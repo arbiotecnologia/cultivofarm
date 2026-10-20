@@ -398,3 +398,8 @@
 
 - [x] 13:29: contenção LIVE DELETE conferida read-only e consolidada como dependência imutável PRE/POST/rollback junto ao binding; 140 checks SQL descartáveis e 72 Vitest PASS, baseline/manifesto atualizados, gate false sem DDL ou deploy.
 - [ ] Revisão independente do pacote integrado CQ/referência e PRE/POST hosted; execução/publicação proibidas nesta rodada, sem pedido de nova autorização de preparação. Monitor segue pendência separada.
+
+## 20/10 13:32 — loader de renovação, candidato separado
+- [ ] Reproduzir loader sequencial/timeout e preparar leituras paralelas atômicas com aborto e recuperação transitória limitada, sem alterar runtime/CQ/lease.
+- [ ] Testar AuthProvider real com transporte fake: 3s/8s/20s/hung, A/B, gestor+consultor, revogação parcial, offline/signout/unmount e respostas antigas.
+- [ ] Entregar artefato separado com rollback byte-exato, hashes e limites de homologação; sem publicar/DDL ou afirmar gateway resolvido.
