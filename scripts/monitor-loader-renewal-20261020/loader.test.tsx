@@ -117,4 +117,18 @@ describe("parallel atomic renewal loader",()=>{
   it("8s probe still expires under unchanged15s lease, loader recovery does not grant",async()=>{
     await start();s.probeMs=8000;await tick(40000);expect(auth.authzReady).toBe(false);
   });
+  it("3s probes and renewed pair remain authorized for120s without extending lease",async()=>{
+    await start();s.probeMs=3000;
+    for(let n=0;n<12;n++){await tick(10000);expect(auth.authzReady).toBe(true);}
+  });
+  it("same identity tenant changes require fresh matching probe, never old tenant",async()=>{
+    await start();s.pms=3000;s.rms=3000;s.org="00000000-0000-4000-8000-000000000010";emit();await tick(100);
+    expect(auth.profile).toBeNull();expect(auth.authzReady).toBe(false);await tick(3200);
+    expect(auth.profile?.organization_id).toBe(s.org);expect(auth.authzReady).toBe(true);
+  });
+  it("offline during active request aborts and cannot restart until explicit fresh resolution",async()=>{
+    await start();s.hang=true;emit();await tick(100);const n=s.calls.length;
+    Object.defineProperty(navigator,"onLine",{configurable:true,value:false});act(()=>window.dispatchEvent(new Event("offline")));
+    await tick(30000);expect(s.calls.length).toBe(n);expect(s.calls.slice(-2).every(c=>c.signal?.aborted)).toBe(true);expect(auth.authzReady).toBe(false);
+  });
 });

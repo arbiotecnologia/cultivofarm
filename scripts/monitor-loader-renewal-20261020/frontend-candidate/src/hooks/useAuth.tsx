@@ -686,6 +686,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // (authzState="expired" via onStateChange) é o que ESCONDE os dados —
         // boundary e scopes derivam readiness dele.
         generationRef.current += 1;
+        if (loaderRecoveryTimerRef.current !== null) failLoad();
         cancelLoader();
         void queryClient.cancelQueries();
         clearActivePortalContext();
@@ -701,7 +702,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const scopeAtExpire = principalScope;
           autoRecoveryTimerRef.current = window.setTimeout(() => {
             autoRecoveryTimerRef.current = null;
-            if (!mountedRef.current || activeUserIdRef.current !== uid || resolvedScopeRef.current !== scopeAtExpire ||
+            if (!mountedRef.current || !navigator.onLine || activeUserIdRef.current !== uid || resolvedScopeRef.current !== scopeAtExpire ||
               authzMonitorRef.current !== monitor || monitor.state() !== "expired" || retryInFlightRef.current) return;
             recordAuthzDiagnostic({ event: "auto_retry", state: "expired", reason: "timeout",
               visible: document.visibilityState === "visible", online: navigator.onLine,
