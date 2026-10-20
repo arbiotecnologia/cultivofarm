@@ -377,7 +377,8 @@
 - [x] 02:45: proprietário implantou cq_remove_guc_definer_bypass; leitura canônica conferiu corpos/hashes/ACL. PRE/POST/rollback devem exigir contenção já aplicada, sem reescrever triggers; nenhum CQ fictício persistiu conforme recibo. Gates OFF, revisão integral ainda pendente.
 
 ## 20/10 13:04 — revisão independente CQ 18fc97
-- [ ] Alinhar hook existente ao core (produto prioritário, sem fallback/associação inventada), monitor/cancelamento e testes do hook real; candidato/rollback/hashes/tipos.
-- [ ] Reproduzir escape por vínculos pais/edição OS em_cq e conter no candidato/rollback sem GUC.
-- [ ] Preparar referência exclusivamente fictícia completa por caminho canônico revisável; verificar edição fora do escopo.
-- [ ] Revalidar pacote e registrar limites; sem DDL/deploy e gate false.
+- [x] Alinhar hook existente ao core (produto prioritário, sem fallback/associação inventada), monitor/cancelamento e testes do hook real; candidato/rollback/hashes/tipos.
+- [x] Reproduzir escape por vínculos pais/edição OS em_cq e conter no candidato/rollback sem GUC.
+- [x] Preparar proposta completa exclusivamente fictícia e verificar comparação somente leitura; sem inserir nem inventar vínculo.
+- [ ] Cadastro hosted da referência fictícia: bloqueado por micro NOT NULL/FK e writer global contido; requer contrato existente produto-only revisado e autorização própria.
+- [x] Revalidar pacote local: 90 checks PG/Auth sintético, 27 Vitest e tsgo isolado PASS; hashes/rollback, sem DDL/deploy e gate false. Nova revisão independente e homologação real continuam pendentes.

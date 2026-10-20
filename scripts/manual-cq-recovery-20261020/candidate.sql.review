@@ -160,6 +160,10 @@ DECLARE ticket text; org uuid; linked boolean;
 BEGIN
  IF TG_TABLE_NAME='ordens_servico' THEN
   linked:=EXISTS(SELECT 1 FROM public.programacao_producao p JOIN public.lotes l ON l.programacao_id=p.id WHERE p.ordem_servico_id=OLD.id AND l.organization_id IS NOT NULL);
+  IF linked AND OLD.status::text='em_cq' AND
+   (to_jsonb(NEW)-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'updated_at') THEN
+   RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501';
+  END IF;
   IF linked AND (OLD.status::text='em_cq' OR NEW.status::text='em_cq') AND NEW.status IS DISTINCT FROM OLD.status THEN
    IF OLD.status::text IS DISTINCT FROM 'programada' OR NEW.status::text IS DISTINCT FROM 'em_cq'
     OR (to_jsonb(NEW)-'status'-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')
@@ -168,6 +172,12 @@ BEGIN
   END IF;
  ELSE
   linked:=OLD.ordem_servico_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.programacao_id=OLD.id AND l.organization_id IS NOT NULL);
+  IF linked AND (NEW.id IS DISTINCT FROM OLD.id OR NEW.ordem_servico_id IS DISTINCT FROM OLD.ordem_servico_id
+   OR NEW.ordem_servico_onfarm_id IS DISTINCT FROM OLD.ordem_servico_onfarm_id
+   OR NEW.organization_id IS DISTINCT FROM OLD.organization_id
+   OR NEW.produto_id IS DISTINCT FROM OLD.produto_id OR NEW.microrganismo_id IS DISTINCT FROM OLD.microrganismo_id) THEN
+   RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501';
+  END IF;
   IF linked AND (OLD.status::text IN ('aguardando_cq','aprovado') OR NEW.status::text IN ('aguardando_cq','aprovado')) AND NEW IS DISTINCT FROM OLD THEN
    ticket:=CASE WHEN OLD.status::text='aguardando' AND NEW.status::text='aguardando_cq' THEN 'manual_cq_send_v1'
      WHEN OLD.status::text='aguardando_cq' AND NEW.status::text='aprovado' THEN 'manual_cq_aprovado_v1' END;
@@ -577,7 +587,7 @@ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cockpi
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.manual_cq_v1(uuid,uuid,jsonb)') AND md5(pg_get_functiondef(oid))='6fc63204f7075ab9e25ef26dfae2adef' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.manual_cq_v1(uuid,uuid,jsonb)';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb)') AND md5(pg_get_functiondef(oid))='4cdb351466747580e4e8b0ec596ca3a5' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb)';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_cq_write_v1()') AND md5(pg_get_functiondef(oid))='4c9738cabaf11d8ac59a4ac0e58abfa4' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_cq_write_v1()';END IF;
-IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_cq_parent_v1()') AND md5(pg_get_functiondef(oid))='46be93ddb0fcfc615099369e50f74f70' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_cq_parent_v1()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_cq_parent_v1()') AND md5(pg_get_functiondef(oid))='fbe67571995aa8e4c942ca29215c15b5' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_cq_parent_v1()';END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.controle_qualidade'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.controle_qualidade';END IF;
 IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.controle_qualidade'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '7b243eb5ec78ddb853482d87bfe557f7' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.controle_qualidade';END IF;
 IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.controle_qualidade'::regclass AND NOT tgisinternal AND tgname<>'aa_manual_cq_write_fence_v1') IS DISTINCT FROM 'bf68d935dbc04146b7f33139cb5fb99f' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.controle_qualidade';END IF;
