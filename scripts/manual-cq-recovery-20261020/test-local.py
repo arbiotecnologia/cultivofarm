@@ -48,7 +48,8 @@ def main():
    deny('legacy step closed '+operation,actor()+f"SELECT public.rpc_avancar_esteira_laboratorio({O},'manual','{operation}',{PP});")
   for origin in ['onfarm','b2b']:
    deny('origin closed '+origin,actor()+f"SELECT public.rpc_avancar_esteira_laboratorio({O},'{origin}','enviar_cq',{PP});")
-  yes('send from real reviewed lot writes all 3 states',f"({send}->>'success')='true' AND (SELECT status::text FROM ordens_servico WHERE id={O})='em_cq' AND (SELECT status::text FROM programacao_producao WHERE id={PP})='aguardando_cq' AND (SELECT status::text FROM lotes WHERE id={L})='aguardando_cq'")
+  yes('send from real reviewed lot succeeds',f"({send}->>'success')='true'")
+  yes('send writes all 3 states',f" (SELECT status::text FROM ordens_servico WHERE id={O})='em_cq' AND (SELECT status::text FROM programacao_producao WHERE id={PP})='aguardando_cq' AND (SELECT status::text FROM lotes WHERE id={L})='aguardando_cq'")
   yes('send replay no duplicate event',f"({send}->>'replay')='true' AND (SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao='enviar_cq')=1")
   for k,v in [('ph',-1),('ph',15),('ph','NaN'),('concentracao',-1),('concentracao','Infinity'),('dados_sinteticos',False),('aparencia',''),('lote_id',str(q(99)).strip("'")),('referencia_id',str(q(98)).strip("'")),('organization_id','forged')]:
    d={**data,k:v};deny('payload denied '+k+'='+str(v),actor()+f'SELECT {call(d)};')
