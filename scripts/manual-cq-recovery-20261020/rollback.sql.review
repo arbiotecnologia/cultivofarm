@@ -1,0 +1,406 @@
+-- REVIEW ONLY. NO HOSTED EXECUTION. Canonical swzpzcwiasxmjutrmvkm; no fixture/data writes.
+BEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='15s';
+DO $guard$ BEGIN
+IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)') AND md5(pg_get_functiondef(oid))='f080f0d9c003ca6b57a208a21625b7e1' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_lot_write_v1()') AND md5(pg_get_functiondef(oid))='4eab765e76ca79f16a7dd481887496d9' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_lot_write_v1()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.check_os_status_transition()') AND md5(pg_get_functiondef(oid))='8dc2c40052b006e51b1defc0284a09e6' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.check_os_status_transition()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_aprovado_avanca_os()') AND md5(pg_get_functiondef(oid))='5b1905b8fc743e1181904db931b165f9' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_aprovado_avanca_os()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('private.h7n_esteira_laboratorio()') AND md5(pg_get_functiondef(oid))='503f30a55dbd7e29b41c489391ce41cd' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','private.h7n_esteira_laboratorio()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_autoria_servidor()') AND md5(pg_get_functiondef(oid))='33f665a1fbc3377b1f909effb5ef5a43' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_autoria_servidor()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_resultado_imutavel()') AND md5(pg_get_functiondef(oid))='f7bc6980729dbef8f06aaf9d412ae291' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_resultado_imutavel()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_sync_os_classica_downstream()') AND md5(pg_get_functiondef(oid))='06e64b76968f91e19f03b24363ac610a' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_sync_os_classica_downstream()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._refresh_esteira_laboratorio_after_change()') AND md5(pg_get_functiondef(oid))='2f361c1fd9de578cf45796d82f3754e0' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public._refresh_esteira_laboratorio_after_change()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.refresh_esteira_laboratorio()') AND md5(pg_get_functiondef(oid))='bbb2e580bfc6ffddfa833f950c38e0f3' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.refresh_esteira_laboratorio()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.h15_actor_organization()') AND md5(pg_get_functiondef(oid))='64e10608403238a41a9baf92857ca881' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.h15_actor_organization()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.lab_item_is_manufacturable(uuid,uuid)') AND md5(pg_get_functiondef(oid))='853595394240e8f2a61ac2d621118271' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.lab_item_is_manufacturable(uuid,uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.technical_actor_ready(uuid)') AND md5(pg_get_functiondef(oid))='b5d0994b6eb976b14122cd2a1ec798cf' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.technical_actor_ready(uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._saas_user_has_feature(uuid,text)') AND md5(pg_get_functiondef(oid))='501dd958e117d2df8a4d38f6bcbeed04' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public._saas_user_has_feature(uuid,text)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)') AND md5(pg_get_functiondef(oid))='04d54f538952afc9bfcd29991f55b724' AND proowner='postgres'::regrole) THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.manual_cq_v1(uuid,uuid,jsonb)') AND md5(pg_get_functiondef(oid))='65c3b628a3632bc819705124e1d627b1' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.manual_cq_v1(uuid,uuid,jsonb)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb)') AND md5(pg_get_functiondef(oid))='4cdb351466747580e4e8b0ec596ca3a5' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_cq_write_v1()') AND md5(pg_get_functiondef(oid))='4c9738cabaf11d8ac59a4ac0e58abfa4' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_cq_write_v1()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_cq_parent_v1()') AND md5(pg_get_functiondef(oid))='46be93ddb0fcfc615099369e50f74f70' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_cq_parent_v1()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.controle_qualidade'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.controle_qualidade';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.controle_qualidade'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '7b243eb5ec78ddb853482d87bfe557f7' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.controle_qualidade';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.controle_qualidade'::regclass AND NOT tgisinternal AND tgname<>'aa_manual_cq_write_fence_v1') IS DISTINCT FROM 'bf68d935dbc04146b7f33139cb5fb99f' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.controle_qualidade';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.controle_qualidade'::regclass) IS DISTINCT FROM '568de7e21732569a28800937144da4bd' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.controle_qualidade';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.controle_qualidade'::regclass AND tgname='aa_manual_cq_write_fence_v1' AND tgenabled='O' AND tgfoid='platform_private.guard_manual_cq_write_v1()'::regprocedure AND tgtype=31) THEN RAISE EXCEPTION 'NEW_TRIGGER_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=rm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.cq_parametros_referencia';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.cq_parametros_referencia'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '2e521a3b3c4e459e5ab9b5f8e52d06ee' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.cq_parametros_referencia';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.cq_parametros_referencia'::regclass AND NOT tgisinternal) IS DISTINCT FROM '7456ac326dd85bb7d22b5f48b22a3d65' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.cq_parametros_referencia';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.cq_parametros_referencia'::regclass) IS DISTINCT FROM '086d698024efa3fb9448a34bea41655f' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.cq_parametros_referencia';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.lotes'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.lotes';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.lotes'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '9ec8b0348eaa6a1416e753d00a7f7216' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.lotes';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.lotes'::regclass AND NOT tgisinternal) IS DISTINCT FROM '5ad7698636d5364d1ac7cd818669051a' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.lotes';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.lotes'::regclass) IS DISTINCT FROM 'e52025f988e6e693c8ba9a2fa868db1f' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.lotes';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.ordens_servico'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.ordens_servico';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.ordens_servico'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '141cda71ffbcadb023dfaa945bb1465c' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.ordens_servico';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.ordens_servico'::regclass AND NOT tgisinternal AND tgname<>'aa_manual_cq_parent_v1') IS DISTINCT FROM 'b4cdb9fa3090c60650ed052dd6c90fcf' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.ordens_servico';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.ordens_servico'::regclass) IS DISTINCT FROM 'a6bc5db4e1f0ab992f260033290f0d23' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.ordens_servico';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.ordens_servico'::regclass AND tgname='aa_manual_cq_parent_v1' AND tgenabled='O' AND tgfoid='platform_private.guard_manual_cq_parent_v1()'::regprocedure AND tgtype=19) THEN RAISE EXCEPTION 'NEW_TRIGGER_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.programacao_producao'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.programacao_producao';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.programacao_producao'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM 'c6c77ef26665c428577e407b65408afc' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.programacao_producao';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.programacao_producao'::regclass AND NOT tgisinternal AND tgname<>'aa_manual_cq_parent_v1') IS DISTINCT FROM 'd67e2052cf43f3fca4b2e53a7f812282' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.programacao_producao';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.programacao_producao'::regclass) IS DISTINCT FROM '3517bb22d1bec05daae0d4ed3441e63d' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.programacao_producao';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.programacao_producao'::regclass AND tgname='aa_manual_cq_parent_v1' AND tgenabled='O' AND tgfoid='platform_private.guard_manual_cq_parent_v1()'::regprocedure AND tgtype=19) THEN RAISE EXCEPTION 'NEW_TRIGGER_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.cockpit_operacao_idempotencia'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.cockpit_operacao_idempotencia';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.cockpit_operacao_idempotencia'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM 'bc6717f7d08c3d9cadd7feea256e50eb' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.cockpit_operacao_idempotencia';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.cockpit_operacao_idempotencia'::regclass AND NOT tgisinternal) IS DISTINCT FROM 'd41d8cd98f00b204e9800998ecf8427e' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.cockpit_operacao_idempotencia';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.cockpit_operacao_idempotencia'::regclass) IS DISTINCT FROM '84a8613294ad2e297c5db942b5731be3' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.cockpit_operacao_idempotencia';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.laboratorio_esteira_eventos'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.laboratorio_esteira_eventos';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.laboratorio_esteira_eventos'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '7d717abc7a2c6b4d8125e7a25a9aaf5a' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.laboratorio_esteira_eventos';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.laboratorio_esteira_eventos'::regclass AND NOT tgisinternal) IS DISTINCT FROM 'd41d8cd98f00b204e9800998ecf8427e' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.laboratorio_esteira_eventos';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.laboratorio_esteira_eventos'::regclass) IS DISTINCT FROM 'cff54c5dfe24beec6da66f1ae14335bf' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.laboratorio_esteira_eventos';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cockpit_norm_origem(text)') AND md5(pg_get_functiondef(oid))='701ba8da92fc3df9ea0e5270ab5e74b2' AND proacl::text='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.fn_cockpit_norm_origem(text)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.gerar_codigo_lote(integer)') AND md5(pg_get_functiondef(oid))='194703302cf0400c10d6d0dda2468d5d' AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.gerar_codigo_lote(integer)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_programar_os_v1(uuid,text,date)') AND md5(pg_get_functiondef(oid))='e374f0ba1698b37523b890dc91682eaf' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.rpc_programar_os_v1(uuid,text,date)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.update_updated_at_column()') AND md5(pg_get_functiondef(oid))='b1930ed5bca3be839f783c6202ab8147' AND proacl::text='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.update_updated_at_column()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cockpit_assert_operador_origem(text)') AND md5(pg_get_functiondef(oid))='ec7bd47943764dc4bfda9cdbea2cf283' AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.fn_cockpit_assert_operador_origem(text)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._saas_trg_require_feature()') AND md5(pg_get_functiondef(oid))='13ed48832f81cbb35434688ca35fda4b' AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public._saas_trg_require_feature()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.guard_tenant_organization_id()') AND md5(pg_get_functiondef(oid))='d01a740c1e3e02407131d2b9228bf658' AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.guard_tenant_organization_id()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.entitlements_for_user(uuid)') AND md5(pg_get_functiondef(oid))='7f4ec7facaebbdf35444dd490fdebe56' AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.entitlements_for_user(uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.platform_actor_access_ready(uuid)') AND md5(pg_get_functiondef(oid))='048249c0c2106c3761e26eacb8d0de84' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.platform_actor_access_ready(uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.has_role(uuid,public.app_role)') AND md5(pg_get_functiondef(oid))='4d90e93d521a4819d9085f28d742030f' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.has_role(uuid,public.app_role)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.h15_actor_organization()') AND md5(pg_get_functiondef(oid))='55edafec08bcc84a00f1526c14334a2c' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.h15_actor_organization()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.lab_assert_manufacturable(uuid,uuid)') AND md5(pg_get_functiondef(oid))='fe24f00acbffa9b6d71c84d0c4ff8eb4' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.lab_assert_manufacturable(uuid,uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.trg_lab_lot_biological_only()') AND md5(pg_get_functiondef(oid))='58abf38671745d272abeb923ee866083' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.trg_lab_lot_biological_only()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.has_role(uuid,public.app_role)') AND md5(pg_get_functiondef(oid))='c5af5b55de6d79da9b73a33948746ae2' AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.has_role(uuid,public.app_role)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.programacao_producao'::regclass AND conname='programacao_producao_ordem_servico_id_fkey' AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.production_order_link'::regclass AND conname='production_order_link_ordem_servico_id_fkey' AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.entregas'::regclass AND conname='entregas_ordem_servico_id_fkey' AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id)') THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.aplicacoes'::regclass AND conname='aplicacoes_ordem_servico_id_fkey' AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id)') THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass AND relowner='postgres'::regrole AND relrowsecurity AND relacl::text='{postgres=arwdDxtm/postgres}') OR EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='platform_private.authz_tickets'::regclass) THEN RAISE EXCEPTION 'PRIVATE_TICKET_DRIFT';END IF;
+END $guard$;
+CREATE OR REPLACE FUNCTION public.rpc_avancar_esteira_laboratorio(
+  p_os_id uuid,
+  p_origem text,
+  p_etapa_destino text,
+  p_programacao_id uuid DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+    v_user_id uuid;
+    v_profile_id uuid;
+    v_role text;
+    v_status_os text;
+    v_etapa_anterior text;
+    v_result jsonb;
+BEGIN
+    v_user_id := auth.uid();
+    IF v_user_id IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Não autenticado');
+    END IF;
+
+    -- Canonical authorization shared by batch, filling and stage operations.
+    BEGIN
+      PERFORM public.fn_cockpit_assert_operador_origem(p_origem);
+    EXCEPTION WHEN raise_exception THEN
+      IF SQLERRM IN ('COCKPIT_FORBIDDEN','COCKPIT_FORBIDDEN_ORIGEM','COCKPIT_UNAUTHENTICATED') THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Seu perfil não possui permissão para esta origem da esteira laboratorial.');
+      END IF;
+      RAISE;
+    END;
+
+    SELECT id INTO v_profile_id FROM public.profiles WHERE user_id = v_user_id LIMIT 1;
+
+    IF p_origem IN ('manual','b2b') THEN
+        SELECT status::text INTO v_status_os FROM public.ordens_servico WHERE id = p_os_id FOR UPDATE;
+        IF NOT FOUND OR v_status_os IS NULL THEN RETURN jsonb_build_object('success', false, 'message', 'Ordem de serviço não encontrada.'); END IF;
+    ELSIF p_origem = 'onfarm' THEN
+        SELECT status::text INTO v_status_os FROM public.ordens_servico_onfarm WHERE id = p_os_id FOR UPDATE;
+        IF NOT FOUND OR v_status_os IS NULL THEN RETURN jsonb_build_object('success', false, 'message', 'Ordem de serviço On-Farm não encontrada.'); END IF;
+    ELSE
+        RETURN jsonb_build_object('success', false, 'message', 'Origem de OS inválida: ' || p_origem);
+    END IF;
+
+
+    -- COCKPIT_PROGRAMACAO_VINCULO_V1: lock and validate before any state changes.
+    IF p_programacao_id IS NOT NULL THEN
+      PERFORM 1 FROM public.programacao_producao p
+      WHERE p.id = p_programacao_id
+        AND (
+          (p_origem IN ('manual','b2b') AND p.ordem_servico_id = p_os_id
+            AND p.ordem_servico_onfarm_id IS NULL)
+          OR (p_origem = 'onfarm' AND p.ordem_servico_onfarm_id = p_os_id
+            AND p.ordem_servico_id IS NULL)
+        )
+      FOR UPDATE;
+      IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false,
+          'message', 'Programação não pertence à ordem de serviço informada.');
+      END IF;
+    END IF;
+    v_etapa_anterior := v_status_os;
+
+
+    -- Replay idempotente do encerramento (duplo clique): nao gera evento novo.
+    IF p_etapa_destino = 'finalizar_os' AND v_status_os = 'finalizada' THEN
+        RETURN jsonb_build_object('success', true, 'replay', true,
+                                  'message', 'OS já finalizada anteriormente.');
+    END IF;
+
+    IF v_status_os IN ('finalizada', 'cancelada') THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Operação não permitida: OS já está ' || v_status_os);
+    END IF;
+
+    CASE p_etapa_destino
+        WHEN 'assumir_producao' THEN
+            IF p_programacao_id IS NULL THEN
+                RETURN jsonb_build_object('success', false, 'message', 'ID da programação é obrigatório para assumir produção.');
+            END IF;
+            IF v_profile_id IS NULL THEN
+                RETURN jsonb_build_object('success', false, 'message', 'Perfil do usuário não encontrado.');
+            END IF;
+
+            -- Auto-avanco fail-safe: sobe a escada 'aberta' -> 'aprovada' -> 'programada'
+            -- respeitando o trigger de +1 passo. Demais status seguem bloqueados.
+            IF v_status_os = 'aberta' THEN
+                IF p_origem = 'onfarm' THEN
+                    UPDATE public.ordens_servico_onfarm SET status = 'aprovada' WHERE id = p_os_id;
+                ELSE
+                    UPDATE public.ordens_servico SET status = 'aprovada' WHERE id = p_os_id;
+                END IF;
+                v_status_os := 'aprovada';
+            END IF;
+
+            IF v_status_os = 'aprovada' THEN
+                IF p_origem = 'onfarm' THEN
+                    UPDATE public.ordens_servico_onfarm SET status = 'programada' WHERE id = p_os_id;
+                ELSE
+                    UPDATE public.ordens_servico SET status = 'programada' WHERE id = p_os_id;
+                END IF;
+                v_status_os := 'programada';
+            END IF;
+
+            IF v_status_os <> 'programada' THEN
+                RETURN jsonb_build_object('success', false, 'message', 'OS precisa estar em status "programada" para assumir produção. Status atual: ' || v_status_os);
+            END IF;
+
+            UPDATE public.programacao_producao
+            SET status = 'em_producao', responsavel_id = v_profile_id
+            WHERE id = p_programacao_id;
+
+            IF p_origem = 'onfarm' THEN
+                UPDATE public.ordens_servico_onfarm SET status = 'em_producao' WHERE id = p_os_id;
+            ELSE
+                UPDATE public.ordens_servico SET status = 'em_producao' WHERE id = p_os_id;
+            END IF;
+
+            INSERT INTO public.laboratorio_esteira_eventos (os_id, origem_os, programacao_id, etapa_anterior, etapa_nova, acao, usuario_id)
+            VALUES (p_os_id, p_origem, p_programacao_id, v_etapa_anterior, p_etapa_destino, p_etapa_destino, v_user_id);
+
+            PERFORM public.refresh_esteira_laboratorio();
+            RETURN jsonb_build_object('success', true, 'message', 'Produção assumida com sucesso');
+        ELSE
+            v_result := public._rpc_avancar_esteira_laboratorio_internal(p_os_id, p_origem, p_etapa_destino, p_programacao_id);
+            IF COALESCE((v_result->>'success')::boolean, false) THEN
+              PERFORM public.refresh_esteira_laboratorio();
+            END IF;
+            RETURN v_result;
+    END CASE;
+END;
+$function$;
+REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) TO service_role;
+-- REVIEW ONLY: no exposed helper endpoint; existing private ticket table only.
+CREATE OR REPLACE FUNCTION platform_private.guard_manual_lot_write_v1()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $guard$
+DECLARE
+ p public.programacao_producao%ROWTYPE;
+ old_manual boolean:=false;
+ old_programacao uuid;
+ org uuid;
+BEGIN
+ -- Lock old/new parents in deterministic order. An UPDATE cannot escape the
+ -- manual fence by changing programacao_id to onfarm or NULL.
+ IF TG_OP='UPDATE' THEN old_programacao:=OLD.programacao_id; END IF;
+ PERFORM 1 FROM public.programacao_producao
+ WHERE id=NEW.programacao_id OR id=old_programacao
+ ORDER BY id FOR SHARE;
+ IF TG_OP='UPDATE' THEN
+  SELECT EXISTS(SELECT 1 FROM public.programacao_producao
+    WHERE id=OLD.programacao_id AND ordem_servico_id IS NOT NULL) INTO old_manual;
+ END IF;
+ SELECT * INTO p FROM public.programacao_producao WHERE id=NEW.programacao_id;
+ IF old_manual OR p.ordem_servico_id IS NOT NULL OR p.id IS NULL THEN
+  -- No JWT/GUC/current_user/service-role escape: only the reviewed insert RPC
+  -- can issue this private, target-specific ticket; it removes it after INSERT.
+  org:=platform_private.h15_actor_organization();
+  IF TG_OP<>'INSERT' OR org IS NULL OR auth.uid() IS NULL
+   OR public.technical_actor_ready(auth.uid()) IS NOT TRUE
+   OR p.id IS NULL OR p.ordem_servico_id IS NULL OR p.ordem_servico_onfarm_id IS NOT NULL
+   OR p.organization_id IS DISTINCT FROM org OR NEW.organization_id IS DISTINCT FROM org
+   OR p.produto_id IS DISTINCT FROM NEW.produto_id OR p.microrganismo_id IS DISTINCT FROM NEW.microrganismo_id
+   OR p.status::text IS DISTINCT FROM 'aguardando' OR NEW.status::text IS DISTINCT FROM 'em_producao'
+   OR NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id
+     WHERE o.id=p.ordem_servico_id AND o.organization_id=org AND c.organization_id=org
+     AND o.status::text='programada' AND o.partner_order_id IS NULL AND o.partner_order_item_id IS NULL
+     AND o.origem IS DISTINCT FROM 'b2b')
+   OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets
+     WHERE txid=pg_catalog.txid_current() AND scope='manual_lot_insert_v1' AND target=NEW.id)
+  THEN RAISE EXCEPTION 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;
+ END IF;
+ RETURN NEW;
+END $guard$;
+REVOKE ALL ON FUNCTION platform_private.guard_manual_lot_write_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE OR REPLACE FUNCTION public.check_os_status_transition()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  status_order text[] := ARRAY['aberta', 'aprovada', 'programada', 'em_producao', 'em_cq', 'envase', 'aguardando_reserva', 'pronto_entrega', 'entregue', 'finalizada'];
+  old_idx int;
+  new_idx int;
+  cq_count int;
+  v_lote_id uuid;
+BEGIN
+  -- Se o status não mudou, permite
+  IF (OLD.status::text = NEW.status::text) THEN
+    RETURN NEW;
+  END IF;
+
+  -- Se o novo status é 'cancelada', permite
+  IF (NEW.status::text = 'cancelada') THEN
+    RETURN NEW;
+  END IF;
+
+  -- Validação específica: Bloquear avanço para 'envase' se o CQ não estiver aprovado
+  IF (NEW.status::text = 'envase') THEN
+    -- Encontrar o lote associado a esta OS OnFarm
+    -- A relação é OS -> Programação -> Lote
+    SELECT l.id INTO v_lote_id
+    FROM public.lotes l
+    JOIN public.programacao_producao pp ON l.programacao_id = pp.id
+    WHERE pp.ordem_servico_onfarm_id = NEW.id
+    LIMIT 1;
+
+    -- Se não encontrar por ordem_servico_onfarm_id, tenta pelo ordem_servico_id (caso seja OS padrão)
+    IF v_lote_id IS NULL THEN
+        SELECT l.id INTO v_lote_id
+        FROM public.lotes l
+        JOIN public.programacao_producao pp ON l.programacao_id = pp.id
+        WHERE pp.ordem_servico_id = NEW.id
+        LIMIT 1;
+    END IF;
+
+    IF v_lote_id IS NOT NULL THEN
+        -- Verificar se existe controle de qualidade aprovado para este lote
+        -- Assumindo que o enum de resultado do CQ possui 'aprovado'
+        SELECT count(*) INTO cq_count
+        FROM public.controle_qualidade
+        WHERE lote_id = v_lote_id AND resultado::text = 'aprovado';
+
+        IF cq_count = 0 THEN
+            RAISE EXCEPTION 'Não é possível avançar para ENVASE: O lote vinculado a esta Ordem de Serviço ainda não possui um laudo de Controle de Qualidade APROVADO.'
+            USING ERRCODE = 'check_violation';
+        END IF;
+    ELSE
+        -- Se não há lote/programação, mas tentou ir para envase, pode ser inconsistência de dados
+        -- Mas se o fluxo operacional permite envase sem lote em casos raros, poderíamos ignorar.
+        -- Para garantir segurança, vamos exigir o lote se estiver na fase de produção.
+        RAISE EXCEPTION 'Não é possível avançar para ENVASE: Nenhum lote de produção foi localizado para esta Ordem de Serviço.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  -- Encontra os índices na esteira
+  SELECT i INTO old_idx FROM unnest(status_order) WITH ORDINALITY AS t(val, i) WHERE val = OLD.status::text;
+  SELECT i INTO new_idx FROM unnest(status_order) WITH ORDINALITY AS t(val, i) WHERE val = NEW.status::text;
+
+  -- Validações:
+  -- 1. Se o status antigo ou novo não estão na lista (e não é cancelamento), lança erro
+  IF old_idx IS NULL OR new_idx IS NULL THEN
+    RAISE EXCEPTION 'Status inválido ou transição não permitida para o fluxo operacional.';
+  END IF;
+
+  -- 2. Permite apenas avançar 1 posição por vez
+  IF new_idx <> old_idx + 1
+     AND NOT (new_idx = old_idx + 2 AND status_order[old_idx + 1] = 'aguardando_reserva') THEN
+    RAISE EXCEPTION 'Transição de status inválida na esteira de produção: % -> %. A próxima etapa obrigatória é %.', 
+      OLD.status::text, NEW.status::text, status_order[old_idx + 1];
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+;
+DO $guard$ BEGIN
+IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)') AND md5(pg_get_functiondef(oid))='c159638f8e2b7bcb4c8c04fd457592cb' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_lot_write_v1()') AND md5(pg_get_functiondef(oid))='8db8d23862936928529e073117bb9e15' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_lot_write_v1()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.check_os_status_transition()') AND md5(pg_get_functiondef(oid))='496a214d87fc831a53b2f16d3524ddea' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.check_os_status_transition()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_aprovado_avanca_os()') AND md5(pg_get_functiondef(oid))='5b1905b8fc743e1181904db931b165f9' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_aprovado_avanca_os()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('private.h7n_esteira_laboratorio()') AND md5(pg_get_functiondef(oid))='503f30a55dbd7e29b41c489391ce41cd' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','private.h7n_esteira_laboratorio()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_autoria_servidor()') AND md5(pg_get_functiondef(oid))='33f665a1fbc3377b1f909effb5ef5a43' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_autoria_servidor()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cq_resultado_imutavel()') AND md5(pg_get_functiondef(oid))='f7bc6980729dbef8f06aaf9d412ae291' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_cq_resultado_imutavel()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_sync_os_classica_downstream()') AND md5(pg_get_functiondef(oid))='06e64b76968f91e19f03b24363ac610a' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.fn_sync_os_classica_downstream()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._refresh_esteira_laboratorio_after_change()') AND md5(pg_get_functiondef(oid))='2f361c1fd9de578cf45796d82f3754e0' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public._refresh_esteira_laboratorio_after_change()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.refresh_esteira_laboratorio()') AND md5(pg_get_functiondef(oid))='bbb2e580bfc6ffddfa833f950c38e0f3' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.refresh_esteira_laboratorio()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.h15_actor_organization()') AND md5(pg_get_functiondef(oid))='64e10608403238a41a9baf92857ca881' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.h15_actor_organization()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.lab_item_is_manufacturable(uuid,uuid)') AND md5(pg_get_functiondef(oid))='853595394240e8f2a61ac2d621118271' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.lab_item_is_manufacturable(uuid,uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.technical_actor_ready(uuid)') AND md5(pg_get_functiondef(oid))='b5d0994b6eb976b14122cd2a1ec798cf' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.technical_actor_ready(uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._saas_user_has_feature(uuid,text)') AND md5(pg_get_functiondef(oid))='501dd958e117d2df8a4d38f6bcbeed04' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public._saas_user_has_feature(uuid,text)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)') AND md5(pg_get_functiondef(oid))='04d54f538952afc9bfcd29991f55b724' AND proowner='postgres'::regrole) THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.manual_cq_v1(uuid,uuid,jsonb)') AND md5(pg_get_functiondef(oid))='65c3b628a3632bc819705124e1d627b1' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.manual_cq_v1(uuid,uuid,jsonb)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb)') AND md5(pg_get_functiondef(oid))='4cdb351466747580e4e8b0ec596ca3a5' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_cq_write_v1()') AND md5(pg_get_functiondef(oid))='4c9738cabaf11d8ac59a4ac0e58abfa4' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_cq_write_v1()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_cq_parent_v1()') AND md5(pg_get_functiondef(oid))='46be93ddb0fcfc615099369e50f74f70' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %','platform_private.guard_manual_cq_parent_v1()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.controle_qualidade'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.controle_qualidade';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.controle_qualidade'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '7b243eb5ec78ddb853482d87bfe557f7' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.controle_qualidade';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.controle_qualidade'::regclass AND NOT tgisinternal AND tgname<>'aa_manual_cq_write_fence_v1') IS DISTINCT FROM 'bf68d935dbc04146b7f33139cb5fb99f' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.controle_qualidade';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.controle_qualidade'::regclass) IS DISTINCT FROM '568de7e21732569a28800937144da4bd' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.controle_qualidade';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.controle_qualidade'::regclass AND tgname='aa_manual_cq_write_fence_v1' AND tgenabled='O' AND tgfoid='platform_private.guard_manual_cq_write_v1()'::regprocedure AND tgtype=31) THEN RAISE EXCEPTION 'NEW_TRIGGER_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=rm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.cq_parametros_referencia';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.cq_parametros_referencia'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '2e521a3b3c4e459e5ab9b5f8e52d06ee' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.cq_parametros_referencia';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.cq_parametros_referencia'::regclass AND NOT tgisinternal) IS DISTINCT FROM '7456ac326dd85bb7d22b5f48b22a3d65' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.cq_parametros_referencia';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.cq_parametros_referencia'::regclass) IS DISTINCT FROM '086d698024efa3fb9448a34bea41655f' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.cq_parametros_referencia';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.lotes'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.lotes';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.lotes'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '9ec8b0348eaa6a1416e753d00a7f7216' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.lotes';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.lotes'::regclass AND NOT tgisinternal) IS DISTINCT FROM '5ad7698636d5364d1ac7cd818669051a' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.lotes';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.lotes'::regclass) IS DISTINCT FROM 'e52025f988e6e693c8ba9a2fa868db1f' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.lotes';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.ordens_servico'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.ordens_servico';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.ordens_servico'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '141cda71ffbcadb023dfaa945bb1465c' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.ordens_servico';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.ordens_servico'::regclass AND NOT tgisinternal AND tgname<>'aa_manual_cq_parent_v1') IS DISTINCT FROM 'b4cdb9fa3090c60650ed052dd6c90fcf' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.ordens_servico';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.ordens_servico'::regclass) IS DISTINCT FROM 'a6bc5db4e1f0ab992f260033290f0d23' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.ordens_servico';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.ordens_servico'::regclass AND tgname='aa_manual_cq_parent_v1' AND tgenabled='O' AND tgfoid='platform_private.guard_manual_cq_parent_v1()'::regprocedure AND tgtype=19) THEN RAISE EXCEPTION 'NEW_TRIGGER_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.programacao_producao'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.programacao_producao';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.programacao_producao'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM 'c6c77ef26665c428577e407b65408afc' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.programacao_producao';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.programacao_producao'::regclass AND NOT tgisinternal AND tgname<>'aa_manual_cq_parent_v1') IS DISTINCT FROM 'd67e2052cf43f3fca4b2e53a7f812282' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.programacao_producao';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.programacao_producao'::regclass) IS DISTINCT FROM '3517bb22d1bec05daae0d4ed3441e63d' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.programacao_producao';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.programacao_producao'::regclass AND tgname='aa_manual_cq_parent_v1' AND tgenabled='O' AND tgfoid='platform_private.guard_manual_cq_parent_v1()'::regprocedure AND tgtype=19) THEN RAISE EXCEPTION 'NEW_TRIGGER_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.cockpit_operacao_idempotencia'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.cockpit_operacao_idempotencia';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.cockpit_operacao_idempotencia'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM 'bc6717f7d08c3d9cadd7feea256e50eb' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.cockpit_operacao_idempotencia';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.cockpit_operacao_idempotencia'::regclass AND NOT tgisinternal) IS DISTINCT FROM 'd41d8cd98f00b204e9800998ecf8427e' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.cockpit_operacao_idempotencia';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.cockpit_operacao_idempotencia'::regclass) IS DISTINCT FROM '84a8613294ad2e297c5db942b5731be3' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.cockpit_operacao_idempotencia';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.laboratorio_esteira_eventos'::regclass AND relowner='postgres'::regrole AND relacl::text='{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %','public.laboratorio_esteira_eventos';END IF;
+IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid='public.laboratorio_esteira_eventos'::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM '7d717abc7a2c6b4d8125e7a25a9aaf5a' THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %','public.laboratorio_esteira_eventos';END IF;
+IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid='public.laboratorio_esteira_eventos'::regclass AND NOT tgisinternal) IS DISTINCT FROM 'd41d8cd98f00b204e9800998ecf8427e' THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %','public.laboratorio_esteira_eventos';END IF;
+IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid='public.laboratorio_esteira_eventos'::regclass) IS DISTINCT FROM 'cff54c5dfe24beec6da66f1ae14335bf' THEN RAISE EXCEPTION 'POLICY_DRIFT: %','public.laboratorio_esteira_eventos';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cockpit_norm_origem(text)') AND md5(pg_get_functiondef(oid))='701ba8da92fc3df9ea0e5270ab5e74b2' AND proacl::text='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.fn_cockpit_norm_origem(text)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.gerar_codigo_lote(integer)') AND md5(pg_get_functiondef(oid))='194703302cf0400c10d6d0dda2468d5d' AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.gerar_codigo_lote(integer)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_programar_os_v1(uuid,text,date)') AND md5(pg_get_functiondef(oid))='e374f0ba1698b37523b890dc91682eaf' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.rpc_programar_os_v1(uuid,text,date)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.update_updated_at_column()') AND md5(pg_get_functiondef(oid))='b1930ed5bca3be839f783c6202ab8147' AND proacl::text='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.update_updated_at_column()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cockpit_assert_operador_origem(text)') AND md5(pg_get_functiondef(oid))='ec7bd47943764dc4bfda9cdbea2cf283' AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.fn_cockpit_assert_operador_origem(text)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._saas_trg_require_feature()') AND md5(pg_get_functiondef(oid))='13ed48832f81cbb35434688ca35fda4b' AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public._saas_trg_require_feature()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.guard_tenant_organization_id()') AND md5(pg_get_functiondef(oid))='d01a740c1e3e02407131d2b9228bf658' AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.guard_tenant_organization_id()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.entitlements_for_user(uuid)') AND md5(pg_get_functiondef(oid))='7f4ec7facaebbdf35444dd490fdebe56' AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.entitlements_for_user(uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.platform_actor_access_ready(uuid)') AND md5(pg_get_functiondef(oid))='048249c0c2106c3761e26eacb8d0de84' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.platform_actor_access_ready(uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.has_role(uuid,public.app_role)') AND md5(pg_get_functiondef(oid))='4d90e93d521a4819d9085f28d742030f' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.has_role(uuid,public.app_role)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.h15_actor_organization()') AND md5(pg_get_functiondef(oid))='55edafec08bcc84a00f1526c14334a2c' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','public.h15_actor_organization()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.lab_assert_manufacturable(uuid,uuid)') AND md5(pg_get_functiondef(oid))='fe24f00acbffa9b6d71c84d0c4ff8eb4' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.lab_assert_manufacturable(uuid,uuid)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.trg_lab_lot_biological_only()') AND md5(pg_get_functiondef(oid))='58abf38671745d272abeb923ee866083' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.trg_lab_lot_biological_only()';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.has_role(uuid,public.app_role)') AND md5(pg_get_functiondef(oid))='c5af5b55de6d79da9b73a33948746ae2' AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.has_role(uuid,public.app_role)';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.programacao_producao'::regclass AND conname='programacao_producao_ordem_servico_id_fkey' AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.production_order_link'::regclass AND conname='production_order_link_ordem_servico_id_fkey' AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.entregas'::regclass AND conname='entregas_ordem_servico_id_fkey' AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id)') THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.aplicacoes'::regclass AND conname='aplicacoes_ordem_servico_id_fkey' AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id)') THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass AND relowner='postgres'::regrole AND relrowsecurity AND relacl::text='{postgres=arwdDxtm/postgres}') OR EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='platform_private.authz_tickets'::regclass) THEN RAISE EXCEPTION 'PRIVATE_TICKET_DRIFT';END IF;
+END $guard$;
+COMMIT;
