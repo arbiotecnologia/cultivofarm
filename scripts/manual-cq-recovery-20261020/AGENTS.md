@@ -4,3 +4,4 @@
 - Rollback closes both CQ entrypoints and restores the previous lot/transition guards, retaining manual CQ fences, the corrected profile-ID reader and the no-autoenvase trigger; never delete history or restore unsafe grants.
 - Preserve unchanged OnFarm/legacy behavior outside the manual containment, documenting its unreviewed effects; null-tenant historical lots must not be repaired.
 - Positive local SQL uses synthetic Auth over a disposable PostgreSQL instance; never report it as hosted JWT/RLS or browser certification.
+- Integrity DEFINER triggers have no purge/GUC escape, including rollback; approval requires a complete active canonical-item reference without inventing product associations.
