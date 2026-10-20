@@ -1,7 +1,7 @@
-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./SHA256SUMS.review
-f6b5d2220f6519a1ff4ea4cdec8d98dcce3be14a9ef4a8d82fc4415ce0dbacb9  ./src/components/cockpit/GerarLoteDialog.tsx.review
-8a1d446079cadd1317901458f322893a388f6f1af7c919844ba5a2eef1727f76  ./src/components/ordens-servico/OSDetalhesDialog.tsx.review
-2c6a817b4226a9695bb393395e242ec4fadb3fe5719a712df14530075f7eb0c1  ./src/components/ordens-servico/RastreabilidadeProducaoTab.tsx.review
-e05abc535d5349cba595f3229f5a597df8d5fc9ef07e33ddb43d6197ca61c615  ./src/hooks/useEsteiraLaboratorio.ts.review
-a7d4b11b558a93d51e64766ad93d8f6a7908fccca816b7a0110dd85df38f94b3  ./src/test/lotes/geracao-codigo.test.ts.review
-0f5fe3308eff10a717a12c9397dbbff63ba679d2d050659e84429924e5426851  ./src/test/lotes/gerar-lote-fences.test.tsx.review
+0848e91577fdea7ff206c99493d9a02956fb4e6b89faf0743833bce8e280aaff  ./README.md
+fdd862f647d875df3876228af7c63bdd83664aee3eef1738cfdaed7d8fd1bc0b  ./src/components/cockpit/GerarLoteDialog.tsx.review
+5f208caa5b7636427e28c12555ae585dc023853ab91837bad9c4c309dddb870b  ./src/components/ordens-servico/OSDetalhesDialog.tsx.review
+b0b97a7d48537711aa40a4eb1b3ecabdacbdde90281cfd931889eb7cd2879842  ./src/components/ordens-servico/RastreabilidadeProducaoTab.tsx.review
+6928a30c45d61c415b55cb5d2b8cf26216bd5b644e6f3c181ead982a3a9f4473  ./src/hooks/useEsteiraLaboratorio.ts.review
+57286cf6da9eb9c8d0406993dc267ce4b1c855a7575f0f9242e6c3d9d46de784  ./src/test/lotes/gerar-lote-fences.test.tsx.review
+702c2f84e0bff7f38d36bf4cbb7a248bddd9b8c893d6c848fa9a62d4298ada74  ./src/test/lotes/gerar-lote-live-scope.test.tsx.review
