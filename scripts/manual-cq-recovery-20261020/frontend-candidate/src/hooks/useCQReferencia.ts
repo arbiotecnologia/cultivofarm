@@ -2,9 +2,19 @@ import { useLayoutEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-import type { CQReferencia } from "@/hooks/useCQReferencia";
-
-export type { CQReferencia } from "@/hooks/useCQReferencia";
+export interface CQReferencia {
+  id: string;
+  microrganismo_id: string;
+  produto_id: string | null;
+  ph_min: number | null;
+  ph_max: number | null;
+  concentracao_min_ufc_ml: number | null;
+  aparencia_esperada: string | null;
+  odor_esperado: string | null;
+  contaminacao_esperada: string | null;
+  observacoes: string | null;
+  ativo: boolean;
+}
 
 /** Same canonical-item precedence as manual_cq_v1. Presentation is not authorization. */
 export function useCQReferencia(microrganismoId?: string | null, produtoId?: string | null) {
