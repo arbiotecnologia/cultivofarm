@@ -124,10 +124,19 @@ def main():
   run(actor()+f'BEGIN;SET LOCAL ROLE authenticated;SELECT {call(no_ref_rejected)};ROLLBACK;');checks.append('no-reference synthetic rejection records data but never conformity')
   # New product-only contract, separate review SQL applied ONLY in this disposable PG.
   run("INSERT INTO fiscal_environment_marker(project_ref,environment_label) VALUES('swzpzcwiasxmjutrmvkm','DISPOSABLE SYNTHETIC ONLY');")
+  # Independent legacy-only fixtures; never attach their micro to the product-only result.
+  run(f"INSERT INTO microrganismos(id,nome,tipo) VALUES({q(92)},'DISPOSABLE LEGACY ONLY','bacteria'); INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ativo) VALUES({q(96)},{q(92)},NULL,false),({q(97)},{q(92)},{lot.P},false);")
+  legacy_sql=f"SELECT jsonb_agg(to_jsonb(r) ORDER BY id) FROM cq_parametros_referencia r WHERE id IN ({q(96)},{q(97)});"
+  legacy=run(legacy_sql).stdout
+  policy_sql="SELECT coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),'|' ORDER BY polname),'') FROM pg_policy WHERE polrelid='public.cq_parametros_referencia'::regclass;"
+  policy=run(policy_sql).stdout
   before=run("SELECT relacl::text||':'||relrowsecurity::text FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass;").stdout
   deny('hosted NOT NULL shape rejects product-only before delta',f"INSERT INTO cq_parametros_referencia(produto_id) VALUES({lot.P});")
   run((H/'reference-product-only.sql.review').read_text())
   run((H/'reference-product-only.sql.review').read_text());checks.append('product-only schema delta idempotent in disposable PG')
+  assert legacy==run(legacy_sql).stdout;checks.append('product-only delta preserves legacy micro-only and dual row snapshots')
+  assert policy==run(policy_sql).stdout;checks.append('product-only delta preserves reference policies')
+  deny('authenticated writer stays closed after schema delta',actor()+f"SET ROLE authenticated;INSERT INTO cq_parametros_referencia(produto_id) VALUES({lot.P});")
   assert before==run("SELECT relacl::text||':'||relrowsecurity::text FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass;").stdout;checks.append('product-only delta preserves table ACL and RLS')
   deny('product-only neither item denied',"INSERT INTO cq_parametros_referencia DEFAULT VALUES;")
   deny('product-only nonexistent product FK denied',f"INSERT INTO cq_parametros_referencia(produto_id) VALUES({q(99)});")
