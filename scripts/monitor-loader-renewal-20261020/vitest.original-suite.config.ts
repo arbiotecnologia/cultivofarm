@@ -15,5 +15,5 @@ export default defineConfig({
     return null;
   } }],
   resolve: { alias: [{ find: "@", replacement: path.resolve("src") }] },
-  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test/setup.ts"], include: (process.env.MONITOR_INCLUDE ?? "src/test/config/**/*.test.{ts,tsx}").split(",") },
+  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test/setup.ts"], include: (process.env.MONITOR_INCLUDE ?? "src/test/config/**/*.test.{ts,tsx}").split(";") },
 });
