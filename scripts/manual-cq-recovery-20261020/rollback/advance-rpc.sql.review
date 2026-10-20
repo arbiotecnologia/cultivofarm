@@ -87,18 +87,18 @@ BEGIN
             -- respeitando o trigger de +1 passo. Demais status seguem bloqueados.
             IF v_status_os = 'aberta' THEN
                 IF p_origem = 'onfarm' THEN
-                    UPDATE public.ordens_servico_onfarm SET status = 'aprovada' WHERE id = p_os_id FOR UPDATE;
+                    UPDATE public.ordens_servico_onfarm SET status = 'aprovada' WHERE id = p_os_id;
                 ELSE
-                    UPDATE public.ordens_servico SET status = 'aprovada' WHERE id = p_os_id FOR UPDATE;
+                    UPDATE public.ordens_servico SET status = 'aprovada' WHERE id = p_os_id;
                 END IF;
                 v_status_os := 'aprovada';
             END IF;
 
             IF v_status_os = 'aprovada' THEN
                 IF p_origem = 'onfarm' THEN
-                    UPDATE public.ordens_servico_onfarm SET status = 'programada' WHERE id = p_os_id FOR UPDATE;
+                    UPDATE public.ordens_servico_onfarm SET status = 'programada' WHERE id = p_os_id;
                 ELSE
-                    UPDATE public.ordens_servico SET status = 'programada' WHERE id = p_os_id FOR UPDATE;
+                    UPDATE public.ordens_servico SET status = 'programada' WHERE id = p_os_id;
                 END IF;
                 v_status_os := 'programada';
             END IF;
@@ -112,9 +112,9 @@ BEGIN
             WHERE id = p_programacao_id;
 
             IF p_origem = 'onfarm' THEN
-                UPDATE public.ordens_servico_onfarm SET status = 'em_producao' WHERE id = p_os_id FOR UPDATE;
+                UPDATE public.ordens_servico_onfarm SET status = 'em_producao' WHERE id = p_os_id;
             ELSE
-                UPDATE public.ordens_servico SET status = 'em_producao' WHERE id = p_os_id FOR UPDATE;
+                UPDATE public.ordens_servico SET status = 'em_producao' WHERE id = p_os_id;
             END IF;
 
             INSERT INTO public.laboratorio_esteira_eventos (os_id, origem_os, programacao_id, etapa_anterior, etapa_nova, acao, usuario_id)
