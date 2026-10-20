@@ -211,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // even when the transport never answers.
     let settle!: () => void;
     const settled = new Promise<void>(resolve => { settle = resolve; });
-    // Post-renewal transient failure (timeout/network/5xx) of the SAME identity:
+    // Post-renewal transient failure (network/5xx answer, not a hung read) of the SAME identity:
     // identity stays hidden (cleared, loading) and exactly one fresh canonical
     // loader runs. Never reuses answers/credentials, never signs out; explicit
     // denial/inactivity/missing roles never reach here. Caller has retired seq.
@@ -242,7 +242,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loaderSeqRef.current++;
       loadDiagnostic("load_timeout", startedAt);
       controller.abort();
-      if (!recoverTransient()) failLoad();
+      // A hung read is never auto-retried: it ends in the explicit, operable
+      // error (Retry). Only fast transient failures below get one recovery.
+      failLoad();
     }, AUTH_LOAD_TIMEOUT_MS);
     const isCurrent = () => mountedRef.current && !timedOut && seq === loaderSeqRef.current && gen === generationRef.current;
     // Fenced by a non-loader event (expiry/epoch/Retry) with no successor
