@@ -1,0 +1,155 @@
+-- REVIEW ONLY. One transactional core for both existing stage/form entrypoints.
+CREATE FUNCTION platform_private.manual_cq_v1(p_os_id uuid,p_programacao_id uuid,p_cq jsonb DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE
+ uid uuid:=auth.uid(); org uuid; os public.ordens_servico%ROWTYPE; pp public.programacao_producao%ROWTYPE;
+ lot public.lotes%ROWTYPE; cq public.controle_qualidade%ROWTYPE; ref public.cq_parametros_referencia%ROWTYPE;
+ key text; phase text; outcome text; ph numeric; concentration numeric; refid uuid;
+ payload jsonb; receipt public.cockpit_operacao_idempotencia%ROWTYPE; receipt_key text; digest text;
+ result jsonb; cqid uuid; profileid uuid;
+BEGIN
+ PERFORM pg_catalog.set_config('lock_timeout','3s',true);
+ org:=platform_private.h15_actor_organization();
+ IF uid IS NULL OR org IS NULL OR public.technical_actor_ready(uid) IS NOT TRUE
+ OR public._saas_user_has_feature(uid,'ordens_producao') IS NOT TRUE
+ OR public._saas_user_has_feature(uid,'lotes_qualidade') IS NOT TRUE
+ OR (public.has_role(uid,'administrador') OR public.has_role(uid,'gestor') OR public.has_role(uid,'producao')) IS NOT TRUE
+ THEN RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_os_id IS NULL OR p_programacao_id IS NULL OR current_setting('transaction_isolation')<>'read committed' THEN
+ RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ phase:=CASE WHEN p_cq IS NULL THEN 'enviar_cq' ELSE 'registrar_cq' END;
+ IF p_cq IS NOT NULL THEN
+  IF jsonb_typeof(p_cq) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'CQ_PAYLOAD_INVALID'; END IF;
+  FOR key IN SELECT jsonb_object_keys(p_cq) LOOP
+   IF key NOT IN ('lote_id','resultado','ph','concentracao','aparencia','odor','contaminacao','referencia_id','dados_sinteticos') THEN RAISE EXCEPTION 'CQ_PAYLOAD_INVALID'; END IF;
+  END LOOP;
+  IF p_cq->'dados_sinteticos' IS DISTINCT FROM 'true'::jsonb OR p_cq->>'resultado' NOT IN ('aprovado','reprovado')
+   OR jsonb_typeof(p_cq->'ph') IS DISTINCT FROM 'number' OR jsonb_typeof(p_cq->'concentracao') IS DISTINCT FROM 'number'
+   OR jsonb_typeof(p_cq->'lote_id') IS DISTINCT FROM 'string' THEN RAISE EXCEPTION 'CQ_PAYLOAD_INVALID'; END IF;
+  outcome:=p_cq->>'resultado'; ph:=(p_cq->>'ph')::numeric; concentration:=(p_cq->>'concentracao')::numeric;
+  IF outcome IS NULL OR ph::text IN ('NaN','Infinity','-Infinity') OR ph<0 OR ph>14
+   OR concentration::text IN ('NaN','Infinity','-Infinity') OR concentration<0 OR concentration>1e30 THEN RAISE EXCEPTION 'CQ_VALUES_INVALID'; END IF;
+  FOREACH key IN ARRAY ARRAY['aparencia','odor','contaminacao'] LOOP
+   IF jsonb_typeof(p_cq->key) IS DISTINCT FROM 'string' OR length(btrim(p_cq->>key)) NOT BETWEEN 1 AND 200 THEN RAISE EXCEPTION 'CQ_PAYLOAD_INVALID'; END IF;
+  END LOOP;
+  IF p_cq ? 'referencia_id' AND jsonb_typeof(p_cq->'referencia_id') NOT IN ('null','string') THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
+  BEGIN refid:=nullif(p_cq->>'referencia_id','')::uuid; EXCEPTION WHEN invalid_text_representation THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END;
+  payload:=p_cq||jsonb_build_object('aparencia',btrim(p_cq->>'aparencia'),'odor',btrim(p_cq->>'odor'),'contaminacao',btrim(p_cq->>'contaminacao'),'referencia_id',refid);
+ ELSE payload:='{}'::jsonb; END IF;
+ -- Same lock order / phantom fences as reviewed lot generation. No legacy assert-only delegation.
+ LOCK TABLE public.platform_org_admin_invites,public.ordens_servico_onfarm IN SHARE MODE;
+ LOCK TABLE public.saas_plan_versions,public.saas_plan_version_features,public.saas_features,public.saas_modules IN SHARE MODE;
+ PERFORM pg_advisory_xact_lock(hashtext('cockpit_lote:'||p_programacao_id::text));
+ SELECT * INTO os FROM public.ordens_servico WHERE id=p_os_id FOR UPDATE;
+ IF os.id IS NULL OR os.organization_id IS DISTINCT FROM org THEN RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=uid ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.user_roles WHERE user_id=uid ORDER BY role::text FOR SHARE;
+ PERFORM 1 FROM public.organizations WHERE id=org FOR UPDATE;
+ PERFORM 1 FROM public.organization_subscriptions WHERE organization_id=org ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.organization_feature_overrides WHERE organization_id=org ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.clientes WHERE id=os.cliente_id FOR SHARE;
+ PERFORM 1 FROM public.fazendas WHERE id=os.fazenda_id FOR SHARE;
+ PERFORM 1 FROM public.talhoes WHERE id=os.talhao_id FOR SHARE;
+ PERFORM 1 FROM public.produtos WHERE id=os.produto_id FOR SHARE;
+ PERFORM 1 FROM public.microrganismos WHERE id=os.microrganismo_id FOR SHARE;
+ PERFORM 1 FROM public.programacao_producao WHERE id=p_programacao_id OR ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id ORDER BY id FOR UPDATE;
+ PERFORM 1 FROM public.lotes WHERE programacao_id=p_programacao_id ORDER BY id FOR UPDATE;
+ IF public.technical_actor_ready(uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM org
+ OR public._saas_user_has_feature(uid,'ordens_producao') IS NOT TRUE OR public._saas_user_has_feature(uid,'lotes_qualidade') IS NOT TRUE
+ OR (public.has_role(uid,'administrador') OR public.has_role(uid,'gestor') OR public.has_role(uid,'producao')) IS NOT TRUE
+ OR NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os='manual')
+ OR NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=os.cliente_id AND c.organization_id=org)
+ OR EXISTS(SELECT 1 FROM public.ordens_servico_onfarm WHERE id=p_os_id)
+ THEN RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF os.origem='b2b' OR os.partner_order_id IS NOT NULL OR os.partner_order_item_id IS NOT NULL
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id)
+ OR EXISTS(SELECT 1 FROM public.entregas WHERE ordem_servico_id=p_os_id)
+ OR EXISTS(SELECT 1 FROM public.aplicacoes WHERE ordem_servico_id=p_os_id)
+ OR (SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id)<>1
+ OR (SELECT count(*) FROM public.lotes WHERE programacao_id=p_programacao_id)<>1
+ THEN RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO pp FROM public.programacao_producao WHERE id=p_programacao_id;
+ SELECT * INTO lot FROM public.lotes WHERE programacao_id=p_programacao_id;
+ IF pp.id IS NULL OR pp.organization_id IS DISTINCT FROM org OR pp.ordem_servico_id IS DISTINCT FROM p_os_id OR pp.ordem_servico_onfarm_id IS NOT NULL
+ OR lot.organization_id IS DISTINCT FROM org OR lot.produto_id IS DISTINCT FROM pp.produto_id OR lot.microrganismo_id IS DISTINCT FROM pp.microrganismo_id
+ OR pp.produto_id IS DISTINCT FROM os.produto_id OR pp.microrganismo_id IS DISTINCT FROM os.microrganismo_id
+ OR pp.data_programada IS NULL OR pp.volume_necessario IS DISTINCT FROM os.volume_total_ml
+ OR lot.volume_produzido<=0 OR lot.volume_produzido::text IN ('NaN','Infinity','-Infinity')
+ OR pp.responsavel_id IS NOT NULL OR nullif(btrim(pp.responsavel),'') IS NOT NULL
+ OR platform_private.lab_item_is_manufacturable(pp.produto_id,pp.microrganismo_id) IS NOT TRUE
+ OR EXISTS(SELECT 1 FROM public.envase WHERE lote_id=lot.id) OR EXISTS(SELECT 1 FROM public.estoque_produto WHERE lote_id=lot.id)
+ OR NOT EXISTS(SELECT 1 FROM public.laboratorio_esteira_eventos e WHERE e.lote_id=lot.id AND e.os_id=os.id AND e.programacao_id=pp.id AND e.origem_os='manual' AND e.acao='gerar_lote')
+ THEN RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_cq IS NOT NULL AND (p_cq->>'lote_id') IS DISTINCT FROM lot.id::text THEN RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtext('cq_lote:'||lot.id::text));
+ PERFORM 1 FROM public.controle_qualidade WHERE lote_id=lot.id ORDER BY seq FOR UPDATE;
+ -- Reference selection is server-owned: exact item first, then microorganism-only; ambiguity closes.
+ IF pp.microrganismo_id IS NOT NULL THEN
+  LOCK TABLE public.cq_parametros_referencia IN SHARE MODE;
+  IF (SELECT count(*) FROM public.cq_parametros_referencia WHERE ativo AND microrganismo_id=pp.microrganismo_id AND produto_id IS NOT DISTINCT FROM pp.produto_id)>1 THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
+  SELECT * INTO ref FROM public.cq_parametros_referencia WHERE ativo AND microrganismo_id=pp.microrganismo_id AND produto_id IS NOT DISTINCT FROM pp.produto_id;
+ END IF;
+ IF refid IS DISTINCT FROM ref.id THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
+ IF ref.id IS NOT NULL AND (ref.ph_min::text IN ('NaN','Infinity','-Infinity') OR ref.ph_max::text IN ('NaN','Infinity','-Infinity') OR ref.concentracao_min_ufc_ml::text IN ('NaN','Infinity','-Infinity')) THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
+ IF p_cq IS NOT NULL AND outcome='aprovado' AND ref.id IS NOT NULL AND
+ ((ref.ph_min IS NOT NULL AND ph<ref.ph_min) OR (ref.ph_max IS NOT NULL AND ph>ref.ph_max)
+ OR (ref.concentracao_min_ufc_ml IS NOT NULL AND concentration<ref.concentracao_min_ufc_ml)
+ OR (nullif(btrim(ref.aparencia_esperada),'') IS NOT NULL AND btrim(p_cq->>'aparencia')<>btrim(ref.aparencia_esperada))
+ OR (nullif(btrim(ref.odor_esperado),'') IS NOT NULL AND btrim(p_cq->>'odor')<>btrim(ref.odor_esperado))
+ OR (nullif(btrim(ref.contaminacao_esperada),'') IS NOT NULL AND btrim(p_cq->>'contaminacao')<>btrim(ref.contaminacao_esperada))) THEN RAISE EXCEPTION 'CQ_REFERENCE_FAILED'; END IF;
+ receipt_key:='manual_cq_v1:'||phase||':'||lot.id::text;
+ payload:=payload||jsonb_build_object('os_id',os.id,'programacao_id',pp.id,'lote_id',lot.id,'referencia_snapshot',CASE WHEN ref.id IS NULL THEN NULL ELSE to_jsonb(ref) END);
+ digest:=md5(payload::text);
+ SELECT * INTO receipt FROM public.cockpit_operacao_idempotencia WHERE idempotency_key=receipt_key FOR UPDATE;
+ IF receipt.idempotency_key IS NOT NULL THEN
+  IF receipt.usuario_id IS DISTINCT FROM uid OR receipt.payload_hash IS DISTINCT FROM digest OR receipt.alvo_id IS DISTINCT FROM lot.id OR receipt.status<>'completed'
+   OR os.status::text<>'em_cq' OR lot.status::text NOT IN ('aguardando_cq','aprovado','reprovado')
+   OR (p_cq IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.controle_qualidade c WHERE c.id=(receipt.resultado->>'cq_id')::uuid AND c.lote_id=lot.id AND c.organization_id=org AND c.resultado::text=outcome AND c.ph=ph AND c.concentracao=concentration AND c.aparencia=payload->>'aparencia' AND c.odor=payload->>'odor' AND c.contaminacao=payload->>'contaminacao'))
+  THEN RAISE EXCEPTION 'CQ_REPLAY_DIVERGENT'; END IF;
+  RETURN receipt.resultado||jsonb_build_object('replay',true);
+ END IF;
+ SELECT id INTO profileid FROM public.profiles WHERE user_id=uid AND ativo AND organization_id=org;
+ IF p_cq IS NULL THEN
+  IF os.status::text<>'programada' OR pp.status::text<>'aguardando' OR lot.status::text<>'em_producao'
+   OR EXISTS(SELECT 1 FROM public.controle_qualidade WHERE lote_id=lot.id) THEN RAISE EXCEPTION 'CQ_STATE_INVALID'; END IF;
+  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'manual_cq_send_v1',lot.id),(txid_current(),'manual_cq_send_v1',os.id),(txid_current(),'manual_cq_send_v1',pp.id);
+  -- Ticket-specific transition reflects a pre-existing lot; never simulates production intermediate steps.
+  UPDATE public.ordens_servico SET status='em_cq' WHERE id=os.id;
+ ELSE
+  IF os.status::text<>'em_cq' OR pp.status::text<>'aguardando_cq' OR lot.status::text<>'aguardando_cq'
+   OR EXISTS(SELECT 1 FROM public.controle_qualidade WHERE lote_id=lot.id)
+   OR NOT EXISTS(SELECT 1 FROM public.cockpit_operacao_idempotencia WHERE idempotency_key='manual_cq_v1:enviar_cq:'||lot.id::text AND status='completed') THEN RAISE EXCEPTION 'CQ_STATE_INVALID'; END IF;
+  cqid:=gen_random_uuid();
+  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'manual_cq_'||outcome||'_v1',lot.id),(txid_current(),'manual_cq_'||outcome||'_v1',pp.id),(txid_current(),'manual_cq_insert_v1',cqid);
+  INSERT INTO public.controle_qualidade(id,lote_id,ph,concentracao,aparencia,odor,contaminacao,responsavel,responsavel_id,resultado,organization_id)
+  VALUES(cqid,lot.id,ph,concentration,payload->>'aparencia',payload->>'odor',payload->>'contaminacao','DADOS FICTICIOS SEM VALOR COMERCIAL',profileid,outcome::public.resultado_cq,org);
+  UPDATE public.lotes SET status=outcome::public.status_lote WHERE id=lot.id;
+  IF outcome='aprovado' THEN UPDATE public.programacao_producao SET status='aprovado' WHERE id=pp.id; END IF;
+ END IF;
+ IF (SELECT status::text FROM public.ordens_servico WHERE id=os.id)<>'em_cq'
+ OR (SELECT status::text FROM public.lotes WHERE id=lot.id)<>CASE WHEN p_cq IS NULL THEN 'aguardando_cq' ELSE outcome END
+ OR (SELECT status::text FROM public.programacao_producao WHERE id=pp.id)<>CASE WHEN outcome='aprovado' THEN 'aprovado' ELSE 'aguardando_cq' END
+ OR public.technical_actor_ready(uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM org THEN RAISE EXCEPTION 'CQ_POSTCONDITION_FAILED'; END IF;
+ INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,lote_id,etapa_anterior,etapa_nova,acao,usuario_id,observacao)
+ VALUES(os.id,'manual',pp.id,lot.id,os.status::text,CASE WHEN p_cq IS NULL THEN 'aguardando_cq' ELSE outcome END,phase,uid,'DADOS FICTICIOS SEM VALOR COMERCIAL; sem producao fisica/venda/uso agricola. '||payload::text);
+ result:=jsonb_build_object('success',true,'replay',false,'lote_id',lot.id,'cq_id',cqid,'status','em_cq','resultado',outcome);
+ INSERT INTO public.cockpit_operacao_idempotencia(idempotency_key,operacao,usuario_id,resultado,payload_hash,alvo_id,status)
+ VALUES(receipt_key,phase,uid,result,digest,lot.id,'completed');
+ DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope IN ('manual_cq_send_v1','manual_cq_aprovado_v1','manual_cq_reprovado_v1','manual_cq_insert_v1');
+ RETURN result;
+END $function$;
+REVOKE ALL ON FUNCTION platform_private.manual_cq_v1(uuid,uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION public.rpc_avancar_esteira_laboratorio(p_os_id uuid,p_origem text,p_etapa_destino text,p_programacao_id uuid DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path TO '' AS $function$
+BEGIN
+ IF p_origem IS DISTINCT FROM 'manual' OR p_etapa_destino IS DISTINCT FROM 'enviar_cq' THEN RAISE EXCEPTION 'CQ_OPERATION_CLOSED' USING ERRCODE='42501'; END IF;
+ RETURN platform_private.manual_cq_entry_v1(p_os_id,p_programacao_id,NULL);
+END $function$;
+-- The only public writer overload uses the same reviewed core, never legacy approve/reprove status handlers.
+CREATE FUNCTION public.rpc_avancar_esteira_laboratorio(p_os_id uuid,p_origem text,p_etapa_destino text,p_programacao_id uuid,p_cq jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path TO '' AS $function$
+BEGIN
+ IF p_origem IS DISTINCT FROM 'manual' OR p_etapa_destino IS DISTINCT FROM 'registrar_cq' OR p_cq IS NULL THEN RAISE EXCEPTION 'CQ_OPERATION_CLOSED' USING ERRCODE='42501'; END IF;
+ RETURN platform_private.manual_cq_entry_v1(p_os_id,p_programacao_id,p_cq);
+END $function$;
