@@ -146,12 +146,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // still has to end loading (fresh re-read, bounded, or explicit error).
   const loaderSeqRef = useRef(0);
   const loaderAbortRef = useRef<AbortController | null>(null);
+  const retryReadAbortRef = useRef<AbortController | null>(null);
   const loaderRecoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelLoader = () => {
     if (loaderRecoveryTimerRef.current !== null) clearTimeout(loaderRecoveryTimerRef.current);
     loaderRecoveryTimerRef.current = null;
     loaderAbortRef.current?.abort();
     loaderAbortRef.current = null;
+    retryReadAbortRef.current?.abort();
+    retryReadAbortRef.current = null;
   };
   const activeUserIdRef = useRef<string | null>(null);
   const retryRevalidateRef = useRef(false);
@@ -234,7 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // loader scheduled: discard this answer, re-read freshly (bounded).
     const yieldStale = () => {
       if (!mountedRef.current || timedOut || seq !== loaderSeqRef.current || timerRef.current !== null ||
-        activeUserIdRef.current !== userId || !navigator.onLine) return;
+        activeUserIdRef.current !== userId || !navigator.onLine || gen === generationRef.current) return;
       if (restarts >= AUTH_LOAD_MAX_RESTARTS) { loaderSeqRef.current++; failLoad(); return; }
       loadDiagnostic("load_restart", startedAt);
       void fetchProfileAndRole(userId, generationRef.current, restarts + 1, renewalRecovery, recoveryUsed);
@@ -269,7 +272,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (userRoles.length === 0) {
         renewalRef.current = null;
-        console.warn("No role found for user:", userId);
         setError("Seu usuário ainda não possui uma função atribuída no sistema.");
       } else if (
         userRoles.includes("cliente_produtor") &&
@@ -762,6 +764,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // re-polls the same monitor; a different scope recreates or stays paused.
   const revalidateAuthz = () => {
     cancelAutoRecovery();
+    if (!navigator.onLine) return;
     const uid = user?.id;
     const current = monitoredLatchRef.current;
     if (!AUTHZ_CACHE_FOUNDATION_ENABLED || !uid || !current || current.userId !== uid) {
@@ -799,19 +802,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let freshOrg: unknown = null;
         let active = false;
         let deadline: ReturnType<typeof setTimeout> | undefined;
+        const readController = new AbortController();
+        retryReadAbortRef.current = readController;
         try {
           // Bounded: a hung read ends as "unavailable" (probe path), never an endless Retry.
-          const timeout = new Promise<never>((_, reject) => { deadline = setTimeout(() => reject(new Error("retry_read_timeout")), AUTH_LOAD_TIMEOUT_MS); });
+          const timeout = new Promise<never>((_, reject) => {
+            readController.signal.addEventListener("abort", () => reject(new Error("retry_read_aborted")), { once: true });
+            deadline = setTimeout(() => { readController.abort(); }, AUTH_LOAD_TIMEOUT_MS);
+          });
           const [{ data: p, error: pe }, { data: r, error: re }] = await Promise.race([Promise.all([
-            supabase.from("profiles").select("user_id, organization_id, ativo").eq("user_id", uid).maybeSingle(),
-            supabase.from("user_roles").select("role").eq("user_id", uid),
+            supabase.from("profiles").select("user_id, organization_id, ativo").eq("user_id", uid).abortSignal(readController.signal).maybeSingle(),
+            supabase.from("user_roles").select("role").eq("user_id", uid).abortSignal(readController.signal),
           ]), timeout]);
           if (!pe && !re && p && (p as { user_id?: unknown }).user_id === uid && Array.isArray(r)) {
             active = (p as { ativo?: unknown }).ativo === true;
             freshOrg = (p as { organization_id?: unknown }).organization_id;
             fresh = r.map((row) => String((row as { role?: unknown })?.role)).sort();
           }
-        } catch { fresh = null; } finally { clearTimeout(deadline); }
+        } catch { fresh = null; } finally {
+          clearTimeout(deadline);
+          if (retryReadAbortRef.current === readController) retryReadAbortRef.current = null;
+        }
+        if (readController.signal.aborted || !navigator.onLine) return;
         if (!isCurrent()) return;
         const same = fresh !== null && freshOrg === cachedOrg &&
           fresh.length === cachedRoles.length && fresh.every((role, i) => role === cachedRoles[i]);

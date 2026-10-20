@@ -1,0 +1,4 @@
+- Keep loader renewal changes as review-only copies of the existing AuthProvider, never modify runtime or CQ artifacts — preserves separate approval gates.
+- Profile and role reads share cancellation/deadline and commit together; one post-renewal transient recovery uses fresh canonical reads, never credentials or cached authority — prevents partial adoption and replay.
+- Preserve the existing monitor lease, epoch/tenant/role probes and residual-role behavior; explicit denial/offline/signout/unmount stop loader recovery — keeps revocation fail-closed.
+- Rollback is the byte-exact captured runtime, guarded by candidate and baseline hashes; tests use real provider/monitor with synthetic SDK boundaries, not hosted certification.
