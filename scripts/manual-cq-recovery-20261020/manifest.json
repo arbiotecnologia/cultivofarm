@@ -5,16 +5,19 @@
   "runtime_changed": false,
   "gate": "MANUAL_CQ_REVIEWED=false",
   "files": {
-    "AGENTS.md": "93cfe477b4e0b6773784eff410877bc8142470a6f5ae8c0a35a98fadeb0e46ab",
+    "AGENTS.md": "acd46e1d398122809002e1c162b3f7d7bb327caa893c05456c844207ce5985a6",
     "BASELINE-cq-remove-guc.md": "2a9b1b361c65c42bdfc057c376d4a2ee0fe7e9c817b6025da450395b9ecb5426",
-    "README.md": "0ebe71e64f2c53f3decba2447d8f787d8394a98229eb9b55a03839dad256b4cb",
-    "assemble.py": "23feb25167a80bb2f4af47c78bfce89f9fe2b5b8b2a06ec74e3a172206b9b245",
+    "HOSTED-BASELINE-PENDING.md": "9c84be8576937617a9a25b3ba066de60968003bca42b903beecbbe7f134fc57e",
+    "README.md": "49ad19d57651c52a15ce96a2e5266bfa40e3bab0f4ade303ee36e01a93b4e38c",
+    "assemble.py": "3a32cddc8713fa059a7e08fd7611772834b91420263ad3421c8b05f9dd9d10b8",
     "candidate.sql.review": "734663be54b69ceaa0266dad5bb4735f6a7daa2a3591e6c43b4e2d502b20a689",
+    "comparison.test.tsx": "301705d4375a935fcc1abb57260c5b36a888eb3292dae991b606295b4c98135a",
     "core.sql.review": "a1306d577569fb7af8916970cf86112f806ec9dcf95e89f2ab469394798d83c3",
     "cq-integrity.sql.review": "e083ea13625dfd4533298837f4b4292ef3179d284389fa0db37a3cf3a94ff06c",
     "cq-trigger.sql.review": "255ba641e0e2f64d9c826c7c4feadb8af88ea3c894670951ea3ce4e1b9ac9f21",
     "fictional-reference.proposal.json": "20d9f397204ab08b14897b9328012612fe701052f07e245547e9071063285f17",
     "form.test.tsx": "4d74e8da9188c7c0ad26492869b95a2776e88abb462982864e18fc09d6e24fa8",
+    "frontend-candidate/src/components/cockpit/CQComparativoTable.tsx": "bdbd8d16bc34c175d9cb04fb85c2411e8371d63e90e7d8df04447ff3c4640cb5",
     "frontend-candidate/src/components/cockpit/RegistrarCQDialog.tsx": "b57564bc4dc4de52b0b5f10418943b193face13a25b3612d889f20fa34120e0a",
     "frontend-candidate/src/components/ordens-servico/OSDetalhesDialog.tsx": "7aab8c6bc4b03b479c74da4058f3d10c60f79a92c5e5dd761c6300d028903021",
     "frontend-candidate/src/hooks/useCQReferencia.ts": "979286112f770c48614bcef8b49e9226fcb8a6294c7e92aedcbb59386f94ea40",
@@ -28,7 +31,7 @@
     "post-triggers.json": "54d7350cb9cc1833fd92ccf7dc9935238a3e943fdf7f9da517765ca3fd28337a",
     "postflight-readonly.sql": "2ed7e0c2fea0ada626ceab9f9dc5813902058e2b537b917b986c7db867f3a04c",
     "preflight-readonly.sql": "375f8b0545af8b452bb33402f9b33abfd214d5fde1e5f2e2d913d4903e13760a",
-    "prepare-validation.py": "652a1a61b6811f696d29d842e3df7256e9d6d506d83436c3d90b566ef3a9ad10",
+    "prepare-validation.py": "3eb75d0a91ffc33f690bb25c1233e450a60cb72bdbf8affd3c8ca9b33916747a",
     "reader.sql.review": "76cb45773aeea47aab2652fe3abbc5b2e13b0c9fa8b6a47dbd7096883e8d308a",
     "rollback/advance-rpc.sql.review": "06eea65fd2be9a769ea9597a01bafe9a1d88600dcb950a4a0b39110e129ce8f6",
     "rollback/check_os_status_transition.sql.review": "73594e8d1e2b88d809065d74c223ac4185bfb3953a57be4e391697a4f6519b2a",
@@ -37,6 +40,7 @@
     "rollback/fn_cq_resultado_imutavel.sql.review": "9d9a5d902df41ec293e2b3f4622f0dc4c02b684836085334397f31574a3ce898",
     "rollback/manual-write-guard.sql.review": "601e5a4194b415fbafc5310526ade777cce02acf3f325a8d2356b7cbd0d88415",
     "rollback/reader.sql.review": "a1d57daeaadee6f95e840ac671b97040a4a4848f3e187e0a4661cd7fc4b92e73",
+    "rollback/src/components/cockpit/CQComparativoTable.tsx.review": "e5b13716e1fee437bfebda58d15239d2b3cd72113ad852aad4c81780d2d1ac03",
     "rollback/src/components/cockpit/RegistrarCQDialog.tsx.review": "feb8228fb7ebbfb5b9837e8f6dc651587f17a803e3a17243cdbf420b3da8f192",
     "rollback/src/components/ordens-servico/OSDetalhesDialog.tsx.review": "3860b367d2b136b2239ad1b36dd99cb8f08f1098d8b8dcffc3ef9098e2eb46c2",
     "rollback/src/hooks/useCQReferencia.ts.review": "d49770351f2f6faf6f1465b59474385d8146145b9eaa08a4a35f99b8dae1bdf9",
@@ -45,6 +49,8 @@
     "test-local.py": "2e8bc8c0c0a93ca4964e756fc9472902d2db4b23d02c229b0892bb4e0486e78b",
     "test-results.json": "888dd72b74ea12904badba384275b0790a0ce66d7e056808eeec080563eefe60",
     "transition.sql.review": "fca57d61ab75965ea1098fcba01f109fd212691cfc4884b7d3319495ed9e32e5",
-    "vitest.config.ts": "bf5e9567cbdc00db1ba34757ee7916a7b4c5727e4bf315ded3fe39f48ad81200"
-  }
+    "vitest.config.ts": "815b2baf573ad872501f2853fb73c497c6b11c84f1398652d8b0b31531fdaeeb"
+  },
+  "assembly_blocked": true,
+  "blocked_reason": "Owner-announced programming identity containment baseline pending"
 }
