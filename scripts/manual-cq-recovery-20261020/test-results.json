@@ -15,6 +15,7 @@
     "isolated trigger history preserved",
     "baseline rejects programada->em_cq",
     "historical parent permits manual link NULL before CQ under existing local triggers",
+    "historical OnFarm switch blocked by another local dependency; NULL escape still reproduced",
     "historical NULL parent bypasses manual CQ INSERT fence; transaction rolled back",
     "parent fence before CQ ordem_servico_id",
     "parent fence before CQ ordem_servico_onfarm_id",
@@ -71,6 +72,7 @@
     "record denied inactive",
     "record denied revoked",
     "record denied foreign-client",
+    "duplicate active product references close recording",
     "approved full synthetic data stays em_cq; transaction rollback",
     "rejected keeps program pending; full result transaction rollback",
     "revocation committed during OS wait denies after locks",
@@ -87,7 +89,7 @@
     "rollback retains completed CQ and no filling",
     "rollback never restores GUC purge escape"
   ],
-  "count": 86,
+  "count": 88,
   "hosted": false,
   "auth": "synthetic UID/JWT; real captured STABLE guards and target triggers; not real browser certification",
   "limits": [

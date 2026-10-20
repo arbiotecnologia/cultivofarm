@@ -7,7 +7,7 @@ for p in (H/'frontend-candidate').rglob('*'):
   out=dest/p.name;out.write_bytes(p.read_bytes())
 link=dest/'node_modules'
 if not link.exists():link.symlink_to(root/'node_modules',target_is_directory=True)
-config=json.loads((root/'tsconfig.app.json').read_text());config['compilerOptions']['baseUrl']=str(root);config['compilerOptions']['paths']={'@/hooks/useCQReferencia':[str(dest/'useCQReferencia.ts')], '@/*':[str(root/'src/*')]};config['include']=[str(dest/'RegistrarCQDialog.tsx'),str(dest/'OSDetalhesDialog.tsx'),str(dest/'useCQReferencia.ts')];config['compilerOptions']['noEmit']=True
+config=json.loads((root/'tsconfig.app.json').read_text());config['compilerOptions'].pop('baseUrl',None);config['compilerOptions']['paths']={'@/hooks/useCQReferencia':[str(dest/'useCQReferencia.ts')], '@/*':[str(root/'src/*')]};config['include']=[str(dest/'RegistrarCQDialog.tsx'),str(dest/'OSDetalhesDialog.tsx'),str(dest/'useCQReferencia.ts')];config['compilerOptions']['noEmit']=True
 # Existing relative sibling imports in OS candidate resolve to their unchanged runtime files except the candidate dialog.
 p=dest/'OSDetalhesDialog.tsx';t=p.read_text().replace('"./RastreabilidadeProducaoTab"','"@/components/ordens-servico/RastreabilidadeProducaoTab"').replace('"../cockpit/RegistrarCQDialog"','"./RegistrarCQDialog"');p.write_text(t)
 (dest/'tsconfig.json').write_text(json.dumps(config))
