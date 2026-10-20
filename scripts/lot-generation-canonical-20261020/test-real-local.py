@@ -41,6 +41,7 @@ def setup():
         s += d + ';\n'
     # Tenant B manual OS, programmed fixture child, plus a second user in B.
     s += f"INSERT INTO auth.users VALUES({U2}); INSERT INTO profiles(user_id,organization_id) VALUES({U2},{B}); INSERT INTO user_roles(user_id,role) VALUES({U2},'administrador');\n"
+    s += "CREATE TABLE platform_private.authz_tickets(txid bigint NOT NULL,scope text NOT NULL,target uuid NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(txid,scope,target)); ALTER TABLE platform_private.authz_tickets ENABLE ROW LEVEL SECURITY; REVOKE ALL ON platform_private.authz_tickets FROM PUBLIC,anon,authenticated,service_role; GRANT ALL ON platform_private.authz_tickets TO postgres;\n"
     s += (H / 'rollback/rpc.sql.review').read_text()
     return s
 
@@ -69,10 +70,11 @@ def main():
         build()
         assert md5().startswith('d37a0e478e01277ba61f70397b1d44f9'), md5()
         results.append('captured baseline reproduces hosted pg_get_functiondef d37a0e47 before assembly')
+        run((H / 'manual-write-guard.sql.review').read_text())
         run((H / 'rpc.sql.review').read_text())
         post = md5().split('|')[0]
         if '--generate-hashes' in sys.argv:
-            (H / 'post-hashes.json').write_text(json.dumps({'public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)': post}, indent=2) + '\n')
+            (H / 'post-hashes.json').write_text(json.dumps({'public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)': post, 'manual_guard':run("SELECT md5(pg_get_functiondef('platform_private.guard_manual_lot_write_v1()'::regprocedure));").stdout.strip(), 'manual_trigger':run("SELECT md5(pg_get_triggerdef(oid)) FROM pg_trigger WHERE tgname='aa_manual_lot_write_fence_v1';").stdout.strip()}, indent=2) + '\n')
         else:
             assert json.loads((H / 'post-hashes.json').read_text())['public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)'] == post, 'POST_HASH_DRIFT'
         spec2 = importlib.util.spec_from_file_location('lot_assemble', H / 'assemble.py')
@@ -179,7 +181,7 @@ def main():
         # Concurrency on fresh fixtures, real triggers, two connections.
         def reset():
             run('DROP SCHEMA public CASCADE; DROP SCHEMA auth CASCADE; DROP SCHEMA private CASCADE; DROP SCHEMA platform_private CASCADE; CREATE SCHEMA public; DROP ROLE anon; DROP ROLE authenticated; DROP ROLE service_role;')
-            build(); run((H / 'rpc.sql.review').read_text())
+            build(); run((H / 'manual-write-guard.sql.review').read_text()); run((H / 'rpc.sql.review').read_text())
 
         def start(sql):
             p = subprocess.Popen(conn, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -225,7 +227,7 @@ def main():
         # Existing protected structural fields forbid rewriting live OS; new disposable fixture uses the setup before triggers.
         run('DROP SCHEMA public CASCADE; DROP SCHEMA auth CASCADE; DROP SCHEMA private CASCADE; DROP SCHEMA platform_private CASCADE; CREATE SCHEMA public; DROP ROLE anon; DROP ROLE authenticated; DROP ROLE service_role;')
         bsetup=setup().replace(f'VALUES({U},{A})',f'VALUES({U},{B})').replace(f"'LOCAL',{A}",f"'LOCAL',{B}").replace(f"'local',{C},{A}",f"'local',{C},{B}").replace(f"1,{A}",f"1,{B}").replace(f"{P},{A},'aprovada'",f"{P},{B},'aprovada'").replace(f"VALUES({PP},{A},{O}",f"VALUES({PP},{B},{O}").replace(f"VALUES({SUB},{A}",f"VALUES({SUB},{B}")
-        run(bsetup); run(actor()+f"SELECT public.rpc_programar_os_v1({O},'manual','2026-10-19');"); run((H/'rpc.sql.review').read_text())
+        run(bsetup); run(actor()+f"SELECT public.rpc_programar_os_v1({O},'manual','2026-10-19');"); run((H/'manual-write-guard.sql.review').read_text()); run((H/'rpc.sql.review').read_text())
         out=run(actor()+f'SELECT {call()};'); assert '"success": true' in out.stdout, out.stdout
         assert run(f"SELECT count(*)=1 AND min(volume_produzido)=100 AND bool_and(organization_id={B}) FROM lotes;").stdout.strip()=='t'
         assert run(f"SELECT p.organization_id={B} AND c.organization_id={B} AND o.organization_id={B} AND pp.organization_id={B} AND o.status::text='programada' AND pp.status::text='aguardando' FROM profiles p JOIN ordens_servico o ON o.id={O} JOIN clientes c ON c.id=o.cliente_id JOIN programacao_producao pp ON pp.ordem_servico_id=o.id WHERE p.user_id={U};").stdout.strip()=='t'

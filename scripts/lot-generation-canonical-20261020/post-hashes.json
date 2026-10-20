@@ -1,3 +1,5 @@
 {
-  "public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)": "5419c59a241476dfd60d147111514057"
+  "public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)": "3c7fa9255984f2c7498c6e32af738611",
+  "manual_guard": "1d0f14d3b15cf4f67003ce9577595621",
+  "manual_trigger": "5e87cf2bf932d0e7e95d3054f006ec1d"
 }
