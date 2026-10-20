@@ -12,5 +12,5 @@ DO $guard$ BEGIN
  END IF;
 END $guard$;
 ALTER TABLE public.cq_parametros_referencia ALTER COLUMN microrganismo_id SET NOT NULL;
--- Keep integrity trigger/function: harmless under NOT NULL and preserves containment.
+-- Keep CHECK and partial index: preserve integrity/history; no DELETE, FK, ACL or RLS changes.
 COMMIT;

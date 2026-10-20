@@ -55,12 +55,13 @@ def guard(mode):
  for table,acl,sch,trig,pol in TABLES:
   name=q('public.'+table);omit=" AND tgname<>"+q(ADDED[table]) if mode!='pre' and table in ADDED else ''
   lines += [f"IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid={name}::regclass AND relowner='postgres'::regrole AND relacl::text={q(acl)} AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'TABLE_ACL_RLS_DRIFT: %',{name};END IF;",
-  f"IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid={name}::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM {q(sch)} THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %',{name};END IF;",
+  f"IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid={name}::regclass AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM {q('834a551c4d52b5a7d177ae98eb055dc3' if table=='cq_parametros_referencia' and mode!='pre' else sch)} THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %',{name};END IF;",
   f"IF (SELECT md5(coalesce(string_agg(pg_get_triggerdef(oid)||':'||tgenabled::text,'|' ORDER BY tgname),'')) FROM pg_trigger WHERE tgrelid={name}::regclass AND NOT tgisinternal{omit}) IS DISTINCT FROM {q(trig)} THEN RAISE EXCEPTION 'TRIGGERS_DRIFT: %',{name};END IF;",
   f"IF (SELECT md5(coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||':'||polroles::text||':'||polcmd::text||':'||polpermissive::text,'|' ORDER BY polname),'')) FROM pg_policy WHERE polrelid={name}::regclass) IS DISTINCT FROM {q(pol)} THEN RAISE EXCEPTION 'POLICY_DRIFT: %',{name};END IF;"]
   if mode!='pre' and table in ADDED:
    fn='platform_private.guard_manual_cq_write_v1()' if table=='controle_qualidade' else 'platform_private.guard_manual_cq_parent_v1()'
    lines.append(f"IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid={name}::regclass AND tgname={q(ADDED[table])} AND tgenabled='O' AND tgfoid={q(fn)}::regprocedure AND tgtype={31 if table=='controle_qualidade' else 19}) THEN RAISE EXCEPTION 'NEW_TRIGGER_DRIFT';END IF;")
+ lines.append("IF NOT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('public.cq_param_ref_micro_prod_uidx') AND indisunique AND indisvalid AND pg_get_indexdef(indexrelid)='CREATE UNIQUE INDEX cq_param_ref_micro_prod_uidx ON public.cq_parametros_referencia USING btree (microrganismo_id, COALESCE(produto_id, ''00000000-0000-0000-0000-000000000000''::uuid))') THEN RAISE EXCEPTION 'LEGACY_REFERENCE_INDEX_DRIFT';END IF;")
  # All immutable dependency schema/constraints and auth/SaaS functions from prior independently reviewed package; targets overridden above.
  old=json.loads((H.parent/'lot-generation-canonical-20261020/catalog.json').read_text())
  for sig,h,a in old['functions']:
@@ -70,6 +71,8 @@ def guard(mode):
   definition='FOREIGN KEY (ordem_servico_id) REFERENCES ordens_servico(id)'+(' ON DELETE CASCADE' if table in ['programacao_producao','production_order_link'] else '')
   lines.append(f"IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid={q('public.'+table)}::regclass AND conname={q(table+'_ordem_servico_id_fkey')} AND convalidated AND NOT condeferrable AND pg_get_constraintdef(oid)={q(definition)}) THEN RAISE EXCEPTION 'PHANTOM_FK_DRIFT';END IF;")
  lines.append("IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass AND relowner='postgres'::regrole AND relrowsecurity AND relacl::text='{postgres=arwdDxtm/postgres}') OR EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='platform_private.authz_tickets'::regclass) THEN RAISE EXCEPTION 'PRIVATE_TICKET_DRIFT';END IF;")
+ if mode!='pre':
+  lines.append("IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.cq_parametros_referencia'::regclass AND conname='cq_reference_item_required_v1' AND convalidated AND pg_get_constraintdef(oid)='CHECK (((microrganismo_id IS NOT NULL) OR (produto_id IS NOT NULL)))') OR NOT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('public.cq_reference_product_only_active_uidx') AND indisunique AND indisvalid AND pg_get_indexdef(indexrelid)='CREATE UNIQUE INDEX cq_reference_product_only_active_uidx ON public.cq_parametros_referencia USING btree (produto_id) WHERE ((microrganismo_id IS NULL) AND (produto_id IS NOT NULL) AND (ativo IS TRUE))') THEN RAISE EXCEPTION 'CQ_REFERENCE_CONTRACT_DRIFT';END IF;")
  lines.append('END $guard$;');return '\n'.join(lines)+'\n'
 
 def main():
@@ -80,12 +83,13 @@ def main():
  acl=''
  for s in ['public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)',NEW[-1]]:acl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
  # Integrity hardening is already LIVE: require exact hashes, never rewrite/reapply it.
- body=''.join((H/f).read_text()+'\n' for f in ['lot-guard.sql.review','guards.sql.review','cq-trigger.sql.review','transition.sql.review','reader.sql.review','core.sql.review'])
+ reference=(H/'reference-product-only.sql.review').read_text().replace("BEGIN;\nSET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='15s';\n",'',1).rstrip().removesuffix('COMMIT;')
+ body=reference+'\n'+''.join((H/f).read_text()+'\n' for f in ['lot-guard.sql.review','guards.sql.review','cq-trigger.sql.review','transition.sql.review','reader.sql.review','core.sql.review'])
  for mode,file in [('pre','preflight-readonly.sql'),('post','postflight-readonly.sql'),('rollback','rollback-postflight-readonly.sql')]: (H/file).write_text(head+'BEGIN READ ONLY;\n'+guard(mode)+'ROLLBACK;\n')
  (H/'candidate.sql.review').write_text(head+tx+guard('pre')+body+acl+guard('post')+'COMMIT;\n')
  rollback=(H/'rollback/advance-rpc.sql.review').read_text()+f'REVOKE ALL ON FUNCTION {NEW[-1]} FROM PUBLIC,anon,authenticated,service_role;\nREVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) TO service_role;\n'+(H/'rollback/manual-write-guard.sql.review').read_text().split('CREATE TRIGGER')[0].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1)+(H/'rollback/check_os_status_transition.sql.review').read_text()
  (H/'rollback.sql.review').write_text(head+tx+guard('post')+rollback+guard('rollback')+'COMMIT;\n')
- manifest={'baseline':'afa2417fb2ac305636b9bc82786d62ae9af0a632','canonical_ref':REF,'applied':False,'runtime_changed':False,'gate':'MANUAL_CQ_REVIEWED=false','live_program_binding_hash':'7c168ffa9393207fb3388c9546c19d05','files':{}}
+ manifest={'baseline':'afa2417fb2ac305636b9bc82786d62ae9af0a632','canonical_ref':REF,'applied':False,'runtime_changed':False,'gate':'MANUAL_CQ_REVIEWED=false','reference_delta_integrated':True,'fictional_admin_proposal_executed':False,'live_program_binding_hash':'7c168ffa9393207fb3388c9546c19d05','files':{}}
  for p in sorted(H.rglob('*')):
   if p.is_file() and p.name!='manifest.json' and '__pycache__' not in p.parts:manifest['files'][str(p.relative_to(H))]=hashlib.sha256(p.read_bytes()).hexdigest()
  (H/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

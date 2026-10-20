@@ -1,34 +1,27 @@
--- OFFLINE REVIEW ONLY. Separate schema gate; never assembled/applied automatically.
--- No data writes, no writer/RLS/ACL opening. Legacy product+micro references remain valid.
+-- OFFLINE REVIEW ONLY. Canonical existing table; no data writes, grants or editor opening.
 BEGIN;
 SET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='15s';
 DO $pre$
 BEGIN
  IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.cq_parametros_referencia'::regclass AND attname='microrganismo_id' AND NOT attisdropped)
- OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.cq_parametros_referencia'::regclass AND conname='cq_parametros_referencia_microrganismo_id_fkey' AND convalidated AND pg_get_constraintdef(oid)='FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE')
+ IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.cq_parametros_referencia'::regclass AND conname='cq_parametros_referencia_microrganismo_id_fkey' AND convalidated AND pg_get_constraintdef(oid)='FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE')
  OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.cq_parametros_referencia'::regclass AND conname='cq_parametros_referencia_produto_id_fkey' AND convalidated AND pg_get_constraintdef(oid)='FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'CQ_REFERENCE_BASELINE_DRIFT'; END IF;
 END $pre$;
 LOCK TABLE public.cq_parametros_referencia IN ACCESS EXCLUSIVE MODE;
--- INVOKER integrity trigger, no auth exception: adds no authorization or elevated writer.
-CREATE OR REPLACE FUNCTION public.fn_cq_reference_item_required_v1()
-RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $function$
+DO $constraint$
 BEGIN
- IF NEW.microrganismo_id IS NULL AND NEW.produto_id IS NULL THEN
-  RAISE EXCEPTION USING ERRCODE='23514',MESSAGE='CQ_REFERENCE_ITEM_REQUIRED';
+ IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.cq_parametros_referencia'::regclass AND conname='cq_reference_item_required_v1') THEN
+  ALTER TABLE public.cq_parametros_referencia ADD CONSTRAINT cq_reference_item_required_v1 CHECK (microrganismo_id IS NOT NULL OR produto_id IS NOT NULL);
+ ELSIF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.cq_parametros_referencia'::regclass AND conname='cq_reference_item_required_v1' AND contype='c' AND convalidated AND pg_get_constraintdef(oid)='CHECK (((microrganismo_id IS NOT NULL) OR (produto_id IS NOT NULL)))') THEN
+  RAISE EXCEPTION 'CQ_REFERENCE_CONSTRAINT_DRIFT';
  END IF;
- RETURN NEW;
-END $function$;
-REVOKE ALL ON FUNCTION public.fn_cq_reference_item_required_v1() FROM PUBLIC,anon,authenticated,service_role;
-DO $trigger$
-BEGIN
- IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.cq_parametros_referencia'::regclass AND tgname='aa_cq_reference_item_required_v1') THEN
-  CREATE TRIGGER aa_cq_reference_item_required_v1 BEFORE INSERT OR UPDATE ON public.cq_parametros_referencia FOR EACH ROW EXECUTE FUNCTION public.fn_cq_reference_item_required_v1();
- ELSIF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.cq_parametros_referencia'::regclass AND tgname='aa_cq_reference_item_required_v1' AND NOT tgisinternal AND tgenabled='O' AND tgtype=23 AND tgfoid='public.fn_cq_reference_item_required_v1()'::regprocedure) THEN
-  RAISE EXCEPTION 'CQ_REFERENCE_TRIGGER_DRIFT';
- END IF;
- IF EXISTS(SELECT 1 FROM public.cq_parametros_referencia WHERE microrganismo_id IS NULL AND produto_id IS NULL) THEN RAISE EXCEPTION 'CQ_REFERENCE_ORPHAN'; END IF;
-END $trigger$;
+ IF EXISTS(SELECT 1 FROM public.cq_parametros_referencia WHERE microrganismo_id IS NULL AND produto_id IS NOT NULL AND ativo IS TRUE GROUP BY produto_id HAVING count(*)>1) THEN RAISE EXCEPTION 'CQ_REFERENCE_ACTIVE_DUPLICATE'; END IF;
+END $constraint$;
+-- New uniqueness affects ONLY active product-only rows; legacy dual/micro rows and history stay untouched.
+CREATE UNIQUE INDEX IF NOT EXISTS cq_reference_product_only_active_uidx ON public.cq_parametros_referencia USING btree (produto_id) WHERE (microrganismo_id IS NULL AND produto_id IS NOT NULL AND ativo IS TRUE);
+DO $index$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid='public.cq_reference_product_only_active_uidx'::regclass AND indrelid='public.cq_parametros_referencia'::regclass AND indisunique AND indisvalid AND indisready AND pg_get_indexdef(indexrelid)='CREATE UNIQUE INDEX cq_reference_product_only_active_uidx ON public.cq_parametros_referencia USING btree (produto_id) WHERE ((microrganismo_id IS NULL) AND (produto_id IS NOT NULL) AND (ativo IS TRUE))') THEN RAISE EXCEPTION 'CQ_REFERENCE_INDEX_DRIFT'; END IF;
+END $index$;
 ALTER TABLE public.cq_parametros_referencia ALTER COLUMN microrganismo_id DROP NOT NULL;
--- Both FKs remain. Product wins; dual legacy rows stay untouched. Ambiguity fails closed in core/hook.
+-- Both FKs/legacy indexes remain. Dual+product-only ambiguity still fails closed in existing core/hook.
 COMMIT;
