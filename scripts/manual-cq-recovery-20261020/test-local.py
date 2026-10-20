@@ -56,6 +56,22 @@ def main():
   for f in ['cq-integrity.sql.review','lot-guard.sql.review','guards.sql.review','cq-trigger.sql.review','transition.sql.review','reader.sql.review','core.sql.review']:
    run((H/f).read_text())
   run('REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) TO authenticated;REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb) TO authenticated;')
+  # Reproduce the reviewed parent vulnerability with all existing local guards active.
+  old_parent=(H/'historical-test-fixtures/parent-guard-before.sql.review').read_text().split('CREATE TRIGGER')[0]
+  old_parent=old_parent.replace('CREATE FUNCTION platform_private.guard_manual_cq_write_v1()', 'CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_write_v1()').replace('CREATE FUNCTION platform_private.guard_manual_cq_parent_v1()', 'CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_parent_v1()')
+  # Only replace parent body, not the write guard or triggers.
+  old_parent=old_parent[old_parent.index('CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_parent_v1()'):]
+  run(old_parent)
+  r=run(actor()+f"BEGIN; UPDATE programacao_producao SET ordem_servico_id=NULL WHERE id={PP}; SELECT ordem_servico_id IS NULL FROM programacao_producao WHERE id={PP};ROLLBACK;",False)
+  assert r.returncode==0 and 't' in r.stdout.splitlines(),r.stderr;checks.append('historical parent permits manual link NULL before CQ under existing local triggers')
+  # The changed parent is no longer classified as manual by the CQ write fence.
+  r=run(actor()+f"BEGIN; UPDATE programacao_producao SET ordem_servico_id=NULL WHERE id={PP}; INSERT INTO controle_qualidade(lote_id,organization_id,resultado,ph) VALUES({L},{A},'reprovado',7); SELECT count(*) FROM controle_qualidade;ROLLBACK;",False)
+  assert r.returncode==0 and '1' in r.stdout.splitlines(),r.stderr;checks.append('historical NULL parent bypasses manual CQ INSERT fence; transaction rolled back')
+  parent=(H/'guards.sql.review').read_text().split('CREATE FUNCTION platform_private.guard_manual_cq_parent_v1()')[1].split('CREATE TRIGGER')[0]
+  run('CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_parent_v1()'+parent)
+  for field,value in [('ordem_servico_id','NULL'),('ordem_servico_onfarm_id',q(98)),('organization_id',B),('produto_id','NULL'),('microrganismo_id',q(99))]:
+   r=run(actor()+f"BEGIN;SELECT set_config('app.cq_purge_fixture','on',true); UPDATE programacao_producao SET {field}={value} WHERE id={PP};ROLLBACK;",False)
+   assert r.returncode and 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' in r.stderr,(field,r.stderr);checks.append('parent fence before CQ '+field)
   send=f"public.rpc_avancar_esteira_laboratorio({O},'manual','enviar_cq',{PP})"
   data={'lote_id':lid,'ph':7,'concentracao':150000000,'aparencia':'Normal','odor':'Caracteristico','contaminacao':'Ausente','resultado':'aprovado','dados_sinteticos':True,'referencia_id':None}
   call=lambda d=data:f"public.rpc_avancar_esteira_laboratorio({O},'manual','registrar_cq',{PP},'{json.dumps(d)}'::jsonb)"
@@ -70,6 +86,14 @@ def main():
   for origin in ['onfarm','b2b']:
    deny('origin closed '+origin,actor()+f"SELECT public.rpc_avancar_esteira_laboratorio({O},'{origin}','enviar_cq',{PP});")
   run(actor()+f'SET ROLE authenticated;SELECT {send};');checks.append('send positive as authenticated canonical A actor')
+  # Historical same-status OS edits are allowed; corrected candidate closes them.
+  run(old_parent)
+  r=run(actor()+f"BEGIN; UPDATE ordens_servico SET volume_total_ml=101 WHERE id={O};SELECT volume_total_ml FROM ordens_servico WHERE id={O};ROLLBACK;",False)
+  assert r.returncode==0 and '101' in r.stdout.splitlines(),r.stderr;checks.append('historical em_cq OS same-status column edit reproduced')
+  run('CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_parent_v1()'+parent)
+  for field,value in [('volume_total_ml','101'),('produto_id','NULL'),('cliente_id','NULL')]:
+   r=run(actor()+f"BEGIN;UPDATE ordens_servico SET {field}={value} WHERE id={O};ROLLBACK;",False)
+   assert r.returncode and 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' in r.stderr,(field,r.stderr);checks.append('em_cq OS same-status edit fenced '+field)
   yes('send writes all 3 states',f" (SELECT status::text FROM ordens_servico WHERE id={O})='em_cq' AND (SELECT status::text FROM programacao_producao WHERE id={PP})='aguardando_cq' AND (SELECT status::text FROM lotes WHERE id={L})='aguardando_cq'")
   yes('send replay no duplicate event',f"({send}->>'replay')='true' AND (SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao='enviar_cq')=1")
   for k,v in [('ph',-1),('ph',15),('ph','NaN'),('concentracao',-1),('concentracao','Infinity'),('dados_sinteticos',False),('aparencia',''),('lote_id',str(q(99)).strip("'")),('referencia_id',str(q(98)).strip("'")),('organization_id','forged')]:
