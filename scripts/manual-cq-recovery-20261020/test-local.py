@@ -50,19 +50,31 @@ def main():
    deny('legacy step closed '+operation,actor()+f"SELECT public.rpc_avancar_esteira_laboratorio({O},'manual','{operation}',{PP});")
   for origin in ['onfarm','b2b']:
    deny('origin closed '+origin,actor()+f"SELECT public.rpc_avancar_esteira_laboratorio({O},'{origin}','enviar_cq',{PP});")
-  yes('send from real reviewed lot succeeds',f"({send}->>'success')='true'")
+  run(actor()+f'SET ROLE authenticated;SELECT {send};');checks.append('send positive as authenticated canonical A actor')
   yes('send writes all 3 states',f" (SELECT status::text FROM ordens_servico WHERE id={O})='em_cq' AND (SELECT status::text FROM programacao_producao WHERE id={PP})='aguardando_cq' AND (SELECT status::text FROM lotes WHERE id={L})='aguardando_cq'")
   yes('send replay no duplicate event',f"({send}->>'replay')='true' AND (SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao='enviar_cq')=1")
   for k,v in [('ph',-1),('ph',15),('ph','NaN'),('concentracao',-1),('concentracao','Infinity'),('dados_sinteticos',False),('aparencia',''),('lote_id',str(q(99)).strip("'")),('referencia_id',str(q(98)).strip("'")),('organization_id','forged')]:
    d={**data,k:v};deny('payload denied '+k+'='+str(v),actor()+f'SELECT {call(d)};')
   for mutation in [f"UPDATE lotes SET status='aprovado' WHERE id={L};",f"UPDATE programacao_producao SET status='aprovado' WHERE id={PP};",f"UPDATE ordens_servico SET status='envase' WHERE id={O};",f"INSERT INTO controle_qualidade(lote_id,resultado,organization_id) VALUES({L},'aprovado',{A});"]:
    deny('direct manual write fenced',actor()+"SELECT set_config('app.cq_purge_fixture','on',false);"+mutation)
+  for role in ['gestor','producao']:
+   r=run(actor()+f"BEGIN;UPDATE user_roles SET role='{role}' WHERE user_id={U};SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;");assert '"success": true' in r.stdout;checks.append('record positive current '+role)
+  for label,change in [('inactive',f'UPDATE profiles SET ativo=false WHERE user_id={U};'),('revoked',f'DELETE FROM user_roles WHERE user_id={U};'),('foreign-client',f'UPDATE clientes SET organization_id={B} WHERE id={lot.C};')]:
+   deny('record denied '+label,actor()+f'BEGIN;{change}SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;')
   # Record first result in transaction then rollback to test both outcomes against same canonical pending state.
   r=run(actor()+f"BEGIN; SELECT {call()};SELECT status FROM ordens_servico WHERE id={O};SELECT status FROM lotes WHERE id={L};SELECT responsavel FROM controle_qualidade;ROLLBACK;");assert 'em_cq' in r.stdout and 'DADOS FICTICIOS SEM VALOR COMERCIAL' in r.stdout;checks.append('approved full synthetic data stays em_cq; transaction rollback')
   rejected={**data,'resultado':'reprovado'};r=run(actor()+f"BEGIN; SELECT {call(rejected)};SELECT status FROM lotes WHERE id={L};SELECT status FROM programacao_producao WHERE id={PP};ROLLBACK;");assert 'reprovado' in r.stdout and 'aguardando_cq' in r.stdout;checks.append('rejected keeps program pending; full result transaction rollback')
   # Two real sessions serialize one complete result and one replay.
   def start(s):
    p=subprocess.Popen(conn,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True);p.stdin.write(s);p.stdin.close();p.stdin=None;return p
+  # Revocation commits while caller waits for OS lock: post-lock actor check must deny.
+  blocker=start(actor()+f"BEGIN;SELECT id FROM ordens_servico WHERE id={O} FOR UPDATE;SELECT pg_sleep(0.6);DELETE FROM user_roles WHERE user_id={U};COMMIT;")
+  time.sleep(.1);blocked=start(actor()+f'SET ROLE authenticated;SELECT {call()};')
+  bo=blocker.communicate(timeout=15);ba=blocked.communicate(timeout=15);assert blocker.returncode==0 and blocked.returncode!=0 and 'CQ_SCOPE_DENIED' in ba[1],(bo,ba);checks.append('revocation committed during OS wait denies after locks')
+  run(f"INSERT INTO user_roles(user_id,role) VALUES({U},'administrador');")
+  # Caller deadline on real lock contention, not a mocked helper.
+  blocker=start(actor()+f'BEGIN;SELECT id FROM ordens_servico WHERE id={O} FOR UPDATE;SELECT pg_sleep(3.5);ROLLBACK;');time.sleep(.1)
+  denied=run(actor()+f'SET ROLE authenticated;SELECT {call()};',False);assert denied.returncode and 'lock timeout' in denied.stderr,denied.stderr;blocker.communicate(timeout=15);checks.append('real OS lock timeout denies without result')
   first=start(actor()+f'BEGIN;SELECT {call()};SELECT pg_sleep(1);COMMIT;');time.sleep(.1);second=start(actor()+f'SELECT {call()};');a=first.communicate(timeout=15);b=second.communicate(timeout=15);assert first.returncode==second.returncode==0,(a,b);assert '"replay": false' in a[0] and '"replay": true' in b[0],(a,b);checks.append('two PG sessions one CQ one replay')
   yes('one immutable CQ one result audit no filling',f'(SELECT count(*) FROM controle_qualidade)=1 AND (SELECT count(*) FROM laboratorio_esteira_eventos WHERE acao=\'registrar_cq\')=1 AND NOT EXISTS(SELECT 1 FROM envase) AND NOT EXISTS(SELECT 1 FROM estoque_produto)')
   deny('divergent replay rejected',actor()+f"SELECT {call({**data,'ph':8})};")
