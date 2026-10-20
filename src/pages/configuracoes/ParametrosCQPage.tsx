@@ -20,7 +20,8 @@ import { formatConcentracaoDisplay, parseConcentracao, formatConcentracaoValue }
 
 interface Row {
   id: string;
-  microrganismo_id: string;
+  /** NULL em referência produto-only. */
+  microrganismo_id: string | null;
   produto_id: string | null;
   ph_min: number | null;
   ph_max: number | null;
@@ -99,9 +100,10 @@ export default function ParametrosCQPage() {
   const upsert = useMutation({
     mutationFn: async () => {
       assertGlobalCatalogWriteBlocked();
-      if (!form.microrganismo_id) throw new Error("Selecione o microrganismo");
+      // Mesmo contrato do CHECK do banco: produto ou microrganismo; nunca ambos vazios.
+      if (!form.microrganismo_id && !form.produto_id) throw new Error("Selecione o microrganismo ou o produto");
       const payload = {
-        microrganismo_id: form.microrganismo_id,
+        microrganismo_id: form.microrganismo_id || null,
         produto_id: form.produto_id || null,
         ph_min: form.ph_min ? Number(form.ph_min.replace(",", ".")) : null,
         ph_max: form.ph_max ? Number(form.ph_max.replace(",", ".")) : null,
@@ -148,7 +150,7 @@ export default function ParametrosCQPage() {
     const conc = parseConcentracao(r.concentracao_min_ufc_ml);
     setForm({
       id: r.id,
-      microrganismo_id: r.microrganismo_id,
+      microrganismo_id: r.microrganismo_id ?? "",
       produto_id: r.produto_id ?? "",
       ph_min: r.ph_min !== null ? String(r.ph_min).replace(".", ",") : "",
       ph_max: r.ph_max !== null ? String(r.ph_max).replace(".", ",") : "",
