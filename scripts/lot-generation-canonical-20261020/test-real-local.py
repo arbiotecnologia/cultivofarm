@@ -286,7 +286,7 @@ def main():
             out=run(actor()+f"SET ROLE authenticated;UPDATE lotes SET {change} WHERE id='{lotid}';",False)
             assert out.returncode and '42501' in out.stderr;results.append('manual UPDATE '+label+' denied, no artificial advancement')
         # An old manual lot cannot escape via a valid onfarm parent either.
-        run(f"INSERT INTO programacao_producao(id,organization_id) VALUES({q(93)},{A});")
+        run(f"INSERT INTO programacao_producao(id,organization_id,produto_id) VALUES({q(93)},{A},{P});")
         out=run(actor()+f"SET ROLE authenticated;UPDATE lotes SET programacao_id={q(93)} WHERE id='{lotid}';",False)
         assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr;results.append('old manual UPDATE to nonmanual parent denied')
         out=run(actor()+"SET ROLE authenticated;INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'manual_lot_insert_v1',gen_random_uuid());",False)

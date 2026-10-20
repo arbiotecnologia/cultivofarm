@@ -1,7 +1,7 @@
 {
   "ref": "swzpzcwiasxmjutrmvkm",
   "scope": "local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof",
-  "passed": 89,
+  "passed": 95,
   "checks": [
     "captured baseline reproduces hosted pg_get_functiondef d37a0e47 before assembly",
     "every guard predicate compiles and evaluates locally",
@@ -84,6 +84,7 @@
     "manual UPDATE unlink denied, no artificial advancement",
     "manual UPDATE tenant denied, no artificial advancement",
     "manual UPDATE item denied, no artificial advancement",
+    "old manual UPDATE to nonmanual parent denied",
     "authenticated cannot forge private ticket",
     "trigger helper has no client EXECUTE",
     "GUC forged flag cannot authorize manual lot INSERT",
@@ -91,6 +92,11 @@
     "rollback retains manual fence and history, direct bypass stays denied",
     "immediate FK programming insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
     "immediate FK link insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
-    "immediate FK delivery insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden"
+    "immediate FK delivery insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
+    "immediate FK application insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden",
+    "earlier programming commit observed after locks, no lot generated",
+    "earlier link commit observed after locks, no lot generated",
+    "earlier delivery commit observed after locks, no lot generated",
+    "earlier application commit observed after locks, no lot generated"
   ]
 }
