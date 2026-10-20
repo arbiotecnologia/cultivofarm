@@ -28,13 +28,17 @@ import { supabase as fake } from '@/integrations/supabase/client';
 import { installInternalActorContextAdapter } from '@/test/config/helpers/internalActorContextAdapter';
 installInternalActorContextAdapter(fake, () => s.uid, (_uid, role) => { s.probes++; return !s.probeDeny && s.roles.includes(role); });
 import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
+import { useState } from 'react';
+let qcRef: QueryClient;
 
-function Probe() { const { roles, checkAuthzAccess, signOut } = useAuth(); return <span>Conteúdo sensível [{checkAuthzAccess() ? 'ok' : 'no'}] {roles.join('+')}<button onClick={() => void signOut()}>sair</button></span>; }
+function Draft() { const [v, setV] = useState(''); const [m, setM] = useState(false); return <><input aria-label="rascunho" value={v} onChange={e => setV(e.target.value)} /><button onClick={() => setM(true)}>abrir</button>{m && <div role="dialog">modal</div>}</>; }
+function Probe() { const { roles, checkAuthzAccess, signOut } = useAuth(); return <><Draft /><span>Conteúdo sensível [{checkAuthzAccess() ? 'ok' : 'no'}] {roles.join('+')}<button onClick={() => void signOut()}>sair</button></span></>; }
 function Outside() { const { signOut } = useAuth(); return <button onClick={() => void signOut()}>sair-externo</button>; }
 const adv = async (ms: number) => { for (let t = 0; t < ms; t += 250) await act(async () => { await vi.advanceTimersByTimeAsync(Math.min(250, ms - t)); }); };
 const paused = () => screen.queryByText('Sessão de acesso pausada');
 const mount = async () => {
-  render(<QueryClientProvider client={new QueryClient()}><AuthProvider><Outside /><AuthzEpochBoundary><Probe /></AuthzEpochBoundary></AuthProvider></QueryClientProvider>);
+  qcRef = new QueryClient(); qcRef.setQueryData(['cache-sensivel'], 'x');
+  render(<QueryClientProvider client={qcRef}><AuthProvider><Outside /><AuthzEpochBoundary><Probe /></AuthzEpochBoundary></AuthProvider></QueryClientProvider>);
   await adv(10_000);
   expect(screen.getByText(/\[ok\] (gestor\+consultor_tecnico|consultor_tecnico\+gestor)/)).toBeTruthy();
 };
@@ -75,6 +79,20 @@ describe.each([['gestor', 'consultor_tecnico'], ['consultor_tecnico', 'gestor']]
     expect(screen.queryByText(new RegExp(removed))).toBeNull(); // removed role never restored
     expect(screen.queryByText(pairText)).toBeNull();
     expect(s.signOuts).toBe(0);
+  });
+  it('rascunho, modal e cache da época anterior são descartados e não voltam após a confirmação automática', async () => {
+    await mount();
+    fireEvent.change(screen.getByLabelText('rascunho'), { target: { value: 'texto sensível' } });
+    fireEvent.click(screen.getByRole('button', { name: 'abrir' }));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    s.roles = [remaining]; s.perCall = 300;
+    await untilPaused();
+    expect(screen.queryByRole('textbox')).toBeNull(); expect(screen.queryByRole('dialog')).toBeNull();
+    expect(qcRef.getQueryData(['cache-sensivel'])).toBeUndefined();
+    expect(await watchUntilContent(20_000)).not.toBeNull();
+    expect((screen.getByLabelText('rascunho') as HTMLInputElement).value).toBe('');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(qcRef.getQueryData(['cache-sensivel'])).toBeUndefined();
   });
 });
 
@@ -125,6 +143,13 @@ describe('negativos (candidato e baseline devem permanecer pausados)', () => {
 });
 
 describe('orçamento', () => {
+  it('restauração do par pelo servidor no residual: probe residual rejeita superconjunto, uma releitura confirma o par', async () => {
+    await mount(); s.roles = ['gestor']; await untilPaused(); await adv(5_000);
+    expect(screen.getByText(/\[ok\] gestor$/)).toBeTruthy();
+    s.roles = ['gestor', 'consultor_tecnico']; await untilPaused();
+    expect(await watchUntilContent(20_000)).not.toBeNull();
+    expect(screen.getByText(pairText)).toBeTruthy();
+  });
   it('ineligible persistente: exatamente uma tentativa automática; valid posterior rearma uma nova', async () => {
     await mount(); s.roles = ['gestor'];
     await untilPaused(); await adv(5_000);
