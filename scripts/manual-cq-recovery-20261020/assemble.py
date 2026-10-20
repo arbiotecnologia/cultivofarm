@@ -10,8 +10,8 @@ BASE={
 'public.check_os_status_transition()':('496a214d87fc831a53b2f16d3524ddea','{postgres=X/postgres,service_role=X/postgres}'),
 'public.fn_cq_aprovado_avanca_os()':('a5ea5580e8ceb0616e1d83c9c6f11e28','{postgres=X/postgres,service_role=X/postgres}'),
 'private.h7n_esteira_laboratorio()':('bad38b5200629cc887767e62b7a46e40','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
-'public.fn_cq_autoria_servidor()':('33f665a1fbc3377b1f909effb5ef5a43','{postgres=X/postgres,service_role=X/postgres}'),
-'public.fn_cq_resultado_imutavel()':('f7bc6980729dbef8f06aaf9d412ae291','{postgres=X/postgres,service_role=X/postgres}'),
+'public.fn_cq_autoria_servidor()':('329913a20fa9284bd794a034ca4cdfd0','{postgres=X/postgres,service_role=X/postgres}'),
+'public.fn_cq_resultado_imutavel()':('1ffd8093e77aa56a8814ed6e292ef299','{postgres=X/postgres,service_role=X/postgres}'),
 'public.fn_sync_os_classica_downstream()':('06e64b76968f91e19f03b24363ac610a','{postgres=X/postgres,service_role=X/postgres}'),
 'public._refresh_esteira_laboratorio_after_change()':('2f361c1fd9de578cf45796d82f3754e0','{postgres=X/postgres,service_role=X/postgres}'),
 'public.refresh_esteira_laboratorio()':('bbb2e580bfc6ffddfa833f950c38e0f3','{postgres=X/postgres,service_role=X/postgres}'),
@@ -75,7 +75,8 @@ def main():
  tx="BEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='15s';\n"
  acl=''
  for s in ['public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)',NEW[-1]]:acl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
- body=''.join((H/f).read_text()+'\n' for f in ['cq-integrity.sql.review','lot-guard.sql.review','guards.sql.review','cq-trigger.sql.review','transition.sql.review','reader.sql.review','core.sql.review'])
+ # Integrity hardening is already LIVE: require exact hashes, never rewrite/reapply it.
+ body=''.join((H/f).read_text()+'\n' for f in ['lot-guard.sql.review','guards.sql.review','cq-trigger.sql.review','transition.sql.review','reader.sql.review','core.sql.review'])
  for mode,file in [('pre','preflight-readonly.sql'),('post','postflight-readonly.sql'),('rollback','rollback-postflight-readonly.sql')]: (H/file).write_text(head+'BEGIN READ ONLY;\n'+guard(mode)+'ROLLBACK;\n')
  (H/'candidate.sql.review').write_text(head+tx+guard('pre')+body+acl+guard('post')+'COMMIT;\n')
  rollback=(H/'rollback/advance-rpc.sql.review').read_text()+f'REVOKE ALL ON FUNCTION {NEW[-1]} FROM PUBLIC,anon,authenticated,service_role;\nREVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) TO service_role;\n'+(H/'rollback/manual-write-guard.sql.review').read_text().split('CREATE TRIGGER')[0].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1)+(H/'rollback/check_os_status_transition.sql.review').read_text()

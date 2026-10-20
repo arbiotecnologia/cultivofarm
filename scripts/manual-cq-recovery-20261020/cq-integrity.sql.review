@@ -1,14 +1,15 @@
--- REVIEW ONLY: no purge requested; remove owner-based GUC escape without replacement.
+-- LIVE baseline snapshot cq_remove_guc_definer_bypass. Local PG tests only; NOT assembled into candidate/rollback.
 CREATE OR REPLACE FUNCTION public.fn_cq_autoria_servidor()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
-AS $fn$
+AS $function$
 DECLARE
   v_uid uuid := auth.uid();
   v_profile uuid;
 BEGIN
+  -- Sem excecao por GUC: autoria e imutabilidade valem em todas as chamadas.
   IF TG_OP = 'INSERT' THEN
     IF v_uid IS NOT NULL THEN
       SELECT id INTO v_profile FROM public.profiles WHERE user_id = v_uid LIMIT 1;
@@ -39,15 +40,16 @@ BEGIN
 
   RETURN NEW;
 END;
-$fn$;
+$function$;
 
 CREATE OR REPLACE FUNCTION public.fn_cq_resultado_imutavel()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
-AS $fn$
+AS $function$
 BEGIN
+  -- Sem excecao por GUC: autoria e imutabilidade valem em todas as chamadas.
   IF TG_OP = 'DELETE' THEN
     IF OLD.resultado IS NOT NULL THEN
       RAISE EXCEPTION 'CQ_RESULTADO_FINAL_IMUTAVEL: análise % do lote % já possui resultado final (%) e não pode ser excluída. Registre uma nova análise (reanálise) para o mesmo lote.',
@@ -84,4 +86,4 @@ BEGIN
 
   RETURN NEW;
 END;
-$fn$;
+$function$;

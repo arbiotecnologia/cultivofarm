@@ -374,3 +374,4 @@
 - [ ] Revisão independente: PRE/POST integrais no catálogo canônico, typechecks app/node e candidata, efeitos/concorrência integral e comparação de bytes. Gate CQ false até aceite; testes locais não homologam sessão real.
 - [ ] Homologação futura CQ A/B e legado: depende de revisão/implantação pelo proprietário; sem envase/reserva/entrega/contratos e sem termo assinado pelo agente.
 - [x] Incorporar achado 02:42: eliminar escape GUC dos triggers DEFINER no candidato/rollback; reprodução isolada sob authenticated e RLS tenant; 73 checks PG sintéticos. Aprovação sem referência válida negada; referência positiva apenas em PG descartável, sem associação real.
+- [x] 02:45: proprietário implantou cq_remove_guc_definer_bypass; leitura canônica conferiu corpos/hashes/ACL. PRE/POST/rollback devem exigir contenção já aplicada, sem reescrever triggers; nenhum CQ fictício persistiu conforme recibo. Gates OFF, revisão integral ainda pendente.

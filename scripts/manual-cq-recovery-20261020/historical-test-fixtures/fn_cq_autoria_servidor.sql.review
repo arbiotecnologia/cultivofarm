@@ -1,0 +1,46 @@
+CREATE OR REPLACE FUNCTION public.fn_cq_autoria_servidor()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $fn$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_profile uuid;
+BEGIN
+  IF COALESCE(current_setting('app.cq_purge_fixture', true), '') = 'on'
+     AND current_user NOT IN ('anon', 'authenticated') THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    IF v_uid IS NOT NULL THEN
+      SELECT id INTO v_profile FROM public.profiles WHERE user_id = v_uid LIMIT 1;
+      IF v_profile IS NOT NULL THEN
+        IF NEW.responsavel_id IS NOT NULL AND NEW.responsavel_id IS DISTINCT FROM v_profile THEN
+          RAISE EXCEPTION 'CQ_AUTORIA_FORJADA: responsavel_id informado (%) difere do perfil do usuario autenticado.', NEW.responsavel_id
+            USING ERRCODE = 'check_violation';
+        END IF;
+        NEW.responsavel_id := v_profile;
+      ELSIF NEW.responsavel_id IS NOT NULL THEN
+        RAISE EXCEPTION 'CQ_AUTORIA_FORJADA: usuario autenticado sem perfil nao pode informar responsavel_id.'
+          USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.responsavel_id IS DISTINCT FROM OLD.responsavel_id THEN
+    RAISE EXCEPTION 'CQ_AUTORIA_IMUTAVEL: responsavel_id da analise % nao pode ser alterado.', OLD.id
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR NEW.seq IS DISTINCT FROM OLD.seq
+     OR NEW.lote_id IS DISTINCT FROM OLD.lote_id THEN
+    RAISE EXCEPTION 'CQ_TRILHA_IMUTAVEL: created_at/seq/lote_id da analise % nao podem ser alterados.', OLD.id
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$fn$;
