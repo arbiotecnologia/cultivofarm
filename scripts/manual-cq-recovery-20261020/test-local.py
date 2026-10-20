@@ -75,7 +75,7 @@ def main():
   # Install the independently verified LIVE containment only in disposable PG.
   run((H/'live-test-fixtures/manual-program-binding.sql.review').read_text())
   # Mirror existing hosted table UPDATE ACLs only in the disposable fixture.
-  run('GRANT SELECT,UPDATE ON public.programacao_producao,public.lotes TO authenticated;GRANT USAGE ON SCHEMA auth TO authenticated;')
+  run('GRANT SELECT,UPDATE ON public.programacao_producao,public.lotes TO authenticated;GRANT USAGE ON SCHEMA auth,platform_private TO authenticated;')
   got=run("SELECT md5(pg_get_functiondef('platform_private.guard_manual_program_binding_v1()'::regprocedure));").stdout.strip()
   assert got=='7c168ffa9393207fb3388c9546c19d05',got;checks.append('exact LIVE program binding function hash')
   yes('LIVE binding private ACL and trigger',"EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.guard_manual_program_binding_v1()'::regprocedure AND proacl::text='{postgres=X/postgres}') AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='aa_manual_program_binding_v1' AND tgtype=19 AND tgenabled='O')")
