@@ -86,6 +86,22 @@ def main():
   r=run(actor()+f"BEGIN;SET LOCAL ROLE authenticated;UPDATE lotes SET volume_produzido=101 WHERE id={L};ROLLBACK;",False)
   assert r.returncode,r.stdout;checks.append('direct lot volume remains denied with LIVE binding')
   yes('LIVE binding original OS and volume100 preserved',f"(SELECT ordem_servico_id={O} FROM programacao_producao WHERE id={PP}) AND (SELECT volume_produzido=100 FROM lotes WHERE id={L})")
+  # Independently captured LIVE deletion fence; never part of deployment assembly.
+  run((H/'live-test-fixtures/manual-lot-delete.sql.review').read_text())
+  run('GRANT DELETE ON public.lotes TO authenticated;')
+  deletion_identity="EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.guard_manual_lot_delete_v1()'::regprocedure AND md5(pg_get_functiondef(oid))='0d490a2910e7fb63dd50fd4c86e1cf0f' AND proacl::text='{postgres=X/postgres}' AND proowner='postgres'::regrole) AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.lotes'::regclass AND tgname='aa_manual_lot_delete_v1' AND tgtype=11 AND tgenabled='O' AND tgfoid='platform_private.guard_manual_lot_delete_v1()'::regprocedure)"
+  yes('LIVE delete exact hash private ACL trigger',deletion_identity)
+  def delete_denied(label,sql):
+   r=run("\\set VERBOSITY verbose\n"+sql,False)
+   assert r.returncode and '42501' in r.stderr and 'MANUAL_LOT_DELETE_FORBIDDEN' in r.stderr,(label,r.stderr)
+   checks.append(label)
+  delete_denied('authenticated forged GUC cannot delete manual linked lot',actor()+f"BEGIN;SET LOCAL ROLE authenticated;SELECT set_config('app.cq_purge_fixture','on',true);DELETE FROM lotes WHERE id={L};ROLLBACK;")
+  delete_denied('postgres role does not bypass manual lot deletion',actor()+f"BEGIN;DELETE FROM lotes WHERE id={L};ROLLBACK;")
+  # Event-only branch isolated from other parent fences, exclusively in disposable PG.
+  # Disable only local UPDATE parent guards to remove the link; DELETE fence remains active.
+  delete_denied('manual event protects lot even after missing OS link',actor()+f"BEGIN;ALTER TABLE programacao_producao DISABLE TRIGGER aa_manual_program_binding_v1;ALTER TABLE programacao_producao DISABLE TRIGGER aa_manual_cq_parent_v1;UPDATE programacao_producao SET ordem_servico_id=NULL WHERE id={PP};SET LOCAL ROLE authenticated;SELECT set_config('app.cq_purge_fixture','on',true);DELETE FROM lotes WHERE id={L};ROLLBACK;")
+  yes('delete attempt preserves lot100 status original link and CQ0',f"(SELECT volume_produzido=100 AND status='em_producao' FROM lotes WHERE id={L}) AND (SELECT ordem_servico_id={O} FROM programacao_producao WHERE id={PP}) AND NOT EXISTS(SELECT 1 FROM controle_qualidade)")
+  yes('event-only probe rollback restores LIVE binding trigger',"EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='aa_manual_program_binding_v1' AND tgenabled='O')")
   parent=(H/'guards.sql.review').read_text().split('CREATE FUNCTION platform_private.guard_manual_cq_parent_v1()')[1].split('CREATE TRIGGER')[0]
   run('CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_parent_v1()'+parent)
   for field,value in [('ordem_servico_id','NULL'),('ordem_servico_onfarm_id',q(98)),('organization_id',B),('produto_id','NULL'),('microrganismo_id',q(99))]:
@@ -214,6 +230,8 @@ def main():
   for mutation in [f"UPDATE programacao_producao SET ordem_servico_id=NULL WHERE id={PP};",f"UPDATE ordens_servico SET volume_total_ml=101 WHERE id={O};"]:
    r=run(actor()+mutation,False);assert r.returncode and 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' in r.stderr,r.stderr;checks.append('rollback retains parent identity and same-status OS fence')
   yes('rollback retains LIVE binding hash ACL and trigger',"EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.guard_manual_program_binding_v1()'::regprocedure AND md5(pg_get_functiondef(oid))='7c168ffa9393207fb3388c9546c19d05' AND proacl::text='{postgres=X/postgres}') AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='aa_manual_program_binding_v1' AND tgtype=19 AND tgenabled='O')")
+  yes('rollback retains LIVE delete hash ACL and trigger',deletion_identity)
+  delete_denied('rollback forged GUC cannot delete manual lot',actor()+f"BEGIN;SET LOCAL ROLE authenticated;SELECT set_config('app.cq_purge_fixture','on',true);DELETE FROM lotes WHERE id={L};ROLLBACK;")
   trigger_deny('rollback never restores GUC purge escape',f'DELETE FROM public._cq_trigger_probe WHERE id={probe};','CQ_RESULTADO_FINAL_IMUTAVEL')
   report={'passed':checks,'count':len(checks),'hosted':False,'auth':'synthetic UID/JWT; real captured STABLE guards and target triggers; not real browser certification','limits':['partial schema clone; full PRE/POST require independent canonical hosted read','no production/user sessions touched']};(H/'test-results.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))
  finally:

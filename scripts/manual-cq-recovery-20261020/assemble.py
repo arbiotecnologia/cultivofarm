@@ -8,6 +8,7 @@ BASE={
 'public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)':('c159638f8e2b7bcb4c8c04fd457592cb','{postgres=X/postgres,service_role=X/postgres}'),
 'platform_private.guard_manual_lot_write_v1()':('8db8d23862936928529e073117bb9e15','{postgres=X/postgres}'),
 'platform_private.guard_manual_program_binding_v1()':('7c168ffa9393207fb3388c9546c19d05','{postgres=X/postgres}'),
+'platform_private.guard_manual_lot_delete_v1()':('0d490a2910e7fb63dd50fd4c86e1cf0f','{postgres=X/postgres}'),
 'public.check_os_status_transition()':('496a214d87fc831a53b2f16d3524ddea','{postgres=X/postgres,service_role=X/postgres}'),
 'public.fn_cq_aprovado_avanca_os()':('a5ea5580e8ceb0616e1d83c9c6f11e28','{postgres=X/postgres,service_role=X/postgres}'),
 'private.h7n_esteira_laboratorio()':('bad38b5200629cc887767e62b7a46e40','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
@@ -25,7 +26,7 @@ BASE={
 TABLES=[
 ('controle_qualidade','{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}','7b243eb5ec78ddb853482d87bfe557f7','bf68d935dbc04146b7f33139cb5fb99f','568de7e21732569a28800937144da4bd'),
 ('cq_parametros_referencia','{postgres=arwdDxtm/postgres,anon=rm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}','2e521a3b3c4e459e5ab9b5f8e52d06ee','7456ac326dd85bb7d22b5f48b22a3d65','086d698024efa3fb9448a34bea41655f'),
-('lotes','{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}','9ec8b0348eaa6a1416e753d00a7f7216','5ad7698636d5364d1ac7cd818669051a','e52025f988e6e693c8ba9a2fa868db1f'),
+('lotes','{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}','9ec8b0348eaa6a1416e753d00a7f7216','c99348df3f7e5f103739a8ded41a5a00','e52025f988e6e693c8ba9a2fa868db1f'),
 ('ordens_servico','{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}','141cda71ffbcadb023dfaa945bb1465c','b4cdb9fa3090c60650ed052dd6c90fcf','a6bc5db4e1f0ab992f260033290f0d23'),
 ('programacao_producao','{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}','c6c77ef26665c428577e407b65408afc','3cd248f967d379787235709a45a8f4e8','3517bb22d1bec05daae0d4ed3441e63d'),
 ('cockpit_operacao_idempotencia','{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}','bc6717f7d08c3d9cadd7feea256e50eb','d41d8cd98f00b204e9800998ecf8427e','84a8613294ad2e297c5db942b5731be3'),
@@ -47,6 +48,7 @@ def guard(mode):
   expected[NEW[-1]]=(post[NEW[-1]],'{postgres=X/postgres}')
  lines=['DO $guard$ BEGIN',f"IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM {q(REF)} THEN RAISE EXCEPTION 'WRONG_PROJECT';END IF;"]
  lines.append("IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.programacao_producao'::regclass AND tgname='aa_manual_program_binding_v1' AND NOT tgisinternal AND tgenabled='O' AND tgtype=19 AND tgfoid='platform_private.guard_manual_program_binding_v1()'::regprocedure AND pg_get_triggerdef(oid)='CREATE TRIGGER aa_manual_program_binding_v1 BEFORE UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_program_binding_v1()') THEN RAISE EXCEPTION 'LIVE_PROGRAM_BINDING_TRIGGER_DRIFT';END IF;")
+ lines.append("IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.lotes'::regclass AND tgname='aa_manual_lot_delete_v1' AND NOT tgisinternal AND tgenabled='O' AND tgtype=11 AND tgfoid='platform_private.guard_manual_lot_delete_v1()'::regprocedure AND pg_get_triggerdef(oid)='CREATE TRIGGER aa_manual_lot_delete_v1 BEFORE DELETE ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_lot_delete_v1()') THEN RAISE EXCEPTION 'LIVE_LOT_DELETE_TRIGGER_DRIFT';END IF;")
  for sig,(h,a) in expected.items():
   extra=' AND proacl::text='+q(a) if a else ''
   lines.append(f"IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure({q(sig)}) AND md5(pg_get_functiondef(oid))={q(h)} AND proowner='postgres'::regrole{extra}) THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %',{q(sig)};END IF;")
@@ -78,6 +80,8 @@ def guard(mode):
 def main():
  if not (H/"BASELINE-manual-program-binding.md").exists():
   raise SystemExit("ASSEMBLY_BLOCKED: verified programming identity containment baseline required")
+ if not (H/"BASELINE-manual-lot-delete.md").exists():
+  raise SystemExit("ASSEMBLY_BLOCKED: verified lot delete containment baseline required")
  head='-- REVIEW ONLY. NO HOSTED EXECUTION. Canonical '+REF+'; no fixture/data writes.\n'
  tx="BEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='15s';\n"
  acl=''
@@ -90,6 +94,8 @@ def main():
  rollback=(H/'rollback/advance-rpc.sql.review').read_text()+f'REVOKE ALL ON FUNCTION {NEW[-1]} FROM PUBLIC,anon,authenticated,service_role;\nREVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) TO service_role;\n'+(H/'rollback/manual-write-guard.sql.review').read_text().split('CREATE TRIGGER')[0].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1)+(H/'rollback/check_os_status_transition.sql.review').read_text()
  (H/'rollback.sql.review').write_text(head+tx+guard('post')+rollback+guard('rollback')+'COMMIT;\n')
  manifest={'baseline':'afa2417fb2ac305636b9bc82786d62ae9af0a632','canonical_ref':REF,'applied':False,'runtime_changed':False,'gate':'MANUAL_CQ_REVIEWED=false','reference_delta_integrated':True,'fictional_admin_proposal_executed':False,'live_program_binding_hash':'7c168ffa9393207fb3388c9546c19d05','files':{}}
+ manifest['live_lot_delete_hash']='0d490a2910e7fb63dd50fd4c86e1cf0f'
+ manifest['live_lot_triggers_hash']='c99348df3f7e5f103739a8ded41a5a00'
  for p in sorted(H.rglob('*')):
   if p.is_file() and p.name!='manifest.json' and '__pycache__' not in p.parts:manifest['files'][str(p.relative_to(H))]=hashlib.sha256(p.read_bytes()).hexdigest()
  (H/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
