@@ -1,7 +1,7 @@
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/cultivofarm.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
