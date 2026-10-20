@@ -23,6 +23,7 @@ def check(name, cond):
 U = lambda c: f"{c*8}-0000-4000-8000-000000000000"
 OA, OB = U("a"), U("b")
 UA, UB, UF, UC, UX, UADM = (f"{p}-0000-4000-8000-000000000000" for p in ["a1a1a1a1", "b1b1b1b1", "a2a2a2a2", "a3a3a3a3", "a4a4a4a4", "b5b5b5b5"])
+UO = "a6a6a6a6-0000-4000-8000-000000000000"; TX = U("3")
 CA, CB = U("c"), U("d")
 EA, EB, EX, EA2 = U("e"), U("f"), U("9"), U("8")
 TA, TB = U("1"), U("2")
@@ -115,15 +116,23 @@ CREATE POLICY entrega_termos_select ON public.entrega_termos FOR SELECT TO authe
  is_delivery_staff((SELECT auth.uid())) OR is_financial_staff((SELECT auth.uid())) OR EXISTS (SELECT 1 FROM entregas e
  WHERE e.id = entrega_termos.entrega_id AND e.cliente_id = ANY (get_cliente_ids_for_user((SELECT auth.uid())))));
 ALTER TABLE public.entregas ENABLE ROW LEVEL SECURITY;
-CREATE POLICY staff ON public.entregas FOR SELECT TO authenticated USING (is_delivery_staff(auth.uid()) OR is_financial_staff(auth.uid())
- OR cliente_id = ANY (get_cliente_ids_for_user(auth.uid())));
+-- Policies de entregas iguais às LIVE (operador_onfarm NÃO lê entregas diretamente).
+CREATE FUNCTION platform_private.has_role(u uuid, r public.app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$
+ SELECT public.has_role(u, r) $$;
+GRANT EXECUTE ON FUNCTION platform_private.has_role(uuid, public.app_role) TO authenticated;
+CREATE POLICY "Admin/Gestor/Adm total access on entregas" ON public.entregas FOR ALL USING (platform_private.has_role((SELECT auth.uid()),'administrador')
+ OR platform_private.has_role((SELECT auth.uid()),'gestor') OR platform_private.has_role((SELECT auth.uid()),'administrativo'));
+CREATE POLICY "Cliente read own entregas" ON public.entregas FOR SELECT USING (cliente_id = ANY (get_cliente_ids_for_user((SELECT auth.uid()))));
+CREATE POLICY "Financeiro read entregas" ON public.entregas FOR SELECT USING (platform_private.has_role((SELECT auth.uid()),'financeiro'));
+CREATE POLICY "Producao/Aplicador read entregas" ON public.entregas FOR SELECT USING (platform_private.has_role((SELECT auth.uid()),'producao')
+ OR platform_private.has_role((SELECT auth.uid()),'aplicador'));
 CREATE POLICY tenant_isolation_d51_5 ON public.entregas AS RESTRICTIVE FOR ALL TO authenticated
  USING (organization_id IS NOT NULL AND organization_id = platform_private.h15_actor_organization())
  WITH CHECK (organization_id IS NOT NULL AND organization_id = platform_private.h15_actor_organization());
 INSERT INTO public.organizations VALUES ('{OA}',true),('{OB}',true);
 INSERT INTO public.profiles VALUES ('{UA}','{OA}',true,null),('{UB}','{OB}',true,null),('{UF}','{OA}',true,null),
- ('{UC}','{OA}',true,'{CA}'),('{UX}','{OA}',false,null),('{UADM}','{OB}',true,null);
-INSERT INTO public.user_roles VALUES ('{UA}','producao'),('{UB}','gestor'),('{UF}','financeiro'),('{UC}','cliente_produtor'),('{UX}','producao'),('{UADM}','administrador');
+ ('{UC}','{OA}',true,'{CA}'),('{UX}','{OA}',false,null),('{UADM}','{OB}',true,null),('{UO}','{OA}',true,null);
+INSERT INTO public.user_roles VALUES ('{UA}','producao'),('{UB}','gestor'),('{UF}','financeiro'),('{UC}','cliente_produtor'),('{UX}','producao'),('{UADM}','administrador'),('{UO}','operador_onfarm');
 INSERT INTO public.user_clientes VALUES ('{UC}','{CA}',true,null,null,null);
 INSERT INTO public.clientes VALUES ('{CA}','{OA}'),('{CB}','{OB}');
 INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}','{CA}'),('{EB}','{OB}','{CB}'),('{EX}','{OA}','{CB}'),('{EA2}','{OA}','{CA}');
@@ -134,6 +143,8 @@ INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}'
                  f"SELECT public.rpc_entrega_gerar_termo_v1('{e}')->>'termo_id'; COMMIT;")
         psql(f"UPDATE public.entrega_termos SET id='{t}' WHERE id='{p.stdout.strip()}';")
 
+    # Termo sintético em entrega A com cliente de B (incoerência), inserido como dono.
+    psql(f"INSERT INTO public.entrega_termos(id,entrega_id,versao,template_versao,status,snapshot,snapshot_hash,cobertura) VALUES ('{TX}','{EX}',1,'x','rascunho','{{}}','h','total');")
     # Fingerprints locais dos stubs (snapshot/cobertura); demais devem bater com LIVE byte a byte.
     def md5(sig): return val(psql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))"))
     exact = [s for s in A.LIVE if s not in ("public.fn_entrega_build_snapshot_v1(uuid)", "public.fn_entrega_cobertura_v1(uuid)")]
@@ -155,6 +166,7 @@ INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}'
     check("BASE: gestor B cancela termo de A", tx(UB, f"SELECT public.rpc_entrega_cancelar_termo_v1('{TA}','motivo teste');").returncode == 0)
     check("BASE contida: authenticated NÃO registra PDF", "permission denied" in err(tx(UA, f"SELECT public.rpc_entrega_registrar_pdf_termo_v1('{TB}','x','y');")))
     check("BASE contida: authenticated NÃO faz TRUNCATE", "permission denied" in err(tx(UA, "TRUNCATE public.entrega_termos;")))
+    check("BASE: operador_onfarm lê termo de B", val(tx(UO, f"SELECT count(*) FROM public.entrega_termos WHERE id='{TB}';")) == "1")
     check("BASE: snapshot direto cross-tenant", tx(UA, f"SELECT public.fn_entrega_build_snapshot_v1('{EB}');").returncode == 0)
 
     # ---------- Aplica candidata (pré + corpo; postflight calculado) ----------
@@ -175,6 +187,11 @@ INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}'
     check("REST: financeiro A lê A e não B", val(tx(UF, "SELECT string_agg(id::text, ',') FROM public.entrega_termos;")) == TA)
     check("REST: cliente/produtor A vinculado lê termo do seu cliente", val(tx(UC, "SELECT string_agg(id::text, ',') FROM public.entrega_termos;")) == TA)
     check("REST: admin B (escopo admin) não lê termo de A", val(tx(UADM, f"SELECT count(*) FROM public.entrega_termos WHERE id='{TA}';")) == "0")
+    check("REST: operador_onfarm A lê termo de A (sem SELECT em entregas)", val(tx(UO, "SELECT string_agg(id::text, ',') FROM public.entrega_termos;")) == TA)
+    check("REST: operador_onfarm A não lê entregas diretamente (RLS LIVE)", val(tx(UO, "SELECT count(*) FROM public.entregas;")) == "0")
+    check("REST: staff A não lê termo de entrega A/cliente B", val(tx(UA, f"SELECT count(*) FROM public.entrega_termos WHERE id='{TX}';")) == "0")
+    check("REST: admin A não lê termo de entrega A/cliente B", val(psql(f"BEGIN; UPDATE public.profiles SET organization_id='{OA}' WHERE user_id='{UADM}'; SET LOCAL ROLE authenticated;"
+          f" DO $s$BEGIN PERFORM set_config('test.sub','{UADM}',true); END$s$; SELECT count(*) FROM public.entrega_termos WHERE id IN ('{TX}','{TA}'); ROLLBACK;", ok=False)) == "1")
     check("REST: perfil inativo não lê nada", val(tx(UX, "SELECT count(*) FROM public.entrega_termos;")) == "0")
     check("REST: anon sem acesso", tx(None, "SELECT count(*) FROM public.entrega_termos;", role="anon").returncode != 0)
     p = tx(UA, "TRUNCATE public.entrega_termos;"); check("TRUNCATE authenticated negado", p.returncode != 0 and "permission denied" in err(p))
@@ -217,7 +234,11 @@ INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}'
     p = tx(UA, f"SELECT public.rpc_entrega_registrar_pdf_termo_v1('{TA}','x','y');"); check("registrar PDF: authenticated → permission denied", "permission denied" in err(p))
     p = tx(UA, f"SELECT public.fn_entrega_build_snapshot_v1('{EB}');"); check("snapshot direto: authenticated → permission denied", "permission denied" in err(p))
     p = tx(UA, f"SELECT public.fn_entrega_cobertura_v1('{EB}');"); check("cobertura direta: authenticated → permission denied", "permission denied" in err(p))
-    p = tx(UA, f"SELECT platform_private.entrega_termo_tenant_ok('{EA}');"); check("helper privado: authenticated → permission denied", "permission denied" in err(p))
+    p = tx(UA, f"SELECT platform_private.entrega_termo_tenant_ok('{EA}'), platform_private.entrega_termo_tenant_ok('{EB}'),"
+              f" platform_private.entrega_termo_tenant_ok('{EX}'), platform_private.entrega_termo_tenant_ok('{U('7')}');")
+    check("helper: só boolean do próprio escopo (A=t, B/incoerente/inexistente=f, sem oráculo)", val(p) == "t|f|f|f")
+    check("helper: anon sem EXECUTE", "permission denied" in err(tx(None, f"SELECT platform_private.entrega_termo_tenant_ok('{EA}');", role="anon")))
+    p = tx(UO, f"SELECT public.rpc_entrega_gerar_termo_v1('{EX}');"); check("gerar: operador A em entrega A/cliente B → sem_permissao", "sem_permissao" in err(p))
     p = psql(f"BEGIN; UPDATE public.entrega_termos SET status='assinado' WHERE id='{TA}'; SET LOCAL ROLE service_role;"
              f" SELECT public.rpc_entrega_registrar_pdf_termo_v1('{TA}','p','h')->>'replay'; ROLLBACK;", ok=False)
     check("registrar PDF: service_role continua funcionando", val(p) == "false")

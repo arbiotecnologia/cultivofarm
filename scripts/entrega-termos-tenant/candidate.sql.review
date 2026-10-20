@@ -42,6 +42,8 @@ BEGIN
     RAISE EXCEPTION 'PREFLIGHT: policy entrega_termos_select divergente'; END IF;
   IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos') <> 1 THEN
     RAISE EXCEPTION 'PREFLIGHT: conjunto de policies inesperado'; END IF;
+  IF NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN
+    RAISE EXCEPTION 'PREFLIGHT: USAGE platform_private ausente'; END IF;
   IF to_regprocedure('platform_private.entrega_termo_tenant_ok(uuid)') IS NOT NULL THEN
     RAISE EXCEPTION 'PREFLIGHT: helper já existe'; END IF;
   IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='rpc_entrega_gerar_termo_v1'
@@ -73,6 +75,7 @@ AS $function$
        AND e.organization_id = platform_private.h15_actor_organization());
 $function$;
 REVOKE ALL ON FUNCTION platform_private.entrega_termo_tenant_ok(uuid) FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION platform_private.entrega_termo_tenant_ok(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION public.rpc_entrega_gerar_termo_v1(p_entrega_id uuid, p_template_versao text DEFAULT 'termo-entrega-v1'::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -275,8 +278,8 @@ REVOKE EXECUTE ON FUNCTION public.fn_entrega_build_snapshot_v1(uuid) FROM PUBLIC
 REVOKE EXECUTE ON FUNCTION public.fn_entrega_cobertura_v1(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLE public.entrega_termos FROM authenticated;
 CREATE POLICY entrega_termos_tenant_isolation ON public.entrega_termos AS RESTRICTIVE FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_termos.entrega_id AND e.organization_id IS NOT NULL AND e.organization_id = platform_private.h15_actor_organization()))
-  WITH CHECK (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_termos.entrega_id AND e.organization_id IS NOT NULL AND e.organization_id = platform_private.h15_actor_organization()));
+  USING (platform_private.entrega_termo_tenant_ok(entrega_id))
+  WITH CHECK (platform_private.entrega_termo_tenant_ok(entrega_id));
 DO $chk$
 BEGIN
   IF current_database() <> 'postgres' THEN RAISE EXCEPTION 'POSTFLIGHT: banco inesperado'; END IF;
@@ -321,11 +324,16 @@ BEGIN
     RAISE EXCEPTION 'POSTFLIGHT: policy entrega_termos_select divergente'; END IF;
   IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos') <> 2 THEN
     RAISE EXCEPTION 'POSTFLIGHT: conjunto de policies inesperado'; END IF;
+  IF NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN
+    RAISE EXCEPTION 'POSTFLIGHT: USAGE platform_private ausente'; END IF;
+  IF (SELECT qual FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos' AND policyname='entrega_termos_tenant_isolation')
+     IS DISTINCT FROM 'platform_private.entrega_termo_tenant_ok(entrega_id)' THEN
+    RAISE EXCEPTION 'POSTFLIGHT: predicado da policy restritiva divergente'; END IF;
   IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos'
       AND policyname='entrega_termos_tenant_isolation' AND permissive='RESTRICTIVE' AND cmd='ALL'
       AND roles = '{authenticated}'::name[]) <> 1 THEN
     RAISE EXCEPTION 'POSTFLIGHT: policy restritiva ausente'; END IF;
-  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres' THEN
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,authenticated=X/postgres' THEN
     RAISE EXCEPTION 'POSTFLIGHT: ACL do helper inesperada'; END IF;
   IF (SELECT prosecdef FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure) IS NOT TRUE
      OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure) <> 'postgres' THEN

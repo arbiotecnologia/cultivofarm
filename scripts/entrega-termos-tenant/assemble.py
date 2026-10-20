@@ -72,8 +72,10 @@ AS $function$
        AND c.organization_id = e.organization_id
        AND e.organization_id = platform_private.h15_actor_organization());
 $function$"""
-POLICY_EXPR = ("EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_termos.entrega_id "
-               "AND e.organization_id IS NOT NULL AND e.organization_id = platform_private.h15_actor_organization())")
+# Predicado único (DEFINER): empresa do ator = empresa da entrega = empresa do cliente, sem depender da RLS de entregas
+# (que não inclui operador_onfarm). Retorna só boolean do próprio escopo; cross-tenant/inexistente = false (sem oráculo).
+POLICY_EXPR = "platform_private.entrega_termo_tenant_ok(entrega_id)"
+HELPER_ACL = "postgres=X/postgres,authenticated=X/postgres"
 
 def fn_md5_check(sig, md5, label):
     return (f"  IF md5(pg_get_functiondef('{sig}'::regprocedure)) <> '{md5}' THEN\n"
@@ -97,12 +99,17 @@ def state_checks(label, md5s, fn_acl, table_acl, candidate):
     n = 2 if candidate else 1
     s += (f"  IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos') <> {n} THEN\n"
           f"    RAISE EXCEPTION '{label}: conjunto de policies inesperado'; END IF;\n")
+    s += ("  IF NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN\n"
+          f"    RAISE EXCEPTION '{label}: USAGE platform_private ausente'; END IF;\n")
     if candidate:
+        s += ("  IF (SELECT qual FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos' AND policyname='entrega_termos_tenant_isolation')\n"
+              "     IS DISTINCT FROM 'platform_private.entrega_termo_tenant_ok(entrega_id)' THEN\n"
+              f"    RAISE EXCEPTION '{label}: predicado da policy restritiva divergente'; END IF;\n")
         s += ("  IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='entrega_termos'\n"
               "      AND policyname='entrega_termos_tenant_isolation' AND permissive='RESTRICTIVE' AND cmd='ALL'\n"
               "      AND roles = '{authenticated}'::name[]) <> 1 THEN\n"
               f"    RAISE EXCEPTION '{label}: policy restritiva ausente'; END IF;\n"
-              "  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres' THEN\n"
+              "  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure), ','), '') <> '" + HELPER_ACL + "' THEN\n"
               f"    RAISE EXCEPTION '{label}: ACL do helper inesperada'; END IF;\n"
               "  IF (SELECT prosecdef FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure) IS NOT TRUE\n"
               "     OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid = 'platform_private.entrega_termo_tenant_ok(uuid)'::regprocedure) <> 'postgres' THEN\n"
@@ -131,6 +138,7 @@ def build(live_md5=LIVE, post_md5=None):
             "-- Projeto canônico obrigatório: swzpzcwiasxmjutrmvkm.\n" + pre +
             run(HELPER) +
             "REVOKE ALL ON FUNCTION platform_private.entrega_termo_tenant_ok(uuid) FROM PUBLIC, anon, authenticated, service_role;\n" +
+            "GRANT EXECUTE ON FUNCTION platform_private.entrega_termo_tenant_ok(uuid) TO authenticated;\n" +
             run(gerar) + run(assinar) + run(cancelar) +
             "".join(f"REVOKE EXECUTE ON FUNCTION {s} FROM PUBLIC, anon, authenticated;\n" for s in SERVICE_ONLY) +
             "REVOKE TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLE public.entrega_termos FROM authenticated;\n"

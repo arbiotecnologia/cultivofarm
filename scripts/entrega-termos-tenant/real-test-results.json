@@ -55,6 +55,10 @@
    "pass": true
   },
   {
+   "name": "BASE: operador_onfarm lê termo de B",
+   "pass": true
+  },
+  {
    "name": "BASE: snapshot direto cross-tenant",
    "pass": true
   },
@@ -88,6 +92,22 @@
   },
   {
    "name": "REST: admin B (escopo admin) não lê termo de A",
+   "pass": true
+  },
+  {
+   "name": "REST: operador_onfarm A lê termo de A (sem SELECT em entregas)",
+   "pass": true
+  },
+  {
+   "name": "REST: operador_onfarm A não lê entregas diretamente (RLS LIVE)",
+   "pass": true
+  },
+  {
+   "name": "REST: staff A não lê termo de entrega A/cliente B",
+   "pass": true
+  },
+  {
+   "name": "REST: admin A não lê termo de entrega A/cliente B",
    "pass": true
   },
   {
@@ -195,7 +215,15 @@
    "pass": true
   },
   {
-   "name": "helper privado: authenticated → permission denied",
+   "name": "helper: só boolean do próprio escopo (A=t, B/incoerente/inexistente=f, sem oráculo)",
+   "pass": true
+  },
+  {
+   "name": "helper: anon sem EXECUTE",
+   "pass": true
+  },
+  {
+   "name": "gerar: operador A em entrega A/cliente B → sem_permissao",
    "pass": true
   },
   {

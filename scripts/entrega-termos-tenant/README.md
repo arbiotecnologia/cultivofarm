@@ -20,6 +20,15 @@ Produção já recebeu `termo_pdf_registration_acl_containment` (23:52 UTC): EXE
 **exige** esse estado contido (o estado antigo falha fechado) e o rollback **não regrava** EXECUTE do registrar nem TRUNCATE;
 reabre apenas o restante da baseline (snapshot/cobertura e REFERENCES/TRIGGER/MAINTAIN). Testes locais 64/64.
 
+## Correção da revisão 5ed365 (20/10 00:49 UTC)
+A policy restritiva antiga fazia `EXISTS entregas` sob a RLS do usuário: `operador_onfarm` (staff de entrega, sem SELECT LIVE em
+`entregas`) perdia leitura legítima, e só a empresa da entrega era comparada. Agora a policy usa o MESMO predicado privado das
+RPCs, `platform_private.entrega_termo_tenant_ok(entrega_id)` (DEFINER, `search_path ''`, ator h15 = entrega = cliente).
+EXECUTE: postgres + authenticated (necessário para avaliar a policy); anon/PUBLIC/service_role sem. Retorna só boolean do próprio
+escopo: outra empresa, incoerência ou ID inexistente = false (sem oráculo). Pre/postflight conferem USAGE do schema, ACL e
+texto exato do predicado. Harness agora reproduz as 5 policies LIVE de `entregas`; inclui operador, leitura de entrega A/cliente B
+e RPC. 71/71 locais (sintético, não JWT real).
+
 ## Mudança mínima (`candidate.sql.review`)
 - Preflight estrito embutido (falha fechado): md5 LIVE das 4 RPCs, snapshot, cobertura, `h15_actor_organization`,
   `is_delivery_staff`; ACL exata das 6 funções e da tabela; RLS ligada; texto exato da policy existente; conjunto de
