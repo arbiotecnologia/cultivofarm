@@ -13,7 +13,7 @@ const auth = vi.hoisted(() => ({
 const m = vi.hoisted(() => ({ lease: true, invoke: vi.fn(), fetch: vi.fn(), sign: vi.fn(), toast: vi.fn(), termo: {} as Record<string, unknown> }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
 vi.mock("@/hooks/use-toast", () => ({ toast: m.toast, useToast: () => ({ toast: m.toast }) }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: {
+vi.mock("@/integrations/supabase/client", () => ({ SUPABASE_URL: "https://canonico.supabase.co", SUPABASE_PUBLISHABLE_KEY: "pk-canonica", supabase: {
   from: (t: string) => {
     const r = t === "entrega_termos" ? { data: m.termo, error: null } : { data: [], error: null };
     const q: Record<string, unknown> = {};
@@ -179,6 +179,16 @@ describe("downloadTermoPdf: prazo real e limite no stream", () => {
     m.fetch.mockImplementation(async () => pdfRes(new ReadableStream({ pull(c) { sent += chunk.byteLength; c.enqueue(chunk); }, cancel() { cancelled = true; } }, { highWaterMark: 0 })));
     await expect(downloadTermoPdf(T, new AbortController().signal)).rejects.toThrow("Documento indisponível");
     expect(cancelled).toBe(true); expect(sent).toBeLessThanOrEqual(TERMO_PDF_MAX_BYTES + chunk.byteLength);
+  });
+  it("usa URL/chave do cliente canônico mesmo com env divergente", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://divergente.example"); vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "pk-divergente");
+    try {
+      await downloadTermoPdf(T, new AbortController().signal);
+      const [url, init] = m.fetch.mock.calls[0];
+      expect(String(url)).toBe("https://canonico.supabase.co/functions/v1/entrega-termo-pdf");
+      expect(init.headers.apikey).toBe("pk-canonica");
+      expect(JSON.stringify(m.fetch.mock.calls)).not.toMatch(/divergente/);
+    } finally { vi.unstubAllEnvs(); }
   });
   it("abort externo (escopo mudou) interrompe imediatamente", async () => {
     m.fetch.mockImplementation(() => new Promise(() => {}));

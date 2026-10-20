@@ -257,4 +257,26 @@ describe("entrega-termo-pdf candidata: download binário autenticado", () => {
     expect((await call({ termo_id: TERMO, action: "download" })).status).toBe(413);
     expect(cancelled).toBe(true); expect(sent).toBeLessThanOrEqual(18 * 1024 * 1024);
   });
+  describe("cancel() que nunca resolve não pendura a resposta", () => {
+    const never = () => new Promise<void>(() => {});
+    const cedo = async (p: Promise<Response>) => {
+      vi.useFakeTimers(); const r = p.then((x) => x.status); await vi.advanceTimersByTimeAsync(50); vi.useRealTimers();
+      return Promise.race([r, Promise.resolve("pendurado")]);
+    };
+    it("status ruim: 404 sem aguardar cancel", async () => {
+      let asked = false;
+      st.fetchImpl = async () => new Response(new ReadableStream({ cancel() { asked = true; return never(); } }), { status: 500 });
+      expect(await cedo(call({ termo_id: TERMO, action: "download" }))).not.toBe("pendurado"); expect(asked).toBe(true);
+    });
+    it("Content-Length acima do limite: 413 sem aguardar cancel", async () => {
+      st.fetchImpl = async () => new Response(new ReadableStream({ cancel: never }, { highWaterMark: 0 }),
+        { status: 200, headers: { "content-length": String(16 * 1024 * 1024) } });
+      expect(await cedo(call({ termo_id: TERMO, action: "download" }))).toBe(413);
+    });
+    it("stream acima do limite: 413 sem aguardar cancel", async () => {
+      const chunk = new Uint8Array(1024 * 1024);
+      st.fetchImpl = async () => new Response(new ReadableStream({ pull(c) { c.enqueue(chunk); }, cancel: never }), { status: 200 });
+      expect(await cedo(call({ termo_id: TERMO, action: "download" }))).toBe(413);
+    });
+  });
 });

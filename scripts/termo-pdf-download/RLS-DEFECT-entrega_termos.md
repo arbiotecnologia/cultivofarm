@@ -1,5 +1,7 @@
 # Defeito RLS separado: `entrega_termos` sem isolamento de tenant para staff (ABERTO)
 
+> 20/10/2026: FECHADO em produção por `entrega_termos_tenant_isolation_reviewed` (ver docs/entrega-termos-migracoes-implantadas.md).
+
 > Atualização 19/10 23:55 UTC: candidata SQL mínima pronta em `scripts/entrega-termos-tenant/` (não aplicada). Inclui também EXECUTE indevido de `authenticated` em `rpc_entrega_registrar_pdf_termo_v1`, snapshot e cobertura.
 
 Registro, **não correção**. A Edge candidata não fecha esta exposição: a tabela continua legível pela REST

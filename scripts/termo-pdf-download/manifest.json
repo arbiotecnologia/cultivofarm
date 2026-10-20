@@ -3,7 +3,7 @@
   "modified": {
     "supabase/functions/entrega-termo-pdf/index.ts": {
       "pre": "8cbcc36db7ce3815d0205397aac1cfdf32d98ad55070521b6ac7cf8d006a367f",
-      "post": "9d7df9dad65c24aeced4690c58fbd92dfba911089131825043e443632708fed0"
+      "post": "294663aa4e719f7a7796e71c7977f9e5fb87b22a824723be01eb908b6fb6876b"
     },
     "src/components/entregas/TermoEntregaPanel.tsx": {
       "pre": "358ca74162031acbe51218fc685e67b0233a9b07dc3fca6129f986285fd8b910",
@@ -15,9 +15,9 @@
     }
   },
   "added": {
-    "src/lib/entregas/termoPdfDownload.ts": "6dbe058ac7a28dd381f6df7f1256c783f06d117451c7cb202ddd88f2d8d72278",
-    "src/test/entregas/termoPdfDownload.test.tsx": "ae2b41ed4a1e1daee96b24159055b6696fc70c56c2ce91dc477de12492d06b32",
-    "src/test/entregas/termoPdfEdge.test.ts": "50cdc716c7d139a74d2d4cc7684e402008113a8bfd7ff58fe46a1686c91e22f1"
+    "src/lib/entregas/termoPdfDownload.ts": "c34efb15a589b1e46b226560a7e1a5a8bf7771b7ff6414d7f178a6e2daa0c54b",
+    "src/test/entregas/termoPdfDownload.test.tsx": "c51238302bc1a122e82be12c29e8f5c12f7bbacfdea3a892f3fc9f2111405409",
+    "src/test/entregas/termoPdfEdge.test.ts": "f4e3ec2e948b928ee3718c10e657a9f9173ac1c8947b6e2e9f79c64ab100b4d7"
   },
   "untouched_runtime": [
     "src/hooks/useStorageAccessScope.ts",
@@ -31,12 +31,14 @@
   "deploy": false,
   "publish": false,
   "open_defects": [
-    "RLS-DEFECT-entrega_termos.md -> candidata SQL em scripts/entrega-termos-tenant/ (n\u00e3o aplicada)"
+    "RLS-DEFECT-entrega_termos.md -> candidata SQL em scripts/entrega-termos-tenant/ (não aplicada)"
   ],
   "real_limits": {
     "edge_deadline_ms": 15000,
-    "edge_transport": "fetch abort\u00e1vel Storage authenticated + espera limitada + stream com teto",
-    "frontend_transport": "fetch abort\u00e1vel Functions + espera limitada + stream com teto",
+    "edge_transport": "fetch abortável Storage authenticated + espera limitada + stream com teto",
+    "frontend_transport": "fetch abortável Functions + espera limitada + stream com teto",
     "max_bytes": 15728640
-  }
+  },
+  "frontend_backend_binding": "SUPABASE_URL/SUPABASE_PUBLISHABLE_KEY importados do cliente canônico",
+  "edge_cancel": "cancelamento não bloqueante (soltar)"
 }
