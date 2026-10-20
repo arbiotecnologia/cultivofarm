@@ -1,6 +1,6 @@
 {
   "ref": "swzpzcwiasxmjutrmvkm",
-  "captured": "2026-10-19T16:04Z hosted READ ONLY (supabase read_query), PostgreSQL 17.6",
+  "captured": "2026-10-20T01:18Z canonical hosted SELECT-only; baseline 793bc012",
   "target": {
     "sig": "public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)",
     "pre_md5": "d37a0e478e01277ba61f70397b1d44f9",
@@ -8,56 +8,289 @@
     "post_acl": "{postgres=X/postgres,authenticated=X/postgres}"
   },
   "functions": [
-    ["public._refresh_esteira_laboratorio_after_change()", "2f361c1fd9de578cf45796d82f3754e0", "{postgres=X/postgres,service_role=X/postgres}"],
-    ["public.fn_cockpit_norm_origem(text)", "701ba8da92fc3df9ea0e5270ab5e74b2", "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"],
-    ["public.gerar_codigo_lote(integer)", "194703302cf0400c10d6d0dda2468d5d", "{postgres=X/postgres,service_role=X/postgres}"],
-    ["public.refresh_esteira_laboratorio()", "bbb2e580bfc6ffddfa833f950c38e0f3", "{postgres=X/postgres,service_role=X/postgres}"],
-    ["public.rpc_programar_os_v1(uuid,text,date)", "e374f0ba1698b37523b890dc91682eaf", "{postgres=X/postgres,authenticated=X/postgres}"],
-    ["public.update_updated_at_column()", "b1930ed5bca3be839f783c6202ab8147", "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"],
-    ["private.h7n_esteira_laboratorio()", "bad38b5200629cc887767e62b7a46e40", "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"],
-    ["public.fn_cockpit_assert_operador_origem(text)", "ec7bd47943764dc4bfda9cdbea2cf283", "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"],
-    ["platform_private.h15_actor_organization()", "64e10608403238a41a9baf92857ca881", "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"],
-    ["public._saas_user_has_feature(uuid,text)", "501dd958e117d2df8a4d38f6bcbeed04", "{postgres=X/postgres,service_role=X/postgres}"],
-    ["public._saas_trg_require_feature()", "13ed48832f81cbb35434688ca35fda4b", "{postgres=X/postgres,service_role=X/postgres}"],
-    ["public.guard_tenant_organization_id()", "d01a740c1e3e02407131d2b9228bf658", "{postgres=X/postgres,service_role=X/postgres}"],
-    ["platform_private.entitlements_for_user(uuid)", "7f4ec7facaebbdf35444dd490fdebe56", "{postgres=X/postgres,service_role=X/postgres}"],
-    ["platform_private.platform_actor_access_ready(uuid)", "048249c0c2106c3761e26eacb8d0de84", "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"],
-    ["public.has_role(uuid,public.app_role)", "4d90e93d521a4819d9085f28d742030f", "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"],
-    ["public.h15_actor_organization()", "55edafec08bcc84a00f1526c14334a2c", "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"],
-    ["public.technical_actor_ready(uuid)", "b5d0994b6eb976b14122cd2a1ec798cf", "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"],
-    ["platform_private.lab_item_is_manufacturable(uuid,uuid)", "853595394240e8f2a61ac2d621118271", "{postgres=X/postgres}"],
-    ["platform_private.lab_assert_manufacturable(uuid,uuid)", "fe24f00acbffa9b6d71c84d0c4ff8eb4", "{postgres=X/postgres}"],
-    ["platform_private.trg_lab_lot_biological_only()", "58abf38671745d272abeb923ee866083", "{postgres=X/postgres}"]
+    [
+      "public._refresh_esteira_laboratorio_after_change()",
+      "2f361c1fd9de578cf45796d82f3754e0",
+      "{postgres=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public.fn_cockpit_norm_origem(text)",
+      "701ba8da92fc3df9ea0e5270ab5e74b2",
+      "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public.gerar_codigo_lote(integer)",
+      "194703302cf0400c10d6d0dda2468d5d",
+      "{postgres=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public.refresh_esteira_laboratorio()",
+      "bbb2e580bfc6ffddfa833f950c38e0f3",
+      "{postgres=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public.rpc_programar_os_v1(uuid,text,date)",
+      "e374f0ba1698b37523b890dc91682eaf",
+      "{postgres=X/postgres,authenticated=X/postgres}"
+    ],
+    [
+      "public.update_updated_at_column()",
+      "b1930ed5bca3be839f783c6202ab8147",
+      "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "private.h7n_esteira_laboratorio()",
+      "bad38b5200629cc887767e62b7a46e40",
+      "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    ],
+    [
+      "public.fn_cockpit_assert_operador_origem(text)",
+      "ec7bd47943764dc4bfda9cdbea2cf283",
+      "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    ],
+    [
+      "platform_private.h15_actor_organization()",
+      "64e10608403238a41a9baf92857ca881",
+      "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public._saas_user_has_feature(uuid,text)",
+      "501dd958e117d2df8a4d38f6bcbeed04",
+      "{postgres=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public._saas_trg_require_feature()",
+      "13ed48832f81cbb35434688ca35fda4b",
+      "{postgres=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public.guard_tenant_organization_id()",
+      "d01a740c1e3e02407131d2b9228bf658",
+      "{postgres=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "platform_private.entitlements_for_user(uuid)",
+      "7f4ec7facaebbdf35444dd490fdebe56",
+      "{postgres=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "platform_private.platform_actor_access_ready(uuid)",
+      "048249c0c2106c3761e26eacb8d0de84",
+      "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public.has_role(uuid,public.app_role)",
+      "4d90e93d521a4819d9085f28d742030f",
+      "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public.h15_actor_organization()",
+      "55edafec08bcc84a00f1526c14334a2c",
+      "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "public.technical_actor_ready(uuid)",
+      "b5d0994b6eb976b14122cd2a1ec798cf",
+      "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    ],
+    [
+      "platform_private.lab_item_is_manufacturable(uuid,uuid)",
+      "853595394240e8f2a61ac2d621118271",
+      "{postgres=X/postgres}"
+    ],
+    [
+      "platform_private.lab_assert_manufacturable(uuid,uuid)",
+      "fe24f00acbffa9b6d71c84d0c4ff8eb4",
+      "{postgres=X/postgres}"
+    ],
+    [
+      "platform_private.trg_lab_lot_biological_only()",
+      "58abf38671745d272abeb923ee866083",
+      "{postgres=X/postgres}"
+    ],
+    [
+      "platform_private.has_role(uuid,public.app_role)",
+      "c5af5b55de6d79da9b73a33948746ae2",
+      "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    ],
+    [
+      "public.rpc_cockpit_listar_esteira_v1(text,text[],text[],text[],boolean,date,date,boolean,integer,integer)",
+      "04d54f538952afc9bfcd29991f55b724",
+      "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    ]
   ],
   "lot_triggers": [
-    ["tenant_organization_guard", "413773b6e8c7dcb256c52e2cb905fbe6", "d01a740c1e3e02407131d2b9228bf658", "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"],
-    ["trg_lab_lot_biological_only", "ff9801851de8f994d2297adbcbf4d30a", "58abf38671745d272abeb923ee866083", "CREATE TRIGGER trg_lab_lot_biological_only BEFORE INSERT OR UPDATE OF produto_id, microrganismo_id ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.trg_lab_lot_biological_only()"],
-    ["trg_refresh_esteira_lotes", "76dcf0a090e1d48a2bf8f1a0cd04004e", "2f361c1fd9de578cf45796d82f3754e0", "CREATE TRIGGER trg_refresh_esteira_lotes AFTER INSERT OR DELETE OR UPDATE ON public.lotes FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()"],
-    ["trg_saas_gate", "f7f6e80ebe8b4e6e85d9c0b1472bd77d", "13ed48832f81cbb35434688ca35fda4b", "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('lotes_qualidade')"],
-    ["update_lotes_updated_at", "58b32d1aad06fbea342b06b8197f3a71", "b1930ed5bca3be839f783c6202ab8147", "CREATE TRIGGER update_lotes_updated_at BEFORE UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"]
+    [
+      "tenant_organization_guard",
+      "413773b6e8c7dcb256c52e2cb905fbe6",
+      "d01a740c1e3e02407131d2b9228bf658",
+      "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+    ],
+    [
+      "trg_lab_lot_biological_only",
+      "ff9801851de8f994d2297adbcbf4d30a",
+      "58abf38671745d272abeb923ee866083",
+      "CREATE TRIGGER trg_lab_lot_biological_only BEFORE INSERT OR UPDATE OF produto_id, microrganismo_id ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.trg_lab_lot_biological_only()"
+    ],
+    [
+      "trg_refresh_esteira_lotes",
+      "76dcf0a090e1d48a2bf8f1a0cd04004e",
+      "2f361c1fd9de578cf45796d82f3754e0",
+      "CREATE TRIGGER trg_refresh_esteira_lotes AFTER INSERT OR DELETE OR UPDATE ON public.lotes FOR EACH STATEMENT EXECUTE FUNCTION _refresh_esteira_laboratorio_after_change()"
+    ],
+    [
+      "trg_saas_gate",
+      "f7f6e80ebe8b4e6e85d9c0b1472bd77d",
+      "13ed48832f81cbb35434688ca35fda4b",
+      "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('lotes_qualidade')"
+    ],
+    [
+      "update_lotes_updated_at",
+      "58b32d1aad06fbea342b06b8197f3a71",
+      "b1930ed5bca3be839f783c6202ab8147",
+      "CREATE TRIGGER update_lotes_updated_at BEFORE UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    ]
   ],
   "lot_indexes": [
-    ["idx_lotes_created_at", "8621800f67f18c4d8232f58c9153b874"],
-    ["idx_lotes_data_producao", "f155a3ed27b777e6b01407c8f0765d47"],
-    ["idx_lotes_produto_id", "6683ca76c86a7309b6fc6fb342ba647c"],
-    ["idx_lotes_programacao_id", "6a9df3cea8e07f8e6f2abea46a812a50"],
-    ["idx_lotes_programacao_id_unique", "ad257ea3ac26332d48874dd6bf7dd2bf"],
-    ["idx_lotes_status", "b556b56fc7e4a17bbef05f59556f0402"],
-    ["lotes_codigo_lote_key", "0289fcf02439239b8b086e42437adbb2"],
-    ["lotes_organization_id_idx", "ce9b48662f43f7673d10740a19d3ed91"],
-    ["lotes_pkey", "0bea0a2fd80eaaed816b3f9d2f670d78"]
+    [
+      "idx_lotes_created_at",
+      "8621800f67f18c4d8232f58c9153b874"
+    ],
+    [
+      "idx_lotes_data_producao",
+      "f155a3ed27b777e6b01407c8f0765d47"
+    ],
+    [
+      "idx_lotes_produto_id",
+      "6683ca76c86a7309b6fc6fb342ba647c"
+    ],
+    [
+      "idx_lotes_programacao_id",
+      "6a9df3cea8e07f8e6f2abea46a812a50"
+    ],
+    [
+      "idx_lotes_programacao_id_unique",
+      "ad257ea3ac26332d48874dd6bf7dd2bf"
+    ],
+    [
+      "idx_lotes_status",
+      "b556b56fc7e4a17bbef05f59556f0402"
+    ],
+    [
+      "lotes_codigo_lote_key",
+      "0289fcf02439239b8b086e42437adbb2"
+    ],
+    [
+      "lotes_organization_id_idx",
+      "ce9b48662f43f7673d10740a19d3ed91"
+    ],
+    [
+      "lotes_pkey",
+      "0bea0a2fd80eaaed816b3f9d2f670d78"
+    ]
   ],
   "lot_policies": [
-    ["Adm/Consultor read lotes", "5099057739b2ec9508a2c3dc1bfd6296"],
-    ["Admin/Gestor/Producao access on lotes", "1e38986704ad11ec4669d4dfdfd42516"],
-    ["Financeiro read lotes", "b3961fe9a864f5ba71216b6e4a38a6e1"],
-    ["OnFarm scoped insert lotes", "c7d94f2bed901ced47243e67a6758567"],
-    ["OnFarm scoped select lotes", "9e7e18b8e71ea2c2dc7655e33436a390"],
-    ["OnFarm scoped update lotes", "8874160de525cad6dd08eb9758f61914"],
-    ["tenant_isolation_d51_5", "98a80c502ebf0d42657f2fde7f562350"]
+    [
+      "Adm/Consultor read lotes",
+      "5099057739b2ec9508a2c3dc1bfd6296"
+    ],
+    [
+      "Admin/Gestor/Producao access on lotes",
+      "1e38986704ad11ec4669d4dfdfd42516"
+    ],
+    [
+      "Financeiro read lotes",
+      "b3961fe9a864f5ba71216b6e4a38a6e1"
+    ],
+    [
+      "OnFarm scoped insert lotes",
+      "c7d94f2bed901ced47243e67a6758567"
+    ],
+    [
+      "OnFarm scoped select lotes",
+      "9e7e18b8e71ea2c2dc7655e33436a390"
+    ],
+    [
+      "OnFarm scoped update lotes",
+      "8874160de525cad6dd08eb9758f61914"
+    ],
+    [
+      "tenant_isolation_d51_5",
+      "98a80c502ebf0d42657f2fde7f562350"
+    ]
   ],
   "event_table_triggers": 0,
   "known_open_paths": [
     "RLS 'Admin/Gestor/Producao access on lotes' (ALL) and 'OnFarm scoped insert lotes' still permit direct table writes outside this RPC; not changed here (out of scope, needs separate review)."
+  ],
+  "tables": [
+    {
+      "name": "aplicacoes",
+      "schema_md5": "ba11010115aaf501b42f04f8b9bec7b6",
+      "constraints_md5": "e72bffc7d7fac8bb6f8adf34c21d39e5",
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "name": "clientes",
+      "schema_md5": "d83fc2f1299e987c51b0b7b43d4e86f0",
+      "constraints_md5": "33789f4d6c316d2222ee050b6ea9af55",
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "name": "controle_qualidade",
+      "schema_md5": "7b243eb5ec78ddb853482d87bfe557f7",
+      "constraints_md5": "5bb199d8b3ca33cfa6eadb0b11558428",
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdm/postgres,authenticated=arwdm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "name": "entregas",
+      "schema_md5": "e4b7c77f3f9dc4556804f6a92b0e1fd4",
+      "constraints_md5": "79616a8e6528e7a8198b609205138c5d",
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "name": "laboratorio_esteira_eventos",
+      "schema_md5": "7d717abc7a2c6b4d8125e7a25a9aaf5a",
+      "constraints_md5": "a718991685db9e4dcbe3654e0ec8370a",
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "name": "lotes",
+      "schema_md5": "9ec8b0348eaa6a1416e753d00a7f7216",
+      "constraints_md5": "cc9012bc57a10a0a68451c6b64e80889",
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "name": "ordens_servico",
+      "schema_md5": "141cda71ffbcadb023dfaa945bb1465c",
+      "constraints_md5": "90bb148ab7c4e2ec39c11eaf6a6c3c41",
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "name": "production_order_link",
+      "schema_md5": "be00ad48fbf6d668fe55c5d944dad6db",
+      "constraints_md5": "1164a99b8153d4db27743fbc9a45eeb6",
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwDxtm/postgres,service_role=arwdDxtm/postgres}"
+    },
+    {
+      "name": "programacao_producao",
+      "schema_md5": "c6c77ef26665c428577e407b65408afc",
+      "constraints_md5": "fa1ab1b64112de492614a2648d00b832",
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    }
+  ],
+  "views": [
+    [
+      "public._src_vw_esteira_laboratorio",
+      "c71226f594d27d92833686212415ccec"
+    ],
+    [
+      "public.mv_esteira_laboratorio",
+      "50e27806080f38e4adbd94f3bdf2db23"
+    ],
+    [
+      "public.vw_esteira_laboratorio",
+      "d72d5df7bacffdf8f4fc4282b804ab90"
+    ]
   ]
 }

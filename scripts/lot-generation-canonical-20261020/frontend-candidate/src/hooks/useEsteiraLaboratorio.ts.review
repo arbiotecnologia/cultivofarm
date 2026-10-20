@@ -52,10 +52,6 @@ const COCKPIT_ERROS: Record<string, string> = {
   COCKPIT_LOTE_VINCULO_AMBIGUO: "Vínculo da programação com a ordem de serviço está ambíguo. Revise o cadastro antes de gerar o lote.",
   COCKPIT_LOTE_ITEM_CANONICO_AUSENTE: "A programação não tem produto nem microrganismo definido. Corrija a programação antes de gerar o lote.",
   COCKPIT_LOTE_VOLUME_INVALIDO: "Informe um volume produzido maior que zero.",
-  COCKPIT_LOTE_SCOPE_DENIED: "Seu acesso não permite gerar o lote desta OS no contexto atual.",
-  COCKPIT_LOTE_ISOLATION_DENIED: "Operação indisponível neste contexto.",
-  COCKPIT_LOTE_CONCORRENTE: "Outro registro de lote ocorreu ao mesmo tempo. Consulte a OS antes de tentar novamente.",
-  COCKPIT_LOTE_POSTCONDITION_FAILED: "O lote não foi confirmado. Nada foi alterado.",
   COCKPIT_SEED_FORBIDDEN: "Apenas administradores podem gerar fixtures.",
   COCKPIT_SEED_BLOQUEADO: "Geração de fixtures indisponível fora do ambiente de homologação.",
   COCKPIT_SEED_INDISPONIVEL: "Gerador de fixtures indisponível neste ambiente.",
@@ -171,13 +167,12 @@ export function useEsteiraLaboratorio() {
   };
 
   /**
-   * Gera o lote pelo RPC canônico (autorização, tenant, SaaS, locks e replay
-   * idêntico validados no servidor). `isCurrent` é a cerca síncrona da sessão:
-   * consultada antes da chamada e depois do await; se falhar, nenhum toast,
-   * invalidação de cache ou resultado é produzido.
+   * Gera o lote pelo motor transacional (lock por programação + unicidade no
+   * banco). Substitui o insert direto, que permitia lotes duplicados quando a
+   * ação era disparada duas vezes.
    */
-  const gerarLote = async (loteData: any, osId: string, origem: string, isCurrent: () => boolean = () => true) => {
-    if (!isCurrent()) return null;
+  const gerarLote = async (loteData: any, osId: string, origem: string, isCurrent: () => boolean, signal: AbortSignal) => {
+    if (!isCurrent() || signal.aborted) return null;
     if (!loteData?.programacao_id || !osId) {
       toast.error("Programação não identificada para gerar o lote.");
       return null;
@@ -204,11 +199,11 @@ export function useEsteiraLaboratorio() {
           tanque: texto(loteData.tanque),
           observacoes_tecnicas: texto(loteData.observacoes_tecnicas),
         },
-      });
-      if (!isCurrent()) return null;
+      }).abortSignal(signal);
+      if (!isCurrent() || signal.aborted) return null;
 
       if (error) {
-        toast.error(traduzErroCockpit(error.message));
+        toast.error("Lote não confirmado. Consulte a OS antes de tentar novamente.");
         return null;
       }
       const valido = !!data && typeof data === "object" && !Array.isArray(data);
@@ -216,16 +211,16 @@ export function useEsteiraLaboratorio() {
         toast.error(valido && typeof data.message === "string" ? data.message : "Não foi possível gerar o lote.");
         return null;
       }
-      if (typeof data.lote_id !== "string" || typeof data.codigo_lote !== "string" || !/^LT-\d{4}-\d{4,}$/.test(data.codigo_lote) || typeof data.replay !== "boolean") {
+      if (typeof data.lote_id !== "string" || typeof data.codigo_lote !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.lote_id) || !/^LT-\d{4}-\d{4,}$/.test(data.codigo_lote) || typeof data.replay !== "boolean") {
         toast.error("Resposta do servidor não confirmou o lote. Consulte a OS antes de tentar novamente.");
         return null;
       }
       if (data.replay) toast.info(`Lote ${data.codigo_lote} já registrado com os mesmos dados.`);
       else toast.success(`Lote ${data.codigo_lote} gerado. Controle de qualidade não iniciado.`);
-      invalidateAll();
+      void qc.invalidateQueries({ queryKey: ["cockpit-laboratorio"] });
       return { id: data.lote_id as string, codigo_lote: data.codigo_lote as string, replay: data.replay as boolean };
     } catch (error: any) {
-      if (isCurrent()) toast.error(traduzErroCockpit(error?.message));
+      if (isCurrent()) toast.error("Lote não confirmado. Consulte a OS antes de tentar novamente.");
       return null;
     }
   };
