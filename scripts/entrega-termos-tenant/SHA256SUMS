@@ -1,4 +1,4 @@
-bfa143fa17b7858464a5a82114fd2bbbf18e7cab428eedfe9d7e4c92b3ab42e1  ./README.md
+1bf482bc7c83db03fafdea7c12e677196d0b778237679cfaffb1f1f146ec25ea  ./README.md
 cebf74fc77e879b673546fba6451273ef8a9c7ae812270231cccf230dc0bc3ab  ./__pycache__/assemble.cpython-313.pyc
 9c8df8c54e3e2c4911e8abc55e0cbaaa58341f76d012083aa620ddbfc9a18687  ./assemble.py
 345bded0ac2fc378a9477f64bd3dc0ebe85b69e6003c57b5d817af1cd05e163d  ./baseline/rpc_entrega_assinar_termo_v1.sql
