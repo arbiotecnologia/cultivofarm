@@ -1,0 +1,380 @@
+[
+ {
+  "suite": "config",
+  "file": "src/test/config/managerConsultantOpenSession.integration.test.tsx",
+  "test": "paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page manager_loss pauses without silently adopting cached authority",
+  "line": 67,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/managerConsultantOpenSession.integration.test.tsx",
+  "test": "paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page consultant_loss pauses without silently adopting cached authority",
+  "line": 67,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/managerConsultantOpenSession.integration.test.tsx",
+  "test": "paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page environmental gestor denies, clears drafts/cache and restore stays clean",
+  "line": 67,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/managerConsultantOpenSession.integration.test.tsx",
+  "test": "paired scope full layouts, actual AuthProvider/guards/layouts/selector, stub page environmental consultor_tecnico denies, clears drafts/cache and restore stays clean",
+  "line": 67,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/managerConsultantOpenSession.integration.test.tsx",
+  "test": "paired scope initial boundaries fail closed loss gestor committed after the single server snapshot is observed by the next confirmation (<= lease) and clears",
+  "line": 67,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/managerConsultantOpenSession.integration.test.tsx",
+  "test": "paired scope initial boundaries fail closed loss consultor_tecnico committed after the single server snapshot is observed by the next confirmation (<= lease) and clears",
+  "line": 67,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+  "test": "Retry re-resolves identity (gestor+consultor) pair → gestor: Retry re-reads roles, residual gestor probe validates, only gestor routes",
+  "line": 67,
+  "code": "const paused = () => expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();",
+  "kind": "outro",
+  "msg": "AssertionError: expected <span></span> to be null"
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+  "test": "Retry re-resolves identity (gestor+consultor) pair → consultor: only consultor routes after validated re-resolution",
+  "line": 67,
+  "code": "const paused = () => expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();",
+  "kind": "outro",
+  "msg": "AssertionError: expected <span></span> to be null"
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+  "test": "Retry re-resolves identity (gestor+consultor) residual gestor later losing gestor pauses again (probe keeps watching)",
+  "line": 66,
+  "code": "const retry = async (ms = 60) => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); await flush(ms); };",
+  "kind": "retry",
+  "msg": "TestingLibraryElementError: Unable to find an accessible element with the role \"button\" and name \"Tentar novamente\""
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+  "test": "Retry re-resolves identity (gestor+consultor) residual is denied while the remaining role is inactive",
+  "line": 66,
+  "code": "const retry = async (ms = 60) => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); await flush(ms); };",
+  "kind": "retry",
+  "msg": "TestingLibraryElementError: Unable to find an accessible element with the role \"button\" and name \"Tentar novamente\""
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+  "test": "Retry re-resolves identity (gestor+consultor) Retry closes readiness synchronously before any await",
+  "line": 125,
+  "code": "fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));",
+  "kind": "retry",
+  "msg": "TestingLibraryElementError: Unable to find an accessible element with the role \"button\" and name \"Tentar novamente\""
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+  "test": "Retry re-resolves identity (gestor+consultor) restore of the exact set recovers via Retry with a new epoch",
+  "line": 66,
+  "code": "const retry = async (ms = 60) => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); await flush(ms); };",
+  "kind": "retry",
+  "msg": "TestingLibraryElementError: Unable to find an accessible element with the role \"button\" and name \"Tentar novamente\""
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+  "test": "Retry re-resolves identity (gestor+consultor) offline during Retry stays paused; later Retry recovers",
+  "line": 66,
+  "code": "const retry = async (ms = 60) => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); await flush(ms); };",
+  "kind": "retry",
+  "msg": "TestingLibraryElementError: Unable to find an accessible element with the role \"button\" and name \"Tentar novamente\""
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+  "test": "Retry re-resolves identity (gestor+consultor) 3s latency: content hidden until reconfirmed; double click is single-flight",
+  "line": 160,
+  "code": "const button = screen.getByRole('button', { name: 'Tentar novamente' });",
+  "kind": "retry",
+  "msg": "TestingLibraryElementError: Unable to find an accessible element with the role \"button\" and name \"Tentar novamente\""
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/monitorRetryReresolve.integration.test.tsx",
+  "test": "Retry re-resolves identity (gestor+consultor) race: role removed again while Retry is in flight stays paused",
+  "line": 175,
+  "code": "fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));",
+  "kind": "retry",
+  "msg": "TestingLibraryElementError: Unable to find an accessible element with the role \"button\" and name \"Tentar novamente\""
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/portalContextRecovery.integration.test.tsx",
+  "test": "real provider + contexts query + app guard + mobile: uncertainty is not denial Perfil real: remove consultor_tecnico, pause, Retry and remaining role only",
+  "line": 139,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/portalContextRecovery.integration.test.tsx",
+  "test": "real provider + contexts query + app guard + mobile: uncertainty is not denial Perfil real: remove gestor, pause, Retry and remaining role only",
+  "line": 139,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/residualScopeStability.integration.test.tsx",
+  "test": "pair → gestor residual stability (3 s/probe) fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched",
+  "line": 54,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/residualScopeStability.integration.test.tsx",
+  "test": "pair → gestor residual stability (3 s/probe) slow from the start of the residual scope stays valid",
+  "line": 54,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/residualScopeStability.integration.test.tsx",
+  "test": "pair → gestor residual stability (3 s/probe) negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive",
+  "line": 54,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/residualScopeStability.integration.test.tsx",
+  "test": "pair → consultor_tecnico residual stability (3 s/probe) fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched",
+  "line": 54,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/residualScopeStability.integration.test.tsx",
+  "test": "pair → consultor_tecnico residual stability (3 s/probe) slow from the start of the residual scope stays valid",
+  "line": 54,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/residualScopeStability.integration.test.tsx",
+  "test": "pair → consultor_tecnico residual stability (3 s/probe) negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive",
+  "line": 54,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "Retry / renewal generation conflicts never leave an endless loading (500 ms per call) control: pair → gestor removed → Retry → consultor recovers, financial denied",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "Retry / renewal generation conflicts never leave an endless loading (500 ms per call) environmental poll of the old monitor expiring during the Retry fresh read does not cancel Retry",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "Retry / renewal generation conflicts never leave an endless loading (500 ms per call) old monitor expiring while the Retry loader is in flight cannot strand loading",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "Retry / renewal generation conflicts never leave an endless loading (500 ms per call) TOKEN_REFRESHED while the Retry loader is in flight + monitor expiry: loading ends",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "Retry / renewal generation conflicts never leave an endless loading (500 ms per call) TOKEN_REFRESHED during the Retry fresh read yields to the renewal loader",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "Retry / renewal generation conflicts never leave an endless loading (500 ms per call) natural renewal after residual consultor (at /app) re-resolves; no stuck spinner",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "Retry / renewal generation conflicts never leave an endless loading (500 ms per call) restoring gestor afterwards: pause → Retry recovers the pair and financial again",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "Retry / renewal generation conflicts never leave an endless loading (500 ms per call) cross-tenant change during Retry is not adopted: stays paused, no spinner",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "Retry / renewal generation conflicts never leave an endless loading (500 ms per call) zero roles during Retry stays paused (no spinner, no financial)",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "never-resolving transport (independent evidence 18:14): deadlines and single-flight release Retry fresh read never resolving: after 60 s transport returns and a new Retry recovers",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "never-resolving transport (independent evidence 18:14): deadlines and single-flight release Retry loader never resolving: deadline ends loading with explicit error, no old authority",
+  "line": 89,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "independent review 1875eb: Retry loader select(*) never resolves pair → gestor (0 ms/call); fresh read answers, loader select(*) hangs; after 60 s new Retry → ready",
+  "line": 222,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "config",
+  "file": "src/test/config/retryLoadingRace.integration.test.tsx",
+  "test": "independent review 1875eb: Retry loader select(*) never resolves pair → gestor (500 ms/call); fresh read answers, loader select(*) hangs; after 60 s new Retry → ready",
+  "line": 222,
+  "code": "expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();",
+  "kind": "pausa",
+  "msg": "TestingLibraryElementError: Unable to find an element with the text: Sessão de acesso pausada. This could be because the text is broken up by multiple elements."
+ },
+ {
+  "suite": "prior",
+  "file": "scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx",
+  "test": "pair → gestor residual stability (3 s/probe) fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched",
+  "line": 55,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "prior",
+  "file": "scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx",
+  "test": "pair → gestor residual stability (3 s/probe) slow from the start of the residual scope stays valid",
+  "line": 55,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "prior",
+  "file": "scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx",
+  "test": "pair → gestor residual stability (3 s/probe) negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive",
+  "line": 55,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "prior",
+  "file": "scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx",
+  "test": "pair → consultor_tecnico residual stability (3 s/probe) fast → slow (3 s/call = 3 s single-RTT probe) stays valid for 10 min of cycles; lease 15 s untouched",
+  "line": 55,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "prior",
+  "file": "scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx",
+  "test": "pair → consultor_tecnico residual stability (3 s/probe) slow from the start of the residual scope stays valid",
+  "line": 55,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ },
+ {
+  "suite": "prior",
+  "file": "scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx",
+  "test": "pair → consultor_tecnico residual stability (3 s/probe) negative: 8 s/call (8 s single-RTT probe) still pauses; late answers do not revive",
+  "line": 55,
+  "code": "expect(pausedText()).toBeTruthy();",
+  "kind": "outro",
+  "msg": "AssertionError: expected null to be truthy"
+ }
+]
