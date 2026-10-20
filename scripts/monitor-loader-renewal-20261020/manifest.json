@@ -20,6 +20,7 @@
     "residualScopeStability.regression.test.tsx": "cd96dc2ed95a5450399d460a5cc8a1e7427ee01592d0e6b7371db9d9f8b19bac",
     "rollback/src/hooks/useAuth.tsx.review": "165c628ebfa5af4e89f597971c0b88861fb831e12e012c1e7292ce154f2f1f9f",
     "rollback.py": "56f6bf9087ee8b3655eadafe56675f30d22f5e9d88b39ca788e0810c542e6b06",
+    "test-results.json": "2a18e3b6e2f9dc38c3a567de5006fc35e74a9a2dc54c283028054d76edb928e0",
     "vitest.config.ts": "abf2696bbd4419060d43d9386c682e90ad7ebcdb38d8fe58abe33d9c60a21be9"
   }
 }
