@@ -250,15 +250,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queueMicrotask(yieldStale);
     }, { once: true });
     const body = (async () => { try {
-      const [{ data: profileData, error: profileError }, { data: rolesData, error: roleError }] = await Promise.all([
+      const [profileResult, roleResult] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", userId).abortSignal(controller.signal).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", userId).abortSignal(controller.signal),
       ]);
+      const { data: profileData, error: profileError } = profileResult;
+      const { data: rolesData, error: roleError } = roleResult;
       if (!isCurrent() || controller.signal.aborted) return yieldStale();
-      if (profileError || roleError) throw profileError ?? roleError;
       const profile = profileData as Profile | null;
       // Explicit negative results are never a transient recovery or global logout.
-      if (!profile || profile.user_id !== userId || profile.ativo !== true) {
+      if (!profileError && (!profile || profile.user_id !== userId || profile.ativo !== true)) {
         renewalRef.current = null;
         loadedUserIdRef.current = null;
         clearIdentityState();
@@ -266,6 +267,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
+      if (profileError || roleError) {
+        const denied = [profileResult, roleResult].some(r => r.error && (r.status === 401 || r.status === 403));
+        const unavailable = [profileResult, roleResult].some(r => r.error && (r.status === 0 || r.status >= 500));
+        if (denied) throw { status: 403 };
+        if (unavailable) throw { status: 503 };
+        throw profileError ?? roleError;
+      }
+      if (!profile) throw new Error("invalid_profile_response");
       if (!Array.isArray(rolesData)) throw new Error("invalid_roles_response");
       const userRoles = normalizeRoles((rolesData ?? []) as Array<{ role: string | null }>);
       const primary = pickPrimaryRole(userRoles);
@@ -659,6 +668,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // rascunhos/objectURLs no unmount) e recarrega identidade para que
         // perfil/roles voltem coerentes antes de exibir dados novamente.
         generationRef.current += 1;
+        if (loaderRecoveryTimerRef.current !== null) failLoad();
         cancelLoader();
         void queryClient.cancelQueries();
         queryClient.clear();

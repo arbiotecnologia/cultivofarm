@@ -66,9 +66,8 @@ describe("parallel atomic renewal loader",()=>{
     await start();s.pms=3000;s.rms=8000;emit();await tick(3100);expect(auth.profile).toBeNull();expect(auth.roles).toEqual([]);
     await tick(5000);expect(auth.authzReady).toBe(true);
   });
-  it("baseline reproduces cumulative >20s; parallel 11s reads finish before watchdog",async()=>{
+  it("parallel 11s reads finish before20s watchdog",async()=>{
     await start();s.pms=11000;s.rms=11000;emit();await tick(11200);expect(auth.loading).toBe(false);expect(auth.error).toBeNull();expect(auth.authzReady).toBe(true);
-    expect(11000+11000).toBeGreaterThan(20000);
   });
   it("20s deadline aborts both hung reads, one fresh recovery only, terminal by41s",async()=>{
     await start();s.hang=true;emit();await tick(20100);
@@ -103,6 +102,14 @@ describe("parallel atomic renewal loader",()=>{
   it("inactivity and total role loss are terminal, no global logout/recovery",async()=>{
     await start();s.active=false;emit();await tick(3000);expect(auth.error).toBe("Sua conta está inativa.");expect(auth.authzReady).toBe(false);
     s.active=true;s.roles=[];emit();await tick(3000);expect(auth.roles).toEqual([]);expect(auth.profile).toBeNull();expect(auth.authzReady).toBe(false);expect(s.signOut).not.toHaveBeenCalled();
+  });
+  it("manual refresh recovers terminal error without automatic retry budget reset",async()=>{
+    await start();s.fail={status:401};emit();await tick(100);expect(auth.authzReady).toBe(false);
+    s.fail=null;act(()=>{ void auth.refresh(); });await tick(200);expect(auth.authzReady).toBe(true);
+  });
+  it("signout during active read aborts immediately, no stale restart",async()=>{
+    await start();s.hang=true;emit();await tick(100);const n=s.calls.length;
+    emit("SIGNED_OUT",null);await tick(30000);expect(s.calls.length).toBe(n);expect(s.calls.slice(-2).every(c=>c.signal?.aborted)).toBe(true);expect(auth.profile).toBeNull();
   });
   it.each(["gestor","consultor_tecnico"])("pair loses one role: fresh %s remains independently monitored",async(role)=>{
     await start();s.roles=[role];emit();await tick(200);expect(auth.roles).toEqual([role]);expect(auth.authzResidualScope).toBe(true);expect(auth.authzReady).toBe(true);
