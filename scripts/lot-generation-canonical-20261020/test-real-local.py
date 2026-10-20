@@ -250,6 +250,74 @@ def main():
         time.sleep(.25); b=start(actor()+'SELECT '+call(body='{"volume_produzido":101}')+';')
         outs=[a.communicate(timeout=20),b.communicate(timeout=20)]
         assert a.returncode==b.returncode==0 and '"success": false' in outs[1][0]; assert run('SELECT count(*) FROM lotes;').stdout.strip()=='1'; results.append('divergent concurrent replay writes only original lot')
+        # Real policy predicates for staff path; role OIDs are local, never asserted as hosted proof.
+        def install_staff_rls():
+            policies=json.loads((H/'catalog.json').read_text())['policy_definitions']
+            run("CREATE FUNCTION public.fn_onfarm_scope_lote(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT false$$; CREATE FUNCTION public.fn_onfarm_scope_cliente(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT false$$;")
+            # Onfarm is not the exercised actor here; these two unexercised helpers are deliberately
+            # false, not a claim of onfarm certification. All seven policy expressions are installed.
+            for policy in policies:
+                sql='CREATE POLICY '+asm.q(policy['name']).replace("'",'"')+' ON public.lotes '+('AS RESTRICTIVE ' if policy.get('restrictive') else '')+'FOR '+policy['cmd']+' TO authenticated'
+                if policy.get('qual'):sql+=' USING ('+policy['qual']+')'
+                if policy.get('check') or policy['cmd'] in ['ALL','UPDATE']:sql+=' WITH CHECK ('+(policy.get('check') or policy['qual'])+')'
+                run(sql+';')
+            run('ALTER TABLE public.lotes ENABLE ROW LEVEL SECURITY; GRANT USAGE ON SCHEMA public,platform_private,auth TO authenticated; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA platform_private,auth TO authenticated; REVOKE EXECUTE ON FUNCTION platform_private.guard_manual_lot_write_v1() FROM authenticated; GRANT SELECT,INSERT,UPDATE,DELETE ON lotes TO anon,authenticated; GRANT SELECT ON programacao_producao,ordens_servico,ordens_servico_onfarm TO authenticated;')
+        reset(); install_staff_rls()
+        direct=f"INSERT INTO lotes(id,codigo_lote,programacao_id,produto_id,organization_id,volume_produzido) VALUES({q(95)},'DIRECT',{PP},{P},{A},100);"
+        # Reproduce actual bypass without altering production: remove candidate trigger locally only.
+        run('DROP TRIGGER aa_manual_lot_write_fence_v1 ON lotes;')
+        out=run(actor()+'SET ROLE authenticated;'+direct)
+        assert out.returncode==0;results.append('baseline real staff RLS permits direct manual INSERT with no RPC/audit')
+        out=run(actor()+f"SET ROLE authenticated; UPDATE lotes SET status='aprovado' WHERE id={q(95)};")
+        assert out.returncode==0;assert run(f"SELECT status FROM lotes WHERE id={q(95)};").stdout.strip()=='aprovado';results.append('baseline real staff RLS permits artificial approved lot without CQ')
+        reset();install_staff_rls()
+        for label,sql in [('direct manual',direct),('foreign programming same actor tenant',direct.replace(f'VALUES({q(95)}',f'VALUES({q(96)}'))]:
+            if label.startswith('foreign'):
+                # Controlled incoherence in disposable DB only, before any lot.
+                run(f'UPDATE programacao_producao SET organization_id={B} WHERE id={PP};')
+            out=run(actor()+'SET ROLE authenticated;'+sql,False)
+            assert out.returncode and '42501' in out.stderr and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr;results.append('candidate real staff RLS '+label+' INSERT blocked')
+        reset();install_staff_rls();run(asm.CAND_ACL)
+        out=run(actor()+'SET ROLE authenticated;SELECT '+call()+';');assert '"success": true' in out.stdout
+        lotid=run('SELECT id FROM lotes;').stdout.strip()
+        assert run(actor()+"SET ROLE authenticated;SELECT count(*) FROM lotes;").stdout.strip().endswith('1');results.append('same-tenant SELECT preserved with all staff policy expressions')
+        assert run(actor(U2)+"SET ROLE authenticated;SELECT count(*) FROM lotes;").stdout.strip().endswith('0');results.append('foreign tenant SELECT remains invisible')
+        for label,change in [('status',"status='aprovado'"),('volume','volume_produzido=101'),('unlink','programacao_id=NULL'),('tenant',f'organization_id={B}'),('item','produto_id=NULL')]:
+            out=run(actor()+f"SET ROLE authenticated;UPDATE lotes SET {change} WHERE id='{lotid}';",False)
+            assert out.returncode and '42501' in out.stderr;results.append('manual UPDATE '+label+' denied, no artificial advancement')
+        out=run(actor()+"SET ROLE authenticated;INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'manual_lot_insert_v1',gen_random_uuid());",False)
+        assert out.returncode and 'permission denied' in out.stderr;results.append('authenticated cannot forge private ticket')
+        out=run(actor()+"SET ROLE authenticated;SELECT platform_private.guard_manual_lot_write_v1();",False)
+        assert out.returncode and 'permission denied' in out.stderr;results.append('trigger helper has no client EXECUTE')
+        out=run(actor()+"SELECT set_config('manual_lot_insert_v1','true',false); SET ROLE authenticated;"+direct,False)
+        assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr;results.append('GUC forged flag cannot authorize manual lot INSERT')
+        assert run('SELECT count(*) FROM platform_private.authz_tickets;').stdout.strip()=='0';results.append('success/replay leave no reusable authorization tickets')
+        run((H/'rollback/rpc.sql.review').read_text()+asm.ROLL_ACL)
+        out=run(actor()+'SET ROLE authenticated;'+direct,False);assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr
+        assert run('SELECT count(*) FROM lotes;').stdout.strip()=='1';results.append('rollback retains manual fence and history, direct bypass stays denied')
+        # FK phantom proof: two sessions, real captured immediate validated FKs and candidate locks.
+        def wait_lock(name):
+            end=time.monotonic()+3
+            while time.monotonic()<end:
+                if run(f"SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='{name}' AND wait_event_type='Lock');").stdout.strip()=='t':return
+                time.sleep(.02)
+            raise AssertionError('writer never reached FK lock '+name)
+        inserts=[('programming',f"INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario) VALUES({q(97)},{A},{O},{P},100);"),('link',f"INSERT INTO production_order_link(id,ordem_servico_id,partner_order_id,partner_order_item_id,planning_id) VALUES({q(98)},{O},{q(82)},{q(83)},{q(84)});"),('delivery',f"INSERT INTO entregas(id,ordem_servico_id,cliente_id,organization_id) VALUES({q(99)},{O},{C},{A});")]
+        for label,insert in inserts:
+            reset()
+            holder=start("SET application_name='lot_rpc_holder';"+actor()+'BEGIN; SELECT '+call()+"; SELECT pg_sleep(2); COMMIT;")
+            end=time.monotonic()+3
+            while time.monotonic()<end:
+                if run("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='lot_rpc_holder' AND wait_event='PgSleep');").stdout.strip()=='t':break
+                time.sleep(.02)
+            else:raise AssertionError('RPC holder not ready')
+            writer=start("SET application_name='phantom_"+label+"';"+insert)
+            wait_lock('phantom_'+label)
+            ho=holder.communicate(timeout=10);wo=writer.communicate(timeout=10)
+            assert holder.returncode==0,ho
+            assert writer.returncode==0,wo
+            assert run('SELECT count(*) FROM lotes;').stdout.strip()=='1'
+            results.append('immediate FK '+label+' insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden')
         (H / 'real-test-results.json').write_text(json.dumps({'ref': 'swzpzcwiasxmjutrmvkm', 'scope': 'local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof', 'passed': len(results), 'checks': results}, indent=2, ensure_ascii=False) + '\n')
         print(len(results), 'PASS')
     finally:
