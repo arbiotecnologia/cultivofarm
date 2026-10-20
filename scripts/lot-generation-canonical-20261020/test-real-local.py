@@ -2,7 +2,7 @@
 triggers and refresh views (reused from os-programming-recovery). Auth UID/JWT transport is
 synthetic: this is NOT hosted JWT/RLS certification nor browser proof."""
 from pathlib import Path
-import json, subprocess, tempfile, os, shutil, time, importlib.util
+import json, subprocess, tempfile, os, shutil, time, importlib.util, sys
 H = Path(__file__).resolve().parent
 P_DIR = H.parent / 'os-programming-recovery'
 spec = importlib.util.spec_from_file_location('prog_real', P_DIR / 'test-real-local.py')
@@ -71,7 +71,10 @@ def main():
         results.append('captured baseline reproduces hosted pg_get_functiondef d37a0e47 before assembly')
         run((H / 'rpc.sql.review').read_text())
         post = md5().split('|')[0]
-        (H / 'post-hashes.json').write_text(json.dumps({'public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)': post}, indent=2) + '\n')
+        if '--generate-hashes' in sys.argv:
+            (H / 'post-hashes.json').write_text(json.dumps({'public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)': post}, indent=2) + '\n')
+        else:
+            assert json.loads((H / 'post-hashes.json').read_text())['public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)'] == post, 'POST_HASH_DRIFT'
         spec2 = importlib.util.spec_from_file_location('lot_assemble', H / 'assemble.py')
         asm = importlib.util.module_from_spec(spec2); spec2.loader.exec_module(asm); asm.main()
         for line in asm.guard(True).splitlines()[1:-1]:
@@ -122,6 +125,16 @@ def main():
             assert run("SELECT count(*) FROM lotes;").stdout.strip() == '0'
         closed(f"UPDATE programacao_producao SET responsavel_id=(SELECT id FROM profiles WHERE user_id={U}) WHERE id={PP};")
         results.append('non-null responsible stays closed')
+        closed(f"UPDATE clientes SET organization_id={B} WHERE id={C};")
+        results.append('delivery category client tenant mismatch rejected before lot')
+        closed(f"UPDATE programacao_producao SET organization_id={B} WHERE id={PP};")
+        results.append('programming tenant mismatch denied')
+        closed(f"UPDATE programacao_producao SET volume_necessario=101 WHERE id={PP};")
+        results.append('canonical programmed volume must match OS 100 mL')
+        closed(f"UPDATE programacao_producao SET produto_id=NULL WHERE id={PP};")
+        results.append('canonical item mismatch denied')
+        closed(f"INSERT INTO production_order_link(id,ordem_servico_id,partner_order_id,partner_order_item_id,planning_id) VALUES({q(91)},{O},{q(82)},{q(83)},{q(84)});")
+        results.append('B2B production link stays closed')
         closed(f"UPDATE produtos SET familia_catalogo='quimico' WHERE id={P};")
         results.append('non-manufacturable product closed')
         assert run("SELECT count(*) FROM lotes;").stdout.strip() == '0'
@@ -137,6 +150,12 @@ def main():
         results.append('exactly one event; real MV refresh reflects lot')
         out = json.loads(run(actor() + f"SELECT {call(body='{\"volume_produzido\":100,\"tanque\":\"TQ-01\"}')};").stdout.strip().splitlines()[-1])
         assert out['success'] is True and out['replay'] is True; results.append('identical replay returns same lot, no write')
+        r=run(actor(U2)+f'SELECT {call()};',False)
+        assert r.returncode and 'SCOPE_DENIED' in r.stderr; results.append('tenant B cannot replay tenant A lot')
+        r=run('BEGIN;'+f'DELETE FROM user_roles WHERE user_id={U};'+actor()+f'SELECT {call()};ROLLBACK;',False)
+        assert r.returncode and 'SCOPE_DENIED' in r.stderr; results.append('revoked actor cannot replay existing lot')
+        r=run('BEGIN;'+f'UPDATE laboratorio_esteira_eventos SET usuario_id={U2} WHERE acao=\'gerar_lote\';'+actor()+f"SELECT ({call(body='{\"volume_produzido\":100,\"tanque\":\"TQ-01\"}')})->>'success';ROLLBACK;")
+        assert 'false' in r.stdout; results.append('receipt actor mismatch refuses replay without repair')
         falsy('divergent replay (volume) denied', call(body='{"volume_produzido":200,"tanque":"TQ-01"}'))
         falsy('divergent replay (tanque) denied', call(body='{"volume_produzido":100}'))
         assert run("SELECT count(*) FROM lotes;").stdout.strip() == '1'
@@ -178,6 +197,38 @@ def main():
             assert req.returncode and 'COCKPIT_LOTE_SCOPE_DENIED' in ro[1], (name, ro)
             assert run("SELECT count(*) FROM lotes;").stdout.strip() == '0'
             results.append('revocation committed while request waits on lock -> denied after locks (' + name + ')')
+        # Actual SQL role authenticated exercises only RPC grants, without auxiliary table grants.
+        reset(); run(asm.CAND_ACL + 'GRANT USAGE ON SCHEMA public TO authenticated;')
+        out=run(actor()+'SET ROLE authenticated; SELECT '+call()+';')
+        assert '"success": true' in out.stdout; results.append('authenticated invokes DEFINER without auxiliary table grants (local synthetic Auth)')
+        out=run(actor()+'SET ROLE anon; SELECT '+call()+';',False)
+        assert out.returncode and 'permission denied' in out.stderr; results.append('anon has no executable RPC')
+        # Positive same-tenant B fixture is built locally, never via hosted data bypass.
+        reset()
+        run(f'UPDATE profiles SET organization_id={B} WHERE user_id={U}; UPDATE organizations SET id=id WHERE id={B}; INSERT INTO organization_subscriptions(id,organization_id,plan_id,plan_version_id,status) VALUES({q(35)},{B},{PLAN},{V},\'ACTIVE\'); UPDATE clientes SET organization_id={B} WHERE id={C}; UPDATE fazendas SET organization_id={B} WHERE cliente_id={C}; UPDATE talhoes SET organization_id={B} WHERE fazenda_id={q(21)};')
+        # Existing protected structural fields forbid rewriting live OS; new disposable fixture uses the setup before triggers.
+        run('DROP SCHEMA public CASCADE; DROP SCHEMA auth CASCADE; DROP SCHEMA private CASCADE; DROP SCHEMA platform_private CASCADE; CREATE SCHEMA public; DROP ROLE anon; DROP ROLE authenticated; DROP ROLE service_role;')
+        bsetup=setup().replace(f'VALUES({U},{A})',f'VALUES({U},{B})').replace(f"'LOCAL',{A}",f"'LOCAL',{B}").replace(f"'local',{C},{A}",f"'local',{C},{B}").replace(f"1,{A}",f"1,{B}").replace(f"{P},{A},'aprovada'",f"{P},{B},'aprovada'").replace(f"VALUES({PP},{A},{O}",f"VALUES({PP},{B},{O}").replace(f"VALUES({SUB},{A}",f"VALUES({SUB},{B}")
+        run(bsetup); run(actor()+f"SELECT public.rpc_programar_os_v1({O},'manual','2026-10-19');"); run((H/'rpc.sql.review').read_text())
+        out=run(actor()+f'SELECT {call()};'); assert '"success": true' in out.stdout, out.stdout
+        assert run(f'SELECT organization_id={B} FROM lotes;').stdout.strip()=='t'; results.append('positive tenant B generates exactly 100 mL in B, local fixture only')
+        for role in ['gestor','producao']:
+            reset(); run(f"UPDATE user_roles SET role='{role}' WHERE user_id={U};")
+            out=run(actor()+f'SELECT {call()};'); assert '"success": true' in out.stdout; results.append(role+' positive manual category')
+        reset()
+        holder=start(f"SET application_name='holder';BEGIN; SELECT id FROM ordens_servico WHERE id={O} FOR UPDATE; SELECT pg_sleep(4); ROLLBACK;")
+        end=time.monotonic()+3
+        while time.monotonic()<end:
+            if run("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='holder' AND wait_event='PgSleep');").stdout.strip()=='t': break
+            time.sleep(.02)
+        else: raise AssertionError('lock holder not started')
+        out=run(actor()+f'SELECT {call()};',False); holder.communicate(timeout=10)
+        assert out.returncode and 'lock timeout' in out.stderr; assert run('SELECT count(*) FROM lotes;').stdout.strip()=='0'; results.append('3s lock timeout rolls back without lot/event')
+        reset()
+        a=start(actor()+'BEGIN; SELECT '+call()+'; SELECT pg_sleep(1); COMMIT;')
+        time.sleep(.25); b=start(actor()+'SELECT '+call(body='{"volume_produzido":101}')+';')
+        outs=[a.communicate(timeout=20),b.communicate(timeout=20)]
+        assert a.returncode==b.returncode==0 and '"success": false' in outs[1][0]; assert run('SELECT count(*) FROM lotes;').stdout.strip()=='1'; results.append('divergent concurrent replay writes only original lot')
         (H / 'real-test-results.json').write_text(json.dumps({'ref': 'swzpzcwiasxmjutrmvkm', 'scope': 'local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof', 'passed': len(results), 'checks': results}, indent=2, ensure_ascii=False) + '\n')
         print(len(results), 'PASS')
     finally:
