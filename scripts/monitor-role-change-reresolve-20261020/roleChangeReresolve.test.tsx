@@ -117,8 +117,10 @@ describe('negativos (candidato e baseline devem permanecer pausados)', () => {
     await mount(); s.roles = ['gestor']; s.perCall = 3000;
     await untilPaused(); s.roles = []; await stays();
   });
-  it('RTT 8 s sustentado: pausa sem resposta tardia (lease 15 s)', async () => {
-    await mount(); s.perCall = 8000; await stays(60_000);
+  it('RTT 8 s sustentado no residual: conteúdo some (lease 15 s, sem resposta tardia)', async () => {
+    await mount(); s.roles = ['gestor']; await untilPaused(); await adv(5_000);
+    s.perCall = 8000; await adv(60_000);
+    expect(sensitive()).toBeNull();
   });
 });
 
