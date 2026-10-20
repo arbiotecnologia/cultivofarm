@@ -398,3 +398,9 @@
 
 - [x] 13:29: contenção LIVE DELETE conferida read-only e consolidada como dependência imutável PRE/POST/rollback junto ao binding; 140 checks SQL descartáveis e 72 Vitest PASS, baseline/manifesto atualizados, gate false sem DDL ou deploy.
 - [ ] Revisão independente do pacote integrado CQ/referência e PRE/POST hosted; execução/publicação proibidas nesta rodada, sem pedido de nova autorização de preparação. Monitor segue pendência separada.
+
+## 20/10 13:32 — loader de renovação, candidato separado
+- [x] Reproduzir baseline11s+11s com timeout20s e adoção parcial; candidata separada com leituras paralelas atômicas, aborto e uma recuperação transitória pós-renovação, sem alterar runtime/CQ/lease.
+- [x] Testar AuthProvider real com transporte fake: 3s/8s/20s/hung, A/B, gestor+consultor, revogação parcial, offline/signout/unmount e respostas antigas; regressões preservadas em cópias compatíveis abortSignal, tipos candidatos PASS.
+- [x] Artefato scripts/monitor-loader-renewal-20261020 separado com rollback byte-exato, hashes e limites de homologação; sem publicar/DDL ou afirmar gateway resolvido.
+- [ ] Revisão independente e homologação real A/B do candidato de loader; runtime intocado, ativação/publicação não autorizadas nesta rodada.
