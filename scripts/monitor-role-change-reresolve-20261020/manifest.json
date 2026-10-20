@@ -1,0 +1,20 @@
+{
+ "baseline": "publicado 0feac450 (monitor v2)",
+ "baseline_sha256": "ace8f12d59a041f7ee5db03992198cb123f8efc04c11807c41559fed4f737dc4",
+ "candidate_sha256": "b3a65696cad65ebe08e861d525c68e55982bf79a49b3e21b448ec09f18d0e63b",
+ "lib_sha256": "b6d7f4e42ec858b0be5105986ef2c110994849419d88a8a630805e7ec788ef8d",
+ "activated": false,
+ "published": false,
+ "ddl_dml": false,
+ "lease_ms": 15000,
+ "preserved": {
+  "src/hooks/useAuth.tsx": "ace8f12d59a041f7ee5db03992198cb123f8efc04c11807c41559fed4f737dc4",
+  "src/components/ordens-servico/OSDetalhesDialog.tsx": "7d844076c89a543bce0f22cd39e4e7bfb6bda421ff5ea683befc2d0ac6a9d32c",
+  "src/components/cockpit/RegistrarCQDialog.tsx": "b57564bc4dc4de52b0b5f10418943b193face13a25b3612d889f20fa34120e0a",
+  "src/components/cockpit/CQComparativoTable.tsx": "bdbd8d16bc34c175d9cb04fb85c2411e8371d63e90e7d8df04447ff3c4640cb5",
+  "src/hooks/useCQReferencia.ts": "979286112f770c48614bcef8b49e9226fcb8a6294c7e92aedcbb59386f94ea40",
+  "src/integrations/supabase/types.ts": "af5c76704525a4d4be0c4c74342bb9b7d7e43d9213704da3e5fa7e066e862886",
+  "src/lib/authz/authzEpochMonitor.ts": "72b26f0aa94caae2a94cc0c34a1d8297227b3e7388b30a7c3c574db38f96d1a9",
+  "src/lib/authz/transientTimeoutRecovery.ts": "58f96bc09f6b53c615ea90a5fce2242d4343af504d7627804e8394f18803e8a8"
+ }
+}
