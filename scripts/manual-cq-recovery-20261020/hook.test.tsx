@@ -1,11 +1,13 @@
-import { renderHook, waitFor, act, cleanup } from "@testing-library/react";
+import { renderHook, render, screen, waitFor, act, cleanup } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
+import { RegistrarCQDialog } from "/tmp/cq-review-validation/RegistrarCQDialog";
 import { useCQReferencia } from "/tmp/cq-review-validation/useCQReferencia";
-const state = vi.hoisted(() => ({ ready: true, epoch: 0, monitor: true, from: vi.fn(), calls: [] as Array<{ filters: unknown[]; signal?: AbortSignal }>, answer: [] as unknown[], error: null as unknown, deferred: false, finish: undefined as undefined | ((value: unknown) => void) }));
+const state = vi.hoisted(() => ({ ready: true, epoch: 0, monitor: true, from: vi.fn(), rpc: vi.fn(), calls: [] as Array<{ filters: unknown[]; signal?: AbortSignal }>, answer: [] as unknown[], error: null as unknown, deferred: false, finish: undefined as undefined | ((value: unknown) => void) }));
 // Real hook + real access-scope hook + real QueryClient. Only Auth transport and SDK boundary are fake.
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "actor-a" }, profile: { user_id: "actor-a", ativo: true, organization_id: "tenant-a" }, roles: ["administrador"], loading: false, authzReady: state.ready, authzEpoch: state.epoch, checkAuthzAccess: () => state.monitor }) }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: state.from } }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: state.from, rpc: state.rpc } }));
 const row = { id: "ref-p", produto_id: "product", microrganismo_id: "unrelated", ativo: true, ph_min: 6, ph_max: 8, concentracao_min_ufc_ml: 100000000, aparencia_esperada: "Normal", odor_esperado: "Caracteristico", contaminacao_esperada: "Ausente" };
 const clients: QueryClient[] = [];
 const mount = (micro: string | null = null, product: string | null = "product") => {
@@ -32,4 +34,11 @@ describe("canonical CQ reference real hook", () => {
   it("pending epoch change aborts; late success never repopulates", async () => { state.deferred = true; const h = mount(); await waitFor(() => expect(state.calls).toHaveLength(1)); const finish = state.finish; state.ready = false; state.epoch++; h.rerender({ micro: null, product: "product" }); expect(state.calls[0].signal?.aborted).toBe(true); await act(async () => { finish?.({ data: [row], error: null }); }); expect(h.result.current.data).toBeUndefined(); });
   it("live monitor expiry rejects completion even before a render", async () => { state.deferred = true; const h = mount(); await waitFor(() => expect(state.calls).toHaveLength(1)); state.monitor = false; await act(async () => state.finish?.({ data: [row], error: null })); expect(h.result.current.data).toBeUndefined(); expect(state.from).toHaveBeenCalledTimes(1); });
   it("real deadline aborts hanging transport", async () => { vi.useFakeTimers(); state.deferred = true; const h = mount(); await act(async () => vi.advanceTimersByTimeAsync(12001)); expect(state.calls[0].signal?.aborted).toBe(true); await act(async () => vi.advanceTimersByTimeAsync(10)); expect(h.result.current.data).toBeUndefined(); expect(h.result.current.isError).toBe(true); });
+});
+it("existing dialog consumes real product-only hook and comparison remains read-only", async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } }); clients.push(client);
+  render(<QueryClientProvider client={client}><MemoryRouter><RegistrarCQDialog open phase="record" target={{ os_id:"os", programacao_id:"pp", lote_id:"lot", origem:"manual", produto_id:"product", microrganismo_id:null }} onOpenChange={() => {}} /></MemoryRouter></QueryClientProvider>);
+  await waitFor(() => expect(screen.getByText("6 – 8")).toBeTruthy());
+  expect(screen.queryByRole("link", { name:"Cadastrar referência" })).toBeNull();
+  expect(state.from).toHaveBeenCalledTimes(1); expect(state.rpc).not.toHaveBeenCalled();
 });
