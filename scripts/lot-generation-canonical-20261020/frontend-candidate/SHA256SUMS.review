@@ -1,0 +1,7 @@
+0848e91577fdea7ff206c99493d9a02956fb4e6b89faf0743833bce8e280aaff  ./README.md
+fdd862f647d875df3876228af7c63bdd83664aee3eef1738cfdaed7d8fd1bc0b  ./src/components/cockpit/GerarLoteDialog.tsx.review
+5f208caa5b7636427e28c12555ae585dc023853ab91837bad9c4c309dddb870b  ./src/components/ordens-servico/OSDetalhesDialog.tsx.review
+b0b97a7d48537711aa40a4eb1b3ecabdacbdde90281cfd931889eb7cd2879842  ./src/components/ordens-servico/RastreabilidadeProducaoTab.tsx.review
+6928a30c45d61c415b55cb5d2b8cf26216bd5b644e6f3c181ead982a3a9f4473  ./src/hooks/useEsteiraLaboratorio.ts.review
+57286cf6da9eb9c8d0406993dc267ce4b1c855a7575f0f9242e6c3d9d46de784  ./src/test/lotes/gerar-lote-fences.test.tsx.review
+702c2f84e0bff7f38d36bf4cbb7a248bddd9b8c893d6c848fa9a62d4298ada74  ./src/test/lotes/gerar-lote-live-scope.test.tsx.review

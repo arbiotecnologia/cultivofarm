@@ -1,0 +1,135 @@
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_gerar_lote_v1(p_programacao_id uuid,p_os_id uuid,p_origem text,p_lote jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE
+ v_uid uuid:=auth.uid(); v_org uuid; v_origin text; v_os record;
+ v_pp public.programacao_producao%ROWTYPE; v_lot public.lotes%ROWTYPE;
+ v_key text; v_count integer; v_id uuid; v_codigo text; v_volume numeric;
+ v_tanque text; v_resp text; v_obs text; v_try integer:=0; v_constraint text;
+BEGIN
+ PERFORM pg_catalog.set_config('lock_timeout','3s',true);
+ -- Cadeia viva (Auth/JWT iat, perfil ativo, empresa ativa, readiness, SaaS, papel) ANTES de qualquer leitura.
+ -- Não reutiliza fn_cockpit_assert_operador_origem: ele só testa papel global.
+ v_org:=platform_private.h15_actor_organization();
+ IF v_uid IS NULL OR v_org IS NULL OR public.technical_actor_ready(v_uid) IS NOT TRUE
+ OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE
+ OR public._saas_user_has_feature(v_uid,'lotes_qualidade') IS NOT TRUE
+ OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor') OR public.has_role(v_uid,'producao')) IS NOT TRUE THEN
+ RAISE EXCEPTION 'COCKPIT_LOTE_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ BEGIN v_origin:=public.fn_cockpit_norm_origem(p_origem); EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'COCKPIT_LOTE_SCOPE_DENIED' USING ERRCODE='42501'; END;
+ IF v_origin<>'manual' THEN RETURN jsonb_build_object('success',false,'message','Somente OS manual neste recorte.'); END IF;
+ IF p_programacao_id IS NULL OR p_os_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_PARAMS_INVALIDOS'; END IF;
+ IF p_lote IS NULL OR jsonb_typeof(p_lote)<>'object' THEN RAISE EXCEPTION 'COCKPIT_LOTE_PAYLOAD_INVALIDO'; END IF;
+ -- Lista fechada: código, produto, microrganismo, tenant, custo e data nunca vêm do navegador.
+ FOR v_key IN SELECT pg_catalog.jsonb_object_keys(p_lote) LOOP
+  IF v_key='codigo_lote' THEN RAISE EXCEPTION 'COCKPIT_LOTE_CODIGO_NAO_ACEITO'; END IF;
+  IF v_key NOT IN ('volume_produzido','responsavel_producao','tanque','observacoes_tecnicas') THEN RAISE EXCEPTION 'COCKPIT_LOTE_PAYLOAD_INVALIDO'; END IF;
+ END LOOP;
+ -- Volume em mL (mesma unidade de programacao_producao.volume_necessario e ordens_servico.volume_total_ml).
+ IF pg_catalog.jsonb_typeof(p_lote->'volume_produzido') IS DISTINCT FROM 'number' THEN RAISE EXCEPTION 'COCKPIT_LOTE_VOLUME_INVALIDO'; END IF;
+ v_volume:=(p_lote->>'volume_produzido')::numeric;
+ IF NOT (v_volume>0 AND v_volume<=100000000 AND v_volume=pg_catalog.round(v_volume,3) AND v_volume::text NOT IN ('NaN','Infinity','-Infinity')) THEN RAISE EXCEPTION 'COCKPIT_LOTE_VOLUME_INVALIDO'; END IF;
+ FOREACH v_key IN ARRAY ARRAY['responsavel_producao','tanque','observacoes_tecnicas'] LOOP
+  IF pg_catalog.jsonb_typeof(p_lote->v_key) NOT IN ('string','null') THEN RAISE EXCEPTION 'COCKPIT_LOTE_PAYLOAD_INVALIDO'; END IF;
+ END LOOP;
+ v_resp:=nullif(pg_catalog.btrim(p_lote->>'responsavel_producao'),'');
+ v_tanque:=nullif(pg_catalog.btrim(p_lote->>'tanque'),'');
+ v_obs:=nullif(pg_catalog.btrim(p_lote->>'observacoes_tecnicas'),'');
+ IF pg_catalog.length(v_resp)>200 OR pg_catalog.length(v_tanque)>60 OR pg_catalog.length(v_obs)>2000 THEN RAISE EXCEPTION 'COCKPIT_LOTE_PAYLOAD_INVALIDO'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os='manual') THEN RAISE EXCEPTION 'COCKPIT_LOTE_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'COCKPIT_LOTE_ISOLATION_DENIED' USING ERRCODE='42501'; END IF;
+ -- Mesmo conjunto de cercas revisado em rpc_programar_os_v1 (convites/onfarm/catálogo SaaS global).
+ LOCK TABLE public.platform_org_admin_invites,public.ordens_servico_onfarm IN SHARE MODE;
+ LOCK TABLE public.saas_plan_versions,public.saas_plan_version_features,public.saas_features,public.saas_modules IN SHARE MODE;
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('cockpit_lote:'||p_programacao_id::text));
+ SELECT o.organization_id,o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,o.status::text status,o.partner_order_id,o.partner_order_item_id,o.origem
+ INTO v_os FROM public.ordens_servico o WHERE o.id=p_os_id FOR UPDATE;
+ IF v_os.id IS NULL OR v_os.organization_id IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'COCKPIT_LOTE_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=v_uid ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.user_roles WHERE user_id=v_uid ORDER BY role::text FOR SHARE;
+ PERFORM 1 FROM public.organizations WHERE id=v_org FOR UPDATE;
+ PERFORM 1 FROM public.organization_subscriptions WHERE organization_id=v_org ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.organization_feature_overrides WHERE organization_id=v_org ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id FOR SHARE;
+ PERFORM 1 FROM public.fazendas WHERE id=v_os.fazenda_id FOR SHARE;
+ PERFORM 1 FROM public.talhoes WHERE id=v_os.talhao_id FOR SHARE;
+ PERFORM 1 FROM public.produtos WHERE id=v_os.produto_id FOR SHARE;
+ PERFORM 1 FROM public.microrganismos WHERE id=v_os.microrganismo_id FOR SHARE;
+ PERFORM 1 FROM public.programacao_producao WHERE id=p_programacao_id OR ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id ORDER BY id FOR UPDATE;
+ PERFORM 1 FROM public.lotes WHERE programacao_id=p_programacao_id ORDER BY id FOR UPDATE;
+ -- Revalidação após locks: revogação/troca de tenant/assinatura concorrente vence a requisição.
+ IF public.technical_actor_ready(v_uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM v_org
+ OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE OR public._saas_user_has_feature(v_uid,'lotes_qualidade') IS NOT TRUE
+ OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor') OR public.has_role(v_uid,'producao')) IS NOT TRUE
+ OR NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os='manual') THEN
+ RAISE EXCEPTION 'COCKPIT_LOTE_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=v_os.cliente_id AND c.organization_id=v_org)
+ OR EXISTS(SELECT 1 FROM public.ordens_servico_onfarm WHERE id=p_os_id) THEN
+ RAISE EXCEPTION 'COCKPIT_LOTE_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF v_os.origem='b2b' OR v_os.partner_order_id IS NOT NULL OR v_os.partner_order_item_id IS NOT NULL
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id) THEN
+ RETURN jsonb_build_object('success',false,'message','Lote B2B indisponível até validação dos efeitos associados.'); END IF;
+ SELECT count(*) INTO v_count FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id;
+ IF v_count<>1 THEN RETURN jsonb_build_object('success',false,'message','Programação existente não comprovada; revisão necessária.'); END IF;
+ SELECT * INTO v_pp FROM public.programacao_producao WHERE id=p_programacao_id;
+ -- IDs divergentes, programação de outra OS ou de outro tenant: mesma negação, sem revelar existência.
+ IF NOT ((v_pp.id IS NOT NULL AND v_pp.organization_id=v_org AND v_pp.ordem_servico_id=p_os_id AND v_pp.ordem_servico_onfarm_id IS NULL
+ AND v_pp.produto_id IS NOT DISTINCT FROM v_os.produto_id AND v_pp.microrganismo_id IS NOT DISTINCT FROM v_os.microrganismo_id) IS TRUE) THEN
+ RAISE EXCEPTION 'COCKPIT_LOTE_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF ((v_pp.produto_id IS NOT NULL)::int+(v_pp.microrganismo_id IS NOT NULL)::int)<>1 THEN RAISE EXCEPTION 'COCKPIT_LOTE_ITEM_CANONICO_AUSENTE'; END IF;
+ IF platform_private.lab_item_is_manufacturable(v_pp.produto_id,v_pp.microrganismo_id) IS NOT TRUE THEN
+ RETURN jsonb_build_object('success',false,'message','Item não elegível ao laboratório biológico.'); END IF;
+ IF v_pp.responsavel_id IS NOT NULL OR nullif(pg_catalog.btrim(v_pp.responsavel),'') IS NOT NULL THEN
+ RETURN jsonb_build_object('success',false,'message','Responsável não nulo indisponível neste recorte.'); END IF;
+ IF EXISTS(SELECT 1 FROM public.entregas WHERE ordem_servico_id=p_os_id) OR EXISTS(SELECT 1 FROM public.aplicacoes WHERE ordem_servico_id=p_os_id) THEN
+ RETURN jsonb_build_object('success',false,'message','OS com entrega/aplicação já vinculada indisponível neste recorte.'); END IF;
+ SELECT count(*) INTO v_count FROM public.lotes WHERE programacao_id=p_programacao_id;
+ IF v_count>1 THEN RETURN jsonb_build_object('success',false,'message','Mais de um lote para a programação; revisão necessária.'); END IF;
+ IF v_count=1 THEN
+  SELECT * INTO v_lot FROM public.lotes WHERE programacao_id=p_programacao_id;
+  -- Replay só é aceito quando o pedido e o lote/evento existentes coincidem; nenhum dado é alterado.
+  IF v_os.status='programada' AND v_pp.status::text='aguardando' AND v_lot.organization_id=v_org AND v_lot.status::text='em_producao'
+  AND v_lot.produto_id IS NOT DISTINCT FROM v_pp.produto_id AND v_lot.microrganismo_id IS NOT DISTINCT FROM v_pp.microrganismo_id
+  AND v_lot.volume_produzido=v_volume AND v_lot.tanque IS NOT DISTINCT FROM v_tanque AND v_lot.responsavel_producao IS NOT DISTINCT FROM v_resp
+  AND v_lot.observacoes_tecnicas IS NOT DISTINCT FROM v_obs AND NOT EXISTS(SELECT 1 FROM public.controle_qualidade WHERE lote_id=v_lot.id)
+  AND NOT EXISTS(SELECT 1 FROM public.envase WHERE lote_id=v_lot.id)
+  AND NOT EXISTS(SELECT 1 FROM public.estoque_produto WHERE lote_id=v_lot.id)
+  AND (SELECT count(*) FROM public.laboratorio_esteira_eventos WHERE lote_id=v_lot.id)=1
+  AND EXISTS(SELECT 1 FROM public.laboratorio_esteira_eventos WHERE lote_id=v_lot.id AND acao='gerar_lote'
+    AND os_id=p_os_id AND origem_os='manual' AND programacao_id=p_programacao_id AND usuario_id=v_uid AND etapa_nova='lote_gerado') THEN
+   RETURN jsonb_build_object('success',true,'replay',true,'lote_id',v_lot.id,'codigo_lote',v_lot.codigo_lote,'message',pg_catalog.format('Lote %s já registrado com os mesmos dados.',v_lot.codigo_lote));
+  END IF;
+  RETURN jsonb_build_object('success',false,'message','Já existe lote com dados diferentes para esta programação; nada foi alterado.');
+ END IF;
+ -- Primeira geração: OS programada e programação aguardando; esta ação não avança OS/programação nem cria CQ/envase.
+ IF v_os.status IS DISTINCT FROM 'programada' OR v_pp.status::text IS DISTINCT FROM 'aguardando' OR v_pp.data_programada IS NULL
+ OR v_pp.volume_necessario IS NULL OR v_pp.volume_necessario<=0 OR v_pp.volume_necessario::text IN ('NaN','Infinity','-Infinity')
+ OR v_pp.volume_necessario IS DISTINCT FROM (SELECT volume_total_ml FROM public.ordens_servico WHERE id=p_os_id) THEN
+ RETURN jsonb_build_object('success',false,'message','A OS deve estar programada e a programação aguardando; esta ação não programa nem avança etapas.'); END IF;
+ LOOP
+  v_try:=v_try+1; v_codigo:=public.gerar_codigo_lote(EXTRACT(YEAR FROM now())::int);
+  BEGIN
+   INSERT INTO public.lotes(programacao_id,codigo_lote,produto_id,microrganismo_id,volume_produzido,data_producao,responsavel_producao,tanque,observacoes_tecnicas,organization_id)
+   VALUES(p_programacao_id,v_codigo,v_pp.produto_id,v_pp.microrganismo_id,v_volume,CURRENT_DATE,v_resp,v_tanque,v_obs,v_org) RETURNING id INTO v_id;
+   EXIT;
+  EXCEPTION WHEN unique_violation THEN
+   GET STACKED DIAGNOSTICS v_constraint=CONSTRAINT_NAME;
+   -- Concorrente fora deste RPC: falha fechada, sem replay presumido.
+   IF v_constraint IS DISTINCT FROM 'lotes_codigo_lote_key' THEN RAISE EXCEPTION 'COCKPIT_LOTE_CONCORRENTE' USING ERRCODE='40001'; END IF;
+   IF v_try>=3 THEN RAISE EXCEPTION 'COCKPIT_LOTE_CODIGO_CONFLITO'; END IF;
+  END;
+ END LOOP;
+ SELECT * INTO v_lot FROM public.lotes WHERE id=v_id;
+ SELECT * INTO v_pp FROM public.programacao_producao WHERE id=p_programacao_id;
+ IF (SELECT count(*) FROM public.lotes WHERE programacao_id=p_programacao_id)<>1 OR v_lot.organization_id IS DISTINCT FROM v_org
+ OR v_lot.volume_produzido IS DISTINCT FROM v_volume OR v_lot.status::text IS DISTINCT FROM 'em_producao'
+ OR v_pp.status::text IS DISTINCT FROM 'aguardando' OR v_pp.organization_id IS DISTINCT FROM v_org
+ OR (SELECT status::text FROM public.ordens_servico WHERE id=p_os_id) IS DISTINCT FROM 'programada'
+ OR EXISTS(SELECT 1 FROM public.controle_qualidade WHERE lote_id=v_id)
+ OR public.technical_actor_ready(v_uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM v_org
+ OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE OR public._saas_user_has_feature(v_uid,'lotes_qualidade') IS NOT TRUE
+ OR (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor') OR public.has_role(v_uid,'producao')) IS NOT TRUE THEN
+ RAISE EXCEPTION 'COCKPIT_LOTE_POSTCONDITION_FAILED'; END IF;
+ INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,lote_id,etapa_nova,acao,usuario_id,observacao)
+ VALUES(p_os_id,'manual',p_programacao_id,v_id,'lote_gerado','gerar_lote',v_uid,pg_catalog.format('Lote %s gerado (codigo canonico do servidor).',v_codigo));
+ RETURN jsonb_build_object('success',true,'replay',false,'lote_id',v_id,'codigo_lote',v_codigo,'message',pg_catalog.format('Lote %s gerado com sucesso.',v_codigo));
+END $function$;

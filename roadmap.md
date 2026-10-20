@@ -356,3 +356,7 @@
 - [ ] Comprovantes de entrega via abridor autenticado (pacote scripts/delivery-receipt-attachments) — aguarda revisão independente e homologação real.
 - [ ] Termo de entrega PDF binário autenticado (scripts/termo-pdf-download): candidato final aplicado no código (URL/chave canônicas, cancel não bloqueante); falta deploy Edge→publicação pelo auditor e homologação real A/B.
 - [x] Isolamento entrega_termos REST/RPC implantado pelo auditor (termo_pdf_registration_acl_containment + entrega_termos_tenant_isolation_reviewed, PRE/POST PASS); ver docs/entrega-termos-migracoes-implantadas.md.
+
+## 20/10 01:16 — geração canônica mínima, baseline 793bc012
+- [x] Fonte/ACL/schema reconfirmados somente leitura; pacote `scripts/lot-generation-canonical-20261020/` com RPC manual programada, PRE/POST, rollback fechado autocontido, UI .review OFF e hashes. 70 checks PG descartável/Auth sintético; Vitest 147/147; tipos app/node EXIT 0. Runtime 793bc012 preservado.
+- [ ] Revisão/implantação e homologação real: dependem do auditor; zero lotes/entregas/termos, sem dados criados pelo agente. Riscos: DML direto lotes, refresh global/locks e timeout hospedado; sem abertura dos demais gates.
