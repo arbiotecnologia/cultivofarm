@@ -358,5 +358,5 @@
 - [x] Isolamento entrega_termos REST/RPC implantado pelo auditor (termo_pdf_registration_acl_containment + entrega_termos_tenant_isolation_reviewed, PRE/POST PASS); ver docs/entrega-termos-migracoes-implantadas.md.
 
 ## 20/10 01:16 — geração canônica mínima, baseline 793bc012
-- [ ] Reconfirmar fonte/ACL/schema atuais e preparar RPC manual programada, rollback fechado, UI candidata e testes isolados.
-- [ ] Revisão/implantação e homologação real: dependem do auditor; zero lotes/entregas/termos, sem dados criados pelo agente.
+- [x] Fonte/ACL/schema reconfirmados somente leitura; pacote `scripts/lot-generation-canonical-20261020/` com RPC manual programada, PRE/POST, rollback fechado autocontido, UI .review OFF e hashes. 70 checks PG descartável/Auth sintético; Vitest 147/147; tipos app/node EXIT 0. Runtime 793bc012 preservado.
+- [ ] Revisão/implantação e homologação real: dependem do auditor; zero lotes/entregas/termos, sem dados criados pelo agente. Riscos: DML direto lotes, refresh global/locks e timeout hospedado; sem abertura dos demais gates.
