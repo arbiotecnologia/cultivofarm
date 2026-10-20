@@ -130,6 +130,8 @@ def main():
   legacy=run(legacy_sql).stdout
   policy_sql="SELECT coalesce(string_agg(polname||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),'|' ORDER BY polname),'') FROM pg_policy WHERE polrelid='public.cq_parametros_referencia'::regclass;"
   policy=run(policy_sql).stdout
+  run("CREATE UNIQUE INDEX cq_param_ref_micro_prod_uidx ON public.cq_parametros_referencia USING btree (microrganismo_id, COALESCE(produto_id, '00000000-0000-0000-0000-000000000000'::uuid));")
+  legacy_index=run("SELECT pg_get_indexdef('public.cq_param_ref_micro_prod_uidx'::regclass);").stdout
   before=run("SELECT relacl::text||':'||relrowsecurity::text FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass;").stdout
   deny('hosted NOT NULL shape rejects product-only before delta',f"INSERT INTO cq_parametros_referencia(produto_id) VALUES({lot.P});")
   run((H/'reference-product-only.sql.review').read_text())
@@ -138,6 +140,8 @@ def main():
   assert policy==run(policy_sql).stdout;checks.append('product-only delta preserves reference policies')
   deny('authenticated writer stays closed after schema delta',actor()+f"SET ROLE authenticated;INSERT INTO cq_parametros_referencia(produto_id) VALUES({lot.P});")
   assert before==run("SELECT relacl::text||':'||relrowsecurity::text FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass;").stdout;checks.append('product-only delta preserves table ACL and RLS')
+  assert legacy_index==run("SELECT pg_get_indexdef('public.cq_param_ref_micro_prod_uidx'::regclass);").stdout;checks.append('legacy unique index unchanged')
+  yes('both NULL constraint is validated CHECK',"EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='cq_parametros_referencia'::regclass AND conname='cq_reference_item_required_v1' AND contype='c' AND convalidated)")
   deny('product-only neither item denied',"INSERT INTO cq_parametros_referencia DEFAULT VALUES;")
   deny('product-only nonexistent product FK denied',f"INSERT INTO cq_parametros_referencia(produto_id) VALUES({q(99)});")
   run((H/'reference-product-only-rollback.sql.review').read_text());checks.append('empty product-only rollback restores NOT NULL')
@@ -157,7 +161,12 @@ def main():
   for label,change in [('inactive',f'UPDATE profiles SET ativo=false WHERE user_id={U};'),('revoked',f'DELETE FROM user_roles WHERE user_id={U};'),('foreign-client',f'UPDATE clientes SET organization_id={B} WHERE id={lot.C};')]:
    deny('record denied '+label,actor()+f'BEGIN;{change}SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;')
   r=run(actor()+f"BEGIN; INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,ativo) VALUES({q(95)},NULL,{lot.P},6,8,100000000,'Normal','Caracteristico','Ausente',true); SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;",False)
-  assert r.returncode and 'CQ_REFERENCE_INVALID' in r.stderr,r.stderr;checks.append('duplicate active product references close recording')
+  assert r.returncode and 'cq_reference_product_only_active_uidx' in r.stderr,r.stderr;checks.append('duplicate active product-only reference rejected by unique index')
+  deny('UPDATE cannot clear both canonical items',f'UPDATE cq_parametros_referencia SET produto_id=NULL WHERE id={refid};')
+  run(f"INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ativo) VALUES({q(94)},NULL,{lot.P},false);");checks.append('inactive product-only history preserved beside active row')
+  deny('reactivating duplicate history denied',f'UPDATE cq_parametros_referencia SET ativo=true WHERE id={q(94)};')
+  r=run(actor()+f"BEGIN;INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ativo) VALUES({q(95)},{q(92)},{lot.P},true);SET LOCAL ROLE authenticated;SELECT {call()};ROLLBACK;",False)
+  assert r.returncode and 'CQ_REFERENCE_INVALID' in r.stderr,r.stderr;checks.append('dual legacy and product-only active ambiguity still fails closed')
   # Record first result in transaction then rollback to test both outcomes against same canonical pending state.
   r=run(actor()+f"BEGIN; SELECT {call()};SELECT status FROM ordens_servico WHERE id={O};SELECT status FROM lotes WHERE id={L};SELECT responsavel FROM controle_qualidade;ROLLBACK;");assert 'em_cq' in r.stdout and 'DADOS FICTICIOS SEM VALOR COMERCIAL' in r.stdout;checks.append('approved full synthetic data stays em_cq; transaction rollback')
   rejected={**data,'resultado':'reprovado'};r=run(actor()+f"BEGIN; SELECT {call(rejected)};SELECT status FROM lotes WHERE id={L};SELECT status FROM programacao_producao WHERE id={PP};ROLLBACK;");assert 'reprovado' in r.stdout and 'aguardando_cq' in r.stdout;checks.append('rejected keeps program pending; full result transaction rollback')
