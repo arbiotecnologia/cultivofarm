@@ -16,7 +16,7 @@ export default defineConfig({
     }
     return null;
   } }],
-  resolve: { alias: [{ find: "@", replacement: path.resolve("src") }] },
+  resolve: { alias: [{ find: "@/lib/authz/roleChangeReresolve", replacement: path.resolve(`${P}/candidate/src/lib/authz/roleChangeReresolve.ts`) }, { find: "@", replacement: path.resolve("src") }] },
   test: { environment: "jsdom", globals: true, setupFiles: ["./src/test/setup.ts"],
     include: (process.env.MONITOR_INCLUDE ?? `${P}/*.test.{ts,tsx}`).split(";") },
 });
