@@ -18,6 +18,7 @@
     "post-triggers.json": "54d7350cb9cc1833fd92ccf7dc9935238a3e943fdf7f9da517765ca3fd28337a",
     "postflight-readonly.sql": "fe6270608969076e9622c7d91ea8fb4aec69bbfdc8bc8354722603ceee99d1f4",
     "preflight-readonly.sql": "7e288ecce992ea7ea9ff626a1d6bcd8882cfb090ead054efdc2821b90e096658",
+    "prepare-validation.py": "929fdbe8ccb356becc1866053cfced3e6da587bdfb215533172d05cabb00aebc",
     "reader.sql.review": "76cb45773aeea47aab2652fe3abbc5b2e13b0c9fa8b6a47dbd7096883e8d308a",
     "rollback/advance-rpc.sql.review": "06eea65fd2be9a769ea9597a01bafe9a1d88600dcb950a4a0b39110e129ce8f6",
     "rollback/check_os_status_transition.sql.review": "73594e8d1e2b88d809065d74c223ac4185bfb3953a57be4e391697a4f6519b2a",
@@ -30,8 +31,8 @@
     "rollback/src/components/ordens-servico/OSDetalhesDialog.tsx.review": "3860b367d2b136b2239ad1b36dd99cb8f08f1098d8b8dcffc3ef9098e2eb46c2",
     "rollback-postflight-readonly.sql": "8456f5f15d330b9ee4e68febcc3b9a734e97106eae2ebe94ac40547af18bfd55",
     "rollback.sql.review": "90ae6d2401987e2103a37883c5a145791905d9be342f3abbe797d6d408607cf7",
-    "test-local.py": "a72c5f3ea94601e8a4d7e1fcac97e21cbc0c9f3b1d49cb02103caa7bbc25974d",
-    "test-results.json": "9e538e74e746f7b2c0da2be8a2e7202a3a3966bb06abc7ba76f3f5ca5fa6a178",
+    "test-local.py": "4571cddbf47c1f76d246dbf025edae55821547edc9d26b69dba980e6e6d395e1",
+    "test-results.json": "9bf44690047f3b79e5e439425c72c65dde98d3075f781067260823dd77f35104",
     "transition.sql.review": "fca57d61ab75965ea1098fcba01f109fd212691cfc4884b7d3319495ed9e32e5",
     "vitest.config.ts": "ab84fa1bdb04aee8af878cfaae7dfb2cbeb48cda09db76de03a7f4a6cf04e7eb"
   }
