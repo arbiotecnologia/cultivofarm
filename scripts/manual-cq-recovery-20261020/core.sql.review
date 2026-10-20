@@ -57,9 +57,10 @@ BEGIN
  IF public.technical_actor_ready(uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM org
  OR public._saas_user_has_feature(uid,'ordens_producao') IS NOT TRUE OR public._saas_user_has_feature(uid,'lotes_qualidade') IS NOT TRUE
  OR (public.has_role(uid,'administrador') OR public.has_role(uid,'gestor') OR public.has_role(uid,'producao')) IS NOT TRUE
- OR NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os='manual')
  OR NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=os.cliente_id AND c.organization_id=org)
  OR EXISTS(SELECT 1 FROM public.ordens_servico_onfarm WHERE id=p_os_id)
+ OR (os.fazenda_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.fazendas f WHERE f.id=os.fazenda_id AND f.organization_id=org AND f.cliente_id=os.cliente_id AND f.ativo))
+ OR (os.talhao_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.talhoes t WHERE t.id=os.talhao_id AND t.organization_id=org AND t.fazenda_id=os.fazenda_id AND t.ativo))
  THEN RAISE EXCEPTION 'CQ_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  IF os.origem='b2b' OR os.partner_order_id IS NOT NULL OR os.partner_order_item_id IS NOT NULL
  OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id)
