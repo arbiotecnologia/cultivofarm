@@ -4,6 +4,7 @@ import { RastreabilidadeProducaoTab, type TraceItem } from "./RastreabilidadePro
 import { GerarLoteDialog, type GerarLoteTarget } from "@/components/cockpit/GerarLoteDialog";
 import { RegistrarCQDialog, type RegistrarCQTarget } from "../cockpit/RegistrarCQDialog";
 import { formatOS } from "@/lib/osLabel";
+import { cockpitStage } from "@/lib/cockpit/stage";
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, Check, FlaskConical, History } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -27,6 +28,19 @@ const programOSRPC = supabase.rpc.bind(supabase) as unknown as (
 
 export const MANUAL_LOT_GENERATION_REVIEWED = true;
 export const MANUAL_CQ_REVIEWED = true;
+
+/**
+ * Fase CQ oferecida pelo detalhe canônico (o Cockpit continua apenas consultivo).
+ * Enviar: OS programada com esteira programada/em_producao. Registrar: OS em_cq com esteira
+ * aguardando CQ. Resultado final (cq_aprovado/cq_reprovado) ou etapas posteriores: nenhuma ação.
+ */
+export function manualCQPhase(trace: Pick<TraceItem, "status_os" | "status_esteira_oficial"> | null | undefined): "send" | "record" | null {
+  if (!trace) return null;
+  const stage = cockpitStage(trace.status_esteira_oficial);
+  if (trace.status_os === "programada" && (stage === "programada" || stage === "em_producao")) return "send";
+  if (trace.status_os === "em_cq" && stage === "aguardando_cq") return "record";
+  return null;
+}
 
 interface Props {
   os: any;
@@ -67,11 +81,13 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
       volume_solicitado: typeof trace.volume_solicitado_l === "number" && Number.isFinite(trace.volume_solicitado_l) ? trace.volume_solicitado_l : undefined,
     });
   };
-  const cqPhase = trace?.status_os === "programada" ? "send" : "record";
+  // Leitura fresca da OS atual: apenas exibição; o core continua sendo a autoridade.
+  const freshTrace = !!os && !!trace && trace.os_id === os.id ? trace : null;
+  const cqPhase = manualCQPhase(freshTrace);
   const canCQ = MANUAL_CQ_REVIEWED && open && access.ready && programOrigin === "manual" &&
-    !os?.partner_order_id && !os?.partner_order_item_id && trace?.os_id === os?.id &&
-    trace?.origem_os === "manual" && !!trace?.programacao_id && !!trace?.lote_id &&
-    ["programada", "em_cq"].includes(trace?.status_os ?? "") &&
+    !os?.partner_order_id && !os?.partner_order_item_id && !!freshTrace &&
+    freshTrace.origem_os === "manual" && !!freshTrace.programacao_id && !!freshTrace.lote_id &&
+    cqPhase !== null &&
     roles.some((role) => ["administrador", "gestor", "producao"].includes(role));
   const openCQ = () => {
     if (!canCQ || !trace?.programacao_id || !trace.lote_id) return;
@@ -176,7 +192,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
                 {os.origem === 'onfarm' ? 'Visita Técnica' : 'Manual'}
               </Badge>
               <Badge className="h-6 bg-primary/10 text-primary border-primary/20">
-                {(programmedId === os.id ? "programada" : approvedId === os.id ? "aprovada" : os.status || "Não informado").replace(/_/g, ' ').toUpperCase()}
+                {(freshTrace?.status_os || (programmedId === os.id ? "programada" : approvedId === os.id ? "aprovada" : os.status) || "Não informado").replace(/_/g, ' ').toUpperCase()}
               </Badge>
               {os.status === "aberta" && approvedId !== os.id && os.origem !== "b2b" && !os.partner_order_id && !os.partner_order_item_id &&
                 roles.some((role) => role === "administrador" || role === "gestor") && (
@@ -241,7 +257,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
           </Tabs>
         </div>
       </DialogContent>
-      {cqTarget && canCQ && <RegistrarCQDialog open target={cqTarget} phase={cqPhase}
+      {cqTarget && canCQ && cqPhase && <RegistrarCQDialog open target={cqTarget} phase={cqPhase}
         onOpenChange={(value) => { if (!value) setCqTarget(null); }}
         onCompleted={() => { setTraceRefresh((value) => value + 1); onChanged?.(); }} />}
       {loteTarget && canGenerateLot && <GerarLoteDialog
