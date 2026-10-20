@@ -50,6 +50,14 @@ const EMPTY = {
   ativo: true,
 };
 
+/** Normalização segura dos vínculos (espelha o CHECK do banco): vazio vira NULL; ambos vazios falha. */
+export function normalizeCQReferenceIds(form: { microrganismo_id: string; produto_id: string }) {
+  const microrganismo_id = form.microrganismo_id.trim() || null;
+  const produto_id = form.produto_id.trim() || null;
+  if (!microrganismo_id && !produto_id) throw new Error("Selecione o microrganismo ou o produto");
+  return { microrganismo_id, produto_id };
+}
+
 export default function ParametrosCQPage() {
   const { role } = useAuth();
   // Contenção global: parâmetros de CQ globais são somente consulta.
@@ -100,11 +108,10 @@ export default function ParametrosCQPage() {
   const upsert = useMutation({
     mutationFn: async () => {
       assertGlobalCatalogWriteBlocked();
-      // Mesmo contrato do CHECK do banco: produto ou microrganismo; nunca ambos vazios.
-      if (!form.microrganismo_id && !form.produto_id) throw new Error("Selecione o microrganismo ou o produto");
+      const ids = normalizeCQReferenceIds(form);
       const payload = {
-        microrganismo_id: form.microrganismo_id || null,
-        produto_id: form.produto_id || null,
+        microrganismo_id: ids.microrganismo_id,
+        produto_id: ids.produto_id,
         ph_min: form.ph_min ? Number(form.ph_min.replace(",", ".")) : null,
         ph_max: form.ph_max ? Number(form.ph_max.replace(",", ".")) : null,
         concentracao_min_ufc_ml: formatConcentracaoValue(form.conc_mantissa, form.conc_expoente),
