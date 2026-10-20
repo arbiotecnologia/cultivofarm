@@ -33,6 +33,7 @@ let currentRoles: string[] = ["cliente_produtor"];
 const chain = (result: unknown) => {
   const o: Record<string, unknown> = {};
   o.eq = () => o;
+  o.abortSignal = () => o;
   o.maybeSingle = async () => result;
   o.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
     Promise.resolve(result).then(res, rej);

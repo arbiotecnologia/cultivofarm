@@ -14,7 +14,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => {} },
   from: (t: string) => {
     const q: Record<string, unknown> = {};
-    for (const n of ['select', 'eq', 'in', 'order']) q[n] = () => q;
+    for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
     const run = () => later(() => t === 'profiles'
       ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
       : { data: s.roles.map(role => ({ role })), error: null }, t);
