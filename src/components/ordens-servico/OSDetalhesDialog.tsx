@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RastreabilidadeProducaoTab, type TraceItem } from "./RastreabilidadeProducaoTab";
 import { GerarLoteDialog, type GerarLoteTarget } from "@/components/cockpit/GerarLoteDialog";
+import { RegistrarCQDialog, type RegistrarCQTarget } from "../cockpit/RegistrarCQDialog";
 import { formatOS } from "@/lib/osLabel";
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, Check, FlaskConical, History } from "lucide-react";
@@ -25,6 +26,7 @@ const programOSRPC = supabase.rpc.bind(supabase) as unknown as (
 ) => ReturnType<typeof supabase.rpc>;
 
 export const MANUAL_LOT_GENERATION_REVIEWED = true;
+export const MANUAL_CQ_REVIEWED = true;
 
 interface Props {
   os: any;
@@ -45,10 +47,11 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
   const [traceRefresh, setTraceRefresh] = useState(0);
   const [trace, setTrace] = useState<TraceItem | null>(null);
   const [loteTarget, setLoteTarget] = useState<GerarLoteTarget | null>(null);
+  const [cqTarget, setCqTarget] = useState<RegistrarCQTarget | null>(null);
   const onTrace = useCallback((item: TraceItem | null) => setTrace(item), []);
   const programOrigin = ["onfarm", "on_farm", "ordem_servico_onfarm"].includes(os?.origem) ? "onfarm" :
     ["manual", "os", "ordem_servico"].includes(os?.origem) ? "manual" : null;
-  useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); setLoteTarget(null); setTrace(null); }, [os?.id, open, access.scope]);
+  useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); setLoteTarget(null); setCqTarget(null); setTrace(null); }, [os?.id, open, access.scope]);
   // Gerar Lote: somente exibição; o servidor revalida tudo. Baseado na leitura canônica atual da OS.
   const canGenerateLot = MANUAL_LOT_GENERATION_REVIEWED && !!os && open && access.ready && programOrigin === "manual" &&
     !os.partner_order_id && !os.partner_order_item_id && !!trace && trace.os_id === os.id &&
@@ -63,6 +66,17 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
       produto_nome: (os.produtos as any)?.nome ?? (os.microrganismos as any)?.nome,
       volume_solicitado: typeof trace.volume_solicitado_l === "number" && Number.isFinite(trace.volume_solicitado_l) ? trace.volume_solicitado_l : undefined,
     });
+  };
+  const cqPhase = trace?.status_os === "programada" ? "send" : "record";
+  const canCQ = MANUAL_CQ_REVIEWED && open && access.ready && programOrigin === "manual" &&
+    !os?.partner_order_id && !os?.partner_order_item_id && trace?.os_id === os?.id &&
+    trace?.origem_os === "manual" && !!trace?.programacao_id && !!trace?.lote_id &&
+    ["programada", "em_cq"].includes(trace?.status_os ?? "") &&
+    roles.some((role) => ["administrador", "gestor", "producao"].includes(role));
+  const openCQ = () => {
+    if (!canCQ || !trace?.programacao_id || !trace.lote_id) return;
+    setCqTarget({ os_id: os.id, programacao_id: trace.programacao_id, lote_id: trace.lote_id, origem: "manual",
+      codigo_lote: trace.codigo_lote, produto_id: os.produto_id, microrganismo_id: os.microrganismo_id });
   };
   const canProgram = !!os && open && access.ready && programOrigin === "manual" &&
     !os.partner_order_id && !os.partner_order_item_id && programmedId !== os.id &&
@@ -196,6 +210,9 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
           </div>
         )}
 
+        {canCQ && <div className="px-4 sm:px-6 py-3 border-b"><Button onClick={openCQ} disabled={saving}>
+          <FlaskConical className="h-4 w-4 mr-2" />{cqPhase === "send" ? "Enviar para CQ" : "Registrar CQ"}
+        </Button></div>}
         <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="rastreabilidade" className="h-full flex flex-col">
             <div className="px-4 sm:px-6 border-b bg-muted/20">
@@ -224,6 +241,9 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
           </Tabs>
         </div>
       </DialogContent>
+      {cqTarget && canCQ && <RegistrarCQDialog open target={cqTarget} phase={cqPhase}
+        onOpenChange={(value) => { if (!value) setCqTarget(null); }}
+        onCompleted={() => { setTraceRefresh((value) => value + 1); onChanged?.(); }} />}
       {loteTarget && canGenerateLot && <GerarLoteDialog
         open
         onOpenChange={(value) => { if (!value) setLoteTarget(null); }}

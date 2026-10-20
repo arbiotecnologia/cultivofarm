@@ -4872,7 +4872,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
-          microrganismo_id: string
+          microrganismo_id: string | null
           observacoes: string | null
           odor_esperado: string | null
           ph_max: number | null
@@ -4888,7 +4888,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          microrganismo_id: string
+          microrganismo_id?: string | null
           observacoes?: string | null
           odor_esperado?: string | null
           ph_max?: number | null
@@ -4904,7 +4904,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          microrganismo_id?: string
+          microrganismo_id?: string | null
           observacoes?: string | null
           odor_esperado?: string | null
           ph_max?: number | null
@@ -23498,15 +23498,26 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      rpc_avancar_esteira_laboratorio: {
-        Args: {
-          p_etapa_destino: string
-          p_origem: string
-          p_os_id: string
-          p_programacao_id?: string
-        }
-        Returns: Json
-      }
+      rpc_avancar_esteira_laboratorio:
+        | {
+            Args: {
+              p_etapa_destino: string
+              p_origem: string
+              p_os_id: string
+              p_programacao_id?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_cq: Json
+              p_etapa_destino: string
+              p_origem: string
+              p_os_id: string
+              p_programacao_id: string
+            }
+            Returns: Json
+          }
       rpc_b2b_aging: {
         Args: { p_partner_id?: string }
         Returns: {
