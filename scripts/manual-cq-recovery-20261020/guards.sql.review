@@ -1,0 +1,52 @@
+-- Only reviewed target/transition tickets; never role/service/GUC exceptions.
+CREATE FUNCTION platform_private.guard_manual_cq_write_v1()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE cid uuid; lid uuid; p public.programacao_producao%ROWTYPE; org uuid;
+BEGIN
+ lid:=CASE WHEN TG_OP='DELETE' THEN OLD.lote_id ELSE NEW.lote_id END;
+ SELECT pp.* INTO p FROM public.programacao_producao pp JOIN public.lotes l ON l.programacao_id=pp.id WHERE l.id=lid;
+ IF p.ordem_servico_id IS NOT NULL OR p.id IS NULL OR (TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM public.lotes l JOIN public.programacao_producao pp ON pp.id=l.programacao_id WHERE l.id=OLD.lote_id AND pp.ordem_servico_id IS NOT NULL)) THEN
+  org:=platform_private.h15_actor_organization();
+  IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'CQ_MANUAL_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;
+  IF auth.uid() IS NULL OR org IS NULL OR public.technical_actor_ready(auth.uid()) IS NOT TRUE
+   OR p.organization_id IS DISTINCT FROM org OR NEW.organization_id IS DISTINCT FROM org
+   OR p.ordem_servico_onfarm_id IS NOT NULL OR NEW.resultado IS NULL
+   OR NEW.responsavel IS DISTINCT FROM 'DADOS FICTICIOS SEM VALOR COMERCIAL'
+   OR NEW.responsavel_id IS DISTINCT FROM (SELECT id FROM public.profiles WHERE user_id=auth.uid() AND ativo AND organization_id=org)
+   OR NOT EXISTS(SELECT 1 FROM public.lotes l JOIN public.ordens_servico o ON o.id=p.ordem_servico_id JOIN public.clientes c ON c.id=o.cliente_id
+     WHERE l.id=lid AND l.organization_id=org AND o.organization_id=org AND c.organization_id=org AND o.status::text='em_cq' AND l.status::text='aguardando_cq')
+   OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_cq_insert_v1' AND target=NEW.id)
+   THEN RAISE EXCEPTION 'CQ_MANUAL_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;
+ END IF;
+ RETURN CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END;
+END $function$;
+REVOKE ALL ON FUNCTION platform_private.guard_manual_cq_write_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER aa_manual_cq_write_fence_v1 BEFORE INSERT OR UPDATE OR DELETE ON public.controle_qualidade FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_cq_write_v1();
+
+CREATE FUNCTION platform_private.guard_manual_cq_parent_v1()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE ticket text; org uuid; linked boolean;
+BEGIN
+ IF TG_TABLE_NAME='ordens_servico' THEN
+  linked:=EXISTS(SELECT 1 FROM public.programacao_producao p JOIN public.lotes l ON l.programacao_id=p.id WHERE p.ordem_servico_id=OLD.id AND l.organization_id IS NOT NULL);
+  IF linked AND (OLD.status::text='em_cq' OR NEW.status::text='em_cq') AND NEW.status IS DISTINCT FROM OLD.status THEN
+   IF OLD.status::text IS DISTINCT FROM 'programada' OR NEW.status::text IS DISTINCT FROM 'em_cq'
+    OR (to_jsonb(NEW)-'status'-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')
+    OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='manual_cq_send_v1' AND target=OLD.id)
+   THEN RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;
+  END IF;
+ ELSE
+  linked:=OLD.ordem_servico_id IS NOT NULL AND EXISTS(SELECT 1 FROM public.lotes l WHERE l.programacao_id=OLD.id AND l.organization_id IS NOT NULL);
+  IF linked AND (OLD.status::text IN ('aguardando_cq','aprovado') OR NEW.status::text IN ('aguardando_cq','aprovado')) AND NEW IS DISTINCT FROM OLD THEN
+   ticket:=CASE WHEN OLD.status::text='aguardando' AND NEW.status::text='aguardando_cq' THEN 'manual_cq_send_v1'
+     WHEN OLD.status::text='aguardando_cq' AND NEW.status::text='aprovado' THEN 'manual_cq_aprovado_v1' END;
+   IF ticket IS NULL OR (to_jsonb(NEW)-'status'-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')
+    OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope=ticket AND target=OLD.id)
+   THEN RAISE EXCEPTION 'CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;
+  END IF;
+ END IF;
+ RETURN NEW;
+END $function$;
+REVOKE ALL ON FUNCTION platform_private.guard_manual_cq_parent_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER aa_manual_cq_parent_v1 BEFORE UPDATE ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_cq_parent_v1();
+CREATE TRIGGER aa_manual_cq_parent_v1 BEFORE UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_cq_parent_v1();

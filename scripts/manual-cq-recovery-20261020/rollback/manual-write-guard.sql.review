@@ -1,0 +1,43 @@
+-- REVIEW ONLY: no exposed helper endpoint; existing private ticket table only.
+CREATE FUNCTION platform_private.guard_manual_lot_write_v1()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $guard$
+DECLARE
+ p public.programacao_producao%ROWTYPE;
+ old_manual boolean:=false;
+ old_programacao uuid;
+ org uuid;
+BEGIN
+ -- Lock old/new parents in deterministic order. An UPDATE cannot escape the
+ -- manual fence by changing programacao_id to onfarm or NULL.
+ IF TG_OP='UPDATE' THEN old_programacao:=OLD.programacao_id; END IF;
+ PERFORM 1 FROM public.programacao_producao
+ WHERE id=NEW.programacao_id OR id=old_programacao
+ ORDER BY id FOR SHARE;
+ IF TG_OP='UPDATE' THEN
+  SELECT EXISTS(SELECT 1 FROM public.programacao_producao
+    WHERE id=OLD.programacao_id AND ordem_servico_id IS NOT NULL) INTO old_manual;
+ END IF;
+ SELECT * INTO p FROM public.programacao_producao WHERE id=NEW.programacao_id;
+ IF old_manual OR p.ordem_servico_id IS NOT NULL OR p.id IS NULL THEN
+  -- No JWT/GUC/current_user/service-role escape: only the reviewed insert RPC
+  -- can issue this private, target-specific ticket; it removes it after INSERT.
+  org:=platform_private.h15_actor_organization();
+  IF TG_OP<>'INSERT' OR org IS NULL OR auth.uid() IS NULL
+   OR public.technical_actor_ready(auth.uid()) IS NOT TRUE
+   OR p.id IS NULL OR p.ordem_servico_id IS NULL OR p.ordem_servico_onfarm_id IS NOT NULL
+   OR p.organization_id IS DISTINCT FROM org OR NEW.organization_id IS DISTINCT FROM org
+   OR p.produto_id IS DISTINCT FROM NEW.produto_id OR p.microrganismo_id IS DISTINCT FROM NEW.microrganismo_id
+   OR p.status::text IS DISTINCT FROM 'aguardando' OR NEW.status::text IS DISTINCT FROM 'em_producao'
+   OR NOT EXISTS(SELECT 1 FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id
+     WHERE o.id=p.ordem_servico_id AND o.organization_id=org AND c.organization_id=org
+     AND o.status::text='programada' AND o.partner_order_id IS NULL AND o.partner_order_item_id IS NULL
+     AND o.origem IS DISTINCT FROM 'b2b')
+   OR NOT EXISTS(SELECT 1 FROM platform_private.authz_tickets
+     WHERE txid=pg_catalog.txid_current() AND scope='manual_lot_insert_v1' AND target=NEW.id)
+  THEN RAISE EXCEPTION 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' USING ERRCODE='42501'; END IF;
+ END IF;
+ RETURN NEW;
+END $guard$;
+REVOKE ALL ON FUNCTION platform_private.guard_manual_lot_write_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER aa_manual_lot_write_fence_v1 BEFORE INSERT OR UPDATE ON public.lotes
+FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_lot_write_v1();

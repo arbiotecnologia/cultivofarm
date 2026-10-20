@@ -1,0 +1,83 @@
+CREATE OR REPLACE FUNCTION public.check_os_status_transition()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  status_order text[] := ARRAY['aberta', 'aprovada', 'programada', 'em_producao', 'em_cq', 'envase', 'aguardando_reserva', 'pronto_entrega', 'entregue', 'finalizada'];
+  old_idx int;
+  new_idx int;
+  cq_count int;
+  v_lote_id uuid;
+BEGIN
+  -- Se o status não mudou, permite
+  IF (OLD.status::text = NEW.status::text) THEN
+    RETURN NEW;
+  END IF;
+
+  -- Se o novo status é 'cancelada', permite
+  IF (NEW.status::text = 'cancelada') THEN
+    RETURN NEW;
+  END IF;
+
+  -- Validação específica: Bloquear avanço para 'envase' se o CQ não estiver aprovado
+  IF (NEW.status::text = 'envase') THEN
+    -- Encontrar o lote associado a esta OS OnFarm
+    -- A relação é OS -> Programação -> Lote
+    SELECT l.id INTO v_lote_id
+    FROM public.lotes l
+    JOIN public.programacao_producao pp ON l.programacao_id = pp.id
+    WHERE pp.ordem_servico_onfarm_id = NEW.id
+    LIMIT 1;
+
+    -- Se não encontrar por ordem_servico_onfarm_id, tenta pelo ordem_servico_id (caso seja OS padrão)
+    IF v_lote_id IS NULL THEN
+        SELECT l.id INTO v_lote_id
+        FROM public.lotes l
+        JOIN public.programacao_producao pp ON l.programacao_id = pp.id
+        WHERE pp.ordem_servico_id = NEW.id
+        LIMIT 1;
+    END IF;
+
+    IF v_lote_id IS NOT NULL THEN
+        -- Verificar se existe controle de qualidade aprovado para este lote
+        -- Assumindo que o enum de resultado do CQ possui 'aprovado'
+        SELECT count(*) INTO cq_count
+        FROM public.controle_qualidade
+        WHERE lote_id = v_lote_id AND resultado::text = 'aprovado';
+
+        IF cq_count = 0 THEN
+            RAISE EXCEPTION 'Não é possível avançar para ENVASE: O lote vinculado a esta Ordem de Serviço ainda não possui um laudo de Controle de Qualidade APROVADO.'
+            USING ERRCODE = 'check_violation';
+        END IF;
+    ELSE
+        -- Se não há lote/programação, mas tentou ir para envase, pode ser inconsistência de dados
+        -- Mas se o fluxo operacional permite envase sem lote em casos raros, poderíamos ignorar.
+        -- Para garantir segurança, vamos exigir o lote se estiver na fase de produção.
+        RAISE EXCEPTION 'Não é possível avançar para ENVASE: Nenhum lote de produção foi localizado para esta Ordem de Serviço.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  -- Encontra os índices na esteira
+  SELECT i INTO old_idx FROM unnest(status_order) WITH ORDINALITY AS t(val, i) WHERE val = OLD.status::text;
+  SELECT i INTO new_idx FROM unnest(status_order) WITH ORDINALITY AS t(val, i) WHERE val = NEW.status::text;
+
+  -- Validações:
+  -- 1. Se o status antigo ou novo não estão na lista (e não é cancelamento), lança erro
+  IF old_idx IS NULL OR new_idx IS NULL THEN
+    RAISE EXCEPTION 'Status inválido ou transição não permitida para o fluxo operacional.';
+  END IF;
+
+  -- 2. Permite apenas avançar 1 posição por vez
+  IF new_idx <> old_idx + 1
+     AND NOT (new_idx = old_idx + 2 AND status_order[old_idx + 1] = 'aguardando_reserva') THEN
+    RAISE EXCEPTION 'Transição de status inválida na esteira de produção: % -> %. A próxima etapa obrigatória é %.', 
+      OLD.status::text, NEW.status::text, status_order[old_idx + 1];
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+;
