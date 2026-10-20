@@ -47,11 +47,11 @@
    "pass": true
   },
   {
-   "name": "BASE: authenticated registra PDF em termo (não service-only)",
+   "name": "BASE contida: authenticated NÃO registra PDF",
    "pass": true
   },
   {
-   "name": "BASE: authenticated TRUNCATE bypassa RLS",
+   "name": "BASE contida: authenticated NÃO faz TRUNCATE",
    "pass": true
   },
   {
@@ -236,6 +236,18 @@
   },
   {
    "name": "após rollback, exposição baseline volta (reversível)",
+   "pass": true
+  },
+  {
+   "name": "após rollback, registrar continua negado a authenticated",
+   "pass": true
+  },
+  {
+   "name": "após rollback, TRUNCATE continua negado a authenticated",
+   "pass": true
+  },
+  {
+   "name": "após rollback, service_role mantém EXECUTE do registrar",
    "pass": true
   },
   {

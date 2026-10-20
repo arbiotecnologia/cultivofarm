@@ -14,6 +14,12 @@ Leitura somente leitura em 19/10/2026 23:45 UTC.
 
 Produção tem **0 termos** e 0 entregas com `organization_id` nulo (leitura de contagem, sem conteúdo).
 
+## Baseline atualizado (20/10/2026 00:46 UTC)
+Produção já recebeu `termo_pdf_registration_acl_containment` (23:52 UTC): EXECUTE do registrar só postgres/service_role e
+`authenticated=arwdxtm` na tabela (sem TRUNCATE). Conferido read-only: corpos/md5 e policy inalterados. Preflight agora
+**exige** esse estado contido (o estado antigo falha fechado) e o rollback **não regrava** EXECUTE do registrar nem TRUNCATE;
+reabre apenas o restante da baseline (snapshot/cobertura e REFERENCES/TRIGGER/MAINTAIN). Testes locais 64/64.
+
 ## Mudança mínima (`candidate.sql.review`)
 - Preflight estrito embutido (falha fechado): md5 LIVE das 4 RPCs, snapshot, cobertura, `h15_actor_organization`,
   `is_delivery_staff`; ACL exata das 6 funções e da tabela; RLS ligada; texto exato da policy existente; conjunto de

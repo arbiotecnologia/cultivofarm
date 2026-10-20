@@ -99,14 +99,16 @@ CREATE FUNCTION public.fn_entrega_cobertura_v1(p_entrega_id uuid) RETURNS text L
         psql(A.B[n] + ";\n")
     # ACL baseline exatas (mesma ordem LIVE).
     acl = ""
-    for s in A.SIGS3 + A.SERVICE_ONLY:
+    for s in A.SIGS3 + A.REOPENABLE:
         acl += f"REVOKE ALL ON FUNCTION {s} FROM PUBLIC; GRANT EXECUTE ON FUNCTION {s} TO service_role; GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n"
+    # Contenção já aplicada em produção (termo_pdf_registration_acl_containment).
+    acl += f"REVOKE ALL ON FUNCTION {A.REGISTRAR} FROM PUBLIC; GRANT EXECUTE ON FUNCTION {A.REGISTRAR} TO service_role;\n"
     for s in ["platform_private.h15_actor_organization()", "public.is_delivery_staff(uuid)", "public.is_financial_staff(uuid)",
               "public.get_cliente_ids_for_user(uuid)", "public.has_role(uuid,public.app_role)", "public.fn_authz_uid_scope_ok(uuid)",
               "platform_private.platform_actor_access_ready(uuid)"]:
         acl += f"REVOKE ALL ON FUNCTION {s} FROM PUBLIC; GRANT EXECUTE ON FUNCTION {s} TO authenticated, service_role;\n"
     psql(acl + f"""
-GRANT ALL ON public.entrega_termos TO authenticated; GRANT ALL ON public.entrega_termos TO service_role;
+GRANT ALL ON public.entrega_termos TO authenticated; REVOKE TRUNCATE ON public.entrega_termos FROM authenticated; GRANT ALL ON public.entrega_termos TO service_role;
 GRANT SELECT ON public.entregas, public.clientes TO authenticated; GRANT ALL ON public.entregas, public.clientes, public.financial_audit_log TO service_role;
 ALTER TABLE public.entrega_termos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY entrega_termos_select ON public.entrega_termos FOR SELECT TO authenticated USING (
@@ -151,9 +153,8 @@ INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}'
     check("BASE: staff A lê termo de B via REST", val(tx(UA, f"SELECT count(*) FROM public.entrega_termos WHERE id='{TB}';")) == "1")
     check("BASE: staff A gera termo da entrega B", tx(UA, f"SELECT public.rpc_entrega_gerar_termo_v1('{EB}');").returncode == 0)
     check("BASE: gestor B cancela termo de A", tx(UB, f"SELECT public.rpc_entrega_cancelar_termo_v1('{TA}','motivo teste');").returncode == 0)
-    check("BASE: authenticated registra PDF em termo (não service-only)",
-          "termo_nao_assinado" in err(tx(UA, f"SELECT public.rpc_entrega_registrar_pdf_termo_v1('{TB}','x','y');")))
-    check("BASE: authenticated TRUNCATE bypassa RLS", tx(UA, "TRUNCATE public.entrega_termos;").returncode == 0)
+    check("BASE contida: authenticated NÃO registra PDF", "permission denied" in err(tx(UA, f"SELECT public.rpc_entrega_registrar_pdf_termo_v1('{TB}','x','y');")))
+    check("BASE contida: authenticated NÃO faz TRUNCATE", "permission denied" in err(tx(UA, "TRUNCATE public.entrega_termos;")))
     check("BASE: snapshot direto cross-tenant", tx(UA, f"SELECT public.fn_entrega_build_snapshot_v1('{EB}');").returncode == 0)
 
     # ---------- Aplica candidata (pré + corpo; postflight calculado) ----------
@@ -227,6 +228,9 @@ INSERT INTO public.entregas(id,organization_id,cliente_id) VALUES ('{EA}','{OA}'
     for s in exact: check(f"rollback restaura md5 LIVE {s}", md5(s) == A.LIVE[s])
     check("após rollback, preflight volta a PASS", psql(localize(pre), ok=False).returncode == 0)
     check("após rollback, exposição baseline volta (reversível)", val(tx(UA, f"SELECT count(*) FROM public.entrega_termos WHERE id='{TB}';")) == "1")
+    p = tx(UA, f"SELECT public.rpc_entrega_registrar_pdf_termo_v1('{TA}','x','y');"); check("após rollback, registrar continua negado a authenticated", "permission denied" in err(p))
+    p = tx(UA, "TRUNCATE public.entrega_termos;"); check("após rollback, TRUNCATE continua negado a authenticated", "permission denied" in err(p))
+    check("após rollback, service_role mantém EXECUTE do registrar", val(psql(f"SELECT has_function_privilege('service_role','{A.REGISTRAR}','EXECUTE')")) == "t")
     check("rollback repetido FALHA fechado", psql(localize(rb), ok=False).returncode != 0)
     # reaplica para provar ciclo apply→rollback→apply
     check("reaplicação após rollback PASS", psql(localize(cand2), ok=False).returncode == 0)

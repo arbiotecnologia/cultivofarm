@@ -245,10 +245,10 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'termo_id', p_termo_id, 'status', 'cancelado');
 END $function$;
 DROP FUNCTION platform_private.entrega_termo_tenant_ok(uuid);
-GRANT EXECUTE ON FUNCTION public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text) TO authenticated;
+-- Não regrava EXECUTE do registrar nem TRUNCATE (contenção aplicada em produção antes desta candidata).
 GRANT EXECUTE ON FUNCTION public.fn_entrega_build_snapshot_v1(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_entrega_cobertura_v1(uuid) TO authenticated;
-GRANT TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLE public.entrega_termos TO authenticated;
+GRANT REFERENCES, TRIGGER, MAINTAIN ON TABLE public.entrega_termos TO authenticated;
 DO $chk$
 BEGIN
   IF current_database() <> 'postgres' THEN RAISE EXCEPTION 'ROLLBACK-POST: banco inesperado'; END IF;
@@ -274,13 +274,13 @@ BEGIN
     RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.rpc_entrega_assinar_termo_v1(uuid,jsonb,text)'; END IF;
   IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_cancelar_termo_v1(uuid,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
     RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.rpc_entrega_cancelar_termo_v1(uuid,text)'; END IF;
-  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
-    RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'; END IF;
   IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.fn_entrega_build_snapshot_v1(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
     RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.fn_entrega_build_snapshot_v1(uuid)'; END IF;
   IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.fn_entrega_cobertura_v1(uuid)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres' THEN
     RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.fn_entrega_cobertura_v1(uuid)'; END IF;
-  IF coalesce(array_to_string((SELECT relacl FROM pg_class WHERE oid = 'public.entrega_termos'::regclass), ','), '') <> 'postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres' THEN
+  IF coalesce(array_to_string((SELECT proacl FROM pg_proc WHERE oid = 'public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'::regprocedure), ','), '') <> 'postgres=X/postgres,service_role=X/postgres' THEN
+    RAISE EXCEPTION 'ROLLBACK-POST: ACL inesperada em public.rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)'; END IF;
+  IF coalesce(array_to_string((SELECT relacl FROM pg_class WHERE oid = 'public.entrega_termos'::regclass), ','), '') <> 'postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres' THEN
     RAISE EXCEPTION 'ROLLBACK-POST: ACL da tabela inesperada'; END IF;
   IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.entrega_termos'::regclass) THEN
     RAISE EXCEPTION 'ROLLBACK-POST: RLS desligada'; END IF;
