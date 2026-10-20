@@ -54,7 +54,7 @@ describe("GerarLoteDialog — cercas de sessão e resposta", () => {
   });
   it("sem sessão pronta não chama o servidor", () => {
     f.current = false; render(<GerarLoteDialog open target={target} onOpenChange={() => {}} />);
-    submit(); expect(f.rpc).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Registrar Lote" })).toBeNull(); expect(f.rpc).not.toHaveBeenCalled();
   });
   it("clique duplo gera uma única chamada", async () => {
     let finish: (v: unknown) => void = () => {};

@@ -139,8 +139,8 @@ BEGIN
  PERFORM 1 FROM public.talhoes WHERE id=v_os.talhao_id FOR SHARE;
  PERFORM 1 FROM public.produtos WHERE id=v_os.produto_id FOR SHARE;
  PERFORM 1 FROM public.microrganismos WHERE id=v_os.microrganismo_id FOR SHARE;
- PERFORM 1 FROM public.lotes WHERE programacao_id=p_programacao_id ORDER BY id FOR UPDATE;
  PERFORM 1 FROM public.programacao_producao WHERE id=p_programacao_id OR ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id ORDER BY id FOR UPDATE;
+ PERFORM 1 FROM public.lotes WHERE programacao_id=p_programacao_id ORDER BY id FOR UPDATE;
  -- Revalidação após locks: revogação/troca de tenant/assinatura concorrente vence a requisição.
  IF public.technical_actor_ready(v_uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM v_org
  OR public._saas_user_has_feature(v_uid,'ordens_producao') IS NOT TRUE OR public._saas_user_has_feature(v_uid,'lotes_qualidade') IS NOT TRUE
@@ -222,7 +222,7 @@ REVOKE ALL ON FUNCTION public.rpc_cockpit_gerar_lote_v1(uuid, uuid, text, jsonb)
 GRANT EXECUTE ON FUNCTION public.rpc_cockpit_gerar_lote_v1(uuid, uuid, text, jsonb) TO authenticated;
 DO $guard$ BEGIN
  IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)') AND md5(pg_get_functiondef(oid))='69d01086d83d10d5261fa57adb5a4050' AND proowner='postgres'::regrole AND prosecdef AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'TARGET_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)') AND md5(pg_get_functiondef(oid))='5419c59a241476dfd60d147111514057' AND proowner='postgres'::regrole AND prosecdef AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'TARGET_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._refresh_esteira_laboratorio_after_change()') AND md5(pg_get_functiondef(oid))='2f361c1fd9de578cf45796d82f3754e0' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %', 'public._refresh_esteira_laboratorio_after_change()'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cockpit_norm_origem(text)') AND md5(pg_get_functiondef(oid))='701ba8da92fc3df9ea0e5270ab5e74b2' AND proowner='postgres'::regrole AND proacl::text='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %', 'public.fn_cockpit_norm_origem(text)'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.gerar_codigo_lote(integer)') AND md5(pg_get_functiondef(oid))='194703302cf0400c10d6d0dda2468d5d' AND proowner='postgres'::regrole AND proacl::text='{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FUNCTION_DRIFT: %', 'public.gerar_codigo_lote(integer)'; END IF;
