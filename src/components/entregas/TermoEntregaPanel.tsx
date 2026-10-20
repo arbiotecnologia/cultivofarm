@@ -13,6 +13,8 @@ import { ClipboardCheck, Download, FileSignature, Loader2, Ban } from "lucide-re
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import { parseQuantidadeConferencia } from "@/lib/entregas/quantidadeConferencia";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+import { downloadTermoPdf } from "@/lib/entregas/termoPdfDownload";
 
 type ConfStatus = "aceito" | "recusado" | "pendente";
 
@@ -46,7 +48,7 @@ const ERRO_LABEL: Record<string, string> = {
 
 const MSG_ERRO_GENERICA = "Não foi possível concluir a operação. Tente novamente.";
 const MSG_ERRO_CARREGAR = "Não foi possível carregar a conferência e o termo desta entrega.";
-const MSG_PDF_SEM_LINK = "Não foi possível obter o link do documento. Tente novamente.";
+const MSG_PDF_INDISPONIVEL = "Não foi possível preparar o termo. Atualize a página e tente novamente.";
 
 /** Erros conhecidos viram texto amigável; desconhecidos nunca expõem detalhe interno. */
 function traduzirErro(msg: string | undefined): string {
@@ -135,6 +137,13 @@ export function TermoEntregaPanel({ entregaId }: Props) {
 
   const termo = access.ready ? termoQuery.data as any : undefined;
   const assinado = termo?.status === "assinado";
+  // Snapshot do termo exibido: qualquer mudança (versão/status/PDF) troca o
+  // escopo, aborta o preparo e revoga o Blob já preparado.
+  const pdf = useAuthenticatedAttachmentOpener(
+    JSON.stringify(["termo-pdf", entregaId, termo?.id ?? null, termo?.versao ?? null, termo?.status ?? null, termo?.pdf_path ?? null, termo?.pdf_hash ?? null]),
+    "entrega-termos",
+    downloadTermoPdf,
+  );
 
   const itens = itensQuery.data ?? [];
   const valorDe = (id: string, campo: "status" | "quantidade" | "motivo") => {
@@ -263,7 +272,7 @@ export function TermoEntregaPanel({ entregaId }: Props) {
     });
 
   const pdfMutation = useMutation({
-    mutationFn: async ({ action, termoId }: { action: "generate" | "signed_url"; termoId: string }) => {
+    mutationFn: async ({ action, termoId }: { action: "generate"; termoId: string }) => {
       const { data, error } = await supabase.functions.invoke("entrega-termo-pdf", {
         body: { termo_id: termoId, action },
       });
@@ -282,15 +291,20 @@ export function TermoEntregaPanel({ entregaId }: Props) {
       toast({ title: "PDF do termo disponível" });
     });
 
-  const baixarPdf = () =>
-    run(async ({ vivo }) => {
-      if (!termo?.id) throw new ErroValidacao("Gere o termo antes de baixar o PDF.");
-      const res = await pdfMutation.mutateAsync({ action: "signed_url", termoId: termo.id });
-      if (!vivo()) return;
-      // Ausência de link é falha explícita: nunca silêncio.
-      if (!res?.signed_url) throw new ErroValidacao(MSG_PDF_SEM_LINK);
-      window.open(res.signed_url, "_blank", "noopener,noreferrer");
+  const prepararPdf = () => {
+    if (!termo?.id || busy) return;
+    const entregaDaOperacao = entregaId;
+    void pdf.open(termo.id, () => {
+      // Termo pode ter sido cancelado/substituído: relê o estado, sem detalhe técnico.
+      invalidar(entregaDaOperacao);
+      toast({ title: "Não foi possível concluir", description: MSG_PDF_INDISPONIVEL, variant: "destructive" });
     });
+  };
+
+  const baixarPdf = () => {
+    if (!termo?.id) return;
+    pdf.download(termo.id, `termo-entrega-v${Number(termo.versao) || 0}.pdf`);
+  };
 
   const cancelarTermo = () =>
     run(async ({ vivo, entregaDaOperacao }) => {
@@ -472,9 +486,18 @@ export function TermoEntregaPanel({ entregaId }: Props) {
                   Gerar PDF do termo
                 </Button>
               ) : (
-                <Button variant="outline" onClick={baixarPdf} disabled={busy} className="min-h-10">
-                  <Download className="h-4 w-4 mr-1" aria-hidden="true" /> Baixar termo assinado
-                </Button>
+                pdf.urls[termo.id] ? (
+                  <Button type="button" variant="outline" onClick={baixarPdf} disabled={busy} className="min-h-10">
+                    <Download className="h-4 w-4 mr-1" aria-hidden="true" /> Baixar termo assinado
+                  </Button>
+                ) : (
+                  <Button type="button" variant="outline" onClick={prepararPdf}
+                    disabled={busy || !pdf.ready || pdf.loadingPaths.includes(termo.id)} className="min-h-10">
+                    {pdf.loadingPaths.includes(termo.id)
+                      ? <Loader2 className="h-4 w-4 mr-1 animate-spin" aria-hidden="true" />
+                      : <Download className="h-4 w-4 mr-1" aria-hidden="true" />} Preparar termo assinado
+                  </Button>
+                )
               )}
             </div>
             <div className="space-y-2">

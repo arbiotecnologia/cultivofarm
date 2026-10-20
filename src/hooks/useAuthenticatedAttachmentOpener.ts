@@ -2,8 +2,12 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useStorageAccessScope } from "./useStorageAccessScope";
 import { ATTACHMENT_LIMITS, downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
 
-/** Scoped ownership for explicit downloads; never signs or falls back remotely. */
-export function useAuthenticatedAttachmentOpener(resource: string, bucket: string) {
+export type AttachmentLoader = (path: string, signal: AbortSignal) => Promise<Blob>;
+
+/** Scoped ownership for explicit downloads; never signs or falls back remotely.
+ * `load` defaults to the authenticated Storage transport; callers that must go
+ * through a canonical Edge may pass their own binary loader (same fences). */
+export function useAuthenticatedAttachmentOpener(resource: string, bucket: string, load?: AttachmentLoader) {
   const access = useStorageAccessScope(resource);
   const controllers = useRef(new Map<string, AbortController>());
   const urls = useRef(new Map<string, { url: string; bytes: number }>());
@@ -28,7 +32,7 @@ export function useAuthenticatedAttachmentOpener(resource: string, bucket: strin
     controllers.current.set(path, controller);
     publish();
     try {
-      const blob = await downloadAuthenticatedAttachment(bucket, path, controller.signal);
+      const blob = await (load ?? ((p: string, s: AbortSignal) => downloadAuthenticatedAttachment(bucket, p, s)))(path, controller.signal);
       if (!current() || controller.signal.aborted) return;
       if (blob.size > ATTACHMENT_LIMITS.fileBytes || blob.size > ATTACHMENT_LIMITS.totalBytes) throw new Error("Anexo indisponível");
       const total = () => [...urls.current.values()].reduce((sum, item) => sum + item.bytes, 0);
