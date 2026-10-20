@@ -149,6 +149,11 @@ def main():
   deny('authenticated writer stays closed after schema delta',actor()+f"SET ROLE authenticated;INSERT INTO cq_parametros_referencia(produto_id) VALUES({lot.P});")
   assert before==run("SELECT relacl::text||':'||relrowsecurity::text FROM pg_class WHERE oid='public.cq_parametros_referencia'::regclass;").stdout;checks.append('product-only delta preserves table ACL and RLS')
   assert legacy_index==run("SELECT pg_get_indexdef('public.cq_param_ref_micro_prod_uidx'::regclass);").stdout;checks.append('legacy unique index unchanged')
+  asm_spec=importlib.util.spec_from_file_location('cq_assembly',H/'assemble.py');asm=importlib.util.module_from_spec(asm_spec);asm_spec.loader.exec_module(asm)
+  for mode in ['pre','post','rollback']:
+   for line in asm.guard(mode).splitlines():
+    if line.startswith('IF ') and ('LEGACY_REFERENCE_INDEX_DRIFT' in line or 'CQ_REFERENCE_CONTRACT_DRIFT' in line):
+     run('DO $$BEGIN '+line+'END$$;');checks.append('assembled '+mode+' reference predicate compiles and passes')
   yes('both NULL constraint is validated CHECK',"EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='cq_parametros_referencia'::regclass AND conname='cq_reference_item_required_v1' AND contype='c' AND convalidated)")
   deny('product-only neither item denied',"INSERT INTO cq_parametros_referencia DEFAULT VALUES;")
   deny('product-only nonexistent product FK denied',f"INSERT INTO cq_parametros_referencia(produto_id) VALUES({q(99)});")
@@ -181,6 +186,10 @@ def main():
   # Two real sessions serialize one complete result and one replay.
   def start(s):
    p=subprocess.Popen(conn,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True);p.stdin.write(s);p.stdin.close();p.stdin=None;return p
+  index_first=start(f"BEGIN;INSERT INTO cq_parametros_referencia(produto_id,ativo) VALUES({q(93)},true);SELECT pg_sleep(0.5);COMMIT;");time.sleep(.1)
+  index_second=start(f"INSERT INTO cq_parametros_referencia(produto_id,ativo) VALUES({q(93)},true);")
+  ia=index_first.communicate(timeout=15);ib=index_second.communicate(timeout=15)
+  assert index_first.returncode==0 and index_second.returncode!=0 and 'cq_reference_product_only_active_uidx' in ib[1],(ia,ib);checks.append('two sessions concurrent active product-only insert one success one unique denial')
   # Revocation commits while caller waits for OS lock: post-lock actor check must deny.
   blocker=start(actor()+f"BEGIN;SELECT id FROM ordens_servico WHERE id={O} FOR UPDATE;SELECT pg_sleep(0.6);DELETE FROM user_roles WHERE user_id={U};COMMIT;")
   time.sleep(.1);blocked=start(actor()+f'SET ROLE authenticated;SELECT {call()};')
