@@ -24,6 +24,8 @@ const programOSRPC = supabase.rpc.bind(supabase) as unknown as (
   name: "rpc_programar_os_v1", args: { p_os_id: string; p_origem: string; p_data_programada: string },
 ) => ReturnType<typeof supabase.rpc>;
 
+export const MANUAL_LOT_GENERATION_REVIEWED = false;
+
 interface Props {
   os: any;
   open: boolean;
@@ -46,11 +48,11 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
   const onTrace = useCallback((item: TraceItem | null) => setTrace(item), []);
   const programOrigin = ["onfarm", "on_farm", "ordem_servico_onfarm"].includes(os?.origem) ? "onfarm" :
     ["manual", "os", "ordem_servico"].includes(os?.origem) ? "manual" : null;
-  useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); setLoteTarget(null); }, [os?.id, open, access.scope]);
+  useEffect(() => { setApprovedId(null); setProgrammedId(null); setProgramDate(""); setSaving(false); setLoteTarget(null); setTrace(null); }, [os?.id, open, access.scope]);
   // Gerar Lote: somente exibição; o servidor revalida tudo. Baseado na leitura canônica atual da OS.
-  const canGenerateLot = !!os && open && access.ready && programOrigin === "manual" &&
+  const canGenerateLot = MANUAL_LOT_GENERATION_REVIEWED && !!os && open && access.ready && programOrigin === "manual" &&
     !os.partner_order_id && !os.partner_order_item_id && !!trace && trace.os_id === os.id &&
-    trace.origem_os === "manual" && trace.status_os === "programada" && !trace.codigo_lote &&
+    trace.origem_os === "manual" && trace.status_os === "programada" && !trace.codigo_lote && !trace.lote_id && !!trace.data_programada &&
     typeof trace.programacao_id === "string" && !!trace.programacao_id &&
     roles.some((role) => role === "administrador" || role === "gestor" || role === "producao");
   const openLot = () => {

@@ -34,6 +34,13 @@ def guard(post: bool) -> str:
         L.append(f" IF NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='public.lotes'::regclass AND polname={q(name)} AND md5(coalesce(pg_get_expr(polqual,polrelid),'')||'|'||coalesce(pg_get_expr(polwithcheck,polrelid),'')||'|'||polcmd::text||'|'||polpermissive::text||'|'||polroles::text)={q(d)}) THEN RAISE EXCEPTION 'POLICY_DRIFT: %', {q(name)}; END IF;")
     L.append(" IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.lotes'::regclass) THEN RAISE EXCEPTION 'RLS_DRIFT'; END IF;")
     L.append(f" IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.laboratorio_esteira_eventos'::regclass AND NOT tgisinternal)<>{int(c['event_table_triggers'])} THEN RAISE EXCEPTION 'EVENT_TRIGGER_DRIFT'; END IF;")
+    for t in c.get('tables', []):
+        name = q('public.' + t['name'])
+        L.append(f" IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass({name}) AND relowner='postgres'::regrole AND relrowsecurity AND NOT relforcerowsecurity AND relacl::text={q(t['acl'])}) THEN RAISE EXCEPTION 'TABLE_ACL_DRIFT: %', {name}; END IF;")
+        L.append(f" IF (SELECT md5(string_agg(a.attname||':'||format_type(a.atttypid,a.atttypmod)||':'||a.attnotnull::text||':'||coalesce(pg_get_expr(d.adbin,d.adrelid),''),'|' ORDER BY a.attnum)) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=to_regclass({name}) AND a.attnum>0 AND NOT a.attisdropped) IS DISTINCT FROM {q(t['schema_md5'])} THEN RAISE EXCEPTION 'SCHEMA_DRIFT: %', {name}; END IF;")
+        L.append(f" IF (SELECT md5(coalesce(string_agg(pg_get_constraintdef(k.oid)||':'||k.conname||':'||k.convalidated::text,'|' ORDER BY k.conname),'')) FROM pg_constraint k WHERE k.conrelid=to_regclass({name})) IS DISTINCT FROM {q(t['constraints_md5'])} THEN RAISE EXCEPTION 'CONSTRAINT_DRIFT: %', {name}; END IF;")
+    for name, digest in c.get('views', []):
+        L.append(f" IF md5(pg_get_viewdef(to_regclass({q(name)}),true)) IS DISTINCT FROM {q(digest)} THEN RAISE EXCEPTION 'VIEW_DRIFT: %', {q(name)}; END IF;")
     L.append("END $guard$;")
     return '\n'.join(L) + '\n'
 

@@ -23,7 +23,7 @@ const ok = { data: { success: true, replay: false, lote_id: "00000000-0000-4000-
 const submit = () => fireEvent.click(screen.getByRole("button", { name: "Registrar Lote" }));
 beforeEach(() => {
   vi.clearAllMocks(); f.roles = ["administrador"]; f.current = true; f.epoch = 0; f.rpc.mockResolvedValue(ok);
-  f.trace = { os_id: OS, origem_os: "manual", status_os: "programada", codigo_lote: null, programacao_id: PP, volume_solicitado_l: 0.1, numero_os: "OS-1" };
+  f.trace = { os_id: OS, origem_os: "manual", status_os: "programada", codigo_lote: null, programacao_id: PP, data_programada: "2026-10-19", volume_solicitado_l: 0.1, numero_os: "OS-1" };
 });
 
 describe("conversão L -> mL", () => {
@@ -61,7 +61,7 @@ describe("GerarLoteDialog — cercas de sessão e resposta", () => {
     f.rpc.mockImplementation(() => new Promise((r) => { finish = r; }));
     render(<GerarLoteDialog open target={target} onOpenChange={() => {}} />);
     const button = screen.getByRole("button", { name: "Registrar Lote" });
-    fireEvent.click(button); fireEvent.submit(button.closest("form")!);
+    fireEvent.click(button); const form = button.closest("form"); if (!form) throw new Error("form missing"); fireEvent.submit(form);
     expect(f.rpc).toHaveBeenCalledTimes(1);
     await act(async () => finish(ok));
   });

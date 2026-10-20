@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,24 +35,26 @@ export function litrosParaMl(value: string): number | null {
   const raw = value.trim().replace(",", ".");
   if (!/^\d+(\.\d{1,6})?$/.test(raw)) return null;
   const ml = Math.round(Number(raw) * 1000 * 1000) / 1000;
-  return Number.isFinite(ml) && ml > 0 ? ml : null;
+  return Number.isFinite(ml) && ml > 0 && ml <= 100000000 ? ml : null;
 }
 
 export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props) {
   const { gerarLote } = useEsteiraLaboratorio();
   const access = useStorageAccessScope(JSON.stringify(["gerar-lote", target?.programacao_id, target?.os_id, open]));
-  const pending = useRef(false);
+  const pending = useRef<AbortController | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY);
 
   // Nova sessão/época/tenant/alvo: descarta rascunho e trava.
-  useEffect(() => {
-    pending.current = false;
+  useLayoutEffect(() => {
+    pending.current?.abort();
+    pending.current = null;
     setSaving(false);
-    setForm(open && target ? { ...EMPTY, volume_produzido: target.volume_solicitado ? String(target.volume_solicitado) : "" } : EMPTY);
+    setForm(access.ready && open && target ? { ...EMPTY, volume_produzido: target.volume_solicitado ? String(target.volume_solicitado) : "" } : EMPTY);
+    return () => { pending.current?.abort(); };
   }, [open, target, access.scope]);
 
-  if (!target) return null;
+  if (!target || !access.ready) return null;
   const isMicro = !!target.microrganismo_id && !target.produto_id;
   const volumeMl = litrosParaMl(form.volume_produzido);
 
@@ -60,24 +62,33 @@ export function GerarLoteDialog({ open, onOpenChange, target, onCreated }: Props
     e.preventDefault();
     if (pending.current || !access.ready || volumeMl === null) return;
     const current = access.capture();
-    pending.current = true;
+    const controller = new AbortController();
+    pending.current = controller;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stopped = new Promise<null>((resolve) => {
+      controller.signal.addEventListener("abort", () => resolve(null), { once: true });
+      timer = setTimeout(() => controller.abort(), 12_000);
+    });
     setSaving(true);
     try {
       // Código, produto, microrganismo, tenant e data são definidos pelo servidor.
-      const result = await gerarLote({
+      const result = await Promise.race([gerarLote({
         programacao_id: target.programacao_id,
         volume_produzido: volumeMl,
         responsavel_producao: form.responsavel_producao,
         tanque: form.tanque,
         observacoes_tecnicas: form.observacoes_tecnicas,
-      }, target.os_id, target.origem, current);
-      if (!current() || !result) return;
+      }, target.os_id, target.origem, current, controller.signal), stopped]);
+      if (!current() || controller.signal.aborted || !result) return;
       setForm(EMPTY);
       onOpenChange(false);
       onCreated?.();
     } finally {
-      pending.current = false;
-      if (current()) setSaving(false);
+      clearTimeout(timer);
+      if (pending.current === controller) {
+        pending.current = null;
+        if (current()) setSaving(false);
+      }
     }
   };
 

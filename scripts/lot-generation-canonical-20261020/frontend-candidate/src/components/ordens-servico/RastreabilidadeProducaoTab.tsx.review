@@ -17,6 +17,7 @@ interface Props {
 }
 
 export interface TraceItem {
+  lote_id?: string | null;
   programacao_id?: string | null;
   os_id: string; origem_os: string; numero_os?: string | null; status_os?: string | null;
   status_esteira_oficial?: string | null; data_programada?: string | null; codigo_lote?: string | null;
@@ -50,7 +51,7 @@ export function RastreabilidadeProducaoTab({ osId, osTipo, numeroOS, refreshKey 
     },
   });
 
-  const reported = query.available && !query.isPending && !query.isError ? query.data ?? null : null;
+  const reported = query.available && !query.isPending && !query.isFetching && !query.isError ? query.data ?? null : null;
   useEffect(() => { onItem?.(reported); }, [onItem, reported]);
   useEffect(() => () => onItem?.(null), [onItem]);
 
