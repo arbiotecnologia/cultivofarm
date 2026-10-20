@@ -4,6 +4,7 @@ import { RastreabilidadeProducaoTab, type TraceItem } from "./RastreabilidadePro
 import { GerarLoteDialog, type GerarLoteTarget } from "@/components/cockpit/GerarLoteDialog";
 import { RegistrarCQDialog, type RegistrarCQTarget } from "../cockpit/RegistrarCQDialog";
 import { formatOS } from "@/lib/osLabel";
+import { cockpitStage } from "@/lib/cockpit/stage";
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, Check, FlaskConical, History } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -256,7 +257,7 @@ export function OSDetalhesDialog({ os, open, onOpenChange, onChanged }: Props) {
           </Tabs>
         </div>
       </DialogContent>
-      {cqTarget && canCQ && <RegistrarCQDialog open target={cqTarget} phase={cqPhase}
+      {cqTarget && canCQ && cqPhase && <RegistrarCQDialog open target={cqTarget} phase={cqPhase}
         onOpenChange={(value) => { if (!value) setCqTarget(null); }}
         onCompleted={() => { setTraceRefresh((value) => value + 1); onChanged?.(); }} />}
       {loteTarget && canGenerateLot && <GerarLoteDialog
