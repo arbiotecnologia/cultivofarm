@@ -4,7 +4,7 @@ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $functi
 DECLARE
  uid uuid:=auth.uid(); org uuid; os public.ordens_servico%ROWTYPE; pp public.programacao_producao%ROWTYPE;
  lot public.lotes%ROWTYPE; cq public.controle_qualidade%ROWTYPE; ref public.cq_parametros_referencia%ROWTYPE;
- key text; phase text; outcome text; ph numeric; concentration numeric; refid uuid;
+ key text; phase text; outcome text; v_ph numeric; concentration numeric; refid uuid;
  payload jsonb; receipt public.cockpit_operacao_idempotencia%ROWTYPE; receipt_key text; digest text;
  result jsonb; cqid uuid; profileid uuid;
 BEGIN
@@ -26,8 +26,8 @@ BEGIN
   IF p_cq->'dados_sinteticos' IS DISTINCT FROM 'true'::jsonb OR p_cq->>'resultado' NOT IN ('aprovado','reprovado')
    OR jsonb_typeof(p_cq->'ph') IS DISTINCT FROM 'number' OR jsonb_typeof(p_cq->'concentracao') IS DISTINCT FROM 'number'
    OR jsonb_typeof(p_cq->'lote_id') IS DISTINCT FROM 'string' THEN RAISE EXCEPTION 'CQ_PAYLOAD_INVALID'; END IF;
-  outcome:=p_cq->>'resultado'; ph:=(p_cq->>'ph')::numeric; concentration:=(p_cq->>'concentracao')::numeric;
-  IF outcome IS NULL OR ph::text IN ('NaN','Infinity','-Infinity') OR ph<0 OR ph>14
+  outcome:=p_cq->>'resultado'; v_ph:=(p_cq->>'ph')::numeric; concentration:=(p_cq->>'concentracao')::numeric;
+  IF outcome IS NULL OR v_ph::text IN ('NaN','Infinity','-Infinity') OR v_ph<0 OR v_ph>14
    OR concentration::text IN ('NaN','Infinity','-Infinity') OR concentration<0 OR concentration>1e30 THEN RAISE EXCEPTION 'CQ_VALUES_INVALID'; END IF;
   FOREACH key IN ARRAY ARRAY['aparencia','odor','contaminacao'] LOOP
    IF jsonb_typeof(p_cq->key) IS DISTINCT FROM 'string' OR length(btrim(p_cq->>key)) NOT BETWEEN 1 AND 200 THEN RAISE EXCEPTION 'CQ_PAYLOAD_INVALID'; END IF;
@@ -92,7 +92,7 @@ BEGIN
  IF refid IS DISTINCT FROM ref.id THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
  IF ref.id IS NOT NULL AND (ref.ph_min::text IN ('NaN','Infinity','-Infinity') OR ref.ph_max::text IN ('NaN','Infinity','-Infinity') OR ref.concentracao_min_ufc_ml::text IN ('NaN','Infinity','-Infinity')) THEN RAISE EXCEPTION 'CQ_REFERENCE_INVALID'; END IF;
  IF p_cq IS NOT NULL AND outcome='aprovado' AND ref.id IS NOT NULL AND
- ((ref.ph_min IS NOT NULL AND ph<ref.ph_min) OR (ref.ph_max IS NOT NULL AND ph>ref.ph_max)
+ ((ref.ph_min IS NOT NULL AND v_ph<ref.ph_min) OR (ref.ph_max IS NOT NULL AND v_ph>ref.ph_max)
  OR (ref.concentracao_min_ufc_ml IS NOT NULL AND concentration<ref.concentracao_min_ufc_ml)
  OR (nullif(btrim(ref.aparencia_esperada),'') IS NOT NULL AND btrim(p_cq->>'aparencia')<>btrim(ref.aparencia_esperada))
  OR (nullif(btrim(ref.odor_esperado),'') IS NOT NULL AND btrim(p_cq->>'odor')<>btrim(ref.odor_esperado))
@@ -104,7 +104,7 @@ BEGIN
  IF receipt.idempotency_key IS NOT NULL THEN
   IF receipt.usuario_id IS DISTINCT FROM uid OR receipt.payload_hash IS DISTINCT FROM digest OR receipt.alvo_id IS DISTINCT FROM lot.id OR receipt.status<>'completed'
    OR os.status::text<>'em_cq' OR lot.status::text NOT IN ('aguardando_cq','aprovado','reprovado')
-   OR (p_cq IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.controle_qualidade c WHERE c.id=(receipt.resultado->>'cq_id')::uuid AND c.lote_id=lot.id AND c.organization_id=org AND c.resultado::text=outcome AND c.ph=ph AND c.concentracao=concentration AND c.aparencia=payload->>'aparencia' AND c.odor=payload->>'odor' AND c.contaminacao=payload->>'contaminacao'))
+   OR (p_cq IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.controle_qualidade c WHERE c.id=(receipt.resultado->>'cq_id')::uuid AND c.lote_id=lot.id AND c.organization_id=org AND c.resultado::text=outcome AND c.ph=v_ph AND c.concentracao=concentration AND c.aparencia=payload->>'aparencia' AND c.odor=payload->>'odor' AND c.contaminacao=payload->>'contaminacao'))
   THEN RAISE EXCEPTION 'CQ_REPLAY_DIVERGENT'; END IF;
   RETURN receipt.resultado||jsonb_build_object('replay',true);
  END IF;
@@ -122,7 +122,7 @@ BEGIN
   cqid:=gen_random_uuid();
   INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'manual_cq_'||outcome||'_v1',lot.id),(txid_current(),'manual_cq_'||outcome||'_v1',pp.id),(txid_current(),'manual_cq_insert_v1',cqid);
   INSERT INTO public.controle_qualidade(id,lote_id,ph,concentracao,aparencia,odor,contaminacao,responsavel,responsavel_id,resultado,organization_id)
-  VALUES(cqid,lot.id,ph,concentration,payload->>'aparencia',payload->>'odor',payload->>'contaminacao','DADOS FICTICIOS SEM VALOR COMERCIAL',profileid,outcome::public.resultado_cq,org);
+  VALUES(cqid,lot.id,v_ph,concentration,payload->>'aparencia',payload->>'odor',payload->>'contaminacao','DADOS FICTICIOS SEM VALOR COMERCIAL',profileid,outcome::public.resultado_cq,org);
   UPDATE public.lotes SET status=outcome::public.status_lote WHERE id=lot.id;
   IF outcome='aprovado' THEN UPDATE public.programacao_producao SET status='aprovado' WHERE id=pp.id; END IF;
  END IF;
