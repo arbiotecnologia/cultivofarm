@@ -34,6 +34,7 @@
 - Exclusive operator login reuses the typed internal probe and canonical role home without inventing portal contexts; open-session scopes share the existing AuthProvider monitor — avoids expanding technical RBAC.
 - OS eligibility decodes live family/dose at the canonical SDK boundary when generated types lag; submit revalidates manufacturing semantics — prevents inferred eligibility and unchecked casts.
 - OS programming/lot candidates replace only the canonical RPC with a fixed self-contained rollback, revalidate actor/tenant/SaaS after locks, reuse existing dialogs with pre/post-await session fences — avoids autoapproval, stale writes and parallel flows.
+- CQ review artifacts follow their directory AGENTS.md; reference lookup and parent fences remain candidate-only until approved — prevents runtime release.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 - Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.

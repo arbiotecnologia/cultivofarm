@@ -8,6 +8,6 @@
   "rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)": "f080f0d9c003ca6b57a208a21625b7e1",
   "platform_private.guard_manual_lot_write_v1()": "4eab765e76ca79f16a7dd481887496d9",
   "platform_private.guard_manual_cq_write_v1()": "4c9738cabaf11d8ac59a4ac0e58abfa4",
-  "platform_private.guard_manual_cq_parent_v1()": "46be93ddb0fcfc615099369e50f74f70",
-  "fn_cq_aprovado_avanca_os()": "5b1905b8fc743e1181904db931b165f9"
+  "fn_cq_aprovado_avanca_os()": "5b1905b8fc743e1181904db931b165f9",
+  "platform_private.guard_manual_cq_parent_v1()": "fbe67571995aa8e4c942ca29215c15b5"
 }
