@@ -127,8 +127,8 @@ BEGIN
   IF outcome='aprovado' THEN UPDATE public.programacao_producao SET status='aprovado' WHERE id=pp.id; END IF;
  END IF;
  IF (SELECT status::text FROM public.ordens_servico WHERE id=os.id)<>'em_cq'
- OR (SELECT status::text FROM public.lotes WHERE id=lot.id)<>CASE WHEN p_cq IS NULL THEN 'aguardando_cq' ELSE outcome END
- OR (SELECT status::text FROM public.programacao_producao WHERE id=pp.id)<>CASE WHEN outcome='aprovado' THEN 'aprovado' ELSE 'aguardando_cq' END
+ OR (SELECT status::text FROM public.lotes WHERE id=lot.id)<>(CASE WHEN p_cq IS NULL THEN 'aguardando_cq' ELSE outcome END)
+ OR (SELECT status::text FROM public.programacao_producao WHERE id=pp.id)<>(CASE WHEN outcome='aprovado' THEN 'aprovado' ELSE 'aguardando_cq' END)
  OR public.technical_actor_ready(uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM org THEN RAISE EXCEPTION 'CQ_POSTCONDITION_FAILED'; END IF;
  INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,lote_id,etapa_anterior,etapa_nova,acao,usuario_id,observacao)
  VALUES(os.id,'manual',pp.id,lot.id,os.status::text,CASE WHEN p_cq IS NULL THEN 'aguardando_cq' ELSE outcome END,phase,uid,'DADOS FICTICIOS SEM VALOR COMERCIAL; sem producao fisica/venda/uso agricola. '||payload::text);
