@@ -67,6 +67,7 @@ async function mount() {
 async function changeRolesAndPoll(next: string[]) {
   s.roles = next;
   await act(async () => { window.dispatchEvent(new Event('focus')); await wait(40); });
+  if (next.length === 1 && !s.offline) expect(s.autoFreshFailures).toBeGreaterThanOrEqual(1); // automatic read actually ran before Retry
 }
 const retry = async (ms = 60) => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); await flush(ms); };
 const paused = () => expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
@@ -139,6 +140,7 @@ describe('Retry re-resolves identity (gestor+consultor)', () => {
     await changeRolesAndPoll(['gestor']);
     await retry(120);
     expect(screen.getByText(/Conteúdo sensível/).textContent).not.toContain('/app/registrar');
+    s.autoFreshFailures = 0; // new valid scope rearmed the automatic budget; exhaust it again
     await changeRolesAndPoll(['gestor', 'consultor_tecnico']); // residual probe rejects superset of gestor
     paused();
     await retry(120);

@@ -88,6 +88,7 @@ async function pairThenLoseGestor() {
   setup(); await tick(3000);
   expect(screen.getByText('Contas a receber')).toBeTruthy();
   s.roles = ['consultor_tecnico']; focus(); await tick(3000);
+  expect(s.autoFreshFailures).toBe(1); // one automatic fresh read exhausted, not neutralized
   expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
 }
 /** Terminal, observable states only: never an endless spinner. */
@@ -156,6 +157,7 @@ describe('Retry / renewal generation conflicts never leave an endless loading (5
   it('restoring gestor afterwards: pause → Retry recovers the pair and financial again', async () => {
     await pairThenLoseGestor();
     retry(); await tick(8000); await expectConsultorRecovered();
+    s.autoFreshFailures = 0; // residual valid rearmed the one-attempt budget
     s.roles = ['gestor', 'consultor_tecnico']; focus(); await tick(4000);
     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
     retry(); await tick(8000);
