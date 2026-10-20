@@ -5,5 +5,9 @@
 - Preserve unchanged OnFarm/legacy behavior outside the manual containment, documenting its unreviewed effects; null-tenant historical lots must not be repaired.
 - Positive local SQL uses synthetic Auth over a disposable PostgreSQL instance; never report it as hosted JWT/RLS or browser certification.
 - Integrity DEFINER triggers have no purge/GUC escape, including rollback; approval requires a complete active canonical-item reference without inventing product associations.
-- Treat contained integrity triggers as immutable LIVE dependencies in PRE/POST/rollback; vulnerable historical definitions belong only to disposable-test fixtures, never deployment assembly.- The existing reference hook candidate uses product-first exact matching without micro fallback, scoped query generations and monitor completion fences; runtime stays unchanged until approved.
+- Treat contained integrity triggers as immutable LIVE dependencies in PRE/POST/rollback; vulnerable historical definitions belong only to disposable-test fixtures, never deployment assembly.
+- The existing reference hook candidate uses product-first exact matching without micro fallback, scoped query generations and monitor completion fences; runtime stays unchanged until approved.
 - Manual parents with nonlegacy lots retain links/tenant/item identity before CQ, and em_cq OS fields are frozen; rollback retains these fences to prevent reclassification escapes.
+
+- Assembly is blocked while the owner-announced programming containment baseline is pending; PRE/POST/rollback must preserve its exact body, ACL and trigger after verification.
+- CQ comparison requires complete active references and valid measurements, with case-sensitive space-trim equality matching the core; it never authorizes mutation.

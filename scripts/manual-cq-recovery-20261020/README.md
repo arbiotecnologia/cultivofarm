@@ -1,5 +1,7 @@
 # CQ manual — candidato para revisão, não implantado
 
+**20/10 13:11: MONTAGEM SQL BLOQUEADA.** Contenção de identidade da programação anunciada pelo proprietário, ainda sem recibo de sucesso/hashes. SQLs existentes são históricos e não devem ser aplicados. Ver `HOSTED-BASELINE-PENDING.md`; `assemble.py` encerra sem regenerar. PRE/POST/rollback só poderão ser atualizados após conferência da nova dependência LIVE, sem reescrevê-la ou removê-la.
+
 **Base publicada:** `afa2417fb2ac305636b9bc82786d62ae9af0a632`. Supabase único `swzpzcwiasxmjutrmvkm`.
 
 Recibo do proprietário: lote LT-2026-0002 criado pelo diálogo REAL B, 100 mL; OS programada, programação aguardando, lote em_producao. Registro fictício, sem produção física/venda/uso agrícola. Nenhum dado operacional foi escrito pelo agente. Legado `cd49ce12-9d06-459c-b874-3c8d3a275423` permanece intocado.
@@ -28,7 +30,7 @@ Recibo do proprietário: lote LT-2026-0002 criado pelo diálogo REAL B, 100 mL; 
 2. `candidate.sql.review`: PRE + corpos/guards/reader + ACL mínima dos dois wrappers + POST, em transação. **Não aplicada**; não está em migrations/autodeploy.
 3. `postflight-readonly.sql`: candidata exata, ACL contida preservada; sem dados operacionais.
 4. `rollback.sql.review` e `rollback-postflight-readonly.sql`: reversão autocontida; definição original da RPC e hash conferidos em PG. Fecha authenticated nos dois wrappers, mantém história, guard CQ/pai e contenção de autoenvase; restaura guard de lote/escada original. Mantém reader corrigido e ambos os triggers de autoria/imutabilidade SEM escape GUC. Snapshots destes dois triggers em rollback já são contidos; fontes vulneráveis ficam somente em `historical-test-fixtures/` para reprodução PG descartável. Nenhum destes dois triggers é reescrito pelo candidato/rollback. Não restaura grants administrativos de lotes.
-5. `frontend-candidate/` e `rollback/src/`: dois componentes e o hook existente; nunca copiar antes do SQL revisado e da comparação independente. Sem tocar monitor/anexos/PDF/bindings.
+5. `frontend-candidate/` e `rollback/src/`: três componentes e o hook existente; nunca copiar antes do SQL revisado e da comparação independente. Sem tocar monitor/anexos/PDF/bindings.
 6. `manifest.json`: SHA256 de cada artefato. `post-hashes.json`: hashes pg_get_functiondef produzidos no PG descartável.
 
 ## Validação reproduzível
@@ -68,3 +70,11 @@ Recibo do proprietário: **34 hashes PASS** na revisão anterior; não é certif
 - `fictional-reference.proposal.json`: valores completos **inventados exclusivamente para teste**, não especificação agronômica: pH 6–8, concentração mínima 100000000, aparência Normal, odor Caracteristico, contaminação Ausente. Produto exato e identificação sem valor comercial. **Não insertável:** micro NULL expressa ausência de associação, incompatível com NOT NULL/FK capturado. Nenhum writer canônico auditado liberado existe; abrir editor/grants ou escolher micro real seria bypass. O caminho preparado é proposta → revisão do contrato existente produto-only → autorização específica → preflight canônico → eventual cadastro exclusivo, sem modificar referências reais. Este contrato e sua implantação permanecem bloqueados para fase própria; não há DDL/DML ou novo fluxo no pacote.
 
 **Resultado:** candidata local, gate false, sem deploy/migration/publicação/sessões. Hook testado em integração local, não ativado nem homologado em navegador real A/B. Envase/reserva/entrega/contratos continuam fechados.
+
+## Delta 13:11 — comparação e recibo de contenção
+
+- Recibo independente hosted: zerar vínculo OS da programação permitiu alterar lote para 101; transação revertida sem persistência. Não é prova executada pelo agente. Aplicação da contenção anunciada ainda aguarda confirmação; nenhuma consulta/escrita hosted nesta rodada.
+- Tabela candidata exige referência ativa, ambos os limites pH finitos/ordenados no intervalo 0–14, concentração mínima finita não negativa e três textos não vazios. Referência incompleta/inválida é indicada explicitamente. Medidos ausentes, inválidos/não finitos, pH fora 0–14, concentração fora 0–1e30 e textos fora 1–200 impedem indicação APROVADO.
+- Igualdade textual usa comparação sensível a maiúsculas/minúsculas após remover somente espaços das extremidades, igual a `btrim` do core. Divergências contam como falha, não warning. Limites numéricos inclusivos. Nenhuma mutação ou autorização adicionada; `canEdit=false` permanece no diálogo candidato.
+- Rollback da tabela é cópia byte-exata do runtime, que continua intocado. Configuração temporária de testes/tipos aponta diálogo/hook/tabela aos candidatos, sem copiar para src.
+- **62 Vitest PASS**: 35 avaliação/tabela + 10 formulário + 17 hook/integração; **tsgo candidato PASS**. Montagem bloqueada comprovada. 90 checks SQL são resultado anterior, não reexecutados nesta rodada nem certificação da nova contenção hosted. Build runtime depende do harness; não homologado browser A/B nem publicado.

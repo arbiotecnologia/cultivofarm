@@ -382,3 +382,9 @@
 - [x] Preparar proposta completa exclusivamente fictícia e verificar comparação somente leitura; sem inserir nem inventar vínculo.
 - [ ] Cadastro hosted da referência fictícia: bloqueado por micro NOT NULL/FK e writer global contido; requer contrato existente produto-only revisado e autorização própria.
 - [x] Revalidar pacote local: 90 checks PG/Auth sintético, 27 Vitest e tsgo isolado PASS; hashes/rollback, sem DDL/deploy e gate false. Nova revisão independente e homologação real continuam pendentes.
+
+## 20/10 13:11 — contenção hosted anunciada e comparação CQ
+- [x] Corrigir comparação candidata: referência incompleta/inativa, medidos ausentes e igualdade textual exata do core; sem mutação.
+- [x] Bloquear montagem SQL até nova baseline de função/trigger; SQLs existentes marcados históricos, sem DDL.
+- [ ] Incorporar baseline LIVE em PRE/POST/rollback: aguarda recibo de sucesso e hashes/trigger do proprietário, sem reescrever contenção.
+- [x] 62 Vitest e tsgo candidato PASS; comparação/rollback/hashes/relatório atualizados, runtime intocado.

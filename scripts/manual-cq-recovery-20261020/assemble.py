@@ -71,6 +71,8 @@ def guard(mode):
  lines.append('END $guard$;');return '\n'.join(lines)+'\n'
 
 def main():
+ if (H/"HOSTED-BASELINE-PENDING.md").exists():
+  raise SystemExit("ASSEMBLY_BLOCKED: programming identity containment baseline pending; no SQL regenerated")
  head='-- REVIEW ONLY. NO HOSTED EXECUTION. Canonical '+REF+'; no fixture/data writes.\n'
  tx="BEGIN;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='15s';\n"
  acl=''
