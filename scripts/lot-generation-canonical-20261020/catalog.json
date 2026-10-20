@@ -292,5 +292,75 @@
       "public.vw_esteira_laboratorio",
       "d72d5df7bacffdf8f4fc4282b804ab90"
     ]
+  ],
+  "dependency_schema": [
+    [
+      "envase",
+      "f5d6ae230e441d2b5f4c888709f44af7"
+    ],
+    [
+      "estoque_produto",
+      "e4cf8014db3a6bf172604bec3fa65cb6"
+    ],
+    [
+      "profiles",
+      "128b6171302931e58eba778177b85019"
+    ],
+    [
+      "user_roles",
+      "e1d37134d4e78eab8cbe037d28dafb85"
+    ],
+    [
+      "organizations",
+      "a5cf5aa5d0fafd5ee00347c9bc93c1c0"
+    ],
+    [
+      "organization_subscriptions",
+      "9912c243b1c4bab185238fe4af981a6b"
+    ],
+    [
+      "organization_feature_overrides",
+      "e889e69ef054dd4c8d9fd8e413dae721"
+    ],
+    [
+      "platform_org_admin_invites",
+      "2d743148bb15d5c5bac3b0e8389e33a6"
+    ],
+    [
+      "ordens_servico_onfarm",
+      "57db4f3d2b4ee1a38256defed97618c8"
+    ],
+    [
+      "saas_plan_versions",
+      "069a3f803a34cd2822666d048c4beb79"
+    ],
+    [
+      "saas_plan_version_features",
+      "a958bdaa90e9ef33be4a5f43c2f37d75"
+    ],
+    [
+      "saas_features",
+      "c058ce5277cae72146ddd5d7532c5215"
+    ],
+    [
+      "saas_modules",
+      "0a5bc4c5b7a97201669e087b47b8dd20"
+    ],
+    [
+      "fazendas",
+      "f6b66094e66e7ff4a547a9778295eb09"
+    ],
+    [
+      "talhoes",
+      "52fc4b5d3d2e9b0c51801596c6cf2449"
+    ],
+    [
+      "produtos",
+      "df8ea5740b0358c87d0e5ce8afd58bd1"
+    ],
+    [
+      "microrganismos",
+      "2c7d22d5b3c2b8d3d3ae76ede3e8f8eb"
+    ]
   ]
 }
