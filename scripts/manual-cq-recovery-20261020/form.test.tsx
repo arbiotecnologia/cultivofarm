@@ -1,0 +1,26 @@
+import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
+import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
+import { RegistrarCQDialog } from "/tmp/cq-review-validation/RegistrarCQDialog";
+const state=vi.hoisted(()=>({roles:["administrador"],ready:true,epoch:0,rpc:vi.fn(),from:vi.fn(),success:vi.fn(),error:vi.fn(),ref:{data:null,isFetching:false,isError:false}}));
+vi.mock("@/hooks/useAuth",()=>({useAuth:()=>({roles:state.roles})}));
+vi.mock("@/hooks/useStorageAccessScope",()=>({useStorageAccessScope:()=>{const epoch=state.epoch;return {ready:state.ready,scope:String(epoch),capture:()=>()=>state.ready&&epoch===state.epoch};}}));
+vi.mock("@/hooks/useCQReferencia",()=>({useCQReferencia:()=>state.ref}));
+vi.mock("@/components/cockpit/CQComparativoTable",()=>({CQComparativoTable:()=>null}));
+vi.mock("@/integrations/supabase/client",()=>({supabase:{rpc:state.rpc,from:state.from}}));
+vi.mock("sonner",()=>({toast:{success:state.success,error:state.error}}));
+vi.mock("@/components/ui/select",()=>({Select:({children,onValueChange}:any)=><div><select aria-label="Resultado" onChange={e=>onValueChange(e.target.value)}><option value="">Selecione</option><option value="aprovado">Aprovado</option><option value="reprovado">Reprovado</option></select>{children}</div>,SelectContent:()=>null,SelectItem:()=>null,SelectTrigger:()=>null,SelectValue:()=>null}));
+const target={os_id:"os-a",programacao_id:"pp-a",lote_id:"lot-a",origem:"manual"};
+let finish:(v:unknown)=>void;
+const props=()=>({open:true,target,phase:"send" as const,onOpenChange:vi.fn(),onCompleted:vi.fn()});
+beforeEach(()=>{vi.clearAllMocks();state.roles=["administrador"];state.ready=true;state.epoch=0;state.ref={data:null,isFetching:false,isError:false};state.rpc.mockImplementation(()=>({abortSignal:()=>new Promise(r=>{finish=r;})}));});
+afterEach(()=>{cleanup();vi.useRealTimers();});
+const confirm=()=>fireEvent.click(screen.getByRole("checkbox"));
+const answer={data:{success:true,lote_id:"lot-a",status:"em_cq"},error:null};
+describe("CQ candidate actual existing form",()=>{
+ it("send is one canonical call, no direct table write and no form navigation",async()=>{const p=props();render(<RegistrarCQDialog {...p}/>);confirm();fireEvent.click(screen.getByRole("button",{name:"Enviar para CQ"}));expect(state.rpc).toHaveBeenCalledTimes(1);expect(state.rpc.mock.calls[0][1]).toEqual({p_os_id:"os-a",p_origem:"manual",p_etapa_destino:"enviar_cq",p_programacao_id:"pp-a"});await act(async()=>finish(answer));expect(p.onCompleted).toHaveBeenCalledTimes(1);expect(state.from).not.toHaveBeenCalled();});
+ it("explicit synthetic confirmation required",()=>{render(<RegistrarCQDialog {...props()}/>);fireEvent.submit(screen.getByRole("button",{name:"Enviar para CQ"}).closest("form") as HTMLFormElement);expect(state.rpc).not.toHaveBeenCalled();});
+ for(const change of ["role","tenant","epoch","revoke"])it(`late completion cannot revive ${change} context`,async()=>{const p=props();const r=render(<RegistrarCQDialog {...p}/>);confirm();fireEvent.click(screen.getByRole("button",{name:"Enviar para CQ"}));state.epoch++;if(change==="role")state.roles=["consultor_tecnico"];if(change==="revoke")state.ready=false;r.rerender(<RegistrarCQDialog {...p}/>);await act(async()=>finish(answer));expect(p.onCompleted).not.toHaveBeenCalled();expect(p.onOpenChange).not.toHaveBeenCalled();expect(state.success).not.toHaveBeenCalled();});
+ it("hung transport has real timeout and late success is ignored",async()=>{vi.useFakeTimers();const p=props();render(<RegistrarCQDialog {...p}/>);confirm();fireEvent.click(screen.getByRole("button",{name:"Enviar para CQ"}));await act(async()=>vi.advanceTimersByTimeAsync(12000));expect(state.error).toHaveBeenCalledTimes(1);await act(async()=>finish(answer));expect(p.onCompleted).not.toHaveBeenCalled();});
+ it("server errors remain neutral",async()=>{render(<RegistrarCQDialog {...props()}/>);confirm();fireEvent.click(screen.getByRole("button",{name:"Enviar para CQ"}));await act(async()=>finish({data:null,error:{message:"private tenant secret"}}));expect(state.error).toHaveBeenCalledWith("CQ não confirmado. Consulte a OS antes de tentar novamente.");});
+ it("full laboratory payload is sent atomically",async()=>{const p={...props(),phase:"record" as const};render(<RegistrarCQDialog {...p}/>);confirm();const inputs=screen.getAllByRole("textbox");fireEvent.change(screen.getByRole("spinbutton"),{target:{value:"7"}});for(const [i,value] of ["1,5","8","Normal","Caracteristico","Ausente"].entries())fireEvent.change(inputs[i],{target:{value}});fireEvent.change(screen.getByLabelText("Resultado"),{target:{value:"aprovado"}});fireEvent.click(screen.getByRole("button",{name:"Registrar análise sintética"}));expect(state.rpc).toHaveBeenCalledTimes(1);expect(state.rpc.mock.calls[0][1].p_cq).toEqual({lote_id:"lot-a",resultado:"aprovado",ph:7,concentracao:150000000,aparencia:"Normal",odor:"Caracteristico",contaminacao:"Ausente",referencia_id:null,dados_sinteticos:true});await act(async()=>finish(answer));expect(state.from).not.toHaveBeenCalled();});
+});
