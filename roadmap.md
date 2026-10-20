@@ -386,5 +386,5 @@
 ## 20/10 13:11 — contenção hosted anunciada e comparação CQ
 - [x] Corrigir comparação candidata: referência incompleta/inativa, medidos ausentes e igualdade textual exata do core; sem mutação.
 - [x] Bloquear montagem SQL até nova baseline de função/trigger; SQLs existentes marcados históricos, sem DDL.
-- [ ] Incorporar baseline LIVE em PRE/POST/rollback: aguarda recibo de sucesso e hashes/trigger do proprietário, sem reescrever contenção.
+- [x] 13:13: baseline LIVE conferida read-only e incorporada em PRE/POST/rollback sem redefinir/remover; 102 checks PG descartável, 67 Vitest e tsgo candidato PASS. Pacote requer nova revisão independente; gate false.
 - [x] 62 Vitest e tsgo candidato PASS; comparação/rollback/hashes/relatório atualizados, runtime intocado.
