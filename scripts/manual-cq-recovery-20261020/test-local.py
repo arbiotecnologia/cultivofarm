@@ -78,6 +78,7 @@ def main():
   run(actor()+f'BEGIN;SET LOCAL ROLE authenticated;SELECT {call(no_ref_rejected)};ROLLBACK;');checks.append('no-reference synthetic rejection records data but never conformity')
   # Explicit synthetic reference for a different local test scenario, NOT a product/micro association.
   refid=q(91); data['referencia_id']=refid.strip("'")
+  run(f"INSERT INTO microrganismos(id,nome,tipo) VALUES({q(92)},'LOCAL SYNTHETIC CQ REFERENCE ONLY','bacteria');")
   run(f"INSERT INTO cq_parametros_referencia(id,microrganismo_id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,ativo) VALUES({refid},{q(92)},{lot.P},6,8,100000000,'Normal','Caracteristico','Ausente',true);")
   yes('product remains without direct microorganism',f'(SELECT microrganismo_id IS NULL FROM ordens_servico WHERE id={O}) AND (SELECT microrganismo_id IS NULL FROM programacao_producao WHERE id={PP})')
   for label,change in [('inactive reference',f'UPDATE cq_parametros_referencia SET ativo=false WHERE id={refid};'),('foreign item reference',f'UPDATE cq_parametros_referencia SET produto_id={q(93)} WHERE id={refid};'),('incomplete reference',f'UPDATE cq_parametros_referencia SET ph_min=NULL WHERE id={refid};'),('out of specification',f'UPDATE cq_parametros_referencia SET ph_min=8 WHERE id={refid};')]:
