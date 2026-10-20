@@ -19,7 +19,20 @@
     "src/lib/authz/authzEpochGate.ts": "2f16ab0a44fcadeac9b084c51fde3c6148c1ee5a6955f12eee23597d9204cfe7",
     "src/lib/configuracoes/externalUserEditGate.ts": "3d3dd31a514cc2a83760122cf1d25160beadd5ba8c6306e710c3dd5aed2301fe",
     "src/lib/fiscal/homologationSmokeGate.ts": "d08fd306463ae63ce108177b1df79846fc70328d1c33d37d8f3956345c09f917",
-    "src/config/featureFlags.ts": "79fcdeef07095f5014e5cc88e9e2f756dd46c1731a9c7c1dffec5f635c1a6c18"
+    "src/config/featureFlags.ts": "79fcdeef07095f5014e5cc88e9e2f756dd46c1731a9c7c1dffec5f635c1a6c18",
+    "src/pages/configuracoes/ParametrosCQPage.tsx": "8ce8c0e48b7a1b89e6b31c9291e60c5a145d15af0694e231b357d4fb1de70eb7"
   },
-  "activation_basis": "revis\u00e3o13a01: 1135/1135 pol\u00edtica ativa + types EXIT0; build autom\u00e1tico pendente"
+  "activation_basis": "revis\u00e3o13a01: candidato e runtime config1077+anteriores41+novos17 PASS, types EXIT0, build autom\u00e1tico OK",
+  "runtime_changed": {
+    "src/hooks/useAuth.tsx": "b3a65696cad65ebe08e861d525c68e55982bf79a49b3e21b448ec09f18d0e63b",
+    "src/lib/authz/roleChangeReresolve.ts": "b6d7f4e42ec858b0be5105986ef2c110994849419d88a8a630805e7ec788ef8d"
+  },
+  "tests_changed": {
+    "scripts/monitor-loader-renewal-20261020/residualScopeStability.regression.test.tsx": "acdb59e10d77041cb100f25d861abb9e6390b3f0097caf17715e60546e676dc5",
+    "src/test/config/managerConsultantOpenSession.integration.test.tsx": "4609bd7954d1674017cc240a9cadf9d9f8a16f8055fa2c4ea8a9c013efaceeb6",
+    "src/test/config/monitorRetryReresolve.integration.test.tsx": "77a38c40aedc3452199c2a9c1a1c5bda687744acdc351adf118e521ff680e94e",
+    "src/test/config/portalContextRecovery.integration.test.tsx": "5c48a1fac1106cb47d75dad7023cc51eeecd0df547a9a8ac668cbcbb1e582d1c",
+    "src/test/config/residualScopeStability.integration.test.tsx": "f9d3aac3d7158cf522f1d4b02404de4ba4db4795f3aad4f450fe0dc17718897a",
+    "src/test/config/retryLoadingRace.integration.test.tsx": "32bbb8c5dda00c668ab2b21903f24f537ebc83a216b6016b352718ea1ddfe127"
+  }
 }
