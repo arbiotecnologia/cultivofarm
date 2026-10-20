@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
-# Rollback frontend CQ: restaura bytes exatos pré-ativação (gate volta a false implicitamente).
+# Rollback frontend CQ (bytes exatos). Uso: rollback.sh [--with-types]
+# types.ts reflete o schema hosted pós-DDL; restaurá-lo só junto do rollback SQL.
 set -euo pipefail
-P=scripts/manual-cq-recovery-20261020
+P=scripts/manual-cq-recovery-20261020; R=$P/runtime-activation
 for f in components/cockpit/CQComparativoTable.tsx components/cockpit/RegistrarCQDialog.tsx components/ordens-servico/OSDetalhesDialog.tsx hooks/useCQReferencia.ts; do cp "$P/rollback/src/$f.review" "src/$f"; done
-cp "$P/runtime-activation/rollback/d51-5-p0d-production-rbac.test.ts.review" src/test/security/d51-5-p0d-production-rbac.test.ts
-sha256sum -c <<'H'
-e5b13716e1fee437bfebda58d15239d2b3cd72113ad852aad4c81780d2d1ac03  src/components/cockpit/CQComparativoTable.tsx
-feb8228fb7ebbfb5b9837e8f6dc651587f17a803e3a17243cdbf420b3da8f192  src/components/cockpit/RegistrarCQDialog.tsx
-3860b367d2b136b2239ad1b36dd99cb8f08f1098d8b8dcffc3ef9098e2eb46c2  src/components/ordens-servico/OSDetalhesDialog.tsx
-d49770351f2f6faf6f1465b59474385d8146145b9eaa08a4a35f99b8dae1bdf9  src/hooks/useCQReferencia.ts
-dc72c7689e22f28dffcccf6e9a8aa271218f43530715a0f832452e7be18be1df  src/test/security/d51-5-p0d-production-rbac.test.ts
-H
+cp "$R/rollback/d51-5-p0d-production-rbac.test.ts.review" src/test/security/d51-5-p0d-production-rbac.test.ts
+# A correção de importação de tipos é independente; só reverter com --with-imports.
+if [[ " $* " == *" --with-imports "* ]]; then (cd "$R/rollback/types-import" && find src -name '*.review') | while read -r f; do cp "$R/rollback/types-import/$f" "${f%.review}"; done; fi
+if [[ " $* " == *" --with-types "* ]]; then cp "$R/rollback/types/types.ts.review" src/integrations/supabase/types.ts; fi
+python3 - "$R" "$@" <<'PY'
+import hashlib,json,sys
+R=sys.argv[1]; m=json.load(open(f"{R}/manifest.json")); ok=True
+for k,v in m["files"].items():
+  if v["group"]=="types" and "--with-types" not in sys.argv: continue
+  if v["group"]=="types-import" and "--with-imports" not in sys.argv: continue
+  h=hashlib.sha256(open(k,"rb").read()).hexdigest()
+  if h!=v["pre_sha256"]: ok=False; print("DRIFT",k)
+print("ROLLBACK OK" if ok else "ROLLBACK FAIL"); sys.exit(0 if ok else 1)
+PY

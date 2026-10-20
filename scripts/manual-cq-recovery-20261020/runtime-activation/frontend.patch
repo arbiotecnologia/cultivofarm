@@ -546,3 +546,135 @@
    });
  
    it("não oferece envase complementar a perfil somente leitura", () => {
+--- a/src/integrations/supabase/types.ts
++++ b/src/integrations/supabase/types.ts
+@@ -4872,7 +4872,7 @@
+           created_at: string
+           created_by: string | null
+           id: string
+-          microrganismo_id: string
++          microrganismo_id: string | null
+           observacoes: string | null
+           odor_esperado: string | null
+           ph_max: number | null
+@@ -4888,7 +4888,7 @@
+           created_at?: string
+           created_by?: string | null
+           id?: string
+-          microrganismo_id: string
++          microrganismo_id?: string | null
+           observacoes?: string | null
+           odor_esperado?: string | null
+           ph_max?: number | null
+@@ -4904,7 +4904,7 @@
+           created_at?: string
+           created_by?: string | null
+           id?: string
+-          microrganismo_id?: string
++          microrganismo_id?: string | null
+           observacoes?: string | null
+           odor_esperado?: string | null
+           ph_max?: number | null
+@@ -23498,15 +23498,26 @@
+           isSetofReturn: false
+         }
+       }
+-      rpc_avancar_esteira_laboratorio: {
+-        Args: {
+-          p_etapa_destino: string
+-          p_origem: string
+-          p_os_id: string
+-          p_programacao_id?: string
+-        }
+-        Returns: Json
+-      }
++      rpc_avancar_esteira_laboratorio:
++        | {
++            Args: {
++              p_etapa_destino: string
++              p_origem: string
++              p_os_id: string
++              p_programacao_id?: string
++            }
++            Returns: Json
++          }
++        | {
++            Args: {
++              p_cq: Json
++              p_etapa_destino: string
++              p_origem: string
++              p_os_id: string
++              p_programacao_id: string
++            }
++            Returns: Json
++          }
+       rpc_b2b_aging: {
+         Args: { p_partner_id?: string }
+         Returns: {
+--- a/src/components/clientes/ClienteDocumentosTab.tsx
++++ b/src/components/clientes/ClienteDocumentosTab.tsx
+@@ -1,7 +1,7 @@
+ import { formatDateDisplay } from "@/lib/date-utils";
+ import { useState, useEffect, useCallback, useRef } from "react";
+ import { supabase } from "@/integrations/supabase/client";
+-import type { Database } from "@/integrations/supabase/types";
++import type { Database } from "@/integrations/supabase/cultivofarm.types";
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
+--- a/src/components/visita/AprovacaoCard.tsx
++++ b/src/components/visita/AprovacaoCard.tsx
+@@ -1,7 +1,7 @@
+ import { formatDateTimeDisplay } from "@/lib/date-utils";
+ import { useQuery } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+-import type { Tables } from "@/integrations/supabase/types";
++import type { Tables } from "@/integrations/supabase/cultivofarm.types";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Badge } from "@/components/ui/badge";
+ import {
+--- a/src/components/financeiro/EstornoDialog.tsx
++++ b/src/components/financeiro/EstornoDialog.tsx
+@@ -2,7 +2,7 @@
+ import { useRef, useState } from "react";
+ import { useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+-import type { Tables } from "@/integrations/supabase/types";
++import type { Tables } from "@/integrations/supabase/cultivofarm.types";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+@@ -15,7 +15,10 @@
+ import { CHAVES_INVALIDACAO_PAGAR } from "@/lib/financeiro/contasPagar";
+ 
+ type CommonPayment = Pick<Tables<"receivable_payments">,
+-  "id" | "installment_id" | "organization_id" | "payment_date" | "is_reversal" | "reversed_payment_id">;
++  "id" | "installment_id" | "payment_date" | "is_reversal" | "reversed_payment_id"> & {
++  /** Hosted column (uuid, nullable) absent from the canonical type snapshot; fence below requires equality. */
++  organization_id: string | null;
++};
+ export type FinancialPayment = CommonPayment & {
+   amount_received?: number;
+   amount_paid?: number;
+--- a/src/pages/financeiro/Categorias.tsx
++++ b/src/pages/financeiro/Categorias.tsx
+@@ -4,7 +4,7 @@
+ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+ import { Badge } from "@/components/ui/badge";
+ 
+-import type { Database } from "@/integrations/supabase/types";
++import type { Database } from "@/integrations/supabase/cultivofarm.types";
+ 
+ type Category = Pick<Database["public"]["Tables"]["financial_categories"]["Row"],
+   "id" | "name" | "type" | "dre_group" | "active">;
+--- a/src/pages/app/wizard/WizardAnexosStep.tsx
++++ b/src/pages/app/wizard/WizardAnexosStep.tsx
+@@ -3,7 +3,7 @@
+ import { supabase } from "@/integrations/supabase/client";
+ import { buildTenantStoragePath, isConsultorStoragePath } from "@/lib/tenantStoragePath";
+ import { buildRemotePath, BUCKET, TECHNICAL_ATTACHMENT_ACCEPT, validateTechnicalAttachment } from "@/lib/mediaUpload";
+-import type { Tables } from "@/integrations/supabase/types";
++import type { Tables } from "@/integrations/supabase/cultivofarm.types";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
+ import { useAuth } from "@/hooks/useAuth";

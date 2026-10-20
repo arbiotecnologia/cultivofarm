@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { buildTenantStoragePath, isConsultorStoragePath } from "@/lib/tenantStoragePath";
 import { buildRemotePath, BUCKET, TECHNICAL_ATTACHMENT_ACCEPT, validateTechnicalAttachment } from "@/lib/mediaUpload";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/cultivofarm.types";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
