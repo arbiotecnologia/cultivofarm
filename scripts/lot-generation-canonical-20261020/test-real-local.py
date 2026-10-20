@@ -123,7 +123,7 @@ def main():
         denied('non-string tanque rejected', call('{"volume_produzido":100,"tanque":5}'))
         def closed(change):
             r = run(f"BEGIN; {change}" + actor() + f"SELECT ({call()})->>'success'; ROLLBACK;", False)
-            assert (r.returncode and ('COCKPIT_LOTE' in r.stderr or 'lab_assert_manufacturable' in r.stderr or 'check_os_status_transition' in r.stderr or 'OS_APPROVAL' in r.stderr or 'check_os_programacao_transition' in r.stderr)) or (r.returncode == 0 and 'false' in r.stdout.splitlines()[-2:][0]), (r.stdout[-300:], r.stderr[-300:])
+            assert (r.returncode and ('COCKPIT_LOTE' in r.stderr or 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in r.stderr or 'lab_assert_manufacturable' in r.stderr or 'check_os_status_transition' in r.stderr or 'OS_APPROVAL' in r.stderr or 'check_os_programacao_transition' in r.stderr)) or (r.returncode == 0 and 'false' in r.stdout.splitlines()[-2:][0]), (r.stdout[-300:], r.stderr[-300:])
             assert run("SELECT count(*) FROM lotes;").stdout.strip() == '0'
         closed(f"UPDATE programacao_producao SET responsavel_id=(SELECT id FROM profiles WHERE user_id={U}) WHERE id={PP};")
         results.append('non-null responsible stays closed')
