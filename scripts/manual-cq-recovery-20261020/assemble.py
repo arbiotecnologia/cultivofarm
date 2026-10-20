@@ -83,13 +83,13 @@ def main():
  acl=''
  for s in ['public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid)',NEW[-1]]:acl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
  # Integrity hardening is already LIVE: require exact hashes, never rewrite/reapply it.
- reference=(H/'reference-product-only.sql.review').read_text().replace('BEGIN;\nSET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='15s';\n','',1).removesuffix('COMMIT;\n')
+ reference=(H/'reference-product-only.sql.review').read_text().replace("BEGIN;\nSET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='15s';\n",'',1).rstrip().removesuffix('COMMIT;')
  body=reference+'\n'+''.join((H/f).read_text()+'\n' for f in ['lot-guard.sql.review','guards.sql.review','cq-trigger.sql.review','transition.sql.review','reader.sql.review','core.sql.review'])
  for mode,file in [('pre','preflight-readonly.sql'),('post','postflight-readonly.sql'),('rollback','rollback-postflight-readonly.sql')]: (H/file).write_text(head+'BEGIN READ ONLY;\n'+guard(mode)+'ROLLBACK;\n')
  (H/'candidate.sql.review').write_text(head+tx+guard('pre')+body+acl+guard('post')+'COMMIT;\n')
  rollback=(H/'rollback/advance-rpc.sql.review').read_text()+f'REVOKE ALL ON FUNCTION {NEW[-1]} FROM PUBLIC,anon,authenticated,service_role;\nREVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) TO service_role;\n'+(H/'rollback/manual-write-guard.sql.review').read_text().split('CREATE TRIGGER')[0].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1)+(H/'rollback/check_os_status_transition.sql.review').read_text()
  (H/'rollback.sql.review').write_text(head+tx+guard('post')+rollback+guard('rollback')+'COMMIT;\n')
- manifest={'baseline':'afa2417fb2ac305636b9bc82786d62ae9af0a632','canonical_ref':REF,'applied':False,'runtime_changed':False,'gate':'MANUAL_CQ_REVIEWED=false','live_program_binding_hash':'7c168ffa9393207fb3388c9546c19d05','files':{}}
+ manifest={'baseline':'afa2417fb2ac305636b9bc82786d62ae9af0a632','canonical_ref':REF,'applied':False,'runtime_changed':False,'gate':'MANUAL_CQ_REVIEWED=false','reference_delta_integrated':True,'fictional_admin_proposal_executed':False,'live_program_binding_hash':'7c168ffa9393207fb3388c9546c19d05','files':{}}
  for p in sorted(H.rglob('*')):
   if p.is_file() and p.name!='manifest.json' and '__pycache__' not in p.parts:manifest['files'][str(p.relative_to(H))]=hashlib.sha256(p.read_bytes()).hexdigest()
  (H/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
