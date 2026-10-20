@@ -9,8 +9,8 @@
   "candidate_sha256": "ace8f12d59a041f7ee5db03992198cb123f8efc04c11807c41559fed4f737dc4",
   "cq_manifest_sha256": "828ca545c9b2c8b49aea23c96766b0281e72d9e8cd696853232d8c8005a22062",
   "files": {
-    "AGENTS.md": "eb7f8aaffe2723c2455d395c7dfc0809ebd843ba1a91e9b94a8230df4cdd7def",
-    "README.md": "883a0d7134e21e81952d741fd75aa0be332e3387e9d46ef8c56e2cba7bf0a40a",
+    "AGENTS.md": "32af9c8995171a4c9fcccfdac19eb440a80c7243baae4f444e33adba5ab891f3",
+    "README.md": "13874aa44322d3074dbc567f10a41ab1ad16014fef964d8401049f9c5e0071bf",
     "autoTimeoutRecovery.regression.test.tsx": "dad21bd3917441c511abb97d5dc0208232e1f9b1fb790c8d59d0ba16acf80945",
     "baseline-reproduction.test.tsx": "32eedcd321640f421d6cae49baabf35f88426c57e23a5523c9ef60b0125c0db3",
     "candidate-v2/src/hooks/useAuth.tsx": "ace8f12d59a041f7ee5db03992198cb123f8efc04c11807c41559fed4f737dc4",
