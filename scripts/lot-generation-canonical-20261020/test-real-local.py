@@ -290,7 +290,7 @@ def main():
         out=run(actor()+"SET ROLE authenticated;SELECT platform_private.guard_manual_lot_write_v1();",False)
         assert out.returncode and 'permission denied' in out.stderr;results.append('trigger helper has no client EXECUTE')
         out=run(actor()+"SELECT set_config('manual_lot_insert_v1','true',false); SET ROLE authenticated;"+direct,False)
-        assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr;results.append('GUC forged flag cannot authorize manual lot INSERT')
+        assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr, out.stderr;results.append('GUC forged flag cannot authorize manual lot INSERT')
         assert run('SELECT count(*) FROM platform_private.authz_tickets;').stdout.strip()=='0';results.append('success/replay leave no reusable authorization tickets')
         run((H/'rollback/rpc.sql.review').read_text()+asm.ROLL_ACL)
         out=run(actor()+'SET ROLE authenticated;'+direct,False);assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr
