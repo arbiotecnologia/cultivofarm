@@ -1,0 +1,49 @@
+CREATE OR REPLACE FUNCTION public.fn_cq_aprovado_avanca_os()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_prog_id uuid;
+  v_os_onfarm_id uuid;
+  v_os_id uuid;
+BEGIN
+  IF EXISTS(SELECT 1 FROM public.lotes l JOIN public.programacao_producao p ON p.id=l.programacao_id WHERE l.id=NEW.lote_id AND p.ordem_servico_id IS NOT NULL) THEN RETURN NEW; END IF;
+  IF NEW.resultado::text <> 'aprovado' THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT programacao_id INTO v_prog_id FROM public.lotes WHERE id = NEW.lote_id;
+  IF v_prog_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT ordem_servico_onfarm_id, ordem_servico_id
+    INTO v_os_onfarm_id, v_os_id
+    FROM public.programacao_producao
+    WHERE id = v_prog_id;
+
+  -- Mirror status on programacao and lote
+  UPDATE public.programacao_producao SET status = 'aprovado' WHERE id = v_prog_id;
+  UPDATE public.lotes SET status = 'aprovado' WHERE id = NEW.lote_id;
+
+  -- Advance OS On-Farm if it is at em_producao or em_cq
+  IF v_os_onfarm_id IS NOT NULL THEN
+    UPDATE public.ordens_servico_onfarm
+      SET status = 'envase'
+      WHERE id = v_os_onfarm_id
+        AND status::text IN ('em_producao','em_cq');
+  END IF;
+
+  -- Advance legacy OS if it is at em_producao or em_cq
+  IF v_os_id IS NOT NULL THEN
+    UPDATE public.ordens_servico
+      SET status = 'envase'
+      WHERE id = v_os_id
+        AND status::text IN ('em_producao','em_cq');
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;
