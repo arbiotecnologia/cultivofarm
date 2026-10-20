@@ -2,7 +2,7 @@ import { formatDateDisplay } from "@/lib/date-utils";
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/cultivofarm.types";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -15,7 +15,10 @@ import { CHAVES_INVALIDACAO_RECEBER } from "@/lib/financeiro/contasReceber";
 import { CHAVES_INVALIDACAO_PAGAR } from "@/lib/financeiro/contasPagar";
 
 type CommonPayment = Pick<Tables<"receivable_payments">,
-  "id" | "installment_id" | "organization_id" | "payment_date" | "is_reversal" | "reversed_payment_id">;
+  "id" | "installment_id" | "payment_date" | "is_reversal" | "reversed_payment_id"> & {
+  /** Hosted column (uuid, nullable) absent from the canonical type snapshot; fence below requires equality. */
+  organization_id: string | null;
+};
 export type FinancialPayment = CommonPayment & {
   amount_received?: number;
   amount_paid?: number;
