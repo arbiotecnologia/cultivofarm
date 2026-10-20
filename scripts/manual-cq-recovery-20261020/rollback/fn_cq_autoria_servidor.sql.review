@@ -3,16 +3,12 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
-AS $fn$
+AS $function$
 DECLARE
   v_uid uuid := auth.uid();
   v_profile uuid;
 BEGIN
-  IF COALESCE(current_setting('app.cq_purge_fixture', true), '') = 'on'
-     AND current_user NOT IN ('anon', 'authenticated') THEN
-    RETURN NEW;
-  END IF;
-
+  -- Sem excecao por GUC: autoria e imutabilidade valem em todas as chamadas.
   IF TG_OP = 'INSERT' THEN
     IF v_uid IS NOT NULL THEN
       SELECT id INTO v_profile FROM public.profiles WHERE user_id = v_uid LIMIT 1;
@@ -43,4 +39,4 @@ BEGIN
 
   RETURN NEW;
 END;
-$fn$;
+$function$;

@@ -1,11 +1,13 @@
 {
   "passed": [
     "exact current closed wrapper rollback",
-    "exact LIVE baseline fn_cq_autoria_servidor()",
-    "exact LIVE baseline fn_cq_resultado_imutavel()",
-    "exact LIVE baseline fn_cq_aprovado_avanca_os()",
-    "exact LIVE baseline check_os_status_transition()",
+    "exact historical reproduction source fn_cq_autoria_servidor()",
+    "exact historical reproduction source fn_cq_resultado_imutavel()",
+    "exact historical reproduction source fn_cq_aprovado_avanca_os()",
+    "exact historical reproduction source check_os_status_transition()",
     "baseline DEFINER GUC forged authenticated bypasses author update delete (isolated triggers)",
+    "exact contained LIVE baseline fn_cq_autoria_servidor()",
+    "exact contained LIVE baseline fn_cq_resultado_imutavel()",
     "forged GUC authenticated cannot forge author",
     "forged GUC authenticated cannot change finalized ph",
     "forged GUC authenticated cannot delete finalized result",
@@ -74,7 +76,7 @@
     "rollback retains completed CQ and no filling",
     "rollback never restores GUC purge escape"
   ],
-  "count": 73,
+  "count": 75,
   "hosted": false,
   "auth": "synthetic UID/JWT; real captured STABLE guards and target triggers; not real browser certification",
   "limits": [
