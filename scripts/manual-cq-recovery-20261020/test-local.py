@@ -57,7 +57,7 @@ def main():
    run((H/f).read_text())
   run('REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) TO authenticated;REVOKE ALL ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid,jsonb) TO authenticated;')
   # Reproduce the reviewed parent vulnerability with all existing local guards active.
-  old_parent=(H/'historical-test-fixtures/parent-guard-before.sql.review').read_text().split('CREATE TRIGGER')[0]
+  old_parent=(H/'historical-test-fixtures/parent-guard-before.sql.review').read_text(); old_parent=old_parent[old_parent.index('CREATE FUNCTION platform_private.guard_manual_cq_parent_v1()'):].split('CREATE TRIGGER')[0]
   old_parent=old_parent.replace('CREATE FUNCTION platform_private.guard_manual_cq_write_v1()', 'CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_write_v1()').replace('CREATE FUNCTION platform_private.guard_manual_cq_parent_v1()', 'CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_parent_v1()')
   # Only replace parent body, not the write guard or triggers.
   old_parent=old_parent[old_parent.index('CREATE OR REPLACE FUNCTION platform_private.guard_manual_cq_parent_v1()'):]
