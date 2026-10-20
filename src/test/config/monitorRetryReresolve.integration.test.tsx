@@ -27,7 +27,7 @@ function chain(table: string) {
   };
   const q: Record<string, unknown> = {};
   for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
-  q.select = (cols: string) => { fresh = cols.includes('user_id, organization_id, ativo'); return q; };
+  q.select = (cols: string) => { fresh = cols === 'user_id, organization_id, ativo'; return q; };
   q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
   return q;
 }

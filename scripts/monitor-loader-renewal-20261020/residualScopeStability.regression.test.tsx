@@ -19,7 +19,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
     const q: Record<string, unknown> = {};
     let fresh = false;
     for (const n of ['select', 'eq', 'in', 'order', 'abortSignal']) q[n] = () => q;
-    q.select = (cols: string) => { fresh = cols.includes('user_id, organization_id, ativo'); return q; };
+    q.select = (cols: string) => { fresh = cols === 'user_id, organization_id, ativo'; return q; };
     const run = () => fresh && t === 'profiles' && s.autoFreshFailures++ === 0
       ? Promise.resolve({ data: null, error: { status: 503, message: 'controlled automatic fresh-read failure' } }) : later(() => t === 'profiles'
       ? { data: { user_id: s.uid, organization_id: s.org, ativo: true, senha_provisoria: false, nome: 'B' }, error: null }
