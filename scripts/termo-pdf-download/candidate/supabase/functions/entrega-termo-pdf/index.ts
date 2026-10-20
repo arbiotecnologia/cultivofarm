@@ -40,24 +40,29 @@ function deadline(ms: number, parent?: AbortSignal | null): Deadline {
   return { signal, wait, run, dispose: () => { clearTimeout(timer); parent?.removeEventListener("abort", abort); } };
 }
 
+/** Cancelamento sem espera: um cancel() que nunca resolve (ou lança) não segura a resposta. */
+function soltar(cancel: (() => Promise<unknown>) | undefined): void {
+  try { void cancel?.().catch(() => {}); } catch { /* ignorado */ }
+}
+
 /** Bytes do bucket privado via transporte abortavel, com limite aplicado durante o stream. */
 async function lerPdfLimitado(d: Deadline, path: string): Promise<{ ok: true; bytes: Uint8Array<ArrayBuffer> } | { ok: false; status: number }> {
   const base = Deno.env.get("SUPABASE_URL")!; const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const url = `${base}/storage/v1/object/authenticated/${BUCKET}/${path.split("/").map(encodeURIComponent).join("/")}`;
   const res: Response = await d.wait(fetch(url, { headers: { Authorization: `Bearer ${key}`, apikey: key }, signal: d.signal }));
-  if (!res.ok || !res.body) { await res.body?.cancel().catch(() => {}); return { ok: false, status: 404 }; }
+  if (!res.ok || !res.body) { soltar(res.body ? () => res.body!.cancel() : undefined); return { ok: false, status: 404 }; }
   const declared = Number(res.headers.get("content-length") ?? "");
-  if (Number.isFinite(declared) && declared > MAX_PDF_BYTES) { await res.body.cancel().catch(() => {}); return { ok: false, status: 413 }; }
+  if (Number.isFinite(declared) && declared > MAX_PDF_BYTES) { soltar(() => res.body!.cancel()); return { ok: false, status: 413 }; }
   const reader = res.body.getReader(); const parts: Uint8Array[] = []; let total = 0;
   try {
     for (;;) {
       const { done, value } = await d.wait(reader.read());
       if (done) break;
       total += value.byteLength;
-      if (total > MAX_PDF_BYTES) { await reader.cancel().catch(() => {}); return { ok: false, status: 413 }; }
+      if (total > MAX_PDF_BYTES) { soltar(() => reader.cancel()); return { ok: false, status: 413 }; }
       parts.push(value);
     }
-  } catch (e) { reader.cancel().catch(() => {}); throw e; }
+  } catch (e) { soltar(() => reader.cancel()); throw e; }
   if (total <= 0) return { ok: false, status: 404 };
   const bytes = new Uint8Array(new ArrayBuffer(total)); let off = 0;
   for (const part of parts) { bytes.set(part, off); off += part.byteLength; }

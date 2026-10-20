@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const unavailable = () => new Error("Documento indisponível");
@@ -37,8 +37,9 @@ export async function downloadTermoPdf(termoId: string, outer: AbortSignal): Pro
     const { data } = await bounded(supabase.auth.getSession(), signal);
     const token = data?.session?.access_token;
     if (!token) throw unavailable();
-    const base = import.meta.env.VITE_SUPABASE_URL as string;
-    const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+    // Mesmas constantes do cliente canônico (binding guard): nunca env divergente, token só ao backend canônico.
+    const base = SUPABASE_URL;
+    const key = SUPABASE_PUBLISHABLE_KEY;
     const res = await bounded(fetch(`${base}/functions/v1/entrega-termo-pdf`, {
       method: "POST", signal, cache: "no-store", credentials: "omit",
       headers: { Authorization: `Bearer ${token}`, apikey: key, "Content-Type": "application/json" },
