@@ -285,6 +285,10 @@ def main():
         for label,change in [('status',"status='aprovado'"),('volume','volume_produzido=101'),('unlink','programacao_id=NULL'),('tenant',f'organization_id={B}'),('item','produto_id=NULL')]:
             out=run(actor()+f"SET ROLE authenticated;UPDATE lotes SET {change} WHERE id='{lotid}';",False)
             assert out.returncode and '42501' in out.stderr;results.append('manual UPDATE '+label+' denied, no artificial advancement')
+        # An old manual lot cannot escape via a valid onfarm parent either.
+        run(f"INSERT INTO programacao_producao(id,organization_id) VALUES({q(93)},{A});")
+        out=run(actor()+f"SET ROLE authenticated;UPDATE lotes SET programacao_id={q(93)} WHERE id='{lotid}';",False)
+        assert out.returncode and 'MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC' in out.stderr;results.append('old manual UPDATE to nonmanual parent denied')
         out=run(actor()+"SET ROLE authenticated;INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(txid_current(),'manual_lot_insert_v1',gen_random_uuid());",False)
         assert out.returncode and 'permission denied' in out.stderr;results.append('authenticated cannot forge private ticket')
         out=run(actor()+"SET ROLE authenticated;SELECT platform_private.guard_manual_lot_write_v1();",False)
@@ -302,7 +306,7 @@ def main():
                 if run(f"SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='{name}' AND wait_event_type='Lock');").stdout.strip()=='t':return
                 time.sleep(.02)
             raise AssertionError('writer never reached FK lock '+name)
-        inserts=[('programming',f"INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario) VALUES({q(97)},{A},{O},{P},100);"),('link',f"INSERT INTO production_order_link(id,ordem_servico_id,partner_order_id,partner_order_item_id,planning_id) VALUES({q(98)},{O},{q(82)},{q(83)},{q(84)});"),('delivery',f"INSERT INTO entregas(id,ordem_servico_id,cliente_id,organization_id) VALUES({q(99)},{O},{C},{A});")]
+        inserts=[('programming',f"INSERT INTO programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario) VALUES({q(97)},{A},{O},{P},100);"),('link',f"INSERT INTO production_order_link(id,ordem_servico_id,partner_order_id,partner_order_item_id,planning_id) VALUES({q(98)},{O},{q(82)},{q(83)},{q(84)});"),('delivery',f"INSERT INTO entregas(id,ordem_servico_id,cliente_id,organization_id) VALUES({q(99)},{O},{C},{A});"),('application',f"INSERT INTO aplicacoes(id,ordem_servico_id,organization_id) VALUES({q(94)},{O},{A});")]
         for label,insert in inserts:
             reset()
             holder=start("SET application_name='lot_rpc_holder';"+actor()+'BEGIN; SELECT '+call()+"; SELECT pg_sleep(2); COMMIT;")
@@ -318,6 +322,21 @@ def main():
             assert writer.returncode==0,wo
             assert run('SELECT count(*) FROM lotes;').stdout.strip()=='1'
             results.append('immediate FK '+label+' insertion waits for actual RPC OS FOR UPDATE; can commit AFTER RPC, not permanently forbidden')
+        # Reverse ordering: writer commits while RPC waits; post-lock absence checks win.
+        for label,insert in inserts:
+            reset()
+            holder=start("SET application_name='before_"+label+"';"+actor()+f'BEGIN; SELECT id FROM ordens_servico WHERE id={O} FOR UPDATE; '+insert+" SELECT pg_sleep(1); COMMIT;")
+            end=time.monotonic()+3
+            while time.monotonic()<end:
+                if run(f"SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='before_{label}' AND wait_event='PgSleep');").stdout.strip()=='t':break
+                time.sleep(.02)
+            else:raise AssertionError('earlier writer not ready')
+            request=start(actor()+'SELECT '+call()+';')
+            ho=holder.communicate(timeout=10);ro=request.communicate(timeout=10)
+            assert holder.returncode==0,ho
+            assert request.returncode==0 and '"success": false' in ro[0],ro
+            assert run('SELECT count(*) FROM lotes;').stdout.strip()=='0'
+            results.append('earlier '+label+' commit observed after locks, no lot generated')
         (H / 'real-test-results.json').write_text(json.dumps({'ref': 'swzpzcwiasxmjutrmvkm', 'scope': 'local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof', 'passed': len(results), 'checks': results}, indent=2, ensure_ascii=False) + '\n')
         print(len(results), 'PASS')
     finally:
