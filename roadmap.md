@@ -359,16 +359,17 @@
 
 ## 20/10 01:16 — geração canônica mínima, baseline 793bc012
 - [x] Fonte/ACL/schema reconfirmados somente leitura; pacote `scripts/lot-generation-canonical-20261020/` com RPC manual programada, PRE/POST, rollback fechado autocontido, UI .review OFF e hashes. 70 checks PG descartável/Auth sintético; Vitest 147/147; tipos app/node EXIT 0. Runtime 793bc012 preservado.
-- [ ] Revisão/implantação e homologação real: dependem do auditor; zero lotes/entregas/termos, sem dados criados pelo agente. Riscos: DML direto lotes, refresh global/locks e timeout hospedado; sem abertura dos demais gates.
+- [x] Revisão/implantação lote e homologação REAL B confirmadas pelo proprietário em afa2417; LT-2026-0002 criado pelo diálogo, sem criação pelo agente. PDF ainda pendente; demais etapas não homologadas.
 
 ## 20/10 01:36 — contenção administrativa e bypass manual de lotes
 - [x] Baseline ACL contida, guard privado INSERT/UPDATE manual e rollback sem reabrir privilégios; testes PG descartável para bypass/ACL e phantoms/FKs em duas sessões; impactos/limites em WRITE-CONCURRENCY-REVIEW.md. Não aplicado; avanço manual legado deliberadamente fechado, não certificado.
 - [x] 20/10: proprietário confirmou revisão 31700a e aplicação de `manual_lot_canonical_generation_reviewed`, PRE/POST hosted integrais PASS; não reaplicar. Nenhuma sessão/fixture alterada pelo agente.
 - [x] Runtime: somente quatro candidatas frontend aplicadas, Gerar Lote ON pelo diálogo canônico da OS, descrições acessíveis e dois testes novos. Manifesto/rollback em `scripts/lot-generation-canonical-20261020/runtime-activation/`; 248/248 testes em 12 arquivos, build automático OK. Monitor/bindings/outros gates/backend preservados; lote legado sem reparo.
-- [ ] Comparação independente e typechecks app/node: confirmação do harness ainda não disponível; execução manual vedada neste ambiente. Publicação não realizada; aguarda auditor.
-- [ ] Homologação real lote/PDF: exige revisão/publicação pelo proprietário e dados canônicos elegíveis; zero fixture criada nesta rodada. Não avançar CQ/envase/contratos.
+- [x] Comparação/publicação afa2417 e 76 testes + tsc app/node PASS independentes confirmados pelo proprietário; não republicar.
+- [x] Homologação REAL Gerar Lote B recebida; análise CQ e PDF permanecem pendentes, sem fabricação física ou valor comercial.
 
 ## 20/10 02:24 — CQ manual canônico, baseline afa2417
 - [x] Recibo independente: lote LT-2026-0002 criado REAL B pelo diálogo publicado; 100mL, um evento, dados fictícios sem valor comercial. Lote legado sem reparo; PDF ainda não homologado.
-- [ ] Preparar candidato CQ único no formulário existente, guard ticket específico, PRE/POST/rollback, inventário de efeitos e testes A/B/concor­rência/revogação; nenhum SQL/deploy/runtime/sessão autorizado nesta rodada.
-- [ ] Revisão independente e homologação futura CQ: sem envase/reserva/entrega/contratos.
+- [x] Preparar `scripts/manual-cq-recovery-20261020`: núcleo único, formulário .review, tickets CQ específicos, PRE/POST/rollback contido, hashes e inventário. 59 checks PG descartável com Auth sintético; 9 testes de formulário candidato e 51 regressões Gerar Lote PASS. Runtime/monitor/cliente byte-idênticos a afa2417; nenhuma escrita hospedada/deploy/sessão.
+- [ ] Revisão independente: PRE/POST integrais no catálogo canônico, typechecks app/node e candidata, efeitos/concorrência integral e comparação de bytes. Gate CQ false até aceite; testes locais não homologam sessão real.
+- [ ] Homologação futura CQ A/B e legado: depende de revisão/implantação pelo proprietário; sem envase/reserva/entrega/contratos e sem termo assinado pelo agente.

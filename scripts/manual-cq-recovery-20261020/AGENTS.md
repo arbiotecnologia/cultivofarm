@@ -1,0 +1,6 @@
+- Keep CQ SQL and frontend in review-only paths; never apply migrations, deploy, or alter sessions during package preparation.
+- Send and record CQ through the existing stage RPC and RegistrarCQDialog, sharing one transactional core; direct CQ writes are fenced to prevent split commits.
+- Manual lot updates require private transaction/target/transition-specific CQ tickets and unchanged non-status fields; roles and GUCs never authorize a write.
+- Rollback closes both CQ entrypoints and restores the previous lot/transition guards, retaining manual CQ fences, the corrected profile-ID reader and the no-autoenvase trigger; never delete history or restore unsafe grants.
+- Preserve unchanged OnFarm/legacy behavior outside the manual containment, documenting its unreviewed effects; null-tenant historical lots must not be repaired.
+- Positive local SQL uses synthetic Auth over a disposable PostgreSQL instance; never report it as hosted JWT/RLS or browser certification.
