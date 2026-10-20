@@ -1,0 +1,53 @@
+{
+ "candidate": "candidate-v2 (pacote d75998cb)",
+ "published": false,
+ "ddl_dml": false,
+ "lease_ms": 15000,
+ "cq_preserved": {
+  "src/components/cockpit/CQComparativoTable.tsx": "bdbd8d16bc34c175d9cb04fb85c2411e8371d63e90e7d8df04447ff3c4640cb5",
+  "src/components/cockpit/RegistrarCQDialog.tsx": "b57564bc4dc4de52b0b5f10418943b193face13a25b3612d889f20fa34120e0a",
+  "src/components/ordens-servico/OSDetalhesDialog.tsx": "1b98d1a184770c5d9bd9aa17811444f500c63e395e8d85d107a2a1c76c2a392d",
+  "src/hooks/useCQReferencia.ts": "979286112f770c48614bcef8b49e9226fcb8a6294c7e92aedcbb59386f94ea40",
+  "src/integrations/supabase/types.ts": "af5c76704525a4d4be0c4c74342bb9b7d7e43d9213704da3e5fa7e066e862886"
+ },
+ "files": {
+  "src/hooks/useAuth.tsx": {
+   "pre_sha256": "165c628ebfa5af4e89f597971c0b88861fb831e12e012c1e7292ce154f2f1f9f",
+   "post_sha256": "ace8f12d59a041f7ee5db03992198cb123f8efc04c11807c41559fed4f737dc4",
+   "rollback": "rollback/useAuth.tsx.review"
+  },
+  "src/test/config/authProviderCallback.test.tsx": {
+   "pre_sha256": "711df92271b877d4f944285f93168e12a03fd6011d2823e07676f80740163693",
+   "post_sha256": "caa7cf98b2afe23a25e30daab41a5ed795fb593b30728502836501349aad4af8",
+   "rollback": "rollback/src/test/config/authProviderCallback.test.tsx.review"
+  },
+  "src/test/config/authzFoundation.integration.test.tsx": {
+   "pre_sha256": "a554c114adc791392f5a319e223b0b0d7e366b957ef5484fde2472d182cff99f",
+   "post_sha256": "58bacf9f4720aa907513da19641a6d76490f07e726cbcde4ec704c550af0b659",
+   "rollback": "rollback/src/test/config/authzFoundation.integration.test.tsx.review"
+  },
+  "src/test/config/autoTimeoutRecovery.integration.test.tsx": {
+   "pre_sha256": "9812af13342ffe24cb9c3185c1a4fcd73542cc7b295cc06bb53329958c1ba7e5",
+   "post_sha256": "879ed5bd97b3c4781a9169d85ef1485d27adc0d859333ba5cdf346e4678c099d",
+   "rollback": "rollback/src/test/config/autoTimeoutRecovery.integration.test.tsx.review"
+  },
+  "src/test/config/monitorRetryReresolve.integration.test.tsx": {
+   "pre_sha256": "93484be685c3162b3da03a9167ef366a7685da91aa75f00b43c22f7bb9fff5ff",
+   "post_sha256": "2210a6a7ada405426b147495f86f2c4f2c6371aec946993c0f9c9fd8241c8582",
+   "rollback": "rollback/src/test/config/monitorRetryReresolve.integration.test.tsx.review"
+  },
+  "src/test/config/residualScopeStability.integration.test.tsx": {
+   "pre_sha256": "59933bec41cbb63267eb05de46bd4484024188fcdf184a119d1f06f8c47c5df0",
+   "post_sha256": "73f53aba1418990a12794768f7d8920e98cc298d2fe4bedef5f35481f2344dc5",
+   "rollback": "rollback/src/test/config/residualScopeStability.integration.test.tsx.review"
+  }
+ },
+ "results": {
+  "tsgo_app": "exit 0",
+  "src_test_config": "70 arquivos / 1077 testes PASS",
+  "novos": "23/23",
+  "regressoes": "18/18",
+  "build": "exit 0",
+  "baseline_reproduction": "falha esperada: defeito da baseline nao reproduz no v2"
+ }
+}
