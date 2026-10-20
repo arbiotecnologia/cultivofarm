@@ -367,3 +367,8 @@
 - [x] Runtime: somente quatro candidatas frontend aplicadas, Gerar Lote ON pelo diálogo canônico da OS, descrições acessíveis e dois testes novos. Manifesto/rollback em `scripts/lot-generation-canonical-20261020/runtime-activation/`; 248/248 testes em 12 arquivos, build automático OK. Monitor/bindings/outros gates/backend preservados; lote legado sem reparo.
 - [ ] Comparação independente e typechecks app/node: confirmação do harness ainda não disponível; execução manual vedada neste ambiente. Publicação não realizada; aguarda auditor.
 - [ ] Homologação real lote/PDF: exige revisão/publicação pelo proprietário e dados canônicos elegíveis; zero fixture criada nesta rodada. Não avançar CQ/envase/contratos.
+
+## 20/10 02:24 — CQ manual canônico, baseline afa2417
+- [x] Recibo independente: lote LT-2026-0002 criado REAL B pelo diálogo publicado; 100mL, um evento, dados fictícios sem valor comercial. Lote legado sem reparo; PDF ainda não homologado.
+- [ ] Preparar candidato CQ único no formulário existente, guard ticket específico, PRE/POST/rollback, inventário de efeitos e testes A/B/concor­rência/revogação; nenhum SQL/deploy/runtime/sessão autorizado nesta rodada.
+- [ ] Revisão independente e homologação futura CQ: sem envase/reserva/entrega/contratos.
