@@ -404,3 +404,8 @@
 - [x] Testar AuthProvider real com transporte fake: 3s/8s/20s/hung, A/B, gestor+consultor, revogação parcial, offline/signout/unmount e respostas antigas; regressões preservadas em cópias compatíveis abortSignal, tipos candidatos PASS.
 - [x] Artefato scripts/monitor-loader-renewal-20261020 separado com rollback byte-exato, hashes e limites de homologação; sem publicar/DDL ou afirmar gateway resolvido.
 - [ ] Revisão independente e homologação real A/B do candidato de loader; runtime intocado, ativação/publicação não autorizadas nesta rodada.
+
+## 20/10 18:28 — revisão13a01, política automática ativa
+- [ ] Adaptar apenas scaffolding das 42 expectativas; esgotar tentativa automática antes de Retry, preservar asserts.
+- [ ] Validar config integral +41 anteriores +17 novos com política ativa, sem neutralização; registrar admin.
+- [ ] Se PASS, ativar fontes exatas b3a65696/b6d7f4 e fornecer manifesto/rollback preservando CQ nullable; sem publicação/banco/sessões.
