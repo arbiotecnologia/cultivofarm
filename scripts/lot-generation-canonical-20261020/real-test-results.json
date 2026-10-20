@@ -1,7 +1,7 @@
 {
   "ref": "swzpzcwiasxmjutrmvkm",
   "scope": "local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof",
-  "passed": 63,
+  "passed": 66,
   "checks": [
     "captured baseline reproduces hosted pg_get_functiondef d37a0e47 before assembly",
     "every guard predicate compiles and evaluates locally",
@@ -59,6 +59,9 @@
     "revocation committed while request waits on lock -> denied after locks (role)",
     "revocation committed while request waits on lock -> denied after locks (subscription)",
     "revocation committed while request waits on lock -> denied after locks (tenant)",
+    "revocation committed while request waits on lock -> denied after locks (client)",
+    "atomic audit failure rolls back lot insert",
+    "real global MV refresh lock timeout rolls back lot and audit",
     "authenticated invokes DEFINER without auxiliary table grants (local synthetic Auth)",
     "anon has no executable RPC",
     "positive tenant B generates exactly 100 mL in B, local fixture only",

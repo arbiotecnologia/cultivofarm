@@ -188,7 +188,7 @@ def main():
         assert a.returncode == b.returncode == 0, outs
         j = ''.join(o[0] for o in outs); assert j.count('"replay": false') == 1 and j.count('"replay": true') == 1, j
         assert run("SELECT count(*) FROM lotes;").stdout.strip() == '1'; results.append('two connections: one write, one identical replay')
-        for name, change in [('profile', f'UPDATE profiles SET ativo=false WHERE user_id={U};'), ('role', f'DELETE FROM user_roles WHERE user_id={U};'), ('subscription', f"UPDATE organization_subscriptions SET status='EXPIRED' WHERE id={SUB};"), ('tenant', f'UPDATE profiles SET organization_id={B} WHERE user_id={U};')]:
+        for name, change in [('profile', f'UPDATE profiles SET ativo=false WHERE user_id={U};'), ('role', f'DELETE FROM user_roles WHERE user_id={U};'), ('subscription', f"UPDATE organization_subscriptions SET status='EXPIRED' WHERE id={SUB};"), ('tenant', f'UPDATE profiles SET organization_id={B} WHERE user_id={U};'), ('client', f'UPDATE clientes SET organization_id={B} WHERE id={C};')]:
             reset()
             holder = start(f"SET application_name='holder'; BEGIN; SELECT 1 FROM ordens_servico WHERE id={O} FOR UPDATE; {change} SELECT pg_sleep(1.2); COMMIT;")
             time.sleep(0.4); req = start(actor() + 'SELECT ' + call() + ';')
@@ -197,6 +197,20 @@ def main():
             assert req.returncode and 'COCKPIT_LOTE_SCOPE_DENIED' in ro[1], (name, ro)
             assert run("SELECT count(*) FROM lotes;").stdout.strip() == '0'
             results.append('revocation committed while request waits on lock -> denied after locks (' + name + ')')
+        reset()
+        run("CREATE FUNCTION public.fail_lot_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'AUDIT_FAILURE'; END $$; CREATE TRIGGER fail_lot_audit BEFORE INSERT ON public.laboratorio_esteira_eventos FOR EACH ROW EXECUTE FUNCTION public.fail_lot_audit();")
+        out=run(actor()+f'SELECT {call()};',False)
+        assert out.returncode and 'AUDIT_FAILURE' in out.stderr
+        assert run('SELECT count(*) FROM lotes;').stdout.strip()=='0'; results.append('atomic audit failure rolls back lot insert')
+        reset()
+        holder=start("SET application_name='mvholder'; BEGIN; REFRESH MATERIALIZED VIEW mv_esteira_laboratorio; SELECT pg_sleep(4); ROLLBACK;")
+        end=time.monotonic()+3
+        while time.monotonic()<end:
+            if run("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE application_name='mvholder' AND wait_event='PgSleep');").stdout.strip()=='t': break
+            time.sleep(.02)
+        else: raise AssertionError('MV holder not started')
+        out=run(actor()+f'SELECT {call()};',False); holder.communicate(timeout=10)
+        assert out.returncode and 'lock timeout' in out.stderr; assert run('SELECT count(*) FROM lotes;').stdout.strip()=='0'; results.append('real global MV refresh lock timeout rolls back lot and audit')
         # Actual SQL role authenticated exercises only RPC grants, without auxiliary table grants.
         reset(); run(asm.CAND_ACL + 'GRANT USAGE ON SCHEMA public TO authenticated;')
         out=run(actor()+'SET ROLE authenticated; SELECT '+call()+';')

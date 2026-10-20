@@ -105,6 +105,30 @@ describe("GerarLoteDialog — cercas de sessão e resposta", () => {
   });
 });
 
+describe("prazo e cancelamento reais do formulário", () => {
+  it("transporte pendurado libera trava aos 12s e sucesso tardio não confirma", async () => {
+    vi.useFakeTimers();
+    try {
+      let finish: (v: unknown) => void = () => {};
+      f.rpc.mockImplementation(() => new Promise(r => { finish = r; }));
+      const created=vi.fn();
+      render(<GerarLoteDialog open target={target} onOpenChange={() => {}} onCreated={created} />);
+      submit(); expect(f.rpc).toHaveBeenCalledTimes(1);
+      await act(async () => { await vi.advanceTimersByTimeAsync(12_000); });
+      expect(screen.getByRole("button", {name:"Registrar Lote"})).toBeEnabled();
+      await act(async () => finish(ok));
+      expect(created).not.toHaveBeenCalled(); expect(f.success).not.toHaveBeenCalled(); expect(f.invalidate).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
+  it("desmontagem cancela e silencia resposta antiga", async () => {
+    let finish: (v: unknown) => void = () => {};
+    f.rpc.mockImplementation(() => new Promise(r => { finish = r; }));
+    const created=vi.fn(); const view=render(<GerarLoteDialog open target={target} onOpenChange={() => {}} onCreated={created} />);
+    submit(); view.unmount(); await act(async () => finish(ok));
+    expect(created).not.toHaveBeenCalled(); expect(f.success).not.toHaveBeenCalled(); expect(f.invalidate).not.toHaveBeenCalled();
+  });
+});
+
 describe("OSDetalhesDialog — botão Gerar lote (somente exibição; servidor decide)", () => {
   const os = { id: OS, origem: "manual", status: "programada", numero_os: "OS-1" };
   const view = (extra: object = {}) => render(<OSDetalhesDialog os={{ ...os, ...extra }} open onOpenChange={() => {}} />);
