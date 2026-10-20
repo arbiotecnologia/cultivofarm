@@ -1,0 +1,20 @@
+{
+  "baseline_reproduction_tests": 1,
+  "candidate_tests": 23,
+  "monitor_residual_regression_tests": 18,
+  "candidate_types": "PASS",
+  "runtime_build": "automatic harness build OK",
+  "hosted": false,
+  "browser_certified": false,
+  "runtime_changed": false,
+  "cq_changed": false,
+  "gateway_resolved": false,
+  "limits": [
+    "Real AuthProvider and monitor; synthetic SDK/session events and fake monotonic clock, not hosted JWT/RLS",
+    "Legacy regression mocks required abortSignal shape in review-only copies; real cancellation asserted only by new tests",
+    "Each loader attempt retains20s watchdog; one post-renewal transient recovery at1s gives41s terminal hung budget",
+    "Existing non-loader epoch fences may trigger up to3 bounded fresh restarts; never adopt old responses",
+    "Lease remains15s;8s probe may legitimately pause",
+    "Independent review and real A/B homologation remain pending; no publish/SQL/Edge/session changes"
+  ]
+}
