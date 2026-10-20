@@ -1,0 +1,32 @@
+{
+  "review_only": true,
+  "ready_for_hosted_insert": false,
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "classification": "DADOS FICTICIOS SEM VALOR COMERCIAL",
+  "purpose": "Somente analise sintetica; sem producao fisica, venda ou uso agricola",
+  "proposed_values_not_agronomic_specification": {
+    "produto_id": "1986af48-709f-4bf4-85b4-3c9ed8a61019",
+    "microrganismo_id": null,
+    "ph_min": 6,
+    "ph_max": 8,
+    "concentracao_min_ufc_ml": 100000000,
+    "aparencia_esperada": "Normal",
+    "odor_esperado": "Caracteristico",
+    "contaminacao_esperada": "Ausente",
+    "observacoes": "DADOS FICTICIOS SEM VALOR COMERCIAL; referencia exclusiva deste produto de teste, sem validade agronomica ou comercial.",
+    "ativo": true
+  },
+  "blockers": [
+    "O schema canonico capturado exige microrganismo_id NOT NULL e FK. NULL aqui representa ausencia comprovada de vinculo, nao um payload insertavel.",
+    "Nao escolher microrganismo real ou criar microrganismo ficticio para satisfazer FK: isso inventaria associacao.",
+    "Editor existente e writers globais permanecem contidos; nao existe writer auditado liberado para este cadastro.",
+    "A eventual compatibilidade de referencia produto-only requer autorizacao e revisao separadas; nenhum DDL integra esta proposta."
+  ],
+  "future_canonical_review_checks": [
+    "Confirmar ref exato antes de qualquer leitura ou escrita hosted.",
+    "Revalidar existencia, atividade e identificacao exclusivamente ficticia do produto, ausencia de referencias ativas concorrentes e ausencia de consumidores reais.",
+    "Revisar contrato existente produto-only sem inventar associacao; nao criar novo fluxo nem abrir grants existentes.",
+    "Somente apos autorizacao especifica, cadastrar referencia nova exclusivamente do produto; nunca atualizar referencia real ou inserir fallback micro-only.",
+    "Registrar ID e snapshot auditavel; preservar referencias reais e historico, sem cleanup destrutivo."
+  ]
+}
