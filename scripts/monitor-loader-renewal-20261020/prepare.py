@@ -3,7 +3,7 @@ from pathlib import Path
 import json,hashlib,difflib
 H=Path(__file__).resolve().parent;root=H.parents[1]
 sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
-b=H/'rollback/src/hooks/useAuth.tsx.review';c=H/'frontend-candidate/src/hooks/useAuth.tsx'
+b=H/'rollback/src/hooks/useAuth.tsx.review';c=H/'candidate-v2/src/hooks/useAuth.tsx'
 if sha(root/'src/hooks/useAuth.tsx')!=sha(b):raise SystemExit('PACKAGE_BLOCKED: runtime baseline drift')
 cq=root/'scripts/manual-cq-recovery-20261020';cm=json.loads((cq/'manifest.json').read_text())
 for f,d in cm['files'].items():
