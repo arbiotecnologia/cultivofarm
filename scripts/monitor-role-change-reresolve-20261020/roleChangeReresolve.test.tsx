@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
   uid: '00000000-0000-4000-8000-000000000001', org: '00000000-0000-4000-8000-000000000002', profileOrg: '00000000-0000-4000-8000-000000000002',
-  roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, reads: 0, readError: null as null | { status: number; message: string }, signOuts: 0, signedOut: false, cb: null as null | ((e: string, sess: unknown) => void),
+  roles: ['gestor', 'consultor_tecnico'] as string[], perCall: 50, reads: 0, readError: null as null | { status: number; message: string }, signOuts: 0, signedOut: false, probeDeny: false, cb: null as null | ((e: string, sess: unknown) => void),
 }));
 const later = <T,>(v: () => T) => new Promise<T>(r => setTimeout(() => r(v()), s.perCall));
 vi.mock('@/lib/authz/authzEpochGate', () => ({ AUTHZ_CACHE_FOUNDATION_ENABLED: true, AUTHZ_CACHE_ROLLOUT_SCOPE: 'b2b-context', MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED: true, FINANCIAL_CONTEXT_MONITOR_ENABLED: false, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED: false, PRODUCER_CONTEXT_MONITOR_ENABLED: false, CONSULTANT_CONTEXT_MONITOR_ENABLED: false, OPERATOR_CONTEXT_MONITOR_ENABLED: false }));
@@ -21,12 +21,12 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
     q.maybeSingle = run; q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => run().then(f, r);
     return q;
   },
-  rpc: (name: string, args?: { _role: string }) => later(() => name === 'has_role' ? { data: s.roles.includes(args!._role), error: null } : { data: s.org, error: null }),
+  rpc: (name: string, args?: { _role: string }) => later(() => name === 'has_role' ? { data: !s.probeDeny && s.roles.includes(args!._role), error: null } : { data: s.org, error: null }),
 } }));
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { supabase as fake } from '@/integrations/supabase/client';
 import { installInternalActorContextAdapter } from '@/test/config/helpers/internalActorContextAdapter';
-installInternalActorContextAdapter(fake, () => s.uid, (_uid, role) => s.roles.includes(role));
+installInternalActorContextAdapter(fake, () => s.uid, (_uid, role) => !s.probeDeny && s.roles.includes(role));
 import { AuthzEpochBoundary } from '@/components/authz/AuthzEpochBoundary';
 
 const BASELINE = process.env.MONITOR_TARGET === 'baseline';
@@ -41,7 +41,7 @@ const mount = async () => {
 };
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance'] });
-  s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.reads = 0; s.readError = null; s.signOuts = 0; s.signedOut = false; s.profileOrg = s.org;
+  s.roles = ['gestor', 'consultor_tecnico']; s.perCall = 50; s.reads = 0; s.readError = null; s.signOuts = 0; s.signedOut = false; s.probeDeny = false; s.profileOrg = s.org;
   Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -82,6 +82,18 @@ describe('negativos', () => {
     await adv(15_000); const r0 = s.reads; await adv(120_000);
     expect(paused()).toBeTruthy(); expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
     expect(s.reads - r0).toBeLessThanOrEqual(2); expect(s.signOuts).toBe(0);
+  });
+  it('papel remanescente negado pelo probe (inativo): pausado, uma única releitura, sem loop', async () => {
+    await mount(); s.roles = ['gestor']; s.probeDeny = true;
+    await adv(15_000); const r0 = s.reads; await adv(120_000);
+    expect(paused()).toBeTruthy(); expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
+    expect(s.reads - r0).toBeLessThanOrEqual(4); expect(s.signOuts).toBe(0);
+  });
+  it('corrida: papel remanescente removido durante a releitura automática permanece pausado', async () => {
+    await mount(); s.roles = ['gestor']; s.perCall = 3000;
+    for (let i = 0; i < 120 && !paused(); i++) await adv(250);
+    s.roles = []; await adv(120_000);
+    expect(paused()).toBeTruthy(); expect(screen.queryByText(/Conteúdo sensível/)).toBeNull();
   });
   it('troca de tenant não é adotada: permanece pausado', async () => {
     await mount(); s.roles = ['gestor']; s.profileOrg = '00000000-0000-4000-8000-0000000000ff';
