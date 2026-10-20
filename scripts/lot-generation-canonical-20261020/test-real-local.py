@@ -121,7 +121,7 @@ def main():
         denied('non-string tanque rejected', call('{"volume_produzido":100,"tanque":5}'))
         def closed(change):
             r = run(f"BEGIN; {change}" + actor() + f"SELECT ({call()})->>'success'; ROLLBACK;", False)
-            assert (r.returncode and 'COCKPIT_LOTE' in r.stderr) or (r.returncode == 0 and 'false' in r.stdout.splitlines()[-2:][0]), (r.stdout[-300:], r.stderr[-300:])
+            assert (r.returncode and ('COCKPIT_LOTE' in r.stderr or 'lab_assert_manufacturable' in r.stderr)) or (r.returncode == 0 and 'false' in r.stdout.splitlines()[-2:][0]), (r.stdout[-300:], r.stderr[-300:])
             assert run("SELECT count(*) FROM lotes;").stdout.strip() == '0'
         closed(f"UPDATE programacao_producao SET responsavel_id=(SELECT id FROM profiles WHERE user_id={U}) WHERE id={PP};")
         results.append('non-null responsible stays closed')
@@ -205,7 +205,6 @@ def main():
         assert out.returncode and 'permission denied' in out.stderr; results.append('anon has no executable RPC')
         # Positive same-tenant B fixture is built locally, never via hosted data bypass.
         reset()
-        run(f'UPDATE profiles SET organization_id={B} WHERE user_id={U}; UPDATE organizations SET id=id WHERE id={B}; INSERT INTO organization_subscriptions(id,organization_id,plan_id,plan_version_id,status) VALUES({q(35)},{B},{PLAN},{V},\'ACTIVE\'); UPDATE clientes SET organization_id={B} WHERE id={C}; UPDATE fazendas SET organization_id={B} WHERE cliente_id={C}; UPDATE talhoes SET organization_id={B} WHERE fazenda_id={q(21)};')
         # Existing protected structural fields forbid rewriting live OS; new disposable fixture uses the setup before triggers.
         run('DROP SCHEMA public CASCADE; DROP SCHEMA auth CASCADE; DROP SCHEMA private CASCADE; DROP SCHEMA platform_private CASCADE; CREATE SCHEMA public; DROP ROLE anon; DROP ROLE authenticated; DROP ROLE service_role;')
         bsetup=setup().replace(f'VALUES({U},{A})',f'VALUES({U},{B})').replace(f"'LOCAL',{A}",f"'LOCAL',{B}").replace(f"'local',{C},{A}",f"'local',{C},{B}").replace(f"1,{A}",f"1,{B}").replace(f"{P},{A},'aprovada'",f"{P},{B},'aprovada'").replace(f"VALUES({PP},{A},{O}",f"VALUES({PP},{B},{O}").replace(f"VALUES({SUB},{A}",f"VALUES({SUB},{B}")

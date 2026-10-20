@@ -1,7 +1,7 @@
 {
   "ref": "swzpzcwiasxmjutrmvkm",
   "scope": "local disposable PostgreSQL; synthetic auth.uid/jwt; NOT hosted/JWT/RLS/browser proof",
-  "passed": 48,
+  "passed": 63,
   "checks": [
     "captured baseline reproduces hosted pg_get_functiondef d37a0e47 before assembly",
     "every guard predicate compiles and evaluates locally",
@@ -32,11 +32,19 @@
     "volume rejected 0.0001",
     "non-string tanque rejected",
     "non-null responsible stays closed",
+    "delivery category client tenant mismatch rejected before lot",
+    "programming tenant mismatch denied",
+    "canonical programmed volume must match OS 100 mL",
+    "canonical item mismatch denied",
+    "B2B production link stays closed",
     "non-manufacturable product closed",
     "manual programmed OS generates one lot (server code)",
     "lot in mL, tenant A, OS/programming not advanced, no CQ created",
     "exactly one event; real MV refresh reflects lot",
     "identical replay returns same lot, no write",
+    "tenant B cannot replay tenant A lot",
+    "revoked actor cannot replay existing lot",
+    "receipt actor mismatch refuses replay without repair",
     "divergent replay (volume) denied",
     "divergent replay (tanque) denied",
     "replays wrote nothing",
@@ -50,6 +58,13 @@
     "revocation committed while request waits on lock -> denied after locks (profile)",
     "revocation committed while request waits on lock -> denied after locks (role)",
     "revocation committed while request waits on lock -> denied after locks (subscription)",
-    "revocation committed while request waits on lock -> denied after locks (tenant)"
+    "revocation committed while request waits on lock -> denied after locks (tenant)",
+    "authenticated invokes DEFINER without auxiliary table grants (local synthetic Auth)",
+    "anon has no executable RPC",
+    "positive tenant B generates exactly 100 mL in B, local fixture only",
+    "gestor positive manual category",
+    "producao positive manual category",
+    "3s lock timeout rolls back without lot/event",
+    "divergent concurrent replay writes only original lot"
   ]
 }
