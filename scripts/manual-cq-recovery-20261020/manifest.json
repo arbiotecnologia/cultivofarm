@@ -57,7 +57,7 @@
     "rollback-postflight-readonly.sql": "c37f75dfc3d271db84d74edd75a72130b3b71e252b887d010205bda5033e7ed5",
     "rollback.sql.review": "b95f0b5748895a2e8b4a6f6e5246e171b2413dc8fb76ebb796fa6d21a73c3d7c",
     "test-local.py": "d1fe21b251a549cd9716e249c4af5d52ded8f8020a7576f5594906b816a09b2d",
-    "test-results.json": "c9a03ab333b1fe3ea129190111015291c2f3c02d813723b0f916e7484bbcc129",
+    "test-results.json": "81606d6c67f6ff0f0edb1dd71f64e6911e732af3f8ca7657f826ae54f4ae5174",
     "transition.sql.review": "fca57d61ab75965ea1098fcba01f109fd212691cfc4884b7d3319495ed9e32e5",
     "vitest.config.ts": "815b2baf573ad872501f2853fb73c497c6b11c84f1398652d8b0b31531fdaeeb"
   },
