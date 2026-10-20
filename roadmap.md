@@ -382,3 +382,8 @@
 - [x] Preparar proposta completa exclusivamente fictícia e verificar comparação somente leitura; sem inserir nem inventar vínculo.
 - [ ] Cadastro hosted da referência fictícia: bloqueado por micro NOT NULL/FK e writer global contido; requer contrato existente produto-only revisado e autorização própria.
 - [x] Revalidar pacote local: 90 checks PG/Auth sintético, 27 Vitest e tsgo isolado PASS; hashes/rollback, sem DDL/deploy e gate false. Nova revisão independente e homologação real continuam pendentes.
+
+## 20/10 13:11 — contenção hosted anunciada e comparação CQ
+- [ ] Corrigir comparação candidata: referência incompleta/inativa, medidos ausentes e igualdade textual exata do core; sem mutação.
+- [ ] Invalidar montagem SQL até nova baseline de função/trigger fornecida e conferida; preservar contenção em PRE/POST/rollback sem DDL.
+- [ ] Testar comparação e atualizar hashes/relatório.
