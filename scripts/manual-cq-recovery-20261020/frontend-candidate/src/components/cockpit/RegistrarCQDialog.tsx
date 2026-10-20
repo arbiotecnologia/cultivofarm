@@ -51,7 +51,7 @@ export function RegistrarCQDialog({ open, onOpenChange, target, phase = "record"
   const { roles = [] } = useAuth();
   const access = useStorageAccessScope(JSON.stringify(["cq", target?.os_id, target?.programacao_id, target?.lote_id, phase, open]));
   const canEditRef = roles.some((role) => ["administrador", "gestor", "producao"].includes(role));
-  const refQuery = useCQReferencia(open && access.ready ? target?.microrganismo_id : null, target?.produto_id);
+  const refQuery = useCQReferencia(open && access.ready && phase === "record" ? target?.microrganismo_id : null, open && access.ready && phase === "record" ? target?.produto_id : null);
   const referencia = !refQuery.isFetching && !refQuery.isError ? refQuery.data : null;
   const refLoading = refQuery.isFetching;
   const [form, setForm] = useState(EMPTY);
@@ -137,7 +137,7 @@ export function RegistrarCQDialog({ open, onOpenChange, target, phase = "record"
               concentracao_mantissa: form.concentracao_mantissa,
               concentracao_expoente: form.concentracao_expoente,
             }}
-            canEdit={canEditRef}
+            canEdit={false}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
