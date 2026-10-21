@@ -32,7 +32,7 @@ function getFirstName(user: { user_metadata?: Record<string, unknown>; email?: s
 
 export default function SelecionarPortal() {
   const { roles, profile, authzLatchBlocked, authzResidualScope } = useAuth();
-  return authzLatchBlocked || authzResidualScope || MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id)
+  return authzLatchBlocked || authzResidualScope || roles.includes("cliente_produtor") || MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id)
     ? <AuthzEpochBoundary><SelecionarPortalContent /></AuthzEpochBoundary>
     : <SelecionarPortalContent />;
 }
@@ -42,7 +42,7 @@ function SelecionarPortalContent() {
   const { signOut, user, profile } = useAuth();
   const [params] = useSearchParams();
   const manual = params.get("intent") === "switch";
-  const { data, isLoading, isError, refetch, isFetching, ready, scope, exclusiveOperator, operatorHome } = useAvailableContexts();
+  const { data, isLoading, isError, refetch, isFetching, ready, scope, exclusiveOperator, operatorHome, producerHome } = useAvailableContexts();
   const [remember, setRemember] = useState(false);
   const [submitting, setSubmitting] = useState<PortalContext | null>(null);
 
@@ -76,7 +76,8 @@ function SelecionarPortalContent() {
     const ctxs = data.available_contexts;
 
     if (ctxs.length === 0) {
-      navigate("/acesso-pendente", { replace: true });
+      // Produtor: home canônica /app (sem contexto de portal fabricado).
+      navigate(producerHome ?? "/acesso-pendente", { replace: true });
       return;
     }
     const target = automaticPortalContext(ctxs, data.preferred_context, data.skip_context_selector, manual);
@@ -85,7 +86,7 @@ function SelecionarPortalContent() {
       void registerLoginRedirect(target);
       navigate(PORTAL_CONTEXT_HOME[target], { replace: true });
     }
-  }, [data, submitting, navigate, isLoading, isFetching, isError, ready, manual, exclusiveOperator, operatorHome]);
+  }, [data, submitting, navigate, isLoading, isFetching, isError, ready, manual, exclusiveOperator, operatorHome, producerHome]);
 
   async function pick(ctx: PortalContext) {
     if (lock.current || !ready || !data?.available_contexts.includes(ctx)) return;
