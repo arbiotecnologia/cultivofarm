@@ -118,7 +118,9 @@ try:
     sql(f"INSERT INTO profiles VALUES ('{uid(10)}', '{OWNER}', false);"
         f"INSERT INTO user_roles VALUES ('{uid(10)}', 'parceiro_b2b');"
         f"INSERT INTO partner_users VALUES ('{uid(10)}', '{PARTNER}', '{OWNER}', 'gestor', NULL);")
-    check('perfil inativo nega', S.format(uid(10)), 'f|NULL|NULL|1|f')
+    # profile_ok=f é o gate dos consumidores (deny antes de usar org_partner); o escopo
+    # mantém a semântica live de resolver o vínculo mesmo com perfil inativo.
+    check('perfil inativo: profile_ok=f bloqueia consumidores', S.format(uid(10)), f'f|{PARTNER}|{PARTNER}|1|t')
     # 11) Cross-tenant: escopo resolve Z; consumidor que pedir W != Z nega (org_partner != p_partner_id)
     check('cross-tenant: escopo fica no parceiro do vinculo', S.format(uid(1)), f't|{PARTNER}|{PARTNER}|1|t')
 
