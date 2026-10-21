@@ -1,0 +1,164 @@
+--- a/src/lib/catalogo/platformCatalogFamily.ts
++++ b/src/lib/catalogo/platformCatalogFamily.ts
+@@ -5,14 +5,9 @@
+  * Família explícita do catálogo GLOBAL (Platform Superadmin). Ponte local para RPCs candidatas
+  * NÃO aplicadas (`scripts/rbac-audit/proposed-platform-global-product-family.sql`); falha fechada
+  * enquanto ausentes. `tipo` (enum legado de finalidade) é preservado e nunca usado para inferir família.
+- *
+- * RÓTULOS: a fonte canônica é `catalog_family_labels` via RPCs platform_* (candidata
+- * `scripts/catalog-labels-20261021`). FAMILY_CLASSES/CLASS_LABEL abaixo são SOMENTE fallback de
+- * exibição dos rótulos semeados; nunca use-os para autorizar uma nova atribuição.
+  */
+ export const PRODUCT_FAMILIES = ["quimico", "biologico", "fertilizante_adubo"] as const;
+ export type ProductFamily = (typeof PRODUCT_FAMILIES)[number];
+-/** @deprecated Fallback de exibição dos rótulos semeados; a lista autoritativa vem do servidor. */
+ export const FAMILY_CLASSES: Record<ProductFamily, readonly string[]> = {
+   biologico: ["biofungicida", "bioinseticida", "inoculante", "solubilizador"],
+   quimico: ["fungicida", "inseticida", "herbicida"],
+@@ -21,7 +16,6 @@
+ export const FAMILY_LABEL: Record<ProductFamily, string> = {
+   quimico: "Produtos Químicos", biologico: "Produtos Biológicos", fertilizante_adubo: "Fertilizantes/Adubos",
+ };
+-/** Fallback de exibição; rótulos novos exibem a chave até o servidor fornecer o nome. */
+ export const CLASS_LABEL: Record<string, string> = {
+   biofungicida: "Biofungicida", bioinseticida: "Bioinseticida", inoculante: "Inoculante", solubilizador: "Solubilizador",
+   fungicida: "Fungicida", inseticida: "Inseticida", herbicida: "Herbicida",
+@@ -46,15 +40,9 @@
+   return value === "pendentes" || value === "todos" ? value : "familia";
+ }
+ 
+-/**
+- * Coerência família↔rótulo. Com `labels` (fonte canônica do servidor), exige rótulo ATIVO da
+- * família. Sem `labels`, falha fechada: só permite rótulo nulo. O servidor sempre decide.
+- */
+-export function isClassAllowed(family: ProductFamily, classe: string | null,
+-  labels?: readonly { rotulo: string; ativo: boolean }[]) {
+-  if (classe === null) return true;
+-  if (!labels) return false;
+-  return labels.some((l) => l.ativo && l.rotulo === classe);
++/** Coerência família↔classe (espelho do CHECK do servidor; o servidor decide). */
++export function isClassAllowed(family: ProductFamily, classe: string | null) {
++  return classe === null || FAMILY_CLASSES[family].includes(classe);
+ }
+ 
+ const version = z.string().datetime({ offset: true });
+@@ -78,8 +66,8 @@
+ }
+ 
+ export async function setProductFamily(target: FamilyTarget, family: ProductFamily, classe: string | null,
+-  reason: string, key: string, signal: AbortSignal, labels?: readonly { rotulo: string; ativo: boolean }[]) {
+-  if (!isClassAllowed(family, classe, labels)) throw new Error("Rótulo não pertence à família escolhida ou está inativo.");
++  reason: string, key: string, signal: AbortSignal) {
++  if (!isClassAllowed(family, classe)) throw new Error("Classe não pertence à família escolhida.");
+   if (target.familia_catalogo === family && target.classe_catalogo === classe) throw new Error("Nenhuma alteração para salvar.");
+   const cleanReason = familyReasonSchema.parse(reason);
+   const rpc = supabase.rpc.bind(supabase) as unknown as Rpc;
+--- a/src/lib/catalogo/platformCatalogRead.ts
++++ b/src/lib/catalogo/platformCatalogRead.ts
+@@ -4,6 +4,11 @@
+ export const PLATFORM_CATALOG_MAX_OFFSET = 1_000_000;
+ export const PLATFORM_CATALOG_SEARCH_LIMIT = 120;
+ 
++const COHERENT: Record<"biologico" | "quimico" | "fertilizante_adubo", readonly string[]> = {
++  biologico: ["biofungicida", "bioinseticida", "inoculante", "solubilizador"],
++  quimico: ["fungicida", "inseticida", "herbicida"], fertilizante_adubo: [],
++};
++
+ export const platformCatalogPageSchema = z.object({
+   items: z.array(z.object({
+     id: z.string().uuid(),
+@@ -15,10 +20,10 @@
+     updated_at: z.string().nullable(),
+     // Classificação explícita (NULL = pendente). Nunca derivada de `tipo`.
+     familia_catalogo: z.enum(["biologico", "quimico", "fertilizante_adubo"]).nullable().optional().default(null),
+-    // Rótulo livre: a coerência família↔rótulo é validada NO SERVIDOR contra a fonte
+-    // canônica `catalog_family_labels`; o leitor não pode rejeitar rótulo novo legítimo.
+-    classe_catalogo: z.string().nullable().optional().default(null),
+-  }).strip()).max(PLATFORM_CATALOG_LIMIT),
++    classe_catalogo: z.enum(["biofungicida", "bioinseticida", "inoculante", "solubilizador", "fungicida", "inseticida", "herbicida"])
++      .nullable().optional().default(null),
++  }).strip().refine((i) => i.classe_catalogo === null || (i.familia_catalogo !== null
++    && COHERENT[i.familia_catalogo].includes(i.classe_catalogo)))).max(PLATFORM_CATALOG_LIMIT),
+   has_more: z.boolean(),
+ }).strip();
+ 
+@@ -41,4 +46,4 @@
+     profile?.id, profile?.user_id, profile?.ativo, profile?.senha_provisoria,
+     profile?.organization_id, [...roles].sort(), loading, error]);
+   return { ready, scope };
+-}
++}
+\ No newline at end of file
+--- a/src/components/plataforma/PlatformCatalogFamilyDialog.tsx
++++ b/src/components/plataforma/PlatformCatalogFamilyDialog.tsx
+@@ -2,9 +2,8 @@
+ import { useAuth } from "@/hooks/useAuth";
+ import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
+ import { metadataRetryKey } from "@/lib/catalogo/platformCatalogMetadata";
+-import { CLASS_LABEL, FAMILY_LABEL, PRODUCT_FAMILIES, isClassAllowed, setProductFamily,
++import { CLASS_LABEL, FAMILY_CLASSES, FAMILY_LABEL, PRODUCT_FAMILIES, isClassAllowed, setProductFamily,
+   type FamilyTarget, type ProductFamily } from "@/lib/catalogo/platformCatalogFamily";
+-import { usePlatformCatalogLabels } from "@/lib/catalogo/platformCatalogLabels";
+ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+ import { Button } from "@/components/ui/button";
+ import { Checkbox } from "@/components/ui/checkbox";
+@@ -16,8 +15,6 @@
+ /**
+  * Classificação explícita da família de um produto GLOBAL. Nunca sugere família a partir de
+  * nome/tipo/composição. Exige motivo e confirmação; recibo validado; CAS no servidor.
+- * Rótulos vêm da fonte canônica (RPC platform_list_catalog_labels): carregando desabilita,
+- * erro falha fechado, rótulo atual inativo é exibido mas não oferecido para nova atribuição.
+  * Fence: troca de escopo de identidade aborta a requisição e descarta o resultado.
+  */
+ export function PlatformCatalogFamilyDialog({ product, scope, onClose, onSaved }:
+@@ -49,19 +46,11 @@
+     const set = requests.current;
+     return () => { for (const r of set) r.abort(); set.clear(); };
+   }, []);
+-  const labelsQuery = usePlatformCatalogLabels(family, scope, live);
+-  const labels = labelsQuery.data ?? [];
+-  const activeLabels = labels.filter((l) => l.ativo);
+-  const labelsReady = labelsQuery.isSuccess;
+-  const labelsFailed = labelsQuery.isError;
+-  // Rótulo atual fora da lista ativa (legado/inativo): exibido como opção desabilitada, nunca oferecido.
+-  const currentMissing = product.classe_catalogo !== null && family === product.familia_catalogo &&
+-    labelsReady && !activeLabels.some((l) => l.rotulo === product.classe_catalogo);
+   if (!live) return null;
+   const classValue = classe === NO_CLASS ? null : classe;
+   const changed = family !== "" && (family !== product.familia_catalogo || classValue !== product.classe_catalogo);
+   const reasonOk = reason.trim().length >= 10 && reason.trim().length <= 500;
+-  const valid = family !== "" && labelsReady && isClassAllowed(family, classValue, labels);
++  const valid = family !== "" && isClassAllowed(family, classValue);
+   const submit = async () => {
+     if (family === "" || !valid || !changed || !reasonOk || !confirmed || lock.current || !liveRef.current) return;
+     const myEpoch = epoch.current.n;
+@@ -70,7 +59,7 @@
+     const c = new AbortController(); requests.current.add(c);
+     const key = metadataRetryKey(scope, JSON.stringify(["family", product.id, product.updated_at, family, classValue, reason.trim()]));
+     try {
+-      await setProductFamily(product, family, classValue, reason, key, c.signal, labels);
++      await setProductFamily(product, family, classValue, reason, key, c.signal);
+       if (!c.signal.aborted && current()) onSaved();
+     } catch (failure) {
+       if (!c.signal.aborted && current()) setError(failure instanceof Error ? failure.message : "Não foi possível confirmar a classificação.");
+@@ -100,17 +89,12 @@
+         </select>
+         {family !== "" && <>
+           <Label htmlFor="class-select">Rótulo (opcional)</Label>
+-          {labelsFailed && <p role="alert" className="text-sm text-destructive">Não foi possível carregar os rótulos autorizados. Tente reabrir o diálogo.</p>}
+           <select id="class-select" className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+-            disabled={busy || !labelsReady || labelsFailed || activeLabels.length === 0}
+-            value={classe} onChange={(e) => { setClasse(e.target.value); reset(); }}>
++            disabled={busy || FAMILY_CLASSES[family].length === 0} value={classe} onChange={(e) => { setClasse(e.target.value); reset(); }}>
+             <option value={NO_CLASS}>Sem rótulo</option>
+-            {activeLabels.map((l) => <option key={l.id} value={l.rotulo}>{l.rotulo_exibicao}</option>)}
+-            {currentMissing && <option value={product.classe_catalogo ?? NO_CLASS} disabled>
+-              {(CLASS_LABEL[product.classe_catalogo ?? ""] ?? product.classe_catalogo) + " (inativo)"}</option>}
++            {FAMILY_CLASSES[family].map((c) => <option key={c} value={c}>{CLASS_LABEL[c]}</option>)}
+           </select>
+-          {labelsReady && activeLabels.length === 0 &&
+-            <p className="text-sm text-muted-foreground">Nenhum rótulo ativo nesta família. Cadastre na Gestão da plataforma antes de rotular.</p>}
++          {FAMILY_CLASSES[family].length === 0 && <p className="text-sm text-muted-foreground">Rótulos de fertilizantes/adubos ainda não foram definidos.</p>}
+         </>}
+         <Label htmlFor="family-reason">Motivo (10 a 500 caracteres)</Label>
+         <Textarea id="family-reason" required rows={2} maxLength={500} disabled={busy} value={reason}
