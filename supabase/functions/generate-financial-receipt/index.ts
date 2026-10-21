@@ -106,17 +106,30 @@ Deno.serve(async (req) => {
     page.drawText(`Validação pública (em preparação): /verificar-recibo/${rec.public_verification_token}`, { x: 30, y: 62, size: 7, font, color: rgb(0.4,0.4,0.4) });
 
     const bytes = await pdf.save();
-    const path = `${organizationId}/${rec.receipt_year}/${rec.receipt_number}.pdf`;
+    if (rec.status !== "ISSUED" && rec.status !== "CANCELED") throw new Error("Status de recibo inválido");
+    // Status-bound objects: the ISSUED object/locator is historical and never overwritten
+    // by a CANCELED render; CANCELED bytes live only at their own deterministic path.
+    const issuedPath = `${organizationId}/${rec.receipt_year}/${rec.receipt_number}.pdf`;
+    const canceled = rec.status === "CANCELED";
+    const path = canceled ? issuedPath.replace(/\.pdf$/, ".canceled.pdf") : issuedPath;
     const { error: upErr } = await supabase.storage.from("financial-receipts").upload(path, bytes, { contentType: "application/pdf", upsert: true });
     if (upErr) throw upErr;
 
-    const { error: updateError } = await supabase.from("financial_receipts")
-      .update({ storage_bucket: "financial-receipts", storage_path: path })
-      .eq("id", receiptId)
-      .eq("organization_id", organizationId);
-    if (updateError) throw updateError;
+    // Re-read after upload: an ISSUED render that lost a race with cancellation is not current.
+    const { data: after, error: afterError } = await supabase.from("financial_receipts")
+      .select("status").eq("id", receiptId).eq("organization_id", organizationId).maybeSingle();
+    if (afterError || after?.status !== rec.status) throw new Error("Recibo alterado durante a geração");
 
-    return new Response(JSON.stringify({ path, receipt_number: rec.receipt_number }), {
+    if (!canceled) {
+      const { error: updateError } = await supabase.from("financial_receipts")
+        .update({ storage_bucket: "financial-receipts", storage_path: path })
+        .eq("id", receiptId)
+        .eq("organization_id", organizationId)
+        .eq("status", "ISSUED");
+      if (updateError) throw updateError;
+    }
+
+    return new Response(JSON.stringify({ path, receipt_number: rec.receipt_number, status: rec.status }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch {
