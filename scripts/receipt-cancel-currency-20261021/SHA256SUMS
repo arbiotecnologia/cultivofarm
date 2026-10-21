@@ -1,3 +1,4 @@
+d9017b4e40be6048a28614d3e1cfb66418758375a1a9a6b41508e7bd226e5522  ./SHA256SUMS.runtime
 c06bfeb685e586e18a4854bcad302b10fd3cefab2aa3695f68aff2992b7960b4  ./baseline/EmitirReciboButton.tsx
 eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed  ./baseline/RecibosList.tsx
 8fbceebf3054a38528fd48e250f9a58245d850ad2a99e01e0c21fa8db7978343  ./baseline/edge-index.ts.v91
