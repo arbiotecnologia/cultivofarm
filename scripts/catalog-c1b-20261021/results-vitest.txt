@@ -5,12 +5,12 @@ $ vitest run --config "scripts/catalog-c1b-20261021/vitest.config.ts"
 stderr | scripts/catalog-c1b-20261021/frontend/fichas.test.tsx > type captured before await survives tab change without switching PDF generators
 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
- ✓ scripts/catalog-c1b-20261021/frontend/fichas.test.tsx (5 tests) 490ms
- ✓ scripts/catalog-c1b-20261021/frontend/catalog.test.tsx (16 tests) 1206ms
-   ✓ C1B inactive candidate canonical readers > actual grid consumes RPC projection, filters families and never mounts internal reader  360ms
+ ✓ scripts/catalog-c1b-20261021/frontend/fichas.test.tsx (5 tests) 548ms
+ ✓ scripts/catalog-c1b-20261021/frontend/catalog.test.tsx (16 tests) 1295ms
+   ✓ C1B inactive candidate canonical readers > actual grid consumes RPC projection, filters families and never mounts internal reader  419ms
 
  Test Files  2 passed (2)
       Tests  21 passed (21)
-   Start at  21:55:09
-   Duration  4.55s (transform 473ms, setup 332ms, collect 1.75s, tests 1.70s, environment 1.84s, prepare 262ms)
+   Start at  21:56:30
+   Duration  5.56s (transform 539ms, setup 345ms, collect 1.96s, tests 1.84s, environment 2.31s, prepare 334ms)
 
