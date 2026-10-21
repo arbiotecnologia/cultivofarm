@@ -1,6 +1,6 @@
 - Keep this package inactive; promote its frontend only after independently approved SQL and real-session postflight — prevents an uninstalled overload from replacing live readers.
 - Preserve old RPC signatures/OIDs, role gates and financial calculations; versioned overloads add metadata only — prevents incompatible TABLE return changes.
-- Supplier/partner hiding intersection is owner-approved; missing/inactive commercial ownership denies reads without backfill — preserves the conservative deployment rule.
+- Supplier/partner hiding intersection was the independent auditor's conservative choice under standing authorization (not an express owner declaration); missing/inactive commercial ownership denies reads without backfill — preserves the conservative deployment rule.
 - Safe frontend reversal retains server filtering; structural rollback is documentation only and never an executable recovery — prevents reopening legacy visibility.
 - Sheet metadata is an approved-profile whitelist on canonical RPC rows, never a parallel frontend enrichment; real PostgREST postflight gates runtime promotion — preserves content and overload safety.
 - Tests use disposable local PostgreSQL and synthetic authorization helpers; never claim hosted JWT/RLS certification — distinguishes local execution from production evidence.

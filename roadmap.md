@@ -498,3 +498,9 @@
 - [ ] Comprovantes técnicos de entrega/aplicação e demais GET privados: exigem provas próprias de registro/tenant, não cobertos pelo snapshot de visita.
 - [ ] GET/CDN históricos: sem purga suportada no FREE ou expiração da URL original comprovada; SU-518022 apenas ack, nenhum contato/upgrade.
 - [ ] Perfis restantes/renovação e aba C8KAaC21: homologação real pelo proprietário; sem reload/sessões pelo agente. Não avançar catálogo/contratos.
+
+## 21/10 — C1B catálogo B2B e candidata de rótulos por família
+- [x] C1B: migration aplicada em produção pelo auditor (sem DML); REST real: consultor A 403 nas overloads técnicas, admin B 200 [] — sem homologação positiva não vazia; aguarda sessão B2B teste4. Interseção fornecedor+parceira foi escolha técnica do auditor sob autorização. Runtime C1B NÃO promovido/publicado.
+- [x] Candidata rótulos por família em scripts/catalog-labels-20261021: tabela catalog_family_labels + RPCs platform_* gated, seed só dos 7 rótulos atuais, trigger dinâmico substitui CHECK literal, diálogo/painel alimentados por RPC. 29/29 SQL local, 11/11 vitest, tsgo OK, build OK; SHA256SUMS 270cbb56.
+- [ ] Revisão independente da candidata de rótulos; NÃO aplicar DDL/DML hosted nem publicar sem autorização. Reversão estrutural só documental.
+- [ ] Retomar depois: promoção B2B (C1B runtime), contratos cumulativos canônicos (atribuir/desvincular/reativar/histórico) — não implementados.

@@ -24,7 +24,7 @@ LIVE read-only no ref `swzpzcwiasxmjutrmvkm`: as duas RPCs não aplicavam `catal
 
 Na matriz lida havia três parceiros ativos: dois com proprietário comercial preenchido, um NULL; o JOIN de organizações parceiras não trouxe organização e as contagens de ocultação desses recortes eram zero. **Isso não determina qual empresa deve prevalecer.** Nenhuma permissão foi deduzida dessas contagens ou de UUID.
 
-A regra conservadora foi **aceita expressamente pelo proprietário em21/10 21:50**: item oculto na empresa parceira/ator **ou** na fornecedora comercial não é retornado; proprietário ausente/inativo nega, sem backfill. Não depende de nova autorização humana para a semântica. A autorização canônica de parceiro/papel/feature permanece antes do filtro. Superadmin sem tenant/parceiro comprovado também não recebe fallback global. A variável `v_visibility_scope uuid[]` é resolvida uma única vez por chamada de cada RPC antiga, nunca dentro dos filtros por linha.
+A regra conservadora foi uma **escolha técnica do auditor independente, feita sob a autorização vigente** — não foi declaração expressa do proprietário: item oculto na empresa parceira/ator **ou** na fornecedora comercial não é retornado; proprietário ausente/inativo nega, sem backfill. Não depende de nova autorização humana para a semântica. A autorização canônica de parceiro/papel/feature permanece antes do filtro. Superadmin sem tenant/parceiro comprovado também não recebe fallback global. A variável `v_visibility_scope uuid[]` é resolvida uma única vez por chamada de cada RPC antiga, nunca dentro dos filtros por linha.
 
 Família de produto vem exclusivamente de `produtos.familia_catalogo`; NULL/valor desconhecido não vira biológico. Legado fica em Todos/sem família. Microrganismos são a entidade biológica canônica já existente; não usamos nome nem `tipo` de produto para classificação.
 
@@ -62,6 +62,13 @@ O consumidor antigo `FichaProdutorDrawer` fazia leituras paralelas de views/perf
 `rest_postflight.py` faz POST real em todos os quatro conjuntos de argumentos das overloads, recusa PGRST202/203, confirma TABLE/marcador/conteúdo e casos reais A/B visível/oculto e financeiro técnico nulo; sem retries, redirects, tokens em saída ou troca de sessão. Executar **após** migration independente no ref canônico usando sessões existentes via ambiente e arquivo de casos reais. Variável URL não substitui atestado independente do destino. SQL local NÃO prova resolução REST.
 
 Nesta rodada migration não aplicada pelo agente e entradas de sessões REST A/B ausentes. Portanto REST LIVE **não executado/não validado**, promoção runtime **não feita** conforme o gate expresso. Candidata testável está entregue, não fingimos contrato validado. Build runtime C1 não certifica bundle C1B. Nenhuma sessão foi criada/trocada e nenhuma aba foi recarregada.
+
+### Atualização 21/10 22:06 UTC (SHA4bf75596) — evidências produzidas pelo auditor independente
+
+- Auditor repetiu **21/21 testes candidatos e tsc PASS**.
+- Migration `catalog_c1b_scoped_families_20261021` **APLICADA em produção pelo auditor**, sem DML. Não reaplicar.
+- REST com sessão real: consultor A — overload técnico antigo e v2 retornam **403 forbidden_role**; administrador B — ambos **200 []** (sem fichas aprovadas). **Não há homologação positiva não vazia**; aguarda login real test4 B2B.
+- Promoção de runtime C1B e publicação seguem **bloqueadas** até essa homologação. Pendências antigas adiadas permanecem abertas.
 
 ## Pendências preservadas e próxima fase
 

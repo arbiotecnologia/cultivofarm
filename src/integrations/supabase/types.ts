@@ -22273,56 +22273,114 @@ export type Database = {
           module_key: string
         }[]
       }
-      get_partner_catalog_secure: {
-        Args: { p_partner_id: string }
-        Returns: {
-          beneficios_principais: string
-          desconto_percentual: number
-          descricao_curta: string
-          explicacao_b2b: string
-          ficha_aprovada: boolean
-          ficha_status: string
-          item_id: string
-          item_tipo: string
-          preco_parceiro: number
-          preco_tabela: number
-          product_id: string
-          produto_ativo: boolean
-          produto_codigo: string
-          produto_nome: string
-          resumo_curto: string
-          unidade_preco_principal: string
-          valor_dose_brl: number
-          valor_ha_brl: number
-          valor_litro_brl: number
-        }[]
-      }
-      get_partner_catalog_tecnico_secure: {
-        Args: never
-        Returns: {
-          beneficios_principais: string
-          codigo: string
-          descricao_curta: string
-          dose_ml_ha: number
-          explicacao_b2b: string
-          ficha_aprovada: boolean
-          ficha_status: string
-          funcao: string
-          item_id: string
-          item_tipo: string
-          nome: string
-          nome_cientifico: string
-          preco_tabela_dose: number
-          preco_tabela_ha: number
-          preco_tabela_litro: number
-          resumo_curto: string
-          tipo: string
-          unidade_preco_principal: string
-          valor_dose_brl: number
-          valor_ha_brl: number
-          valor_litro_brl: number
-        }[]
-      }
+      get_partner_catalog_secure:
+        | {
+            Args: { p_partner_id: string }
+            Returns: {
+              beneficios_principais: string
+              desconto_percentual: number
+              descricao_curta: string
+              explicacao_b2b: string
+              ficha_aprovada: boolean
+              ficha_status: string
+              item_id: string
+              item_tipo: string
+              preco_parceiro: number
+              preco_tabela: number
+              product_id: string
+              produto_ativo: boolean
+              produto_codigo: string
+              produto_nome: string
+              resumo_curto: string
+              unidade_preco_principal: string
+              valor_dose_brl: number
+              valor_ha_brl: number
+              valor_litro_brl: number
+            }[]
+          }
+        | {
+            Args: { p_catalog_v2: boolean; p_partner_id: string }
+            Returns: {
+              beneficios_principais: string
+              catalog_contract: string
+              desconto_percentual: number
+              descricao_curta: string
+              explicacao_b2b: string
+              familia_catalogo: string
+              ficha_aprovada: boolean
+              ficha_conteudo: Json
+              ficha_status: string
+              item_id: string
+              item_tipo: string
+              preco_parceiro: number
+              preco_tabela: number
+              product_id: string
+              produto_ativo: boolean
+              produto_codigo: string
+              produto_nome: string
+              resumo_curto: string
+              unidade_preco_principal: string
+              valor_dose_brl: number
+              valor_ha_brl: number
+              valor_litro_brl: number
+            }[]
+          }
+      get_partner_catalog_tecnico_secure:
+        | {
+            Args: never
+            Returns: {
+              beneficios_principais: string
+              codigo: string
+              descricao_curta: string
+              dose_ml_ha: number
+              explicacao_b2b: string
+              ficha_aprovada: boolean
+              ficha_status: string
+              funcao: string
+              item_id: string
+              item_tipo: string
+              nome: string
+              nome_cientifico: string
+              preco_tabela_dose: number
+              preco_tabela_ha: number
+              preco_tabela_litro: number
+              resumo_curto: string
+              tipo: string
+              unidade_preco_principal: string
+              valor_dose_brl: number
+              valor_ha_brl: number
+              valor_litro_brl: number
+            }[]
+          }
+        | {
+            Args: { p_catalog_v2: boolean }
+            Returns: {
+              beneficios_principais: string
+              catalog_contract: string
+              codigo: string
+              descricao_curta: string
+              dose_ml_ha: number
+              explicacao_b2b: string
+              familia_catalogo: string
+              ficha_aprovada: boolean
+              ficha_conteudo: Json
+              ficha_status: string
+              funcao: string
+              item_id: string
+              item_tipo: string
+              nome: string
+              nome_cientifico: string
+              preco_tabela_dose: number
+              preco_tabela_ha: number
+              preco_tabela_litro: number
+              resumo_curto: string
+              tipo: string
+              unidade_preco_principal: string
+              valor_dose_brl: number
+              valor_ha_brl: number
+              valor_litro_brl: number
+            }[]
+          }
       get_partner_papel: { Args: { _user_id: string }; Returns: string }
       get_portal_cliente_b2b_order_detail_secure: {
         Args: { p_order_id: string }
