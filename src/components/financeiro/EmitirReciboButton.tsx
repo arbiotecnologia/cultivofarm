@@ -30,6 +30,7 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
   const access = useStorageAccessScope(resource);
   const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
   const request = useRef<AbortController | null>(null);
+  const latest = useRef<AbortController | null>(null);
   const [prepared, setPrepared] = useState({ scope: "", path: "", number: "", id: "" });
   useLayoutEffect(() => {
     setBusy(false); setPrepared({ scope: "", path: "", number: "", id: "" });
@@ -41,7 +42,7 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
     const current = access.capture();
     if (!current() || request.current) return;
     const controller = new AbortController();
-    request.current = controller;
+    request.current = controller; latest.current = controller;
     const valid = () => current() && !controller.signal.aborted && request.current === controller;
     const timeout = setTimeout(() => {
       if (request.current !== controller) return;
@@ -102,7 +103,7 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
     } finally {
       clearTimeout(timeout);
       // A newer request may own the same path after a timeout; never revoke its bytes.
-      if (opened && !kept && (request.current === controller || request.current === null)) opener.discard(opened);
+      if (opened && !kept && latest.current === controller) opener.discard(opened);
       if (request.current === controller) {
         request.current = null;
         if (current()) setBusy(false);
