@@ -1,0 +1,7 @@
+-- ROLLBACK DE EMERGÊNCIA (NÃO EXECUTADO; requer autorização específica e preflight do ref swzpzcwiasxmjutrmvkm).
+-- Nega TODO acesso aos sete buckets. NUNCA remover attachment_no_capability_* (reabriria assinatura).
+-- Reversão desta negação: drop apenas de attachment_emergency_deny_*.
+create policy attachment_emergency_deny_select on storage.objects as restrictive for select to public using (bucket_id not in ('consultor-arquivos','aplicacao-evidencias','entrega-documentos','clientes-docs','financial-docs','financial-reports','visitas-pdf'));
+create policy attachment_emergency_deny_insert on storage.objects as restrictive for insert to public with check (bucket_id not in ('consultor-arquivos','aplicacao-evidencias','entrega-documentos','clientes-docs','financial-docs','financial-reports','visitas-pdf'));
+create policy attachment_emergency_deny_update on storage.objects as restrictive for update to public using (bucket_id not in ('consultor-arquivos','aplicacao-evidencias','entrega-documentos','clientes-docs','financial-docs','financial-reports','visitas-pdf')) with check (bucket_id not in ('consultor-arquivos','aplicacao-evidencias','entrega-documentos','clientes-docs','financial-docs','financial-reports','visitas-pdf'));
+create policy attachment_emergency_deny_delete on storage.objects as restrictive for delete to public using (bucket_id not in ('consultor-arquivos','aplicacao-evidencias','entrega-documentos','clientes-docs','financial-docs','financial-reports','visitas-pdf'));

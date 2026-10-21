@@ -1,6 +1,10 @@
 # Interrupção de novas URLs assinadas — anexos técnicos/portais (2026-10-21)
 
-Candidata local. **Não publicada.** Sem Auth, papéis, dados, monitor, SQL ou Edge.
+**Estado aplicado (2026-10-21):**
+- Frontend `51048f5f` revisado independentemente (128/128 PASS) e **publicado**: deployment `e5cf4e05-02a8-4094-a50e-dd0c2e832879`; abas novas A/B carregam `index-jCxb3oOL.js`.
+- Backend: três policies restritivas `attachment_no_capability_{select,insert,update}` aplicadas externamente pelo proprietário em `swzpzcwiasxmjutrmvkm` ~15:06 UTC após ensaio transacional+ROLLBACK e matriz 8 atores; registro exato em `backend-applied.sql` (não reexecutar/migrar). Sem mudança de dados/Auth/Edge.
+- Postflight: `object.sign` = 0 permitido nos 8 atores; `object.get_authenticated` preserva o isolamento por tenant/papel existente.
+- Rollback de emergência (`backend-emergency-deny.sql`, não executado): nega acesso aos sete buckets; nunca remove as policies nem reabre assinatura.
 
 ## Motivo histórico do gate
 `AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED` ficou `false` aguardando auditoria do abridor
@@ -37,16 +41,13 @@ fail-closed (anexos indisponíveis) e aborta se houver `createSignedUrl` no runt
 
 ## Limites / pendências separadas
 - URLs assinadas já emitidas (≤3600s) e bytes/caches baixados **não são revogados**.
-  Chamado SU-518022: apenas ack.
-- `Solicitacoes.tsx` e `VisitaTecnica.tsx` (export PDF) ainda leem `arquivo_url` gravada
-  (não emitem assinatura nova; registros atuais têm `arquivo_url` nulo). Pendência.
-- `useAuthenticatedBlobUrls` eager falha fail-closed acima de 24 arquivos por lista
-  (ex.: histórico longo) — exibe indisponível, sem assinar. Pendência de UX (lazy).
+  As policies não invalidam URLs anteriores nem caches. Chamado SU-518022: apenas ack.
+- Resolvidos e publicados: `Solicitacoes.tsx`/PDF `VisitaTecnica.tsx` sem `arquivo_url` (PDF cercado por escopo) e paginação >24 (adendos abaixo).
 - Bucket `order-attachments` **não existe em produção** (zero objetos) apesar das tabelas
   `partner_order_messages`/`partner_order_message_attachments`. Não criado bucket nem
   policies. Upload/visualização de anexos de mensagens de pedido seguem indisponíveis.
 - Edge `fiscal-xml-engine` ainda emite signed URL de 120s após h15 — fora deste escopo.
-- Homologação real A/B (renovação natural, revogação parcial) pendente após publicação.
+- Homologação real A/B de renovação (236) + download cancelado reportada PASS pelo proprietário; demais cenários reais seguem sob homologação.
 
 ## Adendo 2026-10-21 (sobre 25ed42cb) — históricos >24 e consumidores de URL gravada
 
@@ -63,7 +64,7 @@ Bateria completa `src/test`: 8799 PASS, 12 falhas, todas em arquivos não altera
 3. `src/test/comunicacao/notification-p1-scope.test.tsx` ×1 — espera `${STORAGE_KEY}:${scope}` em `src/hooks/usePortalCliente.ts`.
 (O registro anterior de "11" vinha de bateria parcial sem o item 3.)
 Rollback deste adendo: restaurar os arquivos de 25ed42cb (que também não assinam); `rollback.py` segue com stub indisponível e nunca reabre assinatura.
-Limites: testes sintéticos ≠ homologação real A/B; links já emitidos seguem válidos até expirar; nada publicado.
+Limites: testes sintéticos ≠ homologação real A/B; links já emitidos seguem válidos até expirar. (Publicado depois em `e5cf4e05`.)
 
 ## Adendo 2 — cerca da exportação PDF da visita
 - `useFencedPdfExport` (novo) usa `useStorageAccessScope` canônico por visita: captura no início, rechecagem antes de compartilhar, após `sharePdf` e antes de salvar; mudança de scope/ready/unmount aborta o controller; `finally` só limpa se ainda dono.
