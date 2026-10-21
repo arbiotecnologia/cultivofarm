@@ -48,6 +48,20 @@ try:
  bad=c.replace(json.dumps(s).replace("'","''"),json.dumps({}).replace("'","''"))
  assert run(bad,False).returncode;checks.append('drift denied')
  assert run("SELECT count(*) FROM storage.objects;").stdout.strip()=='3';checks.append('original objects preserved')
+ # A permissive OR must not bypass the restrictive receipt fence.
+ run("CREATE POLICY accidental_broad ON storage.objects FOR SELECT TO authenticated USING(true);")
+ assert run(ctx('object.sign')+'SELECT count(*) FROM storage.objects;').stdout.splitlines()[-1]=='1';checks.append('broad permissive cannot restore sign')
+ run('DROP POLICY accidental_broad ON storage.objects;')
+ # Missing context (NULL, fresh connection) is denied, not merely empty string.
+ assert run("SET ROLE authenticated;SET fixture.tenant='A';SET fixture.staff='yes';SELECT count(*) FROM storage.objects;").stdout.splitlines()[-1]=='1';checks.append('NULL operation denied')
+ post=run("SELECT md5(string_agg(concat_ws('|',policyname,permissive,roles::text,cmd,qual,with_check),E'\\n' ORDER BY policyname)) FROM pg_policies WHERE schemaname='storage' AND tablename='objects';").stdout.strip()
+ rollback=(H/'rollback.sql.review').read_text()
+ assert run(rollback,False).returncode;checks.append('unreviewed rollback denied')
+ run(rollback.replace('NULL /* REVIEWED_POST_HASH */',"'"+post+"'"))
+ for op in ['object.sign','object.get_authenticated','object.upload']:
+  assert run(ctx(op)+'SELECT count(*) FROM storage.objects;').stdout.splitlines()[-1]=='1';checks.append('safe rollback containment '+op)
+ assert run(ctx('object.upload')+"INSERT INTO storage.objects VALUES(4,'financial-receipts','A/new.pdf');",False).returncode;checks.append('safe rollback insert denied')
+ assert run('SELECT count(*) FROM storage.objects;').stdout.strip()=='3';checks.append('safe rollback preserves objects')
  print(json.dumps({'checks':len(checks),'passed':checks,'scope':'disposable PG/synthetic context, no hosted HTTP'},indent=2))
 finally:
  if started:subprocess.run(pre+['pg_ctl','-D',str(t/'data'),'stop','-m','immediate'],capture_output=True)
