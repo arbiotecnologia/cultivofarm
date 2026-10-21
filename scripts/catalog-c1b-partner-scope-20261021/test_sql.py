@@ -49,7 +49,8 @@ try:
     assert r.returncode == 0, r.stderr
     sql(SCHEMA)
     live = json.loads((HERE/'live-snapshot.json').read_text())
-    for row in live:
+    # is_valid_b2b_partner_user primeiro: b2b_actor_scope depende dela.
+    for row in sorted(live, key=lambda r: r['identity'].startswith('platform_private.')):
         sql(row['definition'])
         check('baseline md5 ' + row['identity'],
               f"SELECT md5(pg_get_functiondef('{row['identity']}'::regprocedure))", row['md5'])
