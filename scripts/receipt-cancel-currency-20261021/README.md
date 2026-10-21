@@ -26,7 +26,8 @@ Base publicada: `3d1fb7d2` (Edge v91 sem assinatura; policies `receipt_no_capabi
 - Revoga: Blob preparado em qualquer aba/sessão no próximo clique; preparo concorrente; resposta tardia.
 - Não revoga: bytes já baixados, cópias/cache do navegador, URLs assinadas antigas (até expirar/cache CDN).
 - O objeto ISSUED histórico continua acessível por download autenticado direto do Storage a staff do tenant
-  (policies atuais); a UI apenas não o oferece como atual. Bloqueá-lo exigiria SQL separado — não preparado.
+  (policies atuais); a UI apenas não o oferece como atual. Investigação/correção desse acesso direto e de URLs
+  antigas está AUTORIZADA pelo proprietário; pendente para rodada própria (exige SQL, não feito nesta rodada).
 
 ## Testes
 - `receiptCancelCurrency.list.test.tsx` (baseline reproduz a falha; runtime corrige), `receiptCancelCurrency.edge.test.ts`.
@@ -45,8 +46,24 @@ Base publicada: `3d1fb7d2` (Edge v91 sem assinatura; policies `receipt_no_capabi
 
 ## Sincronização canônica (13:18 UTC)
 - Backend atual informado pelo proprietário: Edge `generate-financial-receipt` v93 (= `edge-review/index.ts.review`,
-  SHA256 f2f2714a…bfcc), JWT false + getUser + h15, 3 policies intactas. Frontend 56e5b32b publicado pelo proprietário.
+  SHA256 f2f2714a…bfcc), JWT false + getUser + h15, 3 policies intactas. Frontend 56e5b32b já publicado.
 - Promovida a mesma fonte byte-exata para `supabase/functions/generate-financial-receipt/index.ts`; elimina risco de redeploy v91.
 - Testes: `receiptEmission.edgeReview` compara runtime com v93 (fixtures v91/baseline preservadas);
   `d51-5` troca literal de assinatura por ausência de `createSignedUrl`. Rollback continua stub 503.
 - Focados 127/127, tsgo e build PASS. Sem emissão/cancelamento/estorno, dados, SQL ou reload.
+
+## Estado atual (13:23 UTC)
+- Produção: frontend 56e5b32b publicado; Edge v93 = fonte canônica (SHA256 f2f2714a…bfcc). Homologação real A/B do
+  PDF CANCELADO e revogação por perfil reportada pelo proprietário.
+
+## Layout do PDF (`edge-layout-review/`, candidata NÃO implantada)
+- Falha real: texto de "Referente a" e "Motivo" cortado na margem direita (REC-2026-000002, motivo longo).
+- Candidata: quebra por largura real da fonte (`widthOfTextAtSize`), quebra de palavra maior que a linha, paginação
+  com cabeçalho "(continuação)" e "Página i de n", rodapé em todas as páginas, CANCELADO em todas as páginas,
+  número alinhado à direita; caracteres não codificáveis viram "?" em vez de derrubar a geração. Nada é truncado.
+- Fora do layout, byte-idêntica à v93 (auth getUser+h15, tenant, status-bound, re-leitura, resposta, zero assinatura).
+- Testes: `receiptPdfLayout.edge.test.ts` (v93 reproduz o estouro; candidata sem estouro, texto integral,
+  token gigante, ISSUED sem marca, delta só de layout). Fixtures sintéticas reais (pdf-lib 1.17.1) em `fixtures/`.
+- QA visual: v93 corta à direita; candidata sem corte em 1 e 2 páginas. Ajustado: marca CANCELADO invadia a faixa
+  do cabeçalho (também na v93) → movida para baixo.
+- Rollback: `rollback.py` (stub 503). Promoção: copiar `edge-layout-review/index.ts.review` byte-exata após revisão.

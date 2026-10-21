@@ -427,4 +427,5 @@
 ## 21/10 13:03 — Recibo cancelado servindo PDF ISSUED
 - [x] Frontend status-bound + reconfirmação no clique (local, não publicado)
 - [x] Edge candidata implantada v93 pelo proprietário e promovida byte-exata à fonte canônica
-- [ ] Bloqueio do objeto ISSUED histórico para recibo cancelado via Storage direto — exige SQL separado, não autorizado
+- [ ] Acesso direto ao objeto ISSUED histórico/URLs antigas — autorizado, investigação/correção em rodada própria (SQL)
+- [ ] Layout PDF candidata `edge-layout-review` — aguarda revisão; não implantada
