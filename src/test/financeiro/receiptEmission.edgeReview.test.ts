@@ -5,10 +5,11 @@ import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../../../supab
 const root = "scripts/receipt-emission-attachments-20261021/edge-review/";
 const candidate = readFileSync(root + "index.ts.review", "utf8");
 const baseline = readFileSync(root + "baseline.ts.review", "utf8");
+const runtime = readFileSync("supabase/functions/generate-financial-receipt/index.ts", "utf8");
 const org = "007bb519-cba0-4704-be2c-cb93ad010048";
 const id = "00000000-0000-4000-8000-000000000002";
 const path = `${org}/2026/REC-2026-000001.pdf`;
-function harness(failure = "", source = candidate) {
+function harness(failure = "", source = runtime) {
   const effects: string[] = [];
   const rec = { id, organization_id: org, receipt_number: "REC-2026-000001", receipt_year: 2026, customer_id: "client", amount: 100, issued_at: "2026-10-21", payment_date: "2026-10-21", status: "ISSUED" };
   const filters: any[] = [];
@@ -35,9 +36,9 @@ function harness(failure = "", source = candidate) {
   };
   return { invoke, sign, upload, effects, filters, createClient };
 }
-it("exact candidate changes only signing/response; runtime Edge remains baseline", () => {
+it("runtime is exact reviewed candidate, changing only signing/response", () => {
   expect(candidate).toBe(baseline.replace('    const { data: signed, error: signedError } = await supabase.storage.from("financial-receipts").createSignedUrl(path, 60 * 60);\n    if (signedError || !signed?.signedUrl) throw new Error("URL do recibo indisponível");\n', '').replace('JSON.stringify({ url: signed?.signedUrl, path, receipt_number: rec.receipt_number })', 'JSON.stringify({ path, receipt_number: rec.receipt_number })'));
-  expect(readFileSync("supabase/functions/generate-financial-receipt/index.ts", "utf8")).toBe(baseline);
+  expect(runtime).toBe(candidate);
 });
 it("actor-authenticated candidate returns locator only, without issuing bearer capability", async () => {
   const h = harness(); const response = await h.invoke(); expect(response.status).toBe(200);

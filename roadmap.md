@@ -417,3 +417,8 @@
 - [x] Testar baseline e patch (tenant/revogação/stale/erros), validar compilação e preparar hashes/preflight/rollback sem restaurar abertura vulnerável.
 - [x] Auditar Edge e inventariar assinadores/callers restantes separadamente; nenhuma emissão real, banco, sessão, reload ou publicação.
 - [ ] Revisão independente e implantação posterior da Edge sem assinatura; homologação real do recibo indisponível sem recebimentos e proibida nesta rodada. Não considerar assinaturas já emitidas revogadas.
+
+## 21/10 12:32 — Edge recibos e assinatura Storage
+- [ ] Promover Edge exata sem assinatura localmente, testar runtime e preparar rollback seguro/hashes; deploy exclusivo do proprietário.
+- [ ] Investigar storage.operation, preparar política restritiva somente financial-receipts com pre/postflight e testes; nenhum SQL hosted.
+- [ ] Documentar URLs antigas/expiração/cache e limites de homologação; preservar objeto, monitor/CQ/OS/gates e sessões.
