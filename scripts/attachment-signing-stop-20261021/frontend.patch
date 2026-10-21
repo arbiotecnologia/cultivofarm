@@ -1,0 +1,321 @@
+--- scripts/attachment-signing-stop-20261021/baseline/src/lib/authz/attachmentBlobGate.ts	2026-10-21 14:24:01.678164644 +0000
++++ src/lib/authz/attachmentBlobGate.ts	2026-10-21 14:32:25.384376777 +0000
+@@ -1,2 +1,3 @@
+-// Candidata revisável. Nenhuma promoção antes de auditoria e drenagem legada.
+-export const AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED: boolean = false;
+\ No newline at end of file
++// Ativado em 2026-10-21: anexos técnicos/portais usam somente download autenticado.
++// O ramo legado de URLs assinadas foi removido; este valor não reabre assinatura.
++export const AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED: boolean = true;
+--- scripts/attachment-signing-stop-20261021/baseline/src/lib/equipe-tecnica/evidencias.ts	2026-10-21 14:24:01.809265558 +0000
++++ src/lib/equipe-tecnica/evidencias.ts	2026-10-21 14:32:25.387942450 +0000
+@@ -67,8 +67,7 @@
+  * Resolução única e consistente da URL efetiva de uma evidência.
+  *
+  * Regra dura: quando existe `arquivo_path`, apenas a signed URL vale.
+- * `arquivo_url` só é aceito em registro legado que realmente não tem path —
+- * nunca como fallback de falha, para não mascarar erro nem tentar link expirado.
++ * `arquivo_url` nunca é aceito (nem legado sem path): só download autenticado.
+  */
+ export function resolverUrlEvidencia(
+   arquivo: EvidenciaVistoria | null | undefined,
+@@ -86,8 +85,8 @@
+     return { url: null, estado: "erro" };
+   }
+ 
+-  const legado = arquivo.arquivo_url?.trim();
+-  if (legado) return { url: legado, estado: "pronta" };
++  // arquivo_url gravada (possível URL assinada/pública antiga) não é aceita:
++  // sem path não há download autenticado, então a evidência fica indisponível.
+   return { url: null, estado: "indisponivel" };
+ }
+ 
+--- scripts/attachment-signing-stop-20261021/baseline/src/hooks/useSignedUrls.ts	2026-10-21 14:24:01.692801243 +0000
++++ src/hooks/useSignedUrls.ts	2026-10-21 14:32:25.394823126 +0000
+@@ -1,85 +1,10 @@
+-import { useState, useEffect, useCallback, useRef } from "react";
+-import { supabase } from "@/integrations/supabase/client";
+-import { useStorageAccessScope } from "./useStorageAccessScope";
+ import { useAuthenticatedBlobUrls } from "./useAuthenticatedBlobUrls";
+-import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
+ 
+-function useLegacySignedUrls(paths: (string | null | undefined)[], bucket: string = "consultor-arquivos") {
+-  const access = useStorageAccessScope(JSON.stringify(["signed-attachments", bucket, paths]));
+-  const { ready, scope } = access;
+-  const currentScope = useRef(scope);
+-  currentScope.current = scope;
+-  const generation = useRef(0);
+-  const [result, setResult] = useState<{ scope: string; urls: Record<string, string>; loading: boolean; error: Error | null }>({ scope: "", urls: {}, loading: false, error: null });
+-  const [tentativa, setTentativa] = useState(0);
+-
+-  useEffect(() => {
+-    let cancelado = false;
+-    const gen = ++generation.current;
+-    const authorized = access.capture();
+-    const isCurrent = () => !cancelado && gen === generation.current && currentScope.current === scope && authorized();
+-    setResult({ scope, urls: {}, loading: ready, error: null });
+-
+-    const fetchUrls = async () => {
+-      // Caminhos válidos e sem repetição: evita pedir a mesma assinatura 2x.
+-      const validPaths = Array.from(
+-        new Set(paths.filter((p): p is string => typeof p === "string" && p.length > 0)),
+-      );
+-      if (!isCurrent() || validPaths.length === 0) {
+-        setResult({ scope, urls: {}, loading: false, error: null });
+-        return;
+-      }
+-      try {
+-        const { data, error: erroStorage } = await supabase.storage
+-          .from(bucket)
+-          .createSignedUrls(validPaths, 3600); // 1 hora
+-
+-        if (erroStorage) throw erroStorage;
+-
+-        const newUrls: Record<string, string> = {};
+-        (data ?? []).forEach((item) => {
+-          // A chave é o próprio caminho do objeto; item sem path é descartado.
+-          if (item?.signedUrl && item?.path) newUrls[item.path] = item.signedUrl;
+-        });
+-
+-        // Resposta parcial (item com erro individual, sem signedUrl ou ausente)
+-        // é tratada como falha: preservamos o que veio válido, mas expomos o
+-        // erro para habilitar "Tentar novamente". Nunca há fallback inseguro.
+-        const faltando = validPaths.filter((p) => !newUrls[p]);
+-        if (isCurrent()) {
+-          setResult({ scope, urls: newUrls, loading: false, error: faltando.length > 0
+-              ? new Error(
+-                  `Falha ao gerar ${faltando.length} de ${validPaths.length} URLs seguras`,
+-                )
+-              : null });
+-        }
+-      } catch {
+-        // Erros do transporte podem conter tokens: não repassar nem registrar.
+-        if (isCurrent()) setResult({ scope, urls: {}, loading: false, error: new Error("Falha ao gerar URLs seguras") });
+-      }
+-    };
+-
+-    void fetchUrls();
+-    return () => {
+-      cancelado = true;
+-    };
+-    // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [scope, tentativa]);
+-
+-  const refresh = useCallback(() => setTentativa((n) => n + 1), []);
+-
+-  // Cerca de apresentação no próprio render, antes de cleanup/effects.
+-  const visible = ready && result.scope === scope;
+-  // Falha por item: caminho válido sem URL após erro é retentável via refresh.
+-  const failed = visible && result.error
+-    ? Array.from(new Set(paths.filter((p): p is string => typeof p === "string" && p.length > 0))).filter((p) => !result.urls[p])
+-    : [];
+-  return { urls: visible ? result.urls : {}, loading: visible ? result.loading : ready, error: visible ? result.error : null, failed, refresh };
+-}
+-
+-// Both hooks remain mounted; closed candidate does not download or mint extra URLs.
++/**
++ * Nome mantido por compatibilidade dos consumidores. Não emite URLs assinadas:
++ * entrega apenas blob: obtidos por download autenticado (RLS do Storage),
++ * com fences de identidade/tenant/papéis/epoch e revogação no cleanup.
++ */
+ export function useSignedUrls(paths: (string | null | undefined)[], bucket = "consultor-arquivos", options: { lazy?: boolean } = {}) {
+-  const legacy = useLegacySignedUrls(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? [] : paths, bucket);
+-  const blobs = useAuthenticatedBlobUrls(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? paths : [], bucket, { enabled: AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED, lazy: options.lazy });
+-  return AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? blobs : { ...legacy, loadingPaths: [] as string[], request: (_path: string) => {} };
++  return useAuthenticatedBlobUrls(paths, bucket, { enabled: true, lazy: options.lazy });
+ }
+--- scripts/attachment-signing-stop-20261021/baseline/src/hooks/useCommercial.ts	2026-10-21 14:24:01.718530952 +0000
++++ src/hooks/useCommercial.ts	2026-10-21 14:32:25.400459819 +0000
+@@ -412,11 +412,6 @@
+   });
+ }
+ 
+-export async function getAttachmentSignedUrl(path: string): Promise<string | null> {
+-  const { data, error } = await supabase.storage.from("order-attachments").createSignedUrl(path, 3600);
+-  if (error) return null;
+-  return data?.signedUrl ?? null;
+-}
+ 
+ // ---------- Dashboard consolidado ----------
+ export function useConsolidatedDashboard(filters: {
+--- scripts/attachment-signing-stop-20261021/baseline/src/components/comercial/OrderMessagesPanel.tsx	2026-10-21 14:24:01.740321160 +0000
++++ src/components/comercial/OrderMessagesPanel.tsx	2026-10-21 14:32:25.406739560 +0000
+@@ -5,7 +5,6 @@
+   useSetMessageStatus,
+   useMessageAttachments,
+   useUploadMessageAttachment,
+-  getAttachmentSignedUrl,
+   type OrderMessage,
+ } from "@/hooks/useCommercial";
+ import { Button } from "@/components/ui/button";
+@@ -14,7 +13,6 @@
+ import { Paperclip, FileText, FileSpreadsheet, FileImage, File as FileIcon } from "lucide-react";
+ import { formatDateDisplay } from "@/lib/date-utils";
+ import { toast } from "sonner";
+-import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
+ import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+ import { useAuthenticatedBlobUrls } from "@/hooks/useAuthenticatedBlobUrls";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+@@ -31,21 +29,8 @@
+ };
+ 
+ function AttachmentThumb({ path, fileName, mime, onOpen, prepared, busy }: { path: string; fileName: string; mime: string | null; onOpen: (path: string) => void; prepared: boolean; busy: boolean }) {
+-  const [thumb, setThumb] = useState<string | null>(null);
+-  const access = useStorageAccessScope(`order-thumbnail:${path}`);
+-  const blobs = useAuthenticatedBlobUrls(mime?.startsWith("image/") ? [path] : [], "order-attachments", { enabled: AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED });
+-  useEffect(() => {
+-    let cancelled = false;
+-    const current = access.capture();
+-    setThumb(null);
+-    if (!AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && access.ready && mime?.startsWith("image/")) {
+-      getAttachmentSignedUrl(path).then((u) => { if (!cancelled && current()) setThumb(u); });
+-    }
+-    return () => { cancelled = true; };
+-    // capture is intentionally bound to the current resource scope.
+-    // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [path, mime, access.scope]);
+-  const visibleThumb = AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? blobs.urls[path] : access.ready ? thumb : null;
++  const blobs = useAuthenticatedBlobUrls(mime?.startsWith("image/") ? [path] : [], "order-attachments");
++  const visibleThumb = blobs.urls[path];
+ 
+   if (visibleThumb) {
+     return (
+@@ -87,14 +72,8 @@
+   const opener = useAuthenticatedAttachmentOpener(`order:${orderId}:message:${m.id}`, "order-attachments");
+   const openAttachment = async (path: string) => {
+     if (!access.ready) return;
+-    if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
+-      if (opener.urls[path]) { opener.download(path, attachments.find(a => a.file_path === path)?.file_name || "anexo"); return; }
+-      await opener.open(path, () => toast.error("Anexo indisponível"));
+-      return;
+-    }
+-    const current = access.capture();
+-    const url = await getAttachmentSignedUrl(path);
+-    if (current() && url) window.open(url, "_blank", "noopener,noreferrer");
++    if (opener.urls[path]) { opener.download(path, attachments.find(a => a.file_path === path)?.file_name || "anexo"); return; }
++    await opener.open(path, () => toast.error("Anexo indisponível"));
+   };
+ 
+   return (
+--- scripts/attachment-signing-stop-20261021/baseline/src/components/visita/roteiro/RoteiroVisita.tsx	2026-10-21 14:24:01.754953776 +0000
++++ src/components/visita/roteiro/RoteiroVisita.tsx	2026-10-21 14:32:25.412021025 +0000
+@@ -64,9 +64,9 @@
+   const eventosComUrls = useMemo(() => {
+     return eventos.map(ev => ({
+       ...ev,
+-      fotoUrl: (ev.fotoPath && signedUrls[ev.fotoPath]) || ev.fotoUrl,
+-      audioUrl: (ev.audioPath && signedUrls[ev.audioPath]) || ev.audioUrl,
+-      arquivoUrl: (ev.arquivoPath && signedUrls[ev.arquivoPath]) || ev.arquivoUrl,
++      fotoUrl: (ev.fotoPath && signedUrls[ev.fotoPath]) || null,
++      audioUrl: (ev.audioPath && signedUrls[ev.audioPath]) || null,
++      arquivoUrl: (ev.arquivoPath && signedUrls[ev.arquivoPath]) || null,
+     }));
+   }, [eventos, signedUrls]);
+ 
+--- scripts/attachment-signing-stop-20261021/baseline/src/components/visita/EvidenciasTabs.tsx	2026-10-21 14:24:01.768198986 +0000
++++ src/components/visita/EvidenciasTabs.tsx	2026-10-21 14:32:25.415849745 +0000
+@@ -140,7 +140,8 @@
+   const { urls: signedUrls } = useSignedUrls(filePaths);
+ 
+   const getEffectiveUrl = (arquivo: ArquivoRow) => {
+-    return (arquivo.arquivo_path && signedUrls[arquivo.arquivo_path]) || arquivo.arquivo_url;
++    // Somente blob autenticado; arquivo_url gravada nunca é usada como fallback.
++    return (arquivo.arquivo_path && signedUrls[arquivo.arquivo_path]) || null;
+   };
+   const fotoInput = useRef<HTMLInputElement>(null);
+   const anexoInput = useRef<HTMLInputElement>(null);
+--- scripts/attachment-signing-stop-20261021/baseline/src/components/solicitacoes/SolicitacaoDetalheTabs.tsx	2026-10-21 14:33:07.287051890 +0000
++++ src/components/solicitacoes/SolicitacaoDetalheTabs.tsx	2026-10-21 14:33:07.397004747 +0000
+@@ -183,7 +183,7 @@
+   const { urls: signedUrls } = useSignedUrls([...fotosPaths, audioPath].filter(Boolean));
+ 
+   const getEffectiveUrl = (path: string | null | undefined, url: string | null | undefined) => {
+-    return (path && signedUrls[path]) || url;
++    return (path && signedUrls[path]) || null; // sem fallback para URL gravada
+   };
+ 
+   return (
+--- scripts/attachment-signing-stop-20261021/baseline/src/components/solicitacoes/TimelineAtendimento.tsx	2026-10-21 14:33:07.300748835 +0000
++++ src/components/solicitacoes/TimelineAtendimento.tsx	2026-10-21 14:33:07.397229148 +0000
+@@ -100,7 +100,7 @@
+   const { urls: signedUrls } = useSignedUrls(allPaths);
+ 
+   const getEffectiveUrl = (path: string | null | undefined, url: string | null | undefined) => {
+-    return (path && signedUrls[path]) || url;
++    return (path && signedUrls[path]) || null; // sem fallback para URL gravada
+   };
+ 
+   if (events.length === 0) {
+--- scripts/attachment-signing-stop-20261021/baseline/src/components/talhoes/HistoricoTalhao.tsx	2026-10-21 14:33:07.313177581 +0000
++++ src/components/talhoes/HistoricoTalhao.tsx	2026-10-21 14:33:07.397816307 +0000
+@@ -414,7 +414,7 @@
+                           <div className="flex gap-1.5 overflow-x-auto pt-2">
+                             {item.fotos.slice(0, 6).map((url, i) => {
+                               const path = item.fotosPaths?.[i];
+-                              const effectiveUrl = (path && signedUrls[path]) || url;
++                              const effectiveUrl = (path && signedUrls[path]) || null; // sem fallback para URL gravada
+                               if (!effectiveUrl) return null;
+                               return (
+                                 <img
+--- scripts/attachment-signing-stop-20261021/baseline/src/components/aplicacao/EvidenciasGallery.tsx	2026-10-21 14:33:07.325281280 +0000
++++ src/components/aplicacao/EvidenciasGallery.tsx	2026-10-21 14:33:30.938897606 +0000
+@@ -7,7 +7,6 @@
+ import { Button } from "@/components/ui/button";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { useSignedUrls } from "@/hooks/useSignedUrls";
+-import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
+ 
+ interface Evidencia {
+   id: string;
+@@ -30,13 +29,13 @@
+   const access = useStorageAccessScope(`aplicacao:${aplicacaoId}`);
+   const [result, setResult] = useState<{ scope: string; items: Evidencia[] }>({ scope: "", items: [] });
+   const items = access.ready && result.scope === access.scope ? result.items : [];
+-  const { urls, request, loadingPaths, error, failed, refresh } = useSignedUrls(items.map(e => e.storage_path), "aplicacao-evidencias", { lazy: true });
++  const { urls, request, loadingPaths, error, failed } = useSignedUrls(items.map(e => e.storage_path), "aplicacao-evidencias", { lazy: true });
+   const galleryRef = useRef<HTMLDivElement>(null);
+   const [lightbox, setLightbox] = useState<{ scope: string; path: string } | null>(null);
+   const lightboxUrl = lightbox?.scope === access.scope ? urls[lightbox.path] : undefined;
+ 
+   useEffect(() => {
+-    if (!AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED || !access.ready || !galleryRef.current) return;
++    if (!access.ready || !galleryRef.current) return;
+     const current = access.capture();
+     // Visible photo previews only; other formats remain explicit click downloads.
+     const observer = new IntersectionObserver(entries => {
+@@ -94,13 +93,12 @@
+               variant="ghost"
+               type="button"
+               data-attachment-path={e.tipo === "foto" ? e.storage_path : undefined}
+-              disabled={!urls[e.storage_path] && !AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && !failed.includes(e.storage_path)}
+               aria-label={failed.includes(e.storage_path) ? `Falha ao carregar ${e.legenda || "anexo"}; tentar novamente` : undefined}
+               onClick={() => {
+                 if (!access.ready) return;
+-                // Retry: candidato re-emite request (controlador já limpo); legado refaz o lote.
++                // Retry: re-emite request autenticado (controlador já limpo).
+                 if (failed.includes(e.storage_path)) {
+-                  if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) request(e.storage_path); else refresh();
++                  request(e.storage_path);
+                   return;
+                 }
+                 if (!urls[e.storage_path]) { request(e.storage_path); return; }
+@@ -116,7 +114,7 @@
+                   <FileText className="h-8 w-8" />
+                   <span className="text-[10px] font-medium">Falhou — tentar novamente</span>
+                 </span>
+-              ) : loadingPaths.includes(e.storage_path) && AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? (
++              ) : loadingPaths.includes(e.storage_path) ? (
+                 <History className="h-6 w-6 text-muted-foreground absolute inset-0 m-auto animate-spin" aria-label="Carregando anexo" />
+               ) : (
+                 <FileText className="h-8 w-8 text-muted-foreground absolute inset-0 m-auto" />
+--- scripts/attachment-signing-stop-20261021/baseline/src/pages/app/MobileTalhaoHistorico.tsx	2026-10-21 14:24:01.783498860 +0000
++++ src/pages/app/MobileTalhaoHistorico.tsx	2026-10-21 14:32:25.419275203 +0000
+@@ -241,7 +241,7 @@
+                         <div className="flex gap-1.5 overflow-x-auto pt-1">
+                           {item.fotos.slice(0, 4).map((url, i) => {
+                             const path = item.fotosPaths?.[i];
+-                            const effectiveUrl = (path && signedUrls[path]) || url;
++                            const effectiveUrl = (path && signedUrls[path]) || null;
+                             if (!effectiveUrl) return null;
+                             return (
+                               <img

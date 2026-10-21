@@ -183,7 +183,7 @@ export function SolicitacaoDetalheTabs({ solicitacao }: Props) {
   const { urls: signedUrls } = useSignedUrls([...fotosPaths, audioPath].filter(Boolean));
 
   const getEffectiveUrl = (path: string | null | undefined, url: string | null | undefined) => {
-    return (path && signedUrls[path]) || url;
+    return (path && signedUrls[path]) || null; // sem fallback para URL gravada
   };
 
   return (

@@ -1,12 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ReadableStream } from "node:stream/web";
 const auth = vi.hoisted(() => ({ user: { id: "A" } as { id: string } | null, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["administrador"], loading: false }));
-const mocks = vi.hoisted(() => ({ query: vi.fn(), sign: vi.fn() }));
+const mocks = vi.hoisted(() => ({ query: vi.fn(), sign: vi.fn(), stream: vi.fn() }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => auth }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   from: () => ({ select: () => ({ eq: () => ({ order: mocks.query }) }) }),
-  storage: { from: () => ({ createSignedUrls: mocks.sign, createSignedUrl: async () => ({ data: { signedUrl: "https://example.invalid/old" } }) }) },
+  storage: { from: () => ({ download: () => ({ asStream: mocks.stream }), createSignedUrls: mocks.sign, createSignedUrl: async () => ({ data: { signedUrl: "https://example.invalid/old" } }) }) },
 } }));
 import { EvidenciasGallery } from "@/components/aplicacao/EvidenciasGallery";
 const row = { evidencia: { id: "E", tipo: "foto", storage_path: "C/APP/a.jpg", legenda: "Foto privada", mime: "image/jpeg", versao_origem_id: null } };
@@ -15,7 +16,12 @@ beforeEach(() => {
   auth.roles = ["administrador"]; auth.loading = false;
   mocks.query.mockReset().mockResolvedValue({ data: [row], error: null });
   mocks.sign.mockReset().mockResolvedValue({ data: [{ path: row.evidencia.storage_path, signedUrl: "https://example.invalid/old" }], error: null });
+  mocks.stream.mockReset().mockImplementation(async () => ({ data: new ReadableStream({ start(c) { c.enqueue(new Uint8Array([1])); c.close(); } }), error: null }));
+  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:private") });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+  vi.stubGlobal("IntersectionObserver", class { constructor(cb: (e: IntersectionObserverEntry[]) => void) { observers.push(cb); } observe(t: Element) { observers[observers.length - 1]([{ target: t, isIntersecting: true } as IntersectionObserverEntry]); } unobserve() {} disconnect() {} });
 });
+const observers: Array<(e: IntersectionObserverEntry[]) => void> = [];
 function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const view = render(<QueryClientProvider client={client}><EvidenciasGallery aplicacaoId="APP" /></QueryClientProvider>);
@@ -39,6 +45,7 @@ describe("EvidenciasGallery session isolation", () => {
       h.refresh();
       expect(screen.queryByAltText("Foto privada")).toBeNull();
       expect(screen.queryByRole("dialog")).toBeNull();
+      expect(mocks.sign).not.toHaveBeenCalled();
       h.unmount();
     });
   }

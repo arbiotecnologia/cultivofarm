@@ -8,8 +8,8 @@ describe('exact manager consultant candidate flags', () => {
       gates.FINANCIAL_CONTEXT_MONITOR_ENABLED, gates.COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED,
       gates.CONSULTANT_CONTEXT_MONITOR_ENABLED, gates.OPERATOR_CONTEXT_MONITOR_ENABLED]) expect(enabled).toBe(true);
   });
-  it('global v6 and Blob remain closed', () => {
+  it('global v6 closed; Blob authenticated active (signing removed)', () => {
     expect(gates.AUTHZ_CACHE_ROLLOUT_SCOPE).toBe('b2b-context');
-    expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(false);
+    expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(true);
   });
 });

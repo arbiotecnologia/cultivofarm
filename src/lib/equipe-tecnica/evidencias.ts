@@ -67,8 +67,7 @@ export interface UrlEvidencia {
  * Resolução única e consistente da URL efetiva de uma evidência.
  *
  * Regra dura: quando existe `arquivo_path`, apenas a signed URL vale.
- * `arquivo_url` só é aceito em registro legado que realmente não tem path —
- * nunca como fallback de falha, para não mascarar erro nem tentar link expirado.
+ * `arquivo_url` nunca é aceito (nem legado sem path): só download autenticado.
  */
 export function resolverUrlEvidencia(
   arquivo: EvidenciaVistoria | null | undefined,
@@ -86,8 +85,8 @@ export function resolverUrlEvidencia(
     return { url: null, estado: "erro" };
   }
 
-  const legado = arquivo.arquivo_url?.trim();
-  if (legado) return { url: legado, estado: "pronta" };
+  // arquivo_url gravada (possível URL assinada/pública antiga) não é aceita:
+  // sem path não há download autenticado, então a evidência fica indisponível.
   return { url: null, estado: "indisponivel" };
 }
 

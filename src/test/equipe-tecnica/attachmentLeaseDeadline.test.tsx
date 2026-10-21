@@ -43,13 +43,13 @@ describe("attachment authorization at completion, without Auth rerender", () => 
     expect(h.result.current.ready).toBe(false);
     h.unmount(); l.monitor.stop();
   });
-  it("does not expose a signed URL completed after deadline", async () => {
-    const l = await lease(); let resolve: (v: unknown) => void = () => {};
-    state.sign.mockImplementation(() => new Promise(r => { resolve = r; }));
+  it("does not expose a blob completed after deadline and never signs", async () => {
+    const l = await lease(); let resolve: (v: Blob) => void = () => {};
+    state.download.mockImplementation(() => new Promise<Blob>(r => { resolve = r; }));
     const h = renderHook(() => useSignedUrls(["file.pdf"]));
-    expect(state.sign).toHaveBeenCalledTimes(1); l.expire();
-    await act(async () => resolve({ data: [{ path: "file.pdf", signedUrl: "https://example.invalid/late" }], error: null }));
-    expect(h.result.current.urls).toEqual({}); h.unmount(); l.monitor.stop();
+    expect(state.download).toHaveBeenCalledTimes(1); l.expire();
+    await act(async () => resolve(new Blob(["late"])));
+    expect(h.result.current.urls).toEqual({}); expect(state.sign).not.toHaveBeenCalled(); h.unmount(); l.monitor.stop();
   });
   it("does not mint a new request after expiry even before rerender", async () => {
     const l = await lease(); const h = renderHook(() => useAuthenticatedAttachmentOpener("file", "bucket"));

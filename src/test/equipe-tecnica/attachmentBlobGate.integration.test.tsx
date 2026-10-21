@@ -36,9 +36,13 @@ it("real gallery with candidate gate waits for visibility, never signs and clear
   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.queryByAltText("Foto privada")).toBeNull();
   expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:private"); h.unmount();
 });
-it("explicitly closed candidate preserves legacy interface without authenticated fetch", async () => {
+it("gate value false (rollback) never reopens signing: gallery still uses authenticated bytes", async () => {
   state.gate = false;
   const h = render(<EvidenciasGallery aplicacaoId="APP" />);
-  await waitFor(() => expect(screen.getByAltText("Foto privada").getAttribute("src")).toBe("https://legacy.invalid/file"));
-  expect(state.sign).toHaveBeenCalledTimes(1); expect(state.stream).not.toHaveBeenCalled(); h.unmount();
+  await waitFor(() => expect(h.container.querySelector("[data-attachment-path]")).toBeTruthy());
+  const target = h.container.querySelector("[data-attachment-path]");
+  if (!target) throw new Error("missing attachment");
+  act(() => notify([{ target, isIntersecting: true } as IntersectionObserverEntry]));
+  await waitFor(() => expect(screen.getByAltText("Foto privada").getAttribute("src")).toBe("blob:private"));
+  expect(state.sign).not.toHaveBeenCalled(); h.unmount();
 });

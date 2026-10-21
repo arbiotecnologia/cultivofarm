@@ -414,7 +414,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
                           <div className="flex gap-1.5 overflow-x-auto pt-2">
                             {item.fotos.slice(0, 6).map((url, i) => {
                               const path = item.fotosPaths?.[i];
-                              const effectiveUrl = (path && signedUrls[path]) || url;
+                              const effectiveUrl = (path && signedUrls[path]) || null; // sem fallback para URL gravada
                               if (!effectiveUrl) return null;
                               return (
                                 <img

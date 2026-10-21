@@ -71,9 +71,9 @@ describe("equipe técnica — URL efetiva da evidência", () => {
     expect(resolverUrlEvidencia(comPath, {}, { loading: true }).estado).toBe("carregando");
   });
 
-  it("aceita arquivo_url apenas em registro legado sem path", () => {
-    const r = resolverUrlEvidencia({ id: "2", arquivo_url: "https://legado/2.png" }, {});
-    expect(r).toEqual({ url: "https://legado/2.png", estado: "pronta" });
+  it("recusa arquivo_url gravada mesmo em registro legado sem path", () => {
+    const r = resolverUrlEvidencia({ id: "2", arquivo_url: "https://legado/2.png?token=antigo" }, {});
+    expect(r).toEqual({ url: null, estado: "indisponivel" });
   });
 
   it("registro sem path e sem url é indisponível", () => {

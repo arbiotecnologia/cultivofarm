@@ -64,9 +64,9 @@ export function RoteiroVisita({ registroId, hideHeader, viewer = "tecnico" }: Pr
   const eventosComUrls = useMemo(() => {
     return eventos.map(ev => ({
       ...ev,
-      fotoUrl: (ev.fotoPath && signedUrls[ev.fotoPath]) || ev.fotoUrl,
-      audioUrl: (ev.audioPath && signedUrls[ev.audioPath]) || ev.audioUrl,
-      arquivoUrl: (ev.arquivoPath && signedUrls[ev.arquivoPath]) || ev.arquivoUrl,
+      fotoUrl: (ev.fotoPath && signedUrls[ev.fotoPath]) || null,
+      audioUrl: (ev.audioPath && signedUrls[ev.audioPath]) || null,
+      arquivoUrl: (ev.arquivoPath && signedUrls[ev.arquivoPath]) || null,
     }));
   }, [eventos, signedUrls]);
 

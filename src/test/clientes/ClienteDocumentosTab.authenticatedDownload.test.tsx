@@ -31,8 +31,8 @@ const tree = () => <form onSubmit={submit}><ClienteDocumentosTab clienteId="C1" 
 const submit = vi.fn((e: React.FormEvent) => e.preventDefault());
 
 describe("ClienteDocumentosTab — abridor autenticado incondicional", () => {
-  it("gate global segue fechado e happy path prepara/baixa sem URL assinada, popup ou submit", async () => {
-    expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(false);
+  it("gate Blob ativo e happy path prepara/baixa sem URL assinada, popup ou submit", async () => {
+    expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(true);
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
       expect(this.href).toBe("blob:1"); expect(this.download).toBe("Documento.pdf");
     });

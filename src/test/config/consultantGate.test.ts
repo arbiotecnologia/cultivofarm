@@ -9,8 +9,8 @@ describe("consultant authorized activation actual flags", () => {
     expect(FINANCIAL_CONTEXT_MONITOR_ENABLED).toBe(true);
     expect(PRODUCER_CONTEXT_MONITOR_ENABLED).toBe(true);
   });
-  it("global v6 and Blob stay closed", () => {
+  it("global v6 closed; Blob authenticated active (signing removed)", () => {
     expect(AUTHZ_CACHE_ROLLOUT_SCOPE).toBe("b2b-context");
-    expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(false);
+    expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(true);
   });
 });

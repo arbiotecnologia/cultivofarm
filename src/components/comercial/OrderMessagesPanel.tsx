@@ -5,7 +5,6 @@ import {
   useSetMessageStatus,
   useMessageAttachments,
   useUploadMessageAttachment,
-  getAttachmentSignedUrl,
   type OrderMessage,
 } from "@/hooks/useCommercial";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Paperclip, FileText, FileSpreadsheet, FileImage, File as FileIcon } from "lucide-react";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { toast } from "sonner";
-import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 import { useAuthenticatedBlobUrls } from "@/hooks/useAuthenticatedBlobUrls";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
@@ -31,21 +29,8 @@ const iconFor = (mime: string | null | undefined) => {
 };
 
 function AttachmentThumb({ path, fileName, mime, onOpen, prepared, busy }: { path: string; fileName: string; mime: string | null; onOpen: (path: string) => void; prepared: boolean; busy: boolean }) {
-  const [thumb, setThumb] = useState<string | null>(null);
-  const access = useStorageAccessScope(`order-thumbnail:${path}`);
-  const blobs = useAuthenticatedBlobUrls(mime?.startsWith("image/") ? [path] : [], "order-attachments", { enabled: AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED });
-  useEffect(() => {
-    let cancelled = false;
-    const current = access.capture();
-    setThumb(null);
-    if (!AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && access.ready && mime?.startsWith("image/")) {
-      getAttachmentSignedUrl(path).then((u) => { if (!cancelled && current()) setThumb(u); });
-    }
-    return () => { cancelled = true; };
-    // capture is intentionally bound to the current resource scope.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, mime, access.scope]);
-  const visibleThumb = AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? blobs.urls[path] : access.ready ? thumb : null;
+  const blobs = useAuthenticatedBlobUrls(mime?.startsWith("image/") ? [path] : [], "order-attachments");
+  const visibleThumb = blobs.urls[path];
 
   if (visibleThumb) {
     return (
@@ -87,14 +72,8 @@ function MessageItem({ m, orderId }: { m: OrderMessage & { status?: string | nul
   const opener = useAuthenticatedAttachmentOpener(`order:${orderId}:message:${m.id}`, "order-attachments");
   const openAttachment = async (path: string) => {
     if (!access.ready) return;
-    if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) {
-      if (opener.urls[path]) { opener.download(path, attachments.find(a => a.file_path === path)?.file_name || "anexo"); return; }
-      await opener.open(path, () => toast.error("Anexo indisponível"));
-      return;
-    }
-    const current = access.capture();
-    const url = await getAttachmentSignedUrl(path);
-    if (current() && url) window.open(url, "_blank", "noopener,noreferrer");
+    if (opener.urls[path]) { opener.download(path, attachments.find(a => a.file_path === path)?.file_name || "anexo"); return; }
+    await opener.open(path, () => toast.error("Anexo indisponível"));
   };
 
   return (
