@@ -104,7 +104,7 @@ permanece risco residual explícito. Não usar signed URL antiga como fallback n
 
 - 110/110 focados (botão48 + lista51 + SDK1 + Edge runtime10).
 - Config integral + focados: **1194/1194, 75 arquivos**, sem exclusão/skip/todo.
-- **58 checks PG descartável**: baseline SIGN visível; sign/sign_many/sign_upload e
+- **61 checks PG descartável**: baseline SIGN visível; sign/sign_many/sign_upload e
 operações desconhecidas negadas; download/info/list/upload/upsert permitidos sob
 escopo válido; tenant estrangeiro, revogado, anon e WITH CHECK negados; permissiva
 ampla não contorna; ref/contrato drift e rollback não revisado bloqueados; documento
@@ -113,7 +113,7 @@ original preservado; service bypass explicitamente demonstrado.
 hosted nem homologação das sessões reais. Não executada emissão UI, pois não há
 recebimento elegível autorizado; nenhum recibo novo foi criado para facilitar teste.
 - Compilação/checagem automática do projeto: log `build-errors.log` build OK
-12:40:23 UTC (harness, sem execução manual). Não confundir build hospedado antigo
+12:42:15 UTC (harness, sem execução manual). Não confundir build hospedado antigo
 3eb1616b com validação local atual. Edge avaliada via transpiler e mocks, não deploy
 Deno hosted; aceite HTTP real continua pendente do proprietário.
 - Rollback Edge `edge-rollback.py` preflight hashes protegido e testado em cópia:
