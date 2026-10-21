@@ -26,6 +26,16 @@ try:
   return f"SET ROLE {role};SET fixture.tenant='{tenant}';SET fixture.staff='{staff}';SET storage.operation='{op}';"
  assert run(ctx('storage.object.sign')+'SELECT count(*) FROM storage.objects;').stdout.splitlines()[-1]=='2';checks.append('baseline permits sign lookup')
  snapshot=run('SELECT jsonb_build_object('+(H/'preflight.sql.review').read_text().split('SELECT jsonb_build_object(',1)[1].split(';')[0]+';').stdout.strip();s=json.loads(snapshot)
+ (t/'snapshot.json').write_text(snapshot)
+ http={'ref':'swzpzcwiasxmjutrmvkm','storage_version':'SYNTHETIC-NOT-HOSTED','reviewed':True,'operations':['object.get_authenticated','object.get_authenticated_info','object.head_authenticated_info','object.upload','object.upload_update','object.sign','object.sign_many','object.sign_upload_url']}
+ (t/'http.json').write_text(json.dumps(http))
+ def prepare(ref):
+  return subprocess.run(['python3',str(H/'prepare.py'),'--ref',ref,'--snapshot',str(t/'snapshot.json'),'--http-contract',str(t/'http.json'),'--output',str(t/'candidate.sql')],capture_output=True)
+ assert prepare('wrong').returncode and not (t/'candidate.sql').exists();checks.append('wrong ref preparation denied')
+ (t/'http.json').write_text('{}')
+ assert prepare(http['ref']).returncode and not (t/'candidate.sql').exists();checks.append('missing HTTP contract denied')
+ (t/'http.json').write_text(json.dumps(http))
+ assert prepare(http['ref']).returncode==0;checks.append('synthetic reviewed preparation succeeds offline')
  c=(H/'candidate.sql.review').read_text().replace('NULL /* REVIEWED_CONTRACT */',"'"+json.dumps(s).replace("'","''")+"'::jsonb")
  run(c)
  for op in ['object.get_authenticated','object.get_authenticated_info','object.head_authenticated_info','object.list','object.list_v2','object.upload','object.upload_update','object.delete','object.delete_many']:
