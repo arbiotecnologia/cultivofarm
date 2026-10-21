@@ -1,4 +1,4 @@
-// Canonical source of download-financial-document v1 (deployed externally, ezbr 2ad75f43…5f31).
+// REVIEW ONLY — intended path supabase/functions/download-financial-document/core.ts.
 // Same contract as download-client-document v3 (clientes-docs untouched), scoped to financial-docs only.
 export const LIMITS = { bytes: 20 * 1024 * 1024, bodyBytes: 4096, timeoutMs: 15_000 } as const;
 export const BUCKET = "financial-docs" as const;

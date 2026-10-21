@@ -1,4 +1,4 @@
-// Canonical source of download-financial-document v1 (deployed externally, ezbr 2ad75f43…5f31).
+// REVIEW ONLY — intended path supabase/functions/download-financial-document/index.ts.
 // Requires config.toml [functions.download-financial-document] verify_jwt = true BEFORE any deploy.
 import { createClient } from "npm:@supabase/supabase-js@2.110.8";
 import { corsHeaders } from "npm:@supabase/supabase-js@2.110.8/cors";

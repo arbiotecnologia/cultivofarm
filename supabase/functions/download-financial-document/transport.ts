@@ -1,4 +1,4 @@
-// Canonical source of download-financial-document v1 (deployed externally, ezbr 2ad75f43…5f31).
+// REVIEW ONLY — intended path supabase/functions/download-financial-document/transport.ts.
 import { BUCKET, validSnapshot, type Snapshot, type Transport } from "./core.ts";
 
 export interface ActorProof { rpc(path: string, signal: AbortSignal): Promise<unknown> }
