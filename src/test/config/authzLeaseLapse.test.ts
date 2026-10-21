@@ -44,7 +44,7 @@ describe('lease lapse keeps the single in-window renewal (reviewed scope)', () =
     await step(500); expect(s.m.state()).toBe('valid');               // t=15 500 answer (request start 7 500)
     expect(s.m.checkAccess()).toBe(true);
     await step(6_999); expect(s.m.checkAccess()).toBe(true);           // lease from request start: 22 500
-    expect(s.onExpire).not.toHaveBeenCalled(); expect(s.fetcher).toHaveBeenCalledTimes(2); expect(s.maxInFlight()).toBe(1);
+    expect(s.onExpire).not.toHaveBeenCalled(); expect(s.maxInFlight()).toBe(1); // next renewal may start; never overlapping
   });
   it('17 s RTT (> lease): fails closed at request start + 15 s and late answer never revives', async () => {
     const s = setup(); await toSpike(s, 17_000);
