@@ -116,12 +116,31 @@ export async function loadFiscalXmlArtifact(key: string, signal: AbortSignal): P
   const [runId, artifact] = key.split(":");
   if (!runId || (artifact !== "signed" && artifact !== "unsigned")) throw unavailable();
   if (signal.aborted) throw unavailable();
-  const { data, error } = await supabase.functions.invoke("fiscal-xml-engine", {
-    body: { action: "download", run_id: runId, artifact },
-    signal,
-    timeout: FISCAL_XML_TIMEOUT_MS,
+  const controller = new AbortController();
+  const relay = () => controller.abort();
+  signal.addEventListener("abort", relay, { once: true });
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    controller.signal.addEventListener("abort", () => reject(unavailable()), { once: true });
+    timer = setTimeout(relay, FISCAL_XML_TIMEOUT_MS);
   });
-  if (signal.aborted || error || !(data instanceof Blob)) throw unavailable();
-  if (data.size === 0 || data.size > FISCAL_XML_MAX_BYTES) throw unavailable();
-  return new Blob([data], { type: "application/xml" });
+  try {
+    const result = await Promise.race([
+      supabase.functions.invoke("fiscal-xml-engine", {
+        body: { action: "download", run_id: runId, artifact },
+        signal: controller.signal,
+        timeout: FISCAL_XML_TIMEOUT_MS,
+      }),
+      aborted,
+    ]);
+    const { data, error } = result;
+    if (signal.aborted || controller.signal.aborted || error || !(data instanceof Blob)) throw unavailable();
+    const mime = data.type.split(";")[0].trim().toLowerCase();
+    if (!["application/octet-stream", "application/xml", "text/xml"].includes(mime)) throw unavailable();
+    if (data.size === 0 || data.size > FISCAL_XML_MAX_BYTES) throw unavailable();
+    return new Blob([data], { type: "application/xml" });
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener("abort", relay);
+  }
 }
