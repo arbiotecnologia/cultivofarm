@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenantCatalogScope } from "@/hooks/useTenantCatalogVisibility";
 import { TECHNICAL_STALE_REVALIDATION } from "@/hooks/useVisitaWorkspace";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { REC_ENUM_OPTIONS, recomendacaoExpectedVersion, recomendacaoOwnedBy, recomendacaoValidationError } from "@/lib/visita/recomendacaoContract";
+import { syncRecomendacao } from "@/lib/visita/syncRecomendacao";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,6 +76,8 @@ export default function WizardRecomendacaoStep({
   const [form, setForm] = useState<Form>(EMPTY_FORM);
   const [pendingRows, setPendingRows] = useState<PendingRecomendacao[]>([]);
   const scope = useTenantCatalogScope();
+  const access = useStorageAccessScope(JSON.stringify([localRegistroId, remoteRegistroId, locked]));
+  const saving = useRef(false);
   const identity = scope ? `${scope.organizationId}|${scope.userId}|${localRegistroId}|${remoteRegistroId}` : "unready";
   const fence = useRef({ identity, generation: 0 });
   if (fence.current.identity !== identity) fence.current = { identity, generation: fence.current.generation + 1 };
@@ -134,11 +139,11 @@ export default function WizardRecomendacaoStep({
 
   const reloadPending = async () => {
     const data = await getPendingRecomendacoesByRegistro(localRegistroId);
-    if (current()) setPendingRows(data);
+    if (current()) setPendingRows(data.filter(p => scope && recomendacaoOwnedBy(p, scope)));
   };
   useEffect(() => {
     let active = true;
-    void getPendingRecomendacoesByRegistro(localRegistroId).then(data => { if (active && current()) setPendingRows(data); });
+    void getPendingRecomendacoesByRegistro(localRegistroId).then(data => { if (active && current()) setPendingRows(data.filter(p => scope && recomendacaoOwnedBy(p, scope))); });
     return () => { active = false; };
     // Identity change must invalidate the pending read even if the original actor returns.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -187,6 +192,14 @@ export default function WizardRecomendacaoStep({
   const openEdit = (row: Row) => { setEditing(row); setForm(row.payload); setDialogOpen(true); };
 
   const save = async () => {
+    if (saving.current || !scope || !access.ready || locked) return;
+    const valid = access.capture();
+    const validationError = recomendacaoValidationError(form);
+    if (validationError) { toast.error(validationError); return; }
+    const pending = editing?.isPending ? pendingRows.find(p => p.clientUuid === editing.clientUuid) : null;
+    if (editing?.isPending && (!pending || pending.versionContract !== "expected_v1")) {
+      toast.error("Pendência antiga: a versão e a autoria precisam de revisão. Nenhum dado foi alterado."); return;
+    }
     if (!form.recomendacao_tecnica?.trim()) {
       toast.error("Informe a recomendação técnica");
       return;
@@ -196,25 +209,23 @@ export default function WizardRecomendacaoStep({
       return;
     }
     const clientUuid = editing?.clientUuid ?? crypto.randomUUID();
-    const versao = (editing?.versao ?? 0) + 1;
+    const versao = recomendacaoExpectedVersion(editing);
     const entry: PendingRecomendacao = {
       clientUuid, localRegistroId, remoteId: editing?.remoteId ?? null,
       payload: form, versao, updatedAt: new Date().toISOString(),
       syncStatus: "pending_sync",
+      remoteRegistroId, ownerUserId: scope.userId, ownerOrganizationId: scope.organizationId,
+      versionContract: "expected_v1",
     };
+    saving.current = true;
+    try {
     await savePendingRecomendacao(entry);
-    if (!current()) return;
+    if (!current() || !valid()) return;
 
     if (isOnline && remoteRegistroId) {
       try {
-        const { error } = await supabase.rpc("rpc_upsert_recomendacao_visita", {
-          p_registro_id: remoteRegistroId,
-          p_client_uuid: clientUuid,
-          p_payload: { ...form },
-          p_expected_versao: versao,
-        });
-        if (error) throw error;
-        if (!current()) return;
+        await syncRecomendacao(entry, scope, remoteRegistroId, () => current() && valid());
+        if (!current() || !valid()) return;
         await removePendingRecomendacao(clientUuid);
       } catch (err: unknown) {
         if (!current()) return;
@@ -226,6 +237,7 @@ export default function WizardRecomendacaoStep({
     await reloadPending();
     await refetch();
     queryClient.invalidateQueries({ queryKey: ["wizard-rec-flag", remoteRegistroId] });
+    } finally { saving.current = false; }
   };
 
   const remove = async (row: Row) => {
@@ -240,6 +252,8 @@ export default function WizardRecomendacaoStep({
         localRegistroId, remoteId: row.remoteId, payload: row.payload,
         versao: row.versao + 1, updatedAt: new Date().toISOString(),
         deleted: true, syncStatus: "pending_sync",
+        remoteRegistroId, ownerUserId: scope?.userId, ownerOrganizationId: scope?.organizationId,
+        versionContract: "expected_v1",
       });
     } else if (row.clientUuid) {
       await removePendingRecomendacao(row.clientUuid);
@@ -396,19 +410,11 @@ export default function WizardRecomendacaoStep({
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label>Objetivo</Label>
-                <Input
-                  value={form.objetivo_recomendacao ?? ""}
-                  onChange={(e) => setForm({ ...form, objetivo_recomendacao: e.target.value })}
-                  placeholder="controle_praga…"
-                />
+                {enumSelect("objetivo_recomendacao", "Objetivo")}
               </div>
               <div className="space-y-1">
                 <Label>Estratégia</Label>
-                <Input
-                  value={form.estrategia_manejo ?? ""}
-                  onChange={(e) => setForm({ ...form, estrategia_manejo: e.target.value })}
-                  placeholder="preventivo/curativo…"
-                />
+                {enumSelect("estrategia_manejo", "Estratégia")}
               </div>
             </div>
 
@@ -517,11 +523,7 @@ export default function WizardRecomendacaoStep({
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label>Modo aplicação</Label>
-                <Input
-                  value={form.modo_aplicacao ?? ""}
-                  onChange={(e) => setForm({ ...form, modo_aplicacao: e.target.value })}
-                  placeholder="pulverizacao…"
-                />
+                {enumSelect("modo_aplicacao", "Modo aplicação")}
               </div>
               <div className="space-y-1">
                 <Label>Momento</Label>
