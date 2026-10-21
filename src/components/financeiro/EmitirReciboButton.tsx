@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 import { financialReceiptLocator } from "@/lib/financeiro/receiptStorageLocator";
 import { readReceiptCurrentState } from "@/lib/financeiro/receiptCurrentState";
+import { recordReceiptPrepare, type ReceiptPrepareStage } from "@/lib/financeiro/receiptPrepareDiagnostics";
 
 interface Props {
   paymentId: string;
@@ -32,9 +33,14 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
   const request = useRef<AbortController | null>(null);
   const latest = useRef<AbortController | null>(null);
   const [prepared, setPrepared] = useState({ scope: "", path: "", number: "", id: "" });
+  const interrupted = useRef(false);
   useLayoutEffect(() => {
     setBusy(false); setPrepared({ scope: "", path: "", number: "", id: "" });
-    return () => { request.current?.abort(); request.current = null; };
+    // Session renewal/revocation mid-operation: neutral notice, never an automatic (mutating) retry.
+    if (interrupted.current && access.ready) toast.info("Sessão atualizada durante o preparo. Tente novamente.");
+    interrupted.current = false;
+    return () => { if (request.current) interrupted.current = true; request.current?.abort(); request.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.scope]);
   const downloadable = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
 
@@ -44,9 +50,11 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
     const controller = new AbortController();
     request.current = controller; latest.current = controller;
     const valid = () => current() && !controller.signal.aborted && request.current === controller;
+    const started = Date.now(); let stage: ReceiptPrepareStage = "fresh_read"; let timedOut = false;
+    let outcome: "ok" | "error" | "stale_state" = "error";
     const timeout = setTimeout(() => {
       if (request.current !== controller) return;
-      controller.abort(); request.current = null;
+      timedOut = true; controller.abort(); request.current = null;
       if (current()) { setBusy(false); toast.error("Recibo indisponível"); }
     }, 15_000);
     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
@@ -60,10 +68,12 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
         if (!valid()) return;
         if (fresh.status !== "ISSUED" || fresh.path !== prepared.path) {
           opener.discard(prepared.path); setPrepared({ scope: "", path: "", number: "", id: "" });
-          toast.error("Recibo atualizado. Consulte a lista de recibos."); return;
+          outcome = "stale_state"; toast.error("Recibo atualizado. Consulte a lista de recibos."); return;
         }
+        stage = "download"; outcome = "ok";
         opener.download(prepared.path, `${prepared.number}.pdf`); return;
       }
+      stage = "issue";
       const { data, error } = await (supabase as any).rpc("issue_financial_receipt", {
         _payment_id: paymentId,
       }).abortSignal(controller.signal);
@@ -73,6 +83,7 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       if (typeof receiptId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receiptId)) throw new Error("Recibo indisponível");
       // Actor-authenticated RLS read: never derive tenant/ownership from a URL.
       // Generated canonical types lag this table's tenant column; validate wire data below.
+      stage = "row_read";
       const { data: receipt, error: readError } = await (supabase as any).from("financial_receipts")
         .select("id,payment_id,organization_id,receipt_year,receipt_number,storage_bucket,storage_path,status")
         .eq("id", receiptId).eq("payment_id", paymentId).eq("organization_id", tenant)
@@ -84,24 +95,29 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
           (receipt.storage_path !== null && typeof receipt.storage_path !== "string") ||
           (receipt.storage_bucket !== null && typeof receipt.storage_bucket !== "string")) throw new Error("Recibo indisponível");
       const path = financialReceiptLocator(receipt, tenant);
+      stage = "edge";
       const { data: pdfRes, error: pdfErr } = await supabase.functions.invoke("generate-financial-receipt", {
         body: { receipt_id: receiptId }, signal: controller.signal,
       });
       if (!valid()) return;
       if (pdfErr || pdfRes?.path !== path || pdfRes?.receipt_number !== receipt.receipt_number || pdfRes?.status !== "ISSUED") throw new Error("Recibo indisponível");
       // Single watchdog covers Edge, bytes and the post-bytes status read until finally.
-      await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
-      opened = path;
+      stage = "bytes";
+      const loaded = await opener.open(path, () => {}, controller.signal);
+      if (loaded) opened = path;
       if (!valid()) return;
+      if (!loaded) throw new Error("Recibo indisponível");
+      stage = "post_read";
       const after = await readReceiptCurrentState(receiptId, tenant, controller.signal);
       if (!valid()) return;
-      if (after.status !== "ISSUED" || after.path !== path) { opener.discard(path); throw new Error("Recibo indisponível"); }
-      kept = true;
+      if (after.status !== "ISSUED" || after.path !== path) { opener.discard(path); outcome = "stale_state"; throw new Error("Recibo indisponível"); }
+      kept = true; outcome = "ok";
       setPrepared({ scope: access.scope, path, number: receipt.receipt_number, id: receiptId });
     } catch {
       if (valid()) toast.error("Recibo indisponível");
     } finally {
       clearTimeout(timeout);
+      recordReceiptPrepare({ source: "button", stage, outcome: timedOut ? "timeout" : !current() ? "fence" : outcome, elapsedMs: Date.now() - started });
       // A newer request may own the same path after a timeout; never revoke its bytes.
       if (opened && !kept && latest.current === controller) opener.discard(opened);
       if (request.current === controller) {
