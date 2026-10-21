@@ -84,10 +84,10 @@ describe('paired early renewal before confirmed deadline', () => {
     expect(s.onEpochChange).not.toHaveBeenCalled();
     expect(s.onExpire).not.toHaveBeenCalled();
     expect(s.maxInFlight()).toBe(1);
-    // response t3 => deadline t15; next request t7.5 (floor margin 7.5s > 2*RTT=6s), steady 7.5s cadence.
-    expect(s.starts.slice(0, 4)).toEqual([0, 7500, 15000, 22500]);
+    // response t3 => deadline t15; next request t5 (floor margin 10s > 2*RTT=6s), steady 5s cadence.
+    expect(s.starts.slice(0, 4)).toEqual([0, 5000, 10000, 15000]);
     for (let i = 1; i < s.starts.length; i++) expect(s.starts[i] - s.starts[i - 1]).toBeGreaterThanOrEqual(EARLY_RENEWAL_MIN_DELAY_MS + 3000);
-    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(18);
+    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(26);
   });
 
   it('variable RTT 0.1–4.5s with jitter for 120s keeps access, single flight and gap >= MIN_DELAY after each answer', async () => {
@@ -124,10 +124,10 @@ describe('paired early renewal before confirmed deadline', () => {
   it('response landing exactly at the confirmed deadline is rejected and cannot reopen', async () => {
     const s = setup();
     s.monitor.start();
-    await vi.advanceTimersByTimeAsync(3000); // deadline 15000, next request at 7500
-    s.setRtt(() => 7500); s.setRespond(() => valid('late'));
+    await vi.advanceTimersByTimeAsync(3000); // deadline 15000, next request at 5000
+    s.setRtt(() => 10000); s.setRespond(() => valid('late'));
     await vi.advanceTimersByTimeAsync(12000);
-    expect(s.starts).toEqual([0, 7500]);
+    expect(s.starts).toEqual([0, 5000]);
     expect(s.monitor.state()).toBe('expired');
     expect(s.monitor.currentFingerprint()).toBe('same');
     expect(s.onEpochChange).not.toHaveBeenCalled();
@@ -152,7 +152,7 @@ describe('paired early renewal before confirmed deadline', () => {
     expect(s.monitor.checkAccess()).toBe(true);
     await holdsAccessFor(s, 20000);
     for (let i = 1; i < s.starts.length; i++) expect(s.starts[i] - s.starts[i - 1]).toBeGreaterThanOrEqual(EARLY_RENEWAL_MIN_DELAY_MS + 200);
-    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(18);
+    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(26);
     // stop answering: access closes at last start + (2500 - RTT) = start + 2300 at the latest
     const last = s.starts[s.starts.length - 1];
     s.setRtt(() => 60000);
@@ -221,8 +221,8 @@ describe('paired early renewal before confirmed deadline', () => {
 });
 
 describe('real homologation variation: fast RTT followed by a single 5.1–6s spike', () => {
-  it('reserves at least the 7.5s floor before the confirmed deadline at every request', () => {
-    expect(EARLY_RENEWAL_FLOOR_MARGIN_MS).toBe(7500);
+  it('reserves at least the 10s floor before the confirmed deadline at every request', () => {
+    expect(EARLY_RENEWAL_FLOOR_MARGIN_MS).toBe(10000);
   });
 
   it('old 5s floor reproduction (arithmetic of the real expire): 5094ms spike started 5087ms before deadline lands 7ms late', () => {
@@ -245,7 +245,7 @@ describe('real homologation variation: fast RTT followed by a single 5.1–6s sp
     expect(s.maxInFlight()).toBe(1);
     // bounded cadence: never more than one request per MIN_DELAY + RTT, and far below 1/s
     for (let i = 1; i < s.starts.length; i++) expect(s.starts[i] - s.starts[i - 1]).toBeGreaterThanOrEqual(EARLY_RENEWAL_MIN_DELAY_MS + 200);
-    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(14);
+    expect(s.fetcher.mock.calls.length).toBeLessThanOrEqual(21); // ~4.5 s cadence with 200 ms RTT
   });
 
   it('every scheduled request starts with >= floor - jitter headroom before the confirmed deadline', async () => {
@@ -259,9 +259,9 @@ describe('real homologation variation: fast RTT followed by a single 5.1–6s sp
     }
   });
 
-  it('spike above the floor (8s) after fast samples still fails closed at the 15s deadline and late answer cannot reopen', async () => {
+  it('spike above the floor (10.5s) after fast samples still fails closed at the 15s deadline and late answer cannot reopen', async () => {
     let n = 0;
-    const s = setup({ rtt: () => (++n === 3 ? 8000 : 200) });
+    const s = setup({ rtt: () => (++n === 3 ? 10500 : 200) });
     s.monitor.start();
     await vi.advanceTimersByTimeAsync(200);
     while (s.fetcher.mock.calls.length < 3) await vi.advanceTimersByTimeAsync(100);
