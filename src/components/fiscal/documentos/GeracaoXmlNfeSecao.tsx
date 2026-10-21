@@ -4,7 +4,7 @@
  * Teto explícito: SIGNED. Nenhum botão transmite documento à SEFAZ.
  * Artefatos são imutáveis: cada correção gera uma nova versão de execução.
  */
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -18,10 +18,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 import {
-  fiscalXmlKey,
-  loadFiscalXmlArtifact,
+  useDownloadFiscalXml,
   useFiscalXmlStatus,
   useGenerateFiscalXml,
   type FiscalXmlRun,
@@ -71,35 +69,19 @@ function Hash({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-function ArtifactButton({ opener, runId, artifact, available, label, icon, testId }: {
-  opener: ReturnType<typeof useAuthenticatedAttachmentOpener>;
-  runId: string; artifact: "signed" | "unsigned"; available: boolean;
-  label: string; icon: ReactNode; testId: string;
-}) {
-  const key = fiscalXmlKey(runId, artifact);
-  const ready = !!opener.urls[key];
-  const busy = opener.loadingPaths.includes(key);
-  const onError = () => toast.error("Não foi possível preparar o arquivo", { description: "Tente novamente." });
-  return (
-    <Button
-      type="button" size="sm" variant="outline"
-      disabled={!available || busy || !opener.ready}
-      onClick={() => {
-        // Clique explícito: prepara bytes autenticados; segundo clique entrega o Blob.
-        if (ready) opener.download(key, `nfe-${runId}-${artifact}.xml`);
-        else void opener.open(key, onError);
-      }}
-      data-testid={testId}
-      data-ready={ready ? "true" : "false"}
-    >
-      {icon} {busy ? "Preparando..." : ready ? `Baixar ${label}` : label}
-    </Button>
-  );
-}
-
 function RunCard({ run }: { run: FiscalXmlRun }) {
-  // Escopo canônico (identidade/tenant/papéis/epoch/lease): mudança aborta e revoga Blobs.
-  const opener = useAuthenticatedAttachmentOpener(`fiscal-xml:${run.runId}`, "fiscal-xml", loadFiscalXmlArtifact);
+  const download = useDownloadFiscalXml();
+
+  const open = async (artifact: "signed" | "unsigned") => {
+    try {
+      const url = await download.mutateAsync({ runId: run.runId, artifact });
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toast.error("Não foi possível abrir o arquivo", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
+  };
 
   return (
     <div className="rounded-lg border border-border p-3 space-y-2" data-testid="fiscal-xml-run">
@@ -111,10 +93,22 @@ function RunCard({ run }: { run: FiscalXmlRun }) {
           <Badge variant="secondary">tpAmb {run.environmentCode} (homologação)</Badge>
         </div>
         <div className="flex gap-2">
-          <ArtifactButton opener={opener} runId={run.runId} artifact="unsigned" available={run.hasUnsigned}
-            label="XML" icon={<Download className="w-4 h-4 mr-1" aria-hidden />} testId="fiscal-xml-download-unsigned" />
-          <ArtifactButton opener={opener} runId={run.runId} artifact="signed" available={run.hasSigned}
-            label="XML assinado" icon={<FileSignature className="w-4 h-4 mr-1" aria-hidden />} testId="fiscal-xml-download-signed" />
+          <Button
+            type="button" size="sm" variant="outline"
+            disabled={!run.hasUnsigned || download.isPending}
+            onClick={() => open("unsigned")}
+            data-testid="fiscal-xml-download-unsigned"
+          >
+            <Download className="w-4 h-4 mr-1" aria-hidden /> XML
+          </Button>
+          <Button
+            type="button" size="sm" variant="outline"
+            disabled={!run.hasSigned || download.isPending}
+            onClick={() => open("signed")}
+            data-testid="fiscal-xml-download-signed"
+          >
+            <FileSignature className="w-4 h-4 mr-1" aria-hidden /> XML assinado
+          </Button>
         </div>
       </div>
 
