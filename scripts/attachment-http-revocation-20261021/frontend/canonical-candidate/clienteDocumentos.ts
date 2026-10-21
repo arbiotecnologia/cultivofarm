@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
+import { fencedStep, type BackupFence } from "@/lib/authz/backupFence";
 
 export interface ClienteDocumento {
   id: string;
@@ -22,15 +23,20 @@ export interface ClienteDocumento {
  */
 export async function gerarBackupDocumentosCliente(
   clienteId: string,
-  nomeCliente: string
+  nomeCliente: string,
+  fence: BackupFence
 ): Promise<{ totalDocs: number; baixados: number; falhas: string[] }> {
-  const { data: docs, error } = await (supabase as any)
-    .from("cliente_documentos")
-    .select("*")
-    .eq("cliente_id", clienteId);
-
-  if (error) throw error;
-  const lista = (docs || []) as unknown as ClienteDocumento[];
+  const read = async () => {
+    const { data, error } = await supabase.rpc("client_documents_backup_snapshot" as never,
+      { _client: clienteId } as never).abortSignal(fence.signal);
+    if (error || !Array.isArray(data)) throw new Error("Documentos indisponíveis");
+    const rows = data as unknown as Array<{ doc: ClienteDocumento; proof: unknown }>;
+    if (rows.some(row => !row.doc || row.doc.cliente_id !== clienteId || !row.proof)) throw new Error("Documentos indisponíveis");
+    return rows;
+  };
+  const initial = await fencedStep(fence, read);
+  const snapshot = JSON.stringify(initial);
+  const lista = initial.map(row => row.doc);
 
   if (lista.length === 0) {
     return { totalDocs: 0, baixados: 0, falhas: [] };
@@ -42,7 +48,7 @@ export async function gerarBackupDocumentosCliente(
 
   for (const doc of lista) {
     try {
-      const blob = await downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, new AbortController().signal);
+      const blob = await fencedStep(fence, () => downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, fence.signal));
       if (!blob) {
         falhas.push(doc.nome);
         continue;
@@ -51,6 +57,7 @@ export async function gerarBackupDocumentosCliente(
       zip.file(`${safeTipo}/${doc.nome}`, blob);
       baixados += 1;
     } catch {
+      if (fence.signal.aborted || !fence.current()) throw new Error("Documentos indisponíveis");
       falhas.push(doc.nome);
     }
   }
@@ -82,7 +89,9 @@ export async function gerarBackupDocumentosCliente(
     )
   );
 
-  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const zipBlob = await fencedStep(fence, () => zip.generateAsync({ type: "blob" }));
+  const fresh = await fencedStep(fence, read);
+  if (JSON.stringify(fresh) !== snapshot) throw new Error("Documentos indisponíveis");
   const yyyymmdd = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const safeName = (nomeCliente || "cliente")
     .normalize("NFD")
@@ -92,11 +101,13 @@ export async function gerarBackupDocumentosCliente(
     .toLowerCase();
   const filename = `backup-documentos-${safeName}-${yyyymmdd}.zip`;
 
+  if (fence.signal.aborted || !fence.current()) throw new Error("Documentos indisponíveis");
   const url = URL.createObjectURL(zipBlob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
+  if (fence.signal.aborted || !fence.current()) { a.remove(); URL.revokeObjectURL(url); throw new Error("Documentos indisponíveis"); }
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
