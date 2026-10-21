@@ -144,8 +144,9 @@ function CatalogGridView({
   }, [scope, source.scope]);
 
   const abrirFichaCompleta = useCallback((r: CatalogoUnificadoRow) => {
+    if (scope === "b2b" && source.scope) { setFichaB2B({ id: r.id, tipo: r.tipo }); return; }
     setFichaUnificada(r);
-  }, []);
+  }, [scope, source.scope]);
 
   const renderActions = (r: CatalogoUnificadoRow) => (
     <div className="flex gap-1 justify-end flex-wrap">
