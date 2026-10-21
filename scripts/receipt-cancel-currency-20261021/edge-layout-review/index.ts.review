@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     const pdf = await PDFDocument.create();
     const font = await pdf.embedFont(StandardFonts.Helvetica);
     const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-    const canceled = rec.status === "CANCELED";
+    const isCanceled = rec.status === "CANCELED";
 
     const customerName = customer?.nome ?? customer?.razao_social ?? "—";
     const method = (rec as any).payment_methods?.name ?? "—";
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       { text: `Forma de pagamento: ${method}`, size: 11, f: font },
       { text: `Data do pagamento: ${new Date(rec.payment_date).toLocaleDateString("pt-BR")}`, size: 11, f: font },
     ];
-    if (canceled && rec.cancel_reason) bodyBlocks.push({ text: `Motivo: ${rec.cancel_reason}`, size: 9, f: font, color: rgb(0.5, 0, 0), gap: 8 });
+    if (isCanceled && rec.cancel_reason) bodyBlocks.push({ text: `Motivo: ${rec.cancel_reason}`, size: 9, f: font, color: rgb(0.5, 0, 0), gap: 8 });
     const footer: Block[] = [
       { text: "Este recibo foi gerado eletronicamente pelo sistema da AR Bio.", size: 9, f: font },
       { text: `Emitido por: ${userData.user.email ?? userData.user.id}  •  ${new Date(rec.issued_at).toLocaleString("pt-BR")}`, size: 8, f: font, color: rgb(0.3, 0.3, 0.3) },
@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
       page.drawText(pages.length === 1 ? "RECIBO DE PAGAMENTO" : "RECIBO DE PAGAMENTO (continuação)", { x: MARGIN, y: 350, size: pages.length === 1 ? 18 : 12, font: bold });
       const num = `Nº ${rec.receipt_number}`;
       page.drawText(num, { x: PAGE_W - MARGIN - bold.widthOfTextAtSize(num, 14), y: 350, size: 14, font: bold });
-      if (canceled) page.drawText("CANCELADO", { x: 110, y: 170, size: 80, font: bold, color: rgb(0.85, 0.1, 0.1), opacity: 0.25, rotate: { type: "degrees", angle: 20 } as any });
+      if (isCanceled) page.drawText("CANCELADO", { x: 110, y: 170, size: 80, font: bold, color: rgb(0.85, 0.1, 0.1), opacity: 0.25, rotate: { type: "degrees", angle: 20 } as any });
       y = 318;
     };
     newPage();
