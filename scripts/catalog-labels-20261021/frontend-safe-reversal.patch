@@ -89,82 +89,9 @@
 -}
 +}
 \ No newline at end of file
---- a/src/components/plataforma/PlatformCatalogFamilyDialog.tsx
-+++ b/src/components/plataforma/PlatformCatalogFamilyDialog.tsx
-@@ -2,9 +2,8 @@
- import { useAuth } from "@/hooks/useAuth";
- import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
- import { metadataRetryKey } from "@/lib/catalogo/platformCatalogMetadata";
--import { CLASS_LABEL, FAMILY_LABEL, PRODUCT_FAMILIES, isClassAllowed, setProductFamily,
-+import { CLASS_LABEL, FAMILY_CLASSES, FAMILY_LABEL, PRODUCT_FAMILIES, isClassAllowed, setProductFamily,
-   type FamilyTarget, type ProductFamily } from "@/lib/catalogo/platformCatalogFamily";
--import { usePlatformCatalogLabels } from "@/lib/catalogo/platformCatalogLabels";
- import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
- import { Button } from "@/components/ui/button";
- import { Checkbox } from "@/components/ui/checkbox";
-@@ -16,8 +15,6 @@
- /**
-  * Classificação explícita da família de um produto GLOBAL. Nunca sugere família a partir de
-  * nome/tipo/composição. Exige motivo e confirmação; recibo validado; CAS no servidor.
-- * Rótulos vêm da fonte canônica (RPC platform_list_catalog_labels): carregando desabilita,
-- * erro falha fechado, rótulo atual inativo é exibido mas não oferecido para nova atribuição.
-  * Fence: troca de escopo de identidade aborta a requisição e descarta o resultado.
-  */
- export function PlatformCatalogFamilyDialog({ product, scope, onClose, onSaved }:
-@@ -49,19 +46,11 @@
-     const set = requests.current;
-     return () => { for (const r of set) r.abort(); set.clear(); };
-   }, []);
--  const labelsQuery = usePlatformCatalogLabels(family, scope, live);
--  const labels = labelsQuery.data ?? [];
--  const activeLabels = labels.filter((l) => l.ativo);
--  const labelsReady = labelsQuery.isSuccess;
--  const labelsFailed = labelsQuery.isError;
--  // Rótulo atual fora da lista ativa (legado/inativo): exibido como opção desabilitada, nunca oferecido.
--  const currentMissing = product.classe_catalogo !== null && family === product.familia_catalogo &&
--    labelsReady && !activeLabels.some((l) => l.rotulo === product.classe_catalogo);
-   if (!live) return null;
-   const classValue = classe === NO_CLASS ? null : classe;
-   const changed = family !== "" && (family !== product.familia_catalogo || classValue !== product.classe_catalogo);
-   const reasonOk = reason.trim().length >= 10 && reason.trim().length <= 500;
--  const valid = family !== "" && labelsReady && isClassAllowed(family, classValue, labels);
-+  const valid = family !== "" && isClassAllowed(family, classValue);
-   const submit = async () => {
-     if (family === "" || !valid || !changed || !reasonOk || !confirmed || lock.current || !liveRef.current) return;
-     const myEpoch = epoch.current.n;
-@@ -70,7 +59,7 @@
-     const c = new AbortController(); requests.current.add(c);
-     const key = metadataRetryKey(scope, JSON.stringify(["family", product.id, product.updated_at, family, classValue, reason.trim()]));
-     try {
--      await setProductFamily(product, family, classValue, reason, key, c.signal, labels);
-+      await setProductFamily(product, family, classValue, reason, key, c.signal);
-       if (!c.signal.aborted && current()) onSaved();
-     } catch (failure) {
-       if (!c.signal.aborted && current()) setError(failure instanceof Error ? failure.message : "Não foi possível confirmar a classificação.");
-@@ -100,17 +89,12 @@
-         </select>
-         {family !== "" && <>
-           <Label htmlFor="class-select">Rótulo (opcional)</Label>
--          {labelsFailed && <p role="alert" className="text-sm text-destructive">Não foi possível carregar os rótulos autorizados. Tente reabrir o diálogo.</p>}
-           <select id="class-select" className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
--            disabled={busy || !labelsReady || labelsFailed || activeLabels.length === 0}
--            value={classe} onChange={(e) => { setClasse(e.target.value); reset(); }}>
-+            disabled={busy || FAMILY_CLASSES[family].length === 0} value={classe} onChange={(e) => { setClasse(e.target.value); reset(); }}>
-             <option value={NO_CLASS}>Sem rótulo</option>
--            {activeLabels.map((l) => <option key={l.id} value={l.rotulo}>{l.rotulo_exibicao}</option>)}
--            {currentMissing && <option value={product.classe_catalogo ?? NO_CLASS} disabled>
--              {(CLASS_LABEL[product.classe_catalogo ?? ""] ?? product.classe_catalogo) + " (inativo)"}</option>}
-+            {FAMILY_CLASSES[family].map((c) => <option key={c} value={c}>{CLASS_LABEL[c]}</option>)}
-           </select>
--          {labelsReady && activeLabels.length === 0 &&
--            <p className="text-sm text-muted-foreground">Nenhum rótulo ativo nesta família. Cadastre na Gestão da plataforma antes de rotular.</p>}
-+          {FAMILY_CLASSES[family].length === 0 && <p className="text-sm text-muted-foreground">Rótulos de fertilizantes/adubos ainda não foram definidos.</p>}
-         </>}
-         <Label htmlFor="family-reason">Motivo (10 a 500 caracteres)</Label>
-         <Textarea id="family-reason" required rows={2} maxLength={500} disabled={busy} value={reason}
 --- a/src/lib/catalogo/platformCatalogLabels.ts
 +++ b/src/lib/catalogo/platformCatalogLabels.ts
-@@ -1,129 +0,0 @@
+@@ -1,133 +0,0 @@
 -import { z } from "zod";
 -import { useQuery } from "@tanstack/react-query";
 -import { supabase } from "@/integrations/supabase/client";
@@ -181,6 +108,11 @@
 -export const LABEL_REASON_MAX = 500;
 -
 -const version = z.string().datetime({ offset: true });
+-export interface CatalogLabel {
+-  id: string; familia: ProductFamily; rotulo: string; rotulo_exibicao: string; ativo: boolean; updated_at: string;
+-}
+-// Cast explícito: o tsconfig do pacote não liga strictNullChecks e a inferência do zod
+-// colapsaria os campos para opcionais; o contrato acima é o autoritativo.
 -export const catalogLabelSchema = z.object({
 -  id: z.string().uuid(),
 -  familia: z.enum(PRODUCT_FAMILIES),
@@ -188,9 +120,8 @@
 -  rotulo_exibicao: z.string().min(2).max(80),
 -  ativo: z.boolean(),
 -  updated_at: version,
--}).strict();
+-}).strict() as unknown as z.ZodType<CatalogLabel>;
 -export const catalogLabelListSchema = z.array(catalogLabelSchema).max(200);
--export type CatalogLabel = z.infer<typeof catalogLabelSchema>;
 -
 -const baseReceipt = {
 -  id: z.string().uuid(), familia: z.enum(PRODUCT_FAMILIES), rotulo: z.string(),
@@ -294,6 +225,136 @@
 -export function labelRetryKey(scope: string, parts: unknown) {
 -  return metadataRetryKey(scope, JSON.stringify(parts));
 -}
+--- a/src/lib/catalogo/catalogLabelDisplay.ts
++++ b/src/lib/catalogo/catalogLabelDisplay.ts
+@@ -1,54 +0,0 @@
+-import { z } from "zod";
+-import { useQueries } from "@tanstack/react-query";
+-import { supabase } from "@/integrations/supabase/client";
+-import { PRODUCT_FAMILIES, type ProductFamily } from "@/lib/catalogo/platformCatalogFamily";
+-
+-/**
+- * Nomes de exibição dos rótulos ATIVOS para leitores autorizados (qualquer perfil ativo,
+- * inclusive técnico B2B e tenant) via RPC `catalog_family_labels_read` — nunca a RPC
+- * administrativa nem consulta direta à tabela `catalog_family_labels` (sem grants).
+- * Renomear a exibição na Gestão da plataforma reflete aqui após invalidação do cache.
+- * Falha fechada: sem a RPC, o mapa fica vazio e o leitor exibe a chave crua do rótulo.
+- */
+-export const activeLabelSchema = z.object({
+-  familia: z.enum(PRODUCT_FAMILIES),
+-  rotulo: z.string().regex(/^[a-z0-9][a-z0-9_]{1,39}$/),
+-  rotulo_exibicao: z.string().min(2).max(80),
+-}).strict();
+-export const activeLabelListSchema = z.array(activeLabelSchema).max(200);
+-export type ActiveLabel = z.infer<typeof activeLabelSchema>;
+-
+-type Rpc = (name: string, args: Record<string, unknown>) =>
+-  { abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: unknown }> };
+-
+-export async function readActiveCatalogLabels(family: ProductFamily, signal: AbortSignal): Promise<ActiveLabel[]> {
+-  const { data, error } = await (supabase.rpc.bind(supabase) as unknown as Rpc)(
+-    "catalog_family_labels_read", { p_familia: family }).abortSignal(signal);
+-  if (signal.aborted) throw new Error("Solicitação encerrada.");
+-  if (error) throw new Error("catalog_label_read_unavailable");
+-  const parsed = activeLabelListSchema.safeParse(data);
+-  if (!parsed.success) throw new Error("catalog_label_read_unavailable");
+-  return parsed.data;
+-}
+-
+-/** Mapa rotulo → nome de exibição das famílias, por escopo de identidade. Falha fechada: mapa vazio. */
+-export function useCatalogLabelNames(scope: string, enabled: boolean): Record<string, string> {
+-  const queries = useQueries({
+-    queries: PRODUCT_FAMILIES.map((family) => ({
+-      queryKey: ["catalog-labels-read", scope, family],
+-      enabled,
+-      retry: false,
+-      staleTime: 30_000,
+-      gcTime: 5 * 60_000,
+-      queryFn: ({ signal }: { signal: AbortSignal }) => readActiveCatalogLabels(family, signal),
+-    })),
+-  });
+-  const map: Record<string, string> = {};
+-  for (const q of queries) for (const l of q.data ?? []) map[l.rotulo] = l.rotulo_exibicao;
+-  return map;
+-}
+-
+-/** Nome de exibição do rótulo: fonte canônica → fallback informado → chave crua. */
+-export function labelDisplayName(names: Record<string, string>, rotulo: string, fallback?: string) {
+-  return names[rotulo] ?? fallback ?? rotulo;
+-}
+--- a/src/components/plataforma/PlatformCatalogFamilyDialog.tsx
++++ b/src/components/plataforma/PlatformCatalogFamilyDialog.tsx
+@@ -2,9 +2,8 @@
+ import { useAuth } from "@/hooks/useAuth";
+ import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
+ import { metadataRetryKey } from "@/lib/catalogo/platformCatalogMetadata";
+-import { CLASS_LABEL, FAMILY_LABEL, PRODUCT_FAMILIES, isClassAllowed, setProductFamily,
++import { CLASS_LABEL, FAMILY_CLASSES, FAMILY_LABEL, PRODUCT_FAMILIES, isClassAllowed, setProductFamily,
+   type FamilyTarget, type ProductFamily } from "@/lib/catalogo/platformCatalogFamily";
+-import { usePlatformCatalogLabels } from "@/lib/catalogo/platformCatalogLabels";
+ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+ import { Button } from "@/components/ui/button";
+ import { Checkbox } from "@/components/ui/checkbox";
+@@ -16,8 +15,6 @@
+ /**
+  * Classificação explícita da família de um produto GLOBAL. Nunca sugere família a partir de
+  * nome/tipo/composição. Exige motivo e confirmação; recibo validado; CAS no servidor.
+- * Rótulos vêm da fonte canônica (RPC platform_list_catalog_labels): carregando desabilita,
+- * erro falha fechado, rótulo atual inativo é exibido mas não oferecido para nova atribuição.
+  * Fence: troca de escopo de identidade aborta a requisição e descarta o resultado.
+  */
+ export function PlatformCatalogFamilyDialog({ product, scope, onClose, onSaved }:
+@@ -49,19 +46,11 @@
+     const set = requests.current;
+     return () => { for (const r of set) r.abort(); set.clear(); };
+   }, []);
+-  const labelsQuery = usePlatformCatalogLabels(family, scope, live);
+-  const labels = labelsQuery.data ?? [];
+-  const activeLabels = labels.filter((l) => l.ativo);
+-  const labelsReady = labelsQuery.isSuccess;
+-  const labelsFailed = labelsQuery.isError;
+-  // Rótulo atual fora da lista ativa (legado/inativo): exibido como opção desabilitada, nunca oferecido.
+-  const currentMissing = product.classe_catalogo !== null && family === product.familia_catalogo &&
+-    labelsReady && !activeLabels.some((l) => l.rotulo === product.classe_catalogo);
+   if (!live) return null;
+   const classValue = classe === NO_CLASS ? null : classe;
+   const changed = family !== "" && (family !== product.familia_catalogo || classValue !== product.classe_catalogo);
+   const reasonOk = reason.trim().length >= 10 && reason.trim().length <= 500;
+-  const valid = family !== "" && labelsReady && isClassAllowed(family, classValue, labels);
++  const valid = family !== "" && isClassAllowed(family, classValue);
+   const submit = async () => {
+     if (family === "" || !valid || !changed || !reasonOk || !confirmed || lock.current || !liveRef.current) return;
+     const myEpoch = epoch.current.n;
+@@ -70,7 +59,7 @@
+     const c = new AbortController(); requests.current.add(c);
+     const key = metadataRetryKey(scope, JSON.stringify(["family", product.id, product.updated_at, family, classValue, reason.trim()]));
+     try {
+-      await setProductFamily(product, family, classValue, reason, key, c.signal, labels);
++      await setProductFamily(product, family, classValue, reason, key, c.signal);
+       if (!c.signal.aborted && current()) onSaved();
+     } catch (failure) {
+       if (!c.signal.aborted && current()) setError(failure instanceof Error ? failure.message : "Não foi possível confirmar a classificação.");
+@@ -100,17 +89,12 @@
+         </select>
+         {family !== "" && <>
+           <Label htmlFor="class-select">Rótulo (opcional)</Label>
+-          {labelsFailed && <p role="alert" className="text-sm text-destructive">Não foi possível carregar os rótulos autorizados. Tente reabrir o diálogo.</p>}
+           <select id="class-select" className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+-            disabled={busy || !labelsReady || labelsFailed || activeLabels.length === 0}
+-            value={classe} onChange={(e) => { setClasse(e.target.value); reset(); }}>
++            disabled={busy || FAMILY_CLASSES[family].length === 0} value={classe} onChange={(e) => { setClasse(e.target.value); reset(); }}>
+             <option value={NO_CLASS}>Sem rótulo</option>
+-            {activeLabels.map((l) => <option key={l.id} value={l.rotulo}>{l.rotulo_exibicao}</option>)}
+-            {currentMissing && <option value={product.classe_catalogo ?? NO_CLASS} disabled>
+-              {(CLASS_LABEL[product.classe_catalogo ?? ""] ?? product.classe_catalogo) + " (inativo)"}</option>}
++            {FAMILY_CLASSES[family].map((c) => <option key={c} value={c}>{CLASS_LABEL[c]}</option>)}
+           </select>
+-          {labelsReady && activeLabels.length === 0 &&
+-            <p className="text-sm text-muted-foreground">Nenhum rótulo ativo nesta família. Cadastre na Gestão da plataforma antes de rotular.</p>}
++          {FAMILY_CLASSES[family].length === 0 && <p className="text-sm text-muted-foreground">Rótulos de fertilizantes/adubos ainda não foram definidos.</p>}
+         </>}
+         <Label htmlFor="family-reason">Motivo (10 a 500 caracteres)</Label>
+         <Textarea id="family-reason" required rows={2} maxLength={500} disabled={busy} value={reason}
 --- a/src/components/plataforma/PlatformCatalogLabelsPanel.tsx
 +++ b/src/components/plataforma/PlatformCatalogLabelsPanel.tsx
 @@ -1,166 +0,0 @@
@@ -463,3 +524,32 @@
 -      Cadastrar rótulo</Button>
 -  </div>;
 -}
+--- a/src/components/plataforma/PlatformCatalogReadTab.tsx
++++ b/src/components/plataforma/PlatformCatalogReadTab.tsx
+@@ -18,7 +18,6 @@
+ import { PlatformCatalogCompositionDialog } from "@/components/plataforma/PlatformCatalogCompositionDialog";
+ import { CATALOG_TABS, CLASS_LABEL, FAMILY_LABEL, parseCatalogView, parseReview,
+   type FamilyTarget, type ProductFamily, type ReviewFilter } from "@/lib/catalogo/platformCatalogFamily";
+-import { labelDisplayName, useCatalogLabelNames } from "@/lib/catalogo/catalogLabelDisplay";
+ import { PlatformCatalogCreateDialog, PlatformCatalogStatusDialog } from "@/components/plataforma/PlatformCatalogLifecycleDialogs";
+ import { platformCatalogAccess, platformCatalogPageSchema, PLATFORM_CATALOG_LIMIT,
+   PLATFORM_CATALOG_MAX_OFFSET, PLATFORM_CATALOG_SEARCH_LIMIT } from "@/lib/catalogo/platformCatalogRead";
+@@ -84,9 +83,6 @@
+     void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
+   };
+   const queryClient = useQueryClient();
+-  // Nomes de exibição dos rótulos pela fonte canônica (RPC de leitura autorizada); renomear
+-  // na Gestão da plataforma reflete aqui após invalidação. Fallback: CLASS_LABEL do seed.
+-  const labelNames = useCatalogLabelNames(scope, true);
+   const active = useRef(true);
+   useEffect(() => {
+     active.current = true;
+@@ -178,7 +174,7 @@
+         <TableCell className="break-words">{product.codigo ?? "—"}</TableCell>
+         <TableCell className="min-w-40 break-words font-medium">{product.nome}</TableCell>
+         <TableCell>{product.familia_catalogo
+-          ? <span>{FAMILY_LABEL[product.familia_catalogo]}{product.classe_catalogo ? ` · ${labelDisplayName(labelNames, product.classe_catalogo, CLASS_LABEL[product.classe_catalogo])}` : ""}</span>
++          ? <span>{FAMILY_LABEL[product.familia_catalogo]}{product.classe_catalogo ? ` · ${CLASS_LABEL[product.classe_catalogo]}` : ""}</span>
+           : <Badge variant="outline">Pendente</Badge>}</TableCell>
+         <TableCell>{product.tipo ?? "—"}</TableCell>
+         <TableCell><Badge variant={product.ativo ? "secondary" : "outline"}>{product.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
