@@ -16,9 +16,6 @@ vi.mock("@/hooks/useCatalogoUnificado", async importOriginal => ({
 vi.mock("@/components/protocolos/MicroorganismTechnicalProfileDialog", () => ({ MicroorganismTechnicalProfileDialog: () => null }));
 vi.mock("@/components/protocolos/ProductTechnicalProfileDialog", () => ({ ProductTechnicalProfileDialog: () => null }));
 vi.mock("@/components/catalogo/FichaProdutorDrawer", () => ({ FichaProdutorDrawer: () => null }));
-vi.mock("@/components/catalogo/CatalogoItemDrawer", () => ({
-  CatalogoItemDrawer: ({ item, open }: { item: { nome: string } | null; open: boolean }) => open && item ? <div data-testid="sheet-item">{item.nome}</div> : null,
-}));
 const state = vi.hoisted(() => ({ actor: "A", tenant: "A", ready: true, epoch: 1,
   calls: [] as { name: string; args: unknown; actor: string; tenant: string }[],
   pending: null as null | { resolve: (v: unknown) => void }, delay: false, deny: false, contract: true,
@@ -35,6 +32,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     const rows = ["biologico", "quimico", "fertilizante_adubo", null].map((family, i) => ({
       item_id: `${actor}-${tenant}-${i}`, item_tipo: "produto", produto_nome: `P${i}`, nome: `P${i}`,
       familia_catalogo: family, catalog_contract: state.contract ? "C1B_DUAL_TENANT_V1" : undefined,
+      ficha_conteudo: { subtitulo: "Subtitulo aprovado", funcao: "Funcao aprovada", explicacao_produtor: "Uso aprovado", indicacoes_uso: "Indicacao aprovada", cuidados_aplicacao: "Cuidado aprovado", mecanismo_acao: "Mecanismo aprovado", alvos_count: 3, fontes_count: 2 },
       ficha_aprovada: true, ficha_status: "aprovado", valor_litro_brl: name.includes("tecnico") ? null : 12,
     }));
     const value = { data: rows, error: state.deny ? new Error("forbidden_partner") : null };
@@ -60,7 +58,11 @@ describe("C1B inactive candidate canonical readers", () => {
     expect(screen.queryByText("P0")).toBeNull();
     expect(screen.queryByText("P2")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /^Ver ficha$/ }));
-    expect(screen.getByTestId("sheet-item").textContent).toBe("P1");
+    expect(screen.getByRole("dialog").textContent).toContain("Uso aprovado");
+    expect(screen.getByRole("dialog").textContent).toContain("Indicacao aprovada");
+    expect(screen.getByRole("dialog").textContent).toContain("Cuidado aprovado");
+    expect(screen.getByRole("dialog").textContent).toContain("Mecanismo aprovado");
+    expect(screen.getByRole("dialog").textContent).toContain("Alvos / culturas: 3");
     expect(state.calls).toHaveLength(1);
   });
   it("open grid sheet is discarded when actor scope changes", async () => {
@@ -69,9 +71,9 @@ describe("C1B inactive candidate canonical readers", () => {
     const source = { ...h.result.current, data: partnerCatalogRows(h.result.current.data ?? []) };
     const ui = render(<CatalogoCardsGrid scope="b2b" source={source} />);
     fireEvent.click(screen.getAllByRole("button", { name: /^Ver ficha$/ })[0]);
-    expect(screen.getByTestId("sheet-item").textContent).toBe("P0");
+    expect(screen.getByRole("dialog").textContent).toContain("P0");
     ui.rerender(<CatalogoCardsGrid scope="b2b" source={{ ...source, scope: "actor-B", data: [] }} />);
-    expect(screen.queryByTestId("sheet-item")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByText("P0")).toBeNull();
   });
   it.each(["biologico", "quimico", "fertilizante_adubo"] as const)("server family %s reaches grid without inference", async family => {

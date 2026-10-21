@@ -1,7 +1,7 @@
 [
   {
     "signature": "get_partner_catalog_tecnico_secure()",
-    "md5": "8c681ba40d1083b2a0d451903749b690",
+    "md5": "ab84d6835dac4d19ee71c842bd2416a9",
     "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
   },
   {
@@ -11,17 +11,17 @@
   },
   {
     "signature": "get_partner_catalog_secure(uuid)",
-    "md5": "bdd031269996980035346f42147d02f8",
+    "md5": "2c1944f3f95e4d2b44675306d5905b61",
     "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
   },
   {
     "signature": "get_partner_catalog_secure(uuid,boolean)",
-    "md5": "e2b70945e1ec21b139832d1b7cc70086",
+    "md5": "1391adc2133b922e2dcea4b1d3e26820",
     "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
   },
   {
     "signature": "get_partner_catalog_tecnico_secure(boolean)",
-    "md5": "3e1077bb1cc16eed971d8084a3ae7fa9",
+    "md5": "f682465d6ffbb145076cfd8d011f685e",
     "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
   }
 ]
