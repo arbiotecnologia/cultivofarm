@@ -1,0 +1,15 @@
+import { Button } from "@/components/ui/button";
+import { Receipt } from "lucide-react";
+
+// Containment rollback: never restore issuance or bearer-URL opening.
+interface Props {
+  paymentId: string;
+  label?: string;
+  size?: "default" | "sm" | "lg";
+  variant?: "default" | "outline" | "ghost" | "secondary";
+}
+export function EmitirReciboButton({ size = "sm", variant = "outline" }: Props) {
+  return <Button type="button" size={size} variant={variant} disabled title="Recibo indisponível">
+    <Receipt className="w-4 h-4 mr-1" />Recibo indisponível
+  </Button>;
+}

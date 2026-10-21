@@ -411,3 +411,9 @@
 - [x] Se PASS, ativar fontes exatas b3a65696/b6d7f4 e fornecer manifesto/rollback preservando CQ nullable; sem publicação/banco/sessões.
 
 - [x] Revisão13a01 concluída: scaffolding6 arquivos, asserts preservados; candidato1135/1135 e runtime1077+58 PASS sem neutralização. Types candidata/app/node0, build automáticoOK; fontes exatas ativadas, CQnullable/gates preservados. Manifesto/diff/rollback verificados em active-policy-validation. Admin intermitente também baseline, sem relaxar teste; estabilidade real permanece pendente do operador, nenhuma publicação/sessão/banco.
+
+## 21/10 00:57 — anexos de emissão de recibo, base117f9c1
+- [x] Corrigir apenas abertura ativa de EmitirReciboButton pelo abridor autenticado da lista; preservar emissão/RLS e monitor/CQ/gates.
+- [x] Testar baseline e patch (tenant/revogação/stale/erros), validar compilação e preparar hashes/preflight/rollback sem restaurar abertura vulnerável.
+- [x] Auditar Edge e inventariar assinadores/callers restantes separadamente; nenhuma emissão real, banco, sessão, reload ou publicação.
+- [ ] Revisão independente e implantação posterior da Edge sem assinatura; homologação real do recibo indisponível sem recebimentos e proibida nesta rodada. Não considerar assinaturas já emitidas revogadas.
