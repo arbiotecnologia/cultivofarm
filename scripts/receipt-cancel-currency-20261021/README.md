@@ -32,5 +32,13 @@ Base publicada: `3d1fb7d2` (Edge v91 sem assinatura; policies `receipt_no_capabi
 - `receiptCancelCurrency.list.test.tsx` (baseline reproduz a falha; runtime corrige), `receiptCancelCurrency.edge.test.ts`.
 - Financeiro+config+security: 2228/2237; 9 falhas preexistentes: 8 `financialReport*`, 1 `d51-5` (literal da assinatura removida em v91).
 - Simuladores antigos: só `limit/abortSignal`, `status` e `waitFor` no clique assíncrono; asserts preservados.
-- tsgo e build PASS. `preflight.sql.review` somente leitura; `rollback.py` restaura só a Edge v91 (sem assinatura);
-  restaurar a lista baseline reintroduziria a falha e não é oferecido.
+- tsgo e build PASS. `preflight.sql.review` somente leitura.
+
+## Revisão 6e645abb — watchdog e rollback
+- Corrigido: o limite de 15 s não é mais encerrado antes dos bytes; cobre Edge, bytes e releitura pós-bytes até o `finally`.
+- Bytes não confirmados (timeout, fence, erro, resposta tardia) são revogados no `finally`, só se a tentativa ainda for a mais recente.
+- Testes novos (falham em 6e645abb, passam agora): releitura pós-bytes travada nos dois componentes → erro em 15 s,
+  Blob revogado, resposta tardia ignorada, nova tentativa recupera; cancelamento concorrente no botão. Delta: `watchdog-delta.patch`.
+- Rollback: `rollback.py` troca a Edge por stub 503 (`rollback/edge-503.ts.review`): não assina, não gera, não sobrescreve.
+  A v91 NÃO é restaurada (geraria CANCELADO sobre o objeto ISSUED). Lista baseline não é oferecida. Sem SQL/policies.
+- Suítes: 2231/2240; mesmas 9 falhas preexistentes. Hashes em `SHA256SUMS.runtime`.
