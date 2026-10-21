@@ -1,5 +1,12 @@
 -- EXACT baseline rollback. Restores prior weaker visibility: use ONLY after explicit security review, never as automatic recovery.
 BEGIN; SET LOCAL lock_timeout='5s';
+DO $postguard$ BEGIN
+IF md5(pg_get_functiondef('get_partner_catalog_tecnico_secure()'::regprocedure)) <> '8c681ba40d1083b2a0d451903749b690' OR (SELECT proacl::text FROM pg_proc WHERE oid='get_partner_catalog_tecnico_secure()'::regprocedure) <> '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'C1B_POST_DRIFT'; END IF;
+IF md5(pg_get_functiondef('platform_private.c1b_catalog_visibility_scope(uuid)'::regprocedure)) <> 'cefe53f36d7fab8572575548cfb4ab7c' OR (SELECT proacl::text FROM pg_proc WHERE oid='platform_private.c1b_catalog_visibility_scope(uuid)'::regprocedure) <> '{postgres=X/postgres}' THEN RAISE EXCEPTION 'C1B_POST_DRIFT'; END IF;
+IF md5(pg_get_functiondef('get_partner_catalog_secure(uuid)'::regprocedure)) <> 'bdd031269996980035346f42147d02f8' OR (SELECT proacl::text FROM pg_proc WHERE oid='get_partner_catalog_secure(uuid)'::regprocedure) <> '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'C1B_POST_DRIFT'; END IF;
+IF md5(pg_get_functiondef('get_partner_catalog_secure(uuid,boolean)'::regprocedure)) <> 'e2b70945e1ec21b139832d1b7cc70086' OR (SELECT proacl::text FROM pg_proc WHERE oid='get_partner_catalog_secure(uuid,boolean)'::regprocedure) <> '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'C1B_POST_DRIFT'; END IF;
+IF md5(pg_get_functiondef('get_partner_catalog_tecnico_secure(boolean)'::regprocedure)) <> '3e1077bb1cc16eed971d8084a3ae7fa9' OR (SELECT proacl::text FROM pg_proc WHERE oid='get_partner_catalog_tecnico_secure(boolean)'::regprocedure) <> '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'C1B_POST_DRIFT'; END IF;
+END $postguard$;
 DROP FUNCTION public.get_partner_catalog_secure(uuid, boolean);
 CREATE OR REPLACE FUNCTION public.get_partner_catalog_secure(p_partner_id uuid)
  RETURNS TABLE(item_id uuid, item_tipo text, product_id uuid, produto_nome text, produto_codigo text, descricao_curta text, preco_tabela numeric, desconto_percentual numeric, preco_parceiro numeric, produto_ativo boolean, resumo_curto text, explicacao_b2b text, beneficios_principais text, ficha_status text, ficha_aprovada boolean, valor_dose_brl numeric, valor_litro_brl numeric, valor_ha_brl numeric, unidade_preco_principal text)
