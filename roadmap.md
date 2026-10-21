@@ -1,8 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 21/10 18:39 — revogação HTTP de anexos, baseline c63bc6b
-- [ ] Preparar transporte clientes-docs com autorização independente fresca antes/depois, stream limitado, cancelamento/prazo e rollback deny; sem promover runtime/Edge/SQL.
-- [ ] Auditar demais leitores e URL direta antiga: evidência externa 200 após retirada de role versus 400 com query distinta; causa/cache/CDN/SW não comprovados, rede do proprietário pendente.
+- [x] Preparar transporte clientes-docs com provas independentes pré/pós-bytes, stream 10 MiB/prazo15s/cancel, integração isolada e rollback deny; 60/60 sintéticos + Deno check/bundle local PASS; sem promover runtime/Edge/SQL.
+- [x] Inventariar leitores irmãos/ZIP e URL direta antiga; relatório distingue fluxo protegido candidato de endpoint antigo ainda não contido, sem atribuir cache/CDN/SW. XML v96/monitor byte-exatos.
+- [ ] Types/build frontend candidato integrado: roteiro portátil pronto, execução independente pendente; build ativo OK não certifica montagem candidata.
 - [ ] Revisão independente e homologação HTTP A/B/URL antiga; XML v96, sessões, objetos, roles e monitor preservados.
 
 ## 21/10 — XML autenticado, baseline c7d5c962

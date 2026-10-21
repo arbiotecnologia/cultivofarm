@@ -16,7 +16,7 @@
 2. Cliente do **ator** apenas, sem service_role. Antes e depois do stream: JWT validado, `h15_actor_organization`, `cliente_storage_object_permitted`, `user_roles`, documento único por path e cliente via RLS. Rechecagem final de permissão/empresa/papéis após a cadeia. Comparação de snapshots; erro, revogação parcial, troca de papel/tenant/metadado negam entrega.
 3. Um prazo absoluto de 15s cobre corpo/claims/RPC/metadados/Storage/stream/pós-prova. Corpo até 4096 bytes, arquivo até 10 MiB contado por chunk; metadata só antecipa recusa, não autoriza bytes. Nenhum await de cancel pendurado segura a resposta; stream tardio é descartado.
 4. Respostas sucesso/erro private/no-store, CDN-Cache-Control/Surrogate-Control no-store, Vary Authorization/Origin, sem URL nem resposta parcial. Isso é defesa do **novo fluxo**, não atestado de revogação da URL antiga.
-5. Candidata frontend usa sessão apenas do cliente canônico, POST para URL completa da função, stream até 10 MiB, prazo/cancel e erro neutro. Dispatcher no helper existente encaminha **apenas clientes-docs**, sem fallback; opener, paginação e fences existentes permanecem. ZIP também precisa passar pelo mesmo helper (patch incluído), sem mudar exclusão/upload.
+5. Candidata frontend usa sessão apenas do cliente canônico, POST para URL completa da função, stream até 10 MiB, prazo/cancel e erro neutro. O helper existente encaminha **apenas clientes-docs**, após adquirir sua fila/concorrência existentes, sem fallback; opener, paginação e fences existentes permanecem. ZIP também precisa passar pelo mesmo helper (patch incluído), sem mudar exclusão/upload. O ZIP completo continua sem fence de escopo/lease por montagem e entrega final: **não homologado**, não confundir a proteção de cada leitura com revogação de bytes já recebidos pelo ZIP.
 
 ## O que NÃO está resolvido
 - **Endpoint antigo continua reutilizável enquanto não houver contenção comprovada.** Uma Edge de proteção não intercepta GET já conhecido de `/storage/v1/object/authenticated/...`. Sem controle verificável desse endpoint/cache, não declarar “revogação efetiva global”.
@@ -49,3 +49,12 @@ Na mesma janela de revogação, coletar a URL **idêntica** e query distinta sem
 | fiscal-certificates, branding/logos | material de chave / público fora do canal genérico; nunca expor certificado ou bloquear logo como arquivo privado sem escopo |
 
 Testes são **laboratório sintético**, não JWT/RLS hosted, não reprodução da causa da resposta real e não homologação das URLs antigas. SU-518022 permanece apenas ack informado; nenhum chamado enviado.
+
+## Validação desta entrega
+- 60/60 testes em seis arquivos: 40 novos (27 servidor, 11 loader, 2 roteamento) + 20 regressões opener/documentos/ausência de assinatura.
+- Deno check candidata + rollback: exit 0. Bundle **local** candidata: 46 módulos, exit 0; não é validação hosted nem implantação.
+- App ativo: harness `build OK`; nenhuma alteração runtime em src (só testes), monitor e XML protegidos por hashes.
+- Montagem frontend candidata/types/build de produção **não executados nesta rodada**; roteiro portátil abaixo para revisão. Não afirmar certificação types/build da aplicação com a candidata integrada.
+
+### Montagem portátil pelo revisor
+Em checkout limpo da base c63bc6b, conferir `protected-sha256.json`, aplicar `frontend.patch` com `git apply --check` antes de aplicar, copiar `frontend/loadClientDocument.ts` para `src/lib/authz/loadClientDocument.ts`. Copiar os dois arquivos de `edge/` para `supabase/functions/download-client-document/` (renomear index.ts.review para index.ts) **apenas fora do projeto conectado**, para evitar deploy automático. Rodar os três testes review novos + regressões indicadas, `bunx tsgo --noEmit -p tsconfig.app.json`, `bunx tsgo --noEmit -p tsconfig.node.json`, `bun run build`, Deno check/bundle. Registrar exits/hashes sem tokens. Não copiar `node_modules`/dist ao pacote. `frontend/canonical-candidate/` contém os dois arquivos completos montados para comparação byte-exata do patch. Rollback: `rollback/frontend-deny.patch`, manter ZIP passando pelo helper negado; nunca desfazer para o download direto.
