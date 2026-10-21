@@ -56,7 +56,7 @@ for (const change of ["unmount", "tenant", "epoch", "pending"] as const) it(`${c
   state.download.mockImplementation(() => new Promise(r => { resolve = r; }));
   const h = renderHook(() => useAuthenticatedAttachmentOpener("R", "private"));
   const error = vi.fn();
-  let request: Promise<void> | undefined;
+  let request: Promise<boolean> | undefined;
   act(() => { request = h.result.current.open("a.pdf", error); });
   await waitFor(() => expect(state.download).toHaveBeenCalledTimes(1));
   expect(h.result.current.loadingPaths).toEqual(["a.pdf"]);

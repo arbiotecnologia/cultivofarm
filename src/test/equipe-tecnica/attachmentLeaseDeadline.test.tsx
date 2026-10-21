@@ -69,7 +69,7 @@ describe("attachment authorization at completion, without Auth rerender", () => 
     const l = await lease(); let resolve: (b: Blob) => void = () => {};
     state.download.mockImplementation(() => new Promise<Blob>(r => { resolve = r; }));
     const h = renderHook(() => useAuthenticatedAttachmentOpener("file", "bucket"));
-    let request: Promise<void> | undefined;
+    let request: Promise<boolean> | undefined;
     act(() => { request = h.result.current.open("file.pdf", vi.fn()); });
     l.expire(); await act(async () => { resolve(new Blob(["late"])); await request; });
     expect(URL.createObjectURL).not.toHaveBeenCalled(); expect(h.result.current.urls).toEqual({});

@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 import { financialReceiptCurrentLocator, readReceiptCurrentState } from "@/lib/financeiro/receiptCurrentState";
+import { recordReceiptPrepare, type ReceiptPrepareStage } from "@/lib/financeiro/receiptPrepareDiagnostics";
 
 interface Receipt {
   id: string;
@@ -38,7 +39,7 @@ interface Receipt {
   method?: { name?: string } | null;
 }
 
-function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; tenant: string; listScope: string }) {
+function ReceiptDownload({ receipt, tenant, listScope, onInterrupted }: { receipt: Receipt; tenant: string; listScope: string; onInterrupted: () => void }) {
   const resource = JSON.stringify(["receipt-pdf", listScope, receipt]);
   const access = useStorageAccessScope(resource);
   const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
@@ -50,7 +51,9 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
   try { listed = financialReceiptCurrentLocator(receipt, tenant).path; } catch { /* fail closed */ }
   useLayoutEffect(() => {
     setBusy(false); setPrepared({ scope: "", path: "", status: "", number: "" });
-    return () => { request.current?.abort(); request.current = null; };
+    // Renewal/revocation (scope change or row remount) mid-preparation: the list decides on a neutral notice.
+    return () => { if (request.current) onInterrupted(); request.current?.abort(); request.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.scope]);
   const isPrepared = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
   const download = async () => {
@@ -59,15 +62,17 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
     const controller = new AbortController();
     request.current = controller; latest.current = controller;
     const valid = () => current() && !controller.signal.aborted && request.current === controller;
+    const started = Date.now(); let stage: ReceiptPrepareStage = "fresh_read"; let timedOut = false;
+    const note = (outcome: "ok" | "timeout" | "fence" | "error" | "stale_state") => recordReceiptPrepare({ source: "list", stage, outcome, elapsedMs: Date.now() - started });
     const timeout = setTimeout(() => {
       if (request.current !== controller) return;
-      controller.abort(); request.current = null;
+      timedOut = true; controller.abort(); request.current = null;
       if (current()) { setBusy(false); toast.error("Recibo indisponível"); }
     }, 15_000);
     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
     setBusy(true);
     // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
-    let opened = ""; let kept = false;
+    let opened = ""; let kept = false; let outcome: "ok" | "error" | "stale_state" = "error";
     try {
       if (isPrepared) {
         // Prepared bytes (possibly from before a cancel elsewhere) are re-confirmed against server state.
@@ -75,8 +80,9 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
         if (!valid()) return;
         if (fresh.status !== prepared.status || fresh.path !== prepared.path) {
           opener.discard(prepared.path); setPrepared({ scope: "", path: "", status: "", number: "" });
-          toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
+          outcome = "stale_state"; toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
         }
+        stage = "download"; outcome = "ok";
         opener.download(prepared.path, `${prepared.number}${prepared.status === "CANCELED" ? "-CANCELADO" : ""}.pdf`);
         return;
       }
@@ -84,6 +90,7 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
       if (!valid()) return;
       // CANCELED always renders its own object; ISSUED renders only when never generated.
       if (before.status === "CANCELED" || !before.generated) {
+        stage = "edge";
         const { data, error } = await supabase.functions.invoke("generate-financial-receipt", {
           body: { receipt_id: receipt.id }, signal: controller.signal,
         });
@@ -93,21 +100,27 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
       }
       if (!valid()) return;
       // Single watchdog covers Edge, bytes and the post-bytes status read until finally.
-      await opener.open(before.path, () => { if (valid()) toast.error("Recibo indisponível"); });
-      opened = before.path;
+      // Parent signal propagates timeout/fence into the opener's own I/O; only a true
+      // result proves fresh bytes exist. A swallowed failure never reaches "prepared".
+      stage = "bytes";
+      const loaded = await opener.open(before.path, () => {}, controller.signal);
+      if (loaded) opened = before.path;
       if (!valid()) return;
+      if (!loaded) throw new Error("Recibo indisponível");
       // A cancel concurrent with preparation invalidates the bytes just fetched.
+      stage = "post_read";
       const after = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
       if (!valid()) return;
       if (after.status !== before.status || after.path !== before.path) {
-        opener.discard(before.path); toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
+        opener.discard(before.path); outcome = "stale_state"; toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
       }
-      kept = true;
+      kept = true; outcome = "ok";
       setPrepared({ scope: access.scope, path: before.path, status: before.status, number: before.receipt_number });
     } catch {
       if (valid()) toast.error("Recibo indisponível");
     } finally {
       clearTimeout(timeout);
+      note(timedOut ? "timeout" : !current() ? "fence" : outcome);
       // A newer request may own the same path after a timeout; never revoke its bytes.
       if (opened && !kept && latest.current === controller) opener.discard(opened);
       if (request.current === controller) {
@@ -139,6 +152,15 @@ export default function RecibosList() {
   const [result, setResult] = useState({ scope: "", rows: [] as Receipt[], loading: false });
   const [refresh, setRefresh] = useState(0);
   const pendingCancel = useRef<AbortController | null>(null);
+  const accessRef = useRef(access); accessRef.current = access;
+  const notice = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Checked after the commit: only an actor still authorized after renewal sees it; never auto-retries.
+  const onPrepareInterrupted = () => {
+    if (notice.current) return;
+    notice.current = setTimeout(() => { notice.current = null;
+      if (accessRef.current.ready) toast.info("Sessão atualizada durante o preparo. Prepare o PDF novamente."); }, 0);
+  };
+  useEffect(() => () => { if (notice.current) clearTimeout(notice.current); }, []);
   const dialogEpoch = useRef(0);
   useLayoutEffect(() => {
     setCancelOpen(null); setReason(""); setBusy(false); dialogEpoch.current++;
@@ -292,7 +314,7 @@ export default function RecibosList() {
                       </TableCell>
                       <TableCell className="font-mono text-xs">{r.authenticity_code}</TableCell>
                       <TableCell className="text-right space-x-1">
-                        <ReceiptDownload key={JSON.stringify([access.scope, r])} receipt={r} tenant={tenant} listScope={access.scope} />
+                        <ReceiptDownload key={JSON.stringify([access.scope, r])} receipt={r} tenant={tenant} listScope={access.scope} onInterrupted={onPrepareInterrupted} />
                         {r.receivable_id && (
                           <Button asChild size="sm" variant="outline" title="Abrir recebimento">
                             <Link to={`/financeiro/receber?id=${r.receivable_id}`}>
