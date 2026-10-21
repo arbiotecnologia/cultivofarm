@@ -1,3 +1,3 @@
 - Keep all executable candidates under this review directory; never promote to supabase/functions or src before independent approval, because source promotion can deploy automatically.
-- Client-document downloads use the actor bearer only, independently re-read canonical authorization and metadata before/after bounded bytes; no cached Storage response can grant access.
+- Client-document authority uses two atomic INVOKER/RLS actor snapshots; server-only bytes require the exact approved resource and never authorize by bucket or credential — preserves legacy GET denial without query fanout.
 - Flow protection does not certify old direct Storage URLs; require independent HTTP containment evidence before claiming effective endpoint revocation.

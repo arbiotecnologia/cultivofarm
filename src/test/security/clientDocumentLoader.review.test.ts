@@ -57,7 +57,7 @@ describe("candidate client-document loader — canonical bearer, no fallback", (
   });
   it("excessive chunk cancels immediately, not based on Content-Length", async () => {
     const fetcher = setup(); const cancel = vi.fn();
-    fetcher.mockResolvedValue(new Response(new ReadableStream({ start(c) { c.enqueue(new Uint8Array(10 * 1024 * 1024 + 1)); }, cancel }), {
+      fetcher.mockResolvedValue(new Response(new ReadableStream({ start(c) { c.enqueue(new Uint8Array(20 * 1024 * 1024 + 1)); }, cancel }), {
       headers: { "Content-Type": "application/octet-stream", "Cache-Control": "private, no-store", "Content-Length": "1" },
     }));
     await expect(loadClientDocument(path, new AbortController().signal)).rejects.toThrow(); expect(cancel).toHaveBeenCalledTimes(1);
