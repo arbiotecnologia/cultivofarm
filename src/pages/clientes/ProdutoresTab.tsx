@@ -47,7 +47,7 @@ export default function ProdutoresTab() {
   const isMobile = useIsMobile();
   const { role, user, profile, roles } = useAuth();
   const scope = useCommercialRegistrationScope();
-  const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles);
+  const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles ?? []);
   const submitLock = useRef(false);
   const draftId = useRef(crypto.randomUUID());
   const readGeneration = useRef(0);
