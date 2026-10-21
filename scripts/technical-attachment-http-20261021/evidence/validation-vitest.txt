@@ -1,0 +1,19 @@
+$ vitest run src/test/security/technicalAttachmentChannel.review.test.ts src/test/security/technicalAttachmentOpener.review.test.tsx src/test/security/financialDocumentChannel.review.test.ts src/test/security/transport.review.test.ts src/test/equipe-tecnica/storageAccessScope.test.tsx src/test/equipe-tecnica/attachmentOpenerAbortOwnership.test.tsx src/test/equipe-tecnica/AttachmentOpener.ownership.test.tsx src/test/security/noSignedAttachmentEmission.test.ts src/test/equipe-tecnica/attachmentLeaseDeadline.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/security/financialDocumentChannel.review.test.ts (30 tests) 166ms
+ ✓ src/test/security/transport.review.test.ts (10 tests) 138ms
+ ✓ src/test/security/technicalAttachmentChannel.review.test.ts (37 tests) 170ms
+ ✓ src/test/security/noSignedAttachmentEmission.test.ts (11 tests) 21ms
+ ✓ src/test/equipe-tecnica/storageAccessScope.test.tsx (8 tests) 46ms
+ ✓ src/test/equipe-tecnica/attachmentLeaseDeadline.test.tsx (5 tests) 48ms
+ ✓ src/test/security/technicalAttachmentOpener.review.test.tsx (4 tests) 72ms
+ ✓ src/test/equipe-tecnica/AttachmentOpener.ownership.test.tsx (7 tests) 152ms
+ ✓ src/test/equipe-tecnica/attachmentOpenerAbortOwnership.test.tsx (2 tests) 44ms
+
+ Test Files  9 passed (9)
+      Tests  114 passed (114)
+   Start at  20:27:24
+   Duration  5.57s (transform 858ms, setup 3.56s, collect 5.97s, tests 858ms, environment 24.04s, prepare 2.55s)
+
