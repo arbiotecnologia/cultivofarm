@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createTransport } from './edge/transport';
-import { serveDocument, LIMITS } from './edge/download';
-import { fencedStep } from './frontend/backupFence';
+import { createTransport } from '../../../scripts/attachment-http-revocation-20261021/edge/transport';
+import { serveDocument, LIMITS } from '../../../scripts/attachment-http-revocation-20261021/edge/download';
+import { fencedStep } from '@/lib/authz/backupFence';
 const tenant='007bb519-cba0-4704-be2c-cb93ad010048', client='b2bd6b53-4198-40ba-b2da-603cea5eda2b';
 const path=`${tenant}/clientes/${client}/outro/legacy.pdf`;
 const proof=()=>({actor:client,tenant,client,path,roles:['administrador'],document:tenant,size:3,mime:'application/pdf'});
