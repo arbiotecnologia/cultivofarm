@@ -4,6 +4,9 @@
 - [x] Adiar pendências sem declará-las resolvidas; avanço substitui gate antigo. Backlog: docs/backlog-prioridade-catalogo-20261021.md.
 - [x] C1 recorte interno revisável: inventário LIVE read-only, metadados/filtros de família técnico/agrônomo/comercial, legado e tenant preservados; 104/104 testes, types/build automático OK. docs/catalogo-c1-20261021-review.md. Não publicado.
 - [ ] C1 B2B: RPCs atuais sem família/ocultação comercial; precisa prova da empresa cuja preferência prevalece e revisão da candidata separada scripts/catalog-c1-b2b-review-20261021. Não ativar via enriquecimento paralelo nem aplicar backend nesta rodada.
+- [x] C1B candidata concreta em scripts/catalog-c1b-20261021: SQL transacional/overloads compatíveis, rollback com drift guard, pre/postflight e consumidores isolados; sem aplicar/promover. Autoridade owner versus parceiro continua ambígua; restrição dual-tenant proposta, não homologada.
+- [ ] C1B revisão independente da autoridade e homologação PostgREST/JWT/RLS A/B; bloqueia aplicação/promover apenas C1B, não reabre as pendências antigas adiadas nem implementa C2.
+- [ ] Publicação C1 solicitada nesta rodada antes das alterações C1B; ferramenta informou agendamento, conclusão/bundle não verificados. C1B não foi publicado.
 - [ ] C1 homologação real dos filtros/perfis: mocks não são JWT/RLS/browser real; sem mudança de sessões nesta rodada.
 - [ ] C2 seguinte, não implementar neste diff: contratos funcionais canônicos de atribuição/desvinculação/reativação/histórico, papéis cumulativos B2B+gestor+técnico+produtor, seletor autorizado e cadastro multiatribuições na empresa.
 
