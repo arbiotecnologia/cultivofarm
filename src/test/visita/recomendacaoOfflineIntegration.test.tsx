@@ -1,9 +1,11 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import "fake-indexeddb/auto";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { __resetOfflineDbForTests, savePendingRecomendacao, getAllPendingRecomendacoes, type PendingRecomendacao } from "@/lib/offlineDb";
 const state = vi.hoisted(() => ({ user: "A", org: "TA", epoch: 0, calls: [] as [string, any][], conflict: false, defer: null as Promise<void> | null }));
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: state.user }, profile: { user_id: state.user, organization_id: state.org } }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: state.user }, profile: { user_id: state.user, organization_id: state.org, ativo: true }, roles: ["consultor_tecnico"], loading: false }) }));
 vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => ({ ready: !!state.user, capture: () => {
   const epoch = state.epoch; return () => !!state.user && state.epoch === epoch;
 } }) }));
@@ -23,7 +25,9 @@ const entry = (patch: Partial<PendingRecomendacao> = {}): PendingRecomendacao =>
 beforeEach(async () => { Object.assign(state, { user: "A", org: "TA", epoch: 0, calls: [], conflict: false, defer: null });
   Object.defineProperty(navigator, "onLine", { value: false, configurable: true }); await __resetOfflineDbForTests(); });
 function setup() {
-  const hook = renderHook(() => useOfflineSync());
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  const hook = renderHook(() => useOfflineSync(), { wrapper });
   Object.defineProperty(navigator, "onLine", { value: true, configurable: true }); return hook;
 }
 it("Sincronizar recupera visita já remota sem mapping, mantém UUID e só remove após prova", async () => {
