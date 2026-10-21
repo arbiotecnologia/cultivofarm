@@ -1,0 +1,8 @@
+-- Emergency rollback candidate: keep origin deny/CDN containment intact.
+BEGIN;
+CREATE OR REPLACE FUNCTION public.client_document_download_snapshot(_name text)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = ''
+AS $$ SELECT NULL::jsonb $$;
+REVOKE ALL ON FUNCTION public.client_document_download_snapshot(text) FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.client_document_download_snapshot(text) TO authenticated;
+COMMIT;
