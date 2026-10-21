@@ -1,6 +1,6 @@
 from pathlib import Path
 import os,subprocess,tempfile,json
-HERE=Path('/dev-server/scripts/catalog-c1b-20261021')
+HERE=Path(__file__).resolve().parent
 root=Path(tempfile.mkdtemp(prefix='c1b-pg-',dir='/tmp'));root.chmod(0o777)
 prefix=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []
 base=['psql','-X','-h',str(root),'-p','55497','-U','postgres','-qAt','-v','ON_ERROR_STOP=1']
@@ -51,6 +51,8 @@ try:
   sql(row['definition']);sig=row['identity'];sql(f'REVOKE ALL ON FUNCTION public.{sig} FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.{sig} TO service_role,authenticated;')
   check('exact baseline '+sig,f"SELECT md5(pg_get_functiondef('public.{sig}'::regprocedure))",row['md5'])
  sql((HERE/'candidate.sql.review').read_text())
+ post = json.loads(sql("SELECT json_agg(json_build_object('signature',p.oid::regprocedure::text,'md5',md5(pg_get_functiondef(p.oid)),'acl',p.proacl::text)) FROM pg_proc p WHERE proname IN ('get_partner_catalog_secure','get_partner_catalog_tecnico_secure','c1b_catalog_visibility_scope');"))
+ (HERE/'local-post-snapshot.json').write_text(json.dumps(post,indent=2)+'\n')
  for n in [100,200,300,400]:sql(f"INSERT INTO organizations VALUES('{uid(n)}',NULL,true,'ativa');")
  for partner,owner,org,user,role in [(10,100,300,1,'parceiro_b2b'),(20,200,400,2,'parceiro_b2b_tecnico')]:
   sql(f"INSERT INTO partner_accounts VALUES('{uid(partner)}','{uid(owner)}',true,NULL); UPDATE organizations SET partner_account_id='{uid(partner)}' WHERE id='{uid(org)}'; INSERT INTO profiles VALUES('{uid(user)}','{uid(org)}',true); INSERT INTO user_roles VALUES('{uid(user)}','{role}'); INSERT INTO partner_users VALUES('{uid(user)}','{uid(partner)}',NULL);")
@@ -65,10 +67,18 @@ try:
  check('A owner hides chemical; inactive omitted; legacy preserved',f"SELECT string_agg(familia_catalogo,',' ORDER BY item_id) FROM get_partner_catalog_secure('{uid(10)}',true)", 'biologico,fertilizante_adubo,biologico')
  check('legacy has NULL family',f"SELECT familia_catalogo IS NULL FROM get_partner_catalog_secure('{uid(10)}',true) WHERE item_id='{uid(54)}'",'t')
  check('canonical price unchanged',f"SELECT preco_parceiro FROM get_partner_catalog_secure('{uid(10)}',true) LIMIT 1",'12.00')
+ check('legacy signature also hides owner item',f"SELECT count(*) FROM get_partner_catalog_secure('{uid(10)}') WHERE item_id='{uid(52)}'",'0')
  sql(f"SELECT * FROM get_partner_catalog_secure('{uid(20)}',true)", 'forbidden_partner');checks.append('cross-partner denied')
  actor(2)
  check('B hides fertilizer by actor; A hidden not applied',"SELECT string_agg(familia_catalogo,',' ORDER BY item_id) FROM get_partner_catalog_tecnico_secure(true)",'biologico,quimico,biologico')
  check('technical finance NULL',"SELECT bool_and(valor_dose_brl IS NULL AND valor_litro_brl IS NULL AND valor_ha_brl IS NULL) FROM get_partner_catalog_tecnico_secure(true)",'t')
+ sql(f"UPDATE product_technical_profiles SET status_validacao='rascunho' WHERE produto_id='{uid(51)}';")
+ check('technical excludes unapproved profile',f"SELECT count(*) FROM get_partner_catalog_tecnico_secure(true) WHERE item_id='{uid(51)}'",'0')
+ sql(f"UPDATE product_technical_profiles SET status_validacao='aprovado' WHERE produto_id='{uid(51)}'; INSERT INTO user_roles VALUES('{uid(2)}','parceiro_b2b');")
+ check('cumulative technical role still suppresses finance',"SELECT bool_and(valor_litro_brl IS NULL) FROM get_partner_catalog_tecnico_secure(true)",'t')
+ sql(f"UPDATE profiles SET ativo=false WHERE user_id='{uid(2)}';")
+ sql("SELECT * FROM get_partner_catalog_tecnico_secure(true)",'inactive_scope');checks.append('inactive actor denied')
+ sql(f"UPDATE profiles SET ativo=true WHERE user_id='{uid(2)}';")
  sql(f"SELECT * FROM get_partner_catalog_secure('{uid(20)}',true)",'forbidden_financial_terms');checks.append('technical financial denial preserved')
  sql("SELECT * FROM get_partner_catalog_tecnico_secure(false)",'catalog_contract_required');checks.append('wrong contract denied')
  sql(f"UPDATE partner_accounts SET commercial_owner_organization_id=NULL WHERE id='{uid(20)}';")
@@ -77,7 +87,19 @@ try:
  sql("SELECT * FROM get_partner_catalog_tecnico_secure(true)",'forbidden_partner');checks.append('revoked link denied')
  check('anon overload ACL',"SELECT has_function_privilege('anon','get_partner_catalog_tecnico_secure(boolean)','EXECUTE')",'f')
  check('private helper ACL',"SELECT has_function_privilege('authenticated','platform_private.c1b_catalog_visibility_scope(uuid)','EXECUTE')",'f')
+ sql("GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;")
+ sql("SET ROLE anon; SELECT * FROM get_partner_catalog_tecnico_secure(true)",'permission denied');checks.append('actual local anon invocation denied')
+ sql(f"UPDATE partner_users SET revoked_at=NULL WHERE user_id='{uid(2)}';")
+ check('actual authenticated invocation through DEFINER',"SET ROLE authenticated; SELECT count(*) FROM get_partner_catalog_tecnico_secure(true)",'4')
  # No DML exists in production candidate; all fixtures/stubs above are confined to this socket.
+ if 'C1B_POST_DRIFT' in (HERE/'rollback.sql.review').read_text():
+  sql("CREATE OR REPLACE FUNCTION platform_private.c1b_catalog_visibility_scope(p_partner uuid) RETURNS uuid[] LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$SELECT ARRAY[]::uuid[]$$;")
+  sql((HERE/'rollback.sql.review').read_text(),'C1B_POST_DRIFT');checks.append('rollback refuses changed deployed body atomically')
+  # Restore exact candidate helper only inside disposable fixture.
+  import re
+  definition=re.search(r'CREATE OR REPLACE FUNCTION platform_private.c1b_catalog_visibility_scope.*?END \$c1b\$;', (HERE/'candidate.sql.review').read_text(),re.S)
+  assert definition is not None
+  sql(definition.group(0))
  sql((HERE/'rollback.sql.review').read_text())
  for row in live:check('rollback exact '+row['identity'],f"SELECT md5(pg_get_functiondef('public.{row['identity']}'::regprocedure))",row['md5'])
  print(json.dumps({'status':'PASS','synthetic':True,'total':len(checks),'checks':checks},indent=2))
