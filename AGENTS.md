@@ -24,7 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
-- B2B catalogue candidates preserve RPC OIDs via metadata overloads and use scoped readers; ambiguous visibility authority stays review-only — avoids return-type breaks and guessed grants.
+- B2B candidates preserve OIDs through metadata overloads; scoped whitelisted sheets retain approved content, REST postflight gates promotion and frontend reversal retains server filters — avoids return breaks and security rollback leaks.
 - Pair/residual ineligibility uses one canonical re-resolution, rearmed only by valid confirmation; tests exhaust automation through transport before Retry assertions — preserves fail-closed isolation and single-flight.
 - Desktop/mobile recovery share one form and the existing canonical redirect policy, with synchronous pending lock and account-neutral states — prevents divergent recovery and local duplicate sends.
 - Storage UI and receipt issuance use the scoped authenticated opener/locator; receipt Edge returns no signed URL, restrictive Storage candidates preserve tenant guards, and rollback denies rather than restoring capabilities — prevents stale-session disclosure.

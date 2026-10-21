@@ -11,14 +11,15 @@ CANONICAL = "https://swzpzcwiasxmjutrmvkm.supabase.co"
 def main():
     if os.environ.get("C1B_REST_URL") != CANONICAL:
         raise SystemExit("FAIL_CLOSED_CANONICAL_TARGET")
-    key = os.environ["C1B_ANON_KEY"]
-    jwt = {a: os.environ[f"C1B_{a}_JWT"] for a in ["A", "B"]}
-    partners = {a: os.environ[f"C1B_{a}_PARTNER_ID"] for a in ["A", "B"]}
+    key = os.environ.get("C1B_ANON_KEY")
+    jwt = {a: os.environ.get(f"C1B_{a}_JWT") for a in ["A", "B"]}
+    partners = {a: os.environ.get(f"C1B_{a}_PARTNER_ID") for a in ["A", "B"]}
     if not key or not all(jwt.values()) or not all(partners.values()):
         raise SystemExit("FAIL_CLOSED_MISSING_INPUT")
     class NoRedirect(urllib.request.HTTPRedirectHandler):
         def redirect_request(self, *args, **kwargs): return None
     opener = urllib.request.build_opener(NoRedirect())
+    resolved_v2 = set()
     def call(actor, rpc, args):
         request = urllib.request.Request(f"{CANONICAL}/rest/v1/rpc/{rpc}",
             data=json.dumps(args).encode(), headers={"apikey":key, "Authorization":f"Bearer {jwt[actor]}",
@@ -44,10 +45,13 @@ def main():
             if status == 200:
                 assert isinstance(body, list), "TABLE_CONTRACT"
                 if "p_catalog_v2" in args:
+                    if body: resolved_v2.add(rpc)
                     assert all(r.get("catalog_contract") == "C1B_DUAL_TENANT_V1" and isinstance(r.get("ficha_conteudo"),dict) for r in body), "V2_CONTRACT"
     cases = json.load(open(os.environ["C1B_REST_CASES_FILE"]))
     assert cases and {c["actor"] for c in cases} == {"A", "B"}, "MISSING_A_B_CASES"
     assert any(c.get("present") for c in cases) and any(c.get("absent") for c in cases), "MISSING_POSITIVE_HIDDEN_CASES"
+    assert resolved_v2 == {"get_partner_catalog_secure", "get_partner_catalog_tecnico_secure"}, "MISSING_NONEMPTY_POSITIVE_OVERLOAD_PROOF"
+    assert any(c.get("finance_null") and c.get("present") and c["status"] == 200 for c in cases), "MISSING_TECHNICAL_FINANCE_PROOF"
     for case in cases:
         assert case["rpc"] in ["get_partner_catalog_secure", "get_partner_catalog_tecnico_secure"], "RPC_ALLOWLIST"
         status, body = call(case["actor"], case["rpc"], case["args"])

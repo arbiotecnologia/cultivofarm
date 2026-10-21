@@ -63,6 +63,8 @@ describe("C1B inactive candidate canonical readers", () => {
     expect(screen.getByRole("dialog").textContent).toContain("Cuidado aprovado");
     expect(screen.getByRole("dialog").textContent).toContain("Mecanismo aprovado");
     expect(screen.getByRole("dialog").textContent).toContain("Alvos / culturas: 3");
+    expect(screen.getByRole("dialog").textContent).not.toContain("Explicação técnica");
+    expect(screen.getByRole("dialog").textContent).not.toContain("Fontes técnicas");
     expect(state.calls).toHaveLength(1);
   });
   it("open grid sheet is discarded when actor scope changes", async () => {
