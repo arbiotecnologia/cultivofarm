@@ -1,0 +1,9 @@
+-- READ-ONLY. Run only against ref swzpzcwiasxmjutrmvkm after confirming current_setting below. No DML/DDL.
+SELECT current_database(), (SELECT setting FROM pg_settings WHERE name='cluster_name') AS cluster;
+-- Edge candidate needs: status column values limited to ISSUED/CANCELED and upload capability preserved.
+SELECT status, count(*), count(storage_path) AS with_path FROM public.financial_receipts GROUP BY status;
+SELECT policyname, cmd, permissive FROM pg_policies WHERE schemaname='storage' AND tablename='objects'
+ AND (policyname ILIKE '%receipt%' OR qual ILIKE '%financial-receipts%' OR with_check ILIKE '%financial-receipts%') ORDER BY 1;
+-- Existing objects are preserved: the candidate never deletes or overwrites *.pdf of CANCELED receipts.
+SELECT count(*) FILTER (WHERE name LIKE '%.canceled.pdf') AS canceled_renders, count(*) AS total
+  FROM storage.objects WHERE bucket_id='financial-receipts';
