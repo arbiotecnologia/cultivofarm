@@ -1,9 +1,10 @@
+85ee6529130c140204ffb45709e0cc61b740a6f8ca8187aae59997aa9e8cf8e0  ./README.md
 93d21d112ff3505abc637901f8acea2fd320125c4f456e716eaa75135eecdd0b  ./edge/core.ts
 0eca017b0a92106920d3d773cf4e898acbce0056447b69936df48170b76896b0  ./edge/index.ts.review
 6038ff2b1e349204138173fe7d48064071ae148f2e2631289c8cc12d51a97c47  ./edge/transport.ts
 106b72e7e10b39203f2d3ceee56e6f8a83e621b6f493e5e10e2cd23da32dd5b9  ./frontend/authenticatedAttachment.patch
 066dac8e5b477a7bdd89aeeebd8d5ea72eb92f51ef92537bbda4ebb00bb3d373  ./frontend/authenticatedAttachment.ts.review
 831d7d5b455d081f575945bfe09a0b83d551110a0485c3cdccdd95978631dec9  ./frontend/loadFinancialDocument.ts
-0960f7700426038045881e2966c81d83343ec62cafcd2e1bcc16ecec89d2bc65  ./rollback/deny-only.sql.review
+eee54398eb86c0ff0d9f1c1b27c31f26bb9f47fa67d626c53ace93480ec43028  ./rollback/deny-only.sql.review
 273ea2c81bbf887eb21c6220498c558a0eb570e9ccff87c98ab9bed3171e8e18  ./sql/origin-deny.sql.review
-47c01ea9beb40405c70a1ce51d54854df449af2f42810782e9bb83502deda0eb  ./sql/snapshot.sql.review
+d4b417f23b5d76762f587a0e05387ed3703b7d2dd394f1947bdef6bc8f0fa508  ./sql/snapshot.sql.review
