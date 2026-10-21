@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { loadClientDocument } from "./loadClientDocument";
 import { loadFinancialDocument } from "./loadFinancialDocument";
+import { loadTechnicalAttachment } from "./loadTechnicalAttachment";
 
 // Operational bounds, not authorization. Storage RLS remains authoritative.
 export const ATTACHMENT_LIMITS = { concurrent: 3, queued: 48, files: 24, fileBytes: 20 * 1024 * 1024, totalBytes: 60 * 1024 * 1024, timeoutMs: 15_000 } as const;
@@ -53,8 +54,8 @@ export async function downloadAuthenticatedAttachment(bucket: string, path: stri
     if (!bucket || !path || path.startsWith("/") || path.split("/").some(part => part === ".." || part === ".")) throw unavailable();
     release = await acquire(controller.signal);
     if (controller.signal.aborted) throw unavailable();
-    if (bucket === "clientes-docs" || bucket === "financial-docs") {
-      const load = bucket === "clientes-docs" ? loadClientDocument : loadFinancialDocument;
+    if (bucket === "clientes-docs" || bucket === "financial-docs" || bucket === "consultor-arquivos") {
+      const load = bucket === "clientes-docs" ? loadClientDocument : bucket === "financial-docs" ? loadFinancialDocument : loadTechnicalAttachment;
       if (performance.now() >= clientDeadline) { abort(); throw unavailable(); }
       const blob = await load(path, controller.signal);
       if (controller.signal.aborted || performance.now() >= clientDeadline) { abort(); throw unavailable(); }

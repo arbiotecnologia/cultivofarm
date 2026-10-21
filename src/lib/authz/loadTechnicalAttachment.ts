@@ -1,4 +1,4 @@
-// REVIEW ONLY — intended path src/lib/authz/loadTechnicalAttachment.ts. Mirrors loadClientDocument.
+// Promoted runtime 2026-10-21 from candidate scripts/technical-attachment-http-20261021 @ 3cd1e4b6. Mirrors loadClientDocument.
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 
 export const TECHNICAL_ATTACHMENT_LIMITS = { bytes: 20 * 1024 * 1024, timeoutMs: 15_000 } as const;

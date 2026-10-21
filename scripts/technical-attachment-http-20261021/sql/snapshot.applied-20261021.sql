@@ -1,5 +1,6 @@
--- REVIEW ONLY / NOT APPLIED. Target: swzpzcwiasxmjutrmvkm exclusively.
--- NO-GO until LIVE public/private helper definitions, ACL, RLS and columns match preflight.
+-- APPLIED EXTERNALLY 2026-10-21 on swzpzcwiasxmjutrmvkm (owner-reported and homologated:
+-- RPC technical_attachment_download_snapshot INVOKER STABLE, search_path '', authenticated only).
+-- AUDIT RECORD ONLY — do NOT reapply. Live database state is authoritative.
 -- No Storage object reads here: origin GET containment cannot prevent the actor proof.
 BEGIN;
 CREATE OR REPLACE FUNCTION public.technical_attachment_download_snapshot(_name text)

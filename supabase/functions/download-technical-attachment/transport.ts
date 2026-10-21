@@ -1,4 +1,4 @@
-// REVIEW ONLY — intended path supabase/functions/download-technical-attachment/transport.ts.
+// Promoted runtime 2026-10-21 from candidate scripts/technical-attachment-http-20261021 @ 3cd1e4b6.
 import { BUCKET, validSnapshot, type Snapshot, type Transport } from "./core.ts";
 
 export interface ActorProof { rpc(path: string, signal: AbortSignal): Promise<unknown> }

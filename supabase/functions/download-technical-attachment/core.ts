@@ -1,4 +1,4 @@
-// REVIEW ONLY — intended path supabase/functions/download-technical-attachment/core.ts.
+// Promoted runtime 2026-10-21 from candidate scripts/technical-attachment-http-20261021 @ 3cd1e4b6.
 // Same contract as download-client-document v3 (clientes-docs untouched), scoped to consultor-arquivos only.
 export const LIMITS = { bytes: 20 * 1024 * 1024, bodyBytes: 4096, timeoutMs: 15_000 } as const;
 export const BUCKET = "consultor-arquivos" as const;

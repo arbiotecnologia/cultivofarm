@@ -1,5 +1,6 @@
-// REVIEW ONLY — intended path supabase/functions/download-technical-attachment/index.ts.
-// Requires config.toml [functions.download-technical-attachment] verify_jwt = true BEFORE any deploy.
+// Promoted runtime 2026-10-21 from candidate scripts/technical-attachment-http-20261021 @ 3cd1e4b6.
+// config.toml [functions.download-technical-attachment] verify_jwt = true is explicit (incident 2026-10-21).
+// Backend homologated externally: Edge v1 ezbr dafbf6c643a7802b515343543ac9484845f6f5a7700127cb05051f6b267d65c4.
 import { createClient } from "npm:@supabase/supabase-js@2.110.8";
 import { corsHeaders } from "npm:@supabase/supabase-js@2.110.8/cors";
 import { serveTechnicalAttachment } from "./core.ts";
