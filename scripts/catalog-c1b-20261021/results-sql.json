@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "synthetic": true,
-  "total": 23,
+  "total": 26,
   "checks": [
     "exact baseline get_partner_catalog_secure(uuid)",
     "exact baseline get_partner_catalog_tecnico_secure()",
@@ -23,8 +23,11 @@
     "private helper ACL",
     "actual local anon invocation denied",
     "actual authenticated invocation through DEFINER",
-    "rollback refuses changed deployed body atomically",
-    "rollback exact get_partner_catalog_secure(uuid)",
-    "rollback exact get_partner_catalog_tecnico_secure()"
+    "one scope resolution public.get_partner_catalog_secure(uuid)",
+    "one scope resolution public.get_partner_catalog_tecnico_secure()",
+    "approved content survives canonical RPC",
+    "draft content denied",
+    "inactive owner denies",
+    "no executable weaker structural rollback"
   ]
 }

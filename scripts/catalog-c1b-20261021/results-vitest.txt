@@ -2,11 +2,15 @@ $ vitest run --config "scripts/catalog-c1b-20261021/vitest.config.ts"
 
  RUN  v3.2.4 /dev-server
 
- ✓ scripts/catalog-c1b-20261021/frontend/catalog.test.tsx (16 tests) 1159ms
-   ✓ C1B inactive candidate canonical readers > actual grid consumes RPC projection, filters families and never mounts internal reader  310ms
+stderr | scripts/catalog-c1b-20261021/frontend/fichas.test.tsx > type captured before await survives tab change without switching PDF generators
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
- Test Files  1 passed (1)
-      Tests  16 passed (16)
-   Start at  21:49:17
-   Duration  3.78s (transform 291ms, setup 106ms, collect 778ms, tests 1.16s, environment 541ms, prepare 98ms)
+ ✓ scripts/catalog-c1b-20261021/frontend/fichas.test.tsx (5 tests) 548ms
+ ✓ scripts/catalog-c1b-20261021/frontend/catalog.test.tsx (16 tests) 1295ms
+   ✓ C1B inactive candidate canonical readers > actual grid consumes RPC projection, filters families and never mounts internal reader  419ms
+
+ Test Files  2 passed (2)
+      Tests  21 passed (21)
+   Start at  21:56:30
+   Duration  5.56s (transform 539ms, setup 345ms, collect 1.96s, tests 1.84s, environment 2.31s, prepare 334ms)
 

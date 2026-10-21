@@ -54,6 +54,7 @@ export function usePartnerCatalogTecnico(enabled = true) {
         const precoBase =
           valorDaUnidade(unidade, { valorHa, valorLitro, valorDose }) ?? null;
         return {
+          ficha_conteudo: r.ficha_aprovada ? r.ficha_conteudo ?? {} : {},
           familia_catalogo: readCatalogFamily(r.familia_catalogo),
           item_id: r.item_id,
           item_tipo: r.item_tipo,

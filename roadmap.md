@@ -3,11 +3,11 @@
 ## 21/10 21:25 — prioridade expressa: catálogo, depois contratos funcionais
 - [x] Adiar pendências sem declará-las resolvidas; avanço substitui gate antigo. Backlog: docs/backlog-prioridade-catalogo-20261021.md.
 - [x] C1 recorte interno revisável: inventário LIVE read-only, metadados/filtros de família técnico/agrônomo/comercial, legado e tenant preservados; 104/104 testes, types/build automático OK. docs/catalogo-c1-20261021-review.md. Não publicado.
-- [ ] C1 B2B: RPCs atuais sem família/ocultação comercial; precisa prova da empresa cuja preferência prevalece e revisão da candidata separada scripts/catalog-c1-b2b-review-20261021. Não ativar via enriquecimento paralelo nem aplicar backend nesta rodada.
-- [x] C1B candidata concreta em scripts/catalog-c1b-20261021: SQL transacional/overloads compatíveis, rollback com drift guard, pre/postflight e consumidores isolados; sem aplicar/promover. Autoridade owner versus parceiro continua ambígua; restrição dual-tenant proposta, não homologada.
-- [ ] C1B revisão independente da autoridade e homologação PostgREST/JWT/RLS A/B; bloqueia aplicação/promover apenas C1B, não reabre as pendências antigas adiadas nem implementa C2.
-- [ ] Publicação C1 solicitada nesta rodada antes das alterações C1B; ferramenta informou agendamento, conclusão/bundle não verificados. C1B não foi publicado.
-- [ ] C1 homologação real dos filtros/perfis: mocks não são JWT/RLS/browser real; sem mudança de sessões nesta rodada.
+- [x] C1B21:50: regra conservadora fornecedor+empresa parceira aceita expressamente; owner ausente/inativo negado sem backfill. Achado original de autoridade preservado nos documentos históricos; não requer nova autorização dessa regra.
+- [x] C1B candidata inicial concreta em scripts/catalog-c1b-20261021 preparada sem aplicação/promoção; ambiguidade e rollback iniciais registrados historicamente. Revisão21:50 abaixo substitui proposta por regra aceita e remove reversão SQL insegura.
+- [x] C1B correções candidatas: refetch erro/stale e tipos PDF, scope uuid[] uma vez, ficha real via whitelist RPC, rollback frontend mantendo filtro; testes26SQL+21UI+21regressões/types isolados PASS, sem promoção.
+- [ ] C1B REST PostgREST real após migration independente: script rest_postflight.py pronto; migration não aplicada e sessões/casos REST ausentes nesta rodada, runtime permanece C1. Capacidades envase/volumes sem contrato comprovado bloqueadas, não presumir paridade integral.
+- [x] C1 publicado confirmado externamente21:50 bundle index-D0RgMmH6.js; consultor A filtros/reset e administrador B catálogo/simulador reais PASS limitados aos dados atuais. Não republicar C1; C1B não publicado.
 - [ ] C2 seguinte, não implementar neste diff: contratos funcionais canônicos de atribuição/desvinculação/reativação/histórico, papéis cumulativos B2B+gestor+técnico+produtor, seletor autorizado e cadastro multiatribuições na empresa.
 
 ## 21/10 21:14 — atualização do wizard após sincronizar, baseline 9565a2b7

@@ -27,9 +27,13 @@ WHERE (n.nspname,p.proname) IN (('platform_private','h15_actor_organization'),
  ('public','fn_b2b_resolve_base_unit_price'));
 SELECT table_name,column_name,data_type,udt_name,is_nullable FROM information_schema.columns
 WHERE table_schema='public' AND table_name IN ('catalog_tenant_visibility','organization_subscriptions',
- 'organization_feature_overrides','partner_accounts','produtos','microrganismos') ORDER BY table_name,ordinal_position;
+ 'organization_feature_overrides','partner_accounts','produtos','microrganismos',
+ 'product_technical_profiles','microorganism_technical_profiles','catalog_technical_sources',
+ 'product_target_recommendations','microorganism_targets','catalogo_volumes','envase','lotes') ORDER BY table_name,ordinal_position;
 SELECT tablename,policyname,roles,cmd,qual,with_check FROM pg_policies WHERE schemaname='public'
-AND tablename IN ('catalog_tenant_visibility','produtos','microrganismos','partner_accounts','partner_users','organization_subscriptions');
+AND tablename IN ('catalog_tenant_visibility','produtos','microrganismos','partner_accounts','partner_users','organization_subscriptions',
+ 'product_technical_profiles','microorganism_technical_profiles','catalog_technical_sources','product_target_recommendations',
+ 'microorganism_targets','catalogo_volumes','envase','lotes');
 SELECT organization_id,to_jsonb(s)-'id' subscription_snapshot FROM public.organization_subscriptions s;
 SELECT organization_id,to_jsonb(o)-'id' override_snapshot FROM public.organization_feature_overrides o;
 SELECT c.oid::regclass,c.relrowsecurity,c.relforcerowsecurity,c.relacl FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace

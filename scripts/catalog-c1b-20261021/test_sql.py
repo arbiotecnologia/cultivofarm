@@ -27,6 +27,11 @@ CREATE TABLE produtos(id uuid,nome text,codigo text,ativo boolean,b2b_enabled bo
 CREATE TABLE microrganismos(id uuid,nome text,codigo text,ativo boolean,b2b_enabled boolean,tipo text,nome_cientifico text,funcao_agronomica text,dose_ml_ha numeric,descricao text);
 CREATE TABLE product_technical_profiles(produto_id uuid,status_validacao text,resumo_curto text,explicacao_b2b text,beneficio_combinado text);
 CREATE TABLE microorganism_technical_profiles(microrganismo_id uuid,status_validacao text,resumo_curto text,explicacao_b2b text,beneficios_agronomicos text);
+ALTER TABLE product_technical_profiles ADD COLUMN explicacao_produtor text, ADD COLUMN indicacoes_uso text, ADD COLUMN cuidados_aplicacao text;
+ALTER TABLE microorganism_technical_profiles ADD COLUMN explicacao_produtor text, ADD COLUMN indicacoes_uso text, ADD COLUMN cuidados_aplicacao text, ADD COLUMN mecanismo_acao text;
+CREATE TABLE product_target_recommendations(produto_id uuid,ativo boolean);
+CREATE TABLE microorganism_targets(microrganismo_id uuid,ativo boolean);
+CREATE TABLE catalog_technical_sources(entidade_id uuid,entidade_tipo text);
 CREATE TABLE catalog_tenant_visibility(organization_id uuid,entity_type text,produto_id uuid,microrganismo_id uuid,hidden boolean);
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE SET search_path TO public AS $$SELECT nullif(current_setting('test.actor',true),'')::uuid$$;
 CREATE FUNCTION public.has_role(u uuid,r app_role) RETURNS boolean LANGUAGE sql STABLE SET search_path TO public AS $$SELECT EXISTS(SELECT 1 FROM user_roles WHERE user_id=u AND role=r)$$;
@@ -58,8 +63,8 @@ try:
   sql(f"INSERT INTO partner_accounts VALUES('{uid(partner)}','{uid(owner)}',true,NULL); UPDATE organizations SET partner_account_id='{uid(partner)}' WHERE id='{uid(org)}'; INSERT INTO profiles VALUES('{uid(user)}','{uid(org)}',true); INSERT INTO user_roles VALUES('{uid(user)}','{role}'); INSERT INTO partner_users VALUES('{uid(user)}','{uid(partner)}',NULL);")
  for n,fam in [(51,'biologico'),(52,'quimico'),(53,'fertilizante_adubo'),(54,None),(55,'quimico')]:
   family="NULL" if fam is None else f"'{fam}'"
-  sql(f"INSERT INTO produtos VALUES('{uid(n)}','P{n}','P{n}',{str(n!=55).lower()},true,'fungicida',{family},NULL,NULL,NULL); INSERT INTO product_technical_profiles VALUES('{uid(n)}','aprovado','resumo','b2b','beneficio');")
- sql(f"INSERT INTO microrganismos VALUES('{uid(60)}','M','M',true,true,'bacteria',NULL,NULL,NULL,NULL); INSERT INTO microorganism_technical_profiles VALUES('{uid(60)}','aprovado','R','B','B'); INSERT INTO catalog_tenant_visibility VALUES('{uid(100)}','produto','{uid(52)}',NULL,true),('{uid(400)}','produto','{uid(53)}',NULL,true);")
+  sql(f"INSERT INTO produtos VALUES('{uid(n)}','P{n}','P{n}',{str(n!=55).lower()},true,'fungicida',{family},NULL,NULL,NULL); INSERT INTO product_technical_profiles(produto_id,status_validacao,resumo_curto,explicacao_b2b,beneficio_combinado) VALUES('{uid(n)}','aprovado','resumo','b2b','beneficio');")
+ sql(f"INSERT INTO microrganismos VALUES('{uid(60)}','M','M',true,true,'bacteria',NULL,NULL,NULL,NULL); INSERT INTO microorganism_technical_profiles(microrganismo_id,status_validacao,resumo_curto,explicacao_b2b,beneficios_agronomicos) VALUES('{uid(60)}','aprovado','R','B','B'); INSERT INTO catalog_tenant_visibility VALUES('{uid(100)}','produto','{uid(52)}',NULL,true),('{uid(400)}','produto','{uid(53)}',NULL,true);")
  def actor(n):
   global active_actor
   active_actor=uid(n)
@@ -92,16 +97,18 @@ try:
  sql(f"UPDATE partner_users SET revoked_at=NULL WHERE user_id='{uid(2)}';")
  check('actual authenticated invocation through DEFINER',"SET ROLE authenticated; SELECT count(*) FROM get_partner_catalog_tecnico_secure(true)",'4')
  # No DML exists in production candidate; all fixtures/stubs above are confined to this socket.
- if 'C1B_POST_DRIFT' in (HERE/'rollback.sql.review').read_text():
-  sql("CREATE OR REPLACE FUNCTION platform_private.c1b_catalog_visibility_scope(p_partner uuid) RETURNS uuid[] LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $$SELECT ARRAY[]::uuid[]$$;")
-  sql((HERE/'rollback.sql.review').read_text(),'C1B_POST_DRIFT');checks.append('rollback refuses changed deployed body atomically')
-  # Restore exact candidate helper only inside disposable fixture.
-  import re
-  definition=re.search(r'CREATE OR REPLACE FUNCTION platform_private.c1b_catalog_visibility_scope.*?END \$c1b\$;', (HERE/'candidate.sql.review').read_text(),re.S)
-  assert definition is not None
-  sql(definition.group(0))
- sql((HERE/'rollback.sql.review').read_text())
- for row in live:check('rollback exact '+row['identity'],f"SELECT md5(pg_get_functiondef('public.{row['identity']}'::regprocedure))",row['md5'])
+ # Safe rollback does not restore the weaker server baseline.
+ for sig in ['public.get_partner_catalog_secure(uuid)','public.get_partner_catalog_tecnico_secure()']:
+  check('one scope resolution '+sig,f"SELECT regexp_count(pg_get_functiondef('{sig}'::regprocedure),'c1b_catalog_visibility_scope')",'1')
+ actor(1)
+ sql(f"UPDATE product_technical_profiles SET explicacao_produtor='uso aprovado',indicacoes_uso='quando',cuidados_aplicacao='cuidado' WHERE produto_id='{uid(51)}';")
+ check('approved content survives canonical RPC',f"SELECT ficha_conteudo->>'explicacao_produtor' FROM get_partner_catalog_secure('{uid(10)}',true) WHERE item_id='{uid(51)}'",'uso aprovado')
+ sql(f"UPDATE product_technical_profiles SET status_validacao='rascunho' WHERE produto_id='{uid(51)}';")
+ check('draft content denied',f"SELECT ficha_conteudo FROM get_partner_catalog_secure('{uid(10)}',true) WHERE item_id='{uid(51)}'",'{}')
+ sql(f"UPDATE organizations SET ativo=false WHERE id='{uid(100)}';")
+ sql(f"SELECT * FROM get_partner_catalog_secure('{uid(10)}',true)",'catalog_commercial_owner_unavailable');checks.append('inactive owner denies')
+ assert not (HERE/'rollback.sql.review').exists()
+ checks.append('no executable weaker structural rollback')
  print(json.dumps({'status':'PASS','synthetic':True,'total':len(checks),'checks':checks},indent=2))
 finally:
  subprocess.run(prefix+['pg_ctl','-D',str(root/'data'),'stop','-m','immediate'],capture_output=True)

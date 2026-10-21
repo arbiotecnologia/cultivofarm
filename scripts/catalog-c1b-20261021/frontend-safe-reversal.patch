@@ -1,0 +1,516 @@
+--- a/src/components/catalogo/CatalogoCardsGrid.tsx
++++ b/src/components/catalogo/CatalogoCardsGrid.tsx
+@@ -11,12 +11,11 @@
+ import { MicroorganismTechnicalProfileDialog } from "@/components/protocolos/MicroorganismTechnicalProfileDialog";
+ import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
+ import { useCatalogoUnificado, CatalogoUnificadoRow, CatalogoScope, catalogoRevisionPending } from "@/hooks/useCatalogoUnificado";
+-import { PartnerFichaDrawer } from "./PartnerFichaDrawer";
+ import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
+ import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalogo/CatalogoItemDrawer";
+ import { useIsMobile } from "@/hooks/use-mobile";
+-import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
+-import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
++import { CatalogoQueryErrorState } from "./CatalogoQueryErrorState";
++import { CatalogFamilyFilter } from "./CatalogFamilyFilter";
+ import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
+
+ type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
+@@ -29,12 +28,7 @@
+  */
+ export const CATALOGO_PAGE_SIZE = 60;
+
+-export interface CatalogGridSource {
+-  data?: CatalogoUnificadoRow[]; isLoading: boolean; error: Error | null;
+-  refetch: () => unknown; isFetching: boolean; scope?: string;
+-}
+ interface Props {
+-  source?: CatalogGridSource;
+   scope: CatalogoScope;
+   /** Mostrar filtros de status da ficha e B2B (admin/interno). Default: true */
+   showStatusFilter?: boolean;
+@@ -53,15 +47,7 @@
+   fichaOrigem?: "protocolos" | "app_mobile";
+ }
+
+-export function CatalogoCardsGrid(props: Props) {
+-  return props.source ? <CatalogGridView {...props} source={props.source} key={props.source.scope} /> : <LegacyCatalogGrid {...props} />;
+-}
+-function LegacyCatalogGrid(props: Props) {
+-  const source = useCatalogoUnificado(props.scope);
+-  return <CatalogGridView {...props} source={source} />;
+-}
+-function CatalogGridView({
+-  source,
++export function CatalogoCardsGrid({
+   scope,
+   showStatusFilter = scope !== "b2b",
+   showB2BFilter = scope !== "b2b",
+@@ -71,8 +57,8 @@
+   actionSlot,
+   filterRow,
+   fichaOrigem = "protocolos",
+-}: Props & { source: CatalogGridSource }) {
+-  const { data, isLoading, error, refetch, isFetching } = source;
++}: Props) {
++  const { data, isLoading, error, refetch, isFetching } = useCatalogoUnificado(scope);
+
+   const [search, setSearch] = useState("");
+   const [tipo, setTipo] = useState<CatalogTipoFiltro>("todos");
+@@ -135,18 +121,16 @@
+   // FASE 27D — callbacks memoizados (compartilhados por todos os cards/linhas).
+   const abrirVerFicha = useCallback((r: CatalogoUnificadoRow) => {
+     if (scope === "b2b") {
+-      if (source.scope) setFichaB2B({ id: r.id, tipo: r.tipo });
+-      else setFichaB2B({ id: r.id, tipo: r.tipo });
++      setFichaB2B({ id: r.id, tipo: r.tipo });
+       return;
+     }
+     if (r.tipo === "produto") setOpenProd(r.raw);
+     else setOpenMicro(r.raw);
+-  }, [scope, source.scope]);
++  }, [scope]);
+
+   const abrirFichaCompleta = useCallback((r: CatalogoUnificadoRow) => {
+-    if (scope === "b2b" && source.scope) { setFichaB2B({ id: r.id, tipo: r.tipo }); return; }
+     setFichaUnificada(r);
+-  }, [scope, source.scope]);
++  }, []);
+
+   const renderActions = (r: CatalogoUnificadoRow) => (
+     <div className="flex gap-1 justify-end flex-wrap">
+@@ -176,7 +160,7 @@
+     const q = search.trim().toLowerCase();
+     return rows.filter((r) => {
+       if (filterRow && !filterRow(r)) return false;
+-      if (!catalogFamilyMatches(r, family)) return false;
++      if (scope !== "b2b" && !catalogFamilyMatches(r, family)) return false;
+       if (tipo !== "todos" && r.tipo !== tipo) return false;
+       if (showB2BFilter) {
+         if (b2b === "sim" && !r.b2b_enabled) return false;
+@@ -226,7 +210,7 @@
+
+   return (
+     <div className="space-y-4">
+-      <CatalogFamilyFilter value={family} onChange={setFamily} />
++      {scope !== "b2b" && <CatalogFamilyFilter value={family} onChange={setFamily} />}
+       <div className="flex flex-col md:flex-row gap-2 md:items-stretch">
+         <div className="flex-1">
+           <CatalogSearchFilters
+@@ -356,7 +340,7 @@
+                     <TableCell className="align-top">
+                       <div className="flex flex-col items-end gap-1">
+                         {showPriceCol && (
+-                          <div className="text-right w-full">{pricingSlot?.(r)}</div>
++                          <div className="text-right w-full">{pricingSlot!(r)}</div>
+                         )}
+                         {renderActions(r)}
+                       </div>
+@@ -452,21 +436,18 @@
+         origem={fichaOrigem}
+       />
+       <CatalogoItemDrawer
+-        item={fichaUnificada ? rows.find(r => r.id === fichaUnificada.id && r.tipo === fichaUnificada.tipo) ?? null : null}
++        item={fichaUnificada}
+         open={!!fichaUnificada}
+         onOpenChange={(v) => !v && setFichaUnificada(null)}
+         scope={scope as CatalogoFichaScope}
+       />
+-      {source.scope ? <PartnerFichaDrawer
+-        item={fichaB2B ? rows.find(r => r.id === fichaB2B.id && r.tipo === fichaB2B.tipo) ?? null : null}
+-        open={!!fichaB2B} onOpenChange={v => !v && setFichaB2B(null)}
+-      /> : <FichaProdutorDrawer
++      <FichaProdutorDrawer
+         open={!!fichaB2B}
+         onOpenChange={(v) => !v && setFichaB2B(null)}
+         itemId={fichaB2B?.id ?? null}
+         tipo={fichaB2B?.tipo ?? "produto"}
+         origem="portal_parceiro"
+-      />}
++      />
+
+ 
+       <p className="text-[10px] text-muted-foreground text-center italic pt-2">
+--- a/src/components/catalogo/PartnerFichaDrawer.tsx
++++ b/src/components/catalogo/PartnerFichaDrawer.tsx
+@@ -1,30 +0,0 @@
+-import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
+-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+-import { formatarMoeda } from "@/lib/catalogo/formatUnidades";
+-
+-/** Approved canonical RPC projection only: no hooks, enrichment reads or grants. */
+-export function PartnerFichaDrawer({ item, open, onOpenChange }: {
+-  item: CatalogoUnificadoRow | null; open: boolean; onOpenChange: (open: boolean) => void;
+-}) {
+-  const fields = item ? [
+-    ["O que é", item.ficha_resumo], ["Para que serve", item.explicacao_produtor],
+-    ["Explicação B2B", item.explicacao_b2b], ["Função", item.funcao],
+-    ["Quais benefícios pode trazer", item.beneficios_agronomicos],
+-    ["Quando costuma ser usado", item.raw.indicacoes_uso],
+-    ["Cuidados básicos", item.raw.cuidados_aplicacao], ["Mecanismo de ação", item.mecanismo_acao],
+-  ] : [];
+-  return <Sheet open={open && !!item} onOpenChange={onOpenChange}>
+-    <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+-      <SheetHeader><SheetTitle>{item?.nome}</SheetTitle><SheetDescription>{item?.subtitulo}</SheetDescription></SheetHeader>
+-      {item?.ficha_status === "aprovado" ? <div className="space-y-4 mt-4 text-sm">
+-        {fields.filter(([, value]) => typeof value === "string" && value.trim()).map(([label, value]) =>
+-          <section key={label}><h3 className="font-semibold">{label}</h3><p className="whitespace-pre-wrap">{value}</p></section>)}
+-        {typeof item.raw.dose_ml_ha === "number" && <p>Dose (mL/ha): {item.raw.dose_ml_ha}</p>}
+-        {([ ["Valor por litro", item.raw.valor_litro_brl], ["Valor da dose (100 mL)", item.raw.valor_dose_brl],
+-          ["Valor por hectare", item.raw.valor_ha_brl] ] as const).filter(([, value]) => typeof value === "number" && Number.isFinite(value))
+-          .map(([label, value]) => <p key={label}>{label}: {formatarMoeda(value)}</p>)}
+-        <p>Alvos / culturas: {item.alvos_count}</p>
+-      </div> : <p className="mt-4 text-sm text-muted-foreground">Ficha técnica em validação.</p>}
+-    </SheetContent>
+-  </Sheet>;
+-}--- a/src/hooks/usePartnerCatalog.ts
++++ b/src/hooks/usePartnerCatalog.ts
+@@ -1,21 +1,13 @@
+ import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+ import { supabase } from "@/integrations/supabase/client";
+ import { resolverUnidadePreco, type UnidadePreco } from "@/lib/catalogo/unidades";
+-import { readCatalogFamily, type ReadCatalogFamily } from "@/lib/catalogo/catalogFamilyRead";
+ import { round2 } from "@/lib/catalogo/formatUnidades";
+
+ export type CatalogItemTipo = "produto" | "microrganismo";
+ /** Unidade canônica de preço (ver src/lib/catalogo/unidades.ts). */
+ export type UnidadePrecoPrincipal = UnidadePreco;
+
+-export interface CatalogFichaConteudo {
+-  subtitulo?: string | null; funcao?: string | null; dose_ml_ha?: number | null;
+-  explicacao_produtor?: string | null; indicacoes_uso?: string | null; cuidados_aplicacao?: string | null;
+-  mecanismo_acao?: string | null; alvos_count?: number; fontes_count?: number;
+-}
+ export interface CatalogItem {
+-  ficha_conteudo?: CatalogFichaConteudo;
+-  familia_catalogo?: ReadCatalogFamily | null;
+   item_id: string;
+   item_tipo: CatalogItemTipo;
+   product_id: string | null;
+@@ -68,17 +60,16 @@
+
+ export function usePartnerCatalog(partnerId: string | null | undefined) {
+   return useScopedPortalQuery({
+-    queryKey: ["partner-catalog-secure", "C1B_DUAL_TENANT_V1", partnerId],
++    queryKey: ["partner-catalog-secure", partnerId],
+     enabled: !!partnerId,
+-    queryFn: async (signal): Promise<CatalogItem[]> => {
++    queryFn: async (): Promise<CatalogItem[]> => {
+       if (!partnerId) return [];
+       const { data, error } = await supabase.rpc(
+         "get_partner_catalog_secure" as any,
+-        { p_partner_id: partnerId, p_catalog_v2: true } as any,
+-      ).abortSignal(signal);
++        { p_partner_id: partnerId },
++      );
+       if (error) throw error;
+       return (data ?? []).map((r: any) => {
+-        if (r.catalog_contract !== "C1B_DUAL_TENANT_V1") throw new Error("catalog_contract_unavailable");
+         const tipo = (r.item_tipo ?? "produto") as CatalogItemTipo;
+         const precoFallback = num(r.preco_parceiro);
+         const valorDose = num(r.valor_dose_brl);
+@@ -93,8 +84,6 @@
+         });
+         const descPct = Number(r.desconto_percentual ?? 0);
+         return {
+-          ficha_conteudo: r.ficha_aprovada ? r.ficha_conteudo ?? {} : {},
+-          familia_catalogo: readCatalogFamily(r.familia_catalogo),
+           item_id: r.item_id,
+           item_tipo: tipo,
+           product_id: r.product_id ?? null,
+--- a/src/hooks/usePartnerCatalogTecnico.ts
++++ b/src/hooks/usePartnerCatalogTecnico.ts
+@@ -1,13 +1,10 @@
+ import { useEffect } from "react";
+-import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+-import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+-import { readCatalogFamily } from "@/lib/catalogo/catalogFamilyRead";
+-import { useQueryClient } from "@tanstack/react-query";
++import { useQuery, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import type { CatalogItem, UnidadePrecoPrincipal } from "./usePartnerCatalog";
+ import { resolverUnidadePreco, valorDaUnidade } from "@/lib/catalogo/unidades";
+
+-const TECNICO_CATALOG_KEY = ["partner-catalog-tecnico", "C1B_DUAL_TENANT_V1"] as const;
++const TECNICO_CATALOG_KEY = ["partner-catalog-tecnico"] as const;
+
+ /**
+  * Catálogo para o parceiro B2B TÉCNICO.
+@@ -16,16 +13,15 @@
+  * apenas itens ativos e liberados para B2B, com valores de tabela e
+  * sem qualquer aplicação de desconto do parceiro.
+  */
+-export function usePartnerCatalogTecnico(enabled = true) {
+-  return useScopedPortalQuery({
+-    enabled,
++export function usePartnerCatalogTecnico() {
++  return useQuery({
+     queryKey: TECNICO_CATALOG_KEY,
+     staleTime: 30_000,
+     refetchOnWindowFocus: true,
+-    queryFn: async (signal): Promise<CatalogItem[]> => {
++    queryFn: async (): Promise<CatalogItem[]> => {
+       const { data, error } = await supabase.rpc(
+-        "get_partner_catalog_tecnico_secure" as any, { p_catalog_v2: true } as any,
+-      ).abortSignal(signal);
++        "get_partner_catalog_tecnico_secure" as any,
++      );
+       if (error) throw error;
+       const rows = (data ?? []) as any[];
+
+@@ -37,7 +33,6 @@
+       };
+
+       return rows.map((r) => {
+-        if (r.catalog_contract !== "C1B_DUAL_TENANT_V1") throw new Error("catalog_contract_unavailable");
+         const valorDose = num(r.valor_dose_brl);
+         const valorLitro =
+           num(r.valor_litro_brl) ??
+@@ -54,8 +49,6 @@
+         const precoBase =
+           valorDaUnidade(unidade, { valorHa, valorLitro, valorDose }) ?? null;
+         return {
+-          ficha_conteudo: r.ficha_aprovada ? r.ficha_conteudo ?? {} : {},
+-          familia_catalogo: readCatalogFamily(r.familia_catalogo),
+           item_id: r.item_id,
+           item_tipo: r.item_tipo,
+           product_id: isProduto ? r.item_id : null,
+@@ -90,26 +83,22 @@
+  */
+ export function useRealtimePartnerCatalogTecnico() {
+   const qc = useQueryClient();
+-  const actor = useStorageAccessScope("portal-query-actor");
+   useEffect(() => {
+-    if (!actor.ready) return;
+-    const current = actor.capture();
+-    const invalidate = () => { if (current()) void qc.invalidateQueries({ predicate: q => q.queryKey[0] === TECNICO_CATALOG_KEY[0] && q.queryKey.at(-2) === actor.scope }); };
+     const channel = supabase
+       .channel("partner-catalog-tecnico-sync")
+       .on(
+         "postgres_changes",
+         { event: "*", schema: "public", table: "produtos" },
+-        invalidate,
++        () => qc.invalidateQueries({ queryKey: TECNICO_CATALOG_KEY }),
+       )
+       .on(
+         "postgres_changes",
+         { event: "*", schema: "public", table: "microrganismos" },
+-        invalidate,
++        () => qc.invalidateQueries({ queryKey: TECNICO_CATALOG_KEY }),
+       )
+       .subscribe();
+     return () => {
+       supabase.removeChannel(channel);
+     };
+-  }, [qc, actor.ready, actor.scope]);
++  }, [qc]);
+ }
+--- a/src/lib/catalogo/partnerCatalogRows.ts
++++ b/src/lib/catalogo/partnerCatalogRows.ts
+@@ -1,18 +0,0 @@
+-import type { CatalogItem } from "@/hooks/usePartnerCatalog";
+-import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
+-
+-/** Only a projection of authorized RPC rows, never an additional catalogue read. */
+-export function partnerCatalogRows(items: readonly CatalogItem[]): CatalogoUnificadoRow[] {
+-  return items.map(item => ({
+-    id: item.item_id, tipo: item.item_tipo, nome: item.nome, codigo: item.codigo,
+-    subtitulo: item.ficha_conteudo?.subtitulo ?? null, funcao: item.ficha_conteudo?.funcao ?? null, ativo: true, b2b_enabled: true,
+-    ficha_status: item.ficha_status, ficha_resumo: item.resumo_curto,
+-    explicacao_b2b: item.explicacao_b2b, beneficios_agronomicos: item.beneficios_principais,
+-    explicacao_produtor: item.ficha_conteudo?.explicacao_produtor ?? null, explicacao_tecnica: null, mecanismo_acao: item.ficha_conteudo?.mecanismo_acao ?? null,
+-    fontes_count: item.ficha_conteudo?.fontes_count ?? 0, alvos_count: item.ficha_conteudo?.alvos_count ?? 0,
+-    // Internal fields and financial values do not enter the read-only sheet.
+-    raw: { familia_catalogo: item.familia_catalogo, dose_ml_ha: item.ficha_conteudo?.dose_ml_ha,
+-      indicacoes_uso: item.ficha_conteudo?.indicacoes_uso, cuidados_aplicacao: item.ficha_conteudo?.cuidados_aplicacao,
+-      valor_dose_brl: item.valor_dose_brl, valor_litro_brl: item.valor_litro_brl, valor_ha_brl: item.valor_ha_brl },
+-  }));
+-}--- a/src/pages/portal-parceiro/FichasTecnicas.tsx
++++ b/src/pages/portal-parceiro/FichasTecnicas.tsx
+@@ -1,9 +1,6 @@
+ import { useEffect, useMemo, useState } from "react";
+-import { usePartnerCatalogTecnico } from "@/hooks/usePartnerCatalogTecnico";
+-import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
+-import { catalogFamilyMatches, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
+-import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+-import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
++import { useQuery } from "@tanstack/react-query";
++import { supabase } from "@/integrations/supabase/client";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Input } from "@/components/ui/input";
+ import { Button } from "@/components/ui/button";
+@@ -26,13 +23,35 @@
+   const [busca, setBusca] = useState("");
+   const [busyId, setBusyId] = useState<string | null>(null);
+
+-  const catalog = usePartnerCatalogTecnico();
+-  const access = useStorageAccessScope("c1b-ficha-pdf");
+-  const [family, setFamily] = useState<FamilyFilter>("todos");
+-  const eligible = (catalog.data ?? []).filter(r => r.ficha_aprovada && catalogFamilyMatches({ tipo: r.item_tipo, raw: r }, family));
+-  const produtos = eligible.filter(r => r.item_tipo === "produto").map(r => ({ ...r, id: r.item_id, descricao: r.descricao_curta }));
+-  const micros = eligible.filter(r => r.item_tipo === "microrganismo").map(r => ({ ...r, id: r.item_id, descricao: r.descricao_curta }));
+-  const loadingP = catalog.isLoading, loadingM = catalog.isLoading;
++  const { data: produtos = [], isLoading: loadingP } = useQuery({
++    queryKey: ["fichas-tecnicas-produtos-b2b"],
++    queryFn: async () => {
++      const { data, error } = await supabase
++        .from("produtos")
++        .select("id, nome, codigo, descricao, product_technical_profiles!inner(status_validacao)")
++        .eq("ativo", true)
++        .eq("b2b_enabled", true)
++        .eq("product_technical_profiles.status_validacao", "aprovado")
++        .order("nome");
++      if (error) throw error;
++      return data ?? [];
++    },
++  });
++
++  const { data: micros = [], isLoading: loadingM } = useQuery({
++    queryKey: ["fichas-tecnicas-micros-b2b"],
++    queryFn: async () => {
++      const { data, error } = await supabase
++        .from("microrganismos")
++        .select("id, nome, codigo, descricao, microorganism_technical_profiles!inner(status_validacao)")
++        .eq("ativo", true)
++        .eq("b2b_enabled", true)
++        .eq("microorganism_technical_profiles.status_validacao", "aprovado")
++        .order("nome");
++      if (error) throw error;
++      return data ?? [];
++    },
++  });
+
+   const q = busca.trim().toLowerCase();
+   const filtered = useMemo(() => {
+@@ -45,33 +64,22 @@
+     );
+   }, [tab, produtos, micros, q]);
+
+-  const [preview, setPreview] = useState<{ blobUrl: string; filename: string; nome: string; scope: string } | null>(null);
+-  const visiblePreview = access.ready && preview?.scope === access.scope ? preview : null;
++  const [preview, setPreview] = useState<{ blobUrl: string; filename: string; nome: string } | null>(null);
+
+-  const abrirFicha = async (id: string, nome: string, itemTipo: "produto" | "microrganismo") => {
+-    const capturedTipo = itemTipo;
+-    const current = access.capture();
+-    if (!current()) return;
++  const abrirFicha = async (id: string, nome: string) => {
+     try {
+       setBusyId(id);
+-      const refreshed = await catalog.refetch();
+-      if (!current() || refreshed.error || !refreshed.data?.some(r => r.item_id === id && r.item_tipo === capturedTipo && r.ficha_aprovada)) return;
+       const result =
+-        capturedTipo === "produto"
++        tab === "produtos"
+           ? await generateFichaTecnicaProdutoPdf({ produtoId: id, mode: "blob", audience: "b2b" })
+           : await generateFichaTecnicaMicrorganismoPdf({ microId: id, mode: "blob", audience: "b2b" });
+       if (result && "blobUrl" in result) {
+-        if (!current()) { URL.revokeObjectURL(result.blobUrl); return; }
+-        const after = await catalog.refetch();
+-        if (!current() || after.error || !after.data?.some(r => r.item_id === id && r.item_tipo === capturedTipo && r.ficha_aprovada)) {
+-          URL.revokeObjectURL(result.blobUrl); return;
+-        }
+-        setPreview({ ...result, nome, scope: access.scope });
++        setPreview({ ...result, nome });
+       }
+     } catch (e: any) {
+-      if (current()) toast.error(e?.message ?? "Erro ao gerar ficha técnica");
++      toast.error(e?.message ?? "Erro ao gerar ficha técnica");
+     } finally {
+-      if (current()) setBusyId(null);
++      setBusyId(null);
+     }
+   };
+
+@@ -81,11 +89,7 @@
+     };
+   }, [preview?.blobUrl]);
+
+-  useEffect(() => { setPreview(null); setBusyId(null); }, [access.scope]);
+-
+   const loading = tab === "produtos" ? loadingP : loadingM;
+-
+-  if (catalog.error) return <CatalogoQueryErrorState error={catalog.error} retry={catalog.refetch} busy={catalog.isFetching} />;
+
+   return (
+     <div className="space-y-4 max-w-5xl mx-auto">
+@@ -96,7 +100,6 @@
+         </p>
+       </div>
+
+-      <CatalogFamilyFilter value={family} onChange={setFamily} />
+       <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+         <TabsList>
+           <TabsTrigger value="produtos">Produtos</TabsTrigger>
+@@ -141,7 +144,7 @@
+                   <Button
+                     size="sm"
+                     variant="outline"
+-                    onClick={() => abrirFicha(r.id, r.nome, r.item_tipo)}
++                    onClick={() => abrirFicha(r.id, r.nome)}
+                     disabled={busyId === r.id}
+                   >
+                     {busyId === r.id ? (
+@@ -159,7 +162,7 @@
+       </Tabs>
+
+       <Dialog
+-        open={!!visiblePreview}
++        open={!!preview}
+         onOpenChange={(v) => {
+           if (!v && preview?.blobUrl) URL.revokeObjectURL(preview.blobUrl);
+           if (!v) setPreview(null);
+@@ -167,12 +170,12 @@
+       >
+         <DialogContent className="max-w-5xl w-[95vw]">
+           <DialogHeader>
+-            <DialogTitle className="truncate">Ficha técnica — {visiblePreview?.nome}</DialogTitle>
++            <DialogTitle className="truncate">Ficha técnica — {preview?.nome}</DialogTitle>
+           </DialogHeader>
+-          {visiblePreview && (
++          {preview && (
+             <iframe
+-              src={visiblePreview.blobUrl}
+-              title={visiblePreview.filename}
++              src={preview.blobUrl}
++              title={preview.filename}
+               className="w-full h-[75vh] rounded-md border"
+             />
+           )}
+@@ -180,8 +183,8 @@
+             <Button variant="outline" onClick={() => setPreview(null)}>
+               Fechar
+             </Button>
+-            {visiblePreview && (
+-              <a href={visiblePreview.blobUrl} download={visiblePreview.filename}>
++            {preview && (
++              <a href={preview.blobUrl} download={preview.filename}>
+                 <Button>
+                   <Download className="h-4 w-4 mr-1" />
+                   Baixar PDF
+--- a/src/pages/portal-parceiro/NovoPedido.tsx
++++ b/src/pages/portal-parceiro/NovoPedido.tsx
+@@ -25,7 +25,6 @@
+ } from "@/components/ui/dialog";
+ import { Trash2, ShoppingCart, Plus, Star } from "lucide-react";
+ import { toast } from "sonner";
+-import { partnerCatalogRows } from "@/lib/catalogo/partnerCatalogRows";
+ import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
+ import { AddToCartDialog } from "@/components/catalogo/AddToCartDialog";
+ import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
+@@ -118,7 +117,7 @@
+   // nunca pedidos oficiais.
+   const isSimulationMode = isRoleTecnico || isSimuladorRoute;
+   const catalogGestor = usePartnerCatalog(isSimulationMode ? null : partner?.id);
+-  const catalogTecnico = usePartnerCatalogTecnico(isSimulationMode);
++  const catalogTecnico = usePartnerCatalogTecnico();
+   useRealtimePartnerCatalogTecnico();
+   const catalog: CatalogItem[] = isSimulationMode
+     ? (catalogTecnico.data ?? [])
+@@ -558,7 +557,6 @@
+           <CardContent>
+             <CatalogoCardsGrid
+               scope="b2b"
+-              source={{ ...(isSimulationMode ? catalogTecnico : catalogGestor), data: partnerCatalogRows(catalog) }}
+               showStatusFilter={false}
+               showB2BFilter={false}
+               showInternalBadges={false}
