@@ -1,8 +1,9 @@
 -- APPLIED EXTERNALLY 2026-10-21 (migration financial_document_atomic_download_snapshot); record only. Atomic actor snapshot for financial-docs (INVOKER/RLS, no new grants to anon).
 -- Reuses canonical public.financial_storage_object_permitted('financial-docs', _name)
 -- (path strict + h15 tenant + is_financial_staff + owner row in tenant). Adds the live record proof.
--- organization_id NULL legacy row (1 in preflight 2026-10-21) stays readable only because the owner
--- tenant is proven by the canonical helper; a non-null organization_id must equal the actor tenant.
+-- A NULL document organization_id does not prove readability: the canonical helper and RLS must
+-- actually prove the owner tenant. Legacy f8580e22/payment owner orgNULL access is unproven.
+-- A non-null organization_id must equal the actor tenant. SQL body unchanged; record only.
 BEGIN;
 CREATE OR REPLACE FUNCTION public.financial_document_download_snapshot(_name text)
 RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path TO '' AS $$

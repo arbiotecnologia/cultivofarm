@@ -104,11 +104,7 @@ export function DocumentosPanel({ ownerType, ownerId, defaultType = "RECEIPT", c
     mutationFn: async ({ id, current }: { id: string; current: () => boolean }) => {
       assertCurrent(current);
       if (!user || !supportedOwner) throw new Error("Sessão ou origem inválida");
-      const rpc = supabase.rpc as unknown as (
-        fn: "rpc_financial_document_soft_delete",
-        args: { p_document_id: string; p_reason: string },
-      ) => Promise<{ error: { message: string } | null }>;
-      const { error } = await rpc("rpc_financial_document_soft_delete", {
+      const { error } = await supabase.rpc("rpc_financial_document_soft_delete", {
         p_document_id: id,
         p_reason: "Removido pelo usuário",
       });
