@@ -30,6 +30,7 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
   const access = useStorageAccessScope(resource);
   const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
   const request = useRef<AbortController | null>(null);
+  const latest = useRef<AbortController | null>(null);
   const [prepared, setPrepared] = useState({ scope: "", path: "", number: "", id: "" });
   useLayoutEffect(() => {
     setBusy(false); setPrepared({ scope: "", path: "", number: "", id: "" });
@@ -41,7 +42,7 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
     const current = access.capture();
     if (!current() || request.current) return;
     const controller = new AbortController();
-    request.current = controller;
+    request.current = controller; latest.current = controller;
     const valid = () => current() && !controller.signal.aborted && request.current === controller;
     const timeout = setTimeout(() => {
       if (request.current !== controller) return;
@@ -50,6 +51,8 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
     }, 15_000);
     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
     setBusy(true);
+    // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
+    let opened = ""; let kept = false;
     try {
       if (downloadable) {
         // Re-confirm server state on click: a cancel elsewhere revokes these prepared bytes.
@@ -86,18 +89,21 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       });
       if (!valid()) return;
       if (pdfErr || pdfRes?.path !== path || pdfRes?.receipt_number !== receipt.receipt_number || pdfRes?.status !== "ISSUED") throw new Error("Recibo indisponível");
-      // Edge/RPC watchdog ends here; authenticated opener owns byte timeout/limits.
-      clearTimeout(timeout);
+      // Single watchdog covers Edge, bytes and the post-bytes status read until finally.
       await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
+      opened = path;
       if (!valid()) return;
       const after = await readReceiptCurrentState(receiptId, tenant, controller.signal);
       if (!valid()) return;
       if (after.status !== "ISSUED" || after.path !== path) { opener.discard(path); throw new Error("Recibo indisponível"); }
+      kept = true;
       setPrepared({ scope: access.scope, path, number: receipt.receipt_number, id: receiptId });
     } catch {
       if (valid()) toast.error("Recibo indisponível");
     } finally {
       clearTimeout(timeout);
+      // A newer request may own the same path after a timeout; never revoke its bytes.
+      if (opened && !kept && latest.current === controller) opener.discard(opened);
       if (request.current === controller) {
         request.current = null;
         if (current()) setBusy(false);

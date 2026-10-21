@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const fake = vi.hoisted(() => ({ tenant: "007bb519-cba0-4704-be2c-cb93ad010048", status: [] as string[], edge: vi.fn(), download: vi.fn(), error: vi.fn(), lateDownload: null as null | Promise<Blob> }));
+const fake = vi.hoisted(() => ({ tenant: "007bb519-cba0-4704-be2c-cb93ad010048", status: [] as string[], edge: vi.fn(), download: vi.fn(), error: vi.fn(), lateDownload: null as null | Promise<Blob>, reads: 0, hangAt: 0, late: null as any }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "actor" },
   profile: { user_id: "actor", organization_id: fake.tenant, ativo: true, senha_provisoria: false }, roles: ["financeiro"],
   loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: () => true }) }));
@@ -15,7 +15,9 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     for (const m of ["select", "eq", "order", "gte", "lte", "ilike"]) q[m] = () => q;
     q.limit = (n: number) => { q.single = n === 2; return q; };
     // List read uses the initial status; each fresh status read consumes the next scripted server state.
-    q.abortSignal = async () => ({ data: [row(q.single ? (fake.status.length > 1 ? fake.status.shift()! : fake.status[0]) : fake.status[0])], error: null });
+    q.abortSignal = async (signal: AbortSignal) => {
+      if (q.single && ++fake.reads === fake.hangAt) { await fake.late.promise; if (signal.aborted) throw new Error("aborted"); }
+      return { data: [row(q.single ? (fake.status.length > 1 ? fake.status.shift()! : fake.status[0]) : fake.status[0])], error: null }; };
     return q; },
   rpc: () => ({ abortSignal: async () => ({ error: null }) }),
   functions: { invoke: (...a: any[]) => fake.edge(...a) },
@@ -27,13 +29,13 @@ import BaselineList from "../../../scripts/receipt-cancel-currency-20261021/base
 const ISSUED = `${fake.tenant}/2026/REC-2026-000001.pdf`;
 const CANCELED = ISSUED.replace(".pdf", ".canceled.pdf");
 beforeEach(() => {
-  fake.status = ["ISSUED"]; fake.edge.mockReset(); fake.download.mockReset(); fake.error.mockReset();
+  fake.status = ["ISSUED"]; fake.reads = 0; fake.hangAt = 0; fake.late = null; fake.edge.mockReset(); fake.download.mockReset(); fake.error.mockReset();
   fake.download.mockImplementation(async (_b: string, p: string) => new Blob([p]));
   fake.edge.mockResolvedValue({ data: { path: CANCELED, receipt_number: "REC-2026-000001", status: "CANCELED" }, error: null });
   vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:r"), revokeObjectURL: vi.fn() }));
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.useRealTimers(); });
 const mount = (C: any) => render(<MemoryRouter><C /></MemoryRouter>);
 
 describe("canceled receipt never served as the earlier ISSUED PDF", () => {
@@ -73,5 +75,21 @@ describe("canceled receipt never served as the earlier ISSUED PDF", () => {
   it("ISSUED with generated path keeps existing behavior without Edge", async () => {
     const ui = mount(RecibosList); fireEvent.click(await ui.findByRole("button", { name: "Preparar PDF" }));
     await ui.findByRole("button", { name: "Baixar PDF" }); expect(fake.edge).not.toHaveBeenCalled();
+  });
+
+  it("hung post-bytes status read is bounded by the watchdog, revokes bytes, ignores late reply and recovers", async () => {
+    let resolve: () => void = () => {}; fake.late = { promise: new Promise<void>(r => { resolve = r; }) }; fake.hangAt = 2;
+    const ui = mount(RecibosList); const button = await ui.findByRole("button", { name: "Preparar PDF" });
+    vi.useFakeTimers(); fireEvent.click(button);
+    await act(async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); });
+    expect(fake.download).toHaveBeenCalledTimes(1); expect(fake.reads).toBe(2);
+    await act(async () => { vi.advanceTimersByTime(15_000); });
+    expect(fake.error).toHaveBeenCalledWith("Recibo indisponível");
+    await act(async () => { resolve(); for (let i = 0; i < 20; i++) await Promise.resolve(); });
+    vi.useRealTimers();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:r");
+    expect(ui.queryByRole("button", { name: "Baixar PDF" })).toBeNull();
+    const retry = ui.getByRole("button", { name: "Preparar PDF" }); expect(retry).not.toBeDisabled();
+    fireEvent.click(retry); await ui.findByRole("button", { name: "Baixar PDF" }); expect(fake.download).toHaveBeenCalledTimes(2);
   });
 });

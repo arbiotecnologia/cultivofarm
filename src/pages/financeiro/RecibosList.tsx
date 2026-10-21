@@ -43,6 +43,7 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
   const access = useStorageAccessScope(resource);
   const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
   const request = useRef<AbortController | null>(null);
+  const latest = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState(false);
   const [prepared, setPrepared] = useState({ scope: "", path: "", status: "", number: "" });
   let listed = "";
@@ -56,7 +57,7 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
     const current = access.capture();
     if (!current() || !listed || request.current) return;
     const controller = new AbortController();
-    request.current = controller;
+    request.current = controller; latest.current = controller;
     const valid = () => current() && !controller.signal.aborted && request.current === controller;
     const timeout = setTimeout(() => {
       if (request.current !== controller) return;
@@ -65,6 +66,8 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
     }, 15_000);
     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
     setBusy(true);
+    // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
+    let opened = ""; let kept = false;
     try {
       if (isPrepared) {
         // Prepared bytes (possibly from before a cancel elsewhere) are re-confirmed against server state.
@@ -89,8 +92,9 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
         if (error || data?.path !== before.path || data?.receipt_number !== before.receipt_number || data?.status !== before.status) throw new Error("Recibo indisponível");
       }
       if (!valid()) return;
-      clearTimeout(timeout);
+      // Single watchdog covers Edge, bytes and the post-bytes status read until finally.
       await opener.open(before.path, () => { if (valid()) toast.error("Recibo indisponível"); });
+      opened = before.path;
       if (!valid()) return;
       // A cancel concurrent with preparation invalidates the bytes just fetched.
       const after = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
@@ -98,11 +102,14 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
       if (after.status !== before.status || after.path !== before.path) {
         opener.discard(before.path); toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
       }
+      kept = true;
       setPrepared({ scope: access.scope, path: before.path, status: before.status, number: before.receipt_number });
     } catch {
       if (valid()) toast.error("Recibo indisponível");
     } finally {
       clearTimeout(timeout);
+      // A newer request may own the same path after a timeout; never revoke its bytes.
+      if (opened && !kept && latest.current === controller) opener.discard(opened);
       if (request.current === controller) {
         request.current = null;
         if (current()) setBusy(false);

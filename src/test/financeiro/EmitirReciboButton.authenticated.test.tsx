@@ -96,3 +96,22 @@ it("hung generation aborts at 15s; old completion cannot unlock a new request", 
   await settle(late, pdf); expect(URL.createObjectURL).not.toHaveBeenCalled(); expect(ui.getByRole("button")).toBeDisabled();
   await settle(newer, pdf); expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
 });
+it("hung post-bytes status read is bounded, revokes bytes, ignores late reply and recovers without pending request", async () => {
+  const late = deferred(); let many = 0;
+  fake.read.mockImplementation((q: any) => q.many && ++many === 1 ? late.promise : Promise.resolve({ data: receipt(), error: null }));
+  const ui = setup(); vi.useFakeTimers(); fireEvent.click(ui.getByRole("button"));
+  await act(async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); });
+  expect(fake.download).toHaveBeenCalledTimes(1); expect(many).toBe(1);
+  await act(async () => { vi.advanceTimersByTime(15_000); });
+  expect(fake.error).toHaveBeenCalledWith("Recibo indisponível");
+  await settle(late, { data: receipt(), error: null }); vi.useRealTimers();
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned-receipt");
+  expect(ui.queryByRole("button", { name: "Baixar PDF" })).toBeNull(); expect(ui.getByRole("button")).not.toBeDisabled();
+  fireEvent.click(ui.getByRole("button")); await ui.findByRole("button", { name: "Baixar PDF" }); expect(fake.rpc).toHaveBeenCalledTimes(2);
+});
+it("cancel concurrent with preparation: post-bytes read CANCELED discards bytes and never offers download", async () => {
+  let many = 0; fake.read.mockImplementation((q: any) => Promise.resolve({ data: receipt(q.many && ++many === 1 ? { status: "CANCELED" } : {}), error: null }));
+  const ui = setup(); fireEvent.click(ui.getByRole("button"));
+  await waitFor(() => expect(fake.error).toHaveBeenCalledWith("Recibo indisponível"));
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned-receipt"); expect(ui.queryByRole("button", { name: "Baixar PDF" })).toBeNull();
+});

@@ -1,5 +1,5 @@
 --- scripts/receipt-cancel-currency-20261021/baseline/RecibosList.tsx	2026-10-21 13:10:02.204196982 +0000
-+++ src/pages/financeiro/RecibosList.tsx	2026-10-21 13:10:02.204688675 +0000
++++ src/pages/financeiro/RecibosList.tsx	2026-10-21 13:14:15.565062718 +0000
 @@ -16,7 +16,7 @@
  import { useAuth } from "@/hooks/useAuth";
  import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
@@ -9,9 +9,11 @@
  
  interface Receipt {
    id: string;
-@@ -44,17 +44,17 @@
+@@ -43,20 +43,21 @@
+   const access = useStorageAccessScope(resource);
    const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
    const request = useRef<AbortController | null>(null);
++  const latest = useRef<AbortController | null>(null);
    const [busy, setBusy] = useState(false);
 -  let path = "";
 -  try { path = financialReceiptLocator(receipt, tenant); } catch { /* fail closed */ }
@@ -31,11 +33,17 @@
 -    if (opener.urls[path]) { if (current()) opener.download(path, `${receipt.receipt_number}.pdf`); return; }
 +    if (!current() || !listed || request.current) return;
      const controller = new AbortController();
-     request.current = controller;
+-    request.current = controller;
++    request.current = controller; latest.current = controller;
      const valid = () => current() && !controller.signal.aborted && request.current === controller;
-@@ -66,20 +66,39 @@
+     const timeout = setTimeout(() => {
+       if (request.current !== controller) return;
+@@ -65,34 +66,58 @@
+     }, 15_000);
      controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
      setBusy(true);
++    // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
++    let opened = ""; let kept = false;
      try {
 -      if (!receipt.storage_path) {
 +      if (isPrepared) {
@@ -64,9 +72,11 @@
        }
        if (!valid()) return;
 -      // The canonical opener owns download timeout/abort; this timer covers Edge only.
-       clearTimeout(timeout);
+-      clearTimeout(timeout);
 -      await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
++      // Single watchdog covers Edge, bytes and the post-bytes status read until finally.
 +      await opener.open(before.path, () => { if (valid()) toast.error("Recibo indisponível"); });
++      opened = before.path;
        if (!valid()) return;
 +      // A cancel concurrent with preparation invalidates the bytes just fetched.
 +      const after = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
@@ -74,11 +84,17 @@
 +      if (after.status !== before.status || after.path !== before.path) {
 +        opener.discard(before.path); toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
 +      }
++      kept = true;
 +      setPrepared({ scope: access.scope, path: before.path, status: before.status, number: before.receipt_number });
      } catch {
        if (valid()) toast.error("Recibo indisponível");
      } finally {
-@@ -90,9 +109,8 @@
+       clearTimeout(timeout);
++      // A newer request may own the same path after a timeout; never revoke its bytes.
++      if (opened && !kept && latest.current === controller) opener.discard(opened);
+       if (request.current === controller) {
+         request.current = null;
+         if (current()) setBusy(false);
        }
      }
    };
@@ -91,7 +107,7 @@
    </Button>;
  }
 --- scripts/receipt-cancel-currency-20261021/baseline/EmitirReciboButton.tsx	2026-10-21 13:10:02.204135013 +0000
-+++ src/components/financeiro/EmitirReciboButton.tsx	2026-10-21 13:10:02.204589394 +0000
++++ src/components/financeiro/EmitirReciboButton.tsx	2026-10-21 13:14:15.567358855 +0000
 @@ -7,6 +7,7 @@
  import { useAuth } from "@/hooks/useAuth";
  import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
@@ -100,11 +116,12 @@
  
  interface Props {
    paymentId: string;
-@@ -29,9 +30,9 @@
+@@ -29,9 +30,10 @@
    const access = useStorageAccessScope(resource);
    const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
    const request = useRef<AbortController | null>(null);
 -  const [prepared, setPrepared] = useState({ scope: "", path: "", number: "" });
++  const latest = useRef<AbortController | null>(null);
 +  const [prepared, setPrepared] = useState({ scope: "", path: "", number: "", id: "" });
    useLayoutEffect(() => {
 -    setBusy(false); setPrepared({ scope: "", path: "", number: "" });
@@ -112,17 +129,23 @@
      return () => { request.current?.abort(); request.current = null; };
    }, [access.scope]);
    const downloadable = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
-@@ -39,7 +40,6 @@
+@@ -39,9 +41,8 @@
    const handle = async () => {
      const current = access.capture();
      if (!current() || request.current) return;
 -    if (downloadable) { opener.download(prepared.path, `${prepared.number}.pdf`); return; }
      const controller = new AbortController();
-     request.current = controller;
+-    request.current = controller;
++    request.current = controller; latest.current = controller;
      const valid = () => current() && !controller.signal.aborted && request.current === controller;
-@@ -51,6 +51,16 @@
+     const timeout = setTimeout(() => {
+       if (request.current !== controller) return;
+@@ -50,7 +51,19 @@
+     }, 15_000);
      controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
      setBusy(true);
++    // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
++    let opened = ""; let kept = false;
      try {
 +      if (downloadable) {
 +        // Re-confirm server state on click: a cancel elsewhere revokes these prepared bytes.
@@ -137,7 +160,7 @@
        const { data, error } = await (supabase as any).rpc("issue_financial_receipt", {
          _payment_id: paymentId,
        }).abortSignal(controller.signal);
-@@ -61,12 +71,12 @@
+@@ -61,12 +74,12 @@
        // Actor-authenticated RLS read: never derive tenant/ownership from a URL.
        // Generated canonical types lag this table's tenant column; validate wire data below.
        const { data: receipt, error: readError } = await (supabase as any).from("financial_receipts")
@@ -152,24 +175,33 @@
            typeof receipt.organization_id !== "string" || typeof receipt.receipt_year !== "number" ||
            (receipt.storage_path !== null && typeof receipt.storage_path !== "string") ||
            (receipt.storage_bucket !== null && typeof receipt.storage_bucket !== "string")) throw new Error("Recibo indisponível");
-@@ -75,11 +85,15 @@
+@@ -75,15 +88,22 @@
          body: { receipt_id: receiptId }, signal: controller.signal,
        });
        if (!valid()) return;
 -      if (pdfErr || pdfRes?.path !== path || pdfRes?.receipt_number !== receipt.receipt_number) throw new Error("Recibo indisponível");
+-      // Edge/RPC watchdog ends here; authenticated opener owns byte timeout/limits.
+-      clearTimeout(timeout);
 +      if (pdfErr || pdfRes?.path !== path || pdfRes?.receipt_number !== receipt.receipt_number || pdfRes?.status !== "ISSUED") throw new Error("Recibo indisponível");
-       // Edge/RPC watchdog ends here; authenticated opener owns byte timeout/limits.
-       clearTimeout(timeout);
++      // Single watchdog covers Edge, bytes and the post-bytes status read until finally.
        await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
 -      if (valid()) setPrepared({ scope: access.scope, path, number: receipt.receipt_number });
++      opened = path;
 +      if (!valid()) return;
 +      const after = await readReceiptCurrentState(receiptId, tenant, controller.signal);
 +      if (!valid()) return;
 +      if (after.status !== "ISSUED" || after.path !== path) { opener.discard(path); throw new Error("Recibo indisponível"); }
++      kept = true;
 +      setPrepared({ scope: access.scope, path, number: receipt.receipt_number, id: receiptId });
      } catch {
        if (valid()) toast.error("Recibo indisponível");
      } finally {
+       clearTimeout(timeout);
++      // A newer request may own the same path after a timeout; never revoke its bytes.
++      if (opened && !kept && latest.current === controller) opener.discard(opened);
+       if (request.current === controller) {
+         request.current = null;
+         if (current()) setBusy(false);
 --- scripts/receipt-cancel-currency-20261021/baseline/useAuthenticatedAttachmentOpener.ts	2026-10-21 13:10:02.204254672 +0000
 +++ src/hooks/useAuthenticatedAttachmentOpener.ts	2026-10-21 13:10:02.204622484 +0000
 @@ -63,6 +63,13 @@

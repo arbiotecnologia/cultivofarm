@@ -1,0 +1,10 @@
+import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../_shared/comunicacao/cors.ts";
+
+// Safe rollback: receipt generation is unavailable. Never signs, never renders CANCELED over ISSUED.
+Deno.serve((req) => {
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  const origin = req.headers.get("Origin");
+  const headers = { ...corsHeadersFor(origin), "Content-Type": "application/json" };
+  if (origin && !isTrustedOrigin(origin)) return new Response(JSON.stringify({ error: "origin_not_allowed" }), { status: 403, headers });
+  return new Response(JSON.stringify({ error: "financial_receipt_unavailable" }), { status: 503, headers });
+});
