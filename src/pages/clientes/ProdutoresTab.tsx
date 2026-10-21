@@ -28,6 +28,9 @@ import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento, validatePhoneBR
 import { normalizeInscricaoEstadualCadastro } from "@/lib/schemas/inscricaoEstadualCadastro";
 import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
 import { commercialRegistrationError } from "@/lib/commercialRegistrationErrors";
+import { clearResume, rememberResume, resumePrincipalKey, takeResume } from "@/lib/navigation/protectedResumeContext";
+
+const RESUME_ROUTE = "/clientes#produtores";
 import { Link } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/cultivofarm.types";
 
@@ -42,8 +45,9 @@ const defaultValues: ClienteSchema = {
 
 export default function ProdutoresTab() {
   const isMobile = useIsMobile();
-  const { role } = useAuth();
+  const { role, user, profile, roles } = useAuth();
   const scope = useCommercialRegistrationScope();
+  const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles);
   const submitLock = useRef(false);
   const draftId = useRef(crypto.randomUUID());
   const readGeneration = useRef(0);
@@ -60,6 +64,27 @@ export default function ProdutoresTab() {
   const [open, setOpen] = useState(false);
   const [selectedClienteId, setSelectedClienteId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Retomada SEGURA só de navegação (ID + aba): nunca rascunho/Blob/dados.
+  const [resumeTab, setResumeTab] = useState<string | undefined>(undefined);
+  const resumeChecked = useRef(false);
+  const openRef = useRef({ open: false, id: null as string | null, tab: "geral", principal: resumePrincipal, ready: false });
+  openRef.current.open = open; openRef.current.id = selectedClienteId;
+  openRef.current.principal = resumePrincipal; openRef.current.ready = canManage;
+  const onFormTabChange = useCallback((tab: string) => {
+    openRef.current.tab = tab;
+    const c = openRef.current;
+    if (c.open && c.id && c.ready) rememberResume(c.principal, RESUME_ROUTE, c.id, tab);
+  }, []);
+  useEffect(() => {
+    if (open && selectedClienteId && canManage) rememberResume(resumePrincipal, RESUME_ROUTE, selectedClienteId, openRef.current.tab);
+  }, [open, selectedClienteId, canManage, resumePrincipal]);
+  useEffect(() => {
+    const path = window.location.pathname;
+    // Unmount pela pausa mantém a rota; navegação para outra rota descarta.
+    return () => { if (window.location.pathname !== path) clearResume(); };
+  }, []);
+  const closeEditor = () => { clearResume(); setResumeTab(undefined); openRef.current.tab = "geral"; };
 
   const [delDialog, setDelDialog] = useState<{ id: string; nome: string; inativo: boolean } | null>(null);
 
@@ -150,6 +175,19 @@ export default function ProdutoresTab() {
     void fetchClientes();
   }, [scope.scope, reset, fetchClientes]);
 
+  useEffect(() => {
+    if (resumeChecked.current || !canManage || clientRows.scope !== scope.scope || clientRows.scope === "") return;
+    resumeChecked.current = true;
+    const ctx = takeResume(resumePrincipal, RESUME_ROUTE);
+    if (!ctx || open) return;
+    const row = clientes.find(c => c.id === ctx.recordId);
+    if (!row) return; // excluído/sem acesso: não reapresenta nada
+    setResumeTab(ctx.tab); openRef.current.tab = ctx.tab;
+    setSelectedClienteId(row.id);
+    methods.reset(clienteToFormValues(row));
+    setOpen(true);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleCreateOrUpdate = async (values: ClienteSchema) => {
     if (submitLock.current || !canManage) return;
     const current = scope.capture();
@@ -239,6 +277,7 @@ export default function ProdutoresTab() {
     // Fechar modal e limpar estado após salvar com sucesso.
     if (!current()) return;
     if (savedRow) {
+      closeEditor();
       setOpen(false);
       setSelectedClienteId(null);
       methods.reset(defaultValues);
@@ -249,6 +288,7 @@ export default function ProdutoresTab() {
   };
 
   const handleEdit = (cliente: ClienteRow) => {
+    setResumeTab(undefined); openRef.current.tab = "geral";
     setSelectedClienteId(cliente.id);
     methods.reset(clienteToFormValues(cliente));
     setOpen(true);
@@ -315,7 +355,7 @@ export default function ProdutoresTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        {canManage ? <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { setSelectedClienteId(null); methods.reset(defaultValues); } }}>
+        {canManage ? <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { closeEditor(); setSelectedClienteId(null); methods.reset(defaultValues); } }}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto" onClick={() => { draftId.current = crypto.randomUUID(); setSelectedClienteId(null); methods.reset(defaultValues); }}><Plus className="h-4 w-4 mr-2" />Novo Produtor</Button>
           </DialogTrigger>
@@ -350,9 +390,9 @@ export default function ProdutoresTab() {
                 const extra = entries.length > 1 ? ` (e mais ${entries.length - 1} campo${entries.length > 2 ? "s" : ""})` : "";
                 toast.error(`${label}: ${friendlyMsg}${extra}`);
               })} className="space-y-6">
-                <ClienteFormTabs clienteId={selectedClienteId || undefined} />
+                <ClienteFormTabs key={selectedClienteId ?? "novo"} clienteId={selectedClienteId || undefined} initialTab={resumeTab} onTabChange={onFormTabChange} />
                 <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+                  <Button type="button" variant="ghost" onClick={() => { closeEditor(); setOpen(false); }}>Cancelar</Button>
                   <Button type="submit" disabled={methods.formState.isSubmitting}>{selectedClienteId ? "Atualizar" : "Salvar Produtor"}</Button>
                 </div>
               </form>
