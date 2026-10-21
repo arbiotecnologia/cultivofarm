@@ -101,7 +101,8 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       if (valid()) toast.error("Recibo indisponível");
     } finally {
       clearTimeout(timeout);
-      if (opened && !kept) opener.discard(opened);
+      // A newer request may own the same path after a timeout; never revoke its bytes.
+      if (opened && !kept && (request.current === controller || request.current === null)) opener.discard(opened);
       if (request.current === controller) {
         request.current = null;
         if (current()) setBusy(false);
