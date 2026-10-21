@@ -150,3 +150,73 @@ describe('retomada /clientes: somente timeout confirmado do monitor', () => {
     expect(tab()).toBeNull();
   });
 });
+
+describe('renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B)', () => {
+  const refresh = async () => { await act(async () => { s.authCb?.('TOKEN_REFRESHED', { user: { id: s.uid } }); }); };
+  it('mesmo usuário/empresa/papéis: conteúdo some durante a revalidação e Documentos reabre com dados relidos, sem rascunho', async () => {
+    await openDocs();
+    const reads = s.clientReads;
+    await refresh();
+    expect(screen.queryByText('RASCUNHO_SENSIVEL')).toBeNull();
+    expect(screen.queryByDisplayValue('RASCUNHO_SENSIVEL')).toBeNull();
+    await adv(10_000);
+    expect(paused()).toBeNull();
+    expect(tab()).toBe('documentos');
+    expect(screen.getByRole('textbox', { name: 'Nome fantasia' })).toHaveValue('Cliente 1');
+    expect(s.clientReads).toBeGreaterThan(reads);
+  });
+  it('renovação com papel removido não retoma e descarta', async () => {
+    await openDocs();
+    s.roles = ['financeiro'];
+    await refresh(); await adv(20_000);
+    expect(tab()).toBeNull();
+    expect(__peekResumeForTests()).toBeNull();
+  });
+  it('renovação com empresa diferente não retoma e descarta', async () => {
+    await openDocs();
+    const o = s.org; s.org = '00000000-0000-4000-8000-0000000000cc';
+    await refresh(); await adv(20_000);
+    expect(tab()).toBeNull();
+    expect(__peekResumeForTests()).toBeNull();
+    s.org = o;
+  });
+  it('renovação seguida de troca de identidade descarta', async () => {
+    await openDocs();
+    await refresh();
+    const a = s.uid; s.uid = '00000000-0000-4000-8000-0000000000bb';
+    await act(async () => { s.authCb?.('SIGNED_IN', { user: { id: s.uid } }); });
+    expect(__peekResumeForTests()).toBeNull();
+    s.uid = a;
+  });
+  it('renovação com perfil inativo não retoma e descarta', async () => {
+    await openDocs();
+    s.active = false;
+    await refresh(); await adv(20_000);
+    expect(tab()).toBeNull();
+    expect(__peekResumeForTests()).toBeNull();
+  });
+  it('renovação com cliente removido não reapresenta', async () => {
+    await openDocs();
+    s.rows = [];
+    await refresh(); await adv(10_000);
+    expect(tab()).toBeNull();
+    expect(__peekResumeForTests()).toBeNull();
+  });
+  it('renovação fora da aba Documentos não retoma', async () => {
+    await openDocs('Aba Financeiro');
+    await refresh(); await adv(10_000);
+    expect(tab()).toBeNull();
+  });
+  it('TTL: renovação sem revalidação em 120 s não retoma', async () => {
+    await openDocs();
+    s.perCall = 130_000;
+    await refresh(); await adv(135_000);
+    s.perCall = 50; await adv(20_000);
+    expect(tab()).toBeNull();
+  });
+  it('carga: renovação não acrescenta probes além do baseline', async () => {
+    await openDocs();
+    const p0 = s.probes; await refresh(); await adv(10_000);
+    expect(s.probes - p0).toBeLessThanOrEqual(3); // baseline a82 medido: 3
+  });
+});

@@ -9,6 +9,7 @@
  * Ciclo de vida (pontos canônicos no AuthProvider):
  * - rememberResume: consumidor autorizado com cliente aberto na aba Documentos.
  * - armResumeOnTimeout: onExpire("timeout") do monitor; TTL conta daqui.
+ * - armResumeOnRenewal: TOKEN_REFRESHED do mesmo usuário; TTL conta daqui.
  * - clearResume: qualquer outro expire (ineligible/error/offline), nova época,
  *   latch, logout, troca de identidade/empresa/papéis, fechamento/navegação.
  * - takeResume: consumo único, exige pausa armada, mesmo principal e TTL.
@@ -18,7 +19,7 @@
 export const RESUME_TTL_MS = 120_000;
 export const RESUMABLE_TAB = "documentos";
 
-type Slot = { principal: string; route: string; recordId: string; pausedAt: number | null };
+type Slot = { principal: string; route: string; recordId: string; pausedAt: number | null; reason: "timeout" | "renewal" | null };
 let slot: Slot | null = null;
 
 export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[] | null | undefined): string | null {
@@ -29,7 +30,7 @@ export function resumePrincipalKey(userId: string | null | undefined, organizati
 /** Só registra a aba Documentos; qualquer outra aba descarta. Reinicia a pausa. */
 export function rememberResume(principal: string | null, route: string, recordId: string, tab: string): void {
   if (!principal || !recordId || tab !== RESUMABLE_TAB) { slot = null; return; }
-  slot = { principal, route, recordId, pausedAt: null };
+  slot = { principal, route, recordId, pausedAt: null, reason: null };
 }
 
 export function clearResume(): void { slot = null; }
@@ -38,12 +39,36 @@ export function clearResume(): void { slot = null; }
 export function armResumeOnTimeout(principal: string | null, now: number = Date.now()): void {
   if (!slot) return;
   if (!principal || slot.principal !== principal) { slot = null; return; }
-  if (slot.pausedAt === null) slot = { ...slot, pausedAt: now };
+  if (slot.pausedAt === null) slot = { ...slot, pausedAt: now, reason: "timeout" };
 }
 
-/** Principal diferente/ausente descarta. */
-export function observeResumePrincipal(principal: string | null): void {
-  if (slot && slot.principal !== principal) slot = null;
+/**
+ * Chamado SOMENTE em TOKEN_REFRESHED do MESMO usuário (renovação natural).
+ * Não confia no principal anterior: takeResume exige o principal relido
+ * idêntico (usuário/empresa/papéis); TTL conta daqui.
+ */
+export function armResumeOnRenewal(now: number = Date.now()): void {
+  if (slot && slot.pausedAt === null) slot = { ...slot, pausedAt: now, reason: "renewal" };
+}
+
+/**
+ * Principal diferente descarta. Principal ausente descarta, exceto enquanto
+ * a identidade está sendo relida (`resolving`) com pausa já armada.
+ */
+export function observeResumePrincipal(principal: string | null, resolving = false): void {
+  if (!slot || slot.principal === principal) return;
+  if (principal === null && resolving && slot.reason === "renewal") return;
+  slot = null;
+}
+
+/**
+ * Latch de re-resolução: descarta, exceto a renovação natural armada enquanto
+ * a identidade ainda é relida. Latch que persiste após a releitura descarta.
+ */
+export function observeResumeLatch(latchBlocked: boolean, resolving: boolean): void {
+  if (!latchBlocked || !slot) return;
+  if (resolving && slot.reason === "renewal") return;
+  slot = null;
 }
 
 /** Consome uma vez; exige pausa armada por timeout dentro do TTL. */
