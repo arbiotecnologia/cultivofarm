@@ -1,0 +1,22 @@
+{
+  "review_base": "2eb45eee18fcce310d6f52ee85cad27a4e94f114",
+  "edge_tests": 44,
+  "ui_tests": 14,
+  "tests_exit": 0,
+  "app_types_exit": 0,
+  "node_types_exit": 0,
+  "vite_build_exit": 0,
+  "vite_build_seconds": 41.5,
+  "deno_bundle_exit": 0,
+  "deno_check_exit": 1,
+  "deno_baseline_same_errors": 5,
+  "runtime_modified": false,
+  "deployment_performed": false,
+  "consent": "corrections and safe deployment authorized; technical review gates remain",
+  "blocked": [
+    "LIVE source/config/dependencies",
+    "Deno baseline type errors",
+    "canonical XML fixture",
+    "hosted bundle size verification"
+  ]
+}

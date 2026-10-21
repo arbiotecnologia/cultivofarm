@@ -4,7 +4,7 @@
 - Organizations writes require SECURITY DEFINER RPCs issuing platform_private.authz_tickets (txid), enforced by triggers; GUC flags never authorize — prevents bypass.
 - Provisioned-admin password links use canonical SMTP and invitation fencing; operator recovery links stay disabled — only holders define passwords.
 - Operational invites use server-fixed `https://app.cultivofarm.com.br/reset-password`; Origin only authorizes, never builds redirects — prevents localhost fallback/open redirects.
-- Global communication requires server `is_platform_superadmin`; tenant admins have no UI/endpoint access; workers use service-only RPCs — preserves tenant/secret isolation.
+- Global communication: server `is_platform_superadmin`; no tenant-admin UI/endpoint; workers service-only RPCs — preserves tenant/secret isolation.
 - Version detection compares production meta ID (fallback entry script); AuthProvider owns controls, navigation needs a click; `/sw.js` cleans up, `/push-sw.js` only pushes — prevents stale shells.
 - Organization creation requires an immutable CNPJ lookup/review snapshot and CNPJ re-entry before RPC — blocks stale-tab/autofill bypass of reviewed E01.
 - Commercial plans offer the global active catalog in audited DRAFTs; all runtime checks share one server-side resolver over linked published snapshots, overrides are idempotent, and payments stay OFF.
@@ -15,7 +15,7 @@
 - Shared catalog writes, wipe/audits and global visual/financial settings require server-validated Platform Superadmin; wipe is transactional, idempotent, reasoned and limited to global tables.
 - `configuracoes_sistema` is platform-global branding: active users may read it, but only a server-validated Platform Superadmin may mutate it or its `logos/platform/` assets.
 - Published versions are immutable; successors start DRAFT. Publishing closes only predecessor `effective_to` under `saas_plan_version_supersede` ticket — preserves snapshots/history.
-- Name/email edits require `platform_update_organization_profile`, expected `updated_at`, idempotency key and immutable `organization_profile_audit`; CNPJ/status/plan/admins stay separate — prevents parallel writes.
+- Name/email: `platform_update_organization_profile`, expected `updated_at`, idempotency key, immutable `organization_profile_audit`; CNPJ/status/plan/admins separate — prevents parallel writes.
 - Provisioned-admin uses one sectioned dialog, existing Edges/invitation mutation and shared lock; target/Auth/JWT/expiry/retry checks and audits stay server-side — avoids bypass.
 - Subscription transitions use a public INVOKER/private authorized DEFINER core; version changes preserve trial deadlines — protects tickets/trials.
 - Logout/renewal clears identity/cache; reload stays outside callbacks — avoids stale roles/deadlocks.
@@ -44,4 +44,4 @@
 - External users reuse receipts/provisioner, ACL closed — no fork.
 - External edits use gated admin RPC; await first CAS, retain drafts/receipts on refetch and fence identity generations — prevents loading deadlocks/stale effects.
 
-- Review subdirectories have their own AGENTS.md; read them before changing review artifacts — keeps candidate-only safety and validation rules scoped.
+- Read subdirectories’ AGENTS.md before edits — preserves scoped review rules.

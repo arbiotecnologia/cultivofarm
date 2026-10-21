@@ -7,6 +7,7 @@ e82456f40b1062969a057456f4d48eafbb4c336ca2fd3a701d8f967d0a126277  scripts/fiscal
 c642f5dbfaa5c5fa4e72191fba91a39bbf889e11fa241d3bb98aaa11db3eec7b  scripts/fiscal-xml-download-blob-20261021/baseline-real-status.json
 8088644bf4c6339784d187fff921f3dcd6e25fffd6745498d381edaf1fd5cb32  scripts/fiscal-xml-download-blob-20261021/before.txt
 d7cc85f39f4ec3f8502dd3b97df71083880c5d3ffc66e546b4185bd6c5524980  scripts/fiscal-xml-download-blob-20261021/candidate-build.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  scripts/fiscal-xml-download-blob-20261021/candidate-types-app.txt
 9188f960f2f9fd5078d9fbe1ed380cbb05ec7ed1fab76d404b08d278eee984d1  scripts/fiscal-xml-download-blob-20261021/edge/baseline.index.ts
 676df6ef54bbcdb5a1db09ca0305a066c8aa6d7e04a775d671a12f6f17301552  scripts/fiscal-xml-download-blob-20261021/edge/index.ts.review
 9ecf359535eefb8ea8aa70b8308228058092cc9972a92ef7c93fdee4abc1b6fd  scripts/fiscal-xml-download-blob-20261021/edge/rollback-deny.index.ts.review
@@ -22,6 +23,7 @@ d0563d4b8732d358aafb686558f3893923357ebfcb7c3b1701f608018558fb41  scripts/fiscal
 e1cc45597e9de68f5c5848097f1db23f9b1ffa1af12234c50b888c13137bc3e3  scripts/fiscal-xml-download-blob-20261021/prepare-validation.py
 abec10371923d40123a73faf62e6011ea5e40721b33a35cd90176fcfab3d19a8  scripts/fiscal-xml-download-blob-20261021/regressions.txt
 c15a794e22b8b789e68818b4fdb49d6e1153d95e080174d8a1e54d370fc085ce  scripts/fiscal-xml-download-blob-20261021/rollback.py
-720d2b750351fd72c9f686ae750c36a08767001e9d67c70d69f90e45933ba415  scripts/fiscal-xml-download-blob-20261021/stream-after.txt
+e20f149c234f5527cf8cc079c5fd439f4e8fc0855c070424dd2b3a114ad5e201  scripts/fiscal-xml-download-blob-20261021/stream-after.txt
 1a9beedd734537c555e36647700cde27140bed870d347a7ad1213dbefeb743d7  scripts/fiscal-xml-download-blob-20261021/stream-before.txt
 26e50286740cc3e52ffc44f7c872e5f53df3c4f0539d675a137179bb8e7d8d2e  scripts/fiscal-xml-download-blob-20261021/stream-review.patch
+9450261fc3e2b118faf8d818bf280fd4c16f8a39d38fc7f086f876fc5dcc6704  scripts/fiscal-xml-download-blob-20261021/validation-status.json
