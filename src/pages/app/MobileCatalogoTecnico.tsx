@@ -14,6 +14,8 @@ import { useEmbalagensPorItem, formatEmbalagens } from "@/hooks/useEmbalagensPor
 import { useCatalogoVolumes, formatVolumesCatalogo } from "@/hooks/useCatalogoVolumes";
 import { useTenantHiddenIds } from "@/hooks/useTenantCatalogVisibility";
 import { catalogoExcludeHidden } from "@/hooks/useCatalogoUnificado";
+import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
+import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
 
 type Tipo = "todos" | "produto" | "microrganismo";
 
@@ -43,6 +45,7 @@ export default function MobileCatalogoTecnico() {
   const hmKey = hm.status === "ready" ? `${hm.scope.organizationId}|${hm.scope.userId}|${hm.ids.join(",")}` : hm.status;
   const [search, setSearch] = useState("");
   const [tipo, setTipo] = useState<Tipo>("todos");
+  const [family, setFamily] = useState<FamilyFilter>("todos");
   const [openMicro, setOpenMicro] = useState<any | null>(null);
   const [openProd, setOpenProd] = useState<any | null>(null);
   const { data: embalagens } = useEmbalagensPorItem();
@@ -57,7 +60,7 @@ export default function MobileCatalogoTecnico() {
       setLoading(true);
       setLoadError(null);
       const [prod, micro, pp, mp] = await Promise.all([
-        catalogoExcludeHidden(supabase.from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").eq("ativo", true), hiddenProd).order("nome"),
+        catalogoExcludeHidden(supabase.from("produtos").select("id,nome,codigo,tipo,familia_catalogo,classe_catalogo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").eq("ativo", true), hiddenProd).order("nome"),
         catalogoExcludeHidden(supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").eq("ativo", true), hiddenMicro).order("nome"),
         supabase.from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto"),
         supabase.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto"),
@@ -87,11 +90,12 @@ export default function MobileCatalogoTecnico() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
+      if (!catalogFamilyMatches(r, family)) return false;
       if (tipo !== "todos" && r.tipo !== tipo) return false;
       if (!q) return true;
       return r.nome.toLowerCase().includes(q) || (r.subtitulo ?? "").toLowerCase().includes(q) || (r.funcao ?? "").toLowerCase().includes(q);
     });
-  }, [rows, search, tipo]);
+  }, [rows, search, tipo, family]);
 
   const copyResumo = async (r: Row) => {
     const txt = `${r.nome}${r.subtitulo ? ` (${r.subtitulo})` : ""}\n${r.resumo ?? "Sem resumo cadastrado"}\n\nCultivo Farm · Recomendação técnica exige prescrição agronômica.`;
@@ -107,6 +111,7 @@ export default function MobileCatalogoTecnico() {
   return (
     <div className="p-3 space-y-3">
       <h1 className="text-lg font-bold">Catálogo técnico</h1>
+      <CatalogFamilyFilter value={family} onChange={setFamily} />
 
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -138,6 +143,7 @@ export default function MobileCatalogoTecnico() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <Badge variant="outline" className="text-[9px] uppercase">{r.tipo}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{catalogFamilyLabel(r)}</Badge>
                       <TechnicalProfileStatusBadge status={r.ficha_status} />
                     </div>
                     <div className="font-semibold text-sm mt-1 truncate">{r.nome}</div>

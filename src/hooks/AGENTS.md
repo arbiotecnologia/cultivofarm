@@ -8,3 +8,4 @@
 
 - Fiscal XML downloads use the canonical binary Edge loader and authenticated attachment opener with abort/scope fences; legacy JSON URL responses fail closed and the generation certification gate stays independent — prevents bearer-link fallback during rollout.
 - Recommendation queue entries carry origin actor/tenant, explicit parent and observed expected version; replay reuses live workspace/RPC authority and session fences. Only confirmed RPC plus successful CAS cleanup invalidates the matching scoped workspace, recommendation flag and rows; reads never adopt receipts — prevents cross-actor caches, lost drafts and fabricated mappings.
+- Catalog family presentation uses explicit canonical product metadata over existing tenant-scoped reads; B2B family rollout stays separate until canonical RPC visibility is proven — prevents legacy inference and parallel authorization.
