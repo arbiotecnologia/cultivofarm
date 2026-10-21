@@ -9,6 +9,7 @@
  * Ciclo de vida (pontos canônicos no AuthProvider):
  * - rememberResume: consumidor autorizado com cliente aberto na aba Documentos.
  * - armResumeOnTimeout: onExpire("timeout") do monitor; TTL conta daqui.
+ * - armResumeOnRenewal: TOKEN_REFRESHED do mesmo usuário; TTL conta daqui.
  * - clearResume: qualquer outro expire (ineligible/error/offline), nova época,
  *   latch, logout, troca de identidade/empresa/papéis, fechamento/navegação.
  * - takeResume: consumo único, exige pausa armada, mesmo principal e TTL.
@@ -41,9 +42,23 @@ export function armResumeOnTimeout(principal: string | null, now: number = Date.
   if (slot.pausedAt === null) slot = { ...slot, pausedAt: now };
 }
 
-/** Principal diferente/ausente descarta. */
-export function observeResumePrincipal(principal: string | null): void {
-  if (slot && slot.principal !== principal) slot = null;
+/**
+ * Chamado SOMENTE em TOKEN_REFRESHED do MESMO usuário (renovação natural).
+ * Não confia no principal anterior: takeResume exige o principal relido
+ * idêntico (usuário/empresa/papéis); TTL conta daqui.
+ */
+export function armResumeOnRenewal(now: number = Date.now()): void {
+  if (slot && slot.pausedAt === null) slot = { ...slot, pausedAt: now };
+}
+
+/**
+ * Principal diferente descarta. Principal ausente descarta, exceto enquanto
+ * a identidade está sendo relida (`resolving`) com pausa já armada.
+ */
+export function observeResumePrincipal(principal: string | null, resolving = false): void {
+  if (!slot || slot.principal === principal) return;
+  if (principal === null && resolving && slot.pausedAt !== null) return;
+  slot = null;
 }
 
 /** Consome uma vez; exige pausa armada por timeout dentro do TTL. */

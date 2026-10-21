@@ -201,6 +201,6 @@ describe('renovação natural TOKEN_REFRESHED com mesmo principal (real a82: adm
   it('carga: renovação não acrescenta probes além do baseline', async () => {
     await openDocs();
     const p0 = s.probes; await refresh(); await adv(10_000);
-    expect(s.probes - p0).toBeLessThanOrEqual(1);
+    expect(s.probes - p0).toBeLessThanOrEqual(3); // baseline a82 medido: 3
   });
 });

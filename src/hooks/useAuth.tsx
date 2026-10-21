@@ -1,4 +1,4 @@
-import { armResumeOnTimeout, clearResume, observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
+import { armResumeOnRenewal, armResumeOnTimeout, clearResume, observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -419,6 +419,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
         }
         if (identityChanged || !nextUserId) monitoredLatchRef.current = null;
+        // Retomada de navegação: renovação natural do MESMO usuário arma; troca/saída descarta.
+        if (identityChanged || !nextUserId) clearResume();
+        else if (event === "TOKEN_REFRESHED") armResumeOnRenewal(Date.now());
         if (identityChanged || authorizationChanged || !nextUserId) {
           clearActivePortalContext();
           queryClient.clear();
@@ -796,7 +799,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // unmonitored/empty/unknown re-resolution is held.
   const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id && !isExternalUser;
   const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles);
-  useEffect(() => { observeResumePrincipal(resumePrincipal); }, [resumePrincipal]);
+  useEffect(() => { observeResumePrincipal(resumePrincipal, loading); }, [resumePrincipal, loading]);
   useEffect(() => { if (latchBlocked) clearResume(); }, [latchBlocked]);
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
