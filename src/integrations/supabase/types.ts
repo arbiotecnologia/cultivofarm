@@ -25842,6 +25842,10 @@ export type Database = {
       }
       storage1_path_strict: { Args: { p_name: string }; Returns: boolean }
       technical_actor_ready: { Args: { p_user: string }; Returns: boolean }
+      technical_attachment_download_snapshot: {
+        Args: { _name: string }
+        Returns: Json
+      }
       technical_child_read_scope: {
         Args: { p_registro_id: string }
         Returns: boolean
