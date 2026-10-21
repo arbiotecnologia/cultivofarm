@@ -63,6 +63,13 @@ O consumidor antigo `FichaProdutorDrawer` fazia leituras paralelas de views/perf
 
 Nesta rodada migration não aplicada pelo agente e entradas de sessões REST A/B ausentes. Portanto REST LIVE **não executado/não validado**, promoção runtime **não feita** conforme o gate expresso. Candidata testável está entregue, não fingimos contrato validado. Build runtime C1 não certifica bundle C1B. Nenhuma sessão foi criada/trocada e nenhuma aba foi recarregada.
 
+### Atualização 21/10 22:06 UTC (SHA4bf75596) — evidências produzidas pelo auditor independente
+
+- Auditor repetiu **21/21 testes candidatos e tsc PASS**.
+- Migration `catalog_c1b_scoped_families_20261021` **APLICADA em produção pelo auditor**, sem DML. Não reaplicar.
+- REST com sessão real: consultor A — overload técnico antigo e v2 retornam **403 forbidden_role**; administrador B — ambos **200 []** (sem fichas aprovadas). **Não há homologação positiva não vazia**; aguarda login real test4 B2B.
+- Promoção de runtime C1B e publicação seguem **bloqueadas** até essa homologação. Pendências antigas adiadas permanecem abertas.
+
 ## Pendências preservadas e próxima fase
 
 - Homologar contratos REST PostgREST e visibilidade A/B após aplicação independente, antes de promover; regra conservadora já aceita, não pedir nova autorização da semântica.
