@@ -63,6 +63,13 @@ export function useAuthenticatedAttachmentOpener(resource: string, bucket: strin
     link.href = item.url; link.download = fileName.split(/[\\/]/).pop() || "anexo";
     document.body.appendChild(link); link.click(); link.remove();
   };
+  /** Revokes prepared bytes that the server no longer confirms as current. */
+  const discard = (path: string) => {
+    controllers.current.get(path)?.abort(); controllers.current.delete(path);
+    const item = urls.current.get(path);
+    if (item) { URL.revokeObjectURL(item.url); urls.current.delete(path); }
+    if (access.capture()()) publish();
+  };
   const visible = access.ready && result.scope === access.scope;
-  return { open, download, urls: visible ? result.urls : {}, loadingPaths: visible ? result.loading : [], ready: access.ready };
+  return { open, download, discard, urls: visible ? result.urls : {}, loadingPaths: visible ? result.loading : [], ready: access.ready };
 }

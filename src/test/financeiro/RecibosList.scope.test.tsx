@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAuthzEpochMonitor } from "@/lib/authz/authzEpochMonitor";
 
 const fake = vi.hoisted(() => ({ uid: "actor", tenant: "007bb519-cba0-4704-be2c-cb93ad010048", roles: ["financeiro"], epoch: 0,
-  ready: true, check: (): boolean => true, list: vi.fn(), rpc: vi.fn(), edge: vi.fn(), download: vi.fn(), success: vi.fn(), error: vi.fn(), queries: [] as any[] }));
+  ready: true, check: (): boolean => true, list: vi.fn(), rpc: vi.fn(), edge: vi.fn(), download: vi.fn(), success: vi.fn(), error: vi.fn(), queries: [] as any[], last: null as any }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: fake.uid },
   profile: { user_id: fake.uid, organization_id: fake.tenant, ativo: true, senha_provisoria: false }, roles: fake.roles,
   loading: false, authzReady: fake.ready, authzEpoch: fake.epoch, checkAuthzAccess: () => fake.check() }) }));
@@ -12,7 +12,10 @@ vi.mock("sonner", () => ({ toast: { success: fake.success, error: fake.error } }
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   from: () => { const q: any = { filters: [] };
     for (const method of ["select", "eq", "order", "limit", "gte", "lte", "ilike"]) q[method] = (...args: any[]) => { q.filters.push([method, ...args]); return q; };
-    q.abortSignal = (signal: AbortSignal) => { q.signal = signal; fake.queries.push(q); return fake.list(q); }; return q; },
+    q.abortSignal = (signal: AbortSignal) => { q.signal = signal;
+      // Fresh per-receipt status re-read (limit 2) mirrors the last list snapshot unless scripted.
+      if (q.filters.some((f: any[]) => f[0] === "limit" && f[1] === 2)) return Promise.resolve(fake.last ?? fake.list(q));
+      fake.queries.push(q); return Promise.resolve(fake.list(q)).then((r: any) => { fake.last = r; return r; }); }; return q; },
   rpc: (...args: any[]) => ({ abortSignal: (signal: AbortSignal) => fake.rpc(...args, signal) }),
   functions: { invoke: (...args: any[]) => fake.edge(...args) },
 } }));
@@ -36,10 +39,10 @@ async function submit(ui: ReturnType<typeof setup>) {
   fireEvent.click(ui.getByRole("button", { name: "Confirmar cancelamento" }));
 }
 beforeEach(() => {
-  Object.assign(fake, { uid: "actor", tenant: TENANT, roles: ["financeiro"], epoch: 0, ready: true, check: () => true, queries: [] });
+  Object.assign(fake, { uid: "actor", tenant: TENANT, roles: ["financeiro"], epoch: 0, ready: true, check: () => true, queries: [], last: null });
   for (const mock of [fake.list, fake.rpc, fake.edge, fake.download, fake.success, fake.error]) mock.mockReset();
   fake.list.mockResolvedValue(response()); fake.rpc.mockResolvedValue({ error: null }); fake.download.mockResolvedValue(new Blob(["pdf"]));
-  fake.edge.mockResolvedValue({ data: { path: receipt().storage_path, receipt_number: receipt().receipt_number, url: "https://evil.invalid" }, error: null });
+  fake.edge.mockResolvedValue({ data: { path: receipt().storage_path, receipt_number: receipt().receipt_number, status: "ISSUED", url: "https://evil.invalid" }, error: null });
   vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:receipt"), revokeObjectURL: vi.fn() }));
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {}); vi.spyOn(window, "open").mockImplementation(() => null);
 });
@@ -140,7 +143,7 @@ describe("receipt PDFs use real authenticated opener, never remote URL", () => {
     await ui.findByRole("button", { name: "Baixar PDF" }); expect(fake.download).toHaveBeenCalledTimes(1);
     expect(fake.download.mock.calls[0].slice(0, 2)).toEqual(["financial-receipts", receipt().storage_path]);
     expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
-    fireEvent.click(ui.getByRole("button", { name: "Baixar PDF" })); expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
+    fireEvent.click(ui.getByRole("button", { name: "Baixar PDF" })); await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1));
     expect(window.open).not.toHaveBeenCalled(); expect(fake.edge).toHaveBeenCalledTimes(generated ? 1 : 0);
     ui.unmount(); expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:receipt");
   });
@@ -158,6 +161,8 @@ describe("receipt PDFs use real authenticated opener, never remote URL", () => {
   it("timeout aborts Edge and ignores its late locator", async () => {
     const late = deferred(); fake.list.mockResolvedValue(response({ storage_path: null })); fake.edge.mockReturnValue(late.promise);
     const ui = setup(); const button = await ui.findByRole("button", { name: "Preparar PDF" }); vi.useFakeTimers(); fireEvent.click(button);
+    // Let the fresh status read (microtasks) reach the Edge call before the deadline.
+    await act(async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); });
     await act(async () => vi.advanceTimersByTime(15_000)); expect(fake.edge.mock.calls[0][1].signal.aborted).toBe(true);
     await settle(late, { data: { path: receipt().storage_path, receipt_number: receipt().receipt_number }, error: null });
     expect(fake.download).not.toHaveBeenCalled(); expect(window.open).not.toHaveBeenCalled();

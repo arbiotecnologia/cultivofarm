@@ -16,7 +16,7 @@ import { brl as fmt } from "@/lib/financial/format";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
-import { financialReceiptLocator } from "@/lib/financeiro/receiptStorageLocator";
+import { financialReceiptCurrentLocator, readReceiptCurrentState } from "@/lib/financeiro/receiptCurrentState";
 
 interface Receipt {
   id: string;
@@ -44,17 +44,17 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
   const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
   const request = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState(false);
-  let path = "";
-  try { path = financialReceiptLocator(receipt, tenant); } catch { /* fail closed */ }
+  const [prepared, setPrepared] = useState({ scope: "", path: "", status: "", number: "" });
+  let listed = "";
+  try { listed = financialReceiptCurrentLocator(receipt, tenant).path; } catch { /* fail closed */ }
   useLayoutEffect(() => {
-    setBusy(false);
+    setBusy(false); setPrepared({ scope: "", path: "", status: "", number: "" });
     return () => { request.current?.abort(); request.current = null; };
   }, [access.scope]);
+  const isPrepared = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
   const download = async () => {
     const current = access.capture();
-    if (!current() || !path || request.current) return;
-    // Prepared bytes are downloaded only on a new, synchronous user click.
-    if (opener.urls[path]) { if (current()) opener.download(path, `${receipt.receipt_number}.pdf`); return; }
+    if (!current() || !listed || request.current) return;
     const controller = new AbortController();
     request.current = controller;
     const valid = () => current() && !controller.signal.aborted && request.current === controller;
@@ -66,20 +66,39 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
     setBusy(true);
     try {
-      if (!receipt.storage_path) {
+      if (isPrepared) {
+        // Prepared bytes (possibly from before a cancel elsewhere) are re-confirmed against server state.
+        const fresh = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
         if (!valid()) return;
+        if (fresh.status !== prepared.status || fresh.path !== prepared.path) {
+          opener.discard(prepared.path); setPrepared({ scope: "", path: "", status: "", number: "" });
+          toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
+        }
+        opener.download(prepared.path, `${prepared.number}${prepared.status === "CANCELED" ? "-CANCELADO" : ""}.pdf`);
+        return;
+      }
+      const before = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
+      if (!valid()) return;
+      // CANCELED always renders its own object; ISSUED renders only when never generated.
+      if (before.status === "CANCELED" || !before.generated) {
         const { data, error } = await supabase.functions.invoke("generate-financial-receipt", {
           body: { receipt_id: receipt.id }, signal: controller.signal,
         });
         if (!valid()) return;
-        // Edge currently returns {url, path, receipt_number}; never consume url.
-        if (error || data?.path !== path || data?.receipt_number !== receipt.receipt_number) throw new Error("Recibo indisponível");
+        // Status-bound contract: path/status must match the fresh server state; never consume url.
+        if (error || data?.path !== before.path || data?.receipt_number !== before.receipt_number || data?.status !== before.status) throw new Error("Recibo indisponível");
       }
       if (!valid()) return;
-      // The canonical opener owns download timeout/abort; this timer covers Edge only.
       clearTimeout(timeout);
-      await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
+      await opener.open(before.path, () => { if (valid()) toast.error("Recibo indisponível"); });
       if (!valid()) return;
+      // A cancel concurrent with preparation invalidates the bytes just fetched.
+      const after = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
+      if (!valid()) return;
+      if (after.status !== before.status || after.path !== before.path) {
+        opener.discard(before.path); toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
+      }
+      setPrepared({ scope: access.scope, path: before.path, status: before.status, number: before.receipt_number });
     } catch {
       if (valid()) toast.error("Recibo indisponível");
     } finally {
@@ -90,9 +109,8 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
       }
     }
   };
-  const prepared = !!path && !!opener.urls[path];
-  return <Button size="sm" variant="outline" onClick={download} disabled={!access.ready || !path || busy || opener.loadingPaths.includes(path)}
-    title={prepared ? "Baixar PDF" : "Preparar PDF"} aria-label={prepared ? "Baixar PDF" : "Preparar PDF"}>
+  return <Button size="sm" variant="outline" onClick={download} disabled={!access.ready || !listed || busy || opener.loadingPaths.length > 0}
+    title={isPrepared ? "Baixar PDF" : "Preparar PDF"} aria-label={isPrepared ? "Baixar PDF" : "Preparar PDF"}>
     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
   </Button>;
 }

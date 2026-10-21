@@ -7,6 +7,7 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 import { financialReceiptLocator } from "@/lib/financeiro/receiptStorageLocator";
+import { readReceiptCurrentState } from "@/lib/financeiro/receiptCurrentState";
 
 interface Props {
   paymentId: string;
@@ -29,9 +30,9 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
   const access = useStorageAccessScope(resource);
   const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
   const request = useRef<AbortController | null>(null);
-  const [prepared, setPrepared] = useState({ scope: "", path: "", number: "" });
+  const [prepared, setPrepared] = useState({ scope: "", path: "", number: "", id: "" });
   useLayoutEffect(() => {
-    setBusy(false); setPrepared({ scope: "", path: "", number: "" });
+    setBusy(false); setPrepared({ scope: "", path: "", number: "", id: "" });
     return () => { request.current?.abort(); request.current = null; };
   }, [access.scope]);
   const downloadable = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
@@ -39,7 +40,6 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
   const handle = async () => {
     const current = access.capture();
     if (!current() || request.current) return;
-    if (downloadable) { opener.download(prepared.path, `${prepared.number}.pdf`); return; }
     const controller = new AbortController();
     request.current = controller;
     const valid = () => current() && !controller.signal.aborted && request.current === controller;
@@ -51,6 +51,16 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
     setBusy(true);
     try {
+      if (downloadable) {
+        // Re-confirm server state on click: a cancel elsewhere revokes these prepared bytes.
+        const fresh = await readReceiptCurrentState(prepared.id, tenant, controller.signal);
+        if (!valid()) return;
+        if (fresh.status !== "ISSUED" || fresh.path !== prepared.path) {
+          opener.discard(prepared.path); setPrepared({ scope: "", path: "", number: "", id: "" });
+          toast.error("Recibo atualizado. Consulte a lista de recibos."); return;
+        }
+        opener.download(prepared.path, `${prepared.number}.pdf`); return;
+      }
       const { data, error } = await (supabase as any).rpc("issue_financial_receipt", {
         _payment_id: paymentId,
       }).abortSignal(controller.signal);
@@ -61,12 +71,12 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       // Actor-authenticated RLS read: never derive tenant/ownership from a URL.
       // Generated canonical types lag this table's tenant column; validate wire data below.
       const { data: receipt, error: readError } = await (supabase as any).from("financial_receipts")
-        .select("id,payment_id,organization_id,receipt_year,receipt_number,storage_bucket,storage_path")
+        .select("id,payment_id,organization_id,receipt_year,receipt_number,storage_bucket,storage_path,status")
         .eq("id", receiptId).eq("payment_id", paymentId).eq("organization_id", tenant)
         .abortSignal(controller.signal).maybeSingle();
       if (!valid()) return;
       if (readError || !receipt || receipt.id !== receiptId || receipt.payment_id !== paymentId ||
-          typeof receipt.receipt_number !== "string" || receipt.receipt_number !== data.receipt_number ||
+          typeof receipt.receipt_number !== "string" || receipt.status !== "ISSUED" || receipt.receipt_number !== data.receipt_number ||
           typeof receipt.organization_id !== "string" || typeof receipt.receipt_year !== "number" ||
           (receipt.storage_path !== null && typeof receipt.storage_path !== "string") ||
           (receipt.storage_bucket !== null && typeof receipt.storage_bucket !== "string")) throw new Error("Recibo indisponível");
@@ -75,11 +85,15 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
         body: { receipt_id: receiptId }, signal: controller.signal,
       });
       if (!valid()) return;
-      if (pdfErr || pdfRes?.path !== path || pdfRes?.receipt_number !== receipt.receipt_number) throw new Error("Recibo indisponível");
+      if (pdfErr || pdfRes?.path !== path || pdfRes?.receipt_number !== receipt.receipt_number || pdfRes?.status !== "ISSUED") throw new Error("Recibo indisponível");
       // Edge/RPC watchdog ends here; authenticated opener owns byte timeout/limits.
       clearTimeout(timeout);
       await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
-      if (valid()) setPrepared({ scope: access.scope, path, number: receipt.receipt_number });
+      if (!valid()) return;
+      const after = await readReceiptCurrentState(receiptId, tenant, controller.signal);
+      if (!valid()) return;
+      if (after.status !== "ISSUED" || after.path !== path) { opener.discard(path); throw new Error("Recibo indisponível"); }
+      setPrepared({ scope: access.scope, path, number: receipt.receipt_number, id: receiptId });
     } catch {
       if (valid()) toast.error("Recibo indisponível");
     } finally {
