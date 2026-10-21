@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.app.json",
+  "include": ["frontend/src", "frontend/catalog.test.tsx"],
+  "compilerOptions": {
+    "paths": { "@/*": ["../../src/*"] }
+  }
+}

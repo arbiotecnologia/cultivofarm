@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "synthetic": true,
+  "total": 23,
+  "checks": [
+    "exact baseline get_partner_catalog_secure(uuid)",
+    "exact baseline get_partner_catalog_tecnico_secure()",
+    "A owner hides chemical; inactive omitted; legacy preserved",
+    "legacy has NULL family",
+    "canonical price unchanged",
+    "legacy signature also hides owner item",
+    "cross-partner denied",
+    "B hides fertilizer by actor; A hidden not applied",
+    "technical finance NULL",
+    "technical excludes unapproved profile",
+    "cumulative technical role still suppresses finance",
+    "inactive actor denied",
+    "technical financial denial preserved",
+    "wrong contract denied",
+    "missing owner denied",
+    "revoked link denied",
+    "anon overload ACL",
+    "private helper ACL",
+    "actual local anon invocation denied",
+    "actual authenticated invocation through DEFINER",
+    "rollback refuses changed deployed body atomically",
+    "rollback exact get_partner_catalog_secure(uuid)",
+    "rollback exact get_partner_catalog_tecnico_secure()"
+  ]
+}
