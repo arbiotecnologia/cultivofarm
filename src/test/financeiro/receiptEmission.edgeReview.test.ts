@@ -25,7 +25,7 @@ function harness(failure = "", source = runtime) {
     rpc: async () => { effects.push("tenant"); return { data: failure === "tenant" ? null : org, error: null }; }, storage: { from: () => ({ upload, createSignedUrl: sign }) } };
   const createClient = vi.fn(() => client);
   let handler: ((req: Request) => Promise<Response>) | undefined;
-  const pdf = { create: async () => ({ embedFont: async () => ({}), addPage: () => ({ drawText() {}, drawLine() {}, drawRectangle() {} }), save: async () => new Uint8Array([1, 2, 3]) }) };
+  const pdf = { create: async () => ({ embedFont: async () => ({ widthOfTextAtSize: (t: string, s: number) => t.length * s * 0.5, heightAtSize: (s: number) => s }), addPage: () => ({ getSize: () => ({ width: 595.28, height: 841.89 }), getWidth: () => 595.28, getHeight: () => 841.89, drawText() {}, drawLine() {}, drawRectangle() {} }), save: async () => new Uint8Array([1, 2, 3]) }) };
   const javascript = ts.transpileModule(source.replace(/^import .*;\s*/gm, ""), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
   new Function("Deno", "createClient", "PDFDocument", "StandardFonts", "rgb", "corsHeadersFor", "handlePreflight", "isTrustedOrigin", javascript)(
     { env: { get: (key: string) => key === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "mock-anon" }, serve: (fn: typeof handler) => { handler = fn; } },
