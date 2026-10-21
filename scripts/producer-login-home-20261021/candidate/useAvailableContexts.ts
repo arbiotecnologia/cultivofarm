@@ -1,0 +1,151 @@
+import { useContext, useEffect, useRef } from "react";
+import { PortalContextFreshness } from "@/lib/portalContextFreshness";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { clearActivePortalContext } from "@/lib/activePortalContext";
+import { useAuth } from "@/hooks/useAuth";
+import { PRODUCER_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+
+import { internalContextProbe } from "@/lib/authz/internalContextProbe";
+import { getHomeForRole } from "@/lib/permissions";
+import { PRODUTOR_HOME_PATH } from "@/lib/navigation/safeHome";
+
+export type PortalContext = "b2b" | "technical" | "admin";
+
+// Technical guards own freshness. Descendant readers (including switch/menu
+// hooks) inherit their policy without changing default readers in other portals.
+
+export interface AvailableContexts {
+  available_contexts: PortalContext[];
+  default_context: PortalContext | null;
+  must_select_context: boolean;
+  has_b2b_access: boolean;
+  has_technical_access: boolean;
+  is_admin: boolean;
+  preferred_context?: PortalContext | null;
+  skip_context_selector?: boolean;
+}
+
+/**
+ * Resolve os contextos de portal reais do usuário via RPC segura.
+ * A decisão de portal nunca depende de localStorage nem do frontend —
+ * quem determina é `public.get_my_available_portal_contexts()`.
+ */
+export function useAvailableContexts({ requireFresh = false }: { requireFresh?: boolean } = {}) {
+  const inheritedFreshness = useContext(PortalContextFreshness);
+  requireFresh = requireFresh || inheritedFreshness;
+  const { user, profile, roles, loading, authzReady = true, authzEpoch = 0, checkAuthzAccess } = useAuth();
+  const queryClient = useQueryClient();
+  const ready = !loading && !!user?.id && profile?.user_id === user.id &&
+    profile.ativo === true && profile.senha_provisoria === false &&
+    !!profile.organization_id && roles.length > 0 && authzReady && (checkAuthzAccess?.() ?? true);
+  const scope = JSON.stringify([ready, user?.id, profile?.user_id, profile?.organization_id, [...roles].sort(), authzEpoch]);
+  const current = useRef({ scope, mounted: true, epoch: 0 });
+  if (current.current.scope !== scope) {
+    current.current.scope = scope;
+    current.current.epoch += 1;
+    clearActivePortalContext({ preserveClientPreference: PRODUCER_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "cliente_produtor" });
+  }
+  useEffect(() => {
+    const state = current.current;
+    state.mounted = true;
+    return () => { state.mounted = false; state.epoch += 1; };
+  }, []);
+  useEffect(() => {
+    // Previous identities/tenants/roles must not retain selectable context data.
+    const predicate = (q: { queryKey: readonly unknown[] }) =>
+      (q.queryKey[0] === "available-portal-contexts" || q.queryKey[0] === "operator-login-home") && q.queryKey[1] !== scope;
+    void queryClient.cancelQueries({ predicate });
+    queryClient.removeQueries({ predicate });
+  }, [scope, queryClient]);
+  const result = useQuery({
+    queryKey: ["available-portal-contexts", scope],
+    enabled: ready,
+    staleTime: 0,
+    gcTime: 2 * 60_000,
+    retry: 1,
+    // Parent guard owns the query; mounting its child must not start another
+    // stale refetch/unmount cycle. Focus/invalidation still refresh normally.
+    refetchOnMount: requireFresh ? false : true,
+    refetchOnWindowFocus: true,
+    queryFn: async ({ signal }): Promise<AvailableContexts> => {
+      if (!ready) throw new Error("portal_context_not_ready");
+      const epoch = current.current.epoch;
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      signal.addEventListener("abort", abort, { once: true });
+      let deadline: ReturnType<typeof setTimeout> | undefined;
+      let response;
+      try {
+        response = await Promise.race([
+          supabase.rpc("get_my_available_portal_contexts").abortSignal(controller.signal),
+          new Promise<never>((_, reject) => {
+            deadline = setTimeout(() => { controller.abort(); reject(new Error("portal_context_timeout")); }, 15_000);
+          }),
+        ]);
+      } finally {
+        clearTimeout(deadline);
+        signal.removeEventListener("abort", abort);
+      }
+      const { data, error } = response;
+      if (signal.aborted || controller.signal.aborted || !current.current.mounted || current.current.scope !== scope || current.current.epoch !== epoch || !(checkAuthzAccess?.() ?? true)) throw new Error("portal_context_changed");
+      if (error) throw new Error("portal_context_unavailable");
+      // Absent/malformed payload is unavailable, never an explicit denial.
+      if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("portal_context_unavailable");
+      const raw = (data ?? {}) as unknown as Partial<AvailableContexts>;
+      if (!Array.isArray(raw.available_contexts) || typeof raw.has_technical_access !== "boolean") throw new Error("portal_context_unavailable");
+      const valid = (value: unknown): value is PortalContext => value === "admin" || value === "b2b" || value === "technical";
+      const contexts = Array.isArray(raw.available_contexts) ? raw.available_contexts.filter(valid) : [];
+      return {
+        available_contexts: contexts,
+        default_context: valid(raw.default_context) && contexts.includes(raw.default_context) ? raw.default_context : null,
+        must_select_context: raw.must_select_context === true,
+        has_b2b_access: raw.has_b2b_access === true,
+        has_technical_access: raw.has_technical_access === true,
+        is_admin: raw.is_admin === true,
+        preferred_context: valid(raw.preferred_context) && contexts.includes(raw.preferred_context) ? raw.preferred_context : null,
+        skip_context_selector: raw.skip_context_selector === true,
+      };
+    },
+  });
+  // Canonical internal home, never a fabricated technical portal context.
+  const exclusiveOperator = roles.length === 1 && roles[0] === "operador_onfarm";
+  const operatorHomeQuery = useQuery({
+    queryKey: ["operator-login-home", scope], enabled: ready && exclusiveOperator,
+    staleTime: 0, gcTime: 0, retry: false,
+    queryFn: async ({ signal }) => {
+      const epoch = current.current.epoch;
+      const observation = await internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", "operador_onfarm");
+      if (signal.aborted || !current.current.mounted || current.current.scope !== scope || current.current.epoch !== epoch || !checkAuthzAccess()) throw new Error("operator_home_context_changed");
+      if (observation.eligible !== true) throw new Error("operator_home_denied");
+      return getHomeForRole("operador_onfarm");
+    },
+  });
+  // Producer home is the canonical /app (MobileLayout + producer monitor/RLS).
+  // Only after a settled, successful context read with no portal contexts, and
+  // never invented: requires the loaded cliente_produtor role and ready (which
+  // already includes the producer monitor's authzReady/checkAuthzAccess).
+  const producerHome = ready && roles.includes("cliente_produtor") && !result.isFetching && !result.isError &&
+    result.data !== undefined && result.data.available_contexts.length === 0 ? PRODUTOR_HOME_PATH : undefined;
+  return { ...result, exclusiveOperator, producerHome,
+    operatorHome: ready && exclusiveOperator && !operatorHomeQuery.isFetching && !operatorHomeQuery.isError ? operatorHomeQuery.data : undefined,
+    isError: result.isError || (exclusiveOperator && operatorHomeQuery.isError),
+    isFetching: result.isFetching || (exclusiveOperator && operatorHomeQuery.isFetching),
+    refetch: exclusiveOperator ? () => Promise.all([result.refetch(), operatorHomeQuery.refetch()]) : result.refetch,
+    // Do not expose a previous successful grant during a refetch or after error.
+    data: ready && (!requireFresh || (!result.isFetching && !result.isError)) ? result.data : undefined, ready, scope,
+    isLoading: loading || (ready && (result.isLoading || (exclusiveOperator && operatorHomeQuery.isLoading))) };
+
+}
+
+/** Registra `login_redirect` via RPC segura (metadata fixa no servidor). */
+export async function registerLoginRedirect(context: PortalContext) {
+  const { data, error } = await supabase.rpc("register_my_login_redirect_secure", {
+    p_context: context,
+  });
+  if (error) {
+    // Logamos apenas — falha no log de auditoria não deve bloquear o acesso já autorizado
+    console.warn("[multiportal] redirect_audit_unavailable");
+  }
+  return data;
+}

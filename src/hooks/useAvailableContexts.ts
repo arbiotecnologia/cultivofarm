@@ -8,6 +8,7 @@ import { PRODUCER_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 
 import { internalContextProbe } from "@/lib/authz/internalContextProbe";
 import { getHomeForRole } from "@/lib/permissions";
+import { PRODUTOR_HOME_PATH } from "@/lib/navigation/safeHome";
 
 export type PortalContext = "b2b" | "technical" | "admin";
 
@@ -120,7 +121,13 @@ export function useAvailableContexts({ requireFresh = false }: { requireFresh?: 
       return getHomeForRole("operador_onfarm");
     },
   });
-  return { ...result, exclusiveOperator,
+  // Producer home is the canonical /app (MobileLayout + producer monitor/RLS).
+  // Only after a settled, successful context read with no portal contexts, and
+  // never invented: requires the loaded cliente_produtor role and ready (which
+  // already includes the producer monitor's authzReady/checkAuthzAccess).
+  const producerHome = ready && roles.includes("cliente_produtor") && !result.isFetching && !result.isError &&
+    result.data !== undefined && result.data.available_contexts.length === 0 ? PRODUTOR_HOME_PATH : undefined;
+  return { ...result, exclusiveOperator, producerHome,
     operatorHome: ready && exclusiveOperator && !operatorHomeQuery.isFetching && !operatorHomeQuery.isError ? operatorHomeQuery.data : undefined,
     isError: result.isError || (exclusiveOperator && operatorHomeQuery.isError),
     isFetching: result.isFetching || (exclusiveOperator && operatorHomeQuery.isFetching),

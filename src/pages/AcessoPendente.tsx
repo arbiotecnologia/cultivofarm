@@ -14,7 +14,7 @@ import { getHomeForRole } from "@/lib/permissions";
 export default function AcessoPendente() {
   const navigate = useNavigate();
   const { signOut, profile, roles } = useAuth();
-  const { data, refetch, isFetching, isError, ready, exclusiveOperator, operatorHome } = useAvailableContexts();
+  const { data, refetch, isFetching, isError, ready, exclusiveOperator, operatorHome, producerHome } = useAvailableContexts();
 
   const isAdmin = roles.includes("administrador");
 
@@ -33,14 +33,16 @@ export default function AcessoPendente() {
       return;
     }
     const ctxs = data.available_contexts;
-    if (ctxs.length === 1) {
+    if (ctxs.length === 0 && producerHome) {
+      navigate(producerHome, { replace: true });
+    } else if (ctxs.length === 1) {
       const only = ctxs[0];
       registerLoginRedirect(only);
       navigate(PORTAL_CONTEXT_HOME[only], { replace: true });
     } else if (ctxs.length >= 2) {
       navigate("/selecionar-portal", { replace: true });
     }
-  }, [data, navigate, isAdmin, ready, isFetching, isError, exclusiveOperator, operatorHome]);
+  }, [data, navigate, isAdmin, ready, isFetching, isError, exclusiveOperator, operatorHome, producerHome]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

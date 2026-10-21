@@ -1,0 +1,6 @@
+   × login produtor: /app/login -> seletor -> home canônica /app > produtor com vínculo/tenant/RLS válidos chega a /app, sem contexto técnico fabricado 107ms
+   × login produtor: /app/login -> seletor -> home canônica /app > carga: uma leitura de contextos; probe produtor só pelo monitor existente 35ms
+   × login produtor: /app/login -> seletor -> home canônica /app > "Atualizar acesso" em /acesso-pendente leva o produtor válido a /app 14ms
+   × login produtor: /app/login -> seletor -> home canônica /app > indisponibilidade da leitura de contextos: erro com nova tentativa, sem acesso-pendente nem /app 86ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  4 failed | 7 passed (11)
