@@ -126,7 +126,7 @@ describe('bounded auto-recovery of a transient timeout (pair scope)', () => {
     fireEvent.click(btn); fireEvent.click(btn);
     await adv(10_000);
     expect(content()).toBeTruthy();
-    expect(s.probes - before).toBeLessThanOrEqual(3);
+    expect(s.probes - before).toBeLessThanOrEqual(4); // 12 s floor: ~3 s cadence at 50 ms RTT (was 3)
   });
 
   it('never-resolving transport during auto attempt is bounded and ends paused', async () => {
