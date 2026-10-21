@@ -20,7 +20,7 @@ function encodable(text: string, font: Font): string {
   }
   return out;
 }
-export function wrapText(text: string, font: Font, size: number, maxWidth = TEXT_W): string[] {
+function wrapText(text: string, font: Font, size: number, maxWidth = TEXT_W): string[] {
   const lines: string[] = [];
   for (const paragraph of encodable(text, font).split("\n")) {
     let line = "";
