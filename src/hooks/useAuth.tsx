@@ -1,3 +1,4 @@
+import { armResumeOnTimeout, clearResume, observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -676,6 +677,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       onEpochChange: () => {
         renewalRef.current = null;
+        clearResume(); // nova época nunca retoma navegação anterior
         // Nova época (fingerprint mudou): geração++, cancela/limpa consultas,
         // limpa seleção de portal e preferências compartilhadas, incrementa a
         // época reativa (consumidores remontam conteúdo sensível e descartam
@@ -693,6 +695,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       onExpire: (reason) => {
         renewalRef.current = null;
+        // Retomada de navegação: SOMENTE timeout confirmado; demais motivos descartam.
+        if (reason === "timeout") armResumeOnTimeout(resumePrincipalKey(user?.id, profile?.organization_id, roles), Date.now());
+        else clearResume();
         // Erro/offline/timeout/ineligible: geração++ (respostas em voo não
         // reabrem), cancela consultas e limpa seleção. O ESTADO reativo
         // (authzState="expired" via onStateChange) é o que ESCONDE os dados —
@@ -790,6 +795,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Tenant changes are re-proven by the new scope's own probe (h15); only an
   // unmonitored/empty/unknown re-resolution is held.
   const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id && !isExternalUser;
+  const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles);
+  useEffect(() => { observeResumePrincipal(resumePrincipal); }, [resumePrincipal]);
+  useEffect(() => { if (latchBlocked) clearResume(); }, [latchBlocked]);
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     (!!user && !loading && !latchBlocked && !retryPending && (!isExternalUser ||
@@ -893,6 +901,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   revalidateAuthzRef.current = revalidateAuthz;
 
   const signOut = async () => {
+    clearResume();
     cancelLoader();
     cancelAutoRecovery();
     autoRecoveryRef.current = { userId: null, s: initialAutoRecovery() };

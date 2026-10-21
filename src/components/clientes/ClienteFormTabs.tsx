@@ -80,10 +80,8 @@ export function ClienteFormTabs({ clienteId, initialTab, onTabChange }: ClienteF
   const canManageDocs = useCanManageClienteDocs();
   const { role } = useAuth();
   const scope = useCommercialRegistrationScope();
-  const canManagePortalTab = role === "administrador" || role === "gestor" || role === "administrativo";
-  const allowedInitial = initialTab && ["geral", "endereco", "financeiro"].includes(initialTab)
-    || (initialTab === "documentos" && canManageDocs) || (initialTab === "portal" && canManagePortalTab);
-  const [tab, setTabState] = useState(allowedInitial && initialTab ? initialTab : "geral");
+  // Retomada de navegação: somente a aba Documentos, e só se autorizada.
+  const [tab, setTabState] = useState(initialTab === "documentos" && canManageDocs ? "documentos" : "geral");
   const onTabChangeRef = useRef(onTabChange);
   onTabChangeRef.current = onTabChange;
   const setTab = useCallback((next: string) => { setTabState(next); onTabChangeRef.current?.(next); }, []);

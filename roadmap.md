@@ -433,4 +433,5 @@
 ## 21/10 15:45 — recuperação de pausa /clientes sem aumentar carga
 - [x] Floor 12 s (d5e0a318) rejeitado; monitor revertido byte-exato para 51048f (10 s).
 - [x] Retomada segura só de navegação (cliente + aba) após reautorização; 9 testes, 1103/1103 config+clientes, typecheck OK; pacote/rollback em scripts/monitor-pause-resume-20261021.
-- [ ] Revisão independente/publicação (proprietário). Gateway v2 (picos de 12–14,6 s) e homologação real dos demais perfis: externos.
+- [x] v2 após da691664: retomada só em timeout confirmado (useAuth), só aba Documentos, TTL desde a pausa; 7 integrados com AuthProvider real; 1106/1106; rollback de 4 arquivos verificado.
+- [ ] Revisão independente/publicação (proprietário). Cancelamento de transporte do probe expirado: pendente. Gateway v2 e homologação real dos demais perfis: externos.

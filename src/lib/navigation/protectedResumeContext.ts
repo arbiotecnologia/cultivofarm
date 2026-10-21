@@ -1,50 +1,59 @@
 /**
- * Retomada de contexto de NAVEGAÇÃO após pausa de autorização (monitor).
+ * Retomada de contexto de NAVEGAÇÃO somente após pausa por TIMEOUT confirmado
+ * do monitor de autorização.
  *
- * Guarda em memória do módulo (nunca storage persistente) apenas:
- * principal (usuário/empresa/papéis), rota, ID do registro e nome da aba de
- * uma allowlist. Nenhum dado de formulário, Blob, URL ou resposta do servidor.
+ * Memória do módulo (nunca storage persistente): principal (usuário/empresa/
+ * papéis), rota, ID do cliente e marca de pausa. Única aba retomável:
+ * "documentos". Nenhum dado de formulário, Blob, URL ou resposta.
  *
- * - Consumo único e TTL curto.
- * - Principal diferente (identidade/empresa/papéis, logout, A->B->A) limpa.
- * - Quem consome DEVE refazer a leitura autorizada canônica e só reabrir se
- *   o registro ainda vier nela; caso contrário descarta.
+ * Ciclo de vida (pontos canônicos no AuthProvider):
+ * - rememberResume: consumidor autorizado com cliente aberto na aba Documentos.
+ * - armResumeOnTimeout: onExpire("timeout") do monitor; TTL conta daqui.
+ * - clearResume: qualquer outro expire (ineligible/error/offline), nova época,
+ *   latch, logout, troca de identidade/empresa/papéis, fechamento/navegação.
+ * - takeResume: consumo único, exige pausa armada, mesmo principal e TTL.
+ * Quem consome DEVE refazer a leitura autorizada e só reabrir se o registro
+ * ainda vier nela.
  */
 export const RESUME_TTL_MS = 120_000;
-export const RESUMABLE_CLIENTE_TABS = ["geral", "endereco", "financeiro", "documentos", "portal"] as const;
-export type ResumableClienteTab = (typeof RESUMABLE_CLIENTE_TABS)[number];
+export const RESUMABLE_TAB = "documentos";
 
-type Slot = { principal: string; route: string; recordId: string; tab: ResumableClienteTab; at: number };
+type Slot = { principal: string; route: string; recordId: string; pausedAt: number | null };
 let slot: Slot | null = null;
 
-export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[]): string | null {
-  if (!userId || !organizationId || roles.length === 0) return null;
+export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[] | null | undefined): string | null {
+  if (!userId || !organizationId || !roles || roles.length === 0) return null;
   return JSON.stringify([userId, organizationId, [...roles].sort()]);
 }
 
-export function isResumableClienteTab(tab: unknown): tab is ResumableClienteTab {
-  return typeof tab === "string" && (RESUMABLE_CLIENTE_TABS as readonly string[]).includes(tab);
-}
-
-export function rememberResume(principal: string | null, route: string, recordId: string, tab: string, now: number = Date.now()): void {
-  if (!principal || !recordId || !isResumableClienteTab(tab)) { slot = null; return; }
-  slot = { principal, route, recordId, tab, at: now };
+/** Só registra a aba Documentos; qualquer outra aba descarta. Reinicia a pausa. */
+export function rememberResume(principal: string | null, route: string, recordId: string, tab: string): void {
+  if (!principal || !recordId || tab !== RESUMABLE_TAB) { slot = null; return; }
+  slot = { principal, route, recordId, pausedAt: null };
 }
 
 export function clearResume(): void { slot = null; }
 
-/** Qualquer mudança/ausência de principal descarta o contexto. */
+/** Chamado SOMENTE no expire por timeout do monitor. Principal divergente descarta. */
+export function armResumeOnTimeout(principal: string | null, now: number = Date.now()): void {
+  if (!slot) return;
+  if (!principal || slot.principal !== principal) { slot = null; return; }
+  if (slot.pausedAt === null) slot = { ...slot, pausedAt: now };
+}
+
+/** Principal diferente/ausente descarta. */
 export function observeResumePrincipal(principal: string | null): void {
   if (slot && slot.principal !== principal) slot = null;
 }
 
-/** Consome uma vez; mismatch/TTL vencido também descarta. */
-export function takeResume(principal: string | null, route: string, now: number = Date.now()): { recordId: string; tab: ResumableClienteTab } | null {
+/** Consome uma vez; exige pausa armada por timeout dentro do TTL. */
+export function takeResume(principal: string | null, route: string, now: number = Date.now()): { recordId: string; tab: typeof RESUMABLE_TAB } | null {
   const s = slot;
   slot = null;
-  if (!s || !principal || s.principal !== principal || s.route !== route) return null;
-  if (now - s.at < 0 || now - s.at > RESUME_TTL_MS) return null;
-  return { recordId: s.recordId, tab: s.tab };
+  if (!s || s.pausedAt === null || !principal || s.principal !== principal || s.route !== route) return null;
+  const elapsed = now - s.pausedAt;
+  if (elapsed < 0 || elapsed > RESUME_TTL_MS) return null;
+  return { recordId: s.recordId, tab: RESUMABLE_TAB };
 }
 
 /** Somente para testes. */

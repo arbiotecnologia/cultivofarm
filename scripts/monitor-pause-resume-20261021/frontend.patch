@@ -1,28 +1,5 @@
-diff --git a/src/components/authz/AuthzEpochBoundary.tsx b/src/components/authz/AuthzEpochBoundary.tsx
-index 5baa4927..c56315b4 100644
---- a/src/components/authz/AuthzEpochBoundary.tsx
-+++ b/src/components/authz/AuthzEpochBoundary.tsx
-@@ -1,4 +1,5 @@
--import { ReactNode } from "react";
-+import { ReactNode, useEffect } from "react";
-+import { observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
- import { useAuth } from "@/hooks/useAuth";
- import { AUTHZ_CACHE_FOUNDATION_ENABLED } from "@/lib/authz/authzEpochGate";
- import { Button } from "@/components/ui/button";
-@@ -19,7 +20,10 @@ import { Loader2, ShieldAlert } from "lucide-react";
-  *   rascunhos, seleções e objectURLs via cleanup de unmount dos consumidores.
-  */
- export function AuthzEpochBoundary({ children }: { children: ReactNode }) {
--  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked } = useAuth();
-+  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked, user, profile, roles } = useAuth();
-+  // Identidade/empresa/papéis diferentes descartam a retomada de navegação.
-+  const principal = resumePrincipalKey(user?.id, profile?.organization_id, roles ?? []);
-+  useEffect(() => { observeResumePrincipal(principal); }, [principal]);
- 
-   if (!AUTHZ_CACHE_FOUNDATION_ENABLED) return <>{children}</>;
- 
 diff --git a/src/components/clientes/ClienteFormTabs.tsx b/src/components/clientes/ClienteFormTabs.tsx
-index e6e7ddec..1ca968f4 100644
+index e6e7ddec..e19c7bed 100644
 --- a/src/components/clientes/ClienteFormTabs.tsx
 +++ b/src/components/clientes/ClienteFormTabs.tsx
 @@ -24,6 +24,9 @@ import { InscricaoEstadualCadastroInput } from "./InscricaoEstadualCadastroInput
@@ -35,7 +12,7 @@ index e6e7ddec..1ca968f4 100644
  }
  
  // MaskedInput integrado com RHF via Controller — garante que o valor
-@@ -70,14 +73,21 @@ function MaskedField({
+@@ -70,14 +73,19 @@ function MaskedField({
    );
  }
  
@@ -48,10 +25,8 @@ index e6e7ddec..1ca968f4 100644
    const { role } = useAuth();
    const scope = useCommercialRegistrationScope();
 -  const [tab, setTab] = useState("geral");
-+  const canManagePortalTab = role === "administrador" || role === "gestor" || role === "administrativo";
-+  const allowedInitial = initialTab && ["geral", "endereco", "financeiro"].includes(initialTab)
-+    || (initialTab === "documentos" && canManageDocs) || (initialTab === "portal" && canManagePortalTab);
-+  const [tab, setTabState] = useState(allowedInitial && initialTab ? initialTab : "geral");
++  // Retomada de navegação: somente a aba Documentos, e só se autorizada.
++  const [tab, setTabState] = useState(initialTab === "documentos" && canManageDocs ? "documentos" : "geral");
 +  const onTabChangeRef = useRef(onTabChange);
 +  onTabChangeRef.current = onTabChange;
 +  const setTab = useCallback((next: string) => { setTabState(next); onTabChangeRef.current?.(next); }, []);
@@ -59,6 +34,51 @@ index e6e7ddec..1ca968f4 100644
    const cepGeneration = useRef({ endereco: 0, cobranca: 0 });
    useEffect(() => {
      const field = Object.keys(errors)[0];
+diff --git a/src/hooks/useAuth.tsx b/src/hooks/useAuth.tsx
+index 0c135ea6..6dabff3d 100644
+--- a/src/hooks/useAuth.tsx
++++ b/src/hooks/useAuth.tsx
+@@ -1,3 +1,4 @@
++import { armResumeOnTimeout, clearResume, observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
+ import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+ import { supabase } from "@/integrations/supabase/client";
+ import type { User, Session } from "@supabase/supabase-js";
+@@ -676,6 +677,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+       },
+       onEpochChange: () => {
+         renewalRef.current = null;
++        clearResume(); // nova época nunca retoma navegação anterior
+         // Nova época (fingerprint mudou): geração++, cancela/limpa consultas,
+         // limpa seleção de portal e preferências compartilhadas, incrementa a
+         // época reativa (consumidores remontam conteúdo sensível e descartam
+@@ -693,6 +695,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+       },
+       onExpire: (reason) => {
+         renewalRef.current = null;
++        // Retomada de navegação: SOMENTE timeout confirmado; demais motivos descartam.
++        if (reason === "timeout") armResumeOnTimeout(resumePrincipalKey(user?.id, profile?.organization_id, roles), Date.now());
++        else clearResume();
+         // Erro/offline/timeout/ineligible: geração++ (respostas em voo não
+         // reabrem), cancela consultas e limpa seleção. O ESTADO reativo
+         // (authzState="expired" via onStateChange) é o que ESCONDE os dados —
+@@ -790,6 +795,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   // Tenant changes are re-proven by the new scope's own probe (h15); only an
+   // unmonitored/empty/unknown re-resolution is held.
+   const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id && !isExternalUser;
++  const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles);
++  useEffect(() => { observeResumePrincipal(resumePrincipal); }, [resumePrincipal]);
++  useEffect(() => { if (latchBlocked) clearResume(); }, [latchBlocked]);
+   const authzReady =
+     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
+     (!!user && !loading && !latchBlocked && !retryPending && (!isExternalUser ||
+@@ -893,6 +901,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   revalidateAuthzRef.current = revalidateAuthz;
+ 
+   const signOut = async () => {
++    clearResume();
+     cancelLoader();
+     cancelAutoRecovery();
+     autoRecoveryRef.current = { userId: null, s: initialAutoRecovery() };
 diff --git a/src/lib/authz/authzEpochMonitor.ts b/src/lib/authz/authzEpochMonitor.ts
 index 875a6a60..521edfa2 100644
 --- a/src/lib/authz/authzEpochMonitor.ts
@@ -86,57 +106,66 @@ index 875a6a60..521edfa2 100644
  export interface AuthzEpochMonitor {
 diff --git a/src/lib/navigation/protectedResumeContext.ts b/src/lib/navigation/protectedResumeContext.ts
 new file mode 100644
-index 00000000..4f0d38c3
+index 00000000..52ed5ff2
 --- /dev/null
 +++ b/src/lib/navigation/protectedResumeContext.ts
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,60 @@
 +/**
-+ * Retomada de contexto de NAVEGAÇÃO após pausa de autorização (monitor).
++ * Retomada de contexto de NAVEGAÇÃO somente após pausa por TIMEOUT confirmado
++ * do monitor de autorização.
 + *
-+ * Guarda em memória do módulo (nunca storage persistente) apenas:
-+ * principal (usuário/empresa/papéis), rota, ID do registro e nome da aba de
-+ * uma allowlist. Nenhum dado de formulário, Blob, URL ou resposta do servidor.
++ * Memória do módulo (nunca storage persistente): principal (usuário/empresa/
++ * papéis), rota, ID do cliente e marca de pausa. Única aba retomável:
++ * "documentos". Nenhum dado de formulário, Blob, URL ou resposta.
 + *
-+ * - Consumo único e TTL curto.
-+ * - Principal diferente (identidade/empresa/papéis, logout, A->B->A) limpa.
-+ * - Quem consome DEVE refazer a leitura autorizada canônica e só reabrir se
-+ *   o registro ainda vier nela; caso contrário descarta.
++ * Ciclo de vida (pontos canônicos no AuthProvider):
++ * - rememberResume: consumidor autorizado com cliente aberto na aba Documentos.
++ * - armResumeOnTimeout: onExpire("timeout") do monitor; TTL conta daqui.
++ * - clearResume: qualquer outro expire (ineligible/error/offline), nova época,
++ *   latch, logout, troca de identidade/empresa/papéis, fechamento/navegação.
++ * - takeResume: consumo único, exige pausa armada, mesmo principal e TTL.
++ * Quem consome DEVE refazer a leitura autorizada e só reabrir se o registro
++ * ainda vier nela.
 + */
 +export const RESUME_TTL_MS = 120_000;
-+export const RESUMABLE_CLIENTE_TABS = ["geral", "endereco", "financeiro", "documentos", "portal"] as const;
-+export type ResumableClienteTab = (typeof RESUMABLE_CLIENTE_TABS)[number];
++export const RESUMABLE_TAB = "documentos";
 +
-+type Slot = { principal: string; route: string; recordId: string; tab: ResumableClienteTab; at: number };
++type Slot = { principal: string; route: string; recordId: string; pausedAt: number | null };
 +let slot: Slot | null = null;
 +
-+export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[]): string | null {
-+  if (!userId || !organizationId || roles.length === 0) return null;
++export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[] | null | undefined): string | null {
++  if (!userId || !organizationId || !roles || roles.length === 0) return null;
 +  return JSON.stringify([userId, organizationId, [...roles].sort()]);
 +}
 +
-+export function isResumableClienteTab(tab: unknown): tab is ResumableClienteTab {
-+  return typeof tab === "string" && (RESUMABLE_CLIENTE_TABS as readonly string[]).includes(tab);
-+}
-+
-+export function rememberResume(principal: string | null, route: string, recordId: string, tab: string, now: number = Date.now()): void {
-+  if (!principal || !recordId || !isResumableClienteTab(tab)) { slot = null; return; }
-+  slot = { principal, route, recordId, tab, at: now };
++/** Só registra a aba Documentos; qualquer outra aba descarta. Reinicia a pausa. */
++export function rememberResume(principal: string | null, route: string, recordId: string, tab: string): void {
++  if (!principal || !recordId || tab !== RESUMABLE_TAB) { slot = null; return; }
++  slot = { principal, route, recordId, pausedAt: null };
 +}
 +
 +export function clearResume(): void { slot = null; }
 +
-+/** Qualquer mudança/ausência de principal descarta o contexto. */
++/** Chamado SOMENTE no expire por timeout do monitor. Principal divergente descarta. */
++export function armResumeOnTimeout(principal: string | null, now: number = Date.now()): void {
++  if (!slot) return;
++  if (!principal || slot.principal !== principal) { slot = null; return; }
++  if (slot.pausedAt === null) slot = { ...slot, pausedAt: now };
++}
++
++/** Principal diferente/ausente descarta. */
 +export function observeResumePrincipal(principal: string | null): void {
 +  if (slot && slot.principal !== principal) slot = null;
 +}
 +
-+/** Consome uma vez; mismatch/TTL vencido também descarta. */
-+export function takeResume(principal: string | null, route: string, now: number = Date.now()): { recordId: string; tab: ResumableClienteTab } | null {
++/** Consome uma vez; exige pausa armada por timeout dentro do TTL. */
++export function takeResume(principal: string | null, route: string, now: number = Date.now()): { recordId: string; tab: typeof RESUMABLE_TAB } | null {
 +  const s = slot;
 +  slot = null;
-+  if (!s || !principal || s.principal !== principal || s.route !== route) return null;
-+  if (now - s.at < 0 || now - s.at > RESUME_TTL_MS) return null;
-+  return { recordId: s.recordId, tab: s.tab };
++  if (!s || s.pausedAt === null || !principal || s.principal !== principal || s.route !== route) return null;
++  const elapsed = now - s.pausedAt;
++  if (elapsed < 0 || elapsed > RESUME_TTL_MS) return null;
++  return { recordId: s.recordId, tab: RESUMABLE_TAB };
 +}
 +
 +/** Somente para testes. */
@@ -251,3 +280,69 @@ index c9583a98..7a73775e 100644
                    <Button type="submit" disabled={methods.formState.isSubmitting}>{selectedClienteId ? "Atualizar" : "Salvar Produtor"}</Button>
                  </div>
                </form>
+diff --git a/src/lib/navigation/protectedResumeContext.ts b/src/lib/navigation/protectedResumeContext.ts
+new file mode 100644
+index 00000000..52ed5ff2
+--- /dev/null
++++ b/src/lib/navigation/protectedResumeContext.ts
+@@ -0,0 +1,60 @@
++/**
++ * Retomada de contexto de NAVEGAÇÃO somente após pausa por TIMEOUT confirmado
++ * do monitor de autorização.
++ *
++ * Memória do módulo (nunca storage persistente): principal (usuário/empresa/
++ * papéis), rota, ID do cliente e marca de pausa. Única aba retomável:
++ * "documentos". Nenhum dado de formulário, Blob, URL ou resposta.
++ *
++ * Ciclo de vida (pontos canônicos no AuthProvider):
++ * - rememberResume: consumidor autorizado com cliente aberto na aba Documentos.
++ * - armResumeOnTimeout: onExpire("timeout") do monitor; TTL conta daqui.
++ * - clearResume: qualquer outro expire (ineligible/error/offline), nova época,
++ *   latch, logout, troca de identidade/empresa/papéis, fechamento/navegação.
++ * - takeResume: consumo único, exige pausa armada, mesmo principal e TTL.
++ * Quem consome DEVE refazer a leitura autorizada e só reabrir se o registro
++ * ainda vier nela.
++ */
++export const RESUME_TTL_MS = 120_000;
++export const RESUMABLE_TAB = "documentos";
++
++type Slot = { principal: string; route: string; recordId: string; pausedAt: number | null };
++let slot: Slot | null = null;
++
++export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[] | null | undefined): string | null {
++  if (!userId || !organizationId || !roles || roles.length === 0) return null;
++  return JSON.stringify([userId, organizationId, [...roles].sort()]);
++}
++
++/** Só registra a aba Documentos; qualquer outra aba descarta. Reinicia a pausa. */
++export function rememberResume(principal: string | null, route: string, recordId: string, tab: string): void {
++  if (!principal || !recordId || tab !== RESUMABLE_TAB) { slot = null; return; }
++  slot = { principal, route, recordId, pausedAt: null };
++}
++
++export function clearResume(): void { slot = null; }
++
++/** Chamado SOMENTE no expire por timeout do monitor. Principal divergente descarta. */
++export function armResumeOnTimeout(principal: string | null, now: number = Date.now()): void {
++  if (!slot) return;
++  if (!principal || slot.principal !== principal) { slot = null; return; }
++  if (slot.pausedAt === null) slot = { ...slot, pausedAt: now };
++}
++
++/** Principal diferente/ausente descarta. */
++export function observeResumePrincipal(principal: string | null): void {
++  if (slot && slot.principal !== principal) slot = null;
++}
++
++/** Consome uma vez; exige pausa armada por timeout dentro do TTL. */
++export function takeResume(principal: string | null, route: string, now: number = Date.now()): { recordId: string; tab: typeof RESUMABLE_TAB } | null {
++  const s = slot;
++  slot = null;
++  if (!s || s.pausedAt === null || !principal || s.principal !== principal || s.route !== route) return null;
++  const elapsed = now - s.pausedAt;
++  if (elapsed < 0 || elapsed > RESUME_TTL_MS) return null;
++  return { recordId: s.recordId, tab: RESUMABLE_TAB };
++}
++
++/** Somente para testes. */
++export function __peekResumeForTests(): Readonly<Slot> | null { return slot; }

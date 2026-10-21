@@ -13,37 +13,42 @@ Base de produção: frontend `51048f5f`. Revisão `d5e0a318` (floor 12 s) foi RE
 - Picos de 12–17 s ultrapassam o que qualquer margem dentro do lease de 15 s consegue cobrir. Nesses casos, a pausa fail-closed é necessária. A correção trata a RECUPERAÇÃO, não elimina essas pausas.
 - A investigação dos picos v2 está com o proprietário (gateway/upstream), sem opt-out documentado.
 
-## 3. Correção da recuperação
-Problema: `AuthzEpochBoundary` desmonta todo o conteúdo quando `authzReady=false`. Depois da reautorização, o modal "Editar Produtor"/aba Documentos sumia e o usuário precisava recomeçar.
+## 3. Correção da recuperação (v2 após revisão da691664)
+A revisão da691664 mostrou que a v1 retomava com latch/negativa sob o mesmo principal em cache e em qualquer remontagem. Ela foi substituída por:
+- **Módulo** `src/lib/navigation/protectedResumeContext.ts`, em memória e sem storage. Guarda principal (usuário, empresa e papéis ordenados), rota, ID do cliente e `pausedAt`. Somente a aba **Documentos** é guardada; outra aba descarta o contexto. Não guarda formulário, Blob nem URL.
+- **Arme apenas no ponto canônico** `useAuth` → `onExpire("timeout")` (`armResumeOnTimeout`). O TTL de 120 s conta da pausa, não da abertura do modal.
+- **Descarte no `useAuth`:**
+  - `onExpire` com ineligible, error ou offline;
+  - `onEpochChange`;
+  - `latchBlocked`;
+  - `signOut`;
+  - mudança de principal.
+  O `takeResume` exige pausa armada, mesmo principal, mesma rota, TTL e consumo único.
+- **`ProdutoresTab`:** depois da releitura canônica autorizada, reabre só se o cliente vier nela, com valores do servidor. O conteúdo fica totalmente ausente enquanto `authzReady=false`.
+- **`AuthzEpochBoundary`:** voltou byte-exato ao baseline.
+- **AuthProvider:** alteração mínima autorizada, sem novos probes, lease ou cadência.
 
-Candidata:
-- O módulo em memória `src/lib/navigation/protectedResumeContext.ts` guarda somente principal (usuário+empresa+papéis ordenados), rota, ID do cliente e aba de uma allowlist. Não guarda formulário, Blob, URL nem resposta. Não usa storage persistente. Consumo único, TTL de 120 s.
-- `ProdutoresTab`: registra o contexto enquanto o modal de edição está aberto e autorizado. Depois de remontar, aguarda a releitura canônica autorizada (`fetchClientes`, as mesmas 2 leituras de qualquer montagem). Reabre só se o cliente ainda vier nessa leitura, com valores do servidor (rascunho descartado). Fechar, cancelar, salvar ou navegar para outra rota limpa o contexto.
-- `ClienteFormTabs`: `initialTab` só é aplicada se a aba estiver autorizada (Documentos exige `useCanManageClienteDocs`). A aba Documentos refaz o próprio carregamento autenticado.
-- `AuthzEpochBoundary`: com principal diferente ou ausente (troca de identidade, empresa ou papéis, revogação, logout, A→B→A), o contexto é descartado. Durante `authzReady=false` nada é renderizado (inalterado).
-- Não há rota, provider ou monitor paralelos.
-
-## 4. Cancelamento do request expirado
-Os probes do monitor (`internalContextProbe`, `producerContextProbe`, B2B e `get_my_authz_fingerprint`) não recebem `AbortSignal`. Propagar o sinal exigiria mudar o AuthProvider e todos os probes, o que não é uma alteração mínima, e não reduziria a carga do servidor, que já recebeu a request. Por isso não foi alterado. A resposta tardia já é descartada por geração/fence, sem retry nem renovação. Fica documentado como I/O órfão limitado a no máximo 1 por aba por expiração.
+## 4. Cancelamento do request expirado — PENDENTE (não resolvido)
+Os probes do monitor não recebem `AbortSignal`. A resposta tardia é descartada por geração/fence, mas o I/O em voo continua até o transporte terminar. Isso foi aceito como pendência fora de escopo; não está resolvido.
 
 ## 5. Testes (transporte simulado; não é homologação real)
-`src/test/clientes/ProdutoresTab.authzResume.test.tsx` (9 testes):
-- pausa→recuperação reabre a aba Documentos com dados do servidor e sem rascunho;
-- leituras na remontagem = 2, sem carga extra;
-- consumo único;
-- revogação de papel → não reabre;
-- cliente removido → não reabre;
-- A→B→A descarta;
-- fechar descarta;
-- TTL, rota, allowlist e logout.
-
-Resultados: `src/test/config` + `src/test/clientes`: 74 arquivos, 1103/1103. Typecheck da app OK; o build roda automaticamente.
+- `ProdutoresTab.authzResume.integration.test.tsx` (7): AuthProvider, monitor, probe, boundary e ProdutoresTab REAIS, com transporte e relógio falsos, sem chamada manual a observe/arm. Casos:
+  - timeout → mesmo principal recupera Documentos (modal aberto por mais de 150 s antes da pausa), sem rascunho e com releitura;
+  - aba Financeiro não retoma;
+  - ineligible com papéis restaurados não retoma;
+  - cliente negado na releitura;
+  - revogação/latch na pausa;
+  - logout;
+  - A→B→A.
+- `ProdutoresTab.authzResume.test.tsx` (5): contrato do módulo (sem arme, allowlist, TTL desde a pausa, divergência, consumo único).
+- `src/test/config` + `src/test/clientes`: 75 arquivos, 1106/1106. Typecheck OK. Monitor byte-exato `febf394c…8069`.
 
 ## 6. Rollback
-`python3 scripts/monitor-pause-resume-20261021/rollback.py` restaura os 3 arquivos (baseline `d7bc1e28`) e remove o módulo e o teste. O monitor permanece no floor 10 s publicado. Não envolve SQL, Auth, Edge, papéis nem dados.
+`python3 scripts/monitor-pause-resume-20261021/rollback.py` restaura 4 arquivos (baseline `d7bc1e28`, incluindo `useAuth.tsx`) e remove o módulo e os testes. Foi verificado em cópia isolada: os 4 arquivos ficaram byte-exatos e o módulo foi removido. O monitor segue com floor 10 s. Não envolve SQL, Auth server, Edge nem dados.
 
 ## Pendente
-- Estabilidade do gateway v2 (proprietário).
+- Gateway v2: 15:45–52 com máximo de 5.565 ms, contra upstream máximo de 158 e v1 máximo de 411; não resolvido (proprietário).
+- Cancelamento de transporte.
 - Homologação real dos demais perfis.
-- Revisão independente antes de publicar.
+- Revisão independente.
 - SU-518022: somente ack.
