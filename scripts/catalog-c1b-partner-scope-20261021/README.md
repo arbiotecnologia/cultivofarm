@@ -1,6 +1,12 @@
-# C1B-SCOPE v2 — resolução do parceiro pelo vínculo autorizado (candidata, não aplicada)
+# C1B-SCOPE v2 — resolução do parceiro pelo vínculo autorizado (APLICADA pelo auditor)
 
-Data: 21/10/2026. Status: **candidata revisável v2; nenhum DDL/DML hosted executado, nada promovido/publicado.**
+Data: 21/10/2026. Status: **migration `catalog_c1b_partner_scope_validated_20261021` aplicada em produção (ref swzpzcwiasxmjutrmvkm) pelo auditor independente.** Nenhum dado, papel ou sessão mudou. Frontend C1B **não** promovido.
+
+## Aplicação e evidência real (produzidas pelo auditor independente, não pelo proprietário)
+
+- O auditor adicionou à migration: `statement_timeout` de 30s, guard de ACL/owner do escopo (`postgres` + `service_role`, owner `postgres`) e guard de 0 organizações com `partner_account_id` explícito.
+- **Modelo de organização parceira explícita NÃO homologado:** a v2 força a igualdade com o fornecedor também no CTE `valid`; não declarar preservação geral do modelo explícito até homologação específica.
+- REST real com sessão teste4 (uid `beb25695-…`): gestor RPC antiga **200/35 itens**, v2 **200/35 itens**, técnico **200/[]** (não há fichas aprovadas), parceiro diferente `2ff13d85…` **403 forbidden_partner**.
 
 ## Revisão independente SHA72c9b82 (v1 NÃO aplicada)
 
