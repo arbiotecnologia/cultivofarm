@@ -948,17 +948,21 @@ export async function updatePendingRecomendacao(
   });
 }
 
-export async function removePendingRecomendacao(clientUuid: string, expectedUpdatedAt?: string): Promise<void> {
+export async function removePendingRecomendacao(clientUuid: string, expectedUpdatedAt?: string): Promise<boolean> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
+    let removed = false;
     const tx = db.transaction(STORE_RECOMENDACOES, "readwrite");
     const store = tx.objectStore(STORE_RECOMENDACOES);
     const req = store.get(clientUuid);
     req.onsuccess = () => {
       const item = req.result as PendingRecomendacao | undefined;
-      if (item && (expectedUpdatedAt === undefined || item.updatedAt === expectedUpdatedAt)) store.delete(clientUuid);
+      if (item && (expectedUpdatedAt === undefined || item.updatedAt === expectedUpdatedAt)) {
+        store.delete(clientUuid);
+        removed = true;
+      }
     };
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => resolve(removed);
     tx.onerror = () => reject(tx.error);
   });
 }

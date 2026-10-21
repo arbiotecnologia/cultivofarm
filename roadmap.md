@@ -1,10 +1,16 @@
 # F2-B — auditoria e preparação revisável
 
+## 21/10 21:14 — atualização do wizard após sincronizar, baseline 9565a2b7
+- [x] Atualizar somente consultas da visita/ator/tenant após recibo RPC e cleanup CAS confirmado; sem reload/Auth/polling/SQL/deploy/publicação.
+- [x] 81/81 em7 arquivos: wizard real aberto com recomendação remota/etapa6 liberada; troca ator/tenant/logout, refetch tardio, CAS perdido e conflito sem publicação de cache antigo.
+- [x] Atualizar revisão/hashes; commit automático na entrega. Homologação REAL9565a2b7 da recuperação histórica informada pelo proprietário: id43c0db07/versão1, sem operação pelo agente.
+- [ ] Homologação real desta atualização do wizard e typecheck independente: dependem de revisão/publicação externa e recibo do auditor; origin-deny/CDN antigo permanecem pendentes, sem aplicação nesta rodada.
+
 ## 21/10 21:01 — recomendações, homologação externa 33425615
 - [x] Corrigir enums/versão e replay de entradas comprovadas com parent explícito sem mapping; conflitos/negações preservados, origem alheia ou histórica não comprovada bloqueada.
 - [x] 80/80 testes em 8 arquivos incluindo formulário real montado e botão Sincronizar; harness build OK21:06:58Z; relatório docs/recomendacao-sync-20261021-review.md com impacto irmão e limites de tipos/homologação.
-- [ ] Recuperação da pendência histórica informada: origem ator/tenant e versão não comprovadas na entrada legada; não adotar só pelo acesso atual/UUID, não alterar fila real.
-- [ ] Homologação real do patch: revisão/publicação externa necessárias; sem SQL/deploy/publicação ou filas reais nesta rodada. Origin-deny consultor não aplicado; CDN antigo/SU-518022 não resolvido.
+- [x] Recuperação histórica homologada REAL9565a2b7 pelo proprietário: id43c0db07/UUID2ab7fdbb/versão1; sem adoção/reparo/alteração de fila real pelo agente.
+- [x] Homologação real da recuperação informada; atualização do wizard aberta em21:14 acima. Origin-deny consultor não aplicado; CDN antigo/SU-518022 não resolvido.
 
 ## 21/10 20:01 — regressão de remoção financeira, publicação 6c9ef2f0
 - [x] Corrigir receiver da RPC existente em DocumentosPanel; mock dependente de this reproduziu 7 falhas/42 PASS antes e 49/49 depois, incluindo fences/negação/invalidation; único caller de remoção financeira, sem refactor amplo.
