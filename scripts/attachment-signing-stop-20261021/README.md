@@ -64,3 +64,8 @@ Bateria completa `src/test`: 8799 PASS, 12 falhas, todas em arquivos não altera
 (O registro anterior de "11" vinha de bateria parcial sem o item 3.)
 Rollback deste adendo: restaurar os arquivos de 25ed42cb (que também não assinam); `rollback.py` segue com stub indisponível e nunca reabre assinatura.
 Limites: testes sintéticos ≠ homologação real A/B; links já emitidos seguem válidos até expirar; nada publicado.
+
+## Adendo 2 — cerca da exportação PDF da visita
+- `useFencedPdfExport` (novo) usa `useStorageAccessScope` canônico por visita: captura no início, rechecagem antes de compartilhar, após `sharePdf` e antes de salvar; mudança de scope/ready/unmount aborta o controller; `finally` só limpa se ainda dono.
+- `pdfVisita`: FileReader concluído após abort é descartado.
+- Testes `src/test/visita/visitaPdfExportFence.test.tsx`: papel/tenant/epoch/ready mudando sem unmount, lease vencida durante share, retry autorizado, sem acesso, unmount. Sem novo monitor nem lease maior.
