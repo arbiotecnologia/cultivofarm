@@ -126,7 +126,6 @@ try:
  candidate=(HERE/'candidate.sql.review').read_text()
  sql(candidate);checks.append('candidate applies cleanly')
  actor(1)
- check('seed has exactly 7 current labels',"SELECT count(*) FROM public.catalog_family_labels",'1') if False else None
  check('seed count is 7',"SELECT count(*) FROM public.catalog_family_labels",'7')
  check('seed all active',"SELECT bool_and(ativo) FROM public.catalog_family_labels",'t')
  check('fertilizer starts without labels',"SELECT count(*) FROM public.catalog_family_labels WHERE familia='fertilizante_adubo'",'0')
