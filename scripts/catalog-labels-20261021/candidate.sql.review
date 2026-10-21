@@ -1,8 +1,11 @@
 -- =============================================================================
--- CANDIDATA REVISÁVEL — cadastro canônico de rótulos por família (21/10/2026)
+-- CANDIDATA REVISÁVEL v2 — cadastro canônico de rótulos por família (21/10/2026)
 -- NÃO APLICADA. Destino único: ref swzpzcwiasxmjutrmvkm, confirmado por operador
 -- aprovado. Transacional, fail-closed. Único DML: semente dos 7 rótulos atuais.
 -- Não altera preços, composição, fabricação, RLS de produtos, papéis ou sessões.
+-- v2 (revisão independente): lock consistente na validação (FOR KEY SHARE),
+-- revalidação mutante APÓS o replay de idempotência, guard de baseline com
+-- definição/ACL/owner exatos e RPC de leitura para leitores autorizados.
 -- =============================================================================
 BEGIN;
 SET LOCAL lock_timeout = '5s';
@@ -10,20 +13,38 @@ SET LOCAL statement_timeout = '120s';
 
 -- ------------------------------------------------------------- guardas de drift
 DO $$
+DECLARE
+  v_md5 text; v_acl text; v_owner text; v_check text;
 BEGIN
   IF to_regclass('public.catalog_family_labels') IS NOT NULL THEN
     RAISE EXCEPTION 'catalog_labels_already_installed';
   END IF;
   IF to_regprocedure('platform_private.catalog_metadata_require_actor()') IS NULL
      OR to_regprocedure('platform_private.catalog_entity_replay(uuid,text,jsonb,text,uuid)') IS NULL
-     OR to_regprocedure('platform_private.catalog_entity_audit(uuid,text,text,uuid,jsonb,jsonb,jsonb,jsonb)') IS NULL
-     OR to_regprocedure('platform_private.set_global_product_family_core(uuid,timestamptz,text,text,text,uuid)') IS NULL THEN
+     OR to_regprocedure('platform_private.catalog_entity_audit(uuid,text,text,uuid,jsonb,jsonb,jsonb,jsonb)') IS NULL THEN
     RAISE EXCEPTION 'catalog_labels_prerequisite_missing';
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint
-    WHERE conrelid = 'public.produtos'::pg_catalog.regclass
-      AND conname = 'produtos_classe_catalogo_coerente_check') THEN
-    RAISE EXCEPTION 'catalog_labels_baseline_check_missing';
+  -- Função substituída: definição (md5), ACL e owner EXATOS do baseline revisado,
+  -- não apenas presença. Qualquer drift aborta a migration.
+  SELECT pg_catalog.md5(pg_catalog.pg_get_functiondef(p.oid)), p.proacl::text, r.rolname
+    INTO v_md5, v_acl, v_owner
+  FROM pg_catalog.pg_proc p
+  JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+  JOIN pg_catalog.pg_roles r ON r.oid = p.proowner
+  WHERE n.nspname = 'platform_private' AND p.proname = 'set_global_product_family_core'
+    AND p.oid = 'platform_private.set_global_product_family_core(uuid,timestamp with time zone,text,text,text,uuid)'::pg_catalog.regprocedure;
+  IF v_md5 IS DISTINCT FROM '8bd3ce69c5bd55b678246acb9d264548'
+     OR v_acl IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}'
+     OR v_owner IS DISTINCT FROM 'postgres' THEN
+    RAISE EXCEPTION 'catalog_labels_core_baseline_drift';
+  END IF;
+  -- CHECK literal a remover: definição EXATA do baseline revisado.
+  SELECT pg_catalog.md5(pg_catalog.pg_get_constraintdef(c.oid)) INTO v_check
+  FROM pg_catalog.pg_constraint c
+  WHERE c.conrelid = 'public.produtos'::pg_catalog.regclass
+    AND c.conname = 'produtos_classe_catalogo_coerente_check';
+  IF v_check IS DISTINCT FROM '0ae66545cef182ce716ee3958ef634b6' THEN
+    RAISE EXCEPTION 'catalog_labels_check_baseline_drift';
   END IF;
 END $$;
 
@@ -79,6 +100,24 @@ REVOKE ALL ON FUNCTION platform_private.catalog_family_labels_touch() FROM PUBLI
 CREATE TRIGGER catalog_family_labels_touch BEFORE UPDATE ON public.catalog_family_labels
   FOR EACH ROW EXECUTE FUNCTION platform_private.catalog_family_labels_touch();
 
+-- ------------------------------------------------------------- checagem com lock consistente
+-- FOR KEY SHARE serializa com platform_set_catalog_label_active (FOR UPDATE na mesma
+-- linha): uma atribuição concorrente ou conclui antes da inativação (e vale), ou espera
+-- a inativação e falha. Sem esse lock, o EXISTS poderia ver ativo=true e a inativação
+-- commitar em seguida, deixando atribuição nova de rótulo inativo.
+-- VOLATILE é obrigatório: SELECT FOR KEY SHARE não é permitido em função STABLE.
+CREATE FUNCTION platform_private.catalog_family_label_check(p_familia text, p_rotulo text) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_ativo boolean;
+BEGIN
+  SELECT l.ativo INTO v_ativo
+    FROM public.catalog_family_labels l
+   WHERE l.familia = p_familia AND l.rotulo = p_rotulo
+   FOR KEY SHARE;
+  RETURN COALESCE(v_ativo, false);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.catalog_family_label_check(text,text) FROM PUBLIC, anon, authenticated, service_role;
+
 -- ------------------------------------------------------------- validação dinâmica em produtos
 -- Substitui o CHECK literal. Valida SOMENTE atribuição nova/alterada: rótulo
 -- legado/inativo já atribuído permanece enquanto a atribuição não mudar.
@@ -91,9 +130,8 @@ BEGIN
      AND NEW.familia_catalogo IS NOT DISTINCT FROM OLD.familia_catalogo THEN
     RETURN NEW;
   END IF;
-  IF NEW.familia_catalogo IS NULL OR NOT EXISTS (
-    SELECT 1 FROM public.catalog_family_labels l
-    WHERE l.familia = NEW.familia_catalogo AND l.rotulo = NEW.classe_catalogo AND l.ativo) THEN
+  IF NEW.familia_catalogo IS NULL
+     OR NOT platform_private.catalog_family_label_check(NEW.familia_catalogo, NEW.classe_catalogo) THEN
     RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = 'catalog_label_not_active';
   END IF;
   RETURN NEW;
@@ -105,10 +143,15 @@ CREATE TRIGGER produtos_catalog_family_label_validate
 ALTER TABLE public.produtos DROP CONSTRAINT produtos_classe_catalogo_coerente_check;
 
 -- ------------------------------------------------------------- core de classificação
--- CREATE OR REPLACE preserva assinatura/OID/ACL. ÚNICA mudança funcional: a
--- validação do rótulo consulta a fonte canônica em vez da lista literal.
--- Demais regras (ator, CAS, idempotência, auditoria, imutabilidade de
--- preços/composição/volumes) permanecem byte-equivalentes ao original.
+-- CREATE OR REPLACE preserva assinatura/OID/ACL. Mudanças funcionais vs. baseline:
+--  1) a validação do rótulo consulta a fonte canônica (com lock) em vez da lista literal;
+--  2) a revalidação mutante (rótulo ativo) foi movida para DEPOIS do replay de
+--     idempotência: um retry legítimo (mesma chave, mesmo fingerprint) retorna o recibo
+--     original mesmo se o rótulo foi inativado depois — a inativação não pode rejeitar
+--     um recibo já emitido. Validações de FORMA (família, fingerprint da requisição)
+--     permanecem ANTES do replay, pois integram a identidade da operação.
+-- Demais regras (ator, CAS, auditoria, imutabilidade de preços/composição/volumes)
+-- permanecem byte-equivalentes ao original.
 CREATE OR REPLACE FUNCTION platform_private.set_global_product_family_core(p_id uuid, p_expected_updated_at timestamptz,
   p_familia text, p_classe text, p_reason text, p_idempotency_key uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
@@ -118,16 +161,18 @@ DECLARE v_actor uuid; v_req jsonb; v_replay jsonb; v_receipt jsonb; v_audit uuid
 BEGIN
   v_actor := platform_private.catalog_metadata_require_actor();
   IF p_id IS NULL OR p_expected_updated_at IS NULL OR NOT pg_catalog.isfinite(p_expected_updated_at) OR p_idempotency_key IS NULL
-     OR p_familia IS NULL OR p_familia NOT IN ('biologico','quimico','fertilizante_adubo')
-     OR NOT (v_classe IS NULL
-       OR EXISTS (SELECT 1 FROM public.catalog_family_labels l
-                  WHERE l.familia = p_familia AND l.rotulo = v_classe AND l.ativo)) THEN
+     OR p_familia IS NULL OR p_familia NOT IN ('biologico','quimico','fertilizante_adubo') THEN
     RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_family_invalid';
   END IF;
   v_req := pg_catalog.jsonb_build_object('id',p_id,'expected_updated_at',p_expected_updated_at,
     'familia_catalogo',p_familia,'classe_catalogo',v_classe,'reason',pg_catalog.btrim(COALESCE(p_reason,'')));
   v_replay := platform_private.catalog_entity_replay(v_actor,'set_global_product_family',v_req,p_reason,p_idempotency_key);
   IF v_replay IS NOT NULL THEN RETURN v_replay; END IF;
+
+  -- Revalidação mutante APÓS o replay: só nova execução exige rótulo ativo (com lock).
+  IF NOT (v_classe IS NULL OR platform_private.catalog_family_label_check(p_familia, v_classe)) THEN
+    RAISE EXCEPTION USING ERRCODE='22023', MESSAGE='catalog_family_invalid';
+  END IF;
 
   SELECT * INTO v_op FROM public.produtos WHERE id=p_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE='42501', MESSAGE='catalog_family_unavailable'; END IF;
@@ -181,6 +226,31 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.platform_list_catalog_labels(text) FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.platform_list_catalog_labels(text) TO authenticated, service_role;
+
+-- ------------------------------------------------------------- leitura de exibição (leitores autorizados)
+-- Taxonomia de EXIBIÇÃO para qualquer usuário autenticado com perfil ativo (técnico B2B,
+-- tenant, admin): somente rótulos ATIVOS, sem id/updated_at/auditoria. Não expõe a RPC
+-- administrativa nem concede consulta direta à tabela (que permanece sem grants).
+CREATE FUNCTION public.catalog_family_labels_read(p_familia text) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_uid uuid := auth.uid(); v_result jsonb;
+BEGIN
+  IF v_uid IS NULL OR NOT EXISTS (SELECT 1 FROM public.profiles p WHERE p.user_id = v_uid AND p.ativo = true) THEN
+    RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'catalog_label_read_forbidden';
+  END IF;
+  IF p_familia IS NULL OR p_familia NOT IN ('biologico','quimico','fertilizante_adubo') THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'catalog_label_family_invalid';
+  END IF;
+  SELECT COALESCE(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+      'familia', l.familia, 'rotulo', l.rotulo, 'rotulo_exibicao', l.rotulo_exibicao)
+    ORDER BY pg_catalog.lower(l.rotulo_exibicao) COLLATE "C", l.id), '[]'::jsonb)
+  INTO v_result
+  FROM public.catalog_family_labels l
+  WHERE l.familia = p_familia AND l.ativo = true;
+  RETURN v_result;
+END $$;
+REVOKE ALL ON FUNCTION public.catalog_family_labels_read(text) FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.catalog_family_labels_read(text) TO authenticated, service_role;
 
 -- ------------------------------------------------------------- criar rótulo
 CREATE FUNCTION public.platform_create_catalog_label(p_familia text, p_rotulo text, p_rotulo_exibicao text,
@@ -278,6 +348,7 @@ BEGIN
   v_replay := platform_private.catalog_entity_replay(v_actor, 'set_catalog_label_active', v_req, p_reason, p_idempotency_key);
   IF v_replay IS NOT NULL THEN RETURN v_replay; END IF;
 
+  -- FOR UPDATE serializa com catalog_family_label_check (FOR KEY SHARE): ver comentário lá.
   SELECT * INTO v_op FROM public.catalog_family_labels WHERE id = p_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'catalog_label_unavailable'; END IF;
   IF v_op.updated_at IS DISTINCT FROM p_expected_updated_at THEN

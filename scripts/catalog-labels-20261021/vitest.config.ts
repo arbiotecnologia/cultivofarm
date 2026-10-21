@@ -13,6 +13,8 @@ export default defineConfig({
     ...base.resolve,
     alias: [
       { find: "@/lib/catalogo/platformCatalogLabels", replacement: candidate("lib/catalogo/platformCatalogLabels.ts") },
+      { find: "@/lib/catalogo/catalogLabelDisplay", replacement: candidate("lib/catalogo/catalogLabelDisplay.ts") },
+      { find: "@/components/plataforma/PlatformCatalogReadTab", replacement: candidate("components/plataforma/PlatformCatalogReadTab.tsx") },
       { find: "@/lib/catalogo/platformCatalogFamily", replacement: candidate("lib/catalogo/platformCatalogFamily.ts") },
       { find: "@/lib/catalogo/platformCatalogRead", replacement: candidate("lib/catalogo/platformCatalogRead.ts") },
       { find: "@/components/plataforma/PlatformCatalogFamilyDialog", replacement: candidate("components/plataforma/PlatformCatalogFamilyDialog.tsx") },

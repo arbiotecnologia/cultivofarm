@@ -4,6 +4,8 @@
   "compilerOptions": {
     "paths": {
       "@/lib/catalogo/platformCatalogLabels": ["./frontend/src/lib/catalogo/platformCatalogLabels.ts"],
+      "@/lib/catalogo/catalogLabelDisplay": ["./frontend/src/lib/catalogo/catalogLabelDisplay.ts"],
+      "@/components/plataforma/PlatformCatalogReadTab": ["./frontend/src/components/plataforma/PlatformCatalogReadTab.tsx"],
       "@/lib/catalogo/platformCatalogFamily": ["./frontend/src/lib/catalogo/platformCatalogFamily.ts"],
       "@/lib/catalogo/platformCatalogRead": ["./frontend/src/lib/catalogo/platformCatalogRead.ts"],
       "@/components/plataforma/PlatformCatalogFamilyDialog": ["./frontend/src/components/plataforma/PlatformCatalogFamilyDialog.tsx"],
