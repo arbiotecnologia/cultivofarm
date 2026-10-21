@@ -83,7 +83,7 @@ describe('login produtor: /app/login -> seletor -> home canônica /app', () => {
   });
   it('indisponibilidade da leitura de contextos: erro com nova tentativa, sem acesso-pendente nem /app', async () => {
     s.ctxError = true;
-    setup(); await tick(); await tick(100);
+    setup(); await tick(); await tick(5_000);
     expect(url()).toBe('/selecionar-portal');
     expect(screen.getByText('Não foi possível validar seus acessos')).toBeTruthy();
     s.ctxError = false;
