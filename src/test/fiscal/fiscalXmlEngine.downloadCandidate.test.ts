@@ -8,7 +8,7 @@ import { ReadableStream } from "node:stream/web";
 // Executa a CANDIDATA revisável (não implantada) com SDK simulado. Não é homologação real.
 const CANDIDATE = "scripts/fiscal-xml-download-blob-20261021/edge/index.ts.review";
 const src = readFileSync(CANDIDATE, "utf8");
-const code = ts.transpileModule(src.replace("catch (error) {\n    if (error instanceof ReadLimitError)", "catch (error) { console.error(error);\n    if (error instanceof ReadLimitError)").replace(/^import[\s\S]*?;\s*/gm, "").replace(/^export /gm, ""),
+const code = ts.transpileModule(src.replace(/^import[\s\S]*?;\s*/gm, "").replace(/^export /gm, ""),
   { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
 
 const RUN = "22222222-2222-4222-8222-222222222222";

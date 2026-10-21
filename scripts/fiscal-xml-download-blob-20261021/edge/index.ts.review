@@ -116,7 +116,7 @@ async function readBounded(
       if (signal.aborted || performance.now() >= deadline) throw new ReadDeadlineError();
       if (result.done) break;
       const chunk = result.value;
-      if (!(chunk instanceof Uint8Array)) throw new Error("invalid_chunk");
+      if (!ArrayBuffer.isView(chunk) || Object.prototype.toString.call(chunk) !== "[object Uint8Array]") throw new Error("invalid_chunk");
       if (chunk.byteLength > maxBytes - total) throw new ReadLimitError();
       chunks.push(chunk);
       total += chunk.byteLength;
