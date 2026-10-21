@@ -41,3 +41,21 @@ Campo já armazena parent remoto explícito. Filas de registros/checkins/campo/d
 - **Origin-deny consultor não aplicado. CDN/cache antigo SU-518022 não resolvido.** Nenhum suporte/upgrade/objeto/chave/papel/sessão alterado.
 
 SHA e diff para revisão: `docs/recomendacao-sync-20261021.sha256` (fontes finais); commit automático consultável no histórico. Artefatos não equivalem a publicação.
+
+## Complemento 21/10 21:14 — wizard aberto após sincronização
+
+**Evidência REAL fornecida pelo proprietário, baseline 9565a2b7:** o botão Sincronizar removeu a pendência e criou `registros_consultor_recomendacoes` id `43c0db07-07e5-4ae0-9dca-5929cab6510a`, client_uuid `2ab7fdbb-4d60-441a-aec9-3f826d63c37b`, versão **1**, na visita `dafabf5e-ea63-447b-959a-a63483d69ae5`. Isso supersede a pendência de homologação da recuperação histórica acima; não foi uma operação realizada pelo agente. O wizard aberto continuou vazio e a etapa6 bloqueada.
+
+Patch mínimo local:
+- `removePendingRecomendacao` retorna sucesso somente após commit da transação CAS que efetivamente removeu a entrada. CAS perdido conserva a edição nova e não invalida consultas nem contabiliza sucesso.
+- Após RPC/recibo/prova LIVE existentes e limpeza CAS bem-sucedida, `useOfflineSync` invalida somente a chave canônica `visitaWorkspaceKey(remoteId, scope)`, a flag `wizard-rec-flag` do mesmo scope e a lista `wizard-rec` daquele ator/tenant/parent remoto. Não grava recibos como dados de leitura nem invalida outros módulos.
+- A captura inclui o scope canônico, além dos fences existentes de ator/tenant/readiness/época/lease. Troca durante RPC ou cleanup impede invalidação; troca durante refetch continua sujeita aos fences dos leitores, sem publicar resposta anterior.
+- A lista aberta relê pendências quando a consulta remota atualiza, removendo o badge/overlay local já limpo sem remontar formulário ou sobrescrever edição em diálogo.
+
+**Validação local: 81/81 em 7 arquivos**, incluindo **7 testes novos integrados**, com wizard e etapa de recomendação reais montados, QueryClient real e IndexedDB descartável: recomendação aparece, workspace atualiza, etapa6 libera e abre; CAS perdido/conflito preservam pendência e não invalidam; troca ator/tenant/logout durante RPC e troca de ator durante refetch rejeitam publicação tardia. Avisos React `act` sem falhas. Transporte mock não equivale a JWT/RLS/browser LIVE.
+
+Harness automático registrou **build OK 21:16:54Z** após o patch runtime; types/build manuais não executados por restrição do ambiente. Recibo independente de typecheck e homologação real do novo frontend ficam para revisão externa.
+
+Nenhuma escrita em filas reais, banco/RLS/Auth/Storage, SQL, Edge/deploy, catálogo/contratos/OS/monitor ou publicação; nenhum reload, refresh Auth ou polling adicional. **Origin-deny consultor ainda não aplicado; CDN/cache antigo SU-518022 não resolvido.**
+
+Fontes e testes com SHA256 atualizados no manifesto existente; commit automático final informado na entrega.
