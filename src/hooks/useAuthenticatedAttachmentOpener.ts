@@ -25,15 +25,20 @@ export function useAuthenticatedAttachmentOpener(resource: string, bucket: strin
     };
   }, [access.scope, bucket]);
 
-  const open = async (path: string, onError: () => void) => {
+  /** Resolves true only when this call stored fresh bytes. A parent signal (caller
+   * watchdog/fence) aborts the owned I/O so a timed-out request never keeps the
+   * path busy or stores late bytes. Returns false on error, abort or busy path. */
+  const open = async (path: string, onError: () => void, parent?: AbortSignal): Promise<boolean> => {
     const current = access.capture();
-    if (!current() || controllers.current.has(path) || urls.current.has(path)) return;
+    if (!current() || parent?.aborted || controllers.current.has(path) || urls.current.has(path)) return false;
     const controller = new AbortController();
+    const relay = () => controller.abort();
+    parent?.addEventListener("abort", relay, { once: true });
     controllers.current.set(path, controller);
     publish();
     try {
       const blob = await (load ?? ((p: string, s: AbortSignal) => downloadAuthenticatedAttachment(bucket, p, s)))(path, controller.signal);
-      if (!current() || controller.signal.aborted) return;
+      if (!current() || controller.signal.aborted) return false;
       if (blob.size > ATTACHMENT_LIMITS.fileBytes || blob.size > ATTACHMENT_LIMITS.totalBytes) throw new Error("Anexo indisponível");
       const total = () => [...urls.current.values()].reduce((sum, item) => sum + item.bytes, 0);
       while (urls.current.size >= ATTACHMENT_LIMITS.files || total() + blob.size > ATTACHMENT_LIMITS.totalBytes) {
@@ -43,11 +48,14 @@ export function useAuthenticatedAttachmentOpener(resource: string, bucket: strin
         urls.current.delete(oldest[0]);
       }
       const url = URL.createObjectURL(blob);
-      if (!current()) { URL.revokeObjectURL(url); return; }
+      if (!current() || controller.signal.aborted) { URL.revokeObjectURL(url); return false; }
       urls.current.set(path, { url, bytes: blob.size });
+      return true;
     } catch {
       if (current() && !controller.signal.aborted) onError();
+      return false;
     } finally {
+      parent?.removeEventListener("abort", relay);
       // An obsolete completion must not remove a newer request for the same path.
       if (controllers.current.get(path) === controller) controllers.current.delete(path);
       if (current()) publish();
