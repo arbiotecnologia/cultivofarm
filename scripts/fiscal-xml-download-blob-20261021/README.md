@@ -1,4 +1,4 @@
-# XML autenticado — candidata revisável, NÃO implantada
+# XML autenticado — Edge v96 aplicada externamente, frontend sincronizado NÃO publicado
 
 Baseline do trabalho: HEAD `c7d5c962ce197ed4dd94c4ba9205b11274d0b36b`.
 A candidata arquivada `127ef0605cec67e762c9769f86ee8c53e806d597`
@@ -158,3 +158,37 @@ unsigned-only não existe no contrato atual e generate não foi acionado.
 NO-GO técnico: nada promovido, implantado ou publicado; runtime intacto,
 gate false e rollback deny preparado. v94 permanece LIVE segundo prova externa:
 nova emissão signedURL XML ainda não interrompida; URLs antigas não resolvidas.
+
+## Rodada 18:22 — v96 LIVE externa e sincronização canônica
+Proprietário implantou via MCP externo com JWT explícito: v96 ACTIVE,
+verify_jwt=true, import_map=false, ezbr
+`f2361ec1c84964d0c56aaa089ff4d277aca75874f848e6140763611db8a23d10`.
+Pacote: index/XSD +12 dependências do 090c033a, com adição única do default
+`https://app.cultivofarm.com.br` no CORS. v95 retornava OPTIONS403; v96 corrigida.
+Selftest **externo** na sessão real A: HTTP200, ok=true, Xerces2.0.1,
+PL_010e_v1.02, loadedFiles5; sem reload. Preflight externo zero runs/objetos.
+Não foi selftest ou implantação executado por este agente.
+
+Index/XSD copiados byte-exatos da candidata aos paths canônicos; shared CORS
+sincronizado com essa única origem, também guardado em `edge/corsAllowlist.ts.review`.
+Rollback importa o mesmo shared; montagem/manifest incluem esse arquivo corrigido.
+Dois arquivos frontend integrados; F4_1_RUNTIME_CERTIFIED=false preservado.
+Checks: **76/76 PASS** (44 Edge,14 UI,7 comportamento,5 CORS novos,6 CORS existentes),
+Deno check candidata/rollback exit0, tipos app/node exit0, build isolado exit0
+**31,78s**; logs `v96-sync-*.txt`. Hashes canônicos no validation-status.
+Sem chamada de deploy Edge, SQL, roles, sessões, monitor ou publicação.
+Frontend pronto tecnicamente para publicação; isso NÃO certifica E2E XML.
+Versões/recibos v94 e NO-GO anteriores acima são históricos, superados por v96 externa.
+
+### Próximo passo canônico de fixture (não executado)
+Preparar pelo cadastro fiscal existente uma NF-e **fictícia tpAmb=2**: salvar
+rascunho → calcular tributos → reservar numeração pelas RPCs canônicas.
+Antes de chamar generate, provar documento/tenant/ator e ausência de A1 resolvível
+para o emitente; sem essa prova, NÃO executar (contrato poderia assinar).
+Após revisão separada do fluxo generate, uma chamada explícita canônica com
+idempotência produz unsigned e GENERATED e deve parar em 412 CERTIFICATE_REQUIRED.
+Reler status canônico e só então testar download unsigned A/B e revogação.
+Não abrir gate UI para fazer fixture, inserir runs, alterar certificado ou chamar
+SEFAZ. Esta rodada não executou nenhuma dessas escritas nem encontrou fixture pronta;
+zero objetos não é PASS de download. Se ausência de A1 não for comprovável, etapa
+continua bloqueada, sem criar novo endpoint ou modificar semântica generate.

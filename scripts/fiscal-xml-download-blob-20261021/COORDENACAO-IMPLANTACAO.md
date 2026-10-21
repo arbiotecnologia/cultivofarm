@@ -52,3 +52,13 @@ certificado, SEFAZ, numeração ou dado foi usado. Fixture ausente NÃO é PASS.
   aplicar somente rollback deny pelo mecanismo canônico comprovado.
 Sem alterações de outros módulos, banco, roles, chaves, Storage, sessões,
 monitor ou reload; sem novas autorizações solicitadas.
+
+## Atualização 18:22 — bloqueio hosted superado externamente
+Proprietário implantou v96 via MCP com JWT explícito, import_map=false, mesmo
+pacote revisado + origem exata CORS. Selftest hospedado real A PASS, não realizado
+por este agente. Ver baseline-real-status.json para recibo externo completo.
+Fonte canônica e dois arquivos UI sincronizados; checks locais PASS; não houve
+redeploy nem publicação. Rollback deny preparado com shared CORS corrigido.
+Fixture continua pendente; passo canônico condicional documentado no README.
+Os bloqueios de mecanismo acima são históricos deste sandbox, não impedimento
+atual de backend já implantado e validado externamente.

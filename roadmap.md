@@ -7,7 +7,8 @@
 - [x] Baseline LIVE v94 recuperado externamente pelo proprietário (ZIP/painel + list_edge_functions): ACTIVE, JWT true, import_map false; index hash igual local, 14 fontes/dependências sem delta normalizado contra c7; não foi download neste sandbox.
 - [x] Preflight externo 18:15: v94 ACTIVE/JWT true/import_map false/ezbr sem drift reportado; revisão 090c033a, 55/55 externos PASS.
 - [x] Cinco erros Deno corrigidos candidata/rollback + XSD isolado: check/bundles PASS; 65/65 Edge/UI/comportamento, tipos app/node e build isolado 28,52 s PASS; sem implantação.
-- [ ] Implantação e E2E XML A/B: correções/implantação segura autorizadas pelo proprietário, NO-GO técnico: mecanismo hosted disponível só deploy (sem dry-run/config garantida); sem fixture canônica unsigned-only comprovada; candidato/rollback arquivados, nenhuma promoção/deploy/publicação; sem INSERT direto/SEFAZ/certificado real.
+- [x] Edge v96 implantada/validada externamente (JWT true, import_map false, CORS app exato, selftest real A PASS); sincronização canônica +2 UI concluída, 76/76 e tipos/Deno/build 31,78s PASS; sem redeploy/publicação.
+- [ ] E2E XML A/B: fixture ausente; próximo passo canônico rascunho/tributos/numeração e generate só após revisão e prova de ausência A1, parada 412, sem gate/INSERT artificial/SEFAZ.
 - [ ] Inventário financial-receipts e horizonte expirado: faltam locators/logs/TTL/cutoff verificáveis; nenhuma URL/cache declarada revogada.
 
 ## Revogação técnica efetiva — baseline db1eee, 22:12
