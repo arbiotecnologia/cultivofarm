@@ -17,7 +17,7 @@ vi.mock("@/hooks/useTenantCatalogVisibility", () => ({ useTenantHiddenIds: () =>
   : { status: "ready", scope: { userId: state.actor, organizationId: state.tenant }, ids: state.hidden } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: (table: string) => {
   let excludes = "";
-  const q = { select: () => q, order: () => q, not: (_c: string, _op: string, ids: string) => { excludes = ids; return q; },
+  const q = { select: () => q, order: () => q, eq: () => q, not: (_c: string, _op: string, ids: string) => { excludes = ids; return q; },
     then: (resolve: (v: unknown) => unknown) => {
       state.calls.push(table);
       return Promise.resolve({ data: table === "produtos" ? products.filter(p => !excludes.includes(p.id)) : [], error: null }).then(resolve);
@@ -31,7 +31,7 @@ describe("famílias sobre leitores já autorizados", () => {
   it.each(["biologico", "quimico", "fertilizante_adubo"] as const)("separa %s sem inferir tipo legado", family => {
     expect(products.filter(p => catalogFamilyMatches({ tipo: "produto", raw: p }, family)).map(p => p.id))
       .toEqual([family === "biologico" ? "bio" : family === "quimico" ? "chem" : "fert"]);
-    expect(catalogFamilyMatches({ tipo: "produto", raw: { tipo: "fungicida" } }, family)).toBe(false);
+    expect(catalogFamilyMatches({ tipo: "produto", raw: products[3] }, family)).toBe(false);
   });
   it("preserva legado em Todos e microrganismos em Biológicos", () => {
     expect(catalogFamilyMatches({ tipo: "produto", raw: {} }, "todos")).toBe(true);
