@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AudioRecorder } from "@/components/visita/AudioRecorder";
 import { UploadQueuePanel } from "@/components/visita/UploadQueuePanel";
 import { useMediaUploadQueue } from "@/hooks/useMediaUploadQueue";
+import { AttachmentPager } from "@/components/shared/AttachmentPager";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { NotasRapidas, type QuickNote } from "@/components/visita/NotasRapidas";
 import { CameraDialog } from "@/components/visita/CameraDialog";
@@ -137,7 +138,7 @@ export function EvidenciasTabs({
   const queue = useMediaUploadQueue();
 
   const filePaths = arquivos.map(a => a.arquivo_path).filter(Boolean);
-  const { urls: signedUrls } = useSignedUrls(filePaths);
+  const { urls: signedUrls, pagination: attachmentPage } = useSignedUrls(filePaths);
 
   const getEffectiveUrl = (arquivo: ArquivoRow) => {
     // Somente blob autenticado; arquivo_url gravada nunca é usada como fallback.
@@ -441,6 +442,7 @@ export function EvidenciasTabs({
   return (
     <Card>
       <CardContent className="p-3 sm:p-4 space-y-3">
+        <AttachmentPager pagination={attachmentPage} />
         <UploadQueuePanel
           progress={queue.progress}
           items={queue.items}

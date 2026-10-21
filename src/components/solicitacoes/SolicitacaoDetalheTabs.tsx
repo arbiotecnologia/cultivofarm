@@ -11,6 +11,7 @@ import {
   TimelineAtendimento,
   TimelineEvent,
 } from "@/components/solicitacoes/TimelineAtendimento";
+import { AttachmentPager } from "@/components/shared/AttachmentPager";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { AtribuicaoForm } from "@/components/solicitacoes/AtribuicaoForm";
 import {
@@ -180,7 +181,7 @@ export function SolicitacaoDetalheTabs({ solicitacao }: Props) {
   const audioUrl = solicitacao.audio_inicial_url;
   const audioPath = solicitacao.audio_inicial_path;
 
-  const { urls: signedUrls } = useSignedUrls([...fotosPaths, audioPath].filter(Boolean));
+  const { urls: signedUrls, pagination: attachmentPage } = useSignedUrls([...fotosPaths, audioPath].filter(Boolean));
 
   const getEffectiveUrl = (path: string | null | undefined, url: string | null | undefined) => {
     return (path && signedUrls[path]) || null; // sem fallback para URL gravada
@@ -188,6 +189,7 @@ export function SolicitacaoDetalheTabs({ solicitacao }: Props) {
 
   return (
     <div className="space-y-4">
+      <AttachmentPager pagination={attachmentPage} />
       <div className="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
           <h2 className="text-lg font-semibold text-foreground">{solicitacao.tipo_demanda}</h2>

@@ -69,11 +69,12 @@ describe("authenticated Blob candidate", () => {
     await expect(downloadAuthenticatedAttachment("private", "a.pdf", new AbortController().signal)).rejects.toThrow("Anexo indisponível");
     expect(cancel).toHaveBeenCalled(); expect(URL.createObjectURL).not.toHaveBeenCalled();
   });
-  it("rejects over 24 files explicitly without issuing requests", async () => {
+  it("eager >24 carrega somente a janela de 24 (sem bloquear todos)", async () => {
     const h = renderHook(() => useAuthenticatedBlobUrls(Array.from({ length: 25 }, (_, n) => `${n}.jpg`)));
-    await waitFor(() => expect(h.result.current.error).toBeInstanceOf(Error));
-    expect(h.result.current.failed).toHaveLength(25);
-    expect(mocks.stream).not.toHaveBeenCalled(); h.unmount();
+    await waitFor(() => expect(Object.keys(h.result.current.urls)).toHaveLength(24));
+    expect(h.result.current.failed).toEqual([]); expect(h.result.current.error).toBeNull();
+    expect(h.result.current.pagination.pageCount).toBe(2);
+    expect(mocks.stream).toHaveBeenCalledTimes(24); h.unmount();
   });
   it("caps retained content at 60 MiB per scoped hook", async () => {
     mocks.stream.mockImplementation(async () => body(ATTACHMENT_LIMITS.fileBytes));
@@ -120,15 +121,11 @@ describe("authenticated Blob candidate", () => {
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1); h.unmount();
   });
 });
-it("limite 25 é retentável após redução para 24 e loading é individual", async () => {
+it("lazy com 25 itens permite o 25º e loading é individual", async () => {
   const h = renderHook(({ paths }) => useAuthenticatedBlobUrls(paths, "private", { lazy: true }), { initialProps: { paths: Array.from({ length: 25 }, (_, n) => `${n}.jpg`) } });
-  act(() => h.result.current.request("0.jpg"));
-  expect(h.result.current.failed).toEqual(["0.jpg"]);
-  expect(mocks.stream).not.toHaveBeenCalled();
-  h.rerender({ paths: Array.from({ length: 24 }, (_, n) => `${n}.jpg`) });
-  act(() => h.result.current.request("0.jpg"));
-  expect(h.result.current.loadingPaths).toEqual(["0.jpg"]);
-  await waitFor(() => expect(h.result.current.urls["0.jpg"]).toBeTruthy());
+  act(() => h.result.current.request("24.jpg"));
+  expect(h.result.current.loadingPaths).toEqual(["24.jpg"]);
+  await waitFor(() => expect(h.result.current.urls["24.jpg"]).toBeTruthy());
   expect(h.result.current.failed).toEqual([]);
   expect(h.result.current.error).toBeNull(); h.unmount();
 });

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { AttachmentPager } from "@/components/shared/AttachmentPager";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { useMemo } from "react";
 
@@ -97,7 +98,7 @@ export function TimelineAtendimento({ events, className }: TimelineAtendimentoPr
     return paths;
   }, [events]);
 
-  const { urls: signedUrls } = useSignedUrls(allPaths);
+  const { urls: signedUrls, pagination: attachmentPage } = useSignedUrls(allPaths);
 
   const getEffectiveUrl = (path: string | null | undefined, url: string | null | undefined) => {
     return (path && signedUrls[path]) || null; // sem fallback para URL gravada
@@ -111,6 +112,7 @@ export function TimelineAtendimento({ events, className }: TimelineAtendimentoPr
 
   return (
     <>
+      <AttachmentPager pagination={attachmentPage} />
       <div className={cn("relative space-y-3", className)}>
         <div className="absolute left-4 top-2 bottom-2 w-px bg-border" />
         {events.map((ev) => {

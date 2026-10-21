@@ -6,6 +6,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useRoteiroEventos } from "./useRoteiroEventos";
 import { RoteiroEventoItem } from "./RoteiroEvento";
+import { AttachmentPager } from "@/components/shared/AttachmentPager";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 
 interface Props {
@@ -59,7 +60,7 @@ export function RoteiroVisita({ registroId, hideHeader, viewer = "tecnico" }: Pr
     return paths;
   }, [eventos]);
 
-  const { urls: signedUrls } = useSignedUrls(allPaths);
+  const { urls: signedUrls, pagination: attachmentPage } = useSignedUrls(allPaths);
 
   const eventosComUrls = useMemo(() => {
     return eventos.map(ev => ({
@@ -125,6 +126,7 @@ export function RoteiroVisita({ registroId, hideHeader, viewer = "tecnico" }: Pr
 
   return (
     <div className="roteiro-visita">
+      <AttachmentPager pagination={attachmentPage} />
       {!hideHeader && (
         <header className="sticky top-0 z-20 -mx-3 sm:-mx-6 px-3 sm:px-6 py-3 mb-4 bg-background/95 backdrop-blur border-b print:static print:border-none print:bg-transparent">
           <div className="flex items-start justify-between gap-3 flex-wrap">

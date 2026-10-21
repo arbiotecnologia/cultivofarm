@@ -8,6 +8,7 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
+import { AttachmentPager } from "@/components/shared/AttachmentPager";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -60,7 +61,7 @@ export default function WizardAnexosStep({ remoteRegistroId, locked, onDone }: P
       isConsultorStoragePath(a.arquivo_path, profile.organization_id, remoteRegistroId) ? [a.arquivo_path] : []),
     [safeAnexos, profile?.organization_id, remoteRegistroId],
   );
-  const { urls, error: urlError, refresh: refreshUrls } = useSignedUrls(paths);
+  const { urls, error: urlError, refresh: refreshUrls, pagination: attachmentPage } = useSignedUrls(paths);
 
   const refreshAttachments = async (id: string) => {
     await Promise.all([
@@ -154,6 +155,7 @@ export default function WizardAnexosStep({ remoteRegistroId, locked, onDone }: P
 
   return (
     <Card className="p-4 space-y-3">
+      <AttachmentPager pagination={attachmentPage} />
       <div className="flex items-center gap-2">
         <Paperclip className="h-4 w-4" />
         <h3 className="text-sm font-semibold">Anexos da visita</h3>

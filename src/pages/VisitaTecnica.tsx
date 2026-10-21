@@ -974,10 +974,10 @@ export default function VisitaTecnica() {
       orientacaoCliente: encerramento.orientacaoCliente || conduta.orientacaoCliente,
       proximaAcao: encerramento.proximoPasso,
       recomendacaoPreliminar: encerramento.recomendacaoPreliminar || conduta.recomendacaoPreliminar,
-      fotos: fotos.map((f: any) => ({ url: f.arquivo_url, legenda: f.legenda })),
-      audios: audios.map((a: any) => ({ url: a.arquivo_url, duracao: a.duracao_segundos, legenda: a.legenda })),
+      // Somente caminhos: bytes vêm do download autenticado; URL gravada não é consumida.
+      fotos: fotos.map((f: any) => ({ path: f.arquivo_path || null, legenda: f.legenda })),
+      audios: audios.map((a: any) => ({ duracao: a.duracao_segundos, legenda: a.legenda })),
       evidenciasExtras: evidExtras.map((a: any) => ({
-        url: a.arquivo_url,
         categoria: a.categoria_arquivo,
         legenda: a.legenda,
         data: a.capturado_em ? formatDateTimeDisplay(a.capturado_em) : null,
@@ -986,6 +986,9 @@ export default function VisitaTecnica() {
     };
   };
 
+  const pdfAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => pdfAbortRef.current?.abort(), []);
+
   const handleExportPdf = async () => {
     if (isNew || !visita) return;
     setGeneratingPdf(true);
@@ -993,7 +996,11 @@ export default function VisitaTecnica() {
       const data = buildPdfData();
       if (!data) return;
       const v = visita as any;
-      const doc = await generateVisitaPdf(data);
+      pdfAbortRef.current?.abort();
+      const controller = new AbortController();
+      pdfAbortRef.current = controller;
+      const doc = await generateVisitaPdf(data, { signal: controller.signal });
+      if (controller.signal.aborted) return;
       const fileName = `visita_${v.objetivo_visita || v.id.slice(0, 8)}.pdf`;
       const shared = await sharePdf(doc, fileName);
       if (!shared) {
