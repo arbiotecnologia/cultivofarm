@@ -16,14 +16,44 @@
      reader = data.getReader();
 --- a/src/lib/clienteDocumentos.ts
 +++ b/src/lib/clienteDocumentos.ts
-@@ -1,5 +1,6 @@
+@@ -1,5 +1,7 @@
  import JSZip from "jszip";
  import { supabase } from "@/integrations/supabase/client";
 +import { downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
++import { fencedStep, type BackupFence } from "@/lib/authz/backupFence";
  
  export interface ClienteDocumento {
    id: string;
-@@ -41,10 +42,8 @@
+@@ -21,15 +23,20 @@
+  */
+ export async function gerarBackupDocumentosCliente(
+   clienteId: string,
+-  nomeCliente: string
++  nomeCliente: string,
++  fence: BackupFence
+ ): Promise<{ totalDocs: number; baixados: number; falhas: string[] }> {
+-  const { data: docs, error } = await (supabase as any)
+-    .from("cliente_documentos")
+-    .select("*")
+-    .eq("cliente_id", clienteId);
+-
+-  if (error) throw error;
+-  const lista = (docs || []) as unknown as ClienteDocumento[];
++  const read = async () => {
++    const { data, error } = await supabase.rpc("client_documents_backup_snapshot" as never,
++      { _client: clienteId } as never).abortSignal(fence.signal);
++    if (error || !Array.isArray(data)) throw new Error("Documentos indisponíveis");
++    const rows = data as unknown as Array<{ doc: ClienteDocumento; proof: unknown }>;
++    if (rows.some(row => !row.doc || row.doc.cliente_id !== clienteId || !row.proof)) throw new Error("Documentos indisponíveis");
++    return rows;
++  };
++  const initial = await fencedStep(fence, read);
++  const snapshot = JSON.stringify(initial);
++  const lista = initial.map(row => row.doc);
+ 
+   if (lista.length === 0) {
+     return { totalDocs: 0, baixados: 0, falhas: [] };
+@@ -41,10 +48,8 @@
  
    for (const doc of lista) {
      try {
@@ -31,8 +61,169 @@
 -        .from("clientes-docs")
 -        .download(doc.arquivo_path);
 -      if (dlErr || !blob) {
-+      const blob = await downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, new AbortController().signal);
++      const blob = await fencedStep(fence, () => downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, fence.signal));
 +      if (!blob) {
          falhas.push(doc.nome);
          continue;
        }
+@@ -52,6 +57,7 @@
+       zip.file(`${safeTipo}/${doc.nome}`, blob);
+       baixados += 1;
+     } catch {
++      if (fence.signal.aborted || !fence.current()) throw new Error("Documentos indisponíveis");
+       falhas.push(doc.nome);
+     }
+   }
+@@ -83,7 +89,9 @@
+     )
+   );
+ 
+-  const zipBlob = await zip.generateAsync({ type: "blob" });
++  const zipBlob = await fencedStep(fence, () => zip.generateAsync({ type: "blob" }));
++  const fresh = await fencedStep(fence, read);
++  if (JSON.stringify(fresh) !== snapshot) throw new Error("Documentos indisponíveis");
+   const yyyymmdd = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+   const safeName = (nomeCliente || "cliente")
+     .normalize("NFD")
+@@ -93,11 +101,13 @@
+     .toLowerCase();
+   const filename = `backup-documentos-${safeName}-${yyyymmdd}.zip`;
+ 
++  if (fence.signal.aborted || !fence.current()) throw new Error("Documentos indisponíveis");
+   const url = URL.createObjectURL(zipBlob);
+   const a = document.createElement("a");
+   a.href = url;
+   a.download = filename;
+   document.body.appendChild(a);
++  if (fence.signal.aborted || !fence.current()) { a.remove(); URL.revokeObjectURL(url); throw new Error("Documentos indisponíveis"); }
+   a.click();
+   document.body.removeChild(a);
+   setTimeout(() => URL.revokeObjectURL(url), 1000);
+--- /dev/null
++++ b/src/lib/authz/loadClientDocument.ts
+@@ -0,0 +1,57 @@
++// REVIEW ONLY — intended path src/lib/authz/loadClientDocument.ts.
++import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
++
++/** Actor session comes only from the canonical client. Never direct Storage fallback. */
++export async function loadClientDocument(path: string, signal: AbortSignal): Promise<Blob> {
++  const unavailable = () => new Error("Documento indisponível");
++  if (SUPABASE_URL !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || signal.aborted) throw unavailable();
++  const controller = new AbortController();
++  const abort = () => controller.abort();
++  signal.addEventListener("abort", abort, { once: true });
++  const timer = setTimeout(abort, 15_000);
++  const STOP = Symbol("aborted");
++  const stopped = new Promise<typeof STOP>(resolve => controller.signal.addEventListener("abort", () => resolve(STOP), { once: true }));
++  const step = async <T>(operation: () => PromiseLike<T>): Promise<T> => {
++    if (controller.signal.aborted) throw unavailable();
++    const result = await Promise.race([Promise.resolve(operation()), stopped]);
++    if (result === STOP || controller.signal.aborted) throw unavailable();
++    return result as T;
++  };
++  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
++  const cancel = () => { void reader?.cancel().catch(() => undefined); };
++  controller.signal.addEventListener("abort", cancel, { once: true });
++  try {
++    const session = await step(() => supabase.auth.getSession());
++    if (session.error || !session.data.session) throw unavailable();
++    // Full canonical function URL; no second Supabase client, no /api alias.
++    const response = await step(() => fetch(`${SUPABASE_URL}/functions/v1/download-client-document`, {
++      method: "POST", cache: "no-store", signal: controller.signal,
++      headers: { Authorization: `Bearer ${session.data.session.access_token}`, apikey: SUPABASE_PUBLISHABLE_KEY,
++        "Content-Type": "application/json" }, body: JSON.stringify({ bucket: "clientes-docs", path }),
++    }).then(value => {
++      if (controller.signal.aborted) void value.body?.cancel().catch(() => undefined);
++      return value;
++    }));
++    if (!response.ok || response.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/octet-stream" ||
++      !response.headers.get("Cache-Control")?.includes("no-store") || !response.body) {
++      void response.body?.cancel().catch(() => undefined); throw unavailable();
++    }
++    reader = response.body.getReader();
++    const chunks: ArrayBuffer[] = []; let size = 0;
++    while (true) {
++      const item = await step(() => reader ? reader.read() : Promise.reject(unavailable()));
++      if (item.done) break;
++      size += item.value.byteLength;
++      if (size > 20 * 1024 * 1024) { abort(); throw unavailable(); }
++      chunks.push(new Uint8Array(item.value).buffer);
++    }
++    if (controller.signal.aborted) throw unavailable();
++    const extension = path.split(".").pop()?.toLowerCase();
++    const types: Record<string, string> = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg" };
++    return new Blob(chunks, { type: types[extension ?? ""] ?? "application/octet-stream" });
++  } catch { throw unavailable(); }
++  finally {
++    clearTimeout(timer); signal.removeEventListener("abort", abort); controller.signal.removeEventListener("abort", cancel);
++    cancel(); try { reader?.releaseLock(); } catch { /* pending read cannot publish */ }
++  }
++}--- /dev/null
++++ b/src/lib/authz/backupFence.ts
+@@ -0,0 +1,12 @@
++export interface BackupFence { signal: AbortSignal; current: () => boolean }
++export async function fencedStep<T>(fence: BackupFence, operation: () => PromiseLike<T>): Promise<T> {
++  const unavailable = () => new Error('Documentos indisponíveis');
++  if (fence.signal.aborted || !fence.current()) throw unavailable();
++  let stop: () => void = () => {};
++  const aborted = new Promise<never>((_, reject) => { stop = () => reject(unavailable()); fence.signal.addEventListener('abort', stop, { once: true }); });
++  try {
++    const value = await Promise.race([Promise.resolve(operation()), aborted]);
++    if (fence.signal.aborted || !fence.current()) throw unavailable();
++    return value;
++  } finally { fence.signal.removeEventListener('abort', stop); }
++}--- a/src/components/cadastros/ExcluirInativarDialog.tsx
++++ b/src/components/cadastros/ExcluirInativarDialog.tsx
+@@ -12,6 +12,7 @@
+ import { supabase } from "@/integrations/supabase/client";
+ import { gerarBackupDocumentosCliente } from "@/lib/clienteDocumentos";
+ import { toast } from "sonner";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
+ 
+ type Entidade = "cliente" | "fazenda" | "talhão";
+@@ -43,6 +44,14 @@
+   const [gerandoBackup, setGerandoBackup] = useState(false);
+   const scope = useCommercialRegistrationScope();
+   const actionLock = useRef(false);
++  const backupScope = useStorageAccessScope(`cliente-backup:${entidadeId}`);
++  const backupOwner = useRef<AbortController | null>(null);
++  useEffect(() => {
++    backupOwner.current?.abort();
++    backupOwner.current = null;
++    setGerandoBackup(false);
++    return () => { backupOwner.current?.abort(); backupOwner.current = null; };
++  }, [backupScope.scope, open, entidadeId]);
+ 
+   useEffect(() => {
+     if (!open) {
+@@ -97,12 +106,15 @@
+   };
+ 
+   const handleGerarBackup = async () => {
+-    if (!scope.ready || actionLock.current) return;
+-    actionLock.current = true;
+-    const current = scope.capture();
++    if (!scope.ready || !backupScope.ready || backupOwner.current || actionLock.current) return;
++    const controller = new AbortController();
++    backupOwner.current = controller;
++    const storageCurrent = backupScope.capture();
++    const commercialCurrent = scope.capture();
++    const current = () => !controller.signal.aborted && backupOwner.current === controller && storageCurrent() && commercialCurrent();
+     setGerandoBackup(true);
+     try {
+-      const r = await gerarBackupDocumentosCliente(entidadeId, nome);
++      const r = await gerarBackupDocumentosCliente(entidadeId, nome, { signal: controller.signal, current });
+       if (!current()) return;
+       setBackupFeito(r.falhas.length === 0);
+       toast.success(
+@@ -111,8 +123,7 @@
+     } catch {
+       if (current()) toast.error("Não foi possível gerar o backup dos documentos.");
+     } finally {
+-      actionLock.current = false;
+-      setGerandoBackup(false);
++      if (backupOwner.current === controller) { backupOwner.current = null; setGerandoBackup(false); }
+     }
+   };
+ 
