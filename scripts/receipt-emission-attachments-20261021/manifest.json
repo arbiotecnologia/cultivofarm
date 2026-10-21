@@ -15,7 +15,7 @@
     "src/components/ordens-servico/OSDetalhesDialog.tsx": "7d844076c89a543bce0f22cd39e4e7bfb6bda421ff5ea683befc2d0ac6a9d32c",
     "src/hooks/useCQReferencia.ts": "5559c78b0d8818c23bee13b332951063fd2c34f53d25694432f40f020e531160",
     "src/pages/configuracoes/ParametrosCQPage.tsx": "8ce8c0e48b7a1b89e6b31c9291e60c5a145d15af0694e231b357d4fb1de70eb7",
-    "supabase/functions/generate-financial-receipt/index.ts": "45913bfbc8aefe59c27868806a947f0e5b8c94e39f57212b27694e1536f9b4a0",
+    "supabase/functions/generate-financial-receipt/index.ts": "8fbceebf3054a38528fd48e250f9a58245d850ad2a99e01e0c21fa8db7978343",
     "src/pages/financeiro/RecibosList.tsx": "eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed",
     "src/hooks/useCommercial.ts": "406ecf4c28bdeb6b77b60a86d3f81d235ac35bb5a896800f2db37e08f302083c",
     "src/hooks/useSignedUrls.ts": "728bc5b6e6d2e3a1b4dedbe880bc4a89011aa4d750f51383e1b47b098b91b4ea",
@@ -24,5 +24,7 @@
     "src/lib/authz/authzEpochMonitor.ts": "febf394c270758376370df87ebdc1f05749a54badb46065e573dad09bd828069"
   },
   "hosted_operations": false,
-  "published": false
+  "published": false,
+  "edge_promoted_local": true,
+  "edge_hosted_deployed": false
 }
