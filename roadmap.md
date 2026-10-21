@@ -1,7 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 21/10 — XML autenticado, baseline c7d5c962
-- [x] Revisar 127ef060, reproduzir claims/primeira RPC travadas (16 PASS/2 FAIL), corrigir prazo de entrada; 22 Edge + 14 UI e 1901 regressões PASS/4 skipped, frontend candidato isolado.
+- [x] Revisar 127ef060, reproduzir claims/primeira RPC travadas (16 PASS/2 FAIL), corrigir prazo de entrada; 23 Edge (inclui rollback) + 14 UI e 1901 regressões PASS/4 skipped, frontend candidato isolado.
 - [x] Preparar diff, rollback deny completo e plano de fixture/inventário legacy sem tokens; monitor, Auth e demais runtime byte-exatos.
 - [ ] Baseline realmente implantado (versão/fontes/config/hash): integração sem operação de leitura de fonte; MCP externo UNAVAILABLE; NO-GO.
 - [ ] Build/typecheck da montagem candidata: recibo independente necessário; build automático c7 aprovado não certifica candidata arquivada.
