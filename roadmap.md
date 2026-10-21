@@ -1,8 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 21/10 21:01 — recomendações, homologação externa 33425615
-- [ ] Corrigir enums e versão esperada; recuperar fila com ID remoto explícito, ator/tenant comprovados e autorização canônica, preservando conflitos/pendências.
-- [ ] Testar criação/edição/pendingnew/conflito/remote sem mapping/logout/troca de tenant e registrar impacto em fases irmãs, hashes e validações locais.
+- [x] Corrigir enums/versão e replay de entradas comprovadas com parent explícito sem mapping; conflitos/negações preservados, origem alheia ou histórica não comprovada bloqueada.
+- [x] 76/76 testes em 7 arquivos; harness build OK21:05:41Z; relatório docs/recomendacao-sync-20261021-review.md com impacto irmão e limites de tipos/homologação.
+- [ ] Recuperação da pendência histórica informada: origem ator/tenant e versão não comprovadas na entrada legada; não adotar só pelo acesso atual/UUID, não alterar fila real.
 - [ ] Homologação real do patch: revisão/publicação externa necessárias; sem SQL/deploy/publicação ou filas reais nesta rodada. Origin-deny consultor não aplicado; CDN antigo/SU-518022 não resolvido.
 
 ## 21/10 20:01 — regressão de remoção financeira, publicação 6c9ef2f0
