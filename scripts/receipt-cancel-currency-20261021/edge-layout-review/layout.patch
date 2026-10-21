@@ -1,0 +1,134 @@
+--- supabase/functions/generate-financial-receipt/index.ts	2026-10-21 13:18:47.871392591 +0000
++++ scripts/receipt-cancel-currency-20261021/edge-layout-review/index.ts.review	2026-10-21 13:24:28.733140119 +0000
+@@ -9,6 +9,39 @@
+   return `${reais.toLocaleString("pt-BR")} reais${cents ? ` e ${cents} centavos` : ""}`;
+ }
+ 
++// Layout: wraps by real font width, paginates, never truncates; CANCELADO on every page.
++const PAGE_W = 595, PAGE_H = 420, MARGIN = 30, TEXT_W = PAGE_W - 2 * MARGIN;
++type Font = { widthOfTextAtSize(t: string, s: number): number; encodeText?(t: string): unknown };
++function encodable(text: string, font: Font): string {
++  let out = "";
++  for (const ch of text.replace(/\r\n?/g, "\n").replace(/\t/g, " ")) {
++    if (ch === "\n") { out += ch; continue; }
++    try { font.widthOfTextAtSize(ch, 10); out += ch; } catch { out += "?"; }
++  }
++  return out;
++}
++export function wrapText(text: string, font: Font, size: number, maxWidth = TEXT_W): string[] {
++  const lines: string[] = [];
++  for (const paragraph of encodable(text, font).split("\n")) {
++    let line = "";
++    for (const word of paragraph.split(/ +/)) {
++      const candidate = line ? `${line} ${word}` : word;
++      if (font.widthOfTextAtSize(candidate, size) <= maxWidth) { line = candidate; continue; }
++      if (line) lines.push(line);
++      line = "";
++      let rest = word;
++      while (font.widthOfTextAtSize(rest, size) > maxWidth) {
++        let n = rest.length - 1;
++        while (n > 1 && font.widthOfTextAtSize(rest.slice(0, n), size) > maxWidth) n--;
++        lines.push(rest.slice(0, n)); rest = rest.slice(n);
++      }
++      line = rest;
++    }
++    lines.push(line);
++  }
++  return lines;
++}
++
+ Deno.serve(async (req) => {
+   const origin = req.headers.get("Origin");
+   if (req.method === "OPTIONS") return handlePreflight(req);
+@@ -64,46 +97,59 @@
+     const pdf = await PDFDocument.create();
+     const font = await pdf.embedFont(StandardFonts.Helvetica);
+     const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+-    const page = pdf.addPage([595, 420]);
+-
+-    page.drawRectangle({ x: 0, y: 380, width: 595, height: 40, color: rgb(0.07, 0.36, 0.2) });
+-    page.drawText("AR Bio On-Farm Manager", { x: 30, y: 395, size: 14, font: bold, color: rgb(1,1,1) });
+-    page.drawText("RECIBO DE PAGAMENTO", { x: 30, y: 350, size: 18, font: bold });
+-    page.drawText(`Nº ${rec.receipt_number}`, { x: 400, y: 350, size: 14, font: bold });
++    const canceled = rec.status === "CANCELED";
+ 
+     const customerName = customer?.nome ?? customer?.razao_social ?? "—";
+     const method = (rec as any).payment_methods?.name ?? "—";
+     const amount = Number(rec.amount);
+ 
+-    const lines = [
+-      `Recebemos de: ${customerName}`,
+-      `A quantia de: R$ ${amount.toFixed(2).replace(".", ",")} (${numberToExtenso(amount)})`,
+-      `Referente a: ${rec.description ?? "Pagamento de título financeiro"}`,
+-      `Forma de pagamento: ${method}`,
+-      `Data do pagamento: ${new Date(rec.payment_date).toLocaleDateString("pt-BR")}`,
++    type Block = { text: string; size: number; f: any; color?: any; gap?: number };
++    const body: Block[] = [
++      { text: `Recebemos de: ${customerName}`, size: 11, f: font },
++      { text: `A quantia de: R$ ${amount.toFixed(2).replace(".", ",")} (${numberToExtenso(amount)})`, size: 11, f: font },
++      { text: `Referente a: ${rec.description ?? "Pagamento de título financeiro"}`, size: 11, f: font },
++      { text: `Forma de pagamento: ${method}`, size: 11, f: font },
++      { text: `Data do pagamento: ${new Date(rec.payment_date).toLocaleDateString("pt-BR")}`, size: 11, f: font },
+     ];
+-    let y = 310;
+-    for (const l of lines) {
+-      page.drawText(l, { x: 30, y, size: 11, font });
+-      y -= 18;
+-    }
+-
+-    // Marca d'água CANCELADO em diagonal
+-    if (rec.status === "CANCELED") {
+-      page.drawText("CANCELADO", {
+-        x: 110, y: 200, size: 80, font: bold,
+-        color: rgb(0.85, 0.1, 0.1), opacity: 0.25, rotate: { type: "degrees", angle: 20 } as any,
+-      });
+-      if (rec.cancel_reason) {
+-        page.drawText(`Motivo: ${rec.cancel_reason}`, { x: 30, y: 165, size: 9, font, color: rgb(0.5,0,0) });
++    if (canceled && rec.cancel_reason) body.push({ text: `Motivo: ${rec.cancel_reason}`, size: 9, f: font, color: rgb(0.5, 0, 0), gap: 8 });
++    const footer: Block[] = [
++      { text: "Este recibo foi gerado eletronicamente pelo sistema da AR Bio.", size: 9, f: font },
++      { text: `Emitido por: ${userData.user.email ?? userData.user.id}  •  ${new Date(rec.issued_at).toLocaleString("pt-BR")}`, size: 8, f: font, color: rgb(0.3, 0.3, 0.3) },
++      { text: `Código de autenticidade: ${rec.authenticity_code}`, size: 9, f: bold, color: rgb(0.07, 0.36, 0.2) },
++      { text: `Validação pública (em preparação): /verificar-recibo/${rec.public_verification_token}`, size: 7, f: font, color: rgb(0.4, 0.4, 0.4) },
++    ];
++    const lead = (size: number) => size * 1.4;
++    const footerLines = footer.flatMap(b => wrapText(b.text, b.f, b.size).map(t => ({ ...b, text: t })));
++    const footerH = footerLines.reduce((h, l) => h + lead(l.size), 0) + 16;
++    const BOTTOM = 24 + footerH; // body never enters the footer area
++    const pages: any[] = [];
++    let page: any; let y = 0;
++    const newPage = () => {
++      page = pdf.addPage([PAGE_W, PAGE_H]); pages.push(page);
++      page.drawRectangle({ x: 0, y: 380, width: PAGE_W, height: 40, color: rgb(0.07, 0.36, 0.2) });
++      page.drawText("AR Bio On-Farm Manager", { x: MARGIN, y: 395, size: 14, font: bold, color: rgb(1, 1, 1) });
++      page.drawText(pages.length === 1 ? "RECIBO DE PAGAMENTO" : "RECIBO DE PAGAMENTO (continuação)", { x: MARGIN, y: 350, size: pages.length === 1 ? 18 : 12, font: bold });
++      const num = `Nº ${rec.receipt_number}`;
++      page.drawText(num, { x: PAGE_W - MARGIN - bold.widthOfTextAtSize(num, 14), y: 350, size: 14, font: bold });
++      if (canceled) page.drawText("CANCELADO", { x: 110, y: 170, size: 80, font: bold, color: rgb(0.85, 0.1, 0.1), opacity: 0.25, rotate: { type: "degrees", angle: 20 } as any });
++      y = 318;
++    };
++    newPage();
++    for (const block of body) {
++      y -= block.gap ?? 0;
++      for (const text of wrapText(block.text, block.f, block.size)) {
++        if (y - lead(block.size) < BOTTOM) newPage();
++        y -= lead(block.size);
++        page.drawText(text, { x: MARGIN, y, size: block.size, font: block.f, ...(block.color ? { color: block.color } : {}) });
+       }
+     }
+-
+-    page.drawLine({ start: { x: 30, y: 130 }, end: { x: 565, y: 130 }, thickness: 0.5, color: rgb(0.6,0.6,0.6) });
+-    page.drawText("Este recibo foi gerado eletronicamente pelo sistema da AR Bio.", { x: 30, y: 110, size: 9, font });
+-    page.drawText(`Emitido por: ${userData.user.email ?? userData.user.id}  •  ${new Date(rec.issued_at).toLocaleString("pt-BR")}`, { x: 30, y: 96, size: 8, font, color: rgb(0.3,0.3,0.3) });
+-    page.drawText(`Código de autenticidade: ${rec.authenticity_code}`, { x: 30, y: 78, size: 9, font: bold, color: rgb(0.07,0.36,0.2) });
+-    page.drawText(`Validação pública (em preparação): /verificar-recibo/${rec.public_verification_token}`, { x: 30, y: 62, size: 7, font, color: rgb(0.4,0.4,0.4) });
++    pages.forEach((p, i) => {
++      let fy = 24 + footerH - 8;
++      p.drawLine({ start: { x: MARGIN, y: fy }, end: { x: PAGE_W - MARGIN, y: fy }, thickness: 0.5, color: rgb(0.6, 0.6, 0.6) });
++      fy -= 6;
++      for (const l of footerLines) { fy -= lead(l.size); p.drawText(l.text, { x: MARGIN, y: fy, size: l.size, font: l.f, ...(l.color ? { color: l.color } : {}) }); }
++      if (pages.length > 1) { const t = `Página ${i + 1} de ${pages.length}`; p.drawText(t, { x: PAGE_W - MARGIN - font.widthOfTextAtSize(t, 8), y: 10, size: 8, font }); }
++    });
+ 
+     const bytes = await pdf.save();
+     if (rec.status !== "ISSUED" && rec.status !== "CANCELED") throw new Error("Status de recibo inválido");
