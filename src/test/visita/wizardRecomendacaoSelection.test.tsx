@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({ scope: { organizationId: "AR", userId: "ar" },
   deferred: null as Promise<void> | null, calls: [] as Record<string, unknown>[] }));
 vi.mock("@/hooks/useTenantCatalogVisibility", () => ({ useTenantCatalogScope: () => state.scope }));
 vi.mock("@/hooks/useOfflineSync", () => ({ useOnlineStatus: () => true }));
+vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => ({ ready: true, capture: () => () => true }) }));
 vi.mock("@/hooks/useVisitaWorkspace", () => ({ TECHNICAL_STALE_REVALIDATION: {} }));
 vi.mock("@/lib/offlineDb", () => ({ getPendingRecomendacoesByRegistro: async () => [], savePendingRecomendacao: vi.fn(), removePendingRecomendacao: vi.fn() }));
 vi.mock("@/components/ui/select", () => ({ Select: ({ children }: { children: ReactNode }) => <div>{children}</div>, SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
