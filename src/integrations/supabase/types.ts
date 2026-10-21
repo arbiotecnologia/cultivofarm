@@ -21305,6 +21305,10 @@ export type Database = {
       }
       d51_5_p0d_ab_selftest: { Args: never; Returns: Json }
       expire_due_trials: { Args: { _limit?: number }; Returns: number }
+      financial_document_download_snapshot: {
+        Args: { _name: string }
+        Returns: Json
+      }
       financial_storage_object_permitted: {
         Args: { _bucket: string; _name: string }
         Returns: boolean

@@ -1,4 +1,4 @@
-# financial-docs — canal POST autenticado (CANDIDATA, NÃO IMPLANTADA)
+# financial-docs — canal POST autenticado (Edge v1 e snapshot APLICADOS EXTERNAMENTE; frontend integrado, não publicado)
 
 Baseline: frontend publicado `d58721b0`, config `a3c1a199`. clientes-docs (v3, JWT=true), recibos e XML v98 intocados.
 
@@ -12,17 +12,23 @@ Baseline: frontend publicado `d58721b0`, config `a3c1a199`. clientes-docs (v3, J
 - `edge/core.ts`, `edge/transport.ts`, `edge/index.ts.review` → `supabase/functions/download-financial-document/` (não criado).
 - `sql/snapshot.sql.review` — `financial_document_download_snapshot(text)` INVOKER, reusa o helper; prova registro+tenant+papéis.
 - `sql/origin-deny.sql.review` — RESTRICTIVE SELECT em financial-docs, preserva list/upload/upload_update/delete; aplicar só após homologação A/B do POST.
-- `rollback/deny-only.sql.review` — nega financial-docs inteiro e revoga a RPC; nunca reabre GET/assinatura.
+- `rollback/deny-only.sql.review` — revoga apenas a RPC; preserva uploads/list/delete; nunca reabre GET/assinatura.
 - `frontend/loadFinancialDocument.ts`, `frontend/authenticatedAttachment.ts.review` (+`.patch`) — roteamento só para financial-docs; sem fallback SDK GET.
 - `supabase/config.toml` — `[functions.download-financial-document] verify_jwt = true` adicionado antes de qualquer deploy.
 - Testes: `src/test/security/financialDocumentChannel.review.test.ts`.
 
-## Ordem segura (cada passo exige revisão do proprietário)
-1. Aplicar `snapshot.sql.review`; postflight A/B da RPC (próprio = 1 snapshot; cruzado/sem papel financeiro = NULL).
-2. Implantar Edge com JWT=true; conferir config LIVE.
-3. Promover frontend; publicar.
-4. Homologar real: próprio 200/hash, cruzado 403, revogação 403, restauração 200, upload/delete preservados.
-5. Só então `origin-deny.sql.review`.
+## Estado (evidência externa do proprietário, 2026-10-21; não executada pelo agente)
+- Snapshot aplicado via migration `financial_document_atomic_download_snapshot`, com REVOKE também de service_role (anon=false, authenticated=true, service=false; INVOKER/STABLE). Registro org NULL aceito pela prova do dono (contrato canônico).
+- Edge `download-financial-document` v1 ACTIVE, JWT=true, import_map=false, ezbr `2ad75f43aa32f42e04587b48bccdf9dfb90b325114428747c6250f8affb05f31`, 3 arquivos exatos.
+- Homologação real A/B: próprios 200 (A 137 B, B 202 B, hashes esperados); cruzados 403; retirada exata do papel admin A e B separadamente 403; restaurados mesmos IDs 200 mesmos hashes.
+- Fontes canônicas integradas: `supabase/functions/download-financial-document/`, `src/lib/authz/loadFinancialDocument.ts`, `src/lib/authz/authenticatedAttachment.ts`. Sem redeploy/publicação.
+
+## Próximos passos (já autorizados; sem nova aprovação por etapa)
+1. Revisão final e publicação do frontend pelo proprietário.
+2. Somente depois `origin-deny.sql.review` (bloqueio GET).
+
+## Rollback
+`rollback/deny-only.sql.review` só revoga a RPC de snapshot (Edge passa a 403, sem bytes). Uploads, list, update e delete ficam preservados; política GET, se aplicada, é mantida. Opcional: Edge stub 503 com JWT=true. Nunca reabre GET/assinatura.
 
 ## Limites
 - Bloqueio de origem **não purga** respostas já em cache na CDN (plano FREE; purge é Pro+). GET legado em HIT pode seguir servindo até `max-age` — gate aberto até prova de expiração.

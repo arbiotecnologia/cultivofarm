@@ -1,4 +1,4 @@
--- REVIEW ONLY — NOT APPLIED. Atomic actor snapshot for financial-docs (INVOKER/RLS, no new grants to anon).
+-- APPLIED EXTERNALLY 2026-10-21 (migration financial_document_atomic_download_snapshot); record only. Atomic actor snapshot for financial-docs (INVOKER/RLS, no new grants to anon).
 -- Reuses canonical public.financial_storage_object_permitted('financial-docs', _name)
 -- (path strict + h15 tenant + is_financial_staff + owner row in tenant). Adds the live record proof.
 -- organization_id NULL legacy row (1 in preflight 2026-10-21) stays readable only because the owner
@@ -27,7 +27,7 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path TO '' AS $$
     'document', id, 'owner_type', owner_type, 'owner', owner_id, 'path', storage_path,
     'size', file_size, 'mime', mime_type) FROM docs) ELSE NULL END;
 $$;
-REVOKE ALL ON FUNCTION public.financial_document_download_snapshot(text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.financial_document_download_snapshot(text) FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.financial_document_download_snapshot(text) TO authenticated;
 COMMIT;
 -- Rollback (deny-only, never reopens GET/signing):
