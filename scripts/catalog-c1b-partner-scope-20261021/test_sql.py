@@ -67,7 +67,9 @@ try:
           "SELECT md5(pg_get_functiondef('is_valid_b2b_partner_user(uuid,uuid)'::regprocedure))",
           '93520101987e599280460d3dadcf3a9f')
 
-    S = f"SELECT profile_ok||'|'||coalesce(org_partner::text,'NULL')||'|'||coalesce(user_partner::text,'NULL')||'|'||user_partner_count||'|'||partner_valid FROM platform_private.b2b_actor_scope('{{}}')"
+    S = ("SELECT (CASE WHEN profile_ok THEN 't' ELSE 'f' END)||'|'||coalesce(org_partner::text,'NULL')||'|'||"
+         "coalesce(user_partner::text,'NULL')||'|'||user_partner_count||'|'||(CASE WHEN partner_valid THEN 't' ELSE 'f' END) "
+         "FROM platform_private.b2b_actor_scope('{}')")
     # 1) POSITIVO: padrão teste4 — vínculo autorizado resolve o parceiro
     check('teste4 resolve pelo vinculo', S.format(uid(1)), f't|{PARTNER}|{PARTNER}|1|t')
     # 2) POSITIVO: modelo A (organização parceira) continua funcionando
