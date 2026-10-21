@@ -1,0 +1,102 @@
+diff --git a/scripts/renewal-resume-20261021/baseline/useAuth.tsx b/src/hooks/useAuth.tsx
+index 6dabff3d..ddd89383 100644
+--- a/scripts/renewal-resume-20261021/baseline/useAuth.tsx
++++ b/src/hooks/useAuth.tsx
+@@ -1,4 +1,4 @@
+-import { armResumeOnTimeout, clearResume, observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
++import { armResumeOnRenewal, armResumeOnTimeout, clearResume, observeResumeLatch, observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
+ import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+ import { supabase } from "@/integrations/supabase/client";
+ import type { User, Session } from "@supabase/supabase-js";
+@@ -419,6 +419,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+             rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
+         }
+         if (identityChanged || !nextUserId) monitoredLatchRef.current = null;
++        // Retomada de navegação: renovação natural do MESMO usuário arma; troca/saída descarta.
++        if (identityChanged || !nextUserId) clearResume();
++        else if (event === "TOKEN_REFRESHED") armResumeOnRenewal(Date.now());
+         if (identityChanged || authorizationChanged || !nextUserId) {
+           clearActivePortalContext();
+           queryClient.clear();
+@@ -796,8 +799,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   // unmonitored/empty/unknown re-resolution is held.
+   const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id && !isExternalUser;
+   const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles);
+-  useEffect(() => { observeResumePrincipal(resumePrincipal); }, [resumePrincipal]);
+-  useEffect(() => { if (latchBlocked) clearResume(); }, [latchBlocked]);
++  useEffect(() => { observeResumePrincipal(resumePrincipal, loading); }, [resumePrincipal, loading]);
++  useEffect(() => { observeResumeLatch(latchBlocked, loading); }, [latchBlocked, loading]);
+   const authzReady =
+     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
+     (!!user && !loading && !latchBlocked && !retryPending && (!isExternalUser ||
+diff --git a/scripts/renewal-resume-20261021/baseline/protectedResumeContext.ts b/src/lib/navigation/protectedResumeContext.ts
+index 52ed5ff2..8945cca5 100644
+--- a/scripts/renewal-resume-20261021/baseline/protectedResumeContext.ts
++++ b/src/lib/navigation/protectedResumeContext.ts
+@@ -9,6 +9,7 @@
+  * Ciclo de vida (pontos canônicos no AuthProvider):
+  * - rememberResume: consumidor autorizado com cliente aberto na aba Documentos.
+  * - armResumeOnTimeout: onExpire("timeout") do monitor; TTL conta daqui.
++ * - armResumeOnRenewal: TOKEN_REFRESHED do mesmo usuário; TTL conta daqui.
+  * - clearResume: qualquer outro expire (ineligible/error/offline), nova época,
+  *   latch, logout, troca de identidade/empresa/papéis, fechamento/navegação.
+  * - takeResume: consumo único, exige pausa armada, mesmo principal e TTL.
+@@ -18,7 +19,7 @@
+ export const RESUME_TTL_MS = 120_000;
+ export const RESUMABLE_TAB = "documentos";
+ 
+-type Slot = { principal: string; route: string; recordId: string; pausedAt: number | null };
++type Slot = { principal: string; route: string; recordId: string; pausedAt: number | null; reason: "timeout" | "renewal" | null };
+ let slot: Slot | null = null;
+ 
+ export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[] | null | undefined): string | null {
+@@ -29,7 +30,7 @@ export function resumePrincipalKey(userId: string | null | undefined, organizati
+ /** Só registra a aba Documentos; qualquer outra aba descarta. Reinicia a pausa. */
+ export function rememberResume(principal: string | null, route: string, recordId: string, tab: string): void {
+   if (!principal || !recordId || tab !== RESUMABLE_TAB) { slot = null; return; }
+-  slot = { principal, route, recordId, pausedAt: null };
++  slot = { principal, route, recordId, pausedAt: null, reason: null };
+ }
+ 
+ export function clearResume(): void { slot = null; }
+@@ -38,12 +39,36 @@ export function clearResume(): void { slot = null; }
+ export function armResumeOnTimeout(principal: string | null, now: number = Date.now()): void {
+   if (!slot) return;
+   if (!principal || slot.principal !== principal) { slot = null; return; }
+-  if (slot.pausedAt === null) slot = { ...slot, pausedAt: now };
++  if (slot.pausedAt === null) slot = { ...slot, pausedAt: now, reason: "timeout" };
+ }
+ 
+-/** Principal diferente/ausente descarta. */
+-export function observeResumePrincipal(principal: string | null): void {
+-  if (slot && slot.principal !== principal) slot = null;
++/**
++ * Chamado SOMENTE em TOKEN_REFRESHED do MESMO usuário (renovação natural).
++ * Não confia no principal anterior: takeResume exige o principal relido
++ * idêntico (usuário/empresa/papéis); TTL conta daqui.
++ */
++export function armResumeOnRenewal(now: number = Date.now()): void {
++  if (slot && slot.pausedAt === null) slot = { ...slot, pausedAt: now, reason: "renewal" };
++}
++
++/**
++ * Principal diferente descarta. Principal ausente descarta, exceto enquanto
++ * a identidade está sendo relida (`resolving`) com pausa já armada.
++ */
++export function observeResumePrincipal(principal: string | null, resolving = false): void {
++  if (!slot || slot.principal === principal) return;
++  if (principal === null && resolving && slot.reason === "renewal") return;
++  slot = null;
++}
++
++/**
++ * Latch de re-resolução: descarta, exceto a renovação natural armada enquanto
++ * a identidade ainda é relida. Latch que persiste após a releitura descarta.
++ */
++export function observeResumeLatch(latchBlocked: boolean, resolving: boolean): void {
++  if (!latchBlocked || !slot) return;
++  if (resolving && slot.reason === "renewal") return;
++  slot = null;
+ }
+ 
+ /** Consome uma vez; exige pausa armada por timeout dentro do TTL. */

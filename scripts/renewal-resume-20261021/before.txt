@@ -1,0 +1,3 @@
+   × renovação natural TOKEN_REFRESHED com mesmo principal (real a82: admin A/B) > mesmo usuário/empresa/papéis: conteúdo some durante a revalidação e Documentos reabre com dados relidos, sem rascunho 142ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  1 failed | 15 passed (16)
