@@ -72,10 +72,13 @@ function ReceiptDownload({ receipt, tenant, listScope, onInterrupted }: { receip
       timedOut = true; controller.abort(); request.current = null;
       if (current()) { setBusy(false); toast.error("Recibo indisponível"); }
     }, 15_000);
-    controller.signal.addEventListener("abort", () => { clearTimeout(timeout); note(timedOut ? "timeout" : "fence"); }, { once: true });
+    let opened = ""; let kept = false; let outcome: "ok" | "error" | "stale_state" = "error";
+    // Abort (timeout/fence) revokes unconfirmed bytes immediately: a hung post-read never reaches finally.
+    // Only the latest request may discard, so a newer attempt's bytes for the same path are never touched.
+    const dropUnconfirmed = () => { if (opened && !kept && latest.current === controller) { opener.discard(opened); opened = ""; } };
+    controller.signal.addEventListener("abort", () => { clearTimeout(timeout); dropUnconfirmed(); note(timedOut ? "timeout" : "fence"); }, { once: true });
     setBusy(true);
     // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
-    let opened = ""; let kept = false; let outcome: "ok" | "error" | "stale_state" = "error";
     try {
       if (isPrepared) {
         // Prepared bytes (possibly from before a cancel elsewhere) are re-confirmed against server state.
@@ -125,7 +128,7 @@ function ReceiptDownload({ receipt, tenant, listScope, onInterrupted }: { receip
       clearTimeout(timeout);
       note(timedOut ? "timeout" : !current() ? "fence" : outcome);
       // A newer request may own the same path after a timeout; never revoke its bytes.
-      if (opened && !kept && latest.current === controller) opener.discard(opened);
+      dropUnconfirmed();
       if (request.current === controller) {
         request.current = null;
         if (current()) setBusy(false);

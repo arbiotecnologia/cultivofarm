@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const fake = vi.hoisted(() => ({ tenant: "007bb519-cba0-4704-be2c-cb93ad010048", epoch: 0, reads: 0, download: vi.fn(), edge: vi.fn(), error: vi.fn(), info: vi.fn() }));
+const fake = vi.hoisted(() => ({ tenant: "007bb519-cba0-4704-be2c-cb93ad010048", epoch: 0, reads: 0, hangRead: 0, release: [] as Array<() => void>, download: vi.fn(), edge: vi.fn(), error: vi.fn(), info: vi.fn() }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "actor" },
   profile: { user_id: "actor", organization_id: fake.tenant, ativo: true, senha_provisoria: false }, roles: ["financeiro"],
   loading: false, authzReady: true, authzEpoch: fake.epoch, checkAuthzAccess: () => true }) }));
@@ -17,7 +17,9 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     for (const m of ["select", "eq", "order", "gte", "lte", "ilike"]) q[m] = () => q;
     q.limit = (n: number) => { q.single = n === 2; return q; };
     q.maybeSingle = () => ({ abortSignal: undefined, then: (r: any) => r({ data: row(), error: null }) });
-    q.abortSignal = (_s: AbortSignal) => { const p: any = (async () => { if (q.single) fake.reads++; return { data: [row()], error: null }; })();
+    // hangRead: that status read ignores abort and settles only when released by the test.
+    q.abortSignal = (_s: AbortSignal) => { const p: any = (async () => { if (q.single && ++fake.reads === fake.hangRead) await new Promise<void>(r => fake.release.push(r));
+      return { data: [row()], error: null }; })();
       p.maybeSingle = async () => ({ data: row(), error: null }); return p; };
     return q; },
   rpc: () => ({ abortSignal: async () => ({ data: { receipt_id: RID, receipt_number: "REC-2026-000001" }, error: null }) }),
@@ -40,7 +42,7 @@ const hanging = () => { const pending: Array<{ resolve: () => void; signal: Abor
   return pending; };
 const flush = async () => { await act(async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); }); };
 beforeEach(() => {
-  fake.epoch = 0; fake.reads = 0; fake.download.mockReset(); fake.edge.mockReset(); fake.error.mockReset(); fake.info.mockReset(); clearReceiptPrepareDiagnostics();
+  fake.epoch = 0; fake.reads = 0; fake.hangRead = 0; fake.release = []; fake.download.mockReset(); fake.edge.mockReset(); fake.error.mockReset(); fake.info.mockReset(); clearReceiptPrepareDiagnostics();
   fake.download.mockImplementation(async (_b: string, p: string) => new Blob([p]));
   fake.edge.mockResolvedValue({ data: { path: PATH, receipt_number: "REC-2026-000001", status: "ISSUED" }, error: null });
   vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:r"), revokeObjectURL: vi.fn() }));
@@ -133,5 +135,35 @@ describe("telemetry with a transport that ignores abort", () => {
     expect(c).not.toBeDisabled();
     resolvers[0](new Blob(["old"])); await flush();
     expect(readReceiptPrepareDiagnostics()).toHaveLength(1); expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+});
+
+describe("post-read that ignores abort after bytes were stored", () => {
+  const cases = [["list", 2], ["button", 1]] as const;
+  it.each(cases)("%s: timeout revokes unconfirmed blob immediately and retry reaches Baixar PDF", async (src, at) => {
+    fake.hangRead = at;
+    const ui = src === "list" ? mount(RecibosList) : render(<EmitirReciboButton paymentId={PID} />);
+    const c = src === "list" ? await ui.findByRole("button", { name: "Preparar PDF" }) : ui.getByRole("button", { name: /Emitir recibo/ });
+    vi.useFakeTimers(); fireEvent.click(c); await flush();
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    await act(async () => { vi.advanceTimersByTime(15_001); }); await flush(); vi.useRealTimers();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:r");
+    expect(readReceiptPrepareDiagnostics()).toEqual([expect.objectContaining({ stage: "post_read", outcome: "timeout" })]);
+    fake.hangRead = 0; fireEvent.click(c);
+    await ui.findByRole("button", { name: /Baixar PDF/ });
+  });
+  it.each(cases)("%s: retry before the late post-read; old completion never revokes the new blob", async (src, at) => {
+    let n = 0; (URL.createObjectURL as any).mockImplementation(() => `blob:${++n}`);
+    fake.hangRead = at;
+    const ui = src === "list" ? mount(RecibosList) : render(<EmitirReciboButton paymentId={PID} />);
+    const c = src === "list" ? await ui.findByRole("button", { name: "Preparar PDF" }) : ui.getByRole("button", { name: /Emitir recibo/ });
+    vi.useFakeTimers(); fireEvent.click(c); await flush();
+    await act(async () => { vi.advanceTimersByTime(15_001); }); await flush(); vi.useRealTimers();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:1");
+    fake.hangRead = 0; fireEvent.click(c);
+    await ui.findByRole("button", { name: /Baixar PDF/ });
+    fake.release[0](); await flush();
+    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith("blob:2");
+    expect(ui.getByRole("button", { name: /Baixar PDF/ })).toBeTruthy();
   });
 });

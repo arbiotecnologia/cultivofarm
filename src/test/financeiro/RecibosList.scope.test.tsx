@@ -8,7 +8,7 @@ const fake = vi.hoisted(() => ({ uid: "actor", tenant: "007bb519-cba0-4704-be2c-
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: fake.uid },
   profile: { user_id: fake.uid, organization_id: fake.tenant, ativo: true, senha_provisoria: false }, roles: fake.roles,
   loading: false, authzReady: fake.ready, authzEpoch: fake.epoch, checkAuthzAccess: () => fake.check() }) }));
-vi.mock("sonner", () => ({ toast: { success: fake.success, error: fake.error } }));
+vi.mock("sonner", () => ({ toast: { success: fake.success, error: fake.error, info: () => {} } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   from: () => { const q: any = { filters: [] };
     for (const method of ["select", "eq", "order", "limit", "gte", "lte", "ilike"]) q[method] = (...args: any[]) => { q.filters.push([method, ...args]); return q; };

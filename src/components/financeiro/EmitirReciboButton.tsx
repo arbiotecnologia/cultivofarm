@@ -61,10 +61,13 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
     // Exactly one record per request: at the timeout/fence event itself (even if I/O hangs) or in finally.
     const note = (o: "ok" | "timeout" | "fence" | "error" | "stale_state") => { if (noted) return; noted = true;
       recordReceiptPrepare({ source: "button", stage, outcome: o, elapsedMs: Date.now() - started }); };
-    controller.signal.addEventListener("abort", () => { clearTimeout(timeout); note(timedOut ? "timeout" : "fence"); }, { once: true });
+    let opened = ""; let kept = false;
+    // Abort (timeout/fence) revokes unconfirmed bytes immediately: a hung post-read never reaches finally.
+    // Only the latest request may discard, so a newer attempt's bytes for the same path are never touched.
+    const dropUnconfirmed = () => { if (opened && !kept && latest.current === controller) { opener.discard(opened); opened = ""; } };
+    controller.signal.addEventListener("abort", () => { clearTimeout(timeout); dropUnconfirmed(); note(timedOut ? "timeout" : "fence"); }, { once: true });
     setBusy(true);
     // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
-    let opened = ""; let kept = false;
     try {
       if (downloadable) {
         // Re-confirm server state on click: a cancel elsewhere revokes these prepared bytes.
@@ -123,7 +126,7 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       clearTimeout(timeout);
       note(timedOut ? "timeout" : !current() ? "fence" : outcome);
       // A newer request may own the same path after a timeout; never revoke its bytes.
-      if (opened && !kept && latest.current === controller) opener.discard(opened);
+      dropUnconfirmed();
       if (request.current === controller) {
         request.current = null;
         if (current()) setBusy(false);

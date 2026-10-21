@@ -38,3 +38,11 @@ a anotação `Promise<void>`→`Promise<boolean>`.
   transporte que ignora abort não bloqueia mais `loadingPaths`/retry; completion antiga não remove nem revoga bytes novos.
 - Telemetria registrada exatamente uma vez: no evento timeout/fence (mesmo com I/O pendurado) ou no finally.
 - Testes: `attachmentOpenerAbortOwnership.test.tsx` (hook real) + 2 de telemetria; focados 196/196.
+
+## Revisão 6a551 (corrigida)
+- Abort do pai (timeout/fence) revoga na hora o Blob já armazenado e ainda não confirmado pelo pós-read
+  (`dropUnconfirmed`, só se `latest === controller`); finally reutiliza a mesma função (idempotente).
+- Variáveis `opened/kept/outcome` declaradas antes do listener; clique de download sobre estado confirmado não é afetado.
+- Testes: pós-read ignorando abort (lista/botão), revogação aos 15001 ms, retry até Baixar PDF, e retry antes da
+  resposta tardia sem revogar o Blob novo. Mock antigo de `sonner` em `RecibosList.scope` ganhou `info` (só simulador).
+- Focados 200/200 sem erros não tratados; tsgo e build OK.
