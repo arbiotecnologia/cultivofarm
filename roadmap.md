@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 21/10 21:01 — recomendações, homologação externa 33425615
+- [x] Corrigir enums/versão e replay de entradas comprovadas com parent explícito sem mapping; conflitos/negações preservados, origem alheia ou histórica não comprovada bloqueada.
+- [x] 80/80 testes em 8 arquivos incluindo formulário real montado e botão Sincronizar; harness build OK21:06:58Z; relatório docs/recomendacao-sync-20261021-review.md com impacto irmão e limites de tipos/homologação.
+- [ ] Recuperação da pendência histórica informada: origem ator/tenant e versão não comprovadas na entrada legada; não adotar só pelo acesso atual/UUID, não alterar fila real.
+- [ ] Homologação real do patch: revisão/publicação externa necessárias; sem SQL/deploy/publicação ou filas reais nesta rodada. Origin-deny consultor não aplicado; CDN antigo/SU-518022 não resolvido.
+
 ## 21/10 20:01 — regressão de remoção financeira, publicação 6c9ef2f0
 - [x] Corrigir receiver da RPC existente em DocumentosPanel; mock dependente de this reproduziu 7 falhas/42 PASS antes e 49/49 depois, incluindo fences/negação/invalidation; único caller de remoção financeira, sem refactor amplo.
 - [x] Registrar 95/95 focados, build automático OK 20:02:31 UTC, SHA e evidências externas em README/REMOVE-REGRESSION.md; legado orgNULL sem legibilidade comprovada. Sem publicação/SQL/Edge/dados; cache CDN legado pendente.

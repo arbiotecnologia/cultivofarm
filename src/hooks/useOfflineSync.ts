@@ -39,6 +39,10 @@ import { uploadMediaIdempotent } from "@/lib/mediaUpload";
 import { buildTenantStoragePath, getCurrentOrganizationId, isTenantScopedStoragePath } from "@/lib/tenantStoragePath";
 import { emitTechnicalVisitSynced } from "@/lib/visitaSyncEvents";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { recomendacaoOwnedBy } from "@/lib/visita/recomendacaoContract";
+import { syncRecomendacao } from "@/lib/visita/syncRecomendacao";
 
 
 const MAX_UPLOAD_ATTEMPTS = 3;
@@ -116,6 +120,12 @@ async function uploadFotoWithRetry(
 
 export function useOfflineSync() {
   const isOnline = useOnlineStatus();
+  const { user, profile } = useAuth();
+  const access = useStorageAccessScope("offline-recomendacoes");
+  const actorRef = useRef({ userId: user?.id ?? "", organizationId: profile?.organization_id ?? "" });
+  actorRef.current = { userId: user?.id ?? "", organizationId: profile?.organization_id ?? "" };
+  const accessRef = useRef(access);
+  accessRef.current = access;
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<SyncProgress>({ total: 0, completed: 0, failed: 0 });
@@ -130,6 +140,10 @@ export function useOfflineSync() {
     if (syncingRef.current || !navigator.onLine) return;
     syncingRef.current = true;
     setSyncing(true);
+    const actor = { ...actorRef.current };
+    const valid = accessRef.current.capture();
+    const recommendationCurrent = () => valid() && actorRef.current.userId === actor.userId &&
+      actorRef.current.organizationId === actor.organizationId;
 
     try {
       const pending = await getPendingRegistros();
@@ -654,45 +668,29 @@ export function useOfflineSync() {
       // === RECOMENDAÇÕES (Etapa 5 do wizard) ===
       const pendingRec = await getAllPendingRecomendacoes();
       for (const r of pendingRec) {
+        // Unowned legacy entries and other actors/tenants are NEVER adopted or rewritten.
+        if (!recommendationCurrent()) break;
+        if (!recomendacaoOwnedBy(r, actor)) { failedCount++; setProgress(p => ({ ...p, failed: p.failed + 1 })); continue; }
         try {
-          const mapping = await getSyncedVisitMapping(r.localRegistroId);
-          const remoteRegistroId = mapping?.remoteId || null;
-          if (!remoteRegistroId) continue;
+          const mapping = r.remoteRegistroId ? null : await getSyncedVisitMapping(r.localRegistroId);
+          const remoteRegistroId = r.remoteRegistroId ?? mapping?.remoteId ?? null;
+          if (!recommendationCurrent()) break;
 
           setProgress((p) => ({ ...p, current: "Etapa 5 · Recomendação" }));
-          await updatePendingRecomendacao(r.clientUuid, { syncStatus: "syncing", syncingAt: Date.now() });
-          await log("recomendacao", r.clientUuid, "tentativa", { item_remoto_id: remoteRegistroId });
+          await syncRecomendacao(r, actor, remoteRegistroId, recommendationCurrent);
+          if (!recommendationCurrent()) break;
 
-          if (r.deleted) {
-            if (r.remoteId) {
-              const { error } = await supabase.rpc("rpc_delete_recomendacao_visita" as any, { p_id: r.remoteId });
-              if (error) throw error;
-            }
-            await removePendingRecomendacao(r.clientUuid);
-            syncedCount++;
-            setProgress((p) => ({ ...p, completed: p.completed + 1 }));
-            continue;
-          }
-
-          const { error: rpcErrR } = await supabase.rpc("rpc_upsert_recomendacao_visita" as any, {
-            p_registro_id: remoteRegistroId,
-            p_client_uuid: r.clientUuid,
-            p_payload: r.payload as any,
-            p_expected_versao: r.versao,
-          });
-          if (rpcErrR) throw rpcErrR;
-
-          await log("recomendacao", r.clientUuid, "sucesso", { item_remoto_id: remoteRegistroId });
-          await removePendingRecomendacao(r.clientUuid);
+          await removePendingRecomendacao(r.clientUuid, r.updatedAt);
+          if (!recommendationCurrent()) break;
           syncedCount++;
           setProgress((p) => ({ ...p, completed: p.completed + 1 }));
         } catch (err: any) {
+          if (!recommendationCurrent()) break;
           console.error("Sync recomendacao error:", err);
           await updatePendingRecomendacao(r.clientUuid, {
             syncStatus: "sync_error", syncingAt: null,
             lastSyncError: err?.message || "erro desconhecido",
-          }).catch(() => {});
-          await log("recomendacao", r.clientUuid, "erro", { mensagem_erro: err?.message || "erro desconhecido" });
+          }, r.updatedAt).catch(() => {});
           failedCount++;
           setProgress((p) => ({ ...p, failed: p.failed + 1 }));
         }
