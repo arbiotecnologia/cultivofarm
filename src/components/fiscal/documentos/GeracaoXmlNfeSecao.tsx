@@ -4,7 +4,7 @@
  * Teto explícito: SIGNED. Nenhum botão transmite documento à SEFAZ.
  * Artefatos são imutáveis: cada correção gera uma nova versão de execução.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -74,7 +74,7 @@ function Hash({ label, value }: { label: string; value: string | null }) {
 function ArtifactButton({ opener, runId, artifact, available, label, icon, testId }: {
   opener: ReturnType<typeof useAuthenticatedAttachmentOpener>;
   runId: string; artifact: "signed" | "unsigned"; available: boolean;
-  label: string; icon: React.ReactNode; testId: string;
+  label: string; icon: ReactNode; testId: string;
 }) {
   const key = fiscalXmlKey(runId, artifact);
   const ready = !!opener.urls[key];
