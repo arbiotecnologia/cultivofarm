@@ -1,0 +1,6 @@
+72b26f0aa94caae2a94cc0c34a1d8297227b3e7388b30a7c3c574db38f96d1a9  ./baseline/authzEpochMonitor.ts.baseline
+b3691b9a3263a1ac47f1c9338d4219306df0fe50d3c6648afa37b1002c65dccc  ./baseline/localDiagnostics.ts.baseline
+f6d71799d34785df5d87b7288a048be50881b1780fb77cb71e127709253e3755  ./candidate/authzEpochMonitor.ts
+90d1402f328aca2569c17295b150d4125d6fad2dbab0e0e88cd573455ad80eff  ./candidate/authzLeaseLapse.test.ts
+fd342eb228be56965173c908f7a8eb01eaabcb49b01c5f71b6ae2d0648f7471c  ./candidate/localDiagnostics.ts
+a44d83874583dbe895a27614e95d1dcaa418186f1dae633cd1dc217873c48e29  ./frontend.patch
