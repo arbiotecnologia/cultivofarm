@@ -103,7 +103,7 @@ it("loader recusa vazio, acima do limite, chave inválida e sinal abortado", asy
   const s = () => new AbortController().signal;
   m.invoke.mockResolvedValueOnce({ data: new Blob([]), error: null });
   await expect(loadFiscalXmlArtifact(`${RUN}:signed`, s())).rejects.toThrow("Arquivo indisponível");
-  m.invoke.mockResolvedValueOnce({ data: { size: FISCAL_XML_MAX_BYTES + 1, arrayBuffer: async () => new ArrayBuffer(0) } as unknown as Blob, error: null });
+  m.invoke.mockResolvedValueOnce({ data: new Blob([new Uint8Array(FISCAL_XML_MAX_BYTES + 1)]), error: null });
   await expect(loadFiscalXmlArtifact(`${RUN}:signed`, s())).rejects.toThrow();
   await expect(loadFiscalXmlArtifact(`${RUN}:pdf`, s())).rejects.toThrow();
   const a = new AbortController(); a.abort();

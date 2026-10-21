@@ -123,5 +123,5 @@ export async function loadFiscalXmlArtifact(key: string, signal: AbortSignal): P
   });
   if (signal.aborted || error || !(data instanceof Blob)) throw unavailable();
   if (data.size === 0 || data.size > FISCAL_XML_MAX_BYTES) throw unavailable();
-  return new Blob([await data.arrayBuffer()], { type: "application/xml" });
+  return new Blob([data], { type: "application/xml" });
 }

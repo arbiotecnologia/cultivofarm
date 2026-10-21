@@ -2,6 +2,7 @@ import { expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import ts from "typescript";
+import { Blob as NodeBlob } from "node:buffer";
 
 // Executa a CANDIDATA revisável (não implantada) com SDK simulado. Não é homologação real.
 const CANDIDATE = "scripts/fiscal-xml-download-blob-20261021/edge/index.ts.review";
@@ -23,7 +24,7 @@ function setup(o: Opt = {}) {
   const download = vi.fn((_p: string, _o: unknown, p: { signal: AbortSignal }) => o.hang
     ? new Promise((_r, rej) => p.signal.addEventListener("abort", () => rej(new Error("aborted"))))
     : Promise.resolve(o.dlError ? { data: null, error: new Error("x") }
-      : { data: o.size ? { size: o.size, arrayBuffer: async () => new ArrayBuffer(0) } : new Blob([XML]), error: null }));
+      : { data: o.size ? { size: o.size, arrayBuffer: async () => new ArrayBuffer(0) } : new NodeBlob([XML]), error: null }));
   const from = () => { const q: Record<string, unknown> = {}; for (const k of ["select", "eq"]) q[k] = () => q;
     q.maybeSingle = async () => { reads++; return visible() ? { data: { id: RUN, signed_path: o.pathChange && reads > 1 ? "OA/other.xml" : "OA/a.xml",
       unsigned_path: "OA/u.xml", storage_bucket: o.bucket ?? "fiscal-xml", signed_sha256: o.sha ?? SHA, unsigned_sha256: SHA, signed_bytes: XML.length, unsigned_bytes: XML.length }, error: null } : { data: null, error: null }; };
