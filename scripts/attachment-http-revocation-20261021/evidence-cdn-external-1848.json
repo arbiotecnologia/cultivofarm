@@ -1,0 +1,45 @@
+{
+  "source": "Proprietário; complemento factual recebido em 2026-10-21 18:48 UTC",
+  "executed_by_agent": false,
+  "job": "jobumsg_01m5fw614pe6esah5edxpthhfn",
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "published_commit": "c63bc6bca04eba1abf2beb7d41394ebd0172fa9d",
+  "bundle": "index-SoQppvKm.js",
+  "actor_label": "B real",
+  "role_state_during_requests": "administrador removido pelo proprietário",
+  "role_state_after_test": "restaurado pelo proprietário",
+  "requests": [
+    {
+      "utc": "2026-10-21T18:40:44Z",
+      "method": "GET",
+      "endpoint": "/storage/v1/object/authenticated/clientes-docs/<mesmo arquivo B; locator não fornecido no complemento>",
+      "query": "URL antiga sem query inédita",
+      "status": 200,
+      "body_bytes": 1751,
+      "fromDiskCache": false,
+      "fromServiceWorker": false,
+      "response_headers": {
+        "cache-control": "private,max-age=3600",
+        "cf-cache-status": "HIT",
+        "sb-request-id": "01a15fc4-05af-7dad-9854-455bd8605589"
+      }
+    },
+    {
+      "utc": "2026-10-21T18:40:45Z",
+      "method": "GET",
+      "endpoint": "/storage/v1/object/authenticated/clientes-docs/<mesmo arquivo B; locator não fornecido no complemento>",
+      "query": "audit_revocation=20261021b",
+      "status": 400,
+      "error": "NoSuchKey",
+      "response_headers": {
+        "cf-cache-status": "BYPASS",
+        "sb-request-id": "01a15fc4-074e-75bb-9c6b-68b88cef5345"
+      }
+    }
+  ],
+  "conclusion": "Evidência externa confirma resposta de cache CDN remoto mascarando a revogação no GET antigo; não é cache de disco nem service worker nestes requests.",
+  "limits": "Sem captura própria, HAR completo, locator B exato, Age/ETag/Vary ou logs correlacionados do origin; não inferir TTL restante, alcance de todos os PoPs ou decisão interna do origin a partir de NoSuchKey.",
+  "support_case": "SU-518022",
+  "external_message_sent": false,
+  "production_actions": "NONE"
+}

@@ -3,6 +3,8 @@
 ## 21/10 18:39 — revogação HTTP de anexos, baseline c63bc6b
 - [x] Preparar transporte clientes-docs com provas independentes pré/pós-bytes, stream 10 MiB/prazo15s/cancel, integração isolada e rollback deny; 60/60 sintéticos + Deno check/bundle local PASS; sem promover runtime/Edge/SQL.
 - [x] Inventariar leitores irmãos/ZIP e URL direta antiga; relatório distingue fluxo protegido candidato de endpoint antigo ainda não contido, sem atribuir cache/CDN/SW. XML v96/monitor byte-exatos.
+- [x] Complemento 18:48: salvar B HIT200/1751 versus BYPASS400/NoSuchKey, mesmo ensaio e request IDs; CDN remoto confirmado externamente. Documentar API oficial de purga (sem execução), controle durável antes do HIT e pendências SU-518022 sem enviar.
+- [ ] Bloquear GET legado no CDN/Storage original + invalidar cache aplicável: falta mecanismo/configuração Supabase comprovados e revisão; POST ou purga isolada não resolvem. Não alterar objetos/chaves/plano.
 - [ ] Types/build frontend candidato integrado: roteiro portátil pronto, execução independente pendente; build ativo OK não certifica montagem candidata.
 - [ ] Revisão independente e homologação HTTP A/B/URL antiga; XML v96, sessões, objetos, roles e monitor preservados.
 

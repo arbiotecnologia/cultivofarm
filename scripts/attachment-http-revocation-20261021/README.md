@@ -6,7 +6,7 @@
 - Próprio PDF A/B: HTTP 200, 1751 bytes. Cruzado A/B: HTTP 400 NoSuchKey.
 - Após retirada exata do papel administrador A, UI pausada, mas URL direta autenticada anterior retornou HTTP 200/1751 bytes com bearer real e cache:no-store.
 - Em segunda retirada, URL com query diferente retornou HTTP 400 NoSuchKey. Papel restaurado pelo proprietário com o mesmo ID após cada ensaio.
-- A diferença é compatível com uma decisão/resposta reutilizada em algum ponto, **não comprova cache, CDN, navegador, gateway ou SW**. Os ensaios são duas revogações diferentes, não uma comparação controlada na mesma janela. `cache:no-store` no fetch não prova que todo intermediário respeitou o pedido. O push worker informado não tem fetch handler; isso não demonstra a causa nem exonera outros componentes sem a rede.
+- Complemento 18:48: proprietário reproduziu B na mesma revogação: URL antiga 18:40:44 UTC `200/1751`, `cf-cache-status:HIT`, `private,max-age=3600`, disk cache/SW false; query inédita 18:40:45 `400/NoSuchKey`, `BYPASS`. **Cache CDN remoto mascarando revogação confirmado por evidência externa**, não captura própria. IDs e limites em `evidence-cdn-external-1848.json`; não reutilizar o locator A como se fosse B.
 
 ## Lacuna comprovável em fonte
 `downloadAuthenticatedAttachment` faz SDK Storage `.asStream()` com limite 20 MiB e abort 15s, mas não verifica autorização independente após bytes. Os hooks cercam ator/tenant/papéis/epoch/lease no navegador; isso não impede um bearer chamar diretamente uma URL antiga. `clienteDocumentos.ts` (ZIP) ainda baixa diretamente e sem esses limites. Nenhum novo signedURL é necessário para explorar o endpoint direto.
@@ -21,11 +21,11 @@
 ## O que NÃO está resolvido
 - **Endpoint antigo continua reutilizável enquanto não houver contenção comprovada.** Uma Edge de proteção não intercepta GET já conhecido de `/storage/v1/object/authenticated/...`. Sem controle verificável desse endpoint/cache, não declarar “revogação efetiva global”.
 - Não adicionar cachebuster como autorização. Negar GET direto em policy restritiva só atua quando a requisição chega ao Storage/RLS; não prova invalidar resposta previamente cacheada. Pode também impedir o download do ator pela candidata; exige desenho de canal server-only/autoridade e revisão própria, nunca trocar para service_role para “funcionar”.
-- Não existe aqui uma garantia documentada de purga seletiva via API que não modifique objetos/chaves. Não apagar, mover, copiar, reenviar arquivo, tornar bucket público, girar chave ou retirar as policies existentes.
+- Atualização factual: existe API oficial de purga seletiva, confirmada no SDK instalado, sem apagar/mover objetos. Disponibilidade no projeto/abrangência de variantes não verificadas; requer secret server-side e Pro ou superior, **sem alterar plano nem executar purga**. Purga isolada repovoa cache e não resolve revogação durável; proposta de bypass/reautorização original + purga e aceite em `LEGACY-CDN-CONTAINMENT.md`.
 - Bytes já recebidos não podem ser recuperados. Uma revogação após a última prova e durante a transmissão é uma janela inevitável; estas provas não constituem trava transacional com a alteração de roles, nem detectam ABA não observado sem versão monotônica do recurso.
 - Sem snapshot LIVE das definições/ACL/policies nesta rodada: fontes versionadas demonstram contratos, **não equivalência LIVE**. A ferramenta de consulta disponível não expõe project_ref, então não foi usada (fail-closed canônico).
 
-## Rede necessária para diferenciar as hipóteses
+## Complemento de rede para correlação e aceite, não para reabrir diagnóstico
 Na mesma janela de revogação, coletar a URL **idêntica** e query distinta sem revelar bearer/cookies; registrar UTC, método/status, tamanho/hash do PDF, `Age`, `Cache-Control`, `Vary`, `CF-Cache-Status`, `ETag`, `Last-Modified`, `Via`, IDs de request/gateway, Initiator, fromServiceWorker/disk/memory quando disponíveis. Registrar headers de request `Cache-Control`/`Pragma` e resposta. Headers ausentes não provam ausência de cache. HAR deve ser sanitizado antes de compartilhar. Comparar decisão de autorização atual por RLS/RPC na mesma janela, com IDs de correlação quando existentes; nada de remover papéis pelo agente.
 
 ## Sequência e gates, sem execução
@@ -48,7 +48,7 @@ Na mesma janela de revogação, coletar a URL **idêntica** e query distinta sem
 | fiscal-xml | v96 estável; autorização run/tenant e stream existentes preservados, não alterados |
 | fiscal-certificates, branding/logos | material de chave / público fora do canal genérico; nunca expor certificado ou bloquear logo como arquivo privado sem escopo |
 
-Testes são **laboratório sintético**, não JWT/RLS hosted, não reprodução da causa da resposta real e não homologação das URLs antigas. SU-518022 permanece apenas ack informado; nenhum chamado enviado.
+Testes são **laboratório sintético**, não JWT/RLS hosted nem homologação das URLs antigas. A causa CDN do ensaio B foi comprovada externamente pelo complemento de rede; o controle legado permanece bloqueado. SU-518022: evidências/pendências salvas sem envio externo, ack anterior não é resolução.
 
 ## Validação desta entrega
 - 60/60 testes em seis arquivos: 40 novos (27 servidor, 11 loader, 2 roteamento) + 20 regressões opener/documentos/ausência de assinatura.
