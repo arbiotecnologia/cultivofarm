@@ -1,0 +1,9 @@
+-- SELECT-only após aplicação revisada. Comparar hashes PRE das policies originais/funções/ACL.
+SELECT policyname,permissive,roles,cmd,qual,with_check FROM pg_policies WHERE schemaname='storage' AND tablename='objects' ORDER BY policyname;
+SELECT md5(string_agg(concat_ws('|',policyname,permissive,roles::text,cmd,qual,with_check),E'\n' ORDER BY policyname)) AS post_policy_md5 FROM pg_policies WHERE schemaname='storage' AND tablename='objects';
+SELECT count(*) AS receipt_count FROM public.financial_receipts;
+SELECT count(*) AS object_count FROM storage.objects WHERE bucket_id='financial-receipts';
+-- Repetir preflight.sql.review: contract (exclui SOMENTE novas policies) deve ser byte-equivalente.
+-- Prova HTTP: download/info/list autenticados do existente; upload/upsert só arquivo laboratorial
+-- descartável fora de produção até autorização específica. Não chamar emissão/Edge geradora.
+-- Não criar nova assinatura em produção, nem para teste negativo: uma falha da política emitiria capability.
