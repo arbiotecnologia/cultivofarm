@@ -16,6 +16,8 @@ export interface ClienteDocumento {
   uploaded_by: string | null;
 }
 
+export const CLIENT_BACKUP_LIMITS = { files: 24, totalBytes: 60 * 1024 * 1024 } as const;
+
 /**
  * Baixa todos os documentos do cliente, monta um ZIP com manifest.json e
  * dispara o download no navegador. Retorna a quantidade de arquivos
@@ -26,9 +28,9 @@ export async function gerarBackupDocumentosCliente(
   nomeCliente: string,
   fence: BackupFence
 ): Promise<{ totalDocs: number; baixados: number; falhas: string[] }> {
-  const read = async () => {
+  const read = async (signal: AbortSignal) => {
     const { data, error } = await supabase.rpc("client_documents_backup_snapshot" as never,
-      { _client: clienteId } as never).abortSignal(fence.signal);
+      { _client: clienteId } as never).abortSignal(signal);
     if (error || !Array.isArray(data)) throw new Error("Documentos indisponíveis");
     const rows = data as unknown as Array<{ doc: ClienteDocumento; proof: unknown }>;
     if (rows.some(row => !row.doc || row.doc.cliente_id !== clienteId || !row.proof)) throw new Error("Documentos indisponíveis");
@@ -37,6 +39,9 @@ export async function gerarBackupDocumentosCliente(
   const initial = await fencedStep(fence, read);
   const snapshot = JSON.stringify(initial);
   const lista = initial.map(row => row.doc);
+  if (lista.length > CLIENT_BACKUP_LIMITS.files || lista.reduce((sum, doc) =>
+    sum + (typeof doc.tamanho_bytes === 'number' && Number.isFinite(doc.tamanho_bytes) && doc.tamanho_bytes > 0 ? doc.tamanho_bytes : 0), 0)
+    > CLIENT_BACKUP_LIMITS.totalBytes) throw new Error("Backup excede o limite de 24 arquivos ou 60 MiB");
 
   if (lista.length === 0) {
     return { totalDocs: 0, baixados: 0, falhas: [] };
@@ -45,18 +50,22 @@ export async function gerarBackupDocumentosCliente(
   const zip = new JSZip();
   const falhas: string[] = [];
   let baixados = 0;
+  let totalBytes = 0;
 
   for (const doc of lista) {
     try {
-      const blob = await fencedStep(fence, () => downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, fence.signal));
+      const blob = await fencedStep(fence, signal => downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, signal));
       if (!blob) {
         falhas.push(doc.nome);
         continue;
       }
+      totalBytes += blob.size;
+      if (totalBytes > CLIENT_BACKUP_LIMITS.totalBytes) throw new Error("Backup excede o limite de 60 MiB");
       const safeTipo = (doc.tipo || "outro").toString();
       zip.file(`${safeTipo}/${doc.nome}`, blob);
       baixados += 1;
     } catch {
+      if (totalBytes > CLIENT_BACKUP_LIMITS.totalBytes) throw new Error("Backup excede o limite de 60 MiB");
       if (fence.signal.aborted || !fence.current()) throw new Error("Documentos indisponíveis");
       falhas.push(doc.nome);
     }

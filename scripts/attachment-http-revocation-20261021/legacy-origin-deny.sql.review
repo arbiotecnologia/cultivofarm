@@ -3,7 +3,13 @@
 BEGIN;
 CREATE POLICY client_document_server_channel_only ON storage.objects
 AS RESTRICTIVE FOR SELECT TO authenticated, anon
-USING (bucket_id <> 'clientes-docs');
+USING (bucket_id <> 'clientes-docs' OR storage.allow_any_operation(ARRAY[
+  'object.list', 'object.list_v2', 'object.upload', 'object.upload_update',
+  'object.delete', 'object.delete_many'
+]::text[]));
 -- Storage's correctly identified server-only service identity bypasses RLS;
--- no service_role policy/grant is added. Writes/uploads are unchanged.
+-- no service_role policy/grant is added. Existing RLS predicates still apply.
+-- SELECT dependencies for listing/update/upsert/delete remain permitted, not
+-- object.get_authenticated, *_info, head, signed URLs or unknown operations.
+-- Validate the LIVE operation matrix before applying; never deny all SELECT.
 COMMIT;
