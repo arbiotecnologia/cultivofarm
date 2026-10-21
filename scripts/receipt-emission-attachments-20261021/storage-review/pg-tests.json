@@ -1,7 +1,10 @@
 {
-  "checks": 58,
+  "checks": 61,
   "passed": [
     "baseline permits sign lookup",
+    "wrong ref preparation denied",
+    "missing HTTP contract denied",
+    "synthetic reviewed preparation succeeds offline",
     "allow object.get_authenticated",
     "allow storage.object.get_authenticated",
     "allow object.get_authenticated_info",
