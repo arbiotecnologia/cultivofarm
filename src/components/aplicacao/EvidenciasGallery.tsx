@@ -7,7 +7,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
-import { AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED } from "@/lib/authz/attachmentBlobGate";
 
 interface Evidencia {
   id: string;
@@ -36,7 +35,7 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
   const lightboxUrl = lightbox?.scope === access.scope ? urls[lightbox.path] : undefined;
 
   useEffect(() => {
-    if (!AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED || !access.ready || !galleryRef.current) return;
+    if (!access.ready || !galleryRef.current) return;
     const current = access.capture();
     // Visible photo previews only; other formats remain explicit click downloads.
     const observer = new IntersectionObserver(entries => {
@@ -94,13 +93,13 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
               variant="ghost"
               type="button"
               data-attachment-path={e.tipo === "foto" ? e.storage_path : undefined}
-              disabled={!urls[e.storage_path] && !AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED && !failed.includes(e.storage_path)}
+              disabled={!urls[e.storage_path] && false}
               aria-label={failed.includes(e.storage_path) ? `Falha ao carregar ${e.legenda || "anexo"}; tentar novamente` : undefined}
               onClick={() => {
                 if (!access.ready) return;
                 // Retry: candidato re-emite request (controlador já limpo); legado refaz o lote.
                 if (failed.includes(e.storage_path)) {
-                  if (AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED) request(e.storage_path); else refresh();
+                  request(e.storage_path);
                   return;
                 }
                 if (!urls[e.storage_path]) { request(e.storage_path); return; }
@@ -116,7 +115,7 @@ export function EvidenciasGallery({ aplicacaoId }: Props) {
                   <FileText className="h-8 w-8" />
                   <span className="text-[10px] font-medium">Falhou — tentar novamente</span>
                 </span>
-              ) : loadingPaths.includes(e.storage_path) && AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED ? (
+              ) : loadingPaths.includes(e.storage_path) ? (
                 <History className="h-6 w-6 text-muted-foreground absolute inset-0 m-auto animate-spin" aria-label="Carregando anexo" />
               ) : (
                 <FileText className="h-8 w-8 text-muted-foreground absolute inset-0 m-auto" />

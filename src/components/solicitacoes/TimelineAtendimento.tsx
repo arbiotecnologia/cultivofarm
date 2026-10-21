@@ -100,7 +100,7 @@ export function TimelineAtendimento({ events, className }: TimelineAtendimentoPr
   const { urls: signedUrls } = useSignedUrls(allPaths);
 
   const getEffectiveUrl = (path: string | null | undefined, url: string | null | undefined) => {
-    return (path && signedUrls[path]) || url;
+    return (path && signedUrls[path]) || null; // sem fallback para URL gravada
   };
 
   if (events.length === 0) {
