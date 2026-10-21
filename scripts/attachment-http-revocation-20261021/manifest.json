@@ -25,9 +25,11 @@
     "rollback/index.ts.review": "34512daffe81e5ad8ca88b7480f7c37c430596fe5c5675998586cbe0e6a806ea",
     "tests.txt": "572b360f4b49dec474465c64ea3640157cf94c163364fa796fe9f5e5e0ffda14",
     "evidence-cdn-external-1848.json": "1287d533c24636d2034699fcef07330bef107d5fbf63e387cef86b08e6fe0273",
-    "LEGACY-CDN-CONTAINMENT.md": "c221fcfacf05f43669348e3fa4fa08a6f82f691696c15173c16be5788394e23e"
+    "LEGACY-CDN-CONTAINMENT.md": "4ba3ac45f791cb4edd9d5bae9503e4d8ba659fec6cee9411abf4c9edf49b6cb6",
+    "PURGE-SERVER-REVIEW.md": "58849ce6e39b588e15efbac13ca7c6c937fa1b4f248a2cea8bbcaa2ccd9bb47d"
   },
   "external_cdn_evidence": "evidence-cdn-external-1848.json; owner report, not sandbox capture",
   "legacy_control_proposal": "LEGACY-CDN-CONTAINMENT.md; origin CDN bypass/reauthorization plus reviewed purge; none executed",
-  "support_case": "SU-518022; evidence saved, no external message"
+  "support_case": "SU-518022; evidence saved, no external message",
+  "purge_server_preparation": "PURGE-SERVER-REVIEW.md; specification only, operational executor blocked pending durable GET control/exact B locator/API availability; no execution"
 }
