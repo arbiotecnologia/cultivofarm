@@ -30,7 +30,7 @@ async function render(source: string, status: string, reason: string, descriptio
   return { body: await res.json(), pages, uploads };
 }
 const overflow = (pages: any[]) => pages.flatMap(p => p.texts).filter((t: any) => t.text !== "CANCELADO" && t.x + font("").widthOfTextAtSize(t.text, t.size) > 565 + 0.01);
-const joined = (pages: any[], size: number) => pages.flatMap(p => p.texts).filter((t: any) => t.size === size && t.text !== "CANCELADO").map((t: any) => t.text).join(" ").replace(/\s+/g, " ");
+const joined = (pages: any[], size: number) => pages.flatMap(p => p.texts).filter((t: any) => t.size === size && t.text !== "CANCELADO" && !/^(Este recibo|Código de)/.test(t.text)).map((t: any) => t.text).join(" ").replace(/\s+/g, " ");
 const REASON = ("Motivo sintético extenso de homologação autorizado sem valor comercial ").repeat(40) + "FIM-DO-MOTIVO";
 const DESC = "Recebimento ref. parcela 1 de Conta a receber fictícia de homologação B2B produto sintético sem valor comercial FIM-DA-DESCRICAO";
 
