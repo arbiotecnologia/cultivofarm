@@ -1,0 +1,13 @@
+-- READ ONLY postflight candidate; not executed here. Run only after reviewed migration.
+SELECT p.proname, p.prosecdef = false AS invoker,
+       p.provolatile = 's' AS stable, p.proconfig,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') AS actor_execute,
+       NOT has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_denied,
+       NOT has_function_privilege('service_role', p.oid, 'EXECUTE') AS service_proof_denied
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND p.proname IN
+  ('client_document_download_snapshot', 'client_documents_backup_snapshot');
+-- JWT A/B matrix must call RPC as actual actor, not service SQL or injected claims.
+-- Expected: own authorized single document yields exact actor/tenant/doc/roles metadata;
+-- foreign client, revoked/inactive actor, duplicate path or inaccessible doc yields NULL.
+-- Backup snapshot must reject inaccessible client and return current docs/proofs atomically.

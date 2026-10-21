@@ -12,6 +12,7 @@
 `downloadAuthenticatedAttachment` faz SDK Storage `.asStream()` com limite 20 MiB e abort 15s, mas não verifica autorização independente após bytes. Os hooks cercam ator/tenant/papéis/epoch/lease no navegador; isso não impede um bearer chamar diretamente uma URL antiga. `clienteDocumentos.ts` (ZIP) ainda baixa diretamente e sem esses limites. Nenhum novo signedURL é necessário para explorar o endpoint direto.
 
 ## Patch mínimo revisável
+**Revisão632594 NÃO liberada; versão v2 substitui o desenho antigo abaixo. Implementação atual e resultados em `REVISION-632594.md`: RPC atômica pré/pós (2 chamadas), canal bytes server-only aprovado por recurso, origin deny candidato, ZIP com prova final/fence, leitura20MiB preservando legado e CORS pinado. O texto original desta seção descreve v1 rejeitada, não o runtime a promover.**
 1. Nova ação de transporte `download-client-document`, apenas leitura, no mesmo preparo/abridor existente. Fonte **fora de supabase/functions**, para impedir deploy automático nesta rodada.
 2. Cliente do **ator** apenas, sem service_role. Antes e depois do stream: JWT validado, `h15_actor_organization`, `cliente_storage_object_permitted`, `user_roles`, documento único por path e cliente via RLS. Rechecagem final de permissão/empresa/papéis após a cadeia. Comparação de snapshots; erro, revogação parcial, troca de papel/tenant/metadado negam entrega.
 3. Um prazo absoluto de 15s cobre corpo/claims/RPC/metadados/Storage/stream/pós-prova. Corpo até 4096 bytes, arquivo até 10 MiB contado por chunk; metadata só antecipa recusa, não autoriza bytes. Nenhum await de cancel pendurado segura a resposta; stream tardio é descartado.
@@ -52,6 +53,7 @@ Na mesma janela de revogação, coletar a URL **idêntica** e query distinta sem
 Testes são **laboratório sintético**, não JWT/RLS hosted nem homologação das URLs antigas. A causa CDN do ensaio B foi comprovada externamente pelo complemento de rede; o controle legado permanece bloqueado. SU-518022: evidências/pendências salvas sem envio externo, ack anterior não é resolução.
 
 ## Validação desta entrega
+- Atualização v2: 76/76 sintéticos em9 arquivos, Deno check/47 módulos bundle, types app/node e build isolado32,44s PASS. SQL/RLS/JWT/GET antigo/ZIP real não homologados. Patches regenerados por arquivos completos, sem contornar bloqueio de git apply. Relatório v2 substitui resultados v1 abaixo.
 - 60/60 testes em seis arquivos: 40 novos (27 servidor, 11 loader, 2 roteamento) + 20 regressões opener/documentos/ausência de assinatura.
 - Deno check candidata + rollback: exit 0. Bundle **local** candidata: 46 módulos, exit 0; não é validação hosted nem implantação.
 - App ativo: harness `build OK`; nenhuma alteração runtime em src (só testes), monitor e XML protegidos por hashes.
