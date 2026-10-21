@@ -1,0 +1,11 @@
+$ vitest run src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx
+
+ RUN  v3.2.4 /tmp/xml-validation
+
+ ✓ src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx (14 tests) 263ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  17:34:36
+   Duration  2.92s (transform 287ms, setup 141ms, collect 663ms, tests 263ms, environment 661ms, prepare 200ms)
+

@@ -1,57 +1,82 @@
-# fiscal-xml-download-blob-20261021 — candidata (NÃO implantada)
+# XML autenticado — candidata revisável, NÃO implantada
 
-Escopo mínimo: remover a capacidade-URL `createSignedUrl(path, 120)` da action
-`download` da Edge `fiscal-xml-engine` e o `window.open(url)` do frontend.
-Não altera `generate`, certificado, assinatura XML (XMLDSig), SEFAZ/emissão,
-SQL, dados, buckets, chaves, perfis, Auth, monitor ou cadência.
+Baseline do trabalho: HEAD `c7d5c962ce197ed4dd94c4ba9205b11274d0b36b`.
+A candidata arquivada `127ef0605cec67e762c9769f86ee8c53e806d597`
+foi conferida pelo SHA256 `60e44676a97ba4f2fd4b85b50886d7f8b693890bd58af5d3baa457473577e6d6` antes do delta.
 
-Base frontend: commit `89cff327` (publicado a82 / deployment c06ba016).
-Edge canônica intocada: `supabase/functions/fiscal-xml-engine/index.ts`
-SHA256 `9188f960f2f9fd5078d9fbe1ed380cbb05ec7ed1fab76d404b08d278eee984d1`
-(cópia em `edge/baseline.index.ts`). Candidata: `edge/index.ts.review` (ver SHA256SUMS).
+## Baseline REAL: bloqueio de implantação
+`baseline-real-status.json` registra tentativas efetivas e resultado UNAVAILABLE.
+Não existe versão/hash/fonte implantada recuperada nesta integração. O arquivo
+`edge/baseline.index.ts` é SOMENTE baseline local, SHA256
+`9188f960f2f9fd5078d9fbe1ed380cbb05ec7ed1fab76d404b08d278eee984d1`;
+não é prova de produção e não pode autorizar implantação nem restauração.
+Sem fonte completa implantada (incluindo dependências), versão e config, o gate é NO-GO.
+Não foi feito deploy, chamada de generate, SQL, acesso a objetos ou mudança de sessão.
 
-## Edge candidata (action download)
-1. Prova: `fn_fiscal_can_operate` (JWT do ator) → leitura RLS de `fiscal_xml_runs`
-   pelo cliente do ator → `h15_service_actor_run_access` → bucket = `fiscal-xml`.
-2. Leitura dos bytes pelo cliente de serviço, só do path registrado na execução.
-   Motivo comprovado (read-only): `pg_policies` não tem nenhuma policy de
-   `storage.objects` citando `fiscal-xml`; download pelo JWT do ator seria
-   negado. A candidata v6 antiga (`scripts/authz-cache/v6/edges/`) usa o
-   cliente do ator e falharia fechada — não reutilizada. Nenhuma policy criada.
-3. Limite 10 MiB, timeout 15 s, abort do cliente propagado, SHA-256 e tamanho
-   conferidos com `signed_sha256/unsigned_sha256` da execução.
-4. Recheck completo (as três provas + mesmo path/sha) após os bytes, antes da entrega.
-5. Resposta `application/octet-stream`, `private, no-store`, `nosniff`,
-   `attachment`; erros JSON genéricos (400/403/404/409/413/500/504).
+## Correção efetiva e reprodução
+A versão 127ef060 limitava apenas a branch após claims e RPC fiscal iniciais.
+Dois novos testes travando claims/primeira RPC reproduziram **16 PASS / 2 FAIL**.
+A candidata agora limita claims, primeira RPC, provas, leitura, hash e prova final
+pelo mesmo deadline monotônico de 15 s contado da entrada do handler; etapa lenta
+não ganha outro prazo. SDK recebe abortSignal nas RPCs/queries suportadas;
+Promise.race encerra resposta mesmo se transporte ignora abort. Sem retry automático.
+Pedido pré-abortado não lê Storage. A desserialização do corpo mantém comportamento
+original; o orçamento consumido antes da branch é descontado. Um corpo de request
+que nunca termina de chegar não está coberto por esse watchdog específico; não
+alegar proteção contra slow upload/slowloris, que exige contrato/gate separado.
 
-## Frontend (aplicado localmente, não publicado)
-`loadFiscalXmlArtifact` via `supabase.functions.invoke` (cliente canônico, signal +
-timeout 15 s) e `useAuthenticatedAttachmentOpener` (escopo identidade/tenant/
-papéis/epoch/lease, abort e revogação de Blob). Clique 1 prepara; clique 2 baixa.
+Download exige perfil fiscal atual, visibilidade RLS da execução e ownership
+`h15_service_actor_run_access`, antes e depois da leitura. O helper encadeia
+execução→invoice→estabelecimento→tenant ativo do ator (SQL local histórico,
+não certificação de corpo LIVE nesta rodada). Bucket exato; mesmo path/hash/tamanho
+na prova final; SHA256 e tamanho conferidos; limite 10 MiB; bytes octet-stream,
+private/no-store, nosniff, attachment. Não retorna capacidade URL nem fallback.
+A leitura service-only ocorre apenas após as provas; não foi criada policy.
+`generate`, certificados, XMLDSig e SEFAZ continuam byte-exatos ao baseline local.
+Assinatura XML necessária NÃO é assinatura de URL.
 
-## Compatibilidade / rollout
-- Frontend novo + Edge atual (`{url}` JSON): recusado como indisponível, nunca
-  abre a URL (fail-closed). Por isso, ordem segura: **Edge candidata primeiro**,
-  depois frontend.
-- Frontend antigo (a82) + Edge candidata: recebe Blob, `(data).url` é
-  `undefined` → `window.open(undefined)` abre aba vazia / erro; sem vazamento,
-  mas funcionalmente quebrado até publicar o frontend. Janela curta aceitável
-  apenas porque a geração está bloqueada (`F4_1_RUNTIME_CERTIFIED=false`).
-- URLs de 120 s já emitidas expiram sozinhas; não são revogadas.
+## Frontend isolado, sem ativação
+Dois arquivos runtime XML permanecem byte-exatos ao HEAD c7.
+`frontend-candidate/` contém o delta revisável, não imports ativos do app.
+Loader usa cliente canônico, prazo real de 15 s mesmo com transporte pendurado,
+cancelamento sem retry, tamanho e tipo MIME XML/octet-stream; recusa JSON legado.
+Abridor canônico cerca tenant/papéis/identidade/época/ready e descarta Blobs.
+Clique prepara; segundo clique baixa. Nenhuma alteração no monitor/Auth/cadência.
 
-## Rollback
-- Frontend: `rollback.py` (download XML indisponível; não restaura baseline/).
-- Edge: se necessário, implantar a action download retornando 410
-  `download_unavailable`; nunca reabrir `createSignedUrl`.
+## Compatibilidade e sequência fail-closed
+1. Recuperar fonte/config/versão LIVE; comparar dependências completas e trechos
+   não-download, congelar preflight e revisar fonte deny de emergência.
+2. Após autorização específica, instalar Edge binária e provar contrato sem URL;
+   frontend antigo pode falhar/abrir aba vazia: não há compatibilidade funcional.
+   Proibição de retornar `{url}` para compatibilizar. Gate de geração fechado NÃO
+   prova inexistência de downloads; aceitar interrupção controlada explicitamente.
+3. Somente depois, publicar os dois arquivos frontend revisados em conjunto.
+   Frontend novo sozinho + Edge velha rejeita JSON e não deve ser publicado.
+4. Homologar atores reais A/B com fixture canônica autorizada antes do aceite.
+Nenhuma etapa operacional foi executada; sem autorização e baseline LIVE, NO-GO.
 
-## Evidências locais (simuladas, não homologação real)
-`src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts` (13) e
-`src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx` (11): 24/24.
-Baterias fiscal+security+equipe-tecnica+authzV6: 2519 PASS, 4 skipped.
+## Rollback seguro
+`edge/rollback-deny.index.ts.review`: fonte completa local, action download 410,
+no-store, sem Storage/signer. Não restaura fonte antiga que assina URLs. Seu tail
+não-download foi comparado ao baseline local, mas ainda precisa rebase/byte-compare
+contra LIVE recuperada antes de qualquer deploy. `rollback.py` desativa somente
+loader novo; foi exercitado em cópia temporária, nunca no runtime atual.
 
-## Revisão 61103c85 — correções (não implantado)
-- Prazo ABSOLUTO 15 s cerca provas + leitura + hash + prova fresca: cada etapa corre contra o sinal (`Promise.race`) e recebe `.abortSignal()` quando o SDK suporta; RPC pendurada → 504, sem retry.
-- `req.signal.aborted` verificado no início do download → 504 sem Storage.
-- Teste "perfil revogado durante leitura" corrigido para `[true,true,false]` (outer `fn_fiscal_can_operate` + 1º authorize) com Storage chamado 1× e entrega negada.
-- Novos testes: RPC pendurada no 1º authorize e no recheck fresco, pedido pré-abortado. 16/16.
-- Pendente para implantação: baseline da Edge em produção (get_edge_function indisponível); `fiscal_xml_runs` em produção = 0 (reportado pelo proprietário).
+## Evidências
+- Edge candidata: **22/22 PASS**, com A/B sintéticos, tenant invisível, ownership,
+  revogação antes/depois de leitura, pré-abort, RPC inicial/final travada,
+  claims lentas consumindo orçamento, sinal SDK, tamanho/hash, nenhum signer.
+- Frontend candidato na cópia temporária: **14/14 PASS**, opener real, transporte
+  simulado; preparo→download, revogação durante/preparado, scope, tipo JSON,
+  timeout com transporte que ignora abort→retry manual e resposta antiga descartada.
+- Bateria fiscal + authzV6 + d51-5 fiscal: **1901 PASS / 4 skipped**, 127 arquivos.
+- `before.txt`, `after.txt`, `frontend-after.txt`, `regressions.txt` guardam saídas.
+- Build automático do runtime c7: succeeded, run
+  `br_20c2a793-9ed8-48cc-af72-f070db945f4c`; log local build OK.
+  Isso NÃO compila candidata arquivada como runtime nem certifica types dela.
+  O ambiente não permite build/typecheck manual; recibo independente de ambos
+  sobre montagem candidata completa é pré-requisito ainda aberto, não PASS presumido.
+
+Testes locais não equivalem a JWT/RLS LIVE nem homologação real. Renovação natural
+admin A/B e download pós-renovação c7 foram reportados pelo proprietário; preservados.
+Fixture e inventário legado: ver `homologacao-e-urls-legadas.md`. SU-518022 apenas ack.
