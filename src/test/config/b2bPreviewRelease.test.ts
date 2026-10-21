@@ -9,8 +9,8 @@ describe("Liberação limitada do auditor 2026-10-18 22:55 — configuração re
   it("mantém o recorte b2b-context sem ativação v6", () => {
     expect(AUTHZ_CACHE_ROLLOUT_SCOPE).toBe("b2b-context");
   });
-  it("mantém anexos Blob fechados", () => {
-    expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(false);
+  it("anexos usam Blob autenticado (assinatura removida)", () => {
+    expect(AUTHENTICATED_ATTACHMENT_BLOBS_ENABLED).toBe(true);
   });
   it("preserva produtor conforme liberação 23:37", () => {
     expect(PRODUCER_CONTEXT_MONITOR_ENABLED).toBe(true);
