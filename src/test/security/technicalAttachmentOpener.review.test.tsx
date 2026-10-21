@@ -13,9 +13,9 @@ import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttach
 import { loadTechnicalAttachment } from "../../../scripts/technical-attachment-http-20261021/frontend/loadTechnicalAttachment";
 beforeEach(() => {
   auth.profile.organization_id = "tenant"; auth.roles = ["consultor_tecnico"]; auth.authzReady = true; auth.authzEpoch = 0;
-  vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fresh"); vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+  vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: vi.fn(() => "blob:fresh"), revokeObjectURL: vi.fn() }));
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 describe("existing opener + candidate POST loader", () => {
   it.each(["tenant", "roles", "epoch", "lease"])("%s change aborts pending bytes without publishing, then explicit authorized retry works", async change => {
     let enqueue: (b: Uint8Array) => void = () => undefined;
