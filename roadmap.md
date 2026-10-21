@@ -1,15 +1,20 @@
 # F2-B — auditoria e preparação revisável
 
+## 21/10 21:25 — prioridade expressa: catálogo, depois contratos funcionais
+- [x] Adiar pendências sem declará-las resolvidas; avanço substitui gate antigo. Backlog: docs/backlog-prioridade-catalogo-20261021.md.
+- [ ] C1: inventariar fontes/rotas/hooks/RPC e expor famílias existentes nos leitores autorizados; preservar tenant/legado/recomendações e impedir químicos/adubos na fabricação biológica. Patch pequeno e testes, sem publicação/backend writes.
+- [ ] C2 seguinte, não implementar neste diff: contratos funcionais canônicos de atribuição/desvinculação/reativação/histórico, papéis cumulativos B2B+gestor+técnico+produtor, seletor autorizado e cadastro multiatribuições na empresa.
+
 ## 21/10 21:14 — atualização do wizard após sincronizar, baseline 9565a2b7
 - [x] Atualizar somente consultas da visita/ator/tenant após recibo RPC e cleanup CAS confirmado; sem reload/Auth/polling/SQL/deploy/publicação.
 - [x] 81/81 em7 arquivos: wizard real aberto com recomendação remota/etapa6 liberada; troca ator/tenant/logout, refetch tardio, CAS perdido e conflito sem publicação de cache antigo.
-- [x] Atualizar revisão/hashes; commit automático na entrega. Homologação REAL9565a2b7 da recuperação histórica informada pelo proprietário: id43c0db07/versão1, sem operação pelo agente.
+- [x] Atualizar revisão/hashes; commit automático na entrega. Homologação REAL9565a2b7 informada pelo proprietário, executada pelo auditor Codex: id43c0db07/versão1, não pelo proprietário pessoalmente nem pelo agente Lovable.
 - [ ] Homologação real desta atualização do wizard e typecheck independente: dependem de revisão/publicação externa e recibo do auditor; origin-deny/CDN antigo permanecem pendentes, sem aplicação nesta rodada.
 
 ## 21/10 21:01 — recomendações, homologação externa 33425615
 - [x] Corrigir enums/versão e replay de entradas comprovadas com parent explícito sem mapping; conflitos/negações preservados, origem alheia ou histórica não comprovada bloqueada.
 - [x] 80/80 testes em 8 arquivos incluindo formulário real montado e botão Sincronizar; harness build OK21:06:58Z; relatório docs/recomendacao-sync-20261021-review.md com impacto irmão e limites de tipos/homologação.
-- [x] Recuperação histórica homologada REAL9565a2b7 pelo proprietário: id43c0db07/UUID2ab7fdbb/versão1; sem adoção/reparo/alteração de fila real pelo agente.
+- [x] Recuperação histórica homologada REAL9565a2b7 pelo auditor Codex, relatada pelo proprietário: id43c0db07/UUID2ab7fdbb/versão1; sem adoção/reparo/alteração de fila real pelo agente Lovable.
 - [x] Homologação real da recuperação informada; atualização do wizard aberta em21:14 acima. Origin-deny consultor não aplicado; CDN antigo/SU-518022 não resolvido.
 
 ## 21/10 20:01 — regressão de remoção financeira, publicação 6c9ef2f0

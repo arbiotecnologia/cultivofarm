@@ -44,7 +44,7 @@ SHA e diff para revisão: `docs/recomendacao-sync-20261021.sha256` (fontes finai
 
 ## Complemento 21/10 21:14 — wizard aberto após sincronização
 
-**Evidência REAL fornecida pelo proprietário, baseline 9565a2b7:** o botão Sincronizar removeu a pendência e criou `registros_consultor_recomendacoes` id `43c0db07-07e5-4ae0-9dca-5929cab6510a`, client_uuid `2ab7fdbb-4d60-441a-aec9-3f826d63c37b`, versão **1**, na visita `dafabf5e-ea63-447b-959a-a63483d69ae5`. Isso supersede a pendência de homologação da recuperação histórica acima; não foi uma operação realizada pelo agente. O wizard aberto continuou vazio e a etapa6 bloqueada.
+**Evidência REAL relatada pelo proprietário, executada pelo auditor Codex (autoria corrigida em21:25), baseline 9565a2b7:** o botão Sincronizar removeu a pendência e criou `registros_consultor_recomendacoes` id `43c0db07-07e5-4ae0-9dca-5929cab6510a`, client_uuid `2ab7fdbb-4d60-441a-aec9-3f826d63c37b`, versão **1**, na visita `dafabf5e-ea63-447b-959a-a63483d69ae5`. Isso supersede a pendência de homologação da recuperação histórica acima; não foi uma operação realizada pessoalmente pelo proprietário nem pelo agente Lovable. O wizard aberto continuou vazio e a etapa6 bloqueada.
 
 Patch mínimo local:
 - `removePendingRecomendacao` retorna sucesso somente após commit da transação CAS que efetivamente removeu a entrada. CAS perdido conserva a edição nova e não invalida consultas nem contabiliza sucesso.
@@ -59,3 +59,5 @@ Harness automático registrou **build OK 21:16:54Z** após o patch runtime; type
 Nenhuma escrita em filas reais, banco/RLS/Auth/Storage, SQL, Edge/deploy, catálogo/contratos/OS/monitor ou publicação; nenhum reload, refresh Auth ou polling adicional. **Origin-deny consultor ainda não aplicado; CDN/cache antigo SU-518022 não resolvido.**
 
 Fontes e testes com SHA256 atualizados no manifesto existente; commit automático final informado na entrega.
+
+Atualização externa informada em21:25: `dac50ea9` publicado, bundle `index-_x1Cf-f5.js`, 61 testes independentes e tsc PASS. Homologação real do sync imediato permanece pendente. Backlog adiado, não resolvido, em `docs/backlog-prioridade-catalogo-20261021.md`.
