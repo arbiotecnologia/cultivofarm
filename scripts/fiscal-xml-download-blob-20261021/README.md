@@ -76,8 +76,8 @@ loader novo; foi exercitado em cópia temporária, nunca no runtime atual.
 - Build automático do runtime c7: succeeded, run
   `br_20c2a793-9ed8-48cc-af72-f070db945f4c`; log local build OK.
   Isso NÃO compila candidata arquivada como runtime nem certifica types dela.
-  O ambiente não permite build/typecheck manual; recibo independente de ambos
-  sobre montagem candidata completa é pré-requisito ainda aberto, não PASS presumido.
+  Essa evidência histórica não certificava a montagem candidata; a rodada 17:49
+  abaixo registra build/types efetivamente executados na cópia externa isolada.
 
 Testes locais não equivalem a JWT/RLS LIVE nem homologação real. Renovação natural
 admin A/B e download pós-renovação c7 foram reportados pelo proprietário; preservados.

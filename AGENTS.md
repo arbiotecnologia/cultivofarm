@@ -44,4 +44,4 @@
 - External users reuse receipts/provisioner, ACL closed — no fork.
 - External edits use gated admin RPC; await first CAS, retain drafts/receipts on refetch and fence identity generations — prevents loading deadlocks/stale effects.
 
-- Read subdirectories’ AGENTS.md before edits — preserves scoped review rules.
+- Read nested AGENTS.md before edits — preserves scoped review rules.
