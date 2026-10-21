@@ -16,7 +16,7 @@ function harness(failure = "", source = runtime) {
   const from = (table: string) => {
     const q: any = { eq: (...args: any[]) => { filters.push([table, ...args]); return q; }, select: () => q,
       maybeSingle: async () => { effects.push(table); return { data: failure === table ? null : table === "financial_receipts" ? rec : { nome: "Fictício" }, error: null }; },
-      update: () => { effects.push("update"); return { eq: () => ({ eq: async () => ({ error: failure === "update" ? "sensitive-transport" : null }) }) }; } };
+      update: () => { effects.push("update"); const u: any = { eq: () => u, then: (r: any) => r({ error: failure === "update" ? "sensitive-transport" : null }) }; return u; } };
     return q;
   };
   const sign = vi.fn(async () => { effects.push("sign"); return { data: { signedUrl: "https://bearer.invalid" }, error: null }; });
@@ -38,11 +38,12 @@ function harness(failure = "", source = runtime) {
 }
 it("runtime is exact reviewed candidate, changing only signing/response", () => {
   expect(candidate).toBe(baseline.replace('    const { data: signed, error: signedError } = await supabase.storage.from("financial-receipts").createSignedUrl(path, 60 * 60);\n    if (signedError || !signed?.signedUrl) throw new Error("URL do recibo indisponível");\n', '').replace('JSON.stringify({ url: signed?.signedUrl, path, receipt_number: rec.receipt_number })', 'JSON.stringify({ path, receipt_number: rec.receipt_number })'));
-  expect(runtime).toBe(candidate);
+  // v91 candidate stays as historical fixture; runtime is now the status-bound v93 source (byte-exact).
+  expect(runtime).toBe(readFileSync("scripts/receipt-cancel-currency-20261021/edge-review/index.ts.review", "utf8"));
 });
 it("actor-authenticated candidate returns locator only, without issuing bearer capability", async () => {
   const h = harness(); const response = await h.invoke(); expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ path, receipt_number: "REC-2026-000001" }); expect(h.sign).not.toHaveBeenCalled();
+  expect(await response.json()).toEqual({ path, receipt_number: "REC-2026-000001", status: "ISSUED" }); expect(h.sign).not.toHaveBeenCalled();
   expect(h.filters).toContainEqual(["financial_receipts", "organization_id", org]); expect(h.filters).toContainEqual(["clientes", "organization_id", org]);
   expect(h.createClient).toHaveBeenCalledWith("https://swzpzcwiasxmjutrmvkm.supabase.co", "mock-anon", { global: { headers: { Authorization: "Bearer synthetic-actor" } } });
 });

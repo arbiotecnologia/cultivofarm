@@ -17,11 +17,11 @@ describe("D51.5 P0-A — financeiro e Storage", () => {
     expect(receiptEdge).toContain('.from("financial_receipts")');
     expect(receiptEdge).toContain('.from("clientes")');
     expect(receiptEdge).toContain('rec.customer_id && !customer');
-    expect(receiptEdge).toContain('const path = `${organizationId}/');
+    expect(receiptEdge).toContain('const issuedPath = `${organizationId}/');
   });
 
-  it("só devolve URL assinada quando a assinatura foi criada", () => {
-    expect(receiptEdge).toContain("signedError || !signed?.signedUrl");
+  it("não emite URL assinada (v93 status-bound)", () => {
+    expect(receiptEdge).not.toContain("createSignedUrl");
   });
 
   it("exportação deriva tenant e grava em prefixo da organização", () => {
