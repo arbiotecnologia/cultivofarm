@@ -314,7 +314,7 @@ export default function RecibosList() {
                       </TableCell>
                       <TableCell className="font-mono text-xs">{r.authenticity_code}</TableCell>
                       <TableCell className="text-right space-x-1">
-                        <ReceiptDownload key={JSON.stringify([access.scope, r])} receipt={r} tenant={tenant} listScope={access.scope} />
+                        <ReceiptDownload key={JSON.stringify([access.scope, r])} receipt={r} tenant={tenant} listScope={access.scope} onInterrupted={onPrepareInterrupted} />
                         {r.receivable_id && (
                           <Button asChild size="sm" variant="outline" title="Abrir recebimento">
                             <Link to={`/financeiro/receber?id=${r.receivable_id}`}>

@@ -93,7 +93,7 @@ describe("RecibosList preparation intermittency", () => {
   it("session renewal during preparation aborts I/O, shows neutral notice and requires a new click", async () => {
     const pending = hanging();
     const ui = mount(RecibosList); fireEvent.click(await ui.findByRole("button", { name: "Preparar PDF" })); await flush();
-    fake.epoch = 1; ui.rerender(<MemoryRouter><RecibosList /></MemoryRouter>); await flush();
+    fake.epoch = 1; ui.rerender(<MemoryRouter><RecibosList /></MemoryRouter>); await flush(); await act(async () => { await new Promise(r => setTimeout(r, 5)); });
     expect(pending[0].signal.aborted).toBe(true);
     expect(fake.info).toHaveBeenCalledWith("Sessão atualizada durante o preparo. Prepare o PDF novamente.");
     expect(ui.queryByRole("button", { name: "Baixar PDF" })).toBeNull(); expect(fake.download).toHaveBeenCalledTimes(1);
