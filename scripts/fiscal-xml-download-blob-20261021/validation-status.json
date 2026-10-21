@@ -14,9 +14,10 @@
   "deployment_performed": false,
   "consent": "corrections and safe deployment authorized; technical review gates remain",
   "blocked": [
-    "LIVE source/config/dependencies",
     "Deno baseline type errors",
     "canonical XML fixture",
-    "hosted bundle size verification"
-  ]
+    "hosted bundle size verification",
+    "predeploy LIVE v94/config/dependency drift reconfirmation"
+  ],
+  "live_baseline": "Externally verified v94 per owner; no sandbox download"
 }

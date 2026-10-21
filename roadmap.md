@@ -4,9 +4,10 @@
 - [x] Corrigir stream XML 10 MiB e corpo 16 KiB/5 s, testar cancelamento/length enganoso e preparar montagem portátil types/build; sem implantação automática, runtime c7 preservado.
 - [x] Revisar 127ef060, reproduzir claims/primeira RPC travadas (16 PASS/2 FAIL), corrigir prazo de entrada; 23 Edge (inclui rollback) + 14 UI e 1901 regressões PASS/4 skipped, frontend candidato isolado.
 - [x] Preparar diff, rollback deny completo e plano de fixture/inventário legacy sem tokens; monitor, Auth e demais runtime byte-exatos.
-- [ ] Baseline realmente implantado (versão/fontes/config/hash): integração sem operação de leitura de fonte; MCP externo UNAVAILABLE; NO-GO.
+- [x] Baseline LIVE v94 recuperado externamente pelo proprietário (ZIP/painel + list_edge_functions): ACTIVE, JWT true, import_map false; index hash igual local, 14 fontes/dependências sem delta normalizado contra c7; não foi download neste sandbox.
+- [ ] Reconfirmar versão/config/hash/dependências LIVE sem drift no predeploy.
 - [ ] Validação Edge candidata: bundle local PASS; Deno check mantém 5 erros reproduzidos no baseline (BufferSource/cast/modulePromise). Montagem UI build/types PASS; recibo externo e bundler hosted ainda necessários.
-- [ ] Implantação e E2E XML A/B: correções/implantação segura autorizadas pelo proprietário, execução aguarda revisão técnica, baseline LIVE e fixture canônica unsigned disponível; sem INSERT direto/SEFAZ/certificado real.
+- [ ] Implantação e E2E XML A/B: correções/implantação segura autorizadas pelo proprietário, execução aguarda revisão técnica, check Edge/bundle hosted, reconfirmação LIVE v94 e fixture canônica unsigned disponível; sem INSERT direto/SEFAZ/certificado real.
 - [ ] Inventário financial-receipts e horizonte expirado: faltam locators/logs/TTL/cutoff verificáveis; nenhuma URL/cache declarada revogada.
 
 ## Revogação técnica efetiva — baseline db1eee, 22:12

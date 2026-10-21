@@ -1,11 +1,31 @@
 {
   "project_ref": "swzpzcwiasxmjutrmvkm",
   "function": "fiscal-xml-engine",
-  "status": "UNAVAILABLE",
-  "deployed_version": null,
-  "deployed_sha256": null,
-  "deployed_sources_recovered": false,
-  "evidence": [
+  "status": "VERIFIED_EXTERNALLY_OWNER_REPORTED",
+  "evidence_received_at": "2026-10-21T18:06:00Z",
+  "verification_origin": "Owner: authenticated Supabase panel Download as ZIP + list_edge_functions; not downloaded in this sandbox",
+  "deployed_version": 94,
+  "deployed_status": "ACTIVE",
+  "verify_jwt": true,
+  "import_map": false,
+  "entrypoint": "supabase/functions/fiscal-xml-engine/index.ts",
+  "deployed_index_sha256": "9188f960f2f9fd5078d9fbe1ed380cbb05ec7ed1fab76d404b08d278eee984d1",
+  "archive_zip_sha256": "41888a4624418c8c85373aa4847ff5a1352ba6be912f5c89ec0cc4f820539cc3",
+  "ezbr_bundle_identifier_reported": "1a52ba6336755a1bbfc36125fbdc84d6336b3a3f5bad98ee2cbe098521bf6a0c",
+  "ezbr_algorithm": "Not independently verified; user label ezbrSHA; not ZIP SHA256",
+  "deployed_sources_recovered": true,
+  "recovered_by": "External owner auditor",
+  "downloaded_in_this_sandbox": false,
+  "dependency_comparison": {
+    "files": 14,
+    "baseline_ref": "c7d5c962",
+    "result": "No normalized content delta reported",
+    "normalization": "LF and trailing newline",
+    "source": "External comparison; missing checkout files read at ref c7 through connector"
+  },
+  "rollback_source_archive_preserved_externally": true,
+  "local_index_hash_matches_reported_live": true,
+  "previous_unavailable_evidence": [
     "Owner reports external MCP get_edge_function UNAVAILABLE twice",
     "Available Supabase tools contain deploy/logs/tests but no retrieve source/version operation",
     "edge_function_logs(fiscal-xml-engine): No logs found; not source/version proof",
@@ -13,6 +33,6 @@
     "Available forward routes contain no Supabase management endpoint",
     "SUPABASE_ACCESS_TOKEN absent; no management credential used"
   ],
-  "local_baseline_is_production_proof": false,
-  "deployment_gate": "NO_GO_UNTIL_DEPLOYED_SOURCE_AND_VERSION_RECOVERED"
+  "predeploy_requirement": "Reconfirm canonical project, ACTIVE v94, index/bundle identity, complete dependencies and config have not changed; drift closes gate",
+  "deployment_gate": "NO_GO_PENDING_TECHNICAL_REVIEW_EDGE_TYPES_FIXTURE_HOSTED_BUNDLE_AND_LIVE_RECONFIRMATION"
 }

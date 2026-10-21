@@ -4,14 +4,25 @@ Baseline do trabalho: HEAD `c7d5c962ce197ed4dd94c4ba9205b11274d0b36b`.
 A candidata arquivada `127ef0605cec67e762c9769f86ee8c53e806d597`
 foi conferida pelo SHA256 `60e44676a97ba4f2fd4b85b50886d7f8b693890bd58af5d3baa457473577e6d6` antes do delta.
 
-## Baseline REAL: bloqueio de implantação
-`baseline-real-status.json` registra tentativas efetivas e resultado UNAVAILABLE.
-Não existe versão/hash/fonte implantada recuperada nesta integração. O arquivo
-`edge/baseline.index.ts` é SOMENTE baseline local, SHA256
-`9188f960f2f9fd5078d9fbe1ed380cbb05ec7ed1fab76d404b08d278eee984d1`;
-não é prova de produção e não pode autorizar implantação nem restauração.
-Sem fonte completa implantada (incluindo dependências), versão e config, o gate é NO-GO.
-Não foi feito deploy, chamada de generate, SQL, acesso a objetos ou mudança de sessão.
+## Baseline REAL v94 — verificação externa recebida às 18:06 UTC
+O proprietário recuperou pelo painel Supabase autenticado **Download as ZIP**;
+`list_edge_functions` confirmou ACTIVE v94, verify_jwt=true, import_map=false,
+entrypoint `supabase/functions/fiscal-xml-engine/index.ts`, no projeto canônico.
+`baseline-real-status.json` registra proveniência, hashes e evidência histórica.
+- Index SHA256: `9188f960f2f9fd5078d9fbe1ed380cbb05ec7ed1fab76d404b08d278eee984d1`;
+  conferido localmente igual a `edge/baseline.index.ts`.
+- ZIP SHA256 externo: `41888a4624418c8c85373aa4847ff5a1352ba6be912f5c89ec0cc4f820539cc3`.
+- Identificador ezbr informado: `1a52ba6336755a1bbfc36125fbdc84d6336b3a3f5bad98ee2cbe098521bf6a0c`;
+  **não é o hash ZIP**; algoritmo não certificado neste ambiente.
+Os 14 arquivos, incluindo dependências, foram comparados externamente ao c7;
+nenhum delta após normalização LF/trailing newline. Arquivos faltantes foram
+lidos no ref c7 pelo conector, segundo o auditor; pacote completo guardado externamente.
+Não foi fabricado download/verificação dos 14 arquivos neste sandbox.
+Fonte/config LIVE deixam de ser indisponíveis por essa evidência externa;
+**reconfirmar ausência de drift de versão/config/dependências no predeploy**.
+Consentimento já concedido; implantação continua bloqueada tecnicamente por
+check Edge, fixture e validação do bundle hosted, além da revisão pendente.
+Nenhum deploy, generate, SQL, objeto Storage ou sessão foi alterado.
 
 ## Correção efetiva e reprodução
 A versão 127ef060 limitava apenas a branch após claims e RPC fiscal iniciais.
@@ -46,8 +57,8 @@ Abridor canônico cerca tenant/papéis/identidade/época/ready e descarta Blobs.
 Clique prepara; segundo clique baixa. Nenhuma alteração no monitor/Auth/cadência.
 
 ## Compatibilidade e sequência fail-closed
-1. Recuperar fonte/config/versão LIVE; comparar dependências completas e trechos
-   não-download, congelar preflight e revisar fonte deny de emergência.
+1. Baseline LIVE v94 recuperado externamente; reconfirmar versão/config/hash e
+   dependências no predeploy, congelar preflight e revisar fonte deny de emergência.
 2. Após revisão técnica e preflight, instalar Edge binária e provar contrato sem URL;
    frontend antigo pode falhar/abrir aba vazia: não há compatibilidade funcional.
    Proibição de retornar `{url}` para compatibilizar. Gate de geração fechado NÃO
@@ -55,13 +66,15 @@ Clique prepara; segundo clique baixa. Nenhuma alteração no monitor/Auth/cadên
 3. Somente depois, publicar os dois arquivos frontend revisados em conjunto.
    Frontend novo sozinho + Edge velha rejeita JSON e não deve ser publicado.
 4. Homologar atores reais A/B com fixture canônica autorizada antes do aceite.
-Nenhuma etapa operacional foi executada; baseline LIVE/config/dependências e fixture não recuperados: NO-GO técnico; consentimento para correções/implantação segura já concedido.
+Nenhuma etapa operacional foi executada; fixture/check Edge/bundle hosted e reconfirmação LIVE no predeploy mantêm NO-GO técnico, não falta de consentimento.
 
 ## Rollback seguro
 `edge/rollback-deny.index.ts.review`: fonte completa local, action download 410,
 no-store, sem Storage/signer. Não restaura fonte antiga que assina URLs. Seu tail
-não-download foi comparado ao baseline local, mas ainda precisa rebase/byte-compare
-contra LIVE recuperada antes de qualquer deploy. `rollback.py` desativa somente
+não-download foi comparado ao baseline local, cujo index é idêntico ao LIVE v94
+externamente comprovado. Reconfirmar ausência de drift antes de qualquer deploy.
+O ZIP LIVE é evidência/backup histórico, NÃO rollback operacional autorizado:
+restaurar v94 reabriria URLs assinadas; emergência mantém download 410. `rollback.py` desativa somente
 loader novo; foi exercitado em cópia temporária, nunca no runtime atual.
 
 ## Evidências
@@ -99,5 +112,12 @@ Fixture e inventário legado: ver `homologacao-e-urls-legadas.md`. SU-518022 ape
   (xsdValidate.ts:66). Nenhum assert relaxado/check desabilitado; correção
   desses trechos comuns à geração precisa de delta revisado, não foi feita.
 - Bundle local próximo ao limite hosted não garante bundle Supabase <=5 MiB;
-  fonte/config/dependências LIVE continuam obrigatórias. Fixture continua bloqueada.
+  fonte/config/dependências LIVE foram comprovadas externamente às 18:06;
+  reconfirmação no predeploy continua obrigatória. Fixture continua bloqueada.
 - Runtime c7, Auth, monitor, SQL, chaves, Storage e sessões intocados; sem deploy.
+
+## Evidência independente complementar — 18:06 UTC
+Auditor reportou 16/16 PASS no teste adicional da RPC inicial em 2eb45eee,
+e corpo pendurado FAIL antes da correção, como esperado. Resultados externos
+não substituem 44/44 Edge +14/14 UI locais da candidata stream/body e não são E2E.
+URLs antigas/cache e SU-518022 permanecem sem solução comprovada (somente ack).
