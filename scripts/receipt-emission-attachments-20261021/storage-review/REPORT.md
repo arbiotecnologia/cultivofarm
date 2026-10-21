@@ -112,7 +112,7 @@ original preservado; service bypass explicitamente demonstrado.
 - PostgreSQL real, mas operação/tenant/role são sintéticos: NÃO prova JWT/RLS HTTP
 hosted nem homologação das sessões reais. Não executada emissão UI, pois não há
 recebimento elegível autorizado; nenhum recibo novo foi criado para facilitar teste.
-- Compilação/checagem automática do projeto: log `build-errors.log` build OK
+- Compilação/checagem automática do projeto: tsgo automático exit0; log `build-errors.log` build OK
 12:42:15 UTC (harness, sem execução manual). Não confundir build hospedado antigo
 3eb1616b com validação local atual. Edge avaliada via transpiler e mocks, não deploy
 Deno hosted; aceite HTTP real continua pendente do proprietário.
