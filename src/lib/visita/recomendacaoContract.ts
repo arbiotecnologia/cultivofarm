@@ -17,7 +17,7 @@ export const REC_ENUM_OPTIONS = {
     ["tratamento_semente", "Tratamento de sementes"], ["sulco_plantio", "Sulco de plantio"],
     ["jato_dirigido", "Jato dirigido"], ["outro", "Outro"],
   ],
-} as const;
+} satisfies Record<string, readonly (readonly [string, string])[]>;
 
 export function recomendacaoValidationError(payload: PendingRecomendacao["payload"]): string | null {
   for (const field of Object.keys(REC_ENUM_OPTIONS) as (keyof typeof REC_ENUM_OPTIONS)[]) {

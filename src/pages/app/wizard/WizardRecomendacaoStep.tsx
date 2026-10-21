@@ -226,13 +226,13 @@ export default function WizardRecomendacaoStep({
       try {
         await syncRecomendacao(entry, scope, remoteRegistroId, () => current() && valid());
         if (!current() || !valid()) return;
-        await removePendingRecomendacao(clientUuid);
+        await removePendingRecomendacao(clientUuid, entry.updatedAt);
       } catch (err: unknown) {
-        if (!current()) return;
+        if (!current() || !valid()) return;
         toast.error(err instanceof Error ? err.message : "Falha ao salvar; ficou pendente de sincronização");
       }
     }
-    if (!current()) return;
+    if (!current() || !valid()) return;
     setDialogOpen(false);
     await reloadPending();
     await refetch();
