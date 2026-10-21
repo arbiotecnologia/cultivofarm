@@ -17,6 +17,8 @@ O complemento B mostra a mesma revogação, mesmo arquivo, requests separados po
 ### Purga seletiva suportada: complemento, não correção durável
 A documentação oficial atualmente descreve `storage.from(bucket).purgeCache(path)` e `storage.purgeBucketCache(bucket)`; o SDK instalado contém ambos. Requer secret server-side e disponibilidade Pro ou superior; a disponibilidade no projeto **não foi verificada**, nenhum plano deve ser alterado. [Documentação oficial](https://supabase.com/docs/guides/storage/cdn/purge-cdn-cache)
 
+Complemento técnico 18:50 incorporado: DELETE `/cdn/{bucket}/{path}` relativo à base Storage é **purga**, não DELETE de objeto. `PURGE-SERVER-REVIEW.md` especifica execução administrativa server-only limitada, gates, headers de segredo opaco, abort/resultado incerto e rollback; executor operacional permanece fechado sem alvos e controle durável comprovados.
+
 Segundo a documentação, a purga enfileira invalidação, pode levar até 60 s entre nós, não limpa cache de navegador; o request seguinte repovoa o CDN. Portanto:
 - Purga não apaga/move/copia objetos e não gira chaves, mas **é operação em produção**, não executada nem autorizada para esta rodada.
 - Purgar só, sem o controle durável acima, permite aquecer novamente enquanto autorizado e voltar a servir bytes após outra revogação. Não chamar isso de resolução.
