@@ -1,8 +1,8 @@
-// @vitest-environment node
 import { expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import ts from "typescript";
+import { TextDecoder } from "node:util";
 import { ReadableStream } from "node:stream/web";
 
 // Executa a CANDIDATA revisável (não implantada) com SDK simulado. Não é homologação real.
@@ -53,8 +53,8 @@ function setup(o: Opt = {}, executable = code) {
   const Deno = { env: { get: (k: string) => k === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "placeholder" }, serve: (h: typeof handler) => { handler = h; } };
   const stub = () => { throw new Error("not_in_download"); };
   new Function("Deno", "createClient", "fiscalCorsHeaders", "isCanonicalSupabaseUrl", "CANONICAL_SUPABASE_URL", "XSD_FILE_COUNT",
-    "inspectOfficialXsdBundle", "validateAgainstOfficialXsd", "isAlreadyExistingObject", "verifyExistingObject", "ReadableStream", executable)(
-    Deno, () => sdk, () => ({ allowed: true, headers: {} }), () => true, "https://swzpzcwiasxmjutrmvkm.supabase.co", 5, stub, stub, stub, stub, ReadableStream);
+    "inspectOfficialXsdBundle", "validateAgainstOfficialXsd", "isAlreadyExistingObject", "verifyExistingObject", "ReadableStream", "TextDecoder", executable)(
+    Deno, () => sdk, () => ({ allowed: true, headers: {} }), () => true, "https://swzpzcwiasxmjutrmvkm.supabase.co", 5, stub, stub, stub, stub, ReadableStream, TextDecoder);
   const invokeRequest = (request: Request) => { if (!handler) throw new Error("handler_missing"); return handler(request); };
   const invoke = (body: unknown, signal?: AbortSignal) => invokeRequest(new Request("https://isolated.invalid", { method: "POST", signal,
     headers: { Authorization: "Bearer placeholder", Origin: "https://app.cultivofarm.com.br" }, body: JSON.stringify(body) }));
