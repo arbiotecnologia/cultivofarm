@@ -172,6 +172,22 @@ describe('renovação natural TOKEN_REFRESHED com mesmo principal (real a82: adm
     expect(tab()).toBeNull();
     expect(__peekResumeForTests()).toBeNull();
   });
+  it('renovação com empresa diferente não retoma e descarta', async () => {
+    await openDocs();
+    const o = s.org; s.org = '00000000-0000-4000-8000-0000000000cc';
+    await refresh(); await adv(20_000);
+    expect(tab()).toBeNull();
+    expect(__peekResumeForTests()).toBeNull();
+    s.org = o;
+  });
+  it('renovação seguida de troca de identidade descarta', async () => {
+    await openDocs();
+    await refresh();
+    const a = s.uid; s.uid = '00000000-0000-4000-8000-0000000000bb';
+    await act(async () => { s.authCb?.('SIGNED_IN', { user: { id: s.uid } }); });
+    expect(__peekResumeForTests()).toBeNull();
+    s.uid = a;
+  });
   it('renovação com perfil inativo não retoma e descarta', async () => {
     await openDocs();
     s.active = false;
