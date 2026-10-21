@@ -85,8 +85,10 @@ it("lease deadline blocks prepared click without rerender; pending revokes bytes
   fake.ready = false; ui.context(); expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned-receipt");
 });
 it("hung generation aborts at 15s; old completion cannot unlock a new request", async () => {
+  vi.useFakeTimers();
   const late = deferred(); fake.edge.mockReturnValueOnce(late.promise); const ui = setup(); fireEvent.click(ui.getByRole("button"));
-  await waitFor(() => expect(fake.edge).toHaveBeenCalled()); vi.useFakeTimers(); await act(async () => vi.advanceTimersByTime(15_000));
+  await act(async () => { await Promise.resolve(); }); expect(fake.edge).toHaveBeenCalled();
+  await act(async () => vi.advanceTimersByTime(15_000));
   expect(fake.edge.mock.calls[0][1].signal.aborted).toBe(true); expect(fake.error).toHaveBeenCalledWith("Recibo indisponível");
   const newer = deferred(); fake.edge.mockReturnValueOnce(newer.promise); fireEvent.click(ui.getByRole("button")); await act(async () => { await Promise.resolve(); });
   await settle(late, pdf); expect(URL.createObjectURL).not.toHaveBeenCalled(); expect(ui.getByRole("button")).toBeDisabled();
