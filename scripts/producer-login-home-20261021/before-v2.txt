@@ -1,0 +1,5 @@
+   × entrada direta em /acesso-pendente e escopo produtor confirmado > erro na leitura de contextos: não afirma ausência de portal; Tentar novamente recupera 39ms
+   × entrada direta em /acesso-pendente e escopo produtor confirmado > validação pendente do probe (h15 indisponível): mostra validando, nunca "sem portal" 25ms
+   × entrada direta em /acesso-pendente e escopo produtor confirmado > papéis múltiplos com cliente_produtor e nenhum contexto: não encaminha a /app (escopo produtor não monitorado) 20ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  3 failed | 12 passed (15)

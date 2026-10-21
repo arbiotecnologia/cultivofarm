@@ -1,1 +1,1 @@
-      Tests  11 passed (11)
+      Tests  15 passed (15)
