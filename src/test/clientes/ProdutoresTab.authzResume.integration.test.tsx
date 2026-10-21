@@ -156,7 +156,10 @@ describe('renovação natural TOKEN_REFRESHED com mesmo principal (real a82: adm
   it('mesmo usuário/empresa/papéis: conteúdo some durante a revalidação e Documentos reabre com dados relidos, sem rascunho', async () => {
     await openDocs();
     const reads = s.clientReads;
+    console.log('DBG0', JSON.stringify(__peekResumeForTests()));
     await refresh();
+    console.log('DBG1', JSON.stringify(__peekResumeForTests()));
+    for (let i=0;i<10;i++){ await adv(250); console.log('DBG2', i, JSON.stringify(__peekResumeForTests()), paused()?'P':'-', tab()); }
     expect(screen.queryByText('RASCUNHO_SENSIVEL')).toBeNull();
     expect(screen.queryByDisplayValue('RASCUNHO_SENSIVEL')).toBeNull();
     await adv(10_000);
