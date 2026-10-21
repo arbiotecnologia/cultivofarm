@@ -48,7 +48,9 @@ export default function AcessoPendente() {
   // Validação/refetch/erro reutilizam os estados existentes do seletor.
   // Sem papel algum: único caso legítimo (sem consulta de contextos).
   const noRole = !loading && roles.length === 0;
-  if (!noRole && isError) {
+  // Operador exclusivo mantém o fluxo revisado existente (negação explícita + Atualizar acesso).
+  const neutral = !noRole && !exclusiveOperator;
+  if (neutral && isError) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
@@ -69,7 +71,7 @@ export default function AcessoPendente() {
       </div>
     );
   }
-  if (!noRole && (loading || !authzReady || (ready && (!data || isFetching)) || producerHome)) {
+  if (neutral && (loading || !authzReady || (ready && (!data || isFetching)) || producerHome)) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-background p-4" role="status" aria-live="polite">
         <div className="flex flex-col items-center gap-3 text-muted-foreground">
