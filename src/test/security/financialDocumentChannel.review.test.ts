@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { serveFinancialDocument, LIMITS } from "../../../scripts/financial-docs-http-revocation-20261021/edge/core";
-import { createTransport, fetchStorageBytes } from "../../../scripts/financial-docs-http-revocation-20261021/edge/transport";
+import { serveFinancialDocument, LIMITS } from "../../../supabase/functions/download-financial-document/core";
+import { createTransport, fetchStorageBytes } from "../../../supabase/functions/download-financial-document/transport";
 
 vi.mock("@/integrations/supabase/client", () => ({
   SUPABASE_URL: "https://swzpzcwiasxmjutrmvkm.supabase.co", SUPABASE_PUBLISHABLE_KEY: "anon",
   supabase: { auth: { getSession: async () => ({ data: { session: { access_token: "t" } }, error: null }) } },
 }));
-import { loadFinancialDocument } from "../../../scripts/financial-docs-http-revocation-20261021/frontend/loadFinancialDocument";
+import { loadFinancialDocument } from "@/lib/authz/loadFinancialDocument";
 
 const tenant = "007bb519-cba0-4704-be2c-cb93ad010048", owner = "b2bd6b53-4198-40ba-b2da-603cea5eda2b";
 const doc = "2c112df5-fc20-4117-a746-705d440d2b28";
@@ -127,6 +127,14 @@ describe("frontend loader (POST only, no retry/fallback)", () => {
 });
 
 describe("config and SQL candidates", () => {
+  it("canonical Edge/loader are byte-identical to approved candidates (except header line)", () => {
+    const body = (f: string) => readFileSync(f, "utf8").split("\n").slice(1).join("\n");
+    const c = "scripts/financial-docs-http-revocation-20261021/";
+    expect(body("supabase/functions/download-financial-document/core.ts")).toBe(body(c + "edge/core.ts"));
+    expect(body("supabase/functions/download-financial-document/transport.ts")).toBe(body(c + "edge/transport.ts"));
+    expect(body("supabase/functions/download-financial-document/index.ts")).toBe(body(c + "edge/index.ts.review"));
+    expect(body("src/lib/authz/loadFinancialDocument.ts")).toBe(body(c + "frontend/loadFinancialDocument.ts"));
+  });
   it("download-financial-document has explicit verify_jwt = true", () => {
     expect(readFileSync("supabase/config.toml", "utf8")).toMatch(/\[functions\.download-financial-document\]\s*\nverify_jwt = true/);
   });
@@ -140,6 +148,8 @@ describe("config and SQL candidates", () => {
     for (const op of ["object.list", "object.upload", "object.upload_update", "object.delete"]) expect(deny).toContain(`'${op}'`);
     expect(deny).not.toContain("get_authenticated'");
     const rb = readFileSync(base + "rollback/deny-only.sql.review", "utf8");
-    expect(rb).not.toMatch(/DROP POLICY|createSignedUrl/);
+    expect(rb).not.toMatch(/DROP POLICY|createSignedUrl|CREATE POLICY|FOR ALL/);
+    expect(rb).toContain("REVOKE EXECUTE ON FUNCTION public.financial_document_download_snapshot(text) FROM authenticated");
+    expect(snap).toContain("FROM PUBLIC, anon, service_role");
   });
 });
