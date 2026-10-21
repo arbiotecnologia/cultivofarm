@@ -76,14 +76,18 @@ export interface AuthzEpochMonitorDeps {
 // observed a 5.094s round-trip right after ~3s samples (5s floor expired 7ms
 // short) and later a 7.999s spike after fast samples (7.5s floor expired ~1s
 // short), so the floor covers an ISOLATED spike up to ~10s after low RTT
-// (8s passes). Cost: with ~3s RTT the cadence goes from ~7.5s to ~5s (+50%
+// (8s passes). 2026-10-21 15:20 a real 10.43s spike after fast samples
+// expired 3ms short (leaseRemaining -3), so the floor is 12s: an isolated
+// spike < 12s survives when the preceding RTT <= 2s (< 11s with 3s RTT).
+// Hard limit: headroom can never exceed 15s - previousRTT - MIN_DELAY.
+// Cost: cadence 5s -> max(previousRTT + 1s, 3s). Earlier note: with ~3s RTT the cadence goes from ~7.5s to ~5s (+50%
 // requests, reviewed scopes only). It only moves the request EARLIER; lease
 // (15s from request start), late-response rejection, no overlap and
 // fail-closed expiry are unchanged. SUSTAINED 8s RTT (margin 2 x RTT > lease)
 // and any RTT >= 15s (e.g. 17s) still expire fail-closed.
 // JITTER: up to this much earlier, never later than the computed time.
 export const EARLY_RENEWAL_MIN_DELAY_MS = 1_000;
-export const EARLY_RENEWAL_FLOOR_MARGIN_MS = 10_000;
+export const EARLY_RENEWAL_FLOOR_MARGIN_MS = 12_000;
 export const EARLY_RENEWAL_MAX_JITTER_MS = 500;
 
 export interface AuthzEpochMonitor {
