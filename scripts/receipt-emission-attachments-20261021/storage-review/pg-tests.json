@@ -1,5 +1,5 @@
 {
-  "checks": 50,
+  "checks": 58,
   "passed": [
     "baseline permits sign lookup",
     "allow object.get_authenticated",
@@ -50,7 +50,15 @@
     "service bypass explicitly remains",
     "idempotent fail-closed occupied",
     "drift denied",
-    "original objects preserved"
+    "original objects preserved",
+    "broad permissive cannot restore sign",
+    "NULL operation denied",
+    "unreviewed rollback denied",
+    "safe rollback containment object.sign",
+    "safe rollback containment object.get_authenticated",
+    "safe rollback containment object.upload",
+    "safe rollback insert denied",
+    "safe rollback preserves objects"
   ],
   "scope": "disposable PG/synthetic context, no hosted HTTP"
 }
