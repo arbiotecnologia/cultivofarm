@@ -1,0 +1,77 @@
+supabase/functions/download-financial-document/transport.ts:14:    response = await fetchImpl(`${url}/storage/v1/object/authenticated/${BUCKET}/${encoded}`,
+supabase/functions/download-financial-document/core.ts:80:    const stream = await step(() => transport.download(path, controller.signal).then(v => {
+supabase/functions/entrega-termo-pdf/index.ts:51:  const url = `${base}/storage/v1/object/authenticated/${BUCKET}/${path.split("/").map(encodeURIComponent).join("/")}`;
+supabase/functions/entrega-termo-pdf/index.ts:357:      const { data: existing } = await admin.storage.from(BUCKET).download(termo.pdf_path);
+supabase/functions/download-client-document/index.ts:46:    const response = await fetch(`${url}/storage/v1/object/authenticated/clientes-docs/${encoded}`, {
+supabase/functions/download-client-document/download.ts:76:    const stream = await step(() => transport.download(path, controller.signal).then(value => {
+supabase/functions/fiscal-event-sign/index.ts:89:    const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path);
+src/integrations/supabase/types.ts:1849:          arquivo_url: string
+src/integrations/supabase/types.ts:1857:          arquivo_url: string
+src/integrations/supabase/types.ts:1865:          arquivo_url?: string
+src/integrations/supabase/types.ts:2564:          arquivo_url: string | null
+src/integrations/supabase/types.ts:2577:          arquivo_url?: string | null
+src/integrations/supabase/types.ts:2590:          arquivo_url?: string | null
+src/integrations/supabase/types.ts:5163:          arquivo_url: string | null
+src/integrations/supabase/types.ts:5207:          arquivo_url?: string | null
+src/integrations/supabase/types.ts:5251:          arquivo_url?: string | null
+src/integrations/supabase/types.ts:17562:          arquivo_url: string | null
+src/integrations/supabase/types.ts:17586:          arquivo_url?: string | null
+src/integrations/supabase/types.ts:17612:          arquivo_url?: string | null
+supabase/functions/fiscal-sefaz-transport/index.ts:159:    const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path);
+supabase/functions/fiscal-sefaz-transport/index.ts:248:      .download(match.signed_path as string);
+supabase/functions/fiscal-sefaz-transport/index.ts:269:        () => admin.storage.from("fiscal-xml").download(path), sha, bytes.byteLength,
+supabase/functions/fiscal-sefaz-transport/index.ts:442:        .download(run.data.signed_path);
+supabase/functions/fiscal-sefaz-transport/index.ts:479:      const dl = await admin.storage.from("fiscal-xml").download(ev.data.signed_xml_path);
+src/integrations/supabase/cultivofarm.types.ts:1881:          arquivo_url: string
+src/integrations/supabase/cultivofarm.types.ts:1889:          arquivo_url: string
+src/integrations/supabase/cultivofarm.types.ts:1897:          arquivo_url?: string
+src/integrations/supabase/cultivofarm.types.ts:2431:          arquivo_url: string | null
+src/integrations/supabase/cultivofarm.types.ts:2444:          arquivo_url?: string | null
+src/integrations/supabase/cultivofarm.types.ts:2457:          arquivo_url?: string | null
+src/integrations/supabase/cultivofarm.types.ts:4859:          arquivo_url: string | null
+src/integrations/supabase/cultivofarm.types.ts:4903:          arquivo_url?: string | null
+src/integrations/supabase/cultivofarm.types.ts:4947:          arquivo_url?: string | null
+src/integrations/supabase/cultivofarm.types.ts:15494:          arquivo_url: string | null
+src/integrations/supabase/cultivofarm.types.ts:15518:          arquivo_url?: string | null
+src/integrations/supabase/cultivofarm.types.ts:15544:          arquivo_url?: string | null
+supabase/functions/fiscal-xml-engine/index.ts:180:    () => admin.storage.from(BUCKET).download(path) as unknown as Promise<
+supabase/functions/fiscal-xml-engine/index.ts:409:      const pendingDownload = admin.storage.from(BUCKET).download(first.path, {}, { signal, cache: "no-store" }).asStream();
+supabase/functions/fiscal-xml-engine/index.ts:627:    const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path as string);
+src/components/visita/roteiro/useRoteiroEventos.ts:175:          fotoUrl: isFoto ? a.arquivo_url : null,
+src/components/visita/roteiro/useRoteiroEventos.ts:177:          audioUrl: isAudio ? a.arquivo_url : null,
+src/components/visita/roteiro/useRoteiroEventos.ts:179:          arquivoUrl: !isFoto && !isAudio ? a.arquivo_url : null,
+src/hooks/useFluxoVisitaTecnica.ts:216:          arquivo_url: data.foto_path ? null : (data.foto_url || null),
+src/hooks/useOfflineSync.ts:514:                arquivo_url: null,
+src/components/visita/EvidenciasTabs.tsx:107:  arquivo_url: string;
+src/components/visita/EvidenciasTabs.tsx:144:    // Somente blob autenticado; arquivo_url gravada nunca é usada como fallback.
+src/components/visita/EvidenciasTabs.tsx:332:        arquivo_url: null, // Legado
+src/components/comercial/OrderMessagesPanel.tsx:75:    if (opener.urls[path]) { opener.download(path, attachments.find(a => a.file_path === path)?.file_name || "anexo"); return; }
+src/pages/ConsultorTecnico.tsx:283:          arquivos:registros_consultor_arquivos(id, arquivo_url, arquivo_path, legenda, nome_arquivo)
+src/pages/financeiro/RecibosList.tsx:92:        opener.download(prepared.path, `${prepared.number}${prepared.status === "CANCELED" ? "-CANCELADO" : ""}.pdf`);
+src/lib/authz/authenticatedAttachment.ts:63:    const { data, error } = await supabase.storage.from(bucket).download(path, {}, { signal: controller.signal, cache: "no-store" }).asStream();
+src/pages/app/wizard/WizardCheckinStep.tsx:164:            arquivo_url: null,
+src/components/clientes/ClienteDocumentosTab.tsx:178:    if (path) attachmentOpener.download(path, doc.nome || "documento");
+src/lib/mediaUpload.ts:105:    .select("id, arquivo_url, arquivo_path, registro_consultor_id")
+src/lib/mediaUpload.ts:150:    arquivo_url: null,
+src/lib/equipe-tecnica/evidencias.ts:7: *   (`id`, `registro_consultor_id`, `arquivo_path`, `arquivo_url`, `legenda`,
+src/lib/equipe-tecnica/evidencias.ts:54:  arquivo_url?: string | null;
+src/lib/equipe-tecnica/evidencias.ts:70: * `arquivo_url` nunca é aceito (nem legado sem path): só download autenticado.
+src/lib/equipe-tecnica/evidencias.ts:88:  // arquivo_url gravada (possível URL assinada/pública antiga) não é aceita:
+src/lib/equipe-tecnica/evidencias.ts:97:  const candidatos = [arquivo?.arquivo_path, arquivo?.nome_arquivo, arquivo?.arquivo_url];
+src/pages/app/MobileTalhaoHistorico.tsx:79:        .select("registro_consultor_id, arquivo_url, arquivo_path")
+src/pages/app/MobileTalhaoHistorico.tsx:104:    const fotos = rArquivos.map((a) => a.arquivo_url);
+src/pages/app/MobileRegistrarOcorrencia.tsx:341:                arquivo_url: null,
+src/lib/pdfAplicacao.ts:73:  const prefix = `${SUPABASE_URL}/storage/v1/object/public/logos/`;
+src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx:89:        if (ready) opener.download(key, `nfe-${runId}-${artifact}.xml`);
+src/pages/app/MobileCheckin.tsx:191:            arquivo_url: null,
+src/components/talhoes/HistoricoTalhao.tsx:109:        .select("registro_consultor_id, arquivo_url, arquivo_path")
+src/components/talhoes/HistoricoTalhao.tsx:164:    const fotos = rArquivos.map((a) => a.arquivo_url);
+src/components/financeiro/relatorios/ReportShell.tsx:173:    opener.download(preparedVisible.path, preparedVisible.path.split("/").pop() || "relatorio");
+src/components/financeiro/relatorios/HistoricoExportacoes.tsx:152:    if (opener.urls[path]) { opener.download(path, fileName); return; }
+src/components/entregas/TermoEntregaPanel.tsx:306:    pdf.download(termo.id, `termo-entrega-v${Number(termo.versao) || 0}.pdf`);
+src/components/entregas/ConfirmacaoEntregaPanel.tsx:193:                        <Button size="sm" variant="ghost" aria-label={`Baixar ${d.nome_arquivo}`} onClick={() => opener.download(locator, d.nome_arquivo || "anexo")}>
+src/components/financeiro/EmitirReciboButton.tsx:81:        opener.download(prepared.path, `${prepared.number}.pdf`); return;
+src/components/financeiro/DocumentosPanel.tsx:219:    if (opener.urls[path]) { opener.download(path, doc.file_name || "documento"); return; }
+src/components/entregas/EntregaComprovantePanel.tsx:626:    anexoOpener.download(arquivoLocator, arquivoLocator.split("/").pop() || "comprovante");
+src/components/portal/PortalBrandingSettings.tsx:80:    const { data } = supabase.storage.from("logos").getPublicUrl(caminho);
+src/components/configuracoes/AparenciaTab.tsx:60:        const { data: urlData } = supabase.storage.from("logos").getPublicUrl(path);
