@@ -86,9 +86,9 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       });
       if (!valid()) return;
       if (pdfErr || pdfRes?.path !== path || pdfRes?.receipt_number !== receipt.receipt_number || pdfRes?.status !== "ISSUED") throw new Error("Recibo indisponível");
-      // Edge/RPC watchdog ends here; authenticated opener owns byte timeout/limits.
-      clearTimeout(timeout);
+      // Single watchdog covers Edge, bytes and the post-bytes status read until finally.
       await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
+      if (!valid()) { opener.discard(path); return; }
       if (!valid()) return;
       const after = await readReceiptCurrentState(receiptId, tenant, controller.signal);
       if (!valid()) return;

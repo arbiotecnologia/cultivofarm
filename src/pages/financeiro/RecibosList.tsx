@@ -89,8 +89,9 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
         if (error || data?.path !== before.path || data?.receipt_number !== before.receipt_number || data?.status !== before.status) throw new Error("Recibo indisponível");
       }
       if (!valid()) return;
-      clearTimeout(timeout);
+      // Single watchdog covers Edge, bytes and the post-bytes status read until finally.
       await opener.open(before.path, () => { if (valid()) toast.error("Recibo indisponível"); });
+      if (!valid()) { opener.discard(before.path); return; }
       if (!valid()) return;
       // A cancel concurrent with preparation invalidates the bytes just fetched.
       const after = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
