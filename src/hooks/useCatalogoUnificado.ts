@@ -34,7 +34,7 @@ export type CatalogoScope = "admin" | "b2b" | "interno";
  * precisa permanecer previsível.
  */
 export const PRODUTOS_SELECT =
-  "id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled";
+  "id,nome,codigo,tipo,familia_catalogo,classe_catalogo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled";
 export const MICROORGANISMOS_SELECT =
   "id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled";
 export const PRODUCT_PROFILES_SELECT =

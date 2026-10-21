@@ -15,6 +15,8 @@ import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalogo/CatalogoItemDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CatalogoQueryErrorState } from "./CatalogoQueryErrorState";
+import { CatalogFamilyFilter } from "./CatalogFamilyFilter";
+import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
 
@@ -60,6 +62,7 @@ export function CatalogoCardsGrid({
 
   const [search, setSearch] = useState("");
   const [tipo, setTipo] = useState<CatalogTipoFiltro>("todos");
+  const [family, setFamily] = useState<FamilyFilter>("todos");
   const [status, setStatus] = useState<CatalogStatusFiltro>("todos");
   const [b2b, setB2b] = useState<"todos" | "sim" | "nao">("todos");
   const [sort, setSort] = useState<SortKey>("nome_asc");
@@ -157,6 +160,7 @@ export function CatalogoCardsGrid({
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
       if (filterRow && !filterRow(r)) return false;
+      if (scope !== "b2b" && !catalogFamilyMatches(r, family)) return false;
       if (tipo !== "todos" && r.tipo !== tipo) return false;
       if (showB2BFilter) {
         if (b2b === "sim" && !r.b2b_enabled) return false;
@@ -176,7 +180,7 @@ export function CatalogoCardsGrid({
         (r.ficha_resumo ?? "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, tipo, status, b2b, filterRow, showB2BFilter, showStatusFilter]);
+  }, [rows, search, tipo, status, b2b, filterRow, showB2BFilter, showStatusFilter, family, scope]);
 
   const sorted = useMemo(() => {
     const list = [...filtered];
@@ -194,6 +198,7 @@ export function CatalogoCardsGrid({
   useEffect(() => {
     setLimite(CATALOGO_PAGE_SIZE);
   }, [search, tipo, status, b2b, sort, scope]);
+  useEffect(() => { setLimite(CATALOGO_PAGE_SIZE); }, [family]);
 
   const visiveis = useMemo(
     () => (sorted.length > limite ? sorted.slice(0, limite) : sorted),
@@ -205,6 +210,7 @@ export function CatalogoCardsGrid({
 
   return (
     <div className="space-y-4">
+      {scope !== "b2b" && <CatalogFamilyFilter value={family} onChange={setFamily} />}
       <div className="flex flex-col md:flex-row gap-2 md:items-stretch">
         <div className="flex-1">
           <CatalogSearchFilters
@@ -261,6 +267,7 @@ export function CatalogoCardsGrid({
                     setTipo("todos");
                     setStatus("todos");
                     setB2b("todos");
+                    setFamily("todos");
                   }}
                 >
                   Limpar filtros
@@ -289,6 +296,7 @@ export function CatalogoCardsGrid({
                     <TableCell className="align-top">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <Badge variant="outline" className="text-[9px] uppercase">{r.tipo}</Badge>
+                        {scope !== "b2b" && <Badge variant="outline">{catalogFamilyLabel(r)}</Badge>}
                         {r.codigo && <span className="font-mono text-[10px] text-muted-foreground">{r.codigo}</span>}
                         {!r.ativo && <Badge variant="destructive" className="text-[9px]">Inativo</Badge>}
                         {r.b2b_enabled && <Badge className="text-[9px] bg-blue-600">B2B</Badge>}
@@ -354,6 +362,7 @@ export function CatalogoCardsGrid({
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <Badge variant="outline" className="text-[9px] uppercase">{r.tipo}</Badge>
+                        {scope !== "b2b" && <Badge variant="outline">{catalogFamilyLabel(r)}</Badge>}
                         {r.codigo && <span className="font-mono text-[10px] text-muted-foreground">{r.codigo}</span>}
                         {!r.ativo && <Badge variant="destructive" className="text-[9px]">Inativo</Badge>}
                         {r.b2b_enabled && <Badge className="text-[9px] bg-blue-600">B2B</Badge>}
