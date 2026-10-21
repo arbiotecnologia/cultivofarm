@@ -14,7 +14,10 @@ export const LABEL_REASON_MIN = 10;
 export const LABEL_REASON_MAX = 500;
 
 const version = z.string().datetime({ offset: true });
-export const catalogLabelSchema = z.object({
+export interface CatalogLabel {
+  id: string; familia: ProductFamily; rotulo: string; rotulo_exibicao: string; ativo: boolean; updated_at: string;
+}
+export const catalogLabelSchema: z.ZodType<CatalogLabel> = z.object({
   id: z.string().uuid(),
   familia: z.enum(PRODUCT_FAMILIES),
   rotulo: z.string().regex(LABEL_ROTULO_PATTERN),
@@ -23,7 +26,6 @@ export const catalogLabelSchema = z.object({
   updated_at: version,
 }).strict();
 export const catalogLabelListSchema = z.array(catalogLabelSchema).max(200);
-export type CatalogLabel = z.infer<typeof catalogLabelSchema>;
 
 const baseReceipt = {
   id: z.string().uuid(), familia: z.enum(PRODUCT_FAMILIES), rotulo: z.string(),
