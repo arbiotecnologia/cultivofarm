@@ -118,7 +118,8 @@ it.each(["actor", "tenant", "logout"])("%s durante RPC impede invalidação do c
   view.rerenderApp(); await act(async () => { release(); });
   await waitFor(async () => expect(await getAllPendingRecomendacoes()).toHaveLength(1));
   expect(invalidation).not.toHaveBeenCalled(); expect(screen.queryByText("Recomendação sincronizada A")).toBeNull();
-  expect(screen.getByRole("button", { name: "6 Anexos" })).toBeDisabled();
+  if (change === "logout") expect(screen.queryByRole("button", { name: "6 Anexos" })).toBeNull();
+  else expect(screen.getByRole("button", { name: "6 Anexos" })).toBeDisabled();
 });
 it("troca de ator durante refetch rejeita bytes tardios e não publica cache de A em B", async () => {
   const view = await mount(); let release = () => {}; state.deferRead = new Promise<void>(r => { release = r; });
