@@ -48,21 +48,22 @@ export default function FichasTecnicas() {
   const [preview, setPreview] = useState<{ blobUrl: string; filename: string; nome: string; scope: string } | null>(null);
   const visiblePreview = access.ready && preview?.scope === access.scope ? preview : null;
 
-  const abrirFicha = async (id: string, nome: string) => {
+  const abrirFicha = async (id: string, nome: string, itemTipo: "produto" | "microrganismo") => {
+    const capturedTipo = itemTipo;
     const current = access.capture();
     if (!current()) return;
     try {
       setBusyId(id);
       const refreshed = await catalog.refetch();
-      if (!current() || !refreshed.data?.some(r => r.item_id === id && r.ficha_aprovada)) return;
+      if (!current() || refreshed.error || !refreshed.data?.some(r => r.item_id === id && r.item_tipo === capturedTipo && r.ficha_aprovada)) return;
       const result =
-        tab === "produtos"
+        capturedTipo === "produto"
           ? await generateFichaTecnicaProdutoPdf({ produtoId: id, mode: "blob", audience: "b2b" })
           : await generateFichaTecnicaMicrorganismoPdf({ microId: id, mode: "blob", audience: "b2b" });
       if (result && "blobUrl" in result) {
         if (!current()) { URL.revokeObjectURL(result.blobUrl); return; }
         const after = await catalog.refetch();
-        if (!current() || after.error || !after.data?.some(r => r.item_id === id && r.ficha_aprovada)) {
+        if (!current() || after.error || !after.data?.some(r => r.item_id === id && r.item_tipo === capturedTipo && r.ficha_aprovada)) {
           URL.revokeObjectURL(result.blobUrl); return;
         }
         setPreview({ ...result, nome, scope: access.scope });
@@ -140,7 +141,7 @@ export default function FichasTecnicas() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => abrirFicha(r.id, r.nome)}
+                    onClick={() => abrirFicha(r.id, r.nome, r.item_tipo)}
                     disabled={busyId === r.id}
                   >
                     {busyId === r.id ? (
