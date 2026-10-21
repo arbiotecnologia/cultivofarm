@@ -63,7 +63,7 @@ contra LIVE recuperada antes de qualquer deploy. `rollback.py` desativa somente
 loader novo; foi exercitado em cópia temporária, nunca no runtime atual.
 
 ## Evidências
-- Edge candidata: **22/22 PASS**, com A/B sintéticos, tenant invisível, ownership,
+- Edge candidata: **23/23 PASS**, com A/B sintéticos, tenant invisível, ownership,
   revogação antes/depois de leitura, pré-abort, RPC inicial/final travada,
   claims lentas consumindo orçamento, sinal SDK, tamanho/hash, nenhum signer.
 - Frontend candidato na cópia temporária: **14/14 PASS**, opener real, transporte
