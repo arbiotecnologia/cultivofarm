@@ -1,0 +1,16 @@
+-- REVIEW ONLY — NOT APPLIED. Apply ONLY after download-financial-document is homologated A/B (POST 200 own,
+-- 403 cross-tenant, 403 after role revocation, 200 after restore).
+-- Origin containment does NOT purge existing CDN HITs (plan FREE; purge is Pro+). Legacy cached GET
+-- responses may keep being served until max-age expires; invalidation stays an open homologation gate.
+BEGIN;
+CREATE POLICY financial_document_server_channel_only ON storage.objects
+AS RESTRICTIVE FOR SELECT TO authenticated, anon
+USING (bucket_id <> 'financial-docs' OR storage.allow_any_operation(ARRAY[
+  'object.list', 'object.list_v2', 'object.upload', 'object.upload_update',
+  'object.delete', 'object.delete_many'
+]::text[]));
+-- Preserves upload (incl. upsert in anexarComprovanteBaixa), list, update, delete under the existing
+-- d51_5_financial_storage_* predicates. Denies get_authenticated/*_info/head/signing/unknown ops.
+-- financial-receipts, financial-reports, clientes-docs and fiscal XML are not touched.
+COMMIT;
+-- Emergency rollback is deny-only: see rollback/deny-only.sql.review. Never DROP this policy to reopen GET.

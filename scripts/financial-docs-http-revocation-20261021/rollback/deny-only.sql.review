@@ -1,0 +1,10 @@
+-- REVIEW ONLY — NOT APPLIED. Emergency: deny all financial-docs reads/writes for clients; keeps policies,
+-- objects and keys. Never reopens GET legacy or signed URLs.
+BEGIN;
+CREATE POLICY financial_docs_emergency_deny ON storage.objects
+AS RESTRICTIVE FOR ALL TO authenticated, anon
+USING (bucket_id <> 'financial-docs') WITH CHECK (bucket_id <> 'financial-docs');
+REVOKE EXECUTE ON FUNCTION public.financial_document_download_snapshot(text) FROM authenticated;
+COMMIT;
+-- Edge rollback: replace download-financial-document with a 503 stub (verify_jwt=true kept).
+-- Frontend rollback: financial-docs branch returns "Documento indisponível" (no SDK GET fallback).

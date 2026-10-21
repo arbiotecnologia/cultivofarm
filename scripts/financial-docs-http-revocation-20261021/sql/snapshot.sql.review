@@ -1,0 +1,34 @@
+-- REVIEW ONLY — NOT APPLIED. Atomic actor snapshot for financial-docs (INVOKER/RLS, no new grants to anon).
+-- Reuses canonical public.financial_storage_object_permitted('financial-docs', _name)
+-- (path strict + h15 tenant + is_financial_staff + owner row in tenant). Adds the live record proof.
+-- organization_id NULL legacy row (1 in preflight 2026-10-21) stays readable only because the owner
+-- tenant is proven by the canonical helper; a non-null organization_id must equal the actor tenant.
+BEGIN;
+CREATE OR REPLACE FUNCTION public.financial_document_download_snapshot(_name text)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path TO '' AS $$
+  WITH actor AS MATERIALIZED (
+    SELECT auth.uid() AS uid, public.h15_actor_organization() AS org
+    WHERE auth.uid() IS NOT NULL AND length(_name) BETWEEN 1 AND 1024
+      AND public.financial_storage_object_permitted('financial-docs', _name)
+  ), roles AS MATERIALIZED (
+    SELECT jsonb_agg(r.role::text ORDER BY r.role::text) AS value
+    FROM public.user_roles r JOIN actor a ON r.user_id = a.uid
+  ), docs AS MATERIALIZED (
+    SELECT d.id, d.owner_type, d.owner_id, d.storage_path, d.file_size, d.mime_type, a.uid, a.org
+    FROM public.financial_documents d JOIN actor a ON true
+    WHERE d.storage_path = _name AND d.deleted_at IS NULL
+      AND (d.organization_id IS NULL OR d.organization_id = a.org)
+      AND split_part(_name, '/', 1) = d.owner_type
+      AND split_part(_name, '/', 2) = d.owner_id::text
+  )
+  SELECT CASE WHEN (SELECT count(*) FROM docs) = 1
+    AND jsonb_array_length(coalesce((SELECT value FROM roles), '[]'::jsonb)) > 0
+  THEN (SELECT jsonb_build_object('actor', uid, 'tenant', org, 'roles', (SELECT value FROM roles),
+    'document', id, 'owner_type', owner_type, 'owner', owner_id, 'path', storage_path,
+    'size', file_size, 'mime', mime_type) FROM docs) ELSE NULL END;
+$$;
+REVOKE ALL ON FUNCTION public.financial_document_download_snapshot(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.financial_document_download_snapshot(text) TO authenticated;
+COMMIT;
+-- Rollback (deny-only, never reopens GET/signing):
+-- REVOKE EXECUTE ON FUNCTION public.financial_document_download_snapshot(text) FROM authenticated;

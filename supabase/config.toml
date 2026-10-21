@@ -110,3 +110,8 @@ verify_jwt = false
 # Fixar a proteção restaurada externamente em v3 para evitar recorrência.
 [functions.download-client-document]
 verify_jwt = true
+
+# Candidata financial-docs (não implantada): JWT obrigatório explícito antes do primeiro deploy,
+# evitando recorrência do incidente 2026-10-21 (publicação recriando função sem JWT).
+[functions.download-financial-document]
+verify_jwt = true
