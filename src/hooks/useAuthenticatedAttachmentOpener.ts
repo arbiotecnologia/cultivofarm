@@ -32,7 +32,12 @@ export function useAuthenticatedAttachmentOpener(resource: string, bucket: strin
     const current = access.capture();
     if (!current() || parent?.aborted || controllers.current.has(path) || urls.current.has(path)) return false;
     const controller = new AbortController();
-    const relay = () => controller.abort();
+    // Ownership is released at abort time, not when a (possibly hung) transport settles:
+    // a retry can start immediately and the old completion is fenced by identity below.
+    const relay = () => {
+      controller.abort();
+      if (controllers.current.get(path) === controller) { controllers.current.delete(path); if (current()) publish(); }
+    };
     parent?.addEventListener("abort", relay, { once: true });
     controllers.current.set(path, controller);
     publish();

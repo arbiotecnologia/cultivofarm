@@ -32,3 +32,9 @@ a anotação `Promise<void>`→`Promise<boolean>`.
 - Bytes já baixados e caches de navegador/proxy não são revogáveis. Nenhum chamado foi enviado.
 - Controle sugerido para revisão: consulta read-only de logs Storage por `/object/sign/financial-receipts`
   após a janela de exp das últimas emissões v90, para confirmar ausência de uso.
+
+## Revisão cc5fbf (corrigida)
+- Ownership do opener é liberada no próprio abort do pai (comparando controller) e publicada se o escopo ainda vale;
+  transporte que ignora abort não bloqueia mais `loadingPaths`/retry; completion antiga não remove nem revoga bytes novos.
+- Telemetria registrada exatamente uma vez: no evento timeout/fence (mesmo com I/O pendurado) ou no finally.
+- Testes: `attachmentOpenerAbortOwnership.test.tsx` (hook real) + 2 de telemetria; focados 196/196.

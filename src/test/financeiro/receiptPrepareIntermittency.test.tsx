@@ -120,3 +120,18 @@ describe("EmitirReciboButton preparation intermittency", () => {
     fireEvent.click(c); await ui.findByRole("button", { name: /Baixar PDF/ });
   });
 });
+
+describe("telemetry with a transport that ignores abort", () => {
+  it.each(["list", "button"] as const)("%s: timeout recorded once at the event, retry not blocked, no duplicate on late settle", async src => {
+    const resolvers: Array<(b: Blob) => void> = [];
+    fake.download.mockImplementation(() => new Promise<Blob>(r => { resolvers.push(r); }));
+    const ui = src === "list" ? mount(RecibosList) : render(<EmitirReciboButton paymentId={PID} />);
+    const c = src === "list" ? await ui.findByRole("button", { name: "Preparar PDF" }) : ui.getByRole("button", { name: /Emitir recibo/ });
+    vi.useFakeTimers(); fireEvent.click(c); await flush();
+    await act(async () => { vi.advanceTimersByTime(15_000); }); await flush(); vi.useRealTimers();
+    expect(readReceiptPrepareDiagnostics()).toEqual([expect.objectContaining({ source: src, stage: "bytes", outcome: "timeout" })]);
+    expect(c).not.toBeDisabled();
+    resolvers[0](new Blob(["old"])); await flush();
+    expect(readReceiptPrepareDiagnostics()).toHaveLength(1); expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+});
