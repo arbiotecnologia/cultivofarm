@@ -6,7 +6,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const U = '00000000-0000-4000-8000-0000000000a1', O = '00000000-0000-4000-8000-0000000000a2', C = '00000000-0000-4000-8000-0000000000a3';
 const s = vi.hoisted(() => ({ roles: ['cliente_produtor'] as string[], active: true, org: '', ids: [] as string[], rows: [] as unknown[],
-  ctx: [] as string[], ctxError: false, h15Error: false, calls: {} as Record<string, number> }));
+  ctx: [] as string[], ctxError: false, h15Error: false, h15Org: null as string | null, calls: {} as Record<string, number> }));
 function chain(result: () => unknown) { const q: Record<string, unknown> = {}; for (const n of ['select', 'eq', 'in', 'filter', 'order', 'abortSignal', 'not', 'is']) q[n] = () => q; q.maybeSingle = async () => result(); q.then = (f: (v: unknown) => unknown, r?: (e: unknown) => unknown) => Promise.resolve(result()).then(f, r); return q; }
 vi.mock('@/lib/portalBroadcast', () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: {
@@ -17,7 +17,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
     : t === 'clientes' ? { data: s.rows, error: null } : { data: [], error: null }),
   rpc: (name: string) => { s.calls[name] = (s.calls[name] ?? 0) + 1; const p = (async () => {
     if (name === 'get_my_available_portal_contexts') return s.ctxError ? { data: null, error: { message: 'x' } } : { data: { available_contexts: s.ctx, has_technical_access: s.ctx.includes('technical'), is_admin: false }, error: null };
-    if (name === 'h15_actor_organization') return s.h15Error ? { data: null, error: {} } : { data: s.org, error: null };
+    if (name === 'h15_actor_organization') return s.h15Error ? { data: null, error: {} } : { data: s.h15Org ?? s.org, error: null };
     if (name === 'get_cliente_ids_for_user') return { data: s.ids, error: null };
     if (name === 'register_my_login_redirect_secure') return { data: null, error: null };
     return { data: null, error: null };
@@ -38,7 +38,7 @@ function setup(path = '/app/login') {
 const tick = async (ms = 0) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); for (let i = 0; i < 10; i++) await act(async () => { await vi.advanceTimersByTimeAsync(1); }); };
 const url = () => screen.getByTestId('url').textContent;
 beforeEach(() => { vi.useFakeTimers(); localStorage.clear(); s.roles = ['cliente_produtor']; s.active = true; s.org = O; s.ids = [C];
-  s.rows = [{ id: C, organization_id: O }]; s.ctx = []; s.ctxError = false; s.h15Error = false; s.calls = {};
+  s.rows = [{ id: C, organization_id: O }]; s.ctx = []; s.ctxError = false; s.h15Error = false; s.h15Org = null; s.calls = {};
   Object.defineProperty(navigator, 'onLine', { configurable: true, value: true }); Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
@@ -62,13 +62,12 @@ describe('login produtor: /app/login -> seletor -> home canônica /app', () => {
   for (const [name, mut] of [
     ['sem vínculo de cliente', () => { s.ids = []; s.rows = []; }],
     ['cliente de outro tenant (RLS vazio)', () => { s.rows = []; }],
-    ['tenant divergente no h15', () => { s.org = O; s.rows = [{ id: C, organization_id: O }]; s.ids = [C]; s.h15Error = false; }],
+    ['tenant divergente no h15', () => { s.h15Org = '00000000-0000-4000-8000-0000000000ff'; }],
   ] as const) {
     it(`negativa: ${name} não abre /app`, async () => {
       mut();
-      if (name === 'tenant divergente no h15') { /* h15 devolve outro tenant */ s.org = O; }
       setup(); await tick(); await tick(20_000);
-      if (name !== 'tenant divergente no h15') expect(url()).not.toBe('/app');
+      expect(url()).not.toBe('/app');
       expect(screen.queryByText('Home produtor')).toBeNull();
     });
   }
