@@ -6,18 +6,56 @@
   "app_types_exit": 0,
   "node_types_exit": 0,
   "vite_build_exit": 0,
-  "vite_build_seconds": 41.5,
+  "vite_build_seconds": 28.52,
   "deno_bundle_exit": 0,
-  "deno_check_exit": 1,
+  "deno_check_exit": 0,
   "deno_baseline_same_errors": 5,
   "runtime_modified": false,
   "deployment_performed": false,
   "consent": "corrections and safe deployment authorized; technical review gates remain",
   "blocked": [
-    "Deno baseline type errors",
     "canonical XML fixture",
     "hosted bundle size verification",
     "predeploy LIVE v94/config/dependency drift reconfirmation"
   ],
-  "live_baseline": "Externally verified v94 per owner; no sandbox download"
+  "live_baseline": "Externally verified v94 per owner; no sandbox download",
+  "candidate_review_base": "12339d925b09241733e6a083e059f60ff8ddfb69",
+  "live_external_evidence_ref": "a4324f3e211aae6806812cc8a9c9d9aaffc78ba1",
+  "deno_rollback_check_exit": 0,
+  "deno_rollback_bundle_exit": 0,
+  "type_behavior_tests": 7,
+  "total_focused_tests": 65,
+  "typecheck_tool": "tsgo",
+  "deno_candidate_remaining_errors": 0,
+  "bundles": {
+    "candidate": {
+      "bytes": 4997922,
+      "sha256": "2340126f9da9406c3b484c48bb16d8cbd26004c9e811f1367cba96f85641cbd0"
+    },
+    "rollback": {
+      "bytes": 4992274,
+      "sha256": "f52bfeb3bd9561dc46882a5d25786cd58b337f2df8412123ac4930aed6915002"
+    }
+  },
+  "artifacts": {
+    "dist/assets/App-C_Y4DzKw.js": "0977bb0a3d8bc083e56e316f8fd1247cc6599f30d1f5c125f3485a3ffd669aa1",
+    "dist/assets/PainelOperacional-CIEkbkFA.js": "96f4de328fb213ecffb6e4339d9f344f37f12cf77043bfe6475565a63bdd9711",
+    "dist/assets/PortalExecutivo-LH-QrgIc.js": "0252c299bcf8e29abe366f0c08dc35154afea7d295de2bdfa3948b43fa5ba79f",
+    "dist/assets/calendarIcs-D7UIWbsH.js": "b186c02ccc9c981ad4664ddcf78069436b9757bf6cfb26266c3378367c4b2acd",
+    "dist/assets/html2canvas.esm-CBrSDip1.js": "b4f3add809a6d59f46260e8fd56cab240f3153def977386b230a839e8cb0b281",
+    "dist/assets/index-0m0KcE3x.css": "e6f48faf456f6cb243cec4549eeb84f3935749cda7978d20210b4eb88d62e90a",
+    "dist/assets/index-SoQppvKm.js": "725ea1b0dd6df24ec7c225b94099067ce4862953077f264b448ada45d8c55a60",
+    "dist/assets/index.es-CRVKATSO.js": "6de24c5d649cc5b7280e85d52177f2fa5b72e8ea87aa75513347958f7789abd3",
+    "dist/assets/purify.es-dhnUglUx.js": "67197e5d31b9b5019c14ae0f9880769ccb5ed6f298d7f68112d4d32a1511b545",
+    "dist/docs/MANUAL-DO-USUARIO.pdf": "27fa6e4567f61454d2d7cba463573bcfb79aa91eb0c81fd502618eb30dcef10d",
+    "dist/favicon.png": "ed0ccb3553d600f2fa80d77469ccc92e14d2b3753de766b68464cc0dea029410",
+    "dist/index.html": "a0ddadca0f539fd6c36cb4235497ad4a5ccbadf0bfcb2189ad24b70ed7a644c4",
+    "dist/manifest.webmanifest": "f09f37e20302514da24808e2cfeb5be7ff895562c321316d091486243dbcc423",
+    "dist/placeholder.svg": "64badf7aabda0b9630b87020ffb6095cb858ccbcf66b355c2aa08b1063954d3b",
+    "dist/push-sw.js": "ebe1cee76ce3323d7c4ef74da4e35b228cbe8e2f893649c0003f3ed8c2877bab",
+    "dist/pwa-icon-192.png": "ce18623d782aa721d56a856210214719744548aa01fbe24a136711068b9ada65",
+    "dist/pwa-icon-512.png": "1089b92640a4974326f468c60812ea15941f7ac39add140986fc5595d3224766",
+    "dist/robots.txt": "a3d27b3ca5ce32341fa9f96f01169b521b1657c05d1860c45d1e53a6258e9e8b",
+    "dist/sw.js": "d5ab15c941f7c44aad8b174d2885ac4d402022bc276f4dbd1dd7e8b512a6361b"
+  }
 }

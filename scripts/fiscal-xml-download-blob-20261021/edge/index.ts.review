@@ -80,7 +80,7 @@ function json(body: unknown, status: number, headers: Record<string, string>): R
 }
 
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", bytes);
+  const buf = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes).buffer);
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
@@ -175,7 +175,7 @@ async function ensureStoredArtifact(
     upsert: false,
   });
   if (!up.error) return null;
-  if (!isAlreadyExistingObject(up.error as Record<string, unknown>)) return "XML_STORAGE_FAILED";
+  if (!isAlreadyExistingObject(up.error)) return "XML_STORAGE_FAILED";
   const verdict = await verifyExistingObject(
     () => admin.storage.from(BUCKET).download(path) as unknown as Promise<
       { data: { arrayBuffer(): Promise<ArrayBuffer> } | null; error: unknown }
@@ -210,8 +210,8 @@ function fromBinaryColumn(value: string): Uint8Array {
 }
 
 async function aesGcmDecrypt(key: Uint8Array, iv: Uint8Array, cipher: Uint8Array): Promise<Uint8Array> {
-  const cryptoKey = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["decrypt"]);
-  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, cryptoKey, cipher);
+  const cryptoKey = await crypto.subtle.importKey("raw", new Uint8Array(key).buffer, "AES-GCM", false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(iv).buffer }, cryptoKey, new Uint8Array(cipher).buffer);
   return new Uint8Array(plain);
 }
 

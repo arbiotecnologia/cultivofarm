@@ -1,0 +1,13 @@
+$ vitest run src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts
+
+ RUN  v3.2.4 /tmp/fiscal-xml-types-1810
+
+ ✓ src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts (7 tests) 21ms
+ ✓ src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx (14 tests) 265ms
+ ✓ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts (44 tests) 278ms
+
+ Test Files  3 passed (3)
+      Tests  65 passed (65)
+   Start at  18:12:33
+   Duration  3.57s (transform 365ms, setup 486ms, collect 2.33s, tests 563ms, environment 3.12s, prepare 463ms)
+

@@ -2,7 +2,7 @@
 
 Executar no checkout revisado com Python 3: `python3 scripts/fiscal-xml-download-blob-20261021/prepare-validation.py /tmp/fiscal-xml-review`.
 O script recusa destino existente/fora de /tmp, exclui credenciais, dependências e build,
-preserva runtime e monta os dois arquivos UI + Edge candidata e rollback numa árvore isolada.
+preserva runtime e monta os dois arquivos UI + Edge candidata, dependência XSD revisada e rollback numa árvore isolada.
 `SOURCE.SHA256SUMS` registra todos os fontes; `supabase/config.LOCAL.toml` não é
 config exportada LIVE. Config v94 foi verificada externamente pelo auditor
 (verify_jwt=true/import_map=false); conferir novamente no predeploy.
@@ -11,8 +11,8 @@ config exportada LIVE. Config v94 foi verificada externamente pelo auditor
 
 1. `sha256sum -c SOURCE.SHA256SUMS`
 2. `bun install --frozen-lockfile`
-3. `bun run test src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx`
-4. `bun run typecheck -- -p tsconfig.app.json` e `bun run typecheck -- -p tsconfig.node.json`
+3. `bun run test src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts`
+4. `bunx tsgo --noEmit -p tsconfig.app.json` e `bunx tsgo --noEmit -p tsconfig.node.json`
 5. `bun run build` (Vite produção; sem chaves reais, sem deploy).
 6. `deno check --config deno.json supabase/functions/fiscal-xml-engine/index.ts supabase/functions/fiscal-xml-engine/rollback-deny.ts`
 7. `deno bundle --config deno.json supabase/functions/fiscal-xml-engine/index.ts -o /tmp/fiscal-xml-review.bundle.js`
@@ -37,3 +37,7 @@ esperar transporte; timeout/cancelamento também cancelam reader, inclusive pend
 Só após leitura completa, bytes/hash e prova fresca existe resposta binária.
 Buffer acumulado até 10 MiB + cópia final até 10 MiB; chunk corrente/filas do
 transporte são externos ao controle da aplicação: não prometer teto RSS exato.
+Rodada 18:10: check/bundle dos dois artefatos PASS; 65 testes PASS, tipos app/node
+e build isolado PASS. `types-review-*.txt` e `validation-status.json` guardam recibos.
+Mudanças comuns de WebCrypto/cache XSD são explícitas no diff de tipos; não
+representam novos algoritmos fiscais nem fonte LIVE byte-idêntica após o delta.

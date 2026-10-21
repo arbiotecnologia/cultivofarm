@@ -21,7 +21,7 @@ Não foi fabricado download/verificação dos 14 arquivos neste sandbox.
 Fonte/config LIVE deixam de ser indisponíveis por essa evidência externa;
 **reconfirmar ausência de drift de versão/config/dependências no predeploy**.
 Consentimento já concedido; implantação continua bloqueada tecnicamente por
-check Edge, fixture e validação do bundle hosted, além da revisão pendente.
+fixture e validação do bundle hosted, além da revisão pendente.
 Nenhum deploy, generate, SQL, objeto Storage ou sessão foi alterado.
 
 ## Correção efetiva e reprodução
@@ -66,7 +66,7 @@ Clique prepara; segundo clique baixa. Nenhuma alteração no monitor/Auth/cadên
 3. Somente depois, publicar os dois arquivos frontend revisados em conjunto.
    Frontend novo sozinho + Edge velha rejeita JSON e não deve ser publicado.
 4. Homologar atores reais A/B com fixture canônica autorizada antes do aceite.
-Nenhuma etapa operacional foi executada; fixture/check Edge/bundle hosted e reconfirmação LIVE no predeploy mantêm NO-GO técnico, não falta de consentimento.
+Nenhuma etapa operacional foi executada; fixture/bundle hosted e reconfirmação LIVE no predeploy mantêm NO-GO técnico, não falta de consentimento.
 
 ## Rollback seguro
 `edge/rollback-deny.index.ts.review`: fonte completa local, action download 410,
@@ -121,3 +121,30 @@ Auditor reportou 16/16 PASS no teste adicional da RPC inicial em 2eb45eee,
 e corpo pendurado FAIL antes da correção, como esperado. Resultados externos
 não substituem 44/44 Edge +14/14 UI locais da candidata stream/body e não são E2E.
 URLs antigas/cache e SU-518022 permanecem sem solução comprovada (somente ack).
+
+## Rodada 18:10 — cinco erros Deno corrigidos, sem implantação
+Base solicitada `12339d925b09241733e6a083e059f60ff8ddfb69`; evidência externa
+LIVE v94 registrada em `a4324f3e211aae6806812cc8a9c9d9aaffc78ba1` preservada.
+- `edge/index.ts.review` e `edge/rollback-deny.index.ts.review`: digest/key/IV/cipher
+  usam cópia exata da view em ArrayBuffer não compartilhado, sem ampliar offsets;
+  `isAlreadyExistingObject` recebe StorageError estruturalmente compatível, sem cast.
+- `edge/xsdValidate.ts.review`: interface mínima explícita do módulo WASM,
+  Promise local não nullable e cache único preservado, inclusive rejeição; nenhum
+  any/ts-ignore novo (removidos os any e supressão existentes desse adaptador).
+- `prepare-validation.py` monta também a dependência XSD revisada; arquivo XSD
+  ativo, runtime XML, Auth/monitor e demais fontes fiscais permanecem intocados.
+- Testes novos `src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts`:
+  hash conhecido de view com offset, AES-GCM roundtrip/adulteração, classificação
+  de colisão/falha Storage nos dois artefatos, cache de rejeição WASM sem reinício.
+- Deno check candidata + rollback **exit 0**, sem os cinco erros; bundles ambos
+  **exit 0**, 100 módulos (candidata 4,77 MB / rollback 4,76 MB reportados pelo CLI).
+- **65/65 PASS**: 44 Edge, 14 UI e 7 preservação de comportamento;
+  tipos app/node via tsgo **exit 0**, Vite isolado **exit 0 / 28,52 s**.
+- Logs `types-review-*.txt`, lock `types-review-deno.lock`, hashes/tamanhos e
+  artefatos em `validation-status.json`; diff mínimo `types-review.patch`.
+Geração conserva algoritmos/bytes/erros e cache: delta comum é tipagem/cópia
+WebCrypto, além da proteção de ingresso previamente revisada. Não afirmar agora
+que o tail inteiro é byte-exato ao LIVE: essas linhas comuns mudaram explicitamente.
+Não houve sessão/reload, banco, Storage, deploy ou publicação. Check local resolvido;
+fixture/E2E e bundler hosted continuam pendentes; LIVE v94 não volta a UNAVAILABLE,
+apenas exige confirmação de ausência de drift no predeploy. URLs antigas não resolvidas.
