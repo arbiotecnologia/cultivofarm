@@ -1,0 +1,55 @@
+$ vitest run src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ❯ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts (18 tests | 2 failed) 134ms
+   ✓ ator autorizado recebe bytes conferidos, no-store, sem URL e sem assinar 17ms
+   ✓ nega antes do Storage: sem perfil fiscal 4ms
+   ✓ nega antes do Storage: RLS invisível (tenant B) 3ms
+   ✓ nega antes do Storage: sem ownership h15 2ms
+   ✓ nega antes do Storage: bucket fora do canônico 3ms
+   ✓ recheck após bytes nega entrega: perfil revogado durante leitura 12ms
+   ✓ recheck após bytes nega entrega: visibilidade revogada 3ms
+   ✓ recheck após bytes nega entrega: ownership revogado 2ms
+   ✓ recheck após bytes nega entrega: path trocado 2ms
+   ✓ integridade divergente, tamanho excessivo e falha do Storage não entregam bytes 4ms
+   ✓ entradas inválidas são recusadas 2ms
+   ✓ abort do cliente durante leitura encerra sem bytes 55ms
+   ✓ candidata preserva generate/assinatura XML e remove apenas a URL assinada 1ms
+   ✓ RPC de autorização pendurada após outer fn_fiscal respeita prazo absoluto 15 s, sem retry 5ms
+   ✓ RPC pendurada no recheck fresco após bytes também expira em 504 sem entrega 3ms
+   ✓ pedido já abortado antes do handler não chama Storage e responde 504 1ms
+   × claims iniciais travada expira desde entrada sem Storage nem retry 11ms
+     → expected undefined to be 504 // Object.is equality
+   × primeira RPC fiscal travada expira desde entrada sem Storage nem retry 2ms
+     → expected undefined to be 504 // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts > claims iniciais travada expira desde entrada sem Storage nem retry
+ FAIL  src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts > primeira RPC fiscal travada expira desde entrada sem Storage nem retry
+AssertionError: expected undefined to be 504 // Object.is equality
+
+[32m- Expected:[39m 
+504
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts:146:28
+    144|       const p = s.invoke(body).then(r => { done = r; });
+    145|       await vi.advanceTimersByTimeAsync(15_001);
+    146|       expect(done?.status).toBe(504);
+       |                            ^
+    147|       expect(s.download).not.toHaveBeenCalled();
+    148|       expect(s.rpc.mock.calls.length).toBeLessThanOrEqual(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 16 passed (18)
+   Start at  17:33:14
+   Duration  3.24s (transform 87ms, setup 164ms, collect 713ms, tests 134ms, environment 657ms, prepare 726ms)
+
+error: script "test" exited with code 1

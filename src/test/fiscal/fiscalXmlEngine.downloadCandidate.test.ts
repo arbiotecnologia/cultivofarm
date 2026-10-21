@@ -13,9 +13,9 @@ const code = ts.transpileModule(src.replace(/^import[\s\S]*?;\s*/gm, "").replace
 const RUN = "22222222-2222-4222-8222-222222222222";
 const XML = "<NFe>assinado</NFe>";
 const SHA = createHash("sha256").update(XML).digest("hex");
-type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number };
+type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean; actor?: string; freshSize?: number; querySignals?: boolean; claimsDelay?: number };
 
-function setup(o: Opt = {}) {
+function setup(o: Opt = {}, executable = code) {
   let handler: ((r: Request) => Promise<Response>) | undefined;
   const seq = (arr: boolean[] | undefined) => { let i = 0; return () => (arr ? arr[Math.min(i++, arr.length - 1)] : true); };
   const operate = seq(o.operate), visible = seq(o.visible), owner = seq(o.owner);
@@ -25,24 +25,26 @@ function setup(o: Opt = {}) {
     ? new Promise((_r, rej) => p.signal.addEventListener("abort", () => rej(new Error("aborted"))))
     : Promise.resolve(o.dlError ? { data: null, error: new Error("x") }
       : { data: o.size ? { size: o.size, arrayBuffer: async () => new ArrayBuffer(0) } : new NodeBlob([XML]), error: null }));
+  const signals: AbortSignal[] = [];
   const from = () => { const q: Record<string, unknown> = {}; for (const k of ["select", "eq"]) q[k] = () => q;
     q.maybeSingle = async () => { reads++; return visible() ? { data: { id: RUN, signed_path: o.pathChange && reads > 1 ? "OA/other.xml" : "OA/a.xml",
-      unsigned_path: "OA/u.xml", storage_bucket: o.bucket ?? "fiscal-xml", signed_sha256: o.sha ?? SHA, unsigned_sha256: SHA, signed_bytes: XML.length, unsigned_bytes: XML.length }, error: null } : { data: null, error: null }; };
+      unsigned_path: "OA/u.xml", storage_bucket: o.bucket ?? "fiscal-xml", signed_sha256: o.sha ?? SHA, unsigned_sha256: SHA, signed_bytes: reads > 1 && o.freshSize !== undefined ? o.freshSize : XML.length, unsigned_bytes: XML.length }, error: null } : { data: null, error: null }; };
+    q.abortSignal = (signal: AbortSignal) => { signals.push(signal); return q; };
     return q; };
   let rpcCalls = 0;
   const rpc = vi.fn((n: string) => { rpcCalls++;
-    if (o.hangRpcCall === rpcCalls) return new Promise(() => {}); // nunca resolve, ignora abort
-    return Promise.resolve({ data: n === "fn_fiscal_can_operate" ? operate() : owner(), error: null }); });
-  const sdk = { from, rpc, auth: { getClaims: async () => ({ data: { claims: { sub: "A" } } }) },
+    const promise = o.hangRpcCall === rpcCalls ? new Promise(() => {}) : Promise.resolve({ data: n === "fn_fiscal_can_operate" ? operate() : owner(), error: null });
+    return Object.assign(promise, { abortSignal: (signal: AbortSignal) => { signals.push(signal); return promise; } }); });
+  const sdk = { from, rpc, auth: { getClaims: () => o.hangClaims ? new Promise(() => {}) : new Promise(r => { const value = { data: { claims: { sub: o.actor ?? "A" } } }; if (o.claimsDelay) setTimeout(() => r(value), o.claimsDelay); else r(value); }) },
     storage: { from: vi.fn(() => ({ download, createSignedUrl: sign, createSignedUrls: sign })) } };
   const Deno = { env: { get: (k: string) => k === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "placeholder" }, serve: (h: typeof handler) => { handler = h; } };
   const stub = () => { throw new Error("not_in_download"); };
   new Function("Deno", "createClient", "fiscalCorsHeaders", "isCanonicalSupabaseUrl", "CANONICAL_SUPABASE_URL", "XSD_FILE_COUNT",
-    "inspectOfficialXsdBundle", "validateAgainstOfficialXsd", "isAlreadyExistingObject", "verifyExistingObject", code)(
+    "inspectOfficialXsdBundle", "validateAgainstOfficialXsd", "isAlreadyExistingObject", "verifyExistingObject", executable)(
     Deno, () => sdk, () => ({ allowed: true, headers: {} }), () => true, "https://swzpzcwiasxmjutrmvkm.supabase.co", 5, stub, stub, stub, stub);
-  const invoke = (body: unknown, signal?: AbortSignal) => handler!(new Request("https://isolated.invalid", { method: "POST", signal,
+  const invoke = (body: unknown, signal?: AbortSignal) => (() => { if (!handler) throw new Error("handler_missing"); return handler; })()(new Request("https://isolated.invalid", { method: "POST", signal,
     headers: { Authorization: "Bearer placeholder", Origin: "https://app.cultivofarm.com.br" }, body: JSON.stringify(body) }));
-  return { invoke, download, sign, rpc };
+  return { invoke, download, sign, rpc, signals };
 }
 const body = { action: "download", run_id: RUN, artifact: "signed" };
 
@@ -111,7 +113,7 @@ it("RPC de autorização pendurada após outer fn_fiscal respeita prazo absoluto
     expect(done).toBeUndefined();
     await vi.advanceTimersByTimeAsync(2);
     await p;
-    expect(done!.status).toBe(504); expect(await done!.text()).not.toContain("NFe");
+    expect(done?.status).toBe(504); expect(await done?.text()).not.toContain("NFe");
     expect(s.download).not.toHaveBeenCalled();
     expect(s.rpc).toHaveBeenCalledTimes(2);
   } finally { vi.useRealTimers(); }
@@ -133,4 +135,59 @@ it("pedido já abortado antes do handler não chama Storage e responde 504", asy
   const r = await s.invoke(body, a.signal);
   expect(r.status).toBe(504); expect(await r.text()).not.toContain("NFe");
   expect(s.download).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
+});
+
+for (const [name, o] of [["claims iniciais", { hangClaims: true }], ["primeira RPC fiscal", { hangRpcCall: 1 }]] as const) {
+  it(`${name} travada expira desde entrada sem Storage nem retry`, async () => {
+    vi.useFakeTimers();
+    try {
+      const s = setup(o);
+      let done: Response | undefined;
+      const p = s.invoke(body).then(r => { done = r; });
+      await vi.advanceTimersByTimeAsync(15_001);
+      expect(done?.status).toBe(504);
+      expect(s.download).not.toHaveBeenCalled();
+      expect(s.rpc.mock.calls.length).toBeLessThanOrEqual(1);
+      if (done) expect(await done.text()).not.toContain("NFe");
+      // Do not await an unresolved baseline promise: failed expectation is reproduction.
+      if (done) await p;
+    } finally { vi.useRealTimers(); }
+  });
+}
+
+it("claims lentas consomem o prazo de entrada, não iniciam novo prazo para RPC", async () => {
+  vi.useFakeTimers();
+  try {
+    const s = setup({ claimsDelay: 8000, hangRpcCall: 1 });
+    let result: Response | undefined;
+    const p = s.invoke(body).then(r => { result = r; });
+    await vi.advanceTimersByTimeAsync(14_999); expect(result).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(2); expect(result?.status).toBe(504); await p;
+    expect(s.signals.length).toBe(1); expect(s.signals[0].aborted).toBe(true);
+    expect(s.download).not.toHaveBeenCalled();
+  } finally { vi.useRealTimers(); }
+});
+it("recheck com tamanho registrado alterado nega bytes antigos", async () => {
+  const s = setup({ freshSize: XML.length + 1 });
+  expect((await s.invoke(body)).status).toBe(403);
+  expect(s.download).toHaveBeenCalledTimes(1);
+});
+for (const actor of ["A", "B"]) {
+  it(`ator sintético ${actor} recebe somente artefato autorizado e propaga sinais SDK`, async () => {
+    const s = setup({ actor });
+    expect((await s.invoke(body)).status).toBe(200);
+    expect(s.rpc).toHaveBeenCalledWith("h15_service_actor_run_access", { p_actor: actor, p_run: RUN });
+    expect(s.signals.length).toBe(7); expect(s.sign).not.toHaveBeenCalled();
+  });
+}
+
+it("rollback deny executável retorna 410 no-store sem consulta ou Storage", async () => {
+  const rollback = readFileSync("scripts/fiscal-xml-download-blob-20261021/edge/rollback-deny.index.ts.review", "utf8");
+  const executable = ts.transpileModule(rollback.replace(/^import[\s\S]*?;\s*/gm, "").replace(/^export /gm, ""),
+    { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
+  const s = setup({}, executable);
+  const r = await s.invoke(body);
+  expect(r.status).toBe(410); expect(r.headers.get("Cache-Control")).toBe("private, no-store");
+  expect(s.rpc).not.toHaveBeenCalled(); expect(s.download).not.toHaveBeenCalled();
+  expect(s.sign).not.toHaveBeenCalled(); expect(await r.text()).not.toContain("url");
 });
