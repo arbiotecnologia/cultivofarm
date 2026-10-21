@@ -8,14 +8,14 @@ import { ReadableStream } from "node:stream/web";
 
 // Executa a CANDIDATA revisável (não implantada) com SDK simulado. Não é homologação real.
 const CANDIDATE = "scripts/fiscal-xml-download-blob-20261021/edge/index.ts.review";
-const src = readFileSync(CANDIDATE, "utf8");
+const src = readFileSync(process.env.FISCAL_XML_REVIEW_SOURCE ?? CANDIDATE, "utf8");
 const code = ts.transpileModule(src.replace(/^import[\s\S]*?;\s*/gm, "").replace(/^export /gm, ""),
   { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
 
 const RUN = "22222222-2222-4222-8222-222222222222";
 const XML = "<NFe>assinado</NFe>";
 const SHA = createHash("sha256").update(XML).digest("hex");
-type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean; actor?: string; freshSize?: number; querySignals?: boolean; claimsDelay?: number; metadata?: number | null; chunks?: Uint8Array[]; length?: string; streamHang?: boolean; realStreamSdk?: boolean };
+type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean; actor?: string; freshSize?: number; querySignals?: boolean; claimsDelay?: number; metadata?: number | null; chunks?: Uint8Array[]; length?: string; streamHang?: boolean; realStreamSdk?: boolean; cancelHang?: boolean };
 
 function setup(o: Opt = {}, executable = code) {
   let handler: ((r: Request) => Promise<Response>) | undefined;
@@ -23,7 +23,7 @@ function setup(o: Opt = {}, executable = code) {
   const operate = seq(o.operate), visible = seq(o.visible), owner = seq(o.owner);
   let reads = 0;
   const sign = vi.fn(() => { throw new Error("sign_must_not_run"); });
-  const cancel = vi.fn();
+  const cancel = vi.fn(() => o.cancelHang ? new Promise<void>(() => {}) : undefined);
   const download = vi.fn((_p: string, _o: unknown, p: { signal: AbortSignal }) => {
     const streamResult = () => o.hang
       ? new Promise((_r, rej) => p.signal.addEventListener("abort", () => rej(new Error("aborted"))))
@@ -53,7 +53,7 @@ function setup(o: Opt = {}, executable = code) {
     storage: { from: vi.fn(() => ({ download, createSignedUrl: sign, createSignedUrls: sign })) } };
   if (o.realStreamSdk) {
     const storageClient = realClient("https://isolated.invalid", "placeholder", {
-      auth: { persistSession: false }, global: { fetch: async (_input, init) => {
+      auth: { persistSession: false, storageKey: `isolated-test-${Math.random()}` }, global: { fetch: async (_input, init) => {
         expect(init?.signal).toBeInstanceOf(AbortSignal);
         expect(init?.cache).toBe("no-store");
         download("recorded-path", {}, { signal: init?.signal as AbortSignal });
@@ -320,4 +320,21 @@ it("corpo lento consome prazo absoluto do download, sem renovar 15 s", async () 
     await vi.advanceTimersByTimeAsync(2); expect(result?.status).toBe(504); await p;
     expect(s.download).not.toHaveBeenCalled();
   } finally { vi.useRealTimers(); }
+});
+
+it("cancelamento pendurado no transporte não prende resposta no timeout", async () => {
+  vi.useFakeTimers();
+  try {
+    const s = setup({ streamHang: true, cancelHang: true }); let result: Response | undefined;
+    const p = s.invoke(body).then(r => { result = r; });
+    await vi.advanceTimersByTimeAsync(15_001);
+    expect(result?.status).toBe(504); expect(s.cancel).toHaveBeenCalledTimes(1);
+    if (result) await p;
+  } finally { vi.useRealTimers(); }
+});
+it("generate válido mantém contrato de entrada e chega ao gate fiscal existente", async () => {
+  const s = setup({ operate: [false] });
+  expect((await s.invoke({ invoice_id: RUN, idempotency_key: "x".repeat(200) })).status).toBe(403);
+  expect(s.rpc).toHaveBeenCalledWith("fn_fiscal_can_operate", { _uid: "A" });
+  expect(s.download).not.toHaveBeenCalled();
 });

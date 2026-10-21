@@ -93,7 +93,7 @@ async function readBounded(
   maxBytes: number,
   signal: AbortSignal,
   deadline: number,
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -406,7 +406,15 @@ Deno.serve(async (req) => {
       // de serviço SOMENTE após a prova acima, para o path registrado na execução.
       // SDK stream mode returns Response.body, NOT a materialized Blob. No extra
       // metadata/HEAD request or retries; Content-Length alone never grants access.
-      const dl = await step(admin.storage.from(BUCKET).download(first.path, {}, { signal, cache: "no-store" }).asStream());
+      const pendingDownload = admin.storage.from(BUCKET).download(first.path, {}, { signal, cache: "no-store" }).asStream();
+      const dl = await step(Promise.resolve(pendingDownload).then(result => {
+        // A transport ignoring AbortSignal may settle after deadline. Discard
+        // and cancel its stream without awaiting it, even if step already exited.
+        if ((signal.aborted || performance.now() >= deadline) && result.data) {
+          void result.data.cancel().catch(() => undefined);
+        }
+        return result;
+      }));
       if (dl.error || !dl.data) return deny(404, "artifact_not_available");
       const bytes = await readBounded(dl.data, MAX_XML_BYTES, signal, deadline);
       const digest = await step(sha256Hex(bytes));

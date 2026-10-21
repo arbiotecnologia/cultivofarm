@@ -26,7 +26,7 @@ shutil.copy2(ROOT / "supabase/config.toml", DEST / "supabase/config.LOCAL.toml")
 shutil.copytree(PACKAGE, DEST / "scripts/fiscal-xml-download-blob-20261021", ignore=skip)
 shutil.copy2(PACKAGE / "edge/index.ts.review", functions / "fiscal-xml-engine/index.ts")
 shutil.copy2(PACKAGE / "edge/rollback-deny.index.ts.review", functions / "fiscal-xml-engine/rollback-deny.ts")
-for name, target in (("useFiscalXmlEngine.ts", "src/hooks/useFiscalXmlEngine.ts"), ("GeracaoXmlNfeSecao.tsx", "src/components/fiscal/GeracaoXmlNfeSecao.tsx")):
+for name, target in (("useFiscalXmlEngine.ts", "src/hooks/useFiscalXmlEngine.ts"), ("GeracaoXmlNfeSecao.tsx", "src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx")):
     shutil.copy2(PACKAGE / "frontend-candidate" / (name + ".review"), DEST / target)
 shutil.copy2(PACKAGE / "frontend-candidate/fiscalXmlAuthenticatedDownload.test.tsx.review", DEST / "src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx")
 # Resolutions below are explicit LOCAL review dependencies, not asserted LIVE.
