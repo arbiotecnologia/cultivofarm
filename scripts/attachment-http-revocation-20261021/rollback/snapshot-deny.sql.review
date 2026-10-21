@@ -5,4 +5,8 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = ''
 AS $$ SELECT NULL::jsonb $$;
 REVOKE ALL ON FUNCTION public.client_document_download_snapshot(text) FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.client_document_download_snapshot(text) TO authenticated;
+CREATE OR REPLACE FUNCTION public.client_documents_backup_snapshot(_client uuid)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $$ SELECT NULL::jsonb $$;
+REVOKE ALL ON FUNCTION public.client_documents_backup_snapshot(uuid) FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.client_documents_backup_snapshot(uuid) TO authenticated;
 COMMIT;

@@ -29,4 +29,16 @@ $fn$;
 REVOKE ALL ON FUNCTION public.client_document_download_snapshot(text) FROM PUBLIC, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.client_document_download_snapshot(text) TO authenticated;
 -- No table grants, no RLS widening, no claims/GUC privilege, no role mutation.
+CREATE OR REPLACE FUNCTION public.client_documents_backup_snapshot(_client uuid)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $fn$
+  SELECT CASE WHEN auth.uid() IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.clientes c WHERE c.id = _client
+      AND c.organization_id = public.h15_actor_organization()
+      AND public.can_user_access_cliente(c.id)
+  ) THEN coalesce((SELECT jsonb_agg(jsonb_build_object(
+    'doc', to_jsonb(d), 'proof', public.client_document_download_snapshot(d.arquivo_path)) ORDER BY d.id)
+    FROM public.cliente_documentos d WHERE d.cliente_id = _client), '[]'::jsonb) ELSE NULL END;
+$fn$;
+REVOKE ALL ON FUNCTION public.client_documents_backup_snapshot(uuid) FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.client_documents_backup_snapshot(uuid) TO authenticated;
 COMMIT;
