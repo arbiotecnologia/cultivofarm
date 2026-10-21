@@ -15,7 +15,7 @@ const XML = "<NFe>assinado</NFe>";
 const SHA = createHash("sha256").update(XML).digest("hex");
 type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean; actor?: string; freshSize?: number; querySignals?: boolean; claimsDelay?: number };
 
-function setup(o: Opt = {}) {
+function setup(o: Opt = {}, executable = code) {
   let handler: ((r: Request) => Promise<Response>) | undefined;
   const seq = (arr: boolean[] | undefined) => { let i = 0; return () => (arr ? arr[Math.min(i++, arr.length - 1)] : true); };
   const operate = seq(o.operate), visible = seq(o.visible), owner = seq(o.owner);
@@ -40,7 +40,7 @@ function setup(o: Opt = {}) {
   const Deno = { env: { get: (k: string) => k === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "placeholder" }, serve: (h: typeof handler) => { handler = h; } };
   const stub = () => { throw new Error("not_in_download"); };
   new Function("Deno", "createClient", "fiscalCorsHeaders", "isCanonicalSupabaseUrl", "CANONICAL_SUPABASE_URL", "XSD_FILE_COUNT",
-    "inspectOfficialXsdBundle", "validateAgainstOfficialXsd", "isAlreadyExistingObject", "verifyExistingObject", code)(
+    "inspectOfficialXsdBundle", "validateAgainstOfficialXsd", "isAlreadyExistingObject", "verifyExistingObject", executable)(
     Deno, () => sdk, () => ({ allowed: true, headers: {} }), () => true, "https://swzpzcwiasxmjutrmvkm.supabase.co", 5, stub, stub, stub, stub);
   const invoke = (body: unknown, signal?: AbortSignal) => (() => { if (!handler) throw new Error("handler_missing"); return handler; })()(new Request("https://isolated.invalid", { method: "POST", signal,
     headers: { Authorization: "Bearer placeholder", Origin: "https://app.cultivofarm.com.br" }, body: JSON.stringify(body) }));
@@ -180,3 +180,14 @@ for (const actor of ["A", "B"]) {
     expect(s.signals.length).toBe(7); expect(s.sign).not.toHaveBeenCalled();
   });
 }
+
+it("rollback deny executável retorna 410 no-store sem consulta ou Storage", async () => {
+  const rollback = readFileSync("scripts/fiscal-xml-download-blob-20261021/edge/rollback-deny.index.ts.review", "utf8");
+  const executable = ts.transpileModule(rollback.replace(/^import[\s\S]*?;\s*/gm, "").replace(/^export /gm, ""),
+    { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
+  const s = setup({}, executable);
+  const r = await s.invoke(body);
+  expect(r.status).toBe(410); expect(r.headers.get("Cache-Control")).toBe("private, no-store");
+  expect(s.rpc).not.toHaveBeenCalled(); expect(s.download).not.toHaveBeenCalled();
+  expect(s.sign).not.toHaveBeenCalled(); expect(await r.text()).not.toContain("url");
+});
