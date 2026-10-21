@@ -104,14 +104,14 @@ Deno.serve(async (req) => {
     const amount = Number(rec.amount);
 
     type Block = { text: string; size: number; f: any; color?: any; gap?: number };
-    const body: Block[] = [
+    const bodyBlocks: Block[] = [
       { text: `Recebemos de: ${customerName}`, size: 11, f: font },
       { text: `A quantia de: R$ ${amount.toFixed(2).replace(".", ",")} (${numberToExtenso(amount)})`, size: 11, f: font },
       { text: `Referente a: ${rec.description ?? "Pagamento de título financeiro"}`, size: 11, f: font },
       { text: `Forma de pagamento: ${method}`, size: 11, f: font },
       { text: `Data do pagamento: ${new Date(rec.payment_date).toLocaleDateString("pt-BR")}`, size: 11, f: font },
     ];
-    if (canceled && rec.cancel_reason) body.push({ text: `Motivo: ${rec.cancel_reason}`, size: 9, f: font, color: rgb(0.5, 0, 0), gap: 8 });
+    if (canceled && rec.cancel_reason) bodyBlocks.push({ text: `Motivo: ${rec.cancel_reason}`, size: 9, f: font, color: rgb(0.5, 0, 0), gap: 8 });
     const footer: Block[] = [
       { text: "Este recibo foi gerado eletronicamente pelo sistema da AR Bio.", size: 9, f: font },
       { text: `Emitido por: ${userData.user.email ?? userData.user.id}  •  ${new Date(rec.issued_at).toLocaleString("pt-BR")}`, size: 8, f: font, color: rgb(0.3, 0.3, 0.3) },
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
       y = 318;
     };
     newPage();
-    for (const block of body) {
+    for (const block of bodyBlocks) {
       y -= block.gap ?? 0;
       for (const text of wrapText(block.text, block.f, block.size)) {
         if (y - lead(block.size) < BOTTOM) newPage();
