@@ -23,3 +23,11 @@ Não é homologação real.
 
 ## Rollback
 `python3 scripts/producer-login-home-20261021/rollback.py` (verifica hashes). Preserva retomada/renovação e XML isolado.
+
+## Revisão 888a9720 (v2)
+- `/acesso-pendente` só afirma "sem portal" com leitura concluída, atual e sem erro, ou quando não há papel algum. Erro → card
+  existente "Não foi possível validar seus acessos" + Tentar novamente; carregando/refetch/probe pendente → "Validando seus acessos…". Sem nova consulta.
+- `producerHome` exige o escopo monitorado exato do AuthProvider (`roles == ["cliente_produtor"]`, gate produtor, b2b-context);
+  papéis múltiplos com `cliente_produtor` não são encaminhados.
+- Testes: 15/15 (v1 da candidata: 3 FAIL, `before-v2.txt`). v1 arquivada em `candidate-v1/`; rollback restaura a82.
+- Build de produção: ver `build-status.txt` (exit 0, entry `index-B6FJk6Pn.js`). Typecheck sem erros.
