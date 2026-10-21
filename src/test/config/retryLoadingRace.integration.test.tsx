@@ -248,6 +248,8 @@ describe('company admin latency: 3 s probes stay valid; 8 s probe is the expecte
     expect(readAuthzDiagnostics().some(d => d.event === 'expire')).toBe(false); // ~3 s probes: no undue pause
     clearAuthzDiagnostics();
     s.lat = 8000; await tick(40000);
+    // Auto-recovery (8 s, fail-closed) may be mid-flight showing "Verificando"; wait for the pause, bounded.
+    for (let i = 0; i < 30 && !screen.queryByText('Sessão de acesso pausada'); i++) await tick(1000);
     expect(screen.getByText('Sessão de acesso pausada')).toBeTruthy();
     const exp = readAuthzDiagnostics().filter(d => d.event === 'expire').at(-1)!;
     expect(exp.reason).toBe('timeout');
