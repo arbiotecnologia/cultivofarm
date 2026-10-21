@@ -14,13 +14,16 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
 vi.mock("sonner", () => ({ toast: { success: fake.success, error: fake.error } }));
 const OWNER = "00000000-0000-4000-8000-000000000001";
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
-  storage: { from: () => ({ upload: fake.upload, remove: fake.remove }) }, rpc: fake.rpc,
+  storage: { from: () => ({ upload: fake.upload, remove: fake.remove }) },
+  rest: { rpc: fake.rpc },
+  rpc(this: { rest: { rpc: typeof fake.rpc } }, ...args: unknown[]) { return this.rest.rpc(...args); },
   from: () => ({ insert: fake.insert, select: () => ({ eq: () => ({ eq: () => ({ is: () => ({ order: async () => ({
     data: [{ id: "doc", file_name: "test.txt", document_type: "OTHER", storage_path: "RECEIVABLE/owner/test.txt" }], error: null,
   }) }) }) }) }) }),
 } }));
 import { DocumentosPanel } from "@/components/financeiro/DocumentosPanel";
 import { financialDocumentStoragePath } from "@/lib/financeiro/documentStoragePath";
+import { supabase } from "@/integrations/supabase/client";
 
 beforeEach(() => {
   Object.assign(fake, { ready: true, tenant: "007bb519-cba0-4704-be2c-cb93ad010048", uid: "actor", epoch: 0, role: "administrador", check: () => true });
@@ -127,9 +130,17 @@ describe("DocumentosPanel existing upload/metadata/soft-delete flow with real sc
     if (phase === "upload") expect(fake.insert).not.toHaveBeenCalled();
   });
   it("preserves canonical soft-delete RPC and only publishes its current completion", async () => {
+    // Reproduce the SDK receiver requirement: the old detached call must fail.
+    const detached = supabase.rpc;
+    expect(() => detached("rpc_financial_document_soft_delete", { p_document_id: "doc", p_reason: "Removido pelo usuário" })).toThrow();
+    expect(fake.rpc).not.toHaveBeenCalled();
     const ui = setup(); fireEvent.click(await ui.findByRole("button", { name: "Remover documento" }));
     await waitFor(() => expect(ui.changed).toHaveBeenCalledTimes(1));
     expect(fake.rpc).toHaveBeenCalledWith("rpc_financial_document_soft_delete", { p_document_id: "doc", p_reason: "Removido pelo usuário" });
+    expect(fake.rpc).toHaveBeenCalledTimes(1);
+    expect(fake.success).toHaveBeenCalledWith("Documento removido");
+    expect(fake.error).not.toHaveBeenCalled();
+    expect(ui.invalidate).toHaveBeenCalledWith({ queryKey: ["fin-docs", "RECEIVABLE", OWNER, expect.any(String)] });
     expect(fake.remove).not.toHaveBeenCalled();
   });
   it("malformed upload fails before any server mutation", async () => {

@@ -1,5 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
+## 21/10 20:01 — regressão de remoção financeira, publicação 6c9ef2f0
+- [ ] Corrigir receiver da RPC existente em DocumentosPanel; teste dependente de this, fences/negação/invalidation e revisão apenas dos callers de remoção financeira.
+- [ ] Registrar checks/SHA e evidências externas de uploads/POST/policy; legado orgNULL não tem legibilidade comprovada. Sem publicação/SQL/Edge/dados; cache CDN legado pendente.
+
 ## 21/10 18:39 — revogação HTTP de anexos, baseline c63bc6b
 - [x] 19:01 revisão0708012d: registrar Edgev1+snapshot simples externamente aplicados, real A/B próprio200/1751 e cruzado403, XMLv97 externo; sincronizar3 fontes backend byte-exatas e frontend após86/86/checks, sem redeploy/publicação/SQL.
 - [x] Corrigir allowlist SELECT por operação, deadline monotônico frontend, ZIP24arquivos/60MiB e prazosRPC/fence; testes canônicos86/86, Deno/types isolados/harness build OK, rollback deny.
