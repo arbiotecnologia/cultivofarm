@@ -28,7 +28,7 @@ B2B MD5 gestor `4c8798e1567434a25b3fa9c9052f8759`, técnico `f1b68ffa8664b265522
 - Sem monitor/Auth/Storage/sessões, reload/polling, subagentes, SQL, DDL/DML, Edge, deploy, publicação ou dados de catálogo.
 
 ## Validação
-- 92/92 testes locais em 8 arquivos: famílias explícitas, NULL/legado, microrganismo, tenant/ator e negativo de preferências, encaminhamento negado para químicos/adubos; regressões de grade/cache/consultas e recomendação. Fixtures são exclusivamente mocks locais.
+- 104/104 testes locais em 10 arquivos: 92/92 catálogo/cache + 12/12 seleção/encaminhamento da recomendação. Famílias explícitas, NULL/legado, microrganismo, tenant/ator e negativo de preferências, encaminhamento negado para químicos/adubos; regressões de grade/cache/consultas. Fixtures são exclusivamente mocks locais.
 - Sinal automático do ambiente: types/build **OK 21:30:18 UTC** após correção do teste isolado. Sem build/typecheck manual (harness automático).
 - Homologação real do novo filtro por consultor/agrônomo/comercial e B2B/JWT/RLS **não realizada** nesta rodada; nenhuma sessão/role foi alterada para obtê-la. C1 é candidata revisável, não certificação integral de todos perfis.
 - Homologação imediata do sync anterior, origin-deny técnico, CDN SU-518022 e demais pendências continuam abertas conforme backlog.

@@ -2,7 +2,7 @@
 
 ## 21/10 21:25 — prioridade expressa: catálogo, depois contratos funcionais
 - [x] Adiar pendências sem declará-las resolvidas; avanço substitui gate antigo. Backlog: docs/backlog-prioridade-catalogo-20261021.md.
-- [x] C1 recorte interno revisável: inventário LIVE read-only, metadados/filtros de família técnico/agrônomo/comercial, legado e tenant preservados; 92/92 testes, types/build automático OK. docs/catalogo-c1-20261021-review.md. Não publicado.
+- [x] C1 recorte interno revisável: inventário LIVE read-only, metadados/filtros de família técnico/agrônomo/comercial, legado e tenant preservados; 104/104 testes, types/build automático OK. docs/catalogo-c1-20261021-review.md. Não publicado.
 - [ ] C1 B2B: RPCs atuais sem família/ocultação comercial; precisa prova da empresa cuja preferência prevalece e revisão da candidata separada scripts/catalog-c1-b2b-review-20261021. Não ativar via enriquecimento paralelo nem aplicar backend nesta rodada.
 - [ ] C1 homologação real dos filtros/perfis: mocks não são JWT/RLS/browser real; sem mudança de sessões nesta rodada.
 - [ ] C2 seguinte, não implementar neste diff: contratos funcionais canônicos de atribuição/desvinculação/reativação/histórico, papéis cumulativos B2B+gestor+técnico+produtor, seletor autorizado e cadastro multiatribuições na empresa.
