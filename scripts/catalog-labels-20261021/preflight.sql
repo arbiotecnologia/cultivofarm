@@ -1,10 +1,13 @@
 -- ============================================================================
--- PREFLIGHT SOMENTE LEITURA — candidata de rótulos por família (21/10/2026)
+-- PREFLIGHT SOMENTE LEITURA — candidata de rótulos por família v2 (21/10/2026)
 -- Rodar com operador aprovado no ref canônico swzpzcwiasxmjutrmvkm, confirmado
 -- independentemente. Nenhuma variável de ambiente prova o destino. Não escreve.
 -- ============================================================================
 
 -- 1) Funções das quais a candidata depende (assinatura, corpo md5, ACL, owner)
+--    Baseline revisado de set_global_product_family_core (guard exige EXATAMENTE):
+--    md5=8bd3ce69c5bd55b678246acb9d264548, acl={postgres=X/postgres,authenticated=X/postgres},
+--    owner=postgres
 SELECT p.proname, p.oid::regprocedure::text AS signature,
        pg_catalog.md5(pg_catalog.pg_get_functiondef(p.oid)) AS body_md5,
        p.proacl::text AS acl, r.rolname AS owner, p.prosecdef AS security_definer
@@ -15,11 +18,15 @@ WHERE (n.nspname = 'platform_private' AND p.proname IN
         ('catalog_metadata_require_actor','catalog_entity_replay','catalog_entity_audit','set_global_product_family_core'))
    OR (n.nspname = 'public' AND p.proname IN
         ('platform_set_global_product_family','platform_read_global_product_catalog_by_family',
-         'platform_list_catalog_labels','platform_create_catalog_label','platform_update_catalog_label','platform_set_catalog_label_active'))
+         'platform_list_catalog_labels','platform_create_catalog_label','platform_update_catalog_label',
+         'platform_set_catalog_label_active','catalog_family_labels_read'))
 ORDER BY 1, 2;
 
 -- 2) Constraints atuais de classificação em produtos (baseline a substituir)
-SELECT c.conname, pg_catalog.pg_get_constraintdef(c.oid) AS definition
+--    Guard exige md5(pg_get_constraintdef) = 0ae66545cef182ce716ee3958ef634b6
+--    para produtos_classe_catalogo_coerente_check.
+SELECT c.conname, pg_catalog.pg_get_constraintdef(c.oid) AS definition,
+       pg_catalog.md5(pg_catalog.pg_get_constraintdef(c.oid)) AS def_md5
 FROM pg_catalog.pg_constraint c
 WHERE c.conrelid = 'public.produtos'::pg_catalog.regclass
   AND c.conname IN ('produtos_familia_catalogo_check','produtos_classe_catalogo_coerente_check')
