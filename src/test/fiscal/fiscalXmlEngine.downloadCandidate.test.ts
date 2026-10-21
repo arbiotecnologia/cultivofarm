@@ -13,7 +13,7 @@ const code = ts.transpileModule(src.replace(/^import[\s\S]*?;\s*/gm, "").replace
 const RUN = "22222222-2222-4222-8222-222222222222";
 const XML = "<NFe>assinado</NFe>";
 const SHA = createHash("sha256").update(XML).digest("hex");
-type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number };
+type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean };
 
 function setup(o: Opt = {}) {
   let handler: ((r: Request) => Promise<Response>) | undefined;
@@ -33,14 +33,14 @@ function setup(o: Opt = {}) {
   const rpc = vi.fn((n: string) => { rpcCalls++;
     if (o.hangRpcCall === rpcCalls) return new Promise(() => {}); // nunca resolve, ignora abort
     return Promise.resolve({ data: n === "fn_fiscal_can_operate" ? operate() : owner(), error: null }); });
-  const sdk = { from, rpc, auth: { getClaims: async () => ({ data: { claims: { sub: "A" } } }) },
+  const sdk = { from, rpc, auth: { getClaims: () => o.hangClaims ? new Promise(() => {}) : Promise.resolve({ data: { claims: { sub: "A" } } }) },
     storage: { from: vi.fn(() => ({ download, createSignedUrl: sign, createSignedUrls: sign })) } };
   const Deno = { env: { get: (k: string) => k === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "placeholder" }, serve: (h: typeof handler) => { handler = h; } };
   const stub = () => { throw new Error("not_in_download"); };
   new Function("Deno", "createClient", "fiscalCorsHeaders", "isCanonicalSupabaseUrl", "CANONICAL_SUPABASE_URL", "XSD_FILE_COUNT",
     "inspectOfficialXsdBundle", "validateAgainstOfficialXsd", "isAlreadyExistingObject", "verifyExistingObject", code)(
     Deno, () => sdk, () => ({ allowed: true, headers: {} }), () => true, "https://swzpzcwiasxmjutrmvkm.supabase.co", 5, stub, stub, stub, stub);
-  const invoke = (body: unknown, signal?: AbortSignal) => handler!(new Request("https://isolated.invalid", { method: "POST", signal,
+  const invoke = (body: unknown, signal?: AbortSignal) => (() => { if (!handler) throw new Error("handler_missing"); return handler; })()(new Request("https://isolated.invalid", { method: "POST", signal,
     headers: { Authorization: "Bearer placeholder", Origin: "https://app.cultivofarm.com.br" }, body: JSON.stringify(body) }));
   return { invoke, download, sign, rpc };
 }
@@ -111,7 +111,7 @@ it("RPC de autorização pendurada após outer fn_fiscal respeita prazo absoluto
     expect(done).toBeUndefined();
     await vi.advanceTimersByTimeAsync(2);
     await p;
-    expect(done!.status).toBe(504); expect(await done!.text()).not.toContain("NFe");
+    expect(done?.status).toBe(504); expect(await done?.text()).not.toContain("NFe");
     expect(s.download).not.toHaveBeenCalled();
     expect(s.rpc).toHaveBeenCalledTimes(2);
   } finally { vi.useRealTimers(); }
@@ -134,3 +134,21 @@ it("pedido já abortado antes do handler não chama Storage e responde 504", asy
   expect(r.status).toBe(504); expect(await r.text()).not.toContain("NFe");
   expect(s.download).not.toHaveBeenCalled(); expect(s.sign).not.toHaveBeenCalled();
 });
+
+for (const [name, o] of [["claims iniciais", { hangClaims: true }], ["primeira RPC fiscal", { hangRpcCall: 1 }]] as const) {
+  it(`${name} travada expira desde entrada sem Storage nem retry`, async () => {
+    vi.useFakeTimers();
+    try {
+      const s = setup(o);
+      let done: Response | undefined;
+      const p = s.invoke(body).then(r => { done = r; });
+      await vi.advanceTimersByTimeAsync(15_001);
+      expect(done?.status).toBe(504);
+      expect(s.download).not.toHaveBeenCalled();
+      expect(s.rpc.mock.calls.length).toBeLessThanOrEqual(1);
+      if (done) expect(await done.text()).not.toContain("NFe");
+      // Do not await an unresolved baseline promise: failed expectation is reproduction.
+      if (done) await p;
+    } finally { vi.useRealTimers(); }
+  });
+}
