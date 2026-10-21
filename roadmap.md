@@ -1,5 +1,13 @@
 # F2-B — auditoria e preparação revisável
 
+## 21/10 — XML autenticado, baseline c7d5c962
+- [x] Revisar 127ef060, reproduzir claims/primeira RPC travadas (16 PASS/2 FAIL), corrigir prazo de entrada; 22 Edge + 14 UI e 1901 regressões PASS/4 skipped, frontend candidato isolado.
+- [x] Preparar diff, rollback deny completo e plano de fixture/inventário legacy sem tokens; monitor, Auth e demais runtime byte-exatos.
+- [ ] Baseline realmente implantado (versão/fontes/config/hash): integração sem operação de leitura de fonte; MCP externo UNAVAILABLE; NO-GO.
+- [ ] Build/typecheck da montagem candidata: recibo independente necessário; build automático c7 aprovado não certifica candidata arquivada.
+- [ ] Implantação e E2E XML A/B: dependem de revisão/autorização, baseline LIVE e fixture canônica unsigned disponível; sem INSERT direto/SEFAZ/certificado real.
+- [ ] Inventário financial-receipts e horizonte expirado: faltam locators/logs/TTL/cutoff verificáveis; nenhuma URL/cache declarada revogada.
+
 ## Revogação técnica efetiva — baseline db1eee, 22:12
 - [x] Reproduzir semântica real (5/15 FAIL antes), corrigir quatro leitores técnicos pela lista canônica e administrador explícito; Perfil/Retry real com transporte fake e MobileLayout independente, 343/343 em 12 arquivos; pacote/rollback contra db1eee verificados isoladamente, build OK. Monitor/banco/dados intocados.
 - [ ] Homologação real pós-correção: aguarda revisão/publicação externa; 82 testes + tsc anteriores não provaram semântica da RPC nem revogação parcial real (falhou 22:11).
