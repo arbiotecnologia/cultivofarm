@@ -7,10 +7,10 @@
   "bundle": "PASS local only",
   "frontend_candidate_types_build": "NOT EXECUTED",
   "patch_apply_check": "BLOCKED BY ENVIRONMENT",
-  "old_direct_url_containment": "NOT PROVEN",
+  "old_direct_url_containment": "UNRESOLVED; remote CDN HIT after revocation proven externally 2026-10-21 18:40:44 UTC",
   "sha256": {
     "AGENTS.md": "2048137d9dab4208dd79c19b12b242e7c96b78f0e32bc63bc28b4239db3cbd40",
-    "README.md": "fe03cad43cd70a708706c45de117b1cfc5f0a7860d32ccdac7cb855a015d4300",
+    "README.md": "6ba36c68fbd4ec9e354772bb5f40f16b6bdc9c748fba64da90e2bf0f684273c2",
     "bundle-local.txt": "0c121c2da3f0f4c60030dc24a8a5fe4d345e78a6897aef427c9b806ad1f8d8ef",
     "deno-check.txt": "8cf939376b85afd15e889e0013257a5c0fa79c1343c49953b45ca6e714e50466",
     "edge/download.ts": "371ca9ebb38593235964094b65baec7e35e28f0a230f50e73a0f6b708b905161",
@@ -23,6 +23,11 @@
     "protected-sha256.json": "d00b9205eadd8ed25ffa2c90b64aae468f20b49688c9b78b434e97adeeab14fb",
     "rollback/frontend-deny.patch": "73f5bc32c886971f2be8b30de714681b8e1489a172f991f98e52c30ca247e595",
     "rollback/index.ts.review": "34512daffe81e5ad8ca88b7480f7c37c430596fe5c5675998586cbe0e6a806ea",
-    "tests.txt": "572b360f4b49dec474465c64ea3640157cf94c163364fa796fe9f5e5e0ffda14"
-  }
+    "tests.txt": "572b360f4b49dec474465c64ea3640157cf94c163364fa796fe9f5e5e0ffda14",
+    "evidence-cdn-external-1848.json": "1287d533c24636d2034699fcef07330bef107d5fbf63e387cef86b08e6fe0273",
+    "LEGACY-CDN-CONTAINMENT.md": "c221fcfacf05f43669348e3fa4fa08a6f82f691696c15173c16be5788394e23e"
+  },
+  "external_cdn_evidence": "evidence-cdn-external-1848.json; owner report, not sandbox capture",
+  "legacy_control_proposal": "LEGACY-CDN-CONTAINMENT.md; origin CDN bypass/reauthorization plus reviewed purge; none executed",
+  "support_case": "SU-518022; evidence saved, no external message"
 }
