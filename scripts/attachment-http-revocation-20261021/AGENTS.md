@@ -1,0 +1,3 @@
+- Keep all executable candidates under this review directory; never promote to supabase/functions or src before independent approval, because source promotion can deploy automatically.
+- Client-document downloads use the actor bearer only, independently re-read canonical authorization and metadata before/after bounded bytes; no cached Storage response can grant access.
+- Flow protection does not certify old direct Storage URLs; require independent HTTP containment evidence before claiming effective endpoint revocation.

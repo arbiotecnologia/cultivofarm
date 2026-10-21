@@ -1,0 +1,57 @@
+// REVIEW ONLY — intended path supabase/functions/download-client-document/index.ts.
+import { createClient } from "npm:@supabase/supabase-js@2.110.8";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { serveDocument, type Snapshot } from "./download.ts";
+
+const origins = new Set(["https://app.cultivofarm.com.br", "https://cultivofarm.lovable.app",
+  "https://id-preview--a79bb3db-f665-466d-bf41-ee8c6cb91fab.lovable.app", "http://localhost:8080"]);
+Deno.serve(async req => {
+  const origin = req.headers.get("Origin");
+  const allowed = origin !== null && origins.has(origin);
+  const headers = { ...corsHeaders, "Access-Control-Allow-Origin": allowed ? origin : "null",
+    "Access-Control-Allow-Methods": "POST, OPTIONS", "Cache-Control": "private, no-store, max-age=0",
+    "CDN-Cache-Control": "no-store", "Surrogate-Control": "no-store", "Vary": "Origin, Authorization" };
+  const deny = (status: number) => new Response(JSON.stringify({ error: "Documento indisponível" }), {
+    status, headers: { ...headers, "Content-Type": "application/json" },
+  });
+  // Missing Origin is allowed for authenticated non-browser callers, not a CORS grant.
+  if (origin !== null && !allowed) return deny(403);
+  if (req.method === "OPTIONS") return allowed ? new Response(null, { headers }) : deny(403);
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_ANON_KEY");
+  const bearer = req.headers.get("Authorization") ?? "";
+  if (url !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || !key) return deny(503);
+  if (!/^Bearer \S+$/i.test(bearer)) return deny(401);
+  // Only actor client: no service client, credentials fallback or privileged object read.
+  const actor = createClient(url, key, { global: { headers: { Authorization: bearer },
+    fetch: (input, init) => fetch(input, { ...init, cache: "no-store", headers: new Headers(init?.headers) }) },
+    auth: { persistSession: false, autoRefreshToken: false } });
+  return serveDocument(req, headers, {
+    authorize: async (path, signal): Promise<Snapshot | null> => {
+      // Repeat identity AND current DB authority, never infer role from JWT metadata.
+      const claims = await actor.auth.getClaims(bearer.slice(7));
+      const uid = claims.data?.claims?.sub;
+      if (signal.aborted || claims.error || typeof uid !== "string") return null;
+      const organization = await actor.rpc("h15_actor_organization").abortSignal(signal);
+      if (organization.error || typeof organization.data !== "string") return null;
+      const permission = await actor.rpc("cliente_storage_object_permitted", { _name: path }).abortSignal(signal);
+      if (permission.error || permission.data !== true) return null;
+      const roles = await actor.from("user_roles").select("role").eq("user_id", uid).abortSignal(signal);
+      if (roles.error || !roles.data?.length) return null;
+      const doc = await actor.from("cliente_documentos").select("id,cliente_id,arquivo_path,tamanho_bytes,mime")
+        .eq("arquivo_path", path).abortSignal(signal).maybeSingle();
+      if (doc.error || !doc.data) return null;
+      const client = await actor.from("clientes").select("id,organization_id").eq("id", doc.data.cliente_id)
+        .eq("organization_id", organization.data).abortSignal(signal).maybeSingle();
+      if (client.error || !client.data || signal.aborted) return null;
+      return { actor: uid, tenant: organization.data, roles: roles.data.map(row => String(row.role)),
+        document: doc.data.id, client: client.data.id, path: doc.data.arquivo_path,
+        size: doc.data.tamanho_bytes, mime: doc.data.mime };
+    },
+    download: async (path, signal) => {
+      const result = await actor.storage.from("clientes-docs").download(path, {}, { signal, cache: "no-store" }).asStream();
+      if (result.error) { void result.data?.cancel().catch(() => undefined); return null; }
+      return result.data;
+    },
+  });
+});
