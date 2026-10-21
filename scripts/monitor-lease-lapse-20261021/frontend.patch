@@ -1,0 +1,72 @@
+--- /tmp/orig/authzEpochMonitor.ts	2026-10-21 00:16:44.066991352 +0000
++++ src/lib/authz/authzEpochMonitor.ts	2026-10-21 00:16:44.132595914 +0000
+@@ -153,13 +153,30 @@
+   const armLeaseDeadline = () => {
+     if (leaseTimer !== null) deps.clearTimeoutFn(leaseTimer);
+     const remaining = leaseUntil - deps.now();
+-    if (remaining <= 0) { expire("timeout"); return; }
++    if (remaining <= 0) { lapseOrExpire(); return; }
+     leaseTimer = deps.setTimeoutFn(() => {
+       leaseTimer = null;
+-      if (state !== "stopped" && deps.now() >= leaseUntil) expire("timeout");
++      if (state !== "stopped" && deps.now() >= leaseUntil) lapseOrExpire();
+     }, remaining);
+   };
+ 
++  // Reviewed early-renewal scopes only. When the confirmed lease lapses while
++  // the background renewal request is STILL inside its own 15 s window (from
++  // its start), hide immediately (pending, leaseUntil=0, checkAccess=false)
++  // but keep that single request alive instead of invalidating it and
++  // starting a second one after the auto-retry backoff. Its answer is still
++  // rejected after requestUntil (request timer + response check), so no lease
++  // is extended, no request overlaps and real timeouts still expire.
++  const canLapse = () => deps.renewBeforeDeadline === true && state === "valid" &&
++    inFlightGeneration !== null && inFlightGeneration === generation && requestUntil > 0 && deps.now() < requestUntil;
++  const lapseOrExpire = () => {
++    if (!canLapse()) { expire("timeout"); return; }
++    diagnostic("lapse", "timeout");
++    leaseUntil = 0;
++    if (leaseTimer !== null) { deps.clearTimeoutFn(leaseTimer); leaseTimer = null; }
++    setState("pending");
++  };
++
+   const schedulePoll = (delayMs: number = pollMs) => {
+     if (state === "stopped") return;
+     if (pollTimer !== null) deps.clearTimeoutFn(pollTimer);
+@@ -289,7 +306,7 @@
+       if (!deps.isOnline()) { expire("offline"); return; }
+       // Check deadline BEFORE deduplication: a suspended in-flight request
+       // cannot keep old authority alive when focus and visibility resume.
+-      if (state === "valid" && deps.now() >= leaseUntil) expire("timeout");
++      if (state === "valid" && deps.now() >= leaseUntil) lapseOrExpire();
+       if (inFlightGeneration !== null) return;
+       void poll(false);
+     },
+--- /tmp/orig/localDiagnostics.ts	2026-10-21 00:16:44.067124502 +0000
++++ src/lib/authz/localDiagnostics.ts	2026-10-21 00:16:44.132727811 +0000
+@@ -1,6 +1,6 @@
+ /** Local bounded diagnostics only: never identity, URLs, fingerprints, payloads or error text. */
+ export interface AuthzDiagnostic {
+-  event: "request" | "response" | "expire" | "environment" | "stale" | "auth_refresh" | "auth_reconfirmed" | "load_restart" | "load_timeout" | "auto_retry";
++  event: "request" | "response" | "expire" | "environment" | "stale" | "auth_refresh" | "auth_reconfirmed" | "load_restart" | "load_timeout" | "auto_retry" | "lapse";
+   state: string;
+   reason: "error" | "offline" | "timeout" | "ineligible" | null;
+   visible: boolean;
+@@ -14,7 +14,7 @@
+   ? Math.round(Math.max(-3_600_000, Math.min(3_600_000, value))) : null;
+ export function recordAuthzDiagnostic(sample: AuthzDiagnostic): void {
+   // Reconstruct the allowlist, never spread untrusted input into diagnostics.
+-  const event = ["request", "response", "expire", "environment", "stale", "auth_refresh", "auth_reconfirmed", "load_restart", "load_timeout", "auto_retry"].includes(sample.event) ? sample.event : "expire";
++  const event = ["request", "response", "expire", "environment", "stale", "auth_refresh", "auth_reconfirmed", "load_restart", "load_timeout", "auto_retry", "lapse"].includes(sample.event) ? sample.event : "expire";
+   const state = ["idle", "pending", "valid", "expired", "stopped"].includes(sample.state) ? sample.state : "expired";
+   const reason = sample.reason && ["error", "offline", "timeout", "ineligible"].includes(sample.reason) ? sample.reason : null;
+   const record: AuthzDiagnostic = { event, state, reason, visible: sample.visible === true, online: sample.online === true,
+@@ -22,7 +22,7 @@
+   records.push(record);
+   if (records.length > 80) records.shift();
+   // Only real allowlisted expiry events; telemetry remains local and cannot affect authority.
+-  if (sample.event === "expire") {
++  if (sample.event === "expire" || sample.event === "lapse") {
+     try { console.warn("cultivo-authz-expire", JSON.stringify(record)); } catch { /* observer failure must not affect expiry */ }
+   } else if (sample.event === "auth_refresh" || sample.event === "auth_reconfirmed") {
+     try { console.info("cultivo-authz-renewal", JSON.stringify(record)); } catch { /* observer failure must not affect reconfirmation */ }
