@@ -153,28 +153,11 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
   const armLeaseDeadline = () => {
     if (leaseTimer !== null) deps.clearTimeoutFn(leaseTimer);
     const remaining = leaseUntil - deps.now();
-    if (remaining <= 0) { lapseOrExpire(); return; }
+    if (remaining <= 0) { expire("timeout"); return; }
     leaseTimer = deps.setTimeoutFn(() => {
       leaseTimer = null;
-      if (state !== "stopped" && deps.now() >= leaseUntil) lapseOrExpire();
+      if (state !== "stopped" && deps.now() >= leaseUntil) expire("timeout");
     }, remaining);
-  };
-
-  // Reviewed early-renewal scopes only. When the confirmed lease lapses while
-  // the background renewal request is STILL inside its own 15 s window (from
-  // its start), hide immediately (pending, leaseUntil=0, checkAccess=false)
-  // but keep that single request alive instead of invalidating it and
-  // starting a second one after the auto-retry backoff. Its answer is still
-  // rejected after requestUntil (request timer + response check), so no lease
-  // is extended, no request overlaps and real timeouts still expire.
-  const canLapse = () => deps.renewBeforeDeadline === true && state === "valid" &&
-    inFlightGeneration !== null && inFlightGeneration === generation && requestUntil > 0 && deps.now() < requestUntil;
-  const lapseOrExpire = () => {
-    if (!canLapse()) { expire("timeout"); return; }
-    diagnostic("lapse", "timeout");
-    leaseUntil = 0;
-    if (leaseTimer !== null) { deps.clearTimeoutFn(leaseTimer); leaseTimer = null; }
-    setState("pending");
   };
 
   const schedulePoll = (delayMs: number = pollMs) => {
@@ -306,7 +289,7 @@ export function createAuthzEpochMonitor(deps: AuthzEpochMonitorDeps): AuthzEpoch
       if (!deps.isOnline()) { expire("offline"); return; }
       // Check deadline BEFORE deduplication: a suspended in-flight request
       // cannot keep old authority alive when focus and visibility resume.
-      if (state === "valid" && deps.now() >= leaseUntil) lapseOrExpire();
+      if (state === "valid" && deps.now() >= leaseUntil) expire("timeout");
       if (inFlightGeneration !== null) return;
       void poll(false);
     },
