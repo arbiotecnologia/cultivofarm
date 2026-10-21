@@ -651,7 +651,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
           gps: c.latitude != null && c.longitude != null
             ? { lat: Number(c.latitude), lng: Number(c.longitude) }
             : null,
-          fotoUrl: c.foto_url || null,
+          // foto_url legada do check-in não é consumida; fotos de check-in ficam em registros_consultor_arquivos.
         })
       );
 
@@ -676,7 +676,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
         // Arquivos da visita
         const { data: arquivos } = await supabase
           .from("registros_consultor_arquivos")
-          .select("id, arquivo_url, tipo_midia, tipo_arquivo, categoria_arquivo, legenda, capturado_em, uploaded_at, duracao_segundos")
+          .select("id, arquivo_path, tipo_midia, tipo_arquivo, categoria_arquivo, legenda, capturado_em, uploaded_at, duracao_segundos")
           .eq("registro_consultor_id", reg.id)
           .order("uploaded_at");
         (arquivos || []).forEach((a: any) => {
@@ -690,7 +690,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
               tipo: "audio_gravado",
               titulo: "Áudio anexado",
               descricao: a.legenda || (a.duracao_segundos ? `${a.duracao_segundos}s` : null),
-              audioUrl: a.arquivo_url,
+              audioPath: a.arquivo_path || null,
             });
           } else if (isExtra) {
             const catLabel =
@@ -703,7 +703,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
               tipo: "evidencia_anexada",
               titulo: `${catLabel} anexado`,
               descricao: a.legenda || null,
-              arquivoUrl: a.arquivo_url,
+              arquivoPath: a.arquivo_path || null,
               arquivoNome: a.legenda || catLabel,
             });
           } else {
@@ -713,7 +713,7 @@ function DetailSheet({ solicitacaoId, onClose }: { solicitacaoId: string | null;
               tipo: "foto_adicionada",
               titulo: "Foto adicionada",
               descricao: a.legenda || null,
-              fotoUrl: a.arquivo_url,
+              fotoPath: a.arquivo_path || null,
             });
           }
         });

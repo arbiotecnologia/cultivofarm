@@ -1,6 +1,7 @@
 import { formatDateTimeDisplay } from "@/lib/date-utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { ATTACHMENT_LIMITS, downloadAuthenticatedAttachment } from "@/lib/authz/authenticatedAttachment";
 
 export interface VisitaPdfData {
   empresa: { nome: string; logoUrl?: string | null };
@@ -25,9 +26,10 @@ export interface VisitaPdfData {
   orientacaoCliente?: string | null;
   proximaAcao?: string | null;
   recomendacaoPreliminar?: string | null;
-  fotos?: { url: string; legenda?: string | null }[];
-  audios?: { url: string; duracao?: number | null; legenda?: string | null }[];
-  evidenciasExtras?: { url: string; categoria?: string | null; legenda?: string | null; data?: string | null }[];
+  /** Somente caminhos de Storage; bytes vêm do download autenticado (RLS). URLs gravadas nunca são consumidas. */
+  fotos?: { path: string | null; legenda?: string | null }[];
+  audios?: { duracao?: number | null; legenda?: string | null }[];
+  evidenciasExtras?: { categoria?: string | null; legenda?: string | null; data?: string | null }[];
   recomendacao?: {
     produto?: string;
     dose?: string;
@@ -61,7 +63,29 @@ export interface VisitaPdfData {
  *
  * Paginação: TODAS as fotos são incluídas, com quebras automáticas a cada par.
  */
-export async function generateVisitaPdf(data: VisitaPdfData): Promise<jsPDF> {
+export interface VisitaPdfOptions {
+  /** Cancela downloads pendentes (unmount, troca de identidade, novo pedido). */
+  signal?: AbortSignal;
+  bucket?: string;
+}
+
+export async function generateVisitaPdf(data: VisitaPdfData, options: VisitaPdfOptions = {}): Promise<jsPDF> {
+  const signal = options.signal ?? new AbortController().signal;
+  const bucket = options.bucket ?? "consultor-arquivos";
+  let totalBytes = 0;
+  /** Download autenticado canônico; falha → null (sem URL gravada, sem assinatura). */
+  const authenticatedImage = async (path: string | null | undefined): Promise<string | null> => {
+    if (!path) return null;
+    try {
+      const blob = await downloadAuthenticatedAttachment(bucket, path, signal);
+      if (signal.aborted || !blob.size || blob.size > ATTACHMENT_LIMITS.fileBytes || totalBytes + blob.size > ATTACHMENT_LIMITS.totalBytes) return null;
+      totalBytes += blob.size;
+      return await blobToDataUrl(blob);
+    } catch {
+      return null;
+    }
+  };
+
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -256,12 +280,13 @@ export async function generateVisitaPdf(data: VisitaPdfData): Promise<jsPDF> {
     const captionHeight = 24;
     const rowHeight = cellHeight + captionHeight + 8;
     let col = 0;
+    let unavailablePhotos = 0;
 
     for (let i = 0; i < data.fotos.length; i++) {
       const foto = data.fotos[i];
       try {
-        const dataUrl = await fetchAsDataUrl(foto.url);
-        if (!dataUrl) continue;
+        const dataUrl = await authenticatedImage(foto.path);
+        if (!dataUrl) { unavailablePhotos++; continue; }
 
         // Quebra de página
         if (y + rowHeight > pageHeight - margin) {
@@ -292,6 +317,15 @@ export async function generateVisitaPdf(data: VisitaPdfData): Promise<jsPDF> {
       }
     }
     if (col > 0) y += rowHeight;
+    if (unavailablePhotos > 0) {
+      if (y > pageHeight - margin - 20) { doc.addPage(); y = margin; }
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`${unavailablePhotos} foto(s) indisponível(is) para este acesso — consulte no sistema.`, margin, y);
+      doc.setTextColor(0, 0, 0);
+      y += 14;
+    }
   }
 
   // Áudios
@@ -306,12 +340,12 @@ export async function generateVisitaPdf(data: VisitaPdfData): Promise<jsPDF> {
       startY: y,
       theme: "grid",
       styles: { fontSize: 8, cellPadding: 4 },
-      head: [["#", "Duração", "Legenda", "Link"]],
+      head: [["#", "Duração", "Legenda", "Acesso"]],
       body: data.audios.map((a, idx) => [
         String(idx + 1),
         a.duracao ? `${a.duracao}s` : "—",
         a.legenda || "—",
-        a.url,
+        ACCESS_NOTE,
       ]),
       columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 60 }, 3: { cellWidth: 200 } },
       margin: { left: margin, right: margin },
@@ -331,12 +365,12 @@ export async function generateVisitaPdf(data: VisitaPdfData): Promise<jsPDF> {
       startY: y,
       theme: "grid",
       styles: { fontSize: 8, cellPadding: 4 },
-      head: [["Finalidade", "Legenda", "Data", "Link"]],
+      head: [["Finalidade", "Legenda", "Data", "Acesso"]],
       body: data.evidenciasExtras.map((ev) => [
         formatCategoria(ev.categoria),
         ev.legenda || "—",
         ev.data || "—",
-        ev.url,
+        ACCESS_NOTE,
       ]),
       columnStyles: { 3: { cellWidth: 200 } },
       margin: { left: margin, right: margin },
@@ -386,19 +420,15 @@ export async function sharePdf(doc: jsPDF, fileName: string): Promise<boolean> {
   return false;
 }
 
-async function fetchAsDataUrl(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
+const ACCESS_NOTE = "Disponível no sistema (acesso autenticado)";
+
+function blobToDataUrl(blob: Blob): Promise<string | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : null);
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(blob);
+  });
 }
 
 function formatCategoria(c?: string | null): string {

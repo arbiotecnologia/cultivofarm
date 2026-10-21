@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { AttachmentPager } from "@/components/shared/AttachmentPager";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,6 +104,7 @@ export default function ConsultorTecnico() {
     loading: signedLoading,
     error: signedError,
     refresh: refreshSignedUrls,
+    pagination: attachmentPage,
   } = useSignedUrls(filePaths);
 
   /** Fonte única da URL efetiva para grade, ampliação, miniatura e download. */
@@ -387,6 +389,7 @@ export default function ConsultorTecnico() {
 
   return (
     <div className="space-y-6">
+      <AttachmentPager pagination={attachmentPage} />
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { AttachmentPager } from "@/components/shared/AttachmentPager";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -270,7 +271,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
     return paths;
   }, [timeline]);
 
-  const { urls: signedUrls } = useSignedUrls(allPaths);
+  const { urls: signedUrls, pagination: attachmentPage } = useSignedUrls(allPaths);
 
   if (isLoading) {
     return (
@@ -285,6 +286,7 @@ export function HistoricoTalhao({ talhaoId, maxHeight }: Props) {
 
   return (
     <div className="space-y-4">
+      <AttachmentPager pagination={attachmentPage} />
       {/* Indicadores rápidos de recorrência */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>

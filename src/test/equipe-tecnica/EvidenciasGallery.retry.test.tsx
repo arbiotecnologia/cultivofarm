@@ -74,17 +74,16 @@ it("falha persistente não abre arquivo nem limpa o estado de erro", async () =>
   h.unmount();
 });
 
-it("limite 25 marca item falho, retry continua explícito e não emite bytes", async () => {
+it("25 evidências: o 25º item carrega pelo fluxo normal autenticado, sem limite global", async () => {
   state.query.mockResolvedValue({ data: Array.from({ length: 25 }, (_, n) => ({ evidencia: { ...row.evidencia, id: `E${n}`, storage_path: `private/${n}.jpg`, legenda: `Foto ${n}` } })), error: null });
+  state.stream.mockImplementation(async () => ({ data: okStream(), error: null }));
   const h = render(<EvidenciasGallery aplicacaoId="APP" />);
   await waitFor(() => expect(h.container.querySelectorAll("[data-attachment-path]")).toHaveLength(25));
-  const target = h.container.querySelector("[data-attachment-path]");
+  const target = h.container.querySelector('[data-attachment-path="private/24.jpg"]');
   if (!target) throw new Error("missing attachment");
   act(() => notify([{ target, isIntersecting: true } as IntersectionObserverEntry]));
-  await screen.findByText("Limite de anexos excedido (24 arquivos)");
-  fireEvent.click(retryButton());
-  expect(state.stream).not.toHaveBeenCalled();
-  expect(screen.getByText("Limite de anexos excedido (24 arquivos)")).toBeTruthy();
+  await waitFor(() => expect(state.stream).toHaveBeenCalledTimes(1));
+  expect(screen.queryByText(/Limite de anexos excedido/)).toBeNull();
   h.unmount();
 });
 

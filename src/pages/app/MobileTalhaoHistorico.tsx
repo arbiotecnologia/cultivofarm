@@ -2,6 +2,7 @@ import { formatDateDisplay } from "@/lib/date-utils";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { AttachmentPager } from "@/components/shared/AttachmentPager";
 import { useSignedUrls } from "@/hooks/useSignedUrls";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -148,7 +149,7 @@ export default function MobileTalhaoHistorico() {
     return paths;
   }, [timeline]);
 
-  const { urls: signedUrls } = useSignedUrls(allPaths);
+  const { urls: signedUrls, pagination: attachmentPage } = useSignedUrls(allPaths);
 
   if (blockProdutor) {
     return <Navigate to="/app/fazendas" replace />;
@@ -157,6 +158,7 @@ export default function MobileTalhaoHistorico() {
   return (
 
     <div className="p-4 space-y-5 pb-8">
+      <AttachmentPager pagination={attachmentPage} />
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="text-muted-foreground">
           <ArrowLeft className="h-5 w-5" />
