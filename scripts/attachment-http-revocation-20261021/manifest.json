@@ -1,0 +1,28 @@
+{
+  "baseline": "c63bc6bca04eba1abf2beb7d41394ebd0172fa9d",
+  "deployment": "NONE",
+  "runtime_changed": false,
+  "tests": "60/60 synthetic; no hosted JWT/RLS proof",
+  "deno_check": "PASS local candidate + rollback",
+  "bundle": "PASS local only",
+  "frontend_candidate_types_build": "NOT EXECUTED",
+  "patch_apply_check": "BLOCKED BY ENVIRONMENT",
+  "old_direct_url_containment": "NOT PROVEN",
+  "sha256": {
+    "AGENTS.md": "2048137d9dab4208dd79c19b12b242e7c96b78f0e32bc63bc28b4239db3cbd40",
+    "README.md": "fe03cad43cd70a708706c45de117b1cfc5f0a7860d32ccdac7cb855a015d4300",
+    "bundle-local.txt": "0c121c2da3f0f4c60030dc24a8a5fe4d345e78a6897aef427c9b806ad1f8d8ef",
+    "deno-check.txt": "8cf939376b85afd15e889e0013257a5c0fa79c1343c49953b45ca6e714e50466",
+    "edge/download.ts": "371ca9ebb38593235964094b65baec7e35e28f0a230f50e73a0f6b708b905161",
+    "edge/index.ts.review": "f4db2af8ae3f142ebc8307f57427220bd4c8949477d21c03cf24bfd8189beb8d",
+    "frontend/canonical-candidate/authenticatedAttachment.ts": "91ac34ba55409733dcae952421f069937931d470e0fb4fb0b25532f386eec5ff",
+    "frontend/canonical-candidate/clienteDocumentos.ts": "6364b3a9c650528fdd5ad64171b2ffc72d7692caaf6d9310e7c69c25bf2556b0",
+    "frontend/clientDocumentDispatcher.ts": "fab8ce7f0a17ddf0c92d5a7b1b7246b786fc592e67dcf282d5b5564e8ed88db4",
+    "frontend/loadClientDocument.ts": "d6dcc0e0f2c0b48d89a42074971c9223dbd3a6d911bfc2da4e90249bcd53bba5",
+    "frontend.patch": "87fdf174cd3f8de881f0cfb59523ab64e590514a93fe98133618d039f7e1266e",
+    "protected-sha256.json": "d00b9205eadd8ed25ffa2c90b64aae468f20b49688c9b78b434e97adeeab14fb",
+    "rollback/frontend-deny.patch": "73f5bc32c886971f2be8b30de714681b8e1489a172f991f98e52c30ca247e595",
+    "rollback/index.ts.review": "34512daffe81e5ad8ca88b7480f7c37c430596fe5c5675998586cbe0e6a806ea",
+    "tests.txt": "572b360f4b49dec474465c64ea3640157cf94c163364fa796fe9f5e5e0ffda14"
+  }
+}
