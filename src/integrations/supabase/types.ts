@@ -21249,6 +21249,10 @@ export type Database = {
       }
       check_partner_order_sla: { Args: never; Returns: undefined }
       check_talhao_dependencies: { Args: { _talhao_id: string }; Returns: Json }
+      client_document_download_snapshot: {
+        Args: { _name: string }
+        Returns: Json
+      }
       cliente_storage_object_permitted: {
         Args: { _name: string }
         Returns: boolean
