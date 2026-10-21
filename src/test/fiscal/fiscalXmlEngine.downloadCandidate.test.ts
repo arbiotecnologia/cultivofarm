@@ -13,7 +13,7 @@ const code = ts.transpileModule(src.replace(/^import[\s\S]*?;\s*/gm, "").replace
 const RUN = "22222222-2222-4222-8222-222222222222";
 const XML = "<NFe>assinado</NFe>";
 const SHA = createHash("sha256").update(XML).digest("hex");
-type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean };
+type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean; actor?: string; freshSize?: number; querySignals?: boolean; claimsDelay?: number };
 
 function setup(o: Opt = {}) {
   let handler: ((r: Request) => Promise<Response>) | undefined;
@@ -25,15 +25,17 @@ function setup(o: Opt = {}) {
     ? new Promise((_r, rej) => p.signal.addEventListener("abort", () => rej(new Error("aborted"))))
     : Promise.resolve(o.dlError ? { data: null, error: new Error("x") }
       : { data: o.size ? { size: o.size, arrayBuffer: async () => new ArrayBuffer(0) } : new NodeBlob([XML]), error: null }));
+  const signals: AbortSignal[] = [];
   const from = () => { const q: Record<string, unknown> = {}; for (const k of ["select", "eq"]) q[k] = () => q;
     q.maybeSingle = async () => { reads++; return visible() ? { data: { id: RUN, signed_path: o.pathChange && reads > 1 ? "OA/other.xml" : "OA/a.xml",
-      unsigned_path: "OA/u.xml", storage_bucket: o.bucket ?? "fiscal-xml", signed_sha256: o.sha ?? SHA, unsigned_sha256: SHA, signed_bytes: XML.length, unsigned_bytes: XML.length }, error: null } : { data: null, error: null }; };
+      unsigned_path: "OA/u.xml", storage_bucket: o.bucket ?? "fiscal-xml", signed_sha256: o.sha ?? SHA, unsigned_sha256: SHA, signed_bytes: reads > 1 && o.freshSize !== undefined ? o.freshSize : XML.length, unsigned_bytes: XML.length }, error: null } : { data: null, error: null }; };
+    q.abortSignal = (signal: AbortSignal) => { signals.push(signal); return q; };
     return q; };
   let rpcCalls = 0;
   const rpc = vi.fn((n: string) => { rpcCalls++;
-    if (o.hangRpcCall === rpcCalls) return new Promise(() => {}); // nunca resolve, ignora abort
-    return Promise.resolve({ data: n === "fn_fiscal_can_operate" ? operate() : owner(), error: null }); });
-  const sdk = { from, rpc, auth: { getClaims: () => o.hangClaims ? new Promise(() => {}) : Promise.resolve({ data: { claims: { sub: "A" } } }) },
+    const promise = o.hangRpcCall === rpcCalls ? new Promise(() => {}) : Promise.resolve({ data: n === "fn_fiscal_can_operate" ? operate() : owner(), error: null });
+    return Object.assign(promise, { abortSignal: (signal: AbortSignal) => { signals.push(signal); return promise; } }); });
+  const sdk = { from, rpc, auth: { getClaims: () => o.hangClaims ? new Promise(() => {}) : new Promise(r => { const value = { data: { claims: { sub: o.actor ?? "A" } } }; if (o.claimsDelay) setTimeout(() => r(value), o.claimsDelay); else r(value); }) },
     storage: { from: vi.fn(() => ({ download, createSignedUrl: sign, createSignedUrls: sign })) } };
   const Deno = { env: { get: (k: string) => k === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "placeholder" }, serve: (h: typeof handler) => { handler = h; } };
   const stub = () => { throw new Error("not_in_download"); };
@@ -42,7 +44,7 @@ function setup(o: Opt = {}) {
     Deno, () => sdk, () => ({ allowed: true, headers: {} }), () => true, "https://swzpzcwiasxmjutrmvkm.supabase.co", 5, stub, stub, stub, stub);
   const invoke = (body: unknown, signal?: AbortSignal) => (() => { if (!handler) throw new Error("handler_missing"); return handler; })()(new Request("https://isolated.invalid", { method: "POST", signal,
     headers: { Authorization: "Bearer placeholder", Origin: "https://app.cultivofarm.com.br" }, body: JSON.stringify(body) }));
-  return { invoke, download, sign, rpc };
+  return { invoke, download, sign, rpc, signals };
 }
 const body = { action: "download", run_id: RUN, artifact: "signed" };
 
@@ -150,5 +152,31 @@ for (const [name, o] of [["claims iniciais", { hangClaims: true }], ["primeira R
       // Do not await an unresolved baseline promise: failed expectation is reproduction.
       if (done) await p;
     } finally { vi.useRealTimers(); }
+  });
+}
+
+it("claims lentas consomem o prazo de entrada, não iniciam novo prazo para RPC", async () => {
+  vi.useFakeTimers();
+  try {
+    const s = setup({ claimsDelay: 8000, hangRpcCall: 1 });
+    let result: Response | undefined;
+    const p = s.invoke(body).then(r => { result = r; });
+    await vi.advanceTimersByTimeAsync(14_999); expect(result).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(2); expect(result?.status).toBe(504); await p;
+    expect(s.signals.length).toBe(1); expect(s.signals[0].aborted).toBe(true);
+    expect(s.download).not.toHaveBeenCalled();
+  } finally { vi.useRealTimers(); }
+});
+it("recheck com tamanho registrado alterado nega bytes antigos", async () => {
+  const s = setup({ freshSize: XML.length + 1 });
+  expect((await s.invoke(body)).status).toBe(403);
+  expect(s.download).toHaveBeenCalledTimes(1);
+});
+for (const actor of ["A", "B"]) {
+  it(`ator sintético ${actor} recebe somente artefato autorizado e propaga sinais SDK`, async () => {
+    const s = setup({ actor });
+    expect((await s.invoke(body)).status).toBe(200);
+    expect(s.rpc).toHaveBeenCalledWith("h15_service_actor_run_access", { p_actor: actor, p_run: RUN });
+    expect(s.signals.length).toBe(7); expect(s.sign).not.toHaveBeenCalled();
   });
 }
