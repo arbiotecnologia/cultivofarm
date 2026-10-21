@@ -1,8 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 21/10 20:01 — regressão de remoção financeira, publicação 6c9ef2f0
-- [ ] Corrigir receiver da RPC existente em DocumentosPanel; teste dependente de this, fences/negação/invalidation e revisão apenas dos callers de remoção financeira.
-- [ ] Registrar checks/SHA e evidências externas de uploads/POST/policy; legado orgNULL não tem legibilidade comprovada. Sem publicação/SQL/Edge/dados; cache CDN legado pendente.
+- [x] Corrigir receiver da RPC existente em DocumentosPanel; mock dependente de this reproduziu 7 falhas/42 PASS antes e 49/49 depois, incluindo fences/negação/invalidation; único caller de remoção financeira, sem refactor amplo.
+- [x] Registrar 95/95 focados, build automático OK 20:02:31 UTC, SHA e evidências externas em README/REMOVE-REGRESSION.md; legado orgNULL sem legibilidade comprovada. Sem publicação/SQL/Edge/dados; cache CDN legado pendente.
+- [ ] Homologação real do novo clique de remoção após revisão/publicação pelo proprietário; verificação de tipos sem recibo separado nesta rodada (execução manual proibida pelo ambiente).
 
 ## 21/10 18:39 — revogação HTTP de anexos, baseline c63bc6b
 - [x] 19:01 revisão0708012d: registrar Edgev1+snapshot simples externamente aplicados, real A/B próprio200/1751 e cruzado403, XMLv97 externo; sincronizar3 fontes backend byte-exatas e frontend após86/86/checks, sem redeploy/publicação/SQL.
@@ -465,4 +466,4 @@
 - [x] v2 após da691664: retomada só em timeout confirmado (useAuth), só aba Documentos, TTL desde a pausa; 7 integrados com AuthProvider real; 1106/1106; rollback de 4 arquivos verificado.
 - [ ] Revisão independente/publicação (proprietário). Cancelamento de transporte do probe expirado: pendente. Gateway v2 e homologação real dos demais perfis: externos.
 
-- [ ] financial-docs canal POST (candidata `scripts/financial-docs-http-revocation-20261021/`): aguardando revisão → SQL snapshot → Edge JWT=true → frontend → homologação A/B → deny GET; cache CDN legado sem purga (FREE).
+- [x] financial-docs canal POST: snapshot, Edge JWT=true, frontend e deny GET aplicados/publicados externamente; A/B uploads/downloads/revogação reportados PASS. Cache CDN legado sem prova de expiração/purga (FREE); correção de remoção local aguarda publicação/homologação.
