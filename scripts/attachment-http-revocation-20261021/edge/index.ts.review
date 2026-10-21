@@ -44,6 +44,13 @@ Deno.serve(async req => {
       const client = await actor.from("clientes").select("id,organization_id").eq("id", doc.data.cliente_id)
         .eq("organization_id", organization.data).abortSignal(signal).maybeSingle();
       if (client.error || !client.data || signal.aborted) return null;
+      // Last DB gate after the metadata chain, not just the earlier role snapshot.
+      const freshPermission = await actor.rpc("cliente_storage_object_permitted", { _name: path }).abortSignal(signal);
+      const freshOrganization = await actor.rpc("h15_actor_organization").abortSignal(signal);
+      const freshRoles = await actor.from("user_roles").select("role").eq("user_id", uid).abortSignal(signal);
+      if (freshPermission.error || freshPermission.data !== true || freshOrganization.error ||
+        freshOrganization.data !== organization.data || freshRoles.error || !freshRoles.data?.length ||
+        JSON.stringify(freshRoles.data.map(row => String(row.role)).sort()) !== JSON.stringify(roles.data.map(row => String(row.role)).sort())) return null;
       return { actor: uid, tenant: organization.data, roles: roles.data.map(row => String(row.role)),
         document: doc.data.id, client: client.data.id, path: doc.data.arquivo_path,
         size: doc.data.tamanho_bytes, mime: doc.data.mime };
