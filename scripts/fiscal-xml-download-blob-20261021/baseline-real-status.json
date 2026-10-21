@@ -34,7 +34,7 @@
     "SUPABASE_ACCESS_TOKEN absent; no management credential used"
   ],
   "predeploy_requirement": "Reconfirm canonical project, ACTIVE v94, index/bundle identity, complete dependencies and config have not changed; drift closes gate",
-  "deployment_gate": "NO_GO_HOSTED_VALIDATION_AND_CANONICAL_FIXTURE_UNAVAILABLE",
+  "deployment_gate": "EDGE_V96_EXTERNALLY_DEPLOYED_CANONICAL_SYNC_COMPLETE_FRONTEND_CHECKED_NOT_PUBLISHED",
   "predeploy_external_reconfirmation": {
     "received_at": "2026-10-21T18:15:00Z",
     "source": "Owner independent review + list_edge_functions, not queried in this sandbox",
@@ -48,5 +48,31 @@
     "candidate_review_ref": "090c033ad83c47b40eefb8e841bf8937cc27b642",
     "independent_tests_passed": 55,
     "composition": "44 download + 4 independent + 7 typesBehavior"
+  },
+  "live_v96_external": {
+    "received_at": "2026-10-21T18:22:00Z",
+    "project_ref": "swzpzcwiasxmjutrmvkm",
+    "version": 96,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "import_map": false,
+    "ezbr_identifier": "f2361ec1c84964d0c56aaa089ff4d277aca75874f848e6140763611db8a23d10",
+    "source": "Owner authenticated external MCP deployment, not deployed/tested by this agent",
+    "sources": "index + xsdValidate +12 dependencies at 090c033a; corsAllowlist adds only exact app origin",
+    "v95_issue": "OPTIONS 403 for app origin; fixed externally in v96",
+    "cors_tests_external_passed": 5,
+    "selftest_external": {
+      "actor": "real session A",
+      "http_status": 200,
+      "ok": true,
+      "validator": "xerces 2.0.1",
+      "package": "PL_010e_v1.02",
+      "loadedFiles": 5,
+      "session_reload": false
+    },
+    "preflight_external": {
+      "runs": 0,
+      "objects": 0
+    }
   }
 }

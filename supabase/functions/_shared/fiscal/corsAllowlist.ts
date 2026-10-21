@@ -19,6 +19,7 @@ export const FISCAL_DEFAULT_ALLOWED_ORIGINS: readonly string[] = [
   `https://preview--${FISCAL_LOVABLE_PROJECT_ID}.lovable.app`,
   `https://${FISCAL_LOVABLE_PROJECT_ID}.lovableproject.com`,
   "https://cultivofarm.lovable.app",
+  "https://app.cultivofarm.com.br",
   "https://www.cultivofarm.com.br",
   "https://cultivofarm.com.br",
   "http://localhost:8080",

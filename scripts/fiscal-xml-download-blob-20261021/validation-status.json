@@ -6,16 +6,15 @@
   "app_types_exit": 0,
   "node_types_exit": 0,
   "vite_build_exit": 0,
-  "vite_build_seconds": 28.52,
+  "vite_build_seconds": 31.78,
   "deno_bundle_exit": 0,
   "deno_check_exit": 0,
   "deno_baseline_same_errors": 5,
-  "runtime_modified": false,
+  "runtime_modified": true,
   "deployment_performed": false,
   "consent": "corrections and safe deployment authorized; technical review gates remain",
   "blocked": [
-    "canonical XML fixture",
-    "hosted bundle size verification"
+    "canonical XML fixture/E2E"
   ],
   "live_baseline": "Externally verified v94 per owner; no sandbox download",
   "candidate_review_base": "12339d925b09241733e6a083e059f60ff8ddfb69",
@@ -23,7 +22,7 @@
   "deno_rollback_check_exit": 0,
   "deno_rollback_bundle_exit": 0,
   "type_behavior_tests": 7,
-  "total_focused_tests": 65,
+  "total_focused_tests": 76,
   "typecheck_tool": "tsgo",
   "deno_candidate_remaining_errors": 0,
   "bundles": {
@@ -63,5 +62,18 @@
     "tests_passed": 55,
     "source": "Owner report"
   },
-  "coordinated_deployment": "NO_GO; canonical runtime not promoted; no deployment attempted"
+  "coordinated_deployment": "Edge v96 deployed/healthy externally; canonical sync and frontend integration complete; not published",
+  "runtime_change_scope": "XML index/XSD, exact CORS origin and two XML frontend files only",
+  "deployment_external_version": 96,
+  "frontend_published": false,
+  "publication_readiness": "checks PASS; XML E2E fixture still absent",
+  "cors_tests": 5,
+  "cors_existing_tests": 6,
+  "canonical_hashes": {
+    "supabase/functions/fiscal-xml-engine/index.ts": "3b73a2af9454ab569090923473966714c0cac0abec3ad2d5d9dbe0ec227038de",
+    "supabase/functions/fiscal-xml-engine/xsdValidate.ts": "93a5dc7a824f15e9e293d23707eb6d1425bc361c3696d8bc59e34ca3d5045ec9",
+    "supabase/functions/_shared/fiscal/corsAllowlist.ts": "dd024193a40a240a813c76af3c215a0b8ab0914e6879fa718390c32a371e152b",
+    "src/hooks/useFiscalXmlEngine.ts": "04da3ea2c8878d1739457c1ee790e2bfd2283832d293e926efac2d13da75e6cd",
+    "src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx": "5d265f3f45f047fff996ef020f1da2c65d20377a5812c1ee8f6b2a740d0b4b04"
+  }
 }

@@ -1,0 +1,15 @@
+$ vitest run src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts "src/test/fiscal/fiscalXml.v96Cors.test.ts" "src/test/fiscal/h7e.corsAllowlist.static.test.ts"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/fiscal/h7e.corsAllowlist.static.test.ts (6 tests) 7ms
+ ✓ src/test/fiscal/fiscalXml.v96Cors.test.ts (5 tests) 15ms
+ ✓ src/test/fiscal/fiscalXmlCandidate.typesBehavior.test.ts (7 tests) 25ms
+ ✓ src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx (14 tests) 311ms
+ ✓ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts (44 tests) 353ms
+
+ Test Files  5 passed (5)
+      Tests  76 passed (76)
+   Start at  18:23:35
+   Duration  5.03s (transform 545ms, setup 1.71s, collect 3.85s, tests 710ms, environment 8.46s, prepare 1.23s)
+

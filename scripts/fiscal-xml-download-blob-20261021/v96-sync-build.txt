@@ -1,0 +1,34 @@
+$ vite build
+vite v5.4.19 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 16 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 4738 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /tmp/fiscal-xml-v96-1822/src/lib/portalBroadcast.ts is dynamically imported by /tmp/fiscal-xml-v96-1822/src/hooks/useAuth.tsx but also statically imported by /tmp/fiscal-xml-v96-1822/src/hooks/useAuth.tsx, /tmp/fiscal-xml-v96-1822/src/hooks/useSwitchPortal.ts, /tmp/fiscal-xml-v96-1822/src/pages/Configuracoes.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /tmp/fiscal-xml-v96-1822/src/lib/offlineDb.ts is dynamically imported by /tmp/fiscal-xml-v96-1822/src/pages/app/MobileCheckin.tsx, /tmp/fiscal-xml-v96-1822/src/pages/app/MobileVisitaWizard.tsx, /tmp/fiscal-xml-v96-1822/src/pages/app/wizard/WizardCampoStep.tsx but also statically imported by /tmp/fiscal-xml-v96-1822/src/components/app/PendingMediaRecovery.tsx, /tmp/fiscal-xml-v96-1822/src/components/visita/CheckinCard.tsx, /tmp/fiscal-xml-v96-1822/src/components/visita/PresencaCheckoutButton.tsx, /tmp/fiscal-xml-v96-1822/src/hooks/useOfflineSync.ts, /tmp/fiscal-xml-v96-1822/src/pages/AuditoriaSync.tsx, /tmp/fiscal-xml-v96-1822/src/pages/app/MobileRegistrarOcorrencia.tsx, /tmp/fiscal-xml-v96-1822/src/pages/app/MobileVisitaWizard.tsx, /tmp/fiscal-xml-v96-1822/src/pages/app/wizard/WizardCampoStep.tsx, /tmp/fiscal-xml-v96-1822/src/pages/app/wizard/WizardCheckinStep.tsx, /tmp/fiscal-xml-v96-1822/src/pages/app/wizard/WizardDiagnosticoStep.tsx, /tmp/fiscal-xml-v96-1822/src/pages/app/wizard/WizardRecomendacaoStep.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /tmp/fiscal-xml-v96-1822/src/lib/mediaUpload.ts is dynamically imported by /tmp/fiscal-xml-v96-1822/src/pages/VisitaTecnica.tsx but also statically imported by /tmp/fiscal-xml-v96-1822/src/hooks/useMediaUploadQueue.ts, /tmp/fiscal-xml-v96-1822/src/hooks/useOfflineSync.ts, /tmp/fiscal-xml-v96-1822/src/pages/app/wizard/WizardAnexosStep.tsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                1.90 kB │ gzip:     0.66 kB
+dist/assets/index-0m0KcE3x.css               136.31 kB │ gzip:    22.40 kB
+dist/assets/calendarIcs-D7UIWbsH.js            0.91 kB │ gzip:     0.58 kB
+dist/assets/PainelOperacional-CIEkbkFA.js     11.49 kB │ gzip:     3.67 kB
+dist/assets/PortalExecutivo-LH-QrgIc.js       17.10 kB │ gzip:     5.01 kB
+dist/assets/purify.es-dhnUglUx.js             24.29 kB │ gzip:     9.13 kB
+dist/assets/index.es-CRVKATSO.js             150.83 kB │ gzip:    51.45 kB
+dist/assets/index-SoQppvKm.js                152.34 kB │ gzip:    49.44 kB
+dist/assets/html2canvas.esm-CBrSDip1.js      201.42 kB │ gzip:    47.70 kB
+dist/assets/App-C_Y4DzKw.js                5,835.97 kB │ gzip: 1,539.76 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 31.78s
