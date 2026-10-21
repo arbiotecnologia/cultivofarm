@@ -8,7 +8,9 @@ vi.mock("sonner", () => ({ toast: { error: fake.error, success: fake.success, in
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   rpc: (...args: any[]) => { const promise = fake.rpc(...args); return Object.assign(promise, { abortSignal: (signal: AbortSignal) => { (promise as any).signal = signal; return promise; } }); },
   from: (table: string) => { const q: any = { table, filters: [] }; q.select = () => q; q.eq = (...args: any[]) => { q.filters.push(args); return q; };
-    q.abortSignal = (signal: AbortSignal) => { q.signal = signal; return q; }; q.maybeSingle = () => { fake.queries.push(q); return fake.read(q); }; return q; },
+    q.limit = () => { q.many = true; return q; };
+    // Fresh status re-read (limit/abortSignal terminal) reuses the same scripted server read.
+    q.abortSignal = (signal: AbortSignal) => { q.signal = signal; return q.many ? Promise.resolve(fake.read(q)).then((r: any) => ({ data: r?.data ? [r.data] : [], error: r?.error ?? null })) : q; }; q.maybeSingle = () => { fake.queries.push(q); return fake.read(q); }; return q; },
   functions: { invoke: (...args: any[]) => fake.edge(...args) },
 } }));
 vi.mock("@/lib/authz/authenticatedAttachment", async original => ({ ...await original<typeof import("@/lib/authz/authenticatedAttachment")>(), downloadAuthenticatedAttachment: (...args: any[]) => fake.download(...args) }));
@@ -18,8 +20,8 @@ const PAYMENT = "00000000-0000-4000-8000-000000000001";
 const ID = "00000000-0000-4000-8000-000000000002";
 const NUMBER = "REC-2026-000001";
 const PATH = `${TENANT}/2026/${NUMBER}.pdf`;
-const receipt = (change = {}) => ({ id: ID, payment_id: PAYMENT, organization_id: TENANT, receipt_year: 2026, receipt_number: NUMBER, storage_bucket: "financial-receipts", storage_path: PATH, ...change });
-const pdf = { data: { path: PATH, receipt_number: NUMBER, url: "https://bearer.invalid/private" }, error: null };
+const receipt = (change = {}) => ({ id: ID, payment_id: PAYMENT, organization_id: TENANT, receipt_year: 2026, receipt_number: NUMBER, storage_bucket: "financial-receipts", storage_path: PATH, status: "ISSUED", ...change });
+const pdf = { data: { path: PATH, receipt_number: NUMBER, status: "ISSUED", url: "https://bearer.invalid/private" }, error: null };
 function deferred() { let resolve: (value: any) => void = () => {}; const promise = new Promise<any>(r => { resolve = r; }); return { promise, resolve }; }
 function setup() { const ui = render(<EmitirReciboButton paymentId={PAYMENT} />); return { ...ui, context: (id = PAYMENT) => ui.rerender(<EmitirReciboButton paymentId={id} />) }; }
 async function settle(late: ReturnType<typeof deferred>, value: any) { await act(async () => late.resolve(value)); }
@@ -41,7 +43,7 @@ it.each([false, true])("issuance duplicate=%s prepares actor-authenticated bytes
   expect(fake.queries[0].filters).toEqual([["id", ID], ["payment_id", PAYMENT], ["organization_id", TENANT]]);
   expect(fake.download.mock.calls[0].slice(0, 2)).toEqual(["financial-receipts", PATH]);
   expect(window.open).not.toHaveBeenCalled(); expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
-  fireEvent.click(ui.getByRole("button", { name: "Baixar PDF" })); expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
+  fireEvent.click(ui.getByRole("button", { name: "Baixar PDF" })); await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1));
   expect(fake.rpc).toHaveBeenCalledTimes(1); ui.unmount(); expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned-receipt");
 });
 it.each([{ organization_id: "foreign" }, { payment_id: ID }, { id: PAYMENT }, { storage_path: "../secret.pdf" }, { storage_bucket: "other" }])("rejects receipt ownership/locator %j before Edge", async change => {

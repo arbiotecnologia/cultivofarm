@@ -423,3 +423,8 @@
 - [x] Contrato upstream investigado; candidata restritiva SELECT/INSERT/UPDATE apenas financial-receipts, PRE/POST/rollback fail-closed e61 checks PG sintéticos; nenhum SQL hosted.
 - [x] Relatório storage-review/REPORT.md: URLs antigas/cache sem revogação instantânea; objeto e monitor/CQ/OS/gates/sessões preservados; previewAuthStorage delta anterior intacto.
 - [ ] Proprietário: revisão/deploy Edge, snapshot+versão/contrato HTTP live para montar/revisar SQL, aplicação e homologação autenticada sem novos recibos/pagamentos; cache legado sem prova de esgotamento.
+
+## 21/10 13:03 — Recibo cancelado servindo PDF ISSUED
+- [x] Frontend status-bound + reconfirmação no clique (local, não publicado)
+- [ ] Edge candidata `scripts/receipt-cancel-currency-20261021/edge-review` — aguarda revisão/deploy do proprietário (antes do frontend)
+- [ ] Bloqueio do objeto ISSUED histórico para recibo cancelado via Storage direto — exige SQL separado, não autorizado

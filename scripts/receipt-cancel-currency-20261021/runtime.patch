@@ -1,0 +1,224 @@
+--- scripts/receipt-cancel-currency-20261021/baseline/RecibosList.tsx	2026-10-21 13:10:02.204196982 +0000
++++ src/pages/financeiro/RecibosList.tsx	2026-10-21 13:10:02.204688675 +0000
+@@ -16,7 +16,7 @@
+ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+-import { financialReceiptLocator } from "@/lib/financeiro/receiptStorageLocator";
++import { financialReceiptCurrentLocator, readReceiptCurrentState } from "@/lib/financeiro/receiptCurrentState";
+ 
+ interface Receipt {
+   id: string;
+@@ -44,17 +44,17 @@
+   const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
+   const request = useRef<AbortController | null>(null);
+   const [busy, setBusy] = useState(false);
+-  let path = "";
+-  try { path = financialReceiptLocator(receipt, tenant); } catch { /* fail closed */ }
++  const [prepared, setPrepared] = useState({ scope: "", path: "", status: "", number: "" });
++  let listed = "";
++  try { listed = financialReceiptCurrentLocator(receipt, tenant).path; } catch { /* fail closed */ }
+   useLayoutEffect(() => {
+-    setBusy(false);
++    setBusy(false); setPrepared({ scope: "", path: "", status: "", number: "" });
+     return () => { request.current?.abort(); request.current = null; };
+   }, [access.scope]);
++  const isPrepared = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
+   const download = async () => {
+     const current = access.capture();
+-    if (!current() || !path || request.current) return;
+-    // Prepared bytes are downloaded only on a new, synchronous user click.
+-    if (opener.urls[path]) { if (current()) opener.download(path, `${receipt.receipt_number}.pdf`); return; }
++    if (!current() || !listed || request.current) return;
+     const controller = new AbortController();
+     request.current = controller;
+     const valid = () => current() && !controller.signal.aborted && request.current === controller;
+@@ -66,20 +66,39 @@
+     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
+     setBusy(true);
+     try {
+-      if (!receipt.storage_path) {
++      if (isPrepared) {
++        // Prepared bytes (possibly from before a cancel elsewhere) are re-confirmed against server state.
++        const fresh = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
+         if (!valid()) return;
++        if (fresh.status !== prepared.status || fresh.path !== prepared.path) {
++          opener.discard(prepared.path); setPrepared({ scope: "", path: "", status: "", number: "" });
++          toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
++        }
++        opener.download(prepared.path, `${prepared.number}${prepared.status === "CANCELED" ? "-CANCELADO" : ""}.pdf`);
++        return;
++      }
++      const before = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
++      if (!valid()) return;
++      // CANCELED always renders its own object; ISSUED renders only when never generated.
++      if (before.status === "CANCELED" || !before.generated) {
+         const { data, error } = await supabase.functions.invoke("generate-financial-receipt", {
+           body: { receipt_id: receipt.id }, signal: controller.signal,
+         });
+         if (!valid()) return;
+-        // Edge currently returns {url, path, receipt_number}; never consume url.
+-        if (error || data?.path !== path || data?.receipt_number !== receipt.receipt_number) throw new Error("Recibo indisponível");
++        // Status-bound contract: path/status must match the fresh server state; never consume url.
++        if (error || data?.path !== before.path || data?.receipt_number !== before.receipt_number || data?.status !== before.status) throw new Error("Recibo indisponível");
+       }
+       if (!valid()) return;
+-      // The canonical opener owns download timeout/abort; this timer covers Edge only.
+       clearTimeout(timeout);
+-      await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
++      await opener.open(before.path, () => { if (valid()) toast.error("Recibo indisponível"); });
+       if (!valid()) return;
++      // A cancel concurrent with preparation invalidates the bytes just fetched.
++      const after = await readReceiptCurrentState(receipt.id, tenant, controller.signal);
++      if (!valid()) return;
++      if (after.status !== before.status || after.path !== before.path) {
++        opener.discard(before.path); toast.error("Recibo atualizado. Prepare o PDF novamente."); return;
++      }
++      setPrepared({ scope: access.scope, path: before.path, status: before.status, number: before.receipt_number });
+     } catch {
+       if (valid()) toast.error("Recibo indisponível");
+     } finally {
+@@ -90,9 +109,8 @@
+       }
+     }
+   };
+-  const prepared = !!path && !!opener.urls[path];
+-  return <Button size="sm" variant="outline" onClick={download} disabled={!access.ready || !path || busy || opener.loadingPaths.includes(path)}
+-    title={prepared ? "Baixar PDF" : "Preparar PDF"} aria-label={prepared ? "Baixar PDF" : "Preparar PDF"}>
++  return <Button size="sm" variant="outline" onClick={download} disabled={!access.ready || !listed || busy || opener.loadingPaths.length > 0}
++    title={isPrepared ? "Baixar PDF" : "Preparar PDF"} aria-label={isPrepared ? "Baixar PDF" : "Preparar PDF"}>
+     {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+   </Button>;
+ }
+--- scripts/receipt-cancel-currency-20261021/baseline/EmitirReciboButton.tsx	2026-10-21 13:10:02.204135013 +0000
++++ src/components/financeiro/EmitirReciboButton.tsx	2026-10-21 13:10:02.204589394 +0000
+@@ -7,6 +7,7 @@
+ import { useAuth } from "@/hooks/useAuth";
+ import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+ import { financialReceiptLocator } from "@/lib/financeiro/receiptStorageLocator";
++import { readReceiptCurrentState } from "@/lib/financeiro/receiptCurrentState";
+ 
+ interface Props {
+   paymentId: string;
+@@ -29,9 +30,9 @@
+   const access = useStorageAccessScope(resource);
+   const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
+   const request = useRef<AbortController | null>(null);
+-  const [prepared, setPrepared] = useState({ scope: "", path: "", number: "" });
++  const [prepared, setPrepared] = useState({ scope: "", path: "", number: "", id: "" });
+   useLayoutEffect(() => {
+-    setBusy(false); setPrepared({ scope: "", path: "", number: "" });
++    setBusy(false); setPrepared({ scope: "", path: "", number: "", id: "" });
+     return () => { request.current?.abort(); request.current = null; };
+   }, [access.scope]);
+   const downloadable = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
+@@ -39,7 +40,6 @@
+   const handle = async () => {
+     const current = access.capture();
+     if (!current() || request.current) return;
+-    if (downloadable) { opener.download(prepared.path, `${prepared.number}.pdf`); return; }
+     const controller = new AbortController();
+     request.current = controller;
+     const valid = () => current() && !controller.signal.aborted && request.current === controller;
+@@ -51,6 +51,16 @@
+     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
+     setBusy(true);
+     try {
++      if (downloadable) {
++        // Re-confirm server state on click: a cancel elsewhere revokes these prepared bytes.
++        const fresh = await readReceiptCurrentState(prepared.id, tenant, controller.signal);
++        if (!valid()) return;
++        if (fresh.status !== "ISSUED" || fresh.path !== prepared.path) {
++          opener.discard(prepared.path); setPrepared({ scope: "", path: "", number: "", id: "" });
++          toast.error("Recibo atualizado. Consulte a lista de recibos."); return;
++        }
++        opener.download(prepared.path, `${prepared.number}.pdf`); return;
++      }
+       const { data, error } = await (supabase as any).rpc("issue_financial_receipt", {
+         _payment_id: paymentId,
+       }).abortSignal(controller.signal);
+@@ -61,12 +71,12 @@
+       // Actor-authenticated RLS read: never derive tenant/ownership from a URL.
+       // Generated canonical types lag this table's tenant column; validate wire data below.
+       const { data: receipt, error: readError } = await (supabase as any).from("financial_receipts")
+-        .select("id,payment_id,organization_id,receipt_year,receipt_number,storage_bucket,storage_path")
++        .select("id,payment_id,organization_id,receipt_year,receipt_number,storage_bucket,storage_path,status")
+         .eq("id", receiptId).eq("payment_id", paymentId).eq("organization_id", tenant)
+         .abortSignal(controller.signal).maybeSingle();
+       if (!valid()) return;
+       if (readError || !receipt || receipt.id !== receiptId || receipt.payment_id !== paymentId ||
+-          typeof receipt.receipt_number !== "string" || receipt.receipt_number !== data.receipt_number ||
++          typeof receipt.receipt_number !== "string" || receipt.status !== "ISSUED" || receipt.receipt_number !== data.receipt_number ||
+           typeof receipt.organization_id !== "string" || typeof receipt.receipt_year !== "number" ||
+           (receipt.storage_path !== null && typeof receipt.storage_path !== "string") ||
+           (receipt.storage_bucket !== null && typeof receipt.storage_bucket !== "string")) throw new Error("Recibo indisponível");
+@@ -75,11 +85,15 @@
+         body: { receipt_id: receiptId }, signal: controller.signal,
+       });
+       if (!valid()) return;
+-      if (pdfErr || pdfRes?.path !== path || pdfRes?.receipt_number !== receipt.receipt_number) throw new Error("Recibo indisponível");
++      if (pdfErr || pdfRes?.path !== path || pdfRes?.receipt_number !== receipt.receipt_number || pdfRes?.status !== "ISSUED") throw new Error("Recibo indisponível");
+       // Edge/RPC watchdog ends here; authenticated opener owns byte timeout/limits.
+       clearTimeout(timeout);
+       await opener.open(path, () => { if (valid()) toast.error("Recibo indisponível"); });
+-      if (valid()) setPrepared({ scope: access.scope, path, number: receipt.receipt_number });
++      if (!valid()) return;
++      const after = await readReceiptCurrentState(receiptId, tenant, controller.signal);
++      if (!valid()) return;
++      if (after.status !== "ISSUED" || after.path !== path) { opener.discard(path); throw new Error("Recibo indisponível"); }
++      setPrepared({ scope: access.scope, path, number: receipt.receipt_number, id: receiptId });
+     } catch {
+       if (valid()) toast.error("Recibo indisponível");
+     } finally {
+--- scripts/receipt-cancel-currency-20261021/baseline/useAuthenticatedAttachmentOpener.ts	2026-10-21 13:10:02.204254672 +0000
++++ src/hooks/useAuthenticatedAttachmentOpener.ts	2026-10-21 13:10:02.204622484 +0000
+@@ -63,6 +63,13 @@
+     link.href = item.url; link.download = fileName.split(/[\\/]/).pop() || "anexo";
+     document.body.appendChild(link); link.click(); link.remove();
+   };
++  /** Revokes prepared bytes that the server no longer confirms as current. */
++  const discard = (path: string) => {
++    controllers.current.get(path)?.abort(); controllers.current.delete(path);
++    const item = urls.current.get(path);
++    if (item) { URL.revokeObjectURL(item.url); urls.current.delete(path); }
++    if (access.capture()()) publish();
++  };
+   const visible = access.ready && result.scope === access.scope;
+-  return { open, download, urls: visible ? result.urls : {}, loadingPaths: visible ? result.loading : [], ready: access.ready };
++  return { open, download, discard, urls: visible ? result.urls : {}, loadingPaths: visible ? result.loading : [], ready: access.ready };
+ }
+\ No newline at end of file
+--- /dev/null	2026-10-21 13:03:05.509210120 +0000
++++ src/lib/financeiro/receiptCurrentState.ts	2026-10-21 13:10:02.204389793 +0000
+@@ -0,0 +1,31 @@
++import { supabase } from "@/integrations/supabase/client";
++import { financialReceiptLocator } from "./receiptStorageLocator";
++
++export type ReceiptStatus = "ISSUED" | "CANCELED";
++export interface ReceiptCurrentState { status: ReceiptStatus; path: string; receipt_number: string }
++
++/**
++ * Status-bound locator. ISSUED keeps the historical deterministic object; a
++ * CANCELED receipt is only ever served from its own watermark render, so the
++ * previous ISSUED bytes can never be offered as the current document.
++ */
++export function financialReceiptCurrentLocator(receipt: {
++  organization_id: string; receipt_year: number; receipt_number: string;
++  storage_path: string | null; storage_bucket?: string | null; status: string;
++}, tenant: string): ReceiptCurrentState {
++  const issued = financialReceiptLocator(receipt, tenant);
++  if (receipt.status === "ISSUED") return { status: "ISSUED", path: issued, receipt_number: receipt.receipt_number };
++  if (receipt.status === "CANCELED") return { status: "CANCELED", path: issued.replace(/\.pdf$/, ".canceled.pdf"), receipt_number: receipt.receipt_number };
++  throw new Error("Recibo indisponível");
++}
++
++/** Fresh actor-authenticated RLS read; never trusts list snapshots or URLs. */
++export async function readReceiptCurrentState(id: string, tenant: string, signal: AbortSignal): Promise<ReceiptCurrentState & { generated: boolean }> {
++  const { data, error } = await (supabase as any).from("financial_receipts")
++    .select("id,organization_id,receipt_year,receipt_number,storage_bucket,storage_path,status")
++    .eq("id", id).eq("organization_id", tenant).limit(2).abortSignal(signal);
++  const rows = Array.isArray(data) ? data : [];
++  const row = rows[0];
++  if (error || rows.length !== 1 || row?.id !== id || typeof row.status !== "string") throw new Error("Recibo indisponível");
++  return { ...financialReceiptCurrentLocator(row, tenant), generated: typeof row.storage_path === "string" && row.storage_path.length > 0 };
++}
