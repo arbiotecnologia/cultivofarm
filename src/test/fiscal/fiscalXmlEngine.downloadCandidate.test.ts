@@ -126,7 +126,7 @@ it("abort do cliente durante leitura encerra sem bytes", async () => {
   expect(r.status).toBe(504); expect(await r.text()).not.toContain("NFe");
 });
 it("candidata preserva generate/assinatura XML e remove apenas a URL assinada", () => {
-  const base = readFileSync("supabase/functions/fiscal-xml-engine/index.ts", "utf8");
+  const base = readFileSync("scripts/fiscal-xml-download-blob-20261021/edge/baseline.index.ts", "utf8");
   expect(src).not.toContain("createSignedUrl");
   expect(base).toContain("createSignedUrl(path, 120)");
   const tail = (s: string) => s.slice(s.indexOf('if (action !== "generate")'));

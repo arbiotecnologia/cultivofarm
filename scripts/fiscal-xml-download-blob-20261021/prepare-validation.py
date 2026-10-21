@@ -13,24 +13,24 @@ if not str(DEST).startswith("/tmp/") or DEST.exists():
     raise SystemExit("Destination must be a new directory under /tmp")
 DEST.mkdir(parents=True)
 skip = shutil.ignore_patterns(".git", "node_modules", "dist", ".env", ".env.*", "*.tsbuildinfo", "AGENTS.md")
-for folder in ("src", "public"):
+for folder in ("src", "public", "scripts", "docs"):
     shutil.copytree(ROOT / folder, DEST / folder, ignore=skip)
 for name in ("package.json", "bun.lock", "index.html", "tsconfig.json", "tsconfig.app.json", "tsconfig.node.json", "vite.config.ts", "vitest.config.ts", "tailwind.config.ts", "postcss.config.js"):
     shutil.copy2(ROOT / name, DEST / name)
 # All transitive local Edge dependencies and static XSD assets (LOCAL only).
 functions = DEST / "supabase/functions"
 functions.mkdir(parents=True)
-for folder in ("fiscal-xml-engine", "_shared"):
+for folder in ("fiscal-xml-engine", "_shared", "fiscal-certificate-upload", "platform-org-admin-email-change"):
     shutil.copytree(ROOT / "supabase/functions" / folder, functions / folder, ignore=skip)
 shutil.copy2(ROOT / "supabase/config.toml", DEST / "supabase/config.LOCAL.toml")
-shutil.copytree(PACKAGE, DEST / "scripts/fiscal-xml-download-blob-20261021", ignore=skip)
+
 shutil.copy2(PACKAGE / "edge/index.ts.review", functions / "fiscal-xml-engine/index.ts")
 shutil.copy2(PACKAGE / "edge/rollback-deny.index.ts.review", functions / "fiscal-xml-engine/rollback-deny.ts")
 for name, target in (("useFiscalXmlEngine.ts", "src/hooks/useFiscalXmlEngine.ts"), ("GeracaoXmlNfeSecao.tsx", "src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx")):
     shutil.copy2(PACKAGE / "frontend-candidate" / (name + ".review"), DEST / target)
 shutil.copy2(PACKAGE / "frontend-candidate/fiscalXmlAuthenticatedDownload.test.tsx.review", DEST / "src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx")
 # Resolutions below are explicit LOCAL review dependencies, not asserted LIVE.
-(DEST / "deno.json").write_text(json.dumps({"nodeModulesDir": "auto", "imports": {
+(DEST / "deno.json").write_text(json.dumps({"nodeModulesDir": "none", "imports": {
     "npm:@supabase/supabase-js@2": "npm:@supabase/supabase-js@2.110.8",
     "npm:node-forge@1": "npm:node-forge@1.3.1"
 }}, indent=2) + "\n")
