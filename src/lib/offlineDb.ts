@@ -873,6 +873,12 @@ export interface PendingRecomendacao {
   clientUuid: string;
   localRegistroId: string;
   remoteId?: string | null;
+  /** Explicit parent locator and origin ownership; legacy unowned entries stay blocked. */
+  remoteRegistroId?: string | null;
+  ownerUserId?: string;
+  ownerOrganizationId?: string;
+  /** Distinguishes reviewed expected versions from legacy local edit counters. */
+  versionContract?: "expected_v1";
   payload: {
     recomendacao_tecnica?: string | null;
     objetivo_recomendacao?: string | null;
