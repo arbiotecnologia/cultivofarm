@@ -1,0 +1,55 @@
+-- CANDIDATA, NÃO APLICAR. Somente swzpzcwiasxmjutrmvkm, ref validado por prepare.py.
+-- Não redefine funções/tabelas/grants Storage. Não apaga objetos ou recibos.
+BEGIN;
+LOCK TABLE storage.objects IN SHARE ROW EXCLUSIVE MODE;
+DO $preflight$
+DECLARE expected_contract jsonb := NULL /* REVIEWED_CONTRACT */; actual jsonb;
+BEGIN
+ IF expected_contract IS NULL THEN RAISE EXCEPTION 'receipt_storage_contract_unreviewed'; END IF;
+ -- Snapshot completo: policies/ACL/guardas e bucket, sem conteúdo de objetos ou secrets.
+ SELECT jsonb_build_object(
+  'policies', (SELECT jsonb_agg(jsonb_build_array(policyname,permissive,roles::text,cmd,qual,with_check) ORDER BY policyname) FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname NOT LIKE 'receipt_no_capability_%'),
+  'functions', (SELECT jsonb_agg(jsonb_build_array(p.oid::regprocedure::text,md5(pg_get_functiondef(p.oid)),p.proacl::text,p.proowner::regrole::text,p.provolatile,p.prosecdef,p.proconfig) ORDER BY p.oid::regprocedure::text) FROM pg_proc p WHERE p.oid IN (to_regprocedure('storage.operation()'),to_regprocedure('storage.allow_any_operation(text[])'),to_regprocedure('public.financial_storage_object_permitted(text,text)'),to_regprocedure('public.h15_actor_organization()'),to_regprocedure('public.is_financial_staff(uuid)'))),
+  'objects_acl', (SELECT relacl::text FROM pg_class WHERE oid='storage.objects'::regclass),
+  'rls', (SELECT jsonb_build_array(relrowsecurity,relforcerowsecurity) FROM pg_class WHERE oid='storage.objects'::regclass),
+  'bucket', (SELECT jsonb_build_array(id,public,file_size_limit,allowed_mime_types) FROM storage.buckets WHERE id='financial-receipts')
+ ) INTO actual;
+ IF actual IS DISTINCT FROM expected_contract THEN RAISE EXCEPTION 'receipt_storage_contract_drift'; END IF;
+ IF to_regprocedure('storage.operation()') IS NULL OR to_regprocedure('storage.allow_any_operation(text[])') IS NULL THEN RAISE EXCEPTION 'receipt_storage_operation_missing'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='financial-receipts' AND public=false) OR NOT (SELECT relrowsecurity FROM pg_class WHERE oid='storage.objects'::regclass) THEN RAISE EXCEPTION 'receipt_storage_private_rls_required'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname LIKE 'receipt_no_capability_%') THEN RAISE EXCEPTION 'receipt_storage_destination_occupied'; END IF;
+END $preflight$;
+-- AND as permissivas existentes; nenhuma concessão de acesso nova.
+CREATE POLICY receipt_no_capability_select ON storage.objects AS RESTRICTIVE
+FOR SELECT TO anon,authenticated USING (
+ bucket_id <> 'financial-receipts' OR (
+  public.financial_storage_object_permitted(bucket_id,name)
+  AND storage.allow_any_operation(ARRAY['object.get_authenticated','object.get_authenticated_info','object.head_authenticated_info','object.list','object.list_v2','object.upload','object.upload_update','object.delete','object.delete_many'])
+  AND current_user = 'authenticated'
+ )
+);
+-- SIGN_UPLOAD_URL testa INSERT, não somente SELECT: conter também este caminho.
+CREATE POLICY receipt_no_capability_insert ON storage.objects AS RESTRICTIVE
+FOR INSERT TO anon,authenticated WITH CHECK (
+ bucket_id <> 'financial-receipts' OR (
+  public.financial_storage_object_permitted(bucket_id,name)
+  AND storage.allow_any_operation(ARRAY['object.upload','object.upload_update'])
+  AND current_user = 'authenticated'
+ )
+);
+CREATE POLICY receipt_no_capability_update ON storage.objects AS RESTRICTIVE
+FOR UPDATE TO anon,authenticated USING (
+ bucket_id <> 'financial-receipts' OR (
+  public.financial_storage_object_permitted(bucket_id,name)
+  AND storage.allow_any_operation(ARRAY['object.upload','object.upload_update'])
+  AND current_user = 'authenticated'
+ )
+) WITH CHECK (
+ bucket_id <> 'financial-receipts' OR (
+  public.financial_storage_object_permitted(bucket_id,name)
+  AND storage.allow_any_operation(ARRAY['object.upload','object.upload_update'])
+  AND current_user = 'authenticated'
+ )
+);
+-- Não contém service_role/BYPASSRLS nem capacidades antigas/cache.
+COMMIT;
