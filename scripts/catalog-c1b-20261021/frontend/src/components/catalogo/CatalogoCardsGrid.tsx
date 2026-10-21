@@ -11,6 +11,7 @@ import { CatalogSearchFilters, CatalogTipoFiltro, CatalogStatusFiltro } from "@/
 import { MicroorganismTechnicalProfileDialog } from "@/components/protocolos/MicroorganismTechnicalProfileDialog";
 import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
 import { useCatalogoUnificado, CatalogoUnificadoRow, CatalogoScope, catalogoRevisionPending } from "@/hooks/useCatalogoUnificado";
+import { PartnerFichaDrawer } from "./PartnerFichaDrawer";
 import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalogo/CatalogoItemDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -134,7 +135,7 @@ function CatalogGridView({
   // FASE 27D — callbacks memoizados (compartilhados por todos os cards/linhas).
   const abrirVerFicha = useCallback((r: CatalogoUnificadoRow) => {
     if (scope === "b2b") {
-      if (source.scope) setFichaUnificada(r);
+      if (source.scope) setFichaB2B({ id: r.id, tipo: r.tipo });
       else setFichaB2B({ id: r.id, tipo: r.tipo });
       return;
     }
@@ -354,7 +355,7 @@ function CatalogGridView({
                     <TableCell className="align-top">
                       <div className="flex flex-col items-end gap-1">
                         {showPriceCol && (
-                          <div className="text-right w-full">{pricingSlot!(r)}</div>
+                          <div className="text-right w-full">{pricingSlot?.(r)}</div>
                         )}
                         {renderActions(r)}
                       </div>
@@ -455,13 +456,16 @@ function CatalogGridView({
         onOpenChange={(v) => !v && setFichaUnificada(null)}
         scope={scope as CatalogoFichaScope}
       />
-      <FichaProdutorDrawer
+      {source.scope ? <PartnerFichaDrawer
+        item={fichaB2B ? rows.find(r => r.id === fichaB2B.id && r.tipo === fichaB2B.tipo) ?? null : null}
+        open={!!fichaB2B} onOpenChange={v => !v && setFichaB2B(null)}
+      /> : <FichaProdutorDrawer
         open={!!fichaB2B}
         onOpenChange={(v) => !v && setFichaB2B(null)}
         itemId={fichaB2B?.id ?? null}
         tipo={fichaB2B?.tipo ?? "produto"}
         origem="portal_parceiro"
-      />
+      />}
 
 
       <p className="text-[10px] text-muted-foreground text-center italic pt-2">
