@@ -460,3 +460,5 @@
 - [x] Retomada segura só de navegação (cliente + aba) após reautorização; 9 testes, 1103/1103 config+clientes, typecheck OK; pacote/rollback em scripts/monitor-pause-resume-20261021.
 - [x] v2 após da691664: retomada só em timeout confirmado (useAuth), só aba Documentos, TTL desde a pausa; 7 integrados com AuthProvider real; 1106/1106; rollback de 4 arquivos verificado.
 - [ ] Revisão independente/publicação (proprietário). Cancelamento de transporte do probe expirado: pendente. Gateway v2 e homologação real dos demais perfis: externos.
+
+- [ ] financial-docs canal POST (candidata `scripts/financial-docs-http-revocation-20261021/`): aguardando revisão → SQL snapshot → Edge JWT=true → frontend → homologação A/B → deny GET; cache CDN legado sem purga (FREE).
