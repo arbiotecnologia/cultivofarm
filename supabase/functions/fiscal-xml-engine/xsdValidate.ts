@@ -18,7 +18,6 @@
  *
  * Pacote XSD oficial: PL_010e_v1.02 (Portal Nacional da NF-e, 10/07/2026).
  */
-// deno-lint-ignore-file no-explicit-any
 import XercesModule from "npm:xerces-wasm@2.0.1/wasm/xerces_validator.js";
 import {
   loadVerifiedXsdBundle,
@@ -49,24 +48,28 @@ const XSD_FILES = FILES;
 /** Número de arquivos XSD oficiais no bundle (prova de empacotamento no selftest). */
 export const XSD_FILE_COUNT = XSD_FILES.length;
 
-let modulePromise: Promise<any> | null = null;
+type Validator = { validate(xml: string): unknown; delete(): void };
+type XercesInstance = {
+  ProjectValidator: new () => Validator & {
+    init(entry: string, files: Record<string, string>, ns: string | null): boolean;
+  };
+};
+let modulePromise: Promise<XercesInstance> | null = null;
 
 /** Instancia o módulo WASM uma única vez, com o binário embutido. */
-function xerces(): Promise<any> {
-  if (!modulePromise) {
-    modulePromise = (XercesModule as any)({
-      wasmBinary: xercesWasmBinary(),
-      // Nunca deve ser usado (o binário já foi fornecido); mantido para impedir
-      // qualquer tentativa de resolução relativa a disco/rede.
-      locateFile: () => "embedded:xerces_validator.wasm",
-      print: () => {},
-      printErr: () => {},
-    });
-  }
-  return modulePromise;
+function xerces(): Promise<XercesInstance> {
+  if (modulePromise) return modulePromise;
+  const pending: Promise<XercesInstance> = XercesModule({
+    wasmBinary: xercesWasmBinary(),
+    // Nunca deve ser usado (o binário já foi fornecido); mantido para impedir
+    // qualquer tentativa de resolução relativa a disco/rede.
+    locateFile: () => "embedded:xerces_validator.wasm",
+    print: () => {},
+    printErr: () => {},
+  });
+  modulePromise = pending;
+  return pending;
 }
-
-type Validator = { validate(xml: string): any; delete(): void };
 
 let validatorCache: Validator | null = null;
 

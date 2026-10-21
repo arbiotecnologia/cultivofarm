@@ -19,7 +19,7 @@
  *                    XSD_VALIDATED → SIGNED. Teto: SIGNED.
  *                    Ausência de certificado devolve 412 CERTIFICATE_REQUIRED
  *                    preservando a execução em GENERATED (recuperável).
- *   2. `download`  — devolve URL assinada de curta duração de um artefato.
+ *   2. `download`  — entrega autenticada dos bytes de um artefato (sem URL).
  *
  * Invariantes:
  *   - Só homologação (tpAmb=2). Nenhuma transmissão à SEFAZ.
@@ -80,8 +80,61 @@ function json(body: unknown, status: number, headers: Record<string, string>): R
 }
 
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", bytes);
+  const buf = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes).buffer);
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Bounded buffering: never call Blob/Response.arrayBuffer() on untrusted input.
+// Cancellation is immediate and never awaits a possibly stalled transport.
+class ReadLimitError extends Error {}
+class ReadDeadlineError extends Error {}
+async function readBounded(
+  stream: ReadableStream<Uint8Array>,
+  maxBytes: number,
+  signal: AbortSignal,
+  deadline: number,
+): Promise<Uint8Array<ArrayBuffer>> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let cancelled = false;
+  const cancel = () => {
+    if (cancelled) return;
+    cancelled = true;
+    chunks.length = 0;
+    void reader.cancel().catch(() => undefined);
+  };
+  let rejectAbort: ((error: Error) => void) | undefined;
+  const aborted = new Promise<never>((_resolve, reject) => { rejectAbort = reject; });
+  const onAbort = () => { cancel(); rejectAbort?.(new ReadDeadlineError()); };
+  signal.addEventListener("abort", onAbort, { once: true });
+  const timer = setTimeout(onAbort, Math.max(0, deadline - performance.now()));
+  try {
+    if (signal.aborted || performance.now() >= deadline) throw new ReadDeadlineError();
+    while (true) {
+      const result = await Promise.race([reader.read(), aborted]);
+      if (signal.aborted || performance.now() >= deadline) throw new ReadDeadlineError();
+      if (result.done) break;
+      const chunk = result.value;
+      if (!ArrayBuffer.isView(chunk) || Object.prototype.toString.call(chunk) !== "[object Uint8Array]") throw new Error("invalid_chunk");
+      if (chunk.byteLength > maxBytes - total) throw new ReadLimitError();
+      chunks.push(chunk);
+      total += chunk.byteLength;
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    return bytes;
+  } catch (error) {
+    cancel();
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener("abort", onAbort);
+    chunks.length = 0;
+    // A pending reader that ignores cancellation must not hold the response.
+    try { reader.releaseLock(); } catch { /* pending underlying read */ }
+  }
 }
 
 function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
@@ -122,7 +175,7 @@ async function ensureStoredArtifact(
     upsert: false,
   });
   if (!up.error) return null;
-  if (!isAlreadyExistingObject(up.error as Record<string, unknown>)) return "XML_STORAGE_FAILED";
+  if (!isAlreadyExistingObject(up.error)) return "XML_STORAGE_FAILED";
   const verdict = await verifyExistingObject(
     () => admin.storage.from(BUCKET).download(path) as unknown as Promise<
       { data: { arrayBuffer(): Promise<ArrayBuffer> } | null; error: unknown }
@@ -157,12 +210,13 @@ function fromBinaryColumn(value: string): Uint8Array {
 }
 
 async function aesGcmDecrypt(key: Uint8Array, iv: Uint8Array, cipher: Uint8Array): Promise<Uint8Array> {
-  const cryptoKey = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["decrypt"]);
-  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, cryptoKey, cipher);
+  const cryptoKey = await crypto.subtle.importKey("raw", new Uint8Array(key).buffer, "AES-GCM", false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(iv).buffer }, cryptoKey, new Uint8Array(cipher).buffer);
   return new Uint8Array(plain);
 }
 
 Deno.serve(async (req) => {
+  const enteredAt = performance.now();
   const origin = req.headers.get("origin");
   const cors = corsHeaders(origin);
   const headers = cors.headers;
@@ -185,13 +239,24 @@ Deno.serve(async (req) => {
     return json({ error: "FISCAL_CANONICAL_PROJECT_REQUIRED", expected: CANONICAL_SUPABASE_URL }, 503, headers);
   }
 
-  // Body parseado uma única vez, antes das exigências de identidade, para
-  // permitir o autodiagnóstico somente leitura do bundle XSD. Nenhuma outra
-  // ação é liberada antes dos gates de claims e perfil fiscal.
+  // All three actions accept identifier-only JSON. Bound ingress (16 KiB / 5 s
+  // from entry) without changing generate's fiscal execution or default action.
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
-  } catch {
+    if (req.signal.aborted) throw new ReadDeadlineError();
+    const declaredLength = req.headers.get("Content-Length");
+    if (declaredLength !== null && /^\d+$/.test(declaredLength) && Number(declaredLength) > 16 * 1024) {
+      void req.body?.cancel().catch(() => undefined);
+      throw new ReadLimitError();
+    }
+    if (!req.body) throw new Error("invalid_body");
+    const bytes = await readBounded(req.body, 16 * 1024, req.signal, enteredAt + 5_000);
+    const parsed: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("invalid_body");
+    body = parsed as Record<string, unknown>;
+  } catch (error) {
+    if (error instanceof ReadLimitError) return json({ error: "body_too_large" }, 413, headers);
+    if (error instanceof ReadDeadlineError) return json({ error: "request_unavailable" }, 504, headers);
     return json({ error: "invalid_body" }, 400, headers);
   }
 
@@ -259,6 +324,125 @@ Deno.serve(async (req) => {
     }
   }
 
+  // ------------------------------------------------------------------
+  // download: entrega autenticada dos bytes de um artefato já produzido.
+  // Nenhuma URL (assinada/pública) é emitida. Autorização provada antes e
+  // revalidada depois da leitura; bytes conferidos com o SHA-256 da execução.
+  // ------------------------------------------------------------------
+  if (action === "download") {
+    const runId = String(body.run_id ?? "");
+    const artifact = String(body.artifact ?? "signed");
+    if (!UUID_RE.test(runId)) return json({ error: "run_id_invalid" }, 400, headers);
+    if (artifact !== "signed" && artifact !== "unsigned") {
+      return json({ error: "artifact_invalid" }, 400, headers);
+    }
+    const noStore = { ...headers, "Cache-Control": "private, no-store" };
+    const deny = (status: number, error: string) => json({ error }, status, noStore);
+    const MAX_XML_BYTES = 10 * 1024 * 1024; // limite do bucket fiscal-xml
+    // Prazo ABSOLUTO de 15 s cercando provas + leitura + hash + prova fresca.
+    // Pedido já abortado antes do handler: addEventListener não retroage.
+    if (req.signal.aborted) return deny(504, "download_unavailable");
+    const deadline = enteredAt + 15_000;
+    if (performance.now() >= deadline) return deny(504, "download_unavailable");
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const onAbort = () => controller.abort();
+    req.signal.addEventListener("abort", onAbort, { once: true });
+    const timer = setTimeout(() => controller.abort(), Math.max(0, deadline - performance.now()));
+    const ABORTED = Symbol("aborted");
+    const abortedP = new Promise<typeof ABORTED>((resolve) => {
+      if (signal.aborted) resolve(ABORTED);
+      else signal.addEventListener("abort", () => resolve(ABORTED), { once: true });
+    });
+    // Propaga o sinal quando o SDK suporta (.abortSignal) e corre contra o prazo;
+    // sem retry. Uma etapa pendurada nunca prende a resposta além do prazo.
+    // deno-lint-ignore no-explicit-any
+    const bound = (q: any) => (q && typeof q.abortSignal === "function" ? q.abortSignal(signal) : q);
+    const step = async <T,>(p: PromiseLike<T> | T): Promise<T> => {
+      if (signal.aborted || performance.now() >= deadline) { controller.abort(); throw ABORTED; }
+      const r = await Promise.race([Promise.resolve(p), abortedP]);
+      if (r === ABORTED || signal.aborted || performance.now() >= deadline) { controller.abort(); throw ABORTED; }
+      return r as T;
+    };
+    const authed = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    });
+    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    let actor: string | undefined;
+    // Prova completa do ator/recurso; repetida após o I/O (sem snapshot antigo).
+    const authorize = async (): Promise<{ path: string; sha: string | null; bytes: number | null } | null> => {
+      const operate = await step(bound(authed.rpc("fn_fiscal_can_operate", { _uid: actor })));
+      if (operate.error || operate.data !== true) return null;
+      const visible = await step(bound(authed.from("fiscal_xml_runs")
+        .select("id, unsigned_path, signed_path, storage_bucket, unsigned_sha256, signed_sha256, unsigned_bytes, signed_bytes")
+        .eq("id", runId)).maybeSingle());
+      if (visible.error || !visible.data) return null;
+      const ownership = await step(bound(admin.rpc("h15_service_actor_run_access", { p_actor: actor, p_run: runId })));
+      if (ownership.error || ownership.data !== true) return null;
+      const row = visible.data as Record<string, unknown>;
+      if (row.storage_bucket !== BUCKET) return null;
+      const path = (artifact === "signed" ? row.signed_path : row.unsigned_path) as string | null;
+      if (typeof path !== "string" || !path || path.startsWith("/") || path.includes("..") || path.includes("://")) return null;
+      return {
+        path,
+        sha: (artifact === "signed" ? row.signed_sha256 : row.unsigned_sha256) as string | null,
+        bytes: (artifact === "signed" ? row.signed_bytes : row.unsigned_bytes) as number | null,
+      };
+    };
+    try {
+      const claims = await step(authed.auth.getClaims(authHeader.replace("Bearer ", "")));
+      actor = claims.data?.claims?.sub as string | undefined;
+      if (!actor) return deny(401, "unauthorized");
+      const initial = await step(bound(authed.rpc("fn_fiscal_can_operate", { _uid: actor })));
+      if (initial.error || initial.data !== true) return deny(403, "permission_denied");
+      const first = await authorize();
+      if (!first) return deny(403, "permission_denied");
+      // The run metadata is checked BEFORE object I/O when present, but is not
+      // trusted as a substitute for counting every chunk from the network.
+      if (first.bytes !== null && (!Number.isSafeInteger(first.bytes) || first.bytes < 0)) return deny(409, "artifact_integrity_failed");
+      if (first.bytes !== null && first.bytes > MAX_XML_BYTES) return deny(413, "artifact_too_large");
+      // Bucket privado sem policy de leitura do usuário: a leitura usa o cliente
+      // de serviço SOMENTE após a prova acima, para o path registrado na execução.
+      // SDK stream mode returns Response.body, NOT a materialized Blob. No extra
+      // metadata/HEAD request or retries; Content-Length alone never grants access.
+      const pendingDownload = admin.storage.from(BUCKET).download(first.path, {}, { signal, cache: "no-store" }).asStream();
+      const dl = await step(Promise.resolve(pendingDownload).then(result => {
+        // A transport ignoring AbortSignal may settle after deadline. Discard
+        // and cancel its stream without awaiting it, even if step already exited.
+        if ((signal.aborted || performance.now() >= deadline) && result.data) {
+          void result.data.cancel().catch(() => undefined);
+        }
+        return result;
+      }));
+      if (dl.error || !dl.data) return deny(404, "artifact_not_available");
+      const bytes = await readBounded(dl.data, MAX_XML_BYTES, signal, deadline);
+      const digest = await step(sha256Hex(bytes));
+      if (!first.sha || digest !== first.sha ||
+          (first.bytes !== null && first.bytes !== bytes.byteLength)) {
+        return deny(409, "artifact_integrity_failed");
+      }
+      const fresh = await authorize();
+      if (!fresh || fresh.path !== first.path || fresh.sha !== first.sha || fresh.bytes !== first.bytes) return deny(403, "permission_denied");
+      if (signal.aborted || performance.now() >= deadline) return deny(504, "download_unavailable");
+      return new Response(bytes, {
+        status: 200,
+        headers: {
+          ...noStore,
+          "Content-Type": "application/octet-stream",
+          "X-Content-Type-Options": "nosniff",
+          "Content-Disposition": `attachment; filename="nfe-${artifact}.xml"`,
+        },
+      });
+    } catch (error) {
+      if (error instanceof ReadLimitError) { controller.abort(); return deny(413, "artifact_too_large"); }
+      return deny(signal.aborted || error instanceof ReadDeadlineError ? 504 : 500, "download_unavailable");
+    } finally {
+      clearTimeout(timer);
+      req.signal.removeEventListener("abort", onAbort);
+    }
+  }
+
   // Cliente do usuário: toda autorização de negócio ocorre nas RPCs
   // SECURITY DEFINER, que validam o perfil fiscal (fail-closed).
   const authed = createClient(supabaseUrl, anonKey, {
@@ -278,40 +462,6 @@ Deno.serve(async (req) => {
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-
-  // ------------------------------------------------------------------
-  // download: URL assinada curta para um artefato já produzido
-  // ------------------------------------------------------------------
-  if (action === "download") {
-    const runId = String(body.run_id ?? "");
-    const artifact = String(body.artifact ?? "signed");
-    if (!UUID_RE.test(runId)) return json({ error: "run_id_invalid" }, 400, headers);
-    if (artifact !== "signed" && artifact !== "unsigned") {
-      return json({ error: "artifact_invalid" }, 400, headers);
-    }
-    // Autorização: a leitura passa pela RLS do usuário (perfil interno).
-    const { data: allowed, error: readErr } = await authed
-      .from("fiscal_xml_runs").select("id").eq("id", runId).maybeSingle();
-    if (readErr || !allowed) return json({ error: "permission_denied" }, 403, headers);
-    const ownership = await admin.rpc("h15_service_actor_run_access", {
-      p_actor: actor,
-      p_run: runId,
-    });
-    if (ownership.error || ownership.data !== true) {
-      return json({ error: "permission_denied" }, 403, headers);
-    }
-
-    const { data: run } = await admin
-      .from("fiscal_xml_runs")
-      .select("unsigned_path, signed_path, storage_bucket")
-      .eq("id", runId).maybeSingle();
-    const path = artifact === "signed" ? run?.signed_path : run?.unsigned_path;
-    if (!path) return json({ error: "artifact_not_available" }, 404, headers);
-
-    const signed = await admin.storage.from(run?.storage_bucket ?? BUCKET).createSignedUrl(path, 120);
-    if (signed.error || !signed.data) return json({ error: "signed_url_failed" }, 500, headers);
-    return json({ url: signed.data.signedUrl, expiresIn: 120, artifact }, 200, headers);
-  }
 
   if (action !== "generate") return json({ error: "action_invalid" }, 400, headers);
 
