@@ -1,0 +1,33 @@
+diff --git a/src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx b/src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx
+index e7977102..2048a42e 100644
+--- a/src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx
++++ b/src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx
+@@ -4,7 +4,7 @@
+  * Teto explícito: SIGNED. Nenhum botão transmite documento à SEFAZ.
+  * Artefatos são imutáveis: cada correção gera uma nova versão de execução.
+  */
+-import { useMemo, useState } from "react";
++import { useMemo, useState, type ReactNode } from "react";
+ import {
+   AlertTriangle,
+   CheckCircle2,
+@@ -74,7 +74,7 @@ function Hash({ label, value }: { label: string; value: string | null }) {
+ function ArtifactButton({ opener, runId, artifact, available, label, icon, testId }: {
+   opener: ReturnType<typeof useAuthenticatedAttachmentOpener>;
+   runId: string; artifact: "signed" | "unsigned"; available: boolean;
+-  label: string; icon: React.ReactNode; testId: string;
++  label: string; icon: ReactNode; testId: string;
+ }) {
+   const key = fiscalXmlKey(runId, artifact);
+   const ready = !!opener.urls[key];
+diff --git a/src/hooks/useFiscalXmlEngine.ts b/src/hooks/useFiscalXmlEngine.ts
+index 2648b13a..335cf2b8 100644
+--- a/src/hooks/useFiscalXmlEngine.ts
++++ b/src/hooks/useFiscalXmlEngine.ts
+@@ -123,5 +123,5 @@ export async function loadFiscalXmlArtifact(key: string, signal: AbortSignal): P
+   });
+   if (signal.aborted || error || !(data instanceof Blob)) throw unavailable();
+   if (data.size === 0 || data.size > FISCAL_XML_MAX_BYTES) throw unavailable();
+-  return new Blob([await data.arrayBuffer()], { type: "application/xml" });
++  return new Blob([data], { type: "application/xml" });
+ }
