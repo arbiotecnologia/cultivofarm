@@ -5,9 +5,9 @@
 - [x] Revisar 127ef060, reproduzir claims/primeira RPC travadas (16 PASS/2 FAIL), corrigir prazo de entrada; 23 Edge (inclui rollback) + 14 UI e 1901 regressões PASS/4 skipped, frontend candidato isolado.
 - [x] Preparar diff, rollback deny completo e plano de fixture/inventário legacy sem tokens; monitor, Auth e demais runtime byte-exatos.
 - [x] Baseline LIVE v94 recuperado externamente pelo proprietário (ZIP/painel + list_edge_functions): ACTIVE, JWT true, import_map false; index hash igual local, 14 fontes/dependências sem delta normalizado contra c7; não foi download neste sandbox.
-- [ ] Reconfirmar versão/config/hash/dependências LIVE sem drift no predeploy.
+- [x] Preflight externo 18:15: v94 ACTIVE/JWT true/import_map false/ezbr sem drift reportado; revisão 090c033a, 55/55 externos PASS.
 - [x] Cinco erros Deno corrigidos candidata/rollback + XSD isolado: check/bundles PASS; 65/65 Edge/UI/comportamento, tipos app/node e build isolado 28,52 s PASS; sem implantação.
-- [ ] Implantação e E2E XML A/B: correções/implantação segura autorizadas pelo proprietário, execução aguarda revisão técnica, bundle hosted, reconfirmação LIVE v94 e fixture canônica unsigned disponível; sem INSERT direto/SEFAZ/certificado real.
+- [ ] Implantação e E2E XML A/B: correções/implantação segura autorizadas pelo proprietário, NO-GO técnico: mecanismo hosted disponível só deploy (sem dry-run/config garantida); sem fixture canônica unsigned-only comprovada; candidato/rollback arquivados, nenhuma promoção/deploy/publicação; sem INSERT direto/SEFAZ/certificado real.
 - [ ] Inventário financial-receipts e horizonte expirado: faltam locators/logs/TTL/cutoff verificáveis; nenhuma URL/cache declarada revogada.
 
 ## Revogação técnica efetiva — baseline db1eee, 22:12
