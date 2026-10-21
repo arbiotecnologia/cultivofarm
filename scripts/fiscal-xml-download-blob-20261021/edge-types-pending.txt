@@ -1,0 +1,70 @@
+[0m[33m╭[0m [0m[1m[33mWarning[0m
+[0m[33m│[0m
+[0m[33m│[0m  Ignored build scripts for packages:
+[0m[33m│[0m  [0m[3mnpm:@swc/core@1.16.18[0m
+[0m[33m│[0m  [0m[3mnpm:core-js@3.51.0[0m
+[0m[33m│[0m
+[0m[33m│[0m  Lifecycle scripts are only supported when using a `node_modules` directory.
+[0m[33m│[0m  Enable it in your deno config file:
+[0m[33m│[0m  [0m[1m"nodeModulesDir": "auto"[0m
+[0m[33m╰─[0m
+[0m[32mCheck[0m supabase/functions/fiscal-xml-engine/index.ts
+[0m[1mTS2345 [0m[ERROR]: Argument of type 'Uint8Array<ArrayBufferLike>' is not assignable to parameter of type 'BufferSource'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+  const buf = await crypto.subtle.digest("SHA-256", bytes);
+[0m[31m                                                    ~~~~~[0m
+    at [0m[36mfile:///tmp/fiscal-xml-review-complete/supabase/functions/fiscal-xml-engine/index.ts[0m:[0m[33m83[0m:[0m[33m53[0m
+
+[0m[1mTS2352 [0m[ERROR]: Conversion of type 'StorageError' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'StorageError'.
+  if (!isAlreadyExistingObject(up.error as Record<string, unknown>)) return "XML_STORAGE_FAILED";
+[0m[31m                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    at [0m[36mfile:///tmp/fiscal-xml-review-complete/supabase/functions/fiscal-xml-engine/index.ts[0m:[0m[33m178[0m:[0m[33m32[0m
+
+[0m[1mTS2769 [0m[ERROR]: No overload matches this call.
+  Overload 1 of 2, '(format: "jwk", keyData: JsonWebKey, algorithm: AlgorithmIdentifier | HmacImportParams | RsaHashedImportParams | EcKeyImportParams, extractable: boolean, keyUsages: KeyUsage[]): Promise<...>', gave the following error.
+    Argument of type '"raw"' is not assignable to parameter of type '"jwk"'.
+  Overload 2 of 2, '(format: "raw" | "pkcs8" | "spki", keyData: BufferSource, algorithm: AlgorithmIdentifier | HmacImportParams | RsaHashedImportParams | EcKeyImportParams, extractable: boolean, keyUsages: KeyUsage[]): Promise<...>', gave the following error.
+    Argument of type 'Uint8Array<ArrayBufferLike>' is not assignable to parameter of type 'BufferSource'.
+      Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+        Types of property 'buffer' are incompatible.
+          Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+            Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+  const cryptoKey = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["decrypt"]);
+[0m[31m                                        ~~~~~~~~~[0m
+    at [0m[36mfile:///tmp/fiscal-xml-review-complete/supabase/functions/fiscal-xml-engine/index.ts[0m:[0m[33m213[0m:[0m[33m41[0m
+
+[0m[1mTS2322 [0m[ERROR]: Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'BufferSource'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, cryptoKey, cipher);
+[0m[31m                                                               ~~[0m
+    at [0m[36mfile:///tmp/fiscal-xml-review-complete/supabase/functions/fiscal-xml-engine/index.ts[0m:[0m[33m214[0m:[0m[33m64[0m
+
+[0m[1mTS2322 [0m[ERROR]: Type 'Promise<any> | null' is not assignable to type 'Promise<any>'.
+  Type 'null' is not assignable to type 'Promise<any>'.
+  return modulePromise;
+[0m[31m  ~~~~~~[0m
+    at [0m[36mfile:///tmp/fiscal-xml-review-complete/supabase/functions/fiscal-xml-engine/xsdValidate.ts[0m:[0m[33m66[0m:[0m[33m3[0m
+
+Found 5 errors.
+
+[0m[1m[31merror[0m: Type checking failed.
+
+Stack backtrace:
+   0: anyhow::error::<impl core::convert::From<E> for anyhow::Error>::from
+   1: <core::result::Result<T,F> as core::ops::try_trait::FromResidual<core::result::Result<core::convert::Infallible,E>>>::from_residual
+   2: deno::graph_container::MainModuleGraphContainer::check_specifiers::{{closure}}
+   3: deno::spawn_subcommand::{{closure}}
+   4: tokio::runtime::task::raw::poll
+   5: deno::main
+   6: std::sys::backtrace::__rust_begin_short_backtrace
+   7: main
+   8: __libc_start_call_main
+   9: __libc_start_main@@GLIBC_2.34
+  10: _start

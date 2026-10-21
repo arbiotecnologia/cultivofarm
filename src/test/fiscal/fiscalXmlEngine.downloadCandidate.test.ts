@@ -1,19 +1,21 @@
+import { createClient as realClient } from "@supabase/supabase-js";
 import { expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import ts from "typescript";
-import { Blob as NodeBlob } from "node:buffer";
+import { TextDecoder } from "node:util";
+import { ReadableStream } from "node:stream/web";
 
 // Executa a CANDIDATA revisável (não implantada) com SDK simulado. Não é homologação real.
 const CANDIDATE = "scripts/fiscal-xml-download-blob-20261021/edge/index.ts.review";
-const src = readFileSync(CANDIDATE, "utf8");
+const src = readFileSync(process.env.FISCAL_XML_REVIEW_SOURCE ?? CANDIDATE, "utf8");
 const code = ts.transpileModule(src.replace(/^import[\s\S]*?;\s*/gm, "").replace(/^export /gm, ""),
   { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
 
 const RUN = "22222222-2222-4222-8222-222222222222";
 const XML = "<NFe>assinado</NFe>";
 const SHA = createHash("sha256").update(XML).digest("hex");
-type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean; actor?: string; freshSize?: number; querySignals?: boolean; claimsDelay?: number };
+type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean; actor?: string; freshSize?: number; querySignals?: boolean; claimsDelay?: number; metadata?: number | null; chunks?: Uint8Array[]; length?: string; streamHang?: boolean; realStreamSdk?: boolean; cancelHang?: boolean };
 
 function setup(o: Opt = {}, executable = code) {
   let handler: ((r: Request) => Promise<Response>) | undefined;
@@ -21,14 +23,26 @@ function setup(o: Opt = {}, executable = code) {
   const operate = seq(o.operate), visible = seq(o.visible), owner = seq(o.owner);
   let reads = 0;
   const sign = vi.fn(() => { throw new Error("sign_must_not_run"); });
-  const download = vi.fn((_p: string, _o: unknown, p: { signal: AbortSignal }) => o.hang
-    ? new Promise((_r, rej) => p.signal.addEventListener("abort", () => rej(new Error("aborted"))))
-    : Promise.resolve(o.dlError ? { data: null, error: new Error("x") }
-      : { data: o.size ? { size: o.size, arrayBuffer: async () => new ArrayBuffer(0) } : new NodeBlob([XML]), error: null }));
+  const cancel = vi.fn(() => o.cancelHang ? new Promise<void>(() => {}) : undefined);
+  const download = vi.fn((_p: string, _o: unknown, p: { signal: AbortSignal }) => {
+    const streamResult = () => o.hang
+      ? new Promise((_r, rej) => p.signal.addEventListener("abort", () => rej(new Error("aborted"))))
+      : Promise.resolve(o.dlError ? { data: null, error: new Error("x") } : {
+        data: new ReadableStream<Uint8Array>({
+          start(c) {
+            const chunks = o.chunks ?? (o.size ? [new Uint8Array(o.size)] : [new TextEncoder().encode(XML)]);
+            for (const chunk of chunks) c.enqueue(chunk);
+            if (!o.streamHang) c.close();
+          }, cancel,
+        }), error: null,
+      });
+    // Only stream mode is accepted by this harness; Blob mode fails explicitly.
+    return { asStream: streamResult };
+  });
   const signals: AbortSignal[] = [];
   const from = () => { const q: Record<string, unknown> = {}; for (const k of ["select", "eq"]) q[k] = () => q;
     q.maybeSingle = async () => { reads++; return visible() ? { data: { id: RUN, signed_path: o.pathChange && reads > 1 ? "OA/other.xml" : "OA/a.xml",
-      unsigned_path: "OA/u.xml", storage_bucket: o.bucket ?? "fiscal-xml", signed_sha256: o.sha ?? SHA, unsigned_sha256: SHA, signed_bytes: reads > 1 && o.freshSize !== undefined ? o.freshSize : XML.length, unsigned_bytes: XML.length }, error: null } : { data: null, error: null }; };
+      unsigned_path: "OA/u.xml", storage_bucket: o.bucket ?? "fiscal-xml", signed_sha256: o.sha ?? SHA, unsigned_sha256: SHA, signed_bytes: reads > 1 && o.freshSize !== undefined ? o.freshSize : o.metadata !== undefined ? o.metadata : XML.length, unsigned_bytes: XML.length }, error: null } : { data: null, error: null }; };
     q.abortSignal = (signal: AbortSignal) => { signals.push(signal); return q; };
     return q; };
   let rpcCalls = 0;
@@ -37,14 +51,29 @@ function setup(o: Opt = {}, executable = code) {
     return Object.assign(promise, { abortSignal: (signal: AbortSignal) => { signals.push(signal); return promise; } }); });
   const sdk = { from, rpc, auth: { getClaims: () => o.hangClaims ? new Promise(() => {}) : new Promise(r => { const value = { data: { claims: { sub: o.actor ?? "A" } } }; if (o.claimsDelay) setTimeout(() => r(value), o.claimsDelay); else r(value); }) },
     storage: { from: vi.fn(() => ({ download, createSignedUrl: sign, createSignedUrls: sign })) } };
+  if (o.realStreamSdk) {
+    const storageClient = realClient("https://isolated.invalid", "placeholder", {
+      auth: { persistSession: false, storageKey: `isolated-test-${Math.random()}` }, global: { fetch: async (_input, init) => {
+        expect(init?.signal).toBeInstanceOf(AbortSignal);
+        expect(init?.cache).toBe("no-store");
+        download("recorded-path", {}, { signal: init?.signal as AbortSignal });
+        return new Response(new ReadableStream<Uint8Array>({ start(c) {
+          for (const chunk of o.chunks ?? [new TextEncoder().encode(XML)]) c.enqueue(chunk);
+          if (!o.streamHang) c.close();
+        }, cancel }) as unknown as BodyInit, { headers: o.length ? { "Content-Length": o.length } : {} });
+      } },
+    });
+    sdk.storage = storageClient.storage as unknown as typeof sdk.storage;
+  }
   const Deno = { env: { get: (k: string) => k === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "placeholder" }, serve: (h: typeof handler) => { handler = h; } };
   const stub = () => { throw new Error("not_in_download"); };
   new Function("Deno", "createClient", "fiscalCorsHeaders", "isCanonicalSupabaseUrl", "CANONICAL_SUPABASE_URL", "XSD_FILE_COUNT",
-    "inspectOfficialXsdBundle", "validateAgainstOfficialXsd", "isAlreadyExistingObject", "verifyExistingObject", executable)(
-    Deno, () => sdk, () => ({ allowed: true, headers: {} }), () => true, "https://swzpzcwiasxmjutrmvkm.supabase.co", 5, stub, stub, stub, stub);
-  const invoke = (body: unknown, signal?: AbortSignal) => (() => { if (!handler) throw new Error("handler_missing"); return handler; })()(new Request("https://isolated.invalid", { method: "POST", signal,
+    "inspectOfficialXsdBundle", "validateAgainstOfficialXsd", "isAlreadyExistingObject", "verifyExistingObject", "ReadableStream", "TextDecoder", executable)(
+    Deno, () => sdk, () => ({ allowed: true, headers: {} }), () => true, "https://swzpzcwiasxmjutrmvkm.supabase.co", 5, stub, stub, stub, stub, ReadableStream, TextDecoder);
+  const invokeRequest = (request: Request) => { if (!handler) throw new Error("handler_missing"); return handler(request); };
+  const invoke = (body: unknown, signal?: AbortSignal) => invokeRequest(new Request("https://isolated.invalid", { method: "POST", signal,
     headers: { Authorization: "Bearer placeholder", Origin: "https://app.cultivofarm.com.br" }, body: JSON.stringify(body) }));
-  return { invoke, download, sign, rpc, signals };
+  return { invoke, invokeRequest, download, cancel, sign, rpc, signals };
 }
 const body = { action: "download", run_id: RUN, artifact: "signed" };
 
@@ -97,7 +126,7 @@ it("abort do cliente durante leitura encerra sem bytes", async () => {
   expect(r.status).toBe(504); expect(await r.text()).not.toContain("NFe");
 });
 it("candidata preserva generate/assinatura XML e remove apenas a URL assinada", () => {
-  const base = readFileSync("supabase/functions/fiscal-xml-engine/index.ts", "utf8");
+  const base = readFileSync("scripts/fiscal-xml-download-blob-20261021/edge/baseline.index.ts", "utf8");
   expect(src).not.toContain("createSignedUrl");
   expect(base).toContain("createSignedUrl(path, 120)");
   const tail = (s: string) => s.slice(s.indexOf('if (action !== "generate")'));
@@ -190,4 +219,122 @@ it("rollback deny executável retorna 410 no-store sem consulta ou Storage", asy
   expect(r.status).toBe(410); expect(r.headers.get("Cache-Control")).toBe("private, no-store");
   expect(s.rpc).not.toHaveBeenCalled(); expect(s.download).not.toHaveBeenCalled();
   expect(s.sign).not.toHaveBeenCalled(); expect(await r.text()).not.toContain("url");
+});
+
+const MAX = 10 * 1024 * 1024;
+for (const length of [undefined, "1", String(MAX * 3)]) {
+  it(`stream sem/com Length não confiável (${length ?? "ausente"}) é contado por bytes`, async () => {
+    // asStream deliberately omits response headers (same as actual SDK). Never
+    // rely on Length; first metadata null still permits verified normal bytes.
+    const s = setup({ metadata: null, length, realStreamSdk: true });
+    const r = await s.invoke(body);
+    expect(r.status).toBe(200); expect(await r.text()).toBe(XML);
+  });
+}
+it("metadata excessiva recusa ANTES I/O", async () => {
+  const s = setup({ metadata: MAX + 1 });
+  expect((await s.invoke(body)).status).toBe(413);
+  expect(s.download).not.toHaveBeenCalled();
+});
+for (const chunks of [[new Uint8Array(MAX), new Uint8Array(1)], [new Uint8Array(MAX + 1)]]) {
+  it(`chunk excedendo 10 MiB cancela imediatamente sem entrega parcial (${chunks.length})`, async () => {
+    const s = setup({ metadata: null, chunks, streamHang: true, realStreamSdk: true, length: "1" });
+    const r = await s.invoke(body);
+    expect(r.status).toBe(413); expect(s.cancel).toHaveBeenCalledTimes(1);
+    expect(await r.text()).not.toContain("NFe");
+    expect(s.rpc.mock.calls.filter(c => c[0] === "h15_service_actor_run_access")).toHaveLength(1);
+  });
+}
+for (const mode of ["abort", "timeout"] as const) {
+  it(`${mode} durante stream cancela reader sem bytes parciais nem retry`, async () => {
+    vi.useFakeTimers();
+    try {
+      const a = new AbortController();
+      const s = setup({ chunks: [new TextEncoder().encode(XML)], streamHang: true });
+      const p = s.invoke(body, a.signal);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(s.download).toHaveBeenCalledTimes(1);
+      if (mode === "abort") a.abort(); else await vi.advanceTimersByTimeAsync(15_000);
+      const r = await p;
+      expect(r.status).toBe(504); expect(s.cancel).toHaveBeenCalledTimes(1);
+      expect(await r.text()).not.toContain("NFe");
+      expect(s.download).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
+  });
+}
+function bodyRequest(stream: ReadableStream<Uint8Array>, signal?: AbortSignal, length?: string) {
+  return new Request("https://isolated.invalid", { method: "POST", signal,
+    headers: { Authorization: "Bearer placeholder", ...(length ? { "Content-Length": length } : {}) },
+    body: stream as unknown as BodyInit, duplex: "half",
+  } as RequestInit);
+}
+for (const mode of ["timeout", "abort", "overflow", "length"] as const) {
+  it(`corpo ${mode}: leitura limitada, cancela sem claims/RPC/Storage`, async () => {
+    vi.useFakeTimers();
+    try {
+      const cancel = vi.fn(); const a = new AbortController();
+      const stream = new ReadableStream<Uint8Array>({ start(c) {
+        c.enqueue(new Uint8Array(mode === "overflow" ? 16 * 1024 + 1 : 1));
+      }, cancel });
+      const s = setup();
+      const p = s.invokeRequest(bodyRequest(stream, a.signal, mode === "length" ? "16385" : undefined));
+      await vi.advanceTimersByTimeAsync(1);
+      if (mode === "abort") a.abort();
+      if (mode === "timeout") await vi.advanceTimersByTimeAsync(5_000);
+      const r = await p;
+      expect(r.status).toBe(mode === "length" || mode === "overflow" ? 413 : 504);
+      expect(cancel).toHaveBeenCalledTimes(1);
+      expect(s.rpc).not.toHaveBeenCalled(); expect(s.download).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
+}
+it("corpo fragmentado com Length enganoso preserva download autorizado", async () => {
+  const bytes = new TextEncoder().encode(JSON.stringify(body));
+  const stream = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(bytes.slice(0, 8)); c.enqueue(bytes.slice(8)); c.close(); } });
+  const s = setup(); const r = await s.invokeRequest(bodyRequest(stream, undefined, "1"));
+  expect(r.status).toBe(200); expect(await r.text()).toBe(XML);
+});
+for (const invalid of ["null", "[]", "{", "1"]) {
+  it(`corpo JSON inválido ${invalid} mantém 400 sem I/O`, async () => {
+    const s = setup(); const stream = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(new TextEncoder().encode(invalid)); c.close(); } });
+    expect((await s.invokeRequest(bodyRequest(stream))).status).toBe(400);
+    expect(s.rpc).not.toHaveBeenCalled(); expect(s.download).not.toHaveBeenCalled();
+  });
+}
+
+it("10 MiB exatos são permitidos somente com hash e metadados corretos", async () => {
+  const bytes = new Uint8Array(MAX).fill(65);
+  const s = setup({ metadata: MAX, chunks: [bytes], sha: createHash("sha256").update(bytes).digest("hex") });
+  const r = await s.invoke(body);
+  expect(r.status).toBe(200); expect((await r.arrayBuffer()).byteLength).toBe(MAX);
+});
+it("corpo lento consome prazo absoluto do download, sem renovar 15 s", async () => {
+  vi.useFakeTimers();
+  try {
+    const stream = new ReadableStream<Uint8Array>({ start(c) { setTimeout(() => {
+      c.enqueue(new TextEncoder().encode(JSON.stringify(body))); c.close();
+    }, 4_000); } });
+    const s = setup({ hangClaims: true }); let result: Response | undefined;
+    const p = s.invokeRequest(bodyRequest(stream)).then(r => { result = r; });
+    await vi.advanceTimersByTimeAsync(14_999); expect(result).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(2); expect(result?.status).toBe(504); await p;
+    expect(s.download).not.toHaveBeenCalled();
+  } finally { vi.useRealTimers(); }
+});
+
+it("cancelamento pendurado no transporte não prende resposta no timeout", async () => {
+  vi.useFakeTimers();
+  try {
+    const s = setup({ streamHang: true, cancelHang: true }); let result: Response | undefined;
+    const p = s.invoke(body).then(r => { result = r; });
+    await vi.advanceTimersByTimeAsync(15_001);
+    expect(result?.status).toBe(504); expect(s.cancel).toHaveBeenCalledTimes(1);
+    if (result) await p;
+  } finally { vi.useRealTimers(); }
+});
+it("generate válido mantém contrato de entrada e chega ao gate fiscal existente", async () => {
+  const s = setup({ operate: [false] });
+  expect((await s.invoke({ invoice_id: RUN, idempotency_key: "x".repeat(200) })).status).toBe(403);
+  expect(s.rpc).toHaveBeenCalledWith("fn_fiscal_can_operate", { _uid: "A" });
+  expect(s.download).not.toHaveBeenCalled();
 });

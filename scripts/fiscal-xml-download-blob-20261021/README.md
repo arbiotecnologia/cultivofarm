@@ -20,10 +20,12 @@ A candidata agora limita claims, primeira RPC, provas, leitura, hash e prova fin
 pelo mesmo deadline monotônico de 15 s contado da entrada do handler; etapa lenta
 não ganha outro prazo. SDK recebe abortSignal nas RPCs/queries suportadas;
 Promise.race encerra resposta mesmo se transporte ignora abort. Sem retry automático.
-Pedido pré-abortado não lê Storage. A desserialização do corpo mantém comportamento
-original; o orçamento consumido antes da branch é descontado. Um corpo de request
-que nunca termina de chegar não está coberto por esse watchdog específico; não
-alegar proteção contra slow upload/slowloris, que exige contrato/gate separado.
+Pedido pré-abortado não lê Storage. Corpo comum às três ações agora usa leitura
+incremental de 16 KiB / 5 s desde entrada, sem req.json pendurado. Essa proteção
+de ingresso é a única alteração comum ao generate; tail fiscal byte-exato.
+XML usa SDK asStream, contador incremental até 10 MiB, cancelamento imediato no
+excesso/abort/prazo, sem aguardar cancel pendurado. Metadados do run conferidos
+antes de I/O; Content-Length ausente/enganoso não determina aceitação.
 
 Download exige perfil fiscal atual, visibilidade RLS da execução e ownership
 `h15_service_actor_run_access`, antes e depois da leitura. O helper encadeia
@@ -46,14 +48,14 @@ Clique prepara; segundo clique baixa. Nenhuma alteração no monitor/Auth/cadên
 ## Compatibilidade e sequência fail-closed
 1. Recuperar fonte/config/versão LIVE; comparar dependências completas e trechos
    não-download, congelar preflight e revisar fonte deny de emergência.
-2. Após autorização específica, instalar Edge binária e provar contrato sem URL;
+2. Após revisão técnica e preflight, instalar Edge binária e provar contrato sem URL;
    frontend antigo pode falhar/abrir aba vazia: não há compatibilidade funcional.
    Proibição de retornar `{url}` para compatibilizar. Gate de geração fechado NÃO
    prova inexistência de downloads; aceitar interrupção controlada explicitamente.
 3. Somente depois, publicar os dois arquivos frontend revisados em conjunto.
    Frontend novo sozinho + Edge velha rejeita JSON e não deve ser publicado.
 4. Homologar atores reais A/B com fixture canônica autorizada antes do aceite.
-Nenhuma etapa operacional foi executada; sem autorização e baseline LIVE, NO-GO.
+Nenhuma etapa operacional foi executada; baseline LIVE/config/dependências e fixture não recuperados: NO-GO técnico; consentimento para correções/implantação segura já concedido.
 
 ## Rollback seguro
 `edge/rollback-deny.index.ts.review`: fonte completa local, action download 410,
@@ -74,9 +76,28 @@ loader novo; foi exercitado em cópia temporária, nunca no runtime atual.
 - Build automático do runtime c7: succeeded, run
   `br_20c2a793-9ed8-48cc-af72-f070db945f4c`; log local build OK.
   Isso NÃO compila candidata arquivada como runtime nem certifica types dela.
-  O ambiente não permite build/typecheck manual; recibo independente de ambos
-  sobre montagem candidata completa é pré-requisito ainda aberto, não PASS presumido.
+  Essa evidência histórica não certificava a montagem candidata; a rodada 17:49
+  abaixo registra build/types efetivamente executados na cópia externa isolada.
 
 Testes locais não equivalem a JWT/RLS LIVE nem homologação real. Renovação natural
 admin A/B e download pós-renovação c7 foram reportados pelo proprietário; preservados.
 Fixture e inventário legado: ver `homologacao-e-urls-legadas.md`. SU-518022 apenas ack.
+
+## Rodada 17:49 — limite incremental e ingresso
+- Revisão recebida 2eb45eee: quatro regressões novas falharam (corpo pendurado,
+  metadados excessivos antes I/O, dois casos chunk excedente); candidata corrigida
+  passou 44/44 Edge e 14/14 UI na montagem externa (58/58).
+- Montagem portátil e comandos: `VALIDACAO-PORTATIL.md`, `prepare-validation.py`.
+- Montagem externa: Vite produção exit 0 / 41,50 s; node types exit 0;
+  app types inicialmente exigiu duas dependências ausentes no pacote, incluídas,
+  segunda execução exit 0. Não são alterações de runtime.
+- Deno 2.6.10 / TS5.9.2: bundle exit 0, 100 módulos, 4,77 MiB;
+  SHA256 286615503f8686dd00cb8538f9bea128edad5eaec1f173304f2bb41593a3afcf.
+- Deno check ainda exit 1: cinco erros também reproduzidos no baseline Git:
+  digest BufferSource (index.ts), StorageError→Record (ensureStoredArtifact),
+  importKey/decrypt BufferSource (aesGcmDecrypt), nullable modulePromise
+  (xsdValidate.ts:66). Nenhum assert relaxado/check desabilitado; correção
+  desses trechos comuns à geração precisa de delta revisado, não foi feita.
+- Bundle local próximo ao limite hosted não garante bundle Supabase <=5 MiB;
+  fonte/config/dependências LIVE continuam obrigatórias. Fixture continua bloqueada.
+- Runtime c7, Auth, monitor, SQL, chaves, Storage e sessões intocados; sem deploy.

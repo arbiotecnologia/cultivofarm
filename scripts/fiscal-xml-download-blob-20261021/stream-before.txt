@@ -1,0 +1,116 @@
+$ vitest run src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts -t "corpo timeout|metadata excessiva|chunk excedendo"
+
+ RUN  v3.2.4 /dev-server
+
+ ❯ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts (44 tests | 4 failed | 40 skipped) 5063ms
+   ↓ ator autorizado recebe bytes conferidos, no-store, sem URL e sem assinar
+   ↓ nega antes do Storage: sem perfil fiscal
+   ↓ nega antes do Storage: RLS invisível (tenant B)
+   ↓ nega antes do Storage: sem ownership h15
+   ↓ nega antes do Storage: bucket fora do canônico
+   ↓ recheck após bytes nega entrega: perfil revogado durante leitura
+   ↓ recheck após bytes nega entrega: visibilidade revogada
+   ↓ recheck após bytes nega entrega: ownership revogado
+   ↓ recheck após bytes nega entrega: path trocado
+   ↓ integridade divergente, tamanho excessivo e falha do Storage não entregam bytes
+   ↓ entradas inválidas são recusadas
+   ↓ abort do cliente durante leitura encerra sem bytes
+   ↓ candidata preserva generate/assinatura XML e remove apenas a URL assinada
+   ↓ RPC de autorização pendurada após outer fn_fiscal respeita prazo absoluto 15 s, sem retry
+   ↓ RPC pendurada no recheck fresco após bytes também expira em 504 sem entrega
+   ↓ pedido já abortado antes do handler não chama Storage e responde 504
+   ↓ claims iniciais travada expira desde entrada sem Storage nem retry
+   ↓ primeira RPC fiscal travada expira desde entrada sem Storage nem retry
+   ↓ claims lentas consomem o prazo de entrada, não iniciam novo prazo para RPC
+   ↓ recheck com tamanho registrado alterado nega bytes antigos
+   ↓ ator sintético A recebe somente artefato autorizado e propaga sinais SDK
+   ↓ ator sintético B recebe somente artefato autorizado e propaga sinais SDK
+   ↓ rollback deny executável retorna 410 no-store sem consulta ou Storage
+   ↓ stream sem/com Length não confiável (ausente) é contado por bytes
+   ↓ stream sem/com Length não confiável (1) é contado por bytes
+   ↓ stream sem/com Length não confiável (31457280) é contado por bytes
+   × metadata excessiva recusa ANTES I/O 31ms
+     → expected 404 to be 413 // Object.is equality
+   × chunk excedendo 10 MiB cancela imediatamente sem entrega parcial (2) 22ms
+     → expected 404 to be 413 // Object.is equality
+   × chunk excedendo 10 MiB cancela imediatamente sem entrega parcial (1) 4ms
+     → expected 404 to be 413 // Object.is equality
+   ↓ abort durante stream cancela reader sem bytes parciais nem retry
+   ↓ timeout durante stream cancela reader sem bytes parciais nem retry
+   × corpo timeout: leitura limitada, cancela sem claims/RPC/Storage 5004ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ↓ corpo abort: leitura limitada, cancela sem claims/RPC/Storage
+   ↓ corpo overflow: leitura limitada, cancela sem claims/RPC/Storage
+   ↓ corpo length: leitura limitada, cancela sem claims/RPC/Storage
+   ↓ corpo fragmentado com Length enganoso preserva download autorizado
+   ↓ corpo JSON inválido null mantém 400 sem I/O
+   ↓ corpo JSON inválido [] mantém 400 sem I/O
+   ↓ corpo JSON inválido { mantém 400 sem I/O
+   ↓ corpo JSON inválido 1 mantém 400 sem I/O
+   ↓ 10 MiB exatos são permitidos somente com hash e metadados corretos
+   ↓ corpo lento consome prazo absoluto do download, sem renovar 15 s
+   ↓ cancelamento pendurado no transporte não prende resposta no timeout
+   ↓ generate válido mantém contrato de entrada e chega ao gate fiscal existente
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts > metadata excessiva recusa ANTES I/O
+AssertionError: expected 404 to be 413 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 413[39m
+[31m+ 404[39m
+
+ ❯ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts:236:41
+    234| it("metadata excessiva recusa ANTES I/O", async () => {
+    235|   const s = setup({ metadata: MAX + 1 });
+    236|   expect((await s.invoke(body)).status).toBe(413);
+       |                                         ^
+    237|   expect(s.download).not.toHaveBeenCalled();
+    238| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts > chunk excedendo 10 MiB cancela imediatamente sem entrega parcial (2)
+ FAIL  src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts > chunk excedendo 10 MiB cancela imediatamente sem entrega parcial (1)
+AssertionError: expected 404 to be 413 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 413[39m
+[31m+ 404[39m
+
+ ❯ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts:243:22
+    241|     const s = setup({ metadata: null, chunks, streamHang: true, realSt…
+    242|     const r = await s.invoke(body);
+    243|     expect(r.status).toBe(413); expect(s.cancel).toHaveBeenCalledTimes…
+       |                      ^
+    244|     expect(await r.text()).not.toContain("NFe");
+    245|     expect(s.rpc.mock.calls.filter(c => c[0] === "h15_service_actor_ru…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts > corpo timeout: leitura limitada, cancela sem claims/RPC/Storage
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts:272:3
+    270| }
+    271| for (const mode of ["timeout", "abort", "overflow", "length"] as const…
+    272|   it(`corpo ${mode}: leitura limitada, cancela sem claims/RPC/Storage`…
+       |   ^
+    273|     vi.useFakeTimers();
+    274|     try {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 40 skipped (44)
+   Start at  17:55:22
+   Duration  8.00s (transform 94ms, setup 112ms, collect 901ms, tests 5.06s, environment 618ms, prepare 451ms)
+
+error: script "test" exited with code 1
