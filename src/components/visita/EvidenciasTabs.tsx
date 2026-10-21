@@ -140,7 +140,8 @@ export function EvidenciasTabs({
   const { urls: signedUrls } = useSignedUrls(filePaths);
 
   const getEffectiveUrl = (arquivo: ArquivoRow) => {
-    return (arquivo.arquivo_path && signedUrls[arquivo.arquivo_path]) || arquivo.arquivo_url;
+    // Somente blob autenticado; arquivo_url gravada nunca é usada como fallback.
+    return (arquivo.arquivo_path && signedUrls[arquivo.arquivo_path]) || null;
   };
   const fotoInput = useRef<HTMLInputElement>(null);
   const anexoInput = useRef<HTMLInputElement>(null);

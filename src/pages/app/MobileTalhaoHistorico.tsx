@@ -241,7 +241,7 @@ export default function MobileTalhaoHistorico() {
                         <div className="flex gap-1.5 overflow-x-auto pt-1">
                           {item.fotos.slice(0, 4).map((url, i) => {
                             const path = item.fotosPaths?.[i];
-                            const effectiveUrl = (path && signedUrls[path]) || url;
+                            const effectiveUrl = (path && signedUrls[path]) || null;
                             if (!effectiveUrl) return null;
                             return (
                               <img

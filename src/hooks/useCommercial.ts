@@ -412,11 +412,6 @@ export function useUploadMessageAttachment() {
   });
 }
 
-export async function getAttachmentSignedUrl(path: string): Promise<string | null> {
-  const { data, error } = await supabase.storage.from("order-attachments").createSignedUrl(path, 3600);
-  if (error) return null;
-  return data?.signedUrl ?? null;
-}
 
 // ---------- Dashboard consolidado ----------
 export function useConsolidatedDashboard(filters: {
