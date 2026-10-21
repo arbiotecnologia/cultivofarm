@@ -17,14 +17,16 @@ const version = z.string().datetime({ offset: true });
 export interface CatalogLabel {
   id: string; familia: ProductFamily; rotulo: string; rotulo_exibicao: string; ativo: boolean; updated_at: string;
 }
-export const catalogLabelSchema: z.ZodType<CatalogLabel> = z.object({
+// Cast explícito: o tsconfig do pacote não liga strictNullChecks e a inferência do zod
+// colapsaria os campos para opcionais; o contrato acima é o autoritativo.
+export const catalogLabelSchema = z.object({
   id: z.string().uuid(),
   familia: z.enum(PRODUCT_FAMILIES),
   rotulo: z.string().regex(LABEL_ROTULO_PATTERN),
   rotulo_exibicao: z.string().min(2).max(80),
   ativo: z.boolean(),
   updated_at: version,
-}).strict();
+}).strict() as unknown as z.ZodType<CatalogLabel>;
 export const catalogLabelListSchema = z.array(catalogLabelSchema).max(200);
 
 const baseReceipt = {
