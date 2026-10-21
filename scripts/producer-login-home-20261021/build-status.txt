@@ -1,8 +1,4 @@
 exit=0
-- Using dynamic import() to code-split the application
-- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
-- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 29.71s
-dist/assets/index-B6FJk6Pn.js
-9
-3f28810f77b4a1a3f7bb5e7a37fd1e18025e850fe19c69a3c1e0e196065c3662  dist/assets/index-B6FJk6Pn.js
+✓ built in 29.12s
+ef6f87165a7b9dc70a425c23d7db5ae32e0dc44b93bcd4e1adfccb600f6cbb37  dist/assets/index-C8KAaC21.js
+assets=9

@@ -30,4 +30,5 @@ Não é homologação real.
 - `producerHome` exige o escopo monitorado exato do AuthProvider (`roles == ["cliente_produtor"]`, gate produtor, b2b-context);
   papéis múltiplos com `cliente_produtor` não são encaminhados.
 - Testes: 15/15 (v1 da candidata: 3 FAIL, `before-v2.txt`). v1 arquivada em `candidate-v1/`; rollback restaura a82.
-- Build de produção: ver `build-status.txt` (exit 0, entry `index-B6FJk6Pn.js`). Typecheck sem erros.
+- Build de produção: ver `build-status.txt` (exit 0, entry em build-status.txt). Typecheck sem erros.
+- Operador exclusivo mantém o fluxo revisado (negação explícita + Atualizar acesso) em /acesso-pendente. Baterias 1246/1246.
