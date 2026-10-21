@@ -73,14 +73,21 @@ function MaskedField({
   );
 }
 
-export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
+export function ClienteFormTabs({ clienteId, initialTab, onTabChange }: ClienteFormTabsProps) {
   const { register, watch, setValue, control, formState: { errors } } = useFormContext();
   const [loadingCEP, setLoadingCEP] = useState(false);
   const [loadingCNPJ, setLoadingCNPJ] = useState(false);
   const canManageDocs = useCanManageClienteDocs();
   const { role } = useAuth();
   const scope = useCommercialRegistrationScope();
-  const [tab, setTab] = useState("geral");
+  const canManagePortalTab = role === "administrador" || role === "gestor" || role === "administrativo";
+  const allowedInitial = initialTab && ["geral", "endereco", "financeiro"].includes(initialTab)
+    || (initialTab === "documentos" && canManageDocs) || (initialTab === "portal" && canManagePortalTab);
+  const [tab, setTabState] = useState(allowedInitial && initialTab ? initialTab : "geral");
+  const onTabChangeRef = useRef(onTabChange);
+  onTabChangeRef.current = onTabChange;
+  const setTab = useCallback((next: string) => { setTabState(next); onTabChangeRef.current?.(next); }, []);
+  useEffect(() => { onTabChangeRef.current?.(tab); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const cepGeneration = useRef({ endereco: 0, cobranca: 0 });
   useEffect(() => {
     const field = Object.keys(errors)[0];
