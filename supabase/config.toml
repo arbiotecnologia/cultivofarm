@@ -115,3 +115,10 @@ verify_jwt = true
 # evitando recorrência do incidente 2026-10-21 (publicação recriando função sem JWT).
 [functions.download-financial-document]
 verify_jwt = true
+
+# Candidata técnica consultor-arquivos (não implantada, pacote revisável
+# scripts/technical-attachment-http-20261021 @ 3cd1e4b6): JWT obrigatório explícito
+# antes do primeiro deploy, evitando recorrência do incidente 2026-10-21
+# (publicação recriando função sem JWT no gateway).
+[functions.download-technical-attachment]
+verify_jwt = true
