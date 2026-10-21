@@ -25,6 +25,10 @@ vi.mock("@/lib/catalogo/platformCatalogLabels", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/catalogo/platformCatalogLabels")>();
   return { ...actual, usePlatformCatalogLabels: () => state.labels };
 });
+vi.mock("@/lib/catalogo/platformCatalogRead", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/catalogo/platformCatalogRead")>();
+  return { ...actual, platformCatalogAccess: () => ({ ready: true, scope: "scope-A" }) };
+});
 
 import { createCatalogLabel, labelError, listCatalogLabels, setCatalogLabelActive,
   updateCatalogLabel } from "@/lib/catalogo/platformCatalogLabels";
