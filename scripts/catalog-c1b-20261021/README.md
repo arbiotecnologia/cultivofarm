@@ -49,7 +49,7 @@ PostgreSQL local executa os corpos originais byte-equivalentes e a candidata/rol
 
 Vitest usa hooks candidatos com o wrapper/fence de runtime, fixtures somente em memória e SDK simulado: três famílias, legado, papéis/finanças, actor/tenant/epoch tardios, logout, invalidação, contrato antigo/negativa sem fallback e fabricação negada para químicos/adubos. Não equivale à homologação browser com sessão real.
 
-Tipos da cópia isolada passaram. Build do aplicativo é responsabilidade do harness automático; a candidata não está importada pelo aplicativo, portanto build runtime OK não certifica o bundle C1B. Uma tentativa inicial mesclou o include de testes e iniciou a suíte global; foi interrompida em 60s, sem resultado global. A configuração foi corrigida e a suíte candidata foi repetida isoladamente.
+Resultado final: **23/23 verificações PostgreSQL sintéticas, 16/16 testes da candidata e 54/54 regressões C1/legado**. Tipos da cópia isolada passaram. Build do aplicativo é responsabilidade do harness automático; último sinal observado `build OK` em 21:48:03Z. A candidata não está importada pelo aplicativo, portanto build runtime OK não certifica o bundle C1B. Uma tentativa inicial mesclou o include de testes e iniciou a suíte global; foi interrompida em 60s, sem resultado global. A configuração foi corrigida e a suíte candidata foi repetida isoladamente.
 
 ## Pendências preservadas e próxima fase
 

@@ -59,7 +59,7 @@ describe("C1B inactive candidate canonical readers", () => {
     expect(screen.getByText("P1")).toBeTruthy();
     expect(screen.queryByText("P0")).toBeNull();
     expect(screen.queryByText("P2")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Ver ficha", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Ver ficha$/ }));
     expect(screen.getByTestId("sheet-item").textContent).toBe("P1");
     expect(state.calls).toHaveLength(1);
   });
@@ -68,7 +68,7 @@ describe("C1B inactive candidate canonical readers", () => {
     await waitFor(() => expect(h.result.current.data).toHaveLength(4));
     const source = { ...h.result.current, data: partnerCatalogRows(h.result.current.data ?? []) };
     const ui = render(<CatalogoCardsGrid scope="b2b" source={source} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Ver ficha", exact: true })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Ver ficha$/ })[0]);
     expect(screen.getByTestId("sheet-item").textContent).toBe("P0");
     ui.rerender(<CatalogoCardsGrid scope="b2b" source={{ ...source, scope: "actor-B", data: [] }} />);
     expect(screen.queryByTestId("sheet-item")).toBeNull();
