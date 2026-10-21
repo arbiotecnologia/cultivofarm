@@ -1,0 +1,306 @@
+diff --git a/src/components/catalogo/CatalogFamilyFilter.tsx b/src/components/catalogo/CatalogFamilyFilter.tsx
+new file mode 100644
+index 00000000..ded640c5
+--- /dev/null
++++ b/src/components/catalogo/CatalogFamilyFilter.tsx
+@@ -0,0 +1,12 @@
++import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
++import { READ_CATALOG_FAMILIES, READ_FAMILY_LABEL, readCatalogFamily, type CatalogFamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
++
++export function CatalogFamilyFilter({ value, onChange }: { value: CatalogFamilyFilter; onChange: (value: CatalogFamilyFilter) => void }) {
++  return <ToggleGroup type="single" value={value === "todos" ? "" : value}
++    onValueChange={v => onChange(readCatalogFamily(v) ?? "todos")}
++    aria-label="Família do catálogo" className="flex flex-wrap justify-start gap-1">
++    {READ_CATALOG_FAMILIES.map(f => <ToggleGroupItem key={f} value={f} className="h-auto min-h-9 whitespace-normal text-sm" aria-label={READ_FAMILY_LABEL[f]}>
++      {READ_FAMILY_LABEL[f]}
++    </ToggleGroupItem>)}
++  </ToggleGroup>;
++}
+\ No newline at end of file
+diff --git a/src/components/catalogo/CatalogoCardsGrid.tsx b/src/components/catalogo/CatalogoCardsGrid.tsx
+index 8e69b246..fc6d651f 100644
+--- a/src/components/catalogo/CatalogoCardsGrid.tsx
++++ b/src/components/catalogo/CatalogoCardsGrid.tsx
+@@ -15,6 +15,8 @@ import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
+ import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalogo/CatalogoItemDrawer";
+ import { useIsMobile } from "@/hooks/use-mobile";
+ import { CatalogoQueryErrorState } from "./CatalogoQueryErrorState";
++import { CatalogFamilyFilter } from "./CatalogFamilyFilter";
++import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
+ 
+ type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
+ 
+@@ -60,6 +62,7 @@ export function CatalogoCardsGrid({
+ 
+   const [search, setSearch] = useState("");
+   const [tipo, setTipo] = useState<CatalogTipoFiltro>("todos");
++  const [family, setFamily] = useState<FamilyFilter>("todos");
+   const [status, setStatus] = useState<CatalogStatusFiltro>("todos");
+   const [b2b, setB2b] = useState<"todos" | "sim" | "nao">("todos");
+   const [sort, setSort] = useState<SortKey>("nome_asc");
+@@ -157,6 +160,7 @@ export function CatalogoCardsGrid({
+     const q = search.trim().toLowerCase();
+     return rows.filter((r) => {
+       if (filterRow && !filterRow(r)) return false;
++      if (scope !== "b2b" && !catalogFamilyMatches(r, family)) return false;
+       if (tipo !== "todos" && r.tipo !== tipo) return false;
+       if (showB2BFilter) {
+         if (b2b === "sim" && !r.b2b_enabled) return false;
+@@ -176,7 +180,7 @@ export function CatalogoCardsGrid({
+         (r.ficha_resumo ?? "").toLowerCase().includes(q)
+       );
+     });
+-  }, [rows, search, tipo, status, b2b, filterRow, showB2BFilter, showStatusFilter]);
++  }, [rows, search, tipo, status, b2b, filterRow, showB2BFilter, showStatusFilter, family, scope]);
+ 
+   const sorted = useMemo(() => {
+     const list = [...filtered];
+@@ -194,6 +198,7 @@ export function CatalogoCardsGrid({
+   useEffect(() => {
+     setLimite(CATALOGO_PAGE_SIZE);
+   }, [search, tipo, status, b2b, sort, scope]);
++  useEffect(() => { setLimite(CATALOGO_PAGE_SIZE); }, [family]);
+ 
+   const visiveis = useMemo(
+     () => (sorted.length > limite ? sorted.slice(0, limite) : sorted),
+@@ -205,6 +210,7 @@ export function CatalogoCardsGrid({
+ 
+   return (
+     <div className="space-y-4">
++      {scope !== "b2b" && <CatalogFamilyFilter value={family} onChange={setFamily} />}
+       <div className="flex flex-col md:flex-row gap-2 md:items-stretch">
+         <div className="flex-1">
+           <CatalogSearchFilters
+@@ -261,6 +267,7 @@ export function CatalogoCardsGrid({
+                     setTipo("todos");
+                     setStatus("todos");
+                     setB2b("todos");
++                    setFamily("todos");
+                   }}
+                 >
+                   Limpar filtros
+@@ -289,6 +296,7 @@ export function CatalogoCardsGrid({
+                     <TableCell className="align-top">
+                       <div className="flex items-center gap-1.5 flex-wrap">
+                         <Badge variant="outline" className="text-[9px] uppercase">{r.tipo}</Badge>
++                        {scope !== "b2b" && <Badge variant="outline">{catalogFamilyLabel(r)}</Badge>}
+                         {r.codigo && <span className="font-mono text-[10px] text-muted-foreground">{r.codigo}</span>}
+                         {!r.ativo && <Badge variant="destructive" className="text-[9px]">Inativo</Badge>}
+                         {r.b2b_enabled && <Badge className="text-[9px] bg-blue-600">B2B</Badge>}
+@@ -354,6 +362,7 @@ export function CatalogoCardsGrid({
+                     <div className="min-w-0">
+                       <div className="flex items-center gap-1.5 flex-wrap">
+                         <Badge variant="outline" className="text-[9px] uppercase">{r.tipo}</Badge>
++                        {scope !== "b2b" && <Badge variant="outline">{catalogFamilyLabel(r)}</Badge>}
+                         {r.codigo && <span className="font-mono text-[10px] text-muted-foreground">{r.codigo}</span>}
+                         {!r.ativo && <Badge variant="destructive" className="text-[9px]">Inativo</Badge>}
+                         {r.b2b_enabled && <Badge className="text-[9px] bg-blue-600">B2B</Badge>}
+diff --git a/src/hooks/AGENTS.md b/src/hooks/AGENTS.md
+index f63b3c72..5844900f 100644
+--- a/src/hooks/AGENTS.md
++++ b/src/hooks/AGENTS.md
+@@ -8,3 +8,4 @@
+ 
+ - Fiscal XML downloads use the canonical binary Edge loader and authenticated attachment opener with abort/scope fences; legacy JSON URL responses fail closed and the generation certification gate stays independent — prevents bearer-link fallback during rollout.
+ - Recommendation queue entries carry origin actor/tenant, explicit parent and observed expected version; replay reuses live workspace/RPC authority and session fences. Only confirmed RPC plus successful CAS cleanup invalidates the matching scoped workspace, recommendation flag and rows; reads never adopt receipts — prevents cross-actor caches, lost drafts and fabricated mappings.
++- Catalog family presentation uses explicit canonical product metadata over existing tenant-scoped reads; B2B family rollout stays separate until canonical RPC visibility is proven — prevents legacy inference and parallel authorization.
+diff --git a/src/hooks/useCatalogoUnificado.ts b/src/hooks/useCatalogoUnificado.ts
+index 48d6d256..1f9c9aad 100644
+--- a/src/hooks/useCatalogoUnificado.ts
++++ b/src/hooks/useCatalogoUnificado.ts
+@@ -34,7 +34,7 @@ export type CatalogoScope = "admin" | "b2b" | "interno";
+  * precisa permanecer previsível.
+  */
+ export const PRODUTOS_SELECT =
+-  "id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled";
++  "id,nome,codigo,tipo,familia_catalogo,classe_catalogo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled";
+ export const MICROORGANISMOS_SELECT =
+   "id,nome,codigo,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled";
+ export const PRODUCT_PROFILES_SELECT =
+diff --git a/src/lib/catalogo/catalogFamilyRead.ts b/src/lib/catalogo/catalogFamilyRead.ts
+new file mode 100644
+index 00000000..25fbf1cd
+--- /dev/null
++++ b/src/lib/catalogo/catalogFamilyRead.ts
+@@ -0,0 +1,20 @@
++/** Presentation over authorized rows only; never infer a product family from legacy `tipo`. */
++export const READ_CATALOG_FAMILIES = ["biologico", "quimico", "fertilizante_adubo"] as const;
++export type ReadCatalogFamily = (typeof READ_CATALOG_FAMILIES)[number];
++export type CatalogFamilyFilter = ReadCatalogFamily | "todos";
++export const READ_FAMILY_LABEL: Record<ReadCatalogFamily, string> = {
++  biologico: "Biológicos", quimico: "Químicos", fertilizante_adubo: "Fertilizantes/Adubos",
++};
++export function readCatalogFamily(value: unknown): ReadCatalogFamily | null {
++  return READ_CATALOG_FAMILIES.find(f => f === value) ?? null;
++}
++export function catalogFamilyMatches(item: { tipo: string; raw?: { familia_catalogo?: unknown } }, filter: CatalogFamilyFilter): boolean {
++  if (filter === "todos") return true;
++  if (item.tipo === "microrganismo") return filter === "biologico";
++  return readCatalogFamily(item.raw?.familia_catalogo) === filter;
++}
++export function catalogFamilyLabel(item: { tipo: string; raw?: { familia_catalogo?: unknown } }): string {
++  if (item.tipo === "microrganismo") return "Microrganismo";
++  const family = readCatalogFamily(item.raw?.familia_catalogo);
++  return family ? READ_FAMILY_LABEL[family] : "Família não informada";
++}
+\ No newline at end of file
+diff --git a/src/pages/app/MobileCatalogoTecnico.tsx b/src/pages/app/MobileCatalogoTecnico.tsx
+index b7bd83e1..ad80f978 100644
+--- a/src/pages/app/MobileCatalogoTecnico.tsx
++++ b/src/pages/app/MobileCatalogoTecnico.tsx
+@@ -14,6 +14,8 @@ import { useEmbalagensPorItem, formatEmbalagens } from "@/hooks/useEmbalagensPor
+ import { useCatalogoVolumes, formatVolumesCatalogo } from "@/hooks/useCatalogoVolumes";
+ import { useTenantHiddenIds } from "@/hooks/useTenantCatalogVisibility";
+ import { catalogoExcludeHidden } from "@/hooks/useCatalogoUnificado";
++import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
++import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
+ 
+ type Tipo = "todos" | "produto" | "microrganismo";
+ 
+@@ -43,6 +45,7 @@ export default function MobileCatalogoTecnico() {
+   const hmKey = hm.status === "ready" ? `${hm.scope.organizationId}|${hm.scope.userId}|${hm.ids.join(",")}` : hm.status;
+   const [search, setSearch] = useState("");
+   const [tipo, setTipo] = useState<Tipo>("todos");
++  const [family, setFamily] = useState<FamilyFilter>("todos");
+   const [openMicro, setOpenMicro] = useState<any | null>(null);
+   const [openProd, setOpenProd] = useState<any | null>(null);
+   const { data: embalagens } = useEmbalagensPorItem();
+@@ -57,7 +60,7 @@ export default function MobileCatalogoTecnico() {
+       setLoading(true);
+       setLoadError(null);
+       const [prod, micro, pp, mp] = await Promise.all([
+-        catalogoExcludeHidden(supabase.from("produtos").select("id,nome,codigo,tipo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").eq("ativo", true), hiddenProd).order("nome"),
++        catalogoExcludeHidden(supabase.from("produtos").select("id,nome,codigo,tipo,familia_catalogo,classe_catalogo,descricao,modo_acao,funcao_completa,ativo,b2b_enabled").eq("ativo", true), hiddenProd).order("nome"),
+         catalogoExcludeHidden(supabase.from("microrganismos").select("id,nome,nome_cientifico,tipo,funcao_agronomica,descricao,observacoes,ativo,b2b_enabled").eq("ativo", true), hiddenMicro).order("nome"),
+         supabase.from("product_technical_profiles").select("produto_id,status_validacao,resumo_curto"),
+         supabase.from("microorganism_technical_profiles").select("microrganismo_id,status_validacao,resumo_curto"),
+@@ -87,11 +90,12 @@ export default function MobileCatalogoTecnico() {
+   const filtered = useMemo(() => {
+     const q = search.trim().toLowerCase();
+     return rows.filter((r) => {
++      if (!catalogFamilyMatches(r, family)) return false;
+       if (tipo !== "todos" && r.tipo !== tipo) return false;
+       if (!q) return true;
+       return r.nome.toLowerCase().includes(q) || (r.subtitulo ?? "").toLowerCase().includes(q) || (r.funcao ?? "").toLowerCase().includes(q);
+     });
+-  }, [rows, search, tipo]);
++  }, [rows, search, tipo, family]);
+ 
+   const copyResumo = async (r: Row) => {
+     const txt = `${r.nome}${r.subtitulo ? ` (${r.subtitulo})` : ""}\n${r.resumo ?? "Sem resumo cadastrado"}\n\nCultivo Farm · Recomendação técnica exige prescrição agronômica.`;
+@@ -107,6 +111,7 @@ export default function MobileCatalogoTecnico() {
+   return (
+     <div className="p-3 space-y-3">
+       <h1 className="text-lg font-bold">Catálogo técnico</h1>
++      <CatalogFamilyFilter value={family} onChange={setFamily} />
+ 
+       <div className="relative">
+         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+@@ -138,6 +143,7 @@ export default function MobileCatalogoTecnico() {
+                   <div className="min-w-0">
+                     <div className="flex items-center gap-1.5">
+                       <Badge variant="outline" className="text-[9px] uppercase">{r.tipo}</Badge>
++                      <Badge variant="outline" className="text-[10px]">{catalogFamilyLabel(r)}</Badge>
+                       <TechnicalProfileStatusBadge status={r.ficha_status} />
+                     </div>
+                     <div className="font-semibold text-sm mt-1 truncate">{r.nome}</div>
+diff --git a/src/pages/comercial/SimuladorComercial.tsx b/src/pages/comercial/SimuladorComercial.tsx
+index 586382b4..5ebc992c 100644
+--- a/src/pages/comercial/SimuladorComercial.tsx
++++ b/src/pages/comercial/SimuladorComercial.tsx
+@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
+ import { Label } from '@/components/ui/label';
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+ import { brl } from '@/lib/financial/format';
++import { catalogFamilyLabel } from '@/lib/catalogo/catalogFamilyRead';
+ 
+ export default function SimuladorComercial() {
+   const sim = useSimulateB2BPaymentPlan();
+@@ -70,7 +71,7 @@ export default function SimuladorComercial() {
+       <div className="grid gap-4 md:grid-cols-2">
+         <div><Label htmlFor="sim-partner">Parceiro</Label><Select value={form.partner} onValueChange={v => change('partner', v)}><SelectTrigger id="sim-partner" aria-invalid={!!errors.partner} aria-describedby="sim-partner-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{partners.data?.map(p => <SelectItem key={p.id} value={p.id}>{p.razao_social}</SelectItem>)}</SelectContent></Select>{errorFor('partner')}{!partners.data?.length && <p>Nenhum parceiro ativo.</p>}</div>
+         <div><Label htmlFor="sim-plan">Condição de pagamento</Label><Select value={form.plan} onValueChange={v => change('plan', v)} disabled={!form.partner}><SelectTrigger id="sim-plan" aria-invalid={!!errors.plan} aria-describedby="sim-plan-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{availablePlans.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select>{errorFor('plan')}{form.partner && !availablePlans.length && <p>Nenhuma condição publicada e vigente para este parceiro.</p>}</div>
+-        <div className="md:col-span-2"><Label htmlFor="sim-item">Produto ou microrganismo</Label><Select value={form.item} onValueChange={v => change('item', v)}><SelectTrigger id="sim-item" aria-invalid={!!errors.item} aria-describedby="sim-item-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{items.map(i => <SelectItem key={`${i.tipo}:${i.id}`} value={`${i.tipo}:${i.id}`} disabled={i.ficha_status !== 'aprovado'}>{i.nome} · {i.tipo}{i.ficha_status !== 'aprovado' ? ' — ficha não aprovada' : ''}</SelectItem>)}</SelectContent></Select>{errorFor('item')}{!items.length && <p>Nenhum item B2B ativo.</p>}</div>
++        <div className="md:col-span-2"><Label htmlFor="sim-item">Produto ou microrganismo</Label><Select value={form.item} onValueChange={v => change('item', v)}><SelectTrigger id="sim-item" aria-invalid={!!errors.item} aria-describedby="sim-item-error"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{items.map(i => <SelectItem key={`${i.tipo}:${i.id}`} value={`${i.tipo}:${i.id}`} disabled={i.ficha_status !== 'aprovado'}>{i.nome} · {catalogFamilyLabel(i)}{i.ficha_status !== 'aprovado' ? ' — ficha não aprovada' : ''}</SelectItem>)}</SelectContent></Select>{errorFor('item')}{!items.length && <p>Nenhum item B2B ativo.</p>}</div>
+         <div><Label htmlFor="sim-unit">Unidade</Label><Select value={form.unit} onValueChange={v => change('unit', v as SimulationForm['unit'])}><SelectTrigger id="sim-unit"><SelectValue /></SelectTrigger><SelectContent>{(['hectare', 'litro', 'dose', 'unidade'] as const).map(u => <SelectItem key={u} value={u}>{u === 'unidade' ? 'Volume comercial' : u}</SelectItem>)}</SelectContent></Select></div>
+         <div><Label htmlFor="sim-quantity">Quantidade</Label><Input id="sim-quantity" type="number" step="any" value={form.quantity} aria-invalid={!!errors.quantity} aria-describedby="sim-quantity-error" onChange={e => change('quantity', e.target.value)} />{errorFor('quantity')}</div>
+         {form.unit === 'unidade' && <div><Label htmlFor="sim-volume">Volume (mL)</Label><Input id="sim-volume" type="number" step="any" value={form.volume} aria-invalid={!!errors.volume} aria-describedby="sim-volume-error" onChange={e => change('volume', e.target.value)} />{errorFor('volume')}</div>}
+diff --git a/src/test/catalogo/catalogFamilyRead.test.tsx b/src/test/catalogo/catalogFamilyRead.test.tsx
+new file mode 100644
+index 00000000..951a15a4
+--- /dev/null
++++ b/src/test/catalogo/catalogFamilyRead.test.tsx
+@@ -0,0 +1,72 @@
++import { afterEach, describe, expect, it, vi } from "vitest";
++import { cleanup, renderHook, waitFor } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import type { ReactNode } from "react";
++import { catalogFamilyMatches, readCatalogFamily } from "@/lib/catalogo/catalogFamilyRead";
++import { recCanForwardToLab } from "@/lib/visita/recomendacaoCatalogo";
++
++const state = vi.hoisted(() => ({ actor: "A", tenant: "A", hidden: ["chem"], blocked: false, calls: [] as string[] }));
++const products = [
++  { id: "bio", nome: "B", familia_catalogo: "biologico", ativo: true, b2b_enabled: true },
++  { id: "chem", nome: "Q", familia_catalogo: "quimico", ativo: true, b2b_enabled: true },
++  { id: "fert", nome: "F", familia_catalogo: "fertilizante_adubo", ativo: true, b2b_enabled: true },
++  { id: "legacy", nome: "L", tipo: "fungicida", ativo: true, b2b_enabled: true },
++];
++vi.mock("@/hooks/useTenantCatalogVisibility", () => ({ useTenantHiddenIds: () => state.blocked
++  ? { status: "error", message: "denied" }
++  : { status: "ready", scope: { userId: state.actor, organizationId: state.tenant }, ids: state.hidden } }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: (table: string) => {
++  let excludes = "";
++  const q = { select: () => q, order: () => q, eq: () => q, not: (_c: string, _op: string, ids: string) => { excludes = ids; return q; },
++    then: (resolve: (v: unknown) => unknown) => {
++      state.calls.push(table);
++      return Promise.resolve({ data: table === "produtos" ? products.filter(p => !excludes.includes(p.id)) : [], error: null }).then(resolve);
++    } };
++  return q;
++} } }));
++import { useCatalogoUnificado } from "@/hooks/useCatalogoUnificado";
++afterEach(cleanup);
++
++describe("famílias sobre leitores já autorizados", () => {
++  it.each(["biologico", "quimico", "fertilizante_adubo"] as const)("separa %s sem inferir tipo legado", family => {
++    expect(products.filter(p => catalogFamilyMatches({ tipo: "produto", raw: p }, family)).map(p => p.id))
++      .toEqual([family === "biologico" ? "bio" : family === "quimico" ? "chem" : "fert"]);
++    expect(catalogFamilyMatches({ tipo: "produto", raw: products[3] }, family)).toBe(false);
++  });
++  it("preserva legado em Todos e microrganismos em Biológicos", () => {
++    expect(catalogFamilyMatches({ tipo: "produto", raw: {} }, "todos")).toBe(true);
++    expect(readCatalogFamily("fungicida")).toBeNull();
++    expect(catalogFamilyMatches({ tipo: "microrganismo" }, "biologico")).toBe(true);
++    expect(catalogFamilyMatches({ tipo: "microrganismo" }, "quimico")).toBe(false);
++  });
++  it.each(["quimico", "fertilizante_adubo", null, "fungicida"])("jamais encaminha %s ao laboratório", family => {
++    expect(recCanForwardToLab("p", null, { id: "p", nome: "P", familia_catalogo: family }, undefined)).toBe(false);
++  });
++  it("mantém encaminhamento biológico explícito e rejeita par ambíguo", () => {
++    const p = { id: "p", nome: "P", familia_catalogo: "biologico" };
++    expect(recCanForwardToLab("p", null, p, undefined)).toBe(true);
++    expect(recCanForwardToLab("p", "m", p, { id: "m", nome: "M", nome_cientifico: null })).toBe(false);
++  });
++  it.each(["admin", "interno"] as const)("%s mantém filtro servidor e separa ator/tenant", async scope => {
++    // UUIDs válidos para o filtro PostgREST; teste não cria nenhum dado remoto.
++    const hidden = "00000000-0000-4000-8000-000000000001";
++    const original = products[1].id;
++    products[1].id = hidden;
++    state.actor = "A"; state.tenant = "A"; state.hidden = [hidden]; state.blocked = false;
++    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
++    const h = renderHook(() => useCatalogoUnificado(scope), { wrapper });
++    await waitFor(() => expect(h.result.current.isSuccess).toBe(true));
++    expect(h.result.current.data?.map(r => r.id)).toEqual(["bio", "fert", "legacy"]);
++    state.actor = "B"; state.tenant = "B"; state.hidden = [];
++    h.rerender();
++    expect(h.result.current.data).toBeUndefined();
++    await waitFor(() => expect(h.result.current.data).toHaveLength(4));
++    expect(h.result.current.data?.find(r => r.id === hidden)?.raw.familia_catalogo).toBe("quimico");
++    state.blocked = true; state.calls = []; h.rerender();
++    expect(h.result.current.data).toBeUndefined();
++    expect(h.result.current.isError).toBe(true);
++    expect(state.calls).toEqual([]);
++    products[1].id = original; state.blocked = false; h.unmount(); client.clear();
++  });
++});
+\ No newline at end of file
