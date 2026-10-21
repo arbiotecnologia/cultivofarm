@@ -102,3 +102,37 @@ describe('login produtor: /app/login -> seletor -> home canônica /app', () => {
     expect(url()).not.toBe('/acesso-pendente');
   });
 });
+
+describe('entrada direta em /acesso-pendente e escopo produtor confirmado', () => {
+  const pendingText = () => screen.queryByText(/ainda não possui um portal operacional liberado/);
+  it('erro na leitura de contextos: não afirma ausência de portal; Tentar novamente recupera', async () => {
+    s.ctxError = true;
+    setup('/acesso-pendente'); await tick(); await tick(5_000);
+    expect(url()).toBe('/acesso-pendente');
+    expect(pendingText()).toBeNull();
+    expect(screen.getByText('Não foi possível validar seus acessos')).toBeTruthy();
+    s.ctxError = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+    await tick(100);
+    expect(url()).toBe('/app');
+  });
+  it('validação pendente do probe (h15 indisponível): mostra validando, nunca "sem portal"', async () => {
+    s.h15Error = true;
+    setup('/acesso-pendente'); await tick(); await tick(100);
+    expect(pendingText()).toBeNull();
+    expect(url()).not.toBe('/app');
+  });
+  it('papéis múltiplos com cliente_produtor e nenhum contexto: não encaminha a /app (escopo produtor não monitorado)', async () => {
+    s.roles = ['cliente_produtor', 'financeiro'];
+    setup('/selecionar-portal'); await tick(); await tick(100);
+    expect(url()).not.toBe('/app');
+    cleanup(); s.calls = {};
+    setup('/acesso-pendente'); await tick(); await tick(100);
+    expect(url()).not.toBe('/app');
+  });
+  it('sem papel algum: acesso pendente legítimo continua exibido', async () => {
+    s.roles = [];
+    setup('/acesso-pendente'); await tick(); await tick(100);
+    expect(url()).toBe('/acesso-pendente');
+  });
+});

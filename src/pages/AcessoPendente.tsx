@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, LogOut, RefreshCw } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, Loader2, LogOut, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useAvailableContexts,
@@ -13,7 +13,7 @@ import { getHomeForRole } from "@/lib/permissions";
 
 export default function AcessoPendente() {
   const navigate = useNavigate();
-  const { signOut, profile, roles } = useAuth();
+  const { signOut, profile, roles, loading, authzReady = true } = useAuth();
   const { data, refetch, isFetching, isError, ready, exclusiveOperator, operatorHome, producerHome } = useAvailableContexts();
 
   const isAdmin = roles.includes("administrador");
@@ -43,6 +43,44 @@ export default function AcessoPendente() {
       navigate("/selecionar-portal", { replace: true });
     }
   }, [data, navigate, isAdmin, ready, isFetching, isError, exclusiveOperator, operatorHome, producerHome]);
+
+  // Só afirma ausência de portal com leitura concluída, atual e sem erro.
+  // Validação/refetch/erro reutilizam os estados existentes do seletor.
+  // Sem papel algum: único caso legítimo (sem consulta de contextos).
+  const noRole = !loading && roles.length === 0;
+  // Operador exclusivo mantém o fluxo revisado existente (negação explícita + Atualizar acesso).
+  const neutral = !noRole && !exclusiveOperator;
+  if (neutral && isError) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center space-y-2">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+              <AlertCircle className="h-6 w-6 text-destructive" aria-hidden="true" />
+            </div>
+            <CardTitle>Não foi possível validar seus acessos</CardTitle>
+            <CardDescription>Verifique sua conexão e tente novamente.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            <Button onClick={() => refetch()} disabled={isFetching} aria-label="Tentar novamente">Tentar novamente</Button>
+            <Button variant="ghost" onClick={signOut} aria-label="Sair da conta">
+              <LogOut className="mr-2 h-4 w-4" aria-hidden="true" /> Sair
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  if (neutral && (loading || !authzReady || (ready && (!data || isFetching)) || producerHome)) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-background p-4" role="status" aria-live="polite">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+          <p className="text-sm">Validando seus acessos…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
