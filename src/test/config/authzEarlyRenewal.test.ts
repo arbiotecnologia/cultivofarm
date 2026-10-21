@@ -222,7 +222,7 @@ describe('paired early renewal before confirmed deadline', () => {
 
 describe('real homologation variation: fast RTT followed by a single 5.1–6s spike', () => {
   it('reserves at least the 10s floor before the confirmed deadline at every request', () => {
-    expect(EARLY_RENEWAL_FLOOR_MARGIN_MS).toBe(10000);
+    expect(EARLY_RENEWAL_FLOOR_MARGIN_MS).toBe(12000);
   });
 
   it('old 5s floor reproduction (arithmetic of the real expire): 5094ms spike started 5087ms before deadline lands 7ms late', () => {
