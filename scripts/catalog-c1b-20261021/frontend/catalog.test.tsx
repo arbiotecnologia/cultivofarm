@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, renderHook, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { catalogFamilyMatches } from "@/lib/catalogo/catalogFamilyRead";
@@ -7,6 +7,18 @@ import { recCanForwardToLab } from "@/lib/visita/recomendacaoCatalogo";
 import { usePartnerCatalog } from "./src/hooks/usePartnerCatalog";
 import { usePartnerCatalogTecnico } from "./src/hooks/usePartnerCatalogTecnico";
 import { partnerCatalogRows } from "./src/lib/catalogo/partnerCatalogRows";
+import { CatalogoCardsGrid } from "./src/components/catalogo/CatalogoCardsGrid";
+vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+vi.mock("@/hooks/useCatalogoUnificado", async importOriginal => ({
+  ...await importOriginal<typeof import("@/hooks/useCatalogoUnificado")>(),
+  useCatalogoUnificado: () => { throw new Error("parallel_internal_read_forbidden"); },
+}));
+vi.mock("@/components/protocolos/MicroorganismTechnicalProfileDialog", () => ({ MicroorganismTechnicalProfileDialog: () => null }));
+vi.mock("@/components/protocolos/ProductTechnicalProfileDialog", () => ({ ProductTechnicalProfileDialog: () => null }));
+vi.mock("@/components/catalogo/FichaProdutorDrawer", () => ({ FichaProdutorDrawer: () => null }));
+vi.mock("@/components/catalogo/CatalogoItemDrawer", () => ({
+  CatalogoItemDrawer: ({ item, open }: { item: { nome: string } | null; open: boolean }) => open && item ? <div data-testid="sheet-item">{item.nome}</div> : null,
+}));
 const state = vi.hoisted(() => ({ actor: "A", tenant: "A", ready: true, epoch: 1,
   calls: [] as { name: string; args: unknown; actor: string; tenant: string }[],
   pending: null as null | { resolve: (v: unknown) => void }, delay: false, deny: false, contract: true,
@@ -38,6 +50,30 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); client.clear(); });
 describe("C1B inactive candidate canonical readers", () => {
+  it("actual grid consumes RPC projection, filters families and never mounts internal reader", async () => {
+    const h = renderHook(() => usePartnerCatalog("partner-A"), { wrapper });
+    await waitFor(() => expect(h.result.current.data).toHaveLength(4));
+    render(<CatalogoCardsGrid scope="b2b" source={{ ...h.result.current, data: partnerCatalogRows(h.result.current.data ?? []) }} />);
+    expect(screen.getByText("P0")).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: "Químicos" }));
+    expect(screen.getByText("P1")).toBeTruthy();
+    expect(screen.queryByText("P0")).toBeNull();
+    expect(screen.queryByText("P2")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Ver ficha", exact: true }));
+    expect(screen.getByTestId("sheet-item").textContent).toBe("P1");
+    expect(state.calls).toHaveLength(1);
+  });
+  it("open grid sheet is discarded when actor scope changes", async () => {
+    const h = renderHook(() => usePartnerCatalog("partner-A"), { wrapper });
+    await waitFor(() => expect(h.result.current.data).toHaveLength(4));
+    const source = { ...h.result.current, data: partnerCatalogRows(h.result.current.data ?? []) };
+    const ui = render(<CatalogoCardsGrid scope="b2b" source={source} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Ver ficha", exact: true })[0]);
+    expect(screen.getByTestId("sheet-item").textContent).toBe("P0");
+    ui.rerender(<CatalogoCardsGrid scope="b2b" source={{ ...source, scope: "actor-B", data: [] }} />);
+    expect(screen.queryByTestId("sheet-item")).toBeNull();
+    expect(screen.queryByText("P0")).toBeNull();
+  });
   it.each(["biologico", "quimico", "fertilizante_adubo"] as const)("server family %s reaches grid without inference", async family => {
     const h = renderHook(() => usePartnerCatalog("partner-A"), { wrapper });
     await waitFor(() => expect(h.result.current.data).toHaveLength(4));

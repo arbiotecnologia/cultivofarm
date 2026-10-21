@@ -45,7 +45,8 @@ export default function FichasTecnicas() {
     );
   }, [tab, produtos, micros, q]);
 
-  const [preview, setPreview] = useState<{ blobUrl: string; filename: string; nome: string } | null>(null);
+  const [preview, setPreview] = useState<{ blobUrl: string; filename: string; nome: string; scope: string } | null>(null);
+  const visiblePreview = access.ready && preview?.scope === access.scope ? preview : null;
 
   const abrirFicha = async (id: string, nome: string) => {
     const current = access.capture();
@@ -64,7 +65,7 @@ export default function FichasTecnicas() {
         if (!current() || after.error || !after.data?.some(r => r.item_id === id && r.ficha_aprovada)) {
           URL.revokeObjectURL(result.blobUrl); return;
         }
-        setPreview({ ...result, nome });
+        setPreview({ ...result, nome, scope: access.scope });
       }
     } catch (e: any) {
       if (current()) toast.error(e?.message ?? "Erro ao gerar ficha técnica");
@@ -157,7 +158,7 @@ export default function FichasTecnicas() {
       </Tabs>
 
       <Dialog
-        open={access.ready && !!preview}
+        open={!!visiblePreview}
         onOpenChange={(v) => {
           if (!v && preview?.blobUrl) URL.revokeObjectURL(preview.blobUrl);
           if (!v) setPreview(null);
@@ -165,12 +166,12 @@ export default function FichasTecnicas() {
       >
         <DialogContent className="max-w-5xl w-[95vw]">
           <DialogHeader>
-            <DialogTitle className="truncate">Ficha técnica — {preview?.nome}</DialogTitle>
+            <DialogTitle className="truncate">Ficha técnica — {visiblePreview?.nome}</DialogTitle>
           </DialogHeader>
-          {preview && (
+          {visiblePreview && (
             <iframe
-              src={preview.blobUrl}
-              title={preview.filename}
+              src={visiblePreview.blobUrl}
+              title={visiblePreview.filename}
               className="w-full h-[75vh] rounded-md border"
             />
           )}
@@ -178,8 +179,8 @@ export default function FichasTecnicas() {
             <Button variant="outline" onClick={() => setPreview(null)}>
               Fechar
             </Button>
-            {preview && (
-              <a href={preview.blobUrl} download={preview.filename}>
+            {visiblePreview && (
+              <a href={visiblePreview.blobUrl} download={visiblePreview.filename}>
                 <Button>
                   <Download className="h-4 w-4 mr-1" />
                   Baixar PDF
