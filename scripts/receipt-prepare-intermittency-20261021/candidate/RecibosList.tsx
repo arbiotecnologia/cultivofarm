@@ -63,13 +63,16 @@ function ReceiptDownload({ receipt, tenant, listScope, onInterrupted }: { receip
     request.current = controller; latest.current = controller;
     const valid = () => current() && !controller.signal.aborted && request.current === controller;
     const started = Date.now(); let stage: ReceiptPrepareStage = "fresh_read"; let timedOut = false;
-    const note = (outcome: "ok" | "timeout" | "fence" | "error" | "stale_state") => recordReceiptPrepare({ source: "list", stage, outcome, elapsedMs: Date.now() - started });
+    let noted = false;
+    // Exactly one record per request: at the timeout/fence event itself (even if I/O hangs) or in finally.
+    const note = (outcome: "ok" | "timeout" | "fence" | "error" | "stale_state") => { if (noted) return; noted = true;
+      recordReceiptPrepare({ source: "list", stage, outcome, elapsedMs: Date.now() - started }); };
     const timeout = setTimeout(() => {
       if (request.current !== controller) return;
       timedOut = true; controller.abort(); request.current = null;
       if (current()) { setBusy(false); toast.error("Recibo indisponível"); }
     }, 15_000);
-    controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
+    controller.signal.addEventListener("abort", () => { clearTimeout(timeout); note(timedOut ? "timeout" : "fence"); }, { once: true });
     setBusy(true);
     // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
     let opened = ""; let kept = false; let outcome: "ok" | "error" | "stale_state" = "error";

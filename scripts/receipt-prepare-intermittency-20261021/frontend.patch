@@ -1,5 +1,5 @@
 --- scripts/receipt-prepare-intermittency-20261021/baseline/RecibosList.tsx	2026-10-21 13:43:20.382182888 +0000
-+++ scripts/receipt-prepare-intermittency-20261021/candidate/RecibosList.tsx	2026-10-21 13:46:59.709811914 +0000
++++ scripts/receipt-prepare-intermittency-20261021/candidate/RecibosList.tsx	2026-10-21 13:51:24.818557728 +0000
 @@ -17,6 +17,7 @@
  import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
  import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
@@ -28,19 +28,23 @@
    }, [access.scope]);
    const isPrepared = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
    const download = async () => {
-@@ -59,15 +62,17 @@
+@@ -59,15 +62,20 @@
      const controller = new AbortController();
      request.current = controller; latest.current = controller;
      const valid = () => current() && !controller.signal.aborted && request.current === controller;
 +    const started = Date.now(); let stage: ReceiptPrepareStage = "fresh_read"; let timedOut = false;
-+    const note = (outcome: "ok" | "timeout" | "fence" | "error" | "stale_state") => recordReceiptPrepare({ source: "list", stage, outcome, elapsedMs: Date.now() - started });
++    let noted = false;
++    // Exactly one record per request: at the timeout/fence event itself (even if I/O hangs) or in finally.
++    const note = (outcome: "ok" | "timeout" | "fence" | "error" | "stale_state") => { if (noted) return; noted = true;
++      recordReceiptPrepare({ source: "list", stage, outcome, elapsedMs: Date.now() - started }); };
      const timeout = setTimeout(() => {
        if (request.current !== controller) return;
 -      controller.abort(); request.current = null;
 +      timedOut = true; controller.abort(); request.current = null;
        if (current()) { setBusy(false); toast.error("Recibo indisponível"); }
      }, 15_000);
-     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
+-    controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
++    controller.signal.addEventListener("abort", () => { clearTimeout(timeout); note(timedOut ? "timeout" : "fence"); }, { once: true });
      setBusy(true);
      // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
 -    let opened = ""; let kept = false;
@@ -48,7 +52,7 @@
      try {
        if (isPrepared) {
          // Prepared bytes (possibly from before a cancel elsewhere) are re-confirmed against server state.
-@@ -75,8 +80,9 @@
+@@ -75,8 +83,9 @@
          if (!valid()) return;
          if (fresh.status !== prepared.status || fresh.path !== prepared.path) {
            opener.discard(prepared.path); setPrepared({ scope: "", path: "", status: "", number: "" });
@@ -59,7 +63,7 @@
          opener.download(prepared.path, `${prepared.number}${prepared.status === "CANCELED" ? "-CANCELADO" : ""}.pdf`);
          return;
        }
-@@ -84,6 +90,7 @@
+@@ -84,6 +93,7 @@
        if (!valid()) return;
        // CANCELED always renders its own object; ISSUED renders only when never generated.
        if (before.status === "CANCELED" || !before.generated) {
@@ -67,7 +71,7 @@
          const { data, error } = await supabase.functions.invoke("generate-financial-receipt", {
            body: { receipt_id: receipt.id }, signal: controller.signal,
          });
-@@ -93,21 +100,27 @@
+@@ -93,21 +103,27 @@
        }
        if (!valid()) return;
        // Single watchdog covers Edge, bytes and the post-bytes status read until finally.
@@ -99,7 +103,7 @@
        // A newer request may own the same path after a timeout; never revoke its bytes.
        if (opened && !kept && latest.current === controller) opener.discard(opened);
        if (request.current === controller) {
-@@ -139,6 +152,15 @@
+@@ -139,6 +155,15 @@
    const [result, setResult] = useState({ scope: "", rows: [] as Receipt[], loading: false });
    const [refresh, setRefresh] = useState(0);
    const pendingCancel = useRef<AbortController | null>(null);
@@ -115,7 +119,7 @@
    const dialogEpoch = useRef(0);
    useLayoutEffect(() => {
      setCancelOpen(null); setReason(""); setBusy(false); dialogEpoch.current++;
-@@ -292,7 +314,7 @@
+@@ -292,7 +317,7 @@
                        </TableCell>
                        <TableCell className="font-mono text-xs">{r.authenticity_code}</TableCell>
                        <TableCell className="text-right space-x-1">
@@ -125,7 +129,7 @@
                            <Button asChild size="sm" variant="outline" title="Abrir recebimento">
                              <Link to={`/financeiro/receber?id=${r.receivable_id}`}>
 --- scripts/receipt-prepare-intermittency-20261021/baseline/EmitirReciboButton.tsx	2026-10-21 13:43:20.382295077 +0000
-+++ scripts/receipt-prepare-intermittency-20261021/candidate/EmitirReciboButton.tsx	2026-10-21 13:46:59.711131861 +0000
++++ scripts/receipt-prepare-intermittency-20261021/candidate/EmitirReciboButton.tsx	2026-10-21 13:51:24.818690049 +0000
 @@ -8,6 +8,7 @@
  import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
  import { financialReceiptLocator } from "@/lib/financeiro/receiptStorageLocator";
@@ -150,7 +154,7 @@
    }, [access.scope]);
    const downloadable = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
  
-@@ -44,9 +50,11 @@
+@@ -44,12 +50,18 @@
      const controller = new AbortController();
      request.current = controller; latest.current = controller;
      const valid = () => current() && !controller.signal.aborted && request.current === controller;
@@ -162,8 +166,16 @@
 +      timedOut = true; controller.abort(); request.current = null;
        if (current()) { setBusy(false); toast.error("Recibo indisponível"); }
      }, 15_000);
-     controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
-@@ -60,10 +68,12 @@
+-    controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
++    let noted = false;
++    // Exactly one record per request: at the timeout/fence event itself (even if I/O hangs) or in finally.
++    const note = (o: "ok" | "timeout" | "fence" | "error" | "stale_state") => { if (noted) return; noted = true;
++      recordReceiptPrepare({ source: "button", stage, outcome: o, elapsedMs: Date.now() - started }); };
++    controller.signal.addEventListener("abort", () => { clearTimeout(timeout); note(timedOut ? "timeout" : "fence"); }, { once: true });
+     setBusy(true);
+     // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
+     let opened = ""; let kept = false;
+@@ -60,10 +72,12 @@
          if (!valid()) return;
          if (fresh.status !== "ISSUED" || fresh.path !== prepared.path) {
            opener.discard(prepared.path); setPrepared({ scope: "", path: "", number: "", id: "" });
@@ -177,7 +189,7 @@
        const { data, error } = await (supabase as any).rpc("issue_financial_receipt", {
          _payment_id: paymentId,
        }).abortSignal(controller.signal);
-@@ -73,6 +83,7 @@
+@@ -73,6 +87,7 @@
        if (typeof receiptId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receiptId)) throw new Error("Recibo indisponível");
        // Actor-authenticated RLS read: never derive tenant/ownership from a URL.
        // Generated canonical types lag this table's tenant column; validate wire data below.
@@ -185,7 +197,7 @@
        const { data: receipt, error: readError } = await (supabase as any).from("financial_receipts")
          .select("id,payment_id,organization_id,receipt_year,receipt_number,storage_bucket,storage_path,status")
          .eq("id", receiptId).eq("payment_id", paymentId).eq("organization_id", tenant)
-@@ -84,24 +95,29 @@
+@@ -84,24 +99,29 @@
            (receipt.storage_path !== null && typeof receipt.storage_path !== "string") ||
            (receipt.storage_bucket !== null && typeof receipt.storage_bucket !== "string")) throw new Error("Recibo indisponível");
        const path = financialReceiptLocator(receipt, tenant);
@@ -215,13 +227,13 @@
        if (valid()) toast.error("Recibo indisponível");
      } finally {
        clearTimeout(timeout);
-+      recordReceiptPrepare({ source: "button", stage, outcome: timedOut ? "timeout" : !current() ? "fence" : outcome, elapsedMs: Date.now() - started });
++      note(timedOut ? "timeout" : !current() ? "fence" : outcome);
        // A newer request may own the same path after a timeout; never revoke its bytes.
        if (opened && !kept && latest.current === controller) opener.discard(opened);
        if (request.current === controller) {
 --- scripts/receipt-prepare-intermittency-20261021/baseline/useAuthenticatedAttachmentOpener.ts	2026-10-21 13:43:20.382409857 +0000
-+++ scripts/receipt-prepare-intermittency-20261021/candidate/useAuthenticatedAttachmentOpener.ts	2026-10-21 13:46:59.711395448 +0000
-@@ -25,15 +25,20 @@
++++ scripts/receipt-prepare-intermittency-20261021/candidate/useAuthenticatedAttachmentOpener.ts	2026-10-21 13:51:24.818794573 +0000
+@@ -25,15 +25,25 @@
      };
    }, [access.scope, bucket]);
  
@@ -234,7 +246,12 @@
 -    if (!current() || controllers.current.has(path) || urls.current.has(path)) return;
 +    if (!current() || parent?.aborted || controllers.current.has(path) || urls.current.has(path)) return false;
      const controller = new AbortController();
-+    const relay = () => controller.abort();
++    // Ownership is released at abort time, not when a (possibly hung) transport settles:
++    // a retry can start immediately and the old completion is fenced by identity below.
++    const relay = () => {
++      controller.abort();
++      if (controllers.current.get(path) === controller) { controllers.current.delete(path); if (current()) publish(); }
++    };
 +    parent?.addEventListener("abort", relay, { once: true });
      controllers.current.set(path, controller);
      publish();
@@ -245,7 +262,7 @@
        if (blob.size > ATTACHMENT_LIMITS.fileBytes || blob.size > ATTACHMENT_LIMITS.totalBytes) throw new Error("Anexo indisponível");
        const total = () => [...urls.current.values()].reduce((sum, item) => sum + item.bytes, 0);
        while (urls.current.size >= ATTACHMENT_LIMITS.files || total() + blob.size > ATTACHMENT_LIMITS.totalBytes) {
-@@ -43,11 +48,14 @@
+@@ -43,11 +53,14 @@
          urls.current.delete(oldest[0]);
        }
        const url = URL.createObjectURL(blob);
