@@ -1,5 +1,5 @@
---- baseline.index.ts	2026-10-21 16:20:22.975937716 +0000
-+++ index.ts.review	2026-10-21 16:20:23.079005326 +0000
+--- edge/baseline.index.ts	2026-10-21 16:29:24.326744042 +0000
++++ edge/index.ts.review	2026-10-21 16:30:21.081157573 +0000
 @@ -19,7 +19,7 @@
   *                    XSD_VALIDATED → SIGNED. Teto: SIGNED.
   *                    Ausência de certificado devolve 412 CERTIFICATE_REQUIRED
@@ -20,7 +20,7 @@
    // ------------------------------------------------------------------
    if (action === "download") {
      const runId = String(body.run_id ?? "");
-@@ -289,28 +291,67 @@
+@@ -289,28 +291,84 @@
      if (artifact !== "signed" && artifact !== "unsigned") {
        return json({ error: "artifact_invalid" }, 400, headers);
      }
@@ -31,20 +31,43 @@
 -    const ownership = await admin.rpc("h15_service_actor_run_access", {
 -      p_actor: actor,
 -      p_run: runId,
--    });
--    if (ownership.error || ownership.data !== true) {
--      return json({ error: "permission_denied" }, 403, headers);
 +    const noStore = { ...headers, "Cache-Control": "private, no-store" };
 +    const deny = (status: number, error: string) => json({ error }, status, noStore);
++    const MAX_XML_BYTES = 10 * 1024 * 1024; // limite do bucket fiscal-xml
++    // Prazo ABSOLUTO de 15 s cercando provas + leitura + hash + prova fresca.
++    // Pedido já abortado antes do handler: addEventListener não retroage.
++    if (req.signal.aborted) return deny(504, "download_unavailable");
++    const controller = new AbortController();
++    const signal = controller.signal;
++    const onAbort = () => controller.abort();
++    req.signal.addEventListener("abort", onAbort, { once: true });
++    const timer = setTimeout(() => controller.abort(), 15_000);
++    const ABORTED = Symbol("aborted");
++    const abortedP = new Promise<typeof ABORTED>((resolve) => {
++      if (signal.aborted) resolve(ABORTED);
++      else signal.addEventListener("abort", () => resolve(ABORTED), { once: true });
+     });
+-    if (ownership.error || ownership.data !== true) {
+-      return json({ error: "permission_denied" }, 403, headers);
++    // Propaga o sinal quando o SDK suporta (.abortSignal) e corre contra o prazo;
++    // sem retry. Uma etapa pendurada nunca prende a resposta além do prazo.
++    // deno-lint-ignore no-explicit-any
++    const bound = (q: any) => (q && typeof q.abortSignal === "function" ? q.abortSignal(signal) : q);
++    const step = async <T,>(p: PromiseLike<T> | T): Promise<T> => {
++      if (signal.aborted) throw ABORTED;
++      const r = await Promise.race([Promise.resolve(p), abortedP]);
++      if (r === ABORTED || signal.aborted) throw ABORTED;
++      return r as T;
++    };
 +    // Prova completa do ator/recurso; repetida após o I/O (sem snapshot antigo).
 +    const authorize = async (): Promise<{ path: string; sha: string | null; bytes: number | null } | null> => {
-+      const operate = await authed.rpc("fn_fiscal_can_operate", { _uid: actor });
++      const operate = await step(bound(authed.rpc("fn_fiscal_can_operate", { _uid: actor })));
 +      if (operate.error || operate.data !== true) return null;
-+      const visible = await authed.from("fiscal_xml_runs")
++      const visible = await step(bound(authed.from("fiscal_xml_runs")
 +        .select("id, unsigned_path, signed_path, storage_bucket, unsigned_sha256, signed_sha256, unsigned_bytes, signed_bytes")
-+        .eq("id", runId).maybeSingle();
++        .eq("id", runId)).maybeSingle());
 +      if (visible.error || !visible.data) return null;
-+      const ownership = await admin.rpc("h15_service_actor_run_access", { p_actor: actor, p_run: runId });
++      const ownership = await step(bound(admin.rpc("h15_service_actor_run_access", { p_actor: actor, p_run: runId })));
 +      if (ownership.error || ownership.data !== true) return null;
 +      const row = visible.data as Record<string, unknown>;
 +      if ((row.storage_bucket ?? BUCKET) !== BUCKET) return null;
@@ -56,30 +79,23 @@
 +        bytes: (artifact === "signed" ? row.signed_bytes : row.unsigned_bytes) as number | null,
 +      };
 +    };
-+    const MAX_XML_BYTES = 10 * 1024 * 1024; // limite do bucket fiscal-xml
-+    const controller = new AbortController();
-+    const onAbort = () => controller.abort();
-+    req.signal.addEventListener("abort", onAbort, { once: true });
-+    const timer = setTimeout(() => controller.abort(), 15_000);
 +    try {
 +      const first = await authorize();
 +      if (!first) return deny(403, "permission_denied");
-+      if (controller.signal.aborted) return deny(504, "download_unavailable");
 +      // Bucket privado sem policy de leitura do usuário: a leitura usa o cliente
 +      // de serviço SOMENTE após a prova acima, para o path registrado na execução.
-+      const dl = await admin.storage.from(BUCKET).download(first.path, {}, { signal: controller.signal } as never);
-+      if (controller.signal.aborted) return deny(504, "download_unavailable");
++      const dl = await step(admin.storage.from(BUCKET).download(first.path, {}, { signal } as never));
 +      if (dl.error || !dl.data) return deny(404, "artifact_not_available");
 +      if (dl.data.size > MAX_XML_BYTES) return deny(413, "artifact_too_large");
-+      const bytes = new Uint8Array(await dl.data.arrayBuffer());
-+      if (controller.signal.aborted) return deny(504, "download_unavailable");
-+      if (!first.sha || (await sha256Hex(bytes)) !== first.sha ||
++      const bytes = new Uint8Array(await step(dl.data.arrayBuffer()));
++      const digest = await step(sha256Hex(bytes));
++      if (!first.sha || digest !== first.sha ||
 +          (first.bytes !== null && first.bytes !== bytes.byteLength)) {
 +        return deny(409, "artifact_integrity_failed");
 +      }
 +      const fresh = await authorize();
 +      if (!fresh || fresh.path !== first.path || fresh.sha !== first.sha) return deny(403, "permission_denied");
-+      if (controller.signal.aborted) return deny(504, "download_unavailable");
++      if (signal.aborted) return deny(504, "download_unavailable");
 +      return new Response(bytes, {
 +        status: 200,
 +        headers: {
@@ -90,7 +106,7 @@
 +        },
 +      });
 +    } catch {
-+      return deny(controller.signal.aborted ? 504 : 500, "download_unavailable");
++      return deny(signal.aborted ? 504 : 500, "download_unavailable");
 +    } finally {
 +      clearTimeout(timer);
 +      req.signal.removeEventListener("abort", onAbort);

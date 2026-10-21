@@ -48,3 +48,10 @@ papéis/epoch/lease, abort e revogação de Blob). Clique 1 prepara; clique 2 ba
 `src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts` (13) e
 `src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx` (11): 24/24.
 Baterias fiscal+security+equipe-tecnica+authzV6: 2519 PASS, 4 skipped.
+
+## Revisão 61103c85 — correções (não implantado)
+- Prazo ABSOLUTO 15 s cerca provas + leitura + hash + prova fresca: cada etapa corre contra o sinal (`Promise.race`) e recebe `.abortSignal()` quando o SDK suporta; RPC pendurada → 504, sem retry.
+- `req.signal.aborted` verificado no início do download → 504 sem Storage.
+- Teste "perfil revogado durante leitura" corrigido para `[true,true,false]` (outer `fn_fiscal_can_operate` + 1º authorize) com Storage chamado 1× e entrega negada.
+- Novos testes: RPC pendurada no 1º authorize e no recheck fresco, pedido pré-abortado. 16/16.
+- Pendente para implantação: baseline da Edge em produção (get_edge_function indisponível); `fiscal_xml_runs` em produção = 0 (reportado pelo proprietário).
