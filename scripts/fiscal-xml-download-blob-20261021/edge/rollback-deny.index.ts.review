@@ -84,6 +84,59 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Bounded buffering: never call Blob/Response.arrayBuffer() on untrusted input.
+// Cancellation is immediate and never awaits a possibly stalled transport.
+class ReadLimitError extends Error {}
+class ReadDeadlineError extends Error {}
+async function readBounded(
+  stream: ReadableStream<Uint8Array>,
+  maxBytes: number,
+  signal: AbortSignal,
+  deadline: number,
+): Promise<Uint8Array> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let cancelled = false;
+  const cancel = () => {
+    if (cancelled) return;
+    cancelled = true;
+    chunks.length = 0;
+    void reader.cancel().catch(() => undefined);
+  };
+  let rejectAbort: ((error: Error) => void) | undefined;
+  const aborted = new Promise<never>((_resolve, reject) => { rejectAbort = reject; });
+  const onAbort = () => { cancel(); rejectAbort?.(new ReadDeadlineError()); };
+  signal.addEventListener("abort", onAbort, { once: true });
+  const timer = setTimeout(onAbort, Math.max(0, deadline - performance.now()));
+  try {
+    if (signal.aborted || performance.now() >= deadline) throw new ReadDeadlineError();
+    while (true) {
+      const result = await Promise.race([reader.read(), aborted]);
+      if (signal.aborted || performance.now() >= deadline) throw new ReadDeadlineError();
+      if (result.done) break;
+      const chunk = result.value;
+      if (!ArrayBuffer.isView(chunk) || Object.prototype.toString.call(chunk) !== "[object Uint8Array]") throw new Error("invalid_chunk");
+      if (chunk.byteLength > maxBytes - total) throw new ReadLimitError();
+      chunks.push(chunk);
+      total += chunk.byteLength;
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    return bytes;
+  } catch (error) {
+    cancel();
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener("abort", onAbort);
+    chunks.length = 0;
+    // A pending reader that ignores cancellation must not hold the response.
+    try { reader.releaseLock(); } catch { /* pending underlying read */ }
+  }
+}
+
 function decodeKeyB64(raw: string | undefined | null): Uint8Array | null {
   if (!raw) return null;
   try {
@@ -186,13 +239,24 @@ Deno.serve(async (req) => {
     return json({ error: "FISCAL_CANONICAL_PROJECT_REQUIRED", expected: CANONICAL_SUPABASE_URL }, 503, headers);
   }
 
-  // Body parseado uma única vez, antes das exigências de identidade, para
-  // permitir o autodiagnóstico somente leitura do bundle XSD. Nenhuma outra
-  // ação é liberada antes dos gates de claims e perfil fiscal.
+  // All three actions accept identifier-only JSON. Bound ingress (16 KiB / 5 s
+  // from entry) without changing generate's fiscal execution or default action.
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
-  } catch {
+    if (req.signal.aborted) throw new ReadDeadlineError();
+    const declaredLength = req.headers.get("Content-Length");
+    if (declaredLength !== null && /^\d+$/.test(declaredLength) && Number(declaredLength) > 16 * 1024) {
+      void req.body?.cancel().catch(() => undefined);
+      throw new ReadLimitError();
+    }
+    if (!req.body) throw new Error("invalid_body");
+    const bytes = await readBounded(req.body, 16 * 1024, req.signal, enteredAt + 5_000);
+    const parsed: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("invalid_body");
+    body = parsed as Record<string, unknown>;
+  } catch (error) {
+    if (error instanceof ReadLimitError) return json({ error: "body_too_large" }, 413, headers);
+    if (error instanceof ReadDeadlineError) return json({ error: "request_unavailable" }, 504, headers);
     return json({ error: "invalid_body" }, 400, headers);
   }
 
@@ -266,10 +330,7 @@ Deno.serve(async (req) => {
   // revalidada depois da leitura; bytes conferidos com o SHA-256 da execução.
   // ------------------------------------------------------------------
   if (action === "download") {
-    return json({ error: "download_unavailable" }, 410, {
-      ...headers, "Cache-Control": "private, no-store",
-      "X-Content-Type-Options": "nosniff",
-    });
+    return json({ error: "download_unavailable" }, 410, { ...headers, "Cache-Control": "private, no-store" });
   }
 
   // Cliente do usuário: toda autorização de negócio ocorre nas RPCs

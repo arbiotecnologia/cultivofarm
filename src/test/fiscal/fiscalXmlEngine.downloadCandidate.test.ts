@@ -1,3 +1,4 @@
+import { createClient as realClient } from "@supabase/supabase-js";
 import { expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -14,7 +15,7 @@ const code = ts.transpileModule(src.replace(/^import[\s\S]*?;\s*/gm, "").replace
 const RUN = "22222222-2222-4222-8222-222222222222";
 const XML = "<NFe>assinado</NFe>";
 const SHA = createHash("sha256").update(XML).digest("hex");
-type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean; actor?: string; freshSize?: number; querySignals?: boolean; claimsDelay?: number; metadata?: number | null; chunks?: Uint8Array[]; length?: string; streamHang?: boolean };
+type Opt = { operate?: boolean[]; visible?: boolean[]; owner?: boolean[]; bucket?: string; sha?: string; size?: number; dlError?: boolean; hang?: boolean; pathChange?: boolean; hangRpcCall?: number; hangClaims?: boolean; actor?: string; freshSize?: number; querySignals?: boolean; claimsDelay?: number; metadata?: number | null; chunks?: Uint8Array[]; length?: string; streamHang?: boolean; realStreamSdk?: boolean };
 
 function setup(o: Opt = {}, executable = code) {
   let handler: ((r: Request) => Promise<Response>) | undefined;
@@ -50,6 +51,20 @@ function setup(o: Opt = {}, executable = code) {
     return Object.assign(promise, { abortSignal: (signal: AbortSignal) => { signals.push(signal); return promise; } }); });
   const sdk = { from, rpc, auth: { getClaims: () => o.hangClaims ? new Promise(() => {}) : new Promise(r => { const value = { data: { claims: { sub: o.actor ?? "A" } } }; if (o.claimsDelay) setTimeout(() => r(value), o.claimsDelay); else r(value); }) },
     storage: { from: vi.fn(() => ({ download, createSignedUrl: sign, createSignedUrls: sign })) } };
+  if (o.realStreamSdk) {
+    const storageClient = realClient("https://isolated.invalid", "placeholder", {
+      auth: { persistSession: false }, global: { fetch: async (_input, init) => {
+        expect(init?.signal).toBeInstanceOf(AbortSignal);
+        expect(init?.cache).toBe("no-store");
+        download("recorded-path", {}, { signal: init?.signal as AbortSignal });
+        return new Response(new ReadableStream<Uint8Array>({ start(c) {
+          for (const chunk of o.chunks ?? [new TextEncoder().encode(XML)]) c.enqueue(chunk);
+          if (!o.streamHang) c.close();
+        }, cancel }), { headers: o.length ? { "Content-Length": o.length } : {} });
+      } },
+    });
+    sdk.storage = storageClient.storage as unknown as typeof sdk.storage;
+  }
   const Deno = { env: { get: (k: string) => k === "SUPABASE_URL" ? "https://swzpzcwiasxmjutrmvkm.supabase.co" : "placeholder" }, serve: (h: typeof handler) => { handler = h; } };
   const stub = () => { throw new Error("not_in_download"); };
   new Function("Deno", "createClient", "fiscalCorsHeaders", "isCanonicalSupabaseUrl", "CANONICAL_SUPABASE_URL", "XSD_FILE_COUNT",
@@ -211,7 +226,7 @@ for (const length of [undefined, "1", String(MAX * 3)]) {
   it(`stream sem/com Length não confiável (${length ?? "ausente"}) é contado por bytes`, async () => {
     // asStream deliberately omits response headers (same as actual SDK). Never
     // rely on Length; first metadata null still permits verified normal bytes.
-    const s = setup({ metadata: null, length });
+    const s = setup({ metadata: null, length, realStreamSdk: true });
     const r = await s.invoke(body);
     expect(r.status).toBe(200); expect(await r.text()).toBe(XML);
   });
@@ -223,7 +238,7 @@ it("metadata excessiva recusa ANTES I/O", async () => {
 });
 for (const chunks of [[new Uint8Array(MAX), new Uint8Array(1)], [new Uint8Array(MAX + 1)]]) {
   it(`chunk excedendo 10 MiB cancela imediatamente sem entrega parcial (${chunks.length})`, async () => {
-    const s = setup({ metadata: null, chunks, streamHang: true });
+    const s = setup({ metadata: null, chunks, streamHang: true, realStreamSdk: true, length: "1" });
     const r = await s.invoke(body);
     expect(r.status).toBe(413); expect(s.cancel).toHaveBeenCalledTimes(1);
     expect(await r.text()).not.toContain("NFe");
@@ -286,3 +301,23 @@ for (const invalid of ["null", "[]", "{", "1"]) {
     expect(s.rpc).not.toHaveBeenCalled(); expect(s.download).not.toHaveBeenCalled();
   });
 }
+
+it("10 MiB exatos são permitidos somente com hash e metadados corretos", async () => {
+  const bytes = new Uint8Array(MAX).fill(65);
+  const s = setup({ metadata: MAX, chunks: [bytes], sha: createHash("sha256").update(bytes).digest("hex") });
+  const r = await s.invoke(body);
+  expect(r.status).toBe(200); expect((await r.arrayBuffer()).byteLength).toBe(MAX);
+});
+it("corpo lento consome prazo absoluto do download, sem renovar 15 s", async () => {
+  vi.useFakeTimers();
+  try {
+    const stream = new ReadableStream<Uint8Array>({ start(c) { setTimeout(() => {
+      c.enqueue(new TextEncoder().encode(JSON.stringify(body))); c.close();
+    }, 4_000); } });
+    const s = setup({ hangClaims: true }); let result: Response | undefined;
+    const p = s.invokeRequest(bodyRequest(stream)).then(r => { result = r; });
+    await vi.advanceTimersByTimeAsync(14_999); expect(result).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(2); expect(result?.status).toBe(504); await p;
+    expect(s.download).not.toHaveBeenCalled();
+  } finally { vi.useRealTimers(); }
+});
