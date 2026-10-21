@@ -34,8 +34,8 @@ export function createTransport(actor: ActorProof, bytes: (path: string, signal:
         typeof r.visit !== "string" || typeof r.client !== "string" || typeof r.path !== "string" ||
         !Array.isArray(r.roles) || !r.roles.every(x => typeof x === "string") ||
         (r.size !== null && typeof r.size !== "number") || (r.mime !== null && typeof r.mime !== "string")) return null;
-      const s: Snapshot = { actor: r.actor, tenant: r.tenant, document: r.document, owner_type: r.owner_type,
-        owner: r.owner, path: r.path, roles: r.roles, size: r.size ?? null, mime: r.mime ?? null };
+      const s: Snapshot = { actor: r.actor, tenant: r.tenant, document: r.document, visit: r.visit,
+        client: r.client, path: r.path, roles: r.roles, size: r.size ?? null, mime: r.mime ?? null };
       if (!validSnapshot(s, path)) return null;
       approved = s;
       return s;
