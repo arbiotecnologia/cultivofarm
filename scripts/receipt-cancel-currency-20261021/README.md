@@ -67,3 +67,9 @@ Base publicada: `3d1fb7d2` (Edge v91 sem assinatura; policies `receipt_no_capabi
 - QA visual: v93 corta à direita; candidata sem corte em 1 e 2 páginas. Ajustado: marca CANCELADO invadia a faixa
   do cabeçalho (também na v93) → movida para baixo.
 - Rollback: `rollback.py` (stub 503). Promoção: copiar `edge-layout-review/index.ts.review` byte-exata após revisão.
+
+## Sincronização v95 (2026-10-21)
+- Proprietário implantou `edge-layout-review/index.ts.review` como Edge v95 (13:29:28 UTC, CORS original); frontend 56e5 intacto.
+- Fonte canônica `supabase/functions/generate-financial-receipt/index.ts` = candidata byte-exata (SHA256 d5e81855…42a6).
+- v91/v93 permanecem fixtures históricas; testes de runtime comparam com v95. Rollback continua stub 503.
+- Seções acima que citam "v93 atual"/"candidata NÃO implantada" são históricas.

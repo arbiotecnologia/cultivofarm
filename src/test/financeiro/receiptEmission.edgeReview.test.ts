@@ -38,8 +38,8 @@ function harness(failure = "", source = runtime) {
 }
 it("runtime is exact reviewed candidate, changing only signing/response", () => {
   expect(candidate).toBe(baseline.replace('    const { data: signed, error: signedError } = await supabase.storage.from("financial-receipts").createSignedUrl(path, 60 * 60);\n    if (signedError || !signed?.signedUrl) throw new Error("URL do recibo indisponível");\n', '').replace('JSON.stringify({ url: signed?.signedUrl, path, receipt_number: rec.receipt_number })', 'JSON.stringify({ path, receipt_number: rec.receipt_number })'));
-  // v91 candidate stays as historical fixture; runtime is now the status-bound v93 source (byte-exact).
-  expect(runtime).toBe(readFileSync("scripts/receipt-cancel-currency-20261021/edge-review/index.ts.review", "utf8"));
+  // v91/v93 ficam como fixtures históricas; runtime é a v95 (layout) byte-exata.
+  expect(runtime).toBe(readFileSync("scripts/receipt-cancel-currency-20261021/edge-layout-review/index.ts.review", "utf8"));
 });
 it("actor-authenticated candidate returns locator only, without issuing bearer capability", async () => {
   const h = harness(); const response = await h.invoke(); expect(response.status).toBe(200);
