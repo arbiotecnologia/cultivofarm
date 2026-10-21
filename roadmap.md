@@ -6,7 +6,7 @@
 - [x] Preparar diff, rollback deny completo e plano de fixture/inventário legacy sem tokens; monitor, Auth e demais runtime byte-exatos.
 - [x] Baseline LIVE v94 recuperado externamente pelo proprietário (ZIP/painel + list_edge_functions): ACTIVE, JWT true, import_map false; index hash igual local, 14 fontes/dependências sem delta normalizado contra c7; não foi download neste sandbox.
 - [ ] Reconfirmar versão/config/hash/dependências LIVE sem drift no predeploy.
-- [ ] Validação Edge candidata: bundle local PASS; Deno check mantém 5 erros reproduzidos no baseline (BufferSource/cast/modulePromise). Montagem UI build/types PASS; recibo externo e bundler hosted ainda necessários.
+- [ ] Corrigir cinco erros Deno na candidata/rollback e dependência XSD isolada; reexecutar check/bundle, Edge/UI, tipos e build isolado; sem implantação.
 - [ ] Implantação e E2E XML A/B: correções/implantação segura autorizadas pelo proprietário, execução aguarda revisão técnica, check Edge/bundle hosted, reconfirmação LIVE v94 e fixture canônica unsigned disponível; sem INSERT direto/SEFAZ/certificado real.
 - [ ] Inventário financial-receipts e horizonte expirado: faltam locators/logs/TTL/cutoff verificáveis; nenhuma URL/cache declarada revogada.
 

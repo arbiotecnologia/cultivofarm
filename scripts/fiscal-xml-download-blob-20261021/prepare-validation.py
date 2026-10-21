@@ -24,6 +24,7 @@ for folder in ("fiscal-xml-engine", "_shared", "fiscal-certificate-upload", "pla
     shutil.copytree(ROOT / "supabase/functions" / folder, functions / folder, ignore=skip)
 shutil.copy2(ROOT / "supabase/config.toml", DEST / "supabase/config.LOCAL.toml")
 
+shutil.copy2(PACKAGE / "edge/xsdValidate.ts.review", functions / "fiscal-xml-engine/xsdValidate.ts")
 shutil.copy2(PACKAGE / "edge/index.ts.review", functions / "fiscal-xml-engine/index.ts")
 shutil.copy2(PACKAGE / "edge/rollback-deny.index.ts.review", functions / "fiscal-xml-engine/rollback-deny.ts")
 for name, target in (("useFiscalXmlEngine.ts", "src/hooks/useFiscalXmlEngine.ts"), ("GeracaoXmlNfeSecao.tsx", "src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx")):
