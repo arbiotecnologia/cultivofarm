@@ -1,0 +1,5 @@
+{
+  "src/hooks/useAuth.tsx": "1c819b79fd32471f3ec43e43284076bf7cc489cf27c4b090a28e2dfad0864564",
+  "supabase/functions/fiscal-xml-engine/index.ts": "3b73a2af9454ab569090923473966714c0cac0abec3ad2d5d9dbe0ec227038de",
+  "supabase/functions/_shared/fiscal/corsAllowlist.ts": "dd024193a40a240a813c76af3c215a0b8ab0914e6879fa718390c32a371e152b"
+}

@@ -1,0 +1,997 @@
+$ vitest run src/test/security/zip.review.test.ts src/test/security/transport.review.test.ts src/test/security/legacy-operations.review.test.ts src/test/security/clientDocumentFreshTransport.review.test.ts src/test/security/clientDocumentLoader.review.test.ts src/test/security/clientDocumentRouting.review.test.ts src/test/config/commercialRegistration.delete.test.tsx src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/security/clientDocumentRouting.review.test.ts (2 tests) 51ms
+ ✓ src/test/security/legacy-operations.review.test.ts (12 tests) 25ms
+ ✓ src/test/security/zip.review.test.ts (11 tests) 139ms
+ ✓ src/test/security/clientDocumentLoader.review.test.ts (12 tests) 181ms
+ ✓ src/test/security/clientDocumentFreshTransport.review.test.ts (27 tests) 249ms
+ ✓ src/test/security/transport.review.test.ts (10 tests) 488ms
+   ✓ atomic actor proof and server-only byte channel > preserves a valid legacy 15 MiB object below bucket 20 MiB  413ms
+stderr | src/test/config/commercialRegistration.delete.test.tsx > erro de consulta de dependências não libera exclusão
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/config/commercialRegistration.delete.test.tsx (2 tests) 555ms
+stderr | src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx > ClienteDocumentosTab dentro de form pai > Preparar não submete o form pai nem assina URL
+Warning: An update to ClienteDocumentosTab inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+
+stderr | src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx > ClienteDocumentosTab dentro de form pai > Preparar não submete o form pai nem assina URL
+Warning: An update to Select inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to Select inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to SelectItemText inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:901:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:39:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:800:7
+    at /dev-server/src/components/ui/select.tsx:122:70
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:711:13
+    at div
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:27:15
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:256:58
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:33:13
+    at file:///dev-server/node_modules/@radix-ui/react-slot/dist/index.mjs:9:13
+    at file:///dev-server/node_modules/@radix-ui/react-primitive/dist/index.mjs:28:13
+    at file:///dev-server/node_modules/@radix-ui/react-portal/dist/index.mjs:11:22
+    at SelectPortal
+    at /dev-server/src/components/ui/select.tsx:75:73
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at CollectionProvider (file:///dev-server/node_modules/@radix-ui/react-collection/dist/index.mjs:17:13)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Provider (file:///dev-server/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+Warning: An update to Popper inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at Popper (file:///dev-server/node_modules/@radix-ui/react-popper/dist/index.mjs:30:11)
+    at Select (file:///dev-server/node_modules/@radix-ui/react-select/dist/index.mjs:42:5)
+    at div
+    at div
+    at div
+    at div
+    at ClienteDocumentosTab (/dev-server/src/components/clientes/ClienteDocumentosTab.tsx:74:33)
+    at form
+
+ ✓ src/test/clientes/ClienteDocumentosTab.formSubmit.test.tsx (3 tests) 1379ms
+   ✓ ClienteDocumentosTab dentro de form pai > Preparar não submete o form pai nem assina URL  731ms
+   ✓ ClienteDocumentosTab dentro de form pai > Enviar com arquivo sem tipo nega por validação sem submeter  430ms
+ ✓ src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx (7 tests) 2813ms
+   ✓ ClienteDocumentosTab — abridor autenticado incondicional > gate Blob ativo e happy path prepara/baixa sem URL assinada, popup ou submit  754ms
+   ✓ ClienteDocumentosTab — abridor autenticado incondicional > tenant após preparo revoga/oculta e bloqueia clique antigo  546ms
+   ✓ ClienteDocumentosTab — abridor autenticado incondicional > roles após preparo revoga/oculta e bloqueia clique antigo  519ms
+
+ Test Files  9 passed (9)
+      Tests  86 passed (86)
+   Start at  19:06:41
+   Duration  14.82s (transform 2.17s, setup 6.57s, collect 11.03s, tests 5.88s, environment 43.82s, prepare 7.11s)
+
