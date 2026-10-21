@@ -34,13 +34,14 @@ export async function syncRecomendacao(
   if (workspace.error) throw workspace.error;
   const ws = workspace.data as unknown as { registro?: { id?: string }; permissions?: {
     can_edit?: boolean; is_participant?: boolean; is_editable_status?: boolean;
-  } };
+  }; recomendacoes?: { id?: string }[] };
   const writable = ws?.permissions?.can_edit === true ||
     (ws?.permissions?.is_participant === true && ws.permissions.is_editable_status === true);
   if (ws?.registro?.id !== remoteRegistroId || !writable) throw new Error("forbidden_visita");
   await proveActor();
   if (entry.deleted) {
     if (!entry.remoteId) throw new Error("recommendation_remote_id_missing");
+    if (!ws.recomendacoes?.some(r => r.id === entry.remoteId)) throw new Error("forbidden_visita");
     const result = await supabase.rpc("rpc_delete_recomendacao_visita", { p_id: entry.remoteId });
     fence();
     if (result.error) throw result.error;
