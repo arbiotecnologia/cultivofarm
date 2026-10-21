@@ -137,7 +137,7 @@ try:
  sql(f"SELECT public.platform_create_catalog_label('quimico','x1','X1','motivo valido dez','{uid(900)}')",'catalog_actor_forbidden');checks.append('non-superadmin create denied')
  actor(1)
  check('create fertilizer label',f"SELECT (public.platform_create_catalog_label('fertilizante_adubo','npk','NPK','motivo valido dez','{uid(901)}'))->>'ativo'",'true')
- sql(f"SELECT public.platform_create_catalog_label('fertilizante_adubo','npk','NPK','motivo valido dez','{uid(902)}')",'23505');checks.append('duplicate label denied')
+ sql(f"SELECT public.platform_create_catalog_label('fertilizante_adubo','npk','NPK','motivo valido dez','{uid(902)}')",'duplicate key');checks.append('duplicate label denied (SQLSTATE 23505 via PostgREST)')
  check('replay returns idempotent',f"SELECT (public.platform_create_catalog_label('fertilizante_adubo','npk','NPK','motivo valido dez','{uid(901)}'))->>'idempotent'",'true')
  sql(f"SELECT public.platform_create_catalog_label('quimico','NPK!','X','motivo valido dez','{uid(903)}')",'catalog_label_invalid');checks.append('invalid rotulo format denied')
  sql(f"SELECT public.platform_create_catalog_label('semente','abc','Abc','motivo valido dez','{uid(904)}')",'catalog_label_invalid');checks.append('invalid family denied')
