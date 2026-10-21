@@ -1,0 +1,17 @@
+$ vitest run src/test/security/clientDocumentFreshTransport.review.test.ts src/test/security/clientDocumentLoader.review.test.ts src/test/security/clientDocumentRouting.review.test.ts src/test/security/noSignedAttachmentEmission.test.ts src/test/equipe-tecnica/attachmentOpenerAbortOwnership.test.tsx src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/security/clientDocumentRouting.review.test.ts (2 tests) 12ms
+ ✓ src/test/security/clientDocumentFreshTransport.review.test.ts (27 tests) 94ms
+ ✓ src/test/security/clientDocumentLoader.review.test.ts (11 tests) 104ms
+ ✓ src/test/security/noSignedAttachmentEmission.test.ts (11 tests) 18ms
+ ✓ src/test/equipe-tecnica/attachmentOpenerAbortOwnership.test.tsx (2 tests) 37ms
+ ✓ src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx (7 tests) 1414ms
+   ✓ ClienteDocumentosTab — abridor autenticado incondicional > gate Blob ativo e happy path prepara/baixa sem URL assinada, popup ou submit  371ms
+
+ Test Files  6 passed (6)
+      Tests  60 passed (60)
+   Start at  18:45:59
+   Duration  6.30s (transform 766ms, setup 1.81s, collect 2.33s, tests 1.68s, environment 12.26s, prepare 4.11s)
+

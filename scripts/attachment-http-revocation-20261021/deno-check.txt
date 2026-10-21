@@ -1,0 +1,2 @@
+[0m[32mCheck[0m ../tmp/attachment-http-review/edge/index.ts
+[0m[32mCheck[0m ../tmp/attachment-http-review/rollback/index.ts

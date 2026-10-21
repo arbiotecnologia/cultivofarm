@@ -1,0 +1,17 @@
+--- a/src/lib/authz/authenticatedAttachment.ts
++++ b/src/lib/authz/authenticatedAttachment.ts
+@@ -1,5 +1,4 @@
+ import { supabase } from "@/integrations/supabase/client";
+-import { loadClientDocument } from "./loadClientDocument";
+ 
+ // Operational bounds, not authorization. Storage RLS remains authoritative.
+ export const ATTACHMENT_LIMITS = { concurrent: 3, queued: 48, files: 24, fileBytes: 20 * 1024 * 1024, totalBytes: 60 * 1024 * 1024, timeoutMs: 15_000 } as const;
+@@ -51,7 +50,7 @@
+     if (!bucket || !path || path.startsWith("/") || path.split("/").some(part => part === ".." || part === ".")) throw unavailable();
+     release = await acquire(controller.signal);
+     if (controller.signal.aborted) throw unavailable();
+-    if (bucket === "clientes-docs") return await loadClientDocument(path, controller.signal);
++    if (bucket === "clientes-docs") throw unavailable();
+     const { data, error } = await supabase.storage.from(bucket).download(path, {}, { signal: controller.signal, cache: "no-store" }).asStream();
+     if (error || !data || controller.signal.aborted) { await data?.cancel(); throw unavailable(); }
+     reader = data.getReader();

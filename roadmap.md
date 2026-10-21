@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 21/10 18:39 — revogação HTTP de anexos, baseline c63bc6b
+- [x] Preparar transporte clientes-docs com provas independentes pré/pós-bytes, stream 10 MiB/prazo15s/cancel, integração isolada e rollback deny; 60/60 sintéticos + Deno check/bundle local PASS; sem promover runtime/Edge/SQL.
+- [x] Inventariar leitores irmãos/ZIP e URL direta antiga; relatório distingue fluxo protegido candidato de endpoint antigo ainda não contido, sem atribuir cache/CDN/SW. XML v96/monitor byte-exatos.
+- [ ] Types/build frontend candidato integrado: roteiro portátil pronto, execução independente pendente; build ativo OK não certifica montagem candidata.
+- [ ] Revisão independente e homologação HTTP A/B/URL antiga; XML v96, sessões, objetos, roles e monitor preservados.
+
 ## 21/10 — XML autenticado, baseline c7d5c962
 - [x] Corrigir stream XML 10 MiB e corpo 16 KiB/5 s, testar cancelamento/length enganoso e preparar montagem portátil types/build; sem implantação automática, runtime c7 preservado.
 - [x] Revisar 127ef060, reproduzir claims/primeira RPC travadas (16 PASS/2 FAIL), corrigir prazo de entrada; 23 Edge (inclui rollback) + 14 UI e 1901 regressões PASS/4 skipped, frontend candidato isolado.
