@@ -59,12 +59,17 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       const receiptId = data?.receipt_id;
       if (typeof receiptId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(receiptId)) throw new Error("Recibo indisponível");
       // Actor-authenticated RLS read: never derive tenant/ownership from a URL.
-      const { data: receipt, error: readError } = await supabase.from("financial_receipts")
+      // Generated canonical types lag this table's tenant column; validate wire data below.
+      const { data: receipt, error: readError } = await (supabase as any).from("financial_receipts")
         .select("id,payment_id,organization_id,receipt_year,receipt_number,storage_bucket,storage_path")
         .eq("id", receiptId).eq("payment_id", paymentId).eq("organization_id", tenant)
         .abortSignal(controller.signal).maybeSingle();
       if (!valid()) return;
-      if (readError || !receipt || receipt.id !== receiptId || receipt.payment_id !== paymentId || receipt.receipt_number !== data.receipt_number) throw new Error("Recibo indisponível");
+      if (readError || !receipt || receipt.id !== receiptId || receipt.payment_id !== paymentId ||
+          typeof receipt.receipt_number !== "string" || receipt.receipt_number !== data.receipt_number ||
+          typeof receipt.organization_id !== "string" || typeof receipt.receipt_year !== "number" ||
+          (receipt.storage_path !== null && typeof receipt.storage_path !== "string") ||
+          (receipt.storage_bucket !== null && typeof receipt.storage_bucket !== "string")) throw new Error("Recibo indisponível");
       const path = financialReceiptLocator(receipt, tenant);
       const { data: pdfRes, error: pdfErr } = await supabase.functions.invoke("generate-financial-receipt", {
         body: { receipt_id: receiptId }, signal: controller.signal,
