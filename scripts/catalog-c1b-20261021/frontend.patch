@@ -1,0 +1,406 @@
+--- a/src/components/catalogo/CatalogoCardsGrid.tsx
++++ b/src/components/catalogo/CatalogoCardsGrid.tsx
+@@ -14,8 +14,8 @@
+ import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
+ import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalogo/CatalogoItemDrawer";
+ import { useIsMobile } from "@/hooks/use-mobile";
+-import { CatalogoQueryErrorState } from "./CatalogoQueryErrorState";
+-import { CatalogFamilyFilter } from "./CatalogFamilyFilter";
++import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
++import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
+ import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
+ 
+ type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
+@@ -28,7 +28,12 @@
+  */
+ export const CATALOGO_PAGE_SIZE = 60;
+ 
++export interface CatalogGridSource {
++  data?: CatalogoUnificadoRow[]; isLoading: boolean; error: Error | null;
++  refetch: () => unknown; isFetching: boolean; scope?: string;
++}
+ interface Props {
++  source?: CatalogGridSource;
+   scope: CatalogoScope;
+   /** Mostrar filtros de status da ficha e B2B (admin/interno). Default: true */
+   showStatusFilter?: boolean;
+@@ -47,7 +52,15 @@
+   fichaOrigem?: "protocolos" | "app_mobile";
+ }
+ 
+-export function CatalogoCardsGrid({
++export function CatalogoCardsGrid(props: Props) {
++  return props.source ? <CatalogGridView {...props} source={props.source} key={props.source.scope} /> : <LegacyCatalogGrid {...props} />;
++}
++function LegacyCatalogGrid(props: Props) {
++  const source = useCatalogoUnificado(props.scope);
++  return <CatalogGridView {...props} source={source} />;
++}
++function CatalogGridView({
++  source,
+   scope,
+   showStatusFilter = scope !== "b2b",
+   showB2BFilter = scope !== "b2b",
+@@ -57,8 +70,8 @@
+   actionSlot,
+   filterRow,
+   fichaOrigem = "protocolos",
+-}: Props) {
+-  const { data, isLoading, error, refetch, isFetching } = useCatalogoUnificado(scope);
++}: Props & { source: CatalogGridSource }) {
++  const { data, isLoading, error, refetch, isFetching } = source;
+ 
+   const [search, setSearch] = useState("");
+   const [tipo, setTipo] = useState<CatalogTipoFiltro>("todos");
+@@ -121,12 +134,13 @@
+   // FASE 27D — callbacks memoizados (compartilhados por todos os cards/linhas).
+   const abrirVerFicha = useCallback((r: CatalogoUnificadoRow) => {
+     if (scope === "b2b") {
+-      setFichaB2B({ id: r.id, tipo: r.tipo });
++      if (source.scope) setFichaUnificada(r);
++      else setFichaB2B({ id: r.id, tipo: r.tipo });
+       return;
+     }
+     if (r.tipo === "produto") setOpenProd(r.raw);
+     else setOpenMicro(r.raw);
+-  }, [scope]);
++  }, [scope, source.scope]);
+ 
+   const abrirFichaCompleta = useCallback((r: CatalogoUnificadoRow) => {
+     setFichaUnificada(r);
+@@ -160,7 +174,7 @@
+     const q = search.trim().toLowerCase();
+     return rows.filter((r) => {
+       if (filterRow && !filterRow(r)) return false;
+-      if (scope !== "b2b" && !catalogFamilyMatches(r, family)) return false;
++      if (!catalogFamilyMatches(r, family)) return false;
+       if (tipo !== "todos" && r.tipo !== tipo) return false;
+       if (showB2BFilter) {
+         if (b2b === "sim" && !r.b2b_enabled) return false;
+@@ -210,7 +224,7 @@
+ 
+   return (
+     <div className="space-y-4">
+-      {scope !== "b2b" && <CatalogFamilyFilter value={family} onChange={setFamily} />}
++      <CatalogFamilyFilter value={family} onChange={setFamily} />
+       <div className="flex flex-col md:flex-row gap-2 md:items-stretch">
+         <div className="flex-1">
+           <CatalogSearchFilters
+@@ -436,7 +450,7 @@
+         origem={fichaOrigem}
+       />
+       <CatalogoItemDrawer
+-        item={fichaUnificada}
++        item={fichaUnificada ? rows.find(r => r.id === fichaUnificada.id && r.tipo === fichaUnificada.tipo) ?? null : null}
+         open={!!fichaUnificada}
+         onOpenChange={(v) => !v && setFichaUnificada(null)}
+         scope={scope as CatalogoFichaScope}
+--- a/src/hooks/usePartnerCatalog.ts
++++ b/src/hooks/usePartnerCatalog.ts
+@@ -1,6 +1,7 @@
+ import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+ import { supabase } from "@/integrations/supabase/client";
+ import { resolverUnidadePreco, type UnidadePreco } from "@/lib/catalogo/unidades";
++import { readCatalogFamily, type ReadCatalogFamily } from "@/lib/catalogo/catalogFamilyRead";
+ import { round2 } from "@/lib/catalogo/formatUnidades";
+ 
+ export type CatalogItemTipo = "produto" | "microrganismo";
+@@ -8,6 +9,7 @@
+ export type UnidadePrecoPrincipal = UnidadePreco;
+ 
+ export interface CatalogItem {
++  familia_catalogo?: ReadCatalogFamily | null;
+   item_id: string;
+   item_tipo: CatalogItemTipo;
+   product_id: string | null;
+@@ -60,16 +62,17 @@
+ 
+ export function usePartnerCatalog(partnerId: string | null | undefined) {
+   return useScopedPortalQuery({
+-    queryKey: ["partner-catalog-secure", partnerId],
++    queryKey: ["partner-catalog-secure", "C1B_DUAL_TENANT_V1", partnerId],
+     enabled: !!partnerId,
+-    queryFn: async (): Promise<CatalogItem[]> => {
++    queryFn: async (signal): Promise<CatalogItem[]> => {
+       if (!partnerId) return [];
+       const { data, error } = await supabase.rpc(
+         "get_partner_catalog_secure" as any,
+-        { p_partner_id: partnerId },
+-      );
++        { p_partner_id: partnerId, p_catalog_v2: true } as any,
++      ).abortSignal(signal);
+       if (error) throw error;
+       return (data ?? []).map((r: any) => {
++        if (r.catalog_contract !== "C1B_DUAL_TENANT_V1") throw new Error("catalog_contract_unavailable");
+         const tipo = (r.item_tipo ?? "produto") as CatalogItemTipo;
+         const precoFallback = num(r.preco_parceiro);
+         const valorDose = num(r.valor_dose_brl);
+@@ -84,6 +87,7 @@
+         });
+         const descPct = Number(r.desconto_percentual ?? 0);
+         return {
++          familia_catalogo: readCatalogFamily(r.familia_catalogo),
+           item_id: r.item_id,
+           item_tipo: tipo,
+           product_id: r.product_id ?? null,
+--- a/src/hooks/usePartnerCatalogTecnico.ts
++++ b/src/hooks/usePartnerCatalogTecnico.ts
+@@ -1,10 +1,13 @@
+ import { useEffect } from "react";
+-import { useQuery, useQueryClient } from "@tanstack/react-query";
++import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { readCatalogFamily } from "@/lib/catalogo/catalogFamilyRead";
++import { useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import type { CatalogItem, UnidadePrecoPrincipal } from "./usePartnerCatalog";
+ import { resolverUnidadePreco, valorDaUnidade } from "@/lib/catalogo/unidades";
+ 
+-const TECNICO_CATALOG_KEY = ["partner-catalog-tecnico"] as const;
++const TECNICO_CATALOG_KEY = ["partner-catalog-tecnico", "C1B_DUAL_TENANT_V1"] as const;
+ 
+ /**
+  * Catálogo para o parceiro B2B TÉCNICO.
+@@ -13,15 +16,16 @@
+  * apenas itens ativos e liberados para B2B, com valores de tabela e
+  * sem qualquer aplicação de desconto do parceiro.
+  */
+-export function usePartnerCatalogTecnico() {
+-  return useQuery({
++export function usePartnerCatalogTecnico(enabled = true) {
++  return useScopedPortalQuery({
++    enabled,
+     queryKey: TECNICO_CATALOG_KEY,
+     staleTime: 30_000,
+     refetchOnWindowFocus: true,
+-    queryFn: async (): Promise<CatalogItem[]> => {
++    queryFn: async (signal): Promise<CatalogItem[]> => {
+       const { data, error } = await supabase.rpc(
+-        "get_partner_catalog_tecnico_secure" as any,
+-      );
++        "get_partner_catalog_tecnico_secure" as any, { p_catalog_v2: true } as any,
++      ).abortSignal(signal);
+       if (error) throw error;
+       const rows = (data ?? []) as any[];
+ 
+@@ -33,6 +37,7 @@
+       };
+ 
+       return rows.map((r) => {
++        if (r.catalog_contract !== "C1B_DUAL_TENANT_V1") throw new Error("catalog_contract_unavailable");
+         const valorDose = num(r.valor_dose_brl);
+         const valorLitro =
+           num(r.valor_litro_brl) ??
+@@ -49,6 +54,7 @@
+         const precoBase =
+           valorDaUnidade(unidade, { valorHa, valorLitro, valorDose }) ?? null;
+         return {
++          familia_catalogo: readCatalogFamily(r.familia_catalogo),
+           item_id: r.item_id,
+           item_tipo: r.item_tipo,
+           product_id: isProduto ? r.item_id : null,
+@@ -83,22 +89,26 @@
+  */
+ export function useRealtimePartnerCatalogTecnico() {
+   const qc = useQueryClient();
++  const actor = useStorageAccessScope("portal-query-actor");
+   useEffect(() => {
++    if (!actor.ready) return;
++    const current = actor.capture();
++    const invalidate = () => { if (current()) void qc.invalidateQueries({ predicate: q => q.queryKey[0] === TECNICO_CATALOG_KEY[0] && q.queryKey.at(-2) === actor.scope }); };
+     const channel = supabase
+       .channel("partner-catalog-tecnico-sync")
+       .on(
+         "postgres_changes",
+         { event: "*", schema: "public", table: "produtos" },
+-        () => qc.invalidateQueries({ queryKey: TECNICO_CATALOG_KEY }),
++        invalidate,
+       )
+       .on(
+         "postgres_changes",
+         { event: "*", schema: "public", table: "microrganismos" },
+-        () => qc.invalidateQueries({ queryKey: TECNICO_CATALOG_KEY }),
++        invalidate,
+       )
+       .subscribe();
+     return () => {
+       supabase.removeChannel(channel);
+     };
+-  }, [qc]);
++  }, [qc, actor.ready, actor.scope]);
+ }
+--- a/src/lib/catalogo/partnerCatalogRows.ts
++++ b/src/lib/catalogo/partnerCatalogRows.ts
+@@ -0,0 +1,16 @@
++import type { CatalogItem } from "../../hooks/usePartnerCatalog";
++import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
++
++/** Only a projection of authorized RPC rows, never an additional catalogue read. */
++export function partnerCatalogRows(items: readonly CatalogItem[]): CatalogoUnificadoRow[] {
++  return items.map(item => ({
++    id: item.item_id, tipo: item.item_tipo, nome: item.nome, codigo: item.codigo,
++    subtitulo: null, funcao: null, ativo: true, b2b_enabled: true,
++    ficha_status: item.ficha_status, ficha_resumo: item.resumo_curto,
++    explicacao_b2b: item.explicacao_b2b, beneficios_agronomicos: item.beneficios_principais,
++    explicacao_produtor: null, explicacao_tecnica: null, mecanismo_acao: null,
++    fontes_count: 0, alvos_count: 0,
++    // Internal fields and financial values do not enter the read-only sheet.
++    raw: { familia_catalogo: item.familia_catalogo },
++  }));
++}--- a/src/pages/portal-parceiro/FichasTecnicas.tsx
++++ b/src/pages/portal-parceiro/FichasTecnicas.tsx
+@@ -1,6 +1,9 @@
+ import { useEffect, useMemo, useState } from "react";
+-import { useQuery } from "@tanstack/react-query";
+-import { supabase } from "@/integrations/supabase/client";
++import { usePartnerCatalogTecnico } from "../../hooks/usePartnerCatalogTecnico";
++import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
++import { catalogFamilyMatches, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Input } from "@/components/ui/input";
+ import { Button } from "@/components/ui/button";
+@@ -23,35 +26,13 @@
+   const [busca, setBusca] = useState("");
+   const [busyId, setBusyId] = useState<string | null>(null);
+ 
+-  const { data: produtos = [], isLoading: loadingP } = useQuery({
+-    queryKey: ["fichas-tecnicas-produtos-b2b"],
+-    queryFn: async () => {
+-      const { data, error } = await supabase
+-        .from("produtos")
+-        .select("id, nome, codigo, descricao, product_technical_profiles!inner(status_validacao)")
+-        .eq("ativo", true)
+-        .eq("b2b_enabled", true)
+-        .eq("product_technical_profiles.status_validacao", "aprovado")
+-        .order("nome");
+-      if (error) throw error;
+-      return data ?? [];
+-    },
+-  });
+-
+-  const { data: micros = [], isLoading: loadingM } = useQuery({
+-    queryKey: ["fichas-tecnicas-micros-b2b"],
+-    queryFn: async () => {
+-      const { data, error } = await supabase
+-        .from("microrganismos")
+-        .select("id, nome, codigo, descricao, microorganism_technical_profiles!inner(status_validacao)")
+-        .eq("ativo", true)
+-        .eq("b2b_enabled", true)
+-        .eq("microorganism_technical_profiles.status_validacao", "aprovado")
+-        .order("nome");
+-      if (error) throw error;
+-      return data ?? [];
+-    },
+-  });
++  const catalog = usePartnerCatalogTecnico();
++  const access = useStorageAccessScope("c1b-ficha-pdf");
++  const [family, setFamily] = useState<FamilyFilter>("todos");
++  const eligible = (catalog.data ?? []).filter(r => r.ficha_aprovada && catalogFamilyMatches({ tipo: r.item_tipo, raw: r }, family));
++  const produtos = eligible.filter(r => r.item_tipo === "produto").map(r => ({ ...r, id: r.item_id, descricao: r.descricao_curta }));
++  const micros = eligible.filter(r => r.item_tipo === "microrganismo").map(r => ({ ...r, id: r.item_id, descricao: r.descricao_curta }));
++  const loadingP = catalog.isLoading, loadingM = catalog.isLoading;
+ 
+   const q = busca.trim().toLowerCase();
+   const filtered = useMemo(() => {
+@@ -67,19 +48,28 @@
+   const [preview, setPreview] = useState<{ blobUrl: string; filename: string; nome: string } | null>(null);
+ 
+   const abrirFicha = async (id: string, nome: string) => {
++    const current = access.capture();
++    if (!current()) return;
+     try {
+       setBusyId(id);
++      const refreshed = await catalog.refetch();
++      if (!current() || !refreshed.data?.some(r => r.item_id === id && r.ficha_aprovada)) return;
+       const result =
+         tab === "produtos"
+           ? await generateFichaTecnicaProdutoPdf({ produtoId: id, mode: "blob", audience: "b2b" })
+           : await generateFichaTecnicaMicrorganismoPdf({ microId: id, mode: "blob", audience: "b2b" });
+       if (result && "blobUrl" in result) {
++        if (!current()) { URL.revokeObjectURL(result.blobUrl); return; }
++        const after = await catalog.refetch();
++        if (!current() || after.error || !after.data?.some(r => r.item_id === id && r.ficha_aprovada)) {
++          URL.revokeObjectURL(result.blobUrl); return;
++        }
+         setPreview({ ...result, nome });
+       }
+     } catch (e: any) {
+-      toast.error(e?.message ?? "Erro ao gerar ficha técnica");
++      if (current()) toast.error(e?.message ?? "Erro ao gerar ficha técnica");
+     } finally {
+-      setBusyId(null);
++      if (current()) setBusyId(null);
+     }
+   };
+ 
+@@ -89,7 +79,11 @@
+     };
+   }, [preview?.blobUrl]);
+ 
++  useEffect(() => { setPreview(null); setBusyId(null); }, [access.scope]);
++
+   const loading = tab === "produtos" ? loadingP : loadingM;
++
++  if (catalog.error) return <CatalogoQueryErrorState error={catalog.error} retry={catalog.refetch} busy={catalog.isFetching} />;
+ 
+   return (
+     <div className="space-y-4 max-w-5xl mx-auto">
+@@ -100,6 +94,7 @@
+         </p>
+       </div>
+ 
++      <CatalogFamilyFilter value={family} onChange={setFamily} />
+       <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
+         <TabsList>
+           <TabsTrigger value="produtos">Produtos</TabsTrigger>
+@@ -162,7 +157,7 @@
+       </Tabs>
+ 
+       <Dialog
+-        open={!!preview}
++        open={access.ready && !!preview}
+         onOpenChange={(v) => {
+           if (!v && preview?.blobUrl) URL.revokeObjectURL(preview.blobUrl);
+           if (!v) setPreview(null);
+--- a/src/pages/portal-parceiro/NovoPedido.tsx
++++ b/src/pages/portal-parceiro/NovoPedido.tsx
+@@ -3,8 +3,8 @@
+ import { useQuery } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useAuth } from "@/hooks/useAuth";
+-import { usePartnerCatalog, CatalogItem, CatalogItemTipo } from "@/hooks/usePartnerCatalog";
+-import { usePartnerCatalogTecnico, useRealtimePartnerCatalogTecnico } from "@/hooks/usePartnerCatalogTecnico";
++import { usePartnerCatalog, CatalogItem, CatalogItemTipo } from "../../hooks/usePartnerCatalog";
++import { usePartnerCatalogTecnico, useRealtimePartnerCatalogTecnico } from "../../hooks/usePartnerCatalogTecnico";
+ import { useCreatePartnerOrder, CartItem } from "@/hooks/useCreatePartnerOrder";
+ import { useCreatePartnerSimulation } from "@/hooks/usePartnerSimulations";
+ import { useSaveOrderTemplate } from "@/hooks/useCommercial";
+@@ -25,7 +25,8 @@
+ } from "@/components/ui/dialog";
+ import { Trash2, ShoppingCart, Plus, Star } from "lucide-react";
+ import { toast } from "sonner";
+-import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
++import { partnerCatalogRows } from "../../lib/catalogo/partnerCatalogRows";
++import { CatalogoCardsGrid } from "../../components/catalogo/CatalogoCardsGrid";
+ import { AddToCartDialog } from "@/components/catalogo/AddToCartDialog";
+ import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
+ import { brl as fmt } from "@/lib/financial/format";
+@@ -117,7 +118,7 @@
+   // nunca pedidos oficiais.
+   const isSimulationMode = isRoleTecnico || isSimuladorRoute;
+   const catalogGestor = usePartnerCatalog(isSimulationMode ? null : partner?.id);
+-  const catalogTecnico = usePartnerCatalogTecnico();
++  const catalogTecnico = usePartnerCatalogTecnico(isSimulationMode);
+   useRealtimePartnerCatalogTecnico();
+   const catalog: CatalogItem[] = isSimulationMode
+     ? (catalogTecnico.data ?? [])
+@@ -557,6 +558,7 @@
+           <CardContent>
+             <CatalogoCardsGrid
+               scope="b2b"
++              source={{ ...(isSimulationMode ? catalogTecnico : catalogGestor), data: partnerCatalogRows(catalog) }}
+               showStatusFilter={false}
+               showB2BFilter={false}
+               showInternalBadges={false}
