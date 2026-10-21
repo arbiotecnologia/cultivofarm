@@ -124,13 +124,13 @@ describe("diálogo de classificar com rótulos do servidor", () => {
   it("carregando rótulos desabilita a seleção", () => {
     state.labels = { data: undefined, isSuccess: false, isError: false };
     renderDialog();
-    expect(screen.getByLabelText("Rótulo (opcional)")).toBeDisabled();
+    expect((screen.getByLabelText("Rótulo (opcional)") as HTMLSelectElement).disabled).toBe(true);
   });
   it("erro ao carregar rótulos falha fechado", () => {
     state.labels = { data: undefined, isSuccess: false, isError: true };
     renderDialog();
     expect(screen.getByText(/Não foi possível carregar os rótulos autorizados/)).toBeTruthy();
-    expect(screen.getByLabelText("Rótulo (opcional)")).toBeDisabled();
+    expect((screen.getByLabelText("Rótulo (opcional)") as HTMLSelectElement).disabled).toBe(true);
   });
   it("rótulo atual inativo é exibido desabilitado e não oferecido", () => {
     state.labels = { data: LABELS, isSuccess: true, isError: false };
