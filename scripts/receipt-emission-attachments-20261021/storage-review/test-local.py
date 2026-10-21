@@ -25,7 +25,7 @@ try:
  def ctx(op,tenant='A',staff='yes',role='authenticated'):
   return f"SET ROLE {role};SET fixture.tenant='{tenant}';SET fixture.staff='{staff}';SET storage.operation='{op}';"
  assert run(ctx('storage.object.sign')+'SELECT count(*) FROM storage.objects;').stdout.splitlines()[-1]=='2';checks.append('baseline permits sign lookup')
- snapshot=run((H/'preflight.sql.review').read_text().split(';')[0]+';').stdout.strip();s=json.loads(snapshot)
+ snapshot=run('SELECT jsonb_build_object('+(H/'preflight.sql.review').read_text().split('SELECT jsonb_build_object(',1)[1].split(';')[0]+';').stdout.strip();s=json.loads(snapshot)
  c=(H/'candidate.sql.review').read_text().replace('NULL /* REVIEWED_CONTRACT */',"'"+json.dumps(s).replace("'","''")+"'::jsonb")
  run(c)
  for op in ['object.get_authenticated','object.get_authenticated_info','object.head_authenticated_info','object.list','object.list_v2','object.upload','object.upload_update','object.delete','object.delete_many']:
