@@ -1,0 +1,5 @@
+-- REVIEW ONLY / NOT APPLIED. Never restores GET or signed URLs.
+BEGIN;
+REVOKE EXECUTE ON FUNCTION public.technical_attachment_download_snapshot(text) FROM authenticated;
+COMMIT;
+-- Keep origin restriction if deployed; frontend remains POST-only and fails closed.
