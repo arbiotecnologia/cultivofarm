@@ -29,11 +29,11 @@ export function resumePrincipalKey(userId: string | null | undefined, organizati
 
 /** Só registra a aba Documentos; qualquer outra aba descarta. Reinicia a pausa. */
 export function rememberResume(principal: string | null, route: string, recordId: string, tab: string): void {
-  if (!principal || !recordId || tab !== RESUMABLE_TAB) { slot = null; return; }
+  if (!principal || !recordId || tab !== RESUMABLE_TAB) { if (slot) console.log("DBGR", principal, tab, new Error().stack?.split("\n").slice(2,5).join("|")); slot = null; return; }
   slot = { principal, route, recordId, pausedAt: null };
 }
 
-export function clearResume(): void { slot = null; }
+export function clearResume(): void { if (slot) console.log("DBGC", new Error().stack?.split("\n").slice(2,5).join("|")); slot = null; }
 
 /** Chamado SOMENTE no expire por timeout do monitor. Principal divergente descarta. */
 export function armResumeOnTimeout(principal: string | null, now: number = Date.now()): void {
