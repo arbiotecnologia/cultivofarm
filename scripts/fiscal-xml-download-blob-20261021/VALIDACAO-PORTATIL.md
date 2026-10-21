@@ -3,7 +3,9 @@
 Executar no checkout revisado com Python 3: `python3 scripts/fiscal-xml-download-blob-20261021/prepare-validation.py /tmp/fiscal-xml-review`.
 O script recusa destino existente/fora de /tmp, exclui credenciais, dependências e build,
 preserva runtime e monta os dois arquivos UI + Edge candidata e rollback numa árvore isolada.
-`SOURCE.SHA256SUMS` registra todos os fontes; `supabase/config.LOCAL.toml` NÃO prova configuração LIVE.
+`SOURCE.SHA256SUMS` registra todos os fontes; `supabase/config.LOCAL.toml` não é
+config exportada LIVE. Config v94 foi verificada externamente pelo auditor
+(verify_jwt=true/import_map=false); conferir novamente no predeploy.
 
 ## Comandos na árvore externa (não no app ativo)
 
@@ -17,7 +19,8 @@ preserva runtime e monta os dois arquivos UI + Edge candidata e rollback numa á
 
 Registrar versões, exit codes, logs, hashes do bundle/artefatos e deno.lock resolvido.
 O bundle local não reproduz limites/config do bundler Supabase; comparar fonte,
-config e dependências LIVE continua obrigatório antes de implantação.
+config e dependências LIVE v94, já comprovadas externamente, exige reconfirmação
+de ausência de drift antes de implantação.
 
 ## Escopo do corpo e memória
 
