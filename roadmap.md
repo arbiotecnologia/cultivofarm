@@ -429,3 +429,8 @@
 - [x] Edge candidata implantada v93 pelo proprietário e promovida byte-exata à fonte canônica
 - [ ] Acesso direto ao objeto ISSUED histórico/URLs antigas — autorizado, investigação/correção em rodada própria (SQL)
 - [ ] Layout PDF candidata `edge-layout-review` — aguarda revisão; não implantada
+
+## 21/10 15:45 — recuperação de pausa /clientes sem aumentar carga
+- [x] Floor 12 s (d5e0a318) rejeitado; monitor revertido byte-exato para 51048f (10 s).
+- [x] Retomada segura só de navegação (cliente + aba) após reautorização; 9 testes, 1103/1103 config+clientes, typecheck OK; pacote/rollback em scripts/monitor-pause-resume-20261021.
+- [ ] Revisão independente/publicação (proprietário). Gateway v2 (picos de 12–14,6 s) e homologação real dos demais perfis: externos.

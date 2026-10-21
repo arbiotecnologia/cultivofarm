@@ -1,3 +1,5 @@
+> **REJEITADA — revisão d5e0a318 (15:43 UTC): NÃO publicar.** O floor de 12 s evita apenas o pico de 10.500 ms; 12.136/14.651/17.000 ms continuam pausando, e a carga aumentaria 67–71%. Correção: `rttMs=10430` foi o tempo decorrido de uma requisição ainda pendente, não uma resposta 3 ms atrasada. Monitor revertido byte-exato para 10 s; veja `../monitor-pause-resume-20261021/`.
+
 # Monitor — piso de renovação 10 s → 12 s (candidata, NÃO publicada)
 
 Base: frontend publicado 51048f5f / repo 8bddd182. Só `src/lib/authz/authzEpochMonitor.ts` (constante + comentário).
