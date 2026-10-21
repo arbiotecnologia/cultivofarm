@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { serveTechnicalAttachment, LIMITS } from "../../../scripts/technical-attachment-http-20261021/edge/core";
 import { createTransport, fetchStorageBytes } from "../../../scripts/technical-attachment-http-20261021/edge/transport";
@@ -31,7 +30,7 @@ describe("consultor-arquivos POST channel (server)", () => {
   it.each([
     ["no proof (other tenant / no technical role)", null],
     ["path owner differs", proof({ visit: tenant })],
-    ["owner_type differs", proof({ tenant: owner })],
+    ["path tenant differs", proof({ tenant: owner })],
     ["proof for other path", proof({ path: `${tenant}/${owner}/documento/x.pdf` })],
     ["no roles", proof({ roles: [] })],
   ])("%s → 403 without privileged bytes", async (_n, value) => {
@@ -40,7 +39,10 @@ describe("consultor-arquivos POST channel (server)", () => {
     expect(r.status).toBe(403); expect(b).not.toHaveBeenCalled();
   });
   it.each([["revoked during read", null], ["roles changed during read", proof({ roles: ["gestor"] })],
-    ["tenant changed during read", proof({ tenant: doc })]])("%s → 403 and bytes discarded", async (_n, after) => {
+    ["tenant changed during read", proof({ tenant: doc })],
+    ["client link changed during read", proof({ client: doc })],
+    ["record replaced during read", proof({ document: owner })],
+    ["actor changed during read", proof({ actor: doc })]])("%s → 403 and bytes discarded", async (_n, after) => {
     const rpc = vi.fn().mockResolvedValueOnce(proof()).mockResolvedValueOnce(after);
     const r = await serveTechnicalAttachment(req(), {}, createTransport({ rpc }, bytes3()));
     expect(r.status).toBe(403); expect(await r.text()).not.toContain("\u0001");
@@ -78,10 +80,45 @@ describe("consultor-arquivos POST channel (server)", () => {
     const r = new Request("https://t.invalid", { method: "POST", signal: c.signal, headers: { "content-type": "application/json" }, body: "{}" });
     expect((await serveTechnicalAttachment(r, {}, createTransport({ rpc }, vi.fn()))).status).toBe(504); expect(rpc).not.toHaveBeenCalled();
   });
+  it.each(["checkins", "solicitacoes"])("unproven %s path is denied without privileged bytes", async prefix => {
+    const p = `${tenant}/${prefix}/${owner}/foto.jpg`; const b = vi.fn();
+    const r = await serveTechnicalAttachment(req({ bucket: "consultor-arquivos", path: p }), {},
+      createTransport({ rpc: vi.fn().mockResolvedValue(proof({ path: p })) }, b));
+    expect(r.status).toBe(403); expect(b).not.toHaveBeenCalled();
+  });
+  it("hung body ends at total deadline without proofs", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
+    const rpc = vi.fn(); const cancel = vi.fn();
+    const body = new ReadableStream({ pull() {}, cancel });
+    const request = new Request("https://t.invalid", { method: "POST", headers: { "Content-Type": "application/json" },
+      body, duplex: "half" } as RequestInit);
+    const pending = serveTechnicalAttachment(request, {}, createTransport({ rpc }, vi.fn()));
+    await vi.advanceTimersByTimeAsync(15_001);
+    expect((await pending).status).toBe(504); expect(rpc).not.toHaveBeenCalled(); expect(cancel).toHaveBeenCalled();
+  });
+  it("hung post-proof cancels stream and emits no partial bytes", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
+    const rpc = vi.fn().mockResolvedValueOnce(proof()).mockImplementationOnce(() => new Promise(() => undefined));
+    const pending = serveTechnicalAttachment(req(), {}, createTransport({ rpc }, bytes3()));
+    await vi.advanceTimersByTimeAsync(15_001);
+    const r = await pending; expect(r.status).toBe(504); expect(await r.text()).toBe('{"error":"Documento indisponível"}');
+  });
+  it("suspended timers cannot extend the monotonic deadline", async () => {
+    let resolve: (x: unknown) => void = () => undefined;
+    const pendingProof = new Promise(r => { resolve = r; });
+    const now = vi.spyOn(performance, "now").mockReturnValue(0); const b = vi.fn();
+    const p = serveTechnicalAttachment(req(), {}, createTransport({ rpc: () => pendingProof }, b));
+    await new Promise(r => setTimeout(r, 5)); now.mockReturnValue(15_001); resolve(proof());
+    expect((await p).status).toBe(504); expect(b).not.toHaveBeenCalled(); now.mockRestore();
+  });
 });
 
 describe("server-only byte fetch", () => {
   const s = new AbortController().signal;
+  it("pre-abort does not fetch Storage", async () => {
+    const c = new AbortController(); c.abort(); const f = vi.fn();
+    expect(await fetchStorageBytes(f, "https://x", "k", path, c.signal)).toBeNull(); expect(f).not.toHaveBeenCalled();
+  });
   it("redirect rejected (redirect:error throws, or 3xx/redirected) → null", async () => {
     expect(await fetchStorageBytes(vi.fn().mockRejectedValue(new TypeError("redirect")), "https://x", "k", path, s)).toBeNull();
     expect(await fetchStorageBytes(vi.fn().mockResolvedValue(new Response(null, { status: 302 })), "https://x", "k", path, s)).toBeNull();
@@ -123,6 +160,13 @@ describe("frontend loader (POST only, no retry/fallback)", () => {
   it("pre-aborted never fetches", async () => {
     const c = new AbortController(); c.abort(); const f = vi.fn();
     await expect(loadTechnicalAttachment(path, c.signal, f)).rejects.toThrow(); expect(f).not.toHaveBeenCalled();
+  });
+  it("failed user action allows a fresh explicit attempt, without automatic retry", async () => {
+    const f = vi.fn().mockResolvedValueOnce(new Response("denied", { status: 403 })).mockResolvedValueOnce(ok());
+    await expect(loadTechnicalAttachment(path, new AbortController().signal, f)).rejects.toThrow();
+    expect(f).toHaveBeenCalledTimes(1);
+    expect((await loadTechnicalAttachment(path, new AbortController().signal, f)).size).toBe(1);
+    expect(f).toHaveBeenCalledTimes(2);
   });
 });
 
