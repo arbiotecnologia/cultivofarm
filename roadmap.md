@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 21/10 21:14 — atualização do wizard após sincronizar, baseline 9565a2b7
+- [ ] Atualizar somente consultas da visita/ator/tenant após recibo RPC e cleanup CAS confirmado; sem reload/Auth/polling/SQL/deploy/publicação.
+- [ ] Provar wizard aberto com recomendação remota e etapa6 liberada; troca de ator, CAS perdido e negativas sem publicação de cache antigo.
+- [ ] Atualizar revisão/hashes e registrar commit automático; homologação real do novo patch depende de revisão/publicação externa.
+
 ## 21/10 21:01 — recomendações, homologação externa 33425615
 - [x] Corrigir enums/versão e replay de entradas comprovadas com parent explícito sem mapping; conflitos/negações preservados, origem alheia ou histórica não comprovada bloqueada.
 - [x] 80/80 testes em 8 arquivos incluindo formulário real montado e botão Sincronizar; harness build OK21:06:58Z; relatório docs/recomendacao-sync-20261021-review.md com impacto irmão e limites de tipos/homologação.

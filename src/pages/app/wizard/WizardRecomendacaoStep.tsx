@@ -96,7 +96,7 @@ export default function WizardRecomendacaoStep({
     return () => { mounted.current = false; };
   }, [identity]);
 
-  const { data: remoteRows = [], refetch } = useQuery({
+  const { data: remoteRows = [], refetch, dataUpdatedAt } = useQuery({
     queryKey: ["wizard-rec", ...cacheScope, remoteRegistroId],
     enabled: !!scope && !!remoteRegistroId,
     ...TECHNICAL_STALE_REVALIDATION,
@@ -147,7 +147,7 @@ export default function WizardRecomendacaoStep({
     return () => { active = false; };
     // Identity change must invalidate the pending read even if the original actor returns.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [identity, localRegistroId]);
+  }, [identity, localRegistroId, dataUpdatedAt]);
 
   const rows: Row[] = useMemo(() => {
     const pendingUuids = new Set(pendingRows.map((p) => p.clientUuid));

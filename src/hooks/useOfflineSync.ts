@@ -43,6 +43,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { recomendacaoOwnedBy } from "@/lib/visita/recomendacaoContract";
 import { syncRecomendacao } from "@/lib/visita/syncRecomendacao";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTechnicalQuerySession, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
 
 
 const MAX_UPLOAD_ATTEMPTS = 3;
@@ -122,6 +124,10 @@ export function useOfflineSync() {
   const isOnline = useOnlineStatus();
   const { user, profile } = useAuth();
   const access = useStorageAccessScope("offline-recomendacoes");
+  const queryClient = useQueryClient();
+  const workspaceSession = useTechnicalQuerySession("visita-workspace");
+  const workspaceScopeRef = useRef(workspaceSession.scope);
+  workspaceScopeRef.current = workspaceSession.scope;
   const actorRef = useRef({ userId: user?.id ?? "", organizationId: profile?.organization_id ?? "" });
   actorRef.current = { userId: user?.id ?? "", organizationId: profile?.organization_id ?? "" };
   const accessRef = useRef(access);
@@ -141,9 +147,10 @@ export function useOfflineSync() {
     syncingRef.current = true;
     setSyncing(true);
     const actor = { ...actorRef.current };
+    const workspaceScope = workspaceScopeRef.current;
     const valid = accessRef.current.capture();
     const recommendationCurrent = () => valid() && actorRef.current.userId === actor.userId &&
-      actorRef.current.organizationId === actor.organizationId;
+      actorRef.current.organizationId === actor.organizationId && workspaceScopeRef.current === workspaceScope;
 
     try {
       const pending = await getPendingRegistros();
@@ -680,7 +687,17 @@ export function useOfflineSync() {
           await syncRecomendacao(r, actor, remoteRegistroId, recommendationCurrent);
           if (!recommendationCurrent()) break;
 
-          await removePendingRecomendacao(r.clientUuid, r.updatedAt);
+          const removed = await removePendingRecomendacao(r.clientUuid, r.updatedAt);
+          if (!recommendationCurrent()) break;
+          if (!removed || !remoteRegistroId) continue;
+          // Invalidate only this confirmed actor/tenant/visit, never seed RPC receipts into read caches.
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: visitaWorkspaceKey(remoteRegistroId, workspaceScope), exact: true }),
+            queryClient.invalidateQueries({ queryKey: ["wizard-rec-flag", remoteRegistroId, workspaceScope], exact: true }),
+            queryClient.invalidateQueries({ predicate: query => recommendationCurrent() &&
+              query.queryKey[0] === "wizard-rec" && query.queryKey[1] === actor.organizationId &&
+              query.queryKey[2] === actor.userId && query.queryKey[4] === remoteRegistroId }),
+          ]);
           if (!recommendationCurrent()) break;
           syncedCount++;
           setProgress((p) => ({ ...p, completed: p.completed + 1 }));
@@ -793,7 +810,7 @@ export function useOfflineSync() {
       // Mantém progresso visível por alguns segundos para o usuário ver o resultado
       setTimeout(() => setProgress({ total: 0, completed: 0, failed: 0 }), 4000);
     }
-  }, [refreshCount]);
+  }, [refreshCount, queryClient]);
 
   useEffect(() => {
     if (isOnline) {
