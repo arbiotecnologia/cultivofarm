@@ -1,0 +1,15 @@
+-- ROLLBACK DE CONTENÇÃO, NÃO RESTAURA ASSINATURA. Operador valida ref e hashes POST antes.
+-- Mantém guardas originais. Financial-receipts fica INDISPONÍVEL para leitura/escrita cliente.
+BEGIN;
+LOCK TABLE storage.objects IN SHARE ROW EXCLUSIVE MODE;
+DO $$
+DECLARE expected_post_md5 text := NULL /* REVIEWED_POST_HASH */;
+BEGIN
+ IF expected_post_md5 IS NULL OR (SELECT md5(string_agg(concat_ws('|',policyname,permissive,roles::text,cmd,qual,with_check),E'\n' ORDER BY policyname)) FROM pg_policies WHERE schemaname='storage' AND tablename='objects') IS DISTINCT FROM expected_post_md5 THEN RAISE EXCEPTION 'receipt_rollback_unreviewed_or_drift'; END IF;
+ IF (SELECT count(*) FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname IN ('receipt_no_capability_select','receipt_no_capability_insert','receipt_no_capability_update') AND permissive='RESTRICTIVE') <> 3 THEN RAISE EXCEPTION 'receipt_rollback_missing_containment'; END IF;
+END $$;
+ALTER POLICY receipt_no_capability_select ON storage.objects USING (bucket_id <> 'financial-receipts');
+ALTER POLICY receipt_no_capability_insert ON storage.objects WITH CHECK (bucket_id <> 'financial-receipts');
+ALTER POLICY receipt_no_capability_update ON storage.objects USING (bucket_id <> 'financial-receipts') WITH CHECK (bucket_id <> 'financial-receipts');
+COMMIT;
+-- Não remover estas policies. Não restaurar URL/assinatura. Não afeta outros buckets.

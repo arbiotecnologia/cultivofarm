@@ -1,0 +1,9 @@
+// Safe containment only; never reinstate signed responses or change receipt/object data.
+import { corsHeadersFor, handlePreflight } from "../_shared/comunicacao/cors.ts";
+Deno.serve((req) => {
+  if (req.method === "OPTIONS") return handlePreflight(req);
+  return new Response(JSON.stringify({ error: "financial_receipt_unavailable" }), {
+    status: 503,
+    headers: { ...corsHeadersFor(req.headers.get("Origin")), "Content-Type": "application/json" },
+  });
+});

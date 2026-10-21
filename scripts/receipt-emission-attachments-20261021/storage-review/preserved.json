@@ -1,0 +1,11 @@
+{
+  "src/hooks/useAuth.tsx": "b3a65696cad65ebe08e861d525c68e55982bf79a49b3e21b448ec09f18d0e63b",
+  "src/lib/authz/authzEpochMonitor.ts": "febf394c270758376370df87ebdc1f05749a54badb46065e573dad09bd828069",
+  "src/hooks/useCQReferencia.ts": "5559c78b0d8818c23bee13b332951063fd2c34f53d25694432f40f020e531160",
+  "src/pages/configuracoes/ParametrosCQPage.tsx": "8ce8c0e48b7a1b89e6b31c9291e60c5a145d15af0694e231b357d4fb1de70eb7",
+  "src/components/ordens-servico/OSDetalhesDialog.tsx": "7d844076c89a543bce0f22cd39e4e7bfb6bda421ff5ea683befc2d0ac6a9d32c",
+  "src/hooks/useStorageAccessScope.ts": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
+  "src/hooks/useAuthenticatedAttachmentOpener.ts": "d856705376603bd63437bdaecd328dbb2d36fa0f97dab711182395e842b9932c",
+  "src/pages/financeiro/RecibosList.tsx": "eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed",
+  "src/components/financeiro/EmitirReciboButton.tsx": "c06bfeb685e586e18a4854bcad302b10fd3cefab2aa3695f68aff2992b7960b4"
+}

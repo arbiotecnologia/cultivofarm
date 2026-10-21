@@ -115,10 +115,8 @@ Deno.serve(async (req) => {
       .eq("id", receiptId)
       .eq("organization_id", organizationId);
     if (updateError) throw updateError;
-    const { data: signed, error: signedError } = await supabase.storage.from("financial-receipts").createSignedUrl(path, 60 * 60);
-    if (signedError || !signed?.signedUrl) throw new Error("URL do recibo indisponível");
 
-    return new Response(JSON.stringify({ url: signed?.signedUrl, path, receipt_number: rec.receipt_number }), {
+    return new Response(JSON.stringify({ path, receipt_number: rec.receipt_number }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch {

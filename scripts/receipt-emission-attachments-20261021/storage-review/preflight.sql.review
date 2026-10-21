@@ -1,0 +1,11 @@
+-- SELECT-only; conferir ref no transporte ANTES. Sem JWT/token/path/conteúdo.
+SELECT jsonb_build_object(
+  'policies', (SELECT jsonb_agg(jsonb_build_array(policyname,permissive,roles::text,cmd,qual,with_check) ORDER BY policyname) FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname NOT LIKE 'receipt_no_capability_%'),
+  'functions', (SELECT jsonb_agg(jsonb_build_array(p.oid::regprocedure::text,md5(pg_get_functiondef(p.oid)),p.proacl::text,p.proowner::regrole::text,p.provolatile,p.prosecdef,p.proconfig) ORDER BY p.oid::regprocedure::text) FROM pg_proc p WHERE p.oid IN (to_regprocedure('storage.operation()'),to_regprocedure('storage.allow_any_operation(text[])'),to_regprocedure('public.financial_storage_object_permitted(text,text)'),to_regprocedure('public.h15_actor_organization()'),to_regprocedure('public.is_financial_staff(uuid)'))),
+  'objects_acl', (SELECT relacl::text FROM pg_class WHERE oid='storage.objects'::regclass),
+  'rls', (SELECT jsonb_build_array(relrowsecurity,relforcerowsecurity) FROM pg_class WHERE oid='storage.objects'::regclass),
+  'bucket', (SELECT jsonb_build_array(id,public,file_size_limit,allowed_mime_types) FROM storage.buckets WHERE id='financial-receipts')
+ ) AS contract;
+SELECT count(*) AS receipt_count FROM public.financial_receipts;
+SELECT count(*) AS object_count FROM storage.objects WHERE bucket_id='financial-receipts';
+-- Requer recibo do operador da versão/rotas HTTP: hashes SQL não provam nomes de rota.

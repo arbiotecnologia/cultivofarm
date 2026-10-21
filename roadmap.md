@@ -417,3 +417,9 @@
 - [x] Testar baseline e patch (tenant/revogação/stale/erros), validar compilação e preparar hashes/preflight/rollback sem restaurar abertura vulnerável.
 - [x] Auditar Edge e inventariar assinadores/callers restantes separadamente; nenhuma emissão real, banco, sessão, reload ou publicação.
 - [ ] Revisão independente e implantação posterior da Edge sem assinatura; homologação real do recibo indisponível sem recebimentos e proibida nesta rodada. Não considerar assinaturas já emitidas revogadas.
+
+## 21/10 12:32 — Edge recibos e assinatura Storage
+- [x] Edge promovida byte-exatamente sem assinatura; runtime110/110 e config1194/1194; compilação automática OK, rollback503 em cópia e hashes; nenhum deploy.
+- [x] Contrato upstream investigado; candidata restritiva SELECT/INSERT/UPDATE apenas financial-receipts, PRE/POST/rollback fail-closed e61 checks PG sintéticos; nenhum SQL hosted.
+- [x] Relatório storage-review/REPORT.md: URLs antigas/cache sem revogação instantânea; objeto e monitor/CQ/OS/gates/sessões preservados; previewAuthStorage delta anterior intacto.
+- [ ] Proprietário: revisão/deploy Edge, snapshot+versão/contrato HTTP live para montar/revisar SQL, aplicação e homologação autenticada sem novos recibos/pagamentos; cache legado sem prova de esgotamento.
