@@ -24,7 +24,7 @@ Deno.serve(async req => {
   if (!/^Bearer \S+$/i.test(bearer)) return deny(401);
   // Only actor client: no service client, credentials fallback or privileged object read.
   const actor = createClient(url, key, { global: { headers: { Authorization: bearer },
-    fetch: (input, init) => fetch(input, { ...init, cache: "no-store", headers: new Headers(init?.headers) }) },
+    fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }) },
     auth: { persistSession: false, autoRefreshToken: false } });
   return serveDocument(req, headers, {
     authorize: async (path, signal): Promise<Snapshot | null> => {
@@ -57,7 +57,7 @@ Deno.serve(async req => {
     },
     download: async (path, signal) => {
       const result = await actor.storage.from("clientes-docs").download(path, {}, { signal, cache: "no-store" }).asStream();
-      if (result.error) { void result.data?.cancel().catch(() => undefined); return null; }
+      if (result.error) return null;
       return result.data;
     },
   });
