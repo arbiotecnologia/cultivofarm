@@ -425,6 +425,7 @@
 - [ ] Proprietário: revisão/deploy Edge, snapshot+versão/contrato HTTP live para montar/revisar SQL, aplicação e homologação autenticada sem novos recibos/pagamentos; cache legado sem prova de esgotamento.
 
 ## 21/10 13:03 — Recibo cancelado servindo PDF ISSUED
-- [x] Frontend status-bound + reconfirmação no clique (local, não publicado)
+- [x] Frontend status-bound + reconfirmação no clique (publicado 56e5b32b)
 - [x] Edge candidata implantada v93 pelo proprietário e promovida byte-exata à fonte canônica
-- [ ] Bloqueio do objeto ISSUED histórico para recibo cancelado via Storage direto — exige SQL separado, não autorizado
+- [ ] Acesso direto ao objeto ISSUED histórico/URLs antigas — autorizado, investigação/correção em rodada própria (SQL)
+- [ ] Layout PDF candidata `edge-layout-review` — aguarda revisão; não implantada
