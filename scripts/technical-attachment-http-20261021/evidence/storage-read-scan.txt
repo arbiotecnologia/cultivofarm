@@ -1,0 +1,30 @@
+supabase/functions/download-financial-document/transport.ts:14:    response = await fetchImpl(`${url}/storage/v1/object/authenticated/${BUCKET}/${encoded}`,
+supabase/functions/download-financial-document/core.ts:80:    const stream = await step(() => transport.download(path, controller.signal).then(v => {
+supabase/functions/download-client-document/index.ts:46:    const response = await fetch(`${url}/storage/v1/object/authenticated/clientes-docs/${encoded}`, {
+supabase/functions/download-client-document/download.ts:76:    const stream = await step(() => transport.download(path, controller.signal).then(value => {
+supabase/functions/entrega-termo-pdf/index.ts:51:  const url = `${base}/storage/v1/object/authenticated/${BUCKET}/${path.split("/").map(encodeURIComponent).join("/")}`;
+supabase/functions/entrega-termo-pdf/index.ts:357:      const { data: existing } = await admin.storage.from(BUCKET).download(termo.pdf_path);
+supabase/functions/fiscal-xml-engine/index.ts:180:    () => admin.storage.from(BUCKET).download(path) as unknown as Promise<
+supabase/functions/fiscal-xml-engine/index.ts:409:      const pendingDownload = admin.storage.from(BUCKET).download(first.path, {}, { signal, cache: "no-store" }).asStream();
+supabase/functions/fiscal-xml-engine/index.ts:627:    const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path as string);
+supabase/functions/fiscal-sefaz-transport/index.ts:159:    const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path);
+supabase/functions/fiscal-sefaz-transport/index.ts:248:      .download(match.signed_path as string);
+supabase/functions/fiscal-sefaz-transport/index.ts:269:        () => admin.storage.from("fiscal-xml").download(path), sha, bytes.byteLength,
+supabase/functions/fiscal-sefaz-transport/index.ts:442:        .download(run.data.signed_path);
+supabase/functions/fiscal-sefaz-transport/index.ts:479:      const dl = await admin.storage.from("fiscal-xml").download(ev.data.signed_xml_path);
+src/pages/financeiro/RecibosList.tsx:92:        opener.download(prepared.path, `${prepared.number}${prepared.status === "CANCELED" ? "-CANCELADO" : ""}.pdf`);
+supabase/functions/fiscal-event-sign/index.ts:89:    const dl = await admin.storage.from("fiscal-certificates").download(material.data.object_path);
+src/components/entregas/TermoEntregaPanel.tsx:306:    pdf.download(termo.id, `termo-entrega-v${Number(termo.versao) || 0}.pdf`);
+src/components/entregas/ConfirmacaoEntregaPanel.tsx:193:                        <Button size="sm" variant="ghost" aria-label={`Baixar ${d.nome_arquivo}`} onClick={() => opener.download(locator, d.nome_arquivo || "anexo")}>
+src/components/clientes/ClienteDocumentosTab.tsx:178:    if (path) attachmentOpener.download(path, doc.nome || "documento");
+src/components/entregas/EntregaComprovantePanel.tsx:626:    anexoOpener.download(arquivoLocator, arquivoLocator.split("/").pop() || "comprovante");
+src/components/configuracoes/AparenciaTab.tsx:60:        const { data: urlData } = supabase.storage.from("logos").getPublicUrl(path);
+src/components/comercial/OrderMessagesPanel.tsx:75:    if (opener.urls[path]) { opener.download(path, attachments.find(a => a.file_path === path)?.file_name || "anexo"); return; }
+src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx:89:        if (ready) opener.download(key, `nfe-${runId}-${artifact}.xml`);
+src/components/portal/PortalBrandingSettings.tsx:80:    const { data } = supabase.storage.from("logos").getPublicUrl(caminho);
+src/lib/pdfAplicacao.ts:73:  const prefix = `${SUPABASE_URL}/storage/v1/object/public/logos/`;
+src/components/financeiro/relatorios/ReportShell.tsx:173:    opener.download(preparedVisible.path, preparedVisible.path.split("/").pop() || "relatorio");
+src/components/financeiro/relatorios/HistoricoExportacoes.tsx:152:    if (opener.urls[path]) { opener.download(path, fileName); return; }
+src/components/financeiro/DocumentosPanel.tsx:219:    if (opener.urls[path]) { opener.download(path, doc.file_name || "documento"); return; }
+src/components/financeiro/EmitirReciboButton.tsx:81:        opener.download(prepared.path, `${prepared.number}.pdf`); return;
+src/lib/authz/authenticatedAttachment.ts:63:    const { data, error } = await supabase.storage.from(bucket).download(path, {}, { signal: controller.signal, cache: "no-store" }).asStream();

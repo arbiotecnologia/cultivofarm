@@ -1,0 +1,3 @@
+- Keep this technical attachment package review-only until canonical live helper bodies, RLS and actor HTTP tests are independently verified; prevents speculative authorization deployment.
+- Only consultor-arquivos may use this fixed-channel candidate; other buckets require their own record proofs, never a bucket-authorized proxy.
+- Preserve existing canonical source, uploads and history; promote Edge with explicit verify_jwt=true before the frontend and contain origin only after real post-revocation tests.

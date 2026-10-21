@@ -1,0 +1,2 @@
+[0m[32mCheck[0m ../tmp/technical-deno/index.ts
+[0m[32mCheck[0m ../tmp/technical-deno/deny.ts

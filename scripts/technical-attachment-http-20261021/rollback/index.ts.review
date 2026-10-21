@@ -1,0 +1,7 @@
+// REVIEW ONLY. Emergency deny response; preserve explicit verify_jwt=true.
+import { corsHeaders } from "npm:@supabase/supabase-js@2.110.8/cors";
+Deno.serve(() => new Response(JSON.stringify({ error: "Documento indisponível" }), {
+  status: 503, headers: { ...corsHeaders, "Cache-Control": "private, no-store, max-age=0",
+    "CDN-Cache-Control": "no-store", "Surrogate-Control": "no-store",
+    "Vary": "Origin, Authorization", "Content-Type": "application/json" },
+}));

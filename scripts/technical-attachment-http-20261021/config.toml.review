@@ -1,0 +1,3 @@
+# REVIEW ONLY — merge BEFORE Edge deployment; never rely on deployment defaults.
+[functions.download-technical-attachment]
+verify_jwt = true

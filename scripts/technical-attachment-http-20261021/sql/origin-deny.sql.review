@@ -1,0 +1,12 @@
+-- REVIEW ONLY / NOT APPLIED. Apply ONLY after POST channel real A/B homologation.
+-- Prevent recache at origin; DOES NOT purge existing remote CDN HITs.
+BEGIN;
+CREATE POLICY technical_attachment_server_channel_only ON storage.objects
+AS RESTRICTIVE FOR SELECT TO authenticated, anon
+USING (bucket_id <> 'consultor-arquivos' OR storage.allow_any_operation(ARRAY[
+  'object.list', 'object.list_v2', 'object.upload', 'object.upload_update',
+  'object.delete', 'object.delete_many'
+]::text[]));
+COMMIT;
+-- Existing permissive/restrictive tenant guards stay in effect.
+-- GET/info/head/sign/unknown operations are excluded; live write/list matrix is a gate.

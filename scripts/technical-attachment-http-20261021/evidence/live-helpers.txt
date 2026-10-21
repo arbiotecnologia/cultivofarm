@@ -1,0 +1,67 @@
+[map[definition:CREATE OR REPLACE FUNCTION public.technical_refs_in_actor_tenant(p_cliente uuid, p_fazenda uuid, p_talhao uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT public.technical_actor_ready(auth.uid())
+ AND EXISTS (SELECT 1 FROM public.clientes c WHERE c.id=p_cliente AND c.organization_id=platform_private.h15_actor_organization())
+ AND (p_fazenda IS NULL OR EXISTS (SELECT 1 FROM public.fazendas f WHERE f.id=p_fazenda AND f.cliente_id=p_cliente AND f.organization_id=platform_private.h15_actor_organization()))
+ AND (p_talhao IS NULL OR (p_fazenda IS NOT NULL AND EXISTS (SELECT 1 FROM public.talhoes t WHERE t.id=p_talhao AND t.fazenda_id=p_fazenda AND t.organization_id=platform_private.h15_actor_organization())));
+$function$
+ nspname:public proacl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} proconfig:[search_path=""] proname:technical_refs_in_actor_tenant prosecdef:true] map[definition:CREATE OR REPLACE FUNCTION public.technical_child_read_scope(p_registro_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT public.can_view_technical_visit(auth.uid(),p_registro_id)
+ OR (public.technical_actor_ready(auth.uid()) AND public.has_role(auth.uid(),'cliente_produtor')
+ AND EXISTS (SELECT 1 FROM public.registros_consultor r
+ WHERE r.id=p_registro_id
+ AND public.technical_refs_in_actor_tenant(r.cliente_id,r.fazenda_id,r.talhao_id)
+ AND r.cliente_id=ANY(public.get_cliente_ids_for_user(auth.uid()))
+ AND r.status::text IN ('aprovado','finalizado','convertido_os')));
+$function$
+ nspname:public proacl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} proconfig:[search_path=""] proname:technical_child_read_scope prosecdef:true] map[definition:CREATE OR REPLACE FUNCTION public.technical_actor_ready(p_user uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT CASE WHEN p_user IS NULL OR p_user IS DISTINCT FROM auth.uid()
+   OR COALESCE((auth.jwt()->>'iat') ~ '^[0-9]{1,10}$',false) IS FALSE THEN false
+ ELSE CASE WHEN (auth.jwt()->>'iat')::bigint <= 0 THEN false
+ ELSE platform_private.h15_actor_organization() IS NOT NULL
+ AND platform_private.platform_actor_access_ready(p_user) END END;
+$function$
+ nspname:public proacl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} proconfig:[search_path=""] proname:technical_actor_ready prosecdef:true] map[definition:CREATE OR REPLACE FUNCTION public.storage1_consultor_allowed(p_name text, p_action text)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$ SELECT p_action IS NOT NULL AND platform_private.storage1_consultor_allowed(p_name,p_action); $function$
+ nspname:public proacl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} proconfig:[search_path=""] proname:storage1_consultor_allowed prosecdef:false] map[definition:CREATE OR REPLACE FUNCTION platform_private.storage1_consultor_core(p_name text, p_action text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_org uuid; v_id uuid; v_client uuid; v_status text;
+BEGIN
+ IF auth.uid() IS NULL OR p_action IS NULL OR NOT public.storage1_path_strict(p_name) OR p_action NOT IN ('select','insert','update','delete') THEN RETURN false; END IF;
+ v_org:=public.h15_actor_organization(); IF v_org IS NULL THEN RETURN false; END IF;
+ IF p_name !~ '^[0-9a-f-]{36}/[0-9a-f-]{36}/(foto|audio|documento)/[A-Za-z0-9_.-]+$' OR split_part(p_name,'/',1)<>v_org::text THEN RETURN false; END IF;
+ BEGIN v_id:=split_part(p_name,'/',2)::uuid; EXCEPTION WHEN invalid_text_representation THEN RETURN false; END;
+ SELECT r.cliente_id,r.status::text INTO v_client,v_status FROM public.registros_consultor r JOIN public.clientes c ON c.id=r.cliente_id AND c.organization_id=v_org WHERE r.id=v_id;
+ IF NOT FOUND THEN RETURN false; END IF;
+ IF p_action='select' THEN RETURN public.technical_child_read_scope(v_id) AND ((public.has_role(auth.uid(),'cliente_produtor') AND v_client=ANY(public.get_cliente_ids_for_user(auth.uid()))) OR ((public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'consultor_tecnico') OR public.has_role(auth.uid(),'tecnico_agronomo') OR public.has_role(auth.uid(),'aplicador')) AND public.can_view_technical_visit(auth.uid(),v_id))); END IF;
+ RETURN v_status IN ('rascunho','em_andamento') AND (public.has_role(auth.uid(),'administrador') OR public.has_role(auth.uid(),'gestor') OR public.has_role(auth.uid(),'consultor_tecnico') OR public.has_role(auth.uid(),'tecnico_agronomo') OR public.has_role(auth.uid(),'aplicador')) AND public.can_manage_technical_visit(auth.uid(),v_id);
+END; $function$
+ nspname:platform_private proacl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} proconfig:[search_path=""] proname:storage1_consultor_core prosecdef:true] map[definition:CREATE OR REPLACE FUNCTION platform_private.storage1_consultor_allowed(p_name text, p_action text)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$ SELECT p_action IS NOT NULL AND platform_private.storage1_consultor_core(p_name,p_action); $function$
+ nspname:platform_private proacl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} proconfig:[search_path=""] proname:storage1_consultor_allowed prosecdef:false]]

@@ -1,0 +1,18 @@
+-- READ ONLY. Execute only after independently confirming exact ref swzpzcwiasxmjutrmvkm.
+SELECT n.nspname, p.proname, p.prosecdef, p.proconfig, p.proacl, pg_get_functiondef(p.oid)
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE p.proname IN ('storage1_consultor_allowed', 'storage1_consultor_core',
+ 'storage1_path_strict', 'h15_actor_organization', 'technical_actor_ready',
+ 'technical_child_read_scope', 'technical_refs_in_actor_tenant',
+ 'can_view_technical_visit', 'get_cliente_ids_for_user', 'has_role');
+SELECT table_name, column_name, data_type, is_nullable FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name IN
+ ('registros_consultor_arquivos', 'registros_consultor', 'clientes', 'user_roles');
+SELECT schemaname, tablename, policyname, roles, cmd, permissive, qual, with_check
+FROM pg_policies WHERE (schemaname = 'public' AND tablename IN
+ ('registros_consultor_arquivos', 'registros_consultor', 'clientes', 'user_roles'))
+ OR (schemaname = 'storage' AND tablename = 'objects');
+SELECT n.nspname, c.relname, c.relrowsecurity, c.relforcerowsecurity, c.relacl
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relname IN
+ ('registros_consultor_arquivos', 'registros_consultor', 'clientes', 'user_roles');

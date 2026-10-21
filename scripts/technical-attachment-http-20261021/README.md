@@ -1,0 +1,42 @@
+# Canal técnico POST — candidata revisável, não implantada
+
+## Baseline e evidências
+- Publicado informado pelo proprietário: `fc2225f1`, `index-DOUkbkC5.js`. Remoção lógica B: `deleted_at`/autor/motivo confirmados, objeto preservado, POST403; financeiro A próprio200/cross403/papel revogado403/restaurado200 e upload137B/download hash igual. Evidência externa, não execução deste agente.
+- Aba antiga `C8KAaC21` não conclui preparo: preservada, sem reload; não atribuída a causa nova sem prova.
+- CDN remoto já comprovado pelo proprietário: clientes-docs GET histórico200 após JWT expirado; origin deny não purga HIT. FREE não comprova disponibilidade da API Pro+; SU-518022 apenas ack, nenhum contato enviado.
+- Destino comprovado por `lovable supabase info`: `swzpzcwiasxmjutrmvkm`, user-managed, URL canônica. CLI diagnostics recusou a consulta por não atender BYO; a ferramenta `supabase.read_query` confirmou os helpers e RLS reais em duas leituras de catálogo, preservadas em `evidence/`. Nenhuma leitura de tokens/dados pessoais, SQL mutante ou sessão.
+
+## Implementação concreta
+- `edge/core.ts`: mesmo algoritmo limitado do canal financeiro, contrato fixo `consultor-arquivos`; POST `{bucket,path}`, corpo4KiB, stream real20MiB, deadline absoluto15s cobrindo corpo, claims dentro da prova, RPC pré, bytes, RPC pós. Antes de retornar qualquer byte, os snapshots normalizados precisam ser iguais. Cancelamento, oversize e erro nunca retornam arquivo parcial.
+- `edge/transport.ts`: bytes server-only apenas depois de snapshot válido para path exato, de uso único. Nenhum bucket arbitrário, redirect, retry, assinatura ou fallback GET do ator. Credencial fica exclusivamente em `SUPABASE_SERVICE_ROLE_KEY` já utilizada pelos canais existentes; presença/configuração deve ser validada sem imprimir segredo antes de promoção.
+- `edge/index.ts.review`: JWT validado em código; SDK/CORS pin2.110.8, origens fixas, ref exato, falha503 se configuração ausente; headers privados/no-store em todas as respostas. `config.toml.review` exige JWT=true antes da implantação.
+- `sql/snapshot.sql.review`: uma prova SQL STABLE INVOKER/RLS por chamada, ator vivo/h15, papéis atuais, guard canônico `storage1_consultor_allowed`, registro `registros_consultor_arquivos` exato e único, visita/cliente e refs fazenda/talhão atuais. Pré+pós são duas chamadas remotas, não consultas HTTP em fanout. Helpers canônicos preservam suas autorizações; nenhum grant de tabelas ou novo papel.
+- LIVE confirmou ausência de tamanho/mime/deleted_at na tabela técnica: snapshot retorna size/mime NULL sem inventar metadados; limite efetivo usa bytes reais. Ausência/invisibilidade do registro nega. Nenhum softdelete novo, alteração de upload ou migração de histórico.
+- `frontend/loadTechnicalAttachment.ts` + `frontend/authenticatedAttachment.ts.review`: candidata de integração no transporte compartilhado para este bucket apenas. Abridor, paginação/LRU e fences existentes permanecem, sem mudanças em monitor/Auth. Os outros ramos são byte-preservados.
+- Origin deny mantém apenas SELECT necessário a list/list_v2/upload/upload_update/delete/delete_many. Não aplicar antes de homologar POST e a matriz real dessas operações. Rollback revoga RPC e/ou serve503, mantendo POST-only e deny de origem; nunca restaurar URL/GET.
+
+## Bloqueios concretos — não inventar contrato
+1. Guard LIVE aceita somente `org/registro/(foto|audio|documento)/filename`. Os writers `MobileCheckin`, `WizardCheckinStep`, `MobileSolicitar` e sincronização antiga ainda constroem `org/checkins/...` ou `org/solicitacoes/...`: NÃO correspondem ao guard. O canal candidato nega tais paths, mesmo havendo snapshot falso; não os reautoriza ou reescreve. Antes de promoção bucket-wide, inventariar exemplares preservados e provar se já eram negados pelo guard atual. Disponibilidade de solicitações/check-ins não está homologada.
+2. RLS INVOKER pode ser mais restritiva que Storage legado: guard positivo sem registro visível não entrega. Homologar combinações reais permitidas e impedidas (inclusive produtor e técnico B2B) antes de promover; não ampliar grants para fazer teste passar. O guard atual não inclui papel B2B técnico externo como exceção.
+3. Dois snapshots iguais não certificam uma revogação temporária totalmente restaurada entre provas. Não alegar atomicidade HTTP global/ABA; chamadas SQL individualmente atômicas e prova fresca pré/pós somente.
+4. Comprovantes de entrega (`entrega-documentos`) e aplicação (`aplicacao-evidencias`) exigem suas próprias provas de registro/herança/tenant; não são atendidos por esse snapshot técnico. Permanecem pendências, não roteados pelo novo canal.
+5. Nenhuma implantação/SQL/publicação nesta rodada. Homologação real POST técnico e GET/CDN antigos permanece aberta.
+
+## Plano definitivo de fechamento — gates sequenciais
+1. **Fechar emissão/leitura vulnerável em todos os buckets privados**: inventário completo em `INVENTORY.md`; migrar cada família para POST fixo com registro comprovado pré/pós. Assinaturas novas já ausentes nos leitores auditados não significam GET/CDN revogado. Não usar proxy autorizado só pelo bucket.
+2. **Conter origem somente depois do canal homologado**: JWT/config explícitos, Edge primeiro, saúde/CORS/provas A/B, integração frontend depois; matriz upload/list/update/delete e preservação de histórico. Aplica-se uma policy revisada por bucket, não deny SELECT total.
+3. **Invalidar cache antigo ou comprovar expiração**: API oficial de purge existe mas requer Pro+; FREE não autoriza presumir disponibilidade nem upgrade. Sem mecanismo suportado comprovado, preservar os exemplares e repetir a MESMA URL antiga dentro do browser, sem query inédita como substituição, registrar UTC/status/bytes/hash/cache headers/expiração observada. Não exportar tokens, HAR com Authorization, cookies ou URLs portadoras. Esperar `max-age` sozinho não prova esgotamento de cache remoto. Invalidação/expiração continua NO-GO até evidência.
+4. **Homologar perfis restantes e renovação**: sessões reais A/B existentes, próprio/cruzado, vínculos/registro/papel revogados403, restauração200/hash, renovação natural/preparo/Retry explícito e descarte de Blob anterior. Sem alterar papéis ou sessões pelo agente; ações independentes do proprietário. Abas antigas preservadas, sem reload.
+5. **Aceite global** apenas depois de todos esses gates; catálogo/contratos permanecem fechados. Nenhum plano/chave/objeto histórico alterado, nenhum suporte contatado.
+
+## Preflight real necessário
+- Export/MD5/ACL dos helpers transitivos `can_view_technical_visit`, `has_role`, `get_cliente_ids_for_user`, h15/readiness; metadados/policies completos dos buckets restantes. As leituras desta rodada comprovam o guard técnico e tabelas, não todos os transitivos.
+- Registro técnico existente fictício A e B, path canônico, tamanho/hash esperados; sem upload/fixture/run artificial pelo agente. Provar duplicate path→NULL e arquivo órfão→NULL; proprietário seleciona exemplares autorizados, nenhum token fora do browser.
+- Matrix por perfil e vínculos atuais, estado do pai publicado/rascunho permitido, refs cliente/fazenda/talhão e registro removido. Sem associar papéis novos nem inferir autorização pelo nome do perfil.
+- Ensaiar SQL candidato/rollback em ambiente descartável com RLS real, depois revisão independente; os testes de transporte com snapshots simulados NÃO executam policies reais.
+- JWT=true/import_map=false, fonte/config/hash LIVE e segredo server-only existentes antes da promoção. CORS selftest não homologa download/revogação.
+
+## Validação portátil
+`python3 scripts/technical-attachment-http-20261021/prepare-validation.py /tmp/technical-attachment-review-NOVO`
+
+Na cópia isolada: disponibilizar as dependências bloqueadas pelo lock existente; executar `bun run test -- src/test/security/technicalAttachmentChannel.review.test.ts src/test/security/technicalAttachmentOpener.review.test.tsx`, `tsgo -p tsconfig.app.json --noEmit`, `tsgo -p tsconfig.node.json --noEmit`, `bun run build`. Não usar estes comandos para publicar/implantar. Deno: copiar `.review` para `index.ts` somente em `/tmp`, executar check/bundle do index e rollback. Resultados locais e hashes em `CHECKS.md` e `SHA256SUMS`.
