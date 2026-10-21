@@ -42,3 +42,11 @@ Base publicada: `3d1fb7d2` (Edge v91 sem assinatura; policies `receipt_no_capabi
 - Rollback: `rollback.py` troca a Edge por stub 503 (`rollback/edge-503.ts.review`): não assina, não gera, não sobrescreve.
   A v91 NÃO é restaurada (geraria CANCELADO sobre o objeto ISSUED). Lista baseline não é oferecida. Sem SQL/policies.
 - Suítes: 2231/2240; mesmas 9 falhas preexistentes. Hashes em `SHA256SUMS.runtime`.
+
+## Sincronização canônica (13:18 UTC)
+- Backend atual informado pelo proprietário: Edge `generate-financial-receipt` v93 (= `edge-review/index.ts.review`,
+  SHA256 f2f2714a…bfcc), JWT false + getUser + h15, 3 policies intactas. Frontend 56e5b32b publicado pelo proprietário.
+- Promovida a mesma fonte byte-exata para `supabase/functions/generate-financial-receipt/index.ts`; elimina risco de redeploy v91.
+- Testes: `receiptEmission.edgeReview` compara runtime com v93 (fixtures v91/baseline preservadas);
+  `d51-5` troca literal de assinatura por ausência de `createSignedUrl`. Rollback continua stub 503.
+- Focados 127/127, tsgo e build PASS. Sem emissão/cancelamento/estorno, dados, SQL ou reload.

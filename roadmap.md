@@ -426,5 +426,5 @@
 
 ## 21/10 13:03 — Recibo cancelado servindo PDF ISSUED
 - [x] Frontend status-bound + reconfirmação no clique (local, não publicado)
-- [ ] Edge candidata `scripts/receipt-cancel-currency-20261021/edge-review` — aguarda revisão/deploy do proprietário (antes do frontend)
+- [x] Edge candidata implantada v93 pelo proprietário e promovida byte-exata à fonte canônica
 - [ ] Bloqueio do objeto ISSUED histórico para recibo cancelado via Storage direto — exige SQL separado, não autorizado
