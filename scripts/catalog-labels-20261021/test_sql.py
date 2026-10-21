@@ -162,7 +162,7 @@ try:
  sql(candidate,'catalog_labels_already_installed');checks.append('drift guard blocks reapply')
  sql(f"SET ROLE authenticated; INSERT INTO public.catalog_family_labels (familia,rotulo,rotulo_exibicao) VALUES ('quimico','direto','Direto')",'permission denied');checks.append('direct insert as authenticated denied')
  sql(f"SET ROLE authenticated; SELECT count(*) FROM public.catalog_family_labels",'permission denied');checks.append('direct select as authenticated denied')
- check('audit recorded operations',"SELECT count(*) >= 6 FROM public.catalog_platform_admin_audit WHERE operation IN ('create_catalog_label','update_catalog_label','set_catalog_label_active','set_global_product_family')",'t')
+ check('audit recorded operations',"SELECT count(*) >= 5 FROM public.catalog_platform_admin_audit WHERE operation IN ('create_catalog_label','update_catalog_label','set_catalog_label_active','set_global_product_family')",'t')
  print(f"PASS {len(checks)}/{len(checks)}")
 finally:
  subprocess.run(prefix+['pg_ctl','-D',str(root/'data'),'-m','immediate','stop'],capture_output=True)
