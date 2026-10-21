@@ -1,5 +1,5 @@
---- edge/baseline.index.ts	2026-10-21 16:29:24.326744042 +0000
-+++ edge/index.ts.review	2026-10-21 16:30:21.081157573 +0000
+--- a/supabase/functions/fiscal-xml-engine/index.ts
++++ b/supabase/functions/fiscal-xml-engine/index.ts
 @@ -19,7 +19,7 @@
   *                    XSD_VALIDATED → SIGNED. Teto: SIGNED.
   *                    Ausência de certificado devolve 412 CERTIFICATE_REQUIRED
@@ -9,9 +9,38 @@
   *
   * Invariantes:
   *   - Só homologação (tpAmb=2). Nenhuma transmissão à SEFAZ.
-@@ -280,7 +280,9 @@
+@@ -163,6 +163,7 @@
+ }
  
+ Deno.serve(async (req) => {
++  const enteredAt = performance.now();
+   const origin = req.headers.get("origin");
+   const cors = corsHeaders(origin);
+   const headers = cors.headers;
+@@ -259,28 +260,10 @@
+     }
+   }
  
+-  // Cliente do usuário: toda autorização de negócio ocorre nas RPCs
+-  // SECURITY DEFINER, que validam o perfil fiscal (fail-closed).
+-  const authed = createClient(supabaseUrl, anonKey, {
+-    global: { headers: { Authorization: authHeader } },
+-    auth: { persistSession: false },
+-  });
+-  const claims = await authed.auth.getClaims(authHeader.replace("Bearer ", ""));
+-  const actor = claims.data?.claims?.sub as string | undefined;
+-  if (!actor) return json({ error: "unauthorized" }, 401, headers);
+-
+-  // Defesa em profundidade: o perfil fiscal interno é exigido já no edge, além
+-  // da validação fail-closed das RPCs SECURITY DEFINER chamadas adiante.
+-  const canOperate = await authed.rpc("fn_fiscal_can_operate", { _uid: actor });
+-  if (canOperate.error || canOperate.data !== true) {
+-    return json({ error: "permission_denied" }, 403, headers);
+-  }
+-
+-  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+-
+-
    // ------------------------------------------------------------------
 -  // download: URL assinada curta para um artefato já produzido
 +  // download: entrega autenticada dos bytes de um artefato já produzido.
@@ -20,7 +49,7 @@
    // ------------------------------------------------------------------
    if (action === "download") {
      const runId = String(body.run_id ?? "");
-@@ -289,28 +291,84 @@
+@@ -289,29 +272,118 @@
      if (artifact !== "signed" && artifact !== "unsigned") {
        return json({ error: "artifact_invalid" }, 400, headers);
      }
@@ -37,11 +66,13 @@
 +    // Prazo ABSOLUTO de 15 s cercando provas + leitura + hash + prova fresca.
 +    // Pedido já abortado antes do handler: addEventListener não retroage.
 +    if (req.signal.aborted) return deny(504, "download_unavailable");
++    const deadline = enteredAt + 15_000;
++    if (performance.now() >= deadline) return deny(504, "download_unavailable");
 +    const controller = new AbortController();
 +    const signal = controller.signal;
 +    const onAbort = () => controller.abort();
 +    req.signal.addEventListener("abort", onAbort, { once: true });
-+    const timer = setTimeout(() => controller.abort(), 15_000);
++    const timer = setTimeout(() => controller.abort(), Math.max(0, deadline - performance.now()));
 +    const ABORTED = Symbol("aborted");
 +    const abortedP = new Promise<typeof ABORTED>((resolve) => {
 +      if (signal.aborted) resolve(ABORTED);
@@ -54,11 +85,17 @@
 +    // deno-lint-ignore no-explicit-any
 +    const bound = (q: any) => (q && typeof q.abortSignal === "function" ? q.abortSignal(signal) : q);
 +    const step = async <T,>(p: PromiseLike<T> | T): Promise<T> => {
-+      if (signal.aborted) throw ABORTED;
++      if (signal.aborted || performance.now() >= deadline) { controller.abort(); throw ABORTED; }
 +      const r = await Promise.race([Promise.resolve(p), abortedP]);
-+      if (r === ABORTED || signal.aborted) throw ABORTED;
++      if (r === ABORTED || signal.aborted || performance.now() >= deadline) { controller.abort(); throw ABORTED; }
 +      return r as T;
 +    };
++    const authed = createClient(supabaseUrl, anonKey, {
++      global: { headers: { Authorization: authHeader } },
++      auth: { persistSession: false },
++    });
++    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
++    let actor: string | undefined;
 +    // Prova completa do ator/recurso; repetida após o I/O (sem snapshot antigo).
 +    const authorize = async (): Promise<{ path: string; sha: string | null; bytes: number | null } | null> => {
 +      const operate = await step(bound(authed.rpc("fn_fiscal_can_operate", { _uid: actor })));
@@ -70,9 +107,9 @@
 +      const ownership = await step(bound(admin.rpc("h15_service_actor_run_access", { p_actor: actor, p_run: runId })));
 +      if (ownership.error || ownership.data !== true) return null;
 +      const row = visible.data as Record<string, unknown>;
-+      if ((row.storage_bucket ?? BUCKET) !== BUCKET) return null;
++      if (row.storage_bucket !== BUCKET) return null;
 +      const path = (artifact === "signed" ? row.signed_path : row.unsigned_path) as string | null;
-+      if (!path) return null;
++      if (typeof path !== "string" || !path || path.startsWith("/") || path.includes("..") || path.includes("://")) return null;
 +      return {
 +        path,
 +        sha: (artifact === "signed" ? row.signed_sha256 : row.unsigned_sha256) as string | null,
@@ -80,6 +117,11 @@
 +      };
 +    };
 +    try {
++      const claims = await step(authed.auth.getClaims(authHeader.replace("Bearer ", "")));
++      actor = claims.data?.claims?.sub as string | undefined;
++      if (!actor) return deny(401, "unauthorized");
++      const initial = await step(bound(authed.rpc("fn_fiscal_can_operate", { _uid: actor })));
++      if (initial.error || initial.data !== true) return deny(403, "permission_denied");
 +      const first = await authorize();
 +      if (!first) return deny(403, "permission_denied");
 +      // Bucket privado sem policy de leitura do usuário: a leitura usa o cliente
@@ -94,8 +136,8 @@
 +        return deny(409, "artifact_integrity_failed");
 +      }
 +      const fresh = await authorize();
-+      if (!fresh || fresh.path !== first.path || fresh.sha !== first.sha) return deny(403, "permission_denied");
-+      if (signal.aborted) return deny(504, "download_unavailable");
++      if (!fresh || fresh.path !== first.path || fresh.sha !== first.sha || fresh.bytes !== first.bytes) return deny(403, "permission_denied");
++      if (signal.aborted || performance.now() >= deadline) return deny(504, "download_unavailable");
 +      return new Response(bytes, {
 +        status: 200,
 +        headers: {
@@ -122,6 +164,28 @@
 -    const signed = await admin.storage.from(run?.storage_bucket ?? BUCKET).createSignedUrl(path, 120);
 -    if (signed.error || !signed.data) return json({ error: "signed_url_failed" }, 500, headers);
 -    return json({ url: signed.data.signedUrl, expiresIn: 120, artifact }, 200, headers);
-   }
+-  }
++  }
++
++  // Cliente do usuário: toda autorização de negócio ocorre nas RPCs
++  // SECURITY DEFINER, que validam o perfil fiscal (fail-closed).
++  const authed = createClient(supabaseUrl, anonKey, {
++    global: { headers: { Authorization: authHeader } },
++    auth: { persistSession: false },
++  });
++  const claims = await authed.auth.getClaims(authHeader.replace("Bearer ", ""));
++  const actor = claims.data?.claims?.sub as string | undefined;
++  if (!actor) return json({ error: "unauthorized" }, 401, headers);
++
++  // Defesa em profundidade: o perfil fiscal interno é exigido já no edge, além
++  // da validação fail-closed das RPCs SECURITY DEFINER chamadas adiante.
++  const canOperate = await authed.rpc("fn_fiscal_can_operate", { _uid: actor });
++  if (canOperate.error || canOperate.data !== true) {
++    return json({ error: "permission_denied" }, 403, headers);
++  }
++
++  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
++
  
    if (action !== "generate") return json({ error: "action_invalid" }, 400, headers);
+ 
