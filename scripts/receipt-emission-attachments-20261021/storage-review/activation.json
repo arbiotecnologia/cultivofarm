@@ -14,8 +14,12 @@
     "src/hooks/useStorageAccessScope.ts": "751d810c2db042839ba692c91ffa54eea07ccd2c97698ce81734abd986b5606b",
     "src/hooks/useAuthenticatedAttachmentOpener.ts": "d856705376603bd63437bdaecd328dbb2d36fa0f97dab711182395e842b9932c",
     "src/pages/financeiro/RecibosList.tsx": "eddad335556fb7a297003e4fd5d6433ea472483c23fda57814f4a0b035bb2fed",
-    "src/components/financeiro/EmitirReciboButton.tsx": "c06bfeb685e586e18a4854bcad302b10fd3cefab2aa3695f68aff2992b7960b4"
+    "src/components/financeiro/EmitirReciboButton.tsx": "c06bfeb685e586e18a4854bcad302b10fd3cefab2aa3695f68aff2992b7960b4",
+    "src/integrations/supabase/previewAuthStorage.ts": "5b00130146b77ecd8ed49f118c640d3e75aa7c5e76695f3b9e3f7f8833719f0a"
   },
   "hosted_deployed": false,
-  "hosted_sql_applied": false
+  "hosted_sql_applied": false,
+  "preexisting_delta_from_requested_base": [
+    "src/integrations/supabase/previewAuthStorage.ts"
+  ]
 }
