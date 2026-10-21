@@ -34,8 +34,8 @@ Campo já armazena parent remoto explícito. Filas de registros/checkins/campo/d
 
 ## Validação e limites
 
-- 76/76 testes locais em 7 arquivos: enums concretos, criação/edição/pendingnew, conflito, autorização negada, parent ausente, owner alheio/legado, logout/tenant/época sem unmount, CAS e integração do botão Sincronizar com IndexedDB isolado.
-- Harness automático: `build OK` às **21:05:13Z** e **21:05:41Z**, após correção das duas falhas de tipos iniciais. Typecheck/build manuais não executados por restrição do ambiente; sem recibo independente de tipos.
+- 80/80 testes locais em 8 arquivos: enums concretos, criação/edição/pendingnew pelo formulário montado, conflito, autorização negada, parent ausente, owner alheio/legado, logout/tenant/época sem unmount, CAS e integração do botão Sincronizar com IndexedDB isolado. Avisos React `act` presentes, sem falhas.
+- Harness automático: `build OK` às **21:06:31Z** e **21:06:58Z**, após correção das duas falhas de tipos iniciais; nenhum erro atual de tipos/compilação no sinal automático. Typecheck/build manuais não executados por restrição do ambiente; sem recibo independente de tipos.
 - Testes usam transporte mock e IndexedDB descartável: **não** são JWT/RLS/browser LIVE. Homologação real do frontend e da recuperação histórica continua pendente do proprietário.
 - Upload técnico A 5647B/SHA informado, POST próprio200/B403 e imagem UI OK são evidências externas anteriores, não ensaios deste patch.
 - **Origin-deny consultor não aplicado. CDN/cache antigo SU-518022 não resolvido.** Nenhum suporte/upgrade/objeto/chave/papel/sessão alterado.

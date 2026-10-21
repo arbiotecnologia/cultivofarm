@@ -2,7 +2,7 @@
 
 ## 21/10 21:01 — recomendações, homologação externa 33425615
 - [x] Corrigir enums/versão e replay de entradas comprovadas com parent explícito sem mapping; conflitos/negações preservados, origem alheia ou histórica não comprovada bloqueada.
-- [x] 76/76 testes em 7 arquivos; harness build OK21:05:41Z; relatório docs/recomendacao-sync-20261021-review.md com impacto irmão e limites de tipos/homologação.
+- [x] 80/80 testes em 8 arquivos incluindo formulário real montado e botão Sincronizar; harness build OK21:06:58Z; relatório docs/recomendacao-sync-20261021-review.md com impacto irmão e limites de tipos/homologação.
 - [ ] Recuperação da pendência histórica informada: origem ator/tenant e versão não comprovadas na entrada legada; não adotar só pelo acesso atual/UUID, não alterar fila real.
 - [ ] Homologação real do patch: revisão/publicação externa necessárias; sem SQL/deploy/publicação ou filas reais nesta rodada. Origin-deny consultor não aplicado; CDN antigo/SU-518022 não resolvido.
 
