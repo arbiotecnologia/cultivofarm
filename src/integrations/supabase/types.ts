@@ -21253,6 +21253,10 @@ export type Database = {
         Args: { _name: string }
         Returns: Json
       }
+      client_documents_backup_snapshot: {
+        Args: { _client: string }
+        Returns: Json
+      }
       cliente_storage_object_permitted: {
         Args: { _name: string }
         Returns: boolean

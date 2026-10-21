@@ -105,3 +105,8 @@ verify_jwt = true
 # JWT de gateway desligado apenas aqui, porque o invocador (pg_cron/pg_net) não envia JWT.
 [functions.process-communication-outbox]
 verify_jwt = false
+
+# Incidente 2026-10-21: publicação recriou v2 sem JWT no gateway.
+# Fixar a proteção restaurada externamente em v3 para evitar recorrência.
+[functions.download-client-document]
+verify_jwt = true

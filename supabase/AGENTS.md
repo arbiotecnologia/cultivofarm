@@ -1,2 +1,3 @@
 - Notification policies require server-proven source tenant and active individual recipient; portal additionally binds the exact source client, so historical recipient data cannot establish ownership.
 - Unknown-origin legacy notifications remain invisible, writes are lido-only for users, and unhomologated privileged producers/queues stay closed; rollback must retain containment to prevent restored broadcast leakage.
+- Keep download-client-document verify_jwt=true explicit in config.toml and regression-tested; deployment defaults must not downgrade the externally restored gateway protection.

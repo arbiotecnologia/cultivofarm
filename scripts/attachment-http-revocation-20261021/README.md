@@ -1,8 +1,13 @@
 # Candidata — revogação HTTP de documentos de clientes
 
-**Atualização19:01: Edge v1 implantada externamente; fontes sincronizadas e frontend integrado localmente, NÃO publicado. Base frontend informada c63bc6bca04eba1abf2beb7d41394ebd0172fa9d. XML LIVE v97 preservado; a atualização externa alterou somente ordem das origens CORS.**
+**Atualização19:13 — evidência externa do proprietário:** frontend `d58721b03e2d19cc631add8fe4b6176ce776d6ab` publicado, deployment `34acc386-4e14-4a40-b7ce-753c351a545e`, bundle `index-lxh5t2PG.js`. A publicação recriou `download-client-document` v2 com JWT=false; o proprietário restaurou imediatamente v3 ACTIVE/JWT=true/import_map=false, mesmo ezbr `ad2041c454788719b1a7a3af7174e0b3b04c223756f986ea7a8e3bbe559ce364`. XML LIVE v98 tem o mesmo hash de v97, sem drift reportado. Não são execuções deste agente.
 
-## Estado vigente após revisão0708012d
+### Prevenção local da regressão JWT
+- `supabase/config.toml` declara explicitamente `[functions.download-client-document] verify_jwt=true`; nenhum outro arquivo runtime alterado nesta rodada, nenhuma publicação/reimplantação/SQL.
+- Teste `src/test/downloadClientDocument.jwtConfig.test.ts` interpreta o TOML e exige booleano true: falhou antes do patch por bloco ausente. A declaração impede depender do default que causou a regressão; o próximo deployment ainda exige conferir a configuração LIVE.
+- Proprietário reportou POST real A/B pós-revogação403 e restauração200/hash, papéis restaurados; B2B A/B403; 23 testes frontend/ZIP independentes PASS. RPC backup aplicada externamente. **Deny GET legado NÃO aplicado; CDN/URLs antigas continuam gate aberto, sem resolução global.**
+
+## Registro histórico19:01 após revisão0708012d — estado atualizado acima
 - Proprietário: 37 testes servidor/transporte PASS; aplicada SOMENTE `client_document_download_snapshot(text)` pela migration `client_document_atomic_download_snapshot`.
 - `download-client-document` v1 ACTIVE/JWT=true/import_map=false, ezbr `ad2041c454788719b1a7a3af7174e0b3b04c223756f986ea7a8e3bbe559ce364`, três fontes exatas. Evidência externa real A: próprio200/1751B ~6,2s, B403; B: A403/próprio200 ~6,7s, mesmo SHA `eab7e35ee414bd13ab72cad855c4090e54b846259f439f58d9b49b54adc65965`, private/no-store. Não execução própria.
 - RPC backup e policy deny legado NÃO aplicadas. O ZIP integrado falha fechado se a RPC estiver ausente; sem consulta alternativa/fallback. Revogação POST em homologação pelo proprietário, não certificada pelo agente.
