@@ -148,3 +148,13 @@ que o tail inteiro é byte-exato ao LIVE: essas linhas comuns mudaram explicitam
 Não houve sessão/reload, banco, Storage, deploy ou publicação. Check local resolvido;
 fixture/E2E e bundler hosted continuam pendentes; LIVE v94 não volta a UNAVAILABLE,
 apenas exige confirmação de ausência de drift no predeploy. URLs antigas não resolvidas.
+
+## Rodada 18:15 — revisão aprovada, preflight externo sem drift
+Revisão ref `090c033ad83c47b40eefb8e841bf8937cc27b642`, 55/55 externos PASS;
+v94 ACTIVE/JWT true/import_map false/ezbr idêntico reconfirmados pelo proprietário.
+Ver `COORDENACAO-IMPLANTACAO.md`: mecanismo disponível só implanta, não valida
+bundle hosted sem implantação nem certifica preservação de config; fixture
+unsigned-only não existe no contrato atual e generate não foi acionado.
+NO-GO técnico: nada promovido, implantado ou publicado; runtime intacto,
+gate false e rollback deny preparado. v94 permanece LIVE segundo prova externa:
+nova emissão signedURL XML ainda não interrompida; URLs antigas não resolvidas.

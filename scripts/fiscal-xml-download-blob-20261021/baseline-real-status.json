@@ -34,5 +34,19 @@
     "SUPABASE_ACCESS_TOKEN absent; no management credential used"
   ],
   "predeploy_requirement": "Reconfirm canonical project, ACTIVE v94, index/bundle identity, complete dependencies and config have not changed; drift closes gate",
-  "deployment_gate": "NO_GO_PENDING_TECHNICAL_REVIEW_EDGE_TYPES_FIXTURE_HOSTED_BUNDLE_AND_LIVE_RECONFIRMATION"
+  "deployment_gate": "NO_GO_HOSTED_VALIDATION_AND_CANONICAL_FIXTURE_UNAVAILABLE",
+  "predeploy_external_reconfirmation": {
+    "received_at": "2026-10-21T18:15:00Z",
+    "source": "Owner independent review + list_edge_functions, not queried in this sandbox",
+    "project_ref": "swzpzcwiasxmjutrmvkm",
+    "version": 94,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "import_map": false,
+    "ezbr_identifier": "1a52ba6336755a1bbfc36125fbdc84d6336b3a3f5bad98ee2cbe098521bf6a0c",
+    "drift": false,
+    "candidate_review_ref": "090c033ad83c47b40eefb8e841bf8937cc27b642",
+    "independent_tests_passed": 55,
+    "composition": "44 download + 4 independent + 7 typesBehavior"
+  }
 }

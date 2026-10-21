@@ -15,8 +15,7 @@
   "consent": "corrections and safe deployment authorized; technical review gates remain",
   "blocked": [
     "canonical XML fixture",
-    "hosted bundle size verification",
-    "predeploy LIVE v94/config/dependency drift reconfirmation"
+    "hosted bundle size verification"
   ],
   "live_baseline": "Externally verified v94 per owner; no sandbox download",
   "candidate_review_base": "12339d925b09241733e6a083e059f60ff8ddfb69",
@@ -57,5 +56,12 @@
     "dist/pwa-icon-512.png": "1089b92640a4974326f468c60812ea15941f7ac39add140986fc5595d3224766",
     "dist/robots.txt": "a3d27b3ca5ce32341fa9f96f01169b521b1657c05d1860c45d1e53a6258e9e8b",
     "dist/sw.js": "d5ab15c941f7c44aad8b174d2885ac4d402022bc276f4dbd1dd7e8b512a6361b"
-  }
+  },
+  "predeploy_live_reconfirmed_externally_at": "2026-10-21T18:15:00Z",
+  "independent_review": {
+    "ref": "090c033ad83c47b40eefb8e841bf8937cc27b642",
+    "tests_passed": 55,
+    "source": "Owner report"
+  },
+  "coordinated_deployment": "NO_GO; canonical runtime not promoted; no deployment attempted"
 }
