@@ -30,15 +30,20 @@ Migration fonte: `20261005200923_a9898565-995b-4066-a99b-e138442af842.sql`;
 readiness fonte: `20261007155703_7e6f0323-4d33-488f-8cdd-e091c104108d.sql`.
 Isto não certifica instalação hosted, JWT/RLS real ou verify_jwt implantado.
 
-## Edge separada, NÃO implantada
+## Edge separada — histórico da preparação; promoção local em 21/10 12:32
 
-Runtime Edge permanece byte-exato à base117f e ainda assina por 3600s, mesmo que o botão
+Na entrega anterior, runtime Edge permanecia byte-exato à base117f e assinava por 3600s, mesmo que o botão
 e a lista ignorem sua URL. `edge-review/index.ts.review` remove apenas assinatura e campo url,
 mantendo `{path,receipt_number}`; nenhuma implantação/config/secrets foi alterada.
 Geração upload/upsert + atualização de locator é escrita, NÃO consulta e NÃO executada aqui.
 Remoção candidata da assinatura não revoga capabilities emitidas anteriormente.
 Só promover após revisão e autorização de implantação; rollback seguro da Edge é mantê-la
 sem assinatura ou indisponibilizar a função, nunca restaurar createSignedUrl.
+
+Nesta continuidade autorizada, o arquivo canônico foi promovido byte-exatamente à candidata.
+Nenhuma implantação hosted foi executada: revisão/deploy pertencem ao proprietário.
+Ver `storage-review/REPORT.md`: política candidata restrita, preflight bloqueado sem contrato
+live revisado, testes SQL locais e rollback de contenção sem restaurar assinatura.
 
 ## Evidências locais
 
