@@ -20,7 +20,7 @@ for name in ("package.json", "bun.lock", "index.html", "tsconfig.json", "tsconfi
 # All transitive local Edge dependencies and static XSD assets (LOCAL only).
 functions = DEST / "supabase/functions"
 functions.mkdir(parents=True)
-for folder in ("fiscal-xml-engine", "_shared", "fiscal-certificate-upload", "platform-org-admin-email-change"):
+for folder in ("fiscal-xml-engine", "_shared", "fiscal-certificate-upload", "platform-org-admin-email-change", "onboarding-cnpj-lookup", "communication-provider-settings"):
     shutil.copytree(ROOT / "supabase/functions" / folder, functions / folder, ignore=skip)
 shutil.copy2(ROOT / "supabase/config.toml", DEST / "supabase/config.LOCAL.toml")
 
