@@ -122,7 +122,7 @@ try:
  r=subprocess.run(prefix+['pg_ctl','-D',str(root/'data'),'-l',str(root/'log'),'-o',f'-k {root} -p 55498 -h ""','start'],capture_output=True,text=True);assert r.returncode==0,r.stderr
  sql(SCHEMA)
  sql(f"INSERT INTO public.profiles VALUES('{uid(1)}',true),('{uid(2)}',true); INSERT INTO public.user_roles VALUES('{uid(1)}','superadmin');")
- sql(f"INSERT INTO public.produtos(id,nome) VALUES('{uid(50)}'),('{uid(51)}');")
+ sql(f"INSERT INTO public.produtos(id,nome) VALUES('{uid(50)}','P50'),('{uid(51)}','P51');")
  candidate=(HERE/'candidate.sql.review').read_text()
  sql(candidate);checks.append('candidate applies cleanly')
  actor(1)
