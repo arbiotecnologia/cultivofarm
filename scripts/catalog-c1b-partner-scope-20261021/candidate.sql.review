@@ -1,0 +1,43 @@
+-- C1B-SCOPE candidata — REVISAR ANTES DE APLICAR. Não executar sem autorização do auditor.
+-- Correção mínima: resolve o parceiro do ator pelo vínculo autorizado validado quando a
+-- organização do perfil não carrega partner_account_id (modelo canônico atual de cadastro
+-- B2B: usuário no tenant fornecedor + vínculo partner_users). Mesma assinatura; CREATE OR
+-- REPLACE preserva OID, owner e grants. Nenhum consumidor, RLS, role ou dado é alterado.
+-- is_valid_b2b_partner_user NÃO é modificada (postflight verifica o md5).
+BEGIN;
+
+CREATE OR REPLACE FUNCTION platform_private.b2b_actor_scope(_uid uuid)
+ RETURNS TABLE(profile_ok boolean, org_partner uuid, user_partner uuid, user_partner_count integer, partner_valid boolean, has_catalog boolean)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  WITH pr AS (
+    SELECT o.partner_account_id
+      FROM public.profiles p JOIN public.organizations o ON o.id = p.organization_id
+     WHERE p.user_id = _uid AND p.ativo = true AND o.ativo = true AND o.status = 'ativa'
+     LIMIT 1
+  ), pu AS (
+    SELECT count(*)::int c, min(partner_id::text)::uuid pid
+      FROM public.partner_users
+     WHERE user_id = _uid AND revoked_at IS NULL
+  ), valid AS (
+    SELECT CASE WHEN (SELECT c FROM pu) = 1
+                 AND public.is_valid_b2b_partner_user(_uid, (SELECT pid FROM pu))
+              THEN (SELECT pid FROM pu) END AS pid
+  )
+  SELECT EXISTS (SELECT 1 FROM pr),
+         -- Organização com parceiro explícito prevalece; sem ela, o vínculo autorizado
+         -- validado resolve o parceiro. Se ambos existirem e divergirem, org_partner
+         -- permanece o da organização e os consumidores negam por mismatch.
+         COALESCE((SELECT partner_account_id FROM pr), (SELECT pid FROM valid)),
+         (SELECT pid FROM valid),
+         (SELECT c FROM pu),
+         CASE WHEN (SELECT partner_account_id FROM pr) IS NOT NULL
+              THEN EXISTS (SELECT 1 FROM pr JOIN public.partner_accounts pa ON pa.id = pr.partner_account_id
+                            WHERE pa.ativo = true AND pa.deleted_at IS NULL)
+              ELSE (SELECT pid FROM valid) IS NOT NULL END,
+         EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'catalogo_precos');
+$function$;
+
+COMMIT;

@@ -504,3 +504,10 @@
 - [x] Candidata rótulos por família em scripts/catalog-labels-20261021: tabela catalog_family_labels + RPCs platform_* gated, seed só dos 7 rótulos atuais, trigger dinâmico substitui CHECK literal, diálogo/painel alimentados por RPC. 29/29 SQL local, 11/11 vitest, tsgo OK, build OK; SHA256SUMS 270cbb56.
 - [ ] Revisão independente da candidata de rótulos; NÃO aplicar DDL/DML hosted nem publicar sem autorização. Reversão estrutural só documental.
 - [ ] Retomar depois: promoção B2B (C1B runtime), contratos cumulativos canônicos (atribuir/desvincular/reativar/histórico) — não implementados.
+
+## 21/10 — C1B-SCOPE: desbloqueio do forbidden_partner (candidata, não aplicada)
+- [x] Evidência do auditor: teste4 (beb25695) recebe 403 forbidden_partner nas 3 RPCs; sessão B2B existe.
+- [x] Inventário read-only: 0/5 organizações com partner_account_id; único partner_users (teste4, gestor) no tenant fornecedor 007bb519 = commercial_owner. Modelo A (organização parceira) nunca populado; Modelo B (vínculo no tenant fornecedor) é o canônico — incompatibilidade estrutural preexistente.
+- [x] Candidata em scripts/catalog-c1b-partner-scope-20261021: CREATE OR REPLACE b2b_actor_scope com fallback ao vínculo validado (is_valid_b2b_partner_user intocada, md5 verificado); org com parceiro prevalece e divergência nega; revogação/inativo/tenant divergente/multipapel negam. 15/15 harness local; SHA256SUMS bcf3f4d1.
+- [ ] Auditor revisar/aplicar candidata e repetir testes na sessão B2B (teste4). Verificar entitlement catalogo_precos no postflight (impedimento separado se faltar).
+- [ ] Incompatibilidade multipapel (count(user_roles)=1) registrada para a fase de contratos funcionais — não aberta nesta correção.
