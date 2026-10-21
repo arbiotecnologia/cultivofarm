@@ -1,6 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 21/10 18:39 — revogação HTTP de anexos, baseline c63bc6b
+- [x] 19:01 revisão0708012d: registrar Edgev1+snapshot simples externamente aplicados, real A/B próprio200/1751 e cruzado403, XMLv97 externo; sincronizar3 fontes backend byte-exatas e frontend após86/86/checks, sem redeploy/publicação/SQL.
+- [x] Corrigir allowlist SELECT por operação, deadline monotônico frontend, ZIP24arquivos/60MiB e prazosRPC/fence; testes canônicos86/86, Deno/types isolados/harness build OK, rollback deny.
+- [ ] Homologação POST em revogação pelo proprietário; RPCbackup e deny legado ausentes mantêm ZIP fail-closed e GET antigo/CDN aberto. Sem aplicação automática.
 - [x] Preparar transporte clientes-docs com provas independentes pré/pós-bytes, stream 10 MiB/prazo15s/cancel, integração isolada e rollback deny; 60/60 sintéticos + Deno check/bundle local PASS; sem promover runtime/Edge/SQL.
 - [x] Inventariar leitores irmãos/ZIP e URL direta antiga; relatório distingue fluxo protegido candidato de endpoint antigo ainda não contido, sem atribuir cache/CDN/SW. XML v96/monitor byte-exatos.
 - [x] Complemento 18:48: salvar B HIT200/1751 versus BYPASS400/NoSuchKey, mesmo ensaio e request IDs; CDN remoto confirmado externamente. Documentar API oficial de purga (sem execução), controle durável antes do HIT e pendências SU-518022 sem enviar.
