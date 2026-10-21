@@ -57,7 +57,11 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       timedOut = true; controller.abort(); request.current = null;
       if (current()) { setBusy(false); toast.error("Recibo indisponível"); }
     }, 15_000);
-    controller.signal.addEventListener("abort", () => clearTimeout(timeout), { once: true });
+    let noted = false;
+    // Exactly one record per request: at the timeout/fence event itself (even if I/O hangs) or in finally.
+    const note = (o: "ok" | "timeout" | "fence" | "error" | "stale_state") => { if (noted) return; noted = true;
+      recordReceiptPrepare({ source: "button", stage, outcome: o, elapsedMs: Date.now() - started }); };
+    controller.signal.addEventListener("abort", () => { clearTimeout(timeout); note(timedOut ? "timeout" : "fence"); }, { once: true });
     setBusy(true);
     // Bytes not confirmed by the post-read (timeout, fence, error, late reply) are revoked in finally.
     let opened = ""; let kept = false;
@@ -117,7 +121,7 @@ export function EmitirReciboButton({ paymentId, label = "Emitir recibo", size = 
       if (valid()) toast.error("Recibo indisponível");
     } finally {
       clearTimeout(timeout);
-      recordReceiptPrepare({ source: "button", stage, outcome: timedOut ? "timeout" : !current() ? "fence" : outcome, elapsedMs: Date.now() - started });
+      note(timedOut ? "timeout" : !current() ? "fence" : outcome);
       // A newer request may own the same path after a timeout; never revoke its bytes.
       if (opened && !kept && latest.current === controller) opener.discard(opened);
       if (request.current === controller) {
