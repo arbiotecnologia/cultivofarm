@@ -3,7 +3,9 @@ import ts from "typescript";
 import { expect, it } from "vitest";
 import { corsHeadersFor, handlePreflight, isTrustedOrigin } from "../../../supabase/functions/_shared/comunicacao/cors";
 const candidate = readFileSync("scripts/receipt-cancel-currency-20261021/edge-layout-review/index.ts.review", "utf8");
-const v93 = readFileSync("supabase/functions/generate-financial-receipt/index.ts", "utf8");
+const v93 = readFileSync("scripts/receipt-cancel-currency-20261021/edge-review/index.ts.review", "utf8");
+const runtime = readFileSync("supabase/functions/generate-financial-receipt/index.ts", "utf8");
+it("runtime canônico é a v95 byte-exata (edge-layout-review)", () => { expect(runtime).toBe(candidate); });
 const org = "007bb519-cba0-4704-be2c-cb93ad010048";
 const id = "00000000-0000-4000-8000-000000000002";
 // Width-proportional fake font: 0.55em per char, throws on chars outside WinAnsi-like range.

@@ -20,7 +20,7 @@ describe("D51.5 P0-A — financeiro e Storage", () => {
     expect(receiptEdge).toContain('const issuedPath = `${organizationId}/');
   });
 
-  it("não emite URL assinada (v93 status-bound)", () => {
+  it("não emite URL assinada (v95 status-bound)", () => {
     expect(receiptEdge).not.toContain("createSignedUrl");
   });
 
