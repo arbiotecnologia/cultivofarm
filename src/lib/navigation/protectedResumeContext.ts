@@ -1,0 +1,51 @@
+/**
+ * Retomada de contexto de NAVEGAÇÃO após pausa de autorização (monitor).
+ *
+ * Guarda em memória do módulo (nunca storage persistente) apenas:
+ * principal (usuário/empresa/papéis), rota, ID do registro e nome da aba de
+ * uma allowlist. Nenhum dado de formulário, Blob, URL ou resposta do servidor.
+ *
+ * - Consumo único e TTL curto.
+ * - Principal diferente (identidade/empresa/papéis, logout, A->B->A) limpa.
+ * - Quem consome DEVE refazer a leitura autorizada canônica e só reabrir se
+ *   o registro ainda vier nela; caso contrário descarta.
+ */
+export const RESUME_TTL_MS = 120_000;
+export const RESUMABLE_CLIENTE_TABS = ["geral", "endereco", "financeiro", "documentos", "portal"] as const;
+export type ResumableClienteTab = (typeof RESUMABLE_CLIENTE_TABS)[number];
+
+type Slot = { principal: string; route: string; recordId: string; tab: ResumableClienteTab; at: number };
+let slot: Slot | null = null;
+
+export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[]): string | null {
+  if (!userId || !organizationId || roles.length === 0) return null;
+  return JSON.stringify([userId, organizationId, [...roles].sort()]);
+}
+
+export function isResumableClienteTab(tab: unknown): tab is ResumableClienteTab {
+  return typeof tab === "string" && (RESUMABLE_CLIENTE_TABS as readonly string[]).includes(tab);
+}
+
+export function rememberResume(principal: string | null, route: string, recordId: string, tab: string, now: number = Date.now()): void {
+  if (!principal || !recordId || !isResumableClienteTab(tab)) { slot = null; return; }
+  slot = { principal, route, recordId, tab, at: now };
+}
+
+export function clearResume(): void { slot = null; }
+
+/** Qualquer mudança/ausência de principal descarta o contexto. */
+export function observeResumePrincipal(principal: string | null): void {
+  if (slot && slot.principal !== principal) slot = null;
+}
+
+/** Consome uma vez; mismatch/TTL vencido também descarta. */
+export function takeResume(principal: string | null, route: string, now: number = Date.now()): { recordId: string; tab: ResumableClienteTab } | null {
+  const s = slot;
+  slot = null;
+  if (!s || !principal || s.principal !== principal || s.route !== route) return null;
+  if (now - s.at < 0 || now - s.at > RESUME_TTL_MS) return null;
+  return { recordId: s.recordId, tab: s.tab };
+}
+
+/** Somente para testes. */
+export function __peekResumeForTests(): Readonly<Slot> | null { return slot; }

@@ -24,6 +24,9 @@ import { InscricaoEstadualCadastroInput } from "./InscricaoEstadualCadastroInput
 
 interface ClienteFormTabsProps {
   clienteId?: string;
+  /** Aba inicial (retomada de navegação); só aplicada se a aba estiver autorizada. */
+  initialTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 // MaskedInput integrado com RHF via Controller — garante que o valor
