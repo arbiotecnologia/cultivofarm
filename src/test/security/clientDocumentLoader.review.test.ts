@@ -11,6 +11,12 @@ const setup = () => {
 const response = (headers = { "Content-Type": "application/octet-stream", "Cache-Control": "private, no-store" }) => new Response(new Uint8Array([1, 2, 3]), { headers });
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 describe("candidate client-document loader — canonical bearer, no fallback", () => {
+  it('rejects late bytes when monotonic time advances but timers are suspended', async () => {
+    let now = 0; vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const fetcher = setup().mockImplementation(async () => { now = 15_001; return response(); });
+    await expect(loadClientDocument(path, new AbortController().signal)).rejects.toThrow();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it("POSTs to canonical Edge, returns bounded bytes with original MIME", async () => {
     const fetcher = setup().mockResolvedValue(response());
     const blob = await loadClientDocument(path, new AbortController().signal);

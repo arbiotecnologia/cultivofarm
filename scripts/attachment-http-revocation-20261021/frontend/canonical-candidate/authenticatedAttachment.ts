@@ -40,6 +40,7 @@ function mime(path: string) {
 
 /** Canonical SDK fetch carries actor authentication; no signed/public fallback. */
 export async function downloadAuthenticatedAttachment(bucket: string, path: string, signal: AbortSignal): Promise<Blob> {
+  const clientDeadline = performance.now() + ATTACHMENT_LIMITS.timeoutMs;
   const controller = new AbortController();
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   const abort = () => { controller.abort(); void reader?.cancel().catch(() => {}); };
@@ -51,7 +52,12 @@ export async function downloadAuthenticatedAttachment(bucket: string, path: stri
     if (!bucket || !path || path.startsWith("/") || path.split("/").some(part => part === ".." || part === ".")) throw unavailable();
     release = await acquire(controller.signal);
     if (controller.signal.aborted) throw unavailable();
-    if (bucket === "clientes-docs") return await loadClientDocument(path, controller.signal);
+    if (bucket === "clientes-docs") {
+      if (performance.now() >= clientDeadline) { abort(); throw unavailable(); }
+      const blob = await loadClientDocument(path, controller.signal);
+      if (controller.signal.aborted || performance.now() >= clientDeadline) { abort(); throw unavailable(); }
+      return blob;
+    }
     const { data, error } = await supabase.storage.from(bucket).download(path, {}, { signal: controller.signal, cache: "no-store" }).asStream();
     if (error || !data || controller.signal.aborted) { await data?.cancel(); throw unavailable(); }
     reader = data.getReader();

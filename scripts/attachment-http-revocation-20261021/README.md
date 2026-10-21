@@ -1,6 +1,20 @@
 # Candidata — revogação HTTP de documentos de clientes
 
-**NÃO IMPLANTADA. Base local/publicada informada: c63bc6bca04eba1abf2beb7d41394ebd0172fa9d, index-SoQppvKm.js. XML v96 preservado.**
+**Atualização19:01: Edge v1 implantada externamente; fontes sincronizadas e frontend integrado localmente, NÃO publicado. Base frontend informada c63bc6bca04eba1abf2beb7d41394ebd0172fa9d. XML LIVE v97 preservado; a atualização externa alterou somente ordem das origens CORS.**
+
+## Estado vigente após revisão0708012d
+- Proprietário: 37 testes servidor/transporte PASS; aplicada SOMENTE `client_document_download_snapshot(text)` pela migration `client_document_atomic_download_snapshot`.
+- `download-client-document` v1 ACTIVE/JWT=true/import_map=false, ezbr `ad2041c454788719b1a7a3af7174e0b3b04c223756f986ea7a8e3bbe559ce364`, três fontes exatas. Evidência externa real A: próprio200/1751B ~6,2s, B403; B: A403/próprio200 ~6,7s, mesmo SHA `eab7e35ee414bd13ab72cad855c4090e54b846259f439f58d9b49b54adc65965`, private/no-store. Não execução própria.
+- RPC backup e policy deny legado NÃO aplicadas. O ZIP integrado falha fechado se a RPC estiver ausente; sem consulta alternativa/fallback. Revogação POST em homologação pelo proprietário, não certificada pelo agente.
+- Loader/frontend: deadline absoluto `performance.now()`15s e timer/AbortSignal, verificação antes/depois de cada await, limite20MiB preservando legados; nenhum GET/signedURL fallback.
+- ZIP: até24 arquivos e60MiB reais acumulados; metadados apenas antecipam recusa. Excesso recusa a operação inteira, sem truncar/apagar documentos. Snapshot inicial/final, compressão e cada leitura têm deadline15s/abort/fence; Retry somente manual, resposta tardia não salva ZIP.
+- Policy revisável usa `storage.allow_any_operation(ARRAY[...]::text[])` só com list/list_v2/upload/upload_update/delete/delete_many para preservar dependências SELECT; não permite GET/info/head/sign nem operações desconhecidas. Continua RESTRICTIVE, sem substituir RLS vigente. Matriz LIVE necessária antes de aplicar.
+- XML v97 reportado pelo proprietário após publicação18:26:18: ZIP14 fontes,13 byte-exatas v96, única diferença ordem CORS equivalente. Nenhum hash ZIP/ezbr novo inventado; fontes XML locais intocadas.
+- Validação atual:86/86 testes canônicos em9 arquivos e Deno check candidata/rollback PASS; tipos isolados app/node PASS e harness canônico build/typecheck OK. Sem comando de redeploy/publicação/SQL, alterações de roles/sessões/objetos/chaves/plano ou mensagens externas.
+- Se rollback necessário: Edge503 deny e frontend nega clientes-docs/ZIP, nunca restaura GET/signedURL; rollback SQL candidato não executado. GET antigo/CDN ainda gate aberto em plano FREE.
+
+## Histórico abaixo — v1 rejeitada/v2 pré-implantação
+As seções seguintes são histórico de revisão; não substituem o estado vigente acima.
 
 ## Evidência real recebida, não reproduzida neste sandbox
 - Próprio PDF A/B: HTTP 200, 1751 bytes. Cruzado A/B: HTTP 400 NoSuchKey.

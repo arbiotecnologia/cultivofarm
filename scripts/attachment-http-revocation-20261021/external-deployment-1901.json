@@ -1,0 +1,18 @@
+{
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "source": "Owner report 2026-10-21T19:01:00Z; not executed by agent",
+  "function": "download-client-document",
+  "version": 1,
+  "status": "ACTIVE",
+  "verify_jwt": true,
+  "import_map": false,
+  "ezbr": "ad2041c454788719b1a7a3af7174e0b3b04c223756f986ea7a8e3bbe559ce364",
+  "applied_rpc": "client_document_download_snapshot(text)",
+  "migration": "client_document_atomic_download_snapshot",
+  "backup_rpc_applied": false,
+  "legacy_deny_applied": false,
+  "external_tests": "37 PASS",
+  "AB": {"own_status": 200, "bytes": 1751, "sha256": "eab7e35ee414bd13ab72cad855c4090e54b846259f439f58d9b49b54adc65965", "cross_status": 403, "A_seconds_approx": 6.2, "B_seconds_approx": 6.7, "cache_control": "private/no-store"},
+  "post_revocation": "owner testing; not yet certified",
+  "xml_live": {"version": 97, "published_utc": "2026-10-21T18:26:18Z", "external_zip_files": 14, "byte_exact_v96": 13, "only_delta": "CORS origin ordering, equivalent behavior owner reported", "local_xml_changed": false}
+}

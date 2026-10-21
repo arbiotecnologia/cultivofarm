@@ -1,3 +1,3 @@
-- Keep all executable candidates under this review directory; never promote to supabase/functions or src before independent approval, because source promotion can deploy automatically.
+- Keep unapproved candidates here; owner-approved download-client-document sources may be synchronized byte-exact after external deployment and frontend checks, without redeploy or publication. SQL remains review-only.
 - Client-document authority uses two atomic INVOKER/RLS actor snapshots; server-only bytes require the exact approved resource and never authorize by bucket or credential — preserves legacy GET denial without query fanout.
 - Flow protection does not certify old direct Storage URLs; require independent HTTP containment evidence before claiming effective endpoint revocation.

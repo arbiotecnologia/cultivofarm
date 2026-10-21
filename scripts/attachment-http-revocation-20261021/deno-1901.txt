@@ -1,0 +1,2 @@
+[0m[32mCheck[0m validation-edge/index.ts
+[0m[32mCheck[0m validation-deny/index.ts

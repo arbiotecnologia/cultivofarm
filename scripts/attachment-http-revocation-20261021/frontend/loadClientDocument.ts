@@ -6,15 +6,20 @@ export async function loadClientDocument(path: string, signal: AbortSignal): Pro
   const unavailable = () => new Error("Documento indisponível");
   if (SUPABASE_URL !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || signal.aborted) throw unavailable();
   const controller = new AbortController();
+  const deadline = performance.now() + 15_000;
   const abort = () => controller.abort();
+  const expired = () => {
+    if (performance.now() >= deadline) abort();
+    return controller.signal.aborted;
+  };
   signal.addEventListener("abort", abort, { once: true });
   const timer = setTimeout(abort, 15_000);
   const STOP = Symbol("aborted");
   const stopped = new Promise<typeof STOP>(resolve => controller.signal.addEventListener("abort", () => resolve(STOP), { once: true }));
   const step = async <T>(operation: () => PromiseLike<T>): Promise<T> => {
-    if (controller.signal.aborted) throw unavailable();
+    if (expired()) throw unavailable();
     const result = await Promise.race([Promise.resolve(operation()), stopped]);
-    if (result === STOP || controller.signal.aborted) throw unavailable();
+    if (result === STOP || expired()) throw unavailable();
     return result as T;
   };
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
@@ -29,7 +34,7 @@ export async function loadClientDocument(path: string, signal: AbortSignal): Pro
       headers: { Authorization: `Bearer ${session.data.session.access_token}`, apikey: SUPABASE_PUBLISHABLE_KEY,
         "Content-Type": "application/json" }, body: JSON.stringify({ bucket: "clientes-docs", path }),
     }).then(value => {
-      if (controller.signal.aborted) void value.body?.cancel().catch(() => undefined);
+      if (expired()) void value.body?.cancel().catch(() => undefined);
       return value;
     }));
     if (!response.ok || response.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase() !== "application/octet-stream" ||
@@ -45,7 +50,7 @@ export async function loadClientDocument(path: string, signal: AbortSignal): Pro
       if (size > 20 * 1024 * 1024) { abort(); throw unavailable(); }
       chunks.push(new Uint8Array(item.value).buffer);
     }
-    if (controller.signal.aborted) throw unavailable();
+    if (expired()) throw unavailable();
     const extension = path.split(".").pop()?.toLowerCase();
     const types: Record<string, string> = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg" };
     return new Blob(chunks, { type: types[extension ?? ""] ?? "application/octet-stream" });

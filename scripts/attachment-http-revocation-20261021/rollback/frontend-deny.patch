@@ -1,23 +1,45 @@
 --- a/src/lib/authz/authenticatedAttachment.ts
 +++ b/src/lib/authz/authenticatedAttachment.ts
-@@ -51,7 +51,7 @@
+@@ -40,7 +40,6 @@
+ 
+ /** Canonical SDK fetch carries actor authentication; no signed/public fallback. */
+ export async function downloadAuthenticatedAttachment(bucket: string, path: string, signal: AbortSignal): Promise<Blob> {
+-  const clientDeadline = performance.now() + ATTACHMENT_LIMITS.timeoutMs;
+   const controller = new AbortController();
+   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+   const abort = () => { controller.abort(); void reader?.cancel().catch(() => {}); };
+@@ -52,12 +51,7 @@
      if (!bucket || !path || path.startsWith("/") || path.split("/").some(part => part === ".." || part === ".")) throw unavailable();
      release = await acquire(controller.signal);
      if (controller.signal.aborted) throw unavailable();
--    if (bucket === "clientes-docs") return await loadClientDocument(path, controller.signal);
+-    if (bucket === "clientes-docs") {
+-      if (performance.now() >= clientDeadline) { abort(); throw unavailable(); }
+-      const blob = await loadClientDocument(path, controller.signal);
+-      if (controller.signal.aborted || performance.now() >= clientDeadline) { abort(); throw unavailable(); }
+-      return blob;
+-    }
 +    if (bucket === "clientes-docs") throw unavailable();
      const { data, error } = await supabase.storage.from(bucket).download(path, {}, { signal: controller.signal, cache: "no-store" }).asStream();
      if (error || !data || controller.signal.aborted) { await data?.cancel(); throw unavailable(); }
      reader = data.getReader();
 --- a/src/lib/clienteDocumentos.ts
 +++ b/src/lib/clienteDocumentos.ts
-@@ -26,93 +26,7 @@
+@@ -16,8 +16,6 @@
+   uploaded_by: string | null;
+ }
+ 
+-export const CLIENT_BACKUP_LIMITS = { files: 24, totalBytes: 60 * 1024 * 1024 } as const;
+-
+ /**
+  * Baixa todos os documentos do cliente, monta um ZIP com manifest.json e
+  * dispara o download no navegador. Retorna a quantidade de arquivos
+@@ -28,100 +26,7 @@
    nomeCliente: string,
    fence: BackupFence
  ): Promise<{ totalDocs: number; baixados: number; falhas: string[] }> {
--  const read = async () => {
+-  const read = async (signal: AbortSignal) => {
 -    const { data, error } = await supabase.rpc("client_documents_backup_snapshot" as never,
--      { _client: clienteId } as never).abortSignal(fence.signal);
+-      { _client: clienteId } as never).abortSignal(signal);
 -    if (error || !Array.isArray(data)) throw new Error("Documentos indisponíveis");
 -    const rows = data as unknown as Array<{ doc: ClienteDocumento; proof: unknown }>;
 -    if (rows.some(row => !row.doc || row.doc.cliente_id !== clienteId || !row.proof)) throw new Error("Documentos indisponíveis");
@@ -26,6 +48,9 @@
 -  const initial = await fencedStep(fence, read);
 -  const snapshot = JSON.stringify(initial);
 -  const lista = initial.map(row => row.doc);
+-  if (lista.length > CLIENT_BACKUP_LIMITS.files || lista.reduce((sum, doc) =>
+-    sum + (typeof doc.tamanho_bytes === 'number' && Number.isFinite(doc.tamanho_bytes) && doc.tamanho_bytes > 0 ? doc.tamanho_bytes : 0), 0)
+-    > CLIENT_BACKUP_LIMITS.totalBytes) throw new Error("Backup excede o limite de 24 arquivos ou 60 MiB");
 -
 -  if (lista.length === 0) {
 -    return { totalDocs: 0, baixados: 0, falhas: [] };
@@ -34,18 +59,22 @@
 -  const zip = new JSZip();
 -  const falhas: string[] = [];
 -  let baixados = 0;
+-  let totalBytes = 0;
 -
 -  for (const doc of lista) {
 -    try {
--      const blob = await fencedStep(fence, () => downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, fence.signal));
+-      const blob = await fencedStep(fence, signal => downloadAuthenticatedAttachment("clientes-docs", doc.arquivo_path, signal));
 -      if (!blob) {
 -        falhas.push(doc.nome);
 -        continue;
 -      }
+-      totalBytes += blob.size;
+-      if (totalBytes > CLIENT_BACKUP_LIMITS.totalBytes) throw new Error("Backup excede o limite de 60 MiB");
 -      const safeTipo = (doc.tipo || "outro").toString();
 -      zip.file(`${safeTipo}/${doc.nome}`, blob);
 -      baixados += 1;
 -    } catch {
+-      if (totalBytes > CLIENT_BACKUP_LIMITS.totalBytes) throw new Error("Backup excede o limite de 60 MiB");
 -      if (fence.signal.aborted || !fence.current()) throw new Error("Documentos indisponíveis");
 -      falhas.push(doc.nome);
 -    }
