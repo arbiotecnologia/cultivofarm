@@ -12,6 +12,7 @@ import { DepCounts, totalDeps, depLabel, getDepRoute } from "@/lib/cadastros";
 import { supabase } from "@/integrations/supabase/client";
 import { gerarBackupDocumentosCliente } from "@/lib/clienteDocumentos";
 import { toast } from "sonner";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
 
 type Entidade = "cliente" | "fazenda" | "talhão";
@@ -43,6 +44,14 @@ export function ExcluirInativarDialog({
   const [gerandoBackup, setGerandoBackup] = useState(false);
   const scope = useCommercialRegistrationScope();
   const actionLock = useRef(false);
+  const backupScope = useStorageAccessScope(`cliente-backup:${entidadeId}`);
+  const backupOwner = useRef<AbortController | null>(null);
+  useEffect(() => {
+    backupOwner.current?.abort();
+    backupOwner.current = null;
+    setGerandoBackup(false);
+    return () => { backupOwner.current?.abort(); backupOwner.current = null; };
+  }, [backupScope.scope, open, entidadeId]);
 
   useEffect(() => {
     if (!open) {
@@ -97,12 +106,15 @@ export function ExcluirInativarDialog({
   };
 
   const handleGerarBackup = async () => {
-    if (!scope.ready || actionLock.current) return;
-    actionLock.current = true;
-    const current = scope.capture();
+    if (!scope.ready || !backupScope.ready || backupOwner.current || actionLock.current) return;
+    const controller = new AbortController();
+    backupOwner.current = controller;
+    const storageCurrent = backupScope.capture();
+    const commercialCurrent = scope.capture();
+    const current = () => !controller.signal.aborted && backupOwner.current === controller && storageCurrent() && commercialCurrent();
     setGerandoBackup(true);
     try {
-      const r = await gerarBackupDocumentosCliente(entidadeId, nome);
+      const r = await gerarBackupDocumentosCliente(entidadeId, nome, { signal: controller.signal, current });
       if (!current()) return;
       setBackupFeito(r.falhas.length === 0);
       toast.success(
@@ -111,8 +123,7 @@ export function ExcluirInativarDialog({
     } catch {
       if (current()) toast.error("Não foi possível gerar o backup dos documentos.");
     } finally {
-      actionLock.current = false;
-      setGerandoBackup(false);
+      if (backupOwner.current === controller) { backupOwner.current = null; setGerandoBackup(false); }
     }
   };
 
