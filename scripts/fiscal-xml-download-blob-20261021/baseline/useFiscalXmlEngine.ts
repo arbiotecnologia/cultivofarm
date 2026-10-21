@@ -100,28 +100,14 @@ export function useGenerateFiscalXml() {
   });
 }
 
-export const FISCAL_XML_MAX_BYTES = 10 * 1024 * 1024;
-export const FISCAL_XML_TIMEOUT_MS = 15_000;
-
-/** Chave estável do artefato para o abridor autenticado (não é path de Storage). */
-export const fiscalXmlKey = (runId: string, artifact: "signed" | "unsigned") => `${runId}:${artifact}`;
-
-/**
- * Baixa os bytes do artefato pela Edge canônica (sessão do ator). Nunca aceita
- * nem abre URL: resposta JSON (contrato antigo `{ url }`) é tratada como
- * indisponível — fail-closed durante o rollout.
- */
-export async function loadFiscalXmlArtifact(key: string, signal: AbortSignal): Promise<Blob> {
-  const unavailable = () => new Error("Arquivo indisponível");
-  const [runId, artifact] = key.split(":");
-  if (!runId || (artifact !== "signed" && artifact !== "unsigned")) throw unavailable();
-  if (signal.aborted) throw unavailable();
-  const { data, error } = await supabase.functions.invoke("fiscal-xml-engine", {
-    body: { action: "download", run_id: runId, artifact },
-    signal,
-    timeout: FISCAL_XML_TIMEOUT_MS,
+export function useDownloadFiscalXml() {
+  return useMutation({
+    mutationFn: async (args: { runId: string; artifact: "signed" | "unsigned" }): Promise<string> => {
+      const { data, error } = await supabase.functions.invoke("fiscal-xml-engine", {
+        body: { action: "download", run_id: args.runId, artifact: args.artifact },
+      });
+      if (error) throw new Error(error.message);
+      return (data as { url: string }).url;
+    },
   });
-  if (signal.aborted || error || !(data instanceof Blob)) throw unavailable();
-  if (data.size === 0 || data.size > FISCAL_XML_MAX_BYTES) throw unavailable();
-  return new Blob([await data.arrayBuffer()], { type: "application/xml" });
 }

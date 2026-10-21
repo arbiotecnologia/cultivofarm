@@ -1,5 +1,5 @@
 diff --git a/src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx b/src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx
-index e7977102..2048a42e 100644
+index b23302df..2048a42e 100644
 --- a/src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx
 +++ b/src/components/fiscal/documentos/GeracaoXmlNfeSecao.tsx
 @@ -4,7 +4,7 @@
@@ -11,23 +11,132 @@ index e7977102..2048a42e 100644
  import {
    AlertTriangle,
    CheckCircle2,
-@@ -74,7 +74,7 @@ function Hash({ label, value }: { label: string; value: string | null }) {
- function ArtifactButton({ opener, runId, artifact, available, label, icon, testId }: {
-   opener: ReturnType<typeof useAuthenticatedAttachmentOpener>;
-   runId: string; artifact: "signed" | "unsigned"; available: boolean;
--  label: string; icon: React.ReactNode; testId: string;
+@@ -18,8 +18,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+ import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { toast } from "sonner";
++import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+ import {
+-  useDownloadFiscalXml,
++  fiscalXmlKey,
++  loadFiscalXmlArtifact,
+   useFiscalXmlStatus,
+   useGenerateFiscalXml,
+   type FiscalXmlRun,
+@@ -69,19 +71,35 @@ function Hash({ label, value }: { label: string; value: string | null }) {
+   );
+ }
+ 
+-function RunCard({ run }: { run: FiscalXmlRun }) {
+-  const download = useDownloadFiscalXml();
++function ArtifactButton({ opener, runId, artifact, available, label, icon, testId }: {
++  opener: ReturnType<typeof useAuthenticatedAttachmentOpener>;
++  runId: string; artifact: "signed" | "unsigned"; available: boolean;
 +  label: string; icon: ReactNode; testId: string;
- }) {
-   const key = fiscalXmlKey(runId, artifact);
-   const ready = !!opener.urls[key];
++}) {
++  const key = fiscalXmlKey(runId, artifact);
++  const ready = !!opener.urls[key];
++  const busy = opener.loadingPaths.includes(key);
++  const onError = () => toast.error("Não foi possível preparar o arquivo", { description: "Tente novamente." });
++  return (
++    <Button
++      type="button" size="sm" variant="outline"
++      disabled={!available || busy || !opener.ready}
++      onClick={() => {
++        // Clique explícito: prepara bytes autenticados; segundo clique entrega o Blob.
++        if (ready) opener.download(key, `nfe-${runId}-${artifact}.xml`);
++        else void opener.open(key, onError);
++      }}
++      data-testid={testId}
++      data-ready={ready ? "true" : "false"}
++    >
++      {icon} {busy ? "Preparando..." : ready ? `Baixar ${label}` : label}
++    </Button>
++  );
++}
+ 
+-  const open = async (artifact: "signed" | "unsigned") => {
+-    try {
+-      const url = await download.mutateAsync({ runId: run.runId, artifact });
+-      window.open(url, "_blank", "noopener,noreferrer");
+-    } catch (err) {
+-      toast.error("Não foi possível abrir o arquivo", {
+-        description: err instanceof Error ? err.message : undefined,
+-      });
+-    }
+-  };
++function RunCard({ run }: { run: FiscalXmlRun }) {
++  // Escopo canônico (identidade/tenant/papéis/epoch/lease): mudança aborta e revoga Blobs.
++  const opener = useAuthenticatedAttachmentOpener(`fiscal-xml:${run.runId}`, "fiscal-xml", loadFiscalXmlArtifact);
+ 
+   return (
+     <div className="rounded-lg border border-border p-3 space-y-2" data-testid="fiscal-xml-run">
+@@ -93,22 +111,10 @@ function RunCard({ run }: { run: FiscalXmlRun }) {
+           <Badge variant="secondary">tpAmb {run.environmentCode} (homologação)</Badge>
+         </div>
+         <div className="flex gap-2">
+-          <Button
+-            type="button" size="sm" variant="outline"
+-            disabled={!run.hasUnsigned || download.isPending}
+-            onClick={() => open("unsigned")}
+-            data-testid="fiscal-xml-download-unsigned"
+-          >
+-            <Download className="w-4 h-4 mr-1" aria-hidden /> XML
+-          </Button>
+-          <Button
+-            type="button" size="sm" variant="outline"
+-            disabled={!run.hasSigned || download.isPending}
+-            onClick={() => open("signed")}
+-            data-testid="fiscal-xml-download-signed"
+-          >
+-            <FileSignature className="w-4 h-4 mr-1" aria-hidden /> XML assinado
+-          </Button>
++          <ArtifactButton opener={opener} runId={run.runId} artifact="unsigned" available={run.hasUnsigned}
++            label="XML" icon={<Download className="w-4 h-4 mr-1" aria-hidden />} testId="fiscal-xml-download-unsigned" />
++          <ArtifactButton opener={opener} runId={run.runId} artifact="signed" available={run.hasSigned}
++            label="XML assinado" icon={<FileSignature className="w-4 h-4 mr-1" aria-hidden />} testId="fiscal-xml-download-signed" />
+         </div>
+       </div>
+ 
 diff --git a/src/hooks/useFiscalXmlEngine.ts b/src/hooks/useFiscalXmlEngine.ts
-index 2648b13a..335cf2b8 100644
+index fe2950e5..335cf2b8 100644
 --- a/src/hooks/useFiscalXmlEngine.ts
 +++ b/src/hooks/useFiscalXmlEngine.ts
-@@ -123,5 +123,5 @@ export async function loadFiscalXmlArtifact(key: string, signal: AbortSignal): P
+@@ -100,14 +100,28 @@ export function useGenerateFiscalXml() {
    });
-   if (signal.aborted || error || !(data instanceof Blob)) throw unavailable();
-   if (data.size === 0 || data.size > FISCAL_XML_MAX_BYTES) throw unavailable();
--  return new Blob([await data.arrayBuffer()], { type: "application/xml" });
+ }
+ 
+-export function useDownloadFiscalXml() {
+-  return useMutation({
+-    mutationFn: async (args: { runId: string; artifact: "signed" | "unsigned" }): Promise<string> => {
+-      const { data, error } = await supabase.functions.invoke("fiscal-xml-engine", {
+-        body: { action: "download", run_id: args.runId, artifact: args.artifact },
+-      });
+-      if (error) throw new Error(error.message);
+-      return (data as { url: string }).url;
+-    },
++export const FISCAL_XML_MAX_BYTES = 10 * 1024 * 1024;
++export const FISCAL_XML_TIMEOUT_MS = 15_000;
++
++/** Chave estável do artefato para o abridor autenticado (não é path de Storage). */
++export const fiscalXmlKey = (runId: string, artifact: "signed" | "unsigned") => `${runId}:${artifact}`;
++
++/**
++ * Baixa os bytes do artefato pela Edge canônica (sessão do ator). Nunca aceita
++ * nem abre URL: resposta JSON (contrato antigo `{ url }`) é tratada como
++ * indisponível — fail-closed durante o rollout.
++ */
++export async function loadFiscalXmlArtifact(key: string, signal: AbortSignal): Promise<Blob> {
++  const unavailable = () => new Error("Arquivo indisponível");
++  const [runId, artifact] = key.split(":");
++  if (!runId || (artifact !== "signed" && artifact !== "unsigned")) throw unavailable();
++  if (signal.aborted) throw unavailable();
++  const { data, error } = await supabase.functions.invoke("fiscal-xml-engine", {
++    body: { action: "download", run_id: runId, artifact },
++    signal,
++    timeout: FISCAL_XML_TIMEOUT_MS,
+   });
++  if (signal.aborted || error || !(data instanceof Blob)) throw unavailable();
++  if (data.size === 0 || data.size > FISCAL_XML_MAX_BYTES) throw unavailable();
 +  return new Blob([data], { type: "application/xml" });
  }
