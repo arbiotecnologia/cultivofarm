@@ -10,7 +10,12 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     rpc: (name: string, args: Record<string, unknown>) => {
       state.rpcCalls.push({ name, args });
-      return { abortSignal: () => Promise.resolve(state.rpcResult) };
+      return { abortSignal: () => {
+        const data = state.rpcResult.data && typeof state.rpcResult.data === "object" && args.p_idempotency_key
+          ? { ...(state.rpcResult.data as Record<string, unknown>), idempotency_key: args.p_idempotency_key }
+          : state.rpcResult.data;
+        return Promise.resolve({ data, error: state.rpcResult.error });
+      } };
     },
   },
 }));
