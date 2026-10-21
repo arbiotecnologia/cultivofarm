@@ -1,0 +1,4 @@
+⚠️  [0m[36mdeno bundle[0m is experimental and subject to changes
+[0m[32mBundled[0m 100 modules in 814ms
+  [0m[36m../fiscal-xml-types-1810.rollback.bundle.js[0m [0m[38;5;245m4.76MB[0m
+

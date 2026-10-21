@@ -1,2 +1,3 @@
 - Review candidates must read request and XML streams with bounded byte counts and absolute deadlines, cancel without awaiting stalled I/O, and release no bytes before integrity and fresh canonical authorization — prevents unbounded transfers and stale delivery.
 - Portable validation stages candidates outside runtime and includes local dependencies without credentials; local compile receipts never substitute for LIVE source/config/dependency provenance — preserves c7 and the deployment gate.
+- Edge type fixes stay in review entrypoints and a staged XSD dependency; WebCrypto receives exact non-shared byte copies and WASM keeps one typed cached promise — preserves runtime isolation and generation semantics.

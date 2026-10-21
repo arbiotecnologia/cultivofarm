@@ -6,8 +6,8 @@
 - [x] Preparar diff, rollback deny completo e plano de fixture/inventário legacy sem tokens; monitor, Auth e demais runtime byte-exatos.
 - [x] Baseline LIVE v94 recuperado externamente pelo proprietário (ZIP/painel + list_edge_functions): ACTIVE, JWT true, import_map false; index hash igual local, 14 fontes/dependências sem delta normalizado contra c7; não foi download neste sandbox.
 - [ ] Reconfirmar versão/config/hash/dependências LIVE sem drift no predeploy.
-- [ ] Corrigir cinco erros Deno na candidata/rollback e dependência XSD isolada; reexecutar check/bundle, Edge/UI, tipos e build isolado; sem implantação.
-- [ ] Implantação e E2E XML A/B: correções/implantação segura autorizadas pelo proprietário, execução aguarda revisão técnica, check Edge/bundle hosted, reconfirmação LIVE v94 e fixture canônica unsigned disponível; sem INSERT direto/SEFAZ/certificado real.
+- [x] Cinco erros Deno corrigidos candidata/rollback + XSD isolado: check/bundles PASS; 65/65 Edge/UI/comportamento, tipos app/node e build isolado 28,52 s PASS; sem implantação.
+- [ ] Implantação e E2E XML A/B: correções/implantação segura autorizadas pelo proprietário, execução aguarda revisão técnica, bundle hosted, reconfirmação LIVE v94 e fixture canônica unsigned disponível; sem INSERT direto/SEFAZ/certificado real.
 - [ ] Inventário financial-receipts e horizonte expirado: faltam locators/logs/TTL/cutoff verificáveis; nenhuma URL/cache declarada revogada.
 
 ## Revogação técnica efetiva — baseline db1eee, 22:12
