@@ -3,7 +3,7 @@
 ## Contrato oficial aceito
 - Objeto exato: `purgeCache(path)`, request `DELETE /storage/v1/cdn/{bucket}/{path}` no host canônico; `/cdn/{bucket}/{path}` é relativo à base Storage. Não confundir com `DELETE /storage/v1/object/...`, que apagaria objeto e está proibido.
 - Bucket inteiro: `purgeBucketCache(bucket)` existe, mas **fora da execução mínima proposta**, pois invalida mais alvos. Exige lista/escopo e revisão independentes próprios.
-- Pro+, segredo apenas no servidor, propagação de até 60 segundos. Plano e habilitação efetiva neste projeto não verificados; não mudar plano, não substituir segredo/chave para tentar habilitar.
+- Pro+, segredo apenas no servidor, propagação de até 60 segundos. **Preflight externo do proprietário 18:51 UTC: organização Cultivo Farm do ref canônico aparece FREE no dashboard.** Portanto disponibilidade da purga NÃO presumida; requisito documental Pro+ não comprovado, execução fechada. Não mudar plano nem substituir segredo/chave para tentar habilitar.
 - Referência: https://supabase.com/docs/guides/storage/cdn/purge-cdn-cache ; implementação instalada `StorageFileApi.purgeCache` usa DELETE em `/cdn/`.
 
 ## Destino e autoridade sem ambiguidade
@@ -34,6 +34,6 @@ Antes de escrever executor operacional, conferir constructor final e headers rea
 4. Homologar URL antiga exata aquecida→revogação, A/B e repetição após restauração/novo aquecimento; POST e GET cruzados negados. A gestão dos papéis nesses ensaios permanece com o proprietário, não com executor de purga.
 
 ## Estado e rollback
-Preparação documental completa; executor operacional **não montado** porque faltam controle durável comprovado, locator B exato e disponibilidade da API no projeto. Não pedir nem expor segredo para executar antes desses gates.
+Preparação documental completa; executor operacional **não montado** porque faltam controle durável comprovado, locator B exato e disponibilidade da API no projeto FREE informado externamente. Não criar endpoint de manutenção com service_role sem necessidade comprovada, nem pedir segredo para contornar o gate. Prioridade é patch POST canônico e bloqueio legado revisáveis; expiração/invalidação permanece **gate de homologação aberto** até prova HTTP, sem presumir que max-age ou restauração dos papéis revogou caches. Papéis A/B já restaurados pelo proprietário; nenhum ensaio de revogação será iniciado pelo agente.
 
 Rollback mantém GET legado sem entrega de cache não autorizado e POST/frontend em deny503; não restaura assinatura/cache antigo. Purga não tem operação inversa para ressuscitar cache e não altera os objetos/histórico. SU-518022 apenas registro existente, **nenhuma mensagem externa**.
