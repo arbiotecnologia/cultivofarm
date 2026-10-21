@@ -301,6 +301,19 @@ export default function WizardRecomendacaoStep({
     produtos.find(p => p.id === form.produto_biologico_sugerido_id) ?? prodMap.get(form.produto_biologico_sugerido_id ?? ""),
     microrganismos.find(m => m.id === form.microrganismo_id) ?? microMap.get(form.microrganismo_id ?? ""));
 
+  const enumSelect = (field: keyof typeof REC_ENUM_OPTIONS, label: string) => {
+    const value = form[field] ?? "";
+    const invalid = value !== "" && !REC_ENUM_OPTIONS[field].some(([key]) => key === value);
+    return <Select value={value || "__none"} onValueChange={v => setForm({ ...form, [field]: v === "__none" ? "" : v })}>
+      <SelectTrigger aria-label={label}><SelectValue /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none">Não informado</SelectItem>
+        {invalid && <SelectItem value={value} disabled>Valor inválido — revise</SelectItem>}
+        {REC_ENUM_OPTIONS[field].map(([key, text]) => <SelectItem key={key} value={key}>{text}</SelectItem>)}
+      </SelectContent>
+    </Select>;
+  };
+
   if (locked) {
     return (
       <Card className="p-6 space-y-3">

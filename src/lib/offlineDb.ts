@@ -932,6 +932,7 @@ export async function getPendingRecomendacoesByRegistro(
 export async function updatePendingRecomendacao(
   clientUuid: string,
   patch: Partial<PendingRecomendacao>,
+  expectedUpdatedAt?: string,
 ): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
@@ -940,18 +941,23 @@ export async function updatePendingRecomendacao(
     const getReq = store.get(clientUuid);
     getReq.onsuccess = () => {
       const item = getReq.result as PendingRecomendacao | undefined;
-      if (item) store.put({ ...item, ...patch });
+      if (item && (expectedUpdatedAt === undefined || item.updatedAt === expectedUpdatedAt)) store.put({ ...item, ...patch });
     };
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
 }
 
-export async function removePendingRecomendacao(clientUuid: string): Promise<void> {
+export async function removePendingRecomendacao(clientUuid: string, expectedUpdatedAt?: string): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_RECOMENDACOES, "readwrite");
-    tx.objectStore(STORE_RECOMENDACOES).delete(clientUuid);
+    const store = tx.objectStore(STORE_RECOMENDACOES);
+    const req = store.get(clientUuid);
+    req.onsuccess = () => {
+      const item = req.result as PendingRecomendacao | undefined;
+      if (item && (expectedUpdatedAt === undefined || item.updatedAt === expectedUpdatedAt)) store.delete(clientUuid);
+    };
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
