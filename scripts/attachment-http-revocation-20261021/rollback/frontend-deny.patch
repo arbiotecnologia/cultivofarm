@@ -1,0 +1,16 @@
+--- a/src/lib/authz/authenticatedAttachment.ts
++++ b/src/lib/authz/authenticatedAttachment.ts
+@@ -1,5 +1,4 @@
+ import { supabase } from "@/integrations/supabase/client";
+-import { loadClientDocument } from "./loadClientDocument";
+ 
+ // Operational bounds, not authorization. Storage RLS remains authoritative.
+ export const ATTACHMENT_LIMITS = { concurrent: 3, queued: 48, files: 24, fileBytes: 20 * 1024 * 1024, totalBytes: 60 * 1024 * 1024, timeoutMs: 15_000 } as const;
+@@ -40,7 +39,7 @@
+ /** Canonical SDK fetch carries actor authentication; no signed/public fallback. */
+ export async function downloadAuthenticatedAttachment(bucket: string, path: string, signal: AbortSignal): Promise<Blob> {
+-  if (bucket === "clientes-docs") return loadClientDocument(path, signal);
++  if (bucket === "clientes-docs") throw unavailable();
+   const controller = new AbortController();
+   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+   const abort = () => { controller.abort(); void reader?.cancel().catch(() => {}); };
