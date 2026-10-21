@@ -27,7 +27,7 @@ async function hold(s: ReturnType<typeof setup>, ms: number) {
 beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] }));
 afterEach(() => vi.useRealTimers());
 
-describe('renewal floor margin (>= 10 s)', () => {
+describe('renewal floor margin 10 s', () => {
   it('sustained 3 s RTT: never pauses for 10 min, ~5 s cadence, no overlap', async () => {
     const s = setup(); s.m.start(); await step(3000);
     await hold(s, 600_000);

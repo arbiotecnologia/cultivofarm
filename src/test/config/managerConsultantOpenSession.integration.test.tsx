@@ -125,7 +125,7 @@ describe('paired scope full layouts, actual AuthProvider/guards/layouts/selector
  it.each(['/financeiro/receber','/app/registrar'])('%s hidden polls and simultaneous focus/visibility preserve drafts and modal on identical fingerprint',async path=>{
    setup(path);await tick();fireEvent.change(screen.getByRole('textbox'),{target:{value:'rascunho entre abas'}});fireEvent.click(screen.getByRole('button',{name:'Abrir modal'}));
    Object.defineProperty(document,'visibilityState',{value:'hidden'});act(()=>document.dispatchEvent(new Event('visibilitychange')));const before=s.h15;
-   await tick(10000);await tick(10000);const hiddenPolls=s.h15-before;expect(hiddenPolls).toBeGreaterThanOrEqual(2);expect(hiddenPolls).toBeLessThanOrEqual(7);// early renewal ~3 s cadence (12 s floor; was <=5 with 10 s)
+   await tick(10000);await tick(10000);const hiddenPolls=s.h15-before;expect(hiddenPolls).toBeGreaterThanOrEqual(2);expect(hiddenPolls).toBeLessThanOrEqual(5);// early renewal ~5 s cadence (10 s floor)
 
    let resolve:((v:unknown)=>void)|undefined;s.hold=()=>new Promise(r=>resolve=r);Object.defineProperty(document,'visibilityState',{value:'visible'});
    act(()=>{document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'));});await tick();expect(s.h15).toBe(before+hiddenPolls+1);

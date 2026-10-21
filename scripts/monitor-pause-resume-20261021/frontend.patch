@@ -1,0 +1,253 @@
+diff --git a/src/components/authz/AuthzEpochBoundary.tsx b/src/components/authz/AuthzEpochBoundary.tsx
+index 5baa4927..c56315b4 100644
+--- a/src/components/authz/AuthzEpochBoundary.tsx
++++ b/src/components/authz/AuthzEpochBoundary.tsx
+@@ -1,4 +1,5 @@
+-import { ReactNode } from "react";
++import { ReactNode, useEffect } from "react";
++import { observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
+ import { useAuth } from "@/hooks/useAuth";
+ import { AUTHZ_CACHE_FOUNDATION_ENABLED } from "@/lib/authz/authzEpochGate";
+ import { Button } from "@/components/ui/button";
+@@ -19,7 +20,10 @@ import { Loader2, ShieldAlert } from "lucide-react";
+  *   rascunhos, seleções e objectURLs via cleanup de unmount dos consumidores.
+  */
+ export function AuthzEpochBoundary({ children }: { children: ReactNode }) {
+-  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked } = useAuth();
++  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked, user, profile, roles } = useAuth();
++  // Identidade/empresa/papéis diferentes descartam a retomada de navegação.
++  const principal = resumePrincipalKey(user?.id, profile?.organization_id, roles ?? []);
++  useEffect(() => { observeResumePrincipal(principal); }, [principal]);
+ 
+   if (!AUTHZ_CACHE_FOUNDATION_ENABLED) return <>{children}</>;
+ 
+diff --git a/src/components/clientes/ClienteFormTabs.tsx b/src/components/clientes/ClienteFormTabs.tsx
+index e6e7ddec..1ca968f4 100644
+--- a/src/components/clientes/ClienteFormTabs.tsx
++++ b/src/components/clientes/ClienteFormTabs.tsx
+@@ -24,6 +24,9 @@ import { InscricaoEstadualCadastroInput } from "./InscricaoEstadualCadastroInput
+ 
+ interface ClienteFormTabsProps {
+   clienteId?: string;
++  /** Aba inicial (retomada de navegação); só aplicada se a aba estiver autorizada. */
++  initialTab?: string;
++  onTabChange?: (tab: string) => void;
+ }
+ 
+ // MaskedInput integrado com RHF via Controller — garante que o valor
+@@ -70,14 +73,21 @@ function MaskedField({
+   );
+ }
+ 
+-export function ClienteFormTabs({ clienteId }: ClienteFormTabsProps) {
++export function ClienteFormTabs({ clienteId, initialTab, onTabChange }: ClienteFormTabsProps) {
+   const { register, watch, setValue, control, formState: { errors } } = useFormContext();
+   const [loadingCEP, setLoadingCEP] = useState(false);
+   const [loadingCNPJ, setLoadingCNPJ] = useState(false);
+   const canManageDocs = useCanManageClienteDocs();
+   const { role } = useAuth();
+   const scope = useCommercialRegistrationScope();
+-  const [tab, setTab] = useState("geral");
++  const canManagePortalTab = role === "administrador" || role === "gestor" || role === "administrativo";
++  const allowedInitial = initialTab && ["geral", "endereco", "financeiro"].includes(initialTab)
++    || (initialTab === "documentos" && canManageDocs) || (initialTab === "portal" && canManagePortalTab);
++  const [tab, setTabState] = useState(allowedInitial && initialTab ? initialTab : "geral");
++  const onTabChangeRef = useRef(onTabChange);
++  onTabChangeRef.current = onTabChange;
++  const setTab = useCallback((next: string) => { setTabState(next); onTabChangeRef.current?.(next); }, []);
++  useEffect(() => { onTabChangeRef.current?.(tab); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+   const cepGeneration = useRef({ endereco: 0, cobranca: 0 });
+   useEffect(() => {
+     const field = Object.keys(errors)[0];
+diff --git a/src/lib/authz/authzEpochMonitor.ts b/src/lib/authz/authzEpochMonitor.ts
+index 875a6a60..521edfa2 100644
+--- a/src/lib/authz/authzEpochMonitor.ts
++++ b/src/lib/authz/authzEpochMonitor.ts
+@@ -76,18 +76,14 @@ export interface AuthzEpochMonitorDeps {
+ // observed a 5.094s round-trip right after ~3s samples (5s floor expired 7ms
+ // short) and later a 7.999s spike after fast samples (7.5s floor expired ~1s
+ // short), so the floor covers an ISOLATED spike up to ~10s after low RTT
+-// (8s passes). 2026-10-21 15:20 a real 10.43s spike after fast samples
+-// expired 3ms short (leaseRemaining -3), so the floor is 12s: an isolated
+-// spike < 12s survives when the preceding RTT <= 2s (< 11s with 3s RTT).
+-// Hard limit: headroom can never exceed 15s - previousRTT - MIN_DELAY.
+-// Cost: cadence 5s -> max(previousRTT + 1s, 3s). Earlier note: with ~3s RTT the cadence goes from ~7.5s to ~5s (+50%
++// (8s passes). Cost: with ~3s RTT the cadence goes from ~7.5s to ~5s (+50%
+ // requests, reviewed scopes only). It only moves the request EARLIER; lease
+ // (15s from request start), late-response rejection, no overlap and
+ // fail-closed expiry are unchanged. SUSTAINED 8s RTT (margin 2 x RTT > lease)
+ // and any RTT >= 15s (e.g. 17s) still expire fail-closed.
+ // JITTER: up to this much earlier, never later than the computed time.
+ export const EARLY_RENEWAL_MIN_DELAY_MS = 1_000;
+-export const EARLY_RENEWAL_FLOOR_MARGIN_MS = 12_000;
++export const EARLY_RENEWAL_FLOOR_MARGIN_MS = 10_000;
+ export const EARLY_RENEWAL_MAX_JITTER_MS = 500;
+ 
+ export interface AuthzEpochMonitor {
+diff --git a/src/lib/navigation/protectedResumeContext.ts b/src/lib/navigation/protectedResumeContext.ts
+new file mode 100644
+index 00000000..4f0d38c3
+--- /dev/null
++++ b/src/lib/navigation/protectedResumeContext.ts
+@@ -0,0 +1,51 @@
++/**
++ * Retomada de contexto de NAVEGAÇÃO após pausa de autorização (monitor).
++ *
++ * Guarda em memória do módulo (nunca storage persistente) apenas:
++ * principal (usuário/empresa/papéis), rota, ID do registro e nome da aba de
++ * uma allowlist. Nenhum dado de formulário, Blob, URL ou resposta do servidor.
++ *
++ * - Consumo único e TTL curto.
++ * - Principal diferente (identidade/empresa/papéis, logout, A->B->A) limpa.
++ * - Quem consome DEVE refazer a leitura autorizada canônica e só reabrir se
++ *   o registro ainda vier nela; caso contrário descarta.
++ */
++export const RESUME_TTL_MS = 120_000;
++export const RESUMABLE_CLIENTE_TABS = ["geral", "endereco", "financeiro", "documentos", "portal"] as const;
++export type ResumableClienteTab = (typeof RESUMABLE_CLIENTE_TABS)[number];
++
++type Slot = { principal: string; route: string; recordId: string; tab: ResumableClienteTab; at: number };
++let slot: Slot | null = null;
++
++export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[]): string | null {
++  if (!userId || !organizationId || roles.length === 0) return null;
++  return JSON.stringify([userId, organizationId, [...roles].sort()]);
++}
++
++export function isResumableClienteTab(tab: unknown): tab is ResumableClienteTab {
++  return typeof tab === "string" && (RESUMABLE_CLIENTE_TABS as readonly string[]).includes(tab);
++}
++
++export function rememberResume(principal: string | null, route: string, recordId: string, tab: string, now: number = Date.now()): void {
++  if (!principal || !recordId || !isResumableClienteTab(tab)) { slot = null; return; }
++  slot = { principal, route, recordId, tab, at: now };
++}
++
++export function clearResume(): void { slot = null; }
++
++/** Qualquer mudança/ausência de principal descarta o contexto. */
++export function observeResumePrincipal(principal: string | null): void {
++  if (slot && slot.principal !== principal) slot = null;
++}
++
++/** Consome uma vez; mismatch/TTL vencido também descarta. */
++export function takeResume(principal: string | null, route: string, now: number = Date.now()): { recordId: string; tab: ResumableClienteTab } | null {
++  const s = slot;
++  slot = null;
++  if (!s || !principal || s.principal !== principal || s.route !== route) return null;
++  if (now - s.at < 0 || now - s.at > RESUME_TTL_MS) return null;
++  return { recordId: s.recordId, tab: s.tab };
++}
++
++/** Somente para testes. */
++export function __peekResumeForTests(): Readonly<Slot> | null { return slot; }
+diff --git a/src/pages/clientes/ProdutoresTab.tsx b/src/pages/clientes/ProdutoresTab.tsx
+index c9583a98..7a73775e 100644
+--- a/src/pages/clientes/ProdutoresTab.tsx
++++ b/src/pages/clientes/ProdutoresTab.tsx
+@@ -28,6 +28,9 @@ import { unmask, unmaskCpfCnpj, formatCpfCnpj, getTipoDocumento, validatePhoneBR
+ import { normalizeInscricaoEstadualCadastro } from "@/lib/schemas/inscricaoEstadualCadastro";
+ import { useCommercialRegistrationScope } from "@/hooks/useCommercialRegistrationScope";
+ import { commercialRegistrationError } from "@/lib/commercialRegistrationErrors";
++import { clearResume, rememberResume, resumePrincipalKey, takeResume } from "@/lib/navigation/protectedResumeContext";
++
++const RESUME_ROUTE = "/clientes#produtores";
+ import { Link } from "react-router-dom";
+ import type { Database } from "@/integrations/supabase/cultivofarm.types";
+ 
+@@ -42,8 +45,9 @@ const defaultValues: ClienteSchema = {
+ 
+ export default function ProdutoresTab() {
+   const isMobile = useIsMobile();
+-  const { role } = useAuth();
++  const { role, user, profile, roles } = useAuth();
+   const scope = useCommercialRegistrationScope();
++  const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles ?? []);
+   const submitLock = useRef(false);
+   const draftId = useRef(crypto.randomUUID());
+   const readGeneration = useRef(0);
+@@ -61,6 +65,27 @@ export default function ProdutoresTab() {
+   const [selectedClienteId, setSelectedClienteId] = useState<string | null>(null);
+   const [historyOpen, setHistoryOpen] = useState(false);
+ 
++  // Retomada SEGURA só de navegação (ID + aba): nunca rascunho/Blob/dados.
++  const [resumeTab, setResumeTab] = useState<string | undefined>(undefined);
++  const resumeChecked = useRef(false);
++  const openRef = useRef({ open: false, id: null as string | null, tab: "geral", principal: resumePrincipal, ready: false });
++  openRef.current.open = open; openRef.current.id = selectedClienteId;
++  openRef.current.principal = resumePrincipal; openRef.current.ready = canManage;
++  const onFormTabChange = useCallback((tab: string) => {
++    openRef.current.tab = tab;
++    const c = openRef.current;
++    if (c.open && c.id && c.ready) rememberResume(c.principal, RESUME_ROUTE, c.id, tab);
++  }, []);
++  useEffect(() => {
++    if (open && selectedClienteId && canManage) rememberResume(resumePrincipal, RESUME_ROUTE, selectedClienteId, openRef.current.tab);
++  }, [open, selectedClienteId, canManage, resumePrincipal]);
++  useEffect(() => {
++    const path = window.location.pathname;
++    // Unmount pela pausa mantém a rota; navegação para outra rota descarta.
++    return () => { if (window.location.pathname !== path) clearResume(); };
++  }, []);
++  const closeEditor = () => { clearResume(); setResumeTab(undefined); openRef.current.tab = "geral"; };
++
+   const [delDialog, setDelDialog] = useState<{ id: string; nome: string; inativo: boolean } | null>(null);
+ 
+   const methods = useForm<ClienteSchema>({
+@@ -150,6 +175,19 @@ export default function ProdutoresTab() {
+     void fetchClientes();
+   }, [scope.scope, reset, fetchClientes]);
+ 
++  useEffect(() => {
++    if (resumeChecked.current || !canManage || clientRows.scope !== scope.scope || clientRows.scope === "") return;
++    resumeChecked.current = true;
++    const ctx = takeResume(resumePrincipal, RESUME_ROUTE);
++    if (!ctx || open) return;
++    const row = clientes.find(c => c.id === ctx.recordId);
++    if (!row) return; // excluído/sem acesso: não reapresenta nada
++    setResumeTab(ctx.tab); openRef.current.tab = ctx.tab;
++    setSelectedClienteId(row.id);
++    methods.reset(clienteToFormValues(row));
++    setOpen(true);
++  }); // eslint-disable-line react-hooks/exhaustive-deps
++
+   const handleCreateOrUpdate = async (values: ClienteSchema) => {
+     if (submitLock.current || !canManage) return;
+     const current = scope.capture();
+@@ -239,6 +277,7 @@ export default function ProdutoresTab() {
+     // Fechar modal e limpar estado após salvar com sucesso.
+     if (!current()) return;
+     if (savedRow) {
++      closeEditor();
+       setOpen(false);
+       setSelectedClienteId(null);
+       methods.reset(defaultValues);
+@@ -249,6 +288,7 @@ export default function ProdutoresTab() {
+   };
+ 
+   const handleEdit = (cliente: ClienteRow) => {
++    setResumeTab(undefined); openRef.current.tab = "geral";
+     setSelectedClienteId(cliente.id);
+     methods.reset(clienteToFormValues(cliente));
+     setOpen(true);
+@@ -315,7 +355,7 @@ export default function ProdutoresTab() {
+   return (
+     <div className="space-y-4">
+       <div className="flex justify-end">
+-        {canManage ? <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { setSelectedClienteId(null); methods.reset(defaultValues); } }}>
++        {canManage ? <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) { closeEditor(); setSelectedClienteId(null); methods.reset(defaultValues); } }}>
+           <DialogTrigger asChild>
+             <Button className="w-full sm:w-auto" onClick={() => { draftId.current = crypto.randomUUID(); setSelectedClienteId(null); methods.reset(defaultValues); }}><Plus className="h-4 w-4 mr-2" />Novo Produtor</Button>
+           </DialogTrigger>
+@@ -350,9 +390,9 @@ export default function ProdutoresTab() {
+                 const extra = entries.length > 1 ? ` (e mais ${entries.length - 1} campo${entries.length > 2 ? "s" : ""})` : "";
+                 toast.error(`${label}: ${friendlyMsg}${extra}`);
+               })} className="space-y-6">
+-                <ClienteFormTabs clienteId={selectedClienteId || undefined} />
++                <ClienteFormTabs key={selectedClienteId ?? "novo"} clienteId={selectedClienteId || undefined} initialTab={resumeTab} onTabChange={onFormTabChange} />
+                 <div className="flex justify-end gap-2 pt-4 border-t">
+-                  <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
++                  <Button type="button" variant="ghost" onClick={() => { closeEditor(); setOpen(false); }}>Cancelar</Button>
+                   <Button type="submit" disabled={methods.formState.isSubmitting}>{selectedClienteId ? "Atualizar" : "Salvar Produtor"}</Button>
+                 </div>
+               </form>

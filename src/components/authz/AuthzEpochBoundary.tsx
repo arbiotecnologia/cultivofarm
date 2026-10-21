@@ -1,4 +1,5 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
+import { observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
 import { useAuth } from "@/hooks/useAuth";
 import { AUTHZ_CACHE_FOUNDATION_ENABLED } from "@/lib/authz/authzEpochGate";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,10 @@ import { Loader2, ShieldAlert } from "lucide-react";
  *   rascunhos, seleções e objectURLs via cleanup de unmount dos consumidores.
  */
 export function AuthzEpochBoundary({ children }: { children: ReactNode }) {
-  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked } = useAuth();
+  const { authzReady, authzEpoch, authzState, revalidateAuthz, authzLatchBlocked, user, profile, roles } = useAuth();
+  // Identidade/empresa/papéis diferentes descartam a retomada de navegação.
+  const principal = resumePrincipalKey(user?.id, profile?.organization_id, roles ?? []);
+  useEffect(() => { observeResumePrincipal(principal); }, [principal]);
 
   if (!AUTHZ_CACHE_FOUNDATION_ENABLED) return <>{children}</>;
 
