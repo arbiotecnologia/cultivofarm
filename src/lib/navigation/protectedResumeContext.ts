@@ -19,7 +19,7 @@
 export const RESUME_TTL_MS = 120_000;
 export const RESUMABLE_TAB = "documentos";
 
-type Slot = { principal: string; route: string; recordId: string; pausedAt: number | null };
+type Slot = { principal: string; route: string; recordId: string; pausedAt: number | null; reason: "timeout" | "renewal" | null };
 let slot: Slot | null = null;
 
 export function resumePrincipalKey(userId: string | null | undefined, organizationId: string | null | undefined, roles: readonly string[] | null | undefined): string | null {
@@ -29,17 +29,17 @@ export function resumePrincipalKey(userId: string | null | undefined, organizati
 
 /** Só registra a aba Documentos; qualquer outra aba descarta. Reinicia a pausa. */
 export function rememberResume(principal: string | null, route: string, recordId: string, tab: string): void {
-  if (!principal || !recordId || tab !== RESUMABLE_TAB) { if (slot) console.log("DBGR", principal, tab, new Error().stack?.split("\n").slice(2,5).join("|")); slot = null; return; }
-  slot = { principal, route, recordId, pausedAt: null };
+  if (!principal || !recordId || tab !== RESUMABLE_TAB) { slot = null; return; }
+  slot = { principal, route, recordId, pausedAt: null, reason: null };
 }
 
-export function clearResume(): void { if (slot) console.log("DBGC", new Error().stack?.split("\n").slice(2,5).join("|")); slot = null; }
+export function clearResume(): void { slot = null; }
 
 /** Chamado SOMENTE no expire por timeout do monitor. Principal divergente descarta. */
 export function armResumeOnTimeout(principal: string | null, now: number = Date.now()): void {
   if (!slot) return;
   if (!principal || slot.principal !== principal) { slot = null; return; }
-  if (slot.pausedAt === null) slot = { ...slot, pausedAt: now };
+  if (slot.pausedAt === null) slot = { ...slot, pausedAt: now, reason: "timeout" };
 }
 
 /**
@@ -48,7 +48,7 @@ export function armResumeOnTimeout(principal: string | null, now: number = Date.
  * idêntico (usuário/empresa/papéis); TTL conta daqui.
  */
 export function armResumeOnRenewal(now: number = Date.now()): void {
-  if (slot && slot.pausedAt === null) slot = { ...slot, pausedAt: now };
+  if (slot && slot.pausedAt === null) slot = { ...slot, pausedAt: now, reason: "renewal" };
 }
 
 /**
@@ -57,7 +57,17 @@ export function armResumeOnRenewal(now: number = Date.now()): void {
  */
 export function observeResumePrincipal(principal: string | null, resolving = false): void {
   if (!slot || slot.principal === principal) return;
-  if (principal === null && resolving && slot.pausedAt !== null) return;
+  if (principal === null && resolving && slot.reason === "renewal") return;
+  slot = null;
+}
+
+/**
+ * Latch de re-resolução: descarta, exceto a renovação natural armada enquanto
+ * a identidade ainda é relida. Latch que persiste após a releitura descarta.
+ */
+export function observeResumeLatch(latchBlocked: boolean, resolving: boolean): void {
+  if (!latchBlocked || !slot) return;
+  if (resolving && slot.reason === "renewal") return;
   slot = null;
 }
 

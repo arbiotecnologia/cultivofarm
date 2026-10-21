@@ -1,4 +1,4 @@
-import { armResumeOnRenewal, armResumeOnTimeout, clearResume, observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
+import { armResumeOnRenewal, armResumeOnTimeout, clearResume, observeResumeLatch, observeResumePrincipal, resumePrincipalKey } from "@/lib/navigation/protectedResumeContext";
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -800,7 +800,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const latchBlocked = AUTHZ_CACHE_FOUNDATION_ENABLED && !!latch && latch.userId === user?.id && !isExternalUser;
   const resumePrincipal = resumePrincipalKey(user?.id, profile?.organization_id, roles);
   useEffect(() => { observeResumePrincipal(resumePrincipal, loading); }, [resumePrincipal, loading]);
-  useEffect(() => { if (latchBlocked) clearResume(); }, [latchBlocked]);
+  useEffect(() => { observeResumeLatch(latchBlocked, loading); }, [latchBlocked, loading]);
   const authzReady =
     !AUTHZ_CACHE_FOUNDATION_ENABLED ||
     (!!user && !loading && !latchBlocked && !retryPending && (!isExternalUser ||
