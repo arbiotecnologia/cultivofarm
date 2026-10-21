@@ -26,7 +26,7 @@ vi.mock("@/lib/catalogo/platformCatalogLabels", async (importOriginal) => {
   return { ...actual, usePlatformCatalogLabels: () => state.labels };
 });
 
-import { createCatalogLabel, isClassAllowedProbe, labelError, listCatalogLabels, setCatalogLabelActive,
+import { createCatalogLabel, labelError, listCatalogLabels, setCatalogLabelActive,
   updateCatalogLabel } from "@/lib/catalogo/platformCatalogLabels";
 import { isClassAllowed } from "@/lib/catalogo/platformCatalogFamily";
 import { platformCatalogPageSchema } from "@/lib/catalogo/platformCatalogRead";
