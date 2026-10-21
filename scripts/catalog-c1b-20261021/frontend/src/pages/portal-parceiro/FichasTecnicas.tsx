@@ -3,7 +3,7 @@ import { usePartnerCatalogTecnico } from "../../hooks/usePartnerCatalogTecnico";
 import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
 import { catalogFamilyMatches, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-import { supabase } from "@/integrations/supabase/client";
+import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,10 @@ export default function FichasTecnicas() {
           : await generateFichaTecnicaMicrorganismoPdf({ microId: id, mode: "blob", audience: "b2b" });
       if (result && "blobUrl" in result) {
         if (!current()) { URL.revokeObjectURL(result.blobUrl); return; }
+        const after = await catalog.refetch();
+        if (!current() || after.error || !after.data?.some(r => r.item_id === id && r.ficha_aprovada)) {
+          URL.revokeObjectURL(result.blobUrl); return;
+        }
         setPreview({ ...result, nome });
       }
     } catch (e: any) {
@@ -78,6 +82,8 @@ export default function FichasTecnicas() {
   useEffect(() => { setPreview(null); setBusyId(null); }, [access.scope]);
 
   const loading = tab === "produtos" ? loadingP : loadingM;
+
+  if (catalog.error) return <CatalogoQueryErrorState error={catalog.error} retry={catalog.refetch} busy={catalog.isFetching} />;
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">

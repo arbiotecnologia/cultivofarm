@@ -14,8 +14,8 @@ import { useCatalogoUnificado, CatalogoUnificadoRow, CatalogoScope, catalogoRevi
 import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalogo/CatalogoItemDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CatalogoQueryErrorState } from "./CatalogoQueryErrorState";
-import { CatalogFamilyFilter } from "./CatalogFamilyFilter";
+import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
+import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
 import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
@@ -134,12 +134,13 @@ function CatalogGridView({
   // FASE 27D — callbacks memoizados (compartilhados por todos os cards/linhas).
   const abrirVerFicha = useCallback((r: CatalogoUnificadoRow) => {
     if (scope === "b2b") {
-      setFichaUnificada(r);
+      if (source.scope) setFichaUnificada(r);
+      else setFichaB2B({ id: r.id, tipo: r.tipo });
       return;
     }
     if (r.tipo === "produto") setOpenProd(r.raw);
     else setOpenMicro(r.raw);
-  }, [scope]);
+  }, [scope, source.scope]);
 
   const abrirFichaCompleta = useCallback((r: CatalogoUnificadoRow) => {
     setFichaUnificada(r);
