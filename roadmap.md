@@ -7,7 +7,7 @@
 - [x] Complemento 18:50: especificar purga server-side por DELETE /cdn, escopo exato sem bucket-wide/retries, preflight/ref/segredo e resultado UNKNOWN em timeout; sem executor operacional até controle durável/locator B/disponibilidade comprovados, sem produção ou envio externo.
 - [x] Preflight externo 18:51: organização canônica FREE no dashboard, A/B restaurados; purga Pro+ não disponível por presunção, sem upgrade/endpoint service_role. Prioridade POST/bloqueio legado; expiração/invalidação segue gate aberto até prova.
 - [ ] Bloquear GET legado no CDN/Storage original + invalidar cache aplicável: falta mecanismo/configuração Supabase comprovados e revisão; POST ou purga isolada não resolvem. Não alterar objetos/chaves/plano.
-- [ ] Types/build frontend candidato integrado: roteiro portátil pronto, execução independente pendente; build ativo OK não certifica montagem candidata.
+- [x] Types/build frontend candidato v2 integrado em montagem /tmp: PASS; build ativo não foi usado como prova da candidata.
 - [x] Revisão632594 v2 concreta: SQL snapshot INVOKER/RLS, 2RPC+1Storage, canal server-only após prova exata, origin deny não aplicado, ZIP fence/prova final/rollback e CORS pin;76/76, Deno/types/build isolado32,44s PASS. Sem implantação; CDN FREE/SQL/JWT real continuam gates.
 - [ ] Revisão independente e homologação HTTP A/B/URL antiga; XML v96, sessões, objetos, roles e monitor preservados.
 

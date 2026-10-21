@@ -1,0 +1,23 @@
+$ vitest run src/test/security/zip.review.test.ts src/test/security/transport.review.test.ts src/test/security/clientDocumentFreshTransport.review.test.ts src/test/security/clientDocumentLoader.review.test.ts src/test/security/clientDocumentRouting.review.test.ts src/test/security/noSignedAttachmentEmission.test.ts src/test/config/commercialRegistration.delete.test.tsx src/test/equipe-tecnica/attachmentOpenerAbortOwnership.test.tsx src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx
+
+ RUN  v3.2.4 /tmp/attachment-review
+
+ ✓ src/test/security/clientDocumentRouting.review.test.ts (2 tests) 12ms
+ ✓ src/test/security/noSignedAttachmentEmission.test.ts (11 tests) 15ms
+ ✓ src/test/security/clientDocumentLoader.review.test.ts (11 tests) 103ms
+ ✓ src/test/security/zip.review.test.ts (4 tests) 68ms
+ ✓ src/test/security/transport.review.test.ts (10 tests) 108ms
+ ✓ src/test/security/clientDocumentFreshTransport.review.test.ts (27 tests) 95ms
+ ✓ src/test/equipe-tecnica/attachmentOpenerAbortOwnership.test.tsx (2 tests) 35ms
+stderr | src/test/config/commercialRegistration.delete.test.tsx > erro de consulta de dependências não libera exclusão
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/config/commercialRegistration.delete.test.tsx (2 tests) 280ms
+ ✓ src/test/clientes/ClienteDocumentosTab.authenticatedDownload.test.tsx (7 tests) 1151ms
+
+ Test Files  9 passed (9)
+      Tests  76 passed (76)
+   Start at  18:56:37
+   Duration  7.46s (transform 810ms, setup 2.52s, collect 3.59s, tests 1.87s, environment 26.11s, prepare 4.22s)
+

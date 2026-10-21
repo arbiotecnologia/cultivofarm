@@ -1,0 +1,4 @@
+⚠️  [0m[36mdeno bundle[0m is experimental and subject to changes
+[0m[32mBundled[0m 47 modules in 142ms
+  [0m[36m../tmp/attachment-review/edge-bundle.js[0m [0m[38;5;245m752.22KB[0m
+
