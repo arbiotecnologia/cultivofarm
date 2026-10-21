@@ -43,3 +43,5 @@
 - OS approval and generator open INSERT guards stay atomic; preserve links/snapshots, deny unresolved B2B approval — prevents bypass.
 - External users reuse receipts/provisioner, ACL closed — no fork.
 - External edits use gated admin RPC; await first CAS, retain drafts/receipts on refetch and fence identity generations — prevents loading deadlocks/stale effects.
+
+- Review subdirectories have their own AGENTS.md; read them before changing review artifacts — keeps candidate-only safety and validation rules scoped.

@@ -1,0 +1,12 @@
+$ vitest run src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx
+
+ RUN  v3.2.4 /tmp/fiscal-xml-review-complete
+
+ ✓ src/test/fiscal/fiscalXmlAuthenticatedDownload.test.tsx (14 tests) 531ms
+ ✓ src/test/fiscal/fiscalXmlEngine.downloadCandidate.test.ts (44 tests) 446ms
+
+ Test Files  2 passed (2)
+      Tests  58 passed (58)
+   Start at  18:00:43
+   Duration  5.42s (transform 375ms, setup 333ms, collect 2.22s, tests 977ms, environment 1.62s, prepare 1.23s)
+

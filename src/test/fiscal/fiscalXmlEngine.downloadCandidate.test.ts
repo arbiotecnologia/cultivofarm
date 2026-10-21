@@ -60,7 +60,7 @@ function setup(o: Opt = {}, executable = code) {
         return new Response(new ReadableStream<Uint8Array>({ start(c) {
           for (const chunk of o.chunks ?? [new TextEncoder().encode(XML)]) c.enqueue(chunk);
           if (!o.streamHang) c.close();
-        }, cancel }), { headers: o.length ? { "Content-Length": o.length } : {} });
+        }, cancel }) as unknown as BodyInit, { headers: o.length ? { "Content-Length": o.length } : {} });
       } },
     });
     sdk.storage = storageClient.storage as unknown as typeof sdk.storage;

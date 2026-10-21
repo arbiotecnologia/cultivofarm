@@ -1,11 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
 ## 21/10 — XML autenticado, baseline c7d5c962
-- [ ] Corrigir stream XML 10 MiB e corpo 16 KiB/5 s, testar cancelamento/length enganoso e preparar montagem portátil types/build; sem implantação automática, runtime c7 preservado.
+- [x] Corrigir stream XML 10 MiB e corpo 16 KiB/5 s, testar cancelamento/length enganoso e preparar montagem portátil types/build; sem implantação automática, runtime c7 preservado.
 - [x] Revisar 127ef060, reproduzir claims/primeira RPC travadas (16 PASS/2 FAIL), corrigir prazo de entrada; 23 Edge (inclui rollback) + 14 UI e 1901 regressões PASS/4 skipped, frontend candidato isolado.
 - [x] Preparar diff, rollback deny completo e plano de fixture/inventário legacy sem tokens; monitor, Auth e demais runtime byte-exatos.
 - [ ] Baseline realmente implantado (versão/fontes/config/hash): integração sem operação de leitura de fonte; MCP externo UNAVAILABLE; NO-GO.
-- [ ] Build/typecheck da montagem candidata: recibo independente necessário; build automático c7 aprovado não certifica candidata arquivada.
+- [ ] Validação Edge candidata: bundle local PASS; Deno check mantém 5 erros reproduzidos no baseline (BufferSource/cast/modulePromise). Montagem UI build/types PASS; recibo externo e bundler hosted ainda necessários.
 - [ ] Implantação e E2E XML A/B: correções/implantação segura autorizadas pelo proprietário, execução aguarda revisão técnica, baseline LIVE e fixture canônica unsigned disponível; sem INSERT direto/SEFAZ/certificado real.
 - [ ] Inventário financial-receipts e horizonte expirado: faltam locators/logs/TTL/cutoff verificáveis; nenhuma URL/cache declarada revogada.
 
