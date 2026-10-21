@@ -79,6 +79,6 @@ describe('spike floor 12 s (real 10.43 s expiry)', () => {
   it('server boundary still caps the grant below the local lease', async () => {
     const s = setup(); s.setRespond(() => ({ eligible: true, fingerprint: 'fp', server_remaining_ms: 4000 }));
     s.m.start(); await step(1500); expect(s.m.checkAccess()).toBe(true);
-    vi.setSystemTime(4000); expect(s.m.checkAccess()).toBe(false);
+    vi.setSystemTime(2500); expect(s.m.checkAccess()).toBe(false); // min(15s, 4000-RTT1500)
   });
 });
