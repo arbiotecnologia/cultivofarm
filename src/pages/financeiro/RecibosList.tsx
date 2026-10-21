@@ -39,7 +39,7 @@ interface Receipt {
   method?: { name?: string } | null;
 }
 
-function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; tenant: string; listScope: string }) {
+function ReceiptDownload({ receipt, tenant, listScope, onInterrupted }: { receipt: Receipt; tenant: string; listScope: string; onInterrupted: () => void }) {
   const resource = JSON.stringify(["receipt-pdf", listScope, receipt]);
   const access = useStorageAccessScope(resource);
   const opener = useAuthenticatedAttachmentOpener(resource, "financial-receipts");
@@ -49,13 +49,10 @@ function ReceiptDownload({ receipt, tenant, listScope }: { receipt: Receipt; ten
   const [prepared, setPrepared] = useState({ scope: "", path: "", status: "", number: "" });
   let listed = "";
   try { listed = financialReceiptCurrentLocator(receipt, tenant).path; } catch { /* fail closed */ }
-  const interrupted = useRef(false);
   useLayoutEffect(() => {
     setBusy(false); setPrepared({ scope: "", path: "", status: "", number: "" });
-    // Session renewal/revocation changes the scope mid-preparation: neutral notice, no auto-retry.
-    if (interrupted.current && access.ready) toast.info("Sessão atualizada durante o preparo. Prepare o PDF novamente.");
-    interrupted.current = false;
-    return () => { if (request.current) interrupted.current = true; request.current?.abort(); request.current = null; };
+    // Renewal/revocation (scope change or row remount) mid-preparation: the list decides on a neutral notice.
+    return () => { if (request.current) onInterrupted(); request.current?.abort(); request.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.scope]);
   const isPrepared = access.ready && prepared.scope === access.scope && !!opener.urls[prepared.path];
@@ -155,6 +152,15 @@ export default function RecibosList() {
   const [result, setResult] = useState({ scope: "", rows: [] as Receipt[], loading: false });
   const [refresh, setRefresh] = useState(0);
   const pendingCancel = useRef<AbortController | null>(null);
+  const accessRef = useRef(access); accessRef.current = access;
+  const notice = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Checked after the commit: only an actor still authorized after renewal sees it; never auto-retries.
+  const onPrepareInterrupted = () => {
+    if (notice.current) return;
+    notice.current = setTimeout(() => { notice.current = null;
+      if (accessRef.current.ready) toast.info("Sessão atualizada durante o preparo. Prepare o PDF novamente."); }, 0);
+  };
+  useEffect(() => () => { if (notice.current) clearTimeout(notice.current); }, []);
   const dialogEpoch = useRef(0);
   useLayoutEffect(() => {
     setCancelOpen(null); setReason(""); setBusy(false); dialogEpoch.current++;
