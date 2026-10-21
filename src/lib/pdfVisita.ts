@@ -80,7 +80,8 @@ export async function generateVisitaPdf(data: VisitaPdfData, options: VisitaPdfO
       const blob = await downloadAuthenticatedAttachment(bucket, path, signal);
       if (signal.aborted || !blob.size || blob.size > ATTACHMENT_LIMITS.fileBytes || totalBytes + blob.size > ATTACHMENT_LIMITS.totalBytes) return null;
       totalBytes += blob.size;
-      return await blobToDataUrl(blob);
+      const dataUrl = await blobToDataUrl(blob);
+      return signal.aborted ? null : dataUrl; // FileReader tardio após abort é descartado
     } catch {
       return null;
     }

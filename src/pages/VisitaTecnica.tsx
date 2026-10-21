@@ -63,6 +63,7 @@ import { contarEvidencias } from "@/lib/visita/evidenciasCount";
 import { EnviarPdfVisitaDialog } from "@/components/visita/EnviarPdfVisitaDialog";
 import { VisitaStatusBanner } from "@/components/visita/VisitaStatusBanner";
 import { generateVisitaPdf, sharePdf, type VisitaPdfData } from "@/lib/pdfVisita";
+import { useFencedPdfExport } from "@/hooks/useFencedPdfExport";
 import { useFluxoVisitaTecnica } from "@/hooks/useFluxoVisitaTecnica";
 import {
   canTransition, getBlockReason, parseBackendTransitionError,
@@ -256,7 +257,6 @@ export default function VisitaTecnica() {
   const [encerramento, setEncerramento] = useState<EncerramentoState>(ENCERRAMENTO_DEFAULT);
   const [notes, setNotes] = useState<QuickNote[]>([]);
 
-  const [generatingPdf, setGeneratingPdf] = useState(false);
   const [enviarEmailOpen, setEnviarEmailOpen] = useState(false);
   const [confirmFinalizeNoPhotos, setConfirmFinalizeNoPhotos] = useState(false);
   const [activeStep, setActiveStep] = useState<string>("identificacao");
@@ -986,33 +986,23 @@ export default function VisitaTecnica() {
     };
   };
 
-  const pdfAbortRef = useRef<AbortController | null>(null);
-  useEffect(() => () => pdfAbortRef.current?.abort(), []);
+  // Exportação cercada pelo escopo canônico da visita: troca de tenant/papéis/epoch/lease aborta e impede entrega tardia.
+  const pdfExport = useFencedPdfExport(`visita:${id ?? "nova"}`, sharePdf as any);
 
   const handleExportPdf = async () => {
     if (isNew || !visita) return;
-    setGeneratingPdf(true);
+    const data = buildPdfData();
+    if (!data) return;
+    const v = visita as any;
+    const fileName = `visita_${v.objetivo_visita || v.id.slice(0, 8)}.pdf`;
     try {
-      const data = buildPdfData();
-      if (!data) return;
-      const v = visita as any;
-      pdfAbortRef.current?.abort();
-      const controller = new AbortController();
-      pdfAbortRef.current = controller;
-      const doc = await generateVisitaPdf(data, { signal: controller.signal });
-      if (controller.signal.aborted) return;
-      const fileName = `visita_${v.objetivo_visita || v.id.slice(0, 8)}.pdf`;
-      const shared = await sharePdf(doc, fileName);
-      if (!shared) {
-        doc.save(fileName);
-        toast.success("PDF gerado");
-      } else {
-        toast.success("PDF compartilhado");
-      }
-    } catch (err: any) {
-      toast.error("Erro ao gerar PDF: " + (err.message || ""));
-    } finally {
-      setGeneratingPdf(false);
+      const result = await pdfExport.run(signal => generateVisitaPdf(data, { signal }), fileName);
+      if (result === "saved") toast.success("PDF gerado");
+      else if (result === "shared") toast.success("PDF compartilhado");
+      else if (result === "unavailable") toast.error("PDF indisponível para este acesso.");
+      else toast.info("Exportação cancelada: o acesso mudou. Tente novamente.");
+    } catch {
+      toast.error("Erro ao gerar PDF. Tente novamente.");
     }
   };
 
@@ -1649,10 +1639,10 @@ export default function VisitaTecnica() {
                 variant="outline" 
                 onClick={handleExportPdf} 
                 title={!etapas.podeGerarPdf ? "Disponível após finalizar a visita" : undefined}
-                disabled={generatingPdf || !etapas.podeGerarPdf}
+                disabled={pdfExport.busy || !etapas.podeGerarPdf}
                 className="h-8 sm:h-9"
               >
-                {generatingPdf ? (
+                {pdfExport.busy ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <FileDown className="h-3.5 w-3.5" />
