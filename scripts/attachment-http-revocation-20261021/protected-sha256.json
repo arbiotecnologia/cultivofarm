@@ -1,0 +1,7 @@
+{
+  "src/hooks/useAuth.tsx": "1c819b79fd32471f3ec43e43284076bf7cc489cf27c4b090a28e2dfad0864564",
+  "src/lib/authz/authenticatedAttachment.ts": "99331e08889a25782400914e4a113e36fc6dc1155539932eccef3d5f2e4ca098",
+  "src/lib/clienteDocumentos.ts": "2e3dc3a7535a22975467ca1b4c52ffd05428a885d4e162911838896ac01a1e74",
+  "supabase/functions/fiscal-xml-engine/index.ts": "3b73a2af9454ab569090923473966714c0cac0abec3ad2d5d9dbe0ec227038de",
+  "supabase/functions/_shared/fiscal/corsAllowlist.ts": "dd024193a40a240a813c76af3c215a0b8ab0914e6879fa718390c32a371e152b"
+}
