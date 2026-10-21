@@ -466,4 +466,13 @@
 - [x] v2 após da691664: retomada só em timeout confirmado (useAuth), só aba Documentos, TTL desde a pausa; 7 integrados com AuthProvider real; 1106/1106; rollback de 4 arquivos verificado.
 - [ ] Revisão independente/publicação (proprietário). Cancelamento de transporte do probe expirado: pendente. Gateway v2 e homologação real dos demais perfis: externos.
 
-- [x] financial-docs canal POST: snapshot, Edge JWT=true, frontend e deny GET aplicados/publicados externamente; A/B uploads/downloads/revogação reportados PASS. Cache CDN legado sem prova de expiração/purga (FREE); correção de remoção local aguarda publicação/homologação.
+- [x] financial-docs canal POST: snapshot, Edge JWT=true, frontend e deny GET aplicados/publicados externamente; baseline fc2225f1 e remoção lógica B homologadas pelo proprietário, objeto preservado/POST403. Financeiro A próprio/cross/revogação/restauração e upload137B/download hash igual reportados; não aceite global.
+
+## 21/10 — revisão do canal técnico HTTP, sem execução hosted
+- [x] Inventário de leitores por bucket e confirmação read-only do guard/RLS técnico no ref canônico; preservar evidências externas e aba antiga.
+- [x] Preparar pacote técnico POST/snapshot INVOKER pré+pós, limites e integração candidata no transporte existente; policy review e rollback deny-only.
+- [x] Testes sintéticos adversariais e integrados: 114/114, Deno check/bundle; não equivalem a JWT/RLS real.
+- [ ] Revisão independente/POST técnico A/B e matriz list/upload/update/delete: faltam provas reais e autorização de execução; paths checkins/solicitacoes não correspondem ao guard e permanecem NO-GO.
+- [ ] Comprovantes técnicos de entrega/aplicação e demais GET privados: exigem provas próprias de registro/tenant, não cobertos pelo snapshot de visita.
+- [ ] GET/CDN históricos: sem purga suportada no FREE ou expiração da URL original comprovada; SU-518022 apenas ack, nenhum contato/upgrade.
+- [ ] Perfis restantes/renovação e aba C8KAaC21: homologação real pelo proprietário; sem reload/sessões pelo agente. Não avançar catálogo/contratos.

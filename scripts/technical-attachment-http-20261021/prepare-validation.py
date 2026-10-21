@@ -10,7 +10,7 @@ if not str(dest).startswith('/tmp/') or dest.exists():
     raise SystemExit('Use a new directory under /tmp')
 dest.mkdir()
 skip = shutil.ignore_patterns('.git', 'node_modules', 'dist', '.env', '.env.*', '*.tsbuildinfo')
-for directory in ('src', 'public', 'scripts', 'supabase'):
+for directory in ('src', 'public', 'scripts', 'supabase', 'docs'):
     shutil.copytree(root / directory, dest / directory, ignore=skip)
 for name in ('package.json', 'bun.lock', 'index.html', 'vite.config.ts', 'vitest.config.ts',
              'tsconfig.json', 'tsconfig.app.json', 'tsconfig.node.json', 'tailwind.config.ts', 'postcss.config.js'):
