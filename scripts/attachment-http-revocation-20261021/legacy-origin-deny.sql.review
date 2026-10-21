@@ -1,0 +1,9 @@
+-- REVIEW ONLY; dependent on approved server-only byte channel and CDN control.
+-- Origin containment does NOT invalidate existing CDN HITs.
+BEGIN;
+CREATE POLICY client_document_server_channel_only ON storage.objects
+AS RESTRICTIVE FOR SELECT TO authenticated, anon
+USING (bucket_id <> 'clientes-docs');
+-- Storage's correctly identified server-only service identity bypasses RLS;
+-- no service_role policy/grant is added. Writes/uploads are unchanged.
+COMMIT;

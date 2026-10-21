@@ -36,7 +36,7 @@
 - OS eligibility decodes live family/dose at the canonical SDK boundary when generated types lag; submit revalidates manufacturing semantics — prevents inferred eligibility and unchecked casts.
 - OS programming/lot candidates replace only the canonical RPC with a fixed self-contained rollback, revalidate actor/tenant/SaaS after locks, reuse existing dialogs with pre/post-await session fences — avoids autoapproval, stale writes and parallel flows.
 - CQ review artifacts follow their directory AGENTS.md; reference lookup and parent fences remain candidate-only until approved — prevents runtime release.
-- Review directories carry their own AGENTS.md; attachment HTTP candidates independently re-prove actor/resource before/after bytes, but never certify old direct URLs without HTTP containment evidence.
+- Review directories have AGENTS.md; HTTP candidates use atomic INVOKER actor proofs before/after server-only bytes and ZIP final fences; old URLs need independent CDN containment — avoids fanout and bucket-only authority.
 <!-- LOVABLE:END -->
 - Portal selection/preferences require canonical ready actor/tenant; real-role contexts remain separate from legacy flags. Manual switch bypasses only preference — prevents invented roles/stale navigation.
 - Wizard requires persisted prerequisites and confirmation lock — prevents duplicates.

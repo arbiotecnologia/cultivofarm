@@ -42,7 +42,7 @@ export async function loadClientDocument(path: string, signal: AbortSignal): Pro
       const item = await step(() => reader ? reader.read() : Promise.reject(unavailable()));
       if (item.done) break;
       size += item.value.byteLength;
-      if (size > 10 * 1024 * 1024) { abort(); throw unavailable(); }
+      if (size > 20 * 1024 * 1024) { abort(); throw unavailable(); }
       chunks.push(new Uint8Array(item.value).buffer);
     }
     if (controller.signal.aborted) throw unavailable();

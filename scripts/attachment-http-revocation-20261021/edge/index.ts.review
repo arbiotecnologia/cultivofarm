@@ -1,7 +1,8 @@
 // REVIEW ONLY — intended path supabase/functions/download-client-document/index.ts.
 import { createClient } from "npm:@supabase/supabase-js@2.110.8";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { serveDocument, type Snapshot } from "./download.ts";
+import { corsHeaders } from "npm:@supabase/supabase-js@2.110.8/cors";
+import { serveDocument } from "./download.ts";
+import { createTransport } from "./transport.ts";
 
 const origins = new Set(["https://app.cultivofarm.com.br", "https://cultivofarm.lovable.app",
   "https://id-preview--a79bb3db-f665-466d-bf41-ee8c6cb91fab.lovable.app", "http://localhost:8080"]);
@@ -22,43 +23,31 @@ Deno.serve(async req => {
   const bearer = req.headers.get("Authorization") ?? "";
   if (url !== "https://swzpzcwiasxmjutrmvkm.supabase.co" || !key) return deny(503);
   if (!/^Bearer \S+$/i.test(bearer)) return deny(401);
-  // Only actor client: no service client, credentials fallback or privileged object read.
+  // Actor client only proves authority; it never downloads through the denied GET.
   const actor = createClient(url, key, { global: { headers: { Authorization: bearer },
     fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }) },
     auth: { persistSession: false, autoRefreshToken: false } });
-  return serveDocument(req, headers, {
-    authorize: async (path, signal): Promise<Snapshot | null> => {
-      // Repeat identity AND current DB authority, never infer role from JWT metadata.
+  // Existing server secret only; never passed to actor/PostgREST/browser or logged.
+  const storageKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!storageKey) return deny(503);
+  let verified = false;
+  const transport = createTransport({ rpc: async (path, signal) => {
+    if (!verified) {
       const claims = await actor.auth.getClaims(bearer.slice(7));
-      const uid = claims.data?.claims?.sub;
-      if (signal.aborted || claims.error || typeof uid !== "string") return null;
-      const organization = await actor.rpc("h15_actor_organization").abortSignal(signal);
-      if (organization.error || typeof organization.data !== "string") return null;
-      const permission = await actor.rpc("cliente_storage_object_permitted", { _name: path }).abortSignal(signal);
-      if (permission.error || permission.data !== true) return null;
-      const roles = await actor.from("user_roles").select("role").eq("user_id", uid).abortSignal(signal);
-      if (roles.error || !roles.data?.length) return null;
-      const doc = await actor.from("cliente_documentos").select("id,cliente_id,arquivo_path,tamanho_bytes,mime")
-        .eq("arquivo_path", path).abortSignal(signal).maybeSingle();
-      if (doc.error || !doc.data) return null;
-      const client = await actor.from("clientes").select("id,organization_id").eq("id", doc.data.cliente_id)
-        .eq("organization_id", organization.data).abortSignal(signal).maybeSingle();
-      if (client.error || !client.data || signal.aborted) return null;
-      // Last DB gate after the metadata chain, not just the earlier role snapshot.
-      const freshPermission = await actor.rpc("cliente_storage_object_permitted", { _name: path }).abortSignal(signal);
-      const freshOrganization = await actor.rpc("h15_actor_organization").abortSignal(signal);
-      const freshRoles = await actor.from("user_roles").select("role").eq("user_id", uid).abortSignal(signal);
-      if (freshPermission.error || freshPermission.data !== true || freshOrganization.error ||
-        freshOrganization.data !== organization.data || freshRoles.error || !freshRoles.data?.length ||
-        JSON.stringify(freshRoles.data.map(row => String(row.role)).sort()) !== JSON.stringify(roles.data.map(row => String(row.role)).sort())) return null;
-      return { actor: uid, tenant: organization.data, roles: roles.data.map(row => String(row.role)),
-        document: doc.data.id, client: client.data.id, path: doc.data.arquivo_path,
-        size: doc.data.tamanho_bytes, mime: doc.data.mime };
-    },
-    download: async (path, signal) => {
-      const result = await actor.storage.from("clientes-docs").download(path, {}, { signal, cache: "no-store" }).asStream();
-      if (result.error) return null;
-      return result.data;
-    },
+      if (signal.aborted || claims.error || !claims.data?.claims?.sub) return null;
+      verified = true;
+    }
+    const result = await actor.rpc("client_document_download_snapshot", { _name: path }).abortSignal(signal);
+    return result.error ? null : result.data;
+  } }, async (path, signal) => {
+    const credentialHeaders: Record<string, string> = { apikey: storageKey };
+    if (!storageKey.startsWith("sb_secret_")) credentialHeaders.Authorization = `Bearer ${storageKey}`;
+    const encoded = path.split("/").map(encodeURIComponent).join("/");
+    const response = await fetch(`${url}/storage/v1/object/authenticated/clientes-docs/${encoded}`, {
+      headers: credentialHeaders, signal, cache: "no-store", redirect: "error",
+    });
+    if (!response.ok || signal.aborted) { void response.body?.cancel().catch(() => undefined); return null; }
+    return response.body;
   });
+  return serveDocument(req, headers, transport);
 });

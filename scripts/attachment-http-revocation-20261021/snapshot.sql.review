@@ -1,0 +1,44 @@
+-- REVIEW ONLY. Do not execute; no migration or hosted mutation authorized.
+-- Single statement snapshot; INVOKER preserves all current table RLS.
+BEGIN;
+CREATE OR REPLACE FUNCTION public.client_document_download_snapshot(_name text)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $fn$
+  WITH actor AS MATERIALIZED (
+    SELECT auth.uid() AS uid, public.h15_actor_organization() AS org
+    WHERE auth.uid() IS NOT NULL
+      AND length(_name) BETWEEN 1 AND 1024
+      AND public.cliente_storage_object_permitted(_name)
+  ), roles AS MATERIALIZED (
+    SELECT jsonb_agg(r.role::text ORDER BY r.role::text) AS value
+    FROM public.user_roles r JOIN actor a ON r.user_id = a.uid
+  ), docs AS MATERIALIZED (
+    SELECT d.id, d.cliente_id, d.arquivo_path, d.tamanho_bytes, d.mime, a.uid, a.org
+    FROM public.cliente_documentos d
+    JOIN public.clientes c ON c.id = d.cliente_id
+    JOIN actor a ON c.organization_id = a.org
+    WHERE d.arquivo_path = _name
+      AND public.can_user_access_cliente(c.id)
+  )
+  SELECT CASE WHEN (SELECT count(*) FROM docs) = 1
+    AND jsonb_array_length(coalesce((SELECT value FROM roles), '[]'::jsonb)) > 0
+    THEN (SELECT jsonb_build_object('actor', uid, 'tenant', org,
+      'roles', (SELECT value FROM roles), 'document', id, 'client', cliente_id,
+      'path', arquivo_path, 'size', tamanho_bytes, 'mime', mime) FROM docs)
+    ELSE NULL END;
+$fn$;
+REVOKE ALL ON FUNCTION public.client_document_download_snapshot(text) FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.client_document_download_snapshot(text) TO authenticated;
+-- No table grants, no RLS widening, no claims/GUC privilege, no role mutation.
+CREATE OR REPLACE FUNCTION public.client_documents_backup_snapshot(_client uuid)
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $fn$
+  SELECT CASE WHEN auth.uid() IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.clientes c WHERE c.id = _client
+      AND c.organization_id = public.h15_actor_organization()
+      AND public.can_user_access_cliente(c.id)
+  ) THEN coalesce((SELECT jsonb_agg(jsonb_build_object(
+    'doc', to_jsonb(d), 'proof', public.client_document_download_snapshot(d.arquivo_path)) ORDER BY d.id)
+    FROM public.cliente_documentos d WHERE d.cliente_id = _client), '[]'::jsonb) ELSE NULL END;
+$fn$;
+REVOKE ALL ON FUNCTION public.client_documents_backup_snapshot(uuid) FROM PUBLIC, anon, service_role;
+GRANT EXECUTE ON FUNCTION public.client_documents_backup_snapshot(uuid) TO authenticated;
+COMMIT;

@@ -1,4 +1,5 @@
-export const LIMITS = { bytes: 10 * 1024 * 1024, bodyBytes: 4096, timeoutMs: 15_000 } as const;
+// Existing uploads UI stays 10 MiB; valid legacy bucket objects up to 20 MiB remain readable.
+export const LIMITS = { bytes: 20 * 1024 * 1024, bodyBytes: 4096, timeoutMs: 15_000 } as const;
 export interface Snapshot {
   actor: string; tenant: string; roles: string[]; document: string;
   client: string; path: string; size: number | null; mime: string | null;
