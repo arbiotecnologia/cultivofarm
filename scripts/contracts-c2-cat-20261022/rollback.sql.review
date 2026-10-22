@@ -1,0 +1,34 @@
+-- REVIEW ONLY. Removes only new UI capabilities; does not restore weak catalog
+-- visibility, change applied scope, revoke user roles or reopen any writer.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='30s';
+DO $guard$
+BEGIN
+ IF md5(pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure))
+  IS DISTINCT FROM '06a858c55328b45f205ccb5ebb02607d'
+ OR md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure))
+  IS DISTINCT FROM 'c3f2997746f24bc2efd15db5c0ccc862'
+ OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.b2b_commercial_partner_projection()'::regprocedure)<>'postgres'
+ OR (SELECT proacl::text FROM pg_proc WHERE oid='platform_private.b2b_commercial_partner_projection()'::regprocedure)
+  IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' THEN
+  RAISE EXCEPTION 'c2_cat_rollback_drift' USING ERRCODE='55000'; END IF;
+END $guard$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_partner_projection()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE c jsonb; result jsonb;
+BEGIN
+ c:=platform_private.b2b_commercial_context();
+ IF c IS NULL THEN RETURN NULL; END IF;
+ SELECT jsonb_build_object('id',p.id,'codigo',p.codigo,'razao_social',p.razao_social,
+   'nome_fantasia',p.nome_fantasia,'ativo',p.ativo,'papel',c->>'papel','mode',c->>'mode')
+ INTO result FROM public.partner_accounts p
+ WHERE p.id=(c->>'partner_id')::uuid AND p.ativo IS TRUE AND p.deleted_at IS NULL
+ AND p.commercial_owner_organization_id=(c->>'commercial_owner_organization_id')::uuid;
+ RETURN result;
+END $function$;
+COMMIT;

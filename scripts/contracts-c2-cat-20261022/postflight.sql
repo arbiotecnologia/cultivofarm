@@ -4,6 +4,7 @@ SELECT md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regproce
  md5(pg_get_functiondef('public.is_valid_b2b_partner_user(uuid,uuid)'::regprocedure))='93520101987e599280460d3dadcf3a9f' AS validator_unchanged;
 SELECT pg_get_userbyid(proowner) AS owner,proacl::text AS acl,pg_get_functiondef(oid) AS definition
 FROM pg_proc WHERE oid='platform_private.b2b_commercial_partner_projection()'::regprocedure;
+SELECT md5(pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure))='06a858c55328b45f205ccb5ebb02607d' AS projection_matches_candidate;
 -- After independent installation: real caller POST /rest/v1/rpc/get_my_commercial_partner_projection
 -- must read C2_CAT_V1; manager catalog=true, sheet follows entitlement;
 -- technical catalog=false; revoked/future/foreign/no-link denied or capabilities=false.
