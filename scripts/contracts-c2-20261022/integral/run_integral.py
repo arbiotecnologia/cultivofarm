@@ -127,7 +127,7 @@ ok('produtor denied own finance', 'forbidden' in fin(PR, expect_ok=False))
 ok('gestor A denied partner Q (tenant B)', 'forbidden' in fin(G, Q, expect_ok=False))
 ok('gestor B denied partner P', 'forbidden' in fin(XB, P, expect_ok=False))
 ok('anon has no execute on finance reader', val(G, "SELECT has_function_privilege('anon','public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid)','EXECUTE');") == 'f')
-proj = as_user(G, "SELECT public.get_my_commercial_partner_context()::text;").splitlines()[-1]
+proj = as_user(G, "SELECT public.get_my_commercial_partner_projection()::text;").splitlines()[-1]
 ok('projection advertises finance capability for gestor', '"obligations_read": true' in proj, proj[:300])
 ok('projection keeps catalogue capability', 'C2_CAT_V1' in proj)
 # fiscal guard post-deploy consistency: fiscal trigger function untouched by C2+finance
@@ -138,7 +138,7 @@ ok('rollback: finance reader closed', 'permission denied' in fin(G, expect_ok=Fa
 ok('rollback: external contexts closed', ctx(G) == [] and ctx(GT) == [])
 ok('rollback: writers closed', 'permission denied' in link(ADMIN_A, T, ['parceiro_b2b'], 'assign', expect_ok=False, expected='0' * 32))
 ok('rollback: roles/links/history preserved', pg.sql(f"SELECT count(*) FROM public.user_roles WHERE user_id IN ('{G}','{GT}','{ALL3}');") != '0' and pg.sql("SELECT count(*)>0 FROM public.partner_audit_logs;") == 't')
-ok('rollback: projection no longer advertises finance', '"obligations_read": true' not in (as_user(G, "SELECT coalesce(public.get_my_commercial_partner_context()::text,'null');", True) or ''))
+ok('rollback: projection no longer advertises finance', '"obligations_read": true' not in (as_user(G, "SELECT coalesce(public.get_my_commercial_partner_projection()::text,'null');", True) or ''))
 for who in ['anon', 'authenticated']:
     ok(f'rollback ACL link_partner_user {who}', pg.sql(f"SELECT has_function_privilege('{who}','public.link_partner_user(uuid,uuid,text[],text,text,uuid,text)','EXECUTE');") == 'f')
 r = subprocess.run(pg.psql(), input=(H / 'rollback.sql.review').read_bytes(), capture_output=True)

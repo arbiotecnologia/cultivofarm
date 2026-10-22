@@ -28,5 +28,19 @@
   "md5": "f9d886384a9da1b36df850f6e63fa3ce",
   "owner": "postgres",
   "sig": "fiscal_rtc_has_sensitive_key(jsonb)"
+ },
+ {
+  "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+  "def": "CREATE OR REPLACE FUNCTION public.get_my_commercial_partner_context()\n RETURNS jsonb\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n SELECT platform_private.b2b_commercial_context();\n$function$\n",
+  "md5": "a40e2efac2d503a1840896ac8b458ce9",
+  "owner": "postgres",
+  "sig": "get_my_commercial_partner_context()"
+ },
+ {
+  "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+  "def": "CREATE OR REPLACE FUNCTION public.get_my_commercial_partner_projection()\n RETURNS jsonb\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n SELECT platform_private.b2b_commercial_partner_projection();\n$function$\n",
+  "md5": "730a17482e07d1bc350edfaea907cd1f",
+  "owner": "postgres",
+  "sig": "get_my_commercial_partner_projection()"
  }
 ]

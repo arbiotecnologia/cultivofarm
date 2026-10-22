@@ -2227,6 +2227,22 @@ BEGIN
  'has_b2b_access',management OR partner,'has_technical_access',management OR tech,'is_admin',management,
  'preferred_context',pref,'skip_context_selector',COALESCE(skip,false));
 END $function$;
+CREATE OR REPLACE FUNCTION public.get_my_commercial_partner_context()
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+ SELECT platform_private.b2b_commercial_context();
+$function$;
+CREATE OR REPLACE FUNCTION public.get_my_commercial_partner_projection()
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+ SELECT platform_private.b2b_commercial_partner_projection();
+$function$;
 CREATE OR REPLACE FUNCTION public.get_user_partner_id()
  RETURNS uuid
  LANGUAGE sql
@@ -7134,6 +7150,16 @@ REVOKE ALL ON FUNCTION public.get_my_available_portal_contexts() FROM PUBLIC, po
 GRANT EXECUTE ON FUNCTION public.get_my_available_portal_contexts() TO postgres;
 GRANT EXECUTE ON FUNCTION public.get_my_available_portal_contexts() TO service_role;
 GRANT EXECUTE ON FUNCTION public.get_my_available_portal_contexts() TO authenticated;
+ALTER FUNCTION public.get_my_commercial_partner_context() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.get_my_commercial_partner_context() FROM PUBLIC, postgres;
+GRANT EXECUTE ON FUNCTION public.get_my_commercial_partner_context() TO postgres;
+GRANT EXECUTE ON FUNCTION public.get_my_commercial_partner_context() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_commercial_partner_context() TO service_role;
+ALTER FUNCTION public.get_my_commercial_partner_projection() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.get_my_commercial_partner_projection() FROM PUBLIC, postgres;
+GRANT EXECUTE ON FUNCTION public.get_my_commercial_partner_projection() TO postgres;
+GRANT EXECUTE ON FUNCTION public.get_my_commercial_partner_projection() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_my_commercial_partner_projection() TO service_role;
 ALTER FUNCTION public.get_user_partner_id() OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.get_user_partner_id() FROM PUBLIC, postgres;
 GRANT EXECUTE ON FUNCTION public.get_user_partner_id() TO postgres;
