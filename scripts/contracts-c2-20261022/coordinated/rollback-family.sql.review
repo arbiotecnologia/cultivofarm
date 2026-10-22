@@ -1,0 +1,28 @@
+-- INACTIVE SECURITY ROLLBACK: no data/history loss, no singleton restoration.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+-- Close new writers AND private cores; do not leave a direct-core escape.
+REVOKE EXECUTE ON FUNCTION public.link_partner_user(uuid,uuid,text[],text,text,uuid,text),
+ platform_private.c2_partner_lifecycle(uuid,uuid,text[],text,text,uuid,text),
+ public.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role[],uuid[],uuid),
+ platform_private.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role[],uuid[],uuid)
+FROM PUBLIC,anon,authenticated,service_role;
+-- Close legacy claim producers too: no alternate route can issue a new receipt.
+REVOKE EXECUTE ON FUNCTION public.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid),
+ platform_private.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role,uuid[],uuid),
+ public.b2b_claim_provisioning(uuid,uuid,text,text),
+ public.b2b_finish_provisioning(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+-- Compensation may remain service-only to reconcile unfinished, exact receipts.
+REVOKE EXECUTE ON FUNCTION public.b2b_prepare_provisioning_compensation(uuid,uuid,uuid),
+ public.b2b_complete_provisioning_compensation(uuid,uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.b2b_prepare_provisioning_compensation(uuid,uuid,uuid),
+ public.b2b_complete_provisioning_compensation(uuid,uuid,uuid) TO service_role;
+CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid,p_partner_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT false $$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_context()
+RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT NULL::jsonb $$;
+CREATE OR REPLACE FUNCTION platform_private.c2_producer_links(p_user uuid,p_org uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT false $$;
+-- Existing context resolver will now omit all external contexts. Preference is
+-- always revalidated; its new enum values and history/receipts stay intact.
+COMMIT;

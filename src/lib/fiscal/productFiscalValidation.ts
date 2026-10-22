@@ -64,6 +64,18 @@ export const productFiscalFormSchema = z.object({
 
 export type ProductFiscalFormValues = z.infer<typeof productFiscalFormSchema>;
 
+/** Cadastro mínimo não certifica uma NF-e: operação/regime/RTC são externos. */
+export function productFiscalPreparation(row: {
+  minimally_classified?: boolean | null;
+  accounting_validated?: boolean | null;
+} | null | undefined, active: boolean | null | undefined) {
+  if (!row) return { stage: "unavailable" as const, readyForNfe: false as const };
+  if (active === false) return { stage: "inactive" as const, readyForNfe: false as const };
+  if (row.minimally_classified !== true) return { stage: "incomplete_draft" as const, readyForNfe: false as const };
+  if (row.accounting_validated !== true) return { stage: "accounting_pending" as const, readyForNfe: false as const };
+  return { stage: "operation_pending" as const, readyForNfe: false as const };
+}
+
 // ————————————————————— Row → Form defaults —————————————————————
 export function rowToFormValues(
   row: ProductFiscalRow | null,

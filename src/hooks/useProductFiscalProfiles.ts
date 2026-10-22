@@ -11,11 +11,14 @@
  * - Erro de RLS/permissão nunca se torna sucesso silencioso.
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/cultivofarm.types";
 import {
   buildInsertPayload,
   buildUpdatePayload,
+  productFiscalFormSchema,
   type ProductFiscalFormValues,
   type ProductFiscalRow,
 } from "@/lib/fiscal/productFiscalValidation";
@@ -83,7 +86,7 @@ export function useProductFiscalList(
   options: { enabled?: boolean } = {},
 ) {
   const enabled = options.enabled ?? true;
-  return useQuery<ListResult, Error>({
+  const result = useScopedPortalQuery<ListResult>({
     queryKey: PRODUCT_FISCAL_KEYS.list(params),
     enabled,
     queryFn: async () => {
@@ -163,6 +166,7 @@ export function useProductFiscalList(
       return { items, total: count ?? items.length, statuses };
     },
   });
+  return { ...result, data: result.ready && !result.isError ? result.data : undefined };
 }
 
 /** Resumo agregado da view `v_product_fiscal_readiness` para os produtos da página. */
@@ -171,7 +175,7 @@ export function useProductFiscalReadiness(
   options: { enabled?: boolean } = {},
 ) {
   const enabled = (options.enabled ?? true) && productIds.length > 0;
-  return useQuery<ReadinessRow[], Error>({
+  const result = useScopedPortalQuery<ReadinessRow[]>({
     queryKey: PRODUCT_FISCAL_KEYS.readiness(productIds),
     enabled,
     queryFn: async () => {
@@ -186,6 +190,7 @@ export function useProductFiscalReadiness(
       return data ?? [];
     },
   });
+  return { ...result, data: result.ready && !result.isError ? result.data : undefined };
 }
 
 /**
@@ -204,7 +209,7 @@ export function useProductFiscalListByIds(
   options: { enabled?: boolean } = {},
 ) {
   const enabled = (options.enabled ?? true) && productIds.length > 0;
-  return useQuery<ProductListItem[], Error>({
+  const result = useScopedPortalQuery<ProductListItem[]>({
     queryKey: PRODUCT_FISCAL_KEYS.byIds(productIds),
     enabled,
     queryFn: async () => {
@@ -239,6 +244,7 @@ export function useProductFiscalListByIds(
       });
     },
   });
+  return { ...result, data: result.ready && !result.isError ? result.data : undefined };
 }
 
 export function useProductFiscalProfile(
@@ -246,14 +252,15 @@ export function useProductFiscalProfile(
   options: { enabled?: boolean } = {},
 ) {
   const enabled = (options.enabled ?? true) && !!productId;
-  return useQuery<ProductFiscalRow | null, Error>({
+  const result = useScopedPortalQuery<ProductFiscalRow | null>({
     queryKey: [...PRODUCT_FISCAL_KEYS.root, "profile", productId] as const,
     enabled,
     queryFn: async () => {
+      if (!productId) throw new Error("product_required");
       const { data, error } = await (supabase as any)
         .from("product_fiscal_profiles")
         .select("*")
-        .eq("product_id", productId!)
+        .eq("product_id", productId)
         .maybeSingle();
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
@@ -262,6 +269,7 @@ export function useProductFiscalProfile(
       return data ?? null;
     },
   });
+  return { ...result, data: result.ready && !result.isError ? result.data : undefined };
 }
 
 export class OptimisticConflictError extends Error {
@@ -273,6 +281,7 @@ export class OptimisticConflictError extends Error {
 
 export function useSaveProductFiscalProfile() {
   const qc = useQueryClient();
+  const fence = useStorageAccessScope("product-fiscal-save");
   return useMutation<
     ProductFiscalRow,
     Error,
@@ -283,6 +292,11 @@ export function useSaveProductFiscalProfile() {
     }
   >({
     mutationFn: async ({ productId, current, values }) => {
+      const valid = fence.capture();
+      const check = () => { if (!valid()) throw new Error("fiscal_context_changed"); };
+      check();
+      values = productFiscalFormSchema.parse(values);
+      if (!productId || (current && (current.product_id !== productId || !current.id || !current.updated_at))) throw new Error("fiscal_target_changed");
       if (!current) {
         // Verificação prévia: perfil pode existir de outra sessão.
         const existing = await (supabase as any)
@@ -290,6 +304,7 @@ export function useSaveProductFiscalProfile() {
           .select("id")
           .eq("product_id", productId)
           .maybeSingle();
+        check();
         if (existing.error) {
           if (isPermissionError(existing.error))
             throw new Error("permission_denied");
@@ -304,10 +319,13 @@ export function useSaveProductFiscalProfile() {
           .insert(payload as any)
           .select("*")
           .single();
+        check();
         if (error) {
           if (isPermissionError(error)) throw new Error("permission_denied");
           throw new Error(error.message);
         }
+        await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root });
+        check();
         return data;
       }
       const payload = buildUpdatePayload(values, current);
@@ -322,6 +340,7 @@ export function useSaveProductFiscalProfile() {
         .eq("updated_at", current.updated_at)
         .select("*")
         .maybeSingle();
+      check();
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
         throw new Error(error.message);
@@ -329,10 +348,9 @@ export function useSaveProductFiscalProfile() {
       if (!data) {
         throw new OptimisticConflictError();
       }
+      await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root });
+      check();
       return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root });
     },
   });
 }

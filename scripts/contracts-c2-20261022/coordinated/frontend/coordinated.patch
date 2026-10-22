@@ -1,0 +1,232 @@
+--- a/src/hooks/useAvailableContexts.ts
++++ b/src/hooks/useAvailableContexts.ts
+@@ -1,3 +1,4 @@
++import { decodeC2Contexts, isC2ExternalScope } from "@/lib/authz/multiProfileContract";
+ import { useContext, useEffect, useRef } from "react";
+ import { PortalContextFreshness } from "@/lib/portalContextFreshness";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+@@ -10,7 +11,7 @@
+ import { getHomeForRole } from "@/lib/permissions";
+ import { PRODUTOR_HOME_PATH } from "@/lib/navigation/safeHome";
+ 
+-export type PortalContext = "b2b" | "technical" | "admin";
++export type PortalContext = "b2b" | "technical" | "producer" | "admin";
+ 
+ // Technical guards own freshness. Descendant readers (including switch/menu
+ // hooks) inherit their policy without changing default readers in other portals.
+@@ -92,9 +93,10 @@
+       if (error) throw new Error("portal_context_unavailable");
+       // Absent/malformed payload is unavailable, never an explicit denial.
+       if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("portal_context_unavailable");
++      if (isC2ExternalScope(roles)) decodeC2Contexts(data,user?.id ?? "",profile?.organization_id ?? "",roles);
+       const raw = (data ?? {}) as unknown as Partial<AvailableContexts>;
+       if (!Array.isArray(raw.available_contexts) || typeof raw.has_technical_access !== "boolean") throw new Error("portal_context_unavailable");
+-      const valid = (value: unknown): value is PortalContext => value === "admin" || value === "b2b" || value === "technical";
++      const valid = (value: unknown): value is PortalContext => value === "admin" || value === "b2b" || value === "technical" || value === "producer";
+       const contexts = Array.isArray(raw.available_contexts) ? raw.available_contexts.filter(valid) : [];
+       return {
+         available_contexts: contexts,
+@@ -137,7 +139,7 @@
+     isFetching: result.isFetching || (exclusiveOperator && operatorHomeQuery.isFetching),
+     refetch: exclusiveOperator ? () => Promise.all([result.refetch(), operatorHomeQuery.refetch()]) : result.refetch,
+     // Do not expose a previous successful grant during a refetch or after error.
+-    data: ready && (!requireFresh || (!result.isFetching && !result.isError)) ? result.data : undefined, ready, scope,
++    data: ready && !result.isError && (!requireFresh || (!result.isFetching && !result.isError)) ? result.data : undefined, ready, scope,
+     isLoading: loading || (ready && (result.isLoading || (exclusiveOperator && operatorHomeQuery.isLoading))) };
+ 
+ }
+--- a/src/lib/portalContext.ts
++++ b/src/lib/portalContext.ts
+@@ -6,6 +6,7 @@
+  * Nunca derivar destino do papel principal: sempre do contexto.
+  */
+ export const PORTAL_CONTEXT_HOME: Record<PortalContext, string> = {
++  producer: "/app",
+   b2b: "/portal-parceiro/dashboard",
+   technical: "/app",
+   admin: "/dashboard/geral",
+@@ -64,6 +65,7 @@
+ 
+ /** Roles que participam do fluxo multiportal via RPC. */
+ const PORTAL_ROLES: AppRole[] = [
++  "cliente_produtor",
+   "parceiro_b2b",
+   "parceiro_b2b_tecnico",
+   "consultor_tecnico",
+--- a/src/hooks/useMyPartner.ts
++++ b/src/hooks/useMyPartner.ts
+@@ -1,3 +1,4 @@
++import { decodeC2Partner, isC2ExternalScope } from "@/lib/authz/multiProfileContract";
+ import { readCatalogCapabilities } from "@/lib/catalogo/catalogAccess";
+ import { useEffect } from "react";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+@@ -8,10 +9,10 @@
+ export type PartnerUserPapel = "gestor" | "tecnico";
+ 
+ export function useMyPartner() {
+-  const { roles, profile } = useAuth();
++  const { user, roles, profile } = useAuth();
+   const fence = useStorageAccessScope("my-commercial-partner");
+   const client = useQueryClient();
+-  const role = roles.length === 1 ? roles[0] : null;
++  const role = isC2ExternalScope(roles) ? roles.includes("parceiro_b2b") ? "parceiro_b2b" : roles.includes("parceiro_b2b_tecnico") ? "parceiro_b2b_tecnico" : null : null;
+   const ready = fence.ready && profile?.senha_provisoria === false &&
+     (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico");
+   useEffect(() => {
+@@ -37,7 +38,7 @@
+       if (!rawContext) return null;
+       if (typeof rawContext !== "object" || Array.isArray(rawContext))
+         throw new Error("partner_context_unavailable");
+-      const context = rawContext as Record<string, unknown>;
++      const context = decodeC2Partner(rawContext,user?.id ?? "",profile?.organization_id ?? "",roles);
+       if (typeof context.partner_id !== "string" || context.organization_id !== profile?.organization_id ||
+         context.role !== role || (context.papel !== "gestor" && context.papel !== "tecnico") ||
+         !["commercial_owner", "legacy_partner_tenant"].includes(String(context.mode)))
+@@ -48,6 +49,7 @@
+       if (!rawPartner) return null;
+       if (typeof rawPartner !== "object" || Array.isArray(rawPartner)) throw new Error("partner_context_unavailable");
+       const partner = rawPartner as Record<string, unknown>;
++      if (partner.contract !== "C2_MULTIPROFILE_V1" || partner.actor_id !== user?.id || partner.tenant_id !== profile?.organization_id || JSON.stringify(partner.external_roles) !== JSON.stringify(context.external_roles)) throw new Error("partner_context_unavailable");
+       if (partner.id !== context.partner_id || partner.papel !== context.papel || partner.mode !== context.mode || partner.ativo !== true)
+         throw new Error("partner_context_unavailable");
+       if (typeof partner.razao_social !== "string" || typeof partner.codigo !== "string") throw new Error("partner_context_unavailable");
+--- a/src/components/guards/B2BRouteGuard.tsx
++++ b/src/components/guards/B2BRouteGuard.tsx
+@@ -1,3 +1,4 @@
++import { isC2ExternalScope } from "@/lib/authz/multiProfileContract";
+ import { ReactNode, useContext, useEffect } from "react";
+ import { CatalogFilterMemoryContext } from "@/lib/catalogo/catalogFilterPreferences";
+ import { Navigate, useLocation } from "react-router-dom";
+@@ -33,8 +34,7 @@
+   const { data, ready, isLoading, isError } = useAvailableContexts();
+   // has_b2b_access historically includes the management context. A real B2B
+   // context additionally proves the partner binding; management alone cannot.
+-  const exclusivePartner = roles.length === 1 &&
+-    (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico");
++  const exclusivePartner = isC2ExternalScope(roles) && roles.includes("parceiro_b2b");
+   const hasPartnerContext = exclusivePartner && own.ready && !!own.data && !own.isError &&
+     data?.has_b2b_access === true && data.available_contexts.includes("b2b");
+   const denied =
+--- a/src/components/guards/AppPortalGuard.tsx
++++ b/src/components/guards/AppPortalGuard.tsx
+@@ -1,3 +1,4 @@
++import { isC2ExternalScope } from "@/lib/authz/multiProfileContract";
+ import { ReactNode, useEffect } from "react";
+ import { Navigate, Outlet, useLocation } from "react-router-dom";
+ import { Loader2 } from "lucide-react";
+@@ -30,11 +31,12 @@
+ 
+   const isAdmin = roles.includes("administrador");
+   const hasTechnical = data?.available_contexts.includes("technical") === true;
+-  const isProducer = roles.includes("cliente_produtor");
++  const external = isC2ExternalScope(roles);
++  const isProducer = external ? data?.available_contexts.includes("producer") === true : roles.includes("cliente_produtor");
+   const isMonitoredConsultant = CONSULTANT_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "consultor_tecnico" &&
+     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
+   const isMonitoredManagerConsultant = MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id);
+-  const monitoredTechnical = isMonitoredConsultant || isMonitoredManagerConsultant || authzResidualScope;
++  const monitoredTechnical = external || isMonitoredConsultant || isMonitoredManagerConsultant || authzResidualScope;
+   const denied =
+     !loading &&
+     (!monitoredTechnical || authzReady) &&
+@@ -53,7 +55,7 @@
+   }, [denied, location.pathname]);
+ 
+   // Pause before readers depending on authzReady; retry stays on this URL.
+-  if (!loading && user && (isProducer || monitoredTechnical || authzLatchBlocked) && !authzReady) {
++  if (!loading && user && (external || isProducer || monitoredTechnical || authzLatchBlocked) && !authzReady) {
+     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
+   }
+ 
+--- a/src/hooks/useAuth.tsx
++++ b/src/hooks/useAuth.tsx
+@@ -8,6 +8,7 @@
+ import { subscribePortalEvents } from "@/lib/portalBroadcast";
+ import { clearActivePortalContext } from "@/lib/activePortalContext";
+ import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED, FINANCIAL_CONTEXT_MONITOR_ENABLED, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED, CONSULTANT_CONTEXT_MONITOR_ENABLED, OPERATOR_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
++import { c2ContextProbe, isC2ExternalScope } from "@/lib/authz/multiProfileContract";
+ import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
+ import { producerContextProbe } from "@/lib/authz/producerContextProbe";
+ import { recordAuthzDiagnostic, clearAuthzDiagnostics } from "@/lib/authz/localDiagnostics";
+@@ -542,6 +543,7 @@
+   const [authzState, setAuthzState] = useState<AuthzMonitorState>("idle");
+   const authzMonitorRef = useRef<AuthzEpochMonitor | null>(null);
+   const b2bContextOnly = AUTHZ_CACHE_ROLLOUT_SCOPE === "b2b-context";
++  const cumulativeExternal = b2bContextOnly && isC2ExternalScope(roles);
+   const producerContextOnly = b2bContextOnly && PRODUCER_CONTEXT_MONITOR_ENABLED &&
+     roles.length === 1 && roles[0] === "cliente_produtor";
+   const financialContextOnly = b2bContextOnly && FINANCIAL_CONTEXT_MONITOR_ENABLED &&
+@@ -574,7 +576,7 @@
+   // Auto-recovery limited to the scopes already homologated (pair/residual/admin/finance).
+   const autoRecoveryScope = environmentalContextOnly;
+   const isExternalUser = b2bContextOnly
+-    ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
++    ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || cumulativeExternal
+     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
+   const principalReady = !!user?.id && profile?.user_id === user.id && profile.ativo === true &&
+     profile.senha_provisoria === false && !!profile.organization_id;
+@@ -604,6 +606,11 @@
+         if (residualRole) return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", residualRole);
+         if (managerConsultantContextOnly || financialContextOnly || companyAdminContextOnly || consultantContextOnly || operatorContextOnly) {
+           return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", managerConsultantContextOnly ? MANAGER_CONSULTANT_ROLES : operatorContextOnly ? "operador_onfarm" : consultantContextOnly ? "consultor_tecnico" : companyAdminContextOnly ? "administrador" : "financeiro");
++        }
++        if (cumulativeExternal) {
++          const { data,error } = await supabase.rpc("get_my_available_portal_contexts");
++          if (error) throw new Error("c2_probe_unavailable");
++          return c2ContextProbe(data,user?.id ?? "",profile?.organization_id ?? "",roles);
+         }
+         if (producerContextOnly) {
+           return producerContextProbe(user?.id ?? "", profile?.organization_id ?? "");
+--- a/src/pages/SelecionarPortal.tsx
++++ b/src/pages/SelecionarPortal.tsx
+@@ -215,8 +215,8 @@
+           aria-label="Portais disponíveis"
+         >
+           {data.available_contexts.map((ctx) => {
+-            const label = ctx === "admin" ? "Gestão" : ctx === "technical" ? "Portal Técnico" : "Portal Parceiro B2B";
+-            const Icon = ctx === "admin" ? LayoutDashboard : ctx === "technical" ? Sprout : Store;
++            const label = ctx === "admin" ? "Gestão" : ctx === "technical" ? "Portal Técnico" : ctx === "producer" ? "Portal Cliente/Produtor" : "Portal Parceiro B2B";
++            const Icon = ctx === "admin" ? LayoutDashboard : ctx === "technical" || ctx === "producer" ? Sprout : Store;
+             return <Card key={ctx} className="flex flex-col border-2 transition hover:border-primary focus-within:border-primary">
+               <CardHeader className="space-y-3">
+                 <Icon className="h-6 w-6 text-primary" aria-hidden="true" />
+--- a/src/lib/authz/multiProfileContract.ts
++++ b/src/lib/authz/multiProfileContract.ts
+@@ -0,0 +1,37 @@
++// INACTIVE. Promoted only together with coordinated SQL, Edge and consumers.
++import type { AuthzFingerprintResult } from "@/lib/authz/authzEpochMonitor";
++const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++const external = ["cliente_produtor", "parceiro_b2b", "parceiro_b2b_tecnico"];
++export function isC2ExternalScope(roles: readonly string[]) {
++  return roles.length > 0 && roles.length <= 3 && new Set(roles).size === roles.length && roles.every(r => external.includes(r));
++}
++export function decodeC2Contexts(raw: unknown, actor: string, tenant: string, roles: readonly string[]) {
++  if (!isC2ExternalScope(roles) || !raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("c2_context_invalid");
++  const r = raw as Record<string, unknown>;
++  const contexts = r.available_contexts;
++  if (r.contract !== "C2_MULTIPROFILE_V1" || r.actor_id !== actor || r.tenant_id !== tenant || r.ready !== true ||
++    !Array.isArray(contexts) || contexts.some(c => !["b2b", "technical", "producer"].includes(c)) || new Set(contexts).size !== contexts.length ||
++    (contexts.includes("b2b") && !roles.includes("parceiro_b2b")) ||
++    (contexts.includes("technical") && !roles.includes("parceiro_b2b_tecnico")) ||
++    (contexts.includes("producer") && (!roles.includes("cliente_produtor") || r.producer_links_valid !== true)) ||
++    (contexts.some(c => c === "b2b" || c === "technical") && (typeof r.partner_id !== "string" || !uuid.test(r.partner_id)))) throw new Error("c2_context_invalid");
++  return r;
++}
++export function c2ContextProbe(raw: unknown, actor: string, tenant: string, roles: readonly string[]): AuthzFingerprintResult {
++  const r = decodeC2Contexts(raw, actor, tenant, roles);
++  const contexts = r.available_contexts as string[];
++  return { eligible: contexts.length > 0, fingerprint: contexts.length ? JSON.stringify([
++    actor, tenant, [...roles].sort(), [...contexts].sort(), r.partner_id,
++    r.producer_links_valid, r.profile_stamp, r.link_version,
++  ]) : null };
++}
++export function decodeC2Partner(raw: unknown, actor: string, tenant: string, roles: readonly string[]) {
++  if (!isC2ExternalScope(roles) || !raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("c2_partner_invalid");
++  const r = raw as Record<string, unknown>;
++  if (r.contract !== "C2_MULTIPROFILE_V1" || r.actor_id !== actor || r.tenant_id !== tenant || r.organization_id !== tenant ||
++    r.commercial_owner_organization_id !== tenant || r.mode !== "commercial_owner" ||
++    typeof r.partner_id !== "string" || !uuid.test(r.partner_id) || !Array.isArray(r.external_roles) ||
++    JSON.stringify([...r.external_roles].sort()) !== JSON.stringify([...roles].sort()) ||
++    r.manager !== roles.includes("parceiro_b2b") || r.technician !== roles.includes("parceiro_b2b_tecnico")) throw new Error("c2_partner_invalid");
++  return r;
++}

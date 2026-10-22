@@ -6,3 +6,4 @@
 - Receipts use the existing immutable partner audit log with actor/key/payload fingerprint; acquire the existing user gate before row locks, validate before and after locks, and replay before mutable validation — prevents deadlocks, stale authority and duplicate effects.
 - Local PostgreSQL tests use synthetic Auth and reduced schema; hosted JWT/RLS, full trigger integration and portal activation remain unverified — prevents false certification.
 - Lifecycle history uses a bounded keyset-paginated canonical RPC with actor and whitelisted before/after state scoped to partner, target and tenant — prevents raw/global audit exposure.
+- Coordinated runtime copies, Edge tests and assembly stay under the review package; promotion requires whole-chain validation including structural drift and rollback ACL — prevents tests of separate slices from implying installation readiness.

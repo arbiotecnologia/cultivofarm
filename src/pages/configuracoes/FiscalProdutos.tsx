@@ -14,7 +14,8 @@ import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWrit
  *    produto vinculado NÃO é usado como fallback fiscal.
  *  - Nenhuma nota é emitida por esta tela.
  */
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuth } from "@/hooks/useAuth";
 import { getAccessLevel } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
@@ -40,6 +41,7 @@ import {
 } from "@/hooks/useMicroorganismFiscalProfiles";
 import {
   productFiscalFormSchema,
+  productFiscalPreparation,
   rowToFormValues as productRowToFormValues,
   type ProductFiscalFormValues,
 } from "@/lib/fiscal/productFiscalValidation";
@@ -128,10 +130,10 @@ const FIELD_SELECTS: Partial<Record<FieldKey, FiscalOption[]>> = {
 };
 
 const FIELD_HINTS: Partial<Record<FieldKey, string>> = {
-  ncm: "8 dígitos numéricos, ex.: 10059010.",
+  ncm: "8 dígitos da classificação revisada para este item. A família comercial não determina o NCM.",
   cest: "7 dígitos numéricos, quando aplicável.",
-  cfop_in_state: "Ex.: 5102 — Venda de mercadoria adquirida.",
-  cfop_interstate: "Ex.: 6102 — Venda interestadual.",
+  cfop_in_state: "Definido pela operação e pelo estabelecimento emitente; não é inferido do produto.",
+  cfop_interstate: "Revisar conforme operação, destino e regime do emitente.",
   gtin: "GTIN-13/14 ou SEM GTIN.",
   taxable_gtin: "GTIN-13/14 ou SEM GTIN.",
   icms_cst: "Preencha CST se Regime Normal; CSOSN se Simples Nacional.",
@@ -139,10 +141,10 @@ const FIELD_HINTS: Partial<Record<FieldKey, string>> = {
 };
 
 const FIELD_PLACEHOLDERS: Partial<Record<FieldKey, string>> = {
-  ncm: "00000000",
-  cest: "0000000",
-  cfop_in_state: "5102",
-  cfop_interstate: "6102",
+  ncm: "Classificação revisada",
+  cest: "Quando aplicável",
+  cfop_in_state: "Operação interna",
+  cfop_interstate: "Operação interestadual",
 };
 
 // —————————————————————————— Unified row type ——————————————————————————
@@ -839,11 +841,19 @@ function ProductEditDrawer({
 }) {
   const profileQuery = useProductFiscalProfile(productId);
   const save = useSaveProductFiscalProfile();
+  const fence = useStorageAccessScope(`fiscal-drawer:${productId}`);
+  const submitLock = useRef(false);
+  const readiness = useProductFiscalReadiness([productId]);
+  const preparation = productFiscalPreparation(readiness.data?.find(r => r.product_id === productId), profileQuery.data?.is_active);
   const [values, setValues] = useState<ProductFiscalFormValues>(() =>
     productRowToFormValues(null),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    setValues(productRowToFormValues(null));
+    setErrors({});
+  }, [fence.scope]);
   useEffect(() => {
     if (profileQuery.data !== undefined) {
       setValues(productRowToFormValues(profileQuery.data));
@@ -852,6 +862,8 @@ function ProductEditDrawer({
 
   async function onSubmit(ev: React.FormEvent) {
     ev.preventDefault();
+    if (submitLock.current || !canEdit || !fence.ready || profileQuery.isFetching || profileQuery.isError || profileQuery.data === undefined) return;
+    const valid = fence.capture();
     setErrors({});
     const parsed = productFiscalFormSchema.safeParse(values);
     if (!parsed.success) {
@@ -865,26 +877,32 @@ function ProductEditDrawer({
       return;
     }
     try {
+      submitLock.current = true;
       await save.mutateAsync({
         productId,
         current: profileQuery.data ?? null,
         values: parsed.data,
       });
+      if (!valid()) return;
       toast({ title: "Perfil fiscal salvo." });
       onClose();
     } catch (err) {
+      if (!valid()) return;
       if (err instanceof OptimisticConflictError) {
         toast({
           title: "Conflito de atualização",
-          description: "Outro usuário alterou este perfil. Recarregue e tente novamente.",
+          description: "Outro usuário alterou este perfil. A versão atual será consultada; revise antes de salvar novamente.",
           variant: "destructive",
         });
+        await profileQuery.refetch();
         return;
       }
       const msg = err instanceof Error ? err.message : "unknown";
       if (msg === "permission_denied") toast({ title: "Sem permissão para salvar", variant: "destructive" });
       else if (msg === "duplicate_profile") toast({ title: "Perfil já existe", description: "Este produto já possui um perfil fiscal.", variant: "destructive" });
       else toast({ title: "Não foi possível salvar", variant: "destructive" });
+    } finally {
+      submitLock.current = false;
     }
   }
 
@@ -892,9 +910,9 @@ function ProductEditDrawer({
     <FiscalProfileDrawer
       title={`${canEdit ? "Editar" : "Detalhes do"} perfil fiscal — produto`}
       subtitle={`${displayName}${displayCodigo ? ` — ${displayCodigo}` : ""}`}
-      loading={profileQuery.isLoading}
+      loading={!fence.ready || profileQuery.isLoading || profileQuery.isFetching || profileQuery.isError}
       saving={save.isPending}
-      canEdit={canEdit}
+      canEdit={canEdit && fence.ready && !profileQuery.isFetching && !profileQuery.isError && profileQuery.data !== undefined}
       values={values}
       errors={errors}
       onChange={(k, v) => setValues((prev) => ({ ...prev, [k]: v }))}
@@ -903,6 +921,10 @@ function ProductEditDrawer({
       testId="fiscal-drawer-produto"
       footer={
         <div className="mt-6" data-testid="fiscal-produtos-ibs-cbs">
+          <Alert className="mb-4">
+            <AlertTitle>{preparation.stage === "incomplete_draft" ? "Rascunho incompleto" : preparation.stage === "inactive" ? "Perfil inativo" : preparation.stage === "accounting_pending" ? "Revisão contábil pendente" : preparation.stage === "unavailable" ? "Prontidão indisponível" : "Cadastro revisado; operação pendente"}</AlertTitle>
+            <AlertDescription>Salvar um rascunho não torna o item pronto para NF-e. Regime, operação, regras do emitente e IBS/CBS precisam de validação própria; emissão permanece desativada.</AlertDescription>
+          </Alert>
           <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit} />
         </div>
       }
