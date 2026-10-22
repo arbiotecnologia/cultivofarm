@@ -1,0 +1,114 @@
+--- a/src/hooks/useMyPartner.ts
++++ b/src/hooks/useMyPartner.ts
+@@ -1,3 +1,4 @@
++import { readCatalogCapabilities } from "@/lib/catalogo/catalogAccess";
+ import { useEffect } from "react";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+@@ -52,11 +53,11 @@
+       if (typeof partner.razao_social !== "string" || typeof partner.codigo !== "string") throw new Error("partner_context_unavailable");
+       return { id: context.partner_id, codigo: partner.codigo, razao_social: partner.razao_social,
+         nome_fantasia: typeof partner.nome_fantasia === "string" ? partner.nome_fantasia : null,
+-        ativo: true, papel: context.papel as PartnerUserPapel,
++        ativo: true, capabilities: readCatalogCapabilities(partner.capabilities), papel: context.papel as PartnerUserPapel,
+         mode: context.mode as "commercial_owner" | "legacy_partner_tenant" };
+     },
+   });
+-  return { ...result, data: ready ? result.data : undefined, ready, scope: fence.scope };
++  return { ...result, data: ready && !result.isError ? result.data : undefined, ready, scope: fence.scope };
+ }
+ 
+ /** Papel efetivo do usuário parceiro logado — considera role + vínculo. */
+--- a/src/pages/portal-parceiro/PortalParceiroLayout.tsx
++++ b/src/pages/portal-parceiro/PortalParceiroLayout.tsx
+@@ -1,3 +1,5 @@
++import { ownerCatalogRoute } from "@/lib/catalogo/catalogAccess";
++import { OwnerCatalog } from "@/components/catalogo/OwnerCatalog";
+ import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useMyPartner } from "@/hooks/useMyPartner";
+@@ -36,7 +38,9 @@
+ export default function PortalParceiroLayout() {
+   const { user, role, signOut, loading } = useAuth();
+   const entitlements = useEntitlements();
+-  const { data: ownPartner, isLoading } = useMyPartner();
++  const { data: ownPartner, isLoading, isError: partnerError, ready: partnerReady } = useMyPartner();
++  const location = useLocation();
++  const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);
+   const { data: contexts } = useAvailableContexts();
+   const switchPortal = useSwitchPortal();
+   const canSwitchPortal = !!contexts && contexts.available_contexts.length >= 2;
+@@ -48,7 +52,7 @@
+   const isTecnico = role === "parceiro_b2b_tecnico";
+   const commercialOwner = ownPartner?.mode === "commercial_owner";
+   const menuGroups = (isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS)
+-    .map((group) => ({ ...group, items: group.items.filter((item) => !commercialOwner && isPathEntitled(item.route, entitlements)) }))
++    .map((group) => ({ ...group, items: group.items.filter((item) => (!commercialOwner || (partnerReady && !partnerError && ownerCatalogRoute(item.route, ownPartner?.capabilities))) && isPathEntitled(item.route, entitlements)) }))
+     .filter((group) => group.items.length > 0);
+   const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
+ 
+@@ -80,13 +84,12 @@
+ 
+   const parceiroBrand = usePortalBranding("parceiro", commercialOwner ? null : partner?.id ?? null);
+ 
+-  const location = useLocation();
+-
+   if (loading) return <div className="p-6">Carregando...</div>;
+   if (!user) return <Navigate to="/auth" replace />;
+   if (role && !["parceiro_b2b", "parceiro_b2b_tecnico", "administrador", "gestor_comercial"].includes(role)) {
+     return <Navigate to="/" replace />;
+   }
++  if (!isStaff && (!partnerReady || partnerError)) return <div role="status">Acesso indisponível.</div>;
+   const isPartnerRole = role === "parceiro_b2b" || role === "parceiro_b2b_tecnico";
+ 
+   // Rotas de vínculo B2B × cliente ocultadas para todos parceiros B2B (Fase 2).
+@@ -185,13 +188,17 @@
+             Você está visualizando como <span className="font-medium text-foreground">{partner.razao_social}</span> (visão interna).
+           </div>
+         )}
+-        {commercialOwner ? (
++        {commercialOwner && canReadOwnerRoute ? (
++          location.pathname === "/portal-parceiro/catalogo"
++            ? <OwnerCatalog key={ownPartner.id} partnerId={ownPartner.id} />
++            : <Outlet context={{ partner: ownPartner }} />
++        ) : commercialOwner ? (
+           <section className="space-y-4" aria-label="Cliente comercial">
+             <h1 className="text-2xl font-semibold">{ownPartner.razao_social}</h1>
+             <p className="text-muted-foreground">{ownPartner.codigo}</p>
+-            {!isTecnico && <CommercialOwnOrders partnerId={ownPartner.id} />}
++            {location.pathname === "/portal-parceiro/dashboard" && !isTecnico && <CommercialOwnOrders partnerId={ownPartner.id} />}
+             <p role="status" className="text-muted-foreground">
+-              Catálogo, simulações, financeiro, arquivos e alterações de pedidos estão indisponíveis.
++              Simulações, financeiro, arquivos e alterações de pedidos estão indisponíveis.
+             </p>
+           </section>
+         ) : !partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
+--- /dev/null
++++ b/src/lib/catalogo/catalogAccess.ts
+@@ -0,0 +1,11 @@
++export function ownerCatalogRoute(path: string, capabilities: { catalog_read?: boolean; sheets_read?: boolean } | undefined) {
++  if (path === "/portal-parceiro/catalogo") return capabilities?.catalog_read === true;
++  if (path === "/portal-parceiro/fichas") return capabilities?.sheets_read === true;
++  return false;
++}
++export function readCatalogCapabilities(raw: unknown) {
++  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { catalog_read: false, sheets_read: false };
++  const row = raw as Record<string, unknown>;
++  if (row.contract !== "C2_CAT_V1") return { catalog_read: false, sheets_read: false };
++  return { catalog_read: row.catalog_read === true, sheets_read: row.sheets_read === true };
++}--- /dev/null
++++ b/src/components/catalogo/OwnerCatalog.tsx
+@@ -0,0 +1,13 @@
++import { usePartnerCatalog } from "@/hooks/usePartnerCatalog";
++import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
++import { partnerCatalogRows } from "@/lib/catalogo/partnerCatalogRows";
++
++// Same canonical catalogue source/grid. No order/simulation/payment hooks,
++// templates, realtime subscriptions, cart hydration or writable action slots.
++export function OwnerCatalog({ partnerId }: { partnerId: string }) {
++  const catalog = usePartnerCatalog(partnerId);
++  return <div className="space-y-4"><h1 className="text-2xl font-semibold">Catálogo</h1>
++    <CatalogoCardsGrid scope="b2b" source={{ ...catalog, data: partnerCatalogRows(catalog.data ?? []) }}
++      showStatusFilter={false} showB2BFilter={false} showInternalBadges={false} hideApprovedBadge />
++  </div>;
++}
