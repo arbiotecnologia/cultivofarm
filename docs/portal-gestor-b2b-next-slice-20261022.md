@@ -1,7 +1,7 @@
 # Portal gestor B2B — inventário inicial e próximo recorte
 
 ## Situação e evidência
-C2-CAT runtime entregue no commit95738f51; publicação pelo auditor e UI real ainda pendentes. Nova prova independente pós-banco: administradorB cbdc4ef3… projeçãoHTTP200null e catálogo parceiroA403forbidden_partner; teste4 projeçãoHTTP200capabilities catálogo/fichastrue. Executado pelo auditor, não pelo proprietário/agente. Não houve recarga. Monitor “verificando acesso” não homologado.
+C2-CAT publicado externamente pelo auditor: HEAD318957a2/deploymentafa325c5, UI teste4 catálogo35 itens (11 produtos24micros); filtros químicos/adubos vazios, não homologação positiva dessas famílias. AdministradorB projeção200null/cross-parceiro403. Provas do auditor, não do proprietário/agente; sem recarga. Monitor “verificando acesso” e reset/desanexação de filtros permanecem pendentes, causa não comprovada.
 
 ## Matriz inicial operação × perfil × empresa (não concessão de acesso)
 | Operação | Módulo/contrato existente | Gestor B2B — escopo | Técnico / produtor | Estado |
@@ -25,6 +25,7 @@ C2-CAT runtime entregue no commit95738f51; publicação pelo auditor e UI real a
 5. Antes do recorte financeiro, capturar preflight somente leitura das RPCs/ACL/owner/entitlements/tenant/cadeia; documentar se o contrato atual expressa finanças do parceiro ou contas internas do fornecedor. Migration candidata guardada e rollback seguro só se necessária; nunca executar hosted nesta fase.
 
 ## Gates e limites
-Primeiro recorte concreto entregue INATIVO em scripts/manager-own-dashboard-20261022: frontend.patch, agregador status exato, componente existente proposto, preflight read-only e reversão pelo baseline mantendo filtros servidor.24/24 Vitest (14 candidato +10 regressões reader canônico) PASS; mocks Auth/transporte não certificam JWT/RLS. Build automático OK; types específicos candidatos não executados pelo agente. Nenhum componente runtime modificado e nenhuma query hosted executada.
+Dashboard em scripts/manager-own-dashboard-20261022 promovido só localmente após revisão: componente/agregador e parser reader sem defaults.29/29 Vitest+types PASS, regressões C2-CAT30/30 e build automático OK; mocks não certificam JWT/RLS/UI real. Nenhum SQL hosted/publicação.
+Financeiro concreto separado INATIVO em scripts/partner-own-finance-20261022: inventário LIVE somente leitura, overload da RPC existente, página/hook, pre/postflight e rollback deny.30/30 PostgreSQL sintético+21/21 Vitest/types PASS. RPCs legadas continuam fechadas; projeção só obrigações de pedidos perante fornecedor e parcelas/pagamentos registrados, não receita/saldo próprio. Documentos sem prova owner-specific fechados. Entitlements e capability financeira coordenada ainda exigem revisão antes de instalação/promoção; REST/JWT/UI pendentes.
 Nenhum novo grant/role/dado/fluxo paralelo; não atribuir gestor interno nem abrir Outlet inteiro. C2.1 só poderá avançar com consumidores/provisioner coordenados e triggers completos testados. Publicação C2-CAT antecede ativação de próximo recorte. Objetivo funcional ampliado não aprova permissões desconhecidas.
 SU518022/CDN, anexos/perfis/origin-deny, monitor, XML/OS/CQ/termos, conteúdo técnico não vazio e demais backlog continuam adiados, não resolvidos.

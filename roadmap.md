@@ -3,16 +3,17 @@
 ## 22/10 01:33 — C2-CAT publicado, dashboard e financeiro próprio
 - [x] Auditor confirmou HEAD318957a2e5f9117a49a365728af421687b22caf1/deploymentafa325c5-7fb8-4461-9d2d-11d47b01f1f4 e UI atualizada;30/30+tsc. UI real teste4 catálogo35itens(11produtos24micros), filtros químicos/adubos funcionam porém vazios: conteúdo não homologado positivo.
 - [ ] Investigar reset/desanexação dos filtros após interação, possível remount monitor, sem polling/reload/alterar lease; não atribuir causa sem reprodução.
-- [ ] Corrigir TS2345 reproduzido no dashboard por campos opcionais Zod com strictNullChecks desabilitado; fronteira validada explícita, typecheck candidato/regressões e promoção local somente após revisão.
-- [ ] Preparar financeiro próprio concreto revisável: inventário LIVE read-only SQL/ACL/RLS/cadeia títulos/parcelas/documentos, contrato/página existentes e negativos; SQL guardado não instalar hosted. Não liberar receitas/custos internos nem total global.
+- [x] Corrigir TS2345 por fronteira runtime explícita dos campos obrigatórios; dashboard promovido localmente após revisão, 29/29 Vitest e types candidato PASS, sem publicar.
+- [x] Preparar financeiro próprio INATIVO em scripts/partner-own-finance-20261022: inventário LIVE read-only, overload guardada, página/hook, preflight/postflight/rollback deny; 30/30 PostgreSQL sintético e 21/21 Vitest/types PASS. Obrigações perante fornecedor, não receitas/saldos internos; documentos fechados.
+- [ ] Revisão independente do financeiro: entitlement e capability coordenada no menu/projeção ainda bloqueiam promoção; REST/JWT/RLS/UI real não homologados. Dashboard local aguarda publicação e UI real pelo auditor.
 - [ ] Coordenar multipapel/readers/provisioning/seletor antes de instalar writersC2.1; demais pendências preservadas.
 
 ## 22/10 01:24 — ampliação funcional portal gestor B2B
-- [x] Registrar orientação explícita: acompanhar empresa própria em dashboard/catálogo/financeiro/operações/equipe, sem gestor interno ou Outlet irrestrito; C2-CAT já entregue95738f51, publicação/UI pendentes.
+- [x] Registrar orientação explícita: acompanhar empresa própria em dashboard/catálogo/financeiro/operações/equipe, sem gestor interno ou Outlet irrestrito; C2-CAT entregue95738f51, publicação e UI catálogo confirmadas posteriormente pelo auditor (registro01:33).
 - [x] Registrar prova externa auditor pós-banco C2-CAT: administradorB cbdc4ef3… projeçãoHTTP200null e catálogo parceiroA403forbidden_partner; teste4 projeçãoHTTP200 catálogo/fichastrue. Não equivale a homologação UI; nenhuma recarga.
 - [x] Inventário inicial/matriz em docs/portal-gestor-b2b-next-slice-20261022.md; fontes financeiras distinguem parceiro/fornecedor, sem afirmar autorização SQL não inspecionada LIVE.
 - [x] Primeiro recorte candidato inativo scripts/manager-own-dashboard-20261022: indicadores exatos de pedidos observados, patch frontend, preflight read-only/reversão segura;24/24 testes sintéticos. Nenhuma mudança runtime/SQL/publicação.
-- [ ] Homologar publicação/UI C2-CAT e revisar independente recorte dashboard; typecheck específico candidato ainda não executado, build automático OK. Financeiro/entregas/OS/equipe dependem de inventário SQL/ACL/transitivos/entitlements e prova real, não de catálogo200.
+- [x] Publicação/UI catálogo C2-CAT observadas pelo auditor; dashboard revisto e types corrigidos, promovido só localmente. Fichas não vazias, monitor/filtros e publicação/UI dashboard continuam pendentes.
 - [ ] Coordenar multipapel/seletor existente gestor/técnico/produtor e provisioning em entrega separada após publicação C2-CAT; permissões ainda dependem de prova.
 
 ## 22/10 00:54 — C2 contratos funcionais multiperfil (candidata separada)
@@ -20,7 +21,7 @@
 - [ ] Gate produção C2.1: reavaliar locks em testes com cadeia completa de triggers; harness reduzido/CAS não certifica essa integração, writers continuam fechados.
 - [x] C2-CAT prioritário separado preparado em scripts/contracts-c2-cat-20261022: capacidade catálogo/fichas na projeção canônica e view owner read-only; nenhum canal financeiro/simulação/escrita adicional. 30UI/session +16SQL locais e39regressões; sem instalar C2.1 ou promover runtime.
 - [x] C2-CAT auditor9743dd58:30/30Vitest, types corrigidos, seis hashes/ACL/owner; SQL aplicado externamente e projeção teste4HTTP200 C2_CAT_V1 ambas capacidadestrue. Promoção local somente4arquivos autorizada, sem reaplicar SQL/publicar.
-- [ ] C2-CAT publicação pelo auditor e homologação UI real catálogo/fichas; monitor “verificando acesso” permanece pendente. Modelo explícito continua não homologado; nenhuma extensão de lease/alteração de sessão.
+- [x] C2-CAT publicação e UI catálogo confirmadas pelo auditor, dados35 e químicos/adubos vazios. Fichas não vazias e monitor “verificando acesso” permanecem pendentes; modelo explícito não homologado, lease/sessões preservados.
 - [x] Registrar publicação externa C1B/rótulos ed9f8d2c, deployment1d249f08-4199-44e8-9e4e-4f4efc3dacb1 e111/111+tsc do auditor; sem reaplicar banco.
 - [x] Inventariar contratos, consumidores e bloqueio commercial_owner da UI; preservar scope aplicado c3f29977 e modelo explícito não homologado. README scripts/contracts-c2-20261022 distingue catálogo autorizado de outros canais fechados.
 - [x] Preparar primeiro recorte administrativo executável SQL/patches/testes/preflight/reversão segura em scripts/contracts-c2-20261022, sem hosted writes/runtime/publicação; NÃO instalar writers isolados com readers exclusivos.
