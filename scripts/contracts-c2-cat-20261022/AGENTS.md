@@ -1,0 +1,3 @@
+- Keep SQL and frontend patch inactive until independent review and real PostgREST postflight; C2.1 writers stay closed — prevents partial activation.
+- Extend only the canonical partner projection with scoped read capabilities; preserve context/scope, role separation, leases and all financial/write gates — prevents catalogue access from granting other channels.
+- Owner catalogue mounts a read-only view using existing catalog RPC/grid, never NovoPedido and its sibling readers — prevents implicit cart/payment/template access.

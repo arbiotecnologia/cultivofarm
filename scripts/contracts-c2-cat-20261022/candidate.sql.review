@@ -1,0 +1,54 @@
+-- C2-CAT candidate only. No hosted execution. Existing context/scope untouched.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='30s';
+DO $guard$
+DECLARE r record;
+BEGIN
+ FOR r IN SELECT * FROM (VALUES
+ ('public.get_my_commercial_partner_projection()','730a17482e07d1bc350edfaea907cd1f'),
+ ('platform_private.b2b_commercial_partner_projection()','67fb596323c4222f9b1357eb42d93eca'),
+ ('platform_private.b2b_commercial_context()','a31d198c9a9fc9a5e7c397ab36fe0fa4'),
+ ('platform_private.b2b_actor_scope(uuid)','c3f2997746f24bc2efd15db5c0ccc862'),
+ ('public.is_valid_b2b_partner_user(uuid,uuid)','93520101987e599280460d3dadcf3a9f'),
+ ('platform_private.b2b_phase1_partner_visible(uuid,boolean)','35cfda5d5988fb6ad57944bd11a51c3c')
+ ) x(signature,hash) LOOP
+  IF md5(pg_get_functiondef(r.signature::regprocedure)) IS DISTINCT FROM r.hash
+   OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=r.signature::regprocedure)<>'postgres' THEN
+   RAISE EXCEPTION 'c2_cat_baseline_drift: %',r.signature USING ERRCODE='55000'; END IF;
+ END LOOP;
+ IF (SELECT proacl::text FROM pg_proc WHERE oid='public.get_my_commercial_partner_projection()'::regprocedure)
+  IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'
+ OR (SELECT proacl::text FROM pg_proc WHERE oid='platform_private.b2b_actor_scope(uuid)'::regprocedure)
+  IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN
+  RAISE EXCEPTION 'c2_cat_acl_drift' USING ERRCODE='55000'; END IF;
+END $guard$;
+
+CREATE OR REPLACE FUNCTION public.get_my_commercial_partner_projection()
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' AS $function$
+DECLARE result jsonb; permitted boolean:=false; catalog boolean:=false; sheets boolean:=false; u uuid:=auth.uid();
+BEGIN
+ result:=platform_private.b2b_commercial_partner_projection();
+ IF result IS NULL THEN RETURN NULL; END IF;
+ -- A commercial client alone is NOT a partner capability. Reuse current B2B
+ -- chain, including singleton role/link validator; add freshness/owner proof.
+ permitted:=COALESCE(platform_private.b2b_phase1_partner_visible((result->>'id')::uuid,true),false)
+  AND EXISTS(SELECT 1 FROM public.partner_users pu
+    JOIN public.partner_accounts pa ON pa.id=pu.partner_id
+    JOIN public.profiles p ON p.user_id=pu.user_id
+    JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id
+    WHERE pu.user_id=u AND pu.partner_id=(result->>'id')::uuid
+      AND pu.revoked_at IS NULL AND pu.valid_from<=now()
+      AND pa.ativo AND pa.deleted_at IS NULL AND o.ativo AND o.status='ativa'
+      AND p.ativo AND p.organization_id=pu.tenant_id AND pu.tenant_id=o.id
+      AND public.is_valid_b2b_partner_user(u,pa.id));
+ IF permitted THEN
+  catalog:=public.has_role(u,'parceiro_b2b') AND EXISTS(
+    SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='catalogo_precos');
+  sheets:=EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='fichas_tecnicas');
+ END IF;
+ RETURN result||jsonb_build_object('capabilities',jsonb_build_object('contract','C2_CAT_V1',
+   'catalog_read',catalog,'sheets_read',sheets));
+END $function$;
+-- CREATE OR REPLACE preserves OID/signature/owner/ACL. No grant or writer changes.
+COMMIT;

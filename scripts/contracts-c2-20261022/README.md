@@ -9,7 +9,7 @@ Nenhum arquivo runtime, migration gerenciada, dado real, role, grant hosted, Edg
 
 ## Evidência externa recebida (auditor, não proprietário executor)
 - `ed9f8d2c535668888ddb3b3442bb71673f26f753`: auditor repetiu111/111+tsc após sincronizar arquivos antigos.
-- Deployment `1d249f08-4199-44e8-9e4e-4f4efc3dacb1` solicitado; UI Lovable confirmou “Seu site foi atualizado”, informado pelo proprietário.
+- Deployment `1d249f08-4199-44e8-9e4e-4f4efc3dacb1` solicitado; confirmação “Seu site foi atualizado” observada pelo auditor, não pelo proprietário.
 - B2B catálogo gestor antigo/v2 200/35; técnico200/[] sem aprovados; cross-parceiro403 e adminB→A403. Conteúdo técnico não vazio não certificado.
 - Scope LIVE lido nesta rodada: **`c3f2997746f24bc2efd15db5c0ccc862`**, owner postgres, EXECUTE postgres/service_role. Não substituído. Organização parceira explícita continua NÃO homologada.
 
