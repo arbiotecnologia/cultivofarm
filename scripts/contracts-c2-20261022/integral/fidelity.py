@@ -19,3 +19,9 @@ if __name__ == '__main__':
     cand = (H.parent / 'coordinated' / 'candidate.sql.review').read_text()
     guard = cand[cand.index('DO $$ BEGIN IF EXISTS(WITH expected'):]; guard = guard[:guard.index('END $$;') + 7]
     r = __import__("subprocess").run(pg.psql(), input=guard, text=True, capture_output=True); print("structural guard:", "PASS" if r.returncode == 0 else r.stderr[-400:])
+def diff(sig):
+    import difflib
+    allf = {f['sig']: f for f in json.loads((H/'hosted-capture.json').read_text())['fns'] + json.loads((H/'hosted-capture-extra.json').read_text())}
+    loc = pg.sql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)")
+    print(allf[sig]['acl'], allf[sig]['owner'])
+    print(''.join(list(difflib.unified_diff(allf[sig]['def'].splitlines(1), (loc+'\n').splitlines(1)))[:30]))
