@@ -78,3 +78,17 @@ Os registros anteriores descrevem o runtime/achados daquela rodada; a correção
 - Testes legados ajustados: `fase3_20.unified_list.ui.test.tsx` — edição de produto agora no modo plataforma/Superadmin; admin na rota tenant vê produto só "Ver" e micro editável; Superadmin pausado não tem entrada de edição. `productFiscalProfiles.session.test.tsx` — fence fiscal de produto, alvo ativo `is_active:true`, chave com escopo `product-fiscal-read`.
 - `src/test/fiscal`: 1932 passam; 6 falhas restantes são preexistentes e fora do recorte (Edge `fiscal-xml-engine` XSD selftest e `transportPersistenceSafety` edge layer). Build OK.
 - `fn_fiscal_company_crt()` (revisada pelo auditor) lê só `h15_actor_organization`: Superadmin sem CRT permanece pendente e nunca vê "pronto NF-e". Sem publicação até revisão do diff final.
+
+## UX platformGlobal (pós-publicação 0ee39ddb) — candidata para revisão, NÃO publicada
+- Modo plataforma: título "Perfis fiscais de produtos globais", descrição humana, resumo só "Produtos na página"; sem contadores/textos de microrganismos e sem nomes de views. Modo tenant inalterado.
+- Testes: `page-split.test.tsx` (+2) e cópia runtime `src/test/fiscal/fiscalProdutos.platformUx.test.tsx` 7/7; `fase3_20.unified_list.ui` 11/11.
+
+## Falhas XML/Edge — comparação de baselines (git archive em /tmp, sem alterar o projeto)
+Arquivos: transportPersistenceSafety, xmlEngineXercesRuntime, xmlEngineXsdSelftest (37 testes).
+| Árvore | Resultado |
+|---|---|
+| `6271e981^` | 37/37 PASS |
+| `6271e981` (Edge XML binária, 2026-10-21) | 5 falham |
+| `c5b169a9` (antes da promoção fiscal) | mesmas 5 |
+| HEAD | mesmas 5 |
+Conclusão: introduzidas por `6271e981` (`fiscal-xml-engine/index.ts`, `xsdValidate.ts`); NÃO pela promoção fiscal (`supabase/functions` sem diff c5b169a9→HEAD). Ex.: limite estático de tamanho 16586 > 13925. A 6ª falha relatada antes não se reproduziu agora (1945 PASS/5 FAIL/4 skip). Testes estáticos desatualizados ou regressão real ainda NÃO decidido — requer revisão; nada corrigido.

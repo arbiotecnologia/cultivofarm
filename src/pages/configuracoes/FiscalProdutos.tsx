@@ -83,6 +83,7 @@ import {
 
 
 const PAGE_TITLE = "Perfis Fiscais de Produtos e Microrganismos";
+const PLATFORM_PAGE_TITLE = "Perfis fiscais de produtos globais";
 const EMISSION_BANNER = "Emissão fiscal desativada — ambiente em preparação";
 const PAGE_SIZE = 20;
 const STATUS_ALL = "__all__";
@@ -345,12 +346,20 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
   return (
     <div className="p-4 md:p-6 max-w-6xl space-y-4" data-testid="fiscal-produtos-page">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">{PAGE_TITLE}</h1>
+        <h1 className="text-2xl font-semibold">{platformGlobal ? PLATFORM_PAGE_TITLE : PAGE_TITLE}</h1>
+        {platformGlobal ? (
+          <p className="text-sm text-muted-foreground" data-testid="fiscal-platform-description">
+            Cadastro fiscal dos produtos do catálogo global, compartilhado por todas as empresas.
+            Revise NCM, CFOP e demais campos com a contabilidade antes de salvar. Um perfil só
+            fica pronto para NF-e depois de completo e revisado; nenhuma nota é emitida por esta tela.
+          </p>
+        ) : (
         <p className="text-sm text-muted-foreground">
           Preparação fiscal do catálogo. Produtos e microrganismos comercializáveis
           aparecem aqui. Cada microrganismo pode ter perfil fiscal próprio e ser
           faturado diretamente. Nenhuma nota é emitida por esta tela.
         </p>
+        )}
       </header>
 
       <Alert data-testid="fiscal-emission-banner">
@@ -361,12 +370,27 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
         </AlertDescription>
       </Alert>
 
+      {platformGlobal ? (
+      <Card data-testid="fiscal-platform-summary">
+        <CardHeader>
+          <CardTitle className="text-base">Resumo da página atual</CardTitle>
+          <CardDescription>
+            Produtos globais exibidos nesta página. Abra um produto para ver o que falta para ficar pronto para NF-e.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div>
+            <div className="text-muted-foreground">Produtos na página</div>
+            <div className="font-medium">{productItems.length}</div>
+          </div>
+        </CardContent>
+      </Card>
+      ) : (
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Resumo de prontidão (página atual)</CardTitle>
           <CardDescription>
-            Produtos usam <code>v_product_fiscal_readiness</code>. Microrganismos usam
-            {" "}<code>v_microorganism_fiscal_readiness</code>.
+            Produtos e microrganismos listados nesta página e situação dos perfis fiscais próprios.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -392,6 +416,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
           </div>
         </CardContent>
       </Card>
+      )}
 
       {!platformGlobal && <RegulatorioMicrorganismosSecao />}
 
@@ -465,7 +490,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm" role="table" aria-label="Perfis fiscais de produtos e microrganismos">
+                <table className="w-full text-sm" role="table" aria-label={platformGlobal ? "Perfis fiscais de produtos globais" : "Perfis fiscais de produtos e microrganismos"}>
                   <thead className="text-left text-muted-foreground">
                     <tr>
                       <th className="p-2">Item</th>
@@ -514,7 +539,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
                 <div className="flex items-center justify-between text-sm">
                   <div className="text-muted-foreground">
                     Página {page + 1} de {totalPages} — {listQuery.data?.total ?? 0} produtos
-                    {kind === KIND_ALL && microItems.length > 0 && (
+                    {!platformGlobal && kind === KIND_ALL && microItems.length > 0 && (
                       <> + {microItems.length} microrganismo(s) na visão unificada</>
                     )}
                   </div>
