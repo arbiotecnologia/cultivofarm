@@ -1,5 +1,12 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 00:54 — C2 contratos funcionais multiperfil (candidata separada)
+- [x] Registrar publicação externa C1B/rótulos ed9f8d2c, deployment1d249f08-4199-44e8-9e4e-4f4efc3dacb1 e111/111+tsc do auditor; sem reaplicar banco.
+- [x] Inventariar contratos, consumidores e bloqueio commercial_owner da UI; preservar scope aplicado c3f29977 e modelo explícito não homologado. README scripts/contracts-c2-20261022 distingue catálogo autorizado de outros canais fechados.
+- [x] Preparar primeiro recorte administrativo executável SQL/patches/testes/preflight/reversão segura em scripts/contracts-c2-20261022, sem hosted writes/runtime/publicação; NÃO instalar writers isolados com readers exclusivos.
+- [ ] Completar evolução coerente dos readers/folha/capacidades/seletor produtor e provisioning canônico: singleton receipt/finish impede cadastro cumulativo; campo candidato não envia. Integração integral dos triggers, finanças e vigência B2B ainda não certificada.
+- [ ] Revisão independente e homologação JWT/UI multiperfil; SU518022/anexos/monitor/XML/OS/CQ/termos/conteúdo técnico não vazio/CRUD rótulos reais seguem abertos.
+
 ## 21/10 21:25 — prioridade expressa: catálogo, depois contratos funcionais
 - [x] Adiar pendências sem declará-las resolvidas; avanço substitui gate antigo. Backlog: docs/backlog-prioridade-catalogo-20261021.md.
 - [x] C1 recorte interno revisável: inventário LIVE read-only, metadados/filtros de família técnico/agrônomo/comercial, legado e tenant preservados; 104/104 testes, types/build automático OK. docs/catalogo-c1-20261021-review.md. Não publicado.

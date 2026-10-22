@@ -1,0 +1,204 @@
+-- C2.1 CANDIDATA INATIVA; NÃO APLICAR AUTOMATICAMENTE.
+-- Administrative lifecycle only. Multiportal readers remain an independent gate.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='30s';
+DO $guard$
+BEGIN
+ IF (SELECT md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure)))
+    IS DISTINCT FROM 'c3f2997746f24bc2efd15db5c0ccc862' THEN
+  RAISE EXCEPTION 'c2_scope_drift' USING ERRCODE='55000'; END IF;
+ IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.b2b_actor_scope(uuid)'::regprocedure)<>'postgres'
+ OR (SELECT proacl::text FROM pg_proc WHERE oid='platform_private.b2b_actor_scope(uuid)'::regprocedure)
+    IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN
+  RAISE EXCEPTION 'c2_scope_acl_drift' USING ERRCODE='55000'; END IF;
+ IF (SELECT md5(pg_get_functiondef('public.is_valid_b2b_partner_user(uuid,uuid)'::regprocedure)))
+    IS DISTINCT FROM '93520101987e599280460d3dadcf3a9f' THEN
+  RAISE EXCEPTION 'c2_validator_drift' USING ERRCODE='55000'; END IF;
+ IF (SELECT md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure)))
+    IS DISTINCT FROM 'b0dd9a14d5fd799a40df0975baf4c5a6' THEN
+  RAISE EXCEPTION 'c2_user_gate_drift' USING ERRCODE='55000'; END IF;
+ IF (SELECT md5(string_agg(t.tgrelid::regclass::text||':'||t.tgname||':'||t.tgenabled::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgrelid::regclass::text,t.tgname))
+   FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass))
+   IS DISTINCT FROM 'd0d02d772e7aa3df8688cf0cd97aadfb'
+ OR (SELECT md5(string_agg(conname||':'||pg_get_constraintdef(oid),E'\n' ORDER BY conname))
+   FROM pg_constraint WHERE conrelid IN ('public.partner_users'::regclass,'public.user_roles'::regclass,'public.partner_audit_logs'::regclass))
+   IS DISTINCT FROM '2924eb29bae1f720bf0595c474e79a17'
+ OR (SELECT md5(string_agg(tablename||':'||policyname||':'||roles::text||':'||cmd||':'||COALESCE(qual,'')||':'||COALESCE(with_check,''),E'\n' ORDER BY tablename,policyname))
+   FROM pg_policies WHERE schemaname='public' AND tablename IN ('partner_users','user_roles','partner_audit_logs'))
+   IS DISTINCT FROM '3129a655c9ef4358496ad02be0e11e8d' THEN
+  RAISE EXCEPTION 'c2_chain_drift' USING ERRCODE='55000'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.partner_users'::regclass
+   AND conname='partner_users_user_id_key' AND pg_get_constraintdef(oid)='UNIQUE (user_id)')
+ OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.user_roles'::regclass
+   AND conname='user_roles_user_id_role_key' AND pg_get_constraintdef(oid)='UNIQUE (user_id, role)') THEN
+  RAISE EXCEPTION 'c2_uniqueness_drift' USING ERRCODE='55000'; END IF;
+ -- Reinstallation never overwrites a reviewed or independently changed contract.
+ IF to_regprocedure('public.link_partner_user(uuid,uuid,text[],text,text,uuid,text)') IS NOT NULL
+ OR to_regprocedure('platform_private.c2_partner_lifecycle(uuid,uuid,text[],text,text,uuid,text)') IS NOT NULL
+ OR to_regprocedure('public.get_partner_user_lifecycle(uuid,uuid)') IS NOT NULL THEN
+  RAISE EXCEPTION 'c2_already_installed' USING ERRCODE='55000'; END IF;
+END $guard$;
+
+CREATE FUNCTION platform_private.c2_partner_lifecycle(
+ p_partner_id uuid,p_user_id uuid,p_roles text[],p_action text,
+ p_expected text,p_key uuid,p_reason text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $core$
+DECLARE
+ actor uuid:=auth.uid(); org uuid; before_state jsonb; after_state jsonb;
+ existing_receipt record; fingerprint text; requested text[]; current_roles text[];
+ link public.partner_users%ROWTYPE; result jsonb; partner_owner uuid;
+BEGIN
+ -- Authority is ALWAYS the caller subject, never a payload actor or owner.
+ IF actor IS NULL OR actor=p_user_id OR p_partner_id IS NULL OR p_user_id IS NULL
+ OR platform_private.platform_actor_access_ready(actor) IS NOT TRUE
+ OR public.has_role(actor,'administrador'::public.app_role) IS NOT TRUE
+ OR public.is_platform_superadmin(actor) IS TRUE
+ OR public.is_platform_superadmin(p_user_id) IS TRUE THEN
+  RAISE EXCEPTION 'c2_forbidden' USING ERRCODE='42501'; END IF;
+ org:=public.h15_actor_organization();
+ IF org IS NULL OR p_key IS NULL OR p_expected IS NULL
+ OR length(p_expected)<>32 OR p_expected !~ '^[a-f0-9]{32}$'
+ OR p_reason IS NULL OR length(btrim(p_reason)) NOT BETWEEN 2 AND 500
+ OR p_action IS NULL OR p_action NOT IN ('assign','revoke_roles','unlink','reactivate')
+ OR p_roles IS NULL OR array_position(p_roles,NULL) IS NOT NULL
+ OR EXISTS(SELECT 1 FROM unnest(p_roles) r WHERE r NOT IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor'))
+ OR cardinality(p_roles)<>(SELECT count(DISTINCT r) FROM unnest(p_roles) r) THEN
+  RAISE EXCEPTION 'c2_invalid_input' USING ERRCODE='22023'; END IF;
+ SELECT array_agg(r ORDER BY r) INTO requested FROM unnest(p_roles) r;
+ requested:=COALESCE(requested,ARRAY[]::text[]);
+ fingerprint:=md5(jsonb_build_object('partner',p_partner_id,'user',p_user_id,
+   'roles',requested,'action',p_action,'expected',p_expected,'reason',btrim(p_reason))::text);
+ -- Preauthorization before waiting. Historical revoked links are still editable
+ -- by their proven owner, but never usable to authorize portal data.
+ IF NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
+   WHERE p.user_id=p_user_id AND p.organization_id=org AND p.ativo AND o.ativo AND o.status='ativa'
+   AND platform_private.platform_actor_access_ready(p.user_id))
+ OR NOT EXISTS(SELECT 1 FROM public.partner_accounts pa JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id
+   WHERE pa.id=p_partner_id AND pa.commercial_owner_organization_id=org AND pa.ativo
+   AND pa.deleted_at IS NULL AND o.ativo AND o.status='ativa') THEN
+  RAISE EXCEPTION 'c2_forbidden' USING ERRCODE='42501'; END IF;
+ -- Same lock order as the existing statement gate, BEFORE profile/role/link locks.
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'c2_guard_unavailable' USING ERRCODE='55000'; END IF;
+ PERFORM 1 FROM public.organizations WHERE id=org FOR SHARE;
+ PERFORM 1 FROM public.partner_accounts WHERE id=p_partner_id FOR SHARE;
+ PERFORM 1 FROM public.profiles WHERE user_id IN(actor,p_user_id) ORDER BY user_id FOR UPDATE;
+ PERFORM 1 FROM public.user_roles WHERE user_id IN(actor,p_user_id) ORDER BY user_id,role FOR UPDATE;
+ SELECT * INTO link FROM public.partner_users WHERE user_id=p_user_id FOR UPDATE;
+ IF link.id IS NOT NULL AND (link.partner_id IS DISTINCT FROM p_partner_id OR link.tenant_id IS DISTINCT FROM org) THEN
+  RAISE EXCEPTION 'c2_cross_partner' USING ERRCODE='42501'; END IF;
+ SELECT commercial_owner_organization_id INTO partner_owner FROM public.partner_accounts WHERE id=p_partner_id AND ativo AND deleted_at IS NULL;
+ IF partner_owner IS DISTINCT FROM org OR public.h15_actor_organization() IS DISTINCT FROM org
+ OR platform_private.platform_actor_access_ready(actor) IS NOT TRUE
+ OR public.has_role(actor,'administrador'::public.app_role) IS NOT TRUE
+ OR public.is_platform_superadmin(actor) OR public.is_platform_superadmin(p_user_id)
+ OR NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_user_id AND organization_id=org AND ativo
+   AND platform_private.platform_actor_access_ready(user_id))
+ OR NOT EXISTS(SELECT 1 FROM public.organizations WHERE id=org AND ativo AND status='ativa') THEN
+  RAISE EXCEPTION 'c2_forbidden' USING ERRCODE='42501'; END IF;
+ -- Replay before state/roles validation: a subsequent revocation cannot cause
+ -- the same committed attempt to grant again or become a false conflict.
+ SELECT * INTO existing_receipt FROM public.partner_audit_logs
+  WHERE acao='c2_partner_lifecycle' AND usuario_id=actor
+    AND dados_novos->>'key'=p_key::text LIMIT 1;
+ IF FOUND THEN
+  IF existing_receipt.dados_novos->>'fingerprint' IS DISTINCT FROM fingerprint THEN
+   RAISE EXCEPTION 'c2_replay_conflict' USING ERRCODE='40001'; END IF;
+  RETURN existing_receipt.dados_novos->'receipt';
+ END IF;
+ SELECT COALESCE(array_agg(role::text ORDER BY role::text),ARRAY[]::text[]) INTO current_roles FROM public.user_roles WHERE user_id=p_user_id;
+ IF EXISTS(SELECT 1 FROM unnest(current_roles) r WHERE r NOT IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor')) THEN
+  RAISE EXCEPTION 'c2_internal_identity_closed' USING ERRCODE='42501'; END IF;
+ before_state:=jsonb_build_object('user',p_user_id,'partner',p_partner_id,'org',org,
+   'roles',current_roles,'link',CASE WHEN link.id IS NULL THEN NULL ELSE to_jsonb(link) END,
+   'profile_stamp',(SELECT updated_at FROM public.profiles WHERE user_id=p_user_id));
+ IF md5(before_state::text)<>p_expected THEN RAISE EXCEPTION 'c2_version_conflict' USING ERRCODE='40001'; END IF;
+ IF p_action IN ('unlink','reactivate') AND requested IS DISTINCT FROM current_roles THEN
+  RAISE EXCEPTION 'c2_roles_must_be_preserved' USING ERRCODE='22023'; END IF;
+ IF p_action='revoke_roles' AND EXISTS(SELECT 1 FROM unnest(requested) r WHERE NOT r=ANY(current_roles)) THEN
+  RAISE EXCEPTION 'c2_revocation_cannot_grant' USING ERRCODE='42501'; END IF;
+ IF p_action='assign' AND link.id IS NOT NULL AND link.revoked_at IS NOT NULL THEN
+  RAISE EXCEPTION 'c2_explicit_reactivation_required' USING ERRCODE='42501'; END IF;
+ IF p_action IN ('unlink','reactivate') AND link.id IS NULL THEN
+  RAISE EXCEPTION 'c2_link_missing' USING ERRCODE='22023'; END IF;
+ IF p_action='reactivate' AND link.revoked_at IS NULL THEN
+  RAISE EXCEPTION 'c2_not_revoked' USING ERRCODE='22023'; END IF;
+ -- This slice does not create/transfer clients or adopt an Auth identity.
+ -- Producer requires an explicit live client AND property, never UUID alone.
+ IF 'cliente_produtor'=ANY(requested) AND p_action='assign' THEN
+  PERFORM 1 FROM public.user_clientes WHERE user_id=p_user_id ORDER BY id FOR SHARE;
+  PERFORM 1 FROM public.clientes c WHERE EXISTS(SELECT 1 FROM public.user_clientes uc WHERE uc.user_id=p_user_id AND uc.cliente_id=c.id) ORDER BY c.id FOR SHARE;
+  PERFORM 1 FROM public.fazendas f WHERE EXISTS(SELECT 1 FROM public.user_clientes uc WHERE uc.user_id=p_user_id AND uc.cliente_id=f.cliente_id) ORDER BY f.id FOR SHARE;
+  IF NOT EXISTS(SELECT 1 FROM public.user_clientes uc JOIN public.clientes c ON c.id=uc.cliente_id
+    JOIN public.fazendas f ON f.cliente_id=c.id
+    WHERE uc.user_id=p_user_id AND uc.is_active AND uc.revoked_at IS NULL
+      AND uc.valid_from<=now() AND (uc.valid_until IS NULL OR uc.valid_until>=now())
+      AND c.organization_id=org AND c.status_cliente='ativo'
+      AND f.organization_id=org AND f.ativo) THEN
+   RAISE EXCEPTION 'c2_producer_link_required' USING ERRCODE='42501'; END IF;
+ END IF;
+ IF p_action='assign' AND NOT ('parceiro_b2b'=ANY(requested) OR 'parceiro_b2b_tecnico'=ANY(requested)) THEN
+  RAISE EXCEPTION 'c2_partner_role_required' USING ERRCODE='22023'; END IF;
+ IF p_action IN ('assign','revoke_roles') THEN
+  DELETE FROM public.user_roles WHERE user_id=p_user_id AND role::text=ANY(current_roles) AND NOT role::text=ANY(requested);
+  INSERT INTO public.user_roles(user_id,role) SELECT p_user_id,r::public.app_role FROM unnest(requested) r
+   WHERE NOT r=ANY(current_roles) ON CONFLICT(user_id,role) DO NOTHING;
+ END IF;
+ IF p_action='assign' AND link.id IS NULL THEN
+  INSERT INTO public.partner_users(user_id,partner_id,papel,tenant_id)
+   VALUES(p_user_id,p_partner_id,CASE WHEN 'parceiro_b2b'=ANY(requested) THEN 'gestor' ELSE 'tecnico' END,org);
+ ELSIF p_action IN ('assign','revoke_roles') AND link.id IS NOT NULL
+   AND ('parceiro_b2b'=ANY(requested) OR 'parceiro_b2b_tecnico'=ANY(requested)) THEN
+  UPDATE public.partner_users SET papel=CASE WHEN 'parceiro_b2b'=ANY(requested) THEN 'gestor' ELSE 'tecnico' END WHERE id=link.id;
+ ELSIF p_action='unlink' THEN
+  UPDATE public.partner_users SET revoked_at=clock_timestamp(),revoked_by=actor,revoke_reason=btrim(p_reason) WHERE id=link.id AND revoked_at IS NULL;
+ ELSIF p_action='reactivate' THEN
+  UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL,valid_from=clock_timestamp() WHERE id=link.id;
+ END IF;
+ -- No role INSERT on reactivation/unlink. Independent producer remains untouched.
+ SELECT jsonb_build_object('user',p_user_id,'partner',p_partner_id,'org',org,'roles',requested,
+   'link',(SELECT to_jsonb(pu) FROM public.partner_users pu WHERE pu.user_id=p_user_id),
+   'profile_stamp',(SELECT updated_at FROM public.profiles WHERE user_id=p_user_id)) INTO after_state;
+ result:=jsonb_build_object('ok',true,'user_id',p_user_id,'partner_id',p_partner_id,
+   'version',md5(after_state::text),'action',p_action,'reader_activation',false);
+ INSERT INTO public.partner_audit_logs(partner_id,usuario_id,acao,dados_anteriores,dados_novos)
+ VALUES(p_partner_id,actor,'c2_partner_lifecycle',before_state,
+   jsonb_build_object('key',p_key,'fingerprint',fingerprint,'reason',btrim(p_reason),'state',after_state,'receipt',result));
+ RETURN result;
+END $core$;
+REVOKE ALL ON FUNCTION platform_private.c2_partner_lifecycle(uuid,uuid,text[],text,text,uuid,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION platform_private.c2_partner_lifecycle(uuid,uuid,text[],text,text,uuid,text) TO authenticated;
+-- Compatible overload: the contained legacy uuid,uuid,text signature stays closed.
+CREATE FUNCTION public.link_partner_user(p_partner_id uuid,p_user_id uuid,p_roles text[],p_action text,p_expected text,p_key uuid,p_reason text)
+RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $api$
+ SELECT platform_private.c2_partner_lifecycle(p_partner_id,p_user_id,p_roles,p_action,p_expected,p_key,p_reason);
+$api$;
+REVOKE ALL ON FUNCTION public.link_partner_user(uuid,uuid,text[],text,text,uuid,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.link_partner_user(uuid,uuid,text[],text,text,uuid,text) TO authenticated;
+-- Dedicated scoped state/history projection; never exposes global audit rows.
+CREATE FUNCTION public.get_partner_user_lifecycle(p_partner_id uuid,p_user_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $read$
+DECLARE actor uuid:=auth.uid(); org uuid; state jsonb;
+BEGIN
+ org:=public.h15_actor_organization();
+ IF actor IS NULL OR org IS NULL OR platform_private.platform_actor_access_ready(actor) IS NOT TRUE
+ OR NOT public.has_role(actor,'administrador'::public.app_role) OR public.is_platform_superadmin(actor)
+ OR public.is_platform_superadmin(p_user_id)
+ OR NOT EXISTS(SELECT 1 FROM public.organizations WHERE id=org AND ativo AND status='ativa')
+ OR NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_user_id AND organization_id=org AND ativo
+   AND platform_private.platform_actor_access_ready(user_id))
+ OR NOT EXISTS(SELECT 1 FROM public.partner_accounts WHERE id=p_partner_id AND commercial_owner_organization_id=org AND ativo AND deleted_at IS NULL)
+ OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=p_user_id AND (partner_id<>p_partner_id OR tenant_id IS DISTINCT FROM org)) THEN
+  RAISE EXCEPTION 'c2_forbidden' USING ERRCODE='42501'; END IF;
+ state:=jsonb_build_object('user',p_user_id,'partner',p_partner_id,'org',org,
+   'roles',(SELECT COALESCE(array_agg(role::text ORDER BY role::text),ARRAY[]::text[]) FROM public.user_roles WHERE user_id=p_user_id),
+   'link',(SELECT to_jsonb(pu) FROM public.partner_users pu WHERE user_id=p_user_id),
+   'profile_stamp',(SELECT updated_at FROM public.profiles WHERE user_id=p_user_id));
+ RETURN jsonb_build_object('state',state,'version',md5(state::text),'history',
+   (SELECT COALESCE(jsonb_agg(jsonb_build_object('at',created_at,'reason',dados_novos->>'reason','action',dados_novos->'receipt'->>'action') ORDER BY created_at),'[]'::jsonb)
+    FROM public.partner_audit_logs WHERE partner_id=p_partner_id AND acao='c2_partner_lifecycle' AND dados_anteriores->>'user'=p_user_id::text));
+END $read$;
+REVOKE ALL ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid) TO authenticated;
+COMMIT;
