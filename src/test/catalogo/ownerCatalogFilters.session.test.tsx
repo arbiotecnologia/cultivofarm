@@ -2,9 +2,9 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
-const state = vi.hoisted(() => ({ actor: "A", tenant: "T", role: "parceiro_b2b", loading: false, ready: true, error: false, epoch: 1, partner: "P" as string | null, catalog: true, calls: 0 }));
+const state = vi.hoisted(() => ({ actor: "A", tenant: "T", role: "parceiro_b2b", pending: false, loading: false, ready: true, error: false, epoch: 1, partner: "P" as string | null, catalog: true, calls: 0 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.tenant }, roles: [state.role], role: state.role, loading: state.loading, authzReady: state.ready, authzEpoch: state.epoch, authzState: "expired", revalidateAuthz: vi.fn() }) }));
-vi.mock("@/hooks/useMyPartner", () => ({ useMyPartner: () => ({ ready: state.ready, isError: state.error, isLoading: false, data: state.ready && !state.error ? state.partner ? { id: state.partner, codigo: "P1", razao_social: "Parceiro", mode: "commercial_owner", capabilities: { catalog_read: state.catalog, sheets_read: true } } : null : undefined }) }));
+vi.mock("@/hooks/useMyPartner", () => ({ useMyPartner: () => ({ ready: state.ready, isError: state.error, isLoading: state.pending, isPending: state.pending, isSuccess: state.ready && !state.error && !state.pending, data: state.ready && !state.error && !state.pending ? state.partner ? { id: state.partner, codigo: "P1", razao_social: "Parceiro", mode: "commercial_owner", capabilities: { catalog_read: state.catalog, sheets_read: true } } : null : undefined }) }));
 vi.mock("@/hooks/useAvailableContexts", () => ({ useAvailableContexts: () => ({ ready: state.ready, isLoading: false, isError: false, data: { has_b2b_access: true, available_contexts: ["b2b"] } }) }));
 vi.mock("@/hooks/useSwitchPortal", () => ({ useSwitchPortal: () => vi.fn() }));
 vi.mock("@/hooks/useEntitlements", () => ({ useEntitlements: () => ({ status: "ready", features: new Set(["catalogo_precos", "fichas_tecnicas"]) }) }));
@@ -29,7 +29,7 @@ import Layout from "@/pages/portal-parceiro/PortalParceiroLayout";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 import { CatalogFilterPreferencesProvider } from "@/components/catalogo/CatalogFilterPreferencesProvider";
 import { createCatalogFilterMemory, defaultCatalogFilters } from "@/lib/catalogo/catalogFilterPreferences";
-beforeEach(() => Object.assign(state, { actor: "A", tenant: "T", role: "parceiro_b2b", loading: false, ready: true, error: false, epoch: 1, partner: "P", catalog: true, calls: 0 }));
+beforeEach(() => Object.assign(state, { actor: "A", tenant: "T", role: "parceiro_b2b", pending: false, loading: false, ready: true, error: false, epoch: 1, partner: "P", catalog: true, calls: 0 }));
 afterEach(cleanup);
 function Navigation() { const go = useNavigate(); return <><button onClick={() => go("/portal-parceiro/fichas")}>Outro contexto</button><button onClick={() => go("/portal-parceiro/catalogo")}>Voltar catálogo</button></>; }
 function mount(guarded = false) {
@@ -40,6 +40,22 @@ function mount(guarded = false) {
 }
 const search = () => screen.getByPlaceholderText("Buscar por nome, código, função, alvo...");
 const selectChemical = () => fireEvent.click(screen.getByRole("radio", { name: "Químicos" }));
+it.each([false, true])("ready=true with pending query retains only filters, guarded=%s", guarded => {
+  const view = mount(guarded); selectChemical(); fireEvent.change(search(), { target: { value: "pendente" } });
+  state.pending = true; state.epoch++; view.update();
+  expect(screen.queryByText("Protegido A")).toBeNull();
+  state.pending = false; view.update();
+  expect(search()).toHaveValue("pendente");
+  expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "true");
+});
+it.each(["tenant", "role"])("clears %s changes during ready=true/pending even when old context returns", kind => {
+  const view = mount(true); selectChemical(); fireEvent.change(search(), { target: { value: "antigo" } });
+  state.pending = true; view.update();
+  if (kind === "tenant") state.tenant = "B"; else state.role = "parceiro_b2b_tecnico";
+  view.update(); state.tenant = "T"; state.role = "parceiro_b2b"; view.update();
+  state.pending = false; view.update(); expect(search()).toHaveValue("");
+  expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "false");
+});
 it("real Layout/Owner/Grid preserves filter during monitor pause/resume without protected rows or drawers", () => {
   const view = mount();
   fireEvent.click(screen.getByRole("button", { name: "Ver ficha" }));

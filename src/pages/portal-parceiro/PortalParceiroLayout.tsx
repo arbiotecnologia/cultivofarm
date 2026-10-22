@@ -39,7 +39,7 @@ import {
 export default function PortalParceiroLayout() {
   const { user, profile, roles, role, signOut, loading } = useAuth();
   const entitlements = useEntitlements();
-  const { data: ownPartner, isLoading, isError: partnerError, ready: partnerReady } = useMyPartner();
+  const { data: ownPartner, isLoading, isError: partnerError, isSuccess: partnerSuccess, ready: partnerReady } = useMyPartner();
   const location = useLocation();
   const filterMemory = useRef(createCatalogFilterMemory());
   const guardFilterMemory = useContext(CatalogFilterMemoryContext);
@@ -49,7 +49,9 @@ export default function PortalParceiroLayout() {
     location.pathname === "/portal-parceiro/catalogo"
     ? JSON.stringify([user.id, profile.organization_id, [...(roles ?? [])].sort(), "b2b"]) : null;
   const filterPreferences = (guardFilterMemory ?? filterMemory.current).bind(preferenceIdentity,
-    partnerReady && !partnerError && ownPartner !== undefined ? ownPartner?.id ?? null : undefined);
+    partnerReady && !partnerError
+      ? ownPartner?.id ?? (partnerSuccess && ownPartner === null ? null : undefined)
+      : undefined);
   const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);
   const { data: contexts } = useAvailableContexts();
   const switchPortal = useSwitchPortal();
