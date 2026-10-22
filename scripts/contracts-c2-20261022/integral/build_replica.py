@@ -22,7 +22,13 @@ w("ALTER ROLE service_role BYPASSRLS;")
 w("GRANT anon, authenticated, service_role TO authenticator;")
 for s in sorted({'auth', 'platform_private', 'cf_user_guards_v1'} | {k.split('(')[0].rsplit('.',1)[0] for k in fns if '.' in k.split('(')[0]}):
     w(f"CREATE SCHEMA IF NOT EXISTS {s};")
-w("GRANT USAGE ON SCHEMA public, auth TO anon, authenticated, service_role;")
+for line in (H / 'hosted-schema-acl.txt').read_text().split():
+    nsp, owner, acl = line.split('|')
+    if owner != 'pg_database_owner': w(f"ALTER SCHEMA {nsp} OWNER TO {owner};")
+    w(f"REVOKE ALL ON SCHEMA {nsp} FROM PUBLIC;")
+    for grantee, privs, grantor in re.findall(r'([a-z_]*)=([UC]+)/([a-z_]+)', acl):
+        if grantee in (owner, 'pg_database_owner'): continue
+        w(f"GRANT {', '.join({'U':'USAGE','C':'CREATE'}[c] for c in privs)} ON SCHEMA {nsp} TO {grantee or 'PUBLIC'};")
 # SYNTHETIC Auth functions: same names/signatures as Supabase, claims from GUC.
 w("""CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$SELECT coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT nullif(auth.jwt()->>'sub','')::uuid$$;
