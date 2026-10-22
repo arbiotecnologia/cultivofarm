@@ -9,9 +9,9 @@ DO $$BEGIN CREATE ROLE supabase_admin NOLOGIN; EXCEPTION WHEN duplicate_object T
 ALTER ROLE service_role BYPASSRLS;
 GRANT anon, authenticated, service_role TO authenticator;
 CREATE SCHEMA IF NOT EXISTS auth;
-CREATE SCHEMA IF NOT EXISTS platform_private;
 CREATE SCHEMA IF NOT EXISTS cf_user_guards_v1;
-CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE SCHEMA IF NOT EXISTS finance_private;
+CREATE SCHEMA IF NOT EXISTS platform_private;
 GRANT USAGE ON SCHEMA public, auth TO anon, authenticated, service_role;
 CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$SELECT coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT nullif(auth.jwt()->>'sub','')::uuid$$;
@@ -868,6 +868,53 @@ BEGIN
  expected_center:=CASE WHEN jsonb_array_length(v.allocations)=1 THEN (v.allocations->0->>'cost_center_id')::uuid ELSE NULL END;
  IF NEW.cost_center_id IS DISTINCT FROM expected_center THEN RAISE EXCEPTION 'FIN_ALLOCATION_USE_RPC' USING ERRCODE='23514'; END IF;
  RETURN NEW;
+END $function$;
+CREATE OR REPLACE FUNCTION finance_private.set_payable_allocations(p_payable_id uuid, p_allocations jsonb, p_reason text, p_expected_version integer, p_request_key uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE u uuid:=auth.uid(); a public.accounts_payable%ROWTYPE; current_version integer; line jsonb; cc uuid; amt numeric; sm numeric:=0; seen uuid[]:='{}'; normalized jsonb:='[]'; enriched jsonb:='[]'; nm text; cd text; fp text; prior public.payable_allocation_versions%ROWTYPE; result_id uuid;
+BEGIN
+ IF u IS NULL OR public.is_financial_staff(u) IS NOT TRUE THEN RAISE EXCEPTION 'FIN_ALLOCATION_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF p_request_key IS NULL OR p_expected_version IS NULL OR p_expected_version<0 THEN RAISE EXCEPTION 'FIN_ALLOCATION_REQUEST' USING ERRCODE='23514'; END IF;
+ IF p_reason IS NULL OR length(btrim(p_reason)) NOT BETWEEN 5 AND 1000 THEN RAISE EXCEPTION 'FIN_ALLOCATION_REASON' USING ERRCODE='23514'; END IF;
+ IF jsonb_typeof(p_allocations) IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'FIN_ALLOCATION_ITEMS' USING ERRCODE='23514'; END IF;
+ IF jsonb_array_length(p_allocations) NOT BETWEEN 1 AND 100 THEN RAISE EXCEPTION 'FIN_ALLOCATION_ITEMS' USING ERRCODE='23514'; END IF;
+ FOR line IN SELECT value FROM jsonb_array_elements(p_allocations) LOOP
+  IF jsonb_typeof(line) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'FIN_ALLOCATION_ITEMS' USING ERRCODE='23514'; END IF;
+  BEGIN cc:=(line->>'cost_center_id')::uuid; amt:=(line->>'amount')::numeric;
+  EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range THEN RAISE EXCEPTION 'FIN_ALLOCATION_VALUE' USING ERRCODE='23514'; END;
+  IF cc IS NULL OR cc=ANY(seen) OR amt IS NULL OR amt::text IN('NaN','Infinity','-Infinity') OR amt<=0 OR amt<>round(amt,2) THEN RAISE EXCEPTION 'FIN_ALLOCATION_VALUE' USING ERRCODE='23514'; END IF;
+  seen:=array_append(seen,cc);sm:=sm+amt;
+  normalized:=normalized||jsonb_build_array(jsonb_build_object('cost_center_id',cc,'amount',round(amt,2)));
+ END LOOP;
+ SELECT jsonb_agg(x ORDER BY x->>'cost_center_id') INTO normalized FROM jsonb_array_elements(normalized) x;
+ fp:=md5(jsonb_build_object('items',normalized,'reason',btrim(p_reason),'expected_version',p_expected_version)::text);
+ SELECT * INTO a FROM public.accounts_payable WHERE id=p_payable_id FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FIN_ALLOCATION_NOT_FOUND' USING ERRCODE='P0002'; END IF;
+ SELECT * INTO prior FROM public.payable_allocation_versions WHERE payable_id=p_payable_id AND request_key=p_request_key;
+ IF FOUND THEN
+  IF prior.request_fingerprint<>fp THEN RAISE EXCEPTION 'FIN_ALLOCATION_IDEMPOTENCY_CONFLICT' USING ERRCODE='23514'; END IF;
+  RETURN jsonb_build_object('success',true,'id',prior.id,'version',prior.version,'replayed',true);
+ END IF;
+ IF a.status='CANCELED' THEN RAISE EXCEPTION 'FIN_ALLOCATION_CANCELED' USING ERRCODE='23514'; END IF;
+ SELECT coalesce(max(version),0) INTO current_version FROM public.payable_allocation_versions WHERE payable_id=p_payable_id;
+ IF current_version<>p_expected_version THEN RAISE EXCEPTION 'FIN_ALLOCATION_STALE' USING ERRCODE='23514'; END IF;
+ IF sm<>a.total_amount THEN RAISE EXCEPTION 'FIN_ALLOCATION_SUM' USING ERRCODE='23514'; END IF;
+ FOR line IN SELECT value FROM jsonb_array_elements(normalized) LOOP
+  cc:=(line->>'cost_center_id')::uuid;
+  SELECT name,code INTO nm,cd FROM public.financial_cost_centers WHERE id=cc AND active FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FIN_ALLOCATION_CENTER_INACTIVE' USING ERRCODE='23514'; END IF;
+  enriched:=enriched||jsonb_build_array(line||jsonb_build_object('cost_center_name',nm,'cost_center_code',cd));
+ END LOOP;
+ INSERT INTO public.payable_allocation_versions(payable_id,version,total_amount,allocations,reason,request_key,request_fingerprint,created_by)
+ VALUES(p_payable_id,current_version+1,a.total_amount,enriched,btrim(p_reason),p_request_key,fp,u) RETURNING id INTO result_id;
+ UPDATE public.accounts_payable SET cost_center_id=CASE WHEN jsonb_array_length(enriched)=1 THEN (enriched->0->>'cost_center_id')::uuid ELSE NULL END WHERE id=p_payable_id;
+ INSERT INTO public.financial_audit_log(entity_type,entity_id,action,old_data,new_data,performed_by,reason)
+ VALUES('accounts_payable',p_payable_id,'COST_ALLOCATION_VERSION_CREATED',jsonb_build_object('version',current_version,'cost_center_id',a.cost_center_id),jsonb_build_object('allocation_id',result_id,'version',current_version+1,'reason',btrim(p_reason),'allocations',enriched),u,btrim(p_reason));
+ RETURN jsonb_build_object('success',true,'id',result_id,'version',current_version+1,'replayed',false);
 END $function$;
 CREATE OR REPLACE FUNCTION public.fiscal_audit_trigger()
  RETURNS trigger
@@ -6761,6 +6808,10 @@ GRANT EXECUTE ON FUNCTION public.enforce_cliente_id_for_produtor() TO service_ro
 ALTER FUNCTION finance_private.protect_allocated_payable() OWNER TO postgres;
 REVOKE ALL ON FUNCTION finance_private.protect_allocated_payable() FROM PUBLIC, postgres;
 GRANT EXECUTE ON FUNCTION finance_private.protect_allocated_payable() TO postgres;
+ALTER FUNCTION finance_private.set_payable_allocations(uuid,jsonb,text,integer,uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION finance_private.set_payable_allocations(uuid,jsonb,text,integer,uuid) FROM PUBLIC, postgres;
+GRANT EXECUTE ON FUNCTION finance_private.set_payable_allocations(uuid,jsonb,text,integer,uuid) TO postgres;
+GRANT EXECUTE ON FUNCTION finance_private.set_payable_allocations(uuid,jsonb,text,integer,uuid) TO authenticated;
 ALTER FUNCTION public.fiscal_audit_trigger() OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fiscal_audit_trigger() FROM PUBLIC, postgres;
 GRANT EXECUTE ON FUNCTION public.fiscal_audit_trigger() TO postgres;

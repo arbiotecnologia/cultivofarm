@@ -9,10 +9,11 @@ def load():
     cap = json.loads((H / 'hosted-capture.json').read_text())
     auth = json.loads((H / 'hosted-capture-auth.json').read_text())
     bad = []
-    for f in cap['fns'] + (auth['fns'] or []):
+    allf = cap['fns'] + (auth['fns'] or []) + json.loads((H / 'hosted-capture-extra.json').read_text())
+    for f in allf:
         got = pg.sql(f"SELECT md5(pg_get_functiondef('{f['sig']}'::regprocedure))||'|'||coalesce(proacl::text,'')||'|'||pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{f['sig']}'::regprocedure")
         if got != f"{f['md5']}|{f['acl'] or ''}|{f['owner']}": bad.append((f['sig'], got))
-    return len(cap['fns'] + (auth['fns'] or [])), bad
+    return len(allf), bad
 if __name__ == '__main__':
     n, bad = load(); print('functions', n, 'mismatch', len(bad)); [print(b) for b in bad[:10]]
     cand = (H.parent / 'coordinated' / 'candidate.sql.review').read_text()

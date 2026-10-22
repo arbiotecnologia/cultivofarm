@@ -9,7 +9,8 @@ H = Path(__file__).resolve().parent
 cap = json.loads((H / 'hosted-capture.json').read_text())
 auth = json.loads((H / 'hosted-capture-auth.json').read_text())
 rels = auth['rels'] + cap['rels']
-fns = {f['sig']: f for f in cap['fns'] + (auth['fns'] or [])}
+extra = json.loads((H / 'hosted-capture-extra.json').read_text())
+fns = {f['sig']: f for f in cap['fns'] + (auth['fns'] or []) + extra}
 names = {r['r'] for r in rels}
 synthetic = []
 out = []
@@ -19,7 +20,7 @@ for role in ['anon', 'authenticated', 'service_role', 'supabase_auth_admin', 'da
     w(f"DO $$BEGIN CREATE ROLE {role} NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END$$;")
 w("ALTER ROLE service_role BYPASSRLS;")
 w("GRANT anon, authenticated, service_role TO authenticator;")
-for s in ['auth', 'platform_private', 'cf_user_guards_v1', 'extensions']:
+for s in sorted({'auth', 'platform_private', 'cf_user_guards_v1'} | {k.split('(')[0].rsplit('.',1)[0] for k in fns if '.' in k.split('(')[0]}):
     w(f"CREATE SCHEMA IF NOT EXISTS {s};")
 w("GRANT USAGE ON SCHEMA public, auth TO anon, authenticated, service_role;")
 # SYNTHETIC Auth functions: same names/signatures as Supabase, claims from GUC.
