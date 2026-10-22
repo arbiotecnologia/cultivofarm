@@ -30,7 +30,7 @@ try:
  CREATE FUNCTION public.is_platform_superadmin(uuid) RETURNS boolean LANGUAGE sql SECURITY DEFINER SET search_path='' AS $$SELECT platform_private.has_role($1,'superadmin')$$;
  CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql SECURITY DEFINER SET search_path='' AS $$SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2)$$;
  CREATE TABLE produtos(id uuid PRIMARY KEY,nome text,codigo text,ativo boolean,b2b_enabled boolean);
- GRANT SELECT ON produtos TO authenticated; ALTER TABLE produtos ENABLE ROW LEVEL SECURITY;
+ GRANT SELECT ON produtos TO authenticated,anon; ALTER TABLE produtos ENABLE ROW LEVEL SECURITY;
  CREATE POLICY produtos_select_internal ON produtos FOR SELECT TO authenticated USING(platform_private.has_role((SELECT auth.uid()),'administrador') OR platform_private.has_role((SELECT auth.uid()),'gestor') OR platform_private.has_role((SELECT auth.uid()),'financeiro'));
  CREATE POLICY produtos_b2b_read ON produtos FOR SELECT TO authenticated USING((platform_private.has_role((SELECT auth.uid()),'parceiro_b2b') OR platform_private.has_role((SELECT auth.uid()),'parceiro_b2b_tecnico')) AND ativo=true AND COALESCE(b2b_enabled,false)=true);
  INSERT INTO produtos VALUES('00000000-0000-4000-8000-000000000090','INS-4 sintético','INS-4',false,false),('00000000-0000-4000-8000-000000000092','B2B sintético','B2B-1',true,true);
