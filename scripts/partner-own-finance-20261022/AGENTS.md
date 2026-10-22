@@ -2,3 +2,4 @@
 - Reuse the existing financial RPC via a versioned overload and page; preserve closed legacy ACL/OIDs, catalog capabilities, actor scope, prices and immutable history — avoids incompatible consumers and security rollback.
 - Own finance means obligations represented by supplier B2B receivables, not partner revenue/cash balance; require full partner/owner/tenant chain and exact order/link/title/installment identity — prevents foreign or internal data disclosure.
 - Documents stay closed until owner-specific binary authorization is proven; no storage paths/URLs or bearer fallback — prevents catalogue/finance reads from granting downloads.
+- Generate finance patches from current runtime with strict hash drift checks and test candidate layout alongside filter regressions; cumulative and singleton SQL variants require separate matched projection/validator preflight — prevents stale patches and incompatible sequential installation.

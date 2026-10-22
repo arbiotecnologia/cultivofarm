@@ -16,7 +16,7 @@
 
 ## Validação e limites
 
-- **53/53 Vitest**: preparação5, hook/fences6, contrato existente34 e lista unificada8. Testes hook exercitam cache negado, resultado tardio após tenant, save tardio sem invalidação do próximo ator, CAS, ID divergente e lease expirada.
+- **55/55 Vitest**: preparação5, hook/fences6, contrato existente34 e página unificada10. Dois testes adicionais exercitam envio real do formulário de produto com rascunho vazio (sem códigos/defaults) e pausa do ator impedindo formulário/submissão. Testes hook exercitam cache negado, resultado tardio após tenant, save tardio sem invalidação do próximo ator, CAS, ID divergente e lease expirada. Matriz completa em `FRONTEND-MATRIX.md`.
 - Build automático da prévia: OK após alterações; sem execução manual de build/typecheck permitida neste ambiente. Não há recibo separado de typecheck integral da candidata coordenada; requer auditor.
 - Nenhuma NF-e emitida, dado/role/session hosted alterado, SQL executado, Edge implantada ou publicação realizada.
 - Prontidão fiscal final depende dos resolvers existentes para estabelecimento/regime/operação/RTC e homologação real; este refinamento não os substitui. Escritas servidor/schema/RLS preservados.
