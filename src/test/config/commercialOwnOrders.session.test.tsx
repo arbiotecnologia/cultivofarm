@@ -21,7 +21,7 @@ function setup() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
   const h = renderHook(({ id }) => useMyCommercialOrders(id), { initialProps: { id: A }, wrapper });
-  return { h, clean: () => { h.unmount(); client.clear(); } };
+  return { h, client, clean: () => { h.unmount(); client.clear(); } };
 }
 describe("own orders — mocked transport, real identity/cache fences", () => {
   it.each(["id", "numero", "status", "created_at"])("required validated field %s cannot be omitted", field => {
@@ -33,6 +33,18 @@ describe("own orders — mocked transport, real identity/cache fences", () => {
     expect(() => parseOwnCommercialOrders(payload(A, { status: null }), A)).toThrow("commercial_orders_unavailable");
   });
   it("reads parameter-free own projection", async () => { const { h, clean } = setup(); await waitFor(() => expect(h.result.current.data?.[0].numero).toBe("OWN")); expect(state.rpc).toHaveBeenCalledExactlyOnceWith("get_my_commercial_orders_projection"); clean(); });
+  it("hides cached orders when the canonical refetch is denied", async () => {
+    const { h, client, clean } = setup();
+    try {
+      await waitFor(() => expect(h.result.current.data).toEqual(payload().orders));
+      state.rpc.mockResolvedValue({ data: null, error: new Error("forbidden") });
+      await act(async () => { await client.invalidateQueries({ queryKey: ["commercial-own-orders"] }); });
+      await waitFor(() => expect(h.result.current.isError).toBe(true));
+      expect(state.rpc).toHaveBeenCalledTimes(2);
+      expect(h.result.current.ready).toBe(true);
+      expect(h.result.current.data).toBeUndefined();
+    } finally { clean(); }
+  });
   it.each([payload(B), payload(A, { total: 50 }), payload(A, { commercial_notes: "PRIVATE" })])("rejects sibling or unreviewed fields", async data => {
     state.rpc.mockResolvedValue({ data, error: null }); const { h, clean } = setup(); await waitFor(() => expect(h.result.current.isError).toBe(true)); expect(h.result.current.data).toBeUndefined(); clean();
   });
