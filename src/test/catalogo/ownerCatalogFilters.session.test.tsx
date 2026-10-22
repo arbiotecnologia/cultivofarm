@@ -5,7 +5,8 @@ import { beforeEach, afterEach, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ actor: "A", tenant: "T", role: "parceiro_b2b", ready: true, error: false, epoch: 1, partner: "P" as string | null, catalog: true, calls: 0 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.tenant }, roles: [state.role], role: state.role, loading: false, authzReady: state.ready, authzEpoch: state.epoch }) }));
 vi.mock("@/hooks/useMyPartner", () => ({ useMyPartner: () => ({ ready: state.ready, isError: state.error, isLoading: false, data: state.ready && !state.error && state.partner ? { id: state.partner, codigo: "P1", razao_social: "Parceiro", mode: "commercial_owner", capabilities: { catalog_read: state.catalog, sheets_read: true } } : undefined }) }));
-vi.mock("@/hooks/useAvailableContexts", () => ({ useAvailableContexts: () => ({ data: { available_contexts: ["b2b"] } }) }));
+vi.mock("@/hooks/useAvailableContexts", () => ({ useAvailableContexts: () => ({ ready: state.ready, isLoading: false, isError: false, data: { has_b2b_access: true, available_contexts: ["b2b"] } }) }));
+vi.mock("@/components/authz/AuthzEpochBoundary", () => ({ AuthzEpochBoundary: ({ children }: { children: React.ReactNode }) => state.ready ? <div key={state.epoch}>{children}</div> : <p>Monitor pausado</p> }));
 vi.mock("@/hooks/useSwitchPortal", () => ({ useSwitchPortal: () => vi.fn() }));
 vi.mock("@/hooks/useEntitlements", () => ({ useEntitlements: () => ({ status: "ready", features: new Set(["catalogo_precos", "fichas_tecnicas"]) }) }));
 vi.mock("@/hooks/useBranding", () => ({ usePortalBranding: () => ({}) }));
@@ -26,13 +27,14 @@ vi.mock("@/components/catalogo/CatalogoItemDrawer", () => ({ CatalogoItemDrawer:
 vi.mock("@/components/catalogo/FichaProdutorDrawer", () => ({ FichaProdutorDrawer: () => null }));
 vi.mock("@/components/catalogo/PartnerFichaDrawer", () => ({ PartnerFichaDrawer: ({ open }: { open: boolean }) => open ? <p>Ficha protegida aberta</p> : null }));
 import Layout from "@/pages/portal-parceiro/PortalParceiroLayout";
+import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 import { createCatalogFilterMemory, defaultCatalogFilters } from "@/lib/catalogo/catalogFilterPreferences";
 beforeEach(() => Object.assign(state, { actor: "A", tenant: "T", role: "parceiro_b2b", ready: true, error: false, epoch: 1, partner: "P", catalog: true, calls: 0 }));
 afterEach(cleanup);
 function Navigation() { const go = useNavigate(); return <><button onClick={() => go("/portal-parceiro/fichas")}>Outro contexto</button><button onClick={() => go("/portal-parceiro/catalogo")}>Voltar catálogo</button></>; }
-function mount() {
+function mount(guarded = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const tree = () => <QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Navigation /><Routes><Route path="/portal-parceiro" element={<Layout />}><Route path="*" element={<p>SIBLING</p>} /></Route></Routes></MemoryRouter></QueryClientProvider>;
+  const tree = () => <QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Navigation /><Routes><Route path="/portal-parceiro" element={guarded ? <B2BRouteGuard><Layout /></B2BRouteGuard> : <Layout />}><Route path="*" element={<p>SIBLING</p>} /></Route></Routes></MemoryRouter></QueryClientProvider>;
   const view = render(tree());
   return { ...view, update: () => view.rerender(tree()) };
 }
@@ -57,6 +59,13 @@ it("same identity renewal remounts request scope but keeps filters; reset remain
   expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "true");
   fireEvent.click(screen.getByRole("button", { name: "Limpar filtros" }));
   expect(screen.getByText("Protegido A")).toBeTruthy();
+});
+it("existing B2B guard retains ONLY filters across ancestor boundary pause and epoch remount", () => {
+  const view = mount(true); selectChemical(); fireEvent.change(search(), { target: { value: "guard preference" } });
+  state.ready = false; view.update(); expect(screen.getByText("Monitor pausado")).toBeTruthy(); expect(screen.queryByText("Protegido A")).toBeNull();
+  state.ready = true; state.epoch++; view.update(); expect(search()).toHaveValue("guard preference");
+  expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "true");
+  state.epoch++; view.update(); expect(search()).toHaveValue("guard preference");
 });
 it.each(["actor", "tenant", "partner", "role", "missing-link"])("isolates and clears preferences across %s including return", kind => {
   const view = mount(); selectChemical(); fireEvent.change(search(), { target: { value: "private preference" } });

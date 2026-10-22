@@ -1,5 +1,6 @@
 import type { CatalogTipoFiltro, CatalogStatusFiltro } from "@/components/protocolos/CatalogSearchFilters";
 import type { CatalogFamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
+import { createContext } from "react";
 
 export interface CatalogFilterPreferences {
   search: string;
@@ -45,3 +46,5 @@ export function createCatalogFilterMemory() {
     },
   };
 }
+/** Existing B2B guard owns this above the epoch boundary, which remounts layouts. */
+export const CatalogFilterMemoryContext = createContext<ReturnType<typeof createCatalogFilterMemory> | null>(null);

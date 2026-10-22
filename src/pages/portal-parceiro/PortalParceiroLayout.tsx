@@ -1,12 +1,12 @@
 import { ownerCatalogRoute } from "@/lib/catalogo/catalogAccess";
 import { OwnerCatalog } from "@/components/catalogo/OwnerCatalog";
-import { createCatalogFilterMemory } from "@/lib/catalogo/catalogFilterPreferences";
+import { CatalogFilterMemoryContext, createCatalogFilterMemory } from "@/lib/catalogo/catalogFilterPreferences";
 import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyPartner } from "@/hooks/useMyPartner";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailableContexts } from "@/hooks/useAvailableContexts";
@@ -42,12 +42,13 @@ export default function PortalParceiroLayout() {
   const { data: ownPartner, isLoading, isError: partnerError, ready: partnerReady } = useMyPartner();
   const location = useLocation();
   const filterMemory = useRef(createCatalogFilterMemory());
+  const guardFilterMemory = useContext(CatalogFilterMemoryContext);
   // Preferences survive only this layout's transient unavailability. Identity/context
   // changes clear synchronously, including A→B→A; no query cache or storage is retained.
   const preferenceIdentity = user?.id && profile?.user_id === user.id && profile.organization_id &&
     location.pathname === "/portal-parceiro/catalogo"
     ? JSON.stringify([user.id, profile.organization_id, [...(roles ?? [])].sort(), "b2b", role]) : null;
-  const filterPreferences = filterMemory.current.bind(preferenceIdentity,
+  const filterPreferences = (guardFilterMemory ?? filterMemory.current).bind(preferenceIdentity,
     partnerReady && !partnerError ? ownPartner?.id ?? null : undefined);
   const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);
   const { data: contexts } = useAvailableContexts();
