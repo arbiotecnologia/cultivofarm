@@ -3,8 +3,9 @@
 ## 22/10 01:24 — ampliação funcional portal gestor B2B
 - [x] Registrar orientação explícita: acompanhar empresa própria em dashboard/catálogo/financeiro/operações/equipe, sem gestor interno ou Outlet irrestrito; C2-CAT já entregue95738f51, publicação/UI pendentes.
 - [x] Registrar prova externa auditor pós-banco C2-CAT: administradorB cbdc4ef3… projeçãoHTTP200null e catálogo parceiroA403forbidden_partner; teste4 projeçãoHTTP200 catálogo/fichastrue. Não equivale a homologação UI; nenhuma recarga.
-- [ ] Inventariar módulos/contratos canônicos e matriz operação×perfil×empresa, distinguindo finanças do parceiro de dados do fornecedor.
-- [ ] Preparar próximo recorte pequeno executável com testes/guards/preflight/rollback quando necessário; sem hosted DDL/DML/publicação ou abrir writersC2.1 isolados.
+- [x] Inventário inicial/matriz em docs/portal-gestor-b2b-next-slice-20261022.md; fontes financeiras distinguem parceiro/fornecedor, sem afirmar autorização SQL não inspecionada LIVE.
+- [x] Primeiro recorte candidato inativo scripts/manager-own-dashboard-20261022: indicadores exatos de pedidos observados, patch frontend, preflight read-only/reversão segura;24/24 testes sintéticos. Nenhuma mudança runtime/SQL/publicação.
+- [ ] Homologar publicação/UI C2-CAT e revisar independente recorte dashboard; typecheck específico candidato ainda não executado, build automático OK. Financeiro/entregas/OS/equipe dependem de inventário SQL/ACL/transitivos/entitlements e prova real, não de catálogo200.
 - [ ] Coordenar multipapel/seletor existente gestor/técnico/produtor e provisioning em entrega separada após publicação C2-CAT; permissões ainda dependem de prova.
 
 ## 22/10 00:54 — C2 contratos funcionais multiperfil (candidata separada)
