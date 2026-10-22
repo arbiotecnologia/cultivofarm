@@ -5,9 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
  * Família explícita do catálogo GLOBAL (Platform Superadmin). Ponte local para RPCs candidatas
  * NÃO aplicadas (`scripts/rbac-audit/proposed-platform-global-product-family.sql`); falha fechada
  * enquanto ausentes. `tipo` (enum legado de finalidade) é preservado e nunca usado para inferir família.
+ *
+ * RÓTULOS: a fonte canônica é `catalog_family_labels` via RPCs platform_* (candidata
+ * `scripts/catalog-labels-20261021`). FAMILY_CLASSES/CLASS_LABEL abaixo são SOMENTE fallback de
+ * exibição dos rótulos semeados; nunca use-os para autorizar uma nova atribuição.
  */
 export const PRODUCT_FAMILIES = ["quimico", "biologico", "fertilizante_adubo"] as const;
 export type ProductFamily = (typeof PRODUCT_FAMILIES)[number];
+/** @deprecated Fallback de exibição dos rótulos semeados; a lista autoritativa vem do servidor. */
 export const FAMILY_CLASSES: Record<ProductFamily, readonly string[]> = {
   biologico: ["biofungicida", "bioinseticida", "inoculante", "solubilizador"],
   quimico: ["fungicida", "inseticida", "herbicida"],
@@ -16,6 +21,7 @@ export const FAMILY_CLASSES: Record<ProductFamily, readonly string[]> = {
 export const FAMILY_LABEL: Record<ProductFamily, string> = {
   quimico: "Produtos Químicos", biologico: "Produtos Biológicos", fertilizante_adubo: "Fertilizantes/Adubos",
 };
+/** Fallback de exibição; rótulos novos exibem a chave até o servidor fornecer o nome. */
 export const CLASS_LABEL: Record<string, string> = {
   biofungicida: "Biofungicida", bioinseticida: "Bioinseticida", inoculante: "Inoculante", solubilizador: "Solubilizador",
   fungicida: "Fungicida", inseticida: "Inseticida", herbicida: "Herbicida",
@@ -40,9 +46,15 @@ export function parseReview(value: string | null): ReviewFilter {
   return value === "pendentes" || value === "todos" ? value : "familia";
 }
 
-/** Coerência família↔classe (espelho do CHECK do servidor; o servidor decide). */
-export function isClassAllowed(family: ProductFamily, classe: string | null) {
-  return classe === null || FAMILY_CLASSES[family].includes(classe);
+/**
+ * Coerência família↔rótulo. Com `labels` (fonte canônica do servidor), exige rótulo ATIVO da
+ * família. Sem `labels`, falha fechada: só permite rótulo nulo. O servidor sempre decide.
+ */
+export function isClassAllowed(family: ProductFamily, classe: string | null,
+  labels?: readonly { rotulo: string; ativo: boolean }[]) {
+  if (classe === null) return true;
+  if (!labels) return false;
+  return labels.some((l) => l.ativo && l.rotulo === classe);
 }
 
 const version = z.string().datetime({ offset: true });
@@ -66,8 +78,8 @@ export function familyError(error: unknown) {
 }
 
 export async function setProductFamily(target: FamilyTarget, family: ProductFamily, classe: string | null,
-  reason: string, key: string, signal: AbortSignal) {
-  if (!isClassAllowed(family, classe)) throw new Error("Classe não pertence à família escolhida.");
+  reason: string, key: string, signal: AbortSignal, labels?: readonly { rotulo: string; ativo: boolean }[]) {
+  if (!isClassAllowed(family, classe, labels)) throw new Error("Rótulo não pertence à família escolhida ou está inativo.");
   if (target.familia_catalogo === family && target.classe_catalogo === classe) throw new Error("Nenhuma alteração para salvar.");
   const cleanReason = familyReasonSchema.parse(reason);
   const rpc = supabase.rpc.bind(supabase) as unknown as Rpc;

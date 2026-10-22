@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { usePartnerCatalogTecnico } from "@/hooks/usePartnerCatalogTecnico";
+import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
+import { catalogFamilyMatches, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,35 +26,13 @@ export default function FichasTecnicas() {
   const [busca, setBusca] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const { data: produtos = [], isLoading: loadingP } = useQuery({
-    queryKey: ["fichas-tecnicas-produtos-b2b"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("produtos")
-        .select("id, nome, codigo, descricao, product_technical_profiles!inner(status_validacao)")
-        .eq("ativo", true)
-        .eq("b2b_enabled", true)
-        .eq("product_technical_profiles.status_validacao", "aprovado")
-        .order("nome");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const { data: micros = [], isLoading: loadingM } = useQuery({
-    queryKey: ["fichas-tecnicas-micros-b2b"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("microrganismos")
-        .select("id, nome, codigo, descricao, microorganism_technical_profiles!inner(status_validacao)")
-        .eq("ativo", true)
-        .eq("b2b_enabled", true)
-        .eq("microorganism_technical_profiles.status_validacao", "aprovado")
-        .order("nome");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
+  const catalog = usePartnerCatalogTecnico();
+  const access = useStorageAccessScope("c1b-ficha-pdf");
+  const [family, setFamily] = useState<FamilyFilter>("todos");
+  const eligible = (catalog.data ?? []).filter(r => r.ficha_aprovada && catalogFamilyMatches({ tipo: r.item_tipo, raw: r }, family));
+  const produtos = eligible.filter(r => r.item_tipo === "produto").map(r => ({ ...r, id: r.item_id, descricao: r.descricao_curta }));
+  const micros = eligible.filter(r => r.item_tipo === "microrganismo").map(r => ({ ...r, id: r.item_id, descricao: r.descricao_curta }));
+  const loadingP = catalog.isLoading, loadingM = catalog.isLoading;
 
   const q = busca.trim().toLowerCase();
   const filtered = useMemo(() => {
@@ -64,22 +45,33 @@ export default function FichasTecnicas() {
     );
   }, [tab, produtos, micros, q]);
 
-  const [preview, setPreview] = useState<{ blobUrl: string; filename: string; nome: string } | null>(null);
+  const [preview, setPreview] = useState<{ blobUrl: string; filename: string; nome: string; scope: string } | null>(null);
+  const visiblePreview = access.ready && preview?.scope === access.scope ? preview : null;
 
-  const abrirFicha = async (id: string, nome: string) => {
+  const abrirFicha = async (id: string, nome: string, itemTipo: "produto" | "microrganismo") => {
+    const capturedTipo = itemTipo;
+    const current = access.capture();
+    if (!current()) return;
     try {
       setBusyId(id);
+      const refreshed = await catalog.refetch();
+      if (!current() || refreshed.error || !refreshed.data?.some(r => r.item_id === id && r.item_tipo === capturedTipo && r.ficha_aprovada)) return;
       const result =
-        tab === "produtos"
+        capturedTipo === "produto"
           ? await generateFichaTecnicaProdutoPdf({ produtoId: id, mode: "blob", audience: "b2b" })
           : await generateFichaTecnicaMicrorganismoPdf({ microId: id, mode: "blob", audience: "b2b" });
       if (result && "blobUrl" in result) {
-        setPreview({ ...result, nome });
+        if (!current()) { URL.revokeObjectURL(result.blobUrl); return; }
+        const after = await catalog.refetch();
+        if (!current() || after.error || !after.data?.some(r => r.item_id === id && r.item_tipo === capturedTipo && r.ficha_aprovada)) {
+          URL.revokeObjectURL(result.blobUrl); return;
+        }
+        setPreview({ ...result, nome, scope: access.scope });
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Erro ao gerar ficha técnica");
+      if (current()) toast.error(e?.message ?? "Erro ao gerar ficha técnica");
     } finally {
-      setBusyId(null);
+      if (current()) setBusyId(null);
     }
   };
 
@@ -89,7 +81,11 @@ export default function FichasTecnicas() {
     };
   }, [preview?.blobUrl]);
 
+  useEffect(() => { setPreview(null); setBusyId(null); }, [access.scope]);
+
   const loading = tab === "produtos" ? loadingP : loadingM;
+
+  if (catalog.error) return <CatalogoQueryErrorState error={catalog.error} retry={catalog.refetch} busy={catalog.isFetching} />;
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
@@ -100,6 +96,7 @@ export default function FichasTecnicas() {
         </p>
       </div>
 
+      <CatalogFamilyFilter value={family} onChange={setFamily} />
       <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
         <TabsList>
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
@@ -144,7 +141,7 @@ export default function FichasTecnicas() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => abrirFicha(r.id, r.nome)}
+                    onClick={() => abrirFicha(r.id, r.nome, r.item_tipo)}
                     disabled={busyId === r.id}
                   >
                     {busyId === r.id ? (
@@ -162,7 +159,7 @@ export default function FichasTecnicas() {
       </Tabs>
 
       <Dialog
-        open={!!preview}
+        open={!!visiblePreview}
         onOpenChange={(v) => {
           if (!v && preview?.blobUrl) URL.revokeObjectURL(preview.blobUrl);
           if (!v) setPreview(null);
@@ -170,12 +167,12 @@ export default function FichasTecnicas() {
       >
         <DialogContent className="max-w-5xl w-[95vw]">
           <DialogHeader>
-            <DialogTitle className="truncate">Ficha técnica — {preview?.nome}</DialogTitle>
+            <DialogTitle className="truncate">Ficha técnica — {visiblePreview?.nome}</DialogTitle>
           </DialogHeader>
-          {preview && (
+          {visiblePreview && (
             <iframe
-              src={preview.blobUrl}
-              title={preview.filename}
+              src={visiblePreview.blobUrl}
+              title={visiblePreview.filename}
               className="w-full h-[75vh] rounded-md border"
             />
           )}
@@ -183,8 +180,8 @@ export default function FichasTecnicas() {
             <Button variant="outline" onClick={() => setPreview(null)}>
               Fechar
             </Button>
-            {preview && (
-              <a href={preview.blobUrl} download={preview.filename}>
+            {visiblePreview && (
+              <a href={visiblePreview.blobUrl} download={visiblePreview.filename}>
                 <Button>
                   <Download className="h-4 w-4 mr-1" />
                   Baixar PDF

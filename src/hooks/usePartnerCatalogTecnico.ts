@@ -1,10 +1,13 @@
 import { useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { readCatalogFamily } from "@/lib/catalogo/catalogFamilyRead";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { CatalogItem, UnidadePrecoPrincipal } from "./usePartnerCatalog";
 import { resolverUnidadePreco, valorDaUnidade } from "@/lib/catalogo/unidades";
 
-const TECNICO_CATALOG_KEY = ["partner-catalog-tecnico"] as const;
+const TECNICO_CATALOG_KEY = ["partner-catalog-tecnico", "C1B_DUAL_TENANT_V1"] as const;
 
 /**
  * Catálogo para o parceiro B2B TÉCNICO.
@@ -13,15 +16,16 @@ const TECNICO_CATALOG_KEY = ["partner-catalog-tecnico"] as const;
  * apenas itens ativos e liberados para B2B, com valores de tabela e
  * sem qualquer aplicação de desconto do parceiro.
  */
-export function usePartnerCatalogTecnico() {
-  return useQuery({
+export function usePartnerCatalogTecnico(enabled = true) {
+  return useScopedPortalQuery({
+    enabled,
     queryKey: TECNICO_CATALOG_KEY,
     staleTime: 30_000,
     refetchOnWindowFocus: true,
-    queryFn: async (): Promise<CatalogItem[]> => {
+    queryFn: async (signal): Promise<CatalogItem[]> => {
       const { data, error } = await supabase.rpc(
-        "get_partner_catalog_tecnico_secure" as any,
-      );
+        "get_partner_catalog_tecnico_secure" as any, { p_catalog_v2: true } as any,
+      ).abortSignal(signal);
       if (error) throw error;
       const rows = (data ?? []) as any[];
 
@@ -33,6 +37,7 @@ export function usePartnerCatalogTecnico() {
       };
 
       return rows.map((r) => {
+        if (r.catalog_contract !== "C1B_DUAL_TENANT_V1") throw new Error("catalog_contract_unavailable");
         const valorDose = num(r.valor_dose_brl);
         const valorLitro =
           num(r.valor_litro_brl) ??
@@ -49,6 +54,8 @@ export function usePartnerCatalogTecnico() {
         const precoBase =
           valorDaUnidade(unidade, { valorHa, valorLitro, valorDose }) ?? null;
         return {
+          ficha_conteudo: r.ficha_aprovada ? r.ficha_conteudo ?? {} : {},
+          familia_catalogo: readCatalogFamily(r.familia_catalogo),
           item_id: r.item_id,
           item_tipo: r.item_tipo,
           product_id: isProduto ? r.item_id : null,
@@ -83,22 +90,26 @@ export function usePartnerCatalogTecnico() {
  */
 export function useRealtimePartnerCatalogTecnico() {
   const qc = useQueryClient();
+  const actor = useStorageAccessScope("portal-query-actor");
   useEffect(() => {
+    if (!actor.ready) return;
+    const current = actor.capture();
+    const invalidate = () => { if (current()) void qc.invalidateQueries({ predicate: q => q.queryKey[0] === TECNICO_CATALOG_KEY[0] && q.queryKey.at(-2) === actor.scope }); };
     const channel = supabase
       .channel("partner-catalog-tecnico-sync")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "produtos" },
-        () => qc.invalidateQueries({ queryKey: TECNICO_CATALOG_KEY }),
+        invalidate,
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "microrganismos" },
-        () => qc.invalidateQueries({ queryKey: TECNICO_CATALOG_KEY }),
+        invalidate,
       )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [qc]);
+  }, [qc, actor.ready, actor.scope]);
 }

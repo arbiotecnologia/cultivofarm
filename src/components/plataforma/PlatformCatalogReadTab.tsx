@@ -18,6 +18,7 @@ import { PlatformCatalogFamilyDialog } from "@/components/plataforma/PlatformCat
 import { PlatformCatalogCompositionDialog } from "@/components/plataforma/PlatformCatalogCompositionDialog";
 import { CATALOG_TABS, CLASS_LABEL, FAMILY_LABEL, parseCatalogView, parseReview,
   type FamilyTarget, type ProductFamily, type ReviewFilter } from "@/lib/catalogo/platformCatalogFamily";
+import { labelDisplayName, useCatalogLabelNames } from "@/lib/catalogo/catalogLabelDisplay";
 import { PlatformCatalogCreateDialog, PlatformCatalogStatusDialog } from "@/components/plataforma/PlatformCatalogLifecycleDialogs";
 import { platformCatalogAccess, platformCatalogPageSchema, PLATFORM_CATALOG_LIMIT,
   PLATFORM_CATALOG_MAX_OFFSET, PLATFORM_CATALOG_SEARCH_LIMIT } from "@/lib/catalogo/platformCatalogRead";
@@ -83,6 +84,9 @@ function CatalogReadPage({ scope, family, review, onReview }:
     void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
   };
   const queryClient = useQueryClient();
+  // Nomes de exibição dos rótulos pela fonte canônica (RPC de leitura autorizada); renomear
+  // na Gestão da plataforma reflete aqui após invalidação. Fallback: CLASS_LABEL do seed.
+  const labelNames = useCatalogLabelNames(scope, true);
   const active = useRef(true);
   useEffect(() => {
     active.current = true;
@@ -174,7 +178,7 @@ function CatalogReadPage({ scope, family, review, onReview }:
         <TableCell className="break-words">{product.codigo ?? "—"}</TableCell>
         <TableCell className="min-w-40 break-words font-medium">{product.nome}</TableCell>
         <TableCell>{product.familia_catalogo
-          ? <span>{FAMILY_LABEL[product.familia_catalogo]}{product.classe_catalogo ? ` · ${CLASS_LABEL[product.classe_catalogo]}` : ""}</span>
+          ? <span>{FAMILY_LABEL[product.familia_catalogo]}{product.classe_catalogo ? ` · ${labelDisplayName(labelNames, product.classe_catalogo, CLASS_LABEL[product.classe_catalogo])}` : ""}</span>
           : <Badge variant="outline">Pendente</Badge>}</TableCell>
         <TableCell>{product.tipo ?? "—"}</TableCell>
         <TableCell><Badge variant={product.ativo ? "secondary" : "outline"}>{product.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>
