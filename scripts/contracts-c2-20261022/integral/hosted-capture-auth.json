@@ -1,0 +1,413 @@
+{
+ "authfns": [
+  {
+   "md5": "bf3569f4ae1c7e250e74daf51d0311c7",
+   "sig": "auth.email()"
+  },
+  {
+   "md5": "20054548ba2003f61a6bcb472175700b",
+   "sig": "auth.jwt()"
+  },
+  {
+   "md5": "8a3e05459e07e0633d43c6fba2a2cdf4",
+   "sig": "auth.role()"
+  },
+  {
+   "md5": "ea3b41bf29e2ad573067939329aa088e",
+   "sig": "auth.uid()"
+  }
+ ],
+ "fns": [
+  {
+   "acl": "{postgres=X/postgres}",
+   "def": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_gate()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass,'auth.users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;\r\n UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;\r\n IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;\r\n RETURN NULL;\r\nEND $function$\n",
+   "md5": "b0dd9a14d5fd799a40df0975baf4c5a6",
+   "owner": "postgres",
+   "sig": "cf_user_guards_v1.acquire_gate()"
+  },
+  {
+   "acl": "{postgres=X/postgres}",
+   "def": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.block_truncate()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\r\nBEGIN RAISE EXCEPTION 'user_bulk_truncate_forbidden' USING ERRCODE='PT409'; END $function$\n",
+   "md5": "a919901eb1e045461a5bc6e4da178624",
+   "owner": "postgres",
+   "sig": "cf_user_guards_v1.block_truncate()"
+  },
+  {
+   "acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "def": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  INSERT INTO public.profiles (user_id, nome, email)\n  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'nome', ''), NEW.email);\n\n  -- Seguran\u00e7a: auto-cadastro N\u00c3O recebe nenhum papel.\n  -- O usu\u00e1rio permanece com privil\u00e9gio m\u00ednimo (sem papel -> /acesso-pendente)\n  -- at\u00e9 que um administrador atribua explicitamente o perfil adequado.\n  -- Usu\u00e1rios criados por admin recebem pap\u00e9is na pr\u00f3pria rotina administrativa.\n\n  RETURN NEW;\nEND;\n$function$\n",
+   "md5": "6f3c5072b776329ac5ff9f8bbf6fd7b2",
+   "owner": "postgres",
+   "sig": "handle_new_user()"
+  }
+ ],
+ "rels": [
+  {
+   "acl": "{supabase_auth_admin=arwdDxtm/supabase_auth_admin,dashboard_user=arwdDxtm/supabase_auth_admin,postgres=ar*wdDxtm/supabase_auth_admin}",
+   "cols": [
+    [
+     "instance_id",
+     "uuid",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "id",
+     "uuid",
+     true,
+     null,
+     "",
+     ""
+    ],
+    [
+     "aud",
+     "character varying(255)",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "role",
+     "character varying(255)",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "email",
+     "character varying(255)",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "encrypted_password",
+     "character varying(255)",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "email_confirmed_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "invited_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "confirmation_token",
+     "character varying(255)",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "confirmation_sent_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "recovery_token",
+     "character varying(255)",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "recovery_sent_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "email_change_token_new",
+     "character varying(255)",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "email_change",
+     "character varying(255)",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "email_change_sent_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "last_sign_in_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "raw_app_meta_data",
+     "jsonb",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "raw_user_meta_data",
+     "jsonb",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "is_super_admin",
+     "boolean",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "created_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "updated_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "phone",
+     "text",
+     false,
+     "NULL::character varying",
+     "",
+     ""
+    ],
+    [
+     "phone_confirmed_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "phone_change",
+     "text",
+     false,
+     "''::character varying",
+     "",
+     ""
+    ],
+    [
+     "phone_change_token",
+     "character varying(255)",
+     false,
+     "''::character varying",
+     "",
+     ""
+    ],
+    [
+     "phone_change_sent_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "confirmed_at",
+     "timestamp with time zone",
+     false,
+     "LEAST(email_confirmed_at, phone_confirmed_at)",
+     "s",
+     ""
+    ],
+    [
+     "email_change_token_current",
+     "character varying(255)",
+     false,
+     "''::character varying",
+     "",
+     ""
+    ],
+    [
+     "email_change_confirm_status",
+     "smallint",
+     false,
+     "0",
+     "",
+     ""
+    ],
+    [
+     "banned_until",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "reauthentication_token",
+     "character varying(255)",
+     false,
+     "''::character varying",
+     "",
+     ""
+    ],
+    [
+     "reauthentication_sent_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "is_sso_user",
+     "boolean",
+     true,
+     "false",
+     "",
+     ""
+    ],
+    [
+     "deleted_at",
+     "timestamp with time zone",
+     false,
+     null,
+     "",
+     ""
+    ],
+    [
+     "is_anonymous",
+     "boolean",
+     true,
+     "false",
+     "",
+     ""
+    ]
+   ],
+   "cons": [
+    [
+     "users_email_change_confirm_status_check",
+     "c",
+     "CHECK (((email_change_confirm_status >= 0) AND (email_change_confirm_status <= 2)))",
+     "-"
+    ],
+    [
+     "users_pkey",
+     "p",
+     "PRIMARY KEY (id)",
+     "-"
+    ],
+    [
+     "users_phone_key",
+     "u",
+     "UNIQUE (phone)",
+     "-"
+    ]
+   ],
+   "force": false,
+   "idx": [
+    "CREATE INDEX idx_users_created_at_desc ON auth.users USING btree (created_at DESC)",
+    "CREATE INDEX users_is_anonymous_idx ON auth.users USING btree (is_anonymous)",
+    "CREATE UNIQUE INDEX reauthentication_token_idx ON auth.users USING btree (reauthentication_token) WHERE ((reauthentication_token)::text !~ '^[0-9 ]*$'::text)",
+    "CREATE INDEX users_instance_id_email_idx ON auth.users USING btree (instance_id, lower((email)::text))",
+    "CREATE INDEX idx_users_name ON auth.users USING btree (((raw_user_meta_data ->> 'name'::text))) WHERE ((raw_user_meta_data ->> 'name'::text) IS NOT NULL)",
+    "CREATE UNIQUE INDEX users_email_partial_key ON auth.users USING btree (email) WHERE (is_sso_user = false)",
+    "CREATE UNIQUE INDEX email_change_token_current_idx ON auth.users USING btree (email_change_token_current) WHERE ((email_change_token_current)::text !~ '^[0-9 ]*$'::text)",
+    "CREATE INDEX idx_users_last_sign_in_at_desc ON auth.users USING btree (last_sign_in_at DESC)",
+    "CREATE UNIQUE INDEX email_change_token_new_idx ON auth.users USING btree (email_change_token_new) WHERE ((email_change_token_new)::text !~ '^[0-9 ]*$'::text)",
+    "CREATE UNIQUE INDEX confirmation_token_idx ON auth.users USING btree (confirmation_token) WHERE ((confirmation_token)::text !~ '^[0-9 ]*$'::text)",
+    "CREATE UNIQUE INDEX recovery_token_idx ON auth.users USING btree (recovery_token) WHERE ((recovery_token)::text !~ '^[0-9 ]*$'::text)",
+    "CREATE INDEX users_instance_id_idx ON auth.users USING btree (instance_id)",
+    "CREATE INDEX idx_users_email ON auth.users USING btree (email)"
+   ],
+   "kind": "r",
+   "owner": "supabase_auth_admin",
+   "pol": null,
+   "r": "auth.users",
+   "rls": true,
+   "trg": [
+    "CREATE TRIGGER a00_cf_user_gate BEFORE DELETE ON auth.users FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate()",
+    "CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON auth.users FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()",
+    "CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()"
+   ]
+  }
+ ],
+ "roles": [
+  {
+   "bypass": false,
+   "n": "authenticated",
+   "super": false
+  },
+  {
+   "bypass": false,
+   "n": "anon",
+   "super": false
+  },
+  {
+   "bypass": true,
+   "n": "service_role",
+   "super": false
+  },
+  {
+   "bypass": true,
+   "n": "supabase_admin",
+   "super": true
+  },
+  {
+   "bypass": false,
+   "n": "authenticator",
+   "super": false
+  },
+  {
+   "bypass": false,
+   "n": "supabase_auth_admin",
+   "super": false
+  },
+  {
+   "bypass": true,
+   "n": "postgres",
+   "super": false
+  }
+ ]
+}
