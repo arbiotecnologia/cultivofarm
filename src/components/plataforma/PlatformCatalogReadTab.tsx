@@ -95,14 +95,17 @@ function CatalogReadPage({ scope, family, review, onReview }:
   const active = useRef(true);
   useEffect(() => {
     active.current = true;
-    const predicate = (q: { queryKey: readonly unknown[] }) => q.queryKey[0] === "platform-catalog-read" && q.queryKey[1] !== scope;
+    // Caches de leitura e de rótulos são por escopo de identidade: escopo anterior é descartado.
+    const scoped = new Set(["platform-catalog-read", "catalog-labels-read", "platform-catalog-labels"]);
+    const predicate = (q: { queryKey: readonly unknown[] }) => scoped.has(String(q.queryKey[0])) && q.queryKey[1] !== scope;
     void queryClient.cancelQueries({ predicate });
     queryClient.removeQueries({ predicate });
     return () => {
       active.current = false;
-      const queryKey = ["platform-catalog-read", scope];
-      void queryClient.cancelQueries({ queryKey });
-      queryClient.removeQueries({ queryKey });
+      for (const queryKey of [["platform-catalog-read", scope], ["catalog-labels-read", scope]]) {
+        void queryClient.cancelQueries({ queryKey });
+        queryClient.removeQueries({ queryKey });
+      }
     };
   }, [queryClient, scope]);
   const query = useQuery({

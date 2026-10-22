@@ -106,7 +106,9 @@ describe("contrato de família", () => {
     expect(isClassAllowed("biologico", "biofungicida")).toBe(false);
     expect(isClassAllowed("biologico", null)).toBe(true);
     expect(isClassAllowed("biologico", "biofungicida", seedLabels("biologico").map((l) => ({ ...l, ativo: false })))).toBe(false);
-    expect(platformCatalogPageSchema.safeParse({ items: [{ ...legacy, familia_catalogo: "quimico", classe_catalogo: "biofungicida" }], has_more: false }).success).toBe(false);
+    // Rótulos v2: coerência família↔rótulo é decidida no servidor (trigger canônico); o leitor
+    // aceita rótulo cadastrado, mas continua rejeitando família fora do enum.
+    expect(platformCatalogPageSchema.safeParse({ items: [{ ...legacy, familia_catalogo: "quimico", classe_catalogo: "fungicida" }], has_more: false }).success).toBe(true);
     expect(platformCatalogPageSchema.safeParse({ items: [{ ...legacy, familia_catalogo: "semente" }], has_more: false }).success).toBe(false);
   });
   it("classe incoerente e motivo curto não chegam ao servidor", async () => {
@@ -159,7 +161,8 @@ describe("fence do diálogo de família", () => {
   type P = { id: string; updated_at: string; familia_catalogo: null; classe_catalogo: null; nome: string };
   function mount(initial: P, scope: () => string) {
     const onSaved = vi.fn(); const onClose = vi.fn();
-    const ui = (p: P) => <PlatformCatalogFamilyDialog product={p} scope={scope()} onClose={onClose} onSaved={onSaved} />;
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const ui = (p: P) => <QueryClientProvider client={client}><PlatformCatalogFamilyDialog product={p} scope={scope()} onClose={onClose} onSaved={onSaved} /></QueryClientProvider>;
     const view = render(ui(initial));
     return { onSaved, rerender: (p: P) => view.rerender(ui(p)), unmount: view.unmount };
   }
@@ -172,14 +175,15 @@ describe("fence do diálogo de família", () => {
   }
   let resolve: ((v: unknown) => void) | undefined;
   beforeEach(() => {
-    mocks.request.mockImplementation((_n: string, args: { p_idempotency_key: string }, signal: AbortSignal) => new Promise((r) => {
+    mocks.request.mockImplementation((_n: string, args: { p_idempotency_key: string; p_familia?: string }, signal: AbortSignal) =>
+      _n === "platform_list_catalog_labels" ? Promise.resolve({ data: seedLabels(args.p_familia ?? ""), error: null }) : new Promise((r) => {
       resolve = () => r({ data: { id: ID, familia_catalogo: "biologico", classe_catalogo: null, updated_at: V2,
         idempotency_key: args.p_idempotency_key, audit_id: ID, idempotent: false }, error: null });
       void signal;
     }));
   });
   const scopeOf = () => platformCatalogAccess(mocks.actor).scope;
-  const signal = () => mocks.request.mock.calls.at(-1)?.[2] as AbortSignal;
+  const signal = () => mocks.request.mock.calls.filter(([n]) => n === "platform_set_global_product_family").at(-1)?.[2] as AbortSignal;
   it.each([
     ["escopo A→B com live=true", () => { mocks.actor = actor("sa-b"); return base; }],
     ["troca de item", () => ({ ...base, id: OTHER })],
