@@ -18,7 +18,7 @@ Frontend proposto:
 - Não altera monitor/Auth/roles/perfis/sessões/Storage/rotas registradas. Nenhum reload.
 
 ## Arquivos / promoção independente
-1. Executor confirma ref **swzpzcwiasxmjutvkm não é válido**; destino exato obrigatório **`swzpzcwiasxmjutrmvkm`** e executa apenas o preflight de leitura. O SQL não consegue provar sozinho o ref de infraestrutura.
+1. Executor confirma destino exato obrigatório **`swzpzcwiasxmjutrmvkm`** e executa apenas o preflight de leitura. O SQL não consegue provar sozinho o ref de infraestrutura.
 2. `preflight.sql` captura definições/hashes/ACL/owner. `candidate.sql.review` transacional verifica baselines e substitui só a projeção privada; não executar automaticamente.
 3. Após revisão/aplicação externa, conferir `postflight.sql` e REST real do wrapper na sessão autorizada: payload C2_CAT_V1, negativas A/B/sem vínculo/futuro/revogado/sem entitlement, dados catálogo35 e fichas somente se aprovadas existentes. Nada disso foi executado pelo agente.
 4. `drift.json` guarda SHA256 dos dois arquivos runtime-base; `frontend.patch` passou **dry-run**, não foi aplicado. Arquivos finais propostos estão neste diretório. Aplicar a integração somente após backend homologado; payload antigo nega seguro.

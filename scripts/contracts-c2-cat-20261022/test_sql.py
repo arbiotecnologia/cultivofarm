@@ -75,6 +75,9 @@ try:
  sql(f"UPDATE session_actor SET id='{U}';UPDATE user_roles SET role='parceiro_b2b_tecnico' WHERE user_id='{U}';UPDATE partner_users SET papel='tecnico';")
  check('technical role no manager catalog',cap('catalog_read'),'f');check('technical sheets permitted',cap('sheets_read'))
  sql("DELETE FROM partner_users;");check('commercial client without partner denied',cap('sheets_read'),'f')
+ rollback=HERE.joinpath('rollback.sql.review').read_text();start=rollback.index('CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_partner_projection')
+ sql('BEGIN;'+rollback[start:])
+ check('rollback restores exact prior definition',"SELECT md5(pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure))='67fb596323c4222f9b1357eb42d93eca';")
  print(f'PASS {len(checks)} local projection checks; synthetic scope/Auth, NOT hosted JWT/RLS')
  for c in checks:print('PASS '+c)
 finally:
