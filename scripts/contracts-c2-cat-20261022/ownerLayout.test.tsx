@@ -1,5 +1,5 @@
 import { render, screen, cleanup } from "@testing-library/react";
-import { MemoryRouter, Routes, Route, Outlet } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ role: "parceiro_b2b", ready: true, error: false, catalog: true, sheets: true, partner: true, features: ["catalogo_precos", "fichas_tecnicas"] }));
@@ -22,7 +22,9 @@ beforeEach(() => Object.assign(state, { role: "parceiro_b2b", ready: true, error
 afterEach(cleanup);
 function mount(path: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[path]}><Routes><Route path="/portal-parceiro" element={<Layout />}><Route path="*" element={<p>SIBLING MOUNTED</p>} /><Route path="fichas" element={<p>Fichas autorizadas</p>} /></Route></Routes></MemoryRouter></QueryClientProvider>);
+  const tree = () => <QueryClientProvider client={client}><MemoryRouter initialEntries={[path]}><Routes><Route path="/portal-parceiro" element={<Layout />}><Route path="*" element={<p>SIBLING MOUNTED</p>} /><Route path="fichas" element={<p>Fichas autorizadas</p>} /></Route></Routes></MemoryRouter></QueryClientProvider>;
+  const view = render(tree());
+  return { ...view, rerenderState: () => view.rerender(tree()) };
 }
 it("realistic owner mounts read-only catalog, not original NovoPedido outlet", () => {
   mount("/portal-parceiro/catalogo"); expect(screen.getByText("Item P")).toBeTruthy();
@@ -37,6 +39,11 @@ it("commercial client without validated capability cannot mount catalog", () => 
 it("no partner denies owner outlet", () => { state.partner = false; mount("/portal-parceiro/catalogo"); expect(screen.queryByText("SIBLING MOUNTED")).toBeNull(); });
 it("lease pause and failed refresh remove catalog without unmounting layout", () => {
   const view = mount("/portal-parceiro/catalogo"); expect(screen.getByText("Item P")).toBeTruthy();
-  state.ready = false; view.rerender(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Routes><Route path="*" element={<Layout />} /></Routes></MemoryRouter></QueryClientProvider>);
+  state.ready = false; view.rerenderState();
   expect(screen.queryByText("Item P")).toBeNull();
+  state.ready = true; state.error = true; view.rerenderState();
+  expect(screen.queryByText("Item P")).toBeNull();
+});
+it("technical owner does not enter manager catalog even if a stale flag was true", () => {
+  state.role = "parceiro_b2b_tecnico"; mount("/portal-parceiro/catalogo"); expect(screen.queryByText("Item P")).toBeNull();
 });
