@@ -5,7 +5,7 @@ from pathlib import Path
 import pg
 H = Path(__file__).resolve().parent
 def load():
-    pg.start(); pg.sql((H / 'replica.sql').read_text())
+    pg.start(); pg.sql(open(H / 'replica.sql', newline='').read())
     cap = json.loads((H / 'hosted-capture.json').read_text())
     auth = json.loads((H / 'hosted-capture-auth.json').read_text())
     bad = []

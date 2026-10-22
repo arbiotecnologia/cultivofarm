@@ -11,7 +11,7 @@ def start():
     subprocess.run(prefix + ['pg_ctl', '-D', str(root / 'data'), '-l', str(root / 'server.log'), '-o', f'-k {root} -h "" -p {PORT}', 'start', '-w'], check=True, capture_output=True)
     atexit.register(lambda: subprocess.run(prefix + ['pg_ctl', '-D', str(root / 'data'), '-m', 'immediate', 'stop'], capture_output=True))
 def sql(s, ok=True):
-    r = subprocess.run(psql(), input=s, text=True, capture_output=True)
+    r = subprocess.run(psql(), input=s.encode(), capture_output=True); r.stdout = r.stdout.decode(); r.stderr = r.stderr.decode()
     if ok:
         assert r.returncode == 0, r.stderr[-3000:]
         return r.stdout.strip()
