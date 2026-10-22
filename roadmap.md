@@ -1,6 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 22/10 01:46 — filtros durante pausa e coordenação dos candidatos
+- [ ] Homologação filtros REABERTA01:56: auditor observou reset real bundle index-kXPMojJ0.js/HEAD50e3f902, publicação ainda Atualizando. Correção local02:00 move memória abaixo AuthProvider/acima Routes e distingue partner undefined (consulta pendente) de null (ausência comprovada); aguarda revisão e UI real, financeiro/multipapel inativos.
 - [x] Complemento01:53: hook useMyCommercialOrders nega cache após refetch em erro; regressão real do hook reproduziu falha antes. Filtros e candidatos financeiro/multipapel preservados, sem SQL hosted/publicação ou mudança de entitlements.
 - [x] Corrigir reset por desmontagem layout/grid e boundary ancestral: memória volátil de filtros acima da boundary, sem manter dados/autoridade/lease. docs/catalog-filter-pause-20261022-review.md.
 - [x] Regressões pausa/retomada/renovação, mudança ator/tenant/contexto/A→B→A e rollback frontend; sem SQL hosted/reload/publicação. Homologação real após publicação pelo auditor permanece aberta.

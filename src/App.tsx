@@ -28,6 +28,7 @@ import SemPermissao from "@/pages/SemPermissao";
 import PlataformaHome from "@/pages/plataforma/PlataformaHome";
 import { PlataformaGuard } from "@/components/guards/PlataformaGuard";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
+import { CatalogFilterPreferencesProvider } from "@/components/catalogo/CatalogFilterPreferencesProvider";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
 import { FINANCIAL_CONTEXT_MONITOR_ENABLED, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED, CONSULTANT_CONTEXT_MONITOR_ENABLED, OPERATOR_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
 import { isManagerConsultantScope } from "@/lib/authz/internalContextProbe";
@@ -424,6 +425,7 @@ const App = () => (
           <AuthProvider>
             <PwaUpdateNotifier />
             <PwaUpdateControl />
+            <CatalogFilterPreferencesProvider>
             <Routes>
               <Route path="/auth" element={<AuthRoute />} />
               <Route path="/reset-password" element={<ResetPassword />} />
@@ -658,6 +660,7 @@ const App = () => (
                </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </CatalogFilterPreferencesProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

@@ -2,6 +2,7 @@
 // NOT JWT/RLS/live concurrency certification. Production gate stays false.
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useContext, useState } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -52,6 +53,8 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 vi.mock("@/lib/authz/authenticatedAttachment", () => ({ ATTACHMENT_LIMITS: { files: 24, totalBytes: 60 * 1024 * 1024 }, downloadAuthenticatedAttachment: (...args: unknown[]) => state.download(...args) }));
 import { AuthProvider } from "@/hooks/useAuth";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
+import { CatalogFilterPreferencesProvider } from "@/components/catalogo/CatalogFilterPreferencesProvider";
+import { CatalogFilterMemoryContext } from "@/lib/catalogo/catalogFilterPreferences";
 import { usePartnerCatalog } from "@/hooks/usePartnerCatalog";
 import { usePartnerPrices } from "@/hooks/usePartnerPrices";
 import { usePartnerSimulations } from "@/hooks/usePartnerSimulations";
@@ -70,15 +73,21 @@ function Data() {
   const prices = usePartnerPrices(P);
   const simulations = usePartnerSimulations(P);
   const blobs = useAuthenticatedBlobUrls(["private/photo.jpg"]);
-  return <div>portal aberto<span>{catalog.data?.map(i => i.nome).join()}</span><span>{simulations.data?.map(i => i.titulo).join()}</span><span>{prices.data?.length}</span><img alt="anexo" src={blobs.urls["private/photo.jpg"]} /></div>;
+  const memory = useContext(CatalogFilterMemoryContext);
+  const binding = memory?.bind(JSON.stringify([U, O, [...state.roles].sort(), "b2b"]), P);
+  const [search, setSearch] = useState(binding?.initial.search ?? "");
+  return <div>portal aberto<input aria-label="Preferência filtro" value={search} onChange={event => {
+    setSearch(event.target.value);
+    if (binding) binding.onChange({ ...binding.initial, search: event.target.value, family: "quimico" });
+  }} /><span>{catalog.data?.map(i => i.nome).join()}</span><span>{simulations.data?.map(i => i.titulo).join()}</span><span>{prices.data?.length}</span><img alt="anexo" src={blobs.urls["private/photo.jpg"]} /></div>;
 }
 function Location() { return <output data-testid="url">{useLocation().pathname}</output>; }
 function setup() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(<QueryClientProvider client={client}><AuthProvider><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Location /><Routes>
+  render(<QueryClientProvider client={client}><AuthProvider><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><CatalogFilterPreferencesProvider><Location /><Routes>
     <Route path="/portal-parceiro/*" element={<B2BRouteGuard><Data /></B2BRouteGuard>} />
     <Route path="/sem-permissao" element={<div>acesso negado</div>} />
-  </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);
+  </Routes></CatalogFilterPreferencesProvider></MemoryRouter></AuthProvider></QueryClientProvider>);
   return client;
 }
 function paused(client: QueryClient) {
@@ -100,6 +109,18 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
+  it("real AuthProvider/Routes/guard/boundary preserves only preferences through monitor remounts", async () => {
+    const client = setup(); await tick();
+    const input = screen.getByRole("textbox", { name: "Preferência filtro" });
+    fireEvent.change(input, { target: { value: "químicos" } });
+    await tick(10_000);
+    expect(input.isConnected).toBe(false);
+    expect(screen.getByRole("textbox", { name: "Preferência filtro" })).toHaveValue("químicos");
+    state.context = null; await tick(10_000); paused(client);
+    expect(screen.queryByRole("textbox", { name: "Preferência filtro" })).toBeNull();
+    state.context = ctx(); fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" })); await tick();
+    expect(screen.getByRole("textbox", { name: "Preferência filtro" })).toHaveValue("químicos");
+  });
   it.each(["parceiro_b2b", "parceiro_b2b_tecnico"])("revoga/restaura %s sem reload e revoga Blob local", async role => {
     state.roles = [role]; state.context = ctx();
     let initialResolve: ((v: unknown) => void) | undefined;

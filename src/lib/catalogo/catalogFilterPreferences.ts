@@ -18,7 +18,7 @@ export interface CatalogFilterBinding {
   onChange: (filters: CatalogFilterPreferences) => void;
 }
 
-/** Layout-local, volatile preferences ONLY. Never rows, drawers, grants or request scope.
+/** App-tree-local, volatile preferences ONLY. Never rows, drawers, grants or request scope.
  * undefined partner = unresolved pause; null = resolved missing link, which clears.
  * Identity deliberately excludes lease/readiness/authzEpoch: these still fence all readers.
  */
@@ -46,5 +46,5 @@ export function createCatalogFilterMemory() {
     },
   };
 }
-/** Existing B2B guard owns this above the epoch boundary, which remounts layouts. */
+/** App owns this below AuthProvider and above Routes; guards may disappear entirely. */
 export const CatalogFilterMemoryContext = createContext<ReturnType<typeof createCatalogFilterMemory> | null>(null);
