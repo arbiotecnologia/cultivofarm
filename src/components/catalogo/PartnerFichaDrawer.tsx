@@ -27,4 +27,4 @@ export function PartnerFichaDrawer({ item, open, onOpenChange }: {
       </div> : <p className="mt-4 text-sm text-muted-foreground">Ficha técnica em validação.</p>}
     </SheetContent>
   </Sheet>;
-}--- a/src/hooks/usePartnerCatalog.ts
+}

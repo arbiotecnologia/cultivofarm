@@ -15,4 +15,4 @@ export function partnerCatalogRows(items: readonly CatalogItem[]): CatalogoUnifi
       indicacoes_uso: item.ficha_conteudo?.indicacoes_uso, cuidados_aplicacao: item.ficha_conteudo?.cuidados_aplicacao,
       valor_dose_brl: item.valor_dose_brl, valor_litro_brl: item.valor_litro_brl, valor_ha_brl: item.valor_ha_brl },
   }));
-}--- a/src/pages/portal-parceiro/FichasTecnicas.tsx
+}
