@@ -1,6 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 22/10 00:54 — C2 contratos funcionais multiperfil (candidata separada)
+- [x] C2-CAT prioritário separado preparado em scripts/contracts-c2-cat-20261022: capacidade catálogo/fichas na projeção canônica e view owner read-only; nenhum canal financeiro/simulação/escrita adicional. 30UI/session +16SQL locais e39regressões; sem instalar C2.1 ou promover runtime.
+- [ ] C2-CAT revisão/types candidato, aplicação independente/postflight REST e homologação UI real antes de promoção/publicação; modelo explícito continua não homologado.
 - [x] Registrar publicação externa C1B/rótulos ed9f8d2c, deployment1d249f08-4199-44e8-9e4e-4f4efc3dacb1 e111/111+tsc do auditor; sem reaplicar banco.
 - [x] Inventariar contratos, consumidores e bloqueio commercial_owner da UI; preservar scope aplicado c3f29977 e modelo explícito não homologado. README scripts/contracts-c2-20261022 distingue catálogo autorizado de outros canais fechados.
 - [x] Preparar primeiro recorte administrativo executável SQL/patches/testes/preflight/reversão segura em scripts/contracts-c2-20261022, sem hosted writes/runtime/publicação; NÃO instalar writers isolados com readers exclusivos.
