@@ -41,8 +41,9 @@ INSERT INTO public.organizations(id,nome,ativo,status) VALUES ('{ORG_A}','Org A 
 INSERT INTO public.saas_modules(id,key,name,active) VALUES ('{U(900)}','b2b','B2B',true),('{U(901)}','financeiro','Fin',true);
 INSERT INTO public.saas_features(id,module_id,key,name,active) VALUES ('{U(910)}','{U(900)}','catalogo_precos','Cat',true),('{U(911)}','{U(900)}','fichas_tecnicas','Fichas',true),('{U(912)}','{U(900)}','pedidos_b2b','Ped',true),('{U(913)}','{U(901)}','contas_receber','CR',true);
 INSERT INTO public.saas_plans(id,key,name,active,is_default,created_at,updated_at) VALUES ('{U(920)}','sintetico','Sintetico',true,false,now(),now());
-INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,features_snapshot,limits_snapshot) VALUES ('{U(921)}','{U(920)}',1,'Plano sintetico','PUBLISHED',now()-interval '1 day','[]','{{}}');
+INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,features_snapshot,limits_snapshot) VALUES ('{U(921)}','{U(920)}',1,'Plano sintetico','DRAFT',now()-interval '1 day','[]','{{}}');
 INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled) SELECT '{U(921)}',id,true FROM public.saas_features;
+UPDATE public.saas_plan_versions SET status='PUBLISHED',price_amount=0,currency='BRL',billing_cycle='monthly',trial_days=0,published_at=now()-interval '1 day',features_snapshot='["sintetico"]' WHERE id='{U(921)}';
 INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_version_id,status,started_at) VALUES ('{ORG_A}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day'),('{ORG_B}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day');
 INSERT INTO public.partner_accounts(id,razao_social,ativo,commercial_owner_organization_id) VALUES ('{P}','Parceiro P sintetico',true,'{ORG_A}'),('{Q}','Parceiro Q sintetico',true,'{ORG_B}');
 """)
