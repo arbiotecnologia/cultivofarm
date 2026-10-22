@@ -1,0 +1,11 @@
+{
+  "base_commit": "ed9f8d2c535668888ddb3b3442bb71673f26f753",
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "files": {
+    "src/pages/Configuracoes.tsx": "45fb8236e4d2db0d4daf58597206eb9c183b37e42de2a4d9e0cb9a7b420d8f39"
+  },
+  "scope_md5": "c3f2997746f24bc2efd15db5c0ccc862",
+  "trigger_md5": "d0d02d772e7aa3df8688cf0cd97aadfb",
+  "constraint_md5": "2924eb29bae1f720bf0595c474e79a17",
+  "policy_md5": "3129a655c9ef4358496ad02be0e11e8d"
+}
