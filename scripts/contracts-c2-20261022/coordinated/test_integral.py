@@ -25,3 +25,4 @@ s=s.replace(" print(f'PASS {len(checks)}", """
  check('rollback context closed',f"SELECT NOT public.is_valid_b2b_partner_user('{a['user_id']}','{partner}');")
  print(f'PASS {len(checks)}""")
 exec(compile(s,str(H/'test_provisioning.py'),'exec'),{'__file__':str(H/'test_provisioning.py'),'Path':Path})
+print('PASS joined readers/provisioning/lifecycle and deny rollback chain; synthetic Auth/reduced schema, not full hosted migration proof')
