@@ -23,15 +23,15 @@
  import { OwnerCatalog } from "@/components/catalogo/OwnerCatalog";
  import { CatalogFilterMemoryContext, createCatalogFilterMemory } from "@/lib/catalogo/catalogFilterPreferences";
  import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
-@@ -50,6 +52,7 @@
-     ? JSON.stringify([user.id, profile.organization_id, [...(roles ?? [])].sort(), "b2b", role]) : null;
-   const filterPreferences = (guardFilterMemory ?? filterMemory.current).bind(preferenceIdentity,
-     partnerReady && !partnerError ? ownPartner?.id ?? null : undefined);
+@@ -52,6 +54,7 @@
+     partnerReady && !partnerError
+       ? ownPartner?.id ?? (partnerSuccess && ownPartner === null ? null : undefined)
+       : undefined);
 +  const canReadOwnFinance = partnerReady && !partnerError && entitlements.status === "ready" && ownFinanceRoute(location.pathname, ownPartner?.financeRead === true, entitlements.features);
    const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);
    const { data: contexts } = useAvailableContexts();
    const switchPortal = useSwitchPortal();
-@@ -62,7 +65,7 @@
+@@ -64,7 +67,7 @@
    const isTecnico = role === "parceiro_b2b_tecnico";
    const commercialOwner = ownPartner?.mode === "commercial_owner";
    const menuGroups = (isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS)
@@ -40,12 +40,12 @@
      .filter((group) => group.items.length > 0);
    const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
  
-@@ -198,7 +201,7 @@
+@@ -200,7 +203,7 @@
              Você está visualizando como <span className="font-medium text-foreground">{partner.razao_social}</span> (visão interna).
            </div>
          )}
 -        {commercialOwner && canReadOwnerRoute ? (
-+        {commercialOwner && canReadOwnFinance ? <OwnerFinance key={ownPartner.id} partnerId={ownPartner.id} /> : commercialOwner && canReadOwnerRoute ? (
++        {commercialOwner && canReadOwnFinance ? <OwnerFinance key={ownPartner.id} partnerId={ownPartner.id} capability={ownPartner.financeRead === true} /> : commercialOwner && canReadOwnerRoute ? (
            location.pathname === "/portal-parceiro/catalogo"
              ? <OwnerCatalog key={JSON.stringify([preferenceIdentity, ownPartner.id])} partnerId={ownPartner.id} filterPreferences={filterPreferences} />
              : <Outlet context={{ partner: ownPartner }} />
@@ -61,8 +61,14 @@
    ["/portal-parceiro/novo", "pedidos_b2b"],
 --- /dev/null
 +++ b/src/lib/comercial/financeAccess.ts
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,16 @@
 +/** Candidate ONLY; additive projection contract, never derived from catalogue200. */
++export function ownFinanceActorAllowed(roles: readonly string[], capability: boolean) {
++  const external = ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"];
++  return capability && roles.includes("parceiro_b2b") &&
++    roles.length <= external.length && new Set(roles).size === roles.length &&
++    roles.every(role => external.includes(role));
++}
 +export function readOwnFinanceCapability(raw: unknown) {
 +  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
 +  const value = raw as Record<string, unknown>;
@@ -85,16 +91,18 @@
 +  return parsed.data;
 +}--- /dev/null
 +++ b/src/hooks/useOwnFinance.ts
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,22 @@
 +import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 +import { useAuth } from "@/hooks/useAuth";
 +import { supabase } from "@/integrations/supabase/client";
 +import { parseOwnFinance } from "@/lib/comercial/financeContract";
-+export function useOwnFinance(partnerId:string, cursor?:{at:string;id:string}) {
++import { ownFinanceActorAllowed } from "@/lib/comercial/financeAccess";
++export function useOwnFinance(partnerId:string, cursor?:{at:string;id:string}, capability = false) {
 +  const {roles}=useAuth();
++  const allowed = ownFinanceActorAllowed(roles, capability);
 +  const query=useScopedPortalQuery({
 +    queryKey:["portal-own-obligations","C2_OWN_OBLIGATIONS_V1",partnerId,cursor ?? null],
-+    enabled:roles.length===1 && roles[0]==="parceiro_b2b" && !!partnerId,
++    enabled:allowed && !!partnerId,
 +    queryFn:async signal=>{
 +      const rpc: (name:string,args:Record<string,unknown>)=>{abortSignal(signal:AbortSignal):PromiseLike<{data:unknown;error:unknown}>}=supabase.rpc.bind(supabase);
 +      const {data,error}=await rpc("rpc_portal_partner_financial",{
@@ -104,7 +112,7 @@
 +      return parseOwnFinance(data,partnerId);
 +    },
 +  });
-+  return {...query,data:query.ready && !query.isError ? query.data : undefined};
++  return {...query,data:allowed && query.ready && !query.isError ? query.data : undefined};
 +}--- /dev/null
 +++ b/src/components/comercial/OwnerFinance.tsx
 @@ -0,0 +1,21 @@
@@ -113,9 +121,9 @@
 +import { Table,TableHeader,TableHead,TableRow,TableBody,TableCell } from "@/components/ui/table";
 +import { brl,fmtDate } from "@/lib/financial/format";
 +import { useOwnFinance } from "@/hooks/useOwnFinance";
-+export function OwnerFinance({partnerId}:{partnerId:string}) {
++export function OwnerFinance({partnerId, capability = false}:{partnerId:string; capability?:boolean}) {
 +  const [cursor,setCursor]=useState<{at:string;id:string}>();
-+  const query=useOwnFinance(partnerId,cursor);
++  const query=useOwnFinance(partnerId,cursor,capability);
 +  const rows=query.data?.rows ?? [];
 +  const last=rows.at(-1);
 +  return <section className="space-y-4"><h1 className="text-xl font-semibold">Minhas obrigações com o fornecedor</h1>

@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 02:22 — drift financeiro e matriz fiscal
+- [x] Regenerar patch financeiro sobre HEAD corrigido, driftcheck SHA256 PASS e filtros17+layout financeiro2=19/19; suíte financeira35/35. Bind success/null e identidade arrayroles do HEAD preservados, sem restaurar scalar role/bind antigo.
+- [x] Preparar variante financeira multiperfil por capacidades atuais em multiprofile/: projeção/validator coordenados, preflight separado e guard instalação explicitamente fechado; nenhuma instalação/SQL hosted.
+- [ ] Gate financeiro conjunto: auditor deve capturar baseline PostgreSQL/ACL/owner pós-C2 e validar SQL/rollback/REST/UI integrais; fontes SHA não substituem hashes LIVE. Singleton e multiperfil não instalar sequencialmente com preflight antigo.
+- [x] Matriz frontend fiscal existente documentada;55/55 testes incluindo formulário rascunho vazio/ator pausado, sem dados tributários inventados. Build automático OK; typecheck candidato independente e UI real continuam pendentes.
+
 ## 22/10 02:13 — continuação coordenada autorizada
 - [x] Registrar homologação específica dos filtros pelo auditor: HEAD3b030e4/deployment05e50d06/bundleDesBQeTv; Químicos+busca preservados em r1s→r5g, sem reload. Renovação token/revogação integral ainda pendentes.
 - [x] Implementar candidata concreta claim/finish/compensação, Edge fora deploy e patch coordenado8arquivos: 19PG com triggers capturados+49PG readers/lifecycle+9Deno+11Vitest. Preflight estrutural16relações e rollbackfamily deny-only preparados; runtime multiperfil inalterado.

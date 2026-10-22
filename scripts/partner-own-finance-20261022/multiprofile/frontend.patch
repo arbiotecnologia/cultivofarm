@@ -1,0 +1,184 @@
+--- a/src/hooks/useMyPartner.ts
++++ b/src/hooks/useMyPartner.ts
+@@ -1,3 +1,5 @@
++import { readOwnFinanceCapability } from "@/lib/comercial/financeAccess";
++import { decodeC2Partner, isC2ExternalScope } from "@/lib/authz/multiProfileContract";
+ import { readCatalogCapabilities } from "@/lib/catalogo/catalogAccess";
+ import { useEffect } from "react";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+@@ -8,10 +10,10 @@
+ export type PartnerUserPapel = "gestor" | "tecnico";
+ 
+ export function useMyPartner() {
+-  const { roles, profile } = useAuth();
++  const { user, roles, profile } = useAuth();
+   const fence = useStorageAccessScope("my-commercial-partner");
+   const client = useQueryClient();
+-  const role = roles.length === 1 ? roles[0] : null;
++  const role = isC2ExternalScope(roles) ? roles.includes("parceiro_b2b") ? "parceiro_b2b" : roles.includes("parceiro_b2b_tecnico") ? "parceiro_b2b_tecnico" : null : null;
+   const ready = fence.ready && profile?.senha_provisoria === false &&
+     (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico");
+   useEffect(() => {
+@@ -37,7 +39,7 @@
+       if (!rawContext) return null;
+       if (typeof rawContext !== "object" || Array.isArray(rawContext))
+         throw new Error("partner_context_unavailable");
+-      const context = rawContext as Record<string, unknown>;
++      const context = decodeC2Partner(rawContext,user?.id ?? "",profile?.organization_id ?? "",roles);
+       if (typeof context.partner_id !== "string" || context.organization_id !== profile?.organization_id ||
+         context.role !== role || (context.papel !== "gestor" && context.papel !== "tecnico") ||
+         !["commercial_owner", "legacy_partner_tenant"].includes(String(context.mode)))
+@@ -48,12 +50,13 @@
+       if (!rawPartner) return null;
+       if (typeof rawPartner !== "object" || Array.isArray(rawPartner)) throw new Error("partner_context_unavailable");
+       const partner = rawPartner as Record<string, unknown>;
++      if (partner.contract !== "C2_MULTIPROFILE_V1" || partner.actor_id !== user?.id || partner.tenant_id !== profile?.organization_id || JSON.stringify(partner.external_roles) !== JSON.stringify(context.external_roles)) throw new Error("partner_context_unavailable");
+       if (partner.id !== context.partner_id || partner.papel !== context.papel || partner.mode !== context.mode || partner.ativo !== true)
+         throw new Error("partner_context_unavailable");
+       if (typeof partner.razao_social !== "string" || typeof partner.codigo !== "string") throw new Error("partner_context_unavailable");
+       return { id: context.partner_id, codigo: partner.codigo, razao_social: partner.razao_social,
+         nome_fantasia: typeof partner.nome_fantasia === "string" ? partner.nome_fantasia : null,
+-        ativo: true, capabilities: readCatalogCapabilities(partner.capabilities), papel: context.papel as PartnerUserPapel,
++        ativo: true, financeRead: readOwnFinanceCapability(partner.finance_capabilities), capabilities: readCatalogCapabilities(partner.capabilities), papel: context.papel as PartnerUserPapel,
+         mode: context.mode as "commercial_owner" | "legacy_partner_tenant" };
+     },
+   });
+--- a/src/pages/portal-parceiro/PortalParceiroLayout.tsx
++++ b/src/pages/portal-parceiro/PortalParceiroLayout.tsx
+@@ -1,4 +1,7 @@
++import { isC2ExternalScope } from "@/lib/authz/multiProfileContract";
+ import { ownerCatalogRoute } from "@/lib/catalogo/catalogAccess";
++import { ownFinanceRoute } from "@/lib/comercial/financeAccess";
++import { OwnerFinance } from "@/components/comercial/OwnerFinance";
+ import { OwnerCatalog } from "@/components/catalogo/OwnerCatalog";
+ import { CatalogFilterMemoryContext, createCatalogFilterMemory } from "@/lib/catalogo/catalogFilterPreferences";
+ import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
+@@ -52,6 +55,7 @@
+     partnerReady && !partnerError
+       ? ownPartner?.id ?? (partnerSuccess && ownPartner === null ? null : undefined)
+       : undefined);
++  const canReadOwnFinance = partnerReady && !partnerError && entitlements.status === "ready" && ownFinanceRoute(location.pathname, ownPartner?.financeRead === true, entitlements.features);
+   const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);
+   const { data: contexts } = useAvailableContexts();
+   const switchPortal = useSwitchPortal();
+@@ -60,11 +64,12 @@
+   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebarOpenState("parceiro");
+   const [simulatedId, setSimulatedId] = useState<string | null>(null);
+ 
++  const externalManager = isC2ExternalScope(roles) && roles.includes("parceiro_b2b");
+   const isStaff = role === "administrador" || role === "gestor_comercial";
+-  const isTecnico = role === "parceiro_b2b_tecnico";
++  const isTecnico = !externalManager && role === "parceiro_b2b_tecnico";
+   const commercialOwner = ownPartner?.mode === "commercial_owner";
+   const menuGroups = (isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS)
+-    .map((group) => ({ ...group, items: group.items.filter((item) => (!commercialOwner || (partnerReady && !partnerError && ownerCatalogRoute(item.route, ownPartner?.capabilities))) && isPathEntitled(item.route, entitlements)) }))
++    .map((group) => ({ ...group, items: group.items.filter((item) => (!commercialOwner || (partnerReady && !partnerError && (ownerCatalogRoute(item.route, ownPartner?.capabilities) || (entitlements.status === "ready" && ownFinanceRoute(item.route, ownPartner?.financeRead === true, entitlements.features))))) && isPathEntitled(item.route, entitlements)) }))
+     .filter((group) => group.items.length > 0);
+   const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
+ 
+@@ -98,7 +103,7 @@
+ 
+   if (loading) return <div className="p-6">Carregando...</div>;
+   if (!user) return <Navigate to="/auth" replace />;
+-  if (role && !["parceiro_b2b", "parceiro_b2b_tecnico", "administrador", "gestor_comercial"].includes(role)) {
++  if (!externalManager && role && !["parceiro_b2b", "parceiro_b2b_tecnico", "administrador", "gestor_comercial"].includes(role)) {
+     return <Navigate to="/" replace />;
+   }
+   if (!isStaff && (!partnerReady || partnerError)) return <div role="status">Acesso indisponível.</div>;
+@@ -200,7 +205,7 @@
+             Você está visualizando como <span className="font-medium text-foreground">{partner.razao_social}</span> (visão interna).
+           </div>
+         )}
+-        {commercialOwner && canReadOwnerRoute ? (
++        {commercialOwner && canReadOwnFinance ? <OwnerFinance key={ownPartner.id} partnerId={ownPartner.id} capability={ownPartner.financeRead === true} /> : commercialOwner && canReadOwnerRoute ? (
+           location.pathname === "/portal-parceiro/catalogo"
+             ? <OwnerCatalog key={JSON.stringify([preferenceIdentity, ownPartner.id])} partnerId={ownPartner.id} filterPreferences={filterPreferences} />
+             : <Outlet context={{ partner: ownPartner }} />
+--- a/src/lib/saas/featureRouteMap.ts
++++ b/src/lib/saas/featureRouteMap.ts
+@@ -37,6 +37,7 @@
+   // Portais especializados — somente correspondências inequívocas.
+   ["/app/visita", "visitas_tecnicas"],
+   ["/app/checkin", "visitas_tecnicas"],
++  ["/portal-parceiro/financeiro", "contas_receber"],
+   ["/portal-parceiro/pedidos", "pedidos_b2b"],
+   ["/portal-parceiro/solicitacoes", "pedidos_b2b"],
+   ["/portal-parceiro/novo", "pedidos_b2b"],
+--- a/src/lib/comercial/financeAccess.ts
++++ b/src/lib/comercial/financeAccess.ts
+@@ -0,0 +1,16 @@
++/** Candidate ONLY; additive projection contract, never derived from catalogue200. */
++export function ownFinanceActorAllowed(roles: readonly string[], capability: boolean) {
++  const external = ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"];
++  return capability && roles.includes("parceiro_b2b") &&
++    roles.length <= external.length && new Set(roles).size === roles.length &&
++    roles.every(role => external.includes(role));
++}
++export function readOwnFinanceCapability(raw: unknown) {
++  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
++  const value = raw as Record<string, unknown>;
++  return value.contract === "C2_OWN_OBLIGATIONS_V1" && value.obligations_read === true;
++}
++export function ownFinanceRoute(path: string, allowed: boolean, features: ReadonlySet<string>) {
++  return path === "/portal-parceiro/financeiro" && allowed &&
++    features.has("pedidos_b2b") && features.has("contas_receber");
++}--- a/src/lib/comercial/financeContract.ts
++++ b/src/lib/comercial/financeContract.ts
+@@ -0,0 +1,10 @@
++import { z } from "zod";
++const amount = z.number().finite().nonnegative();
++const installment = z.object({ id:z.string().uuid(), numero:z.number().int(), vencimento:z.string().nullable(), valor:amount, recebido:amount, status:z.string() }).strict();
++const title = z.object({ id:z.string().uuid(),order_id:z.string().uuid(),numero:z.string(),created_at:z.string().datetime({offset:true}),total:amount,status:z.string(),installments:z.array(installment) }).strict();
++const schema = z.object({ contract:z.literal("C2_OWN_OBLIGATIONS_V1"),partner_id:z.string().uuid(),rows:z.array(title).max(50),limit:z.literal(50),documents_enabled:z.literal(false) }).strict();
++export function parseOwnFinance(data:unknown, partnerId:string) {
++  const parsed=schema.safeParse(data);
++  if(!parsed.success || parsed.data.partner_id!==partnerId) throw new Error("own_finance_unavailable");
++  return parsed.data;
++}--- a/src/hooks/useOwnFinance.ts
++++ b/src/hooks/useOwnFinance.ts
+@@ -0,0 +1,22 @@
++import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
++import { useAuth } from "@/hooks/useAuth";
++import { supabase } from "@/integrations/supabase/client";
++import { parseOwnFinance } from "@/lib/comercial/financeContract";
++import { ownFinanceActorAllowed } from "@/lib/comercial/financeAccess";
++export function useOwnFinance(partnerId:string, cursor?:{at:string;id:string}, capability = false) {
++  const {roles}=useAuth();
++  const allowed = ownFinanceActorAllowed(roles, capability);
++  const query=useScopedPortalQuery({
++    queryKey:["portal-own-obligations","C2_OWN_OBLIGATIONS_V1",partnerId,cursor ?? null],
++    enabled:allowed && !!partnerId,
++    queryFn:async signal=>{
++      const rpc: (name:string,args:Record<string,unknown>)=>{abortSignal(signal:AbortSignal):PromiseLike<{data:unknown;error:unknown}>}=supabase.rpc.bind(supabase);
++      const {data,error}=await rpc("rpc_portal_partner_financial",{
++        p_partner_id:partnerId,p_own_finance_v1:true,p_before:cursor?.at ?? null,p_before_id:cursor?.id ?? null,
++      }).abortSignal(signal);
++      if(error) throw new Error("own_finance_unavailable");
++      return parseOwnFinance(data,partnerId);
++    },
++  });
++  return {...query,data:allowed && query.ready && !query.isError ? query.data : undefined};
++}--- a/src/components/comercial/OwnerFinance.tsx
++++ b/src/components/comercial/OwnerFinance.tsx
+@@ -0,0 +1,21 @@
++import { useState } from "react";
++import { Button } from "@/components/ui/button";
++import { Table,TableHeader,TableHead,TableRow,TableBody,TableCell } from "@/components/ui/table";
++import { brl,fmtDate } from "@/lib/financial/format";
++import { useOwnFinance } from "@/hooks/useOwnFinance";
++export function OwnerFinance({partnerId, capability = false}:{partnerId:string; capability?:boolean}) {
++  const [cursor,setCursor]=useState<{at:string;id:string}>();
++  const query=useOwnFinance(partnerId,cursor,capability);
++  const rows=query.data?.rows ?? [];
++  const last=rows.at(-1);
++  return <section className="space-y-4"><h1 className="text-xl font-semibold">Minhas obrigações com o fornecedor</h1>
++    {!query.ready ? <p role="status">Acesso indisponível.</p> : query.isError ? <div role="alert">Financeiro indisponível.<Button variant="outline" onClick={()=>{void query.refetch();}}>Tentar novamente</Button></div>
++    : query.isLoading ? <p role="status">Carregando títulos...</p> : <>
++      <Table><TableHeader><TableRow><TableHead>Pedido</TableHead><TableHead>Valor do título</TableHead><TableHead>Status</TableHead><TableHead>Parcelas</TableHead></TableRow></TableHeader>
++        <TableBody>{rows.map(row=><TableRow key={row.id}><TableCell>{row.numero}</TableCell><TableCell>{brl(row.total)}</TableCell><TableCell>{row.status}</TableCell><TableCell><ul>{row.installments?.map(i=><li key={i.id}>{i.numero} · {fmtDate(i.vencimento)} · {brl(i.valor)} · Pagamento registrado: {brl(i.recebido)} · {i.status}</li>)}</ul></TableCell></TableRow>)}</TableBody>
++      </Table>
++      {!rows.length && <p>Nenhum título autorizado nesta página.</p>}
++      <div className="flex gap-2"><Button variant="outline" disabled={!cursor} onClick={()=>setCursor(undefined)}>Mais recentes</Button><Button variant="outline" disabled={query.isFetching || rows.length!==50 || !last} onClick={()=>{if(typeof last?.created_at==='string' && typeof last.id==='string')setCursor({at:last.created_at,id:last.id});}}>Mais antigos</Button></div>
++    </>}
++  </section>;
++}

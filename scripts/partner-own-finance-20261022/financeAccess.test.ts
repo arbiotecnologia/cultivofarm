@@ -1,6 +1,12 @@
 import { expect, it } from "vitest";
-import { readOwnFinanceCapability, ownFinanceRoute } from "./financeAccess";
+import { readOwnFinanceCapability, ownFinanceRoute, ownFinanceActorAllowed } from "./financeAccess";
 const features = new Set(["pedidos_b2b", "contas_receber"]);
+it("manager capability survives external cumulative roles, not internal or residual technician", () => {
+  expect(ownFinanceActorAllowed(["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"], true)).toBe(true);
+  expect(ownFinanceActorAllowed(["parceiro_b2b_tecnico", "cliente_produtor"], true)).toBe(false);
+  expect(ownFinanceActorAllowed(["parceiro_b2b", "administrador"], true)).toBe(false);
+  expect(ownFinanceActorAllowed(["parceiro_b2b"], false)).toBe(false);
+});
 it("catalogue capability never authorizes finance", () => {
   expect(readOwnFinanceCapability({ contract: "C2_CAT_V1", catalog_read: true, obligations_read: true })).toBe(false);
 });

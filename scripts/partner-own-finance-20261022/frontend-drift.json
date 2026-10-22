@@ -1,6 +1,6 @@
 {
   "src/hooks/useMyPartner.ts": "536195d65ea6fe4b161e75d10654554a66d3e4c424423a76c634cd3b1bf0ea20",
-  "src/pages/portal-parceiro/PortalParceiroLayout.tsx": "278bad8c821c428adc308698e1f4692fa9dae0eb40ac0f96b03c979fd7489e30",
+  "src/pages/portal-parceiro/PortalParceiroLayout.tsx": "2d30f29ad2e9c6574c606845a077de733d89311ce000906b1a7bab3ca5ccb872",
   "src/lib/saas/featureRouteMap.ts": "50528152a31c4fd08ed8fa3d746a7be00c11ba03b186b904dc034ba52d180864",
   "src/lib/comercial/financeAccess.ts": null,
   "src/lib/comercial/financeContract.ts": null,

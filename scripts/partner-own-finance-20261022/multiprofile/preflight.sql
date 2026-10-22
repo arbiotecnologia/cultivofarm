@@ -1,0 +1,2 @@
+-- READ ONLY; canonical ref swzpzcwiasxmjutrmvkm required.
+SELECT p.oid::regprocedure signature,pg_get_functiondef(p.oid) definition,md5(pg_get_functiondef(p.oid)) md5,pg_get_userbyid(p.proowner) owner,p.proacl::text acl FROM pg_proc p WHERE p.oid IN ('platform_private.b2b_commercial_partner_projection()'::regprocedure,'platform_private.b2b_commercial_context()'::regprocedure,'public.is_valid_b2b_partner_user(uuid,uuid)'::regprocedure);

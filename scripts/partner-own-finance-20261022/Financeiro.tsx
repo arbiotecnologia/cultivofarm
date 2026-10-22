@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Table,TableHeader,TableHead,TableRow,TableBody,TableCell } from "@/components/ui/table";
 import { brl,fmtDate } from "@/lib/financial/format";
 import { useOwnFinance } from "./useOwnFinance";
-function OwnFinancePage({partnerId}:{partnerId:string}) {
+function OwnFinancePage({partnerId, capability = false}:{partnerId:string; capability?:boolean}) {
   const [cursor,setCursor]=useState<{at:string;id:string}>();
-  const query=useOwnFinance(partnerId,cursor);
+  const query=useOwnFinance(partnerId,cursor,capability);
   const rows=query.data?.rows ?? [];
   const last=rows.at(-1);
   return <section className="space-y-4"><h1 className="text-xl font-semibold">Minhas obrigações com o fornecedor</h1>
@@ -21,6 +21,6 @@ function OwnFinancePage({partnerId}:{partnerId:string}) {
   </section>;
 }
 export default function Financeiro(){
- const {partner}=useOutletContext<{partner:{id:string}}>();
- return <OwnFinancePage key={partner.id} partnerId={partner.id}/>;
+ const {partner}=useOutletContext<{partner:{id:string;financeRead?:boolean}}>();
+ return <OwnFinancePage key={partner.id} partnerId={partner.id} capability={partner.financeRead === true}/>;
 }

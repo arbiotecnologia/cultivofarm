@@ -23,3 +23,13 @@ Rollback deny fecha a nova leitura e substitui helper de capacidade por negaçã
 4. Rollbackdeny revoga somente nova overload/core para authenticated, mantém legacy fechado; frontend volta a indisponível, não restaura grants. Nada de dados/objetos/roles/sessões/publicação automática.
 
 Multipapel continua dependente de readers/provisioner/seletor/writersC2.1 coordenados. Ambiguidades/limites são blockers reais para promoção, não autorizações presumidas.
+
+## Revisão 02:22 — drift confirmado e variantes incompatíveis
+
+O patch anterior estava stale, conforme achado do auditor. `assemble_frontend.py` agora regenera sobre o runtime corrigido e produz cópias completas para teste; `--check` compara SHA256 de todos os arquivos alvo e falha em qualquer drift, sem regenerar silenciosamente. O bind preserva `partnerSuccess && ownPartner === null`; pending/erro continuam `undefined`. A identidade preservada é a do HEAD atual: ator/tenant/array de papéis ordenado/portal, nunca o scalar `role`. Não restaura código antigo nem remove invalidação por alteração de papéis.
+
+`useOwnFinance` exige capacidade financeira atual explícita e gestor entre papéis externos allowlisted; capability retirada ou papel gestor revogado oculta dados imediatamente. Papéis internos misturados negam; técnico residual não herda finanças. Isso NÃO abre backend singleton: a variante SQL original ainda nega multipapel.
+
+`coordinate_multiprofile.py` monta variante mutuamente exclusiva `multiprofile/`: composição da projeção C2 mantém contrato/ator/tenant/external_roles/catálogo e adiciona finanças; core usa validator cumulativo revisável + papel gestor real, sem `pu.papel` ou count singleton e sem alterar scope aplicado. Usa mesma leitura de títulos/parcelas sem documentos. **Não instalar a variante singleton antes de C2 nem vice-versa sem novo preflight**. A variante conjunta contém bloqueio transacional explícito `c2_finance_baseline_not_certified`: hashes PostgreSQL/ACL/owner da projeção/contexto/validator pós-C2 não podem ser adivinhados dos fontes Python. Auditor deve capturá-los, comparar e revisar o guard antes de remover o bloqueio. `expected-sources.json` registra SHA dos fontes, não hashes LIVE.
+
+Testes executam o layout financeiro candidato real, não runtime antigo: filtros17 + montagem financeira/retirada capability/pausa/retry2 = **19/19**; suíte contrato/hook/capacidade **35/35**; fiscal **55/55**. Nenhuma homologação JWT/REST/UI financeira real ou instalação conjunta foi realizada. Matriz fiscal em `scripts/fiscal-products-refinement-20261022/FRONTEND-MATRIX.md`.

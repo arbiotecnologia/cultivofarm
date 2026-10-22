@@ -844,7 +844,7 @@ function ProductEditDrawer({
   const fence = useStorageAccessScope(`fiscal-drawer:${productId}`);
   const submitLock = useRef(false);
   const readiness = useProductFiscalReadiness([productId]);
-  const preparation = productFiscalPreparation(readiness.data?.find(r => r.product_id === productId), profileQuery.data?.is_active);
+  const preparation = productFiscalPreparation(!fence.ready || readiness.isError || readiness.isFetching ? undefined : readiness.data?.find(r => r.product_id === productId), profileQuery.data?.is_active);
   const [values, setValues] = useState<ProductFiscalFormValues>(() =>
     productRowToFormValues(null),
   );
@@ -925,7 +925,9 @@ function ProductEditDrawer({
             <AlertTitle>{preparation.stage === "incomplete_draft" ? "Rascunho incompleto" : preparation.stage === "inactive" ? "Perfil inativo" : preparation.stage === "accounting_pending" ? "Revisão contábil pendente" : preparation.stage === "unavailable" ? "Prontidão indisponível" : "Cadastro revisado; operação pendente"}</AlertTitle>
             <AlertDescription>Salvar um rascunho não torna o item pronto para NF-e. Regime, operação, regras do emitente e IBS/CBS precisam de validação própria; emissão permanece desativada.</AlertDescription>
           </Alert>
-          <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit} />
+          {fence.ready && !profileQuery.isFetching && !profileQuery.isError && profileQuery.data !== undefined && (
+            <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit && fence.ready} />
+          )}
         </div>
       }
     />
