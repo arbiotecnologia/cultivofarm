@@ -25,7 +25,7 @@ BEGIN
  IF partner_snapshot IS NULL THEN RAISE EXCEPTION 'external_provisioning_forbidden'; END IF;
  END IF;
  IF 'cliente_produtor'=ANY(p_roles) THEN
- IF OR cardinality(p_clients) NOT BETWEEN 1 AND 100
+ IF cardinality(p_clients) NOT BETWEEN 1 AND 100
  OR p_clients IS NULL OR array_position(p_clients,NULL) IS NOT NULL
  OR cardinality(p_clients)<>(SELECT count(DISTINCT id) FROM unnest(p_clients) id)
  OR p_primary IS NULL OR NOT (p_primary=ANY(p_clients)) THEN
