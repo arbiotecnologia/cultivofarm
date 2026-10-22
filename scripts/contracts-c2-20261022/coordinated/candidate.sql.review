@@ -161,7 +161,7 @@ BEGIN
  ELSIF last_ctx IS NOT NULL AND last_ctx=ANY(contexts) THEN def:=last_ctx;
  ELSIF cardinality(contexts)=1 THEN def:=contexts[1]; END IF;
  IF pref IS NULL OR NOT(pref=ANY(contexts)) THEN pref:=NULL; skip:=false; END IF;
- RETURN jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,'partner_id',(platform_private.b2b_commercial_context()->>'partner_id')::uuid,'ready',true,'producer_links_valid',platform_private.c2_producer_links(u,org),'available_contexts',contexts,'default_context',def,'must_select_context',cardinality(contexts)>1 AND NOT COALESCE(skip,false),
+ RETURN jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,'partner_id',(platform_private.b2b_commercial_context()->>'partner_id')::uuid,'ready',true,'profile_stamp',(SELECT updated_at FROM public.profiles WHERE user_id=u),'link_version',(SELECT version FROM public.partner_users WHERE user_id=u),'producer_links_valid',platform_private.c2_producer_links(u,org),'available_contexts',contexts,'default_context',def,'must_select_context',cardinality(contexts)>1 AND NOT COALESCE(skip,false),
  'has_b2b_access',management OR (partner AND public.has_role(u,'parceiro_b2b')),'has_technical_access',management OR tech,'is_admin',management,
  'preferred_context',pref,'skip_context_selector',COALESCE(skip,false));
 END $function$;
