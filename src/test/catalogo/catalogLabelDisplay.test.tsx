@@ -67,10 +67,21 @@ describe("exibição dinâmica de rótulos — leitores autorizados", () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     state.labelPages = [[], [], [{ ...NPK, rotulo_exibicao: "NPK" }]];
     const { result } = renderHook(() => useCatalogLabelNames("scope-A", true), { wrapper: wrapper(client) });
-    await waitFor(() => expect(result.current.npk).toBe("NPK"));
+    await waitFor(() => expect(result.current[labelNameKey("fertilizante_adubo", "npk")]).toBe("NPK"));
     state.labelPages = [[], [], [{ ...NPK, rotulo_exibicao: "NPK Organomineral" }]];
     await client.invalidateQueries({ queryKey: ["catalog-labels-read", "scope-A"] });
-    await waitFor(() => expect(result.current.npk).toBe("NPK Organomineral"));
+    await waitFor(() => expect(result.current[labelNameKey("fertilizante_adubo", "npk")]).toBe("NPK Organomineral"));
+  });
+  it("mesma chave em famílias distintas não cruza nomes", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // ordem das famílias: quimico, biologico, fertilizante_adubo
+    state.labelPages = [[{ familia: "quimico", rotulo: "foliar", rotulo_exibicao: "Foliar químico" }], [],
+      [{ familia: "fertilizante_adubo", rotulo: "foliar", rotulo_exibicao: "Foliar adubo" }]];
+    const { result } = renderHook(() => useCatalogLabelNames("scope-C", true), { wrapper: wrapper(client) });
+    await waitFor(() => expect(Object.keys(result.current)).toHaveLength(2));
+    expect(labelDisplayName(result.current, "quimico", "foliar")).toBe("Foliar químico");
+    expect(labelDisplayName(result.current, "fertilizante_adubo", "foliar")).toBe("Foliar adubo");
+    expect(labelDisplayName(result.current, "biologico", "foliar")).toBe("foliar");
   });
   it("leitor do catálogo exibe o nome do servidor para rótulo novo", async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
