@@ -37,6 +37,9 @@ ok('replica: 16 guarded relations fingerprint identical', want == got)
 # ---- synthetic tenant/catalogue fixtures (superuser setup; no hosted rows copied) ----
 users = [ADMIN_A, ADMIN_B, G, T, PR, GT, ALL3, XB]
 pg.sql(f"""
+-- FIXTURE SEEDING ONLY: SaaS catalogue/plan/subscription guard triggers skipped (tickets are out of scope);
+-- every scenario below runs with all triggers enabled.
+SET session_replication_role=replica;
 INSERT INTO public.organizations(id,nome,ativo,status) VALUES ('{ORG_A}','Org A sintetica',true,'ativa'),('{ORG_B}','Org B sintetica',true,'ativa');
 INSERT INTO public.saas_modules(id,key,name,active) VALUES ('{U(900)}','b2b','B2B',true),('{U(901)}','financeiro','Fin',true);
 INSERT INTO public.saas_features(id,module_id,key,name,active) VALUES ('{U(910)}','{U(900)}','catalogo_precos','Cat',true),('{U(911)}','{U(900)}','fichas_tecnicas','Fichas',true),('{U(912)}','{U(900)}','pedidos_b2b','Ped',true),('{U(913)}','{U(901)}','contas_receber','CR',true);
@@ -46,6 +49,7 @@ INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled
 UPDATE public.saas_plan_versions SET status='PUBLISHED',price_amount=0,currency='BRL',billing_cycle='monthly',trial_days=0,published_at=now()-interval '1 day',features_snapshot='["sintetico"]' WHERE id='{U(921)}';
 INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_version_id,status,started_at) VALUES ('{ORG_A}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day'),('{ORG_B}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day');
 INSERT INTO public.partner_accounts(id,razao_social,ativo,commercial_owner_organization_id) VALUES ('{P}','Parceiro P sintetico',true,'{ORG_A}'),('{Q}','Parceiro Q sintetico',true,'{ORG_B}');
+SET session_replication_role=origin;
 """)
 for u in users:
     org = ORG_B if u in (ADMIN_B, XB) else ORG_A
