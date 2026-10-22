@@ -68,6 +68,7 @@ it.each(["actor", "tenant", "partner", "role", "missing-link"])("isolates and cl
   if (kind === "missing-link") state.partner = null;
   state.ready = true; view.update();
   Object.assign(state, { actor: "A", tenant: "T", partner: "P", role: "parceiro_b2b" }); view.update();
+  if (kind === "role") fireEvent.click(screen.getByText("Voltar catálogo"));
   expect(search()).toHaveValue(""); expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "false");
 });
 it("leaving portal route clears preferences rather than resurrecting old context", () => {

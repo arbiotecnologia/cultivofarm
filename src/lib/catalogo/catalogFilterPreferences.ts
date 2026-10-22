@@ -37,7 +37,10 @@ export function createCatalogFilterMemory() {
       }
       const captured = generation;
       return { initial: { ...filters }, onChange: next => {
-        if (captured === generation && identity !== null && partner !== null) filters = { ...next };
+        if (captured === generation && identity !== null && partner !== null) {
+          filters = { search: next.search, tipo: next.tipo, family: next.family,
+            status: next.status, b2b: next.b2b, sort: next.sort };
+        }
       } };
     },
   };
