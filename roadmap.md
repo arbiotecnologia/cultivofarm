@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 02:29 — correção global fiscal e gates integrais C2
+- [ ] Preparar candidata fiscal Superadmin na plataforma com editor existente, leitores internos read-only, autoridade forte, ativo/histórico, CAS/duplicidade e IBS/CBS fenced; migration/preflight/rollback somente revisão.
+- [ ] Executar montagem C2 integral e rollback/ACL; tornar preflight estrutural assertivo e fresco, validar integração coordenada sem instalar.
+- [ ] Homologação autenticada/JWT/RLS real aguarda revisão/aplicação independente; sem fixtures novas, SQL hosted ou publicação.
+
 ## 22/10 02:26 — fixtures existentes e conferência fiscal
 - [x] Registrar evidência relatada INS-4 químico/Inseticida e SOLO-4 fertilizante/sem rótulo criados por Superadmin no formulário existente; inativos/fora B2B/sem dose/composição/fiscal; NÃO recriar nem modificar.
 - [x] Corrigir aviso falso de famílias indisponíveis para criação pendente seguida da classificação canônica; fluxo existente25/25 testes.
