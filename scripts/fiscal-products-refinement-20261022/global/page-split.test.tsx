@@ -51,4 +51,19 @@ describe("product (global) vs micro (canonical) edit split", () => {
     expect(m.microList.mock.calls.every(([e]) => e === false)).toBe(true);
     expect(m.microProfiles.mock.calls.every(([e]) => e === false)).toBe(true);
   });
+  test("Superadmin platform UX: only global-product copy/counters, no view names or micro counters", () => {
+    m.role = "superadmin"; m.write = true; renderWithProviders(<FiscalProdutos platformGlobal />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Perfis fiscais de produtos globais");
+    expect(screen.getByTestId("fiscal-platform-summary")).toBeInTheDocument();
+    const text = document.body.textContent ?? "";
+    expect(text).not.toMatch(/icrorganism|v_product_fiscal_readiness|v_microorganism/);
+    expect(screen.queryByTestId("micros-com-perfil-proprio")).toBeNull();
+    expect(screen.queryByTestId("micros-sem-perfil-proprio")).toBeNull();
+  });
+  test("tenant mode keeps existing micro summary", () => {
+    m.role = "administrador"; renderWithProviders(<FiscalProdutos />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Perfis Fiscais de Produtos e Microrganismos");
+    expect(screen.getByTestId("micros-sem-perfil-proprio")).toBeInTheDocument();
+    expect(screen.queryByTestId("fiscal-platform-summary")).toBeNull();
+  });
 });
