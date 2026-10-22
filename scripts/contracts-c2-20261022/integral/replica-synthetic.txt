@@ -1,0 +1,12 @@
+auth.jwt/uid/role/email: request.jwt.claims GUC (Supabase-internal bodies not captured; hosted md5 listed in hosted-capture-auth.json)
+FK target stub public.bank_accounts(id): outside captured closure, no other columns/policies
+FK target stub public.commercial_price_rules(id): outside captured closure, no other columns/policies
+FK target stub public.financial_cost_centers(id): outside captured closure, no other columns/policies
+FK target stub public.fiscal_official_sources(id): outside captured closure, no other columns/policies
+FK target stub public.microrganismos(id): outside captured closure, no other columns/policies
+FK target stub public.ordens_servico(id): outside captured closure, no other columns/policies
+FK target stub public.partner_simulations(id): outside captured closure, no other columns/policies
+FK target stub public.produtos(id): outside captured closure, no other columns/policies
+FK target stub public.recurring_financial_templates(id): outside captured closure, no other columns/policies
+FK target stub public.saas_plans(id): outside captured closure, no other columns/policies
+cf_user_guards_v1.state: one singleton row via column defaults (hosted row content not copied)
