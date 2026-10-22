@@ -175,8 +175,12 @@ type EditingTarget =
 export default function FiscalProdutos({ platformGlobal = false }: { platformGlobal?: boolean } = {}) {
   const fiscalAccess = useProductFiscalAccess("product-fiscal-page");
   const { role } = useAuth();
-  const access = platformGlobal ? fiscalAccess.ready && fiscalAccess.canWrite ? "rw" : "none" : getAccessLevel(role, "/configuracoes/fiscal/produtos");
-  const canEdit = access === "rw" && fiscalAccess.canWrite;
+  const routeAccess = getAccessLevel(role, "/configuracoes/fiscal/produtos");
+  const access = platformGlobal ? fiscalAccess.ready && fiscalAccess.canWrite ? "rw" : "none" : routeAccess;
+  // Produto global: somente Superadmin forte na plataforma. Microrganismo: permissão
+  // canônica existente da rota tenant (admin/financeiro rw, gestor r), nunca na plataforma.
+  const canEditProduct = platformGlobal && access === "rw" && fiscalAccess.ready && fiscalAccess.canWrite;
+  const canEditMicro = !platformGlobal && routeAccess === "rw";
   const uiEnabled = FEATURE_FLAGS.fiscalProductProfilesUi === true;
   const emissionLock = FEATURE_FLAGS.fiscalEmissionEnabled === false;
 
@@ -389,7 +393,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
         </CardContent>
       </Card>
 
-      <RegulatorioMicrorganismosSecao />
+      {!platformGlobal && <RegulatorioMicrorganismosSecao />}
 
 
       <Card>
@@ -403,7 +407,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
                 onChange={(e) => { setSearch(e.target.value); setPage(0); }}
                 className="max-w-sm"
               />
-              <Select
+              {!platformGlobal && <Select
                 value={kind}
                 onValueChange={(v) => { setKind(v as EntityKindFilter); setPage(0); }}
               >
@@ -415,7 +419,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
                   <SelectItem value={KIND_PRODUCT}>Produtos</SelectItem>
                   <SelectItem value={KIND_MICRO}>Microrganismos</SelectItem>
                 </SelectContent>
-              </Select>
+              </Select>}
               <Select
                 value={status ?? STATUS_ALL}
                 onValueChange={(v) => { setStatus(v === STATUS_ALL ? null : v); setPage(0); }}
@@ -479,7 +483,8 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
                       r,
                       readinessByProduct,
                       microReadinessByMicro,
-                      canEdit,
+                      canEditProduct,
+                      canEditMicro,
                       readinessUnknown,
                       microProfilesUnknown,
                       microReadinessUnknown,
@@ -539,7 +544,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
           productId={editing.productId}
           displayName={editing.displayName}
           displayCodigo={editing.displayCodigo}
-          canEdit={canEdit}
+          canEdit={canEditProduct}
           onClose={() => setEditing(null)}
         />
       ) : null}
@@ -548,7 +553,7 @@ export default function FiscalProdutos({ platformGlobal = false }: { platformGlo
           microorganismId={editing.microorganismId}
           displayName={editing.displayName}
           displayCodigo={editing.displayCodigo}
-          canEdit={canEdit}
+          canEdit={canEditMicro}
           onClose={() => setEditing(null)}
         />
       ) : null}
@@ -570,7 +575,8 @@ function renderRow(
   r: UnifiedRow,
   readinessByProduct: Map<string, { minimally_classified: boolean | null }>,
   microReadinessByMicro: Map<string, { minimally_classified: boolean | null; profile_status: string | null }>,
-  canEdit: boolean,
+  canEditProduct: boolean,
+  canEditMicro: boolean,
   readinessUnknown: boolean,
   microProfilesUnknown: boolean,
   microReadinessUnknown: boolean,
@@ -608,9 +614,9 @@ function renderRow(
           <Button
             variant="outline" size="sm"
             onClick={() => onEditProduct(p)}
-            aria-label={`${canEdit ? "Editar" : "Ver"} perfil fiscal de ${p.product_nome}`}
+            aria-label={`${canEditProduct ? "Editar" : "Ver"} perfil fiscal de ${p.product_nome}`}
           >
-            {canEdit ? (p.profile_id ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />) : "Ver"}
+            {canEditProduct ? (p.profile_id ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />) : "Ver"}
           </Button>
         </td>
       </tr>
@@ -680,7 +686,7 @@ function renderRow(
       </td>
 
       <td className="p-2 text-right space-x-2">
-        {canEdit ? (
+        {canEditMicro ? (
           <>
             <Button
               variant={own ? "outline" : "default"}
