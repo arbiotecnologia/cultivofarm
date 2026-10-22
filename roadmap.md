@@ -1,5 +1,12 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 01:33 — C2-CAT publicado, dashboard e financeiro próprio
+- [x] Auditor confirmou HEAD318957a2e5f9117a49a365728af421687b22caf1/deploymentafa325c5-7fb8-4461-9d2d-11d47b01f1f4 e UI atualizada;30/30+tsc. UI real teste4 catálogo35itens(11produtos24micros), filtros químicos/adubos funcionam porém vazios: conteúdo não homologado positivo.
+- [ ] Investigar reset/desanexação dos filtros após interação, possível remount monitor, sem polling/reload/alterar lease; não atribuir causa sem reprodução.
+- [ ] Corrigir TS2345 reproduzido no dashboard por campos opcionais Zod com strictNullChecks desabilitado; fronteira validada explícita, typecheck candidato/regressões e promoção local somente após revisão.
+- [ ] Preparar financeiro próprio concreto revisável: inventário LIVE read-only SQL/ACL/RLS/cadeia títulos/parcelas/documentos, contrato/página existentes e negativos; SQL guardado não instalar hosted. Não liberar receitas/custos internos nem total global.
+- [ ] Coordenar multipapel/readers/provisioning/seletor antes de instalar writersC2.1; demais pendências preservadas.
+
 ## 22/10 01:24 — ampliação funcional portal gestor B2B
 - [x] Registrar orientação explícita: acompanhar empresa própria em dashboard/catálogo/financeiro/operações/equipe, sem gestor interno ou Outlet irrestrito; C2-CAT já entregue95738f51, publicação/UI pendentes.
 - [x] Registrar prova externa auditor pós-banco C2-CAT: administradorB cbdc4ef3… projeçãoHTTP200null e catálogo parceiroA403forbidden_partner; teste4 projeçãoHTTP200 catálogo/fichastrue. Não equivale a homologação UI; nenhuma recarga.
