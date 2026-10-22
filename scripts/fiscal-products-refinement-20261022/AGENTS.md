@@ -1,3 +1,4 @@
-- Keep global fiscal SQL and frontend copies review-only until independent promotion; reuse FiscalProdutos and product_fiscal_profiles — prevents a parallel editor or partial authorization rollout.
+- Global fiscal SQL was applied by the auditor and frontend copies promoted to src; never reapply the migration, regenerate copies from build_frontend.py and reuse FiscalProdutos/product_fiscal_profiles — prevents drift and parallel editors.
+- Product edit is global Superadmin-only inside the platform; microorganism edit keeps the canonical route level — prevents regressing tenant micro editors.
 - Global product writes require the real actor, platform_actor_access_ready and Superadmin; internal readers stay read-only, active profiles are separate from immutable history, and IBS/CBS uses the same authority and CAS — prevents tenant writes and sibling RPC bypass.
 - Never certify mocked Auth or reduced PostgreSQL as hosted JWT/RLS/browser proof; fixtures remain untouched — prevents false homologation.
