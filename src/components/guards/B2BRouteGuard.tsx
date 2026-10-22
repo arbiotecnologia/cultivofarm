@@ -1,4 +1,5 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef } from "react";
+import { CatalogFilterMemoryContext, createCatalogFilterMemory } from "@/lib/catalogo/catalogFilterPreferences";
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,9 +18,16 @@ import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
  * Este gate visual não substitui entitlements, RLS ou autorização de cada RPC.
  */
 export function B2BRouteGuard({ children }: { children: ReactNode }) {
-  const { user, loading, roles, authzReady = true } = useAuth();
+  const { user, profile, loading, roles, authzReady = true } = useAuth();
   const own = useMyPartner();
   const location = useLocation();
+  const filters = useRef(createCatalogFilterMemory());
+  // Only preferences cross the existing epoch remount. This never keeps children,
+  // queries, grants or rows mounted during pause. Clear even when children are absent.
+  const filterIdentity = user?.id && profile?.user_id === user.id && profile.organization_id &&
+    location.pathname === "/portal-parceiro/catalogo"
+    ? JSON.stringify([user.id, profile.organization_id, [...roles].sort(), "b2b", roles.length === 1 ? roles[0] : null]) : null;
+  filters.current.bind(filterIdentity, own.ready && !own.isError ? own.data?.id ?? null : undefined);
   const { data, ready, isLoading, isError } = useAvailableContexts();
   // has_b2b_access historically includes the management context. A real B2B
   // context additionally proves the partner binding; management alone cannot.
@@ -76,7 +84,7 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
 
   // Foundation de cache (mesma identidade): boundary esconde/remonta conteúdo
   // sensível conforme a época de autorização. Gate fechado = sem alteração.
-  return <AuthzEpochBoundary>{children}</AuthzEpochBoundary>;
+  return <CatalogFilterMemoryContext.Provider value={filters.current}><AuthzEpochBoundary>{children}</AuthzEpochBoundary></CatalogFilterMemoryContext.Provider>;
 }
 
 export default B2BRouteGuard;

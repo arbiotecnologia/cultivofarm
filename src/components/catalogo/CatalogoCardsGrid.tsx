@@ -18,6 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
 import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
 import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
+import type { CatalogFilterBinding } from "@/lib/catalogo/catalogFilterPreferences";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
 
@@ -34,6 +35,8 @@ export interface CatalogGridSource {
   refetch: () => unknown; isFetching: boolean; scope?: string;
 }
 interface Props {
+  /** Volatile layout-owned preferences; never preserves catalogue rows or open sheets. */
+  filterPreferences?: CatalogFilterBinding;
   source?: CatalogGridSource;
   scope: CatalogoScope;
   /** Mostrar filtros de status da ficha e B2B (admin/interno). Default: true */
@@ -71,15 +74,19 @@ function CatalogGridView({
   actionSlot,
   filterRow,
   fichaOrigem = "protocolos",
+  filterPreferences,
 }: Props & { source: CatalogGridSource }) {
   const { data, isLoading, error, refetch, isFetching } = source;
 
-  const [search, setSearch] = useState("");
-  const [tipo, setTipo] = useState<CatalogTipoFiltro>("todos");
-  const [family, setFamily] = useState<FamilyFilter>("todos");
-  const [status, setStatus] = useState<CatalogStatusFiltro>("todos");
-  const [b2b, setB2b] = useState<"todos" | "sim" | "nao">("todos");
-  const [sort, setSort] = useState<SortKey>("nome_asc");
+  const [search, setSearch] = useState(filterPreferences?.initial.search ?? "");
+  const [tipo, setTipo] = useState<CatalogTipoFiltro>(filterPreferences?.initial.tipo ?? "todos");
+  const [family, setFamily] = useState<FamilyFilter>(filterPreferences?.initial.family ?? "todos");
+  const [status, setStatus] = useState<CatalogStatusFiltro>(filterPreferences?.initial.status ?? "todos");
+  const [b2b, setB2b] = useState<"todos" | "sim" | "nao">(filterPreferences?.initial.b2b ?? "todos");
+  const [sort, setSort] = useState<SortKey>(filterPreferences?.initial.sort ?? "nome_asc");
+  useEffect(() => {
+    filterPreferences?.onChange({ search, tipo, family, status, b2b, sort });
+  }, [search, tipo, family, status, b2b, sort, filterPreferences]);
   const [openMicro, setOpenMicro] = useState<any | null>(null);
   const [openProd, setOpenProd] = useState<any | null>(null);
   const [fichaB2B, setFichaB2B] = useState<{ id: string; tipo: "produto" | "microrganismo" } | null>(null);
