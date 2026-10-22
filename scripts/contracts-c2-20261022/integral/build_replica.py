@@ -43,21 +43,15 @@ for s in sorted(seqs):
     w(f"CREATE SEQUENCE {s};")
 def q(rel):
     return rel if '.' in rel else 'public.' + rel
-# Stub FK targets outside the closure: only referenced key columns, typed from referrer.
+# Context relations outside the closure (FK targets / policy subqueries): exact hosted
+# columns + PK only; their own policies/triggers/ACL are NOT replicated (deny to clients).
+ctx = json.loads((H / 'hosted-capture-context.json').read_text())
+for c in ctx:
+    cols = ', '.join(f'"{n}" {t}' + (' NOT NULL' if nn else '') for n, t, nn in c['cols'])
+    w(f"CREATE TABLE {q(c['r'])} ({cols}{', ' + c['pk'] if c['pk'] else ''});")
+    if c['rls']: w(f"ALTER TABLE {q(c['r'])} ENABLE ROW LEVEL SECURITY;")
+    synthetic.append(f"context relation {q(c['r'])}: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)")
 stubs = {}
-for r in rels:
-    coltype = {c[0]: c[1] for c in r['cols']}
-    for c in r['cons'] or []:
-        if c[1] == 'f' and c[3] not in names:
-            m = re.match(r'FOREIGN KEY \(([^)]*)\) REFERENCES ([^(]+)\(([^)]*)\)', c[2])
-            src = [x.strip().strip('"') for x in m.group(1).split(',')]
-            dst = [x.strip().strip('"') for x in m.group(3).split(',')]
-            st = stubs.setdefault(q(c[3]), {})
-            for s_, d_ in zip(src, dst):
-                st[d_] = coltype[s_]
-for t, cols in sorted(stubs.items()):
-    w(f"CREATE TABLE {t} ({', '.join(f'{k} {v}' for k, v in cols.items())}, PRIMARY KEY ({', '.join(cols)}));")
-    synthetic.append(f'FK target stub {t}({", ".join(cols)}): outside captured closure, no other columns/policies')
 later = []
 for r in rels:
     cols = []

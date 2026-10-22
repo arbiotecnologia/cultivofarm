@@ -1,12 +1,18 @@
 auth.jwt/uid/role/email: request.jwt.claims GUC (Supabase-internal bodies not captured; hosted md5 listed in hosted-capture-auth.json)
-FK target stub public.bank_accounts(id): outside captured closure, no other columns/policies
-FK target stub public.commercial_price_rules(id): outside captured closure, no other columns/policies
-FK target stub public.financial_cost_centers(id): outside captured closure, no other columns/policies
-FK target stub public.fiscal_official_sources(id): outside captured closure, no other columns/policies
-FK target stub public.microrganismos(id): outside captured closure, no other columns/policies
-FK target stub public.ordens_servico(id): outside captured closure, no other columns/policies
-FK target stub public.partner_simulations(id): outside captured closure, no other columns/policies
-FK target stub public.produtos(id): outside captured closure, no other columns/policies
-FK target stub public.recurring_financial_templates(id): outside captured closure, no other columns/policies
-FK target stub public.saas_plans(id): outside captured closure, no other columns/policies
+context relation public.entregas: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.microrganismos: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.ordens_servico: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.produtos: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.bank_accounts: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.commercial_price_rules: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.financial_cost_centers: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.financial_documents: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.financial_receipts: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.financial_report_exports: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.fiscal_invoices: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.fiscal_official_sources: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.partner_simulations: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.payable_payments: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.recurring_financial_templates: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
+context relation public.saas_plans: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
 cf_user_guards_v1.state: one singleton row via column defaults (hosted row content not copied)
