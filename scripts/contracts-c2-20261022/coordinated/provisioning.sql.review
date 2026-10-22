@@ -42,8 +42,7 @@ BEGIN
  snapshot:=jsonb_build_object('partner',partner_snapshot,'clients',snapshot,'roles',to_jsonb(p_roles));
  IF snapshot IS NULL THEN RAISE EXCEPTION 'external_provisioning_forbidden' USING ERRCODE='42501'; END IF;
  RETURN jsonb_build_object('organization_id',org,'snapshot',snapshot);
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION platform_private.b2b_claim_provisioning(p_partner uuid, p_key uuid, p_email text, p_nome text, p_roles app_role[], p_clients uuid[] DEFAULT ARRAY[]::uuid[], p_primary uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -78,8 +77,7 @@ BEGIN
  -- Never renew/reclaim a timed-out lease: Auth may already exist. Reconcile by ID.
  RETURN jsonb_build_object('contract','C2_MULTIPROFILE_V1','external_roles',r.external_roles,'actor_id',r.actor_id,'partner_id',r.partner_id,'readers_ready',true,'provisioning_ready',true,'producer_links_valid','cliente_produtor'=ANY(r.external_roles),'claim_id',r.id,'user_id',r.user_id,'fence',r.fence,'status',r.status,
   'lease_valid',r.lease_until>clock_timestamp(),'acquired',inserted=1,'organization_id',r.organization_id);
-END $function$
-
+END $function$;
 CREATE FUNCTION public.b2b_claim_provisioning(p_partner uuid,p_key uuid,p_email text,p_nome text,p_roles public.app_role[],p_clients uuid[],p_primary uuid) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$ SELECT platform_private.b2b_claim_provisioning(p_partner,p_key,p_email,p_nome,p_roles,p_clients,p_primary); $$;
 REVOKE ALL ON FUNCTION public.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role[],uuid[],uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role[],uuid[],uuid) TO authenticated;
@@ -190,8 +188,7 @@ BEGIN
     VALUES (p_user_id, p_partner_id, p_partner_papel);
   END IF;
 END;
-$function$
-
+$function$;
 CREATE OR REPLACE FUNCTION public.b2b_finish_provisioning(p_claim uuid, p_fence uuid, p_user uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -245,8 +242,7 @@ BEGIN
  VALUES(p_user,clock_timestamp(),NULL);
  UPDATE platform_private.b2b_provisioning_receipts SET status='completed' WHERE id=r.id;
  RETURN jsonb_build_object('success',true,'user_id',p_user,'first_access_pending',true);
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.b2b_prepare_provisioning_compensation(p_claim uuid, p_fence uuid, p_user uuid)
  RETURNS text
  LANGUAGE plpgsql
@@ -266,8 +262,7 @@ BEGIN
  IF r.status='aborted' THEN RETURN 'aborted'; END IF;
  UPDATE platform_private.b2b_provisioning_receipts SET status='compensating' WHERE id=r.id;
  RETURN 'compensating';
-END $function$
-
+END $function$;
 CREATE OR REPLACE FUNCTION public.b2b_complete_provisioning_compensation(p_claim uuid, p_fence uuid, p_user uuid)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -301,5 +296,4 @@ BEGIN
  WHERE id=p_claim AND fence=p_fence AND user_id=p_user AND status='compensating';
  IF NOT FOUND THEN RAISE EXCEPTION 'b2b_provisioning_forbidden' USING ERRCODE='42501'; END IF;
  RETURN true;
-END $function$
-
+END $function$;
