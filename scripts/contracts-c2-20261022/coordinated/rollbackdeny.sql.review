@@ -1,0 +1,5 @@
+-- SECURITY ROLLBACK ONLY: keeps data/history/server filters; never reinstalls singleton authority.
+BEGIN; SET LOCAL lock_timeout='5s';
+REVOKE EXECUTE ON FUNCTION public.link_partner_user(uuid,uuid,text[],text,text,uuid,text), public.b2b_claim_provisioning(uuid,uuid,text,text,public.app_role[],uuid[],uuid) FROM authenticated;
+CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid,p_partner_id uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$SELECT false$$;
+COMMIT;

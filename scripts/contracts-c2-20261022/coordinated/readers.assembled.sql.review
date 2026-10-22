@@ -1,0 +1,280 @@
+-- INACTIVE: applied only in the guarded coordinated assembly.
+CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid,p_partner_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT platform_private.platform_actor_access_ready(p_user_id)
+ AND EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
+ JOIN public.partner_users pu ON pu.user_id=p.user_id
+ JOIN public.partner_accounts pa ON pa.id=pu.partner_id
+ JOIN public.organizations owner ON owner.id=pa.commercial_owner_organization_id
+ WHERE p.user_id=p_user_id AND pa.id=p_partner_id AND p.ativo AND o.ativo AND o.status='ativa'
+ AND owner.ativo AND owner.status='ativa' AND pa.ativo AND pa.deleted_at IS NULL
+ AND p.organization_id=pu.tenant_id AND pu.tenant_id=owner.id
+ AND (o.partner_account_id IS NULL OR o.partner_account_id=pa.id)
+ AND pu.revoked_at IS NULL AND pu.valid_from<=now())
+ AND (SELECT count(*) FROM public.partner_users WHERE user_id=p_user_id)=1
+ AND EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p_user_id AND role IN ('parceiro_b2b','parceiro_b2b_tecnico'))
+ AND NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p_user_id AND role NOT IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor'));
+$$;
+CREATE FUNCTION platform_private.c2_producer_links(p_user uuid,p_org uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT platform_private.platform_actor_access_ready(p_user)
+ AND EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
+ JOIN public.user_clientes uc ON uc.user_id=p.user_id JOIN public.clientes c ON c.id=uc.cliente_id
+ JOIN public.fazendas f ON f.cliente_id=c.id
+ WHERE p.user_id=p_user AND p.organization_id=p_org AND p.ativo AND o.ativo AND o.status='ativa'
+ AND uc.is_active AND uc.revoked_at IS NULL AND uc.valid_from<=now()
+ AND (uc.valid_until IS NULL OR uc.valid_until>=now())
+ AND c.organization_id=p_org AND c.status_cliente='ativo' AND f.organization_id=p_org AND f.ativo);
+$$;
+REVOKE ALL ON FUNCTION platform_private.c2_producer_links(uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION platform_private.c2_producer_links(uuid,uuid) TO authenticated,service_role;
+CREATE OR REPLACE FUNCTION platform_private.b2b_assignment_identity_coherent(p_user uuid,p_partner uuid,p_owner uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT public.is_valid_b2b_partner_user(p_user,p_partner)
+ AND EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_user AND organization_id=p_owner)
+ AND EXISTS(SELECT 1 FROM public.partner_accounts WHERE id=p_partner AND commercial_owner_organization_id=p_owner);
+$$;
+-- Operation-specific role: cumulative technician never overrides manager.
+CREATE OR REPLACE FUNCTION platform_private.b2b_phase1_partner_visible(p_partner uuid,p_technical boolean DEFAULT false)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE s record; u uuid:=auth.uid(); BEGIN
+ IF u IS NULL OR p_partner IS NULL THEN RETURN false; END IF;
+ IF public.is_platform_superadmin(u) THEN RETURN true; END IF;
+ IF EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=u AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor')) THEN
+  RETURN public.is_valid_b2b_partner_user(u,p_partner)
+   AND (public.has_role(u,'parceiro_b2b') OR (p_technical AND public.has_role(u,'parceiro_b2b_tecnico')));
+ END IF;
+ SELECT * INTO s FROM platform_private.b2b_actor_scope(u);
+ RETURN s.profile_ok AND s.partner_valid AND s.org_partner=p_partner;
+END $$;
+-- Legacy scalar is not an authorization source for cumulative identities.
+CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(p_user_id uuid,p_partner_id uuid)
+RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT CASE WHEN public.is_valid_b2b_partner_user(p_user_id,p_partner_id)
+ AND (SELECT count(*) FROM public.user_roles WHERE user_id=p_user_id AND role IN ('parceiro_b2b','parceiro_b2b_tecnico'))=1
+ THEN CASE WHEN public.has_role(p_user_id,'parceiro_b2b') THEN 'parceiro_b2b' ELSE 'parceiro_b2b_tecnico' END END;
+$$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_context()
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE u uuid:=auth.uid(); org uuid; pid uuid; rs text[]; result jsonb; BEGIN
+ org:=public.h15_actor_organization();
+ SELECT partner_id INTO pid FROM public.partner_users WHERE user_id=u;
+ IF NOT public.is_valid_b2b_partner_user(u,pid) THEN RETURN NULL; END IF;
+ SELECT array_agg(role::text ORDER BY role::text) INTO rs FROM public.user_roles WHERE user_id=u;
+ result:=jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,
+ 'organization_id',org,'partner_id',pid,'commercial_owner_organization_id',org,'external_roles',rs,
+ 'role',CASE WHEN 'parceiro_b2b'=ANY(rs) THEN 'parceiro_b2b' ELSE 'parceiro_b2b_tecnico' END,
+ 'papel',CASE WHEN 'parceiro_b2b'=ANY(rs) THEN 'gestor' ELSE 'tecnico' END,'mode','commercial_owner',
+ 'manager', 'parceiro_b2b'=ANY(rs),'technician','parceiro_b2b_tecnico'=ANY(rs),
+ 'producer_links_valid',platform_private.c2_producer_links(u,org),
+ 'profile_stamp',(SELECT updated_at FROM public.profiles WHERE user_id=u),
+ 'link_version',(SELECT version FROM public.partner_users WHERE user_id=u));
+ RETURN result;
+END $$;
+-- Projection body remains the installed C2-CAT body; assembler adds whitelisted
+-- identity/capability fields, never finance or documents.
+CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_partner_projection()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE c jsonb; result jsonb; permitted boolean:=false; catalog boolean:=false; sheets boolean:=false; u uuid:=auth.uid();
+BEGIN
+ c:=platform_private.b2b_commercial_context();
+ IF c IS NULL THEN RETURN NULL; END IF;
+ SELECT jsonb_build_object('id',p.id,'codigo',p.codigo,'razao_social',p.razao_social,
+   'nome_fantasia',p.nome_fantasia,'ativo',p.ativo,'papel',c->>'papel','mode',c->>'mode')
+ INTO result FROM public.partner_accounts p
+ WHERE p.id=(c->>'partner_id')::uuid AND p.ativo IS TRUE AND p.deleted_at IS NULL
+ AND p.commercial_owner_organization_id=(c->>'commercial_owner_organization_id')::uuid;
+ IF result IS NULL THEN RETURN NULL; END IF;
+ -- A commercial client alone is NOT a partner capability. Reuse current B2B
+ -- chain, including singleton role/link validator; add freshness/owner proof.
+ permitted:=COALESCE(platform_private.b2b_phase1_partner_visible((result->>'id')::uuid,true),false)
+  AND EXISTS(SELECT 1 FROM public.partner_users pu
+    JOIN public.partner_accounts pa ON pa.id=pu.partner_id
+    JOIN public.profiles p ON p.user_id=pu.user_id
+    JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id
+    WHERE pu.user_id=u AND pu.partner_id=(result->>'id')::uuid
+      AND pu.revoked_at IS NULL AND pu.valid_from<=now()
+      AND pa.ativo AND pa.deleted_at IS NULL AND o.ativo AND o.status='ativa'
+      AND p.ativo AND p.organization_id=pu.tenant_id AND pu.tenant_id=o.id
+      AND public.is_valid_b2b_partner_user(u,pa.id));
+ IF permitted THEN
+  catalog:=public.has_role(u,'parceiro_b2b') AND EXISTS(
+    SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='catalogo_precos');
+  sheets:=EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='fichas_tecnicas');
+ END IF;
+ RETURN result||jsonb_build_object('contract',c->>'contract','actor_id',c->'actor_id','tenant_id',c->'tenant_id','external_roles',c->'external_roles','manager',c->'manager','technician',c->'technician','producer_links_valid',c->'producer_links_valid')||jsonb_build_object('capabilities',jsonb_build_object('contract','C2_CAT_V1',
+   'catalog_read',catalog,'sheets_read',sheets));
+END $function$
+
+CREATE OR REPLACE FUNCTION public.get_my_available_portal_contexts()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE u uuid:=auth.uid(); org uuid; management boolean:=false; tech boolean:=false; partner boolean:=false; scopes record; contexts text[]:=ARRAY[]::text[]; pref text; last_ctx text; skip boolean:=false; def text;
+BEGIN
+ IF u IS NULL OR NOT platform_private.platform_actor_access_ready(u) THEN
+  RETURN jsonb_build_object('available_contexts',contexts,'default_context',NULL,'must_select_context',false,'has_b2b_access',false,'has_technical_access',false,'is_admin',false,'preferred_context',NULL,'skip_context_selector',false);
+ END IF;
+ org:=public.h15_actor_organization();
+ IF org IS NULL THEN RETURN jsonb_build_object('available_contexts',contexts,'default_context',NULL,'must_select_context',false,'has_b2b_access',false,'has_technical_access',false,'is_admin',false,'preferred_context',NULL,'skip_context_selector',false); END IF;
+ SELECT EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=u AND r.role IN ('administrador','gestor')),
+ EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=u AND r.role IN ('tecnico_agronomo','consultor_tecnico','aplicador')) INTO management,tech;
+ partner:=platform_private.b2b_commercial_context() IS NOT NULL;
+ IF management THEN contexts:=array_append(contexts,'admin'); END IF;
+ IF partner AND public.has_role(u,'parceiro_b2b') THEN contexts:=array_append(contexts,'b2b'); END IF;
+ IF partner AND public.has_role(u,'parceiro_b2b_tecnico') THEN tech:=true; END IF;
+ IF public.has_role(u,'cliente_produtor') AND platform_private.c2_producer_links(u,org) THEN contexts:=array_append(contexts,'producer'); END IF;
+ IF tech THEN contexts:=array_append(contexts,'technical'); END IF;
+ SELECT preferred_context,last_context,skip_context_selector INTO pref,last_ctx,skip FROM public.user_access_preferences WHERE user_id=u;
+ IF pref IS NOT NULL AND pref=ANY(contexts) THEN def:=pref;
+ ELSIF last_ctx IS NOT NULL AND last_ctx=ANY(contexts) THEN def:=last_ctx;
+ ELSIF cardinality(contexts)=1 THEN def:=contexts[1]; END IF;
+ IF pref IS NULL OR NOT(pref=ANY(contexts)) THEN pref:=NULL; skip:=false; END IF;
+ RETURN jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,'partner_id',(platform_private.b2b_commercial_context()->>'partner_id')::uuid,'ready',true,'producer_links_valid',platform_private.c2_producer_links(u,org),'available_contexts',contexts,'default_context',def,'must_select_context',cardinality(contexts)>1 AND NOT COALESCE(skip,false),
+ 'has_b2b_access',management OR (partner AND public.has_role(u,'parceiro_b2b')),'has_technical_access',management OR tech,'is_admin',management,
+ 'preferred_context',pref,'skip_context_selector',COALESCE(skip,false));
+END $function$
+
+CREATE OR REPLACE FUNCTION public.set_my_context_preference(p_context text, p_remember boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_previous text;
+  v_action text;
+  v_available jsonb;
+BEGIN
+  IF v_uid IS NULL OR NOT platform_private.platform_actor_access_ready(v_uid) OR public.h15_actor_organization() IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
+  IF p_context IS NULL OR p_context NOT IN ('b2b','technical','producer','admin') THEN
+    RAISE EXCEPTION 'invalid context %', p_context;
+  END IF;
+
+  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'c2_guard_unavailable'; END IF;
+  v_available := public.get_my_available_portal_contexts();
+
+  IF NOT (v_available->'available_contexts' ? p_context) THEN
+    -- Grava auditoria e retorna erro em JSON (sem RAISE).
+    -- Sem exception, sem rollback: o INSERT persiste.
+    INSERT INTO public.user_context_access_logs (
+      user_id, context_code, action, previous_context, metadata
+    ) VALUES (
+      v_uid, p_context, 'access_denied', NULL,
+      jsonb_build_object('reason','context_not_available')
+    );
+
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error_code', 'context_not_available',
+      'context', p_context
+    );
+  END IF;
+
+  SELECT last_context INTO v_previous
+  FROM public.user_access_preferences
+  WHERE user_id = v_uid;
+
+  -- Upsert com semântica correta para p_remember=false (limpar preferência)
+  INSERT INTO public.user_access_preferences (
+    user_id, last_context, preferred_context, skip_context_selector
+  ) VALUES (
+    v_uid,
+    p_context,
+    CASE WHEN p_remember THEN p_context ELSE NULL END,
+    COALESCE(p_remember, false)
+  )
+  ON CONFLICT (user_id) DO UPDATE
+    SET last_context = EXCLUDED.last_context,
+        preferred_context = CASE
+          WHEN p_remember THEN EXCLUDED.last_context
+          ELSE NULL
+        END,
+        skip_context_selector = COALESCE(p_remember, false),
+        updated_at = now();
+
+  v_action := CASE
+    WHEN v_previous IS NULL THEN 'context_selected'
+    WHEN v_previous = p_context THEN 'context_selected'
+    ELSE 'context_switched'
+  END;
+
+  INSERT INTO public.user_context_access_logs (
+    user_id, context_code, action, previous_context, metadata
+  ) VALUES (
+    v_uid, p_context, v_action, v_previous,
+    jsonb_build_object('remember', COALESCE(p_remember, false))
+  );
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'context', p_context,
+    'remembered', COALESCE(p_remember, false)
+  );
+END;
+$function$
+
+CREATE OR REPLACE FUNCTION public.register_my_login_redirect_secure(p_context text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_available jsonb;
+BEGIN
+  IF v_uid IS NULL OR NOT platform_private.platform_actor_access_ready(v_uid) OR public.h15_actor_organization() IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
+  IF p_context IS NULL OR p_context NOT IN ('b2b','technical','producer','admin') THEN
+    RAISE EXCEPTION 'invalid context %', p_context;
+  END IF;
+
+  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'c2_guard_unavailable'; END IF;
+  v_available := public.get_my_available_portal_contexts();
+
+  IF NOT (v_available->'available_contexts' ? p_context) THEN
+    INSERT INTO public.user_context_access_logs (
+      user_id, context_code, action, previous_context, metadata
+    ) VALUES (
+      v_uid, p_context, 'access_denied', NULL,
+      jsonb_build_object('reason','context_not_available','source','login_redirect')
+    );
+
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error_code', 'context_not_available',
+      'context', p_context
+    );
+  END IF;
+
+  -- Metadata fixa; frontend não escolhe.
+  INSERT INTO public.user_context_access_logs (
+    user_id, context_code, action, previous_context, metadata
+  ) VALUES (
+    v_uid, p_context, 'login_redirect', NULL,
+    jsonb_build_object('source','auto')
+  );
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'context', p_context,
+    'action', 'login_redirect'
+  );
+END;
+$function$
+
