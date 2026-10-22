@@ -15,4 +15,4 @@ context relation public.partner_simulations: hosted columns/PK only; policies/tr
 context relation public.payable_payments: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
 context relation public.recurring_financial_templates: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
 context relation public.saas_plans: hosted columns/PK only; policies/triggers/ACL not replicated (clients denied)
-cf_user_guards_v1.state: one singleton row via column defaults (hosted row content not copied)
+cf_user_guards_v1.state: one synthetic singleton row (true,0) (hosted row content not copied)

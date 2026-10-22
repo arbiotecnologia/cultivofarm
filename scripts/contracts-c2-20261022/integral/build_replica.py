@@ -114,8 +114,8 @@ for sig, f in sorted(fns.items()):
             w(f"GRANT EXECUTE ON FUNCTION {sigq} TO {grantee or 'PUBLIC'};")
 for s in sorted(seqs):
     w(f"GRANT USAGE ON SEQUENCE {s} TO authenticated, service_role;")
-w("INSERT INTO cf_user_guards_v1.state DEFAULT VALUES;" if any(r['r'] == 'cf_user_guards_v1.state' for r in rels) else '')
-synthetic.append('cf_user_guards_v1.state: one singleton row via column defaults (hosted row content not copied)')
+w("INSERT INTO cf_user_guards_v1.state(singleton,revision) VALUES (true,0);" if any(r['r'] == 'cf_user_guards_v1.state' for r in rels) else '')
+synthetic.append('cf_user_guards_v1.state: one synthetic singleton row (true,0) (hosted row content not copied)')
 (H / 'replica.sql').write_text('\n'.join(out) + '\n')
 (H / 'replica-synthetic.txt').write_text('\n'.join(synthetic) + '\n')
 print(len(out), 'statements;', len(stubs), 'stubs;', len(fns), 'functions;', len(rels), 'relations')

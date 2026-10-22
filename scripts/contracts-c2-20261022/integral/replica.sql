@@ -7680,4 +7680,4 @@ REVOKE ALL ON FUNCTION public.validate_partner_user_client_fn() FROM PUBLIC, pos
 GRANT EXECUTE ON FUNCTION public.validate_partner_user_client_fn() TO postgres;
 GRANT EXECUTE ON FUNCTION public.validate_partner_user_client_fn() TO service_role;
 GRANT USAGE ON SEQUENCE public.partner_orders_numero_seq TO authenticated, service_role;
-INSERT INTO cf_user_guards_v1.state DEFAULT VALUES;
+INSERT INTO cf_user_guards_v1.state(singleton,revision) VALUES (true,0);
