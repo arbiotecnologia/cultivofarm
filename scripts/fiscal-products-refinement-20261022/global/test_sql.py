@@ -83,7 +83,7 @@ try:
  def editor_writer(_):return run(actor(1)+direct).splitlines()[-1]
  with concurrent.futures.ThreadPoolExecutor(2) as pool:outcomes=list(pool.map(editor_writer,[1,2]))
  assert sorted(outcomes)==['0','1'],outcomes;checks.append('editor concurrent same token: one success, one zero-row conflict')
- check(actor(1)+direct if False else direct,'0')
+ assert run(actor(1)+direct).splitlines()[-1]=='0';checks.append('sequential stale editor token conflicts')
  check(f"SELECT updated_at>'{editor_token}'::timestamptz FROM product_fiscal_profiles WHERE product_id='{p}' AND is_active;")
  check('SELECT count(*)=1 AND bool_and(new_token>old_token) FROM fiscal_test_audit;')
  # Aborted write rolls back both the server token and the AFTER audit.
