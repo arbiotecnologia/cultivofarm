@@ -1,0 +1,3 @@
+- Keep global fiscal SQL and frontend copies review-only until independent promotion; reuse FiscalProdutos and product_fiscal_profiles — prevents a parallel editor or partial authorization rollout.
+- Global product writes require the real actor, platform_actor_access_ready and Superadmin; internal readers stay read-only, active profiles are separate from immutable history, and IBS/CBS uses the same authority and CAS — prevents tenant writes and sibling RPC bypass.
+- Never certify mocked Auth or reduced PostgreSQL as hosted JWT/RLS/browser proof; fixtures remain untouched — prevents false homologation.

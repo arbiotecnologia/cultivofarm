@@ -1,0 +1,77 @@
+-- INACTIVE, REVIEW ONLY. Canonical swzpzcwiasxmjutrmvkm; no hosted execution.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='30s';
+-- Structural guard is embedded by assemble_sql.py, before any mutation.
+DO $$ BEGIN
+ IF md5(pg_get_functiondef('platform_private.platform_actor_access_ready(uuid)'::regprocedure))<>'048249c0c2106c3761e26eacb8d0de84'
+ OR md5(pg_get_functiondef('public.is_platform_superadmin(uuid)'::regprocedure))<>'3dfe79d976821244d9b7a7f893d765f2'
+ OR md5(pg_get_functiondef('public.rpc_fiscal_product_ibs_cbs_get(uuid)'::regprocedure))<>'5f72915265c4b3b43a0c550cefa534a7'
+ OR md5(pg_get_functiondef('public.rpc_fiscal_product_ibs_cbs_save(uuid,jsonb,text)'::regprocedure))<>'af1cdef76219d2dcde4788eecd0edbdc'
+ THEN RAISE EXCEPTION 'global_fiscal_function_drift'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_indexes WHERE schemaname='public' AND tablename='product_fiscal_profiles' AND indexname='ux_product_fiscal_profiles_active' AND indexdef='CREATE UNIQUE INDEX ux_product_fiscal_profiles_active ON public.product_fiscal_profiles USING btree (product_id) WHERE (is_active = true)') THEN RAISE EXCEPTION 'global_fiscal_active_index_drift'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.product_fiscal_profiles'::regclass AND attname IN ('organization_id','tenant_id') AND NOT attisdropped) THEN RAISE EXCEPTION 'global_fiscal_model_drift'; END IF;
+END $$;
+-- Serialize with existing role/profile mutation gates; never use caller GUC authority.
+LOCK TABLE public.product_fiscal_profiles IN SHARE ROW EXCLUSIVE MODE;
+CREATE FUNCTION platform_private.global_product_fiscal_write_ready()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT auth.uid() IS NOT NULL AND platform_private.platform_actor_access_ready(auth.uid()) AND public.is_platform_superadmin(auth.uid());
+$$;
+CREATE FUNCTION platform_private.global_product_fiscal_read_ready()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT auth.uid() IS NOT NULL AND platform_private.platform_actor_access_ready(auth.uid()) AND
+ (public.is_platform_superadmin(auth.uid()) OR platform_private.has_role(auth.uid(),'administrador') OR platform_private.has_role(auth.uid(),'gestor') OR platform_private.has_role(auth.uid(),'financeiro'));
+$$;
+REVOKE ALL ON FUNCTION platform_private.global_product_fiscal_write_ready(),platform_private.global_product_fiscal_read_ready() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION platform_private.global_product_fiscal_write_ready(),platform_private.global_product_fiscal_read_ready() TO authenticated;
+-- Policies remain narrow to this GLOBAL table, no tenant operations changed.
+ALTER POLICY product_fiscal_profiles_read ON public.product_fiscal_profiles USING(platform_private.global_product_fiscal_read_ready());
+ALTER POLICY product_fiscal_profiles_insert ON public.product_fiscal_profiles WITH CHECK(platform_private.global_product_fiscal_write_ready());
+ALTER POLICY product_fiscal_profiles_update ON public.product_fiscal_profiles USING(platform_private.global_product_fiscal_write_ready()) WITH CHECK(platform_private.global_product_fiscal_write_ready());
+CREATE FUNCTION platform_private.global_product_fiscal_before_write()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF NOT platform_private.global_product_fiscal_write_ready() THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF TG_OP='UPDATE' THEN
+  IF OLD.is_active IS NOT TRUE THEN RAISE EXCEPTION 'FISCAL_HISTORY_IMMUTABLE' USING ERRCODE='42501'; END IF;
+  IF NEW.product_id IS DISTINCT FROM OLD.product_id OR NEW.id IS DISTINCT FROM OLD.id THEN RAISE EXCEPTION 'FISCAL_IDENTITY_IMMUTABLE'; END IF;
+  NEW.updated_at:=greatest(clock_timestamp(),OLD.updated_at+interval '1 microsecond');
+ ELSE NEW.updated_at:=clock_timestamp(); END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.global_product_fiscal_before_write() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER a00_global_product_fiscal_gate BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate();
+CREATE TRIGGER a10_global_product_fiscal_authorize BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION platform_private.global_product_fiscal_before_write();
+CREATE OR REPLACE FUNCTION public.rpc_fiscal_product_ibs_cbs_get(p_product_id uuid)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' AS $$
+DECLARE cfg jsonb; rev text; BEGIN
+ IF NOT platform_private.global_product_fiscal_read_ready() THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ SELECT ibs_cbs_configuration,updated_at::text INTO cfg,rev FROM public.product_fiscal_profiles WHERE product_id=p_product_id AND is_active IS TRUE;
+ RETURN jsonb_build_object('configuration',COALESCE(cfg,'{}'::jsonb),'revision',COALESCE(rev,''),'exists',rev IS NOT NULL);
+END $$;
+CREATE FUNCTION platform_private.global_product_fiscal_ibs_save(p_product_id uuid,payload jsonb,expected_revision text)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE current_row public.product_fiscal_profiles; result public.product_fiscal_profiles; BEGIN
+ IF NOT platform_private.global_product_fiscal_write_ready() THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ -- Lock the same existing gate BEFORE the row; role revokers use this gate too.
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_GATE_UNAVAILABLE'; END IF;
+ IF NOT platform_private.global_product_fiscal_write_ready() THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ PERFORM public._fiscal_rtc_assert_payload(payload,'item');
+ SELECT * INTO current_row FROM public.product_fiscal_profiles WHERE product_id=p_product_id AND is_active IS TRUE FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_ITEM_NOT_FOUND' USING ERRCODE='P0002'; END IF;
+ IF expected_revision IS NULL OR expected_revision<>current_row.updated_at::text THEN RAISE EXCEPTION 'FISCAL_CONFLICT' USING ERRCODE='40001'; END IF;
+ UPDATE public.product_fiscal_profiles SET ibs_cbs_configuration=payload WHERE id=current_row.id AND product_id=p_product_id AND is_active IS TRUE AND updated_at=current_row.updated_at RETURNING * INTO result;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_CONFLICT' USING ERRCODE='40001'; END IF;
+ RETURN jsonb_build_object('configuration',result.ibs_cbs_configuration,'revision',result.updated_at::text);
+END $$;
+REVOKE ALL ON FUNCTION platform_private.global_product_fiscal_ibs_save(uuid,jsonb,text) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION platform_private.global_product_fiscal_ibs_save(uuid,jsonb,text) TO authenticated;
+CREATE OR REPLACE FUNCTION public.rpc_fiscal_product_ibs_cbs_save(p_product_id uuid,payload jsonb,expected_revision text DEFAULT NULL)
+RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
+ SELECT platform_private.global_product_fiscal_ibs_save(p_product_id,payload,expected_revision);
+$$;
+REVOKE ALL ON FUNCTION public.rpc_fiscal_product_ibs_cbs_get(uuid),public.rpc_fiscal_product_ibs_cbs_save(uuid,jsonb,text) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_fiscal_product_ibs_cbs_get(uuid),public.rpc_fiscal_product_ibs_cbs_save(uuid,jsonb,text) TO authenticated;
+COMMIT;
