@@ -37,7 +37,18 @@ function blockOf(toml: string, name: string): string | null {
   return match[1].split("\n").filter((l) => !l.trimStart().startsWith("#")).join("\n");
 }
 
-const pos = (needle: string) => INDEX.indexOf(needle);
+const pos = (needle: string) => {
+  const index = INDEX.indexOf(needle);
+  expect(index, `marcador obrigatório: ${needle}`).toBeGreaterThanOrEqual(0);
+  return index;
+};
+
+function selftestBlock() {
+  const start = pos('if (action === "xsd-selftest")');
+  const end = pos('if (action === "download")');
+  expect(end).toBeGreaterThan(start);
+  return INDEX.slice(start, end);
+}
 
 describe("fiscal-xml-engine — ordem dos gates do xsd-selftest", () => {
   it("selftest aparece após CORS, método, Bearer, gate canônico e parse do body", () => {
@@ -47,7 +58,10 @@ describe("fiscal-xml-engine — ordem dos gates do xsd-selftest", () => {
     expect(pos('req.method !== "POST"')).toBeLessThan(selftest);
     expect(pos('authHeader?.startsWith("Bearer ")')).toBeLessThan(selftest);
     expect(pos("isCanonicalSupabaseUrl(supabaseUrl)")).toBeLessThan(selftest);
-    expect(pos("await req.json()")).toBeLessThan(selftest);
+    const read = pos("await readBounded(req.body, 16 * 1024, req.signal, enteredAt + 5_000)");
+    const parse = pos("JSON.parse(new TextDecoder");
+    expect(read).toBeLessThan(parse);
+    expect(parse).toBeLessThan(selftest);
   });
 
   it("claims e perfil fiscal só são exigidos depois do ramo do selftest", () => {
@@ -57,7 +71,8 @@ describe("fiscal-xml-engine — ordem dos gates do xsd-selftest", () => {
   });
 
   it("body é parseado exatamente uma vez (sem parse duplo)", () => {
-    expect(INDEX.match(/await req\.json\(\)/g)?.length).toBe(1);
+    expect(INDEX.match(/\bJSON\.parse\s*\(/g) ?? []).toHaveLength(1);
+    expect(INDEX).not.toMatch(/\breq\.json\s*\(/);
   });
 
   it("download e generate permanecem roteados após os gates de identidade", () => {
@@ -69,33 +84,23 @@ describe("fiscal-xml-engine — ordem dos gates do xsd-selftest", () => {
 
 describe("fiscal-xml-engine — comportamento fail-closed do selftest", () => {
   it("chama o validador XSD real com o XML mínimo deliberadamente inválido", () => {
-    const selftestBlock = INDEX.slice(
-      pos('action === "xsd-selftest"'),
-      pos("Cliente do usuário: toda autorização"),
-    );
-    expect(selftestBlock).toContain("validateAgainstOfficialXsd(XSD_SELFTEST_XML)");
+    expect(selftestBlock()).toContain("validateAgainstOfficialXsd(XSD_SELFTEST_XML)");
     const probe = INDEX.match(/const XSD_SELFTEST_XML =[\s\S]*?';\n/);
     expect(probe).toBeTruthy();
     expect(probe?.[0]).toContain("xsdSelfTestProbe");
   });
 
   it("só considera sucesso quando valid=false e há ao menos um erro XSD", () => {
-    const selftestBlock = INDEX.slice(
-      pos('action === "xsd-selftest"'),
-      pos("authed.auth.getClaims"),
-    );
-    expect(selftestBlock).toContain("probe.valid === false");
-    expect(selftestBlock).toContain("(probe.issues?.length ?? 0) > 0");
+    const block = selftestBlock();
+    expect(block).toContain("probe.valid === false");
+    expect(block).toContain("(probe.issues?.length ?? 0) > 0");
   });
 
   it("ausência/erro do bundle responde 500 com XSD_BUNDLE_UNAVAILABLE", () => {
-    const selftestBlock = INDEX.slice(
-      pos('action === "xsd-selftest"'),
-      pos("authed.auth.getClaims"),
-    );
-    expect(selftestBlock.match(/XSD_BUNDLE_UNAVAILABLE/g)?.length).toBe(4);
-    expect(selftestBlock).toContain("catch");
-    expect(selftestBlock).toContain("500");
+    const block = selftestBlock();
+    expect(block.match(/XSD_BUNDLE_UNAVAILABLE/g)?.length).toBe(4);
+    expect(block).toContain("catch");
+    expect(block).toContain("500");
   });
 
   it("inspeciona o bundle (somente leitura) antes de executar o validador", () => {
@@ -107,29 +112,23 @@ describe("fiscal-xml-engine — comportamento fail-closed do selftest", () => {
   });
 
   it("diagnóstico é enum sanitizado, sem mensagem ou stack crus", () => {
-    const selftestBlock = INDEX.slice(
-      pos('action === "xsd-selftest"'),
-      pos("Cliente do usuário: toda autorização"),
-    );
-    expect(selftestBlock).toContain('diagnostic: "XSD_BUNDLE_CHECK_FAILED"');
-    expect(selftestBlock).toContain('diagnostic: "XSD_VALIDATOR_MEMORY_OR_WASM_FAILED"');
-    expect(selftestBlock).not.toMatch(/catch\s*\(\s*\w+\s*\)/);
-    expect(selftestBlock).not.toMatch(/\.stack|String\(err|err\.message|\bmessage:\s*\w/);
+    const block = selftestBlock();
+    expect(block).toContain('diagnostic: "XSD_BUNDLE_CHECK_FAILED"');
+    expect(block).toContain('diagnostic: "XSD_VALIDATOR_MEMORY_OR_WASM_FAILED"');
+    expect(block).not.toMatch(/catch\s*\(\s*\w+\s*\)/);
+    expect(block).not.toMatch(/\.stack|String\(err|err\.message|\bmessage:\s*\w/);
   });
 
   it("sucesso responde apenas metadados não sensíveis", () => {
-    const selftestBlock = INDEX.slice(
-      pos('action === "xsd-selftest"'),
-      pos("authed.auth.getClaims"),
-    );
-    expect(selftestBlock).toContain("ok: true");
-    expect(selftestBlock).toContain("validator: probe.validator");
-    expect(selftestBlock).toContain("package: probe.package");
-    expect(selftestBlock).toContain("schema: probe.schema");
-    expect(selftestBlock).toContain("loadedFiles: XSD_SELFTEST_EXPECTED_FILES");
+    const block = selftestBlock();
+    expect(block).toContain("ok: true");
+    expect(block).toContain("validator: probe.validator");
+    expect(block).toContain("package: probe.package");
+    expect(block).toContain("schema: probe.schema");
+    expect(block).toContain("loadedFiles: XSD_SELFTEST_EXPECTED_FILES");
     // Nenhum conteúdo cru vazando no ramo de sucesso.
-    expect(selftestBlock).not.toContain("probe.issues[");
-    expect(selftestBlock).not.toContain("XSD_SELFTEST_XML.slice");
+    expect(block).not.toContain("probe.issues[");
+    expect(block).not.toContain("XSD_SELFTEST_XML.slice");
   });
 
   it("contagem de arquivos vem do bundle real (5 XSDs)", () => {
@@ -140,11 +139,7 @@ describe("fiscal-xml-engine — comportamento fail-closed do selftest", () => {
   });
 
   it("ramo do selftest não toca banco nem Storage", () => {
-    const selftestBlock = INDEX.slice(
-      pos('action === "xsd-selftest"'),
-      pos("Cliente do usuário: toda autorização"),
-    );
-    expect(selftestBlock).not.toMatch(/\.from\(|\.storage\.|createClient|\.rpc\(/);
+    expect(selftestBlock()).not.toMatch(/\.from\(|\.storage\.|createClient|\.rpc\(/);
   });
 });
 

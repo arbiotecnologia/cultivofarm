@@ -55,15 +55,32 @@ describe("Fiscal safety regression contracts (not remote E2E)", () => {
   });
 
   it("requires the internal fiscal profile in the edge layer too", () => {
-    expect(xmlEngine).toContain('authed.rpc("fn_fiscal_can_operate"');
-    // xsd-selftest (diagnóstico somente leitura) é a única ação antes do perfil;
-    // todo o roteamento que acessa banco/Storage exige o perfil fiscal antes.
-    const selftest = xmlEngine.indexOf('action === "xsd-selftest"');
-    const canOperate = xmlEngine.indexOf('authed.rpc("fn_fiscal_can_operate"');
-    expect(selftest).toBeGreaterThan(-1);
-    expect(canOperate).toBeGreaterThan(selftest);
-    expect(canOperate).toBeLessThan(xmlEngine.indexOf('action === "download"'));
-    expect(canOperate).toBeLessThan(xmlEngine.indexOf('action !== "generate"'));
+    const position = (source: string, marker: string) => {
+      const index = source.indexOf(marker);
+      expect(index, `marcador obrigatório: ${marker}`).toBeGreaterThanOrEqual(0);
+      return index;
+    };
+    const selftest = position(xmlEngine, 'if (action === "xsd-selftest")');
+    const downloadStart = position(xmlEngine, 'if (action === "download")');
+    const generateStart = position(xmlEngine, "// Cliente do usuário: toda autorização");
+    expect(downloadStart).toBeGreaterThan(selftest);
+    expect(generateStart).toBeGreaterThan(downloadStart);
+    // Cada ramo tem seu próprio gate fiscal antes de acessar dados/Storage.
+    const download = xmlEngine.slice(downloadStart, generateStart);
+    const profile = position(download, 'authed.rpc("fn_fiscal_can_operate"');
+    const visible = position(download, 'authed.from("fiscal_xml_runs")');
+    const ownership = position(download, 'admin.rpc("h15_service_actor_run_access"');
+    const bytes = position(download, "admin.storage.from(BUCKET).download(");
+    expect(profile).toBeLessThan(visible);
+    expect(visible).toBeLessThan(ownership);
+    expect(ownership).toBeLessThan(bytes);
+    expect(download).toContain("if (operate.error || operate.data !== true) return null");
+    expect(download).toContain('if (!first) return deny(403, "permission_denied")');
+    const generate = xmlEngine.slice(generateStart);
+    const generateProfile = position(generate, 'authed.rpc("fn_fiscal_can_operate"');
+    expect(generateProfile).toBeLessThan(position(generate, 'action !== "generate"'));
+    expect(generateProfile).toBeLessThan(position(generate, 'authed.rpc("rpc_fiscal_xml_prepare_v1"'));
+    expect(generate).toContain("if (canOperate.error || canOperate.data !== true)");
     expect(edge).toContain('authed.rpc("fn_fiscal_can_operate"');
   });
 

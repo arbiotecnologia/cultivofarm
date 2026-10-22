@@ -47,6 +47,14 @@ const INDEX = readFileSync(
   "utf8",
 );
 
+function selftestBlock() {
+  const start = INDEX.indexOf('if (action === "xsd-selftest")');
+  const end = INDEX.indexOf('if (action === "download")');
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(end).toBeGreaterThan(start);
+  return INDEX.slice(start, end);
+}
+
 const INVALID_XML =
   '<?xml version="1.0" encoding="UTF-8"?>' +
   '<xsdSelfTestProbe xmlns="http://www.portalfiscal.inf.br/nfe">invalid-root</xsdSelfTestProbe>';
@@ -178,10 +186,7 @@ describe("grafo da função — sem worker_threads e sem vazamento de erro cru",
   });
 
   it("erro interno não expõe stack, caminho ou conteúdo", () => {
-    const block = INDEX.slice(
-      INDEX.indexOf('action === "xsd-selftest"'),
-      INDEX.indexOf("Cliente do usuário: toda autorização"),
-    );
+    const block = selftestBlock();
     expect(block).not.toMatch(/\.stack|String\(err|err\.message/);
     expect(block).toContain('error: "XSD_BUNDLE_UNAVAILABLE"');
   });
@@ -225,10 +230,7 @@ describe("grafo da função — sem worker_threads e sem vazamento de erro cru",
   });
 
   it("selftest não devolve texto do validador em nenhuma ramificação", () => {
-    const block = INDEX.slice(
-      INDEX.indexOf('action === "xsd-selftest"'),
-      INDEX.indexOf("Cliente do usuário: toda autorização"),
-    );
+    const block = selftestBlock();
     // Só se permite usar `issues?.length` (contagem booleana); nenhuma
     // ramificação extrai texto de issue, stack, erro ou diagnóstico.
     expect(block).not.toMatch(/issue\.(message|code)|String\(|\.stack|err\.|JSON\.stringify/);
