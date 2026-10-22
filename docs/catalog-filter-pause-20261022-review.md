@@ -7,6 +7,8 @@ Inspeção: App monta AuthProvider→Routes→B2BRouteGuard→AuthzEpochBoundary
 
 Memória agora em CatalogFilterPreferencesProvider abaixo AuthProvider/acima Routes no App existente, sem RPC/queries/dados/capabilities/storage/timers. Guard/layout consomem a mesma memória, identidade compartilhada ator/tenant/roles/portal; undefined preserva durante consulta pendente, null explícito limpa vínculo. Rota/identidade/tenant/contexto alterados limpam mesmo sem children. Regressores Layout/Grid usam boundary real (mock removido); teste adicional provider/monitor reais verifica nó desconectado, confirmação automática e pausa/revalidação existente, sem novo polling. Transporte continua sintético, não homologação JWT/RLS/UI teste4.
 
+Resultado local01:59:75/75 testes runtime (30 integração monitor/provider reais,13 filtros/layout/grid,16 pedidos,11 famílias,5 guards) e30/30 C2-CAT PASS. Types runtime afetado e candidatas financeiras/C2 via tsgo PASS; build automático OK. Teste monitor falhou antes ao perder preferência na confirmação automática, depois passou distinguindo undefined/null. Teste ausência de vínculo utiliza null explícito do contrato real; continua limpando. Nenhuma sessão hosted ou publicação executada; homologação real continua ABERTA.
+
 Rollback frontend retira somente a nova montagem de preferências e binding correspondente, nunca SQL/lease/guards/cache fail-closed ou hook pedidos; voltará a perder filtros, não a mostrar dados protegidos. Financeiro/multipapel continuam INATIVOS e não foram alterados nesta correção.
 
 ## Causa comprovada pelo código e regressão
