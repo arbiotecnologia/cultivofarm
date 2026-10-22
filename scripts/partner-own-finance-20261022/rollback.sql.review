@@ -3,4 +3,10 @@ BEGIN;
 SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='30s';
 REVOKE EXECUTE ON FUNCTION public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid) FROM PUBLIC,anon,authenticated;
 REVOKE EXECUTE ON FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) FROM PUBLIC,anon,authenticated;
+-- Projection must no longer advertise finance after deny. Server owner helper
+-- remains callable only to evaluate denied readiness, never titles or documents.
+CREATE OR REPLACE FUNCTION platform_private.b2b_own_obligations_owner(p_partner_id uuid)
+RETURNS uuid LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $function$
+BEGIN RAISE EXCEPTION 'own_finance_disabled' USING ERRCODE='42501'; END $function$;
+REVOKE ALL ON FUNCTION platform_private.b2b_own_obligations_owner(uuid) FROM PUBLIC,anon;
 COMMIT;
