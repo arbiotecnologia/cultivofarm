@@ -55,5 +55,5 @@ export function useMyCommercialOrders(partnerId: string | null) {
       return parseOwnCommercialOrders(data, partnerId);
     },
   });
-  return { ...result, data: ready ? result.data : undefined, ready };
+  return { ...result, data: ready && !result.isError ? result.data : undefined, ready };
 }
