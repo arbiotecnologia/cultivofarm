@@ -1,5 +1,13 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 02:00 — sequência expressa: filtros → financeiro/multiperfil → fixtures/fiscal
+- [x] Registrar orientação sem interromper filtros: auditor reproduziu 1 falha/13 com ready=true/pending=true/dataundefined; os 12 anteriores passavam. Correção local6be91d43 reforça ambas chamadas com ausência somente em sucesso/null e adiciona janela pendente e troca tenant/papel; NÃO equivale a homologação real.
+- [ ] Revisão independente/UI real dos filtros após nova correção: bloqueio permanece na homologação, não ampliar lease/proteções nem preservar rows.
+- [ ] Prosseguir financeiro/multiperfil coordenados, ainda candidatos inativos até revisão; novos objetivos abaixo não substituem esses recortes.
+- [ ] Na sequência, cadastrar químicos e fertilizantes/adubos FICTÍCIOS pelo fluxo canônico, identificados TESTE/SEM USO COMERCIAL, para positivos/negativos perfil/tenant/catálogo/recomendação/OS; sem uso real, dados fiscais ou agronômicos inventados. Nenhuma fixture criada nesta rodada.
+- [ ] Preparar candidata fiscal na página existente /configuracoes/fiscal/produtos: reutilizar FiscalProdutos unificada, IbsCbsItemCard e product_fiscal_profiles por IDproduto; confirmar fontes/contrato vigente antes de alterar, sem cadastro paralelo.
+- [ ] Consultar docs oficiais IBS/CBS/NF-e e regime/operação antes da implementação; classificação NCM/CEST/CFOP/tributação ausente vira pendência e bloqueia prontidão. Cobrir tenant, concorrência e rascunho/pronto; sem alterar perfis reais, emitir notas reais, SQL hosted automático ou publicação.
+
 ## 22/10 01:46 — filtros durante pausa e coordenação dos candidatos
 - [ ] Homologação filtros REABERTA01:56: auditor observou reset real bundle index-kXPMojJ0.js/HEAD50e3f902; atualização da publicação confirmada posteriormente pelo auditor, filtros NÃO homologados. Correção local02:00 move memória abaixo AuthProvider/acima Routes; ambas chamadas só emitem null em query success com data null, nunca pendência/erro.63/63+30/30/types PASS; aguarda revisão e UI real, financeiro/multipapel inativos.
 - [x] Complemento01:53: hook useMyCommercialOrders nega cache após refetch em erro; regressão real do hook reproduziu falha antes. Filtros e candidatos financeiro/multipapel preservados, sem SQL hosted/publicação ou mudança de entitlements.
