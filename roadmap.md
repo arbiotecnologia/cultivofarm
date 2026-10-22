@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 01:46 — filtros durante pausa e coordenação dos candidatos
+- [ ] Corrigir reset reproduzido por desmontagem OwnerCatalog/Grid durante !partnerReady e alteração do escopo de renovação; preservar apenas filtros por ator/tenant/parceiro/portal, nunca dados/autoridade/lease.
+- [ ] Regressões pausa/retomada/renovação, mudança de ator/tenant/contexto e rollback frontend; sem SQL hosted, reload ou publicação.
+- [ ] Coordenar capacidade/menu/entitlements financeiros e readers/provisionamento/seletor C2.1 em pacotes inativos separados, sem abrir runtime.
+
 ## 22/10 01:33 — C2-CAT publicado, dashboard e financeiro próprio
 - [x] Auditor confirmou HEAD318957a2e5f9117a49a365728af421687b22caf1/deploymentafa325c5-7fb8-4461-9d2d-11d47b01f1f4 e UI atualizada;30/30+tsc. UI real teste4 catálogo35itens(11produtos24micros), filtros químicos/adubos funcionam porém vazios: conteúdo não homologado positivo.
 - [ ] Investigar reset/desanexação dos filtros após interação, possível remount monitor, sem polling/reload/alterar lease; não atribuir causa sem reprodução.

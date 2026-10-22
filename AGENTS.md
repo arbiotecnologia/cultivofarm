@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Owner catalogue filter preferences are volatile layout-local and identity/tenant/partner/portal scoped; pause/renewal preserves only filters, never protected rows or authority — prevents remount resets without extending access.
 - Partner own-finance reviews follow their directory AGENTS.md; obligation projections never expose supplier-internal balances or enable documents/writes — preserves financial scope.
 - Manager own-dashboard candidates follow their directory AGENTS.md and reuse only the existing own-order read; no full dashboard/financial mounts — prevents supplier-internal disclosure.
 - C2-CAT owner routes require canonical read capabilities and mount only catalog/grid or sheets, never NovoPedido; C2.1 writers remain inactive until coordinated readers/provisioning — prevents catalogue access from enabling payment/cart channels.
