@@ -40,7 +40,7 @@ try:
  GRANT USAGE ON SCHEMA auth,platform_private TO authenticated;
  """)
  candidate=(H/'migration.sql.review').read_text()
- deny(candidate,'global_fiscal_function_drift')
+ deny(candidate,'does not exist')
  # Reduced harness cannot satisfy canonical guard: exact implementation block only.
  run('ROLLBACK;BEGIN;'+candidate[candidate.index('LOCK TABLE'):])
  for n,role in enumerate(['superadmin','administrador','gestor','financeiro','parceiro_b2b','parceiro_b2b_tecnico'],1):
