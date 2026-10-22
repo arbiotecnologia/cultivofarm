@@ -2,13 +2,15 @@
 
 ## 22/10 02:13 — continuação coordenada autorizada
 - [x] Registrar homologação específica dos filtros pelo auditor: HEAD3b030e4/deployment05e50d06/bundleDesBQeTv; Químicos+busca preservados em r1s→r5g, sem reload. Renovação token/revogação integral ainda pendentes.
-- [ ] Completar/testar candidata multiperfil concreta: claim/finish/compensação/Edge fora deploy, readers/preference/guards/monitor/selector, preflight triggers/constraints e rollback deny.
-- [ ] Refinamento fiscal revisável na FiscalProdutos/hook/validação existentes após fontes oficiais; rascunho incompleto não é pronto NF-e, sem classificação/default inventados.
+- [x] Implementar candidata concreta claim/finish/compensação, Edge fora deploy e patch coordenado8arquivos: 19PG com triggers capturados+49PG readers/lifecycle+9Deno+11Vitest. Preflight estrutural16relações e rollbackfamily deny-only preparados; runtime multiperfil inalterado.
+- [ ] Gate C2 NO-GO: montagem integral/rollback/ACL, guard assertivo estrutural fresco, integração real selector/monitor/cadastro/MobileLayout e typecheck candidato completo; NÃO instalar/publicar até revisão auditor.
+- [x] Refinamento fiscal revisável em FiscalProdutos/hook/validação existentes após NTs oficiais2025.002v1.52/2026.002v1.11;53/53testes, build automáticoOK; rascunho incompleto não é NF-e pronta, sem classificação/default inventados. Revisão scripts/fiscal-products-refinement-20261022/README.md.
+- [ ] Homologação fiscal UI autenticada e typecheck independente: auditor; nenhuma NF-e/fixture criada. Refinamento não certifica RTC/operação final.
 - [ ] Fixtures humano-autorizadas aguardam auditor/Superadmin no fluxo canônico; nenhum DML hosted pelo agente. Financeiro/documentos permanecem inativos/fechados.
 
 ## 22/10 02:00 — sequência expressa: filtros → financeiro/multiperfil → fixtures/fiscal
 - [x] Registrar orientação sem interromper filtros: auditor reproduziu 1 falha/13 com ready=true/pending=true/dataundefined; os 12 anteriores passavam. Correção local6be91d43 reforça ambas chamadas com ausência somente em sucesso/null e adiciona janela pendente e troca tenant/papel; NÃO equivale a homologação real.
-- [ ] Revisão independente/UI real dos filtros após nova correção: bloqueio permanece na homologação, não ampliar lease/proteções nem preservar rows.
+- [x] Homologação específica filtros substituída pelo resultado auditor02:13: Químicos+busca preservados sem reload; renovação token/revogação integral seguem abertas.
 - [ ] Prosseguir financeiro/multiperfil coordenados, ainda candidatos inativos até revisão; novos objetivos abaixo não substituem esses recortes.
 - [ ] Na sequência, cadastrar químicos e fertilizantes/adubos FICTÍCIOS pelo fluxo canônico, identificados TESTE/SEM USO COMERCIAL, para positivos/negativos perfil/tenant/catálogo/recomendação/OS; sem uso real, dados fiscais ou agronômicos inventados. Nenhuma fixture criada nesta rodada.
 - [ ] Preparar candidata fiscal na página existente /configuracoes/fiscal/produtos: reutilizar FiscalProdutos unificada, IbsCbsItemCard e product_fiscal_profiles por IDproduto; confirmar fontes/contrato vigente antes de alterar, sem cadastro paralelo.

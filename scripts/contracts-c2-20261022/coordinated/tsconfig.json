@@ -2,7 +2,7 @@
   "extends": "../../../tsconfig.app.json",
   "include": ["frontend"],
   "compilerOptions": {
-    "paths": { "@/*": ["../../../src/*"] },
+    "paths": { "@/*": ["./frontend/runtime-copies/src/*", "../../../src/*"] },
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   }
 }
