@@ -32,7 +32,7 @@
   {
     "path": "src/hooks/useFiscalRtc.ts",
     "baseline_sha256": "4b2b89456733e00a31fa1bcd05ff3bbf478c1015bf335aa6405cddc4980d4a25",
-    "candidate_sha256": "6620ae00c2ebd119d852e3ce50fce10e1a5f5c86cbc04c895b23cb4bdc6ce3c2"
+    "candidate_sha256": "568cb3511032dd9fed087f80ccdb1d9379367c21501356bd5031060c244c8264"
   },
   {
     "path": "src/components/fiscal/IbsCbsItemCard.tsx",
