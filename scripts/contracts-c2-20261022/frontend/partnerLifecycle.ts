@@ -5,7 +5,9 @@ export type LifecycleInput = {
   partnerId: string; userId: string; roles: Capability[]; action: LifecycleAction;
   expected: string; key: string; reason: string;
 };
-export type LifecycleState = { version: string; state: { roles: Capability[]; link: { revoked_at: string | null } | null }; history: { at: string; reason: string; action: string }[] };
+export type HistoryCursor = { at: string; id: string };
+export type AuditState = { roles: Capability[]; link: { partner_id: string; valid_from: string; revoked_at: string | null; version: number } | null };
+export type LifecycleState = { version: string; state: { roles: Capability[]; link: { revoked_at: string | null } | null }; history: { id: string; at: string; actor_id: string; reason: string; action: string; before: AuditState; after: AuditState }[]; next_cursor: HistoryCursor | null };
 export interface LifecycleClient {
   rpc(name: string, args: Record<string, unknown>): {
     abortSignal(signal: AbortSignal): PromiseLike<{ data: unknown; error: unknown }>;

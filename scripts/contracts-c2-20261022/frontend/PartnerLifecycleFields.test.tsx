@@ -18,7 +18,7 @@ function mount() {
 beforeEach(() => {
   cleanup(); state.scope = "actor-A"; state.ready = true; state.version = "a".repeat(32); state.roles = ["parceiro_b2b"]; state.conflict = false;
   state.rpc.mockReset().mockImplementation((name: string, args: Record<string, unknown>) => ({ abortSignal: async () => {
-    if (name === "get_partner_user_lifecycle") return { data: { version: state.version, state: { roles: [...state.roles], link: { revoked_at: null } }, history: [] }, error: null };
+    if (name === "get_partner_user_lifecycle") return { data: { version: state.version, state: { roles: [...state.roles], link: { revoked_at: null } }, history: [], next_cursor: null }, error: null };
     if (state.conflict) return { data: null, error: { code: "40001" } };
     state.roles = args.p_roles as string[]; state.version = "b".repeat(32);
     return { data: { ok: true, user_id: userId, partner_id: partnerId, action: args.p_action, reader_activation: false, version: state.version }, error: null };
