@@ -84,8 +84,9 @@ vi.mock("@/components/fiscal/IbsCbsItemCard", () => ({
 }));
 
 import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
-const fiscalFence = vi.hoisted(() => ({ ready: true, scope: "A/T", capture: () => () => fiscalFence.ready && fiscalFence.scope === "A/T" }));
+const fiscalFence = vi.hoisted(() => ({ ready: true, canWrite: true, scope: "A/T", capture: () => () => fiscalFence.ready && fiscalFence.scope === "A/T" }));
 vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => fiscalFence }));
+vi.mock("@/hooks/useProductFiscalAccess", () => ({ useProductFiscalAccess: () => fiscalFence }));
 
 const PRODUCT_A = {
   product_id: "prod-A", product_nome: "Bio-A Comercial", product_codigo: "BIO-A",
@@ -110,7 +111,7 @@ const MICRO_OWN_PROFILE = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.assign(fiscalFence, { ready: true, scope: "A/T" });
+  Object.assign(fiscalFence, { ready: true, canWrite: true, scope: "A/T" });
   mockUseProductFiscalProfile.mockReturnValue({ data: null, isLoading: false, isFetching: false, isError: false, refetch: vi.fn() });
   mockUseAuth.mockReturnValue({ role: "administrador" });
   mockUseProductFiscalList.mockReturnValue({
@@ -142,7 +143,8 @@ describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21
   test("existing product drawer saves an empty draft without guessed tax codes", async () => {
     const mutateAsync = vi.fn().mockResolvedValue({});
     mockUseSaveProductFiscalProfile.mockReturnValue({ mutateAsync, isPending: false });
-    renderWithProviders(<FiscalProdutos />);
+    mockUseAuth.mockReturnValue({ role: "superadmin" });
+    renderWithProviders(<FiscalProdutos platformGlobal />);
     fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" }));
     fireEvent.submit(screen.getByRole("form", { name: "Formulário de perfil fiscal" }));
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
@@ -153,8 +155,13 @@ describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21
   });
   test("paused actor cannot submit existing product form", () => {
     const mutateAsync = vi.fn(); mockUseSaveProductFiscalProfile.mockReturnValue({ mutateAsync, isPending: false });
-    fiscalFence.ready = false; renderWithProviders(<FiscalProdutos />);
+    mockUseAuth.mockReturnValue({ role: "superadmin" });
+    const view = renderWithProviders(<FiscalProdutos platformGlobal />);
     fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" }));
+    fireEvent.click(screen.getByRole("button", { name: /Cancelar|Fechar/ }));
+    fiscalFence.ready = false; view.rerender(<FiscalProdutos platformGlobal />);
+    // Paused Superadmin: platform tab fails closed, no edit entry point remains.
+    expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
     expect(screen.queryByRole("form", { name: "Formulário de perfil fiscal" })).toBeNull();
     expect(mutateAsync).not.toHaveBeenCalled();
   });
@@ -168,6 +175,13 @@ describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21
     expect(within(row).getByTestId("badge-vinculo-opcional")).toBeInTheDocument();
     // Não existe mais badge de "produto fiscal não associado".
     expect(within(row).queryByTestId("badge-nao-associado")).not.toBeInTheDocument();
+  });
+
+  test("admin (rota tenant): produto global somente leitura, microrganismo segue editável", () => {
+    renderWithProviders(<FiscalProdutos />);
+    expect(screen.getByRole("button", { name: "Ver perfil fiscal de Bio-A Comercial" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
+    expect(screen.getAllByTestId("btn-editar-perfil-micro").length).toBeGreaterThan(0);
   });
 
   test("microrganismo SEM perfil próprio mostra 'Perfil fiscal pendente' e ação Criar perfil fiscal", () => {

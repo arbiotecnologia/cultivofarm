@@ -8,10 +8,16 @@ vi.mock("@/hooks/useStorageAccessScope",()=>({useStorageAccessScope:(resource:st
  const scope=JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource]);
  return {ready:state.ready,scope,capture:()=>()=>state.ready&&scope===JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource])};
 }}));
+// Global product hooks use the product-specific fence (Superadmin canonical write); same scope semantics.
+vi.mock("@/hooks/useProductFiscalAccess",()=>({useProductFiscalAccess:(resource:string)=>{
+ const scope=JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource]);
+ return {ready:state.ready,canWrite:state.ready,scope,capture:()=>()=>state.ready&&scope===JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource])};
+}}));
 vi.mock("@/integrations/supabase/client",()=>({supabase:{from:(...a:unknown[])=>state.from(...a)}}));
 let client:QueryClient;
 function wrapper({children}:{children:React.ReactNode}){return <QueryClientProvider client={client}>{children}</QueryClientProvider>}
-const row={id:"profile",product_id:"product",updated_at:"2026-10-22T00:00:00Z",ncm:null};
+// Only the ACTIVE global profile is an editable CAS target (history is immutable).
+const row={id:"profile",product_id:"product",is_active:true,updated_at:"2026-10-22T00:00:00Z",ncm:null};
 beforeEach(()=>{
  state.actor="A";state.tenant="A";state.epoch=0;state.ready=true;vi.clearAllMocks();
  client=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});
@@ -28,7 +34,7 @@ describe("fiscal product canonical hook fences",()=>{
   const query=client.getQueryCache().getAll().find(q=>q.queryKey[2]==="profile");
   expect(query?.queryKey.slice(0,4)).toEqual(["fiscal","product-profiles","profile","product"]);
   expect(JSON.parse(String(query?.queryKey.at(-2)))).toEqual(["A","A",0,true,"portal-query-actor"]);
-  expect(String(query?.queryKey.at(-1))).toContain('portal:');
+  expect(JSON.parse(String(query?.queryKey.at(-1)))).toEqual(["A","A",0,true,"product-fiscal-read"]);
  });
  it("confirmed save invalidates only matching actor scope, never foreign cache",async()=>{
   const actorScope=JSON.stringify(["A","A",0,true,"portal-query-actor"]);

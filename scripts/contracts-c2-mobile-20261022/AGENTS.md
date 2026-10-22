@@ -1,0 +1,2 @@
+- Keep this MobileLayout candidate inactive; promote only together with the C2 readers that emit the canonical "producer" context — the current runtime reader drops it and producers would lose /app.
+- Mode, menus and access derive only from the fresh canonical projection; raw roles never grant producer mode and errors never fall back to roles; administrador remains the sole explicit bypass, only after a successful projection — prevents stale or self-granted portals.

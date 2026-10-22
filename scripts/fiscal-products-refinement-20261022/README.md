@@ -70,3 +70,11 @@ Os registros anteriores descrevem o runtime/achados daquela rodada; a correção
 - Em `platformGlobal`: `RegulatorioMicrorganismosSecao` desmontada, seletor Tipo (Todos/Produtos/Microrganismos) oculto, drawer micro já fechado, consultas micro desabilitadas; reutiliza o editor de PRODUTOS globais sem iniciar fluxos de empresa/micro.
 - `build_frontend.py` regenera as cópias de forma determinística (igual à edição conferida). Novo `page-split.test.tsx` 5/5: admin/financeiro produto só "Ver" + micro editável + seção regulatória; gestor tudo leitura; interno com capacidade espúria ainda não edita produto fora da plataforma; Superadmin na plataforma só produtos, sem seção/seletor/micro e com consultas micro desabilitadas. Total candidato Vitest 15/15; SQL 50/50 inalterado.
 - Typecheck integral das cópias regeneradas deve ser repetido pelo auditor (cópias mudaram desde o PASS anterior). Teste runtime atual que espera admin editar produto mudará apenas na promoção.
+
+## Promoção runtime 02:59 — frontend fiscal revisado
+
+- SQL `global_product_fiscal_guard_cas` aplicada pelo AUDITOR via apply_migration em `swzpzcwiasxmjutrmvkm` (revisão 3c5d3c27, guards 38f43281 PASS; postflight: 2 triggers novos + audit preservado, `acquire_gate` intacto, anon_save=false, direct_gate=false; advisors sem novos achados). **Não reaplicada** pelo agente; fixtures INS-4/SOLO-4 continuam com 0 perfis.
+- 8 cópias promovidas para `src/` byte-exatas após driftcheck (todas `baseline_ok`). Financeiro e C2 permanecem inativos.
+- Testes legados ajustados: `fase3_20.unified_list.ui.test.tsx` — edição de produto agora no modo plataforma/Superadmin; admin na rota tenant vê produto só "Ver" e micro editável; Superadmin pausado não tem entrada de edição. `productFiscalProfiles.session.test.tsx` — fence fiscal de produto, alvo ativo `is_active:true`, chave com escopo `product-fiscal-read`.
+- `src/test/fiscal`: 1932 passam; 6 falhas restantes são preexistentes e fora do recorte (Edge `fiscal-xml-engine` XSD selftest e `transportPersistenceSafety` edge layer). Build OK.
+- `fn_fiscal_company_crt()` (revisada pelo auditor) lê só `h15_actor_organization`: Superadmin sem CRT permanece pendente e nunca vê "pronto NF-e". Sem publicação até revisão do diff final.

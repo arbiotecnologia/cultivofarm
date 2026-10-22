@@ -12,7 +12,7 @@
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
-import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/cultivofarm.types";
 import {
@@ -87,6 +87,8 @@ export function useProductFiscalList(
   params: ListParams,
   options: { enabled?: boolean } = {},
 ) {
+  const request = useProductFiscalAccess("product-fiscal-read");
+  const actor = useProductFiscalAccess("portal-query-actor");
   const enabled = options.enabled ?? true;
   const result = useScopedPortalQuery<ListResult>({
     queryKey: PRODUCT_FISCAL_KEYS.list(params),
@@ -110,7 +112,9 @@ export function useProductFiscalList(
             "id, nome, codigo, product_fiscal_profiles!inner(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
             { count: "exact" },
           )
+          .eq("product_fiscal_profiles.is_active", true)
           .eq("product_fiscal_profiles.profile_status", params.status as string)
+          .eq("product_fiscal_profiles.is_active", true)
           .order("nome", { ascending: true })
           .range(from, to);
         if (safeTerm) {
@@ -126,6 +130,7 @@ export function useProductFiscalList(
             "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
             { count: "exact" },
           )
+          .eq("product_fiscal_profiles.is_active", true)
           .order("nome", { ascending: true })
           .range(from, to);
         if (safeTerm) {
@@ -167,7 +172,7 @@ export function useProductFiscalList(
 
       return { items, total: count ?? items.length, statuses };
     },
-  });
+  }, { request, actor });
   return { ...result, data: result.ready && !result.isError ? result.data : undefined };
 }
 
@@ -176,6 +181,8 @@ export function useProductFiscalReadiness(
   productIds: string[],
   options: { enabled?: boolean } = {},
 ) {
+  const request = useProductFiscalAccess("product-fiscal-read");
+  const actor = useProductFiscalAccess("portal-query-actor");
   const enabled = (options.enabled ?? true) && productIds.length > 0;
   const result = useScopedPortalQuery<ReadinessRow[]>({
     queryKey: PRODUCT_FISCAL_KEYS.readiness(productIds),
@@ -191,7 +198,7 @@ export function useProductFiscalReadiness(
       }
       return data ?? [];
     },
-  });
+  }, { request, actor });
   return { ...result, data: result.ready && !result.isError ? result.data : undefined };
 }
 
@@ -210,6 +217,8 @@ export function useProductFiscalListByIds(
   productIds: string[],
   options: { enabled?: boolean } = {},
 ) {
+  const request = useProductFiscalAccess("product-fiscal-read");
+  const actor = useProductFiscalAccess("portal-query-actor");
   const enabled = (options.enabled ?? true) && productIds.length > 0;
   const result = useScopedPortalQuery<ProductListItem[]>({
     queryKey: PRODUCT_FISCAL_KEYS.byIds(productIds),
@@ -220,6 +229,7 @@ export function useProductFiscalListByIds(
         .select(
           "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
         )
+        .eq("product_fiscal_profiles.is_active", true)
         .in("id", productIds as any);
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
@@ -245,7 +255,7 @@ export function useProductFiscalListByIds(
         };
       });
     },
-  });
+  }, { request, actor });
   return { ...result, data: result.ready && !result.isError ? result.data : undefined };
 }
 
@@ -253,6 +263,8 @@ export function useProductFiscalProfile(
   productId: string | null,
   options: { enabled?: boolean } = {},
 ) {
+  const request = useProductFiscalAccess("product-fiscal-read");
+  const actor = useProductFiscalAccess("portal-query-actor");
   const enabled = (options.enabled ?? true) && !!productId;
   const result = useScopedPortalQuery<ProductFiscalRow | null>({
     queryKey: [...PRODUCT_FISCAL_KEYS.root, "profile", productId] as const,
@@ -263,6 +275,7 @@ export function useProductFiscalProfile(
         .from("product_fiscal_profiles")
         .select("*")
         .eq("product_id", productId)
+        .eq("is_active", true)
         .maybeSingle();
       if (error) {
         if (isPermissionError(error)) throw new Error("permission_denied");
@@ -270,7 +283,7 @@ export function useProductFiscalProfile(
       }
       return data ?? null;
     },
-  });
+  }, { request, actor });
   return { ...result, data: result.ready && !result.isError ? result.data : undefined };
 }
 
@@ -283,8 +296,8 @@ export class OptimisticConflictError extends Error {
 
 export function useSaveProductFiscalProfile() {
   const qc = useQueryClient();
-  const fence = useStorageAccessScope("product-fiscal-save");
-  const actor = useStorageAccessScope("portal-query-actor");
+  const fence = useProductFiscalAccess("product-fiscal-save");
+  const actor = useProductFiscalAccess("portal-query-actor");
   return useMutation<
     ProductFiscalRow,
     Error,
@@ -306,14 +319,16 @@ export function useSaveProductFiscalProfile() {
         check();
       };
       check();
+      if (!fence.canWrite) throw new Error("permission_denied");
       values = productFiscalFormSchema.parse(values);
-      if (!productId || (current && (current.product_id !== productId || !current.id || !current.updated_at))) throw new Error("fiscal_target_changed");
+      if (!productId || (current && (current.product_id !== productId || !current.id || !current.updated_at || current.is_active !== true))) throw new Error("fiscal_target_changed");
       if (!current) {
         // Verificação prévia: perfil pode existir de outra sessão.
         const existing = await (supabase as any)
           .from("product_fiscal_profiles")
           .select("id")
           .eq("product_id", productId)
+        .eq("is_active", true)
           .maybeSingle();
         check();
         if (existing.error) {
@@ -345,6 +360,7 @@ export function useSaveProductFiscalProfile() {
       const { data, error } = await (supabase as any)
         .from("product_fiscal_profiles")
         .update(payload as any)
+        .eq("is_active", true)
         .eq("id", current.id)
         .eq("product_id", current.product_id)
         .eq("updated_at", current.updated_at)

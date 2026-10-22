@@ -127,8 +127,10 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/configuracoes/fiscal/empresa": {
     administrador: "rw", gestor: "r", financeiro: "r",
   },
-  // Fase Fiscal 3.2 — Perfis Fiscais de Produtos. Admin e Financeiro
-  // editam; Gestor somente lê. Demais perfis: bloqueado por URL.
+  // Rota unificada: nível canônico preservado para o editor de microrganismos
+  // (RLS microorganism_fiscal_profiles_write: admin OU financeiro; gestor lê).
+  // Perfis de PRODUTO são globais: na página o editor de produto é separado
+  // (canEditProduct) e só o Superadmin forte edita, dentro de /plataforma.
   "/configuracoes/fiscal/produtos": {
     administrador: "rw", financeiro: "rw", gestor: "r",
   },
