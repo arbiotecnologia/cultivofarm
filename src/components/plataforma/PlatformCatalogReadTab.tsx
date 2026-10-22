@@ -16,6 +16,7 @@ import { PlatformCatalogMetadataDialog } from "@/components/plataforma/PlatformC
 import { PlatformCatalogB2BDialog } from "@/components/plataforma/PlatformCatalogB2BDialog";
 import { PlatformCatalogFamilyDialog } from "@/components/plataforma/PlatformCatalogFamilyDialog";
 import { PlatformCatalogCompositionDialog } from "@/components/plataforma/PlatformCatalogCompositionDialog";
+import { PlatformCatalogLabelsPanel } from "@/components/plataforma/PlatformCatalogLabelsPanel";
 import { CATALOG_TABS, CLASS_LABEL, FAMILY_LABEL, parseCatalogView, parseReview,
   type FamilyTarget, type ProductFamily, type ReviewFilter } from "@/lib/catalogo/platformCatalogFamily";
 import { labelDisplayName, useCatalogLabelNames } from "@/lib/catalogo/catalogLabelDisplay";
@@ -39,6 +40,7 @@ export function PlatformCatalogReadTab() {
 /** Quatro abas globais (ordem fixa) + Cadastros de apoio; estado em query param, sem rota paralela. */
 function CatalogTabs({ scope }: { scope: string }) {
   const [params, setParams] = useSearchParams();
+  const [labelsOpen, setLabelsOpen] = useState(false);
   const view = parseCatalogView(params.get("catalogo"));
   const review = parseReview(params.get("revisao"));
   const update = (patch: Record<string, string | null>) => setParams((prev) => {
@@ -61,8 +63,11 @@ function CatalogTabs({ scope }: { scope: string }) {
       <span className="text-muted-foreground">Cadastros de apoio:</span>
       <Button variant={view === "culturas" ? "secondary" : "outline"} size="sm" className="min-h-10"
         aria-pressed={view === "culturas"} onClick={() => update({ catalogo: "culturas" })}>Culturas</Button>
+      <Button variant={labelsOpen ? "secondary" : "outline"} size="sm" className="min-h-10"
+        aria-pressed={labelsOpen} onClick={() => setLabelsOpen((v) => !v)}>Rótulos por família</Button>
     </nav>
     {view === "culturas" && <PlatformCatalogEntityPanel kind="cultura" scope={scope} />}
+    {labelsOpen && <PlatformCatalogLabelsPanel scope={scope} />}
   </div>;
 }
 
