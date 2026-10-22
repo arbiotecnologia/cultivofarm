@@ -1,6 +1,7 @@
 -- =============================================================================
 -- CANDIDATA REVISÁVEL v2 — cadastro canônico de rótulos por família (21/10/2026)
--- NÃO APLICADA. Destino único: ref swzpzcwiasxmjutrmvkm, confirmado por operador
+-- APLICADA pelo auditor como catalog_family_labels_canonical_20261021 (com a correção
+-- independente da whitelist/guard md5 de auditoria registrada aqui; NÃO reaplicar). Destino único: ref swzpzcwiasxmjutrmvkm, confirmado por operador
 -- aprovado. Transacional, fail-closed. Único DML: semente dos 7 rótulos atuais.
 -- Não altera preços, composição, fabricação, RLS de produtos, papéis ou sessões.
 -- v2 (revisão independente): lock consistente na validação (FOR KEY SHARE),
@@ -45,6 +46,15 @@ BEGIN
     AND c.conname = 'produtos_classe_catalogo_coerente_check';
   IF v_check IS DISTINCT FROM '0ae66545cef182ce716ee3958ef634b6' THEN
     RAISE EXCEPTION 'catalog_labels_check_baseline_drift';
+  END IF;
+  -- Correção independente do auditor (aplicada): CHECK de auditoria EXATO do baseline,
+  -- para que a whitelist reescrita preserve TODAS as operações existentes.
+  SELECT pg_catalog.md5(pg_catalog.pg_get_constraintdef(c.oid)) INTO v_check
+  FROM pg_catalog.pg_constraint c
+  WHERE c.conrelid = 'public.catalog_platform_admin_audit'::pg_catalog.regclass
+    AND c.conname = 'catalog_platform_admin_audit_operation_check';
+  IF v_check IS DISTINCT FROM 'a62259c75c05f0f0c6be34a387b483e9' THEN
+    RAISE EXCEPTION 'catalog_labels_audit_check_baseline_drift';
   END IF;
 END $$;
 
@@ -385,7 +395,7 @@ ALTER TABLE public.catalog_platform_admin_audit ADD CONSTRAINT catalog_platform_
     'create_global_microorganism','update_global_microorganism','set_global_microorganism_status',
     'create_global_culture','update_global_culture','set_global_culture_status',
     'create_global_volume','update_global_volume','set_global_volume_status',
-    'set_global_b2b_enabled','set_global_product_family',
+    'set_global_b2b_enabled','set_global_product_family','set_global_product_composition',
     'create_catalog_label','update_catalog_label','set_catalog_label_active'));
 
 COMMIT;
