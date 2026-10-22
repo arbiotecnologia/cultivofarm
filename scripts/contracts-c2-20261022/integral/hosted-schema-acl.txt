@@ -1,0 +1,5 @@
+auth|supabase_admin|{supabase_admin=UC/supabase_admin,anon=U/supabase_admin,authenticated=U/supabase_admin,service_role=U/supabase_admin,supabase_auth_admin=UC/supabase_admin,dashboard_user=UC/supabase_admin,postgres=U/supabase_admin}
+cf_user_guards_v1|postgres|{postgres=UC/postgres}
+finance_private|postgres|{postgres=UC/postgres,authenticated=U/postgres}
+platform_private|postgres|{postgres=UC/postgres,authenticated=U/postgres}
+public|pg_database_owner|{pg_database_owner=UC/pg_database_owner,=U/pg_database_owner,postgres=U/pg_database_owner,anon=U/pg_database_owner,authenticated=U/pg_database_owner,service_role=U/pg_database_owner}

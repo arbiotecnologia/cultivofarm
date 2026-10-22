@@ -1,0 +1,5 @@
+{
+ "platform_private.b2b_commercial_context()": "2f1063f00281c4ca78dcebaab81a9446|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres",
+ "platform_private.b2b_commercial_partner_projection()": "3351e3c6a193e566dddc86780e58d830|{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}|postgres",
+ "public.is_valid_b2b_partner_user(uuid,uuid)": "0bb0dea04be8ca84c66db7ca6329876c|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}|postgres"
+}

@@ -1,0 +1,110 @@
+[
+ {
+  "path": "src/components/comercial/OwnerFinance.tsx",
+  "package": "finance-multiprofile",
+  "baseline_sha256": null,
+  "candidate_sha256": "20c6cb58411c92bb2d953c81164ebdb2d1f311163abed3927ef233848479f03f"
+ },
+ {
+  "path": "src/components/configuracoes/PartnerLifecycleFields.tsx",
+  "package": "c2.1-admin",
+  "baseline_sha256": null,
+  "candidate_sha256": "ce4e6f53a19eb822c17ac3f9e20f09ee0ef2fb0dbe95fb7c96c880c214ea9208"
+ },
+ {
+  "path": "src/components/guards/AppPortalGuard.tsx",
+  "package": "c2-coordinated",
+  "baseline_sha256": "422f89c85218c90b4cee0a0da3c3bb9bee562c71f6ebcfdea195ea050f02d183",
+  "candidate_sha256": "deef50a7a14b51e323226d13fb74f6c40debbdb3e06f2a7910b0a3475c4ea050"
+ },
+ {
+  "path": "src/components/guards/B2BRouteGuard.tsx",
+  "package": "c2-coordinated",
+  "baseline_sha256": "9f2324b39e374a3c0e64b3295c743ecb3e9a43cd136680e22a78e5ec5959489d",
+  "candidate_sha256": "8855dd71df583001fa04786fd4b891fd12476e105a40a95662622a42e78f1718"
+ },
+ {
+  "path": "src/hooks/useAuth.tsx",
+  "package": "c2-coordinated",
+  "baseline_sha256": "1c819b79fd32471f3ec43e43284076bf7cc489cf27c4b090a28e2dfad0864564",
+  "candidate_sha256": "808dbad97d973fecb0dacbf88ce7cc0d0897de8c26011e2e7ef9ec0a18bff167"
+ },
+ {
+  "path": "src/hooks/useAvailableContexts.ts",
+  "package": "c2-coordinated",
+  "baseline_sha256": "bf672750b5df01dca483f6e1b3dcf59e78d048f1b5fcecd73dfc367c355535f2",
+  "candidate_sha256": "3a95c4a9c84af1895a489900ea46e0c78b103b5a87512592c5a2961877aff5c9"
+ },
+ {
+  "path": "src/hooks/useMyPartner.ts",
+  "package": "finance-multiprofile",
+  "baseline_sha256": "536195d65ea6fe4b161e75d10654554a66d3e4c424423a76c634cd3b1bf0ea20",
+  "candidate_sha256": "f57d3a528a5623ef50355dc8398090b8dbfda6f6909089576b512ae7ce92d029"
+ },
+ {
+  "path": "src/hooks/useOwnFinance.ts",
+  "package": "finance-multiprofile",
+  "baseline_sha256": null,
+  "candidate_sha256": "bd8aed8a5d81be3cfc097f0d4732884437d051b572bfa293dd042d05db61d704"
+ },
+ {
+  "path": "src/lib/authz/multiProfileContract.ts",
+  "package": "c2-coordinated",
+  "baseline_sha256": null,
+  "candidate_sha256": "c52f1c93e49fa8225fcb8cccdc2083d625f7f4f2a2dabfb776577a6f29248f26"
+ },
+ {
+  "path": "src/lib/comercial/financeAccess.ts",
+  "package": "finance-multiprofile",
+  "baseline_sha256": null,
+  "candidate_sha256": "62220720f34408fc311fbc95af583d76ece0b5d42f5f564c3527cd8a9c4771b6"
+ },
+ {
+  "path": "src/lib/comercial/financeContract.ts",
+  "package": "finance-multiprofile",
+  "baseline_sha256": null,
+  "candidate_sha256": "45c90a049bfbc9f1a91ca036f58faa3c4ee08fdbd30c665f6199218ca69fa6f8"
+ },
+ {
+  "path": "src/lib/configuracoes/partnerLifecycle.ts",
+  "package": "c2.1-admin",
+  "baseline_sha256": null,
+  "candidate_sha256": "367dd83d3e35fe175ae5b970e1a9c839646e14fdf7720bf302782a23950328cd"
+ },
+ {
+  "path": "src/lib/portalContext.ts",
+  "package": "c2-coordinated",
+  "baseline_sha256": "724cfaba318be4be84cc25be3f028044c9aee1ec34e8af257455173a06e3e281",
+  "candidate_sha256": "8218cf7eb963cc5a4b343ef3029586da0d76330938592344b237ed620c9c48fa"
+ },
+ {
+  "path": "src/lib/saas/featureRouteMap.ts",
+  "package": "finance-multiprofile",
+  "baseline_sha256": "50528152a31c4fd08ed8fa3d746a7be00c11ba03b186b904dc034ba52d180864",
+  "candidate_sha256": "121ebb038a4bb824ac1dcc14bf7d3e44eb0a0dad45de61cedc2af2167f87627c"
+ },
+ {
+  "path": "src/pages/Configuracoes.tsx",
+  "package": "c2.1-admin",
+  "baseline_sha256": "45fb8236e4d2db0d4daf58597206eb9c183b37e42de2a4d9e0cb9a7b420d8f39",
+  "candidate_sha256": "ff6028e1864505aaf6ae1530428b6e625d100dfcf7c70bcbbd392bcc9f8467e4"
+ },
+ {
+  "path": "src/pages/SelecionarPortal.tsx",
+  "package": "c2-coordinated",
+  "baseline_sha256": "7d15dd7c621c22558564fbddadfb9f189470e232ac008e71d12965d7ff0976da",
+  "candidate_sha256": "d7a7ecb00315c64100c45e130757961b05209f977513b70ae30b2a8d137ee8e3"
+ },
+ {
+  "path": "src/pages/app/MobileLayout.tsx",
+  "package": "c2-mobile",
+  "baseline_sha256": "1fba03f98817dd9cef40a1f8f4d1ca3b7915805f18c7ebc32c1379a30c786749",
+  "candidate_sha256": "49dea9672c913332692af49f3dc031f6cab313dc1f0980bd7637f2c2281ad146"
+ },
+ {
+  "path": "src/pages/portal-parceiro/PortalParceiroLayout.tsx",
+  "package": "finance-multiprofile",
+  "baseline_sha256": "2d30f29ad2e9c6574c606845a077de733d89311ce000906b1a7bab3ca5ccb872",
+  "candidate_sha256": "b819b650f7446c8f062c5494eae12548d4bd9b512163660a091301213cafe449"
+ }
+]
