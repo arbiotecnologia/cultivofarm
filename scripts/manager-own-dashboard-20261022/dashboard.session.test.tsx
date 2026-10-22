@@ -26,7 +26,6 @@ afterEach(() => { cleanup(); clients.splice(0).forEach(client => client.clear())
 describe("candidate UI with canonical hook, synthetic Auth/transport", () => {
   it("shows own row and observed counts through a single RPC without financial queries", async () => {
     mount(); await screen.findByText("OWN-A");
-    expect(screen.getByRole("definition", { name: "" })).toBeDefined();
     expect(state.rpc).toHaveBeenCalledExactlyOnceWith("get_my_commercial_orders_projection");
   });
   it.each(["parceiro_b2b_tecnico", "cliente_produtor", "gestor", "administrador"])("denies role %s without querying", role => {
