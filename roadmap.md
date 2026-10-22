@@ -7,6 +7,9 @@
 - [x] C1B candidata inicial concreta em scripts/catalog-c1b-20261021 preparada sem aplicação/promoção; ambiguidade e rollback iniciais registrados historicamente. Revisão21:50 abaixo substitui proposta por regra aceita e remove reversão SQL insegura.
 - [x] C1B correções candidatas: refetch erro/stale e tipos PDF, scope uuid[] uma vez, ficha real via whitelist RPC, rollback frontend mantendo filtro; testes26SQL+21UI+21regressões/types isolados PASS, sem promoção.
 - [ ] C1B REST PostgREST real após migration independente: script rest_postflight.py pronto; migration não aplicada e sessões/casos REST ausentes nesta rodada, runtime permanece C1. Capacidades envase/volumes sem contrato comprovado bloqueadas, não presumir paridade integral.
+- [x] 22/10 runtime C1B consumidores + rótulos v2 promovidos localmente (não publicado); SQL rótulos registrado com correção do auditor (composição preservada, md5 a62259c7), sem reaplicar. Ver scripts/catalog-labels-20261021/PROMOTION-20261022.md.
+- [ ] Publicação pelo auditor; conteúdo técnico não vazio, UI real e matriz de perfis pendentes.
+- [ ] Próxima fase: contratos de múltiplos perfis (não iniciada).
 - [x] C1 publicado confirmado externamente21:50 bundle index-D0RgMmH6.js; consultor A filtros/reset e administrador B catálogo/simulador reais PASS limitados aos dados atuais. Não republicar C1; C1B não publicado.
 - [ ] C2 seguinte, não implementar neste diff: contratos funcionais canônicos de atribuição/desvinculação/reativação/histórico, papéis cumulativos B2B+gestor+técnico+produtor, seletor autorizado e cadastro multiatribuições na empresa.
 
