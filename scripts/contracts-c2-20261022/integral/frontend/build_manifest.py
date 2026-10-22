@@ -37,6 +37,9 @@ out = H / 'runtime-copies'
 shutil.rmtree(out, ignore_errors=True)
 for rel, (src, _) in sources.items():
     (out / rel).parent.mkdir(parents=True, exist_ok=True); shutil.copyfile(src, out / rel)
+plf = out / 'src/components/configuracoes/PartnerLifecycleFields.tsx'
+t = plf.read_text(); assert t.count('from "./partnerLifecycle";') == 1
+plf.write_text(t.replace('from "./partnerLifecycle";', 'from "@/lib/configuracoes/partnerLifecycle";'))  # same as reviewed frontend.patch
 (out / 'src/pages/Configuracoes.tsx').parent.mkdir(parents=True, exist_ok=True)
 (out / 'src/pages/Configuracoes.tsx').write_text(cfg)
 sources['src/pages/Configuracoes.tsx'] = (out / 'src/pages/Configuracoes.tsx', 'c2.1-admin')

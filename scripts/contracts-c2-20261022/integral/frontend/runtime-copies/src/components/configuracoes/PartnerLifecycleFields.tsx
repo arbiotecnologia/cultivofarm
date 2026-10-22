@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-import { EXTERNAL_CAPABILITIES, lifecycleQueryKey, submitLifecycle, type Capability, type LifecycleAction, type LifecycleClient, type LifecycleState, type HistoryCursor } from "./partnerLifecycle";
+import { EXTERNAL_CAPABILITIES, lifecycleQueryKey, submitLifecycle, type Capability, type LifecycleAction, type LifecycleClient, type LifecycleState, type HistoryCursor } from "@/lib/configuracoes/partnerLifecycle";
 
 const labels: Record<Capability, string> = { parceiro_b2b: "Gestor B2B", parceiro_b2b_tecnico: "Consultor técnico B2B", cliente_produtor: "Cliente/Produtor" };
 // Mounted only in the existing canonical user/partner editor by the review patch.

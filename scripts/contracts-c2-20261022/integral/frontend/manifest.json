@@ -9,7 +9,7 @@
   "path": "src/components/configuracoes/PartnerLifecycleFields.tsx",
   "package": "c2.1-admin",
   "baseline_sha256": null,
-  "candidate_sha256": "6e3765497f2a0dc8eb3739bc6a52c0c67a75af1c6c7616d2911065f6463d1dc0"
+  "candidate_sha256": "ce4e6f53a19eb822c17ac3f9e20f09ee0ef2fb0dbe95fb7c96c880c214ea9208"
  },
  {
   "path": "src/components/guards/AppPortalGuard.tsx",
