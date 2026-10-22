@@ -1,3 +1,5 @@
+import { ownerCatalogRoute } from "@/lib/catalogo/catalogAccess";
+import { OwnerCatalog } from "@/components/catalogo/OwnerCatalog";
 import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyPartner } from "@/hooks/useMyPartner";
@@ -36,7 +38,9 @@ import {
 export default function PortalParceiroLayout() {
   const { user, role, signOut, loading } = useAuth();
   const entitlements = useEntitlements();
-  const { data: ownPartner, isLoading } = useMyPartner();
+  const { data: ownPartner, isLoading, isError: partnerError, ready: partnerReady } = useMyPartner();
+  const location = useLocation();
+  const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);
   const { data: contexts } = useAvailableContexts();
   const switchPortal = useSwitchPortal();
   const canSwitchPortal = !!contexts && contexts.available_contexts.length >= 2;
@@ -48,7 +52,7 @@ export default function PortalParceiroLayout() {
   const isTecnico = role === "parceiro_b2b_tecnico";
   const commercialOwner = ownPartner?.mode === "commercial_owner";
   const menuGroups = (isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS)
-    .map((group) => ({ ...group, items: group.items.filter((item) => !commercialOwner && isPathEntitled(item.route, entitlements)) }))
+    .map((group) => ({ ...group, items: group.items.filter((item) => (!commercialOwner || (partnerReady && !partnerError && ownerCatalogRoute(item.route, ownPartner?.capabilities))) && isPathEntitled(item.route, entitlements)) }))
     .filter((group) => group.items.length > 0);
   const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
 
@@ -80,13 +84,12 @@ export default function PortalParceiroLayout() {
 
   const parceiroBrand = usePortalBranding("parceiro", commercialOwner ? null : partner?.id ?? null);
 
-  const location = useLocation();
-
   if (loading) return <div className="p-6">Carregando...</div>;
   if (!user) return <Navigate to="/auth" replace />;
   if (role && !["parceiro_b2b", "parceiro_b2b_tecnico", "administrador", "gestor_comercial"].includes(role)) {
     return <Navigate to="/" replace />;
   }
+  if (!isStaff && (!partnerReady || partnerError)) return <div role="status">Acesso indisponível.</div>;
   const isPartnerRole = role === "parceiro_b2b" || role === "parceiro_b2b_tecnico";
 
   // Rotas de vínculo B2B × cliente ocultadas para todos parceiros B2B (Fase 2).
@@ -185,13 +188,17 @@ export default function PortalParceiroLayout() {
             Você está visualizando como <span className="font-medium text-foreground">{partner.razao_social}</span> (visão interna).
           </div>
         )}
-        {commercialOwner ? (
+        {commercialOwner && canReadOwnerRoute ? (
+          location.pathname === "/portal-parceiro/catalogo"
+            ? <OwnerCatalog key={ownPartner.id} partnerId={ownPartner.id} />
+            : <Outlet context={{ partner: ownPartner }} />
+        ) : commercialOwner ? (
           <section className="space-y-4" aria-label="Cliente comercial">
             <h1 className="text-2xl font-semibold">{ownPartner.razao_social}</h1>
             <p className="text-muted-foreground">{ownPartner.codigo}</p>
-            {!isTecnico && <CommercialOwnOrders partnerId={ownPartner.id} />}
+            {location.pathname === "/portal-parceiro/dashboard" && !isTecnico && <CommercialOwnOrders partnerId={ownPartner.id} />}
             <p role="status" className="text-muted-foreground">
-              Catálogo, simulações, financeiro, arquivos e alterações de pedidos estão indisponíveis.
+              Simulações, financeiro, arquivos e alterações de pedidos estão indisponíveis.
             </p>
           </section>
         ) : !partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
