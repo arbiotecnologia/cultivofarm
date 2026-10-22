@@ -5,4 +5,6 @@ ALTER POLICY product_fiscal_profiles_insert ON public.product_fiscal_profiles WI
 ALTER POLICY product_fiscal_profiles_update ON public.product_fiscal_profiles USING(false) WITH CHECK(false);
 REVOKE EXECUTE ON FUNCTION public.rpc_fiscal_product_ibs_cbs_save(uuid,jsonb,text) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE EXECUTE ON FUNCTION platform_private.global_product_fiscal_ibs_save(uuid,jsonb,text) FROM PUBLIC,anon,authenticated,service_role;
+-- Superadmin catalogue read is closed (deny-only); internal/B2B policies untouched.
+ALTER POLICY produtos_select_platform_fiscal_superadmin ON public.produtos USING(false);
 COMMIT;

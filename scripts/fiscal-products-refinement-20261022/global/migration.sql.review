@@ -8,8 +8,10 @@ DO $$ BEGIN
  OR md5(pg_get_functiondef('public.is_platform_superadmin(uuid)'::regprocedure))<>'3dfe79d976821244d9b7a7f893d765f2'
  OR md5(pg_get_functiondef('public.rpc_fiscal_product_ibs_cbs_get(uuid)'::regprocedure))<>'5f72915265c4b3b43a0c550cefa534a7'
  OR md5(pg_get_functiondef('public.rpc_fiscal_product_ibs_cbs_save(uuid,jsonb,text)'::regprocedure))<>'af1cdef76219d2dcde4788eecd0edbdc'
+ OR md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure))<>'b0dd9a14d5fd799a40df0975baf4c5a6'
  THEN RAISE EXCEPTION 'global_fiscal_function_drift'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_indexes WHERE schemaname='public' AND tablename='product_fiscal_profiles' AND indexname='ux_product_fiscal_profiles_active' AND indexdef='CREATE UNIQUE INDEX ux_product_fiscal_profiles_active ON public.product_fiscal_profiles USING btree (product_id) WHERE (is_active = true)') THEN RAISE EXCEPTION 'global_fiscal_active_index_drift'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.produtos'::regclass AND attname IN ('organization_id','tenant_id') AND NOT attisdropped) OR EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='public.produtos'::regclass AND polname='produtos_select_platform_fiscal_superadmin') OR to_regprocedure('platform_private.global_product_fiscal_statement_gate()') IS NOT NULL THEN RAISE EXCEPTION 'global_fiscal_produtos_drift'; END IF;
  IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.product_fiscal_profiles'::regclass AND attname IN ('organization_id','tenant_id') AND NOT attisdropped) THEN RAISE EXCEPTION 'global_fiscal_model_drift'; END IF;
 END $$;
 -- Serialize with existing role/profile mutation gates; never use caller GUC authority.
@@ -44,7 +46,26 @@ BEGIN
  RETURN NEW;
 END $$;
 REVOKE ALL ON FUNCTION platform_private.global_product_fiscal_before_write() FROM PUBLIC,anon,authenticated;
-CREATE TRIGGER a00_global_product_fiscal_gate BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate();
+-- cf_user_guards_v1.acquire_gate() whitelists only identity tables (hosted md5
+-- b0dd9a14d5fd799a40df0975baf4c5a6) and would always raise invalid_user_guard_context
+-- here. Its whitelist is NOT widened: this private fiscal statement gate validates its own
+-- exact context and locks the SAME canonical state row first (same order as Auth gates),
+-- without bumping the identity revision counter used by authz caches.
+CREATE FUNCTION platform_private.global_product_fiscal_statement_gate()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF TG_WHEN<>'BEFORE' OR TG_LEVEL<>'STATEMENT' OR TG_OP NOT IN ('INSERT','UPDATE') OR TG_RELID<>'public.product_fiscal_profiles'::regclass THEN RAISE EXCEPTION 'invalid_fiscal_guard_context' USING ERRCODE='42501'; END IF;
+ IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'FISCAL_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FISCAL_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
+ RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.global_product_fiscal_statement_gate() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER a00_global_product_fiscal_gate BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH STATEMENT EXECUTE FUNCTION platform_private.global_product_fiscal_statement_gate();
+-- produtos SELECT covers internal roles and active B2B only; the fiscal editor list joins
+-- produtos, so a strong Superadmin would otherwise see an empty catalogue. Global catalogue
+-- (no tenant column, asserted by structural guard); read-only, no tenant/B2B change.
+CREATE POLICY produtos_select_platform_fiscal_superadmin ON public.produtos FOR SELECT TO authenticated USING(platform_private.global_product_fiscal_write_ready());
 CREATE TRIGGER a10_global_product_fiscal_authorize BEFORE INSERT OR UPDATE ON public.product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION platform_private.global_product_fiscal_before_write();
 CREATE OR REPLACE FUNCTION public.rpc_fiscal_product_ibs_cbs_get(p_product_id uuid)
 RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' AS $$
