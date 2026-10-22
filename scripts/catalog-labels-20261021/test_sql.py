@@ -198,10 +198,21 @@ try:
     check_md5 = sql("SELECT md5(pg_get_constraintdef(oid)) FROM pg_constraint WHERE conrelid='public.produtos'::regclass AND conname='produtos_classe_catalogo_coerente_check'")
     audit_md5 = sql("SELECT md5(pg_get_constraintdef(oid)) FROM pg_constraint WHERE conrelid='public.catalog_platform_admin_audit'::regclass AND conname='catalog_platform_admin_audit_operation_check'")
     partial = candidate.replace('8bd3ce69c5bd55b678246acb9d264548', core_md5).replace('0ae66545cef182ce716ee3958ef634b6', check_md5)
-    # Guard do CHECK de auditoria: md5 LIVE diverge do sintético -> aborta.
+    # O baseline sintético reproduz o CHECK LIVE byte a byte: md5 deve coincidir com o do auditor.
+    assert audit_md5 == 'a62259c75c05f0f0c6be34a387b483e9', audit_md5
+    checks.append('baseline sintetico do CHECK de auditoria = md5 LIVE a62259c7')
+    # Guard: CHECK de auditoria com drift (sem composição) -> aborta antes de qualquer DDL.
+    sql("BEGIN; ALTER TABLE public.catalog_platform_admin_audit DROP CONSTRAINT catalog_platform_admin_audit_operation_check;"
+        " ALTER TABLE public.catalog_platform_admin_audit ADD CONSTRAINT catalog_platform_admin_audit_operation_check CHECK (operation IN ('set_global_product_family'));"
+        " COMMIT;")
     sql(partial, deny='catalog_labels_audit_check_baseline_drift')
-    checks.append('guard aborta com md5 do CHECK de auditoria divergente')
-    cand = partial.replace('a62259c75c05f0f0c6be34a387b483e9', audit_md5)
+    checks.append('guard aborta com CHECK de auditoria divergente')
+    sql("ALTER TABLE public.catalog_platform_admin_audit DROP CONSTRAINT catalog_platform_admin_audit_operation_check;"
+        " ALTER TABLE public.catalog_platform_admin_audit ADD CONSTRAINT catalog_platform_admin_audit_operation_check CHECK (operation IN ('wipe_global_products','update_global_product_metadata','create_global_product','set_global_product_status',"
+        "'create_global_microorganism','update_global_microorganism','set_global_microorganism_status','create_global_culture','update_global_culture','set_global_culture_status',"
+        "'create_global_volume','update_global_volume','set_global_volume_status','set_global_b2b_enabled','set_global_product_family','set_global_product_composition'));")
+    assert sql("SELECT md5(pg_get_constraintdef(oid)) FROM pg_constraint WHERE conname='catalog_platform_admin_audit_operation_check'") == audit_md5
+    cand = partial
     assert cand != candidate
     sql(cand); checks.append('candidate applies cleanly')
 
