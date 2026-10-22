@@ -6,6 +6,7 @@ H=Path(__file__).resolve().parent
 # setup with actual readers. No policy or security predicate rewritten.
 s=(H.parent/'test_sql.py').read_text()
 s=s.replace("HERE=Path(__file__).resolve().parent",f"HERE=Path({str(H.parent)!r})")
+s=s.replace("'superadmin');", "'superadmin','tecnico_agronomo','aplicador');")
 inject="""
  sql('ALTER TABLE public.partner_accounts ADD COLUMN codigo text DEFAULT \'P\', ADD COLUMN razao_social text DEFAULT \'Partner\', ADD COLUMN nome_fantasia text; CREATE TABLE public.user_access_preferences(user_id uuid PRIMARY KEY,preferred_context text,last_context text,skip_context_selector boolean,updated_at timestamptz); CREATE TABLE public.user_context_access_logs(user_id uuid,context_code text,action text,previous_context text,metadata jsonb); CREATE FUNCTION platform_private.entitlements_for_user(uuid) RETURNS TABLE(feature_key text) LANGUAGE sql AS $$SELECT unnest(ARRAY[\'catalogo_precos\',\'fichas_tecnicas\'])$$;')
  sql(Path(H/'readers.assembled.sql.review').read_text())
