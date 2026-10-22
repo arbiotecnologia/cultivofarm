@@ -160,7 +160,8 @@ describe("FiscalProdutos — perfil fiscal próprio de microrganismos (Fase 3.21
     fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" }));
     fireEvent.click(screen.getByRole("button", { name: /Cancelar|Fechar/ }));
     fiscalFence.ready = false; view.rerender(<FiscalProdutos platformGlobal />);
-    fireEvent.click(screen.getByRole("button", { name: "Ver perfil fiscal de Bio-A Comercial" }));
+    // Paused Superadmin: platform tab fails closed, no edit entry point remains.
+    expect(screen.queryByRole("button", { name: "Editar perfil fiscal de Bio-A Comercial" })).toBeNull();
     expect(screen.queryByRole("form", { name: "Formulário de perfil fiscal" })).toBeNull();
     expect(mutateAsync).not.toHaveBeenCalled();
   });
