@@ -1,0 +1,42 @@
+[
+  {
+    "path": "src/hooks/useProductFiscalAccess.ts",
+    "baseline_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "candidate_sha256": "be9d1d36e369e2cb11b1dce0c650e77fe2e3e890743584a599ac1b0b7f6d1b20"
+  },
+  {
+    "path": "src/hooks/useScopedPortalQuery.ts",
+    "baseline_sha256": "6efb962be490184d9b1945c039a9c99f972d53e988d7eead1f5309cbe832f163",
+    "candidate_sha256": "45cd388e3d1767e54225c654815a5b63eef8869bec6721182a0baa631692ff30"
+  },
+  {
+    "path": "src/hooks/useProductFiscalProfiles.ts",
+    "baseline_sha256": "7da98646ccc4075defbbb6d22c507dbe21220602aaf1125d008aea1b46fb1809",
+    "candidate_sha256": "5c9609fc3171378b4c6a4c03f660199db9169eef56a5a5037b95da097314ef49"
+  },
+  {
+    "path": "src/lib/permissions.ts",
+    "baseline_sha256": "4d8442b166e46596532b7fdd8bad2582171a52a223250065cd23ba25a5591b97",
+    "candidate_sha256": "5bf3049433fd11ec2252c03dd7abd39574d4543f15ab1c37ba4f1c98a0d13c5e"
+  },
+  {
+    "path": "src/pages/configuracoes/FiscalProdutos.tsx",
+    "baseline_sha256": "0af8aac611eb7dc2d79a6e91843f7bb71ccb348fd5b3f95083111260cd2fe2ff",
+    "candidate_sha256": "415dd2e6de083891e50da652876a03b9bc50983bf5f4a65f3f6c5e69df827c6c"
+  },
+  {
+    "path": "src/pages/plataforma/PlataformaHome.tsx",
+    "baseline_sha256": "fb24a29915858403f23767ed5182e51c893a6e78e901de933a9e1ec3f91dc3a1",
+    "candidate_sha256": "3ce5c3ac133784048cb0dd74df4adc5fbadd68f2c34f98116b3e05f057fdb3e0"
+  },
+  {
+    "path": "src/hooks/useFiscalRtc.ts",
+    "baseline_sha256": "4b2b89456733e00a31fa1bcd05ff3bbf478c1015bf335aa6405cddc4980d4a25",
+    "candidate_sha256": "6620ae00c2ebd119d852e3ce50fce10e1a5f5c86cbc04c895b23cb4bdc6ce3c2"
+  },
+  {
+    "path": "src/components/fiscal/IbsCbsItemCard.tsx",
+    "baseline_sha256": "a224ffa8ee34ad9289fc6170883d720c8431a474a96170f5aa1303bcdf01e8f1",
+    "candidate_sha256": "1b93b21d048a7ae01444d95556fac86d351dea145d72c622b0eb76ff2d3393a7"
+  }
+]

@@ -1,0 +1,434 @@
+--- a/src/hooks/useProductFiscalAccess.ts
++++ b/src/hooks/useProductFiscalAccess.ts
+@@ -0,0 +1,23 @@
++import { useLayoutEffect, useRef } from "react";
++import { useAuth } from "@/hooks/useAuth";
++import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
++
++/** Global product-only fence. No tenant operation uses this hook. RLS is authoritative. */
++export function useProductFiscalAccess(resource: string) {
++  const actor = useAuth();
++  const platform = platformCatalogAccess(actor);
++  const internal = !actor.loading && !actor.error && !!actor.user &&
++    actor.session?.user.id === actor.user.id && actor.profile?.user_id === actor.user.id &&
++    actor.profile.ativo === true && actor.profile.senha_provisoria === false &&
++    !!actor.profile.organization_id && actor.roles.some(r => ["administrador", "gestor", "financeiro"].includes(r));
++  const monitor = useRef(actor.checkAuthzAccess);
++  monitor.current = actor.checkAuthzAccess;
++  const ready = (platform.ready || internal) && actor.authzReady === true && (monitor.current?.() ?? false);
++  const canWrite = ready && platform.ready;
++  const scope = JSON.stringify(["global-product-fiscal", platform.scope, actor.authzEpoch, ready, resource]);
++  const live = useRef({ scope, mounted: true });
++  live.current.scope = scope;
++  useLayoutEffect(() => { live.current.mounted = true; return () => { live.current.mounted = false; }; }, []);
++  const capture = () => () => ready && live.current.mounted && live.current.scope === scope && (monitor.current?.() ?? false);
++  return { get ready() { return ready && (monitor.current?.() ?? false); }, canWrite, scope, capture };
++}
+--- a/src/hooks/useScopedPortalQuery.ts
++++ b/src/hooks/useScopedPortalQuery.ts
+@@ -3,11 +3,13 @@
+ import { useStorageAccessScope } from "./useStorageAccessScope";
+ 
+ /** Cache isolation only; each existing RPC/RLS must independently authorize. */
+-export function useScopedPortalQuery<T>(options: Omit<UseQueryOptions<T, Error>, "queryFn"> & { queryFn: (signal: AbortSignal) => Promise<T> }) {
++export function useScopedPortalQuery<T>(options: Omit<UseQueryOptions<T, Error>, "queryFn"> & { queryFn: (signal: AbortSignal) => Promise<T> }, access?: { request: ReturnType<typeof useStorageAccessScope>; actor: ReturnType<typeof useStorageAccessScope> }) {
+   const serializedKey = JSON.stringify(options.queryKey);
+   const stableKey = useMemo(() => JSON.parse(serializedKey) as readonly unknown[], [serializedKey]);
+-  const fence = useStorageAccessScope(`portal:${serializedKey}:${options.enabled !== false}`);
+-  const actor = useStorageAccessScope("portal-query-actor");
++  const defaultFence = useStorageAccessScope(`portal:${serializedKey}:${options.enabled !== false}`);
++  const defaultActor = useStorageAccessScope("portal-query-actor");
++  const fence = access?.request ?? defaultFence;
++  const actor = access?.actor ?? defaultActor;
+   const client = useQueryClient();
+   const prefix = options.queryKey[0];
+   useEffect(() => {
+--- a/src/hooks/useProductFiscalProfiles.ts
++++ b/src/hooks/useProductFiscalProfiles.ts
+@@ -12,7 +12,7 @@
+  */
+ import { useMutation, useQueryClient } from "@tanstack/react-query";
+ import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+-import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
+ import { supabase } from "@/integrations/supabase/client";
+ import type { Database } from "@/integrations/supabase/cultivofarm.types";
+ import {
+@@ -87,6 +87,8 @@
+   params: ListParams,
+   options: { enabled?: boolean } = {},
+ ) {
++  const request = useProductFiscalAccess("product-fiscal-read");
++  const actor = useProductFiscalAccess("portal-query-actor");
+   const enabled = options.enabled ?? true;
+   const result = useScopedPortalQuery<ListResult>({
+     queryKey: PRODUCT_FISCAL_KEYS.list(params),
+@@ -110,7 +112,9 @@
+             "id, nome, codigo, product_fiscal_profiles!inner(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
+             { count: "exact" },
+           )
++          .eq("product_fiscal_profiles.is_active", true)
+           .eq("product_fiscal_profiles.profile_status", params.status as string)
++          .eq("product_fiscal_profiles.is_active", true)
+           .order("nome", { ascending: true })
+           .range(from, to);
+         if (safeTerm) {
+@@ -126,6 +130,7 @@
+             "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
+             { count: "exact" },
+           )
++          .eq("product_fiscal_profiles.is_active", true)
+           .order("nome", { ascending: true })
+           .range(from, to);
+         if (safeTerm) {
+@@ -167,7 +172,7 @@
+ 
+       return { items, total: count ?? items.length, statuses };
+     },
+-  });
++  }, { request, actor });
+   return { ...result, data: result.ready && !result.isError ? result.data : undefined };
+ }
+ 
+@@ -176,6 +181,8 @@
+   productIds: string[],
+   options: { enabled?: boolean } = {},
+ ) {
++  const request = useProductFiscalAccess("product-fiscal-read");
++  const actor = useProductFiscalAccess("portal-query-actor");
+   const enabled = (options.enabled ?? true) && productIds.length > 0;
+   const result = useScopedPortalQuery<ReadinessRow[]>({
+     queryKey: PRODUCT_FISCAL_KEYS.readiness(productIds),
+@@ -191,7 +198,7 @@
+       }
+       return data ?? [];
+     },
+-  });
++  }, { request, actor });
+   return { ...result, data: result.ready && !result.isError ? result.data : undefined };
+ }
+ 
+@@ -210,6 +217,8 @@
+   productIds: string[],
+   options: { enabled?: boolean } = {},
+ ) {
++  const request = useProductFiscalAccess("product-fiscal-read");
++  const actor = useProductFiscalAccess("portal-query-actor");
+   const enabled = (options.enabled ?? true) && productIds.length > 0;
+   const result = useScopedPortalQuery<ProductListItem[]>({
+     queryKey: PRODUCT_FISCAL_KEYS.byIds(productIds),
+@@ -220,6 +229,7 @@
+         .select(
+           "id, nome, codigo, product_fiscal_profiles(id, profile_status, is_active, ncm, cest, cfop_in_state, cfop_interstate, updated_at)",
+         )
++        .eq("product_fiscal_profiles.is_active", true)
+         .in("id", productIds as any);
+       if (error) {
+         if (isPermissionError(error)) throw new Error("permission_denied");
+@@ -245,7 +255,7 @@
+         };
+       });
+     },
+-  });
++  }, { request, actor });
+   return { ...result, data: result.ready && !result.isError ? result.data : undefined };
+ }
+ 
+@@ -253,6 +263,8 @@
+   productId: string | null,
+   options: { enabled?: boolean } = {},
+ ) {
++  const request = useProductFiscalAccess("product-fiscal-read");
++  const actor = useProductFiscalAccess("portal-query-actor");
+   const enabled = (options.enabled ?? true) && !!productId;
+   const result = useScopedPortalQuery<ProductFiscalRow | null>({
+     queryKey: [...PRODUCT_FISCAL_KEYS.root, "profile", productId] as const,
+@@ -263,6 +275,7 @@
+         .from("product_fiscal_profiles")
+         .select("*")
+         .eq("product_id", productId)
++        .eq("is_active", true)
+         .maybeSingle();
+       if (error) {
+         if (isPermissionError(error)) throw new Error("permission_denied");
+@@ -270,7 +283,7 @@
+       }
+       return data ?? null;
+     },
+-  });
++  }, { request, actor });
+   return { ...result, data: result.ready && !result.isError ? result.data : undefined };
+ }
+ 
+@@ -283,8 +296,8 @@
+ 
+ export function useSaveProductFiscalProfile() {
+   const qc = useQueryClient();
+-  const fence = useStorageAccessScope("product-fiscal-save");
+-  const actor = useStorageAccessScope("portal-query-actor");
++  const fence = useProductFiscalAccess("product-fiscal-save");
++  const actor = useProductFiscalAccess("portal-query-actor");
+   return useMutation<
+     ProductFiscalRow,
+     Error,
+@@ -306,14 +319,16 @@
+         check();
+       };
+       check();
++      if (!fence.canWrite) throw new Error("permission_denied");
+       values = productFiscalFormSchema.parse(values);
+-      if (!productId || (current && (current.product_id !== productId || !current.id || !current.updated_at))) throw new Error("fiscal_target_changed");
++      if (!productId || (current && (current.product_id !== productId || !current.id || !current.updated_at || current.is_active !== true))) throw new Error("fiscal_target_changed");
+       if (!current) {
+         // Verificação prévia: perfil pode existir de outra sessão.
+         const existing = await (supabase as any)
+           .from("product_fiscal_profiles")
+           .select("id")
+           .eq("product_id", productId)
++        .eq("is_active", true)
+           .maybeSingle();
+         check();
+         if (existing.error) {
+@@ -345,6 +360,7 @@
+       const { data, error } = await (supabase as any)
+         .from("product_fiscal_profiles")
+         .update(payload as any)
++        .eq("is_active", true)
+         .eq("id", current.id)
+         .eq("product_id", current.product_id)
+         .eq("updated_at", current.updated_at)
+--- a/src/lib/permissions.ts
++++ b/src/lib/permissions.ts
+@@ -127,10 +127,10 @@
+   "/configuracoes/fiscal/empresa": {
+     administrador: "rw", gestor: "r", financeiro: "r",
+   },
+-  // Fase Fiscal 3.2 — Perfis Fiscais de Produtos. Admin e Financeiro
+-  // editam; Gestor somente lê. Demais perfis: bloqueado por URL.
++  // Perfis fiscais de produto são globais. Internos somente leem;
++  // escrita Superadmin ocorre exclusivamente dentro de /plataforma.
+   "/configuracoes/fiscal/produtos": {
+-    administrador: "rw", financeiro: "rw", gestor: "r",
++    administrador: "r", financeiro: "r", gestor: "r",
+   },
+   // Fase Fiscal 3.3 — Perfis Fiscais de Serviços. Admin e Financeiro
+   // editam; Gestor somente lê. Demais perfis: bloqueado por URL.
+--- a/src/pages/configuracoes/FiscalProdutos.tsx
++++ b/src/pages/configuracoes/FiscalProdutos.tsx
+@@ -15,6 +15,7 @@
+  *  - Nenhuma nota é emitida por esta tela.
+  */
+ import { useMemo, useState, useEffect, useRef } from "react";
++import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { useAuth } from "@/hooks/useAuth";
+ import { getAccessLevel } from "@/lib/permissions";
+@@ -171,29 +172,30 @@
+   | { entity: "produto"; productId: string; displayName: string; displayCodigo: string | null }
+   | { entity: "microrganismo"; microorganismId: string; displayName: string; displayCodigo: string | null };
+ 
+-export default function FiscalProdutos() {
++export default function FiscalProdutos({ platformGlobal = false }: { platformGlobal?: boolean } = {}) {
++  const fiscalAccess = useProductFiscalAccess("product-fiscal-page");
+   const { role } = useAuth();
+-  const access = getAccessLevel(role, "/configuracoes/fiscal/produtos");
+-  const canEdit = access === "rw";
++  const access = platformGlobal ? fiscalAccess.ready && fiscalAccess.canWrite ? "rw" : "none" : getAccessLevel(role, "/configuracoes/fiscal/produtos");
++  const canEdit = access === "rw" && fiscalAccess.canWrite;
+   const uiEnabled = FEATURE_FLAGS.fiscalProductProfilesUi === true;
+   const emissionLock = FEATURE_FLAGS.fiscalEmissionEnabled === false;
+ 
+   const [search, setSearch] = useState("");
+   const [status, setStatus] = useState<string | null>(null);
+-  const [kind, setKind] = useState<EntityKindFilter>(KIND_ALL);
++  const [kind, setKind] = useState<EntityKindFilter>(platformGlobal ? KIND_PRODUCT : KIND_ALL);
+   const [page, setPage] = useState(0);
+   const [editing, setEditing] = useState<EditingTarget | null>(null);
+   const [associating, setAssociating] = useState<
+     { microorganismId: string; microorganismNome: string; currentProductId: string | null } | null
+   >(null);
+ 
+-  const productsEnabled = uiEnabled && access !== "none" && kind !== KIND_MICRO;
++  const productsEnabled = uiEnabled && access !== "none" && (platformGlobal || kind !== KIND_MICRO);
+   const listQuery = useProductFiscalList(
+     { search, status, page, pageSize: PAGE_SIZE },
+     { enabled: productsEnabled },
+   );
+ 
+-  const microorganismsEnabled = uiEnabled && access !== "none" && kind !== KIND_PRODUCT;
++  const microorganismsEnabled = !platformGlobal && uiEnabled && access !== "none" && kind !== KIND_PRODUCT;
+   const microorganismsQuery = useMicroorganismList(search, {
+     enabled: microorganismsEnabled,
+   });
+@@ -207,7 +209,7 @@
+     [productItemsPage],
+   );
+   const readinessQuery = useProductFiscalReadiness(productIds, {
+-    enabled: uiEnabled && access !== "none" && kind !== KIND_MICRO,
++    enabled: uiEnabled && access !== "none" && (platformGlobal || kind !== KIND_MICRO),
+   });
+ 
+   const microItems = useMemo(
+@@ -216,10 +218,10 @@
+   );
+   const microIds = useMemo(() => microItems.map((m) => m.id), [microItems]);
+   const microProfilesQuery = useMicroorganismFiscalProfileList(microIds, {
+-    enabled: uiEnabled && access !== "none",
++    enabled: !platformGlobal && uiEnabled && access !== "none",
+   });
+   const microReadinessQuery = useMicroorganismFiscalReadiness(microIds, {
+-    enabled: uiEnabled && access !== "none",
++    enabled: !platformGlobal && uiEnabled && access !== "none",
+   });
+ 
+   const permissionDenied =
+@@ -432,9 +434,9 @@
+           </div>
+         </CardHeader>
+         <CardContent className="space-y-3">
+-          {(listQuery.isLoading && kind !== KIND_MICRO)
++          {(listQuery.isLoading && (platformGlobal || kind !== KIND_MICRO))
+             || (microorganismsQuery.isLoading && kind !== KIND_PRODUCT)
+-            || (kind !== KIND_MICRO && productIds.length > 0 && readinessQuery.isLoading)
++            || ((platformGlobal || kind !== KIND_MICRO) && productIds.length > 0 && readinessQuery.isLoading)
+             || (kind !== KIND_PRODUCT && microIds.length > 0 && microProfilesQuery.isLoading)
+             || (kind !== KIND_PRODUCT && microIds.length > 0 && microReadinessQuery.isLoading) ? (
+             <div className="flex items-center gap-2 text-muted-foreground" data-testid="fiscal-produtos-loading">
+@@ -503,7 +505,7 @@
+                 </table>
+               </div>
+ 
+-              {kind !== KIND_MICRO && (
++              {(platformGlobal || kind !== KIND_MICRO) && (
+                 <div className="flex items-center justify-between text-sm">
+                   <div className="text-muted-foreground">
+                     Página {page + 1} de {totalPages} — {listQuery.data?.total ?? 0} produtos
+@@ -541,7 +543,7 @@
+           onClose={() => setEditing(null)}
+         />
+       ) : null}
+-      {editing?.entity === "microrganismo" ? (
++      {!platformGlobal && editing?.entity === "microrganismo" ? (
+         <MicroorganismEditDrawer
+           microorganismId={editing.microorganismId}
+           displayName={editing.displayName}
+@@ -841,7 +843,7 @@
+ }) {
+   const profileQuery = useProductFiscalProfile(productId);
+   const save = useSaveProductFiscalProfile();
+-  const fence = useStorageAccessScope(`fiscal-drawer:${productId}`);
++  const fence = useProductFiscalAccess(`fiscal-drawer:${productId}`);
+   const submitLock = useRef(false);
+   const readiness = useProductFiscalReadiness([productId]);
+   const preparation = productFiscalPreparation(!fence.ready || readiness.isError || readiness.isFetching ? undefined : readiness.data?.find(r => r.product_id === productId), profileQuery.data?.is_active);
+@@ -926,7 +928,7 @@
+             <AlertDescription>Salvar um rascunho não torna o item pronto para NF-e. Regime, operação, regras do emitente e IBS/CBS precisam de validação própria; emissão permanece desativada.</AlertDescription>
+           </Alert>
+           {fence.ready && !profileQuery.isFetching && !profileQuery.isError && profileQuery.data !== undefined && (
+-            <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit && fence.ready} />
++            <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit && fence.canWrite && profileQuery.data?.is_active === true} />
+           )}
+         </div>
+       }
+--- a/src/pages/plataforma/PlataformaHome.tsx
++++ b/src/pages/plataforma/PlataformaHome.tsx
+@@ -4,6 +4,7 @@
+  * Não toca menus operacionais: esta rota vive fora do layout administrativo
+  * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
+  */
++import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
+ import { useState } from "react";
+ import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare, Package } from "lucide-react";
+ import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
+@@ -185,8 +186,10 @@
+               <Package className="mr-2 h-4 w-4" aria-hidden="true" />
+               Catálogo
+             </TabsTrigger>
++            <TabsTrigger value="fiscal-produtos">Perfis fiscais de produtos</TabsTrigger>
+           </TabsList>
+           <TabsContent value="catalogo"><PlatformCatalogReadTab /></TabsContent>
++          <TabsContent value="fiscal-produtos"><FiscalProdutos platformGlobal /></TabsContent>
+ 
+           {/* PLANOS ------------------------------------------------------- */}
+           <TabsContent value="planos" className="space-y-4">
+--- a/src/hooks/useFiscalRtc.ts
++++ b/src/hooks/useFiscalRtc.ts
+@@ -5,6 +5,7 @@
+  * escrita item=admin/financeiro. Códigos de erro: FISCAL_CONFLICT,
+  * FISCAL_FORBIDDEN, FISCAL_UNAUTHENTICATED, FISCAL_RTC_*.
+  */
++import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
+ import { useCallback, useEffect, useState } from "react";
+ import { supabase } from "@/integrations/supabase/client";
+ import {
+@@ -162,7 +163,9 @@
+   itemId: string | null,
+   options: { enabled?: boolean } = {},
+ ) {
+-  const enabled = (options.enabled ?? true) && !!itemId;
++  const fence = useProductFiscalAccess(`product-rtc:${itemId}`);
++  const product = kind === "product";
++  const enabled = (options.enabled ?? true) && !!itemId && (!product || fence.ready);
+   const [state, setState] = useState<RtcHookState<IbsCbsItemConfiguration>>({
+     data: null, revision: "", loading: enabled, error: null, saving: false,
+   });
+@@ -181,9 +184,11 @@
+     : "p_profile_id";
+ 
+   const load = useCallback(async () => {
+-    if (!itemId) return;
++    if (!itemId || (product && !fence.ready)) return;
++    const valid = product ? fence.capture() : () => true;
+     setState((s) => ({ ...s, loading: true, error: null }));
+     const { data, error } = await rpc<unknown>(getFn, { [idKey]: itemId });
++    if (!valid()) return;
+     if (error) {
+       setState({ data: null, revision: "", loading: false, saving: false,
+         error: toMessage(error.message, "Falha ao carregar IBS/CBS.") });
+@@ -198,12 +203,13 @@
+     }
+     setState({ data: env.configuration, revision: env.revision,
+       loading: false, saving: false, error: null });
+-  }, [itemId, getFn, idKey]);
++  }, [itemId, getFn, idKey, product, fence.scope]);
+ 
+   useEffect(() => { if (enabled) void load(); }, [enabled, load]);
+ 
+   const save = useCallback(async (payload: IbsCbsItemConfiguration) => {
+-    if (!itemId) return { ok: false as const };
++    if (!itemId || (product && (!fence.ready || !fence.canWrite))) return { ok: false as const };
++    const valid = product ? fence.capture() : () => true;
+     setState((s) => ({ ...s, saving: true, error: null }));
+     if (rtcHasSensitiveKey(payload)) {
+       setState((s) => ({ ...s, saving: false,
+@@ -219,6 +225,7 @@
+       [idKey]: itemId, payload: parsed.data,
+       expected_revision: state.revision || null,
+     });
++    if (!valid()) return { ok: false as const };
+     if (error) {
+       setState((s) => ({ ...s, saving: false,
+         error: toMessage(error.message, "Falha ao salvar IBS/CBS.") }));
+@@ -234,9 +241,9 @@
+     setState({ data: env.configuration, revision: env.revision,
+       loading: false, saving: false, error: null });
+     return { ok: true as const };
+-  }, [itemId, saveFn, idKey, state.revision]);
+-
+-  return { ...state, reload: load, save };
++  }, [itemId, saveFn, idKey, state.revision, product, fence.scope, fence.canWrite]);
++
++  return { ...state, data: product && !fence.ready ? null : state.data, reload: load, save };
+ }
+ 
+ export { emptyCompany as _emptyCompanyRtc };
+--- a/src/components/fiscal/IbsCbsItemCard.tsx
++++ b/src/components/fiscal/IbsCbsItemCard.tsx
+@@ -64,6 +64,7 @@
+     : "IBS/CBS do produto";
+ 
+   async function onSave() {
++    if (disabled) return;
+     setFlash(null);
+     const res = await rtc.save(form);
+     if (res.ok) setFlash("IBS/CBS salvo com sucesso.");

@@ -1,0 +1,441 @@
+/**
+ * Gestão SaaS do Superadmin de Plataforma.
+ *
+ * Não toca menus operacionais: esta rota vive fora do layout administrativo
+ * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
+ */
+import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
+import { useState } from "react";
+import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare, Package } from "lucide-react";
+import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
+import PlataformaAdmins from "./PlataformaAdmins";
+import PlataformaEmpresas from "./PlataformaEmpresas";
+import { PlatformCatalogReadTab } from "@/components/plataforma/PlatformCatalogReadTab";
+import ComunicacaoConfigTab from "@/pages/configuracoes/ComunicacaoConfigTab";
+import { VersaoComercialEditor } from "@/components/plataforma/VersaoComercialEditor";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAuth } from "@/hooks/useAuth";
+import { PwaManualCheckButton } from "@/pwa/PwaManualCheckButton";
+import {
+  useAssinaturasSaaS,
+  useHistoricoAssinaturasSaaS,
+  useModulosFeaturesSaaS,
+  useOrganizacoesSaaS,
+  usePlanosSaaS,
+  useVersoesPlanosSaaS,
+} from "@/hooks/usePlataformaSaaS";
+
+const STATUS_LABEL: Record<string, string> = {
+  TRIAL: "Período de teste",
+  ACTIVE: "Ativa",
+  PAST_DUE: "Pagamento em atraso",
+  SUSPENDED: "Suspensa",
+  CANCELLED: "Cancelada",
+  EXPIRED: "Expirada",
+};
+
+function dataCurta(valor: string | null): string {
+  if (!valor) return "—";
+  const d = new Date(valor);
+  return Number.isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
+function dataHora(valor: string | null): string {
+  if (!valor) return "—";
+  const d = new Date(valor);
+  return Number.isNaN(d.getTime())
+    ? "—"
+    : d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+}
+
+function EstadoConsulta({
+  carregando,
+  erro,
+  vazio,
+  mensagemVazio,
+  onTentarNovamente,
+}: {
+  carregando: boolean;
+  erro: boolean;
+  vazio: boolean;
+  mensagemVazio: string;
+  onTentarNovamente: () => void;
+}) {
+  if (carregando) {
+    return <p className="text-sm text-muted-foreground py-6 text-center">Carregando…</p>;
+  }
+  if (erro) {
+    return (
+      <div className="py-6 text-center space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Não foi possível carregar estas informações agora.
+        </p>
+        <Button variant="outline" size="sm" onClick={onTentarNovamente}>
+          <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
+  if (vazio) {
+    return <p className="text-sm text-muted-foreground py-6 text-center">{mensagemVazio}</p>;
+  }
+  return null;
+}
+
+/** Nomes humanos para origens/motivos técnicos do histórico (detalhe em expansão). */
+const ORIGEM_LABEL: Record<string, string> = {
+  superadmin_panel: "Painel da plataforma",
+  platform_rpc: "Rotina administrativa",
+  service_role: "Rotina do sistema",
+  seed: "Criação inicial",
+  manual: "Manual",
+};
+const motivoHumano = (s: string | null) => (s ? (ORIGEM_LABEL[s] ?? s.replace(/_/g, " ")) : "—");
+const CICLO_LABEL: Record<string, string> = { monthly: "Mensal", quarterly: "Trimestral", semiannual: "Semestral", annual: "Anual", custom: "Personalizado" };
+const moeda = (valor: number | null, currency: string | null) => valor === null || !currency ? "Pendente" : new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(valor);
+
+export default function PlataformaHome() {
+  const { signOut } = useAuth();
+  // `?catalogo=` (estado das abas do catálogo global) reabre a aba Catálogo; sem rota nova.
+  const [aba, setAba] = useState(() => new URLSearchParams(window.location.search).has("catalogo") ? "catalogo" : "planos");
+  const [organizacaoEmContexto, setOrganizacaoEmContexto] = useState<string | null>(null);
+  const planos = usePlanosSaaS();
+  const versoes = useVersoesPlanosSaaS();
+  const catalogo = useModulosFeaturesSaaS();
+  const assinaturas = useAssinaturasSaaS();
+  const historico = useHistoricoAssinaturasSaaS();
+  const organizacoes = useOrganizacoesSaaS();
+
+  const nomeOrg = (id: string) =>
+    organizacoes.data?.find((o) => o.id === id)?.nome ?? id.slice(0, 8);
+  const historicoVisivel = (historico.data ?? []).filter((h) => !organizacaoEmContexto || h.organization_id === organizacaoEmContexto);
+  const nomePlano = (id: string) => planos.data?.find((p) => p.id === id)?.name ?? id.slice(0, 8);
+
+  return (
+    <main className="min-h-dvh bg-background">
+      <header className="sticky top-0 z-30 border-b bg-card/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-tight truncate">Gestão da plataforma</p>
+              <p className="text-[11px] leading-tight text-muted-foreground truncate">
+                Superadmin de Plataforma · isolado das operações das empresas
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <PwaManualCheckButton />
+            <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sair da conta">
+              <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
+              Sair
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-6xl space-y-6 p-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Gestão da plataforma</CardTitle>
+            <CardDescription>
+              Planos, assinaturas, exceções, empresas e administradores. Toda alteração é validada no
+              servidor, exige motivo e fica registrada no histórico — e é isolada das operações das empresas.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        <Tabs value={aba} onValueChange={setAba}>
+          <TabsList aria-label="Seções da gestão da plataforma" className="h-auto w-full justify-start gap-1 overflow-x-auto overflow-y-hidden whitespace-nowrap p-1 [scrollbar-width:thin] [&>button]:min-h-10 [&>button]:shrink-0 [&>button]:px-3 [&>button:focus-visible]:ring-2 [&>button:focus-visible]:ring-ring">
+            <TabsTrigger value="planos">
+              <Layers className="mr-2 h-4 w-4" aria-hidden="true" />
+              Planos
+            </TabsTrigger>
+            <TabsTrigger value="assinaturas">
+              <Building2 className="mr-2 h-4 w-4" aria-hidden="true" />
+              Assinaturas
+            </TabsTrigger>
+            <TabsTrigger value="excecoes">
+              <SlidersHorizontal className="mr-2 h-4 w-4" aria-hidden="true" />
+              Exceções
+            </TabsTrigger>
+            <TabsTrigger value="empresas">
+              <Building2 className="mr-2 h-4 w-4" aria-hidden="true" />
+              Empresa
+            </TabsTrigger>
+            <TabsTrigger value="admins">
+              <UserCog className="mr-2 h-4 w-4" aria-hidden="true" />
+              Administradores
+            </TabsTrigger>
+            <TabsTrigger value="comunicacao">
+              <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
+              Comunicação
+            </TabsTrigger>
+            <TabsTrigger value="historico">
+              <History className="mr-2 h-4 w-4" aria-hidden="true" />
+              Histórico
+            </TabsTrigger>
+            <TabsTrigger value="catalogo">
+              <Package className="mr-2 h-4 w-4" aria-hidden="true" />
+              Catálogo
+            </TabsTrigger>
+            <TabsTrigger value="fiscal-produtos">Perfis fiscais de produtos</TabsTrigger>
+          </TabsList>
+          <TabsContent value="catalogo"><PlatformCatalogReadTab /></TabsContent>
+          <TabsContent value="fiscal-produtos"><FiscalProdutos platformGlobal /></TabsContent>
+
+          {/* PLANOS ------------------------------------------------------- */}
+          <TabsContent value="planos" className="space-y-4">
+            <Card>
+              <CardHeader><CardTitle className="text-base">Versão comercial</CardTitle><CardDescription>Prepare e revise os dados antes de liberar uma nova versão.</CardDescription></CardHeader>
+              <CardContent><VersaoComercialEditor /></CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Planos comerciais</CardTitle>
+                <CardDescription>Catálogo de planos cadastrados na plataforma.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EstadoConsulta
+                  carregando={planos.isLoading}
+                  erro={planos.isError}
+                  vazio={!!planos.data && planos.data.length === 0}
+                  mensagemVazio="Nenhum plano cadastrado."
+                  onTentarNovamente={() => planos.refetch()}
+                />
+                {planos.data && planos.data.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Plano</TableHead>
+                          <TableHead>Identificador</TableHead>
+                          <TableHead>Situação</TableHead>
+                          <TableHead>Criado em</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {planos.data.map((p) => (
+                          <TableRow key={p.id}>
+                            <TableCell className="font-medium">
+                              {p.name}
+                              {p.is_default && (
+                                <Badge variant="secondary" className="ml-2">
+                                  Padrão
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{p.key}</TableCell>
+                            <TableCell>
+                              <Badge variant={p.active ? "default" : "outline"}>
+                                {p.active ? "Ativo" : "Inativo"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{dataCurta(p.created_at)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Versões comerciais</CardTitle>
+                <CardDescription>Rascunhos permanecem inativos; versões publicadas ficam imutáveis.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EstadoConsulta carregando={versoes.isLoading} erro={versoes.isError} vazio={!!versoes.data && versoes.data.length === 0} mensagemVazio="Nenhuma versão comercial. Novos períodos de teste e mudanças de plano permanecem bloqueados." onTentarNovamente={() => versoes.refetch()} />
+                {versoes.data && versoes.data.length > 0 && <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Plano</TableHead><TableHead>Versão</TableHead><TableHead>Situação</TableHead><TableHead>Preço</TableHead><TableHead>Ciclo</TableHead><TableHead>Vigência</TableHead></TableRow></TableHeader><TableBody>{versoes.data.map((v) => <TableRow key={v.id}><TableCell className="font-medium">{v.name_snapshot}</TableCell><TableCell>v{v.version_number}</TableCell><TableCell><Badge variant={v.status === "PUBLISHED" ? "default" : "outline"}>{v.status === "DRAFT" ? "Rascunho" : v.status === "ARCHIVED" ? "Arquivada" : "Publicada"}</Badge></TableCell><TableCell>{moeda(v.price_amount, v.currency)}</TableCell><TableCell>{v.billing_cycle ? CICLO_LABEL[v.billing_cycle] ?? v.billing_cycle : "Pendente"}</TableCell><TableCell>{v.effective_from ? `${dataCurta(v.effective_from)}${v.effective_to ? ` a ${dataCurta(v.effective_to)}` : " em diante"}` : "Pendente"}</TableCell></TableRow>)}</TableBody></Table></div>}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Módulos e funcionalidades</CardTitle>
+                <CardDescription>
+                  Itens que futuramente poderão ser incluídos nos planos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EstadoConsulta
+                  carregando={catalogo.isLoading}
+                  erro={catalogo.isError}
+                  vazio={!!catalogo.data && catalogo.data.modulos.length === 0}
+                  mensagemVazio="Nenhum módulo cadastrado — nada é bloqueado enquanto o catálogo estiver vazio."
+                  onTentarNovamente={() => catalogo.refetch()}
+                />
+                {catalogo.data && catalogo.data.modulos.length > 0 && (
+                  <ul className="space-y-3">
+                    {catalogo.data.modulos.map((m) => (
+                      <li key={m.id} className="rounded-md border p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{m.name}</span>
+                          <Badge variant={m.active ? "default" : "outline"}>
+                            {m.active ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {catalogo.data.features.filter((f) => f.module_id === m.id).length}{" "}
+                          funcionalidade(s)
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ASSINATURAS -------------------------------------------------- */}
+          <TabsContent value="excecoes">
+            <ExcecoesTab />
+          </TabsContent>
+
+          {/* ADMINISTRADORES DE EMPRESA ----------------------------------- */}
+          <TabsContent value="empresas">
+            <PlataformaEmpresas
+              onAbrirAdministradores={(organizationId) => {
+                setOrganizacaoEmContexto(organizationId);
+                setAba("admins");
+              }}
+              onAbrirAssinaturas={(organizationId) => {
+                setOrganizacaoEmContexto(organizationId);
+                setAba("assinaturas");
+              }}
+              onAbrirHistorico={(organizationId) => {
+                setOrganizacaoEmContexto(organizationId);
+                setAba("historico");
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="admins">
+            <PlataformaAdmins organizationIdInicial={organizacaoEmContexto} />
+          </TabsContent>
+
+          <TabsContent value="comunicacao">
+            <ComunicacaoConfigTab />
+          </TabsContent>
+
+
+          <TabsContent value="assinaturas" className="space-y-4">
+            <AlterarAssinaturaCard organizationIdInicial={organizacaoEmContexto} />
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Assinaturas por empresa</CardTitle>
+                <CardDescription>Situação atual de cada organização.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EstadoConsulta
+                  carregando={assinaturas.isLoading}
+                  erro={assinaturas.isError}
+                  vazio={!!assinaturas.data && assinaturas.data.length === 0}
+                  mensagemVazio="Nenhuma assinatura registrada até o momento."
+                  onTentarNovamente={() => assinaturas.refetch()}
+                />
+                {assinaturas.data && assinaturas.data.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Empresa</TableHead>
+                          <TableHead>Plano</TableHead>
+                          <TableHead>Situação</TableHead>
+                          <TableHead>Versão</TableHead>
+                          <TableHead>Início</TableHead>
+                          <TableHead>Vigência até</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {assinaturas.data.map((a) => (
+                          <TableRow key={a.id}>
+                            <TableCell className="font-medium">{nomeOrg(a.organization_id)}</TableCell>
+                            <TableCell>{nomePlano(a.plan_id)}</TableCell>
+                            <TableCell>
+                              <Badge variant={a.status === "ACTIVE" ? "default" : "secondary"}>
+                                {STATUS_LABEL[a.status] ?? a.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{a.plan_version_id ? "Vinculada" : <Badge variant="outline">Regularização pendente</Badge>}</TableCell>
+                            <TableCell>{dataCurta(a.started_at)}</TableCell>
+                            <TableCell>{dataCurta(a.status === "TRIAL" ? a.trial_ends_at : a.current_period_end)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* HISTÓRICO ---------------------------------------------------- */}
+          <TabsContent value="historico">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Histórico de assinaturas</CardTitle>
+                <CardDescription>
+                  Registro permanente das mudanças — não pode ser editado nem apagado.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {organizacaoEmContexto && (
+                  <div className="mb-3 flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
+                    <span>Filtrado pela empresa:</span>
+                    <Badge variant="secondary">{nomeOrg(organizacaoEmContexto)}</Badge>
+                    <Button size="sm" variant="ghost" className="min-h-9" onClick={() => setOrganizacaoEmContexto(null)}>Mostrar todas</Button>
+                  </div>
+                )}
+                <EstadoConsulta
+                  carregando={historico.isLoading}
+                  erro={historico.isError}
+                  vazio={!!historico.data && historicoVisivel.length === 0}
+                  mensagemVazio={organizacaoEmContexto ? "Nenhuma mudança de assinatura registrada para esta empresa." : "Nenhuma mudança registrada."}
+                  onTentarNovamente={() => historico.refetch()}
+                />
+                {historico.data && historicoVisivel.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Quando</TableHead>
+                          <TableHead>Empresa</TableHead>
+                          <TableHead>Origem</TableHead>
+                          <TableHead>Ação</TableHead>
+                          <TableHead>Transição</TableHead>
+                          <TableHead>Motivo</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {historicoVisivel.map((h) => (
+                          <TableRow key={h.id}>
+                            <TableCell>{dataHora(h.created_at)}</TableCell>
+                            <TableCell>{nomeOrg(h.organization_id)}</TableCell>
+                            <TableCell className="text-muted-foreground">{motivoHumano(h.source)}</TableCell>
+                            <TableCell>{motivoHumano(h.action)}</TableCell>
+                            <TableCell>{h.previous_status || h.new_status ? `${h.previous_status ? STATUS_LABEL[h.previous_status] ?? h.previous_status : "—"} → ${h.new_status ? STATUS_LABEL[h.new_status] ?? h.new_status : "—"}` : "—"}</TableCell>
+                            <TableCell>{motivoHumano(h.reason)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </main>
+  );
+}
