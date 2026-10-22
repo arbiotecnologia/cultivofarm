@@ -851,6 +851,10 @@ function ProductEditDrawer({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    setValues(productRowToFormValues(null));
+    setErrors({});
+  }, [fence.scope]);
+  useEffect(() => {
     if (profileQuery.data !== undefined) {
       setValues(productRowToFormValues(profileQuery.data));
     }
@@ -887,7 +891,7 @@ function ProductEditDrawer({
       if (err instanceof OptimisticConflictError) {
         toast({
           title: "Conflito de atualização",
-          description: "Outro usuário alterou este perfil. Recarregue e tente novamente.",
+          description: "Outro usuário alterou este perfil. A versão atual será consultada; revise antes de salvar novamente.",
           variant: "destructive",
         });
         await profileQuery.refetch();
@@ -906,7 +910,7 @@ function ProductEditDrawer({
     <FiscalProfileDrawer
       title={`${canEdit ? "Editar" : "Detalhes do"} perfil fiscal — produto`}
       subtitle={`${displayName}${displayCodigo ? ` — ${displayCodigo}` : ""}`}
-      loading={profileQuery.isLoading}
+      loading={!fence.ready || profileQuery.isLoading || profileQuery.isFetching || profileQuery.isError}
       saving={save.isPending}
       canEdit={canEdit && fence.ready && !profileQuery.isFetching && !profileQuery.isError && profileQuery.data !== undefined}
       values={values}

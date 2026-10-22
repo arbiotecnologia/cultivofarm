@@ -389,4 +389,4 @@ export async function handler(req: Request, clientFactory: typeof createClient =
     });
   }
 }
-if (import.meta.main) Deno.serve(handler);
+if (import.meta.main) Deno.serve(req => handler(req));
