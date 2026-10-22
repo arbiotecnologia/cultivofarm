@@ -87,9 +87,10 @@ describe("FASE 27E — portal parceiro usa RPCs seguras", () => {
 
   it("FichasTecnicas filtra b2b_enabled e ficha aprovada", () => {
     const c = read(FICHAS);
-    expect(c).toContain("b2b_enabled");
-    expect(c).toContain("status_validacao");
-    expect(c).toContain("aprovado");
+    // C1B: b2b_enabled/visibilidade/ficha aprovada resolvidos no servidor pela RPC canônica.
+    expect(c).toContain("usePartnerCatalogTecnico");
+    expect(c).toContain("ficha_aprovada");
+    expect(c).not.toMatch(/\.from\(/);
   });
 });
 

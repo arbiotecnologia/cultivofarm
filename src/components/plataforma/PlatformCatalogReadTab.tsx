@@ -16,8 +16,10 @@ import { PlatformCatalogMetadataDialog } from "@/components/plataforma/PlatformC
 import { PlatformCatalogB2BDialog } from "@/components/plataforma/PlatformCatalogB2BDialog";
 import { PlatformCatalogFamilyDialog } from "@/components/plataforma/PlatformCatalogFamilyDialog";
 import { PlatformCatalogCompositionDialog } from "@/components/plataforma/PlatformCatalogCompositionDialog";
+import { PlatformCatalogLabelsPanel } from "@/components/plataforma/PlatformCatalogLabelsPanel";
 import { CATALOG_TABS, CLASS_LABEL, FAMILY_LABEL, parseCatalogView, parseReview,
   type FamilyTarget, type ProductFamily, type ReviewFilter } from "@/lib/catalogo/platformCatalogFamily";
+import { labelDisplayName, useCatalogLabelNames } from "@/lib/catalogo/catalogLabelDisplay";
 import { PlatformCatalogCreateDialog, PlatformCatalogStatusDialog } from "@/components/plataforma/PlatformCatalogLifecycleDialogs";
 import { platformCatalogAccess, platformCatalogPageSchema, PLATFORM_CATALOG_LIMIT,
   PLATFORM_CATALOG_MAX_OFFSET, PLATFORM_CATALOG_SEARCH_LIMIT } from "@/lib/catalogo/platformCatalogRead";
@@ -38,6 +40,7 @@ export function PlatformCatalogReadTab() {
 /** Quatro abas globais (ordem fixa) + Cadastros de apoio; estado em query param, sem rota paralela. */
 function CatalogTabs({ scope }: { scope: string }) {
   const [params, setParams] = useSearchParams();
+  const [labelsOpen, setLabelsOpen] = useState(false);
   const view = parseCatalogView(params.get("catalogo"));
   const review = parseReview(params.get("revisao"));
   const update = (patch: Record<string, string | null>) => setParams((prev) => {
@@ -60,8 +63,11 @@ function CatalogTabs({ scope }: { scope: string }) {
       <span className="text-muted-foreground">Cadastros de apoio:</span>
       <Button variant={view === "culturas" ? "secondary" : "outline"} size="sm" className="min-h-10"
         aria-pressed={view === "culturas"} onClick={() => update({ catalogo: "culturas" })}>Culturas</Button>
+      <Button variant={labelsOpen ? "secondary" : "outline"} size="sm" className="min-h-10"
+        aria-pressed={labelsOpen} onClick={() => setLabelsOpen((v) => !v)}>Rótulos por família</Button>
     </nav>
     {view === "culturas" && <PlatformCatalogEntityPanel kind="cultura" scope={scope} />}
+    {labelsOpen && <PlatformCatalogLabelsPanel scope={scope} />}
   </div>;
 }
 
@@ -83,17 +89,23 @@ function CatalogReadPage({ scope, family, review, onReview }:
     void queryClient.invalidateQueries({ queryKey: ["platform-catalog-read", scope] });
   };
   const queryClient = useQueryClient();
+  // Nomes de exibição dos rótulos pela fonte canônica (RPC de leitura autorizada); renomear
+  // na Gestão da plataforma reflete aqui após invalidação. Fallback: CLASS_LABEL do seed.
+  const labelNames = useCatalogLabelNames(scope, true);
   const active = useRef(true);
   useEffect(() => {
     active.current = true;
-    const predicate = (q: { queryKey: readonly unknown[] }) => q.queryKey[0] === "platform-catalog-read" && q.queryKey[1] !== scope;
+    // Caches de leitura e de rótulos são por escopo de identidade: escopo anterior é descartado.
+    const scoped = new Set(["platform-catalog-read", "catalog-labels-read", "platform-catalog-labels"]);
+    const predicate = (q: { queryKey: readonly unknown[] }) => scoped.has(String(q.queryKey[0])) && q.queryKey[1] !== scope;
     void queryClient.cancelQueries({ predicate });
     queryClient.removeQueries({ predicate });
     return () => {
       active.current = false;
-      const queryKey = ["platform-catalog-read", scope];
-      void queryClient.cancelQueries({ queryKey });
-      queryClient.removeQueries({ queryKey });
+      for (const queryKey of [["platform-catalog-read", scope], ["catalog-labels-read", scope]]) {
+        void queryClient.cancelQueries({ queryKey });
+        queryClient.removeQueries({ queryKey });
+      }
     };
   }, [queryClient, scope]);
   const query = useQuery({
@@ -174,7 +186,7 @@ function CatalogReadPage({ scope, family, review, onReview }:
         <TableCell className="break-words">{product.codigo ?? "—"}</TableCell>
         <TableCell className="min-w-40 break-words font-medium">{product.nome}</TableCell>
         <TableCell>{product.familia_catalogo
-          ? <span>{FAMILY_LABEL[product.familia_catalogo]}{product.classe_catalogo ? ` · ${CLASS_LABEL[product.classe_catalogo]}` : ""}</span>
+          ? <span>{FAMILY_LABEL[product.familia_catalogo]}{product.classe_catalogo ? ` · ${labelDisplayName(labelNames, product.classe_catalogo, CLASS_LABEL[product.classe_catalogo])}` : ""}</span>
           : <Badge variant="outline">Pendente</Badge>}</TableCell>
         <TableCell>{product.tipo ?? "—"}</TableCell>
         <TableCell><Badge variant={product.ativo ? "secondary" : "outline"}>{product.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>

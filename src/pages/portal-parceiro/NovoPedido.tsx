@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Trash2, ShoppingCart, Plus, Star } from "lucide-react";
 import { toast } from "sonner";
+import { partnerCatalogRows } from "@/lib/catalogo/partnerCatalogRows";
 import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
 import { AddToCartDialog } from "@/components/catalogo/AddToCartDialog";
 import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
@@ -117,7 +118,7 @@ export default function NovoPedido() {
   // nunca pedidos oficiais.
   const isSimulationMode = isRoleTecnico || isSimuladorRoute;
   const catalogGestor = usePartnerCatalog(isSimulationMode ? null : partner?.id);
-  const catalogTecnico = usePartnerCatalogTecnico();
+  const catalogTecnico = usePartnerCatalogTecnico(isSimulationMode);
   useRealtimePartnerCatalogTecnico();
   const catalog: CatalogItem[] = isSimulationMode
     ? (catalogTecnico.data ?? [])
@@ -557,6 +558,7 @@ export default function NovoPedido() {
           <CardContent>
             <CatalogoCardsGrid
               scope="b2b"
+              source={{ ...(isSimulationMode ? catalogTecnico : catalogGestor), data: partnerCatalogRows(catalog) }}
               showStatusFilter={false}
               showB2BFilter={false}
               showInternalBadges={false}

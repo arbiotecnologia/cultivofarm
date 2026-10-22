@@ -26,10 +26,18 @@ function setup(entry = "/plataforma") {
   const view = render(tree());
   return { rerender: () => view.rerender(tree()) };
 }
+// Fonte canônica de rótulos (RPC platform_list_catalog_labels): somente a semente atual.
+const SEED: Record<string, string[]> = { biologico: ["biofungicida", "bioinseticida", "inoculante", "solubilizador"], quimico: ["fungicida", "inseticida", "herbicida"], fertilizante_adubo: [] };
+const seedLabels = (fam: string) => SEED[fam].map((rotulo, i) => ({ id: `00000000-0000-4000-8000-0000000001${fam.length}${i}`, familia: fam, rotulo,
+  rotulo_exibicao: rotulo, ativo: true, updated_at: V1 }));
 const readCalls = () => mocks.rpc.mock.calls.filter(([n]) => n === "platform_read_global_product_catalog_by_family").map(([, a]) => a);
 beforeEach(() => {
   mocks.actor = actor();
-  mocks.request.mockReset().mockImplementation((name: string) => name === "platform_read_global_product_catalog_by_family" ? Promise.resolve(page()) : new Promise(() => {}));
+  mocks.request.mockReset().mockImplementation((name: string, args: { p_familia?: string }) =>
+    name === "platform_read_global_product_catalog_by_family" ? Promise.resolve(page())
+    : name === "platform_list_catalog_labels" ? Promise.resolve({ data: seedLabels(args.p_familia ?? ""), error: null })
+    : name === "catalog_family_labels_read" ? Promise.resolve({ data: [], error: null })
+    : new Promise(() => {}));
   mocks.rpc.mockReset().mockImplementation((name, args) => ({ abortSignal: (s: AbortSignal) => mocks.request(name, args, s) }));
 });
 afterEach(cleanup);
@@ -89,17 +97,23 @@ describe("contrato de família", () => {
   it("biológico e químico nunca se misturam", () => {
     expect(FAMILY_CLASSES.biologico).toEqual(["biofungicida", "bioinseticida", "inoculante", "solubilizador"]);
     expect(FAMILY_CLASSES.quimico).toEqual(["fungicida", "inseticida", "herbicida"]);
-    expect(isClassAllowed("quimico", "biofungicida")).toBe(false);
-    expect(isClassAllowed("biologico", "herbicida")).toBe(false);
-    expect(isClassAllowed("fertilizante_adubo", "fungicida")).toBe(false);
-    expect(isClassAllowed("biologico", "biofungicida")).toBe(true);
-    expect(platformCatalogPageSchema.safeParse({ items: [{ ...legacy, familia_catalogo: "quimico", classe_catalogo: "biofungicida" }], has_more: false }).success).toBe(false);
+    expect(isClassAllowed("quimico", "biofungicida", seedLabels("quimico"))).toBe(false);
+    expect(isClassAllowed("biologico", "herbicida", seedLabels("biologico"))).toBe(false);
+    expect(isClassAllowed("fertilizante_adubo", "fungicida", seedLabels("fertilizante_adubo"))).toBe(false);
+    expect(isClassAllowed("biologico", "biofungicida", seedLabels("biologico"))).toBe(true);
+    // Sem fonte canônica carregada: falha fechada (só rótulo nulo); rótulo inativo não é atribuível.
+    expect(isClassAllowed("biologico", "biofungicida")).toBe(false);
+    expect(isClassAllowed("biologico", null)).toBe(true);
+    expect(isClassAllowed("biologico", "biofungicida", seedLabels("biologico").map((l) => ({ ...l, ativo: false })))).toBe(false);
+    // Rótulos v2: coerência família↔rótulo é decidida no servidor (trigger canônico); o leitor
+    // aceita rótulo cadastrado, mas continua rejeitando família fora do enum.
+    expect(platformCatalogPageSchema.safeParse({ items: [{ ...legacy, familia_catalogo: "quimico", classe_catalogo: "fungicida" }], has_more: false }).success).toBe(true);
     expect(platformCatalogPageSchema.safeParse({ items: [{ ...legacy, familia_catalogo: "semente" }], has_more: false }).success).toBe(false);
   });
   it("classe incoerente e motivo curto não chegam ao servidor", async () => {
     const s = new AbortController().signal; const t = { id: ID, updated_at: V1, familia_catalogo: null, classe_catalogo: null };
-    await expect(setProductFamily(t, "quimico", "biofungicida", "Motivo suficiente", ID, s)).rejects.toThrow();
-    await expect(setProductFamily(t, "biologico", "biofungicida", "curto", ID, s)).rejects.toThrow();
+    await expect(setProductFamily(t, "quimico", "biofungicida", "Motivo suficiente", ID, s, seedLabels("quimico"))).rejects.toThrow();
+    await expect(setProductFamily(t, "biologico", "biofungicida", "curto", ID, s, seedLabels("biologico"))).rejects.toThrow();
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
   it("envia CAS/motivo/chave e rejeita recibo divergente", async () => {
@@ -108,15 +122,15 @@ describe("contrato de família", () => {
     const ok = { id: ID, familia_catalogo: "biologico", classe_catalogo: "biofungicida", updated_at: "2026-10-14T21:40:00.000000+00:00",
       idempotency_key: KEY, audit_id: KEY, idempotent: false };
     mocks.request.mockResolvedValueOnce({ data: ok, error: null });
-    await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s)).resolves.toMatchObject({ familia_catalogo: "biologico" });
+    await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s, seedLabels("biologico"))).resolves.toMatchObject({ familia_catalogo: "biologico" });
     expect(mocks.rpc).toHaveBeenCalledWith("platform_set_global_product_family", { p_id: ID, p_expected_updated_at: V1,
       p_familia: "biologico", p_classe: "biofungicida", p_reason: "Confirmado pelo usuário", p_idempotency_key: KEY });
     for (const bad of [{ ...ok, familia_catalogo: "quimico" }, { ...ok, updated_at: V1 }, { ...ok, classe_catalogo: null }, { ...ok, idempotency_key: ID }]) {
       mocks.request.mockResolvedValueOnce({ data: bad, error: null });
-      await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s)).rejects.toThrow(/Não foi possível confirmar/);
+      await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s, seedLabels("biologico"))).rejects.toThrow(/Não foi possível confirmar/);
     }
     mocks.request.mockResolvedValueOnce({ data: null, error: { code: "40001" } });
-    await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s)).rejects.toThrow(/mudou/);
+    await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s, seedLabels("biologico"))).rejects.toThrow(/mudou/);
   });
   it("diálogo exige família, motivo e confirmação; salva e relê lista", async () => {
     setup("/plataforma?revisao=pendentes"); await screen.findByText("Bombarbio");
@@ -124,6 +138,8 @@ describe("contrato de família", () => {
     const save = await screen.findByRole("button", { name: "Salvar classificação" });
     expect((save as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText("Família"), { target: { value: "biologico" } });
+    // Rótulos chegam da fonte canônica antes de serem selecionáveis.
+    await screen.findByRole("option", { name: "biofungicida" });
     fireEvent.change(screen.getByLabelText("Rótulo (opcional)"), { target: { value: "biofungicida" } });
     fireEvent.change(screen.getByLabelText("Motivo (10 a 500 caracteres)"), { target: { value: "Confirmado pelo usuário" } });
     expect((save as HTMLButtonElement).disabled).toBe(true);
@@ -146,33 +162,36 @@ describe("fence do diálogo de família", () => {
   type P = { id: string; updated_at: string; familia_catalogo: null; classe_catalogo: null; nome: string };
   function mount(initial: P, scope: () => string) {
     const onSaved = vi.fn(); const onClose = vi.fn();
-    const ui = (p: P) => <PlatformCatalogFamilyDialog product={p} scope={scope()} onClose={onClose} onSaved={onSaved} />;
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const ui = (p: P) => <QueryClientProvider client={client}><PlatformCatalogFamilyDialog product={p} scope={scope()} onClose={onClose} onSaved={onSaved} /></QueryClientProvider>;
     const view = render(ui(initial));
     return { onSaved, rerender: (p: P) => view.rerender(ui(p)), unmount: view.unmount };
   }
   const base: P = { id: ID, updated_at: V1, familia_catalogo: null, classe_catalogo: null, nome: "Bombarbio" };
-  function fill() {
+  async function fill() {
     fireEvent.change(screen.getByLabelText("Família"), { target: { value: "biologico" } });
+    await waitFor(() => expect((screen.getByRole("checkbox") as HTMLButtonElement).disabled).toBe(false));
     fireEvent.change(screen.getByLabelText("Motivo (10 a 500 caracteres)"), { target: { value: "Confirmado pelo usuário" } });
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Salvar classificação" }));
   }
   let resolve: ((v: unknown) => void) | undefined;
   beforeEach(() => {
-    mocks.request.mockImplementation((_n: string, args: { p_idempotency_key: string }, signal: AbortSignal) => new Promise((r) => {
+    mocks.request.mockImplementation((_n: string, args: { p_idempotency_key: string; p_familia?: string }, signal: AbortSignal) =>
+      _n === "platform_list_catalog_labels" ? Promise.resolve({ data: seedLabels(args.p_familia ?? ""), error: null }) : new Promise((r) => {
       resolve = () => r({ data: { id: ID, familia_catalogo: "biologico", classe_catalogo: null, updated_at: V2,
         idempotency_key: args.p_idempotency_key, audit_id: ID, idempotent: false }, error: null });
       void signal;
     }));
   });
   const scopeOf = () => platformCatalogAccess(mocks.actor).scope;
-  const signal = () => mocks.request.mock.calls.at(-1)?.[2] as AbortSignal;
+  const signal = () => mocks.request.mock.calls.filter(([n]) => n === "platform_set_global_product_family").at(-1)?.[2] as AbortSignal;
   it.each([
     ["escopo A→B com live=true", () => { mocks.actor = actor("sa-b"); return base; }],
     ["troca de item", () => ({ ...base, id: OTHER })],
     ["mesma entidade em nova versão", () => ({ ...base, updated_at: V2 })],
   ])("%s aborta escrita, limpa campos e ignora resposta tardia", async (_n, change) => {
-    const m = mount(base, scopeOf); fill();
+    const m = mount(base, scopeOf); await fill();
     await screen.findByText("Confirmando…");
     const next = change(); m.rerender(next);
     expect(signal().aborted).toBe(true);
@@ -184,12 +203,12 @@ describe("fence do diálogo de família", () => {
     expect(m.onSaved).not.toHaveBeenCalled(); expect(screen.queryByRole("alert")).toBeNull();
   });
   it("fechamento (desmontagem) aborta escrita pendente", async () => {
-    const m = mount(base, scopeOf); fill(); await screen.findByText("Confirmando…");
+    const m = mount(base, scopeOf); await fill(); await screen.findByText("Confirmando…");
     m.unmount(); expect(signal().aborted).toBe(true);
     await act(async () => { resolve?.(null); }); expect(m.onSaved).not.toHaveBeenCalled();
   });
   it("perda de readiness esconde o diálogo e aborta", async () => {
-    const m = mount(base, scopeOf); fill(); await screen.findByText("Confirmando…");
+    const m = mount(base, scopeOf); await fill(); await screen.findByText("Confirmando…");
     const s0 = scopeOf(); mocks.actor = { ...actor(), roles: [] };
     const view = m; view.rerender(base); void s0;
     expect(signal().aborted).toBe(true); expect(screen.queryByText("Salvar classificação")).toBeNull();

@@ -11,11 +11,12 @@ import { CatalogSearchFilters, CatalogTipoFiltro, CatalogStatusFiltro } from "@/
 import { MicroorganismTechnicalProfileDialog } from "@/components/protocolos/MicroorganismTechnicalProfileDialog";
 import { ProductTechnicalProfileDialog } from "@/components/protocolos/ProductTechnicalProfileDialog";
 import { useCatalogoUnificado, CatalogoUnificadoRow, CatalogoScope, catalogoRevisionPending } from "@/hooks/useCatalogoUnificado";
+import { PartnerFichaDrawer } from "./PartnerFichaDrawer";
 import { FichaProdutorDrawer } from "@/components/catalogo/FichaProdutorDrawer";
 import { CatalogoItemDrawer, type CatalogoFichaScope } from "@/components/catalogo/CatalogoItemDrawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CatalogoQueryErrorState } from "./CatalogoQueryErrorState";
-import { CatalogFamilyFilter } from "./CatalogFamilyFilter";
+import { CatalogoQueryErrorState } from "@/components/catalogo/CatalogoQueryErrorState";
+import { CatalogFamilyFilter } from "@/components/catalogo/CatalogFamilyFilter";
 import { catalogFamilyMatches, catalogFamilyLabel, type CatalogFamilyFilter as FamilyFilter } from "@/lib/catalogo/catalogFamilyRead";
 
 type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
@@ -28,7 +29,12 @@ type SortKey = "nome_asc" | "nome_desc" | "tipo" | "codigo";
  */
 export const CATALOGO_PAGE_SIZE = 60;
 
+export interface CatalogGridSource {
+  data?: CatalogoUnificadoRow[]; isLoading: boolean; error: Error | null;
+  refetch: () => unknown; isFetching: boolean; scope?: string;
+}
 interface Props {
+  source?: CatalogGridSource;
   scope: CatalogoScope;
   /** Mostrar filtros de status da ficha e B2B (admin/interno). Default: true */
   showStatusFilter?: boolean;
@@ -47,7 +53,15 @@ interface Props {
   fichaOrigem?: "protocolos" | "app_mobile";
 }
 
-export function CatalogoCardsGrid({
+export function CatalogoCardsGrid(props: Props) {
+  return props.source ? <CatalogGridView {...props} source={props.source} key={props.source.scope} /> : <LegacyCatalogGrid {...props} />;
+}
+function LegacyCatalogGrid(props: Props) {
+  const source = useCatalogoUnificado(props.scope);
+  return <CatalogGridView {...props} source={source} />;
+}
+function CatalogGridView({
+  source,
   scope,
   showStatusFilter = scope !== "b2b",
   showB2BFilter = scope !== "b2b",
@@ -57,8 +71,8 @@ export function CatalogoCardsGrid({
   actionSlot,
   filterRow,
   fichaOrigem = "protocolos",
-}: Props) {
-  const { data, isLoading, error, refetch, isFetching } = useCatalogoUnificado(scope);
+}: Props & { source: CatalogGridSource }) {
+  const { data, isLoading, error, refetch, isFetching } = source;
 
   const [search, setSearch] = useState("");
   const [tipo, setTipo] = useState<CatalogTipoFiltro>("todos");
@@ -121,16 +135,18 @@ export function CatalogoCardsGrid({
   // FASE 27D — callbacks memoizados (compartilhados por todos os cards/linhas).
   const abrirVerFicha = useCallback((r: CatalogoUnificadoRow) => {
     if (scope === "b2b") {
-      setFichaB2B({ id: r.id, tipo: r.tipo });
+      if (source.scope) setFichaB2B({ id: r.id, tipo: r.tipo });
+      else setFichaB2B({ id: r.id, tipo: r.tipo });
       return;
     }
     if (r.tipo === "produto") setOpenProd(r.raw);
     else setOpenMicro(r.raw);
-  }, [scope]);
+  }, [scope, source.scope]);
 
   const abrirFichaCompleta = useCallback((r: CatalogoUnificadoRow) => {
+    if (scope === "b2b" && source.scope) { setFichaB2B({ id: r.id, tipo: r.tipo }); return; }
     setFichaUnificada(r);
-  }, []);
+  }, [scope, source.scope]);
 
   const renderActions = (r: CatalogoUnificadoRow) => (
     <div className="flex gap-1 justify-end flex-wrap">
@@ -160,7 +176,7 @@ export function CatalogoCardsGrid({
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
       if (filterRow && !filterRow(r)) return false;
-      if (scope !== "b2b" && !catalogFamilyMatches(r, family)) return false;
+      if (!catalogFamilyMatches(r, family)) return false;
       if (tipo !== "todos" && r.tipo !== tipo) return false;
       if (showB2BFilter) {
         if (b2b === "sim" && !r.b2b_enabled) return false;
@@ -210,7 +226,7 @@ export function CatalogoCardsGrid({
 
   return (
     <div className="space-y-4">
-      {scope !== "b2b" && <CatalogFamilyFilter value={family} onChange={setFamily} />}
+      <CatalogFamilyFilter value={family} onChange={setFamily} />
       <div className="flex flex-col md:flex-row gap-2 md:items-stretch">
         <div className="flex-1">
           <CatalogSearchFilters
@@ -340,7 +356,7 @@ export function CatalogoCardsGrid({
                     <TableCell className="align-top">
                       <div className="flex flex-col items-end gap-1">
                         {showPriceCol && (
-                          <div className="text-right w-full">{pricingSlot!(r)}</div>
+                          <div className="text-right w-full">{pricingSlot?.(r)}</div>
                         )}
                         {renderActions(r)}
                       </div>
@@ -436,18 +452,21 @@ export function CatalogoCardsGrid({
         origem={fichaOrigem}
       />
       <CatalogoItemDrawer
-        item={fichaUnificada}
+        item={fichaUnificada ? rows.find(r => r.id === fichaUnificada.id && r.tipo === fichaUnificada.tipo) ?? null : null}
         open={!!fichaUnificada}
         onOpenChange={(v) => !v && setFichaUnificada(null)}
         scope={scope as CatalogoFichaScope}
       />
-      <FichaProdutorDrawer
+      {source.scope ? <PartnerFichaDrawer
+        item={fichaB2B ? rows.find(r => r.id === fichaB2B.id && r.tipo === fichaB2B.tipo) ?? null : null}
+        open={!!fichaB2B} onOpenChange={v => !v && setFichaB2B(null)}
+      /> : <FichaProdutorDrawer
         open={!!fichaB2B}
         onOpenChange={(v) => !v && setFichaB2B(null)}
         itemId={fichaB2B?.id ?? null}
         tipo={fichaB2B?.tipo ?? "produto"}
         origem="portal_parceiro"
-      />
+      />}
 
 
       <p className="text-[10px] text-muted-foreground text-center italic pt-2">

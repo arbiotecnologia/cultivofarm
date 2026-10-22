@@ -1,13 +1,21 @@
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { resolverUnidadePreco, type UnidadePreco } from "@/lib/catalogo/unidades";
+import { readCatalogFamily, type ReadCatalogFamily } from "@/lib/catalogo/catalogFamilyRead";
 import { round2 } from "@/lib/catalogo/formatUnidades";
 
 export type CatalogItemTipo = "produto" | "microrganismo";
 /** Unidade canônica de preço (ver src/lib/catalogo/unidades.ts). */
 export type UnidadePrecoPrincipal = UnidadePreco;
 
+export interface CatalogFichaConteudo {
+  subtitulo?: string | null; funcao?: string | null; dose_ml_ha?: number | null;
+  explicacao_produtor?: string | null; indicacoes_uso?: string | null; cuidados_aplicacao?: string | null;
+  mecanismo_acao?: string | null; alvos_count?: number; fontes_count?: number;
+}
 export interface CatalogItem {
+  ficha_conteudo?: CatalogFichaConteudo;
+  familia_catalogo?: ReadCatalogFamily | null;
   item_id: string;
   item_tipo: CatalogItemTipo;
   product_id: string | null;
@@ -60,16 +68,17 @@ const num = (v: unknown): number | null => {
 
 export function usePartnerCatalog(partnerId: string | null | undefined) {
   return useScopedPortalQuery({
-    queryKey: ["partner-catalog-secure", partnerId],
+    queryKey: ["partner-catalog-secure", "C1B_DUAL_TENANT_V1", partnerId],
     enabled: !!partnerId,
-    queryFn: async (): Promise<CatalogItem[]> => {
+    queryFn: async (signal): Promise<CatalogItem[]> => {
       if (!partnerId) return [];
       const { data, error } = await supabase.rpc(
         "get_partner_catalog_secure" as any,
-        { p_partner_id: partnerId },
-      );
+        { p_partner_id: partnerId, p_catalog_v2: true } as any,
+      ).abortSignal(signal);
       if (error) throw error;
       return (data ?? []).map((r: any) => {
+        if (r.catalog_contract !== "C1B_DUAL_TENANT_V1") throw new Error("catalog_contract_unavailable");
         const tipo = (r.item_tipo ?? "produto") as CatalogItemTipo;
         const precoFallback = num(r.preco_parceiro);
         const valorDose = num(r.valor_dose_brl);
@@ -84,6 +93,8 @@ export function usePartnerCatalog(partnerId: string | null | undefined) {
         });
         const descPct = Number(r.desconto_percentual ?? 0);
         return {
+          ficha_conteudo: r.ficha_aprovada ? r.ficha_conteudo ?? {} : {},
+          familia_catalogo: readCatalogFamily(r.familia_catalogo),
           item_id: r.item_id,
           item_tipo: tipo,
           product_id: r.product_id ?? null,

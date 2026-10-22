@@ -103,7 +103,7 @@ ALTER TABLE public.catalog_platform_admin_audit ADD CONSTRAINT catalog_platform_
     'create_global_microorganism','update_global_microorganism','set_global_microorganism_status',
     'create_global_culture','update_global_culture','set_global_culture_status',
     'create_global_volume','update_global_volume','set_global_volume_status',
-    'set_global_b2b_enabled','set_global_product_family'));
+    'set_global_b2b_enabled','set_global_product_family','set_global_product_composition'));
 CREATE FUNCTION platform_private.catalog_entity_replay(p_actor uuid, p_operation text, p_request jsonb, p_reason text, p_key uuid)
 RETURNS jsonb LANGUAGE plpgsql STABLE SET search_path='' AS $$
 DECLARE r jsonb; BEGIN
@@ -196,7 +196,23 @@ try:
     # Injeta os md5 do baseline SINTÉTICO (o artifact mantém os md5 LIVE byte-finais).
     core_md5 = sql("SELECT md5(pg_get_functiondef('platform_private.set_global_product_family_core(uuid,timestamp with time zone,text,text,text,uuid)'::regprocedure))")
     check_md5 = sql("SELECT md5(pg_get_constraintdef(oid)) FROM pg_constraint WHERE conrelid='public.produtos'::regclass AND conname='produtos_classe_catalogo_coerente_check'")
-    cand = candidate.replace('8bd3ce69c5bd55b678246acb9d264548', core_md5).replace('0ae66545cef182ce716ee3958ef634b6', check_md5)
+    audit_md5 = sql("SELECT md5(pg_get_constraintdef(oid)) FROM pg_constraint WHERE conrelid='public.catalog_platform_admin_audit'::regclass AND conname='catalog_platform_admin_audit_operation_check'")
+    partial = candidate.replace('8bd3ce69c5bd55b678246acb9d264548', core_md5).replace('0ae66545cef182ce716ee3958ef634b6', check_md5)
+    # O baseline sintético reproduz o CHECK LIVE byte a byte: md5 deve coincidir com o do auditor.
+    assert audit_md5 == 'a62259c75c05f0f0c6be34a387b483e9', audit_md5
+    checks.append('baseline sintetico do CHECK de auditoria = md5 LIVE a62259c7')
+    # Guard: CHECK de auditoria com drift (sem composição) -> aborta antes de qualquer DDL.
+    sql("BEGIN; ALTER TABLE public.catalog_platform_admin_audit DROP CONSTRAINT catalog_platform_admin_audit_operation_check;"
+        " ALTER TABLE public.catalog_platform_admin_audit ADD CONSTRAINT catalog_platform_admin_audit_operation_check CHECK (operation IN ('set_global_product_family'));"
+        " COMMIT;")
+    sql(partial, deny='catalog_labels_audit_check_baseline_drift')
+    checks.append('guard aborta com CHECK de auditoria divergente')
+    sql("ALTER TABLE public.catalog_platform_admin_audit DROP CONSTRAINT catalog_platform_admin_audit_operation_check;"
+        " ALTER TABLE public.catalog_platform_admin_audit ADD CONSTRAINT catalog_platform_admin_audit_operation_check CHECK (operation IN ('wipe_global_products','update_global_product_metadata','create_global_product','set_global_product_status',"
+        "'create_global_microorganism','update_global_microorganism','set_global_microorganism_status','create_global_culture','update_global_culture','set_global_culture_status',"
+        "'create_global_volume','update_global_volume','set_global_volume_status','set_global_b2b_enabled','set_global_product_family','set_global_product_composition'));")
+    assert sql("SELECT md5(pg_get_constraintdef(oid)) FROM pg_constraint WHERE conname='catalog_platform_admin_audit_operation_check'") == audit_md5
+    cand = partial
     assert cand != candidate
     sql(cand); checks.append('candidate applies cleanly')
 
@@ -301,6 +317,14 @@ try:
     sql("SET ROLE authenticated; INSERT INTO public.catalog_family_labels (familia,rotulo,rotulo_exibicao) VALUES ('quimico','direto','Direto')", 'permission denied'); checks.append('direct insert as authenticated denied')
     sql("SET ROLE authenticated; SELECT count(*) FROM public.catalog_family_labels", 'permission denied'); checks.append('direct select as authenticated denied')
     check('audit recorded operations', "SELECT count(*) >= 5 FROM public.catalog_platform_admin_audit WHERE operation IN ('create_catalog_label','update_catalog_label','set_catalog_label_active','set_global_product_family')", 't')
+    # Operação de composição existente continua aceita pela whitelist reescrita.
+    sql("INSERT INTO public.catalog_platform_admin_audit(operation,reason,idempotency_key) VALUES ('set_global_product_composition','manutencao composicao',gen_random_uuid())")
+    checks.append('whitelist preserva set_global_product_composition')
+    for op in ['wipe_global_products','set_global_b2b_enabled','set_global_product_family','create_catalog_label']:
+        sql(f"INSERT INTO public.catalog_platform_admin_audit(operation,reason,idempotency_key) VALUES ('{op}','preservada',gen_random_uuid())")
+    checks.append('whitelist preserva operacoes antigas e novas')
+    sql("INSERT INTO public.catalog_platform_admin_audit(operation,reason,idempotency_key) VALUES ('operacao_inventada','x',gen_random_uuid())", 'violates check constraint')
+    checks.append('whitelist rejeita operacao desconhecida')
     print(f"PASS {len(checks)}/{len(checks)}")
     for c in checks: print(' -', c)
 finally:

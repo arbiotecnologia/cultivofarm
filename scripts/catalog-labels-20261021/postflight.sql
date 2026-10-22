@@ -66,3 +66,9 @@ WHERE c.conrelid = 'public.catalog_platform_admin_audit'::pg_catalog.regclass
 -- 9) Leitura de exibição: usuário autenticado ativo recebe somente rótulos ATIVOS
 --    (executar com sessão de leitor autorizado; esperado: sem id/updated_at/ativo)
 -- SELECT public.catalog_family_labels_read('quimico');
+
+-- 9) Correção independente do auditor: whitelist preserva a operação de composição existente
+SELECT pg_catalog.pg_get_constraintdef(c.oid) LIKE '%set_global_product_composition%' AS composition_operation_preserved
+FROM pg_catalog.pg_constraint c
+WHERE c.conrelid = 'public.catalog_platform_admin_audit'::pg_catalog.regclass
+  AND c.conname = 'catalog_platform_admin_audit_operation_check';

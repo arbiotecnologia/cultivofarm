@@ -4,11 +4,6 @@ export const PLATFORM_CATALOG_LIMIT = 50;
 export const PLATFORM_CATALOG_MAX_OFFSET = 1_000_000;
 export const PLATFORM_CATALOG_SEARCH_LIMIT = 120;
 
-const COHERENT: Record<"biologico" | "quimico" | "fertilizante_adubo", readonly string[]> = {
-  biologico: ["biofungicida", "bioinseticida", "inoculante", "solubilizador"],
-  quimico: ["fungicida", "inseticida", "herbicida"], fertilizante_adubo: [],
-};
-
 export const platformCatalogPageSchema = z.object({
   items: z.array(z.object({
     id: z.string().uuid(),
@@ -20,10 +15,10 @@ export const platformCatalogPageSchema = z.object({
     updated_at: z.string().nullable(),
     // Classificação explícita (NULL = pendente). Nunca derivada de `tipo`.
     familia_catalogo: z.enum(["biologico", "quimico", "fertilizante_adubo"]).nullable().optional().default(null),
-    classe_catalogo: z.enum(["biofungicida", "bioinseticida", "inoculante", "solubilizador", "fungicida", "inseticida", "herbicida"])
-      .nullable().optional().default(null),
-  }).strip().refine((i) => i.classe_catalogo === null || (i.familia_catalogo !== null
-    && COHERENT[i.familia_catalogo].includes(i.classe_catalogo)))).max(PLATFORM_CATALOG_LIMIT),
+    // Rótulo livre: a coerência família↔rótulo é validada NO SERVIDOR contra a fonte
+    // canônica `catalog_family_labels`; o leitor não pode rejeitar rótulo novo legítimo.
+    classe_catalogo: z.string().nullable().optional().default(null),
+  }).strip()).max(PLATFORM_CATALOG_LIMIT),
   has_more: z.boolean(),
 }).strip();
 

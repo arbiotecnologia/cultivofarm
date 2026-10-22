@@ -89,7 +89,7 @@ function paused(client: QueryClient) {
 }
 beforeEach(() => {
   vi.useFakeTimers(); state.roles = ["parceiro_b2b"]; state.gate = true; state.context = ctx(); state.contextCalls = 0; state.override = undefined;
-  state.catalog.mockReset().mockResolvedValue({ data: [{ produto_nome: "catálogo atual" }] });
+  state.catalog.mockReset().mockResolvedValue({ data: [{ produto_nome: "catálogo atual", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] });
   state.prices.mockReset().mockReturnValue({ data: [] });
   state.simulations.mockReset().mockResolvedValue({ data: [{ titulo: "simulação atual" }] });
   state.download.mockReset().mockResolvedValue(new Blob(["private"]));
@@ -118,7 +118,7 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     expect(screen.getByAltText("anexo").getAttribute("src")).toBe("blob:owned");
     state.context = null; await tick(10_000); paused(client);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned");
-    state.context = ctx(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "catálogo novo" }] });
+    state.context = ctx(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "catálogo novo", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] });
     let restoreResolve: ((v: unknown) => void) | undefined;
     state.override = () => new Promise(resolve => { restoreResolve = resolve; });
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" })); await tick();
@@ -144,7 +144,7 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     const client = setup(); await tick();
     Object.defineProperty(navigator, "onLine", { value: false }); act(() => window.dispatchEvent(new Event("offline"))); await tick(); paused(client);
     Object.defineProperty(navigator, "onLine", { value: true }); act(() => window.dispatchEvent(new Event("online"))); await tick();
-    oldCatalog?.({ data: [{ produto_nome: "catálogo antigo" }] }); oldSimulation?.({ data: [{ titulo: "simulação antiga" }] }); oldBlob?.(new Blob(["old"])); await tick();
+    oldCatalog?.({ data: [{ produto_nome: "catálogo antigo", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] }); oldSimulation?.({ data: [{ titulo: "simulação antiga" }] }); oldBlob?.(new Blob(["old"])); await tick();
     expect(screen.queryByText("catálogo antigo")).toBeNull(); expect(screen.queryByText("simulação antiga")).toBeNull();
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(client.getQueryCache().getAll().map(q => q.state.data))).not.toContain("antig");
@@ -155,7 +155,7 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     expect(screen.getByText("portal aberto")).toBeTruthy();
   });
   it("mesma tupla confirmada novamente retira cache e refaz leitura (não prova ABA server)", async () => {
-    setup(); await tick(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "catálogo novo" }] }); await tick(10_000);
+    setup(); await tick(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "catálogo novo", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] }); await tick(10_000);
     expect(screen.getByText("catálogo novo")).toBeTruthy(); expect(screen.queryByText("catálogo atual")).toBeNull();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:owned");
   });
@@ -164,8 +164,8 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     state.catalog.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
     const client = setup(); await tick();
     state.context = ctx("00000000-0000-4000-8000-000000000004"); await tick(10_000);
-    state.context = ctx(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "A restaurado" }] }); await tick(10_000);
-    resolve?.({ data: [{ produto_nome: "A obsoleto" }] }); await tick();
+    state.context = ctx(); state.catalog.mockResolvedValue({ data: [{ produto_nome: "A restaurado", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] }); await tick(10_000);
+    resolve?.({ data: [{ produto_nome: "A obsoleto", catalog_contract: "C1B_DUAL_TENANT_V1", item_id: "i1", item_tipo: "produto" }] }); await tick();
     expect(screen.getByText("A restaurado")).toBeTruthy(); expect(screen.queryByText("A obsoleto")).toBeNull();
     expect(JSON.stringify(client.getQueryCache().getAll().map(q => q.state.data))).not.toContain("obsoleto");
   });
