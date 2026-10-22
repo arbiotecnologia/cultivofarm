@@ -1,0 +1,131 @@
+--- a/src/hooks/useMyPartner.ts
++++ b/src/hooks/useMyPartner.ts
+@@ -1,3 +1,4 @@
++import { readOwnFinanceCapability } from "@/lib/comercial/financeAccess";
+ import { readCatalogCapabilities } from "@/lib/catalogo/catalogAccess";
+ import { useEffect } from "react";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+@@ -53,7 +54,7 @@
+       if (typeof partner.razao_social !== "string" || typeof partner.codigo !== "string") throw new Error("partner_context_unavailable");
+       return { id: context.partner_id, codigo: partner.codigo, razao_social: partner.razao_social,
+         nome_fantasia: typeof partner.nome_fantasia === "string" ? partner.nome_fantasia : null,
+-        ativo: true, capabilities: readCatalogCapabilities(partner.capabilities), papel: context.papel as PartnerUserPapel,
++        ativo: true, financeRead: readOwnFinanceCapability(partner.finance_capabilities), capabilities: readCatalogCapabilities(partner.capabilities), papel: context.papel as PartnerUserPapel,
+         mode: context.mode as "commercial_owner" | "legacy_partner_tenant" };
+     },
+   });
+--- a/src/pages/portal-parceiro/PortalParceiroLayout.tsx
++++ b/src/pages/portal-parceiro/PortalParceiroLayout.tsx
+@@ -1,4 +1,6 @@
+ import { ownerCatalogRoute } from "@/lib/catalogo/catalogAccess";
++import { ownFinanceRoute } from "@/lib/comercial/financeAccess";
++import { OwnerFinance } from "@/components/comercial/OwnerFinance";
+ import { OwnerCatalog } from "@/components/catalogo/OwnerCatalog";
+ import { CatalogFilterMemoryContext, createCatalogFilterMemory } from "@/lib/catalogo/catalogFilterPreferences";
+ import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
+@@ -50,6 +52,7 @@
+     ? JSON.stringify([user.id, profile.organization_id, [...(roles ?? [])].sort(), "b2b", role]) : null;
+   const filterPreferences = (guardFilterMemory ?? filterMemory.current).bind(preferenceIdentity,
+     partnerReady && !partnerError ? ownPartner?.id ?? null : undefined);
++  const canReadOwnFinance = partnerReady && !partnerError && entitlements.status === "ready" && ownFinanceRoute(location.pathname, ownPartner?.financeRead === true, entitlements.features);
+   const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);
+   const { data: contexts } = useAvailableContexts();
+   const switchPortal = useSwitchPortal();
+@@ -62,7 +65,7 @@
+   const isTecnico = role === "parceiro_b2b_tecnico";
+   const commercialOwner = ownPartner?.mode === "commercial_owner";
+   const menuGroups = (isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS)
+-    .map((group) => ({ ...group, items: group.items.filter((item) => (!commercialOwner || (partnerReady && !partnerError && ownerCatalogRoute(item.route, ownPartner?.capabilities))) && isPathEntitled(item.route, entitlements)) }))
++    .map((group) => ({ ...group, items: group.items.filter((item) => (!commercialOwner || (partnerReady && !partnerError && (ownerCatalogRoute(item.route, ownPartner?.capabilities) || (entitlements.status === "ready" && ownFinanceRoute(item.route, ownPartner?.financeRead === true, entitlements.features))))) && isPathEntitled(item.route, entitlements)) }))
+     .filter((group) => group.items.length > 0);
+   const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
+ 
+@@ -198,7 +201,7 @@
+             Você está visualizando como <span className="font-medium text-foreground">{partner.razao_social}</span> (visão interna).
+           </div>
+         )}
+-        {commercialOwner && canReadOwnerRoute ? (
++        {commercialOwner && canReadOwnFinance ? <OwnerFinance key={ownPartner.id} partnerId={ownPartner.id} /> : commercialOwner && canReadOwnerRoute ? (
+           location.pathname === "/portal-parceiro/catalogo"
+             ? <OwnerCatalog key={JSON.stringify([preferenceIdentity, ownPartner.id])} partnerId={ownPartner.id} filterPreferences={filterPreferences} />
+             : <Outlet context={{ partner: ownPartner }} />
+--- a/src/lib/saas/featureRouteMap.ts
++++ b/src/lib/saas/featureRouteMap.ts
+@@ -37,6 +37,7 @@
+   // Portais especializados — somente correspondências inequívocas.
+   ["/app/visita", "visitas_tecnicas"],
+   ["/app/checkin", "visitas_tecnicas"],
++  ["/portal-parceiro/financeiro", "contas_receber"],
+   ["/portal-parceiro/pedidos", "pedidos_b2b"],
+   ["/portal-parceiro/solicitacoes", "pedidos_b2b"],
+   ["/portal-parceiro/novo", "pedidos_b2b"],
+--- /dev/null
++++ b/src/lib/comercial/financeAccess.ts
+@@ -0,0 +1,10 @@
++/** Candidate ONLY; additive projection contract, never derived from catalogue200. */
++export function readOwnFinanceCapability(raw: unknown) {
++  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
++  const value = raw as Record<string, unknown>;
++  return value.contract === "C2_OWN_OBLIGATIONS_V1" && value.obligations_read === true;
++}
++export function ownFinanceRoute(path: string, allowed: boolean, features: ReadonlySet<string>) {
++  return path === "/portal-parceiro/financeiro" && allowed &&
++    features.has("pedidos_b2b") && features.has("contas_receber");
++}--- /dev/null
++++ b/src/lib/comercial/financeContract.ts
+@@ -0,0 +1,10 @@
++import { z } from "zod";
++const amount = z.number().finite().nonnegative();
++const installment = z.object({ id:z.string().uuid(), numero:z.number().int(), vencimento:z.string().nullable(), valor:amount, recebido:amount, status:z.string() }).strict();
++const title = z.object({ id:z.string().uuid(),order_id:z.string().uuid(),numero:z.string(),created_at:z.string().datetime({offset:true}),total:amount,status:z.string(),installments:z.array(installment) }).strict();
++const schema = z.object({ contract:z.literal("C2_OWN_OBLIGATIONS_V1"),partner_id:z.string().uuid(),rows:z.array(title).max(50),limit:z.literal(50),documents_enabled:z.literal(false) }).strict();
++export function parseOwnFinance(data:unknown, partnerId:string) {
++  const parsed=schema.safeParse(data);
++  if(!parsed.success || parsed.data.partner_id!==partnerId) throw new Error("own_finance_unavailable");
++  return parsed.data;
++}--- /dev/null
++++ b/src/hooks/useOwnFinance.ts
+@@ -0,0 +1,20 @@
++import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
++import { useAuth } from "@/hooks/useAuth";
++import { supabase } from "@/integrations/supabase/client";
++import { parseOwnFinance } from "@/lib/comercial/financeContract";
++export function useOwnFinance(partnerId:string, cursor?:{at:string;id:string}) {
++  const {roles}=useAuth();
++  const query=useScopedPortalQuery({
++    queryKey:["portal-own-obligations","C2_OWN_OBLIGATIONS_V1",partnerId,cursor ?? null],
++    enabled:roles.length===1 && roles[0]==="parceiro_b2b" && !!partnerId,
++    queryFn:async signal=>{
++      const rpc: (name:string,args:Record<string,unknown>)=>{abortSignal(signal:AbortSignal):PromiseLike<{data:unknown;error:unknown}>}=supabase.rpc.bind(supabase);
++      const {data,error}=await rpc("rpc_portal_partner_financial",{
++        p_partner_id:partnerId,p_own_finance_v1:true,p_before:cursor?.at ?? null,p_before_id:cursor?.id ?? null,
++      }).abortSignal(signal);
++      if(error) throw new Error("own_finance_unavailable");
++      return parseOwnFinance(data,partnerId);
++    },
++  });
++  return {...query,data:query.ready && !query.isError ? query.data : undefined};
++}--- /dev/null
++++ b/src/components/comercial/OwnerFinance.tsx
+@@ -0,0 +1,21 @@
++import { useState } from "react";
++import { Button } from "@/components/ui/button";
++import { Table,TableHeader,TableHead,TableRow,TableBody,TableCell } from "@/components/ui/table";
++import { brl,fmtDate } from "@/lib/financial/format";
++import { useOwnFinance } from "@/hooks/useOwnFinance";
++export function OwnerFinance({partnerId}:{partnerId:string}) {
++  const [cursor,setCursor]=useState<{at:string;id:string}>();
++  const query=useOwnFinance(partnerId,cursor);
++  const rows=query.data?.rows ?? [];
++  const last=rows.at(-1);
++  return <section className="space-y-4"><h1 className="text-xl font-semibold">Minhas obrigações com o fornecedor</h1>
++    {!query.ready ? <p role="status">Acesso indisponível.</p> : query.isError ? <div role="alert">Financeiro indisponível.<Button variant="outline" onClick={()=>{void query.refetch();}}>Tentar novamente</Button></div>
++    : query.isLoading ? <p role="status">Carregando títulos...</p> : <>
++      <Table><TableHeader><TableRow><TableHead>Pedido</TableHead><TableHead>Valor do título</TableHead><TableHead>Status</TableHead><TableHead>Parcelas</TableHead></TableRow></TableHeader>
++        <TableBody>{rows.map(row=><TableRow key={row.id}><TableCell>{row.numero}</TableCell><TableCell>{brl(row.total)}</TableCell><TableCell>{row.status}</TableCell><TableCell><ul>{row.installments?.map(i=><li key={i.id}>{i.numero} · {fmtDate(i.vencimento)} · {brl(i.valor)} · Pagamento registrado: {brl(i.recebido)} · {i.status}</li>)}</ul></TableCell></TableRow>)}</TableBody>
++      </Table>
++      {!rows.length && <p>Nenhum título autorizado nesta página.</p>}
++      <div className="flex gap-2"><Button variant="outline" disabled={!cursor} onClick={()=>setCursor(undefined)}>Mais recentes</Button><Button variant="outline" disabled={query.isFetching || rows.length!==50 || !last} onClick={()=>{if(typeof last?.created_at==='string' && typeof last.id==='string')setCursor({at:last.created_at,id:last.id});}}>Mais antigos</Button></div>
++    </>}
++  </section>;
++}
