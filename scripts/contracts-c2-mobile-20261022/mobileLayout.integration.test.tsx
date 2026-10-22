@@ -70,12 +70,14 @@ describe("C2 MobileLayout uses canonical contexts only", () => {
   });
   it("cliente_produtor role without canonical producer context never enters producer mode", async () => {
     s.roles = ["cliente_produtor"]; s.contexts = []; setup(); await tick();
+    console.log("DBG1", document.body.textContent);
     expect(producerMenu()).toBe(false); expect(screen.getByTestId("url").textContent).toBe("/sem-permissao");
   });
   it("partial revocation of producer keeps the remaining technical context (stale visual choice ignored)", async () => {
     setActivePortalContext("producer"); setup(); await tick();
     expect(producerMenu()).toBe(true);
     s.contexts = ["technical"]; focus(); await tick(6000);
+    console.log("DBG2", document.body.textContent);
     expect(producerMenu()).toBe(false); expect(technicalMenu()).toBe(true);
     expect(screen.getByTestId("consumer").textContent).toBe("technical");
   });
