@@ -1,4 +1,4 @@
--- INACTIVE COMPLETE COORDINATED CANDIDATE; NO HOSTED EXECUTOR
+-- INACTIVE PARTIAL COORDINATED DRAFT; NO-GO, NOT VALIDATED FOR INSTALLATION
 BEGIN; SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='30s';
 DO $$ BEGIN
 IF (SELECT md5(pg_get_functiondef('public.admin_provision_user_profile_v1(uuid,text,text,app_role[],uuid[],uuid,uuid,text,text,text,text,text,text)'::regprocedure))) IS DISTINCT FROM '9a2e228a68f369f32fe323c6c2a7f1b8' OR (SELECT proacl::text FROM pg_proc WHERE oid='public.admin_provision_user_profile_v1(uuid,text,text,app_role[],uuid[],uuid,uuid,text,text,text,text,text,text)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.admin_provision_user_profile_v1(uuid,text,text,app_role[],uuid[],uuid,uuid,text,text,text,text,text,text)'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'c2_coordinated_drift'; END IF;
