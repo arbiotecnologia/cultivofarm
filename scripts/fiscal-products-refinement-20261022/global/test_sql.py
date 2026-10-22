@@ -73,7 +73,7 @@ try:
  check(f"SELECT updated_at>'{old}'::timestamptz FROM product_fiscal_profiles WHERE product_id='{p}' AND is_active;")
  deny(actor(1)+f"SELECT rpc_fiscal_product_ibs_cbs_save('{p}','{{}}',NULL);",'FISCAL_CONFLICT')
  run((H/'rollback.sql.review').read_text())
- deny(actor(1)+insert,'FISCAL_FORBIDDEN')
+ deny(actor(1)+insert,'row-level security')
  check("SELECT NOT has_function_privilege('authenticated','platform_private.global_product_fiscal_ibs_save(uuid,jsonb,text)','EXECUTE');")
  check('SELECT count(*)=2 FROM product_fiscal_profiles;')
  print(f'PASS {len(checks)} SQL/RLS/CAS/rollback checks; synthetic Auth and reduced schema only')
