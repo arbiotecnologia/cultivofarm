@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 02:22 — drift financeiro e matriz fiscal
+- [ ] Regenerar patch financeiro sobre HEAD corrigido, driftcheck estrito e regressão filtros junto layout/financeiro candidato; sem restaurar bind antigo.
+- [ ] Coordenar variante financeira multiperfil por capacidades atuais, com preflight separado que rejeita baseline incompatível; nenhuma instalação/SQL hosted.
+- [ ] Completar matriz frontend fiscal na página existente e testes de rascunho/concorrência/escopo, sem dados tributários inventados.
+
 ## 22/10 02:13 — continuação coordenada autorizada
 - [x] Registrar homologação específica dos filtros pelo auditor: HEAD3b030e4/deployment05e50d06/bundleDesBQeTv; Químicos+busca preservados em r1s→r5g, sem reload. Renovação token/revogação integral ainda pendentes.
 - [x] Implementar candidata concreta claim/finish/compensação, Edge fora deploy e patch coordenado8arquivos: 19PG com triggers capturados+49PG readers/lifecycle+9Deno+11Vitest. Preflight estrutural16relações e rollbackfamily deny-only preparados; runtime multiperfil inalterado.
