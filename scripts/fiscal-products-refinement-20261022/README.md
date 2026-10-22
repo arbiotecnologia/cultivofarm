@@ -16,9 +16,22 @@
 
 ## Validação e limites
 
-- **55/55 Vitest**: preparação5, hook/fences6, contrato existente34 e página unificada10. Dois testes adicionais exercitam envio real do formulário de produto com rascunho vazio (sem códigos/defaults) e pausa do ator impedindo formulário/submissão. Testes hook exercitam cache negado, resultado tardio após tenant, save tardio sem invalidação do próximo ator, CAS, ID divergente e lease expirada. Matriz completa em `FRONTEND-MATRIX.md`.
+- **59/59 Vitest**: preparação5, hook/fences10, contrato existente34 e página unificada10. Testes adicionais comprovam a chave efetiva ator/tenant/request, invalidação somente do ator correspondente, revogação durante pré-check sem INSERT e negativa RLS sem sucesso/invalidação. Matriz completa em `FRONTEND-MATRIX.md`.
 - Build automático da prévia: OK após alterações; sem execução manual de build/typecheck permitida neste ambiente. Não há recibo separado de typecheck integral da candidata coordenada; requer auditor.
 - Nenhuma NF-e emitida, dado/role/session hosted alterado, SQL executado, Edge implantada ou publicação realizada.
 - Prontidão fiscal final depende dos resolvers existentes para estabelecimento/regime/operação/RTC e homologação real; este refinamento não os substitui. Escritas servidor/schema/RLS preservados.
-- Fixtures químico/fertilizante aguardam auditor com Superadmin e fluxo canônico; não criadas pelo agente. Financeiro/documentos fechados.
+- Evidência informada pelo proprietário02:26: Superadmin criou INS-4 TESTE AUDITORIA QUIMICO 20261021 — SEM USO COMERCIAL (inseticida/químicos/Inseticida) e SOLO-4 TESTE AUDITORIA FERTILIZANTE 20261021 — SEM USO COMERCIAL (solo/fertilizantes/sem rótulo). Ambos inativos/fora B2B, sem dose/composição/fiscal inventados. Não recriados, alterados ou consultados como fixtures pelo agente. Financeiro/documentos fechados.
 - UI autenticada real e regressão completa do editor de microrganismos/IBS-CBS não homologadas nesta rodada; refinamento focal produto não certifica os leitores irmãos.
+
+## Conferência 02:28 — cache frontend não substitui RLS
+
+`PRODUCT_FISCAL_KEYS` são prefixos de recurso; todas as quatro leituras usam `useScopedPortalQuery`, que acrescenta `actor.scope` e `fence.scope` contendo ator/tenant/papéis/epoch. Teste verifica a chave efetivamente registrada no QueryClient. Não havia leitura raw usando só o prefixo. Correção focal: invalidação pós-save antes ampla agora filtra o sufixo do ator capturado; rechecagem dupla após awaits e antes/depois da invalidação. CAS continua `.eq(id).eq(product_id).eq(updated_at)`; zero rows é conflito, não sucesso.
+
+Consultas hosted SOMENTE LEITURA, após validar `supabase/config.toml` ref `swzpzcwiasxmjutrmvkm`:
+- `product_fiscal_profiles` RLS=true; SELECT permite administrador/gestor/financeiro por role, **sem predicado tenant**; INSERT/UPDATE exigem `is_platform_superadmin(auth.uid())`; DELETE=false.
+- View readiness possui `security_invoker=true`. Tabela perfil não tem organization_id/tenant_id; tem FK product_id→produtos, sem unicidade product_id listada; trigger fiscal_audit AFTER INSERT/UPDATE/DELETE, nenhum trigger BEFORE updated_at listado.
+- Portanto isolamento frontend foi testado, **isolamento server-side tenant não foi comprovado**. Superadmin-only sem papel interno também não está incluído explicitamente na política SELECT capturada; fluxo create `.select()`/pré-check depende disso. Não habilitar fiscal para parceiros/novos perfis nem inferir autoridade da família ou do cache.
+- Timestamp CAS é preservado no cliente, mas avanço automático de updated_at no servidor não foi comprovado nesta captura; exige revisão/teste real concorrente antes de homologar edição. Não alterar RLS, schema ou triggers nesta rodada.
+- SQL sintético e policies lidas não equivalem a negativos JWT/RLS reais. Gates fiscal e pacote conjunto permanecem NO-GO para ativação independente não revisada.
+
+Aviso falso no formulário global corrigido: criação com classificação pendente seguida de classificação canônica; tipo de aplicação não determina família. Fluxo criação existente:25/25 testes passaram; sem teste de copy/markup adicionado.

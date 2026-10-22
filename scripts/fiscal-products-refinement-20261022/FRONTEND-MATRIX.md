@@ -15,7 +15,7 @@ Fixtures abaixo são doubles locais dos testes, não dados ou classificações d
 | Refetch autorizado anteriormente, agora negado | Dados fiscais stale ocultos, sem falsa aprovação | testes hooks |
 | CAS concorrente | Conflito explícito, não toast de sucesso; consulta versão atual antes de nova tentativa | teste hook CAS; fluxo drawer preservado |
 | Microrganismo com perfil próprio | Não herda NCM do produto vinculado | teste lista existente |
-| Químico/fertilizante sem dados tributários autorizados | Nenhum NCM/CEST/CFOP/CST/IBS-CBS deduzido da família | rascunho vazio; positivo real aguarda fixtures auditor |
+| Químico/fertilizante sem dados tributários autorizados | Nenhum NCM/CEST/CFOP/CST/IBS-CBS deduzido da família | INS-4/SOLO-4 criação relatada; rascunho testado localmente, prontidão real não homologada |
 | NF-e | Nenhuma emissão/ativação; cadastro não substitui resolver fiscal server-side | flag emissão preservada; todas preparações `readyForNfe:false` |
 
-55 testes focados passaram nesta rodada. São testes sintéticos frontend/hook; não certificam JWT/RLS, escrituração, correção contábil dos códigos ou emissão. Homologação autenticada e revisão independente continuam gates. Nenhum formulário ou tabela paralelos.
+59 testes focados passaram nesta rodada. Chave efetiva actor/tenant/request, invalidação isolada, revogação no pré-check e RLS negada cobertas. São testes sintéticos frontend/hook; não certificam JWT/RLS, escrituração, correção contábil dos códigos ou emissão. Captura readonly mostrou SELECT por role sem tenant na tabela global e avanço server updated_at não comprovado: revisão RLS/modelo global e CAS real são gates antes de habilitar. Nenhum formulário ou tabela paralelos.
