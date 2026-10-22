@@ -1,0 +1,22 @@
+import {renderHook,act,waitFor,cleanup} from "@testing-library/react";
+import {QueryClient,QueryClientProvider} from "@tanstack/react-query";
+import {type ReactNode} from "react";
+import {beforeEach,afterEach,describe,it,expect,vi} from "vitest";
+const A="11111111-1111-4111-8111-111111111111",B="22222222-2222-4222-8222-222222222222";
+const state=vi.hoisted(()=>({auth:{user:{id:"U"} as {id:string}|null,profile:{user_id:"U",organization_id:"A",ativo:true,senha_provisoria:false},roles:["parceiro_b2b"],loading:false,authzReady:true,authzEpoch:1},rpc:vi.fn()}));
+vi.mock("@/hooks/useAuth",()=>({useAuth:()=>state.auth}));
+vi.mock("@/integrations/supabase/client",()=>({supabase:{rpc:state.rpc}}));
+import {useOwnFinance} from "./useOwnFinance";
+const payload=(partner_id=A)=>({contract:"C2_OWN_OBLIGATIONS_V1",partner_id,limit:50,documents_enabled:false,rows:[{id:A,order_id:A,numero:"OWN",created_at:"2026-10-22T00:00:00Z",total:100,status:"PARTIAL",installments:[]}]});
+const clients:QueryClient[]=[];
+beforeEach(()=>{Object.assign(state.auth,{user:{id:"U"},roles:["parceiro_b2b"],authzReady:true,authzEpoch:1});Object.assign(state.auth.profile,{organization_id:"A",ativo:true});state.rpc.mockReset().mockImplementation(()=>({abortSignal:()=>Promise.resolve({data:payload(),error:null})}));});
+afterEach(()=>{cleanup();clients.splice(0).forEach(c=>c.clear());});
+function setup(){const client=new QueryClient({defaultOptions:{queries:{retry:false}}});clients.push(client);const wrapper=({children}:{children:ReactNode})=><QueryClientProvider client={client}>{children}</QueryClientProvider>;return {client,h:renderHook(()=>useOwnFinance(A),{wrapper})};}
+describe("own finance candidate scope/transport integration — synthetic",()=>{
+ it("uses canonical versioned RPC once with explicit partner",async()=>{const {h}=setup();await waitFor(()=>expect(h.result.current.data?.rows).toHaveLength(1));expect(state.rpc).toHaveBeenCalledExactlyOnceWith("rpc_portal_partner_financial",{p_partner_id:A,p_own_finance_v1:true,p_before:null,p_before_id:null});});
+ it.each(["parceiro_b2b_tecnico","cliente_produtor","gestor","administrador"])("role%s not queried",role=>{state.auth.roles=[role];const{h}=setup();expect(state.rpc).not.toHaveBeenCalled();expect(h.result.current.data).toBeUndefined();});
+ it("cross partner fails closed",async()=>{state.rpc.mockImplementation(()=>({abortSignal:()=>Promise.resolve({data:payload(B),error:null})}));const{h}=setup();await waitFor(()=>expect(h.result.current.isError).toBe(true));expect(h.result.current.data).toBeUndefined();});
+ it.each(["logout","tenant","epoch","lease","revocation"])("hides previous cache on%s",async kind=>{const{h}=setup();await waitFor(()=>expect(h.result.current.data?.rows).toHaveLength(1));state.rpc.mockImplementation(()=>({abortSignal:()=>new Promise(()=>{})}));if(kind==="logout")state.auth.user=null;if(kind==="tenant")state.auth.profile.organization_id="B";if(kind==="epoch")state.auth.authzEpoch++;if(kind==="lease")state.auth.authzReady=false;if(kind==="revocation")state.auth.roles=[];h.rerender();expect(h.result.current.data).toBeUndefined();});
+ it("failed refetch hides stale financial values",async()=>{const{h,client}=setup();await waitFor(()=>expect(h.result.current.data?.rows).toHaveLength(1));state.rpc.mockImplementation(()=>({abortSignal:()=>Promise.resolve({data:null,error:new Error("forbidden")})}));await act(async()=>{await client.invalidateQueries({queryKey:["portal-own-obligations"]});});expect(h.result.current.isError).toBe(true);expect(h.result.current.data).toBeUndefined();});
+ it("late response cannot publish in new tenant",async()=>{let resolve:((v:unknown)=>void)|undefined;state.rpc.mockImplementation(()=>({abortSignal:()=>new Promise(r=>{resolve=r;})}));const{h}=setup();await waitFor(()=>expect(state.rpc).toHaveBeenCalledOnce());state.auth.authzReady=false;state.auth.profile.organization_id="B";h.rerender();await act(async()=>{resolve?.({data:payload(),error:null});});expect(h.result.current.data).toBeUndefined();});
+});

@@ -63,7 +63,7 @@ try:
  ('no link',"DELETE FROM partner_users;"),
  ('multipapel stays closed',f"INSERT INTO user_roles VALUES('{U}','administrador');"),
  ('explicit mismatch',f"UPDATE organizations SET partner_account_id='{Q}' WHERE id='{A}';")]:
-  sql('BEGIN;'+mutation);deny(name);sql('ROLLBACK;')
+  check(name,'BEGIN;'+mutation+f"DO $$BEGIN PERFORM {read()}; RAISE EXCEPTION 'unexpected_allow'; EXCEPTION WHEN insufficient_privilege THEN NULL; END$$;SELECT true;ROLLBACK;")
  for name,mutation in [
  ('foreign title tenant',f"UPDATE accounts_receivable SET organization_id='{B}';"),
  ('unowned title',"UPDATE accounts_receivable SET organization_id=NULL;"),
@@ -74,7 +74,7 @@ try:
  ('unowned installment',"UPDATE accounts_receivable_installments SET organization_id=NULL;"),
  ('NaN amount',"UPDATE accounts_receivable SET total_amount='NaN';"),
  ('ambiguous link',f"INSERT INTO partner_order_financial_links VALUES('{O}','{P}','{R}');")]:
-  sql('BEGIN;'+mutation);check(name,f"SELECT jsonb_array_length({read()}->'rows')=0;");sql('ROLLBACK;')
+  check(name,'BEGIN;'+mutation+f"SELECT jsonb_array_length({read()}->'rows')=0;ROLLBACK;")
  check('anon no execute',"SELECT NOT has_function_privilege('anon','public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid)','EXECUTE');")
  check('wrapper invoker',"SELECT NOT prosecdef FROM pg_proc WHERE oid='public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid)'::regprocedure;")
  check('cursor rejects partial',f"DO $$BEGIN PERFORM public.rpc_portal_partner_financial('{P}',true,now(),NULL);RAISE EXCEPTION 'unexpected_allow';EXCEPTION WHEN invalid_parameter_value THEN NULL;END$$;SELECT true;")
