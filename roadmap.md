@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 02:13 — continuação coordenada autorizada
+- [x] Registrar homologação específica dos filtros pelo auditor: HEAD3b030e4/deployment05e50d06/bundleDesBQeTv; Químicos+busca preservados em r1s→r5g, sem reload. Renovação token/revogação integral ainda pendentes.
+- [ ] Completar/testar candidata multiperfil concreta: claim/finish/compensação/Edge fora deploy, readers/preference/guards/monitor/selector, preflight triggers/constraints e rollback deny.
+- [ ] Refinamento fiscal revisável na FiscalProdutos/hook/validação existentes após fontes oficiais; rascunho incompleto não é pronto NF-e, sem classificação/default inventados.
+- [ ] Fixtures humano-autorizadas aguardam auditor/Superadmin no fluxo canônico; nenhum DML hosted pelo agente. Financeiro/documentos permanecem inativos/fechados.
+
 ## 22/10 02:00 — sequência expressa: filtros → financeiro/multiperfil → fixtures/fiscal
 - [x] Registrar orientação sem interromper filtros: auditor reproduziu 1 falha/13 com ready=true/pending=true/dataundefined; os 12 anteriores passavam. Correção local6be91d43 reforça ambas chamadas com ausência somente em sucesso/null e adiciona janela pendente e troca tenant/papel; NÃO equivale a homologação real.
 - [ ] Revisão independente/UI real dos filtros após nova correção: bloqueio permanece na homologação, não ampliar lease/proteções nem preservar rows.
