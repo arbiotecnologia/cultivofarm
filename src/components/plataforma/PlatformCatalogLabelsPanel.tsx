@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
 import { FAMILY_LABEL, PRODUCT_FAMILIES, type ProductFamily } from "@/lib/catalogo/platformCatalogFamily";
-import { LABEL_REASON_MAX, LABEL_REASON_MIN, createCatalogLabel, labelRetryKey, setCatalogLabelActive,
+import { LABEL_CONFLICT_MESSAGE, LABEL_REASON_MAX, LABEL_REASON_MIN, createCatalogLabel, labelRetryKey, setCatalogLabelActive,
   updateCatalogLabel, usePlatformCatalogLabels, type CatalogLabel } from "@/lib/catalogo/platformCatalogLabels";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,19 +48,32 @@ function FamilyLabels({ family, scope }: { family: ProductFamily; scope: string 
     const set = requests.current;
     return () => { epoch.current += 1; for (const r of set) r.abort(); set.clear(); };
   }, []);
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["platform-catalog-labels", scope, family] });
+  // Após mutação confirmada: invalida a lista administrativa E o leitor de exibição do mesmo escopo/família.
+  const refresh = () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["platform-catalog-labels", scope, family] }),
+    queryClient.invalidateQueries({ queryKey: ["catalog-labels-read", scope, family] }),
+  ]);
+  const [conflict, setConflict] = useState(false);
+  const reloadData = async () => {
+    if (lock.current) return;
+    const myEpoch = epoch.current;
+    await refresh();
+    if (epoch.current === myEpoch) { setConflict(false); setError(""); }
+  };
 
   const run = async (fn: (signal: AbortSignal) => Promise<unknown>) => {
     if (lock.current) return;
     const myEpoch = epoch.current;
-    lock.current = true; setBusy(true); setError("");
+    lock.current = true; setBusy(true); setError(""); setConflict(false);
     const c = new AbortController(); requests.current.add(c);
     try {
       await fn(c.signal);
       if (!c.signal.aborted && epoch.current === myEpoch) refresh();
     } catch (failure) {
-      if (!c.signal.aborted && epoch.current === myEpoch)
-        setError(failure instanceof Error ? failure.message : "Não foi possível confirmar a operação.");
+      if (!c.signal.aborted && epoch.current === myEpoch) {
+        const message = failure instanceof Error ? failure.message : "Não foi possível confirmar a operação.";
+        setError(message); setConflict(message === LABEL_CONFLICT_MESSAGE);
+      }
     } finally {
       requests.current.delete(c);
       if (epoch.current === myEpoch) { lock.current = false; setBusy(false); }
@@ -70,6 +83,8 @@ function FamilyLabels({ family, scope }: { family: ProductFamily; scope: string 
   return <div className="space-y-4">
     {labelsQuery.isError && <p role="alert" className="text-sm text-destructive">Não foi possível carregar os rótulos desta família.</p>}
     {error && <p role="alert">{error}</p>}
+    {conflict && <Button type="button" variant="outline" className="min-h-10" disabled={busy}
+      onClick={() => void reloadData()}>Atualizar dados</Button>}
     {labelsQuery.isSuccess && labels.length === 0 &&
       <p className="text-sm text-muted-foreground">Nenhum rótulo cadastrado nesta família.</p>}
     {labels.length > 0 && <ul className="space-y-2" aria-label={`Rótulos de ${FAMILY_LABEL[family]}`}>

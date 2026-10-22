@@ -186,7 +186,7 @@ function CatalogReadPage({ scope, family, review, onReview }:
         <TableCell className="break-words">{product.codigo ?? "—"}</TableCell>
         <TableCell className="min-w-40 break-words font-medium">{product.nome}</TableCell>
         <TableCell>{product.familia_catalogo
-          ? <span>{FAMILY_LABEL[product.familia_catalogo]}{product.classe_catalogo ? ` · ${labelDisplayName(labelNames, product.classe_catalogo, CLASS_LABEL[product.classe_catalogo])}` : ""}</span>
+          ? <span>{FAMILY_LABEL[product.familia_catalogo]}{product.classe_catalogo ? ` · ${labelDisplayName(labelNames, product.familia_catalogo, product.classe_catalogo, CLASS_LABEL[product.classe_catalogo])}` : ""}</span>
           : <Badge variant="outline">Pendente</Badge>}</TableCell>
         <TableCell>{product.tipo ?? "—"}</TableCell>
         <TableCell><Badge variant={product.ativo ? "secondary" : "outline"}>{product.ativo ? "Ativo" : "Inativo"}</Badge></TableCell>

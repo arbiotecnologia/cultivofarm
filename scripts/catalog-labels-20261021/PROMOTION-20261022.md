@@ -41,3 +41,15 @@ nunca reabre lista literal, visibilidade antiga nem consulta direta. Rollback es
 Publicação pelo auditor; conteúdo técnico não vazio (sem ficha aprovada real; nenhuma inventada); UI real por perfil
 e matriz de perfis; SU-518022/CDN, origin-deny técnico/anexos, monitor B, XML/OS/CQ/termos, sync imediato.
 Próxima fase: contratos de múltiplos perfis — não implementada aqui.
+
+## Revisão adicional independente (22/10 00:22) — corrigida no runtime promovido
+1. **Nome cruzado entre famílias:** o mapa de exibição usava só `rotulo`; a unicidade canônica é `(familia, rotulo)`.
+   Agora `labelNameKey(familia, rotulo)` e `labelDisplayName(names, familia, rotulo, fallback)`; leitor do catálogo passa
+   a família do produto. Teste de colisão: mesma chave em químico e fertilizante exibe nomes próprios e não vaza para biológico.
+2. **Leitor stale após mutação:** `PlatformCatalogLabelsPanel.refresh` agora invalida `platform-catalog-labels` E
+   `catalog-labels-read` do mesmo escopo/família, só após confirmação. Teste integrado painel→leitor
+   (`src/test/catalogo/catalogLabelsPanelFlow.test.tsx`) renomeia pela UI e prova o leitor atualizado, sem invalidação manual.
+3. **Conflito CAS:** mensagem não manda mais "Recarregue"; o painel exibe "Atualizar dados", que faz refetch controlado
+   (mesmas chaves, fence de época, bloqueado durante operação) sem recarregar a página. Testado.
+Os arquivos `frontend/src` do pacote ficam como registro da revisão 784cc6d; o runtime contém estas correções adicionais.
+Validação: 948/948 focados (catálogo, plataforma, sessão B2B), tsc e build OK. Sem migração, SQL ou publicação.
