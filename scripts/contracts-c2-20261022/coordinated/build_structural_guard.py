@@ -12,5 +12,4 @@ def guard(rows,meta=None):
 named=metadata.replace("pol.polroles::text","(SELECT array_agg(CASE WHEN x=0 THEN 'public' ELSE pg_get_userbyid(x) END ORDER BY 1) FROM unnest(pol.polroles) x)::text")
 named_baseline=dict(l.split('=') for l in (H.parent/'integral/hosted-fingerprints-named.txt').read_text().split())
 (H/'structural-guard.sql.review').write_text(guard(named_baseline,named))
-fiscal=H.parents[1]/'fiscal-products-refinement-20261022/global'
-(fiscal/'structural-guard.sql.review').write_text(guard({k:v for k,v in baseline.items() if k in ['public.product_fiscal_profiles','public.profiles','public.user_roles','public.platform_org_admin_invites','cf_user_guards_v1.state']}))
+# Fiscal guard is part of an APPLIED package and is frozen; never regenerated here.
