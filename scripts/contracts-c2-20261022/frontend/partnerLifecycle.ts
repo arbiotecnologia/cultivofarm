@@ -35,4 +35,3 @@ export async function submitLifecycle(client: LifecycleClient, input: LifecycleI
   return row;
 }
 export const lifecycleQueryKey = (scope: string, partnerId: string, userId: string) => ["partner-user-lifecycle", scope, partnerId, userId] as const;
-export const lifecycleInvalidations = (scope: string) => ["partner-user-lifecycle", "partner-users", "available-partner-users", "available-portal-contexts", "my-partner"].map(name => [name, scope]);

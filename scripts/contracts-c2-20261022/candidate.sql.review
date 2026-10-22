@@ -18,6 +18,16 @@ BEGIN
  IF (SELECT md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure)))
     IS DISTINCT FROM 'b0dd9a14d5fd799a40df0975baf4c5a6' THEN
   RAISE EXCEPTION 'c2_user_gate_drift' USING ERRCODE='55000'; END IF;
+ IF (SELECT md5(string_agg(t.tgrelid::regclass::text||':'||t.tgname||':'||t.tgenabled::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgrelid::regclass::text,t.tgname))
+   FROM pg_trigger t WHERE NOT t.tgisinternal AND t.tgrelid IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass))
+   IS DISTINCT FROM 'd0d02d772e7aa3df8688cf0cd97aadfb'
+ OR (SELECT md5(string_agg(conname||':'||pg_get_constraintdef(oid),E'\n' ORDER BY conname))
+   FROM pg_constraint WHERE conrelid IN ('public.partner_users'::regclass,'public.user_roles'::regclass,'public.partner_audit_logs'::regclass))
+   IS DISTINCT FROM '2924eb29bae1f720bf0595c474e79a17'
+ OR (SELECT md5(string_agg(tablename||':'||policyname||':'||roles::text||':'||cmd||':'||COALESCE(qual,'')||':'||COALESCE(with_check,''),E'\n' ORDER BY tablename,policyname))
+   FROM pg_policies WHERE schemaname='public' AND tablename IN ('partner_users','user_roles','partner_audit_logs'))
+   IS DISTINCT FROM '3129a655c9ef4358496ad02be0e11e8d' THEN
+  RAISE EXCEPTION 'c2_chain_drift' USING ERRCODE='55000'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.partner_users'::regclass
    AND conname='partner_users_user_id_key' AND pg_get_constraintdef(oid)='UNIQUE (user_id)')
  OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.user_roles'::regclass
@@ -25,7 +35,8 @@ BEGIN
   RAISE EXCEPTION 'c2_uniqueness_drift' USING ERRCODE='55000'; END IF;
  -- Reinstallation never overwrites a reviewed or independently changed contract.
  IF to_regprocedure('public.link_partner_user(uuid,uuid,text[],text,text,uuid,text)') IS NOT NULL
- OR to_regprocedure('platform_private.c2_partner_lifecycle(uuid,uuid,text[],text,text,uuid,text)') IS NOT NULL THEN
+ OR to_regprocedure('platform_private.c2_partner_lifecycle(uuid,uuid,text[],text,text,uuid,text)') IS NOT NULL
+ OR to_regprocedure('public.get_partner_user_lifecycle(uuid,uuid)') IS NOT NULL THEN
   RAISE EXCEPTION 'c2_already_installed' USING ERRCODE='55000'; END IF;
 END $guard$;
 
@@ -175,7 +186,8 @@ BEGIN
  OR NOT public.has_role(actor,'administrador'::public.app_role) OR public.is_platform_superadmin(actor)
  OR public.is_platform_superadmin(p_user_id)
  OR NOT EXISTS(SELECT 1 FROM public.organizations WHERE id=org AND ativo AND status='ativa')
- OR NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_user_id AND organization_id=org AND ativo)
+ OR NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_user_id AND organization_id=org AND ativo
+   AND platform_private.platform_actor_access_ready(user_id))
  OR NOT EXISTS(SELECT 1 FROM public.partner_accounts WHERE id=p_partner_id AND commercial_owner_organization_id=org AND ativo AND deleted_at IS NULL)
  OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=p_user_id AND (partner_id<>p_partner_id OR tenant_id IS DISTINCT FROM org)) THEN
   RAISE EXCEPTION 'c2_forbidden' USING ERRCODE='42501'; END IF;
