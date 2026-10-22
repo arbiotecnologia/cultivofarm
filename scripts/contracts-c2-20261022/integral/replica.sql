@@ -952,6 +952,75 @@ BEGIN
   END IF;
   RETURN NULL;
 END $function$;
+CREATE OR REPLACE FUNCTION public.fiscal_json_has_sensitive_key(p jsonb)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  k text;
+  v jsonb;
+  item jsonb;
+  sensitive constant text[] := ARRAY[
+    'token','password','senha','secret','api_key','apikey',
+    'private_key','privatekey','pfx','p12',
+    'certificate_content','certificate_pem','pem',
+    'authorization','bearer'
+  ];
+BEGIN
+  IF p IS NULL THEN RETURN false; END IF;
+  IF jsonb_typeof(p) = 'object' THEN
+    FOR k, v IN SELECT key, value FROM jsonb_each(p) LOOP
+      IF lower(k) = ANY (sensitive) THEN
+        RETURN true;
+      END IF;
+      IF public.fiscal_json_has_sensitive_key(v) THEN
+        RETURN true;
+      END IF;
+    END LOOP;
+    RETURN false;
+  ELSIF jsonb_typeof(p) = 'array' THEN
+    FOR item IN SELECT value FROM jsonb_array_elements(p) LOOP
+      IF public.fiscal_json_has_sensitive_key(item) THEN
+        RETURN true;
+      END IF;
+    END LOOP;
+    RETURN false;
+  END IF;
+  RETURN false;
+END;
+$function$;
+CREATE OR REPLACE FUNCTION public.fiscal_rtc_has_sensitive_key(payload jsonb)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ IMMUTABLE STRICT
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+DECLARE
+  k text; v jsonb; needle text;
+  needles text[] := ARRAY[
+    'token','password','senha','secret','api_key','apikey',
+    'private_key','privatekey','pfx','p12',
+    'certificate','certificate_content','certificate_pem','pem',
+    'authorization','bearer','access_token','refresh_token','client_secret',
+    'production_enabled'];
+BEGIN
+  IF payload IS NULL THEN RETURN false; END IF;
+  IF jsonb_typeof(payload) = 'object' THEN
+    FOR k, v IN SELECT * FROM jsonb_each(payload) LOOP
+      FOREACH needle IN ARRAY needles LOOP
+        IF position(needle IN lower(k)) > 0 THEN RETURN true; END IF;
+      END LOOP;
+      IF public.fiscal_rtc_has_sensitive_key(v) THEN RETURN true; END IF;
+    END LOOP;
+  ELSIF jsonb_typeof(payload) = 'array' THEN
+    FOR v IN SELECT jsonb_array_elements(payload) LOOP
+      IF public.fiscal_rtc_has_sensitive_key(v) THEN RETURN true; END IF;
+    END LOOP;
+  END IF;
+  RETURN false;
+END; $function$;
 CREATE OR REPLACE FUNCTION public.fn_audit_category_dre()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -6816,6 +6885,20 @@ ALTER FUNCTION public.fiscal_audit_trigger() OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fiscal_audit_trigger() FROM PUBLIC, postgres;
 GRANT EXECUTE ON FUNCTION public.fiscal_audit_trigger() TO postgres;
 GRANT EXECUTE ON FUNCTION public.fiscal_audit_trigger() TO service_role;
+ALTER FUNCTION public.fiscal_json_has_sensitive_key(jsonb) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fiscal_json_has_sensitive_key(jsonb) FROM PUBLIC, postgres;
+GRANT EXECUTE ON FUNCTION public.fiscal_json_has_sensitive_key(jsonb) TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fiscal_json_has_sensitive_key(jsonb) TO postgres;
+GRANT EXECUTE ON FUNCTION public.fiscal_json_has_sensitive_key(jsonb) TO anon;
+GRANT EXECUTE ON FUNCTION public.fiscal_json_has_sensitive_key(jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.fiscal_json_has_sensitive_key(jsonb) TO service_role;
+ALTER FUNCTION public.fiscal_rtc_has_sensitive_key(jsonb) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fiscal_rtc_has_sensitive_key(jsonb) FROM PUBLIC, postgres;
+GRANT EXECUTE ON FUNCTION public.fiscal_rtc_has_sensitive_key(jsonb) TO PUBLIC;
+GRANT EXECUTE ON FUNCTION public.fiscal_rtc_has_sensitive_key(jsonb) TO postgres;
+GRANT EXECUTE ON FUNCTION public.fiscal_rtc_has_sensitive_key(jsonb) TO anon;
+GRANT EXECUTE ON FUNCTION public.fiscal_rtc_has_sensitive_key(jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.fiscal_rtc_has_sensitive_key(jsonb) TO service_role;
 ALTER FUNCTION public.fn_audit_category_dre() OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_audit_category_dre() FROM PUBLIC, postgres;
 GRANT EXECUTE ON FUNCTION public.fn_audit_category_dre() TO postgres;

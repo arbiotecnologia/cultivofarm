@@ -14,5 +14,19 @@
   "nsp": "{postgres=UC/postgres,authenticated=U/postgres}",
   "owner": "postgres",
   "sig": "finance_private.protect_allocated_payable()"
+ },
+ {
+  "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+  "def": "CREATE OR REPLACE FUNCTION public.fiscal_json_has_sensitive_key(p jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n IMMUTABLE\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  k text;\n  v jsonb;\n  item jsonb;\n  sensitive constant text[] := ARRAY[\n    'token','password','senha','secret','api_key','apikey',\n    'private_key','privatekey','pfx','p12',\n    'certificate_content','certificate_pem','pem',\n    'authorization','bearer'\n  ];\nBEGIN\n  IF p IS NULL THEN RETURN false; END IF;\n  IF jsonb_typeof(p) = 'object' THEN\n    FOR k, v IN SELECT key, value FROM jsonb_each(p) LOOP\n      IF lower(k) = ANY (sensitive) THEN\n        RETURN true;\n      END IF;\n      IF public.fiscal_json_has_sensitive_key(v) THEN\n        RETURN true;\n      END IF;\n    END LOOP;\n    RETURN false;\n  ELSIF jsonb_typeof(p) = 'array' THEN\n    FOR item IN SELECT value FROM jsonb_array_elements(p) LOOP\n      IF public.fiscal_json_has_sensitive_key(item) THEN\n        RETURN true;\n      END IF;\n    END LOOP;\n    RETURN false;\n  END IF;\n  RETURN false;\nEND;\n$function$\n",
+  "md5": "991212f0782b13912479621951f5a5f4",
+  "owner": "postgres",
+  "sig": "fiscal_json_has_sensitive_key(jsonb)"
+ },
+ {
+  "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+  "def": "CREATE OR REPLACE FUNCTION public.fiscal_rtc_has_sensitive_key(payload jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n IMMUTABLE STRICT\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  k text; v jsonb; needle text;\n  needles text[] := ARRAY[\n    'token','password','senha','secret','api_key','apikey',\n    'private_key','privatekey','pfx','p12',\n    'certificate','certificate_content','certificate_pem','pem',\n    'authorization','bearer','access_token','refresh_token','client_secret',\n    'production_enabled'];\nBEGIN\n  IF payload IS NULL THEN RETURN false; END IF;\n  IF jsonb_typeof(payload) = 'object' THEN\n    FOR k, v IN SELECT * FROM jsonb_each(payload) LOOP\n      FOREACH needle IN ARRAY needles LOOP\n        IF position(needle IN lower(k)) > 0 THEN RETURN true; END IF;\n      END LOOP;\n      IF public.fiscal_rtc_has_sensitive_key(v) THEN RETURN true; END IF;\n    END LOOP;\n  ELSIF jsonb_typeof(payload) = 'array' THEN\n    FOR v IN SELECT jsonb_array_elements(payload) LOOP\n      IF public.fiscal_rtc_has_sensitive_key(v) THEN RETURN true; END IF;\n    END LOOP;\n  END IF;\n  RETURN false;\nEND; $function$\n",
+  "md5": "f9d886384a9da1b36df850f6e63fa3ce",
+  "owner": "postgres",
+  "sig": "fiscal_rtc_has_sensitive_key(jsonb)"
  }
 ]
