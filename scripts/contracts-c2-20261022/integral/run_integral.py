@@ -69,7 +69,6 @@ INSERT INTO public.fazendas(id,cliente_id,nome,organization_id,ativo) VALUES ('{
 install = (H / 'install.sql.review').read_text()
 ok('install has exactly one COMMIT', install.count('COMMIT;') == 1)
 pg.sql(install)
-ok('install applied in one transaction', True)
 r = subprocess.run(pg.psql(), input=install.encode(), capture_output=True)
 ok('re-install fails closed on drift (idempotent guard)', r.returncode != 0 and b'drift' in r.stderr, r.stderr[-300:])
 # ---- admin cadastro: cumulative external assignments through the canonical writer ----
@@ -98,11 +97,11 @@ k = uuid.uuid4(); v = version(ADMIN_A, GT)
 # Contract: revoke_roles receives the RESULTING role set (must be a subset of current).
 first = link(ADMIN_A, GT, ['parceiro_b2b'], 'revoke_roles', key=k, expected=v)
 again = link(ADMIN_A, GT, ['parceiro_b2b'], 'revoke_roles', key=k, expected=v)
-ok('idempotent replay returns receipt', first.splitlines()[-1] == again.splitlines()[-1] or 'replay' in again)
+ok('idempotent replay returns identical receipt', first.splitlines()[-1] == again.splitlines()[-1])
+ok('same key different payload conflicts', 'replay_conflict' in link(ADMIN_A, GT, ['parceiro_b2b', 'parceiro_b2b_tecnico'], 'revoke_roles', key=k, expected=v, expect_ok=False))
 ok('partial revocation: GT keeps b2b only', ctx(GT) == ['b2b'], ctx(GT))
 ok('partial revocation preserves link (gestor finance chain)', val(ADMIN_A, f"SELECT public.is_valid_b2b_partner_user('{GT}','{P}');") == 't')
 ok('revoke_roles cannot grant', 'cannot_grant' in link(ADMIN_A, T, ['parceiro_b2b', 'parceiro_b2b_tecnico'], 'revoke_roles', expect_ok=False))
-ok('partial revocation of tecnico-only to empty partner roles requires producer chain', True)
 link(ADMIN_A, ALL3, ['cliente_produtor', 'parceiro_b2b_tecnico'], 'revoke_roles')
 ok('ALL3 partial revoke gestor keeps producer+technical', ctx(ALL3) == ['producer', 'technical'], ctx(ALL3))
 ok('unlink requires preserving current roles', 'preserved' in link(ADMIN_A, ALL3, ['parceiro_b2b_tecnico'], 'unlink', expect_ok=False))
@@ -116,7 +115,11 @@ pg.sql(f"UPDATE public.fazendas SET ativo=false WHERE id='{FAZ}';")
 ok('producer without active farm loses producer context', 'producer' not in ctx(PR), ctx(PR))
 pg.sql(f"UPDATE public.fazendas SET ativo=true WHERE id='{FAZ}';")
 pg.sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{T}';")
-ok('inactive profile blocks all contexts', ctx(T) == [] if as_user(T, 'SELECT 1;', True) else True)
+try:
+    inactive = ctx(T)
+except AssertionError:
+    inactive = []
+ok('inactive profile blocks all contexts', inactive == [], inactive)
 pg.sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{T}';")
 # ---- own finance (paired variant) ----
 def fin(u, partner=P, expect_ok=True):
