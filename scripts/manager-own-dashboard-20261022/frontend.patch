@@ -1,3 +1,5 @@
+diff --git a/src/components/comercial/CommercialOwnOrders.tsx b/src/components/comercial/CommercialOwnOrders.tsx
+index e524faef..c2686488 100644
 --- a/src/components/comercial/CommercialOwnOrders.tsx
 +++ b/src/components/comercial/CommercialOwnOrders.tsx
 @@ -1,13 +1,24 @@
@@ -27,7 +29,54 @@
 +        <ul className="divide-y divide-border">{rows.map(order => <li key={order.id} className="flex flex-wrap justify-between gap-2 py-3"><span className="font-medium">{order.numero}</span><span className="text-muted-foreground">{order.status.replace(/_/g, " ")}</span><time className="text-sm text-muted-foreground" dateTime={order.created_at}>{new Date(order.created_at).toLocaleDateString("pt-BR")}</time></li>)}</ul>
 +      </>}
    </section>;
- }--- /dev/null
+ }
+\ No newline at end of file
+diff --git a/src/hooks/useMyCommercialOrders.ts b/src/hooks/useMyCommercialOrders.ts
+index d4665875..eb8376ab 100644
+--- a/src/hooks/useMyCommercialOrders.ts
++++ b/src/hooks/useMyCommercialOrders.ts
+@@ -13,6 +13,25 @@ const ordersSchema = z.object({
+   }).strict()).max(100),
+ }).strict();
+ 
++export interface OwnCommercialOrder {
++  id: string;
++  numero: string;
++  status: string;
++  created_at: string;
++}
++
++/** Explicit required output after validation, including projects without strictNullChecks. */
++export function parseOwnCommercialOrders(data: unknown, partnerId: string): OwnCommercialOrder[] {
++  const parsed = ordersSchema.safeParse(data);
++  if (!parsed.success || parsed.data.partner_id !== partnerId) throw new Error("commercial_orders_unavailable");
++  return parsed.data.orders.map(row => {
++    if (typeof row.id !== "string" || typeof row.numero !== "string" || typeof row.status !== "string" || typeof row.created_at !== "string") {
++      throw new Error("commercial_orders_unavailable");
++    }
++    return { id: row.id, numero: row.numero, status: row.status, created_at: row.created_at };
++  });
++}
++
+ export function useMyCommercialOrders(partnerId: string | null) {
+   const { roles } = useAuth();
+   const fence = useStorageAccessScope(`commercial-orders:${partnerId ?? "closed"}`);
+@@ -32,9 +51,8 @@ export function useMyCommercialOrders(partnerId: string | null) {
+       const rpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
+       const { data, error } = await rpc.call(supabase, "get_my_commercial_orders_projection");
+       check();
+-      const parsed = ordersSchema.safeParse(data);
+-      if (error || !parsed.success || parsed.data.partner_id !== partnerId) throw new Error("commercial_orders_unavailable");
+-      return parsed.data.orders;
++      if (error) throw new Error("commercial_orders_unavailable");
++      return parseOwnCommercialOrders(data, partnerId);
+     },
+   });
+   return { ...result, data: ready ? result.data : undefined, ready };
+diff --git a/src/lib/comercial/ownOrderIndicators.ts b/src/lib/comercial/ownOrderIndicators.ts
+new file mode 100644
+index 00000000..f474842b
+--- /dev/null
 +++ b/src/lib/comercial/ownOrderIndicators.ts
 @@ -0,0 +1,9 @@
 +export function ownOrderIndicators(rows: readonly { status: string }[]) {
@@ -39,3 +88,32 @@
 +    byStatus: [...counts].map(([status, count]) => ({ status, count })),
 +  };
 +}
+\ No newline at end of file
+diff --git a/src/test/config/commercialOwnOrders.session.test.tsx b/src/test/config/commercialOwnOrders.session.test.tsx
+index 8c37895c..19628a76 100644
+--- a/src/test/config/commercialOwnOrders.session.test.tsx
++++ b/src/test/config/commercialOwnOrders.session.test.tsx
+@@ -10,7 +10,7 @@ const state = vi.hoisted(() => ({
+ }));
+ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: state.rpc } }));
+-import { useMyCommercialOrders } from "@/hooks/useMyCommercialOrders";
++import { useMyCommercialOrders, parseOwnCommercialOrders } from "@/hooks/useMyCommercialOrders";
+ const payload = (partner_id = A, extra = {}) => ({ partner_id, orders: [{ id: A, numero: "OWN", status: "solicitado", created_at: "2026-10-08T21:00:00Z", ...extra }] });
+ beforeEach(() => {
+   state.auth.user = { id: "U" }; state.auth.roles = ["parceiro_b2b"];
+@@ -24,6 +24,14 @@ function setup() {
+   return { h, clean: () => { h.unmount(); client.clear(); } };
+ }
+ describe("own orders — mocked transport, real identity/cache fences", () => {
++  it.each(["id", "numero", "status", "created_at"])("required validated field %s cannot be omitted", field => {
++    const data = payload(); Reflect.deleteProperty(data.orders[0], field);
++    expect(() => parseOwnCommercialOrders(data, A)).toThrow("commercial_orders_unavailable");
++  });
++  it("requires complete typed output without defaults", () => {
++    expect(parseOwnCommercialOrders(payload(), A)).toEqual(payload().orders);
++    expect(() => parseOwnCommercialOrders(payload(A, { status: null }), A)).toThrow("commercial_orders_unavailable");
++  });
+   it("reads parameter-free own projection", async () => { const { h, clean } = setup(); await waitFor(() => expect(h.result.current.data?.[0].numero).toBe("OWN")); expect(state.rpc).toHaveBeenCalledExactlyOnceWith("get_my_commercial_orders_projection"); clean(); });
+   it.each([payload(B), payload(A, { total: 50 }), payload(A, { commercial_notes: "PRIVATE" })])("rejects sibling or unreviewed fields", async data => {
+     state.rpc.mockResolvedValue({ data, error: null }); const { h, clean } = setup(); await waitFor(() => expect(h.result.current.isError).toBe(true)); expect(h.result.current.data).toBeUndefined(); clean();
