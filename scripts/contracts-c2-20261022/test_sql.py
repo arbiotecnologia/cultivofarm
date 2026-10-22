@@ -103,6 +103,21 @@ try:
  sql(op('reactivate',remaining,26))
  check('reactivate link explicit preserves revoked manager',f"SELECT revoked_at IS NULL AND NOT public.has_role('{USER}','parceiro_b2b') FROM partner_users WHERE user_id='{USER}';")
  check('history has only confirmed mutations',f"SELECT jsonb_array_length(public.get_partner_user_lifecycle('{P}','{USER}')->'history')=4;")
+ check('history projects responsible actor',f"SELECT bool_and(h->>'actor_id'='{ADMIN}') FROM jsonb_array_elements(public.get_partner_user_lifecycle('{P}','{USER}')->'history') h;")
+ check('audit before and after show concrete role revocation',f"SELECT (h->'before'->'roles') ? 'parceiro_b2b' AND NOT ((h->'after'->'roles') ? 'parceiro_b2b') FROM jsonb_array_elements(public.get_partner_user_lifecycle('{P}','{USER}')->'history') h WHERE h->>'action'='revoke_roles';")
+ check('audit payload whitelist excludes receipt keys and raw state',f"SELECT bool_and(NOT (h ?| ARRAY['key','fingerprint','receipt','state','profile_stamp'])) FROM jsonb_array_elements(public.get_partner_user_lifecycle('{P}','{USER}')->'history') h;")
+ # Force timestamp ties to exercise the stable (created_at,id) cursor.
+ sql("UPDATE partner_audit_logs SET created_at='2026-10-22T00:00:00Z';")
+ page=f"public.get_partner_user_lifecycle('{P}','{USER}',2,NULL::timestamptz,NULL::uuid)"
+ check('history page is bounded to two',f"SELECT jsonb_array_length({page}->'history')=2;")
+ check('equal timestamps paginate without loss or duplication',f"WITH first AS (SELECT {page} j), second AS (SELECT public.get_partner_user_lifecycle('{P}','{USER}',2,(j->'next_cursor'->>'at')::timestamptz,(j->'next_cursor'->>'id')::uuid) j FROM first) SELECT count(DISTINCT h->>'id')=4 FROM (SELECT j FROM first UNION ALL SELECT j FROM second) pages CROSS JOIN LATERAL jsonb_array_elements(j->'history') h;")
+ deny('page zero rejected',f"SELECT public.get_partner_user_lifecycle('{P}','{USER}',0,NULL,NULL);",'c2_invalid_page')
+ deny('page above fifty rejected',f"SELECT public.get_partner_user_lifecycle('{P}','{USER}',51,NULL,NULL);",'c2_invalid_page')
+ deny('partial cursor rejected',f"SELECT public.get_partner_user_lifecycle('{P}','{USER}',20,now(),NULL);",'c2_invalid_page')
+ sql(f"INSERT INTO partner_audit_logs(partner_id,usuario_id,acao,dados_anteriores,dados_novos) SELECT partner_id,usuario_id,acao,jsonb_set(dados_anteriores,'{{org}}',to_jsonb('{B}'::text)),dados_novos FROM partner_audit_logs LIMIT 1;")
+ check('other tenant log hidden even for same partner target',f"SELECT jsonb_array_length(public.get_partner_user_lifecycle('{P}','{USER}')->'history')=4;")
+ sql(f"INSERT INTO partner_audit_logs(partner_id,usuario_id,acao,dados_anteriores,dados_novos) SELECT partner_id,usuario_id,acao,dados_anteriores,jsonb_set(dados_novos,'{{state,user}}',to_jsonb('{uid(99)}'::text)) FROM partner_audit_logs LIMIT 1;")
+ check('mismatched after target excluded',f"SELECT jsonb_array_length(public.get_partner_user_lifecycle('{P}','{USER}')->'history')=4;")
  check('legacy validator unchanged',"SELECT public.is_valid_b2b_partner_user(NULL,NULL);",'f')
  # Two transactions race same CAS; existing gate serializes, second cannot overwrite.
  expected=version()
