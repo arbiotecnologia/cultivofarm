@@ -13,6 +13,7 @@ contexts=baseline('get_my_available_portal_contexts()')
 contexts=contexts.replace("IF partner THEN contexts:=array_append(contexts,'b2b'); END IF;", "IF partner AND public.has_role(u,'parceiro_b2b') THEN contexts:=array_append(contexts,'b2b'); END IF;\n IF partner AND public.has_role(u,'parceiro_b2b_tecnico') THEN tech:=true; END IF;\n IF public.has_role(u,'cliente_produtor') AND platform_private.c2_producer_links(u,org) THEN contexts:=array_append(contexts,'producer'); END IF;")
 contexts=contexts.replace("RETURN jsonb_build_object('available_contexts',contexts,'default_context',def", "RETURN jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,'partner_id',(platform_private.b2b_commercial_context()->>'partner_id')::uuid,'ready',true,'producer_links_valid',platform_private.c2_producer_links(u,org),'available_contexts',contexts,'default_context',def")
 contexts=contexts.replace("'has_b2b_access',management OR partner", "'has_b2b_access',management OR (partner AND public.has_role(u,'parceiro_b2b'))")
+contexts=contexts.replace("'ready',true,", "'ready',true,'profile_stamp',(SELECT updated_at FROM public.profiles WHERE user_id=u),'link_version',(SELECT version FROM public.partner_users WHERE user_id=u),")
 preferences=[]
 for name in ['set_my_context_preference(text,boolean)','register_my_login_redirect_secure(text)']:
  s=baseline(name).replace("('b2b','technical','admin')","('b2b','technical','producer','admin')")

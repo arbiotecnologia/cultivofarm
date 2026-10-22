@@ -1,23 +1,21 @@
 // INACTIVE REVIEW COPY — never place under supabase/functions before approval.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod@3";
 
 // Code-reviewed activation, never request/env authority; server guards still apply.
 const B2B_PROVISIONING_CHANNELS_REVIEWED = true;
 
 function requiredEnv(key: string) { const value = Deno.env.get(key); if (!value) throw new Error("configuration_unavailable"); return value; }
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-export async function handler(req: Request) {
+export async function handler(req: Request, clientFactory: typeof createClient = createClient) {
   let compensate: (() => Promise<void>) | undefined;
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    if (req.method !== "POST") return new Response(JSON.stringify({error:"method_not_allowed"}), {status:405,headers:{...corsHeaders,"Content-Type":"application/json"}});
+    if (Deno.env.get("SUPABASE_URL") !== "https://swzpzcwiasxmjutrmvkm.supabase.co") return new Response(JSON.stringify({error:"configuration_unavailable"}), {status:503,headers:{...corsHeaders,"Content-Type":"application/json"}});
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
@@ -26,7 +24,7 @@ export async function handler(req: Request) {
       });
     }
 
-    const anonClient = createClient(
+    const anonClient = clientFactory(
       requiredEnv("SUPABASE_URL"),
       requiredEnv("SUPABASE_ANON_KEY"),
       { global: { headers: { Authorization: authHeader } } }
@@ -43,7 +41,7 @@ export async function handler(req: Request) {
 
     const callerId = claimsData.claims.sub;
 
-    const adminClient = createClient(
+    const adminClient = clientFactory(
       requiredEnv("SUPABASE_URL"),
       requiredEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
@@ -74,7 +72,20 @@ export async function handler(req: Request) {
     }
     const actorOrganizationId = actorProfile.organization_id;
 
-    const body = await req.json();
+    let input: unknown;
+    try { input = await req.json(); } catch { return new Response(JSON.stringify({error:"invalid_json"}),{status:400,headers:{...corsHeaders,"Content-Type":"application/json"}}); }
+    const parsed = z.object({
+      email:z.string().trim().email().max(254),nome:z.string().trim().min(1).max(200),
+      roles:z.array(z.string().max(40)).max(13).optional(),role:z.string().max(40).optional(),
+      partner_id:z.string().uuid().nullable().optional(),partner_papel:z.string().max(20).nullable().optional(),
+      cliente_id:z.string().uuid().nullable().optional(),cliente_ids:z.array(z.string().uuid()).max(100).optional(),
+      principal_cliente_id:z.string().uuid().nullable().optional(),
+      telefone:z.string().max(50).nullable().optional(),cargo:z.string().max(200).nullable().optional(),
+      cpf_cnpj:z.string().max(30).nullable().optional(),crea:z.string().max(50).nullable().optional(),especialidade:z.string().max(200).nullable().optional(),
+      password:z.string().max(200).nullable().optional(),
+    }).passthrough().safeParse(input);
+    if (!parsed.success) return new Response(JSON.stringify({error:"invalid_input"}),{status:400,headers:{...corsHeaders,"Content-Type":"application/json"}});
+    const body = parsed.data;
     const {
       email, password, nome, role,
       roles: rolesInput,

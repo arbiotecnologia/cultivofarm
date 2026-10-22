@@ -27,7 +27,8 @@ describe("fiscal product canonical hook fences",()=>{
   await waitFor(()=>expect(h.result.current.data?.id).toBe("profile"));
   state.read.mockResolvedValue({data:null,error:{code:"42501"}});
   await act(async()=>{await h.result.current.refetch()});
-  expect(h.result.current.data).toBeUndefined();expect(h.result.current.isError).toBe(true);
+  await waitFor(()=>expect(h.result.current.isError).toBe(true));
+  expect(h.result.current.data).toBeUndefined();
  });
  it("does not adopt actor A response after tenant switch",async()=>{
   let resolve:(v:unknown)=>void=()=>{};
