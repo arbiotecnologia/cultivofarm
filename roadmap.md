@@ -1,8 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## 22/10 02:29 — correção global fiscal e gates integrais C2
-- [ ] Preparar candidata fiscal Superadmin na plataforma com editor existente, leitores internos read-only, autoridade forte, ativo/histórico, CAS/duplicidade e IBS/CBS fenced; migration/preflight/rollback somente revisão.
-- [ ] Executar montagem C2 integral e rollback/ACL; tornar preflight estrutural assertivo e fresco, validar integração coordenada sem instalar.
+- [x] Preparar candidata fiscal Superadmin na plataforma com editor existente, leitores internos read-only, ativo/histórico, CAS/duplicidade e IBS/CBS fenced; 26 SQL locais + 10 Vitest candidatos + 59 regressões; SQL/preflight/rollback somente revisão.
+- [x] Executar cadeia local C2 readers/provisionamento/lifecycle+rollback/ACL (34 checks), SQL complementar49, Edge9, contrato11 e seletor integrado3; guard estrutural fresco embutido, sem instalar.
+- [ ] Gates integrais C2: migration em schema hosted completo e árvore AuthProvider/MobileLayout/provisionamento real aguardam validação independente; testes com Auth/RPC sintéticos não encerram este gate.
+- [ ] Typecheck integral das cópias fiscais/C2 e UI fiscal global autenticada aguardam auditor; build automático runtime OK não valida cópias inativas.
 - [ ] Homologação autenticada/JWT/RLS real aguarda revisão/aplicação independente; sem fixtures novas, SQL hosted ou publicação.
 
 ## 22/10 02:26 — fixtures existentes e conferência fiscal

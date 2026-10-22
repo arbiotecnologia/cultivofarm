@@ -35,3 +35,14 @@ Consultas hosted SOMENTE LEITURA, após validar `supabase/config.toml` ref `swzp
 - SQL sintético e policies lidas não equivalem a negativos JWT/RLS reais. Gates fiscal e pacote conjunto permanecem NO-GO para ativação independente não revisada.
 
 Aviso falso no formulário global corrigido: criação com classificação pendente seguida de classificação canônica; tipo de aplicação não determina família. Fluxo criação existente:25/25 testes passaram; sem teste de copy/markup adicionado.
+
+## Candidata fiscal GLOBAL — revisão a70923ea
+
+Os registros anteriores descrevem o runtime/achados daquela rodada; a correção abaixo permanece **fora do runtime**, em `global/`.
+
+- `frontend.patch` e cópias reutilizam FiscalProdutos dentro da plataforma; não criam cadastro paralelo. Superadmin exige sessão com sujeito correspondente, perfil ativo, senha definitiva e monitor pronto. Internos ficam somente leitura; nenhum canal tenant/B2B é concedido.
+- Perfis ativos são filtrados explicitamente antes de `maybeSingle`; histórico não é usado como alvo editável. Saves preservam CAS/ID e fences. IBS/CBS produto compartilha autoridade, nega escrita interna e oculta resposta de epoch anterior; serviço/empresa não são promovidos neste recorte.
+- `candidate.sql.review`, montado por `assemble_sql.py`, agrega guard estrutural e guards de funções antes da mudança; tabela global existente, unique parcial e auditoria preservados. Autoridade de escrita combina `platform_actor_access_ready` e `is_platform_superadmin`; trigger usa gate existente e avança timestamp. Histórico inativo imutável; IBS/CBS active-only com CAS. `rollback.sql.review` fecha escritas sem restaurar política fraca.
+- **26 verificações PostgreSQL locais**: negativos de perfil/senha/convite/papéis, leitura interna, duplicidade ativa, histórico, corrida CAS e rollback. Schema/Auth reduzidos: não provam guard de baseline hosted completo, JWT/RLS real ou integração hosted.
+- **10/10 Vitest candidatos** para sessão/monitor/leitura interna e IBS/CBS negado/tardio; regressões runtime **59/59**. Build automático da prévia OK, mas não compila automaticamente as cópias inativas; typecheck integral destas cópias permanece gate independente, não foi executado manualmente.
+- **Authenticated path: UNVERIFIED**. Supabase externo não oferece sessão gerenciada para esta checagem; candidata não instalada. Provas reais de RLS/CAS e UI Superadmin dependem de revisão/aplicação pelo auditor; não houve SQL hosted, emissão NF-e, publicação ou alteração INS-4/SOLO-4.

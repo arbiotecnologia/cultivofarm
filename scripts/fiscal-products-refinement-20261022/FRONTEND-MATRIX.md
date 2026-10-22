@@ -4,7 +4,8 @@ Fixtures abaixo são doubles locais dos testes, não dados ou classificações d
 
 | Situação | Resultado requerido | Evidência |
 |---|---|---|
-| Administrador com leitura autorizada, perfil produto ausente | Formulário existente permite rascunho vazio; envia campos vazios, sem defaults tributários | teste UI `existing product drawer saves an empty draft` |
+| Superadmin com autoridade global válida, perfil produto ausente | Candidata reutiliza formulário para rascunho vazio, sem defaults; cadastro ainda não homologado | acesso candidato + teste antigo de formulário; UI integrada global pendente |
+| Administrador/gestor/financeiro | Candidata permite somente leitura; save perfil e IBS/CBS negados | testes acesso candidato + negativos SQL local |
 | Gestor somente leitura | Ações mutantes ausentes; nenhuma elevação por capacidade B2B | teste UI somente leitura existente |
 | Rascunho sem classificação mínima | `incomplete_draft`, nunca NF-e pronta | preparação pura |
 | Mínimo classificado sem validação contábil | `accounting_pending`, nunca NF-e pronta | preparação pura |
