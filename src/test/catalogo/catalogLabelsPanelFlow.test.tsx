@@ -42,7 +42,7 @@ function setup() {
 async function rename(to: string) {
   fireEvent.click(await screen.findByRole("button", { name: "Renomear exibição" }));
   fireEvent.change(screen.getByLabelText(/Nome de exibição \(a chave/), { target: { value: to } });
-  fireEvent.change(screen.getByLabelText(/^Motivo/), { target: { value: "Ajuste de nome confirmado" } });
+  fireEvent.change(document.getElementById(`reason-${ID}`) as HTMLElement, { target: { value: "Ajuste de nome confirmado" } });
   fireEvent.click(screen.getByRole("checkbox", { name: /Confirmo a alteração/ }));
   fireEvent.click(screen.getByRole("button", { name: "Salvar nome" }));
 }
@@ -58,7 +58,6 @@ describe("painel de rótulos → leitor de exibição (fluxo real)", () => {
   });
   it("conflito CAS oferece atualização controlada sem recarregar a página", async () => {
     state.ver = V1; state.conflict = true; setup();
-    await screen.findByText("Fungicida", { selector: "p *, p" }).catch(() => undefined);
     await rename("Outro nome");
     expect((await screen.findByRole("alert")).textContent).toMatch(/Atualize os dados/);
     expect(screen.queryByText(/Recarregue/)).toBeNull();
