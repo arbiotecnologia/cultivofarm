@@ -14,5 +14,4 @@ export default defineConfig({ ...base, resolve: { alias: [
   "scripts/contracts-c2-20261022/frontend/*.test.{ts,tsx}",
   "scripts/partner-own-finance-20261022/*.test.{ts,tsx}",
   "scripts/contracts-c2-20261022/integral/frontend/*.test.{ts,tsx}",
-  "src/test/catalogo/ownerCatalogFilters.session.test.tsx",
 ] } });
