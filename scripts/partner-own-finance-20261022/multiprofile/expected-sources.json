@@ -1,0 +1,14 @@
+[
+  {
+    "signature": "platform_private.b2b_commercial_partner_projection()",
+    "review_source_sha256": "c8d7e1c71336ee8437f3b3c8911e933ac4d6dbe1bfaa7ac3802ec94bb3f354fd"
+  },
+  {
+    "signature": "platform_private.b2b_commercial_context()",
+    "review_source_sha256": "a3dd07b37313796c6142d5cf85da696082a4fcc5b4fea09ec93ecdd9bafe30de"
+  },
+  {
+    "signature": "public.is_valid_b2b_partner_user(uuid,uuid)",
+    "review_source_sha256": "5d8f29be9dcc67db68118362f9c0b2dedb9a6b64a72bf16c61dde70c68e90e54"
+  }
+]
