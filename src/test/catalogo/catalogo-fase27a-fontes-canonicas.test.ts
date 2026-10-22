@@ -64,9 +64,10 @@ describe("FASE 27A — CatalogoItemDrawer somente leitura", () => {
 describe("FASE 27A — Exposição por portal", () => {
   it("FichasTecnicas B2B filtra b2b_enabled e ficha aprovada", () => {
     const src = read("src/pages/portal-parceiro/FichasTecnicas.tsx");
-    expect(src).toContain("b2b_enabled");
-    expect(src).toContain("status_validacao");
-    expect(src).toContain("aprovado");
+    // C1B: b2b_enabled/visibilidade/ficha aprovada resolvidos no servidor pela RPC canônica.
+    expect(src).toContain("usePartnerCatalogTecnico");
+    expect(src).toContain("ficha_aprovada");
+    expect(src).not.toMatch(/\.from\(/);
   });
 
   it("MobileCatalogoTecnico não expõe custo interno nem auditoria", () => {

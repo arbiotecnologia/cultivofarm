@@ -28,7 +28,9 @@ function setup() {
 beforeEach(() => {
   mocks.actor = actor();
   mocks.request.mockReset().mockResolvedValue(page());
-  mocks.rpc.mockReset().mockImplementation((name, args) => ({ abortSignal: (signal: AbortSignal) => mocks.request(name, args, signal) }));
+  // Leitura de nomes de rótulos (catalog_family_labels_read) fica fora do contador do leitor do catálogo.
+  mocks.rpc.mockReset().mockImplementation((name, args) => ({ abortSignal: (signal: AbortSignal) =>
+    name === "catalog_family_labels_read" ? Promise.resolve({ data: [], error: null }) : mocks.request(name, args, signal) }));
 });
 afterEach(cleanup);
 

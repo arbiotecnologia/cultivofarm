@@ -26,10 +26,19 @@ function setup(entry = "/plataforma") {
   const view = render(tree());
   return { rerender: () => view.rerender(tree()) };
 }
+// Fonte canônica de rótulos (RPC platform_list_catalog_labels): somente a semente atual.
+const SEED: Record<string, string[]> = { biologico: ["biofungicida", "bioinseticida", "inoculante", "solubilizador"], quimico: ["fungicida", "inseticida", "herbicida"], fertilizante_adubo: [] };
+const seedLabels = (fam: string) => SEED[fam].map((rotulo, i) => ({ id: `00000000-0000-4000-8000-0000000001${fam.length}${i}`, familia: fam, rotulo,
+  rotulo_exibicao: rotulo, ativo: true, updated_at: V1 }));
+const ALL = [...seedLabels("biologico"), ...seedLabels("quimico")];
 const readCalls = () => mocks.rpc.mock.calls.filter(([n]) => n === "platform_read_global_product_catalog_by_family").map(([, a]) => a);
 beforeEach(() => {
   mocks.actor = actor();
-  mocks.request.mockReset().mockImplementation((name: string) => name === "platform_read_global_product_catalog_by_family" ? Promise.resolve(page()) : new Promise(() => {}));
+  mocks.request.mockReset().mockImplementation((name: string, args: { p_familia?: string }) =>
+    name === "platform_read_global_product_catalog_by_family" ? Promise.resolve(page())
+    : name === "platform_list_catalog_labels" ? Promise.resolve({ data: seedLabels(args.p_familia ?? ""), error: null })
+    : name === "catalog_family_labels_read" ? Promise.resolve({ data: [], error: null })
+    : new Promise(() => {}));
   mocks.rpc.mockReset().mockImplementation((name, args) => ({ abortSignal: (s: AbortSignal) => mocks.request(name, args, s) }));
 });
 afterEach(cleanup);
@@ -89,17 +98,21 @@ describe("contrato de família", () => {
   it("biológico e químico nunca se misturam", () => {
     expect(FAMILY_CLASSES.biologico).toEqual(["biofungicida", "bioinseticida", "inoculante", "solubilizador"]);
     expect(FAMILY_CLASSES.quimico).toEqual(["fungicida", "inseticida", "herbicida"]);
-    expect(isClassAllowed("quimico", "biofungicida")).toBe(false);
-    expect(isClassAllowed("biologico", "herbicida")).toBe(false);
-    expect(isClassAllowed("fertilizante_adubo", "fungicida")).toBe(false);
-    expect(isClassAllowed("biologico", "biofungicida")).toBe(true);
+    expect(isClassAllowed("quimico", "biofungicida", seedLabels("quimico"))).toBe(false);
+    expect(isClassAllowed("biologico", "herbicida", seedLabels("biologico"))).toBe(false);
+    expect(isClassAllowed("fertilizante_adubo", "fungicida", seedLabels("fertilizante_adubo"))).toBe(false);
+    expect(isClassAllowed("biologico", "biofungicida", seedLabels("biologico"))).toBe(true);
+    // Sem fonte canônica carregada: falha fechada (só rótulo nulo); rótulo inativo não é atribuível.
+    expect(isClassAllowed("biologico", "biofungicida")).toBe(false);
+    expect(isClassAllowed("biologico", null)).toBe(true);
+    expect(isClassAllowed("biologico", "biofungicida", seedLabels("biologico").map((l) => ({ ...l, ativo: false })))).toBe(false);
     expect(platformCatalogPageSchema.safeParse({ items: [{ ...legacy, familia_catalogo: "quimico", classe_catalogo: "biofungicida" }], has_more: false }).success).toBe(false);
     expect(platformCatalogPageSchema.safeParse({ items: [{ ...legacy, familia_catalogo: "semente" }], has_more: false }).success).toBe(false);
   });
   it("classe incoerente e motivo curto não chegam ao servidor", async () => {
     const s = new AbortController().signal; const t = { id: ID, updated_at: V1, familia_catalogo: null, classe_catalogo: null };
-    await expect(setProductFamily(t, "quimico", "biofungicida", "Motivo suficiente", ID, s)).rejects.toThrow();
-    await expect(setProductFamily(t, "biologico", "biofungicida", "curto", ID, s)).rejects.toThrow();
+    await expect(setProductFamily(t, "quimico", "biofungicida", "Motivo suficiente", ID, s, ALL)).rejects.toThrow();
+    await expect(setProductFamily(t, "biologico", "biofungicida", "curto", ID, s, ALL)).rejects.toThrow();
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
   it("envia CAS/motivo/chave e rejeita recibo divergente", async () => {
@@ -108,15 +121,15 @@ describe("contrato de família", () => {
     const ok = { id: ID, familia_catalogo: "biologico", classe_catalogo: "biofungicida", updated_at: "2026-10-14T21:40:00.000000+00:00",
       idempotency_key: KEY, audit_id: KEY, idempotent: false };
     mocks.request.mockResolvedValueOnce({ data: ok, error: null });
-    await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s)).resolves.toMatchObject({ familia_catalogo: "biologico" });
+    await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s, ALL)).resolves.toMatchObject({ familia_catalogo: "biologico" });
     expect(mocks.rpc).toHaveBeenCalledWith("platform_set_global_product_family", { p_id: ID, p_expected_updated_at: V1,
       p_familia: "biologico", p_classe: "biofungicida", p_reason: "Confirmado pelo usuário", p_idempotency_key: KEY });
     for (const bad of [{ ...ok, familia_catalogo: "quimico" }, { ...ok, updated_at: V1 }, { ...ok, classe_catalogo: null }, { ...ok, idempotency_key: ID }]) {
       mocks.request.mockResolvedValueOnce({ data: bad, error: null });
-      await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s)).rejects.toThrow(/Não foi possível confirmar/);
+      await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s, ALL)).rejects.toThrow(/Não foi possível confirmar/);
     }
     mocks.request.mockResolvedValueOnce({ data: null, error: { code: "40001" } });
-    await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s)).rejects.toThrow(/mudou/);
+    await expect(setProductFamily(t, "biologico", "biofungicida", "Confirmado pelo usuário", KEY, s, ALL)).rejects.toThrow(/mudou/);
   });
   it("diálogo exige família, motivo e confirmação; salva e relê lista", async () => {
     setup("/plataforma?revisao=pendentes"); await screen.findByText("Bombarbio");
