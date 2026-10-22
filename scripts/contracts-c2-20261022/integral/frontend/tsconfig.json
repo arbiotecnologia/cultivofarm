@@ -1,0 +1,3 @@
+{ "extends": "../../../../tsconfig.app.json",
+  "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["runtime-copies/src/*", "../../../../src/*"] }, "noEmit": true },
+  "include": ["runtime-copies/src/**/*", "../../../../src/vite-env.d.ts"] }
