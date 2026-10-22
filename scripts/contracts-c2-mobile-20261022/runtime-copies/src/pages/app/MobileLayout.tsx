@@ -57,10 +57,9 @@ export default function MobileLayout() {
   // Fallback: sem contexto ativo, se não é produtor mas tem técnico → técnico.
   const isTechnicalMode =
     (activeCtx === "technical" && hasTechnical) ||
-    (activeCtx !== "producer" && !isProdutor && hasTechnical) ||
-    // Producer partially revoked: a stale visual choice falls back to the remaining context.
-    (activeCtx === "producer" && !isProdutor && hasTechnical) ||
-    (!activeCtx && !isProdutor && hasTechnical);
+    // Without a canonical producer context (incl. partial revocation with a stale visual
+    // "producer" choice) the remaining technical context is used.
+    (!isProdutor && hasTechnical);
   const isProducerMode = !isTechnicalMode && isProdutor;
 
   // Semeia contexto visual quando ausente (fluxos legados sem passar pelo seletor).

@@ -1,6 +1,6 @@
 --- src/pages/app/MobileLayout.tsx	2026-10-22 00:04:12.790533610 +0000
-+++ scripts/contracts-c2-mobile-20261022/runtime-copies/src/pages/app/MobileLayout.tsx	2026-10-22 02:56:46.605626723 +0000
-@@ -44,14 +44,22 @@
++++ scripts/contracts-c2-mobile-20261022/runtime-copies/src/pages/app/MobileLayout.tsx	2026-10-22 02:56:52.984305183 +0000
+@@ -44,15 +44,22 @@
    const { config, defaults } = useSystemConfig();
    const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
  
@@ -20,13 +20,14 @@
    // Fallback: sem contexto ativo, se não é produtor mas tem técnico → técnico.
    const isTechnicalMode =
      (activeCtx === "technical" && hasTechnical) ||
-+    (activeCtx !== "producer" && !isProdutor && hasTechnical) ||
-+    // Producer partially revoked: a stale visual choice falls back to the remaining context.
-+    (activeCtx === "producer" && !isProdutor && hasTechnical) ||
-     (!activeCtx && !isProdutor && hasTechnical);
+-    (!activeCtx && !isProdutor && hasTechnical);
++    // Without a canonical producer context (incl. partial revocation with a stale visual
++    // "producer" choice) the remaining technical context is used.
++    (!isProdutor && hasTechnical);
    const isProducerMode = !isTechnicalMode && isProdutor;
  
-@@ -76,7 +84,7 @@
+   // Semeia contexto visual quando ausente (fluxos legados sem passar pelo seletor).
+@@ -76,7 +83,7 @@
  
    if (!user) return <Navigate to="/app/login" replace />;
  
