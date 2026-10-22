@@ -15,6 +15,7 @@
 - [x] Regressões pausa/retomada/renovação, mudança ator/tenant/contexto/A→B→A e rollback frontend; sem SQL hosted/reload/publicação. Homologação real após publicação pelo auditor permanece aberta.
 - [x] Coordenar capacidade/menu/entitlements financeiros em SQL/patch frontend INATIVOS; adapters de readers/provisionamento/seletor C2.1 rejeitam contrato singular atual. Sem ativação runtime dessas candidatas.
 - [ ] Multipapel integral: adaptar folha/readers/claim/finish/compensação/contextos/preferência/monitor junto dos writers e testar triggers completos/locks/JWT; adapters não certificam nem habilitam essa cadeia.
+- [x] Coordenação parcial02:09 em scripts/contracts-c2-20261022/coordinated: readers + writers existentes49/49 PostgreSQL descartável e33/33Vitest; montagem de provisionamento NÃO validada integralmente. README NO-GO explicita ausência de patch Edge/seletor/monitor e gates de triggers/rollback; nenhuma promoção runtime, SQL hosted ou publicação.
 
 ## 22/10 01:33 — C2-CAT publicado, dashboard e financeiro próprio
 - [x] Auditor confirmou HEAD318957a2e5f9117a49a365728af421687b22caf1/deploymentafa325c5-7fb8-4461-9d2d-11d47b01f1f4 e UI atualizada;30/30+tsc. UI real teste4 catálogo35itens(11produtos24micros), filtros químicos/adubos funcionam porém vazios: conteúdo não homologado positivo.
