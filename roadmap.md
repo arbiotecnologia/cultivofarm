@@ -1,5 +1,12 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 02:26 — fixtures existentes e conferência fiscal
+- [x] Registrar evidência relatada INS-4 químico/Inseticida e SOLO-4 fertilizante/sem rótulo criados por Superadmin no formulário existente; inativos/fora B2B/sem dose/composição/fiscal; NÃO recriar nem modificar.
+- [x] Corrigir aviso falso de famílias indisponíveis para criação pendente seguida da classificação canônica; fluxo existente25/25 testes.
+- [x] Conferir chave efetiva wrapper ator/tenant/request e restringir invalidação ao ator capturado;59/59 testes fiscais com revogação pré-insert/RLS/CAS/negação de cache.
+- [ ] Gate fiscal real: readonly canônico mostra SELECT por role sem tenant, perfil sem tenant e nenhum BEFORE updated_at listado; revisão modelo global/RLS e CAS concorrente real necessários antes de habilitar novos perfis. Nenhuma política/SQL alterada.
+- [ ] Pacote financeiro/multiperfil conjunto segue NO-GO nos gates registrados; driftcheck financeiro PASS nesta rodada, nenhuma ativação/publicação.
+
 ## 22/10 02:22 — drift financeiro e matriz fiscal
 - [x] Regenerar patch financeiro sobre HEAD corrigido, driftcheck SHA256 PASS e filtros17+layout financeiro2=19/19; suíte financeira35/35. Bind success/null e identidade arrayroles do HEAD preservados, sem restaurar scalar role/bind antigo.
 - [x] Preparar variante financeira multiperfil por capacidades atuais em multiprofile/: projeção/validator coordenados, preflight separado e guard instalação explicitamente fechado; nenhuma instalação/SQL hosted.
@@ -12,7 +19,7 @@
 - [ ] Gate C2 NO-GO: montagem integral/rollback/ACL, guard assertivo estrutural fresco, integração real selector/monitor/cadastro/MobileLayout e typecheck candidato completo; NÃO instalar/publicar até revisão auditor.
 - [x] Refinamento fiscal revisável em FiscalProdutos/hook/validação existentes após NTs oficiais2025.002v1.52/2026.002v1.11;53/53testes, build automáticoOK; rascunho incompleto não é NF-e pronta, sem classificação/default inventados. Revisão scripts/fiscal-products-refinement-20261022/README.md.
 - [ ] Homologação fiscal UI autenticada e typecheck independente: auditor; nenhuma NF-e/fixture criada. Refinamento não certifica RTC/operação final.
-- [ ] Fixtures humano-autorizadas aguardam auditor/Superadmin no fluxo canônico; nenhum DML hosted pelo agente. Financeiro/documentos permanecem inativos/fechados.
+- [x] Fixtures humano-autorizadas criadas por Superadmin segundo evidência02:26 INS-4/SOLO-4; nenhum DML hosted pelo agente. Financeiro/documentos permanecem inativos/fechados.
 
 ## 22/10 02:00 — sequência expressa: filtros → financeiro/multiperfil → fixtures/fiscal
 - [x] Registrar orientação sem interromper filtros: auditor reproduziu 1 falha/13 com ready=true/pending=true/dataundefined; os 12 anteriores passavam. Correção local6be91d43 reforça ambas chamadas com ausência somente em sucesso/null e adiciona janela pendente e troca tenant/papel; NÃO equivale a homologação real.

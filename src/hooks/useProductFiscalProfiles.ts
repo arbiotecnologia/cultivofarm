@@ -10,7 +10,7 @@
  * - Concorrência otimista no UPDATE via `updated_at` prévio.
  * - Erro de RLS/permissão nunca se torna sucesso silencioso.
  */
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,8 @@ import {
 
 export type ReadinessRow = any;
 
+// Resource prefixes only: useScopedPortalQuery appends canonical actor and
+// request scopes (actor/tenant/roles/epoch). Never use these prefixes for raw reads.
 export const PRODUCT_FISCAL_KEYS = {
   root: ["fiscal", "product-profiles"] as const,
   list: (p: ListParams) =>
@@ -282,6 +284,7 @@ export class OptimisticConflictError extends Error {
 export function useSaveProductFiscalProfile() {
   const qc = useQueryClient();
   const fence = useStorageAccessScope("product-fiscal-save");
+  const actor = useStorageAccessScope("portal-query-actor");
   return useMutation<
     ProductFiscalRow,
     Error,
@@ -293,7 +296,15 @@ export function useSaveProductFiscalProfile() {
   >({
     mutationFn: async ({ productId, current, values }) => {
       const valid = fence.capture();
-      const check = () => { if (!valid()) throw new Error("fiscal_context_changed"); };
+      const actorValid = actor.capture();
+      const actorScope = actor.scope;
+      const check = () => { if (!valid() || !actorValid()) throw new Error("fiscal_context_changed"); };
+      const invalidate = async () => {
+        check();
+        await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root,
+          predicate: query => query.queryKey.at(-2) === actorScope });
+        check();
+      };
       check();
       values = productFiscalFormSchema.parse(values);
       if (!productId || (current && (current.product_id !== productId || !current.id || !current.updated_at))) throw new Error("fiscal_target_changed");
@@ -324,8 +335,7 @@ export function useSaveProductFiscalProfile() {
           if (isPermissionError(error)) throw new Error("permission_denied");
           throw new Error(error.message);
         }
-        await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root });
-        check();
+        await invalidate();
         return data;
       }
       const payload = buildUpdatePayload(values, current);
@@ -348,8 +358,7 @@ export function useSaveProductFiscalProfile() {
       if (!data) {
         throw new OptimisticConflictError();
       }
-      await qc.invalidateQueries({ queryKey: PRODUCT_FISCAL_KEYS.root });
-      check();
+      await invalidate();
       return data;
     },
   });

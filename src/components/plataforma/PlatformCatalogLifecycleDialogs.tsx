@@ -105,7 +105,7 @@ function CreateForm({ scope, onClose, onSaved }: { scope: string; onClose: () =>
               <option value="">Selecione…</option>
               {legacyProductTypes.map((t) => <option key={t} value={t}>{tipoLabels[t]}</option>)}
             </select>
-            <p className="text-xs text-muted-foreground">Famílias Químicos e Fertilizantes/Adubos ainda não estão disponíveis.</p></div>
+            <p className="text-xs text-muted-foreground">Crie o produto com classificação pendente. Depois, na classificação do catálogo, selecione Biológicos, Químicos ou Fertilizantes/Adubos e o rótulo aplicável. O tipo de aplicação não define a família.</p></div>
           <div className="space-y-1.5"><Label htmlFor="create-dose">Dose (mL/ha, opcional)</Label>
             <Input id="create-dose" inputMode="decimal" value={dose} onChange={(e) => setDose(e.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="create-descricao">Descrição</Label>
