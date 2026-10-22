@@ -1,6 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 22/10 01:46 — filtros durante pausa e coordenação dos candidatos
+- [x] Complemento01:53: hook useMyCommercialOrders nega cache após refetch em erro; regressão real do hook reproduziu falha antes. Filtros e candidatos financeiro/multipapel preservados, sem SQL hosted/publicação ou mudança de entitlements.
 - [x] Corrigir reset por desmontagem layout/grid e boundary ancestral: memória volátil de filtros acima da boundary, sem manter dados/autoridade/lease. docs/catalog-filter-pause-20261022-review.md.
 - [x] Regressões pausa/retomada/renovação, mudança ator/tenant/contexto/A→B→A e rollback frontend; sem SQL hosted/reload/publicação. Homologação real após publicação pelo auditor permanece aberta.
 - [x] Coordenar capacidade/menu/entitlements financeiros em SQL/patch frontend INATIVOS; adapters de readers/provisionamento/seletor C2.1 rejeitam contrato singular atual. Sem ativação runtime dessas candidatas.
