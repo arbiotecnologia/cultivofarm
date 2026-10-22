@@ -5,7 +5,8 @@
  * escrita item=admin/financeiro. Códigos de erro: FISCAL_CONFLICT,
  * FISCAL_FORBIDDEN, FISCAL_UNAUTHENTICATED, FISCAL_RTC_*.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   rtcCompanySchema,
@@ -162,7 +163,10 @@ export function useFiscalRtcItem(
   itemId: string | null,
   options: { enabled?: boolean } = {},
 ) {
-  const enabled = (options.enabled ?? true) && !!itemId;
+  const fence = useProductFiscalAccess(`product-rtc:${itemId}`);
+  const product = kind === "product";
+  const adoptedScope = useRef("");
+  const enabled = (options.enabled ?? true) && !!itemId && (!product || fence.ready);
   const [state, setState] = useState<RtcHookState<IbsCbsItemConfiguration>>({
     data: null, revision: "", loading: enabled, error: null, saving: false,
   });
@@ -181,9 +185,12 @@ export function useFiscalRtcItem(
     : "p_profile_id";
 
   const load = useCallback(async () => {
-    if (!itemId) return;
+    if (!itemId || (product && !fence.ready)) return;
+    const valid = product ? fence.capture() : () => true;
     setState((s) => ({ ...s, loading: true, error: null }));
     const { data, error } = await rpc<unknown>(getFn, { [idKey]: itemId });
+    if (!valid()) return;
+    adoptedScope.current = fence.scope;
     if (error) {
       setState({ data: null, revision: "", loading: false, saving: false,
         error: toMessage(error.message, "Falha ao carregar IBS/CBS.") });
@@ -198,12 +205,13 @@ export function useFiscalRtcItem(
     }
     setState({ data: env.configuration, revision: env.revision,
       loading: false, saving: false, error: null });
-  }, [itemId, getFn, idKey]);
+  }, [itemId, getFn, idKey, product, fence.scope]);
 
   useEffect(() => { if (enabled) void load(); }, [enabled, load]);
 
   const save = useCallback(async (payload: IbsCbsItemConfiguration) => {
-    if (!itemId) return { ok: false as const };
+    if (!itemId || (product && (!fence.ready || !fence.canWrite))) return { ok: false as const };
+    const valid = product ? fence.capture() : () => true;
     setState((s) => ({ ...s, saving: true, error: null }));
     if (rtcHasSensitiveKey(payload)) {
       setState((s) => ({ ...s, saving: false,
@@ -219,6 +227,8 @@ export function useFiscalRtcItem(
       [idKey]: itemId, payload: parsed.data,
       expected_revision: state.revision || null,
     });
+    if (!valid()) return { ok: false as const };
+    adoptedScope.current = fence.scope;
     if (error) {
       setState((s) => ({ ...s, saving: false,
         error: toMessage(error.message, "Falha ao salvar IBS/CBS.") }));
@@ -234,9 +244,9 @@ export function useFiscalRtcItem(
     setState({ data: env.configuration, revision: env.revision,
       loading: false, saving: false, error: null });
     return { ok: true as const };
-  }, [itemId, saveFn, idKey, state.revision]);
+  }, [itemId, saveFn, idKey, state.revision, product, fence.scope, fence.canWrite]);
 
-  return { ...state, reload: load, save };
+  return { ...state, data: product && (!fence.ready || adoptedScope.current !== fence.scope) ? null : state.data, reload: load, save };
 }
 
 export { emptyCompany as _emptyCompanyRtc };

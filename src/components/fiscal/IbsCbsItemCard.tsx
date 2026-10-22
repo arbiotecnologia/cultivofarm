@@ -64,6 +64,7 @@ export function IbsCbsItemCard({ kind, itemId, canEdit }: IbsCbsItemCardProps) {
     : "IBS/CBS do produto";
 
   async function onSave() {
+    if (disabled) return;
     setFlash(null);
     const res = await rtc.save(form);
     if (res.ok) setFlash("IBS/CBS salvo com sucesso.");

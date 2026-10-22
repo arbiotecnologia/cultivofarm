@@ -4,6 +4,7 @@
  * Não toca menus operacionais: esta rota vive fora do layout administrativo
  * (sem barra lateral de módulos) e fora do `ACCESS_MAP`.
  */
+import FiscalProdutos from "@/pages/configuracoes/FiscalProdutos";
 import { useState } from "react";
 import { ShieldCheck, LogOut, RefreshCw, Layers, Building2, History, SlidersHorizontal, UserCog, MessageSquare, Package } from "lucide-react";
 import { AlterarAssinaturaCard, ExcecoesTab } from "./PlataformaGestao";
@@ -185,8 +186,10 @@ export default function PlataformaHome() {
               <Package className="mr-2 h-4 w-4" aria-hidden="true" />
               Catálogo
             </TabsTrigger>
+            <TabsTrigger value="fiscal-produtos">Perfis fiscais de produtos</TabsTrigger>
           </TabsList>
           <TabsContent value="catalogo"><PlatformCatalogReadTab /></TabsContent>
+          <TabsContent value="fiscal-produtos"><FiscalProdutos platformGlobal /></TabsContent>
 
           {/* PLANOS ------------------------------------------------------- */}
           <TabsContent value="planos" className="space-y-4">

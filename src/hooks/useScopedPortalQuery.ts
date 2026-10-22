@@ -3,11 +3,13 @@ import { useQuery, useQueryClient, type UseQueryOptions } from "@tanstack/react-
 import { useStorageAccessScope } from "./useStorageAccessScope";
 
 /** Cache isolation only; each existing RPC/RLS must independently authorize. */
-export function useScopedPortalQuery<T>(options: Omit<UseQueryOptions<T, Error>, "queryFn"> & { queryFn: (signal: AbortSignal) => Promise<T> }) {
+export function useScopedPortalQuery<T>(options: Omit<UseQueryOptions<T, Error>, "queryFn"> & { queryFn: (signal: AbortSignal) => Promise<T> }, access?: { request: ReturnType<typeof useStorageAccessScope>; actor: ReturnType<typeof useStorageAccessScope> }) {
   const serializedKey = JSON.stringify(options.queryKey);
   const stableKey = useMemo(() => JSON.parse(serializedKey) as readonly unknown[], [serializedKey]);
-  const fence = useStorageAccessScope(`portal:${serializedKey}:${options.enabled !== false}`);
-  const actor = useStorageAccessScope("portal-query-actor");
+  const defaultFence = useStorageAccessScope(`portal:${serializedKey}:${options.enabled !== false}`);
+  const defaultActor = useStorageAccessScope("portal-query-actor");
+  const fence = access?.request ?? defaultFence;
+  const actor = access?.actor ?? defaultActor;
   const client = useQueryClient();
   const prefix = options.queryKey[0];
   useEffect(() => {

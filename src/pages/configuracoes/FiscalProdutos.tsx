@@ -15,6 +15,7 @@ import { TENANT_CAN_EDIT_GLOBAL_CATALOG } from "@/lib/catalogo/globalCatalogWrit
  *  - Nenhuma nota é emitida por esta tela.
  */
 import { useMemo, useState, useEffect, useRef } from "react";
+import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuth } from "@/hooks/useAuth";
 import { getAccessLevel } from "@/lib/permissions";
@@ -171,29 +172,34 @@ type EditingTarget =
   | { entity: "produto"; productId: string; displayName: string; displayCodigo: string | null }
   | { entity: "microrganismo"; microorganismId: string; displayName: string; displayCodigo: string | null };
 
-export default function FiscalProdutos() {
+export default function FiscalProdutos({ platformGlobal = false }: { platformGlobal?: boolean } = {}) {
+  const fiscalAccess = useProductFiscalAccess("product-fiscal-page");
   const { role } = useAuth();
-  const access = getAccessLevel(role, "/configuracoes/fiscal/produtos");
-  const canEdit = access === "rw";
+  const routeAccess = getAccessLevel(role, "/configuracoes/fiscal/produtos");
+  const access = platformGlobal ? fiscalAccess.ready && fiscalAccess.canWrite ? "rw" : "none" : routeAccess;
+  // Produto global: somente Superadmin forte na plataforma. Microrganismo: permissão
+  // canônica existente da rota tenant (admin/financeiro rw, gestor r), nunca na plataforma.
+  const canEditProduct = platformGlobal && access === "rw" && fiscalAccess.ready && fiscalAccess.canWrite;
+  const canEditMicro = !platformGlobal && routeAccess === "rw";
   const uiEnabled = FEATURE_FLAGS.fiscalProductProfilesUi === true;
   const emissionLock = FEATURE_FLAGS.fiscalEmissionEnabled === false;
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | null>(null);
-  const [kind, setKind] = useState<EntityKindFilter>(KIND_ALL);
+  const [kind, setKind] = useState<EntityKindFilter>(platformGlobal ? KIND_PRODUCT : KIND_ALL);
   const [page, setPage] = useState(0);
   const [editing, setEditing] = useState<EditingTarget | null>(null);
   const [associating, setAssociating] = useState<
     { microorganismId: string; microorganismNome: string; currentProductId: string | null } | null
   >(null);
 
-  const productsEnabled = uiEnabled && access !== "none" && kind !== KIND_MICRO;
+  const productsEnabled = uiEnabled && access !== "none" && (platformGlobal || kind !== KIND_MICRO);
   const listQuery = useProductFiscalList(
     { search, status, page, pageSize: PAGE_SIZE },
     { enabled: productsEnabled },
   );
 
-  const microorganismsEnabled = uiEnabled && access !== "none" && kind !== KIND_PRODUCT;
+  const microorganismsEnabled = !platformGlobal && uiEnabled && access !== "none" && kind !== KIND_PRODUCT;
   const microorganismsQuery = useMicroorganismList(search, {
     enabled: microorganismsEnabled,
   });
@@ -207,7 +213,7 @@ export default function FiscalProdutos() {
     [productItemsPage],
   );
   const readinessQuery = useProductFiscalReadiness(productIds, {
-    enabled: uiEnabled && access !== "none" && kind !== KIND_MICRO,
+    enabled: uiEnabled && access !== "none" && (platformGlobal || kind !== KIND_MICRO),
   });
 
   const microItems = useMemo(
@@ -216,10 +222,10 @@ export default function FiscalProdutos() {
   );
   const microIds = useMemo(() => microItems.map((m) => m.id), [microItems]);
   const microProfilesQuery = useMicroorganismFiscalProfileList(microIds, {
-    enabled: uiEnabled && access !== "none",
+    enabled: !platformGlobal && uiEnabled && access !== "none",
   });
   const microReadinessQuery = useMicroorganismFiscalReadiness(microIds, {
-    enabled: uiEnabled && access !== "none",
+    enabled: !platformGlobal && uiEnabled && access !== "none",
   });
 
   const permissionDenied =
@@ -387,7 +393,7 @@ export default function FiscalProdutos() {
         </CardContent>
       </Card>
 
-      <RegulatorioMicrorganismosSecao />
+      {!platformGlobal && <RegulatorioMicrorganismosSecao />}
 
 
       <Card>
@@ -401,7 +407,7 @@ export default function FiscalProdutos() {
                 onChange={(e) => { setSearch(e.target.value); setPage(0); }}
                 className="max-w-sm"
               />
-              <Select
+              {!platformGlobal && <Select
                 value={kind}
                 onValueChange={(v) => { setKind(v as EntityKindFilter); setPage(0); }}
               >
@@ -413,7 +419,7 @@ export default function FiscalProdutos() {
                   <SelectItem value={KIND_PRODUCT}>Produtos</SelectItem>
                   <SelectItem value={KIND_MICRO}>Microrganismos</SelectItem>
                 </SelectContent>
-              </Select>
+              </Select>}
               <Select
                 value={status ?? STATUS_ALL}
                 onValueChange={(v) => { setStatus(v === STATUS_ALL ? null : v); setPage(0); }}
@@ -432,9 +438,9 @@ export default function FiscalProdutos() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(listQuery.isLoading && kind !== KIND_MICRO)
+          {(listQuery.isLoading && (platformGlobal || kind !== KIND_MICRO))
             || (microorganismsQuery.isLoading && kind !== KIND_PRODUCT)
-            || (kind !== KIND_MICRO && productIds.length > 0 && readinessQuery.isLoading)
+            || ((platformGlobal || kind !== KIND_MICRO) && productIds.length > 0 && readinessQuery.isLoading)
             || (kind !== KIND_PRODUCT && microIds.length > 0 && microProfilesQuery.isLoading)
             || (kind !== KIND_PRODUCT && microIds.length > 0 && microReadinessQuery.isLoading) ? (
             <div className="flex items-center gap-2 text-muted-foreground" data-testid="fiscal-produtos-loading">
@@ -477,7 +483,8 @@ export default function FiscalProdutos() {
                       r,
                       readinessByProduct,
                       microReadinessByMicro,
-                      canEdit,
+                      canEditProduct,
+                      canEditMicro,
                       readinessUnknown,
                       microProfilesUnknown,
                       microReadinessUnknown,
@@ -503,7 +510,7 @@ export default function FiscalProdutos() {
                 </table>
               </div>
 
-              {kind !== KIND_MICRO && (
+              {(platformGlobal || kind !== KIND_MICRO) && (
                 <div className="flex items-center justify-between text-sm">
                   <div className="text-muted-foreground">
                     Página {page + 1} de {totalPages} — {listQuery.data?.total ?? 0} produtos
@@ -537,16 +544,16 @@ export default function FiscalProdutos() {
           productId={editing.productId}
           displayName={editing.displayName}
           displayCodigo={editing.displayCodigo}
-          canEdit={canEdit}
+          canEdit={canEditProduct}
           onClose={() => setEditing(null)}
         />
       ) : null}
-      {editing?.entity === "microrganismo" ? (
+      {!platformGlobal && editing?.entity === "microrganismo" ? (
         <MicroorganismEditDrawer
           microorganismId={editing.microorganismId}
           displayName={editing.displayName}
           displayCodigo={editing.displayCodigo}
-          canEdit={canEdit}
+          canEdit={canEditMicro}
           onClose={() => setEditing(null)}
         />
       ) : null}
@@ -568,7 +575,8 @@ function renderRow(
   r: UnifiedRow,
   readinessByProduct: Map<string, { minimally_classified: boolean | null }>,
   microReadinessByMicro: Map<string, { minimally_classified: boolean | null; profile_status: string | null }>,
-  canEdit: boolean,
+  canEditProduct: boolean,
+  canEditMicro: boolean,
   readinessUnknown: boolean,
   microProfilesUnknown: boolean,
   microReadinessUnknown: boolean,
@@ -606,9 +614,9 @@ function renderRow(
           <Button
             variant="outline" size="sm"
             onClick={() => onEditProduct(p)}
-            aria-label={`${canEdit ? "Editar" : "Ver"} perfil fiscal de ${p.product_nome}`}
+            aria-label={`${canEditProduct ? "Editar" : "Ver"} perfil fiscal de ${p.product_nome}`}
           >
-            {canEdit ? (p.profile_id ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />) : "Ver"}
+            {canEditProduct ? (p.profile_id ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />) : "Ver"}
           </Button>
         </td>
       </tr>
@@ -678,7 +686,7 @@ function renderRow(
       </td>
 
       <td className="p-2 text-right space-x-2">
-        {canEdit ? (
+        {canEditMicro ? (
           <>
             <Button
               variant={own ? "outline" : "default"}
@@ -841,7 +849,7 @@ function ProductEditDrawer({
 }) {
   const profileQuery = useProductFiscalProfile(productId);
   const save = useSaveProductFiscalProfile();
-  const fence = useStorageAccessScope(`fiscal-drawer:${productId}`);
+  const fence = useProductFiscalAccess(`fiscal-drawer:${productId}`);
   const submitLock = useRef(false);
   const readiness = useProductFiscalReadiness([productId]);
   const preparation = productFiscalPreparation(!fence.ready || readiness.isError || readiness.isFetching ? undefined : readiness.data?.find(r => r.product_id === productId), profileQuery.data?.is_active);
@@ -926,7 +934,7 @@ function ProductEditDrawer({
             <AlertDescription>Salvar um rascunho não torna o item pronto para NF-e. Regime, operação, regras do emitente e IBS/CBS precisam de validação própria; emissão permanece desativada.</AlertDescription>
           </Alert>
           {fence.ready && !profileQuery.isFetching && !profileQuery.isError && profileQuery.data !== undefined && (
-            <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit && fence.ready} />
+            <IbsCbsItemCard kind="product" itemId={productId} canEdit={canEdit && fence.canWrite && profileQuery.data?.is_active === true} />
           )}
         </div>
       }
