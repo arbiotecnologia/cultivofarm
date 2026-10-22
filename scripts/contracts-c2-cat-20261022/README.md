@@ -26,8 +26,8 @@ Frontend proposto:
 
 ## Testes e limites
 - **30/30 Vitest**: layout real + OwnerCatalog real com grid/source simulados; catálogo montado sem NovoPedido, irmãos não montados, técnico, ausência de vínculo/capacidade/entitlement, lease pause e erro de refetch no mesmo layout, respostas tardias e troca A→B, nenhuma chamada extra.
-- **15/15 PostgreSQL descartável**: corpo real da projeção candidata + contexto/validator capturados do LIVE, scope/Auth/entitlements sintéticos. A/B, perfil movido, inativo, owner inativo, parceiro inativo, vínculo futuro/revogado, técnico sem catálogo gestor, cliente comercial sem vínculo. **Não são JWT/RLS reais** nem certificação do modelo explícito.
-- Regressões C1B/fichas/myPartner/entitlements executadas separadamente; recibos em `validation-results.txt`.
+- **16/16 PostgreSQL descartável**: corpo real da projeção candidata + contexto/validator capturados do LIVE, scope/Auth/entitlements sintéticos. A/B, perfil movido, inativo, owner inativo, parceiro inativo, vínculo futuro/revogado, técnico sem catálogo gestor, cliente comercial sem vínculo e rollback com MD5 original exato. **Não são JWT/RLS reais** nem certificação do modelo explícito.
+- **39/39 regressões** C1B/fichas/myPartner/entitlements/guards; recibos em `validation-results.txt`.
 - MD5 da nova projeção normalizada pelo PostgreSQL local: `06a858c55328b45f205ccb5ebb02607d`; conferir independente antes de aplicar rollback.
 - Typecheck independente da **candidata isolada**: UNVERIFIED; configuração fornecida. Build automático runtime OK não prova a candidata inativa. Nenhuma homologação real C2-CAT nesta rodada.
 
