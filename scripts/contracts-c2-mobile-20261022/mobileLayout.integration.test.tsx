@@ -66,6 +66,7 @@ afterEach(() => { cleanup(); vi.useRealTimers(); sessionStorage.clear(); });
 describe("C2 MobileLayout uses canonical contexts only", () => {
   it("producer + technical: chosen producer mode shows producer menus", async () => {
     setActivePortalContext("producer"); setup(); await tick();
+    console.log("DBG", document.body.textContent);
     expect(producerMenu()).toBe(true); expect(technicalMenu()).toBe(false);
   });
   it("cliente_produtor role without canonical producer context never enters producer mode", async () => {
