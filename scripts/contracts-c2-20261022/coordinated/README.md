@@ -24,3 +24,5 @@ Nenhum SQL aplicado, Edge implantada, frontend promovido ou sessão modificada n
 ## Próximo recorte
 
 Completar os gates acima dentro desta candidata separada antes de aceite instalável. Refinamento fiscal local entregue em paralelo, sem criação de fixtures: ver `scripts/fiscal-products-refinement-20261022/README.md`. Financeiro próprio/documentos continuam inativos.
+## Pacote integral (2026-10-22)
+Superado para instalação pelo pacote único `scripts/contracts-c2-20261022/integral/` (SQL C2+financeiro numa transação, manifesto frontend de 18 arquivos). Não instalar este pacote isoladamente.
