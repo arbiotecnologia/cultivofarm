@@ -1,0 +1,6 @@
+# Dashboard próprio — candidato INATIVO
+Sem alteração runtime, SQL, roles, sessões ou publicação. Primeiro recorte do plano aprovado: indicadores exclusivamente dos pedidos retornados pelo contrato existente, máximo100. Não agrupa estados em fases inventadas; exibe contagens exatas. Não monta DashboardPremium, financeiro, documentos, favoritos, mensagens, equipe ou writes. Catálogo/fichas continuam isolados em C2-CAT.
+
+Promoção após revisão independente e publicação C2-CAT: adicionar helper a src/lib/comercial/ownOrderIndicators.ts e substituir somente src/components/comercial/CommercialOwnOrders.tsx pelo candidato; não alterar layout/hook/Auth. frontend.patch é proposto, não aplicado. Reversão frontend pelo componente baseline preserva todos os filtros de banco e fences. SQL desnecessário neste recorte; preflight financeiro é somente leitura e não foi executado hosted.
+
+Limites: lista pertence ao parceiro e não garante por si vínculo partner_users; esse contrato comercial existente deve ser auditado antes de habilitar outras rotas. Nenhuma prova de futuro/revogação/tenant no servidor é inventada por mocks. C2.1 continua fechado; restante da matriz funcional ainda exige SQL/ACL/RLS/transitivos/entitlements e homologação JWT/UI real.

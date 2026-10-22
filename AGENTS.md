@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Manager own-dashboard candidates follow their directory AGENTS.md and reuse only the existing own-order read; no full dashboard/financial mounts — prevents supplier-internal disclosure.
 - C2-CAT owner routes require canonical read capabilities and mount only catalog/grid or sheets, never NovoPedido; C2.1 writers remain inactive until coordinated readers/provisioning — prevents catalogue access from enabling payment/cart channels.
 - C2 administrative lifecycle stays candidate-only with its directory AGENTS.md; writers cannot be installed separately from reviewed capability readers/provisioning — prevents cumulative roles from breaking access or reopening channels.
 - B2B candidates preserve OIDs through metadata overloads; scoped whitelisted sheets retain approved content, REST postflight gates promotion and frontend reversal retains server filters — avoids return breaks and security rollback leaks.
