@@ -1,0 +1,75 @@
+-- INACTIVE: applied only in the guarded coordinated assembly.
+CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid,p_partner_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT platform_private.platform_actor_access_ready(p_user_id)
+ AND EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
+ JOIN public.partner_users pu ON pu.user_id=p.user_id
+ JOIN public.partner_accounts pa ON pa.id=pu.partner_id
+ JOIN public.organizations owner ON owner.id=pa.commercial_owner_organization_id
+ WHERE p.user_id=p_user_id AND pa.id=p_partner_id AND p.ativo AND o.ativo AND o.status='ativa'
+ AND owner.ativo AND owner.status='ativa' AND pa.ativo AND pa.deleted_at IS NULL
+ AND p.organization_id=pu.tenant_id AND pu.tenant_id=owner.id
+ AND (o.partner_account_id IS NULL OR o.partner_account_id=pa.id)
+ AND pu.revoked_at IS NULL AND pu.valid_from<=now())
+ AND (SELECT count(*) FROM public.partner_users WHERE user_id=p_user_id)=1
+ AND EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p_user_id AND role IN ('parceiro_b2b','parceiro_b2b_tecnico'))
+ AND NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=p_user_id AND role NOT IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor'));
+$$;
+CREATE FUNCTION platform_private.c2_producer_links(p_user uuid,p_org uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT platform_private.platform_actor_access_ready(p_user)
+ AND EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
+ JOIN public.user_clientes uc ON uc.user_id=p.user_id JOIN public.clientes c ON c.id=uc.cliente_id
+ JOIN public.fazendas f ON f.cliente_id=c.id
+ WHERE p.user_id=p_user AND p.organization_id=p_org AND p.ativo AND o.ativo AND o.status='ativa'
+ AND uc.is_active AND uc.revoked_at IS NULL AND uc.valid_from<=now()
+ AND (uc.valid_until IS NULL OR uc.valid_until>=now())
+ AND c.organization_id=p_org AND c.status_cliente='ativo' AND f.organization_id=p_org AND f.ativo);
+$$;
+REVOKE ALL ON FUNCTION platform_private.c2_producer_links(uuid,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION platform_private.c2_producer_links(uuid,uuid) TO authenticated,service_role;
+CREATE OR REPLACE FUNCTION platform_private.b2b_assignment_identity_coherent(p_user uuid,p_partner uuid,p_owner uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT public.is_valid_b2b_partner_user(p_user,p_partner)
+ AND EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_user AND organization_id=p_owner)
+ AND EXISTS(SELECT 1 FROM public.partner_accounts WHERE id=p_partner AND commercial_owner_organization_id=p_owner);
+$$;
+-- Operation-specific role: cumulative technician never overrides manager.
+CREATE OR REPLACE FUNCTION platform_private.b2b_phase1_partner_visible(p_partner uuid,p_technical boolean DEFAULT false)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE s record; u uuid:=auth.uid(); BEGIN
+ IF u IS NULL OR p_partner IS NULL THEN RETURN false; END IF;
+ IF public.is_platform_superadmin(u) THEN RETURN true; END IF;
+ IF EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=u AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor')) THEN
+  RETURN public.is_valid_b2b_partner_user(u,p_partner)
+   AND (public.has_role(u,'parceiro_b2b') OR (p_technical AND public.has_role(u,'parceiro_b2b_tecnico')));
+ END IF;
+ SELECT * INTO s FROM platform_private.b2b_actor_scope(u);
+ RETURN s.profile_ok AND s.partner_valid AND s.org_partner=p_partner;
+END $$;
+-- Legacy scalar is not an authorization source for cumulative identities.
+CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(p_user_id uuid,p_partner_id uuid)
+RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT CASE WHEN public.is_valid_b2b_partner_user(p_user_id,p_partner_id)
+ AND (SELECT count(*) FROM public.user_roles WHERE user_id=p_user_id AND role IN ('parceiro_b2b','parceiro_b2b_tecnico'))=1
+ THEN CASE WHEN public.has_role(p_user_id,'parceiro_b2b') THEN 'parceiro_b2b' ELSE 'parceiro_b2b_tecnico' END END;
+$$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_context()
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE u uuid:=auth.uid(); org uuid; pid uuid; rs text[]; result jsonb; BEGIN
+ org:=public.h15_actor_organization();
+ SELECT partner_id INTO pid FROM public.partner_users WHERE user_id=u;
+ IF NOT public.is_valid_b2b_partner_user(u,pid) THEN RETURN NULL; END IF;
+ SELECT array_agg(role::text ORDER BY role::text) INTO rs FROM public.user_roles WHERE user_id=u;
+ result:=jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,
+ 'organization_id',org,'partner_id',pid,'commercial_owner_organization_id',org,'external_roles',rs,
+ 'role',CASE WHEN 'parceiro_b2b'=ANY(rs) THEN 'parceiro_b2b' ELSE 'parceiro_b2b_tecnico' END,
+ 'papel',CASE WHEN 'parceiro_b2b'=ANY(rs) THEN 'gestor' ELSE 'tecnico' END,'mode','commercial_owner',
+ 'manager', 'parceiro_b2b'=ANY(rs),'technician','parceiro_b2b_tecnico'=ANY(rs),
+ 'producer_links_valid',platform_private.c2_producer_links(u,org),
+ 'profile_stamp',(SELECT updated_at FROM public.profiles WHERE user_id=u),
+ 'link_version',(SELECT version FROM public.partner_users WHERE user_id=u));
+ RETURN result;
+END $$;
+-- Projection body remains the installed C2-CAT body; assembler adds whitelisted
+-- identity/capability fields, never finance or documents.

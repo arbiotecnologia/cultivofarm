@@ -11,6 +11,8 @@ Resultado local01:59:75/75 testes runtime (30 integração monitor/provider reai
 
 Complemento02:00: ambas chamadas agora emitem null SOMENTE para `isSuccess && data === null`; ready=true com data undefined/pending ou erro emite undefined. Adicionados quatro casos fiéis ready=true/isLoading=true/isPending=true/dataundefined: retomada via guard e via layout, troca tenant e troca papel enquanto pendente incluindo retorno ao contexto anterior. Mock de ausência confirmado retorna null com isSuccess, não undefined. Integração TanStack/AuthProvider/monitor real preservada:63/63 (17 filtros+30 monitor+16 pedidos),30/30 C2-CAT e types via tsgo PASS; build automático OK. Auditor confirmou atualização da publicação50e3f902, NÃO homologação filtros; esta nova correção não foi publicada.
 
+Reexecução02:09:17/17 filtros/layout/grid,30/30 árvore AuthProvider/monitor e16/16 pedidos PASS (63/63), sem sessão real ou publicação. HEAD consultado antes deste registro: `a8cd6def820588b968a87587c93023e47996473a`; SHA automático posterior deve ser obtido pela revisão. Log automático de compilação02:08:15Z: build OK; checagem TypeScript desta rodada não executada manualmente, conforme harness. Homologação UI teste4 continua aberta.
+
 Rollback frontend retira somente a nova montagem de preferências e binding correspondente, nunca SQL/lease/guards/cache fail-closed ou hook pedidos; voltará a perder filtros, não a mostrar dados protegidos. Financeiro/multipapel continuam INATIVOS e não foram alterados nesta correção.
 
 ## Causa comprovada pelo código e regressão
