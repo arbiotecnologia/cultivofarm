@@ -77,11 +77,10 @@ try:
  deny("CREATE TRIGGER misuse BEFORE INSERT ON produtos FOR EACH STATEMENT EXECUTE FUNCTION platform_private.global_product_fiscal_statement_gate(); INSERT INTO produtos VALUES(gen_random_uuid(),'x','x',true,true);",'invalid_fiscal_guard_context')
  for n,want in [(1,'2'),(2,'2'),(5,'1')]:
   assert run(actor(n)+"SELECT count(*) FROM produtos;").splitlines()[-1]==want,(n,want);checks.append(f'produtos visibility actor{n}={want}')
- assert run("SET ROLE anon; SELECT count(*) FROM produtos;").splitlines()[-1]=='0' if False else True
+ assert run("GRANT USAGE ON SCHEMA auth,platform_private TO anon; SET ROLE anon; SELECT count(*) FROM produtos;").splitlines()[-1]=="0";checks.append("anon produtos hidden")
  rev0=run('SELECT revision FROM cf_user_guards_v1.state;')
  p=uid(90); insert=f"INSERT INTO product_fiscal_profiles(product_id) VALUES('{p}');"
  run(actor(1)+insert)
- check(actor(1)+f"SELECT count(*)=1 FROM produtos pr JOIN product_fiscal_profiles f ON f.product_id=pr.id AND f.is_active WHERE pr.id='{p}';".replace('SELECT count','SELECT count',1)) if False else None
  assert run(actor(1)+f"SELECT count(*) FROM produtos pr JOIN product_fiscal_profiles f ON f.product_id=pr.id AND f.is_active WHERE pr.id='{p}';").splitlines()[-1]=='1';checks.append('Superadmin editor list join visible')
  check(f"SELECT revision={rev0} FROM cf_user_guards_v1.state;")
  import threading,time
@@ -91,7 +90,6 @@ try:
  deny(actor(1)+f"SET lock_timeout='300ms'; UPDATE product_fiscal_profiles SET ibs_cbs_configuration='{{}}' WHERE product_id='{p}' AND is_active;",'lock timeout')
  t.join()
  for n in [2,3,4]:
-  check(actor(n)+"SELECT count(*)=1 FROM product_fiscal_profiles;") if False else None
   assert run(actor(n)+"SELECT count(*) FROM product_fiscal_profiles;").splitlines()[-1]=='1';checks.append('internal read')
   deny(actor(n)+insert,'FISCAL_FORBIDDEN')
   deny(actor(n)+f"SELECT rpc_fiscal_product_ibs_cbs_save('{p}','{{}}','x');",'FISCAL_FORBIDDEN')
