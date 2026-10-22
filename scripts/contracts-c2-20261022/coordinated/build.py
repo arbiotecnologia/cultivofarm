@@ -4,7 +4,7 @@ import json,re,hashlib,difflib
 H=Path(__file__).resolve().parent; ROOT=H.parents[2]
 rows=json.loads((H/'baseline.json').read_text())
 def baseline(name):
- return next(r['definition'] for r in rows if r['signature']==name)
+ return next(r['definition'] for r in rows if r['signature']==name).rstrip()+';'
 def put(name,s): (H/name).write_text(s+'\n')
 read=(H/'readers.sql.review').read_text()
 projection=baseline('platform_private.b2b_commercial_partner_projection()')
