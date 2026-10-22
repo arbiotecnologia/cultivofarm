@@ -17,12 +17,12 @@
   {
     "path": "src/lib/permissions.ts",
     "baseline_sha256": "4d8442b166e46596532b7fdd8bad2582171a52a223250065cd23ba25a5591b97",
-    "candidate_sha256": "5bf3049433fd11ec2252c03dd7abd39574d4543f15ab1c37ba4f1c98a0d13c5e"
+    "candidate_sha256": "531c2c9ff236e4ab941216201d79d3625d7b770b323ebedd6e775727c84c559b"
   },
   {
     "path": "src/pages/configuracoes/FiscalProdutos.tsx",
     "baseline_sha256": "0af8aac611eb7dc2d79a6e91843f7bb71ccb348fd5b3f95083111260cd2fe2ff",
-    "candidate_sha256": "415dd2e6de083891e50da652876a03b9bc50983bf5f4a65f3f6c5e69df827c6c"
+    "candidate_sha256": "f74510088d68d3fb87d737d8c90e78a38ea16f3f491a32a97ebec1daf7ab7789"
   },
   {
     "path": "src/pages/plataforma/PlataformaHome.tsx",
