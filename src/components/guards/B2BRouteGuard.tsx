@@ -27,7 +27,7 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
   const filterIdentity = user?.id && profile?.user_id === user.id && profile.organization_id &&
     location.pathname === "/portal-parceiro/catalogo"
     ? JSON.stringify([user.id, profile.organization_id, [...roles].sort(), "b2b"]) : null;
-  filters?.bind(filterIdentity, own.ready && !own.isError ? own.data?.id ?? null : undefined);
+  filters?.bind(filterIdentity, own.ready && !own.isError && own.data !== undefined ? own.data?.id ?? null : undefined);
   const { data, ready, isLoading, isError } = useAvailableContexts();
   // has_b2b_access historically includes the management context. A real B2B
   // context additionally proves the partner binding; management alone cannot.

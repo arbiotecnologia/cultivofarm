@@ -49,7 +49,7 @@ export default function PortalParceiroLayout() {
     location.pathname === "/portal-parceiro/catalogo"
     ? JSON.stringify([user.id, profile.organization_id, [...(roles ?? [])].sort(), "b2b"]) : null;
   const filterPreferences = (guardFilterMemory ?? filterMemory.current).bind(preferenceIdentity,
-    partnerReady && !partnerError ? ownPartner?.id ?? null : undefined);
+    partnerReady && !partnerError && ownPartner !== undefined ? ownPartner?.id ?? null : undefined);
   const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);
   const { data: contexts } = useAvailableContexts();
   const switchPortal = useSwitchPortal();
