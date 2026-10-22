@@ -1,6 +1,12 @@
 # C2-CAT — candidata separada para catálogo do parceiro fornecedor
 
-**Não aplicada, runtime proposto não promovido, não publicada. C2.1 continua fechada.**
+**SQL aplicado externamente pelo auditor; runtime C2-CAT promovido localmente sob autorização22/10 01:22, sem publicação automática. C2.1 continua fechada.**
+
+## Evidência independente9743dd58 (auditor, não proprietário executor)
+- Auditor repetiu30/30Vitest PASS; typecheck original FALHOU por alias `useMyPartner` apontar runtime antigo e ausência de `vite/client`. Correção do auditor incorporada em `tsconfig.json`; somente a configuração corrigida recebeu PASS.
+- Preflight LIVE: seis hashes/ACL/owner conferidos pelo auditor. Migration `b2b_owner_catalog_capabilities_20261022` APLICADA pelo auditor em `swzpzcwiasxmjutrmvkm`, sem DML; não reaplicada pelo agente.
+- Sessão real teste4 `beb25695…`: wrapper `get_my_commercial_partner_projection` HTTP200, `mode=commercial_owner`, capabilities `{contract:C2_CAT_V1,catalog_read:true,sheets_read:true}`. Evidência produzida pelo auditor, sem token exposto/recarga.
+- **Não é homologação UI**: monitor “verificando acesso” e fluxo UI real catálogo/fichas/revogação ainda pendentes. Não mudar lease, proteção ou sessão para obter PASS.
 
 ## Correção concreta
 O catálogo gestor já retorna 35 itens em REST do teste4, conforme prova do auditor. O bloqueio visual vem de `PortalParceiroLayout`: `commercial_owner` substitui todo Outlet por Cliente comercial. Essa evidência não prova outros canais.

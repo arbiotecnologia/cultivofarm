@@ -4,7 +4,8 @@
 - [x] Complemento auditor15bd79dd registrado: tsc original falhou4TS2339; tipos jest-dom corrigidos no candidato e histórico paginado ator/antes/depois restrito em C2.1, sem afetar C2-CAT.
 - [ ] Gate produção C2.1: reavaliar locks em testes com cadeia completa de triggers; harness reduzido/CAS não certifica essa integração, writers continuam fechados.
 - [x] C2-CAT prioritário separado preparado em scripts/contracts-c2-cat-20261022: capacidade catálogo/fichas na projeção canônica e view owner read-only; nenhum canal financeiro/simulação/escrita adicional. 30UI/session +16SQL locais e39regressões; sem instalar C2.1 ou promover runtime.
-- [ ] C2-CAT revisão/types candidato, aplicação independente/postflight REST e homologação UI real antes de promoção/publicação; modelo explícito continua não homologado.
+- [x] C2-CAT auditor9743dd58:30/30Vitest, types corrigidos, seis hashes/ACL/owner; SQL aplicado externamente e projeção teste4HTTP200 C2_CAT_V1 ambas capacidadestrue. Promoção local somente4arquivos autorizada, sem reaplicar SQL/publicar.
+- [ ] C2-CAT publicação pelo auditor e homologação UI real catálogo/fichas; monitor “verificando acesso” permanece pendente. Modelo explícito continua não homologado; nenhuma extensão de lease/alteração de sessão.
 - [x] Registrar publicação externa C1B/rótulos ed9f8d2c, deployment1d249f08-4199-44e8-9e4e-4f4efc3dacb1 e111/111+tsc do auditor; sem reaplicar banco.
 - [x] Inventariar contratos, consumidores e bloqueio commercial_owner da UI; preservar scope aplicado c3f29977 e modelo explícito não homologado. README scripts/contracts-c2-20261022 distingue catálogo autorizado de outros canais fechados.
 - [x] Preparar primeiro recorte administrativo executável SQL/patches/testes/preflight/reversão segura em scripts/contracts-c2-20261022, sem hosted writes/runtime/publicação; NÃO instalar writers isolados com readers exclusivos.
