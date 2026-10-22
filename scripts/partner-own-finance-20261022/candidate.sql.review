@@ -1,0 +1,92 @@
+-- CANDIDATE ONLY. External canonical swzpzcwiasxmjutrmvkm required; never auto-apply.
+BEGIN;
+SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='30s';
+DO $guard$
+DECLARE r record; p record;
+BEGIN
+ FOR r IN SELECT * FROM (VALUES
+('h15_actor_organization()','55edafec08bcc84a00f1526c14334a2c','postgres','{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'),
+('is_valid_b2b_partner_user(uuid,uuid)','93520101987e599280460d3dadcf3a9f','postgres','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
+('platform_private.b2b_actor_scope(uuid)','c3f2997746f24bc2efd15db5c0ccc862','postgres','{postgres=X/postgres,service_role=X/postgres}'),
+('platform_private.b2b_commercial_context()','a31d198c9a9fc9a5e7c397ab36fe0fa4','postgres','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
+('platform_private.b2b_commercial_partner_projection()','06a858c55328b45f205ccb5ebb02607d','postgres','{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'),
+('platform_private.entitlements_for_user(uuid)','7f4ec7facaebbdf35444dd490fdebe56','postgres','{postgres=X/postgres,service_role=X/postgres}'),
+('platform_private.h15_actor_organization()','64e10608403238a41a9baf92857ca881','postgres','{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'),
+('rpc_portal_partner_financial()','832b0b107151ffd2c2f2be385964c22a','postgres','{postgres=X/postgres,service_role=X/postgres}'),
+('rpc_portal_partner_financial(uuid)','ecd99f80a194bb9b540a4c197e0b9afe','postgres','{postgres=X/postgres,service_role=X/postgres}')
+ ) v(signature,hash,owner,acl) LOOP
+  SELECT * INTO p FROM pg_proc WHERE oid=to_regprocedure(r.signature);
+  IF NOT FOUND OR md5(pg_get_functiondef(p.oid)) IS DISTINCT FROM r.hash
+   OR pg_get_userbyid(p.proowner) IS DISTINCT FROM r.owner OR p.proacl::text IS DISTINCT FROM r.acl THEN
+   RAISE EXCEPTION 'own_finance_baseline_drift: %',r.signature USING ERRCODE='55000'; END IF;
+ END LOOP;
+ IF to_regprocedure('platform_private.b2b_own_obligations(uuid,timestamptz,uuid)') IS NOT NULL
+  OR to_regprocedure('public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid)') IS NOT NULL THEN
+  RAISE EXCEPTION 'own_finance_already_present' USING ERRCODE='55000'; END IF;
+ IF EXISTS(SELECT 1 FROM public.organizations WHERE partner_account_id IS NOT NULL) THEN
+  RAISE EXCEPTION 'explicit_partner_model_unreviewed' USING ERRCODE='55000'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.saas_features WHERE key='contas_receber' AND active)
+ OR NOT EXISTS(SELECT 1 FROM public.saas_features WHERE key='pedidos_b2b' AND active) THEN
+  RAISE EXCEPTION 'own_finance_feature_missing' USING ERRCODE='55000'; END IF;
+END $guard$;
+CREATE FUNCTION platform_private.b2b_own_obligations(p_partner_id uuid, p_before timestamptz, p_before_id uuid)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $function$
+DECLARE u uuid:=auth.uid(); s record; owner uuid; rows jsonb;
+BEGIN
+ IF u IS NULL OR NOT platform_private.platform_actor_access_ready(u)
+  OR (SELECT count(*) FROM public.user_roles WHERE user_id=u)<>1
+  OR NOT public.has_role(u,'parceiro_b2b') THEN
+  RAISE EXCEPTION 'own_finance_forbidden' USING ERRCODE='42501'; END IF;
+ SELECT * INTO s FROM platform_private.b2b_actor_scope(u);
+ IF NOT COALESCE(s.profile_ok,false) OR NOT COALESCE(s.partner_valid,false)
+  OR s.org_partner IS DISTINCT FROM p_partner_id OR s.user_partner IS DISTINCT FROM p_partner_id
+  OR s.user_partner_count<>1 THEN RAISE EXCEPTION 'own_finance_forbidden' USING ERRCODE='42501'; END IF;
+ SELECT pa.commercial_owner_organization_id INTO owner FROM public.partner_accounts pa
+ JOIN public.partner_users pu ON pu.partner_id=pa.id
+ JOIN public.profiles pf ON pf.user_id=pu.user_id
+ JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id
+ WHERE pa.id=p_partner_id AND pu.user_id=u AND pu.papel='gestor'
+ AND pu.revoked_at IS NULL AND pu.valid_from<=now()
+ AND pf.ativo AND o.ativo AND o.status='ativa' AND pa.ativo AND pa.deleted_at IS NULL
+ AND pf.organization_id=pu.tenant_id AND pu.tenant_id=o.id
+ AND public.h15_actor_organization()=o.id;
+ IF owner IS NULL OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='pedidos_b2b')
+ OR NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='contas_receber') THEN
+  RAISE EXCEPTION 'own_finance_forbidden' USING ERRCODE='42501'; END IF;
+ IF (p_before IS NULL) <> (p_before_id IS NULL) THEN RAISE EXCEPTION 'invalid_cursor' USING ERRCODE='22023'; END IF;
+ SELECT COALESCE(jsonb_agg(q.value ORDER BY q.created_at DESC,q.id DESC),'[]'::jsonb) INTO rows FROM (
+ SELECT ar.id,ar.created_at,jsonb_build_object('id',ar.id,'order_id',po.id,'numero',po.numero,
+ 'created_at',ar.created_at,'total',ar.total_amount,'status',ar.status,
+ 'installments',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',i.id,'numero',i.installment_number,
+ 'vencimento',i.due_date,'valor',i.original_amount,'recebido',i.received_amount,'status',i.status)
+ ORDER BY i.installment_number,i.id) FROM public.accounts_receivable_installments i WHERE i.receivable_id=ar.id),'[]'::jsonb)) value
+ FROM public.partner_orders po JOIN public.partner_order_financial_links l ON l.partner_order_id=po.id
+ JOIN public.accounts_receivable ar ON ar.id=l.receivable_id
+ WHERE po.partner_id=p_partner_id AND l.partner_id=p_partner_id AND ar.partner_id=p_partner_id
+ AND ar.origin_type='B2B_ORDER' AND ar.origin_id=po.id AND ar.organization_id=owner
+ -- A title with an ambiguous order/link or foreign/unowned installment is not projected.
+ AND (SELECT count(*) FROM public.partner_order_financial_links x WHERE x.receivable_id=ar.id)=1
+ AND (SELECT count(*) FROM public.partner_order_financial_links x WHERE x.partner_order_id=po.id)=1
+ AND ar.total_amount>=0 AND ar.total_amount::text NOT IN ('NaN','Infinity','-Infinity')
+ AND NOT EXISTS(SELECT 1 FROM public.accounts_receivable_installments i WHERE i.receivable_id=ar.id
+  AND (i.organization_id IS DISTINCT FROM owner OR i.original_amount IS NULL OR i.received_amount IS NULL
+   OR i.original_amount<0 OR i.received_amount<0 OR i.original_amount::text IN ('NaN','Infinity','-Infinity')
+   OR i.received_amount::text IN ('NaN','Infinity','-Infinity')))
+ AND (p_before IS NULL OR (ar.created_at,ar.id)<(p_before,p_before_id))
+ ORDER BY ar.created_at DESC,ar.id DESC LIMIT 50
+ ) q;
+ RETURN jsonb_build_object('contract','C2_OWN_OBLIGATIONS_V1','partner_id',p_partner_id,
+ 'rows',rows,'limit',50,'documents_enabled',false);
+END $function$;
+REVOKE ALL ON FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) TO authenticated,service_role;
+
+CREATE FUNCTION public.rpc_portal_partner_financial(p_partner_id uuid,p_own_finance_v1 boolean,p_before timestamptz DEFAULT NULL,p_before_id uuid DEFAULT NULL)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' AS $function$
+BEGIN
+ IF p_own_finance_v1 IS DISTINCT FROM true THEN RAISE EXCEPTION 'own_finance_contract_required' USING ERRCODE='42501'; END IF;
+ RETURN platform_private.b2b_own_obligations(p_partner_id,p_before,p_before_id);
+END $function$;
+REVOKE ALL ON FUNCTION public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid) TO authenticated,service_role;
+COMMIT;
