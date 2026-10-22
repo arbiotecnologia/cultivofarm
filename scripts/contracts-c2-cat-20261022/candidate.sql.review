@@ -19,6 +19,8 @@ BEGIN
  END LOOP;
  IF (SELECT proacl::text FROM pg_proc WHERE oid='platform_private.b2b_commercial_partner_projection()'::regprocedure)
   IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'
+ OR (SELECT proacl::text FROM pg_proc WHERE oid='public.get_my_commercial_partner_projection()'::regprocedure)
+  IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'
  OR (SELECT proacl::text FROM pg_proc WHERE oid='platform_private.b2b_actor_scope(uuid)'::regprocedure)
   IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN
   RAISE EXCEPTION 'c2_cat_acl_drift' USING ERRCODE='55000'; END IF;

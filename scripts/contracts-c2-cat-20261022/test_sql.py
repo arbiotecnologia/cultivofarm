@@ -50,6 +50,7 @@ try:
   sql(snapshot[start:end]+';')
  candidate=HERE.joinpath('candidate.sql.review').read_text();start=candidate.index('CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_partner_projection')
  sql('BEGIN;'+candidate[start:])
+ print('PROJECTION_MD5 '+sql("SELECT md5(pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure));"))
  name='public.get_my_commercial_partner_projection';start=snapshot.index('CREATE OR REPLACE FUNCTION '+name+'(');end=snapshot.index('$function$',snapshot.index('AS $function$',start)+len('AS $function$'))+len('$function$')
  sql(snapshot[start:end]+';')
  check('manager owner catalogue permitted',cap('catalog_read'))
