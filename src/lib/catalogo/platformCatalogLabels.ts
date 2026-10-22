@@ -37,10 +37,12 @@ export const labelCreateReceiptSchema = z.object({ ...baseReceipt, rotulo_exibic
 export const labelUpdateReceiptSchema = z.object({ ...baseReceipt, rotulo_exibicao: z.string(), updated_at: version }).strict();
 export const labelActiveReceiptSchema = z.object({ ...baseReceipt, ativo: z.boolean(), updated_at: version }).strict();
 
+/** Conflito CAS/replay: a UI oferece atualização controlada dos dados (refetch), sem recarregar a página. */
+export const LABEL_CONFLICT_MESSAGE = "O rótulo mudou ou esta solicitação já foi usada. Atualize os dados para conferir antes de tentar novamente.";
 export function labelError(error: unknown) {
   const code = typeof error === "object" && error !== null && "code" in error ? (error as { code?: unknown }).code : undefined;
   if (code === "42501") return "Sem permissão para gerenciar rótulos do catálogo global.";
-  if (code === "40001") return "O rótulo mudou ou esta solicitação já foi usada. Recarregue para conferir os dados.";
+  if (code === "40001") return LABEL_CONFLICT_MESSAGE;
   if (code === "23505") return "Já existe um rótulo com esta chave nesta família.";
   if (code === "22023") return "Dados inválidos: confira família, chave, nome de exibição e motivo.";
   return "Não foi possível confirmar a operação. Confira os dados antes de tentar novamente.";

@@ -29,7 +29,7 @@ vi.mock("@/hooks/useAuth", () => ({
   }),
 }));
 
-import { labelDisplayName, readActiveCatalogLabels, useCatalogLabelNames } from "@/lib/catalogo/catalogLabelDisplay";
+import { labelDisplayName, labelNameKey, readActiveCatalogLabels, useCatalogLabelNames } from "@/lib/catalogo/catalogLabelDisplay";
 import { PlatformCatalogReadTab } from "@/components/plataforma/PlatformCatalogReadTab";
 
 const NPK = { familia: "fertilizante_adubo", rotulo: "npk", rotulo_exibicao: "NPK" };
@@ -59,9 +59,9 @@ describe("exibição dinâmica de rótulos — leitores autorizados", () => {
     await expect(readActiveCatalogLabels("quimico", new AbortController().signal)).rejects.toThrow("catalog_label_read_unavailable");
   });
   it("nome de exibição: fonte canônica > fallback > chave crua", () => {
-    expect(labelDisplayName({ npk: "NPK Organomineral" }, "npk", "NPK")).toBe("NPK Organomineral");
-    expect(labelDisplayName({}, "npk", "NPK")).toBe("NPK");
-    expect(labelDisplayName({}, "npk")).toBe("npk");
+    expect(labelDisplayName({ [labelNameKey("fertilizante_adubo", "npk")]: "NPK Organomineral" }, "fertilizante_adubo", "npk", "NPK")).toBe("NPK Organomineral");
+    expect(labelDisplayName({}, "fertilizante_adubo", "npk", "NPK")).toBe("NPK");
+    expect(labelDisplayName({}, "fertilizante_adubo", "npk")).toBe("npk");
   });
   it("renomeação na Gestão reflete no leitor após invalidação", async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

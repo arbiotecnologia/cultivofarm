@@ -31,7 +31,9 @@ export async function readActiveCatalogLabels(family: ProductFamily, signal: Abo
   return parsed.data;
 }
 
-/** Mapa rotulo → nome de exibição das famílias, por escopo de identidade. Falha fechada: mapa vazio. */
+/** Chave composta: a unicidade canônica é (familia, rotulo); a mesma chave em famílias distintas não colide. */
+export const labelNameKey = (familia: string, rotulo: string) => `${familia}\u0000${rotulo}`;
+/** Mapa (familia, rotulo) → nome de exibição, por escopo de identidade. Falha fechada: mapa vazio. */
 export function useCatalogLabelNames(scope: string, enabled: boolean): Record<string, string> {
   const queries = useQueries({
     queries: PRODUCT_FAMILIES.map((family) => ({
@@ -44,11 +46,11 @@ export function useCatalogLabelNames(scope: string, enabled: boolean): Record<st
     })),
   });
   const map: Record<string, string> = {};
-  for (const q of queries) for (const l of q.data ?? []) map[l.rotulo] = l.rotulo_exibicao;
+  for (const q of queries) for (const l of q.data ?? []) map[labelNameKey(l.familia, l.rotulo)] = l.rotulo_exibicao;
   return map;
 }
 
 /** Nome de exibição do rótulo: fonte canônica → fallback informado → chave crua. */
-export function labelDisplayName(names: Record<string, string>, rotulo: string, fallback?: string) {
-  return names[rotulo] ?? fallback ?? rotulo;
+export function labelDisplayName(names: Record<string, string>, familia: string, rotulo: string, fallback?: string) {
+  return names[labelNameKey(familia, rotulo)] ?? fallback ?? rotulo;
 }
