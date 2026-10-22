@@ -57,3 +57,64 @@ Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogCont
    Start at  01:14:33
    Duration  2.64s (transform 421ms, setup 548ms, collect 1.56s, tests 743ms, environment 3.20s, prepare 408ms)
 
+
+PROMOTION22/10 LOCAL; REST evidence external auditor, UI UNVERIFIED
+$ vitest run --config "scripts/contracts-c2-cat-20261022/vitest.config.ts"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ scripts/contracts-c2-cat-20261022/catalogAccess.test.ts (13 tests) 3ms
+stderr | scripts/contracts-c2-cat-20261022/ownerLayout.test.tsx > realistic owner mounts read-only catalog, not original NovoPedido outlet
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ scripts/contracts-c2-cat-20261022/ownerLayout.test.tsx (12 tests) 67ms
+ ✓ scripts/contracts-c2-cat-20261022/projection.session.test.tsx (5 tests) 446ms
+
+ Test Files  3 passed (3)
+      Tests  30 passed (30)
+   Start at  01:22:52
+   Duration  2.32s (transform 201ms, setup 326ms, collect 898ms, tests 516ms, environment 2.11s, prepare 263ms)
+
+$ vitest run --config "/tmp/c2cat-runtime/vitest.config.ts"
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ scripts/contracts-c2-cat-20261022/catalogAccess.test.ts (13 tests) 4ms
+stderr | scripts/contracts-c2-cat-20261022/ownerLayout.test.tsx > realistic owner mounts read-only catalog, not original NovoPedido outlet
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ scripts/contracts-c2-cat-20261022/ownerLayout.test.tsx (12 tests) 71ms
+ ✓ scripts/contracts-c2-cat-20261022/projection.session.test.tsx (5 tests) 448ms
+
+ Test Files  3 passed (3)
+      Tests  30 passed (30)
+   Start at  01:23:40
+   Duration  2.29s (transform 202ms, setup 345ms, collect 890ms, tests 523ms, environment 2.05s, prepare 1.04s)
+
+$ vitest run "src/test/catalogo/c1bCatalog.test.tsx" "src/test/catalogo/c1bFichas.test.tsx" src/test/config/myPartner.session.test.tsx src/test/saas/portal-entitlement-gates.test.ts src/test/multiportal.guards.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/saas/portal-entitlement-gates.test.ts (4 tests) 5ms
+stderr | src/test/multiportal.guards.test.tsx > AppPortalGuard > nega gestor com payload legado verdadeiro e apenas admin canônico
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/multiportal.guards.test.tsx (23 tests) 71ms
+ ✓ src/test/config/myPartner.session.test.tsx (7 tests) 342ms
+stderr | src/test/catalogo/c1bFichas.test.tsx > type captured before await survives tab change without switching PDF generators
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/catalogo/c1bFichas.test.tsx (5 tests) 339ms
+ ✓ src/test/catalogo/c1bCatalog.test.tsx (16 tests) 1030ms
+
+ Test Files  5 passed (5)
+      Tests  55 passed (55)
+   Start at  01:23:24
+   Duration  3.64s (transform 554ms, setup 701ms, collect 2.44s, tests 1.79s, environment 4.65s, prepare 581ms)
+
+
+Corrected candidate tsgo without override PASS; full runtime tsgo temporary resolved types PASS
