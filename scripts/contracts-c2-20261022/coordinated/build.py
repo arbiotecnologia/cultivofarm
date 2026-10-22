@@ -80,7 +80,8 @@ guards=[]
 for r in rows:
  sig=r['signature']; sig=sig if sig.startswith('platform_private.') else 'public.'+sig
  guards.append(f"IF (SELECT md5(pg_get_functiondef('{sig}'::regprocedure))) IS DISTINCT FROM '{r['md5']}' OR (SELECT proacl::text FROM pg_proc WHERE oid='{sig}'::regprocedure) IS DISTINCT FROM '{r['acl']}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{sig}'::regprocedure) IS DISTINCT FROM '{r['owner']}' THEN RAISE EXCEPTION 'c2_coordinated_drift'; END IF;")
-old=(H.parent/'candidate.sql.review').read_text(); old=old[old.index('CREATE FUNCTION platform_private.c2_partner_lifecycle'):].removesuffix('COMMIT;\n')
+old=(H.parent/'candidate.sql.review').read_text(); old=re.sub(r'\s*COMMIT;\s*$','',old[old.index('CREATE FUNCTION platform_private.c2_partner_lifecycle'):])
+assert 'COMMIT;' not in old, 'nested COMMIT in lifecycle body'
 # Producer residual is independent and never implicitly creates/reactivates partner.
 old=old.replace("IF p_action='assign' AND NOT ('parceiro_b2b'=ANY(requested) OR 'parceiro_b2b_tecnico'=ANY(requested)) THEN", "IF p_action='assign' AND link.id IS NULL AND NOT ('parceiro_b2b'=ANY(requested) OR 'parceiro_b2b_tecnico'=ANY(requested)) THEN")
 constraints="""ALTER TABLE platform_private.b2b_provisioning_receipts ADD COLUMN external_roles public.app_role[];
@@ -90,6 +91,7 @@ ALTER TABLE public.user_access_preferences ADD CONSTRAINT user_access_preference
 constraints+="""ALTER TABLE platform_private.b2b_provisioning_receipts ADD CONSTRAINT c2_receipt_roles_shape CHECK(external_roles IS NULL OR (cardinality(external_roles) BETWEEN 1 AND 3 AND array_position(external_roles,NULL) IS NULL AND external_roles <@ ARRAY['parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor']::public.app_role[]));
 """
 put('candidate.sql.review',"-- INACTIVE COORDINATED CANDIDATE; NO-GO UNTIL INDEPENDENT REVIEW\nBEGIN; SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='30s';\n"+(H/'structural-guard.sql.review').read_text()+"\nDO $$ BEGIN\n"+'\n'.join(guards)+"\nEND $$;\n"+constraints+(H/'readers.assembled.sql.review').read_text()+(H/'provisioning.sql.review').read_text()+old+'\nCOMMIT;')
+assert (H/'candidate.sql.review').read_text().count('COMMIT;')==1 and (H/'candidate.sql.review').read_text().rstrip().endswith('COMMIT;'), 'exactly one final COMMIT'
 put('preflight.sql',"-- Read-only; external operator must validate swzpzcwiasxmjutrmvkm first.\nSELECT p.oid::regprocedure,md5(pg_get_functiondef(p.oid)),p.proacl,pg_get_userbyid(p.proowner) FROM pg_proc p WHERE p.oid IN ("+','.join("'"+(r['signature'] if r['signature'].startswith('platform_private.') else 'public.'+r['signature'])+"'::regprocedure" for r in rows)+");\n"+(H/'structural-preflight.sql').read_text())
 put('postflight.sql',"-- Execute under real actor JWT A/B after independent installation only.\nSELECT public.get_my_available_portal_contexts();\nSELECT public.get_my_commercial_partner_context();\nSELECT public.get_my_commercial_partner_projection();\nSELECT md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure))='c3f2997746f24bc2efd15db5c0ccc862' AS immutable_scope;\nSELECT has_function_privilege('anon','public.link_partner_user(uuid,uuid,text[],text,text,uuid,text)','EXECUTE') AS must_be_false;")
 put('rollbackdeny.sql.review',(H/'rollback-family.sql.review').read_text())
