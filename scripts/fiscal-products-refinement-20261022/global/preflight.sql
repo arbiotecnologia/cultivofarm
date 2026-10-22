@@ -1,0 +1,6 @@
+-- READ ONLY; operator must first prove canonical ref swzpzcwiasxmjutrmvkm.
+SELECT p.oid::regprocedure::text signature,pg_get_functiondef(p.oid) definition,md5(pg_get_functiondef(p.oid)) md5,p.proacl::text acl,pg_get_userbyid(p.proowner) owner FROM pg_proc p WHERE p.oid IN ('platform_private.platform_actor_access_ready(uuid)'::regprocedure,'public.is_platform_superadmin(uuid)'::regprocedure,'public.rpc_fiscal_product_ibs_cbs_get(uuid)'::regprocedure,'public.rpc_fiscal_product_ibs_cbs_save(uuid,jsonb,text)'::regprocedure,'cf_user_guards_v1.acquire_gate()'::regprocedure,'public._fiscal_rtc_assert_payload(jsonb,text)'::regprocedure);
+SELECT relacl::text,relrowsecurity,relforcerowsecurity,pg_get_userbyid(relowner) FROM pg_class WHERE oid='public.product_fiscal_profiles'::regclass;
+SELECT policyname,roles,cmd,qual,with_check FROM pg_policies WHERE schemaname='public' AND tablename='product_fiscal_profiles' ORDER BY policyname;
+SELECT indexname,indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='product_fiscal_profiles' ORDER BY indexname;
+SELECT tgname,tgenabled,pg_get_triggerdef(oid),md5(pg_get_functiondef(tgfoid)) FROM pg_trigger WHERE tgrelid='public.product_fiscal_profiles'::regclass AND NOT tgisinternal ORDER BY tgname;

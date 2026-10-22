@@ -1,0 +1,7 @@
+-- Security rollback only: retain data, history, timestamp protection, no legacy admin writer.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+ALTER POLICY product_fiscal_profiles_insert ON public.product_fiscal_profiles WITH CHECK(false);
+ALTER POLICY product_fiscal_profiles_update ON public.product_fiscal_profiles USING(false) WITH CHECK(false);
+REVOKE EXECUTE ON FUNCTION public.rpc_fiscal_product_ibs_cbs_save(uuid,jsonb,text) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;
