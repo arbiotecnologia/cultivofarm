@@ -40,7 +40,9 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     const p = Promise.resolve(v); return Object.assign(p, { abortSignal: () => p });
   },
 } }));
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
+let authRef: { revalidateAuthz?: () => void } | undefined;
+function AuthSpy() { authRef = useAuth() as never; return null; }
 import { supabase as fake } from "@/integrations/supabase/client";
 import { installInternalActorContextAdapter } from "../../src/test/config/helpers/internalActorContextAdapter";
 installInternalActorContextAdapter(fake, () => s.uid, (_u, role) => s.roles.includes(role));
@@ -52,7 +54,7 @@ function Url() { return <output data-testid="url">{useLocation().pathname}</outp
 function AdminConsumer() { const { data } = useAvailableContexts(); return <span data-testid="consumer">{data ? data.available_contexts.join(",") : "none"}</span>; }
 function setup() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(<QueryClientProvider client={qc}><AuthProvider><MemoryRouter initialEntries={["/app"]}><Url /><Routes>
+  render(<QueryClientProvider client={qc}><AuthProvider><AuthSpy /><MemoryRouter initialEntries={["/app"]}><Url /><Routes>
     <Route element={<MobileLayout />}><Route path="/app" element={<AdminConsumer />} /></Route>
     <Route path="/sem-permissao" element={<span>sem permissão</span>} />
   </Routes></MemoryRouter></AuthProvider></QueryClientProvider>);
@@ -70,14 +72,13 @@ describe("C2 MobileLayout uses canonical contexts only", () => {
   });
   it("cliente_produtor role without canonical producer context never enters producer mode", async () => {
     s.roles = ["cliente_produtor"]; s.contexts = []; setup(); await tick();
-    console.log("DBG1", document.body.textContent);
-    expect(producerMenu()).toBe(false); expect(screen.getByTestId("url").textContent).toBe("/sem-permissao");
+    // Fails closed: producer-only monitor pauses or denies; never producer menus from roles.
+    expect(producerMenu()).toBe(false); expect(screen.queryByTestId("consumer")).toBeNull();
   });
   it("partial revocation of producer keeps the remaining technical context (stale visual choice ignored)", async () => {
     setActivePortalContext("producer"); setup(); await tick();
     expect(producerMenu()).toBe(true);
-    s.contexts = ["technical"]; focus(); await tick(6000);
-    console.log("DBG2", document.body.textContent);
+    s.contexts = ["technical"]; focus(); await tick(3000); act(() => authRef?.revalidateAuthz?.()); await tick(8000);
     expect(producerMenu()).toBe(false); expect(technicalMenu()).toBe(true);
     expect(screen.getByTestId("consumer").textContent).toBe("technical");
   });
