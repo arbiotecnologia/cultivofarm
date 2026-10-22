@@ -48,7 +48,7 @@ try:
  CREATE FUNCTION fiscal_test_audit_after() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN INSERT INTO public.fiscal_test_audit VALUES(NEW.id,OLD.updated_at,NEW.updated_at); RETURN NEW; END$$;
  CREATE TRIGGER fiscal_test_audit_after AFTER UPDATE ON product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION fiscal_test_audit_after();
  """)
- run((H/'live-acquire-gate.sql.review').read_text()+';')
+ run((H/'live-acquire-gate.sql.review').read_bytes().decode()+';')
  check("SELECT md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure))='b0dd9a14d5fd799a40df0975baf4c5a6';")
  run("CREATE TRIGGER a00_user_roles_gate BEFORE INSERT OR UPDATE OR DELETE ON user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate();")
  # Defect 1 (auditor): reusing acquire_gate on product_fiscal_profiles always fails.
