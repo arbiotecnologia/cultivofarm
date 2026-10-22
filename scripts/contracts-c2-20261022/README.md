@@ -58,6 +58,10 @@ Não remover `commercialOwner`: o contrato `get_my_commercial_partner_projection
 - `python3 scripts/contracts-c2-20261022/test_sql.py` e `bun run test -- --config scripts/contracts-c2-20261022/vitest.config.ts`.
 
 ## Validação e bloqueios
+Complemento independente `15bd79dd`: auditor executou18/18Vitest PASS; tsc original FALHOU quatro TS2339 de jest-dom. Configuração candidata corrigida inclui `vitest/globals` e `@testing-library/jest-dom`; types sem override passam localmente. A evidência original não é PASS. Histórico agora expõe ator UUID + antes/depois autorizados em páginas20 (máximo50), cursor estável at/id e whitelist sem receipt/fingerprint/payload bruto; overload2args preservada com primeira página limitada. Alterações ficam somente em C2.1, sem modificar C2-CAT.
+
+**Gate adicional de produção: locks com triggers completos ainda NÃO reavaliados/certificados.** O harness reduzido não simula a integração integral; executar a matriz descrita em `VALIDATION.md` em instância descartável com a cadeia real antes de qualquer liberação. Não instalar writers.
+
 Provas locais não são JWT/RLS/UI reais. Testes atuais executam corpos SQL reais em schema reduzido + Auth sintético; gate/duas transações CAS foram exercidos, **não certificam integração de todos triggers hosted**. Não confirmar técnico sem finanças por simples ausência da role gestor: teste comprova ausência de role, mas as RPCs financeiras cumulativas precisam matriz real. Testes de UI candidatos usam QueryClient real e transporte simulado, não sessão teste4.
 
 Types/build: harness automático verifica runtime; isso não certifica frontend candidato isolado. Ver `VALIDATION.md` para recibo e comando independente necessário. Sem instalação, o fluxo autenticado C2 é **UNVERIFIED**. Contratos cumulativos, seletor produtor, cadastro multiperfil, capabilities/monitor e expiry B2B continuam próximos recortes da **mesma fase C2**, não concluídos por esta primeira entrega.

@@ -18,13 +18,30 @@ function mount() {
 beforeEach(() => {
   cleanup(); state.scope = "actor-A"; state.ready = true; state.version = "a".repeat(32); state.roles = ["parceiro_b2b"]; state.conflict = false;
   state.rpc.mockReset().mockImplementation((name: string, args: Record<string, unknown>) => ({ abortSignal: async () => {
-    if (name === "get_partner_user_lifecycle") return { data: { version: state.version, state: { roles: [...state.roles], link: { revoked_at: null } }, history: [] }, error: null };
+    if (name === "get_partner_user_lifecycle") return { data: { version: state.version, state: { roles: [...state.roles], link: { revoked_at: null } }, history: [], next_cursor: null }, error: null };
     if (state.conflict) return { data: null, error: { code: "40001" } };
     state.roles = args.p_roles as string[]; state.version = "b".repeat(32);
     return { data: { ok: true, user_id: userId, partner_id: partnerId, action: args.p_action, reader_activation: false, version: state.version }, error: null };
   } }));
 });
 describe("existing editor candidate integration", () => {
+  it("reads scoped audit pages and resets cursor on actor change", async () => {
+    const at = "2026-10-22T00:00:00Z";
+    state.rpc.mockImplementation((_name, args) => ({ abortSignal: async () => ({ data: {
+      version: state.version, state: { roles: state.roles, link: null },
+      history: [{ id: args.p_before_id ? userId : partnerId, at, actor_id: "auditor-A", action: "revoke_roles", reason: "Motivo confirmado",
+        before: { roles: ["parceiro_b2b"], link: null }, after: { roles: [], link: null } }],
+      next_cursor: args.p_before_id ? null : { at, id: partnerId }
+    }, error: null }) }));
+    const { element, view } = mount();
+    await screen.findByRole("button", { name: "Histórico anterior" });
+    expect(screen.getByText("Responsável: auditor-A")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Histórico anterior" }));
+    await screen.findByRole("button", { name: "Mais recentes" });
+    expect(state.rpc.mock.calls.at(-1)?.[1]).toMatchObject({ p_partner_id: partnerId, p_user_id: userId, p_limit: 20, p_before: at, p_before_id: partnerId });
+    state.scope = "actor-B"; view.rerender(element());
+    await waitFor(() => expect(state.rpc.mock.calls.at(-1)?.[1]).toMatchObject({ p_before: null, p_before_id: null }));
+  });
   it("selects cumulative roles and reads back confirmed mutation without manual cache invalidation", async () => {
     mount(); await screen.findByRole("button", { name: "Confirmar perfis" });
     fireEvent.click(screen.getByRole("checkbox", { name: "Consultor técnico B2B" }));

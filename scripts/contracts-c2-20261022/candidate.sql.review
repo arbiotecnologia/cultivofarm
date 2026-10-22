@@ -36,6 +36,7 @@ BEGIN
  -- Reinstallation never overwrites a reviewed or independently changed contract.
  IF to_regprocedure('public.link_partner_user(uuid,uuid,text[],text,text,uuid,text)') IS NOT NULL
  OR to_regprocedure('platform_private.c2_partner_lifecycle(uuid,uuid,text[],text,text,uuid,text)') IS NOT NULL
+ OR to_regprocedure('public.get_partner_user_lifecycle(uuid,uuid,integer,timestamp with time zone,uuid)') IS NOT NULL
  OR to_regprocedure('public.get_partner_user_lifecycle(uuid,uuid)') IS NOT NULL THEN
   RAISE EXCEPTION 'c2_already_installed' USING ERRCODE='55000'; END IF;
 END $guard$;
@@ -177,9 +178,9 @@ $api$;
 REVOKE ALL ON FUNCTION public.link_partner_user(uuid,uuid,text[],text,text,uuid,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.link_partner_user(uuid,uuid,text[],text,text,uuid,text) TO authenticated;
 -- Dedicated scoped state/history projection; never exposes global audit rows.
-CREATE FUNCTION public.get_partner_user_lifecycle(p_partner_id uuid,p_user_id uuid)
+CREATE FUNCTION public.get_partner_user_lifecycle(p_partner_id uuid,p_user_id uuid,p_limit integer,p_before timestamptz,p_before_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $read$
-DECLARE actor uuid:=auth.uid(); org uuid; state jsonb;
+DECLARE actor uuid:=auth.uid(); org uuid; state jsonb; history jsonb; next_cursor jsonb;
 BEGIN
  org:=public.h15_actor_organization();
  IF actor IS NULL OR org IS NULL OR platform_private.platform_actor_access_ready(actor) IS NOT TRUE
@@ -191,14 +192,46 @@ BEGIN
  OR NOT EXISTS(SELECT 1 FROM public.partner_accounts WHERE id=p_partner_id AND commercial_owner_organization_id=org AND ativo AND deleted_at IS NULL)
  OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=p_user_id AND (partner_id<>p_partner_id OR tenant_id IS DISTINCT FROM org)) THEN
   RAISE EXCEPTION 'c2_forbidden' USING ERRCODE='42501'; END IF;
+ IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 50 OR (p_before IS NULL)<>(p_before_id IS NULL) THEN
+  RAISE EXCEPTION 'c2_invalid_page' USING ERRCODE='22023'; END IF;
  state:=jsonb_build_object('user',p_user_id,'partner',p_partner_id,'org',org,
    'roles',(SELECT COALESCE(array_agg(role::text ORDER BY role::text),ARRAY[]::text[]) FROM public.user_roles WHERE user_id=p_user_id),
    'link',(SELECT to_jsonb(pu) FROM public.partner_users pu WHERE user_id=p_user_id),
    'profile_stamp',(SELECT updated_at FROM public.profiles WHERE user_id=p_user_id));
- RETURN jsonb_build_object('state',state,'version',md5(state::text),'history',
-   (SELECT COALESCE(jsonb_agg(jsonb_build_object('at',created_at,'reason',dados_novos->>'reason','action',dados_novos->'receipt'->>'action') ORDER BY created_at),'[]'::jsonb)
-    FROM public.partner_audit_logs WHERE partner_id=p_partner_id AND acao='c2_partner_lifecycle' AND dados_anteriores->>'user'=p_user_id::text));
+ -- Immutable log scoped by partner + target + tenant BOTH before and after.
+ -- Return an explicit audit whitelist, never raw payload/receipt/profile data.
+ WITH eligible AS (
+  SELECT a.* FROM public.partner_audit_logs a
+  WHERE a.partner_id=p_partner_id AND a.acao='c2_partner_lifecycle'
+    AND a.dados_anteriores->>'user'=p_user_id::text AND a.dados_anteriores->>'org'=org::text
+    AND a.dados_novos->'state'->>'user'=p_user_id::text AND a.dados_novos->'state'->>'org'=org::text
+    AND (p_before IS NULL OR (a.created_at,a.id)<(p_before,p_before_id))
+  ORDER BY a.created_at DESC,a.id DESC LIMIT p_limit+1
+ ), page AS (SELECT * FROM eligible ORDER BY created_at DESC,id DESC LIMIT p_limit)
+ SELECT COALESCE((SELECT jsonb_agg(jsonb_build_object(
+    'id',id,'at',created_at,'actor_id',usuario_id,'reason',dados_novos->>'reason',
+    'action',dados_novos->'receipt'->>'action',
+    'before',jsonb_build_object('roles',dados_anteriores->'roles','link',
+      CASE WHEN dados_anteriores->'link'='null'::jsonb THEN NULL ELSE jsonb_build_object(
+       'partner_id',dados_anteriores->'link'->'partner_id','valid_from',dados_anteriores->'link'->'valid_from',
+       'revoked_at',dados_anteriores->'link'->'revoked_at','version',dados_anteriores->'link'->'version') END),
+    'after',jsonb_build_object('roles',dados_novos->'state'->'roles','link',
+      CASE WHEN dados_novos->'state'->'link'='null'::jsonb THEN NULL ELSE jsonb_build_object(
+       'partner_id',dados_novos->'state'->'link'->'partner_id','valid_from',dados_novos->'state'->'link'->'valid_from',
+       'revoked_at',dados_novos->'state'->'link'->'revoked_at','version',dados_novos->'state'->'link'->'version') END)
+   ) ORDER BY created_at DESC,id DESC) FROM page),'[]'::jsonb),
+   CASE WHEN (SELECT count(*) FROM eligible)>p_limit THEN
+    (SELECT jsonb_build_object('at',created_at,'id',id) FROM page ORDER BY created_at,id LIMIT 1) ELSE NULL END
+ INTO history,next_cursor;
+ RETURN jsonb_build_object('state',state,'version',md5(state::text),'history',history,'next_cursor',next_cursor);
 END $read$;
+REVOKE ALL ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid) TO authenticated;
+-- Preserve the uninstalled candidate's two-argument contract; bounded first page.
+CREATE FUNCTION public.get_partner_user_lifecycle(p_partner_id uuid,p_user_id uuid)
+RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $api$
+ SELECT public.get_partner_user_lifecycle(p_partner_id,p_user_id,20,NULL::timestamptz,NULL::uuid);
+$api$;
 REVOKE ALL ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid) TO authenticated;
 COMMIT;
