@@ -38,7 +38,18 @@ try:
  CREATE POLICY product_fiscal_profiles_update ON product_fiscal_profiles FOR UPDATE TO authenticated USING(false);
  CREATE POLICY product_fiscal_profiles_delete ON product_fiscal_profiles FOR DELETE TO authenticated USING(false);
  GRANT USAGE ON SCHEMA auth,platform_private TO authenticated;
+ CREATE TABLE fiscal_test_audit(profile_id uuid,old_token timestamptz,new_token timestamptz);
+ CREATE FUNCTION fiscal_test_audit_after() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN INSERT INTO public.fiscal_test_audit VALUES(NEW.id,OLD.updated_at,NEW.updated_at); RETURN NEW; END$$;
+ CREATE TRIGGER fiscal_test_audit_after AFTER UPDATE ON product_fiscal_profiles FOR EACH ROW EXECUTE FUNCTION fiscal_test_audit_after();
  """)
+ # Reproduce the live defect before installing the candidate: AFTER-only audit
+ # does not advance the token; two stale-token direct updates both succeed.
+ baseline_product=uid(91)
+ run(f"INSERT INTO product_fiscal_profiles(product_id) VALUES('{baseline_product}');")
+ baseline_token=run(f"SELECT updated_at::text FROM product_fiscal_profiles WHERE product_id='{baseline_product}';")
+ direct_baseline=f"WITH changed AS (UPDATE product_fiscal_profiles SET ibs_cbs_configuration='{{}}' WHERE product_id='{baseline_product}' AND updated_at='{baseline_token}'::timestamptz RETURNING id) SELECT count(*) FROM changed;"
+ check(direct_baseline,'1');check(direct_baseline,'1')
+ run(f"DELETE FROM product_fiscal_profiles WHERE product_id='{baseline_product}'; DELETE FROM fiscal_test_audit;")
  candidate=(H/'migration.sql.review').read_text()
  deny(candidate,'does not exist')
  # Reduced harness cannot satisfy canonical guard: exact implementation block only.
@@ -65,6 +76,21 @@ try:
  run(actor(1)+f"INSERT INTO product_fiscal_profiles(product_id,is_active) VALUES('{p}',false);")
  assert run(actor(1)+f"SELECT rpc_fiscal_product_ibs_cbs_get('{p}')->>'exists';").splitlines()[-1]=='true';checks.append('active history read')
  deny(actor(1)+f"UPDATE product_fiscal_profiles SET ibs_cbs_configuration='{{}}' WHERE product_id='{p}' AND NOT is_active;",'FISCAL_HISTORY_IMMUTABLE')
+ # Actual PostgreSQL connections, same direct UPDATE shape as the editor,
+ # no timestamp in SET. Zero rows is the editor's OptimisticConflictError.
+ editor_token=run(f"SELECT updated_at::text FROM product_fiscal_profiles WHERE product_id='{p}' AND is_active;")
+ direct=f"WITH changed AS (UPDATE product_fiscal_profiles SET ibs_cbs_configuration='{{}}' WHERE product_id='{p}' AND is_active AND updated_at='{editor_token}'::timestamptz RETURNING id) SELECT count(*) FROM changed;"
+ def editor_writer(_):return run(actor(1)+direct).splitlines()[-1]
+ with concurrent.futures.ThreadPoolExecutor(2) as pool:outcomes=list(pool.map(editor_writer,[1,2]))
+ assert sorted(outcomes)==['0','1'],outcomes;checks.append('editor concurrent same token: one success, one zero-row conflict')
+ check(actor(1)+direct if False else direct,'0')
+ check(f"SELECT updated_at>'{editor_token}'::timestamptz FROM product_fiscal_profiles WHERE product_id='{p}' AND is_active;")
+ check('SELECT count(*)=1 AND bool_and(new_token>old_token) FROM fiscal_test_audit;')
+ # Aborted write rolls back both the server token and the AFTER audit.
+ before_rollback=run(f"SELECT updated_at::text FROM product_fiscal_profiles WHERE product_id='{p}' AND is_active;")
+ run(actor(1)+f"BEGIN; UPDATE product_fiscal_profiles SET ibs_cbs_configuration='{{}}' WHERE product_id='{p}' AND is_active AND updated_at='{before_rollback}'::timestamptz; ROLLBACK;")
+ check(f"SELECT updated_at='{before_rollback}'::timestamptz FROM product_fiscal_profiles WHERE product_id='{p}' AND is_active;")
+ check('SELECT count(*)=1 FROM fiscal_test_audit;')
  old=run(f"SELECT updated_at::text FROM product_fiscal_profiles WHERE product_id='{p}' AND is_active;")
  def race(_):
   r=subprocess.run(base,input=actor(1)+f"SELECT rpc_fiscal_product_ibs_cbs_save('{p}','{{}}','{old}');",text=True,capture_output=True);return r.returncode,r.stderr
