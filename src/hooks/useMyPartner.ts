@@ -1,3 +1,4 @@
+import { readCatalogCapabilities } from "@/lib/catalogo/catalogAccess";
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,11 +53,11 @@ export function useMyPartner() {
       if (typeof partner.razao_social !== "string" || typeof partner.codigo !== "string") throw new Error("partner_context_unavailable");
       return { id: context.partner_id, codigo: partner.codigo, razao_social: partner.razao_social,
         nome_fantasia: typeof partner.nome_fantasia === "string" ? partner.nome_fantasia : null,
-        ativo: true, papel: context.papel as PartnerUserPapel,
+        ativo: true, capabilities: readCatalogCapabilities(partner.capabilities), papel: context.papel as PartnerUserPapel,
         mode: context.mode as "commercial_owner" | "legacy_partner_tenant" };
     },
   });
-  return { ...result, data: ready ? result.data : undefined, ready, scope: fence.scope };
+  return { ...result, data: ready && !result.isError ? result.data : undefined, ready, scope: fence.scope };
 }
 
 /** Papel efetivo do usuário parceiro logado — considera role + vínculo. */

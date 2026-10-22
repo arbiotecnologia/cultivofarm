@@ -1,6 +1,12 @@
 # C2-CAT — candidata separada para catálogo do parceiro fornecedor
 
-**Não aplicada, runtime proposto não promovido, não publicada. C2.1 continua fechada.**
+**SQL aplicado externamente pelo auditor; runtime C2-CAT promovido localmente sob autorização22/10 01:22, sem publicação automática. C2.1 continua fechada.**
+
+## Evidência independente9743dd58 (auditor, não proprietário executor)
+- Auditor repetiu30/30Vitest PASS; typecheck original FALHOU por alias `useMyPartner` apontar runtime antigo e ausência de `vite/client`. Correção do auditor incorporada em `tsconfig.json`; somente a configuração corrigida recebeu PASS.
+- Preflight LIVE: seis hashes/ACL/owner conferidos pelo auditor. Migration `b2b_owner_catalog_capabilities_20261022` APLICADA pelo auditor em `swzpzcwiasxmjutrmvkm`, sem DML; não reaplicada pelo agente.
+- Sessão real teste4 `beb25695…`: wrapper `get_my_commercial_partner_projection` HTTP200, `mode=commercial_owner`, capabilities `{contract:C2_CAT_V1,catalog_read:true,sheets_read:true}`. Evidência produzida pelo auditor, sem token exposto/recarga.
+- **Não é homologação UI**: monitor “verificando acesso” e fluxo UI real catálogo/fichas/revogação ainda pendentes. Não mudar lease, proteção ou sessão para obter PASS.
 
 ## Correção concreta
 O catálogo gestor já retorna 35 itens em REST do teste4, conforme prova do auditor. O bloqueio visual vem de `PortalParceiroLayout`: `commercial_owner` substitui todo Outlet por Cliente comercial. Essa evidência não prova outros canais.
@@ -21,7 +27,7 @@ Frontend proposto:
 1. Executor confirma destino exato obrigatório **`swzpzcwiasxmjutrmvkm`** e executa apenas o preflight de leitura. O SQL não consegue provar sozinho o ref de infraestrutura.
 2. `preflight.sql` captura definições/hashes/ACL/owner. `candidate.sql.review` transacional verifica baselines e substitui só a projeção privada; não executar automaticamente.
 3. Após revisão/aplicação externa, conferir `postflight.sql` e REST real do wrapper na sessão autorizada: payload C2_CAT_V1, negativas A/B/sem vínculo/futuro/revogado/sem entitlement, dados catálogo35 e fichas somente se aprovadas existentes. Nada disso foi executado pelo agente.
-4. `drift.json` guarda SHA256 dos dois arquivos runtime-base; `frontend.patch` passou **dry-run**, não foi aplicado. Arquivos finais propostos estão neste diretório. Aplicar a integração somente após backend homologado; payload antigo nega seguro.
+4. `drift.json` guarda SHA256 dos dois arquivos runtime-base; promoção22/10 01:22 conferiu ambos e destinos novos ausentes, depois copiou os quatro candidatos byte-exatos. `frontend.patch` histórico continua revisável; recibo em `PROMOTION-20261022.md`. Payload antigo nega seguro.
 5. `rollback.sql.review` devolve projeção anterior byte-equivalente com guard da nova MD5/ACL/owner/scope. Remove capacidade, sem reabrir filtros/roles/writers. Rollback frontend retira apenas patch C2-CAT, mantendo catálogo/rótulos C1B publicados e SQL servidor.
 
 ## Testes e limites
@@ -29,7 +35,7 @@ Frontend proposto:
 - **16/16 PostgreSQL descartável**: corpo real da projeção candidata + contexto/validator capturados do LIVE, scope/Auth/entitlements sintéticos. A/B, perfil movido, inativo, owner inativo, parceiro inativo, vínculo futuro/revogado, técnico sem catálogo gestor, cliente comercial sem vínculo e rollback com MD5 original exato. **Não são JWT/RLS reais** nem certificação do modelo explícito.
 - **39/39 regressões** C1B/fichas/myPartner/entitlements/guards; recibos em `validation-results.txt`.
 - MD5 da nova projeção normalizada pelo PostgreSQL local: `06a858c55328b45f205ccb5ebb02607d`; conferir independente antes de aplicar rollback.
-- Typecheck independente da **candidata isolada**: UNVERIFIED; configuração fornecida. Build automático runtime OK não prova a candidata inativa. Nenhuma homologação real C2-CAT nesta rodada.
+- Typecheck original da candidata falhou conforme auditor; configuração corrigida incorporada e `tsgo` sem override PASS. Após promoção:30/30contra runtime,55/55regressões,types runtime PASS e build automático OK; detalhes/limites em `PROMOTION-20261022.md`. REST real da projeção foi executado pelo auditor; UI real/monitor continuam pendentes.
 
 ## Próxima continuação C2 (separada deste commit publicável)
 C2.1 writers não instalar: readers exclusivos/provisioner ainda incompatíveis. O recorte seguinte deve coordenar folha/contexto/capacidades por operação, RPC seletor/preferência, producer com vínculo real e receipts/finish/compensação do create-user. Não basta remover `roles.length===1`/`pu.papel` ou combinar papéis internos. Esta implementação não declara esses contratos concluídos; o inventário está em `../contracts-c2-20261022/README.md`.

@@ -3,9 +3,11 @@
   "include": ["*.ts", "*.tsx"],
   "compilerOptions": {
     "paths": {
+      "@/hooks/useMyPartner": ["./useMyPartner.ts"],
       "@/lib/catalogo/catalogAccess": ["./catalogAccess.ts"],
       "@/components/catalogo/OwnerCatalog": ["./OwnerCatalog.tsx"],
       "@/*": ["../../src/*"]
-    }
+    },
+    "types": ["vitest/globals", "@testing-library/jest-dom", "vite/client"]
   }
 }
