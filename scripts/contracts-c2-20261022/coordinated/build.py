@@ -29,6 +29,7 @@ scope=scope.replace("cardinality(p_clients) IS DISTINCT FROM 0 OR p_primary IS N
 scope=scope.replace('INTO snapshot FROM public.partner_accounts','INTO partner_snapshot FROM public.partner_accounts')
 scope=scope.replace(" ELSE\n IF p_role IS DISTINCT FROM 'cliente_produtor' OR p_partner IS NOT NULL", " IF partner_snapshot IS NULL THEN RAISE EXCEPTION 'external_provisioning_forbidden'; END IF;\n END IF;\n IF 'cliente_produtor'=ANY(p_roles) THEN\n IF")
 scope=scope.replace(" IF snapshot IS NULL THEN", " IF 'cliente_produtor'=ANY(p_roles) AND EXISTS(SELECT 1 FROM unnest(p_clients) cid WHERE NOT EXISTS(SELECT 1 FROM public.fazendas f WHERE f.cliente_id=cid AND f.organization_id=org AND f.ativo)) THEN RAISE EXCEPTION 'c2_producer_farm_required'; END IF;\n IF p_partner IS NULL AND p_roles IS DISTINCT FROM ARRAY['cliente_produtor']::public.app_role[] THEN RAISE EXCEPTION 'c2_partner_required'; END IF;\n snapshot:=jsonb_build_object('partner',partner_snapshot,'clients',snapshot,'roles',to_jsonb(p_roles));\n IF snapshot IS NULL THEN")
+scope=scope.replace('IF OR cardinality(p_clients)', 'IF cardinality(p_clients)')
 claim=baseline('platform_private.b2b_claim_provisioning(uuid,uuid,text,text,app_role,uuid[],uuid)')
 claim=claim.replace("p_role app_role DEFAULT 'parceiro_b2b'::app_role",'p_roles app_role[]')
 claim=claim.replace("  IF p_role = 'parceiro_b2b' THEN\n PERFORM public.b2b_provisioning_preflight(p_partner,p_role::text,'gestor'); END IF;",'')
