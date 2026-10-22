@@ -78,7 +78,7 @@ describe("C2 MobileLayout uses canonical contexts only", () => {
   it("partial revocation of producer keeps the remaining technical context (stale visual choice ignored)", async () => {
     setActivePortalContext("producer"); setup(); await tick();
     expect(producerMenu()).toBe(true);
-    s.roles = ["consultor_tecnico"]; s.contexts = ["technical"]; focus(); await tick(3000); act(() => authRef?.revalidateAuthz?.()); await tick(8000);
+    s.roles = ["consultor_tecnico"]; s.contexts = ["technical"]; focus(); await tick(3000); act(() => authRef?.revalidateAuthz?.()); await tick(8000); console.log("DBG", document.body.textContent);
     expect(producerMenu()).toBe(false); expect(technicalMenu()).toBe(true);
     expect(screen.getByTestId("consumer").textContent).toBe("technical");
   });
