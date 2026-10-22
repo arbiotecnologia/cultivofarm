@@ -7,7 +7,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const s = vi.hoisted(() => ({
   uid: "00000000-0000-4000-8000-000000000001", org: "00000000-0000-4000-8000-000000000002",
-  roles: ["cliente_produtor", "consultor_tecnico"] as string[], contexts: ["technical", "producer"] as string[], error: false,
+  listener: undefined as undefined | ((e: string, x: unknown) => void), roles: ["cliente_produtor", "consultor_tecnico"] as string[], contexts: ["technical", "producer"] as string[], error: false,
 }));
 function chain(t: string) {
   const q: Record<string, unknown> = {};
@@ -29,7 +29,7 @@ vi.mock("@/components/app/OfflineIndicator", () => ({ OfflineIndicator: () => nu
 vi.mock("@/components/app/PendingMediaRecovery", () => ({ PendingMediaRecovery: () => null }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   auth: { getSession: async () => ({ data: { session: { user: { id: s.uid } } }, error: null }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }), signOut: async () => {} },
+    onAuthStateChange: (l: (e: string, x: unknown) => void) => { s.listener = l; return { data: { subscription: { unsubscribe() { s.listener = undefined; } } } }; }, signOut: async () => {} },
   from: (t: string) => chain(t),
   rpc: (name: string, args?: { _role: string }) => {
     const v = name === "get_my_available_portal_contexts"
@@ -78,7 +78,7 @@ describe("C2 MobileLayout uses canonical contexts only", () => {
   it("partial revocation of producer keeps the remaining technical context (stale visual choice ignored)", async () => {
     setActivePortalContext("producer"); setup(); await tick();
     expect(producerMenu()).toBe(true);
-    s.roles = ["consultor_tecnico"]; s.contexts = ["technical"]; focus(); await tick(3000); act(() => authRef?.revalidateAuthz?.()); await tick(8000); console.log("DBG", document.body.textContent);
+    s.roles = ["consultor_tecnico"]; s.contexts = ["technical"]; focus(); act(() => s.listener?.("TOKEN_REFRESHED", { user: { id: s.uid } })); await tick(3000); act(() => authRef?.revalidateAuthz?.()); await tick(8000); console.log("DBG", document.body.textContent);
     expect(producerMenu()).toBe(false); expect(technicalMenu()).toBe(true);
     expect(screen.getByTestId("consumer").textContent).toBe("technical");
   });
