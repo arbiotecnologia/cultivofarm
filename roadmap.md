@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 22/10 02:38 — CAS fiscal servidor, mesmo recorte
+- [x] Reproduzir AFTER-only sem avanço de timestamp e reforçar candidata BEFORE monotônica/transacional; teste UPDATE direto com duas conexões/m mesmo token: uma linha/um conflito, stale sequencial e rollback token/auditoria; 34 SQL locais + 10 Vitest candidatos PASS.
+- [x] Registrar relato Admin B: leitura fixtures e tentativa vazia INS-4 sem perfil criado; edição indevida ainda presente no runtime, corrigida apenas na candidata read-only interna.
+- [x] Registrar evidência do auditor financeiro35/layout-filtros19/tsc candidato PASS; não equivale a SQL multiperfil ou produção homologados.
+- [ ] Promoção fiscal e prova hosted CAS/auditoria/UI aguardam revisão independente; nenhuma alteração de dados reais, SQL hosted ou publicação.
+
 ## 22/10 02:29 — correção global fiscal e gates integrais C2
 - [x] Preparar candidata fiscal Superadmin na plataforma com editor existente, leitores internos read-only, ativo/histórico, CAS/duplicidade e IBS/CBS fenced; 26 SQL locais + 10 Vitest candidatos + 59 regressões; SQL/preflight/rollback somente revisão.
 - [x] Executar cadeia local C2 readers/provisionamento/lifecycle+rollback/ACL (34 checks), SQL complementar49, Edge9, contrato11 e seletor integrado3; guard estrutural fresco embutido, sem instalar.
