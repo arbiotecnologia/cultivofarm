@@ -47,7 +47,7 @@ export default function PortalParceiroLayout() {
   // changes clear synchronously, including A→B→A; no query cache or storage is retained.
   const preferenceIdentity = user?.id && profile?.user_id === user.id && profile.organization_id &&
     location.pathname === "/portal-parceiro/catalogo"
-    ? JSON.stringify([user.id, profile.organization_id, [...(roles ?? [])].sort(), "b2b", role]) : null;
+    ? JSON.stringify([user.id, profile.organization_id, [...(roles ?? [])].sort(), "b2b"]) : null;
   const filterPreferences = (guardFilterMemory ?? filterMemory.current).bind(preferenceIdentity,
     partnerReady && !partnerError ? ownPartner?.id ?? null : undefined);
   const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);

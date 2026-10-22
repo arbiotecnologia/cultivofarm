@@ -2,11 +2,10 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
-const state = vi.hoisted(() => ({ actor: "A", tenant: "T", role: "parceiro_b2b", ready: true, error: false, epoch: 1, partner: "P" as string | null, catalog: true, calls: 0 }));
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.tenant }, roles: [state.role], role: state.role, loading: false, authzReady: state.ready, authzEpoch: state.epoch }) }));
+const state = vi.hoisted(() => ({ actor: "A", tenant: "T", role: "parceiro_b2b", loading: false, ready: true, error: false, epoch: 1, partner: "P" as string | null, catalog: true, calls: 0 }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.tenant }, roles: [state.role], role: state.role, loading: state.loading, authzReady: state.ready, authzEpoch: state.epoch, authzState: "expired", revalidateAuthz: vi.fn() }) }));
 vi.mock("@/hooks/useMyPartner", () => ({ useMyPartner: () => ({ ready: state.ready, isError: state.error, isLoading: false, data: state.ready && !state.error && state.partner ? { id: state.partner, codigo: "P1", razao_social: "Parceiro", mode: "commercial_owner", capabilities: { catalog_read: state.catalog, sheets_read: true } } : undefined }) }));
 vi.mock("@/hooks/useAvailableContexts", () => ({ useAvailableContexts: () => ({ ready: state.ready, isLoading: false, isError: false, data: { has_b2b_access: true, available_contexts: ["b2b"] } }) }));
-vi.mock("@/components/authz/AuthzEpochBoundary", () => ({ AuthzEpochBoundary: ({ children }: { children: React.ReactNode }) => state.ready ? <div key={state.epoch}>{children}</div> : <p>Monitor pausado</p> }));
 vi.mock("@/hooks/useSwitchPortal", () => ({ useSwitchPortal: () => vi.fn() }));
 vi.mock("@/hooks/useEntitlements", () => ({ useEntitlements: () => ({ status: "ready", features: new Set(["catalogo_precos", "fichas_tecnicas"]) }) }));
 vi.mock("@/hooks/useBranding", () => ({ usePortalBranding: () => ({}) }));
@@ -28,13 +27,14 @@ vi.mock("@/components/catalogo/FichaProdutorDrawer", () => ({ FichaProdutorDrawe
 vi.mock("@/components/catalogo/PartnerFichaDrawer", () => ({ PartnerFichaDrawer: ({ open }: { open: boolean }) => open ? <p>Ficha protegida aberta</p> : null }));
 import Layout from "@/pages/portal-parceiro/PortalParceiroLayout";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
+import { CatalogFilterPreferencesProvider } from "@/components/catalogo/CatalogFilterPreferencesProvider";
 import { createCatalogFilterMemory, defaultCatalogFilters } from "@/lib/catalogo/catalogFilterPreferences";
-beforeEach(() => Object.assign(state, { actor: "A", tenant: "T", role: "parceiro_b2b", ready: true, error: false, epoch: 1, partner: "P", catalog: true, calls: 0 }));
+beforeEach(() => Object.assign(state, { actor: "A", tenant: "T", role: "parceiro_b2b", loading: false, ready: true, error: false, epoch: 1, partner: "P", catalog: true, calls: 0 }));
 afterEach(cleanup);
 function Navigation() { const go = useNavigate(); return <><button onClick={() => go("/portal-parceiro/fichas")}>Outro contexto</button><button onClick={() => go("/portal-parceiro/catalogo")}>Voltar catálogo</button></>; }
 function mount(guarded = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const tree = () => <QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Navigation /><Routes><Route path="/portal-parceiro" element={guarded ? <B2BRouteGuard><Layout /></B2BRouteGuard> : <Layout />}><Route path="*" element={<p>SIBLING</p>} /></Route></Routes></MemoryRouter></QueryClientProvider>;
+  const tree = () => <QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><CatalogFilterPreferencesProvider><Navigation /><Routes><Route path="/portal-parceiro" element={guarded ? <B2BRouteGuard><Layout /></B2BRouteGuard> : <Layout />}><Route path="*" element={<p>SIBLING</p>} /></Route></Routes></CatalogFilterPreferencesProvider></MemoryRouter></QueryClientProvider>;
   const view = render(tree());
   return { ...view, update: () => view.rerender(tree()) };
 }
@@ -62,10 +62,20 @@ it("same identity renewal remounts request scope but keeps filters; reset remain
 });
 it("existing B2B guard retains ONLY filters across ancestor boundary pause and epoch remount", () => {
   const view = mount(true); selectChemical(); fireEvent.change(search(), { target: { value: "guard preference" } });
-  state.ready = false; view.update(); expect(screen.getByText("Monitor pausado")).toBeTruthy(); expect(screen.queryByText("Protegido A")).toBeNull();
+  state.ready = false; view.update(); expect(screen.getByText("Sessão de acesso pausada")).toBeTruthy(); expect(screen.queryByText("Protegido A")).toBeNull();
   state.ready = true; state.epoch++; view.update(); expect(search()).toHaveValue("guard preference");
   expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "true");
   state.epoch++; view.update(); expect(search()).toHaveValue("guard preference");
+});
+it("real Routes/guard/boundary discards the protected tree during loader and repeated renewal", () => {
+  const view = mount(true); selectChemical(); fireEvent.change(search(), { target: { value: "retomar" } });
+  const oldInput = search();
+  state.loading = true; view.update(); expect(oldInput.isConnected).toBe(false);
+  expect(screen.queryByText("Protegido A")).toBeNull();
+  state.loading = false; state.epoch++; view.update(); expect(search()).toHaveValue("retomar");
+  const renewedInput = search(); state.epoch++; view.update(); expect(renewedInput.isConnected).toBe(false);
+  expect(search()).toHaveValue("retomar");
+  expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "true");
 });
 it("ancestor guard clears A preferences when tenant changes during pause, including A→B→A", () => {
   const view = mount(true); selectChemical(); fireEvent.change(search(), { target: { value: "A only" } });
