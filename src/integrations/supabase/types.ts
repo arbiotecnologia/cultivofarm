@@ -2099,6 +2099,39 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_family_labels: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          familia: string
+          id: string
+          rotulo: string
+          rotulo_exibicao: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          familia: string
+          id?: string
+          rotulo: string
+          rotulo_exibicao: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          familia?: string
+          id?: string
+          rotulo?: string
+          rotulo_exibicao?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       catalog_platform_admin_audit: {
         Row: {
           actor_id: string
@@ -21239,6 +21272,7 @@ export type Database = {
         Args: { _reason: string; _receipt_id: string }
         Returns: undefined
       }
+      catalog_family_labels_read: { Args: { p_familia: string }; Returns: Json }
       check_cliente_dependencies: {
         Args: { _cliente_id: string }
         Returns: Json
@@ -22821,6 +22855,16 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: boolean
       }
+      platform_create_catalog_label: {
+        Args: {
+          p_familia: string
+          p_idempotency_key: string
+          p_reason: string
+          p_rotulo: string
+          p_rotulo_exibicao: string
+        }
+        Returns: Json
+      }
       platform_create_global_culture: {
         Args: { p_idempotency_key: string; p_payload: Json; p_reason: string }
         Returns: Json
@@ -22936,6 +22980,10 @@ export type Database = {
           }
       platform_get_organization_fiscal_summary: {
         Args: { _org: string }
+        Returns: Json
+      }
+      platform_list_catalog_labels: {
+        Args: { p_familia: string }
         Returns: Json
       }
       platform_mark_org_admin_email_ambiguous: {
@@ -23071,6 +23119,16 @@ export type Database = {
         }
         Returns: string
       }
+      platform_set_catalog_label_active: {
+        Args: {
+          p_ativo: boolean
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       platform_set_feature_override:
         | {
             Args: {
@@ -23192,6 +23250,16 @@ export type Database = {
           _reason: string
         }
         Returns: string
+      }
+      platform_update_catalog_label: {
+        Args: {
+          p_expected_updated_at: string
+          p_id: string
+          p_idempotency_key: string
+          p_reason: string
+          p_rotulo_exibicao: string
+        }
+        Returns: Json
       }
       platform_update_global_culture: {
         Args: {
