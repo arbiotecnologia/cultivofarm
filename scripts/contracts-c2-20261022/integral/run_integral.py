@@ -51,11 +51,18 @@ INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_versi
 INSERT INTO public.partner_accounts(id,razao_social,ativo,commercial_owner_organization_id) VALUES ('{P}','Parceiro P sintetico',true,'{ORG_A}'),('{Q}','Parceiro Q sintetico',true,'{ORG_B}');
 SET session_replication_role=origin;
 """)
-for u in users:
-    org = ORG_B if u in (ADMIN_B, XB) else ORG_A
+# BOOTSTRAP ONLY: the canonical "always one active administrador" guard needs an existing
+# admin; the two tenant admins are seeded with triggers skipped, everything after runs guarded.
+for u, org in ((ADMIN_A, ORG_A), (ADMIN_B, ORG_B)):
+    pg.sql(f"""SET session_replication_role=replica;
+INSERT INTO auth.users(id,email,raw_app_meta_data,raw_user_meta_data,created_at) VALUES ('{u}','{u[-3:]}@sintetico.invalid','{{}}','{{}}',now());
+INSERT INTO public.profiles(user_id,organization_id,ativo,senha_provisoria,nome) VALUES ('{u}','{org}',true,false,'Admin');
+INSERT INTO public.user_roles(user_id,role) VALUES ('{u}','administrador');
+SET session_replication_role=origin;""")
+for u in [G, T, PR, GT, ALL3, XB]:
+    org = ORG_B if u == XB else ORG_A
     pg.sql(f"INSERT INTO auth.users(id,email,raw_app_meta_data,raw_user_meta_data,created_at) VALUES ('{u}','{u[-3:]}@sintetico.invalid','{{}}','{{}}',now());")
-    pg.sql(f"INSERT INTO public.profiles(user_id,organization_id,ativo,senha_provisoria,nome) VALUES ('{u}','{org}',true,false,'U{u[-3:]}') ON CONFLICT (user_id) DO UPDATE SET organization_id=EXCLUDED.organization_id,ativo=true,senha_provisoria=false;")
-pg.sql(f"INSERT INTO public.user_roles(user_id,role) VALUES ('{ADMIN_A}','administrador'),('{ADMIN_B}','administrador');")
+    pg.sql(f"UPDATE public.profiles SET organization_id='{org}',ativo=true,senha_provisoria=false WHERE user_id='{u}';")
 pg.sql(f"""INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES ('{CLI}','Cliente sintetico','C-1','{ORG_A}'),('{CLI_B}','Cliente B','C-2','{ORG_B}');
 INSERT INTO public.fazendas(id,cliente_id,nome,organization_id,ativo) VALUES ('{FAZ}','{CLI}','Fazenda sintetica','{ORG_A}',true);""")
 # ---- INSTALL: unmodified single-transaction candidate ----
