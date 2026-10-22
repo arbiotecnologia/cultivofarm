@@ -121,6 +121,20 @@ except AssertionError:
     inactive = []
 ok('inactive profile blocks all contexts', inactive == [], inactive)
 pg.sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{T}';")
+# real concurrency: two admin sessions, same CAS token, different keys -> one wins
+import time
+v = version(ADMIN_A, G)
+def tx(key, hold):
+    q = (f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{claims(ADMIN_A)}',true);\n"
+         f"SELECT public.link_partner_user('{P}','{G}',ARRAY['parceiro_b2b','parceiro_b2b_tecnico']::text[],'assign','{v}','{key}','Corrida sintetica');\n"
+         f"SELECT pg_sleep({hold}); COMMIT;")
+    pr = subprocess.Popen(pg.psql(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    pr.stdin.write(q.encode()); pr.stdin.close(); return pr
+a = tx(uuid.uuid4(), 1.5); time.sleep(0.4); b = tx(uuid.uuid4(), 0)
+ra, rb = a.wait(30), b.wait(30)
+eb = b.stderr.read().decode()
+ok('concurrent CAS: first commits, second waits then conflicts', ra == 0 and rb != 0 and 'version_conflict' in eb, (ra, rb, eb[-200:]))
+ok('concurrent CAS: exactly one effect', ctx(G) == ['b2b', 'technical'], ctx(G))
 # ---- own finance (paired variant) ----
 def fin(u, partner=P, expect_ok=True):
     return as_user(u, f"SELECT public.rpc_portal_partner_financial('{partner}',true)::text;", expect_ok)
