@@ -1,0 +1,51 @@
+LOCAL ONLY; hosted JWT/RLS UNVERIFIED
+
+checking file src/pages/Configuracoes.tsx
+checking file src/lib/configuracoes/partnerLifecycle.ts
+checking file src/components/configuracoes/PartnerLifecycleFields.tsx
+
+$ vitest run --config "scripts/contracts-c2-20261022/vitest.config.ts"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ scripts/contracts-c2-20261022/frontend/registrationContract.test.ts (3 tests) 4ms
+ ✓ scripts/contracts-c2-20261022/frontend/partnerLifecycle.test.ts (12 tests) 8ms
+ ✓ scripts/contracts-c2-20261022/frontend/PartnerLifecycleFields.test.tsx (3 tests) 268ms
+
+ Test Files  3 passed (3)
+      Tests  18 passed (18)
+   Start at  01:04:23
+   Duration  2.26s (transform 150ms, setup 381ms, collect 497ms, tests 279ms, environment 2.15s, prepare 1.03s)
+
+
+PASS 30 isolated PostgreSQL checks
+PASS full baseline guard rejects reduced noncanonical schema
+PASS producer needs real client/property
+PASS client alone is not farm proof
+PASS assign three cumulative capabilities
+PASS three roles stored once
+PASS exact replay receipt
+PASS key with modified payload conflicts
+PASS CAS stale no effects
+PASS cross tenant partner
+PASS admin tenant B cannot mutate target A
+PASS admin tenant B cannot read target A history
+PASS inactive partner denies mutation
+PASS internal manager not granted
+PASS profile B link A denied
+PASS inactive profile denied
+PASS inactive owner org denied
+PASS future producer binding denied
+PASS expired producer binding denied
+PASS revoked producer link cannot assign
+PASS partial revoke preserves technician producer
+PASS manager financial role not present
+PASS revocation cannot grant manager
+PASS old assign replay never resurrects revoked manager
+PASS manager still absent after old replay
+PASS unlink revokes link but not independent producer
+PASS assign cannot implicitly reactivate
+PASS reactivate link explicit preserves revoked manager
+PASS history has only confirmed mutations
+PASS legacy validator unchanged
+PASS two real transactions serialize CAS

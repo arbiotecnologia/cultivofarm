@@ -59,7 +59,8 @@
 +    throw new Error("c2_unconfirmed");
 +  return row;
 +}
-+export const lifecycleQueryKey = (scope: string, partnerId: string, userId: string) => ["partner-user-lifecycle", scope, partnerId, userId] as const;--- /dev/null
++export const lifecycleQueryKey = (scope: string, partnerId: string, userId: string) => ["partner-user-lifecycle", scope, partnerId, userId] as const;
+--- /dev/null
 +++ b/src/components/configuracoes/PartnerLifecycleFields.tsx
 @@ -0,0 +1,104 @@
 +import { useEffect, useRef, useState } from "react";
