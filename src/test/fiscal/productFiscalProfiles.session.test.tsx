@@ -8,6 +8,11 @@ vi.mock("@/hooks/useStorageAccessScope",()=>({useStorageAccessScope:(resource:st
  const scope=JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource]);
  return {ready:state.ready,scope,capture:()=>()=>state.ready&&scope===JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource])};
 }}));
+// Global product hooks use the product-specific fence (Superadmin canonical write); same scope semantics.
+vi.mock("@/hooks/useProductFiscalAccess",()=>({useProductFiscalAccess:(resource:string)=>{
+ const scope=JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource]);
+ return {ready:state.ready,canWrite:state.ready,scope,capture:()=>()=>state.ready&&scope===JSON.stringify([state.actor,state.tenant,state.epoch,state.ready,resource])};
+}}));
 vi.mock("@/integrations/supabase/client",()=>({supabase:{from:(...a:unknown[])=>state.from(...a)}}));
 let client:QueryClient;
 function wrapper({children}:{children:React.ReactNode}){return <QueryClientProvider client={client}>{children}</QueryClientProvider>}
