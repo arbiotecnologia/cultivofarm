@@ -31,7 +31,7 @@ try:
  import re
  capture=(H.parent/'triggers-live.txt').read_text()
  for name in ['partner_users_derive_tenant','partner_users_bump_version']:
-  body=re.search(r'CREATE OR REPLACE FUNCTION public\.'+name+r'\(\).*?\$function\$',capture,re.S)
+  body=re.search(r'CREATE OR REPLACE FUNCTION public\.'+name+r'\(\).*?AS \$function\$.*?\$function\$',capture,re.S)
   assert body is not None
   sql+=body.group()+';'
  sql+="CREATE TRIGGER a10_partner_users_derive_tenant BEFORE INSERT OR UPDATE ON public.partner_users FOR EACH ROW EXECUTE FUNCTION public.partner_users_derive_tenant(); CREATE TRIGGER a20_partner_users_bump_version BEFORE UPDATE ON public.partner_users FOR EACH ROW EXECUTE FUNCTION public.partner_users_bump_version();"
