@@ -1,0 +1,31 @@
+src/App.tsx:286:  const companyAdminBoundary = COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "administrador" &&
+src/App.tsx:288:  const consultantBoundary = CONSULTANT_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "consultor_tecnico" &&
+src/App.tsx:290:  const operatorBoundary = OPERATOR_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "operador_onfarm" &&
+src/hooks/useAvailableContexts.ts:47:    clearActivePortalContext({ preserveClientPreference: PRODUCER_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "cliente_produtor" });
+src/hooks/useAvailableContexts.ts:112:  const exclusiveOperator = roles.length === 1 && roles[0] === "operador_onfarm";
+src/hooks/useAvailableContexts.ts:131:    roles.length === 1 && roles[0] === "cliente_produtor";
+src/hooks/useAuth.tsx:546:    roles.length === 1 && roles[0] === "cliente_produtor";
+src/hooks/useAuth.tsx:548:    roles.length === 1 && roles[0] === "financeiro";
+src/hooks/useAuth.tsx:550:    roles.length === 1 && roles[0] === "administrador" &&
+src/hooks/useAuth.tsx:553:    roles.length === 1 && roles[0] === "consultor_tecnico" &&
+src/hooks/useAuth.tsx:556:    roles.length === 1 && roles[0] === "operador_onfarm" &&
+src/hooks/useAuth.tsx:566:    residualLatch.userId === user?.id && roles.length === 1 &&
+src/hooks/useAuth.tsx:577:    ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
+src/hooks/usePartnerUsers.ts:102:      })).filter(p => p.roles.length === 1 && (p.roles[0] === "parceiro_b2b" || p.roles[0] === "parceiro_b2b_tecnico"));
+supabase/migrations/20261016190539_c25b0e99-8110-4801-adeb-4d07ee0ff2d1.sql:15:   'parceiro',(SELECT jsonb_build_object('partner_id',pa.id,'razao_social',pa.razao_social,'papel',pu.papel,'ativo',(pa.ativo AND pa.deleted_at IS NULL))
+src/hooks/useMyPartner.ts:13:  const role = roles.length === 1 ? roles[0] : null;
+src/hooks/useMyCommercialOrders.ts:20:  const ready = fence.ready && !!partnerId && roles.length === 1 && roles[0] === "parceiro_b2b";
+supabase/migrations/20261015205954_h_external_user_provisioning_closed.sql:197:  OR (SELECT count(*) FROM public.user_roles WHERE user_id=r.user_id)<>1
+supabase/migrations/20261008221537_95b4f2b6-6fc2-40b5-9a17-b81a56cc4025.sql:4:CREATE OR REPLACE FUNCTION platform_private.b2b_assignment_identity_coherent(p_user uuid,p_partner uuid,p_owner uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $f$ SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.organization_id=p_owner AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p_user)) AND (SELECT count(*) FROM public.user_roles r WHERE r.user_id=p_user)=1 AND (SELECT count(*) FROM public.partner_users pu WHERE pu.user_id=p_user)=1 AND EXISTS(SELECT 1 FROM public.partner_users pu JOIN public.user_roles r ON r.user_id=pu.user_id WHERE pu.user_id=p_user AND pu.partner_id=p_partner AND ((r.role='parceiro_b2b' AND pu.papel='gestor') OR (r.role='parceiro_b2b_tecnico' AND pu.papel='tecnico'))); $f$;
+supabase/migrations/20261008212043_b3b02dba-c8f9-4dbb-beb4-52d77aae3f62.sql:7: IF org IS NULL OR (SELECT count(*) FROM public.user_roles r WHERE r.user_id=u)<>1 THEN RETURN NULL; END IF;
+supabase/migrations/20261008212043_b3b02dba-c8f9-4dbb-beb4-52d77aae3f62.sql:11: SELECT pu.partner_id,pu.papel INTO link FROM public.partner_users pu WHERE pu.user_id=u;
+src/test/config/b2bProvisioning.proposal.test.ts:15:    && r.roles.length === 1 && ["parceiro_b2b", "parceiro_b2b_tecnico"].includes(r.roles[0])
+src/components/guards/B2BRouteGuard.tsx:26:  const exclusivePartner = roles.length === 1 &&
+src/components/guards/AppPortalGuard.tsx:34:  const isMonitoredConsultant = CONSULTANT_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "consultor_tecnico" &&
+supabase/migrations/20260922160736_29af83f9-2f0d-4770-91d4-264de788ccc5.sql:176:  SELECT count(*) INTO v_n FROM public.user_roles WHERE role='superadmin'::public.app_role;
+supabase/migrations/20261005194512_9a63a46f-dba0-4861-bd0c-62e432e23671.sql:48:  SELECT count(*) INTO v_count FROM public.user_roles WHERE user_id = v_admin_b;
+supabase/migrations/20261005194512_9a63a46f-dba0-4861-bd0c-62e432e23671.sql:92:  SELECT count(*) INTO v_count FROM public.user_roles WHERE user_id = v_admin_a;
+supabase/migrations/20261005194622_91711015-fd68-40ef-a008-24d14cb3be1c.sql:29:  SELECT count(*) INTO v_count FROM public.user_roles WHERE user_id=v_admin_b; IF v_count<>0 THEN RAISE EXCEPTION 'd51_4_admin_a_role_b_visible'; END IF;
+supabase/migrations/20261005194622_91711015-fd68-40ef-a008-24d14cb3be1c.sql:56:  SELECT count(*) INTO v_count FROM public.user_roles WHERE user_id=v_admin_a; IF v_count<>0 THEN RAISE EXCEPTION 'd51_4_admin_b_role_a_visible'; END IF;
+supabase/migrations/20261005192534_d3208b29-c579-4309-ac0f-29841ef48126.sql:71: SELECT count(*) INTO v_total FROM public.profiles p WHERE p.organization_id=v_org AND (p_active IS NULL OR p.ativo=p_active) AND (NULLIF(btrim(p_search),'') IS NULL OR p.nome ILIKE '%'||btrim(p_search)||'%' OR p.email ILIKE '%'||btrim(p_search)||'%') AND (p_role IS NULL OR EXISTS(SELECT 1 FROM public.user_roles ur WHERE ur.user_id=p.user_id AND ur.role=p_role)) AND NOT public.is_platform_superadmin(p.user_id);
+supabase/migrations/20261005192534_d3208b29-c579-4309-ac0f-29841ef48126.sql:85: IF p_active=false AND public.has_role(p_user_id,'administrador'::public.app_role) THEN SELECT count(*) INTO v_admin_count FROM public.profiles p JOIN public.user_roles ur ON ur.user_id=p.user_id WHERE p.organization_id=platform_private.current_user_organization_id() AND p.ativo=true AND ur.role='administrador'::public.app_role; IF v_admin_count<=1 THEN RAISE EXCEPTION 'user_last_active_admin' USING ERRCODE='PT409'; END IF; END IF;

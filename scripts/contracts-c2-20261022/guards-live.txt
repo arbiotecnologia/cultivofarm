@@ -1,0 +1,120 @@
+[map[acl:{postgres=X/postgres} args: definition:CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_gate()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass,'auth.users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;
+ IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;
+ UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
+ RETURN NULL;
+END $function$
+ md5:b0dd9a14d5fd799a40df0975baf4c5a6 nspname:cf_user_guards_v1 owner:postgres proname:acquire_gate] map[acl:{postgres=X/postgres} args: definition:CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_invitation_gate()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ IF TG_LEVEL<>'STATEMENT' OR TG_RELID<>'public.platform_org_admin_invites'::regclass THEN
+  RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;
+ IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN
+  RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT;
+ IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;
+ UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;
+ RETURN NULL;
+END $function$
+ md5:a9046ea9d2c93152d292ba40be549e2a nspname:cf_user_guards_v1 owner:postgres proname:acquire_invitation_gate] map[acl:{postgres=X/postgres} args: definition:CREATE OR REPLACE FUNCTION cf_user_guards_v1.advance_stamp()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+BEGIN NEW.updated_at:=greatest(clock_timestamp(),OLD.updated_at+interval '1 microsecond'); RETURN NEW; END $function$
+ md5:ce295ff5799d306ad81578047cd9bff5 nspname:cf_user_guards_v1 owner:postgres proname:advance_stamp] map[acl:{postgres=X/postgres} args: definition:CREATE OR REPLACE FUNCTION cf_user_guards_v1.block_truncate()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+BEGIN RAISE EXCEPTION 'user_bulk_truncate_forbidden' USING ERRCODE='PT409'; END $function$
+ md5:a919901eb1e045461a5bc6e4da178624 nspname:cf_user_guards_v1 owner:postgres proname:block_truncate] map[acl:{postgres=X/postgres} args: definition:CREATE OR REPLACE FUNCTION cf_user_guards_v1.require_admin()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.user_roles r USING(user_id) WHERE p.ativo IS TRUE AND r.role='administrador') THEN RAISE EXCEPTION 'user_last_active_admin' USING ERRCODE='PT409'; END IF;
+ RETURN NULL;
+END $function$
+ md5:ec8e7077521cdee212be924bfb400e8a nspname:cf_user_guards_v1 owner:postgres proname:require_admin] map[acl:{postgres=X/postgres} args: definition:CREATE OR REPLACE FUNCTION cf_user_guards_v1.touch_invitation_profiles()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE old_id uuid; new_id uuid; item uuid;
+BEGIN
+ IF TG_LEVEL<>'ROW' OR TG_RELID<>'public.platform_org_admin_invites'::regclass THEN
+  RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;
+ IF TG_OP<>'INSERT' THEN old_id:=OLD.user_id; END IF;
+ IF TG_OP<>'DELETE' THEN new_id:=NEW.user_id; END IF;
+ FOR item IN SELECT DISTINCT x FROM unnest(ARRAY[old_id,new_id]) x WHERE x IS NOT NULL ORDER BY x
+ LOOP UPDATE public.profiles SET updated_at=updated_at WHERE user_id=item; END LOOP;
+ RETURN NULL;
+END $function$
+ md5:ff13703e8174fa2fa3cd641ff5b36258 nspname:cf_user_guards_v1 owner:postgres proname:touch_invitation_profiles] map[acl:{postgres=X/postgres} args: definition:CREATE OR REPLACE FUNCTION cf_user_guards_v1.touch_related_profiles()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE old_id uuid; new_id uuid; item uuid;
+BEGIN
+ IF TG_LEVEL<>'ROW' OR TG_RELID NOT IN ('public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;
+ IF TG_OP<>'INSERT' THEN old_id:=OLD.user_id; END IF;
+ IF TG_OP<>'DELETE' THEN new_id:=NEW.user_id; END IF;
+ FOR item IN SELECT DISTINCT x FROM unnest(ARRAY[old_id,new_id]) x WHERE x IS NOT NULL ORDER BY x LOOP UPDATE public.profiles SET updated_at=updated_at WHERE user_id=item; END LOOP;
+ RETURN NULL;
+END $function$
+ md5:e5911c3801be399f9de57e038b390e79 nspname:cf_user_guards_v1 owner:postgres proname:touch_related_profiles] map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} args: definition:CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_partner_projection()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE c jsonb; result jsonb;
+BEGIN
+ c:=platform_private.b2b_commercial_context();
+ IF c IS NULL THEN RETURN NULL; END IF;
+ SELECT jsonb_build_object('id',p.id,'codigo',p.codigo,'razao_social',p.razao_social,
+   'nome_fantasia',p.nome_fantasia,'ativo',p.ativo,'papel',c->>'papel','mode',c->>'mode')
+ INTO result FROM public.partner_accounts p
+ WHERE p.id=(c->>'partner_id')::uuid AND p.ativo IS TRUE AND p.deleted_at IS NULL
+ AND p.commercial_owner_organization_id=(c->>'commercial_owner_organization_id')::uuid;
+ RETURN result;
+END $function$
+ md5:67fb596323c4222f9b1357eb42d93eca nspname:platform_private owner:postgres proname:b2b_commercial_partner_projection] map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} args: definition:CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);
+$function$
+ md5:64e10608403238a41a9baf92857ca881 nspname:platform_private owner:postgres proname:h15_actor_organization] map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} args:p_target_user_id uuid definition:CREATE OR REPLACE FUNCTION platform_private.is_tenant_admin_for_user(p_target_user_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  SELECT auth.uid() IS NOT NULL
+     AND public.has_role(auth.uid(), 'administrador'::public.app_role)
+     AND NOT public.is_platform_superadmin(auth.uid())
+     AND NOT public.is_platform_superadmin(p_target_user_id)
+     AND platform_private.is_same_tenant_user(p_target_user_id);
+$function$
+ md5:6f548278ad7a8fc39e83cad7c0101de2 nspname:platform_private owner:postgres proname:is_tenant_admin_for_user]]

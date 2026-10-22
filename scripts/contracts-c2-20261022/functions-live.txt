@@ -1,0 +1,358 @@
+[map[acl:{postgres=X/postgres,service_role=X/postgres} args:_uid uuid definition:CREATE OR REPLACE FUNCTION platform_private.b2b_actor_scope(_uid uuid)
+ RETURNS TABLE(profile_ok boolean, org_partner uuid, user_partner uuid, user_partner_count integer, partner_valid boolean, has_catalog boolean)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  WITH pr AS (
+    SELECT o.partner_account_id
+      FROM public.profiles p JOIN public.organizations o ON o.id = p.organization_id
+     WHERE p.user_id = _uid AND p.ativo = true AND o.ativo = true AND o.status = 'ativa'
+     LIMIT 1
+  ), pu AS (
+    SELECT count(*)::int c, min(partner_id::text)::uuid pid
+      FROM public.partner_users
+     WHERE user_id = _uid AND revoked_at IS NULL
+  ), valid AS (
+    -- Caminho fornecedor: vínculo só resolve o parceiro com a cadeia completa
+    -- perfil→organização→tenant→proprietário comprovada no servidor.
+    SELECT CASE WHEN (SELECT c FROM pu) = 1
+                 AND public.is_valid_b2b_partner_user(_uid, (SELECT pid FROM pu))
+                 AND EXISTS (
+                   SELECT 1
+                     FROM public.partner_users puv
+                     JOIN public.partner_accounts pa ON pa.id = puv.partner_id
+                     JOIN public.organizations owner ON owner.id = pa.commercial_owner_organization_id
+                     JOIN public.profiles pf ON pf.user_id = puv.user_id
+                     JOIN public.organizations porg ON porg.id = pf.organization_id
+                    WHERE puv.user_id = _uid
+                      AND puv.partner_id = (SELECT pid FROM pu)
+                      AND puv.revoked_at IS NULL
+                      AND (puv.valid_from IS NULL OR puv.valid_from <= now())
+                      AND pf.ativo = true
+                      AND porg.ativo = true AND porg.status = 'ativa'
+                      AND pf.organization_id = puv.tenant_id
+                      AND puv.tenant_id = pa.commercial_owner_organization_id
+                      AND pa.ativo = true AND pa.deleted_at IS NULL
+                      AND owner.ativo = true AND owner.status = 'ativa'
+                 )
+              THEN (SELECT pid FROM pu) END AS pid
+  )
+  SELECT EXISTS (SELECT 1 FROM pr),
+         -- Organização com parceiro explícito prevalece; sem ela, o vínculo autorizado
+         -- validado resolve o parceiro. Se ambos existirem e divergirem, org_partner
+         -- permanece o da organização e os consumidores negam por mismatch.
+         COALESCE((SELECT partner_account_id FROM pr), (SELECT pid FROM valid)),
+         (SELECT pid FROM valid),
+         (SELECT c FROM pu),
+         CASE WHEN (SELECT partner_account_id FROM pr) IS NOT NULL
+              THEN EXISTS (SELECT 1 FROM pr JOIN public.partner_accounts pa ON pa.id = pr.partner_account_id
+                            WHERE pa.ativo = true AND pa.deleted_at IS NULL)
+              ELSE (SELECT pid FROM valid) IS NOT NULL END,
+         EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'catalogo_precos');
+$function$
+ md5:c3f2997746f24bc2efd15db5c0ccc862 owner:postgres proname:b2b_actor_scope schema:platform_private] map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} args:p_user uuid, p_partner uuid, p_owner uuid definition:CREATE OR REPLACE FUNCTION platform_private.b2b_assignment_identity_coherent(p_user uuid, p_partner uuid, p_owner uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.organization_id=p_owner AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p_user)) AND (SELECT count(*) FROM public.user_roles r WHERE r.user_id=p_user)=1 AND (SELECT count(*) FROM public.partner_users pu WHERE pu.user_id=p_user)=1 AND EXISTS(SELECT 1 FROM public.partner_users pu JOIN public.user_roles r ON r.user_id=pu.user_id WHERE pu.user_id=p_user AND pu.partner_id=p_partner AND ((r.role='parceiro_b2b' AND pu.papel='gestor') OR (r.role='parceiro_b2b_tecnico' AND pu.papel='tecnico'))); $function$
+ md5:98caa1464f97b1c21eeb836ceff4992d owner:postgres proname:b2b_assignment_identity_coherent schema:platform_private] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} args: definition:CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_context()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE u uuid:=auth.uid(); org uuid; role_name text; link record; owner uuid; legacy uuid; mode text;
+BEGIN
+ IF u IS NULL OR NOT platform_private.platform_actor_access_ready(u) THEN RETURN NULL; END IF;
+ org:=public.h15_actor_organization();
+ IF org IS NULL OR (SELECT count(*) FROM public.user_roles r WHERE r.user_id=u)<>1 THEN RETURN NULL; END IF;
+ SELECT r.role::text INTO role_name FROM public.user_roles r WHERE r.user_id=u;
+ IF role_name NOT IN ('parceiro_b2b','parceiro_b2b_tecnico') THEN RETURN NULL; END IF;
+ IF (SELECT count(*) FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL)<>1 THEN RETURN NULL; END IF;
+ SELECT pu.partner_id,pu.papel,pu.tenant_id INTO link FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL;
+ IF link.papel IS DISTINCT FROM (CASE WHEN role_name='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END) THEN RETURN NULL; END IF;
+ SELECT pa.commercial_owner_organization_id INTO owner FROM public.partner_accounts pa
+ WHERE pa.id=link.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL;
+ IF owner IS NULL THEN RETURN NULL; END IF;
+ IF link.tenant_id IS NULL OR link.tenant_id IS DISTINCT FROM owner THEN RETURN NULL; END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='catalogo_precos') THEN RETURN NULL; END IF;
+ SELECT o.partner_account_id INTO legacy FROM public.organizations o WHERE o.id=org AND o.ativo IS TRUE AND o.status='ativa';
+ IF NOT FOUND THEN RETURN NULL; END IF;
+ IF owner=org THEN
+   IF legacy IS NOT NULL AND legacy IS DISTINCT FROM link.partner_id THEN RETURN NULL; END IF;
+   mode:='commercial_owner';
+ ELSIF legacy=link.partner_id AND COALESCE(platform_private.b2b_phase1_partner_visible(link.partner_id,true),false) THEN
+   mode:='legacy_partner_tenant';
+ ELSE RETURN NULL;
+ END IF;
+ RETURN jsonb_build_object('partner_id',link.partner_id,'organization_id',org,
+   'commercial_owner_organization_id',owner,'role',role_name,'papel',link.papel,'mode',mode);
+END $function$
+ md5:a31d198c9a9fc9a5e7c397ab36fe0fa4 owner:postgres proname:b2b_commercial_context schema:platform_private] map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} args:p_user uuid definition:CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)
+ AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));
+$function$
+ md5:048249c0c2106c3761e26eacb8d0de84 owner:postgres proname:platform_actor_access_ready schema:platform_private] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} args:p_user_id uuid, p_partner_id uuid definition:CREATE OR REPLACE FUNCTION public.get_b2b_user_role_for_partner(p_user_id uuid, p_partner_id uuid)
+ RETURNS text
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT CASE
+    WHEN public.is_valid_b2b_partner_user(p_user_id, p_partner_id) THEN
+      (SELECT CASE pu.papel
+                WHEN 'tecnico' THEN 'parceiro_b2b_tecnico'
+                ELSE 'parceiro_b2b'
+              END
+         FROM public.partner_users pu
+        WHERE pu.user_id = p_user_id
+          AND pu.partner_id = p_partner_id
+          AND pu.revoked_at IS NULL)
+    ELSE NULL
+  END;
+$function$
+ md5:27efcdaf40dc0e5287abd4cf418a6571 owner:postgres proname:get_b2b_user_role_for_partner schema:public] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} args: definition:CREATE OR REPLACE FUNCTION public.get_my_available_portal_contexts()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE u uuid:=auth.uid(); org uuid; management boolean:=false; tech boolean:=false; partner boolean:=false; scopes record; contexts text[]:=ARRAY[]::text[]; pref text; last_ctx text; skip boolean:=false; def text;
+BEGIN
+ IF u IS NULL OR NOT platform_private.platform_actor_access_ready(u) THEN
+  RETURN jsonb_build_object('available_contexts',contexts,'default_context',NULL,'must_select_context',false,'has_b2b_access',false,'has_technical_access',false,'is_admin',false,'preferred_context',NULL,'skip_context_selector',false);
+ END IF;
+ org:=public.h15_actor_organization();
+ IF org IS NULL THEN RETURN jsonb_build_object('available_contexts',contexts,'default_context',NULL,'must_select_context',false,'has_b2b_access',false,'has_technical_access',false,'is_admin',false,'preferred_context',NULL,'skip_context_selector',false); END IF;
+ SELECT EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=u AND r.role IN ('administrador','gestor')),
+ EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=u AND r.role IN ('tecnico_agronomo','consultor_tecnico','aplicador')) INTO management,tech;
+ partner:=platform_private.b2b_commercial_context() IS NOT NULL;
+ IF management THEN contexts:=array_append(contexts,'admin'); END IF;
+ IF partner THEN contexts:=array_append(contexts,'b2b'); END IF;
+ IF tech THEN contexts:=array_append(contexts,'technical'); END IF;
+ SELECT preferred_context,last_context,skip_context_selector INTO pref,last_ctx,skip FROM public.user_access_preferences WHERE user_id=u;
+ IF pref IS NOT NULL AND pref=ANY(contexts) THEN def:=pref;
+ ELSIF last_ctx IS NOT NULL AND last_ctx=ANY(contexts) THEN def:=last_ctx;
+ ELSIF cardinality(contexts)=1 THEN def:=contexts[1]; END IF;
+ IF pref IS NULL OR NOT(pref=ANY(contexts)) THEN pref:=NULL; skip:=false; END IF;
+ RETURN jsonb_build_object('available_contexts',contexts,'default_context',def,'must_select_context',cardinality(contexts)>1 AND NOT COALESCE(skip,false),
+ 'has_b2b_access',management OR partner,'has_technical_access',management OR tech,'is_admin',management,
+ 'preferred_context',pref,'skip_context_selector',COALESCE(skip,false));
+END $function$
+ md5:4e3a27946c31ef4645eb5b7c7937c236 owner:postgres proname:get_my_available_portal_contexts schema:public] map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} args: definition:CREATE OR REPLACE FUNCTION public.get_my_commercial_partner_context()
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+ SELECT platform_private.b2b_commercial_context();
+$function$
+ md5:a40e2efac2d503a1840896ac8b458ce9 owner:postgres proname:get_my_commercial_partner_context schema:public] map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} args: definition:CREATE OR REPLACE FUNCTION public.get_my_commercial_partner_projection()
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$
+ SELECT platform_private.b2b_commercial_partner_projection();
+$function$
+ md5:730a17482e07d1bc350edfaea907cd1f owner:postgres proname:get_my_commercial_partner_projection schema:public] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} args:_user_id uuid, _cliente_id uuid, _levels text[] definition:CREATE OR REPLACE FUNCTION public.has_active_user_cliente_access(_user_id uuid, _cliente_id uuid, _levels text[] DEFAULT ARRAY['read'::text, 'execute'::text, 'manage'::text])
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF _user_id IS NULL OR _cliente_id IS NULL THEN
+    RETURN false;
+  END IF;
+  IF NOT public.fn_authz_uid_scope_ok(_user_id) THEN
+    RETURN false;
+  END IF;
+  IF public.has_role(_user_id, 'administrador'::public.app_role) THEN
+    RETURN true;
+  END IF;
+  RETURN EXISTS (
+    SELECT 1
+      FROM public.user_clientes uc
+     WHERE uc.user_id = _user_id
+       AND uc.cliente_id = _cliente_id
+       AND uc.is_active = true
+       AND uc.revoked_at IS NULL
+       AND (uc.valid_from IS NULL OR uc.valid_from <= now())
+       AND (uc.valid_until IS NULL OR uc.valid_until >= now())
+       AND uc.access_level::text = ANY(_levels)
+  );
+END
+$function$
+ md5:e099f51d128620e5a68cc3e9001dd976 owner:postgres proname:has_active_user_cliente_access schema:public] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} args:p_user_id uuid, p_partner_id uuid definition:CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.partner_users pu
+    JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+    WHERE pu.user_id = p_user_id
+      AND pu.partner_id = p_partner_id
+      AND pu.revoked_at IS NULL
+      AND (SELECT count(*)
+             FROM public.partner_users pu2
+            WHERE pu2.user_id = p_user_id
+              AND pu2.revoked_at IS NULL) = 1
+      AND pa.ativo = true
+      AND pa.deleted_at IS NULL
+      AND pa.commercial_owner_organization_id IS NOT NULL
+      AND pu.tenant_id = pa.commercial_owner_organization_id
+      AND (SELECT count(*)
+             FROM public.user_roles ur
+            WHERE ur.user_id = p_user_id) = 1
+      AND (
+        (pu.papel = 'gestor'
+          AND public.has_role(p_user_id, 'parceiro_b2b'::app_role)
+          AND NOT public.has_role(p_user_id, 'parceiro_b2b_tecnico'::app_role))
+        OR
+        (pu.papel = 'tecnico'
+          AND public.has_role(p_user_id, 'parceiro_b2b_tecnico'::app_role)
+          AND NOT public.has_role(p_user_id, 'parceiro_b2b'::app_role))
+      )
+  );
+$function$
+ md5:93520101987e599280460d3dadcf3a9f owner:postgres proname:is_valid_b2b_partner_user schema:public] map[acl:{postgres=X/postgres,service_role=X/postgres} args:p_partner_id uuid, p_user_id uuid, p_papel text definition:CREATE OR REPLACE FUNCTION public.link_partner_user(p_partner_id uuid, p_user_id uuid, p_papel text DEFAULT 'gestor'::text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ -- No partner tenant is inferred from actor, created_by, email or legacy role.
+ -- The existing provisioning/edit contracts reject linked roles; there is no
+ -- reviewed integrated partner ownership + first-access contract to delegate to.
+ RAISE EXCEPTION 'CADASTRO1_PARTNER_CONTRACT_UNAVAILABLE' USING ERRCODE='42501';
+END;
+$function$
+ md5:a1c502f07321b9e5f599c90f17e872c0 owner:postgres proname:link_partner_user schema:public] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} args:p_context text, p_remember boolean definition:CREATE OR REPLACE FUNCTION public.set_my_context_preference(p_context text, p_remember boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_previous text;
+  v_action text;
+  v_available jsonb;
+BEGIN
+  IF v_uid IS NULL OR NOT platform_private.platform_actor_access_ready(v_uid) OR public.h15_actor_organization() IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
+  IF p_context IS NULL OR p_context NOT IN ('b2b','technical','admin') THEN
+    RAISE EXCEPTION 'invalid context %', p_context;
+  END IF;
+
+  v_available := public.get_my_available_portal_contexts();
+
+  IF NOT (v_available->'available_contexts' ? p_context) THEN
+    -- Grava auditoria e retorna erro em JSON (sem RAISE).
+    -- Sem exception, sem rollback: o INSERT persiste.
+    INSERT INTO public.user_context_access_logs (
+      user_id, context_code, action, previous_context, metadata
+    ) VALUES (
+      v_uid, p_context, 'access_denied', NULL,
+      jsonb_build_object('reason','context_not_available')
+    );
+
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error_code', 'context_not_available',
+      'context', p_context
+    );
+  END IF;
+
+  SELECT last_context INTO v_previous
+  FROM public.user_access_preferences
+  WHERE user_id = v_uid;
+
+  -- Upsert com semântica correta para p_remember=false (limpar preferência)
+  INSERT INTO public.user_access_preferences (
+    user_id, last_context, preferred_context, skip_context_selector
+  ) VALUES (
+    v_uid,
+    p_context,
+    CASE WHEN p_remember THEN p_context ELSE NULL END,
+    COALESCE(p_remember, false)
+  )
+  ON CONFLICT (user_id) DO UPDATE
+    SET last_context = EXCLUDED.last_context,
+        preferred_context = CASE
+          WHEN p_remember THEN EXCLUDED.last_context
+          ELSE NULL
+        END,
+        skip_context_selector = COALESCE(p_remember, false),
+        updated_at = now();
+
+  v_action := CASE
+    WHEN v_previous IS NULL THEN 'context_selected'
+    WHEN v_previous = p_context THEN 'context_selected'
+    ELSE 'context_switched'
+  END;
+
+  INSERT INTO public.user_context_access_logs (
+    user_id, context_code, action, previous_context, metadata
+  ) VALUES (
+    v_uid, p_context, v_action, v_previous,
+    jsonb_build_object('remember', COALESCE(p_remember, false))
+  );
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'context', p_context,
+    'remembered', COALESCE(p_remember, false)
+  );
+END;
+$function$
+ md5:9a1ff2b6bb65114f55d90082d6559f42 owner:postgres proname:set_my_context_preference schema:public] map[acl:{postgres=X/postgres,service_role=X/postgres} args:p_link_id uuid, p_papel text definition:CREATE OR REPLACE FUNCTION public.set_partner_user_papel(p_link_id uuid, p_papel text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_user_id uuid;
+  v_role public.app_role;
+BEGIN
+  IF NOT (public.has_role(auth.uid(), 'administrador') OR public.has_role(auth.uid(), 'gestor_comercial')) THEN
+    RAISE EXCEPTION 'Permissão negada';
+  END IF;
+  IF p_papel NOT IN ('gestor','tecnico') THEN
+    RAISE EXCEPTION 'Papel inválido: %', p_papel;
+  END IF;
+
+  UPDATE public.partner_users SET papel = p_papel WHERE id = p_link_id
+    RETURNING user_id INTO v_user_id;
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Vínculo não encontrado';
+  END IF;
+
+  v_role := CASE WHEN p_papel = 'tecnico' THEN 'parceiro_b2b_tecnico'::public.app_role
+                 ELSE 'parceiro_b2b'::public.app_role END;
+
+  DELETE FROM public.user_roles
+   WHERE user_id = v_user_id
+     AND role IN ('parceiro_b2b'::public.app_role, 'parceiro_b2b_tecnico'::public.app_role);
+
+  INSERT INTO public.user_roles(user_id, role)
+  VALUES (v_user_id, v_role)
+  ON CONFLICT (user_id, role) DO NOTHING;
+END;
+$function$
+ md5:0a1733a9d21951dd272f41c993fa9a3a owner:postgres proname:set_partner_user_papel schema:public]]
