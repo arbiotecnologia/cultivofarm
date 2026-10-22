@@ -67,6 +67,12 @@ it("existing B2B guard retains ONLY filters across ancestor boundary pause and e
   expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "true");
   state.epoch++; view.update(); expect(search()).toHaveValue("guard preference");
 });
+it("ancestor guard clears A preferences when tenant changes during pause, including A→B→A", () => {
+  const view = mount(true); selectChemical(); fireEvent.change(search(), { target: { value: "A only" } });
+  state.ready = false; view.update(); state.tenant = "B"; view.update(); state.tenant = "T"; view.update();
+  state.ready = true; state.epoch++; view.update(); expect(search()).toHaveValue("");
+  expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "false");
+});
 it.each(["actor", "tenant", "partner", "role", "missing-link"])("isolates and clears preferences across %s including return", kind => {
   const view = mount(); selectChemical(); fireEvent.change(search(), { target: { value: "private preference" } });
   state.ready = false; view.update();

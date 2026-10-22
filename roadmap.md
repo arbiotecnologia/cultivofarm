@@ -1,13 +1,14 @@
 # F2-B — auditoria e preparação revisável
 
 ## 22/10 01:46 — filtros durante pausa e coordenação dos candidatos
-- [ ] Corrigir reset reproduzido por desmontagem OwnerCatalog/Grid durante !partnerReady e alteração do escopo de renovação; preservar apenas filtros por ator/tenant/parceiro/portal, nunca dados/autoridade/lease.
-- [ ] Regressões pausa/retomada/renovação, mudança de ator/tenant/contexto e rollback frontend; sem SQL hosted, reload ou publicação.
-- [ ] Coordenar capacidade/menu/entitlements financeiros e readers/provisionamento/seletor C2.1 em pacotes inativos separados, sem abrir runtime.
+- [x] Corrigir reset por desmontagem layout/grid e boundary ancestral: memória volátil de filtros acima da boundary, sem manter dados/autoridade/lease. docs/catalog-filter-pause-20261022-review.md.
+- [x] Regressões pausa/retomada/renovação, mudança ator/tenant/contexto/A→B→A e rollback frontend; sem SQL hosted/reload/publicação. Homologação real após publicação pelo auditor permanece aberta.
+- [x] Coordenar capacidade/menu/entitlements financeiros em SQL/patch frontend INATIVOS; adapters de readers/provisionamento/seletor C2.1 rejeitam contrato singular atual. Sem ativação runtime dessas candidatas.
+- [ ] Multipapel integral: adaptar folha/readers/claim/finish/compensação/contextos/preferência/monitor junto dos writers e testar triggers completos/locks/JWT; adapters não certificam nem habilitam essa cadeia.
 
 ## 22/10 01:33 — C2-CAT publicado, dashboard e financeiro próprio
 - [x] Auditor confirmou HEAD318957a2e5f9117a49a365728af421687b22caf1/deploymentafa325c5-7fb8-4461-9d2d-11d47b01f1f4 e UI atualizada;30/30+tsc. UI real teste4 catálogo35itens(11produtos24micros), filtros químicos/adubos funcionam porém vazios: conteúdo não homologado positivo.
-- [ ] Investigar reset/desanexação dos filtros após interação, possível remount monitor, sem polling/reload/alterar lease; não atribuir causa sem reprodução.
+- [x] Reset reproduzido e corrigido localmente em01:46 por desmontagem/keys; publicação e UI teste4 reais da correção ainda pendentes, sem alterar monitor.
 - [x] Corrigir TS2345 por fronteira runtime explícita dos campos obrigatórios; dashboard promovido localmente após revisão, 29/29 Vitest e types candidato PASS, sem publicar.
 - [x] Preparar financeiro próprio INATIVO em scripts/partner-own-finance-20261022: inventário LIVE read-only, overload guardada, página/hook, preflight/postflight/rollback deny; 30/30 PostgreSQL sintético e 21/21 Vitest/types PASS. Obrigações perante fornecedor, não receitas/saldos internos; documentos fechados.
 - [ ] Revisão independente do financeiro: entitlement e capability coordenada no menu/projeção ainda bloqueiam promoção; REST/JWT/RLS/UI real não homologados. Dashboard local aguarda publicação e UI real pelo auditor.
