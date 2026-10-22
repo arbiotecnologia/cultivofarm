@@ -5,6 +5,7 @@ const m = vi.hoisted(() => ({ role: "administrador", write: false, regulatory: v
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: m.role }) }));
 vi.mock("@/hooks/useProductFiscalAccess", () => ({ useProductFiscalAccess: () => ({ ready: true, canWrite: m.write, scope: "A/T", capture: () => () => true }) }));
 vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => ({ ready: true, scope: "A/T", capture: () => () => true }) }));
+vi.mock("@/hooks/useScopedPortalQuery", () => ({ useScopedPortalQuery: () => ({ data: undefined, ready: false, isError: false }) }));
 vi.mock("@/components/fiscal/IbsCbsItemCard", () => ({ IbsCbsItemCard: () => null }));
 vi.mock("@/components/fiscal/RegulatorioMicrorganismosSecao", () => ({ RegulatorioMicrorganismosSecao: () => { m.regulatory(); return <div data-testid="regulatorio-micro" />; } }));
 const q = (data: unknown) => ({ data, isLoading: false, isFetching: false, isError: false, error: null, refetch: vi.fn() });
