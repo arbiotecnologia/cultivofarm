@@ -1,6 +1,6 @@
 """Disposable PostgreSQL: actual candidate bodies, reduced schema, synthetic Auth; never hosted JWT proof."""
 from pathlib import Path
-import os, subprocess, tempfile, shutil, concurrent.futures, time
+import os, subprocess, tempfile, shutil, concurrent.futures
 HERE=Path(__file__).resolve().parent
 root=Path(tempfile.mkdtemp(prefix='c2-pg-',dir='/tmp'));root.chmod(0o777)
 prefix=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []
@@ -41,10 +41,10 @@ try:
  CREATE TABLE fazendas(id uuid,cliente_id uuid,organization_id uuid,ativo boolean);
  CREATE TABLE cf_user_guards_v1.state(singleton boolean,revision bigint);INSERT INTO cf_user_guards_v1.state VALUES(true,1);
  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT '{ADMIN}'::uuid $$;
- CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS(SELECT 1 FROM user_roles WHERE user_id=$1 AND role=$2) $$;
+ CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2) $$;
  CREATE FUNCTION public.is_platform_superadmin(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT public.has_role($1,'superadmin') $$;
- CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS(SELECT 1 FROM profiles WHERE user_id=$1 AND ativo AND NOT senha_provisoria) $$;
- CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql AS $$ SELECT organization_id FROM profiles WHERE user_id=auth.uid() AND ativo $$;
+ CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=$1 AND ativo AND NOT senha_provisoria) $$;
+ CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql AS $$ SELECT organization_id FROM public.profiles WHERE user_id=auth.uid() AND ativo $$;
  CREATE FUNCTION platform_private.b2b_actor_scope(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT false$$;
  CREATE FUNCTION public.is_valid_b2b_partner_user(uuid,uuid) RETURNS boolean LANGUAGE sql AS $$SELECT false$$;
  CREATE FUNCTION cf_user_guards_v1.acquire_gate() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RETURN NULL;END$$;
@@ -62,13 +62,12 @@ try:
  sql(f"INSERT INTO user_clientes(user_id,cliente_id,is_active,valid_from) VALUES('{USER}','{uid(20)}',true,now()-interval '1 day');INSERT INTO clientes VALUES('{uid(20)}','{A}','ativo');")
  deny('client alone is not farm proof',op('assign',roles,11),'c2_producer_link_required')
  sql(f"INSERT INTO fazendas VALUES('{uid(21)}','{uid(20)}','{A}',true);")
- check('three cumulative capabilities',op('assign',roles,12)+f"SELECT count(*)=3 FROM user_roles WHERE user_id='{USER}';",want=sql(op('assign',roles,12))+'\nt') if False else None
  first_expected=version();first=sql(op('assign',roles,12,first_expected));checks.append('assign three cumulative capabilities')
  check('three roles stored once',f"SELECT count(*)=3 FROM user_roles WHERE user_id='{USER}';")
  check('exact replay receipt',op('assign',roles,12,first_expected),first)
  deny('key with modified payload conflicts',op('revoke_roles',roles[:1],12,first_expected),'c2_replay_conflict')
  deny('CAS stale no effects',op('revoke_roles',roles[:1],13,'0'*32),'c2_version_conflict')
- deny('cross tenant partner',op('assign',roles,14,partner=Q),'c2_forbidden')
+ deny('cross tenant partner',op('assign',roles,14,'0'*32,partner=Q),'c2_forbidden')
  deny('internal manager not granted',op('assign',['gestor'],15),'c2_invalid_input')
  # Negative scope/profile/owner and validity evidence for producer assignments.
  sql(f"UPDATE profiles SET organization_id='{B}' WHERE user_id='{USER}';")
@@ -98,7 +97,6 @@ try:
  # Two transactions race same CAS; existing gate serializes, second cannot overwrite.
  expected=version()
  with concurrent.futures.ThreadPoolExecutor(2) as pool:
-  futures=[pool.submit(sql,op('revoke_roles',['cliente_produtor'],30+i,expected),False if False else True) for i in []]
   def race(i):
    r=subprocess.run(base,input=op('revoke_roles',['cliente_produtor'],30+i,expected),text=True,capture_output=True)
    return r.returncode,r.stderr
