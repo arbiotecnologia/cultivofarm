@@ -1,0 +1,321 @@
+[map[functions:[map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} definition:CREATE OR REPLACE FUNCTION public.h15_actor_organization()
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$ SELECT platform_private.h15_actor_organization(); $function$
+ md5:55edafec08bcc84a00f1526c14334a2c owner:postgres signature:h15_actor_organization()] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} definition:CREATE OR REPLACE FUNCTION public.is_valid_b2b_partner_user(p_user_id uuid, p_partner_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.partner_users pu
+    JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+    WHERE pu.user_id = p_user_id
+      AND pu.partner_id = p_partner_id
+      AND pu.revoked_at IS NULL
+      AND (SELECT count(*)
+             FROM public.partner_users pu2
+            WHERE pu2.user_id = p_user_id
+              AND pu2.revoked_at IS NULL) = 1
+      AND pa.ativo = true
+      AND pa.deleted_at IS NULL
+      AND pa.commercial_owner_organization_id IS NOT NULL
+      AND pu.tenant_id = pa.commercial_owner_organization_id
+      AND (SELECT count(*)
+             FROM public.user_roles ur
+            WHERE ur.user_id = p_user_id) = 1
+      AND (
+        (pu.papel = 'gestor'
+          AND public.has_role(p_user_id, 'parceiro_b2b'::app_role)
+          AND NOT public.has_role(p_user_id, 'parceiro_b2b_tecnico'::app_role))
+        OR
+        (pu.papel = 'tecnico'
+          AND public.has_role(p_user_id, 'parceiro_b2b_tecnico'::app_role)
+          AND NOT public.has_role(p_user_id, 'parceiro_b2b'::app_role))
+      )
+  );
+$function$
+ md5:93520101987e599280460d3dadcf3a9f owner:postgres signature:is_valid_b2b_partner_user(uuid,uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres} definition:CREATE OR REPLACE FUNCTION platform_private.b2b_actor_scope(_uid uuid)
+ RETURNS TABLE(profile_ok boolean, org_partner uuid, user_partner uuid, user_partner_count integer, partner_valid boolean, has_catalog boolean)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  WITH pr AS (
+    SELECT o.partner_account_id
+      FROM public.profiles p JOIN public.organizations o ON o.id = p.organization_id
+     WHERE p.user_id = _uid AND p.ativo = true AND o.ativo = true AND o.status = 'ativa'
+     LIMIT 1
+  ), pu AS (
+    SELECT count(*)::int c, min(partner_id::text)::uuid pid
+      FROM public.partner_users
+     WHERE user_id = _uid AND revoked_at IS NULL
+  ), valid AS (
+    -- Caminho fornecedor: vínculo só resolve o parceiro com a cadeia completa
+    -- perfil→organização→tenant→proprietário comprovada no servidor.
+    SELECT CASE WHEN (SELECT c FROM pu) = 1
+                 AND public.is_valid_b2b_partner_user(_uid, (SELECT pid FROM pu))
+                 AND EXISTS (
+                   SELECT 1
+                     FROM public.partner_users puv
+                     JOIN public.partner_accounts pa ON pa.id = puv.partner_id
+                     JOIN public.organizations owner ON owner.id = pa.commercial_owner_organization_id
+                     JOIN public.profiles pf ON pf.user_id = puv.user_id
+                     JOIN public.organizations porg ON porg.id = pf.organization_id
+                    WHERE puv.user_id = _uid
+                      AND puv.partner_id = (SELECT pid FROM pu)
+                      AND puv.revoked_at IS NULL
+                      AND (puv.valid_from IS NULL OR puv.valid_from <= now())
+                      AND pf.ativo = true
+                      AND porg.ativo = true AND porg.status = 'ativa'
+                      AND pf.organization_id = puv.tenant_id
+                      AND puv.tenant_id = pa.commercial_owner_organization_id
+                      AND pa.ativo = true AND pa.deleted_at IS NULL
+                      AND owner.ativo = true AND owner.status = 'ativa'
+                 )
+              THEN (SELECT pid FROM pu) END AS pid
+  )
+  SELECT EXISTS (SELECT 1 FROM pr),
+         -- Organização com parceiro explícito prevalece; sem ela, o vínculo autorizado
+         -- validado resolve o parceiro. Se ambos existirem e divergirem, org_partner
+         -- permanece o da organização e os consumidores negam por mismatch.
+         COALESCE((SELECT partner_account_id FROM pr), (SELECT pid FROM valid)),
+         (SELECT pid FROM valid),
+         (SELECT c FROM pu),
+         CASE WHEN (SELECT partner_account_id FROM pr) IS NOT NULL
+              THEN EXISTS (SELECT 1 FROM pr JOIN public.partner_accounts pa ON pa.id = pr.partner_account_id
+                            WHERE pa.ativo = true AND pa.deleted_at IS NULL)
+              ELSE (SELECT pid FROM valid) IS NOT NULL END,
+         EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'catalogo_precos');
+$function$
+ md5:c3f2997746f24bc2efd15db5c0ccc862 owner:postgres signature:platform_private.b2b_actor_scope(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} definition:CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_context()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE u uuid:=auth.uid(); org uuid; role_name text; link record; owner uuid; legacy uuid; mode text;
+BEGIN
+ IF u IS NULL OR NOT platform_private.platform_actor_access_ready(u) THEN RETURN NULL; END IF;
+ org:=public.h15_actor_organization();
+ IF org IS NULL OR (SELECT count(*) FROM public.user_roles r WHERE r.user_id=u)<>1 THEN RETURN NULL; END IF;
+ SELECT r.role::text INTO role_name FROM public.user_roles r WHERE r.user_id=u;
+ IF role_name NOT IN ('parceiro_b2b','parceiro_b2b_tecnico') THEN RETURN NULL; END IF;
+ IF (SELECT count(*) FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL)<>1 THEN RETURN NULL; END IF;
+ SELECT pu.partner_id,pu.papel,pu.tenant_id INTO link FROM public.partner_users pu WHERE pu.user_id=u AND pu.revoked_at IS NULL;
+ IF link.papel IS DISTINCT FROM (CASE WHEN role_name='parceiro_b2b_tecnico' THEN 'tecnico' ELSE 'gestor' END) THEN RETURN NULL; END IF;
+ SELECT pa.commercial_owner_organization_id INTO owner FROM public.partner_accounts pa
+ WHERE pa.id=link.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL;
+ IF owner IS NULL THEN RETURN NULL; END IF;
+ IF link.tenant_id IS NULL OR link.tenant_id IS DISTINCT FROM owner THEN RETURN NULL; END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='catalogo_precos') THEN RETURN NULL; END IF;
+ SELECT o.partner_account_id INTO legacy FROM public.organizations o WHERE o.id=org AND o.ativo IS TRUE AND o.status='ativa';
+ IF NOT FOUND THEN RETURN NULL; END IF;
+ IF owner=org THEN
+   IF legacy IS NOT NULL AND legacy IS DISTINCT FROM link.partner_id THEN RETURN NULL; END IF;
+   mode:='commercial_owner';
+ ELSIF legacy=link.partner_id AND COALESCE(platform_private.b2b_phase1_partner_visible(link.partner_id,true),false) THEN
+   mode:='legacy_partner_tenant';
+ ELSE RETURN NULL;
+ END IF;
+ RETURN jsonb_build_object('partner_id',link.partner_id,'organization_id',org,
+   'commercial_owner_organization_id',owner,'role',role_name,'papel',link.papel,'mode',mode);
+END $function$
+ md5:a31d198c9a9fc9a5e7c397ab36fe0fa4 owner:postgres signature:platform_private.b2b_commercial_context()] map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} definition:CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_partner_projection()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE c jsonb; result jsonb; permitted boolean:=false; catalog boolean:=false; sheets boolean:=false; u uuid:=auth.uid();
+BEGIN
+ c:=platform_private.b2b_commercial_context();
+ IF c IS NULL THEN RETURN NULL; END IF;
+ SELECT jsonb_build_object('id',p.id,'codigo',p.codigo,'razao_social',p.razao_social,
+   'nome_fantasia',p.nome_fantasia,'ativo',p.ativo,'papel',c->>'papel','mode',c->>'mode')
+ INTO result FROM public.partner_accounts p
+ WHERE p.id=(c->>'partner_id')::uuid AND p.ativo IS TRUE AND p.deleted_at IS NULL
+ AND p.commercial_owner_organization_id=(c->>'commercial_owner_organization_id')::uuid;
+ IF result IS NULL THEN RETURN NULL; END IF;
+ -- A commercial client alone is NOT a partner capability. Reuse current B2B
+ -- chain, including singleton role/link validator; add freshness/owner proof.
+ permitted:=COALESCE(platform_private.b2b_phase1_partner_visible((result->>'id')::uuid,true),false)
+  AND EXISTS(SELECT 1 FROM public.partner_users pu
+    JOIN public.partner_accounts pa ON pa.id=pu.partner_id
+    JOIN public.profiles p ON p.user_id=pu.user_id
+    JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id
+    WHERE pu.user_id=u AND pu.partner_id=(result->>'id')::uuid
+      AND pu.revoked_at IS NULL AND pu.valid_from<=now()
+      AND pa.ativo AND pa.deleted_at IS NULL AND o.ativo AND o.status='ativa'
+      AND p.ativo AND p.organization_id=pu.tenant_id AND pu.tenant_id=o.id
+      AND public.is_valid_b2b_partner_user(u,pa.id));
+ IF permitted THEN
+  catalog:=public.has_role(u,'parceiro_b2b') AND EXISTS(
+    SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='catalogo_precos');
+  sheets:=EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='fichas_tecnicas');
+ END IF;
+ RETURN result||jsonb_build_object('capabilities',jsonb_build_object('contract','C2_CAT_V1',
+   'catalog_read',catalog,'sheets_read',sheets));
+END $function$
+ md5:06a858c55328b45f205ccb5ebb02607d owner:postgres signature:platform_private.b2b_commercial_partner_projection()] map[acl:{postgres=X/postgres,service_role=X/postgres} definition:CREATE OR REPLACE FUNCTION platform_private.entitlements_for_user(_uid uuid)
+ RETURNS TABLE(module_key text, feature_key text, limit_value numeric, config jsonb)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  WITH actor AS (
+    SELECT p.organization_id
+    FROM public.profiles p
+    JOIN public.organizations org
+      ON org.id = p.organization_id
+     AND org.ativo IS TRUE
+    WHERE p.user_id = _uid
+      AND p.ativo IS TRUE
+      AND p.organization_id IS NOT NULL
+    ORDER BY p.created_at, p.organization_id
+    LIMIT 1
+  ), current_subscription AS (
+    SELECT s.organization_id, s.plan_version_id
+    FROM public.organization_subscriptions s
+    JOIN actor a ON a.organization_id = s.organization_id
+    JOIN public.saas_plan_versions v
+      ON v.id = s.plan_version_id
+     AND v.status = 'PUBLISHED'
+     AND v.effective_from <= now()
+     AND (v.effective_to IS NULL OR v.effective_to > now())
+    WHERE s.plan_version_id IS NOT NULL
+      AND (
+        s.status = 'ACTIVE'
+        OR (s.status = 'TRIAL' AND s.trial_ends_at IS NOT NULL AND s.trial_ends_at > now())
+      )
+      AND (s.cancel_at IS NULL OR s.cancel_at > now())
+    ORDER BY s.started_at DESC, s.id DESC
+    LIMIT 1
+  ), candidates AS (
+    SELECT f.id AS feature_id, f.module_id, f.key AS feature_key,
+           vf.enabled AS base_enabled, vf.limit_value AS base_limit, vf.config AS base_config
+    FROM current_subscription s
+    JOIN public.saas_plan_version_features vf ON vf.plan_version_id = s.plan_version_id
+    JOIN public.saas_features f ON f.id = vf.feature_id AND f.active IS TRUE
+    UNION
+    SELECT f.id, f.module_id, f.key, false, NULL::numeric, NULL::jsonb
+    FROM current_subscription s
+    JOIN public.organization_feature_overrides o ON o.organization_id = s.organization_id
+    JOIN public.saas_features f ON f.id = o.feature_id AND f.active IS TRUE
+    WHERE o.ended_at IS NULL
+      AND o.starts_at <= now()
+      AND (o.ends_at IS NULL OR o.ends_at > now())
+  ), effective AS (
+    SELECT DISTINCT ON (c.feature_id)
+      c.feature_id, c.module_id, c.feature_key,
+      CASE
+        WHEN o.mode = 'REVOKE' THEN false
+        WHEN o.mode = 'GRANT' THEN true
+        ELSE c.base_enabled
+      END AS enabled,
+      CASE
+        WHEN o.mode = 'GRANT' THEN o.limit_value
+        WHEN o.mode = 'REVOKE' THEN NULL::numeric
+        ELSE c.base_limit
+      END AS effective_limit,
+      c.base_config AS effective_config
+    FROM candidates c
+    CROSS JOIN current_subscription s
+    LEFT JOIN LATERAL (
+      SELECT x.mode, x.limit_value
+      FROM public.organization_feature_overrides x
+      WHERE x.organization_id = s.organization_id
+        AND x.feature_id = c.feature_id
+        AND x.ended_at IS NULL
+        AND x.starts_at <= now()
+        AND (x.ends_at IS NULL OR x.ends_at > now())
+      ORDER BY x.created_at DESC, x.id DESC
+      LIMIT 1
+    ) o ON true
+    ORDER BY c.feature_id
+  )
+  SELECT m.key::text, e.feature_key::text, e.effective_limit::numeric, e.effective_config
+  FROM effective e
+  JOIN public.saas_modules m ON m.id = e.module_id AND m.active IS TRUE
+  WHERE e.enabled IS TRUE
+  ORDER BY m.key, e.feature_key
+$function$
+ md5:7f4ec7facaebbdf35444dd490fdebe56 owner:postgres signature:platform_private.entitlements_for_user(uuid)] map[acl:{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres} definition:CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);
+$function$
+ md5:64e10608403238a41a9baf92857ca881 owner:postgres signature:platform_private.h15_actor_organization()] map[acl:{postgres=X/postgres,service_role=X/postgres} definition:CREATE OR REPLACE FUNCTION public.rpc_portal_partner_financial()
+ RETURNS TABLE(partner_order_id uuid, numero text, receivable_id uuid, total numeric, vencimento date, financial_status text, payment_method text, ar_status text, installments jsonb)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_uid uuid := auth.uid();
+BEGIN
+  RETURN QUERY
+  SELECT
+    po.id, po.numero, ar.id, po.total, po.payment_due_date, po.financial_status, po.payment_method, ar.status,
+    COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'numero', i.installment_number, 'vencimento', i.due_date,
+        'valor', i.original_amount, 'recebido', i.received_amount, 'status', i.status
+      ) ORDER BY i.installment_number)
+      FROM public.accounts_receivable_installments i WHERE i.receivable_id = ar.id
+    ), '[]'::jsonb)
+  FROM public.partner_orders po
+  JOIN public.partner_order_financial_links l ON l.partner_order_id = po.id
+  JOIN public.accounts_receivable ar ON ar.id = l.receivable_id
+  WHERE po.partner_id IN (SELECT partner_id FROM public.partner_users WHERE user_id = v_uid)
+  ORDER BY po.created_at DESC;
+END $function$
+ md5:832b0b107151ffd2c2f2be385964c22a owner:postgres signature:rpc_portal_partner_financial()] map[acl:{postgres=X/postgres,service_role=X/postgres} definition:CREATE OR REPLACE FUNCTION public.rpc_portal_partner_financial(p_partner_id uuid DEFAULT NULL::uuid)
+ RETURNS TABLE(partner_order_id uuid, numero text, receivable_id uuid, total numeric, vencimento date, financial_status text, payment_method text, ar_status text, installments jsonb)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_is_staff boolean := (has_role(v_uid, 'administrador'::app_role) OR has_role(v_uid, 'gestor_comercial'::app_role));
+  v_filter_partner uuid;
+BEGIN
+  IF p_partner_id IS NOT NULL THEN
+    IF NOT v_is_staff THEN
+      -- Parceiro só pode ver o próprio; ignora tentativa de simular
+      v_filter_partner := NULL;
+    ELSE
+      v_filter_partner := p_partner_id;
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    po.id, po.numero, ar.id, po.total, po.payment_due_date, po.financial_status, po.payment_method, ar.status,
+    COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'numero', i.installment_number, 'vencimento', i.due_date,
+        'valor', i.original_amount, 'recebido', i.received_amount, 'status', i.status
+      ) ORDER BY i.installment_number)
+      FROM public.accounts_receivable_installments i WHERE i.receivable_id = ar.id
+    ), '[]'::jsonb)
+  FROM public.partner_orders po
+  JOIN public.partner_order_financial_links l ON l.partner_order_id = po.id
+  JOIN public.accounts_receivable ar ON ar.id = l.receivable_id
+  WHERE
+    (
+      v_filter_partner IS NOT NULL AND po.partner_id = v_filter_partner
+    )
+    OR (
+      v_filter_partner IS NULL AND po.partner_id IN (SELECT partner_id FROM public.partner_users WHERE user_id = v_uid)
+    )
+  ORDER BY po.created_at DESC;
+END $function$
+ md5:ecd99f80a194bb9b540a4c197e0b9afe owner:postgres signature:rpc_portal_partner_financial(uuid)]]]]

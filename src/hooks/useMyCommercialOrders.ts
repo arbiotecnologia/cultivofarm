@@ -13,6 +13,25 @@ const ordersSchema = z.object({
   }).strict()).max(100),
 }).strict();
 
+export interface OwnCommercialOrder {
+  id: string;
+  numero: string;
+  status: string;
+  created_at: string;
+}
+
+/** Explicit required output after validation, including projects without strictNullChecks. */
+export function parseOwnCommercialOrders(data: unknown, partnerId: string): OwnCommercialOrder[] {
+  const parsed = ordersSchema.safeParse(data);
+  if (!parsed.success || parsed.data.partner_id !== partnerId) throw new Error("commercial_orders_unavailable");
+  return parsed.data.orders.map(row => {
+    if (typeof row.id !== "string" || typeof row.numero !== "string" || typeof row.status !== "string" || typeof row.created_at !== "string") {
+      throw new Error("commercial_orders_unavailable");
+    }
+    return { id: row.id, numero: row.numero, status: row.status, created_at: row.created_at };
+  });
+}
+
 export function useMyCommercialOrders(partnerId: string | null) {
   const { roles } = useAuth();
   const fence = useStorageAccessScope(`commercial-orders:${partnerId ?? "closed"}`);
@@ -32,9 +51,8 @@ export function useMyCommercialOrders(partnerId: string | null) {
       const rpc = supabase.rpc as unknown as (name: string) => Promise<{ data: unknown; error: unknown }>;
       const { data, error } = await rpc.call(supabase, "get_my_commercial_orders_projection");
       check();
-      const parsed = ordersSchema.safeParse(data);
-      if (error || !parsed.success || parsed.data.partner_id !== partnerId) throw new Error("commercial_orders_unavailable");
-      return parsed.data.orders;
+      if (error) throw new Error("commercial_orders_unavailable");
+      return parseOwnCommercialOrders(data, partnerId);
     },
   });
   return { ...result, data: ready ? result.data : undefined, ready };

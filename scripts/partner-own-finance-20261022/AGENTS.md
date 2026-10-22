@@ -1,0 +1,4 @@
+- Keep all finance SQL/frontend candidates inactive until independent authorization review and real PostgREST/JWT/UI postflight; no hosted writes or publication — prevents unreviewed financial access.
+- Reuse the existing financial RPC via a versioned overload and page; preserve closed legacy ACL/OIDs, catalog capabilities, actor scope, prices and immutable history — avoids incompatible consumers and security rollback.
+- Own finance means obligations represented by supplier B2B receivables, not partner revenue/cash balance; require full partner/owner/tenant chain and exact order/link/title/installment identity — prevents foreign or internal data disclosure.
+- Documents stay closed until owner-specific binary authorization is proven; no storage paths/URLs or bearer fallback — prevents catalogue/finance reads from granting downloads.

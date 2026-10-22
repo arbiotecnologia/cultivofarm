@@ -1,2 +1,2 @@
-- Keep this dashboard candidate inactive until independent review and C2-CAT publication; reuse the existing own-order RPC/hook without widening authority — avoids granting supplier-internal channels.
+- Promote this reviewed dashboard only after C2-CAT publication and validation; reuse the existing own-order RPC/hook without widening authority and never auto-publish — avoids granting supplier-internal channels.
 - Aggregate only observed status rows, never global totals, financial balances or inferred lifecycle transitions; preserve identity/lease fences and single canonical read — avoids fabricated indicators and extra polling.

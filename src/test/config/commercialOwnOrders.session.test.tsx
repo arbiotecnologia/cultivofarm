@@ -10,7 +10,7 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: state.rpc } }));
-import { useMyCommercialOrders } from "@/hooks/useMyCommercialOrders";
+import { useMyCommercialOrders, parseOwnCommercialOrders } from "@/hooks/useMyCommercialOrders";
 const payload = (partner_id = A, extra = {}) => ({ partner_id, orders: [{ id: A, numero: "OWN", status: "solicitado", created_at: "2026-10-08T21:00:00Z", ...extra }] });
 beforeEach(() => {
   state.auth.user = { id: "U" }; state.auth.roles = ["parceiro_b2b"];
@@ -24,6 +24,14 @@ function setup() {
   return { h, clean: () => { h.unmount(); client.clear(); } };
 }
 describe("own orders — mocked transport, real identity/cache fences", () => {
+  it.each(["id", "numero", "status", "created_at"])("required validated field %s cannot be omitted", field => {
+    const data = payload(); Reflect.deleteProperty(data.orders[0], field);
+    expect(() => parseOwnCommercialOrders(data, A)).toThrow("commercial_orders_unavailable");
+  });
+  it("requires complete typed output without defaults", () => {
+    expect(parseOwnCommercialOrders(payload(), A)).toEqual(payload().orders);
+    expect(() => parseOwnCommercialOrders(payload(A, { status: null }), A)).toThrow("commercial_orders_unavailable");
+  });
   it("reads parameter-free own projection", async () => { const { h, clean } = setup(); await waitFor(() => expect(h.result.current.data?.[0].numero).toBe("OWN")); expect(state.rpc).toHaveBeenCalledExactlyOnceWith("get_my_commercial_orders_projection"); clean(); });
   it.each([payload(B), payload(A, { total: 50 }), payload(A, { commercial_notes: "PRIVATE" })])("rejects sibling or unreviewed fields", async data => {
     state.rpc.mockResolvedValue({ data, error: null }); const { h, clean } = setup(); await waitFor(() => expect(h.result.current.isError).toBe(true)); expect(h.result.current.data).toBeUndefined(); clean();

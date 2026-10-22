@@ -1,0 +1,6 @@
+-- DENY ONLY. Never restore the vulnerable legacy reader/grants.
+BEGIN;
+SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='30s';
+REVOKE EXECUTE ON FUNCTION public.rpc_portal_partner_financial(uuid,boolean,timestamptz,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION platform_private.b2b_own_obligations(uuid,timestamptz,uuid) FROM PUBLIC,anon,authenticated;
+COMMIT;
