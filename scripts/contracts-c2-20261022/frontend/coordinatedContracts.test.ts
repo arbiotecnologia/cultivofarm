@@ -1,0 +1,11 @@
+import { expect, it } from "vitest";
+import { readCoordinatedContexts, requireCoordinatedProvisioning } from "./coordinatedContracts";
+const expected = { actor: "A", tenant: "T", partner: "P" };
+const contexts = { contract: "C2_MULTIPROFILE_V1", actor_id: "A", tenant_id: "T", partner_id: "P", ready: true, available_contexts: ["b2b", "technical", "producer"], producer_links_valid: true };
+it("retains independent contexts from explicit canonical response, never invents internal management", () => expect(readCoordinatedContexts(contexts, expected)).toEqual(["b2b", "technical", "producer"]));
+it("partial revocation preserves only remaining canonical contexts", () => expect(readCoordinatedContexts({ ...contexts, available_contexts: ["technical"] }, expected)).toEqual(["technical"]));
+it.each([{ tenant_id: "B" }, { actor_id: "B" }, { partner_id: "Q" }, { ready: false }, { producer_links_valid: false }, { available_contexts: ["admin"] }])("denies unproven or previous context %j", change => expect(() => readCoordinatedContexts({ ...contexts, ...change }, expected)).toThrow());
+const roles = ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"] as const;
+const receipt = { contract: "C2_MULTIPROFILE_V1", actor_id: "A", organization_id: "T", partner_id: "P", readers_ready: true, provisioning_ready: true, external_roles: [...roles], producer_links_valid: true };
+it("matches exact cumulative receipt without singular role fallback", () => expect(requireCoordinatedProvisioning(receipt, { ...expected, roles: [...roles] })).toEqual([...roles]));
+it.each([{ external_role: "parceiro_b2b" }, { ...receipt, readers_ready: false }, { ...receipt, external_roles: ["gestor"] }, { ...receipt, organization_id: "B" }, { ...receipt, producer_links_valid: false }])("current singular/uncoordinated provisioning stays closed %j", value => expect(() => requireCoordinatedProvisioning(value, { ...expected, roles: [...roles] })).toThrow());
