@@ -9,6 +9,8 @@ Memória agora em CatalogFilterPreferencesProvider abaixo AuthProvider/acima Rou
 
 Resultado local01:59:75/75 testes runtime (30 integração monitor/provider reais,13 filtros/layout/grid,16 pedidos,11 famílias,5 guards) e30/30 C2-CAT PASS. Types runtime afetado e candidatas financeiras/C2 via tsgo PASS; build automático OK. Teste monitor falhou antes ao perder preferência na confirmação automática, depois passou distinguindo undefined/null. Teste ausência de vínculo utiliza null explícito do contrato real; continua limpando. Nenhuma sessão hosted ou publicação executada; homologação real continua ABERTA.
 
+Complemento02:00: ambas chamadas agora emitem null SOMENTE para `isSuccess && data === null`; ready=true com data undefined/pending ou erro emite undefined. Adicionados quatro casos fiéis ready=true/isLoading=true/isPending=true/dataundefined: retomada via guard e via layout, troca tenant e troca papel enquanto pendente incluindo retorno ao contexto anterior. Mock de ausência confirmado retorna null com isSuccess, não undefined. Integração TanStack/AuthProvider/monitor real preservada:63/63 (17 filtros+30 monitor+16 pedidos),30/30 C2-CAT e types via tsgo PASS; build automático OK. Auditor confirmou atualização da publicação50e3f902, NÃO homologação filtros; esta nova correção não foi publicada.
+
 Rollback frontend retira somente a nova montagem de preferências e binding correspondente, nunca SQL/lease/guards/cache fail-closed ou hook pedidos; voltará a perder filtros, não a mostrar dados protegidos. Financeiro/multipapel continuam INATIVOS e não foram alterados nesta correção.
 
 ## Causa comprovada pelo código e regressão
