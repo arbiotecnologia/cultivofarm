@@ -16,9 +16,10 @@ ORG_A, ORG_B, P, Q, CLI, FAZ, CLI_B = U(1), U(2), U(3), U(4), U(5), U(6), U(7)
 ADMIN_A, ADMIN_B, G, T, PR, GT, ALL3, XB = (U(100 + i) for i in range(8))
 def claims(u): return json.dumps({'sub': u, 'role': 'authenticated', 'iat': 4102444800})
 def as_user(u, s, expect_ok=True):
-    q = f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{claims(u)}',true) \\gset\n{s}\nCOMMIT;"
+    q = f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{claims(u)}',true);\n{s}\nCOMMIT;"
     return pg.sql(q, ok=expect_ok)
-def val(u, s): return as_user(u, s).splitlines()[-1] if as_user(u, s) else ''
+def val(u, s):
+    o = as_user(u, s); return o.splitlines()[-1] if o else ''
 def contexts(u):
     out = as_user(u, "SELECT public.get_my_available_portal_contexts()::text;")
     return json.loads(out.splitlines()[-1])
