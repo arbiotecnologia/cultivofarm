@@ -22,6 +22,38 @@ beforeEach(()=>{
  });
 });
 describe("fiscal product canonical hook fences",()=>{
+ it("effective profile key includes actor/tenant and request scope, not only product ID",async()=>{
+  const h=renderHook(()=>useProductFiscalProfile("product"),{wrapper});
+  await waitFor(()=>expect(h.result.current.data?.id).toBe("profile"));
+  const query=client.getQueryCache().getAll().find(q=>q.queryKey[2]==="profile");
+  expect(query?.queryKey.slice(0,4)).toEqual(["fiscal","product-profiles","profile","product"]);
+  expect(JSON.parse(String(query?.queryKey.at(-2)))).toEqual(["A","A",0,true,"portal-query-actor"]);
+  expect(String(query?.queryKey.at(-1))).toContain('portal:');
+ });
+ it("confirmed save invalidates only matching actor scope, never foreign cache",async()=>{
+  const actorScope=JSON.stringify(["A","A",0,true,"portal-query-actor"]);
+  const own=["fiscal","product-profiles","list",{},actorScope,"request-A"];
+  const foreign=["fiscal","product-profiles","list",{},JSON.stringify(["B","B",0,true,"portal-query-actor"]),"request-B"];
+  client.setQueryData(own,{items:[]});client.setQueryData(foreign,{items:[]});
+  const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
+  await act(async()=>{await h.result.current.mutateAsync({productId:"product",current:row,values:productFiscalFormSchema.parse({ncm:"12345678"})})});
+  expect(client.getQueryState(own)?.isInvalidated).toBe(true);
+  expect(client.getQueryState(foreign)?.isInvalidated).toBe(false);
+ });
+ it("revocation during new-profile existence check prevents insert",async()=>{
+  let resolve:(v:unknown)=>void=()=>{};state.read.mockImplementation(()=>new Promise(r=>{resolve=r}));
+  const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});let pending:Promise<unknown>=Promise.resolve();
+  act(()=>{pending=h.result.current.mutateAsync({productId:"product",current:null,values:productFiscalFormSchema.parse({})}).catch(e=>e)});
+  await waitFor(()=>expect(state.read).toHaveBeenCalled());state.ready=false;h.rerender();
+  let result:unknown;await act(async()=>{resolve({data:null,error:null});result=await pending});
+  expect(result).toBeInstanceOf(Error);expect(state.write).not.toHaveBeenCalled();
+ });
+ it("RLS rejection never invalidates or reports a confirmed save",async()=>{
+  state.write.mockResolvedValue({data:null,error:{code:"42501"}});
+  const invalidate=vi.spyOn(client,"invalidateQueries");const h=renderHook(()=>useSaveProductFiscalProfile(),{wrapper});
+  await act(async()=>{await expect(h.result.current.mutateAsync({productId:"product",current:row,values:productFiscalFormSchema.parse({ncm:"12345678"})})).rejects.toThrow("permission_denied")});
+  expect(invalidate).not.toHaveBeenCalled();
+ });
  it("rejects cached profile after denied refetch",async()=>{
   const h=renderHook(()=>useProductFiscalProfile("product"),{wrapper});
   await waitFor(()=>expect(h.result.current.data?.id).toBe("profile"));
