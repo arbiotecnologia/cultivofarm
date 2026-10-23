@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 21:06 — promoção frontend P1 autorizada, sem publicação
+- [x] Promover somente hook RPC financeiro para src; selector/mutation owner ativo OU ownorg legado interno sob RLS, RPC/CAS autoritativos, sem writes diretos ou liberar writer C2.
+- [x] 48/48 testes owner/ownorg/B/externos/CAS/fences/diálogo/publicação; tsgo app/node EXIT0, Vite production cópia integrada PASS36,15s (aviso chunks), preview OK. NÃO tsc/JWT/UI real; diff/SHA frontend-promotion-20261023.
+- [x] Registrar relato ACL fiscal c2_fiscal_resolver_internal_only aplicada pelo proprietário em applied (corpo intacto, postgres/service_role), sem consulta nova nem cópia migration fabricada; nunca reaplicar.
+- [ ] Aplicação SQL P1, POST/hashes e JWT/UI A/B aguardam proprietário/revisão; writer C2 continua fechado, método pix/plan published teste4 e pendências antigas preservados.
+
 ## 23/10 20:10 — P1 prioritário antes do writer
 - [x] Complemento20:19 candidato inativo: history/list/upsert/delete/matrix/batch/publish/copy/simulate + RLS itens/rules e dois logs, vínculos assignment/rule, PRE família/trigger LIVE e rollback comum; 102/102 PG sintético + 5/5 SDK. Cópia default/logs globais e histórico sem alvo provado fechados, preservados. Sem pedido/título/hosted/publicação; ver limites README.
 - [x] Candidata P1 inativa em scripts/owner-orders-20261023/p1-isolation: leitura/listagem e família assignment/sibling por destino, planos globais intactos; prova REAL B relatada, Arquivar NÃO acionado. 50/50 PostgreSQL sintético.

@@ -1,5 +1,8 @@
 # C2-ORD v3 — rebase sobre o recorte instalado 20261023192728 (REVIEW, restante inativo)
 
+## 23/10 21:06 — promoção restrita frontend, sem publicação
+Hook RPC P1 promovido localmente; ownorg legado e commercial owner ativos refletidos no selector e precheck, RLS/RPC autoritativos. 48/48 testes, tsgo app/node EXIT0 e Vite production da cópia integrada PASS36,15s. Detalhes/diff/SHA em `p1-isolation/frontend-promotion-20261023/`. SQL P1 não aplicado pelo agente, writer C2 não liberado. ACL fiscal `c2_fiscal_resolver_internal_only` implantada pelo proprietário segundo relato: registro `applied/c2_fiscal_resolver_internal_only.md`, corpo intacto/EXECUTE postgres+service_role; PRE/candidata fiscal antigos são históricos, não reaplicar. Método pix e plano publicado teste4 intactos; sem dados/publicação/sessão. Homologação JWT/UI real e gates antigos seguem abertos.
+
 ## Prioridade20:10 — P1, não liberar writer
 Candidata/preflight/rollback/testes em `p1-isolation/README.md`: atribuições privadas por destino (inclui família RPC e sibling publicação de item), owner/ownorg settings com CAS servidor e método ativo. **50/50 PG sintético + 5/5 Vitest candidato + 19/19 regressões**; sem aplicar/publicar/dados/sessões. PRE/POST integral, tipos/produção candidato e JWT/UI A/B reais permanecem NO-GO. Este pacote supera o blocker owner somente como proposta INATIVA; runtime não promovido.
 
