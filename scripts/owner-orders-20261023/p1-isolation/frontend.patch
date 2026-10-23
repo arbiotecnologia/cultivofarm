@@ -1,0 +1,28 @@
+--- a/src/hooks/useB2BFinanceiro.ts
++++ b/src/hooks/useB2BFinanceiro.ts
+@@ -163,19 +163,12 @@
+       if (!current()) throw new Error("financial_context_changed");
+       if (methodError || !activePaymentMethodValid(draft.default_payment_method, methods ?? [])) throw new Error("payment_method_invalid");
+       const payload = Object.fromEntries(settingsFields.map(field => [field, draft[field]]));
+-      let query;
+-      if (baseline) {
+-        // Full baseline predicates also catch existing writers that do not advance updated_at.
+-        const stamp = new Date(Math.max(Date.now(), Date.parse(baseline.updated_at ?? "") + 1)).toISOString();
+-        query = sb.from("partner_financial_settings").update({ ...payload, updated_at: stamp })
+-          .eq("id", baseline.id).eq("partner_id", draft.partner_id).eq("updated_at", baseline.updated_at);
+-        for (const field of settingsFields) query = baseline[field] === null
+-          ? query.is(field, null) : query.eq(field, baseline[field]);
+-      } else {
+-        // Unique partner_id denies concurrent insertion; never upsert over somebody else's new row.
+-        query = sb.from("partner_financial_settings").insert({ ...payload, partner_id: draft.partner_id });
+-      }
+-      const { data, error } = await query.select("*").maybeSingle();
++      // Candidate only: server authorizes target and compares the complete persisted baseline.
++      const { data, error } = await sb.rpc("rpc_update_partner_financial_settings", {
++        p_partner_id: draft.partner_id,
++        p_expected: baseline,
++        p_values: payload,
++      });
+       if (!current()) throw new Error("financial_context_changed");
+       if (error?.code === "23505" || (!error && !data)) throw new Error("settings_conflict");
+       if (error) throw error;
