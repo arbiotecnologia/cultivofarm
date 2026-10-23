@@ -624,3 +624,10 @@
 - [ ] PartnerLifecycleFields (checkboxes/motivo de perfis) SEM retenção: pausa ainda descarta a seleção; não prometer preservação.
 - [ ] Homologação real A/B: entrada pelo “Trocar de portal” bloqueada por pausas/remount na rodada 18:02–18:04Z; pós-revogação “sem permissão” e Voltar → /portal-parceiro/pedidos pausado — não reproduzido localmente nem certificado.
 - [ ] 38 falhas em 7 arquivos de teste idênticas (nome a nome) às de 28699adf, anterior a esta rodada; origem anterior não atribuída nem corrigida.
+
+## 23/10 — C2-ORD v2: compra do cliente comercial (candidato REVIEW, não aplicado)
+- [x] Blockers corrigidos no candidato: cumulativo gestor+técnico compra, técnico isolado não; guard server-side em create/simulate com plano atribuído; título no tenant dono com categoria/forma/cliente estritos; aprovação `na_aprovacao` atômica com a cobrança.
+- [x] Preflight hosted READ ONLY PASS (11 hashes/ACL); harness descartável 35/35 com rollback que fecha o writer.
+- [ ] Revisão independente + aplicação pelo auditor; postflight REST/JWT real.
+- [ ] Configuração: 5/5 configurações financeiras com forma de pagamento inexistente (`pix`); 3 clientes comerciais sem plano atribuído.
+- [ ] Idempotência concorrente/troca de preço apenas estática; fiscal por tenant não auditado; listagem de planos ignora vínculo revogado.
