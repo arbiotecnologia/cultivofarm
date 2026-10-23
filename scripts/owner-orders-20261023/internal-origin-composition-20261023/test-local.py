@@ -145,7 +145,7 @@ before=snapshot();pg.sql("CREATE FUNCTION public.test_fail_link() RETURNS trigge
 actor(ADMIN,f"SELECT public.approve_partner_order('{orders[1]}',NULL,NULL);",err='B2B_APPROVAL_BILLING_FAILED')
 ok('late billing failure rolls back approval/title/installments/schedule/audits',snapshot()==before)
 pg.sql('DROP TRIGGER zz_test_fail ON public.partner_order_financial_links;')
-pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=1,credit_limit_action='approval_required' WHERE partner_id='{P}'; SET session_replication_role=origin;")
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=100,credit_limit_action='approval_required' WHERE partner_id='{P}'; SET session_replication_role=origin;")
 before=snapshot();failure=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{{\"sub\":\"{ADMIN}\",\"role\":\"authenticated\",\"iat\":{int(time.time())}}}',true); UPDATE public.partner_orders SET status='aprovado' WHERE id='{orders[1]}'; COMMIT;",ok=False);print(failure);ok('late credit decision cannot leave pending order sealed','C2_EXTERNAL_UNFINALIZED_APPROVAL' in failure and snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
 before=snapshot();pg.sql(f"SET session_replication_role=replica; DELETE FROM public.partner_financial_settings WHERE partner_id='{P}'; SET session_replication_role=origin;")
