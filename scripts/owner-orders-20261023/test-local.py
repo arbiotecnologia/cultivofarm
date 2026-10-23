@@ -151,6 +151,9 @@ try:
   for f in ['platform_private.b2b_phase1_partner_visible','platform_private.b2b_phase1_order_visible','public.b2b_phase1_order_visible','public.fn_b2b_order_priceable','public.fn_b2b_credit_exposure','public.fn_b2b_order_billing_eligibility','public.fn_generate_receivable_installments','public.generate_b2b_receivable_secure']:
     run((HERE/'baseline-p1'/f'{f}.sql').read_text())
   run("CREATE TRIGGER c2p1_settings_fence BEFORE INSERT OR UPDATE OR DELETE ON partner_financial_settings FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_settings_fence(); CREATE TRIGGER trg_pfs_updated_at BEFORE UPDATE ON partner_financial_settings FOR EACH ROW EXECUTE FUNCTION tg_pfs_updated_at(); CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments();")
+  # Restore the captured LIVE ACL (CREATE OR REPLACE does not load grants).
+  run("REVOKE ALL ON FUNCTION public.fn_b2b_order_billing_eligibility(uuid) FROM PUBLIC,anon,authenticated; GRANT EXECUTE ON FUNCTION public.fn_b2b_order_billing_eligibility(uuid) TO service_role;")
+  run((HERE/'billing-eligibility-invariant.sql').read_text())
   # Explicitly check real baseline blocker: internal owner has no ownorg/partner link.
   assert run(as_uid(U['admin'],f"SELECT public.b2b_phase1_order_visible('11111111-0000-0000-0000-000000000001');"))=='f'
   ok('baseline phase1 real sem owner fallback; corpo capturado não substituído por true')
@@ -308,6 +311,13 @@ try:
   assert s in ('300|3','300.00|3'), s
   assert run(f"SELECT status FROM partner_orders WHERE id='{O1}'") == 'aprovado'
   ok('aprovação gera 1 título no tenant dono, parcelas 3 somando 300 (cronograma canônico)')
+  for role,actor in [('authenticated',ADM_B),('anon',ADM_B)]:
+    run(as_uid(actor,f"SET ROLE {role}; SELECT public.fn_b2b_order_billing_eligibility('{O1}');"),'permission denied for function fn_b2b_order_billing_eligibility')
+  gate=json.loads(run(f"SELECT public.fn_b2b_order_billing_eligibility('{O1}');"))
+  assert gate['eligible'] is True and gate['final_amount']==300
+  assert json.loads(run(f"SET ROLE service_role; SELECT public.fn_b2b_order_billing_eligibility('{O1}');"))==gate
+  run((HERE/'billing-eligibility-invariant.sql').read_text())
+  ok('eligibility internal-only: B/anon negados; owner/service e aprovação real preservados, corpo/ACL/caller intactos')
   dup = run(as_uid(U['admin'], f"SELECT public.generate_b2b_receivable_secure('{O1}')->>'duplicado';"))
   assert dup == 'true' and run(f"SELECT count(*) FROM accounts_receivable WHERE origin_id='{O1}'") == '1'
   ok('segunda geração devolve duplicado=true, sem novo título')
@@ -399,6 +409,8 @@ try:
   # (4) rollback
   before = run("SELECT count(*) FROM accounts_receivable")+'|'+run("SELECT count(*) FROM partner_orders")
   run((HERE/'rollback.sql.review').read_text())
+  run((HERE/'billing-eligibility-invariant.sql').read_text())
+  run(as_uid(ADM_B,f"SET ROLE authenticated; SELECT public.fn_b2b_order_billing_eligibility('{O1}');"),'permission denied for function fn_b2b_order_billing_eligibility')
   assert run("SELECT md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure))") == hosted['platform_private.assert_b2b_partner_scope']
   ok('assert byte-exato hosted em toda a vida do candidato')
   run(guard('gestor'), 'C2_OWNER_ORDER_CLOSED'); run(cscope('cumul'), 'forbidden_financial_terms')
