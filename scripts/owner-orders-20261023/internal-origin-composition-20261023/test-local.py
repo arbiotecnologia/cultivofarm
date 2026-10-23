@@ -132,8 +132,11 @@ ok('H6 installments match exact contractual dates/amounts',pg.sql(f"SELECT count
 for table,where in [('partner_orders',f"id='{oid}'"),('partner_order_items',f"order_id='{oid}'"),('partner_order_payment_terms',f"partner_order_id='{oid}'"),('partner_order_payment_schedule',f"partner_order_id='{oid}'"),('accounts_receivable',f"origin_id='{oid}'"),('accounts_receivable_installments',f"receivable_id IN (SELECT id FROM public.accounts_receivable WHERE origin_id='{oid}')")]:
     ok('authenticated B cannot read A '+table,val(ADMIN_B,f'SELECT count(*) FROM public.{table} WHERE {where};')=='0')
 ok('authenticated A reads own title',val(ADMIN,f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}';")=='1')
-before=snapshot();actor(ADMIN,f"UPDATE public.partner_orders SET c2_external_origin_snapshot=jsonb_set(c2_external_origin_snapshot,'{{creditor_organization_id}}','\"{B}\"') WHERE id='{oid}';",err='B2B_INTERNAL_SNAPSHOT_IMMUTABLE');ok('immutable origin cannot redirect creditor',snapshot()==before)
-before=snapshot();actor(ADMIN,f"UPDATE public.partner_order_items SET quantidade=2 WHERE order_id='{oid}';",err='');ok('sealed child rejects financial changes',snapshot()==before)
+before=snapshot();actor(ADMIN,f"UPDATE public.partner_orders SET c2_external_origin_snapshot=jsonb_set(c2_external_origin_snapshot,'{{creditor_organization_id}}','\"{B}\"') WHERE id='{oid}';");ok('RLS blocks direct origin change',snapshot()==before)
+# Owner-superuser trigger execution with synthetic actor proves the trigger independently of RLS zero-row updates.
+pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{{\"sub\":\"{ADMIN}\",\"role\":\"authenticated\",\"iat\":{int(time.time())}}}',true); UPDATE public.partner_orders SET c2_external_origin_snapshot=jsonb_set(c2_external_origin_snapshot,'{{creditor_organization_id}}','\"{B}\"') WHERE id='{oid}'; COMMIT;",ok=False)
+ok('origin trigger rejects forged creditor',snapshot()==before)
+before=snapshot();actor(ADMIN,f"UPDATE public.partner_order_items SET quantidade=2 WHERE order_id='{oid}';");ok('RLS blocks sealed item edits',snapshot()==before)
 actor(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{oid}');")
 ok('billing replay one title',pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}'")=='1')
 for u in [T,PR,GB,ADMIN_B]:
@@ -143,7 +146,7 @@ actor(ADMIN,f"SELECT public.approve_partner_order('{orders[1]}',NULL,NULL);",err
 ok('late billing failure rolls back approval/title/installments/schedule/audits',snapshot()==before)
 pg.sql('DROP TRIGGER zz_test_fail ON public.partner_order_financial_links;')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=1,credit_limit_action='approval_required' WHERE partner_id='{P}'; SET session_replication_role=origin;")
-before=snapshot();actor(ADMIN,f"UPDATE public.partner_orders SET status='aprovado' WHERE id='{orders[1]}';",err='C2_EXTERNAL_UNFINALIZED_APPROVAL');ok('late credit decision cannot leave pending order sealed',snapshot()==before)
+before=snapshot();failure=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{{\"sub\":\"{ADMIN}\",\"role\":\"authenticated\",\"iat\":{int(time.time())}}}',true); UPDATE public.partner_orders SET status='aprovado' WHERE id='{orders[1]}'; COMMIT;",ok=False);ok('late credit decision cannot leave pending order sealed','C2_EXTERNAL_UNFINALIZED_APPROVAL' in failure and snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
 before=snapshot();pg.sql(f"SET session_replication_role=replica; DELETE FROM public.partner_financial_settings WHERE partner_id='{P}'; SET session_replication_role=origin;")
 actor(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{orders[1]}');",err='B2B_FINANCIAL_SETTINGS_REQUIRED');ok('missing settings explicitly denied without automatic insert or partial title',snapshot()==before)
