@@ -9,7 +9,9 @@ const state = vi.hoisted(() => ({
   actor: "11111111-1111-4111-8111-111111111111",
   tenant: "22222222-2222-4222-8222-222222222222",
   partner: "33333333-3333-4333-8333-333333333333",
-  epoch: 0, profileStamp: "v1", linkVersion: 1, revoked: false, authCb: undefined as undefined | ((event: string, session: unknown) => void), entitled: true, loadingPlan: false, orderCreate: true,
+  epoch: 0, profileStamp: "v1", linkVersion: 1, revoked: false, hasVolume: true,
+  holdProbe: undefined as undefined | (() => Promise<{ data: unknown; error: null }>),
+  authCb: undefined as undefined | ((event: string, session: unknown) => void), entitled: true, loadingPlan: false, orderCreate: true,
   rpc: vi.fn(), table: vi.fn(), writes: vi.fn(), subscriptions: vi.fn(),
 }));
 vi.mock("@/lib/portalBroadcast", () => ({ subscribePortalEvents: () => () => {}, broadcastPortalEvent: () => {} }));
@@ -34,7 +36,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   }, removeChannel: vi.fn(),
 } }));
 
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { AuthProvider } from "@/hooks/useAuth";
 import Layout from "@/pages/portal-parceiro/PortalParceiroLayout";
 import NovoPedido from "@/pages/portal-parceiro/NovoPedido";
 import { EntitlementOutlet } from "@/components/guards/EntitlementOutlet";
@@ -48,6 +50,8 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date", "performance"] });
   Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, profileStamp: "v1", linkVersion: 1, revoked: false, authCb: undefined as undefined | ((event: string, session: unknown) => void), entitled: true, loadingPlan: false, orderCreate: true });
   vi.clearAllMocks();
+  state.hasVolume = true; state.holdProbe = undefined;
+  Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
   state.table.mockImplementation((table: string) => {
     if (table === "profiles" || table === "user_roles") {
       const q: Record<string, unknown> = {};
@@ -56,9 +60,12 @@ beforeEach(() => {
       q.maybeSingle = run; q.then = (f: (v: unknown) => unknown) => run().then(f); return q;
     }
     if (table !== "catalogo_volumes") throw new Error(`Unexpected table read: ${table}`);
-    return { select: () => ({ eq: () => response([{ id: "volume-local", produto_id: state.partner, item_tipo: "produto", volume_ml: 1000, rotulo: "1 L", preco_brl: 10, ativo: true, ordem: 0 }]) }) };
+    return { select: () => ({ eq: () => response(state.hasVolume ? [{ id: "volume-local", produto_id: state.partner, item_tipo: "produto", volume_ml: 1000, rotulo: "1 L", preco_brl: 10, ativo: true, ordem: 0 }] : []) }) };
   });
   state.rpc.mockImplementation((name: string, args?: { p_partner_id?: string }) => {
+    if (name === "get_my_available_portal_contexts" && state.holdProbe) {
+      const promise = state.holdProbe(); return Object.assign(promise, { abortSignal: () => promise });
+    }
     const context = { contract: "C2_MULTIPROFILE_V1", actor_id: state.actor, tenant_id: state.tenant,
       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
       partner_id: state.partner, external_roles: ["parceiro_b2b"], manager: true, technician: false, role: "parceiro_b2b", papel: "gestor" };
@@ -105,6 +112,24 @@ it("same confirmed probes retain the real modal DOM and cart without profile rel
   expect(screen.getByText("Carrinho (1)")).toBeTruthy();
   expect(state.table.mock.calls.filter(([name]) => name === "profiles")).toHaveLength(profileReads);
   expect(catalogCalls()).toHaveLength(reads); expect(state.writes).not.toHaveBeenCalled();
+  expect(state.rpc.mock.calls.filter(([name]) => name === "get_my_available_portal_contexts").length).toBeLessThanOrEqual(6);
+});
+it("BAC2-like missing volume stays blocked while a 1 L item uses the canonical dialog", async () => {
+  state.hasVolume = false; mount(); await tick(1000); const dialog = await openModal();
+  expect(within(dialog).getByRole("button", { name: "Adicionar ao carrinho" })).toBeDisabled();
+  expect(state.writes).not.toHaveBeenCalled();
+});
+it.each(["deadline", "offline"])("%s retires authority and a late healthy response cannot resurrect the modal", async reason => {
+  mount(); await tick(1000); await addItem(); await openModal();
+  let resolve: ((value: { data: unknown; error: null }) => void) | undefined;
+  state.holdProbe = () => new Promise(r => { resolve = r; });
+  await tick(10_000);
+  if (reason === "offline") act(() => window.dispatchEvent(new Event("offline")));
+  else await tick(5_000);
+  expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.queryByText("Carrinho (1)")).toBeNull();
+  act(() => resolve?.({ data: { contract: "C2_MULTIPROFILE_V1", actor_id: state.actor, tenant_id: state.tenant, ready: true,
+    available_contexts: ["b2b"], partner_id: state.partner, profile_stamp: "v1", link_version: 1 }, error: null }));
+  await tick(); expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.queryByText("Carrinho (1)")).toBeNull();
 });
 it("same-identity token refresh hides old authority then restores cart choices and modal from fresh reads", async () => {
   mount(); await tick(1000); await addItem(); await openModal();
