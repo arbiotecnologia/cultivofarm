@@ -9,7 +9,7 @@
   "path": "src/components/configuracoes/ExternalRegistrationFields.tsx",
   "package": "c2-registration",
   "baseline_sha256": null,
-  "candidate_sha256": "0150c52206db693c9f51d21b869e83c3e774c844e44a0cfa38f36b9a9e2cd901"
+  "candidate_sha256": "acf0997032d39ea64c0d172c0d35444f7ebda372ca60b2d891d4398548a2a28e"
  },
  {
   "path": "src/components/configuracoes/PartnerLifecycleFields.tsx",
