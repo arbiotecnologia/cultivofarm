@@ -403,7 +403,11 @@ RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $
  IF p_data IS NULL THEN RETURN true; END IF;
  RETURN jsonb_typeof(p_data)='object' AND p_data ? 'buyer_scope'
  AND (p_data->>'partner_id')::uuid IS NOT DISTINCT FROM p_partner
- AND platform_private.c2p1_assignment_allowed(p_data->>'buyer_scope',(p_data->>'partner_id')::uuid,(p_data->>'customer_id')::uuid);
+ AND platform_private.c2p1_assignment_allowed(p_data->>'buyer_scope',(p_data->>'partner_id')::uuid,(p_data->>'customer_id')::uuid)
+ AND EXISTS(SELECT 1 FROM public.commercial_price_rules r WHERE r.id=(p_data->>'id')::uuid
+ AND r.buyer_scope=p_data->>'buyer_scope' AND r.partner_id IS NOT DISTINCT FROM (p_data->>'partner_id')::uuid
+ AND r.customer_id IS NOT DISTINCT FROM (p_data->>'customer_id')::uuid
+ AND platform_private.c2p1_assignment_allowed(r.buyer_scope,r.partner_id,r.customer_id));
  EXCEPTION WHEN invalid_text_representation THEN RETURN false; END $$;
 CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_log_allowed(p_action text,p_partner uuid,p_before jsonb,p_after jsonb)
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
