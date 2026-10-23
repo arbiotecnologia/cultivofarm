@@ -95,4 +95,5 @@ IF to_regprocedure('platform_private.c2p1_assignment_allowed(text,uuid,uuid)') I
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.issue_ticket(text,uuid)') AND md5(pg_get_functiondef(oid))='c32ad23a9db8574af85da8fcfc45af43' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'C2P1_TICKET_DRIFT'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.has_ticket(text,uuid)') AND md5(pg_get_functiondef(oid))='29adae3347e8a5ff23327fa86fceb54b' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'C2P1_TICKET_DRIFT'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass AND relacl::text='{postgres=arwdDxtm/postgres}' AND relrowsecurity) THEN RAISE EXCEPTION 'C2P1_TICKET_TABLE_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_publish_item_prices(uuid[],text)') AND md5(pg_get_functiondef(oid))='bf203e6ca0aea3de80d7fd7b264c9414' AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'C2P1_SIBLING_DRIFT'; END IF;
 END $$;
