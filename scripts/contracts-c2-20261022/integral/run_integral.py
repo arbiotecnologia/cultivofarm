@@ -3,7 +3,7 @@ byte-identical by md5/fingerprint) -> install.sql.review (single transaction, un
 -> real-trigger scenarios with SYNTHETIC Auth claims (request.jwt.claims GUC, role
 authenticated) -> idempotency -> rollback.sql.review -> post-rollback denial.
 NOT hosted JWT/RLS/REST evidence. No hosted connection is used."""
-import json, uuid, subprocess
+import json, uuid, subprocess, time
 from pathlib import Path
 import pg, fidelity
 H = Path(__file__).resolve().parent
@@ -14,7 +14,7 @@ def ok(name, cond, detail=''):
 def U(n): return f'00000000-0000-4000-8000-{n:012d}'
 ORG_A, ORG_B, P, Q, CLI, FAZ, CLI_B = U(1), U(2), U(3), U(4), U(5), U(6), U(7)
 ADMIN_A, ADMIN_B, G, T, PR, GT, ALL3, XB = (U(100 + i) for i in range(8))
-def claims(u): return json.dumps({'sub': u, 'role': 'authenticated', 'iat': 4102444800})
+def claims(u): return json.dumps({'sub': u, 'role': 'authenticated', 'iat': int(time.time())})
 def as_user(u, s, expect_ok=True):
     q = f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{claims(u)}',true);\n{s}\nCOMMIT;"
     return pg.sql(q, ok=expect_ok)
