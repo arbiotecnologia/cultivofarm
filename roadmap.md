@@ -2,7 +2,8 @@
 
 ## 23/10 22:43 — rebase restante C2-ORD sobre P1 instalado
 - [x] Registrar relato f351d6d5 publicado e salvar/reabrir AUDIT homologado REAL admin A; P1/fiscal instalados e B UI sem A. Não recarregar sessões ou reaplicar.
-- [ ] Revisar/rebase candidato v3, scope comercial sem org própria, inserção settings versus ticket P1, PRE/POST/rollback e testes locais com corpos reais; writer fechado até implantação independente.
+- [x] Rebase v3: fallback org_partner real/teste divergência, remover INSERT settings, owner P1 nos dois endpoints approval/billing; PRE composição atual/POST hashes/rollback deny. 68 checks PG descartáveis +18 Vitest PASS; Auth/schema reduzidos, não JWT/homologação real.
+- [ ] Revisão independente PRE/POST integral hosted/cadeia triggers/locks e create positivo/preço/hash/idempotência; writer continua fechado até implantação independente. Nenhuma sessão/dado real alterado.
 - [ ] Arquivamento negativo48dcac7d por adminB autorizado, botão ausente, nenhuma escrita executada; teste não concluído. Pendências antigas preservadas.
 
 ## 23/10 21:18 — P1 aplicado externo; regressão salvar/reabrir

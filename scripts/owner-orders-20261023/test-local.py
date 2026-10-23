@@ -194,7 +194,7 @@ try:
   assert run(as_uid(U['cumul'],f"SELECT platform_private.c2_owner_order_create_allowed('{U['cumul']}','{P_A}')"))=='f'
   run(cscope('cumul'),'forbidden_financial_terms')
   run(f"UPDATE organizations SET partner_account_id=NULL WHERE id='{ORG_A}';")
-  ok('org_partner fallback réel A; conflit explicite owner ferme capacité et wrapper')
+  ok('org_partner fallback real A; parceiro explícito divergente fecha capacidade e wrapper')
   run(cscope('gestor')); ok('wrapper de compra: gestor singleton passa (via assert)')
   run(cscope('tech'), 'forbidden_financial_terms'); ok('wrapper de compra: técnico isolado negado')
   run(as_uid(U['gestor'], f"SELECT platform_private.c2_order_actor_scope('{U['cumul']}','{P_A}');"), 'auth_required'); ok('wrapper: uid forjado negado')

@@ -1,5 +1,29 @@
 # C2-ORD v3 — rebase sobre o recorte instalado 20261023192728 (REVIEW, restante inativo)
 
+## 23/10 22:43 — rebase P1 instalado; status atual NO-GO
+f351d6d5 publicado e salvar/reabrir AUDIT homologado REAL admin A, conforme relato do proprietário. B UI sem A. P1 e fiscal ACL não reaplicados. Arquivamento negativo48dcac7d autorizado, botão ausente, nenhuma escrita real executada: pendente.
+
+Captura nova READ ONLY no Supabase canônico confirmou create624f6e3d/approve09eb9e74/tg0f679538 e `b2b_actor_scope=c3f29977`; P1 settings_allowed57baa5fd/fencef87cc289/update1d64475b. Snapshot integral de funções/policies/colunas/triggers em `baseline-p1/snapshot.json`; demais corpos em `baseline-p1/`.
+
+Achados críticos corrigidos SOMENTE no candidato:
+1. Gerador tentava INSERT settings sem ticket P1 e sem método default. Agora falha `B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED`; somente RPC CAS P1 cria settings. Nenhum ticket novo/bypass.
+2. `c2_order_actor_scope` **retorna void**, não uma linha: lê `b2b_actor_scope`. O corpo real resolve `org_partner` pelo vínculo quando owner não tem parceiro explícito. Owner com parceiro explícito divergente agora também fecha a capacidade, preservando precedência canônica.
+3. Phase1 real negava admin do commercial owner sem org própria antes da aprovação/geração. Somente os dois endpoints revisados aceitam adicionalmente `c2p1_settings_allowed(partner,true)`; roles, priceable, h15, locks, crédito e gatilho continuam autoritativos. Helper phase1 e callers irmãos intactos.
+
+### Caminhos exatos e sequência independente
+- PRE integral READ ONLY: `scripts/owner-orders-20261023/preflight.sql` (inclui composição P1); companion: `p1-composition-preflight.sql`.
+- Candidato transacional INATIVO: `scripts/owner-orders-20261023/candidate.sql.review`. Não aplicar sem PRE integral PASS no mesmo ref e revisão de locks/schema completos.
+- POST assertivo READ ONLY: `scripts/owner-orders-20261023/postflight.sql` (hashes pós, ACL, scope/gatilho intactos e composição P1); expectativas dos corpos calculadas localmente em `postflight-expected.json`, não recibo hosted.
+- Rollback de contenção: `scripts/owner-orders-20261023/rollback.sql.review`; fecha writer externo/projeção, preserva P1, ACL fiscal, aprovação atômica, destinatários e resolução estrita; não restaura baseline vulnerável.
+- Testes: `scripts/owner-orders-20261023/test-local.py`, `src/test/saas/c2-orders-p1-postgres.test.ts`; comando `bun run test -- src/test/saas/c2-orders-p1-postgres.test.ts src/test/comercial/ownerOrderAccess.test.ts src/test/financeiro/partnerSettings.integration.test.tsx src/test/comercial/assignmentPublication.test.tsx`.
+
+### Evidência e limites
+**68/68 checks PostgreSQL descartável + 18/18 Vitest** (um Vitest executa o harness68, não somar como provas independentes). Corpos reais capturados: scope/context/readiness, P1 CAS/fence/tickets, approve, wrapper/impl, eligibility, priceable, crédito, parcelas e phase1. Concorrência duas conexões: mesmo UUID e estado financeiro integral estável. Falhas tardias em vínculo/notificação desfazem aprovação/campos/título/parcelas/cronograma/auditoria; retry gera um título. Settings AUDIT/prazo7/CAS intactos, ownorg/owner positivos e B/externos negativos.
+
+**Não é homologação real JWT/RLS/PostgREST**: Auth/has_role/entitlements/Superadmin/produtor e d51 reduzidos, schema não integral, triggers de governança/SaaS não executados. Create positivo/carrinho/preço/hash e concorrência de criação continuam NÃO certificados; create só percorre negativas do guard. PRE/POST integrais desta revisão ainda não executados hosted; composição estrutural exata requer auditor independente. Ausência de settings no gatilho ainda retorna sem geração (semântica existente), não prometer cobrança em toda aprovação. Sem alteração de UI/runtime, banco/dados/papéis/sessões, publicação ou liberação writer; monitor/anexos/fiscal/cancelamento/estorno/multiperfil B e pendências antigas permanecem abertas. Build automático da prévia OK22:49:21, não build/typecheck independente do SQL candidato.
+
+Seções antigas abaixo são histórico; não usar seus PRE/ACLs/contagens ou status como autorização atual.
+
 ## 23/10 21:18 — P1 aplicado por Codex; cache/baseline corrigidos localmente
 Relato implantação migration20261023211007/PRE/POST/dados iguais e JWT B sem atribuições/A própria publicada; método AUDIT salvo UI21:18:08.481422+00, prazo7/na_entrega intactos. Registro `applied/20261023211007_c2_private_assignments_financial_settings.md`. Nunca reaplicar P1/PRE antigos. Artefato publicado bafe3e23/deploybcca6f2f confirmado por metadados públicos e SHA App igual à build anterior.
 

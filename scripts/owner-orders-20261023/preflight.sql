@@ -47,6 +47,12 @@ BEGIN
    WHERE pa.commercial_owner_organization_id IS NOT NULL
      AND EXISTS (SELECT 1 FROM public.organizations o WHERE o.partner_account_id = pa.id);
   IF n > 0 THEN RAISE EXCEPTION 'owner_and_own_org_conflict:%', n; END IF;
+  IF EXISTS (SELECT 1 FROM public.partner_accounts pa JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id
+    WHERE pa.ativo AND pa.deleted_at IS NULL AND o.ativo AND o.status='ativa'
+    AND o.partner_account_id IS NOT NULL AND o.partner_account_id<>pa.id
+    AND NOT EXISTS(SELECT 1 FROM public.organizations own WHERE own.partner_account_id=pa.id)) THEN
+    RAISE EXCEPTION 'commercial_owner_explicit_partner_conflict';
+  END IF;
 END $$;
 -- Current P1 composition: exact functions, policies, settings columns and triggers.
 -- This companion is embedded in candidate.sql.review before any persistent DDL.
