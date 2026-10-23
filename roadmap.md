@@ -630,6 +630,7 @@
 - [x] Preflight hosted READ ONLY PASS (11 hashes/ACL); harness descartável 35/35 com rollback que fecha o writer.
 - [ ] Revisão independente + aplicação pelo auditor; postflight REST/JWT real.
 - [ ] Configuração: 5/5 configurações financeiras com forma de pagamento inexistente (`pix`); 3 clientes comerciais sem plano atribuído.
+- [x] Hipótese corrigida: categorias/formas são globais por desenho (sem DDL de tenant); d51_5 valida só cliente/parcelas/pagamentos.
 - [ ] Idempotência concorrente/troca de preço apenas estática; fiscal por tenant não auditado; listagem de planos ignora vínculo revogado.
 - [x] C2-ORD v2: notificação de novo pedido restrita a admin/gestor_comercial ativos do tenant dono; aprovação só a vínculos vigentes/perfis ativos (43/43 local).
 - [ ] Sessão real A financeiro: verificando→vazio→pausada, retry voltou vazio — candidato não instalado, não reproduzido; investigar sem aumentar verificação nem reload.

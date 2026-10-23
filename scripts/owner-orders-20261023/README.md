@@ -16,7 +16,15 @@ Nada aplicado, publicado ou implantado. Nenhum pedido, título, fiscal, fixture 
 | 4 | Preflight/rollback fracos | Preflight assertivo (11 hashes + ACL + gatilho + schema global + conflito org) e rollback que fecha o writer no servidor |
 
 Observação estrutural: `financial_categories` e `payment_methods` **não têm `organization_id`** no schema canônico
-(catálogos globais). Filtro por tenant é impossível sem DDL; o preflight aborta se a coluna aparecer.
+(catálogos globais, RLS `is_financial_staff`). Esse é o desenho correto: **não** se cria coluna nem migração de
+tenant nesses cadastros. A correção limita-se à seleção determinística (receita ativa por `created_at, id`;
+forma ativa única pelo nome configurado), sem fallback. O preflight só alerta se o schema mudar.
+
+**Correção da hipótese inicial (v1 deste README):** foi afirmado que a impl escolhia categoria/forma "sem filtro
+de tenant" e que `d51_5_validate_tenant_links` poderia recusar o título por isso. Errado: `d51_5` valida apenas
+`customer_id → clientes.organization_id` e o tenant de parcelas/pagamentos, nunca categoria/forma. O tenant é
+verificado onde existe ownership: tenant do título (dono), cliente do título (`client_id` no mesmo tenant),
+emissor interno (h15) e destinatários de notificação.
 
 ## Autoridade do writer (`c2_owner_order_create_allowed`)
 `uid = auth.uid()` · `parceiro_b2b` vigente em `user_roles` · contexto `C2_MULTIPROFILE_V1`/`commercial_owner`,
