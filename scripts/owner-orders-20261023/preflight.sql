@@ -26,10 +26,9 @@ BEGIN
       RAISE EXCEPTION 'acl_drift % %', r.sig, (SELECT proacl::text FROM pg_proc WHERE oid = r.sig::regprocedure);
     END IF;
   END LOOP;
-  -- Accept only original ACL or independently installed fiscal containment, same body.
+  -- Fiscal containment is installed: never accept the vulnerable historical ACL.
   IF (SELECT proacl::text FROM pg_proc WHERE oid='public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date)'::regprocedure)
-     NOT IN ('{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}',
-             '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'fiscal_acl_drift'; END IF;
+     IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' THEN RAISE EXCEPTION 'fiscal_acl_drift'; END IF;
   IF to_regprocedure('platform_private.c2_owner_order_create_allowed(uuid,uuid)') IS NOT NULL
      OR to_regprocedure('platform_private.c2_order_actor_scope(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'already_installed'; END IF;
   IF NOT EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='20261023192728') THEN RAISE EXCEPTION 'installed_slice_missing'; END IF;
@@ -49,6 +48,8 @@ BEGIN
      AND EXISTS (SELECT 1 FROM public.organizations o WHERE o.partner_account_id = pa.id);
   IF n > 0 THEN RAISE EXCEPTION 'owner_and_own_org_conflict:%', n; END IF;
 END $$;
+-- Current P1 composition: exact functions, policies, settings columns and triggers.
+-- This companion is embedded in candidate.sql.review before any persistent DDL.
 -- Informativos (não bloqueiam, mas devem ser lidos pelo revisor):
 SELECT 'revenue_categories_active' k, count(*)::text v FROM public.financial_categories WHERE upper(btrim(type))='RECEITA' AND active
 UNION ALL SELECT 'payment_methods_active', string_agg(name, ' | ') FROM public.payment_methods WHERE active
