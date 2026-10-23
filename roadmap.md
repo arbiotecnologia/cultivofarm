@@ -1,5 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 22:58 — contenção independente e patch UI
+- [x] Registrar c2_owner_orders_writer_containment SUCCESS relatado: create_allowed SELECT false, eligibility fechada, financeiro/approval preservados; POST release antigo não representa estado pós-contenção deliberado. Não reaplicar/reabrir writer.
+- [ ] Validar patch mínimo EntitlementOutlet com contexto exato permitido, queries zero negado/pendente e troca partner/tenant com QueryClient real; preparar diff/SHA sem publicação, baseline SQL antigo intocado.
+
 ## 23/10 22:56 — C2-ORD implantado independente / bloqueio catálogo preview
 - [x] Registrar Codex c2_owner_orders_p1_composed baseado b38e2c26, PRE/POST integrais mesma transação SUCCESS e POST externo PASS relatados; eligibility preservada, sem pedido/título, não reaplicar nem editar baseline antigo.
 - [x] Reproduzir sem HMR contexto partner perdido no EntitlementOutlet intermediário real; teste falha com erro idêntico. Corrigir encaminhamento exato de contexto após gate existente, sem permissões novas.

@@ -1,5 +1,8 @@
 # C2-ORD v4 — P1 e eligibility instalados (REVIEW, restante inativo)
 
+## 23/10 22:58 — CONTENÇÃO instalada externamente, writer fechado
+Codex `c2_owner_orders_writer_containment` SUCCESS segundo proprietário: create_allowed SELECT false, eligibility ACL false para authenticated, correções financeiras/approval preservadas. Registro `applied/c2_owner_orders_writer_containment.md`. **POST release esperado não descreve mais o estado atual por decisão explícita; não reaplicar release/candidato antigo ou reparar isso como drift.** Baselines históricos intocados. UI local corrigida e testes ampliados partner/tenant/queries em revisão; sem auto-publicação ou writer até UI revisada/publicada e autorização independente.
+
 ## 23/10 22:56 — C2-ORD implantado externamente / bloqueio frontend
 Codex implantou `c2_owner_orders_p1_composed` baseado b38e2c26, conforme proprietário: PRE/POST integrais na mesma transação SUCCESS, POST READ ONLY externo PASS, eligibility ACL preservada; nenhum pedido/título criado. Registro `applied/c2_owner_orders_p1_composed.md`. **Não reaplicar os scripts candidatos abaixo nem modificar os snapshots/baselines históricos**. As afirmações antigas de “restante inativo/writer fechado” documentam a revisão anterior; agora SQL foi implantado externamente, sem homologação pós completa e sem novos pedidos autorizados pelo agente.
 

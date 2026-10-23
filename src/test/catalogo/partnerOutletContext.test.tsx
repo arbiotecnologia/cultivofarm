@@ -1,34 +1,58 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, Outlet, useOutletContext } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { EntitlementOutlet } from "@/components/guards/EntitlementOutlet";
 
-const state = vi.hoisted(() => ({ ready: true, entitled: true, calls: 0 }));
+const state = vi.hoisted(() => ({ ready: true, entitled: true, calls: 0, reads: [] as string[] }));
 vi.mock("@/hooks/useEntitlements", () => ({ useEntitlements: () => ({ status: state.ready ? "ready" : "loading", features: new Set(state.entitled ? ["catalogo_precos"] : []) }) }));
 const partner = { id: "partner-A" };
-const context = { partner };
+const initialContext = { partner, tenant: "tenant-A" };
+let context = initialContext;
 function Consumer() {
   state.calls++;
   const received = useOutletContext<typeof context>();
   expect(received).toBe(context);
   const { partner: scoped } = received;
-  return <output>{scoped.id}</output>;
+  const query = useQuery({ queryKey: ["provider-regression", received.tenant, scoped.id], queryFn: async () => {
+    const result = `${received.tenant}/${scoped.id}`; state.reads.push(result); return result;
+  } });
+  return <><output>{scoped.id}</output><output>{query.data}</output></>;
 }
 function mount() {
-  return render(<MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Routes>
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const tree = () => <QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Routes>
     <Route path="/portal-parceiro" element={<Outlet context={context} />}>
       <Route element={<EntitlementOutlet />}>
         <Route path="catalogo" element={<Consumer />} />
       </Route>
     </Route>
-  </Routes></MemoryRouter>);
+  </Routes></MemoryRouter></QueryClientProvider>;
+  const view = render(tree());
+  return { ...view, update: () => view.rerender(tree()) };
 }
-beforeEach(() => Object.assign(state, { ready: true, entitled: true, calls: 0 }));
+beforeEach(() => { context = initialContext; Object.assign(state, { ready: true, entitled: true, calls: 0, reads: [] }); });
 afterEach(cleanup);
 it("canonical nested entitlement outlet preserves the exact partner context", () => {
   mount(); expect(screen.getByText("partner-A")).toBeTruthy();
 });
 it.each(["denied", "pending"])("%s entitlement never mounts partner readers", mode => {
   if (mode === "denied") state.entitled = false; else state.ready = false;
-  mount(); expect(state.calls).toBe(0); expect(screen.queryByText("partner-A")).toBeNull();
+  mount(); expect(state.calls).toBe(0); expect(state.reads).toEqual([]); expect(screen.queryByText("partner-A")).toBeNull();
+});
+it("partner and tenant changes propagate current context without retaining the previous query result", async () => {
+  const view = mount(); await screen.findByText("tenant-A/partner-A");
+  context = { partner: { id: "partner-B" }, tenant: "tenant-A" }; view.update();
+  expect(screen.queryByText("tenant-A/partner-A")).toBeNull(); await screen.findByText("tenant-A/partner-B");
+  context = { partner: { id: "partner-B" }, tenant: "tenant-B" }; view.update();
+  expect(screen.queryByText("tenant-A/partner-B")).toBeNull(); await screen.findByText("tenant-B/partner-B");
+  expect(state.reads).toEqual(["tenant-A/partner-A", "tenant-A/partner-B", "tenant-B/partner-B"]);
+});
+it("denial during tenant switch unmounts readers before any new query and resumes only with current context", async () => {
+  const view = mount(); await screen.findByText("tenant-A/partner-A");
+  state.entitled = false; context = { partner: { id: "partner-B" }, tenant: "tenant-B" }; view.update();
+  expect(screen.queryByText("tenant-A/partner-A")).toBeNull(); expect(state.reads).toEqual(["tenant-A/partner-A"]);
+  state.entitled = true; view.update();
+  await waitFor(() => expect(screen.getByText("tenant-B/partner-B")).toBeTruthy());
+  expect(state.reads).toEqual(["tenant-A/partner-A", "tenant-B/partner-B"]);
 });
