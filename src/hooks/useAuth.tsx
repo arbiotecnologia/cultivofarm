@@ -974,7 +974,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authzLatchBlocked: latchBlocked && !loading,
         authzResidualScope: residualContextOnly,
         checkAuthzAccess,
-        revalidateAuthz,
+        // Consumidores (botão Tentar novamente) só disparam o Retry MANUAL.
+        revalidateAuthz: () => revalidateAuthz(),
         setSafeOSDraft,
         takeSafeOSDraft,
       }}
