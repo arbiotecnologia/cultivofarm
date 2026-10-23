@@ -1,5 +1,5 @@
 # C2-ORD review
-- SQL remains review-only; capture canonical production bodies read-only and preserve installed notification/atomic-approval changes — prevents partial release.
+- Unapplied SQL remains review-only; record owner-installed releases separately and never replay their preflights or restore vulnerable ACLs — prevents partial release and rollback leaks.
 - Fiscal UUID resolution is service/owner-only; authenticated users use existing authorized callers, and rollback retains this containment — prevents exemption metadata probing.
 - Scope tests load the captured b2b_actor_scope, is_valid_b2b_partner_user and C2 context/readiness bodies, never replacements; synthetic Auth and other reduced dependencies remain explicitly uncertified — prevents false JWT evidence.
 - Financial settings use the existing server-CAS RPC with full baseline/NULL absence; UI prechecks active owner OR ownorg under RLS and never fall back to direct writes; SQL installation stays owner-controlled — prevents frontend authority bypass.
