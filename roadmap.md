@@ -1,6 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 23/10 19:55 — revisão pós-914d06c
+- [ ] Complemento20:03: seletor tenant/roles no Financeiro B2B sem pedido, mesmo diálogo/métodos ativos, legado inválido explícito, rascunho sem reset/CAS concorrente; publicação atribuição cancela leitura antiga e relê estado canônico. Sem dados/SQL/publicação.
 - [x] Preparar contenção fiscal ACL-only com pre/postflight/hashes, rollback e roteiro REST; 60/60 PG locais incluindo authenticated B/A sintético, sem alegar JWT hosted.
 - [x] Testar C2-ORD com 6 corpos reais b2b_actor_scope/is_valid/contexto/readiness/h15 e hashes LIVE; legado/recorte instalado intactos.
 - [x] Corrigir vigência civil do plano 23/10–30/10; 23/23 Vitest, tipos e produção em cópia isolada PASS; documentar caminho/bloqueio real do formulário financeiro.
