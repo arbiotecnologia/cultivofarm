@@ -70,6 +70,11 @@ for p in policies:
     pg.sql(cmd+';')
 # Preflight must pass unchanged against containment before any candidate mutation.
 pg.sql((H/'preflight.sql').read_text());ok('READ ONLY preflight on captured containment')
+pg.sql('ALTER TABLE public.partner_orders DISABLE ROW LEVEL SECURITY;')
+failure=pg.sql((H/'preflight.sql').read_text(),ok=False);ok('PRE denies disabled RLS','origin_RLS_drift:partner_orders' in failure)
+pg.sql('ALTER TABLE public.partner_orders ENABLE ROW LEVEL SECURITY; CREATE POLICY synthetic_unexpected ON public.partner_orders FOR SELECT TO authenticated USING (true);')
+failure=pg.sql((H/'preflight.sql').read_text(),ok=False);ok('PRE denies unexpected permissive policy','origin_policy_set_drift' in failure)
+pg.sql('DROP POLICY synthetic_unexpected ON public.partner_orders;')
 pg.sql((H/'candidate.sql.review').read_text());ok('inactive candidate parsed/applied only in disposable PG')
 post={}
 for name in json.loads((H/'expected-source.json').read_text()):
