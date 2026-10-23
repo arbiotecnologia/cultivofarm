@@ -5,5 +5,6 @@ REVOKE EXECUTE ON FUNCTION public.link_partner_user(uuid,uuid,text[],text,text,u
 REVOKE EXECUTE ON FUNCTION platform_private.c2_partner_lifecycle(uuid,uuid,text[],text,text,uuid,text) FROM PUBLIC,anon,authenticated;
 REVOKE EXECUTE ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid) FROM PUBLIC,anon,authenticated;
 REVOKE EXECUTE ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION platform_private.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid) FROM PUBLIC,anon,authenticated,service_role;
 -- Do NOT reinstall old scope, delete roles, reverse revocations or erase receipts.
 COMMIT;
