@@ -26,6 +26,7 @@ def snapshot():
     return {t:pg.sql(f"SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]') FROM public.{t} t") for t in tables}
 pg.start();pg.sql((I/'replica.sql').read_text())
 pg.sql("SET check_function_bodies=off;")
+pg.sql("ALTER TABLE public.partner_financial_settings DROP CONSTRAINT IF EXISTS partner_financial_settings_default_payment_method_check;")
 relations=json.loads((H/'baseline/relations.json').read_text())
 for r in relations['relations']:
     if pg.sql(f"SELECT to_regclass('public.{r['name']}') IS NULL")=='t':
