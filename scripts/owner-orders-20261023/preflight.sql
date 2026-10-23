@@ -6,14 +6,17 @@ BEGIN
   FOR r IN SELECT * FROM (VALUES
     ('platform_private.assert_b2b_partner_scope(uuid,uuid)','f86f43f9d9ad3ed97b840fcc02c79476','{postgres=X/postgres,service_role=X/postgres}'),
     ('platform_private.b2b_commercial_partner_projection()','136b4d59f794d5ff379a7c2ca19455e2','{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'),
-    ('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)','85be378d0751a26470cb98cc641a230f','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
+    ('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)','624f6e3d45e5af7d039d5da8f784d787','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
     ('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)','f9882718027ac4a09810e6e0bf133c61','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
     ('public.generate_b2b_receivable_secure_impl(uuid)','60be0fb336ca1537c063a001a213f7af','{postgres=X/postgres,service_role=X/postgres}'),
-    ('public.tg_auto_b2b_receivable()','0b11150214b3bded49e1a7e1a4b0e80e','{postgres=X/postgres,service_role=X/postgres}'),
+    ('public.tg_auto_b2b_receivable()','0f679538fe394924b140e54938a3bb9e','{postgres=X/postgres,service_role=X/postgres}'),
     ('public.generate_b2b_receivable_secure(uuid)','c08432be20b610b424c45b73ec9610ae','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
-    ('public.approve_partner_order(uuid,text,date)','8e266945b058393ce780b1d10b20f6b3','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
+    ('public.approve_partner_order(uuid,text,date)','09eb9e7442cc59c7c72b4d39f3567a53','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
     ('public.cancel_b2b_receivable_secure(uuid,text)','9935ddb807b0b3da89dfb7d18fea267e','{postgres=X/postgres,service_role=X/postgres}'),
     ('platform_private.b2b_actor_scope(uuid)','c3f2997746f24bc2efd15db5c0ccc862','{postgres=X/postgres,service_role=X/postgres}'),
+    ('platform_private.c2_order_internal_recipients(uuid)','d4936c87a3ab62d26816a11a032dfe0f','{postgres=X/postgres}'),
+    ('platform_private.c2_order_partner_recipients(uuid)','70b381094ae1f3ac87d0fa8e28274dac','{postgres=X/postgres}'),
+    ('public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date)','8bb99a3c335b5f9876d99d988dcf94b0',NULL),
     ('public.fn_b2b_plan_selectable(uuid,timestamp with time zone)','4cb833a3eae76cbebce920f34cd5d5ce',NULL)
   ) v(sig,h,acl) LOOP
     IF md5(pg_get_functiondef(r.sig::regprocedure)) <> r.h THEN RAISE EXCEPTION 'drift %', r.sig; END IF;
@@ -21,7 +24,9 @@ BEGIN
       RAISE EXCEPTION 'acl_drift % %', r.sig, (SELECT proacl::text FROM pg_proc WHERE oid = r.sig::regprocedure);
     END IF;
   END LOOP;
-  IF to_regprocedure('platform_private.c2_owner_order_create_allowed(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'already_installed'; END IF;
+  IF to_regprocedure('platform_private.c2_owner_order_create_allowed(uuid,uuid)') IS NOT NULL
+     OR to_regprocedure('platform_private.c2_order_actor_scope(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'already_installed'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='20261023192728') THEN RAISE EXCEPTION 'installed_slice_missing'; END IF;
   -- Gatilho continua AFTER UPDATE OF status (atomicidade depende disso).
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_auto_b2b_receivable'
                  AND pg_get_triggerdef(oid) LIKE '%AFTER UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable()%') THEN

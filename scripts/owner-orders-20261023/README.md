@@ -1,3 +1,35 @@
+# C2-ORD v3 — rebase sobre o recorte instalado 20261023192728 (REVIEW, restante inativo)
+
+## Já instalado em produção (pelo auditor, via MCP) — não reaplicar
+`applied/20261023192728_c2_orders_tenant_notifications_atomic_approval.sql` é a cópia byte-exata de
+`supabase_migrations.schema_migrations` (md5 `5744e639…`, SHA-256 `40ec89d6…`). Contém só (G) destinatários
+e (E) aprovação atômica. Hashes pós conferidos READ ONLY: create `624f6e3d…`, approve `09eb9e74…`,
+tg `0f679538…`, helpers `d4936c87…`/`70b38109…` (ACL postgres-only). Não copiado para `supabase/migrations/`:
+esse diretório é gerido pela ferramenta de migração da plataforma (não há CLI no sandbox) e gravar lá
+arrisca reexecução; a cópia fica aqui como registro auditável.
+Contenção do instalado: `rollback-installed-containment.sql.review` (helpers → `SELECT NULL::uuid WHERE false`,
+ACL e aprovação atômica preservadas, sem reabrir vazamento).
+
+## Restante (candidate.sql.review v3)
+A guard/autoridade, B **wrapper** `c2_order_actor_scope` (substitui a mudança no assert: `assert_b2b_partner_scope`
+fica byte-exato e os callers legados — crédito, preços, conversão — continuam negando o técnico cumulativo),
+C create/simulate, D título, F projeção. Conversão de simulação (`convert_*`) chama o assert antes de create,
+logo continua fechada para o cumulativo (não ampliada).
+
+## Auditoria fiscal real (`fn_fiscal_requirement_resolve`, md5 `8bb99a3c…`)
+- SECURITY DEFINER, EXECUTE para authenticated; lê `fiscal_requirement_exemptions` (scope_type/scope_id) e
+  `fiscal_operation_policies` (canal/operação/UF) — ambos **globais**, sem tenant; sem uso de auth.uid().
+- Hosted: 0 políticas ativas e 0 isenções ⇒ retorno fail-closed `required=true / PENDING_PARAMETRIZATION`;
+  o título nasce marcado como pendente fiscal, nada é emitido.
+- teste4 sem `uf` ⇒ só políticas sem UF casariam. Achado menor: qualquer autenticado pode sondar se um UUID
+  tem isenção (revela id/motivo/approved_by). Não corrigido; registrar para recorte fiscal.
+
+## Fixture teste4 (`fixture-teste4.sql.review`, NÃO executado)
+Atribui o plano existente AUDIT-C2-20261023 ao parceiro 7e52de9a… e troca só a forma de pagamento desse
+parceiro para o método existente de auditoria (evita criar `pix` global). billing_trigger continua `na_entrega`.
+Cliente b2bd6b53… já está no tenant dono 007bb519 (ok para `B2B_CUSTOMER_TENANT_MISMATCH`).
+
+---
 # C2-ORD v2 — compra do cliente comercial pelo fluxo canônico (REVIEW, inativo)
 
 Autoria: agente Lovable, a partir de 10ae3078. Leitura hosted somente `SELECT`/`pg_get_functiondef`.
@@ -58,7 +90,7 @@ Consequência após instalar: geração passará a falhar explicitamente até ca
 `na_entrega` a entrega segue e a falha é registrada (semântica atual).
 
 ## Testes (`test-local.py`) — PostgreSQL 17 descartável, auth sintético, dependências stub
-43/43 PASS (inclui 8 negativos A/B de notificação): fidelidade md5 local = hosted dos 7 corpos; blocker 1 reproduzido no baseline; candidato com
+49/49 PASS (inclui 8 negativos A/B de notificação): fidelidade md5 local = hosted dos 7 corpos; blocker 1 reproduzido no baseline; candidato com
 hashes reais; ACL; gestor/cumulativo/técnico/A→B/uid forjado; plano não atribuído; create/simulate usam guard;
 revogação de papel, vínculo e entitlement; projeção; categoria/método/cliente/tenant interno; 1 título no
 tenant dono com 3 parcelas = 300; duplicidade; parceiro não emite; `na_entrega` preservado; `na_aprovacao`
