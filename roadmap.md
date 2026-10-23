@@ -1,9 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## 23/10 — complemento de revisão C2 inativo
-- [ ] Mover histórico autorizado para core privado + API INVOKER, atualizar réplica/rollback/preflight e testes.
-- [ ] Mensagem financeira contextual e compatibilidade singleton/admin com c0441e86 sem recarregar sessões; esclarecer arquivos e contagens.
-- [ ] Registrar evidências relatadas pelo proprietário (tipagem18 PASS/preflight hosted readonly PASS/gate intacto/sessões disponíveis), sem promover/aplicar.
+- [x] Histórico core privado + API INVOKER, réplica/rollback/preflight; SQL integral67 e histórico40 PASS.
+- [x] Mensagem financeira contextual; leitores publicados singleton/admin6 PASS, integral134 PASS/tipos20 PASS; arquivos/contagens esclarecidos.
+- [x] Evidências relatadas tipagem18/preflight readonly/gate/sessões disponíveis registradas, sem promover/aplicar.
+- [ ] Convivência cumulativa em aba antiga não certificada: leitor antigo exige papel único; requisições pendentes/Edge/schema cache e revogação reais aguardam auditoria, sem reload ou bypass.
 
 ## 23/10 — cadastro cumulativo integral INATIVO
 - [x] Corrigir formulário canônico candidato com três perfis externos, produtor sem parceiro, cliente/fazenda, payload coordenado e confirmação única lifecycle; manifesto 20 cópias.
