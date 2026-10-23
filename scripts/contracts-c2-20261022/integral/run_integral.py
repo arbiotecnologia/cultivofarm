@@ -48,7 +48,7 @@ INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,st
 INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled) SELECT '{U(921)}',id,true FROM public.saas_features;
 UPDATE public.saas_plan_versions SET status='PUBLISHED',price_amount=0,currency='BRL',billing_cycle='monthly',trial_days=7,published_at=now()-interval '1 day',features_snapshot='["sintetico"]' WHERE id='{U(921)}';
 INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_version_id,status,started_at) VALUES ('{ORG_A}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day'),('{ORG_B}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day');
-INSERT INTO public.partner_accounts(id,razao_social,ativo,commercial_owner_organization_id) VALUES ('{P}','Parceiro P sintetico',true,'{ORG_A}'),('{Q}','Parceiro Q sintetico',true,'{ORG_B}');
+INSERT INTO public.partner_accounts(id,codigo,razao_social,ativo,commercial_owner_organization_id) VALUES ('{P}','P-SINTETICO','Parceiro P sintetico',true,'{ORG_A}'),('{Q}','Q-SINTETICO','Parceiro Q sintetico',true,'{ORG_B}');
 SET session_replication_role=origin;
 """)
 # BOOTSTRAP ONLY: the canonical "always one active administrador" guard needs an existing
