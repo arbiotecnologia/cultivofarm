@@ -153,9 +153,11 @@ export function useUpdatePartnerFinancialSettings() {
       const org = profile?.organization_id;
       if (!current() || !org || !canConfigurePartnerSettings(roles)) throw new Error("financial_context_unavailable");
       if (baseline && (baseline.partner_id !== draft.partner_id || !baseline.id || !baseline.updated_at)) throw new Error("settings_conflict");
-      // RLS remains authoritative. Check exact tenant-owned active target, not cached selector rows.
-      const { data: partner, error: partnerError } = await sb.from("partner_accounts")
-        .select("id").eq("id", draft.partner_id).eq("commercial_owner_organization_id", org)
+      // Presentation prechecks only: the RPC independently proves h15/roles/target and full-row CAS.
+      const organization = await readFinancialSettingsOrganization(org);
+      if (!current()) throw new Error("financial_context_changed");
+      const { data: partner, error: partnerError } = await financialSettingsTargetQuery(
+        sb.from("partner_accounts").select("id").eq("id", draft.partner_id), org, organization.partner_account_id)
         .eq("ativo", true).is("deleted_at", null).maybeSingle();
       if (!current()) throw new Error("financial_context_changed");
       if (partnerError || !partner) throw new Error("financial_partner_unavailable");
@@ -163,7 +165,6 @@ export function useUpdatePartnerFinancialSettings() {
       if (!current()) throw new Error("financial_context_changed");
       if (methodError || !activePaymentMethodValid(draft.default_payment_method, methods ?? [])) throw new Error("payment_method_invalid");
       const payload = Object.fromEntries(settingsFields.map(field => [field, draft[field]]));
-      // Candidate only: server authorizes target and compares the complete persisted baseline.
       const { data, error } = await sb.rpc("rpc_update_partner_financial_settings", {
         p_partner_id: draft.partner_id,
         p_expected: baseline,
@@ -183,6 +184,20 @@ export function useUpdatePartnerFinancialSettings() {
   });
 }
 
+/** Never infer ownorg from a partner UUID or browser storage: read the current actor organization under RLS. */
+async function readFinancialSettingsOrganization(org: string): Promise<{ partner_account_id: string | null }> {
+  const { data, error } = await sb.from("organizations").select("id, partner_account_id")
+    .eq("id", org).eq("ativo", true).eq("status", "ativa").maybeSingle();
+  if (error || !data || data.id !== org) throw new Error("financial_context_unavailable");
+  return data;
+}
+
+function financialSettingsTargetQuery(query: any, org: string, ownPartner: string | null) {
+  return ownPartner
+    ? query.or(`commercial_owner_organization_id.eq.${org},id.eq.${ownPartner}`)
+    : query.eq("commercial_owner_organization_id", org);
+}
+
 export function useFinancialSettingsPartners(enabled: boolean) {
   const { profile, roles } = useAuth();
   return useScopedB2BFinancialQuery({
@@ -190,8 +205,10 @@ export function useFinancialSettingsPartners(enabled: boolean) {
     enabled: enabled && canConfigurePartnerSettings(roles),
     queryFn: async (): Promise<Array<{ id: string; razao_social: string; nome_fantasia: string | null }>> => {
       if (!profile?.organization_id) throw new Error("financial_context_unavailable");
-      const { data, error } = await sb.from("partner_accounts").select("id, razao_social, nome_fantasia")
-        .eq("commercial_owner_organization_id", profile.organization_id).eq("ativo", true)
+      const organization = await readFinancialSettingsOrganization(profile.organization_id);
+      const { data, error } = await financialSettingsTargetQuery(
+        sb.from("partner_accounts").select("id, razao_social, nome_fantasia"),
+        profile.organization_id, organization.partner_account_id).eq("ativo", true)
         .is("deleted_at", null).order("razao_social").limit(1000);
       if (error) throw error;
       return data ?? [];
