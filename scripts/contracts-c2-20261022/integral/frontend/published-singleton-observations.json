@@ -10,7 +10,7 @@
       "tenant_id": "00000000-0000-4000-8000-000000000001",
       "partner_id": "00000000-0000-4000-8000-000000000003",
       "link_version": 1,
-      "profile_stamp": "2026-10-23T17:11:07.486639+00:00",
+      "profile_stamp": "2026-10-23T17:13:14.53612+00:00",
       "has_b2b_access": true,
       "default_context": "b2b",
       "preferred_context": null,
@@ -33,7 +33,7 @@
       "partner_id": "00000000-0000-4000-8000-000000000003",
       "technician": false,
       "link_version": 1,
-      "profile_stamp": "2026-10-23T17:11:07.486639+00:00",
+      "profile_stamp": "2026-10-23T17:13:14.53612+00:00",
       "external_roles": [
         "parceiro_b2b"
       ],
@@ -80,7 +80,7 @@
       "tenant_id": "00000000-0000-4000-8000-000000000001",
       "partner_id": "00000000-0000-4000-8000-000000000003",
       "link_version": 1,
-      "profile_stamp": "2026-10-23T17:11:07.583533+00:00",
+      "profile_stamp": "2026-10-23T17:13:14.63659+00:00",
       "has_b2b_access": false,
       "default_context": "technical",
       "preferred_context": null,
@@ -103,7 +103,7 @@
       "partner_id": "00000000-0000-4000-8000-000000000003",
       "technician": true,
       "link_version": 1,
-      "profile_stamp": "2026-10-23T17:11:07.583533+00:00",
+      "profile_stamp": "2026-10-23T17:13:14.63659+00:00",
       "external_roles": [
         "parceiro_b2b_tecnico"
       ],
@@ -150,7 +150,7 @@
       "tenant_id": "00000000-0000-4000-8000-000000000001",
       "partner_id": null,
       "link_version": null,
-      "profile_stamp": "2026-10-23T17:11:07.820186+00:00",
+      "profile_stamp": "2026-10-23T17:13:14.918234+00:00",
       "has_b2b_access": false,
       "default_context": "producer",
       "preferred_context": null,
@@ -176,7 +176,7 @@
       "tenant_id": "00000000-0000-4000-8000-000000000001",
       "partner_id": null,
       "link_version": null,
-      "profile_stamp": "2026-10-23T17:11:06.83629+00:00",
+      "profile_stamp": "2026-10-23T17:13:13.346499+00:00",
       "has_b2b_access": true,
       "default_context": "admin",
       "preferred_context": null,
