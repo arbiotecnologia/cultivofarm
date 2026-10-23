@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { EXTERNAL_ROLES, EXTERNAL_LABELS } from "@/lib/configuracoes/externalUserDraft";
 type Props = { roles: string[]; partnerId: string; clients: string[]; primary: string | null; disabled?: boolean;
   onRoles: (roles: string[]) => void; onPartner: (id: string) => void;
-  onClients: (ids: string[], primary: string | null) => void; onVerified: (ids: string[]) => void; partnerOnly?: boolean };
+  onClients: (ids: string[], primary: string | null) => void; onVerified: (ids: string[]) => void; partnerOnly?: boolean; companyLabel?: string };
 // Only existing RLS-scoped reads. A visible farm is a prerequisite, never a grant;
 // claim/finish revalidate the chain and locks on the server before provisioning.
 export function ExternalRegistrationFields(props: Props) {
@@ -49,7 +49,7 @@ export function ExternalRegistrationFields(props: Props) {
     [fence.ready, fence.scope, producer, proof.data, proof.isFetching, proof.isError]);
   if (!fence.ready) return <p role="alert">Sessão indisponível para consultar vínculos.</p>;
   return <fieldset disabled={props.disabled} className="space-y-3" aria-label="Perfis e vínculos externos">
-    <div><span className="text-sm">Empresa do cadastro</span><p>{profile?.organization_id}</p></div>
+    <div><span className="text-sm">Empresa do cadastro</span><p>{props.companyLabel || profile?.organization_id}</p></div>
     {!props.partnerOnly && <div className="flex flex-wrap gap-3">{EXTERNAL_ROLES.map(r => <label key={r} className="flex items-center gap-2"><Checkbox checked={props.roles.includes(r)} onCheckedChange={v => {
       const next = v === true ? [...props.roles, r] : props.roles.filter(x => x !== r); props.onRoles(next);
       if (!next.includes("cliente_produtor")) props.onClients([], null);

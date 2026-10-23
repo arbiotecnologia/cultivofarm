@@ -849,7 +849,7 @@ export default function Configuracoes() {
                              </div>
                           )}
                           {registrationKind !== "internal" && <>
-                            <ExternalRegistrationFields key={createFence.scope} roles={newUser.roles} partnerId={newUser.partner_id}
+                            <ExternalRegistrationFields key={createFence.scope} companyLabel={organizationProfile.data?.nome} roles={newUser.roles} partnerId={newUser.partner_id}
                               clients={selectedClients} primary={primaryClient} disabled={createUser.isPending}
                               onRoles={next => setNewUser(old => ({ ...old, roles: next }))}
                               onPartner={id => setNewUser(old => ({ ...old, partner_id: id }))}
@@ -1121,7 +1121,7 @@ export default function Configuracoes() {
                     <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(editOrig ?? editUser, true)}</div></div>
                     {isAdmin && externalLifecycleCandidate && canTenantEmail && !vinculos.isFetching && !vinculos.isError && <>
                       {!vinculos.data?.get(editUser.user_id)?.parceiro?.partner_id && <ExternalRegistrationFields
-                        key={`partner:${externalScope}`} partnerOnly roles={[]} partnerId={editPartner} clients={[]} primary={null}
+                        key={`partner:${externalScope}`} companyLabel={organizationProfile.data?.nome} partnerOnly roles={[]} partnerId={editPartner} clients={[]} primary={null}
                         onRoles={() => {}} onPartner={setEditPartner} onClients={() => {}} onVerified={() => {}} />}
                       {(vinculos.data?.get(editUser.user_id)?.parceiro?.partner_id || editPartner) && <PartnerLifecycleFields
                         key={`${externalScope}:${editPartner}:${editUser.user_id}`}

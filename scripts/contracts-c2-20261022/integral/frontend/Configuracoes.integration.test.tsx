@@ -100,6 +100,23 @@ it("sem parceiro e sem perfil não cria usuário", async () => {
   fireEvent.click(screen.getByRole("checkbox", { name: "Gestor B2B" }));
   fireEvent.click(screen.getByRole("button", { name: "Criar Usuário" })); expect(s.invoke).not.toHaveBeenCalled();
 });
+it("mudar de interno para externo elimina papéis internos e senha do formulário/payload", async () => {
+  mount(); fireEvent.click(await screen.findByRole("button", { name: "Novo Usuário" }));
+  fireEvent.change(screen.getByLabelText("Senha *"), { target: { value: "Synthetic123" } });
+  fireEvent.click(screen.getByRole("radio", { name: /Parceiro B2B/ }));
+  fireEvent.change(screen.getByLabelText("Nome *"), { target: { value: "Pessoa sintética" } });
+  fireEvent.change(screen.getByLabelText("Email *"), { target: { value: "synthetic@example.invalid" } });
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Parceiro sintético" }));
+  fireEvent.click(screen.getByRole("button", { name: "Criar Usuário" })); await waitFor(() => expect(s.invoke).toHaveBeenCalledTimes(1));
+  expect(s.invoke.mock.calls[0][1].body.roles).toEqual(["parceiro_b2b"]); expect(s.invoke.mock.calls[0][1].body).not.toHaveProperty("password");
+});
+it("erro ao consultar vínculos não libera envio sem parceiro", async () => {
+  s.from.mockImplementation(() => { const chain: Record<string, unknown> = { abortSignal: async () => ({ data: null, error: { code: "42501" }, count: 0 }) };
+    for (const method of ["select", "filter", "eq", "is", "ilike", "order", "range", "in"]) chain[method] = () => chain; return chain; });
+  mount(); fireEvent.click(await screen.findByRole("button", { name: "Novo Usuário" })); fireEvent.click(screen.getByRole("radio", { name: /Parceiro B2B/ }));
+  await screen.findByRole("button", { name: "Tentar novamente" });
+  fireEvent.click(screen.getByRole("button", { name: "Criar Usuário" })); expect(s.invoke).not.toHaveBeenCalled();
+});
 it("erro preserva recibo e lock; retry é idêntico e não aceita payload alterado", async () => {
   let resolve: (v: unknown) => void = () => {}; s.invoke.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
   mount(); await openCreate(); const submit = screen.getByRole("button", { name: "Criar Usuário" });
