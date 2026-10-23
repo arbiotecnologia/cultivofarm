@@ -42,6 +42,12 @@ export function getPortalDisplayLabel({
   // Portal técnico / campo — decide por papéis reais.
   // O papel primário tem precedência para distinguir consultor_tecnico de
   // tecnico_agronomo (rótulos diferentes, mesmas permissões).
+  // Contexto técnico explícito de parceiro B2B cumulativo: o papel B2B gestor
+  // primário nunca rotula o portal técnico (apresentação apenas).
+  if (activeCtx === "technical" && roles.includes("parceiro_b2b_tecnico") &&
+      !roles.includes("consultor_tecnico") && !roles.includes("tecnico_agronomo")) {
+    return ROLE_LABELS.parceiro_b2b_tecnico;
+  }
   if (primaryRole === "tecnico_agronomo") return ROLE_LABELS.tecnico_agronomo;
   if (primaryRole === "consultor_tecnico") return ROLE_LABELS.consultor_tecnico;
   if (roles.includes("consultor_tecnico")) return ROLE_LABELS.consultor_tecnico;
