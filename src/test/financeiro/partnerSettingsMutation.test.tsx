@@ -15,7 +15,7 @@ vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => {
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   rpc: async (name: string, args: Record<string, unknown>) => {
     state.operations.push({ table: name, calls: [["rpc", args, undefined]] });
-    return { data: state.rows ? { id: "S" } : null,
+    return { data: state.rows ? { id: "S", partner_id: args.p_partner_id, ...(args.p_values as Record<string, unknown>) } : null,
       error: state.rpcError ?? (state.duplicate ? { code: "40001", message: "settings_conflict" } : null) };
   }, from: (table: string) => {
     const op = { table, calls: [] as Array<[string, unknown, unknown]> }; state.operations.push(op);

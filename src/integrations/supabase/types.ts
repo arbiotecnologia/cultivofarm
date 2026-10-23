@@ -25823,6 +25823,32 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_update_partner_financial_settings: {
+        Args: { p_expected: Json; p_partner_id: string; p_values: Json }
+        Returns: {
+          active: boolean
+          auto_generate_receivable: boolean
+          billing_trigger: string
+          block_if_overdue: boolean
+          created_at: string
+          credit_alert_threshold_1: number
+          credit_alert_threshold_2: number
+          credit_limit: number | null
+          credit_limit_action: string
+          default_payment_method: string | null
+          id: string
+          overdue_tolerance_days: number
+          partner_id: string
+          payment_terms_days: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "partner_financial_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       rpc_upsert_communication_rule: {
         Args: {
           p_canal: Database["public"]["Enums"]["comunicacao_canal"]

@@ -244,11 +244,11 @@ export function PartnerFinancialSettingsDialog({
   const [failure, setFailure] = useState<string | null>(null);
   const submitting = useRef(false);
   useEffect(() => {
-    if (baseline !== undefined || !query.isSuccess || query.data === undefined || !partner) return;
+    if (baseline !== undefined || !query.isSuccess || query.isFetching || query.isFetchedAfterMount === false || query.data === undefined || !partner) return;
     setBaseline(query.data);
     setForm(query.data ?? emptyPartnerSettings(partner.partner_id));
-  }, [baseline, query.isSuccess, query.data, partner]);
-  const conflict = baseline !== undefined && query.data !== undefined && !samePartnerSettings(baseline, query.data);
+  }, [baseline, query.isSuccess, query.isFetching, query.isFetchedAfterMount, query.data, partner]);
+  const conflict = !save.isPending && baseline !== undefined && query.data !== undefined && !samePartnerSettings(baseline, query.data);
   const validMethod = activePaymentMethodValid(form.default_payment_method, methods.data ?? []);
   const ready = allowed && baseline !== undefined && query.isSuccess && !query.isFetching && !query.isError
     && methods.isSuccess && !methods.isFetching && !methods.isError && validMethod && !conflict && !failure;

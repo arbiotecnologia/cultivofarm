@@ -1,0 +1,50 @@
+--- a/src/hooks/useB2BFinanceiro.ts
++++ b/src/hooks/useB2BFinanceiro.ts
+@@ -131,6 +131,8 @@
+   return useScopedB2BFinancialQuery({
+     queryKey: ["pfs", partner_id],
+     enabled: enabled && !!partner_id,
++    // App disables refetch-on-mount globally; each newly opened settings dialog needs a fresh CAS baseline.
++    refetchOnMount: "always",
+     queryFn: async () => {
+       const { data, error } = await sb
+         .from("partner_financial_settings")
+@@ -173,12 +175,20 @@
+       if (!current()) throw new Error("financial_context_changed");
+       if (error?.code === "23505" || (!error && !data)) throw new Error("settings_conflict");
+       if (error) throw error;
++      if (data.partner_id !== draft.partner_id) throw new Error("settings_response_invalid");
++      const key = ["pfs", draft.partner_id, fence.scope];
++      // Serialize canonical adoption against pre-RPC reads. Cancellation rejects late SDK results
++      // even if the transport does not support abort; never seed another actor/tenant/epoch.
++      await qc.cancelQueries({ queryKey: key, exact: true });
++      if (!current()) throw new Error("financial_context_changed");
++      qc.setQueryData(key, data as PartnerSettings);
++      await qc.invalidateQueries({ queryKey: key, exact: true, refetchType: "active" }, { throwOnError: true });
++      if (!current()) throw new Error("financial_context_changed");
+       return { row: data as PartnerSettings, scope: fence.scope };
+     },
+     onSuccess: (result, v) => {
+       if (!fence.ready || result.scope !== fence.scope) return;
+       toast.success("Configuração salva");
+-      void qc.invalidateQueries({ queryKey: ["pfs", v.draft.partner_id, result.scope], exact: true });
+     },
+     onError: () => {}, // Dialog preserves draft and distinguishes conflict/uncertainty.
+   });
+--- a/src/pages/financeiro/FinanceiroB2B.tsx
++++ b/src/pages/financeiro/FinanceiroB2B.tsx
+@@ -244,11 +244,11 @@
+   const [failure, setFailure] = useState<string | null>(null);
+   const submitting = useRef(false);
+   useEffect(() => {
+-    if (baseline !== undefined || !query.isSuccess || query.data === undefined || !partner) return;
++    if (baseline !== undefined || !query.isSuccess || query.isFetching || query.isFetchedAfterMount === false || query.data === undefined || !partner) return;
+     setBaseline(query.data);
+     setForm(query.data ?? emptyPartnerSettings(partner.partner_id));
+-  }, [baseline, query.isSuccess, query.data, partner]);
+-  const conflict = baseline !== undefined && query.data !== undefined && !samePartnerSettings(baseline, query.data);
++  }, [baseline, query.isSuccess, query.isFetching, query.isFetchedAfterMount, query.data, partner]);
++  const conflict = !save.isPending && baseline !== undefined && query.data !== undefined && !samePartnerSettings(baseline, query.data);
+   const validMethod = activePaymentMethodValid(form.default_payment_method, methods.data ?? []);
+   const ready = allowed && baseline !== undefined && query.isSuccess && !query.isFetching && !query.isError
+     && methods.isSuccess && !methods.isFetching && !methods.isError && validMethod && !conflict && !failure;

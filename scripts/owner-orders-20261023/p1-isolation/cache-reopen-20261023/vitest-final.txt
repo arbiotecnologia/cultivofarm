@@ -1,0 +1,16 @@
+$ vitest run src/test/financeiro/partnerSettings.integration.test.tsx src/test/financeiro/partnerSettingsMutation.test.tsx src/test/financeiro/partnerSettings.test.tsx "src/test/financeiro/b2bFinancial.session.test.tsx" src/test/comercial/assignmentPublication.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/comercial/assignmentPublication.test.tsx (3 tests) 242ms
+ ✓ src/test/financeiro/partnerSettingsMutation.test.tsx (20 tests) 473ms
+ ✓ src/test/financeiro/b2bFinancial.session.test.tsx (14 tests) 710ms
+ ✓ src/test/financeiro/partnerSettings.test.tsx (11 tests) 560ms
+ ✓ src/test/financeiro/partnerSettings.integration.test.tsx (11 tests) 1509ms
+   ✓ P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > salvar fecha; reabrir mostra retorno canônico e nunca pix do cache anterior  409ms
+
+ Test Files  5 passed (5)
+      Tests  59 passed (59)
+   Start at  18:22:50
+   Duration  5.33s (transform 726ms, setup 1.35s, collect 4.04s, tests 3.49s, environment 6.89s, prepare 2.63s)
+

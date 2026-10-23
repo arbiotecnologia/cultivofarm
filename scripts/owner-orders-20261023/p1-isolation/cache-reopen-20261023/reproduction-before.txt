@@ -1,0 +1,655 @@
+$ vitest run src/test/financeiro/partnerSettings.integration.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ❯ src/test/financeiro/partnerSettings.integration.test.tsx (9 tests | 5 failed) 3017ms
+   × P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > salvar fecha; reabrir mostra retorno canônico e nunca pix do cache anterior 1184ms
+     → [2mexpect([22m[31melement[39m[2m).toBeEnabled()[22m
+
+Received element is not enabled:
+  [31m<button
+  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"
+  disabled=""
+/>[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+      [36m>[39m
+        [0mConfigurar parceiro[0m
+      [36m</button>[39m
+    [36m</div>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mclass[39m=[32m"fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-state[39m=[32m"open"[39m
+      [33mstyle[39m=[32m"pointer-events: auto;"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-labelledby[39m=[32m"radix-:r1:"[39m
+      [33mclass[39m=[32m"fixed left-[50%] top-[50%] z-50 grid w-full max-h-[90vh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-lg"[39m
+      [33mdata-state[39m=[32m"open"[39m
+      [33mid[39m=[32m"radix-:r0:"[39m
+      [33mrole[39m=[32m"dialog"[39m
+      [33mstyle[39m=[32m"pointer-events: auto;"[39m
+      [33mtabindex[39m=[32m"-1"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col space-y-1.5 text-center sm:text-left"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mclass[39m=[32m"text-lg font-semibold leading-none tracking-tight"[39m
+          [33mid[39m=[32m"radix-:r1:"[39m
+        [36m>[39m
+          [0mConfiguração Financeira — [0m
+          [0mTeste[0m
+        [36m</h2>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"space-y-3"[39m
+      [36m>[39m
+        [36m<div>[39m
+          [36m<label[39m
+            [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+            [33mfor[39m=[32m"billing-trigger"[39m
+          [36m>[39m
+            [0mGatilho de cobrança[0m
+          [36m</label>[39m
+          [36m<select>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_aprovacao"[39m
+            [36m>[39m
+              [0mNa aprovação[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_producao_finalizada"[39m
+            [36m>[39m
+              [0mProdução finalizada[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_entrega"[39m
+            [36m>[39m
+              [0mNa entrega (padrão)[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"manual"[39m
+            [36m>[39m
+              [0mManual[0m
+            [36m</option>[39m
+          [36m</select>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 gap-3"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+              [33mfor[39m=[32m"payment-days"[39m
+            [36m>[39m
+              [0mPrazo (dias)[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+              [33mid[39m=[32m"payment-days"[39m
+              [33mmin[39m=[32m"0"[39m
+              [33mtype[39m=[32m"number"[39m
+              [33mvalue[39m=[32m"7"[39m
+            [36m/>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+              [33mfor[39m=[32m"default-method"[39m
+            [36m>[39m
+              [0mForma padrão[0m
+            [36m</label>[39m
+            [36m<select>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"AUDIT-AR-20260922 - Sem transferencia"[39m
+              [36m>[39m
+                [0mAUDIT-AR-20260922 - Sem transferencia[0m
+              [36m</option>[39m
+            [36m</select>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm text-destructive"[39m
+              [33mrole[39m=[32m"alert"[39m
+            [36m>[39m
+              [0mSelecione explicitamente um método ativo cadastrado.[0m
+            [36m</p>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div>[39m
+          [36m<label[39m
+      ...
+   × P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > reabertura não congela baseline stale durante a primeira releitura 1041ms
+     → expected [] to have a length of 1 but got +0
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+      [36m>[39m
+        [0mConfigurar parceiro[0m
+      [36m</button>[39m
+    [36m</div>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mclass[39m=[32m"fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-state[39m=[32m"open"[39m
+      [33mstyle[39m=[32m"pointer-events: auto;"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-labelledby[39m=[32m"radix-:r4:"[39m
+      [33mclass[39m=[32m"fixed left-[50%] top-[50%] z-50 grid w-full max-h-[90vh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-lg"[39m
+      [33mdata-state[39m=[32m"open"[39m
+      [33mid[39m=[32m"radix-:r3:"[39m
+      [33mrole[39m=[32m"dialog"[39m
+      [33mstyle[39m=[32m"pointer-events: auto;"[39m
+      [33mtabindex[39m=[32m"-1"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col space-y-1.5 text-center sm:text-left"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mclass[39m=[32m"text-lg font-semibold leading-none tracking-tight"[39m
+          [33mid[39m=[32m"radix-:r4:"[39m
+        [36m>[39m
+          [0mConfiguração Financeira — [0m
+          [0mTeste[0m
+        [36m</h2>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"space-y-3"[39m
+      [36m>[39m
+        [36m<div>[39m
+          [36m<label[39m
+            [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+            [33mfor[39m=[32m"billing-trigger"[39m
+          [36m>[39m
+            [0mGatilho de cobrança[0m
+          [36m</label>[39m
+          [36m<select>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_aprovacao"[39m
+            [36m>[39m
+              [0mNa aprovação[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_producao_finalizada"[39m
+            [36m>[39m
+              [0mProdução finalizada[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_entrega"[39m
+            [36m>[39m
+              [0mNa entrega (padrão)[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"manual"[39m
+            [36m>[39m
+              [0mManual[0m
+            [36m</option>[39m
+          [36m</select>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 gap-3"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+              [33mfor[39m=[32m"payment-days"[39m
+            [36m>[39m
+              [0mPrazo (dias)[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+              [33mid[39m=[32m"payment-days"[39m
+              [33mmin[39m=[32m"0"[39m
+              [33mtype[39m=[32m"number"[39m
+              [33mvalue[39m=[32m"7"[39m
+            [36m/>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+              [33mfor[39m=[32m"default-method"[39m
+            [36m>[39m
+              [0mForma padrão[0m
+            [36m</label>[39m
+            [36m<select>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+              [36m<option[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mvalue[39m=[32m"pix"[39m
+              [36m>[39m
+                [0mpix[0m
+                [0m — inválido/inativo[0m
+              [36m</option>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"AUDIT-AR-20260922 - Sem transferencia"[39m
+              [36m>[39m
+                [0mAUDIT-AR-20260922 - Sem transferencia[0m
+              [36m</option>[39m
+            [36m</select>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm text-destructive"[39m
+              [33mrol...
+   ✓ P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > cancela leitura antiga pendente no sucesso RPC e ignora resposta velha tardia 163ms
+   × P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > aguarda releitura pós-sucesso antes de fechar, sem cache stale 128ms
+     → expected { partner_id: 'P', …(13) } to match object { Object (default_payment_method) }
+(13 matching properties omitted from actual)
+   ✓ P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > refetch igual preserva edição suja; diferente mantém rascunho e bloqueia CAS 80ms
+   ✓ P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > conflito RPC não atualiza cache nem fecha ou perde edição 121ms
+   × P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > tenant enquanto RPC pendente impede adoção/invalidação do resultado antigo 103ms
+     → expected true to be false // Object.is equality
+   ✓ P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > revocation enquanto RPC pendente impede adoção/invalidação do resultado antigo 86ms
+   × P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > epoch enquanto RPC pendente impede adoção/invalidação do resultado antigo 107ms
+     → expected true to be false // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/financeiro/partnerSettings.integration.test.tsx > P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > salvar fecha; reabrir mostra retorno canônico e nunca pix do cache anterior
+Error: [2mexpect([22m[31melement[39m[2m).toBeEnabled()[22m
+
+Received element is not enabled:
+  [31m<button
+  class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"
+  disabled=""
+/>[39m
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+      [36m>[39m
+        [0mConfigurar parceiro[0m
+      [36m</button>[39m
+    [36m</div>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mclass[39m=[32m"fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-state[39m=[32m"open"[39m
+      [33mstyle[39m=[32m"pointer-events: auto;"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-labelledby[39m=[32m"radix-:r1:"[39m
+      [33mclass[39m=[32m"fixed left-[50%] top-[50%] z-50 grid w-full max-h-[90vh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-lg"[39m
+      [33mdata-state[39m=[32m"open"[39m
+      [33mid[39m=[32m"radix-:r0:"[39m
+      [33mrole[39m=[32m"dialog"[39m
+      [33mstyle[39m=[32m"pointer-events: auto;"[39m
+      [33mtabindex[39m=[32m"-1"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col space-y-1.5 text-center sm:text-left"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mclass[39m=[32m"text-lg font-semibold leading-none tracking-tight"[39m
+          [33mid[39m=[32m"radix-:r1:"[39m
+        [36m>[39m
+          [0mConfiguração Financeira — [0m
+          [0mTeste[0m
+        [36m</h2>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"space-y-3"[39m
+      [36m>[39m
+        [36m<div>[39m
+          [36m<label[39m
+            [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+            [33mfor[39m=[32m"billing-trigger"[39m
+          [36m>[39m
+            [0mGatilho de cobrança[0m
+          [36m</label>[39m
+          [36m<select>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_aprovacao"[39m
+            [36m>[39m
+              [0mNa aprovação[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_producao_finalizada"[39m
+            [36m>[39m
+              [0mProdução finalizada[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_entrega"[39m
+            [36m>[39m
+              [0mNa entrega (padrão)[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"manual"[39m
+            [36m>[39m
+              [0mManual[0m
+            [36m</option>[39m
+          [36m</select>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 gap-3"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+              [33mfor[39m=[32m"payment-days"[39m
+            [36m>[39m
+              [0mPrazo (dias)[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+              [33mid[39m=[32m"payment-days"[39m
+              [33mmin[39m=[32m"0"[39m
+              [33mtype[39m=[32m"number"[39m
+              [33mvalue[39m=[32m"7"[39m
+            [36m/>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+              [33mfor[39m=[32m"default-method"[39m
+            [36m>[39m
+              [0mForma padrão[0m
+            [36m</label>[39m
+            [36m<select>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"AUDIT-AR-20260922 - Sem transferencia"[39m
+              [36m>[39m
+                [0mAUDIT-AR-20260922 - Sem transferencia[0m
+              [36m</option>[39m
+            [36m</select>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm text-destructive"[39m
+              [33mrole[39m=[32m"alert"[39m
+            [36m>[39m
+              [0mSelecione explicitamente um método ativo cadastrado.[0m
+            [36m</p>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div>[39m
+          [36m<label[39m
+      ...
+ ❯ src/test/financeiro/partnerSettings.integration.test.tsx:71:78
+     69|   await screen.findByLabelText("Prazo (dias)");
+     70|   fireEvent.change(screen.getAllByRole("combobox")[1], { target: { val…
+     71|   await waitFor(() => expect(screen.getByRole("button", { name: "Salva…
+       |                                                                              ^
+     72| }
+     73| beforeEach(() => {
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  src/test/financeiro/partnerSettings.integration.test.tsx > P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > reabertura não congela baseline stale durante a primeira releitura
+AssertionError: expected [] to have a length of 1 but got +0
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<button[39m
+        [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+      [36m>[39m
+        [0mConfigurar parceiro[0m
+      [36m</button>[39m
+    [36m</div>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mclass[39m=[32m"fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-state[39m=[32m"open"[39m
+      [33mstyle[39m=[32m"pointer-events: auto;"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-labelledby[39m=[32m"radix-:r4:"[39m
+      [33mclass[39m=[32m"fixed left-[50%] top-[50%] z-50 grid w-full max-h-[90vh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg max-w-lg"[39m
+      [33mdata-state[39m=[32m"open"[39m
+      [33mid[39m=[32m"radix-:r3:"[39m
+      [33mrole[39m=[32m"dialog"[39m
+      [33mstyle[39m=[32m"pointer-events: auto;"[39m
+      [33mtabindex[39m=[32m"-1"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col space-y-1.5 text-center sm:text-left"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mclass[39m=[32m"text-lg font-semibold leading-none tracking-tight"[39m
+          [33mid[39m=[32m"radix-:r4:"[39m
+        [36m>[39m
+          [0mConfiguração Financeira — [0m
+          [0mTeste[0m
+        [36m</h2>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"space-y-3"[39m
+      [36m>[39m
+        [36m<div>[39m
+          [36m<label[39m
+            [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+            [33mfor[39m=[32m"billing-trigger"[39m
+          [36m>[39m
+            [0mGatilho de cobrança[0m
+          [36m</label>[39m
+          [36m<select>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m""[39m
+            [36m/>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_aprovacao"[39m
+            [36m>[39m
+              [0mNa aprovação[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_producao_finalizada"[39m
+            [36m>[39m
+              [0mProdução finalizada[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"na_entrega"[39m
+            [36m>[39m
+              [0mNa entrega (padrão)[0m
+            [36m</option>[39m
+            [36m<option[39m
+              [33mvalue[39m=[32m"manual"[39m
+            [36m>[39m
+              [0mManual[0m
+            [36m</option>[39m
+          [36m</select>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-2 gap-3"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+              [33mfor[39m=[32m"payment-days"[39m
+            [36m>[39m
+              [0mPrazo (dias)[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+              [33mid[39m=[32m"payment-days"[39m
+              [33mmin[39m=[32m"0"[39m
+              [33mtype[39m=[32m"number"[39m
+              [33mvalue[39m=[32m"7"[39m
+            [36m/>[39m
+          [36m</div>[39m
+          [36m<div>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70"[39m
+              [33mfor[39m=[32m"default-method"[39m
+            [36m>[39m
+              [0mForma padrão[0m
+            [36m</label>[39m
+            [36m<select>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m""[39m
+              [36m/>[39m
+              [36m<option[39m
+                [33mdisabled[39m=[32m""[39m
+                [33mvalue[39m=[32m"pix"[39m
+              [36m>[39m
+                [0mpix[0m
+                [0m — inválido/inativo[0m
+              [36m</option>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m"AUDIT-AR-20260922 - Sem transferencia"[39m
+              [36m>[39m
+                [0mAUDIT-AR-20260922 - Sem transferencia[0m
+              [36m</option>[39m
+            [36m</select>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm text-destructive"[39m
+              [33mrol...
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+ ❯ src/test/financeiro/partnerSettings.integration.test.tsx:91:52
+     89|     state.row = { ...legacy(), default_payment_method: method }; state…
+     90|     const { client } = setup(legacy()); await open();
+     91|     await waitFor(() => expect(state.pendingReads).toHaveLength(1));
+       |                                                    ^
+     92|     expect(screen.queryByLabelText("Prazo (dias)")).toBeNull();
+     93|     await act(async () => { state.holdReads = false; state.pendingRead…
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  src/test/financeiro/partnerSettings.integration.test.tsx > P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > aguarda releitura pós-sucesso antes de fechar, sem cache stale
+AssertionError: expected { partner_id: 'P', …(13) } to match object { Object (default_payment_method) }
+(13 matching properties omitted from actual)
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "default_payment_method": "AUDIT-AR-20260922 - Sem transferencia",[39m
+[31m+   "default_payment_method": "pix",[39m
+[2m  }[22m
+
+ ❯ src/test/financeiro/partnerSettings.integration.test.tsx:116:38
+    114|     await act(async () => { state.holdReads = true; state.pendingRpc?.…
+    115|     await waitFor(() => expect(state.pendingReads).toHaveLength(1));
+    116|     expect(client.getQueryData(key)).toMatchObject({ default_payment_m…
+       |                                      ^
+    117|     expect(screen.getByRole("dialog")).toBeInTheDocument(); expect(scr…
+    118|     await act(async () => { state.holdReads = false; state.pendingRead…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  src/test/financeiro/partnerSettings.integration.test.tsx > P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > tenant enquanto RPC pendente impede adoção/invalidação do resultado antigo
+ FAIL  src/test/financeiro/partnerSettings.integration.test.tsx > P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML hosted > epoch enquanto RPC pendente impede adoção/invalidação do resultado antigo
+AssertionError: expected true to be false // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+ ❯ src/test/financeiro/partnerSettings.integration.test.tsx:150:127
+    148|       await act(async () => state.pendingRpc?.());
+    149|       const values = client.getQueryCache().getAll().map(q => q.state.…
+    150|       expect(values.some(value => (value as PartnerSettings | undefine…
+       |                                                                                                                               ^
+    151|       expect(client.getQueryData(key)).toBeUndefined(); client.clear();
+    152|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 4 passed (9)
+   Start at  18:20:42
+   Duration  5.15s (transform 218ms, setup 86ms, collect 570ms, tests 3.02s, environment 470ms, prepare 77ms)
+
+error: script "test" exited with code 1

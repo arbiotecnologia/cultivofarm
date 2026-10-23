@@ -1,5 +1,10 @@
 # C2-ORD v3 — rebase sobre o recorte instalado 20261023192728 (REVIEW, restante inativo)
 
+## 23/10 21:18 — P1 aplicado por Codex; cache/baseline corrigidos localmente
+Relato implantação migration20261023211007/PRE/POST/dados iguais e JWT B sem atribuições/A própria publicada; método AUDIT salvo UI21:18:08.481422+00, prazo7/na_entrega intactos. Registro `applied/20261023211007_c2_private_assignments_financial_settings.md`. Nunca reaplicar P1/PRE antigos. Artefato publicado bafe3e23/deploybcca6f2f confirmado por metadados públicos e SHA App igual à build anterior.
+
+Fix revisável em `p1-isolation/cache-reopen-20261023/`: somente hook+dialog/cache com retorno RPC canônico e leitura inicial fresca, CAS/dirty/fences preservados; 59/59 testes (11 integrados), tsgo app/node0 e produção26,04s PASS. NÃO publicado; banco/dados/writerC2/sessões intocados. Arquivamento B bloqueado pela revisão automática Codex pendente de confirmação específica, sem nova tentativa. Homologação real desta correção e pendências antigas continuam abertas. Seções anteriores abaixo são histórico, não status atual de implantação/método.
+
 ## 23/10 21:06 — promoção restrita frontend, sem publicação
 Hook RPC P1 promovido localmente; ownorg legado e commercial owner ativos refletidos no selector e precheck, RLS/RPC autoritativos. 48/48 testes, tsgo app/node EXIT0 e Vite production da cópia integrada PASS36,15s. Detalhes/diff/SHA em `p1-isolation/frontend-promotion-20261023/`. SQL P1 não aplicado pelo agente, writer C2 não liberado. ACL fiscal `c2_fiscal_resolver_internal_only` implantada pelo proprietário segundo relato: registro `applied/c2_fiscal_resolver_internal_only.md`, corpo intacto/EXECUTE postgres+service_role; PRE/candidata fiscal antigos são históricos, não reaplicar. Método pix e plano publicado teste4 intactos; sem dados/publicação/sessão. Homologação JWT/UI real e gates antigos seguem abertos.
 
