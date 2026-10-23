@@ -31,7 +31,7 @@ beforeEach(() => {
   s.rpc.mockReset().mockImplementation((name, args) => {
     const response = async () => {
       if (name === "tenant_admin_list_users") return { data: { items: s.rows, total: s.rows.length }, error: null };
-      if (name === "tenant_admin_user_links") return { data: s.rows.map(row => ({ user_id: row.user_id, expected_version: "a".repeat(64), clientes: [], parceiro: s.partnerLink ? { partner_id: partner, razao_social: "Parceiro sintético", papel: "gestor", ativo: true } : null, parceiros_total: s.partnerLink ? 1 : 0, fora_do_alcance: 0 })), error: null };
+      if (name === "tenant_admin_user_links") return { data: { items: s.rows.map(row => ({ user_id: row.user_id, expected_version: "a".repeat(64), clientes: [], parceiro: s.partnerLink ? { partner_id: partner, razao_social: "Parceiro sintético", papel: "gestor", ativo: true } : null, parceiros_total: s.partnerLink ? 1 : 0, fora_do_alcance: 0 })) }, error: null };
       if (name === "get_partner_user_lifecycle") return { data: { version: s.version, state: { roles: s.roles, link: s.partnerLink ? { revoked_at: null } : null }, history: [], next_cursor: null }, error: null };
       if (name === "link_partner_user") {
         if (s.conflict) return { data: null, error: { code: "40001" } };
