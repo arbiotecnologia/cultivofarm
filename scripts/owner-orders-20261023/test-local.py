@@ -303,6 +303,53 @@ try:
   dup = run(as_uid(U['admin'], f"SELECT public.generate_b2b_receivable_secure('{O1}')->>'duplicado';"))
   assert dup == 'true' and run(f"SELECT count(*) FROM accounts_receivable WHERE origin_id='{O1}'") == '1'
   ok('segunda geração devolve duplicado=true, sem novo título')
+  def financial_snapshot():
+    return run("SELECT jsonb_build_object(" + ','.join(
+      f"'{t}',(SELECT COALESCE(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]'::jsonb) FROM {t} x)"
+      for t in ['partner_orders','accounts_receivable','accounts_receivable_installments','partner_order_financial_links','partner_order_payment_schedule','partner_financial_settings','notificacoes_operacionais']) + ");")
+  before_financial=financial_snapshot()
+  call=as_uid(U['admin'],f"SELECT public.generate_b2b_receivable_secure('{O1}')->>'receivable_id';")
+  with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+    ids=list(pool.map(lambda _:run(call),range(2)))
+  assert len(set(ids))==1 and ids[0]==run(f"SELECT receivable_id FROM partner_order_financial_links WHERE partner_order_id='{O1}'")
+  assert financial_snapshot()==before_financial
+  ok('duas conexões reais: replay mesmo UUID, título/vínculo/parcelas/cronograma/settings inalterados')
+  assert run(f"SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='{P_A}'")==settings_before
+  ok('geração não grava settings nem modifica CAS/updated_at P1')
+  for actor in ['gestor','cumul','tech','gestorB']:
+    run(as_uid(U[actor],f"SELECT public.generate_b2b_receivable_secure('{O1}');"),'b2b_phase1_scope_denied' if actor in ['tech','gestorB'] else 'permission_denied')
+    run(as_uid(U[actor],f"SELECT public.approve_partner_order('{O1}',NULL,NULL);"),'b2b_phase1_scope_denied' if actor in ['tech','gestorB'] else 'forbidden')
+  ok('endpoints reais: gestor externo/cumulativo/técnico/B não aprovam ou geram título A')
+  run(f"UPDATE partner_users SET revoked_at=now() WHERE user_id='{U['gestor']}';")
+  run(as_uid(U['gestor'],f"SELECT public.generate_b2b_receivable_secure('{O1}');"),'b2b_phase1_scope_denied')
+  run(f"UPDATE partner_users SET revoked_at=NULL WHERE user_id='{U['gestor']}';")
+  ok('replay de título existente não contorna vínculo revogado')
+
+  # Failure injection is ONLY a disposable trigger, never a substituted business body.
+  O4='11111111-0000-0000-0000-000000000004'
+  run(mk_order(O4))
+  run("CREATE FUNCTION test_late_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test_late_failure'; END $$;")
+  for table in ['partner_order_financial_links','notificacoes_operacionais']:
+    baseline=financial_snapshot()
+    audit_before=run("SELECT COALESCE(jsonb_agg(to_jsonb(a) ORDER BY to_jsonb(a)::text),'[]') FROM partner_order_audit_logs a")
+    run(f"CREATE TRIGGER test_late_failure BEFORE INSERT ON {table} FOR EACH ROW EXECUTE FUNCTION test_late_failure();")
+    run(approve(O4),'test_late_failure')
+    assert financial_snapshot()==baseline
+    assert run("SELECT COALESCE(jsonb_agg(to_jsonb(a) ORDER BY to_jsonb(a)::text),'[]') FROM partner_order_audit_logs a")==audit_before
+    run(f"DROP TRIGGER test_late_failure ON {table};")
+    ok(f'RPC aprovação: falha tardia {table} desfaz status/campos/título/parcelas/cronograma/auditoria/notificações')
+  run(approve(O4))
+  assert run(f"SELECT count(*) FROM accounts_receivable WHERE origin_id='{O4}'")=='1'
+  ok('retry após falha tardia gera exatamente um título pela RPC real')
+
+  # Missing settings must fail explicitly, not acquire a second provisioning ticket.
+  O5='11111111-0000-0000-0000-000000000005'
+  run(mk_order(O5,partner=P_B))
+  run(f"UPDATE partner_orders SET status='aprovado' WHERE id='{O5}';")
+  run(as_uid(ADM_B,f"SELECT public.generate_b2b_receivable_secure('{O5}');"),'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED')
+  assert run(f"SELECT count(*) FROM partner_financial_settings WHERE partner_id='{P_B}'")=='0'
+  run(as_uid(ADM_B,f"INSERT INTO partner_financial_settings(partner_id) VALUES('{P_B}');"),'C2P1_SETTINGS_WRITE_CLOSED')
+  ok('ausência settings: erro explícito sem INSERT/ticket paralelo; fence P1 real nega provisionamento direto')
   # Partner tenta gerar título: negado
   run(as_uid(U['gestor'], f"SELECT public.generate_b2b_receivable_secure_impl('{O1}');"), 'Sem permissão')
   ok('gestor B2B externo não emite título')
@@ -324,6 +371,11 @@ try:
   assert run(f"SELECT status FROM partner_orders WHERE id='{O3}'") == 'em_analise_comercial'
   assert run(f"SELECT count(*) FROM partner_order_audit_logs WHERE order_id='{O3}'") == '0'
   ok('na_aprovacao: qualquer falha de geração impede a aprovação (atômico)')
+
+  expected={}
+  for sig in ['platform_private.c2_owner_order_create_allowed(uuid,uuid)','platform_private.c2_owner_plan_assigned(uuid,uuid)','platform_private.c2_owner_order_guard(uuid,uuid,uuid)','platform_private.c2_order_actor_scope(uuid,uuid)','public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)','public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)','public.generate_b2b_receivable_secure_impl(uuid)','public.generate_b2b_receivable_secure(uuid)','public.approve_partner_order(uuid,text,date)','platform_private.b2b_commercial_partner_projection()']:
+    expected[sig]=json.loads(run(f"SELECT jsonb_build_object('hash',md5(pg_get_functiondef('{sig}'::regprocedure)),'acl',proacl::text) FROM pg_proc WHERE oid='{sig}'::regprocedure"))
+  (HERE/'postflight-expected.json').write_text(json.dumps(expected,indent=2)+'\n')
 
   # (4) rollback
   before = run("SELECT count(*) FROM accounts_receivable")+'|'+run("SELECT count(*) FROM partner_orders")
