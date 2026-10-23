@@ -56,7 +56,7 @@ try:
    cols.append('"'+c['column_name']+'" '+typ+(' NOT NULL' if c['is_nullable']=='NO' else '')+(' DEFAULT '+c['column_default'] if c['column_default'] else ''))
   run(f'CREATE TABLE public.{table}('+','.join(cols)+');GRANT ALL ON public.'+table+' TO authenticated,anon,service_role;')
  for c in d['constraints']:run(f"ALTER TABLE public.{c['table']} ADD CONSTRAINT {c['name']} {c['definition']};")
- run((H/'baseline.sql').read_text())
+ run('SET check_function_bodies=off;'+(H/'baseline.sql').read_text())
  for f in d['functions']:
   run('ALTER FUNCTION '+f['signature']+' OWNER TO postgres; REVOKE ALL ON FUNCTION '+f['signature']+' FROM PUBLIC,anon,authenticated,service_role;'+('GRANT EXECUTE ON FUNCTION '+f['signature']+' TO authenticated,service_role;' if 'authenticated=' in (f['acl'] or '') else ''))
  for t in d['triggers']:run(t['definition']+';')
