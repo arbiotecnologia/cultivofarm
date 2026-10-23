@@ -1,9 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## 23/10 19:55 — revisão pós-914d06c
-- [ ] Preparar contenção fiscal ACL com pre/postflight/hashes e rollback que não reabra sondagem de UUID; negativos authenticated B/A locais, sem alegar JWT hosted.
-- [ ] Testar C2-ORD com corpos reais b2b_actor_scope/is_valid/contexto/readiness; preservar legado e recorte instalado.
-- [ ] Corrigir vigência civil do plano 23/10–30/10; validar frontend candidato e documentar caminho/bloqueio do formulário financeiro.
+- [x] Preparar contenção fiscal ACL-only com pre/postflight/hashes, rollback e roteiro REST; 60/60 PG locais incluindo authenticated B/A sintético, sem alegar JWT hosted.
+- [x] Testar C2-ORD com 6 corpos reais b2b_actor_scope/is_valid/contexto/readiness/h15 e hashes LIVE; legado/recorte instalado intactos.
+- [x] Corrigir vigência civil do plano 23/10–30/10; 23/23 Vitest, tipos e produção em cópia isolada PASS; documentar caminho/bloqueio real do formulário financeiro.
+- [ ] Revisão/aplicação fiscal e restante C2-ORD pelo auditor; REST/JWT real após aprovação e instalação. Nenhuma operação hosted/publicação automática.
 - [ ] Configuração humana teste4 aguarda formulário funcional: não alterar fixture/parceiros; plano62147f24 e atribuição48dcac7d já existem, não duplicar. Pendências antigas continuam abertas.
 
 ## 23/10 17:55 — implantação coordenada C2 executada pelo auditor
@@ -642,5 +643,6 @@
 - [ ] Sessão real A financeiro: verificando→vazio→pausada, retry voltou vazio — candidato não instalado, não reproduzido; investigar sem aumentar verificação nem reload.
 - [x] 20261023192728 (G destinatários + E aprovação atômica) instalado pelo auditor; cópia exata em scripts/owner-orders-20261023/applied; candidato v3 rebased sem reaplicar; contenção preparada.
 - [x] Guard multiperfil via wrapper só de create/simulate; assert legado intacto (49/49 local).
-- [ ] Fixture teste4 (plano + método de auditoria) preparado, não executado; fiscal: 0 políticas ⇒ pendente parametrização; sondagem de isenções por autenticado registrada.
+- [x] Plano e atribuição teste4 já existentes confirmados READ ONLY; arquivo de fixture convertido para SELECT-only, sem duplicação/arquivamento. Contenção fiscal candidata pronta, não instalada.
+- [ ] Método teste4 aguarda formulário canônico funcional: engrenagem só aparece em pedido e seletor fixo não oferece método ativo AUDIT; não criar pedido para acessá-lo. Fiscal continua pendente parametrização em produção.
 - [ ] Prévia A: /sem-permissao intermitente e nó desanexado por remontagem — pendência do monitor, sem reload.
