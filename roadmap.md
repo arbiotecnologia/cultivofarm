@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 23/10 23:00 — NovoPedido real e expectativa histórica
-- [ ] Testar NovoPedido real sob a estrutura canônica de Outlet/gate com QueryClient, sem substituir página/hooks para ocultar destructuring; sem sessões/SQL/publicação.
-- [ ] Atualizar separadamente expectativa antiga financeiro=contas_receber, sem modificar featureRouteMap; rodar suítes focadas e entregar patch/SHA para revisão.
+- [x] Testar B2BRouteGuard/Layout/EntitlementOutlet/NovoPedido e hooks reais com QueryClient e transporte local instrumentado: partner/tenant, negação/loading sem queries descendentes; sem sessões/SQL/publicação.
+- [x] Atualizar separadamente expectativa antiga financeiro=contas_receber, featureRouteMap intocado;21/21 testes em5 arquivos PASS, build monitor23:03:18 OK, patch/SHA para revisão. Sem typecheck manual/homologação JWT real.
 
 ## 23/10 22:58 — contenção independente e patch UI
 - [x] Registrar c2_owner_orders_writer_containment SUCCESS relatado: create_allowed SELECT false, eligibility fechada, financeiro/approval preservados; POST release antigo não representa estado pós-contenção deliberado. Não reaplicar/reabrir writer.
