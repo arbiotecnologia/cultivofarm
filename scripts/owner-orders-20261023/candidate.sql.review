@@ -10,6 +10,7 @@
 --  (E) tg_auto_b2b_receivable: billing_trigger='na_aprovacao' falha ⇒ aprovação abortada (atômica);
 --      demais gatilhos mantêm a semântica atual (log financeiro_auto_falhou).
 --  (F) projeção: order_capabilities derivada de (A).
+--  (G) notificações de criação/aprovação restritas ao tenant dono e a vínculos/perfis ativos.
 BEGIN;
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '60s';
@@ -40,7 +41,8 @@ BEGIN
   OR md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) <> '85be378d0751a26470cb98cc641a230f'
   OR md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) <> 'f9882718027ac4a09810e6e0bf133c61'
   OR md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure)) <> '60be0fb336ca1537c063a001a213f7af'
-  OR md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure)) <> '0b11150214b3bded49e1a7e1a4b0e80e' THEN
+  OR md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure)) <> '0b11150214b3bded49e1a7e1a4b0e80e'
+  OR md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) <> '8e266945b058393ce780b1d10b20f6b3' THEN
     RAISE EXCEPTION 'drift: baseline hash mismatch';
   END IF;
 END $$;
@@ -110,6 +112,30 @@ REVOKE ALL ON FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid)
 REVOKE ALL ON FUNCTION platform_private.c2_owner_plan_assigned(uuid,uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION platform_private.c2_owner_order_guard(uuid,uuid,uuid) FROM PUBLIC, anon, authenticated;
 
+-- (G) Destinatários de notificação: somente tenant dono e usuários ativos/autorizados.
+CREATE FUNCTION platform_private.c2_order_internal_recipients(_partner uuid)
+RETURNS SETOF uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+  SELECT DISTINCT ur.user_id
+    FROM public.partner_accounts pa
+    JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id AND o.ativo IS TRUE AND o.status = 'ativa'
+    JOIN public.profiles p ON p.organization_id = o.id AND p.ativo IS TRUE
+    JOIN public.user_roles ur ON ur.user_id = p.user_id
+   WHERE pa.id = _partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+     AND ur.role IN ('administrador'::public.app_role,'gestor_comercial'::public.app_role);
+$function$;
+CREATE FUNCTION platform_private.c2_order_partner_recipients(_partner uuid)
+RETURNS SETOF uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+  SELECT DISTINCT pu.user_id
+    FROM public.partner_users pu
+    JOIN public.partner_accounts pa ON pa.id = pu.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+    JOIN public.profiles p ON p.user_id = pu.user_id AND p.ativo IS TRUE AND p.organization_id = pu.tenant_id
+   WHERE pu.partner_id = _partner AND pu.revoked_at IS NULL
+     AND (pu.valid_from IS NULL OR pu.valid_from <= now())
+     AND public.is_valid_b2b_partner_user(pu.user_id, pu.partner_id);
+$function$;
+REVOKE ALL ON FUNCTION platform_private.c2_order_internal_recipients(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION platform_private.c2_order_partner_recipients(uuid) FROM PUBLIC, anon, authenticated;
+
 DO $$
 DECLARE d text;
 BEGIN
@@ -132,6 +158,20 @@ $n$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);
 $o$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);$o$,
 $n$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);
   PERFORM platform_private.c2_owner_order_guard(v_uid, p_partner_id, p_payment_plan_id); -- c2_ord_guard$n$, 'simulate');
+  EXECUTE d;
+
+  -- (G) notificação de novo pedido: só admin/gestor_comercial ativos do tenant dono.
+  d := pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$    SELECT DISTINCT ur.user_id FROM public.user_roles ur
+     WHERE ur.role IN ('administrador','gestor_comercial')$o$,
+$n$    SELECT r AS user_id FROM platform_private.c2_order_internal_recipients(p_partner_id) r -- c2_ord_recipients$n$, 'create_recipients');
+  EXECUTE d;
+  -- (G) notificação de aprovação: só vínculos vigentes e perfis ativos.
+  d := pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$  FOR v_partner_user IN SELECT user_id FROM public.partner_users WHERE partner_id = v_pid LOOP$o$,
+$n$  FOR v_partner_user IN SELECT r FROM platform_private.c2_order_partner_recipients(v_pid) r LOOP -- c2_ord_recipients$n$, 'approve_recipients');
   EXECUTE d;
 
   -- (D) geração do título.

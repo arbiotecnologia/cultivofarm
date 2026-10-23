@@ -11,6 +11,8 @@ Nada aplicado, publicado ou implantado. Nenhum pedido, título, fiscal, fixture 
 | 2 | Impl escolhia categoria qualquer (fallback tipo/inativa) e forma de pagamento silenciosa (`NULL` se ausente) | `RECEITA` ativa estrita, forma ativa e **única** pelo nome configurado, `client_id` no mesmo tenant; erros `B2B_REVENUE_CATEGORY_NOT_CONFIGURED`, `B2B_PAYMENT_METHOD_NOT_CONFIGURED`, `B2B_CUSTOMER_TENANT_MISMATCH` |
 | 2b | Tenant do título só via `organizations.partner_account_id` (0 para clientes comerciais) | Fallback ao tenant dono ativo; emissor interno validado por `h15_actor_organization() = tenant` (o assert de parceiro negava admin interno sem `org_partner`) |
 | 3 | `tg_auto_b2b_receivable` engolia falha (`financeiro_auto_falhou`) ⇒ aprovado sem título | Com `billing_trigger='na_aprovacao'`, falha relança `B2B_APPROVAL_BILLING_FAILED` e desfaz a aprovação; `na_producao_finalizada`/`na_entrega` mantêm semântica atual |
+| 5 | `create_partner_order_secure` notificava **todo** `administrador`/`gestor_comercial` (sem tenant/perfil ativo) com número e total | Destinatários = `platform_private.c2_order_internal_recipients`: só admin/gestor_comercial com perfil ativo no tenant dono ativo; parceiro sem dono ⇒ ninguém |
+| 6 | `approve_partner_order` notificava `partner_users` sem filtrar revogação/perfil | `c2_order_partner_recipients`: vínculo vigente, perfil ativo no tenant do vínculo e `is_valid_b2b_partner_user`; `approve_partner_order` entra no hash guard (`8e266945…`) |
 | 4 | Preflight/rollback fracos | Preflight assertivo (11 hashes + ACL + gatilho + schema global + conflito org) e rollback que fecha o writer no servidor |
 
 Observação estrutural: `financial_categories` e `payment_methods` **não têm `organization_id`** no schema canônico
@@ -25,7 +27,7 @@ revogado, perfil ativo, `profile.org = pu.tenant = owner = contexto.tenant` · e
 ## Rollback (`rollback.sql.review`)
 `c2_owner_order_create_allowed` → `false` (guard nega todo cliente comercial externo; projeção false) e assert
 volta byte-exato (md5 `f86f43f9…`). **Mantém** aprovação atômica, resolução estrita e escopo do título.
-Atenção: fecha também a compra direta de cliente comercial via RPC que hoje já existia sem menu.
+Também mantém os destinatários restritos (não reabre o vazamento). Atenção: fecha também a compra direta de cliente comercial via RPC que hoje já existia sem menu.
 
 ## Matriz demanda → pedido → financeiro
 | Etapa | Caminho canônico | Título |
@@ -48,13 +50,23 @@ Consequência após instalar: geração passará a falhar explicitamente até ca
 `na_entrega` a entrega segue e a falha é registrada (semântica atual).
 
 ## Testes (`test-local.py`) — PostgreSQL 17 descartável, auth sintético, dependências stub
-35/35 PASS: fidelidade md5 local = hosted dos 7 corpos; blocker 1 reproduzido no baseline; candidato com
+43/43 PASS (inclui 8 negativos A/B de notificação): fidelidade md5 local = hosted dos 7 corpos; blocker 1 reproduzido no baseline; candidato com
 hashes reais; ACL; gestor/cumulativo/técnico/A→B/uid forjado; plano não atribuído; create/simulate usam guard;
 revogação de papel, vínculo e entitlement; projeção; categoria/método/cliente/tenant interno; 1 título no
 tenant dono com 3 parcelas = 300; duplicidade; parceiro não emite; `na_entrega` preservado; `na_aprovacao`
 atômico; rollback byte-exato, writer fechado, dados preservados, sem aprovação sem cobrança.
 
+Hosted READ ONLY (19:20Z): hoje há 3 destinatários internos ativos em 3 empresas distintas — um pedido
+de qualquer empresa notificaria as outras 2; 0 notificações `pedido_b2b_*` já emitidas; 0 vínculos revogados.
+
+## Pendência: sessão A financeiro verificando→vazio→pausada
+Candidato SQL **não instalado** (confirmado hosted) e frontend sem mudança nesta rodada ⇒ não é efeito do
+candidato. Telemetria local da sessão sem eventos relevantes; não reproduzido. Pausas fail-closed e intervalo
+de verificação preservados; investigação segue aberta.
+
 ## Limites exatos
+- Execução completa de create/approve com notificações reais não ocorreu no harness: helpers testados direto
+  e substituição conferida no corpo instalado.
 - Não é prova hosted/JWT/RLS/PostgREST nem homologação. Stubs: `b2b_actor_scope`, contexto, entitlements,
   eligibility, fiscal, wrapper do título, gatilhos de parcelas e d51.
 - Idempotência concorrente e alteração de preço/hash: corpos de create intactos (lock e comparação de hash

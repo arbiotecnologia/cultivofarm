@@ -631,3 +631,5 @@
 - [ ] Revisão independente + aplicação pelo auditor; postflight REST/JWT real.
 - [ ] Configuração: 5/5 configurações financeiras com forma de pagamento inexistente (`pix`); 3 clientes comerciais sem plano atribuído.
 - [ ] Idempotência concorrente/troca de preço apenas estática; fiscal por tenant não auditado; listagem de planos ignora vínculo revogado.
+- [x] C2-ORD v2: notificação de novo pedido restrita a admin/gestor_comercial ativos do tenant dono; aprovação só a vínculos vigentes/perfis ativos (43/43 local).
+- [ ] Sessão real A financeiro: verificando→vazio→pausada, retry voltou vazio — candidato não instalado, não reproduzido; investigar sem aumentar verificação nem reload.
