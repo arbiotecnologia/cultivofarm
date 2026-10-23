@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 17:55 — implantação coordenada C2 executada pelo auditor
+- [x] Registrar evidências relatadas: migration integral `c2_integral_multiprofile_own_finance_reviewed` SUCCESS, postflight INVOKER/core ACL PASS, `b2b_actor_scope` intacto, legacy financeiro fechado, anon negado; Edge create-user v103 ACTIVE verify_jwt=true conteúdo exato 67bca16c; hosting deploy 86b2e88d iniciado, bundle build-mvl8yand com novo lifecycle; build Vite production 4763 módulos PASS, safeHome 12 PASS; UI real adminA lista6/lifecycle3, adminB lista2 sem A, parceiroA Financeiro com lista vazia autorizada; advisor diff sem findings novos.
+- [x] Sincronizar SOMENTE `supabase/functions/create-user/index.ts` byte-exato com o candidato implantado (SHA256 931ba9fa46ebea265fd3fc9105e07f383c2f44ad3ff7879a84a2cd18b78ca095), verify_jwt=true preservado, sem mudança funcional — evita reversão da Edge hosted em próximo deploy automático. Redeploy automático da mesma Edge autorizado pelo proprietário.
+- [ ] Homologação real integral A/B de atribuição cumulativa, revogação parcial/total e reativação em sessões reais: NÃO declarar multiperfil/revogação completos; pendências anteriores continuam abertas. Sem SQL/publicação pelo agente; roles/dados reais intocados.
+
 ## 23/10 17:20 — preparação release67bca16c autorizada
 - [x] Driftcheck20 baseline/candidato/revisão exata; promover20 arquivos src sem SQL hosted/publicação/dados/sessões.
 - [x] Edge canônica patch exato separado; não tocar supabase/functions pois mudanças podem disparar deploy automático proibido.
