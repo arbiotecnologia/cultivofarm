@@ -358,7 +358,7 @@ BEGIN
     IF v_before IS NULL THEN RAISE EXCEPTION 'item_price_not_found'; END IF;
     IF (v_before->>'status') NOT IN ('draft','pending_approval') THEN RAISE EXCEPTION 'item_price_not_editable'; END IF;
     UPDATE public.commercial_condition_item_prices
-       SET assignment_id=[REDACTED] plan_id=p_plan_id, buyer_scope=p_buyer_scope,
+       SET assignment_id=p_assignment_id, plan_id=p_plan_id, buyer_scope=p_buyer_scope,
            partner_id=p_partner_id, customer_id=p_customer_id, product_id=p_product_id,
            microrganismo_id=p_microrganismo_id, unit_type=p_unit_type, volume_ml=p_volume_ml,
            min_quantity=COALESCE(p_min_quantity,0), pricing_mode=p_pricing_mode,
@@ -382,6 +382,33 @@ AS $function$
   INSERT INTO public.commercial_condition_audit_log(entity, entity_id, action, actor_id, before_data, after_data, motivo)
   VALUES (p_entity, p_entity_id, p_action, auth.uid(), p_before, p_after, p_motivo);
 $function$
+;
+
+CREATE OR REPLACE FUNCTION public.fn_cc_validate_item_input(p_plan_id uuid, p_pricing_mode text, p_condition_price numeric, p_discount_percent numeric)
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_plan_mode text;
+BEGIN
+  IF p_pricing_mode NOT IN ('fixed_item_price','discount_from_base','quote_only') THEN
+    RAISE EXCEPTION 'invalid_pricing_mode';
+  END IF;
+  SELECT pricing_mode INTO v_plan_mode FROM public.commercial_payment_plans WHERE id = p_plan_id;
+  IF v_plan_mode IS NULL THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+  IF p_pricing_mode <> 'quote_only' AND p_pricing_mode <> v_plan_mode THEN
+    RAISE EXCEPTION 'pricing_mode_conflicts_plan';
+  END IF;
+  IF p_pricing_mode = 'fixed_item_price' AND COALESCE(p_condition_price,0) <= 0 THEN
+    RAISE EXCEPTION 'condition_price_required';
+  END IF;
+  IF p_pricing_mode = 'discount_from_base'
+     AND p_discount_percent IS NOT NULL
+     AND (p_discount_percent < 0 OR p_discount_percent > 100) THEN
+    RAISE EXCEPTION 'discount_percent_out_of_range';
+  END IF;
+END $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.rpc_cc_simulate_price(p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_plan_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric DEFAULT NULL::numeric, p_ref_date date DEFAULT CURRENT_DATE, p_quantity numeric DEFAULT NULL::numeric)
@@ -419,6 +446,21 @@ BEGIN
  -- Read-only canonical resolver; no order, credit, receivable, snapshot or fiscal writes.
  RETURN public.fn_resolve_commercial_price('partner',p_partner_id,NULL,p_plan_id,
   p_product_id,p_microrganismo_id,p_unit_type,p_volume_ml,p_ref_date,p_quantity);
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.tg_commercial_price_rules_touch()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  NEW.updated_at := now();
+  IF TG_OP = 'INSERT' THEN
+    NEW.created_by := COALESCE(NEW.created_by, auth.uid());
+  END IF;
+  NEW.updated_by := COALESCE(auth.uid(), NEW.updated_by);
+  RETURN NEW;
 END $function$
 ;
 
