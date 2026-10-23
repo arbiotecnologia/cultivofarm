@@ -22,7 +22,7 @@ BEGIN
     ('public.fn_b2b_plan_selectable(uuid,timestamp with time zone)','4cb833a3eae76cbebce920f34cd5d5ce',NULL)
   ) v(sig,h,acl) LOOP
     IF md5(pg_get_functiondef(r.sig::regprocedure)) <> r.h THEN RAISE EXCEPTION 'drift %', r.sig; END IF;
-    IF r.acl IS NOT NULL AND (SELECT proacl::text FROM pg_proc WHERE oid = r.sig::regprocedure) <> r.acl THEN
+    IF r.acl IS NOT NULL AND (SELECT proacl::text FROM pg_proc WHERE oid = r.sig::regprocedure) IS DISTINCT FROM r.acl THEN
       RAISE EXCEPTION 'acl_drift % %', r.sig, (SELECT proacl::text FROM pg_proc WHERE oid = r.sig::regprocedure);
     END IF;
   END LOOP;
