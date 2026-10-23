@@ -67,7 +67,17 @@ try:
  test('reproduz leak direto B antes',actor(B,f"SELECT count(*) FROM commercial_payment_plan_assignments WHERE id='{ASN}';"),1)
  test('reproduz leak RPC B antes',actor(B,f"SELECT count(*) FROM rpc_cc_list_assignments(NULL) WHERE id='{ASN}';"),1)
  # core is separate from hosted catalog preflight: it does not pretend reduced schema passes hosted gate.
+ run("""CREATE TABLE commercial_condition_item_prices(id uuid PRIMARY KEY,plan_id uuid,buyer_scope text,partner_id uuid,customer_id uuid,status text,product_id uuid,microrganismo_id uuid,unit_type text,volume_ml numeric,pricing_mode text,condition_price numeric,discount_percent numeric,min_quantity numeric,currency text,valid_from date,valid_until date,motivo text,published_by uuid,published_at timestamptz,published_rule_id uuid,updated_by uuid);
+ CREATE TABLE commercial_price_rules(id uuid DEFAULT gen_random_uuid(),plan_id uuid,buyer_scope text,partner_id uuid,customer_id uuid,active boolean,product_id uuid,microrganismo_id uuid,unit_type text,volume_ml numeric,pricing_mode text,condition_price numeric,discount_percent numeric,min_quantity numeric,currency text,valid_from date,valid_until date,motivo text,created_by uuid,updated_by uuid,updated_at timestamptz);
+ """)
  run((H/'core.sql.review').read_text())
+ run("SET c2p1.review_project_ref='swzpzcwiasxmjutrmvkm';"+(H/'postflight.sql').read_text())
+ n+=1;print('PASS postflight candidato local completo')
+ run(f"INSERT INTO commercial_condition_item_prices(id,plan_id,buyer_scope,partner_id,status,pricing_mode) VALUES('{ASN}','{PLAN}','partner','{P}','draft','discount_from_base');")
+ test('B publicação item irmão A negada',actor(B,f"SELECT rpc_cc_publish_item_prices(ARRAY['{ASN}'::uuid],'audit');"),err='C2P1_FORBIDDEN')
+ test('item irmão sem efeito após negação',f"SELECT status FROM commercial_condition_item_prices WHERE id='{ASN}';",'draft')
+ test('A publicação item irmão permitida',actor(A,f"SELECT rpc_cc_publish_item_prices(ARRAY['{ASN}'::uuid],'audit')->>'published';"),1)
+
  test('B leitura direta A invisível',actor(B,f"SELECT count(*) FROM commercial_payment_plan_assignments WHERE id='{ASN}';"),0)
  test('B RPC A invisível',actor(B,f"SELECT count(*) FROM rpc_cc_list_assignments(NULL) WHERE id='{ASN}';"),0)
  test('A lê assignmentA publicado',actor(A,f"SELECT status FROM rpc_cc_list_assignments(NULL) WHERE id='{ASN}';"),'published')
@@ -120,6 +130,7 @@ try:
  test('ownorg legado interno preservado',update(expected=saved2))
  run(f"UPDATE profiles SET ativo=false WHERE user_id='{A}';")
  test('perfil inativo nega',update(),err='C2P1_FORBIDDEN')
+ test('perfil inativo leitura fechada',actor(A,'SELECT count(*) FROM rpc_cc_list_assignments(NULL);'),0)
  run(f"UPDATE profiles SET ativo=true WHERE user_id='{A}';")
  run("SET c2p1.review_project_ref='swzpzcwiasxmjutrmvkm';"+(H/'rollback.sql.review').read_text())
  test('rollback leitura assignment fechada',actor(B,'SELECT count(*) FROM rpc_cc_list_assignments(NULL);'),0)
