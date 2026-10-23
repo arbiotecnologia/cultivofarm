@@ -21145,6 +21145,18 @@ export type Database = {
             }
             Returns: Json
           }
+        | {
+            Args: {
+              p_clients: string[]
+              p_email: string
+              p_key: string
+              p_nome: string
+              p_partner: string
+              p_primary: string
+              p_roles: Database["public"]["Enums"]["app_role"][]
+            }
+            Returns: Json
+          }
       b2b_complete_provisioning_compensation: {
         Args: { p_claim: string; p_fence: string; p_user: string }
         Returns: boolean
@@ -22416,6 +22428,18 @@ export type Database = {
             }[]
           }
       get_partner_papel: { Args: { _user_id: string }; Returns: string }
+      get_partner_user_lifecycle:
+        | { Args: { p_partner_id: string; p_user_id: string }; Returns: Json }
+        | {
+            Args: {
+              p_before: string
+              p_before_id: string
+              p_limit: number
+              p_partner_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       get_portal_cliente_b2b_order_detail_secure: {
         Args: { p_order_id: string }
         Returns: Json
@@ -22656,10 +22680,23 @@ export type Database = {
         Args: { p_motivo: string; p_os_id: string }
         Returns: Json
       }
-      link_partner_user: {
-        Args: { p_papel?: string; p_partner_id: string; p_user_id: string }
-        Returns: string
-      }
+      link_partner_user:
+        | {
+            Args: { p_papel?: string; p_partner_id: string; p_user_id: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_action: string
+              p_expected: string
+              p_key: string
+              p_partner_id: string
+              p_reason: string
+              p_roles: string[]
+              p_user_id: string
+            }
+            Returns: Json
+          }
       log_my_access_denied_secure: {
         Args: { p_context: string; p_route_group?: string }
         Returns: Json
@@ -25350,6 +25387,15 @@ export type Database = {
               total: number
               vencimento: string
             }[]
+          }
+        | {
+            Args: {
+              p_before?: string
+              p_before_id?: string
+              p_own_finance_v1: boolean
+              p_partner_id: string
+            }
+            Returns: Json
           }
       rpc_preparar_notificacoes_alertas: { Args: never; Returns: Json }
       rpc_preparar_resumos_alertas: {
