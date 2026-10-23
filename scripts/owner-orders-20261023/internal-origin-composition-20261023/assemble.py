@@ -38,7 +38,7 @@ policy_guard+='\n'.join(f"IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public
 policy_guard+='\nEND $guard$;\n'
 pre+=policy_guard
 pre += "DO $$ BEGIN IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.partner_orders'::regclass AND attname='c2_external_origin_snapshot' AND NOT attisdropped) OR to_regprocedure('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'origin_already_installed_or_drift'; END IF; END $$;\n"
-(H/'preflight.sql').write_text('-- READ ONLY. Operator must prove canonical ref swzpzcwiasxmjutrmvkm externally.\nBEGIN TRANSACTION READ ONLY;\n'+pre+'ROLLBACK;\n')
+(H/'preflight.sql').write_text('-- READ ONLY. Operator must prove canonical ref swzpzcwiasxmjutrmvkm externally.\n-- MANDATORY HUMAN GATE: preflight-accounting.sql must also PASS; structural PASS alone is NO-GO.\n-- Owner A reported DRAFT/accounting_validated_at NULL; owner B has no configuration. Never fabricate validation.\nBEGIN TRANSACTION READ ONLY;\n'+pre+'ROLLBACK;\n')
 helper = '''CREATE FUNCTION platform_private.c2_external_origin_assert(s jsonb, partner uuid, client uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
 DECLARE uid uuid:=auth.uid(); org uuid; p public.partner_accounts;

@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 23:55 — bloqueio contábil e composição dos filhos
+- [x] Registrar relato readonly: ownerA1ativoDRAFT/accounting_validated_atNULL; ownerBsemconfig. Adicionar `preflight-accounting.sql` obrigatório junto do PRE estrutural, sem alterações contábeis/DDL/DML hospedados.
+- [x] Validar composição existente dos filhos:56checks PostgreSQL descartável PASS, incluindo DRAFT/NULL/ausência e seis negativos de administração por externos/B; aprovação/cobrança owner preservadas. Auth sintética, não homologação JWT. Pacote revisável inativo/writerfalse, sem deployment.
+- [ ] Bloqueio humano: revisão contábil legítima do ownerA e configuração realmente validada pelo fluxo autorizado; NÃO inventar CNPJ/atestado/VALIDATED para PASS. Revisão independente whole-chain/PREPOST e JWT continuam pendentes, demais dívidas preservadas.
+
 ## 23/10 23:32 — conflito de origem interna no pedido externo
 - [x] Registrar homologação independente c8dc171c/index-xrePLkS9: modal estável, Bombarbio1L180/simulação180; duas criações negadas403/42501 B2B_INTERNAL_ACTOR_DENIED, zero pedidos/títulos. Contenção c2_contain_writer_internal_origin_conflict helperfalse vigente, não reabrir.
 - [x] Inspecionar chain completo:44triggers/50policies/78corpos; preparar composição inativa em `scripts/owner-orders-20261023/internal-origin-composition-20261023/` com origem server-owned/ticketprivado, PRE/POST integral, rollbackdeny-only.46checksPostgreSQL/1VitestPASS; Auth/fixtures sintéticas, sem provaJWT hosted. Sem SQL aplicado/publicação/sessões; baselines anteriores preservados.
