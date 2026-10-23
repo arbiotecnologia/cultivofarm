@@ -48,8 +48,6 @@ import { ExternalCommonUserEditBoundary } from "@/components/configuracoes/Exter
 import { PartnerLifecycleFields } from "@/components/configuracoes/PartnerLifecycleFields";
 import { ExternalRegistrationFields } from "@/components/configuracoes/ExternalRegistrationFields";
 import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from "@/lib/configuracoes/externalUserEditGate";
-import { pauseStateKey, readPauseState, writePauseState, clearPauseState } from "@/lib/authz/pauseRetainedState";
-import { resolveConfiguracoesTab } from "@/lib/configuracoes/configuracoesTabs";
 type LinhaUsuario = { user_id: string; roles?: string[] | null };
 import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -92,7 +90,7 @@ import { FUSOS_BRASIL, REGIMES_TRIBUTARIOS } from "@/lib/saas/orgOnboarding";
 
 export default function Configuracoes() {
   const isMobile = useIsMobile();
-  const { profile, role, roles, user, authzEpoch = 0 } = useAuth();
+  const { profile, role, roles, user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -109,16 +107,18 @@ export default function Configuracoes() {
   const canFin = isAdmin || role === "gestor" || role === "financeiro";
   const organizationProfile = useOnboardingState(isAdmin && !!profile?.organization_id);
   const tabParam = searchParams.get("tab");
-  // Aba CONTROLADA pela URL: sobrevive a remontagens transitórias (pausa de
-  // autorização) sem reter nada sensível — apenas o nome da aba, validado
-  // contra as permissões atuais a cada render.
-  const activeTab = resolveConfiguracoesTab(tabParam, { isAdmin, canFin, canMeuPlano, isPlatformSuperadmin });
-  const handleTabChange = (value: string) => {
-    const sp = new URLSearchParams(searchParams);
-    if (value === "perfil") sp.delete("tab");
-    else sp.set("tab", value);
-    setSearchParams(sp, { replace: true });
-  };
+  const initialTab =
+    tabParam === "usuarios" && isAdmin
+      ? "usuarios"
+      : tabParam === "financeiro" && canFin
+        ? "financeiro"
+        : tabParam === "meu-plano" && canMeuPlano
+          ? "meu-plano"
+          : tabParam === "aparencia" && isPlatformSuperadmin
+            ? "aparencia"
+            : tabParam && ["perfil", "empresa", "catalogos", "sla-b2b"].includes(tabParam)
+            ? tabParam
+            : "perfil";
 
 
   // Profile edit state
@@ -378,26 +378,9 @@ export default function Configuracoes() {
     }
   }
 
-  // Edit user dialog — retenção volátil durante pausa transitória de
-  // autorização: a chave inclui identidade + época, portanto revogação ou
-  // troca de identidade torna o estado retido inalcançável (fail-closed).
-  // Nada é exibido enquanto expirado; o estado apenas re-semeia a UI após a
-  // recuperação com o MESMO vetor de autorização.
-  const editPauseKey = pauseStateKey({ userId: user?.id, organizationId: profile?.organization_id, roles: roles ?? [], epoch: authzEpoch }) + ":config-edit";
-  const [editOpen, setEditOpen] = useState<boolean>(() => {
-    const retained = readPauseState<{ open: boolean; target: any }>(editPauseKey);
-    return isAdmin && retained?.open === true && !!retained.target;
-  });
-  const [editUser, setEditUser] = useState<any>(() => {
-    const retained = readPauseState<{ open: boolean; target: any }>(editPauseKey);
-    return isAdmin && retained?.open === true && retained.target ? retained.target : null;
-  });
-  useEffect(() => {
-    if (!isAdmin) return;
-    if (editOpen && editUser) writePauseState(editPauseKey, { open: true, target: editUser });
-    else clearPauseState(editPauseKey);
-  }, [isAdmin, editPauseKey, editOpen, editUser]);
-  const editDraftKey = editUser?.user_id ? `${editPauseKey}:draft:${editUser.user_id}` : null;
+  // Edit user dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUser, setEditUser] = useState<any>(null);
   const editOrig: LinhaUsuario | null = editUser
     ? ((usersPage as LinhaUsuario[]).find((u) => u.user_id === editUser.user_id) ?? (editUser as LinhaUsuario))
     : null;
@@ -610,7 +593,7 @@ export default function Configuracoes() {
         }
       />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+      <Tabs defaultValue={initialTab} className="w-full">
         <TabsList className="w-full h-auto p-1 bg-muted/50 rounded-lg flex overflow-x-auto justify-start sm:justify-center gap-1 mb-4">
           <TabsTrigger value="perfil" className="flex-1 sm:flex-none gap-1 sm:gap-2 text-[10px] sm:text-sm py-2 px-3 whitespace-nowrap">
             <Settings className="h-3 w-3 sm:h-4 sm:w-4" />Meu perfil pessoal
@@ -1117,9 +1100,6 @@ export default function Configuracoes() {
               if (!open) {
                 externalDialog.current.open = false;
                 externalDialog.current.generation += 1;
-                // Fechamento EXPLÍCITO descarta o rascunho retido; apenas a
-                // pausa transitória (unmount sem este handler) o preserva.
-                if (editDraftKey) clearPauseState(editDraftKey);
               }
               setEditOpen(open);
               if (!open) {
@@ -1155,7 +1135,6 @@ export default function Configuracoes() {
                       snapshotReady={!vinculos.isFetching && !vinculos.isError}
                       snapshotError={vinculos.isError}
                       isCurrent={externalCurrent}
-                      draftKey={editDraftKey ?? undefined}
                       onSuccess={() => {
                         if (!externalCurrent()) return;
                         queryClient.invalidateQueries({ queryKey: ['admin-users', profile?.organization_id, user?.id] });
@@ -1164,7 +1143,6 @@ export default function Configuracoes() {
                         toast({ title: 'Usuário atualizado' });
                         externalDialog.current.open = false;
                         externalDialog.current.generation += 1;
-                        if (editDraftKey) clearPauseState(editDraftKey);
                         setEditOpen(false);
                       }}
                       onError={message => {
