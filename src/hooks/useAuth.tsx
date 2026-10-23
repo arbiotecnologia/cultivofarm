@@ -16,6 +16,7 @@ import { safeOSRenewalDraft, type SafeOSRenewalDraft } from "@/lib/authz/safeOSR
 import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLES } from "@/lib/authz/internalContextProbe";
 import { initialAutoRecovery, onExpire as autoRecoveryOnExpire, onValid as autoRecoveryOnValid, type AutoRecoveryState } from "@/lib/authz/transientTimeoutRecovery";
 import { initialRoleChangeReresolve, onExpire as roleChangeOnExpire, onValid as roleChangeOnValid, type RoleChangeReresolveState } from "@/lib/authz/roleChangeReresolve";
+import { clearAllPauseStates } from "@/lib/authz/pauseRetainedState";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -420,6 +421,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
         }
         if (identityChanged || !nextUserId) monitoredLatchRef.current = null;
+        // Troca de identidade/saída descarta TODA retenção volátil de pausa.
+        if (identityChanged || !nextUserId) clearAllPauseStates();
         // Retomada de navegação: renovação natural do MESMO usuário arma; troca/saída descarta.
         if (identityChanged || !nextUserId) clearResume();
         else if (event === "TOKEN_REFRESHED") armResumeOnRenewal(Date.now());
