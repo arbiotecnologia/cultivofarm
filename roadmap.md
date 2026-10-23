@@ -2,7 +2,8 @@
 
 ## 23/10 22:52 — superfície billing eligibility
 - [x] Registrar negação REAL API archive A/admin B HTTP403 C2P1_FORBIDDEN/42501 relatada pelo proprietário; não repetir teste.
-- [ ] Auditar callers repo/SQL, cercar eligibility internal-only atual em PRE/candidato/POST/rollback e testar B/anon, corpo intacto e callers legítimos; sem implantação nem fiscal resolver alterado.
+- [x] Callers repo/SQL auditados: nenhum cliente de produto, Edge só probe, SQL atual único impl DEFINER/postgres. Consulta READ ONLY canônica: authenticated/anon=false, service=true; internal-only já vigente, não atribuir implantação.
+- [x] Guardas corpo/owner/ACL/call graph incorporadas em PRE/candidato/POST/rollback;69 PG checks via Vitest1 PASS, B/anon negados e owner/service/aprovação preservados. Sem ACL/schema/fiscal alterados, deploy ou liberação writer; homologação real do gate e cadeia integral permanecem pendentes da revisão independente.
 
 ## 23/10 22:43 — rebase restante C2-ORD sobre P1 instalado
 - [x] Registrar relato f351d6d5 publicado e salvar/reabrir AUDIT homologado REAL admin A; P1/fiscal instalados e B UI sem A. Não recarregar sessões ou reaplicar.
