@@ -74,7 +74,7 @@ try:
   for c in channels['columns']:
    if c['table_name']==table:cols.append(c['column_name']+' '+c['data_type']+(' NOT NULL' if c['is_nullable']=='NO' else '')+(' DEFAULT '+c['column_default'] if c['column_default'] else ''))
   run('CREATE TABLE public.'+table+'('+','.join(cols)+');GRANT ALL ON public.'+table+' TO authenticated,anon;ALTER TABLE public.'+table+' ENABLE ROW LEVEL SECURITY;')
- for c in channels['constraints']:
+ for c in sorted(channels['constraints'],key=lambda c:('PRIMARY KEY' not in c['definition'],'FOREIGN KEY' in c['definition'])):
   if c['table']=='commercial_condition_audit_log':continue
   if 'EXCLUDE' not in c['definition']:run('ALTER TABLE public.'+c['table']+' ADD CONSTRAINT '+c['name']+' '+c['definition']+';')
  run("ALTER TABLE partner_accounts ADD COLUMN client_id uuid; CREATE FUNCTION _saas_user_has_feature(uuid,text) RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;")
