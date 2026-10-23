@@ -96,6 +96,16 @@ order=swap(order,"BEGIN\n IF TG_OP='INSERT' THEN","BEGIN\n"+branch+" IF TG_OP='I
 child=functions['platform_private.b2b_internal_child_snapshot_guard']['sql']
 child=swap(child,'  IF o.internal_origin_snapshot IS NOT NULL THEN',"  IF o.c2_external_origin_snapshot IS NOT NULL THEN PERFORM platform_private.c2_external_origin_assert(o.c2_external_origin_snapshot,o.partner_id,o.cliente_id); END IF;\n  IF o.internal_origin_snapshot IS NOT NULL OR o.c2_external_origin_snapshot IS NOT NULL THEN")
 child=swap(child,'   PERFORM platform_private.b2b_internal_assert_origin(o.internal_origin_snapshot,o.partner_id,o.cliente_id);',"   IF o.internal_origin_snapshot IS NOT NULL THEN PERFORM platform_private.b2b_internal_assert_origin(o.internal_origin_snapshot,o.partner_id,o.cliente_id); END IF;")
+final_guard='''CREATE FUNCTION platform_private.c2_external_final_state_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+ IF NEW.c2_external_origin_snapshot IS NOT NULL AND OLD.internal_economic_snapshot IS NULL AND NEW.internal_economic_snapshot IS NOT NULL AND NEW.status IS DISTINCT FROM 'aprovado' THEN
+  RAISE EXCEPTION 'C2_EXTERNAL_UNFINALIZED_APPROVAL' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $function$;
+REVOKE ALL ON FUNCTION platform_private.c2_external_final_state_guard() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER zz_c2_external_final_state BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_external_final_state_guard();
+'''
 changed.append('platform_private.b2b_internal_child_snapshot_guard')
 create=functions[changed[0]]['sql']
 create=swap(create,'  INSERT INTO public.partner_orders(',"  -- Issue only after canonical role/partner/plan/cart/hash/credit checks and idempotent replay.\n  IF NOT v_is_internal AND platform_private.c2_owner_order_create_allowed(v_uid,p_partner_id) THEN\n    PERFORM platform_private.issue_ticket('c2_external_order_create',p_partner_id);\n  END IF;\n  INSERT INTO public.partner_orders(")
@@ -109,7 +119,7 @@ installments=functions['public.fn_generate_receivable_installments']['sql']
 installments=swap(installments,'  FOR i IN 1..v_qtd LOOP',"  IF NEW.origin_type='B2B_ORDER' AND EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=NEW.origin_id AND o.c2_external_origin_snapshot IS NOT NULL) THEN\n    INSERT INTO public.accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,net_amount,status,organization_id,interest_amount)\n    SELECT NEW.id,s.installment_number,s.due_date,s.amount,s.amount,'OPEN',NEW.organization_id,s.interest_amount\n    FROM public.partner_order_payment_schedule s JOIN public.partner_orders o ON o.id=s.partner_order_id AND o.payment_terms_id=s.payment_terms_id\n    WHERE o.id=NEW.origin_id ORDER BY s.installment_number;\n    IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id=NEW.id)<>v_qtd THEN RAISE EXCEPTION 'B2B_INSTALLMENT_CARDINALITY_INVALID' USING ERRCODE='23514'; END IF;\n    RETURN NEW;\n  END IF;\n  FOR i IN 1..v_qtd LOOP")
 bodies={changed[0]:create,changed[1]:order,'platform_private.b2b_internal_child_snapshot_guard':child,'public.approve_partner_order':approve,'public.generate_b2b_receivable_secure_impl':impl,'public.fn_generate_receivable_installments':installments}
 (H/'expected-source.json').write_text(json.dumps({n:hashlib.md5(s.encode()).hexdigest() for n,s in bodies.items()},indent=2)+'\n')
-(H/'candidate.sql.review').write_text('-- INACTIVE REVIEW ONLY. Does not reopen writer; no internal-origin bypass or RLS change.\nBEGIN;\nSET LOCAL lock_timeout=\'5s\'; SET LOCAL statement_timeout=\'60s\';\n'+pre+"ALTER TABLE public.partner_orders ADD COLUMN c2_external_origin_snapshot jsonb;\n"+helper+'\n'.join(s.rstrip()+';\n' for s in bodies.values())+'\nCOMMIT;\n')
+(H/'candidate.sql.review').write_text('-- INACTIVE REVIEW ONLY. Does not reopen writer; no internal-origin bypass or RLS change.\nBEGIN;\nSET LOCAL lock_timeout=\'5s\'; SET LOCAL statement_timeout=\'60s\';\n'+pre+"ALTER TABLE public.partner_orders ADD COLUMN c2_external_origin_snapshot jsonb;\n"+helper+'\n'.join(s.rstrip()+';\n' for s in bodies.values())+final_guard+'\nCOMMIT;\n')
 # Rollback is containment only: preserve immutable snapshots/history and all composed financial guards.
 contain=functions['platform_private.c2_owner_order_create_allowed']['sql']
 (H/'rollback.sql.review').write_text('-- Deny-only containment, preserves all snapshots/data/financial guards.\nBEGIN;\n'+contain.rstrip()+';\nCOMMIT;\n')

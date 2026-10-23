@@ -107,7 +107,7 @@ actor(G,create(G,'baseline',h=hashA)+';',err='B2B_INTERNAL_ACTOR_DENIED');ok('ba
 pg.sql(guard)
 orders=[]
 for u in [G,GT]:
-    result=json.loads(val(u,create(u,str(uuid.uuid4()))+';')); oid=result['order_id'];orders.append(oid)
+    result=json.loads(val(u,create(u,str(uuid.uuid4()))+';')); oid=result['id'];orders.append(oid)
     row=json.loads(pg.sql(f"SELECT to_jsonb(o) FROM public.partner_orders o WHERE id='{oid}'"))
     ok('positive singleton/cumulative total180 owner/issuer/creditor A',row['total']==180 and row['c2_external_origin_snapshot']['organization_id']==A and row['c2_external_origin_snapshot']['creditor_organization_id']==A and row['c2_external_origin_snapshot']['issuer_organization_id']==A and row['internal_origin_snapshot'] is None)
     ok('three canonical schedule rows and no title before approval',pg.sql(f"SELECT count(*) FROM public.partner_order_payment_schedule WHERE partner_order_id='{oid}'")=='3' and pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}'")=='0')
