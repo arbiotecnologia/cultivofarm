@@ -32,7 +32,7 @@ describe("publicação com releitura canônica — servidor simulado", () => {
     const { hook, client } = setup();
     await waitFor(() => expect(hook.result.current.list.data?.[0].status).toBe("draft"));
     await act(async () => hook.result.current.publish.mutateAsync({ id: "48dcac7d-d4a0-4058-bdf4-5461fee89f45" }));
-    expect(hook.result.current.list.data?.[0].status).toBe("published");
+    await waitFor(() => expect(hook.result.current.list.data?.[0].status).toBe("published"));
     hook.unmount(); client.clear();
   });
   it("cancela rascunho em voo; resposta tardia não vence publicação", async () => {
