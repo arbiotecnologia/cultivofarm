@@ -52,7 +52,10 @@ function response(data: unknown) {
 beforeEach(() => {
   Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, entitled: true, loadingPlan: false, orderCreate: true });
   vi.clearAllMocks();
-  state.table.mockImplementation((table: string) => { throw new Error(`Unexpected table read: ${table}`); });
+  state.table.mockImplementation((table: string) => {
+    if (table !== "catalogo_volumes") throw new Error(`Unexpected table read: ${table}`);
+    return { select: () => ({ eq: () => response([]) }) };
+  });
   state.rpc.mockImplementation((name: string, args?: { p_partner_id?: string }) => {
     const context = { contract: "C2_MULTIPROFILE_V1", actor_id: state.actor, tenant_id: state.tenant,
       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
@@ -85,7 +88,7 @@ const catalogCalls = () => state.rpc.mock.calls.filter(([name]) => name === "get
 it("real layout/guard/outlet/NovoPedido reaches its real catalogue hook with the parent's partner", async () => {
   mount(); await screen.findByText(product());
   expect(catalogCalls().map(([, args]) => args.p_partner_id)).toEqual([state.partner]);
-  expect(state.writes).not.toHaveBeenCalled(); expect(state.table).not.toHaveBeenCalled();
+  expect(state.writes).not.toHaveBeenCalled(); expect(state.table.mock.calls).toEqual([["catalogo_volumes"]]);
 });
 it("real route replaces partner then tenant through current canonical projection without old product rows", async () => {
   const view = mount(); const first = product(); await screen.findByText(first);
@@ -102,4 +105,5 @@ it.each(["denied", "loading"])("%s plan never mounts NovoPedido or its queries u
   expect(catalogCalls()).toHaveLength(0);
   expect(state.rpc.mock.calls.some(([name]) => name === "rpc_b2b_list_selectable_payment_plans")).toBe(false);
   expect(state.subscriptions).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
+  expect(state.table).not.toHaveBeenCalled();
 });
