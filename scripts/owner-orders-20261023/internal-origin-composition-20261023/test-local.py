@@ -2,7 +2,7 @@
 No connection to production; historical replica schema is explicitly partial.
 """
 from pathlib import Path
-import sys,json,time,uuid,subprocess
+import sys,json,time,uuid,subprocess,re
 H=Path(__file__).resolve().parent
 ROOT=H.parents[2]
 I=ROOT/'scripts/contracts-c2-20261022/integral'
@@ -36,7 +36,8 @@ for r in relations['relations']:
 # Overlay current captured functions/ACL. No stubs replace business/authorization/pricing functions.
 fns={}
 for source in ['snapshot.json','pricing.json','dependencies.json','relations.json']:
-    for f in json.loads((H/'baseline'/source).read_text())['functions'] or []:fns[f['sig']]=f
+    for f in json.loads((H/'baseline'/source).read_text())['functions'] or []:
+        f=dict(f);f['sig']=re.sub(r'\bp_\w+\s+','',f['sig']);fns[f['sig']]=f
 for f in fns.values():
     pg.sql(f['sql'])
     pg.sql(f"ALTER FUNCTION {f['sig']} OWNER TO {f['owner']}; REVOKE ALL ON FUNCTION {f['sig']} FROM PUBLIC,anon,authenticated,service_role;")

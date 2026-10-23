@@ -1,11 +1,14 @@
 """Assemble inactive SQL from immutable read-only captures; never connects to hosted DB."""
 from pathlib import Path
-import json, hashlib
+import json, hashlib, re
 H = Path(__file__).resolve().parent
 B = H / 'baseline'
 functions = {}
 for name in ['snapshot.json', 'pricing.json', 'dependencies.json']:
-    for f in json.loads((B/name).read_text())['functions']: functions[f['sig'].split('(')[0]] = f
+    for f in json.loads((B/name).read_text())['functions']:
+        f=dict(f)
+        f['sig']=re.sub(r'\bp_\w+\s+','',f['sig'])
+        functions[f['sig'].split('(')[0]] = f
 changed = ['public.create_partner_order_secure', 'platform_private.b2b_internal_order_snapshot_guard',
            'public.approve_partner_order', 'public.generate_b2b_receivable_secure_impl', 'public.fn_generate_receivable_installments']
 def swap(body, old, new):
