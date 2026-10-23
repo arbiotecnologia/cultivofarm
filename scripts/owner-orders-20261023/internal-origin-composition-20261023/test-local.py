@@ -72,7 +72,7 @@ SET session_replication_role=replica;
 INSERT INTO public.organizations(id,nome,ativo,status) VALUES('{A}','A synthetic',true,'ativa'),('{B}','B synthetic',true,'ativa');
 INSERT INTO public.saas_modules(id,key,name,active) VALUES('{U(900)}','b2b','B2B',true);
 INSERT INTO public.saas_features(id,module_id,key,name,active) VALUES('{U(910)}','{U(900)}','catalogo_precos','Cat',true),('{U(911)}','{U(900)}','pedidos_b2b','Order',true),('{U(912)}','{U(900)}','contas_receber','CR',true);
-INSERT INTO public.saas_plans(id,key,name,active,is_default) VALUES('{U(920)}','test','Test',true,false);
+INSERT INTO public.saas_plans(id,key,name,active,is_default,created_at,updated_at) VALUES('{U(920)}','test','Test',true,false,now(),now());
 INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,features_snapshot,limits_snapshot) VALUES('{U(921)}','{U(920)}',1,'Test','DRAFT',now()-interval '1 day','[]','{{}}');
 INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled) SELECT '{U(921)}',id,true FROM public.saas_features;
 UPDATE public.saas_plan_versions SET status='PUBLISHED',price_amount=0,currency='BRL',billing_cycle='monthly',trial_days=7,published_at=now()-interval '1 day',features_snapshot='["test"]' WHERE id='{U(921)}';
