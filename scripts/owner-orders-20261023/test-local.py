@@ -1,7 +1,8 @@
 """C2-ORD v3 (rebased sobre 20261023192728 instalado) em PostgreSQL DESCARTÁVEL. NÃO é prova hosted/JWT/RLS.
 - Corpos alterados: baseline/*.sql capturados byte-exato do hosted (md5 conferido abaixo).
-- Dependências (has_role, contexto, entitlements, eligibility, fiscal, wrapper, gatilho de parcelas)
-  são STUBS reduzidos; auth.uid() vem de GUC sintético request.jwt.claim.sub.
+- b2b_actor_scope/is_valid/contexto/readiness/h15 e resolver fiscal usam corpos canônicos capturados.
+- Demais dependências (has_role, entitlements, eligibility, wrapper, parcelas) são reduzidas;
+  auth.uid()/auth.jwt() são sintéticos. Não é JWT hosted nem schema/RLS integral.
 - O candidato roda com os hashes hosted reais quando o pg local reproduz o mesmo pg_get_functiondef.
 """
 from pathlib import Path
@@ -37,11 +38,15 @@ try:
   CREATE ROLE authenticated; CREATE ROLE anon; CREATE ROLE service_role;
   CREATE SCHEMA auth; CREATE SCHEMA platform_private;
   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+  CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$ SELECT jsonb_build_object('iat',extract(epoch from now())::bigint) $$;
   CREATE TYPE public.app_role AS ENUM('administrador','tecnico_agronomo','producao','administrativo','gestor','cliente_produtor','consultor_tecnico','aplicador','operador_onfarm','financeiro','gestor_comercial','parceiro_b2b','parceiro_b2b_tecnico','superadmin');
   CREATE TYPE public.partner_order_status AS ENUM('rascunho','pendente','solicitado','em_analise_comercial','aprovado','reprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado','cancelado','aguardando_aprovacao_credito','aguardando_ajuste_comercial','aguardando_itens','reprovado_sem_itens','aguardando_cotacao');
   CREATE TABLE user_roles(user_id uuid, role app_role);
   CREATE TABLE organizations(id uuid PRIMARY KEY, ativo boolean DEFAULT true, status text DEFAULT 'ativa', partner_account_id uuid);
-  CREATE TABLE profiles(user_id uuid PRIMARY KEY, organization_id uuid, ativo boolean DEFAULT true, updated_at timestamptz DEFAULT now());
+  CREATE TABLE profiles(user_id uuid PRIMARY KEY, organization_id uuid, ativo boolean DEFAULT true, updated_at timestamptz DEFAULT now(), senha_provisoria boolean DEFAULT false);
+  CREATE TABLE platform_org_admin_invites(user_id uuid, access_operation_status text, access_valid_after timestamptz);
+  CREATE TABLE fiscal_requirement_exemptions(id uuid DEFAULT gen_random_uuid(), active boolean, scope_type text, scope_id uuid, motivo text, approved_by uuid);
+  CREATE TABLE fiscal_operation_policies(id uuid DEFAULT gen_random_uuid(), active boolean, sales_channel text, operation_type text, uf text, valid_from date, valid_until date, requires_invoice boolean, document_model text);
   CREATE TABLE partner_accounts(id uuid PRIMARY KEY, codigo text, razao_social text, nome_fantasia text, ativo boolean DEFAULT true, deleted_at timestamptz, commercial_owner_organization_id uuid, client_id uuid, uf text DEFAULT 'SP');
   CREATE TABLE partner_users(user_id uuid, partner_id uuid, tenant_id uuid, revoked_at timestamptz, valid_from timestamptz DEFAULT now()-interval '1 day', version int DEFAULT 1);
   CREATE TABLE fixture_entitlements(user_id uuid, feature_key text);
@@ -78,38 +83,32 @@ try:
 
   CREATE FUNCTION public.has_role(uuid, app_role) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=$1 AND role=$2) $$;
   CREATE FUNCTION public.is_platform_superadmin(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT false $$;
-  CREATE FUNCTION public.h15_actor_organization() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT organization_id FROM public.profiles WHERE user_id=auth.uid() $$;
-  CREATE FUNCTION public.is_valid_b2b_partner_user(uuid, uuid) RETURNS boolean LANGUAGE sql STABLE AS $$
-    SELECT EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=$1 AND partner_id=$2 AND revoked_at IS NULL) $$;
   CREATE FUNCTION platform_private.b2b_phase1_partner_visible(uuid, boolean) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT true $$;
   CREATE FUNCTION platform_private.entitlements_for_user(uuid) RETURNS TABLE(feature_key text) LANGUAGE sql STABLE AS $$ SELECT feature_key FROM public.fixture_entitlements WHERE user_id=$1 $$;
   CREATE FUNCTION platform_private.b2b_own_obligations_owner(uuid) RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULL::uuid $$;
   CREATE FUNCTION platform_private.c2_producer_links(uuid,uuid) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT false $$;
-  -- contexto canônico C2 reduzido (mesmo contrato do hosted)
-  CREATE FUNCTION platform_private.b2b_commercial_context() RETURNS jsonb LANGUAGE plpgsql STABLE AS $$
-  DECLARE u uuid:=auth.uid(); org uuid; pid uuid; rs text[]; BEGIN
-    org:=public.h15_actor_organization();
-    SELECT partner_id INTO pid FROM public.partner_users WHERE user_id=u AND revoked_at IS NULL;
-    IF NOT public.is_valid_b2b_partner_user(u,pid) THEN RETURN NULL; END IF;
-    SELECT array_agg(role::text ORDER BY role::text) INTO rs FROM public.user_roles WHERE user_id=u;
-    RETURN jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,'partner_id',pid,
-      'commercial_owner_organization_id',org,'mode','commercial_owner','papel','gestor',
-      'manager','parceiro_b2b'=ANY(rs),'technician','parceiro_b2b_tecnico'=ANY(rs));
-  END $$;
-  CREATE FUNCTION platform_private.b2b_actor_scope(_uid uuid) RETURNS TABLE(profile_ok boolean, org_partner uuid, user_partner uuid, user_partner_count integer, partner_valid boolean, has_catalog boolean)
-  LANGUAGE sql STABLE AS $$
-    WITH pu AS (SELECT count(*)::int c, min(partner_id::text)::uuid pid FROM public.partner_users WHERE user_id=_uid AND revoked_at IS NULL)
-    SELECT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=_uid AND ativo), (SELECT pid FROM pu), (SELECT pid FROM pu), (SELECT c FROM pu), (SELECT c FROM pu)=1, true $$;
   CREATE FUNCTION public.fn_b2b_order_billing_eligibility(uuid) RETURNS jsonb LANGUAGE sql STABLE AS $$
     SELECT jsonb_build_object('eligible',true,'payment_terms_id',(SELECT id FROM public.partner_order_payment_terms WHERE partner_order_id=$1)) $$;
-  CREATE FUNCTION public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date) RETURNS jsonb LANGUAGE sql STABLE AS $$
-    SELECT '{{"required":false,"status":"NOT_APPLICABLE_TEST","source":"stub"}}'::jsonb $$;
   -- wrapper reduzido: lock + impl (o real também checa phase1/priceable)
   CREATE FUNCTION public.generate_b2b_receivable_secure(p uuid) RETURNS jsonb LANGUAGE plpgsql AS $$ BEGIN
     PERFORM pg_advisory_xact_lock(hashtextextended('b2b_receivable:'||p::text,0));
     IF current_setting('test.fail_wrapper',true)='1' THEN RAISE EXCEPTION 'stub_generation_failed'; END IF;
     RETURN public.generate_b2b_receivable_secure_impl(p); END $$;
   ''')
+  # Load captured REAL scope bodies, not stubs. Enforce fidelity against LIVE hashes.
+  canonical = [
+    ('platform_private.platform_actor_access_ready','(uuid)','048249c0c2106c3761e26eacb8d0de84'),
+    ('platform_private.h15_actor_organization','()','64e10608403238a41a9baf92857ca881'),
+    ('public.h15_actor_organization','()','55edafec08bcc84a00f1526c14334a2c'),
+    ('public.is_valid_b2b_partner_user','(uuid,uuid)','0bb0dea04be8ca84c66db7ca6329876c'),
+    ('platform_private.b2b_commercial_context','()','2f1063f00281c4ca78dcebaab81a9446'),
+    ('platform_private.b2b_actor_scope','(uuid)','c3f2997746f24bc2efd15db5c0ccc862')]
+  for name, args, h in canonical:
+    run((HERE/'fiscal'/f'{name}.sql').read_text())
+    assert run(f"SELECT md5(pg_get_functiondef('{name}{args}'::regprocedure))") == h, name
+  ok('6 corpos de autoridade reais byte-exatos aos hashes LIVE; sem stubs de scope/contexto/readiness')
+  run((HERE/'baseline-v2/public.fn_fiscal_requirement_resolve.sql').read_text())
+  run('REVOKE ALL ON FUNCTION public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date) TO service_role, authenticated; GRANT USAGE ON SCHEMA public TO authenticated, anon, service_role;')
   # Baseline exato + verificação de fidelidade de hash.
   hosted = {}
   for f in sorted((HERE/'baseline').glob('*.sql')):
