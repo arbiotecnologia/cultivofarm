@@ -13,8 +13,10 @@ describe("Gates de plano em portais especializados", () => {
     expect(featureForPath("/portal-parceiro/catalogo")).toBe("catalogo_precos");
     expect(featureForPath("/portal-parceiro/simulacoes-equipe")).toBe("simulacoes");
     expect(featureForPath("/portal-parceiro/fichas")).toBe("fichas_tecnicas");
+    // Financial portal was subsequently scoped to the existing receivables entitlement.
+    expect(featureForPath("/portal-parceiro/financeiro")).toBe("contas_receber");
     // Sem feature inequívoca: inalteradas
-    for (const p of ["/app", "/app/perfil", "/app/catalogo", "/app/fazendas", "/portal-parceiro/dashboard", "/portal-parceiro/financeiro", "/portal-parceiro/perfil", "/portal"]) {
+    for (const p of ["/app", "/app/perfil", "/app/catalogo", "/app/fazendas", "/portal-parceiro/dashboard", "/portal-parceiro/perfil", "/portal"]) {
       expect(featureForPath(p)).toBeNull();
     }
   });
