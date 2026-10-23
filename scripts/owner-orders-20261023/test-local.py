@@ -146,12 +146,13 @@ try:
   snapshot=json.loads((HERE/'baseline-p1/snapshot.json').read_text())
   for f in snapshot['functions']:
     if 'phase1_order_visible' not in f['sig']: run(f['sql'])
+  run("CREATE FUNCTION public.b2b_phase1_partner_visible(p uuid,t boolean DEFAULT false) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT platform_private.b2b_phase1_partner_visible(p,t) $$;")
   for f in ['platform_private.b2b_phase1_partner_visible','platform_private.b2b_phase1_order_visible','public.b2b_phase1_order_visible','public.fn_b2b_order_priceable','public.fn_b2b_credit_exposure','public.fn_b2b_order_billing_eligibility','public.fn_generate_receivable_installments','public.generate_b2b_receivable_secure']:
     run((HERE/'baseline-p1'/f'{f}.sql').read_text())
   run("CREATE TRIGGER c2p1_settings_fence BEFORE INSERT OR UPDATE OR DELETE ON partner_financial_settings FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_settings_fence(); CREATE TRIGGER trg_pfs_updated_at BEFORE UPDATE ON partner_financial_settings FOR EACH ROW EXECUTE FUNCTION tg_pfs_updated_at(); CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments();")
   # Explicitly check real baseline blocker: internal owner has no ownorg/partner link.
   assert run(as_uid(U['admin'],f"SELECT public.b2b_phase1_order_visible('11111111-0000-0000-0000-000000000001');"))=='f'
-  ok('baseline phase1 réel sem owner fallback; corpo capturado não substituído por true')
+  ok('baseline phase1 real sem owner fallback; corpo capturado não substituído por true')
 
   # ---------- CANDIDATO ----------
   run((HERE/'candidate.sql.review').read_text())
@@ -271,7 +272,7 @@ try:
   run("INSERT INTO payment_methods(name,active) VALUES('AUDIT-AR-20260922 - Sem transferencia',true);")
   run(settings())
   settings_before=run(f"SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='{P_A}'")
-  ok('P1 CAS réel crée settings avec méthode AUDIT et délai7; aucun INSERT du générateur')
+  ok('P1 CAS real cria settings com método AUDIT e prazo7; gerador não faz INSERT')
   approve = lambda oid: as_uid(U['admin'], f"SELECT public.approve_partner_order('{oid}',NULL,NULL);")
   run(approve(O1), 'B2B_REVENUE_CATEGORY_NOT_CONFIGURED')
   assert run(f"SELECT status FROM partner_orders WHERE id='{O1}'") == 'em_analise_comercial'
