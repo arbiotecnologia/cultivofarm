@@ -4,7 +4,7 @@ import json, hashlib, re
 H = Path(__file__).resolve().parent
 B = H / 'baseline'
 functions = {}
-for name in ['snapshot.json', 'pricing.json', 'dependencies.json']:
+for name in ['snapshot.json', 'pricing.json', 'dependencies.json','relations.json','policy-functions.json']:
     for f in json.loads((B/name).read_text())['functions']:
         f=dict(f)
         f['sig']=re.sub(r'([,(])\s*\w+\s+',r'\1',f['sig'])
@@ -25,6 +25,14 @@ pre = guard({})
 chain=json.loads((B/'chain.json').read_text())
 triggers='\n'.join(f"IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.{t['table']}'::regclass AND tgname={quote(t['name'])} AND tgenabled={quote(t['enabled'])} AND pg_get_triggerdef(oid)={quote(t['sql'])}) THEN RAISE EXCEPTION 'origin_trigger_drift:{t['table']}.{t['name']}'; END IF;" for t in chain['triggers'])
 pre += 'DO $guard$ BEGIN\n'+triggers+'\nEND $guard$;\n'
+policies=json.loads((B/'policies.json').read_text())
+tables=sorted(set(p['tablename'] for p in policies))
+policy_literal=quote(json.dumps(policies))
+table_literal=','.join(quote(t) for t in tables)
+policy_guard=f"DO $guard$ BEGIN IF (SELECT coalesce(jsonb_agg(to_jsonb(p) ORDER BY tablename,policyname),'[]') FROM pg_policies p WHERE schemaname='public' AND tablename IN ({table_literal})) IS DISTINCT FROM {policy_literal}::jsonb THEN RAISE EXCEPTION 'origin_policy_set_drift'; END IF;\n"
+policy_guard+='\n'.join(f"IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.{t}'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:{t}'; END IF;" for t in tables)
+policy_guard+='\nEND $guard$;\n'
+pre+=policy_guard
 pre += "DO $$ BEGIN IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.partner_orders'::regclass AND attname='c2_external_origin_snapshot' AND NOT attisdropped) OR to_regprocedure('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'origin_already_installed_or_drift'; END IF; END $$;\n"
 (H/'preflight.sql').write_text('-- READ ONLY. Operator must prove canonical ref swzpzcwiasxmjutrmvkm externally.\nBEGIN TRANSACTION READ ONLY;\n'+pre+'ROLLBACK;\n')
 helper = '''CREATE FUNCTION platform_private.c2_external_origin_assert(s jsonb, partner uuid, client uuid)
@@ -124,3 +132,9 @@ bodies={changed[0]:create,changed[1]:order,'platform_private.b2b_internal_child_
 contain=functions['platform_private.c2_owner_order_create_allowed']['sql']
 (H/'rollback.sql.review').write_text('-- Deny-only containment, preserves all snapshots/data/financial guards.\nBEGIN;\n'+contain.rstrip()+';\nCOMMIT;\n')
 print('assembled',len(functions),'dependency guards;',len(bodies),'changed bodies; writer remains false')
+if (H/'postflight-hashes.json').exists():
+    expected=json.loads((H/'postflight-hashes.json').read_text())
+    post=guard(expected)+policy_guard
+    post+='DO $guard$ BEGIN\n'+triggers+'\nEND $guard$;\n'
+    post+="DO $$ BEGIN IF has_function_privilege('authenticated','platform_private.c2_external_origin_assert(jsonb,uuid,uuid)','EXECUTE') OR has_function_privilege('anon','platform_private.c2_external_origin_assert(jsonb,uuid,uuid)','EXECUTE') THEN RAISE EXCEPTION 'origin_private_helper_exposed'; END IF; IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='zz_c2_external_final_state' AND tgenabled='O') THEN RAISE EXCEPTION 'origin_final_guard_missing'; END IF; END $$;\n"
+    (H/'postflight.sql').write_text('-- READ ONLY; validates composed containment, NOT writer reopening.\nBEGIN TRANSACTION READ ONLY;\n'+post+'ROLLBACK;\n')

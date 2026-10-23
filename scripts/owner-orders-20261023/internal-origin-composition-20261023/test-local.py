@@ -39,7 +39,7 @@ for r in relations['relations']:
 fns={}
 pg.sql((H/'baseline/platform_private.c2p1_internal_actor.sql').read_text())
 pg.sql((H/'baseline/platform_private.c2_producer_links.sql').read_text())
-for source in ['snapshot.json','pricing.json','dependencies.json','relations.json']:
+for source in ['snapshot.json','pricing.json','dependencies.json','relations.json','policy-functions.json']:
     for f in json.loads((H/'baseline'/source).read_text())['functions'] or []:
         f=dict(f);f['sig']=re.sub(r'([,(])\s*\w+\s+',r'\1',f['sig']);fns[f['sig']]=f
 for f in fns.values():
@@ -58,6 +58,16 @@ chain=json.loads((H/'baseline/chain.json').read_text())
 for t in chain['triggers']:
     pg.sql(f"DROP TRIGGER IF EXISTS {t['name']} ON public.{t['table']}; "+t['sql']+';')
 ok('all 44 current order/children/financial triggers installed; actions use origin mode')
+# Current captured RLS overlay, setup only. Every tested call runs authenticated/origin.
+policies=json.loads((H/'baseline/policies.json').read_text())
+for t in sorted(set(p['tablename'] for p in policies)):
+    for n in pg.sql(f"SELECT policyname FROM pg_policies WHERE schemaname='public' AND tablename='{t}'").splitlines():pg.sql(f'DROP POLICY "{n}" ON public.{t};')
+    pg.sql(f'ALTER TABLE public.{t} ENABLE ROW LEVEL SECURITY; ALTER TABLE public.{t} NO FORCE ROW LEVEL SECURITY;')
+for p in policies:
+    cmd=f'CREATE POLICY "{p["policyname"]}" ON public.{p["tablename"]} AS {p["permissive"]} FOR {p["cmd"]} TO '+','.join(p['roles'])
+    if p['qual']:cmd+=' USING ('+p['qual']+')'
+    if p['with_check']:cmd+=' WITH CHECK ('+p['with_check']+')'
+    pg.sql(cmd+';')
 # Preflight must pass unchanged against containment before any candidate mutation.
 pg.sql((H/'preflight.sql').read_text());ok('READ ONLY preflight on captured containment')
 pg.sql((H/'candidate.sql.review').read_text());ok('inactive candidate parsed/applied only in disposable PG')
@@ -66,6 +76,8 @@ for name in json.loads((H/'expected-source.json').read_text()):
     f=next(f for f in fns.values() if f['sig'].split('(')[0]==name)
     post[name]=pg.sql(f"SELECT md5(pg_get_functiondef('{f['sig']}'::regprocedure))")
 (H/'postflight-hashes.json').write_text(json.dumps(post,indent=2)+'\n')
+subprocess.run([sys.executable,str(H/'assemble.py')],check=True)
+pg.sql((H/'postflight.sql').read_text());ok('assertive READ ONLY postflight composed containment')
 ok('candidate leaves writer containment false',pg.sql(f"SELECT platform_private.c2_owner_order_create_allowed('{G}','{P}')")=='f')
 # Positive test setup ONLY: reviewed writer body from existing v4 source, never hosted/release.
 old=(H.parent/'candidate.sql.review').read_text(); start=old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); end=old.index('END $function$;',start)+len('END $function$;')
