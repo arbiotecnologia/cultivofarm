@@ -2,7 +2,8 @@
 
 ## 23/10 23:32 — conflito de origem interna no pedido externo
 - [x] Registrar homologação independente c8dc171c/index-xrePLkS9: modal estável, Bombarbio1L180/simulação180; duas criações negadas403/42501 B2B_INTERNAL_ACTOR_DENIED, zero pedidos/títulos. Contenção c2_contain_writer_internal_origin_conflict helperfalse vigente, não reabrir.
-- [ ] Inspecionar chain completo e baseline/hash atuais em leitura; preparar candidato mínimo origem owner/credor/emissor canônicos com PRE/POST/rollback deny-only e testes PostgreSQL criação/negação/aprovação/cobrança/rollback. Sem SQL aplicado/publicação/sessões; pendências antigas preservadas.
+- [x] Inspecionar chain completo:44triggers/50policies/78corpos; preparar composição inativa em `scripts/owner-orders-20261023/internal-origin-composition-20261023/` com origem server-owned/ticketprivado, PRE/POST integral, rollbackdeny-only.44checksPostgreSQL/1VitestPASS; Auth/fixtures sintéticas, sem provaJWT hosted. Sem SQL aplicado/publicação/sessões; baselines anteriores preservados.
+- [ ] Revisão final independente/PREPOST canônico e homologaçãoJWT A/B/cumulativo/revogação dependem do proprietário; writer permanecefalse. Readiness/produção/entrega continuam fechadas no candidato. Pendência adicional percentual crédito numeric6,2 overflow em faixa extrema registrada, não corrigida neste recorte.
 
 ## 23/10 23:25 — confirmação independente e vetor completo
 - [x] Registrar observação passiva CDP25responsesHTTP200/264–345ms: esta rodada não sugere gateway lento, conforme proprietário; sem atribuir prova a novas consultas do agente. Contenção23:21 vigente.
