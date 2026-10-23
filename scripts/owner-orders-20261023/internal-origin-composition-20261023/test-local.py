@@ -22,10 +22,11 @@ def actor(u,s,err=None):
     return result
 def val(u,s):return actor(u,s).splitlines()[-1]
 def snapshot():
-    tables=['partner_orders','partner_order_items','partner_order_payment_terms','partner_order_payment_schedule','partner_order_idempotency','accounts_receivable','accounts_receivable_installments','partner_order_financial_links','partner_order_audit_logs','partner_order_timeline_events','notificacoes_operacionais','financial_audit_log','production_planning']
+    tables=['partner_orders','partner_order_items','partner_order_payment_terms','partner_order_payment_schedule','partner_order_idempotency','accounts_receivable','accounts_receivable_installments','partner_order_financial_links','partner_order_audit_logs','production_timeline_events','notificacoes_operacionais','financial_audit_log','production_planning']
     return {t:pg.sql(f"SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]') FROM public.{t} t") for t in tables}
 pg.start();pg.sql((I/'replica.sql').read_text())
 pg.sql("SET check_function_bodies=off;")
+pg.sql((H/'baseline/extra-structure.sql').read_text())
 pg.sql("ALTER TABLE public.partner_financial_settings DROP CONSTRAINT IF EXISTS partner_financial_settings_default_payment_method_check;")
 relations=json.loads((H/'baseline/relations.json').read_text())
 for r in relations['relations']:
