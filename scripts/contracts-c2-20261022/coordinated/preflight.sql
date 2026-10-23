@@ -22,3 +22,5 @@ SELECT c.oid::regclass AS relation,c.relrowsecurity,c.relforcerowsecurity,c.rela
 FROM pg_class c JOIN targets t ON t.oid=c.oid ORDER BY c.oid::regclass::text;
 -- Auditor must compare the complete rows, including absence/extra triggers,
 -- against a fresh captured structural baseline before installation. No bypass.
+SELECT 1 / CASE WHEN to_regprocedure('platform_private.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)') IS NULL AND to_regprocedure('public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)') IS NULL AND to_regprocedure('public.get_partner_user_lifecycle(uuid,uuid)') IS NULL THEN 1 ELSE 0 END AS lifecycle_not_installed;
+

@@ -117,6 +117,6 @@
   "path": "src/pages/portal-parceiro/PortalParceiroLayout.tsx",
   "package": "finance-multiprofile",
   "baseline_sha256": "2d30f29ad2e9c6574c606845a077de733d89311ce000906b1a7bab3ca5ccb872",
-  "candidate_sha256": "b819b650f7446c8f062c5494eae12548d4bd9b512163660a091301213cafe449"
+  "candidate_sha256": "1df184d41ee60a584171e70d6b8e97a038eae9146fae1ce4ffb3b9937e65eccf"
  }
 ]

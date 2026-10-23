@@ -215,7 +215,9 @@ export default function PortalParceiroLayout() {
             <p className="text-muted-foreground">{ownPartner.codigo}</p>
             {location.pathname === "/portal-parceiro/dashboard" && !isTecnico && <CommercialOwnOrders partnerId={ownPartner.id} />}
             <p role="status" className="text-muted-foreground">
-              Simulações, financeiro, arquivos e alterações de pedidos estão indisponíveis.
+              {menuGroups.some(group => group.items.some(item => ownFinanceRoute(item.route, ownPartner?.financeRead === true, entitlements.features)))
+                ? "Simulações, arquivos e alterações de pedidos estão indisponíveis."
+                : "Simulações, financeiro, arquivos e alterações de pedidos estão indisponíveis."}
             </p>
           </section>
         ) : !partner && !isLoading && (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico") ? (
