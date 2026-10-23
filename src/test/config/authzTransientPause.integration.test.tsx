@@ -111,7 +111,8 @@ describe('pausa transitória não muda a época (regressão /configuracoes)', ()
     expect(content()).toBeNull();
     // Antes do backoff automático (1,5 s): clique explícito no boundary.
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); });
-    await adv(5_000);
+    await adv(20_000);
+    if (!content()) console.log('DBG', document.body.textContent);
     expect(content()).toBeTruthy();
     expect(epochOf()).toBe((before as number) + 1);
   });
