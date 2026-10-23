@@ -7,6 +7,7 @@ import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from '@/lib/configuracoes/external
 import { buildCommonExternalEdit, submitCommonExternalEditCandidate, validateCommonExternalEdit, type CandidateClient, type CommonExternalEdit } from '@/lib/configuracoes/externalUserEditCandidate';
 import { classificarErroRpcEdicao, executarComDeadlineEdicao } from '@/lib/configuracoes/edicaoUsuarioRpc';
 import { unmaskCpfCnpj, validatePhoneBR } from '@/lib/masks';
+import { readPauseState, writePauseState } from '@/lib/authz/pauseRetainedState';
 
 export type ExternalCommonTarget = {
   user_id: string;
@@ -26,7 +27,17 @@ type Props = {
   isCurrent: () => boolean;
   onSuccess: () => void;
   onError: (message: string) => void;
+  /**
+   * Chave de retenção volátil do rascunho (identidade + época + alvo).
+   * Presente: o rascunho digitado sobrevive a um unmount transitório de
+   * pausa de autorização e é descartado quando a época/identidade muda
+   * (revogação) ou quando o diálogo fecha explicitamente. Ausente: comportamento
+   * publicado inalterado. Nunca altera os fences CAS/snapshot do envio.
+   */
+  draftKey?: string;
 };
+
+type RetainedDraft = { profile: CommonExternalEdit['profile']; reason: string };
 
 /** The screen waits for the first complete snapshot, then retains the draft across refetches. */
 export function ExternalCommonUserEditBoundary(props: Props) {
