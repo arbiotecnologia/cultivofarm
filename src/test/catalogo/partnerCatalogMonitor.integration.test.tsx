@@ -97,7 +97,7 @@ async function tick(ms = 100) { for (let elapsed = 0; elapsed < ms; elapsed += 5
 async function openModal() { fireEvent.click(screen.getByRole("button", { name: "Adicionar", exact: true })); await tick(); return screen.getByRole("dialog"); }
 async function addItem() { const modal = await openModal(); fireEvent.click(within(modal).getByRole("button", { name: "Adicionar ao carrinho" })); await tick(); }
 it("same confirmed probes retain the real modal DOM and cart without profile reload/cache reset", async () => {
-  mount(); await tick(); await addItem(); const modal = await openModal();
+  mount(); await tick(1000); await addItem(); const modal = await openModal();
   const profileReads = state.table.mock.calls.filter(([name]) => name === "profiles").length;
   const reads = catalogCalls().length;
   await tick(21_000);
@@ -107,7 +107,7 @@ it("same confirmed probes retain the real modal DOM and cart without profile rel
   expect(catalogCalls()).toHaveLength(reads); expect(state.writes).not.toHaveBeenCalled();
 });
 it("same-identity token refresh hides old authority then restores cart choices and modal from fresh reads", async () => {
-  mount(); await tick(); await addItem(); await openModal();
+  mount(); await tick(1000); await addItem(); await openModal();
   act(() => state.authCb?.("TOKEN_REFRESHED", { user: { id: state.actor } }));
   expect(screen.queryByRole("dialog")).toBeNull();
   await tick();
@@ -116,14 +116,14 @@ it("same-identity token refresh hides old authority then restores cart choices a
   expect(catalogCalls().length).toBeGreaterThanOrEqual(2); expect(state.writes).not.toHaveBeenCalled();
 });
 it("effective revocation retires modal/cart; observed restoration never revives draft", async () => {
-  mount(); await tick(); await addItem(); await openModal(); state.revoked = true;
+  mount(); await tick(1000); await addItem(); await openModal(); state.revoked = true;
   await tick(10_100); expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.queryByText("Carrinho (1)")).toBeNull();
   state.revoked = false; state.linkVersion++;
   act(() => state.authCb?.("TOKEN_REFRESHED", { user: { id: state.actor } })); await tick();
   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getByText("Carrinho (0)")).toBeTruthy();
 });
 it.each(["partner", "tenant"])("real %s change retires modal and cart", async kind => {
-  mount(); await tick(); await addItem(); await openModal();
+  mount(); await tick(1000); await addItem(); await openModal();
   if (kind === "partner") { state.partner = "44444444-4444-4444-8444-444444444444"; state.linkVersion++; await tick(10_100); }
   else { state.tenant = "55555555-5555-4555-8555-555555555555"; act(() => state.authCb?.("TOKEN_REFRESHED", { user: { id: state.actor } })); await tick(); }
   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getByText("Carrinho (0)")).toBeTruthy(); expect(state.writes).not.toHaveBeenCalled();
