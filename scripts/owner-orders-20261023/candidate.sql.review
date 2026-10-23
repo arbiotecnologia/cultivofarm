@@ -35,6 +35,10 @@ BEGIN
      OR to_regprocedure('platform_private.c2_order_actor_scope(uuid,uuid)') IS NOT NULL THEN
     RAISE EXCEPTION 'already_installed_or_drift';
   END IF;
+  IF md5(pg_get_functiondef('platform_private.c2p1_settings_allowed(uuid,boolean)'::regprocedure)) IS DISTINCT FROM '57baa5fd657952d9383ad0c422c1d028'
+  OR md5(pg_get_functiondef('platform_private.c2p1_settings_fence()'::regprocedure)) IS DISTINCT FROM 'f87cc2894dc551d242c2586f17e2cdd4'
+  OR md5(pg_get_functiondef('platform_private.c2p1_update_settings(uuid,jsonb,jsonb)'::regprocedure)) IS DISTINCT FROM '1d64475b433bd8557fd399be3b491a38'
+  OR md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'c08432be20b610b424c45b73ec9610ae' THEN RAISE EXCEPTION 'P1_dependency_drift'; END IF;
   -- Hash guard de TODOS os corpos alterados antes de qualquer escrita.
   IF md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure)) <> 'f86f43f9d9ad3ed97b840fcc02c79476'
   OR md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure)) <> 'c3f2997746f24bc2efd15db5c0ccc862'
