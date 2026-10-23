@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 — cadastro cumulativo integral INATIVO
+- [x] Corrigir formulário canônico candidato com três perfis externos, produtor sem parceiro, cliente/fazenda, payload coordenado e confirmação única lifecycle; manifesto 20 cópias.
+- [x] Página real jsdom 15/15; integral 128/128; Edge sintética 13/13; tipos das cópias PASS; diff/provas/SQL e rollback preservados.
+- [ ] Preflight/postflight e homologação real A/B aguardam revisão independente; não instalar/implantar/promover/publicar neste turno. Dados comuns multiperfil e gestão de vínculos cliente/fazenda na edição continuam fora do contrato revisado.
+
 ## 22/10 02:38 — CAS fiscal servidor, mesmo recorte
 - [x] Reproduzir AFTER-only sem avanço de timestamp e reforçar candidata BEFORE monotônica/transacional; teste UPDATE direto com duas conexões/m mesmo token: uma linha/um conflito, stale sequencial e rollback token/auditoria; 34 SQL locais + 10 Vitest candidatos PASS.
 - [x] Registrar relato Admin B: leitura fixtures e tentativa vazia INS-4 sem perfil criado; edição indevida ainda presente no runtime, corrigida apenas na candidata read-only interna.

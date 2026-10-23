@@ -6,10 +6,16 @@
   "candidate_sha256": "20c6cb58411c92bb2d953c81164ebdb2d1f311163abed3927ef233848479f03f"
  },
  {
+  "path": "src/components/configuracoes/ExternalRegistrationFields.tsx",
+  "package": "c2-registration",
+  "baseline_sha256": null,
+  "candidate_sha256": "a78a92d0955848a5f82bbc5d821fc0ab377b02761ddca042dad1f631f5052727"
+ },
+ {
   "path": "src/components/configuracoes/PartnerLifecycleFields.tsx",
   "package": "c2.1-admin",
   "baseline_sha256": null,
-  "candidate_sha256": "ce4e6f53a19eb822c17ac3f9e20f09ee0ef2fb0dbe95fb7c96c880c214ea9208"
+  "candidate_sha256": "03e964e18d7147d39c75b43e6c35d616e4fc5f1b405d3d960192baa61e57ea8f"
  },
  {
   "path": "src/components/guards/AppPortalGuard.tsx",
@@ -66,6 +72,12 @@
   "candidate_sha256": "45c90a049bfbc9f1a91ca036f58faa3c4ee08fdbd30c665f6199218ca69fa6f8"
  },
  {
+  "path": "src/lib/configuracoes/externalUserDraft.ts",
+  "package": "c2-registration",
+  "baseline_sha256": "d68a2e6fb1ac11c2fa29592811482059725dbe4a289195dc7549400d58af2c43",
+  "candidate_sha256": "05853c9912c9dcf68583fa7edb4bd0d2455029310f748f49db6ce2a73d96dca1"
+ },
+ {
   "path": "src/lib/configuracoes/partnerLifecycle.ts",
   "package": "c2.1-admin",
   "baseline_sha256": null,
@@ -87,7 +99,7 @@
   "path": "src/pages/Configuracoes.tsx",
   "package": "c2.1-admin",
   "baseline_sha256": "45fb8236e4d2db0d4daf58597206eb9c183b37e42de2a4d9e0cb9a7b420d8f39",
-  "candidate_sha256": "ff6028e1864505aaf6ae1530428b6e625d100dfcf7c70bcbbd392bcc9f8467e4"
+  "candidate_sha256": "daa8258a2905b472300280c283440cc4a9f7849f748b589e74c414b0169fbcc4"
  },
  {
   "path": "src/pages/SelecionarPortal.tsx",

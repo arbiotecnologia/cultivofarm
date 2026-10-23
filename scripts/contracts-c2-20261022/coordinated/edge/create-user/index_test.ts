@@ -4,13 +4,14 @@ const actor="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",tenant="bbbbbbbb-bbbb-4bbb-8b
 const key="eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const roles=["cliente_produtor","parceiro_b2b","parceiro_b2b_tecnico"];
 const body={email:"synthetic@example.invalid",nome:"Synthetic",roles,partner_id:partner,cliente_ids:[key],principal_cliente_id:key,idempotency_key:key};
-function fixture(options:{status?:string;finishError?:boolean;foreign?:boolean;malformed?:boolean}={}) {
+function fixture(options:{status?:string;finishError?:boolean;foreign?:boolean;malformed?:boolean;producerOnly?:boolean}={}) {
  const calls:string[]=[];let count=0;
- const receipt={contract:"C2_MULTIPROFILE_V1",external_roles:roles,actor_id:actor,partner_id:partner,readers_ready:true,provisioning_ready:true,producer_links_valid:true,claim_id:key,fence:key,user_id:user,organization_id:tenant,status:options.status??"claimed",acquired:options.status!=="completed",lease_valid:true};
+ const receipt={contract:"C2_MULTIPROFILE_V1",external_roles:options.producerOnly?["cliente_produtor"]:roles,actor_id:actor,partner_id:options.producerOnly?null:partner,readers_ready:true,provisioning_ready:true,producer_links_valid:true,claim_id:key,fence:key,user_id:user,organization_id:tenant,status:options.status??"claimed",acquired:options.status!=="completed",lease_valid:true};
  const anon={auth:{getClaims:()=>({data:{claims:{sub:actor,role:"authenticated",iat:1}},error:null})},rpc:(name:string,args:unknown)=>{
   calls.push(name);
   if(name==="has_role")return {data:true,error:null};
-  assertEquals((args as {p_roles:string[]}).p_roles,roles);
+  assertEquals((args as {p_roles:string[]}).p_roles,receipt.external_roles);
+  assertEquals((args as {p_partner:string|null}).p_partner,receipt.partner_id);
   return {data:{...receipt,...(options.malformed?{actor_id:user}:{})},error:null};
  }};
  const admin={from:()=>({select:()=>({eq:()=>({maybeSingle:()=>({data:{organization_id:tenant,ativo:true},error:null})})})}),
@@ -23,6 +24,10 @@ function fixture(options:{status?:string;finishError?:boolean;foreign?:boolean;m
 function env(){Deno.env.set("SUPABASE_URL","https://swzpzcwiasxmjutrmvkm.supabase.co");Deno.env.set("SUPABASE_ANON_KEY","synthetic");Deno.env.set("SUPABASE_SERVICE_ROLE_KEY","synthetic");}
 function request(value:unknown=body){return new Request("http://localhost/",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json"},body:JSON.stringify(value)})}
 Deno.test("cumulative receipt uses exactly one Auth create",async()=>{env();const f=fixture();const r=await handler(request(),f.factory);assertEquals(r.status,200);assertEquals(f.calls.filter(c=>c==="create").length,1);assertEquals(f.calls.includes("delete"),false)});
+Deno.test("explicit external_roles alias matches canonical cumulative payload",async()=>{env();const f=fixture();const r=await handler(request({...body,external_roles:roles}),f.factory);assertEquals(r.status,200);assertEquals(f.calls.filter(c=>c==="create").length,1)});
+Deno.test("contradictory external_roles fails before claim and Auth",async()=>{env();const f=fixture();const r=await handler(request({...body,external_roles:["gestor"]}),f.factory);assertEquals(r.status,403);assertEquals(f.calls.includes("b2b_claim_provisioning"),false);assertEquals(f.calls.includes("create"),false)});
+Deno.test("duplicate external_roles fails before claim",async()=>{env();const f=fixture();const r=await handler(request({...body,external_roles:[roles[0],roles[0],roles[2]]}),f.factory);assertEquals(r.status,403);assertEquals(f.calls.includes("b2b_claim_provisioning"),false)});
+Deno.test("producer-only matching alias creates without partner",async()=>{env();const f=fixture({producerOnly:true});const r=await handler(request({...body,roles:["cliente_produtor"],external_roles:["cliente_produtor"],partner_id:null,partner_papel:null}),f.factory);assertEquals(r.status,200);assertEquals(f.calls.filter(c=>c==="create").length,1)});
 Deno.test("completed replay never recreates Auth",async()=>{env();const f=fixture({status:"completed"});const r=await handler(request(),f.factory);assertEquals(r.status,200);assertEquals(f.calls.includes("create"),false)});
 Deno.test("mismatched claim stops before Auth",async()=>{env();const f=fixture({malformed:true});const r=await handler(request(),f.factory);assertEquals(r.status,409);assertEquals(f.calls.includes("create"),false)});
 Deno.test("failure compensates exact owned receipt only",async()=>{env();const f=fixture({finishError:true});await handler(request(),f.factory);assertEquals(f.calls.includes("delete"),true);assertEquals(f.calls.includes("b2b_complete_provisioning_compensation"),true)});
