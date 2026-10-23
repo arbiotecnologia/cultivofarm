@@ -137,6 +137,23 @@ describe("P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML host
     expect(client.getQueryData(key)).toMatchObject({ default_payment_method: "pix" });
     expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled(); expect(state.rpcCalls).toHaveLength(1); client.clear();
   });
+  for (const change of ["tenant", "revocation"] as const) {
+    it(`${change} durante releitura pós-RPC remove cache antigo e não readota bytes tardios`, async () => {
+      const { client, key, view } = setup(); await open(); await editMethod(); state.holdRpc = true;
+      fireEvent.click(screen.getByRole("button", { name: "Salvar" })); await waitFor(() => expect(state.pendingRpc).not.toBeNull());
+      await act(async () => { state.holdReads = true; state.pendingRpc?.(); });
+      await waitFor(() => expect(state.pendingReads).toHaveLength(1));
+      expect(client.getQueryData(key)).toMatchObject({ default_payment_method: method });
+      const late = state.pendingReads.shift();
+      if (change === "tenant") state.auth.profile.organization_id = "OB";
+      else state.auth.authzReady = false;
+      view.rerender(<QueryClientProvider client={client}><Harness /></QueryClientProvider>);
+      await act(async () => late?.());
+      expect(client.getQueryData(key)).toBeUndefined();
+      expect(client.getQueryCache().getAll().some(q => (q.state.data as PartnerSettings | undefined)?.updated_at === "2026-10-23T21:18:08.481422+00:00")).toBe(false);
+      client.clear();
+    });
+  }
   for (const change of ["tenant", "revocation", "epoch"] as const) {
     it(`${change} enquanto RPC pendente impede adoção/invalidação do resultado antigo`, async () => {
       const { client, key, view } = setup(); await open(); await editMethod(); state.holdRpc = true;
