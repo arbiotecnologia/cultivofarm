@@ -1,24 +1,30 @@
--- REVIEW ONLY. Rollback deny-only: remove os dois fragmentos C2-ORD, restaurando
--- os corpos com hash exato do preflight. Títulos já emitidos NÃO são apagados
--- (histórico financeiro imutável; trg_h6d_ar_no_delete).
+-- REVIEW ONLY (C2-ORD v2 rollback). Fecha o writer SERVER-SIDE e reverte apenas a ampliação do técnico cumulativo.
+-- Não restaura: fallback de categoria/forma de pagamento, aprovação sem título nem escopo antigo do título
+-- (o corpo antigo falhava para emissor interno e aprovava sem cobrança). Não apaga pedidos/títulos/links.
 BEGIN;
-DO $$
-DECLARE d text; a int; b int;
+SET LOCAL lock_timeout = '5s';
+CREATE FUNCTION pg_temp.c2_swap(d text, o text, n text, tag text) RETURNS text LANGUAGE plpgsql AS $s$
 BEGIN
-  SELECT pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure) INTO d;
-  a := position('  -- c2_ord_owner_tenant:' in d);
-  IF a = 0 THEN RAISE EXCEPTION 'not_installed_receivable'; END IF;
-  b := position('  END IF;' in substr(d, a)) + a - 1 + length('  END IF;');
-  d := substr(d, 1, a - 2) || substr(d, b);  -- remove "\n" + bloco
-  IF md5(d) <> '60be0fb336ca1537c063a001a213f7af' THEN RAISE EXCEPTION 'rollback_hash_mismatch_receivable %', md5(d); END IF;
-  EXECUTE d;
+  IF (length(d) - length(replace(d, o, ''))) / length(o) <> 1 THEN RAISE EXCEPTION 'fragment_not_unique:%', tag; END IF;
+  RETURN replace(d, o, n);
+END $s$;
+DO $$
+DECLARE d text;
+BEGIN
+  IF to_regprocedure('platform_private.c2_owner_order_create_allowed(uuid,uuid)') IS NULL THEN
+    RAISE EXCEPTION 'not_installed';
+  END IF;
+  -- 1) Writer fechado: guard passa a negar todo cliente comercial externo; projeção devolve false.
+  CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid, _partner uuid)
+  RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $f$ SELECT false; $f$;
+  REVOKE ALL ON FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid) FROM PUBLIC, anon, authenticated;
 
-  SELECT pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure) INTO d;
-  a := position('||jsonb_build_object(''order_capabilities''' in d);
-  IF a = 0 THEN RAISE EXCEPTION 'not_installed_projection'; END IF;
-  b := position('''pedidos_b2b'')));' in d) + length('''pedidos_b2b'')));');
-  d := substr(d, 1, a - 1) || ';' || substr(d, b);
-  IF md5(d) <> '136b4d59f794d5ff379a7c2ca19455e2' THEN RAISE EXCEPTION 'rollback_hash_mismatch_projection %', md5(d); END IF;
+  -- 2) Técnico cumulativo volta a ser negado em assert (corpo original exato).
+  d := pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$  IF public.has_role(_uid,'parceiro_b2b_tecnico'::app_role) AND NOT public.has_role(_uid,'parceiro_b2b'::app_role) THEN -- c2_ord_cumulative$o$,
+$n$  IF public.has_role(_uid,'parceiro_b2b_tecnico'::app_role) THEN$n$, 'assert');
+  IF md5(d) <> 'f86f43f9d9ad3ed97b840fcc02c79476' THEN RAISE EXCEPTION 'rollback_hash_mismatch_assert %', md5(d); END IF;
   EXECUTE d;
 END $$;
 COMMIT;

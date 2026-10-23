@@ -1,20 +1,145 @@
--- REVIEW ONLY — NÃO APLICAR sem revisão independente e preflight.sql PASS.
--- Recorte C2-ORD: (1) título B2B de cliente comercial nasce no tenant dono
--- (partner_accounts.commercial_owner_organization_id), fail-closed em ambiguidade;
--- (2) projeção canônica expõe order_capabilities (writer server-side explícito).
--- Sem novas tabelas, sem alterar ACL, create_partner_order_secure, aprovação ou crédito.
+-- REVIEW ONLY (C2-ORD v2) — NÃO APLICAR sem revisão independente e preflight.sql PASS.
+-- Baseline exato capturado READ ONLY em 2026-10-23 (ver baseline/*.sql + SHA em README).
+-- Mudanças (todas hash-guarded, substituição textual única, CREATE OR REPLACE preserva proacl):
+--  (A) platform_private.c2_owner_order_create_allowed / c2_owner_plan_assigned / c2_owner_order_guard
+--      — autoridade server-side única do writer do cliente comercial (sem ACL para clientes).
+--  (B) assert_b2b_partner_scope: técnico só é negado quando NÃO é também gestor B2B (parceiro_b2b).
+--  (C) create_partner_order_secure / simulate_b2b_payment_plan_secure: chamam o guard logo após o assert.
+--  (D) generate_b2b_receivable_secure_impl: tenant dono, escopo interno por h15, categoria RECEITA ativa
+--      estrita, forma de pagamento ativa e única, cliente no mesmo tenant; falha explícita.
+--  (E) tg_auto_b2b_receivable: billing_trigger='na_aprovacao' falha ⇒ aprovação abortada (atômica);
+--      demais gatilhos mantêm a semântica atual (log financeiro_auto_falhou).
+--  (F) projeção: order_capabilities derivada de (A).
 BEGIN;
 SET LOCAL lock_timeout = '5s';
-DO $$
-DECLARE d text; old_frag text; new_frag text; h text;
+SET LOCAL statement_timeout = '60s';
+
+CREATE FUNCTION pg_temp.c2_swap(d text, o text, n text, tag text) RETURNS text LANGUAGE plpgsql AS $s$
 BEGIN
-  IF current_setting('request.jwt.claim.role', true) IS NOT NULL THEN RAISE EXCEPTION 'run_as_owner_only'; END IF;
-  -- (1) generate_b2b_receivable_secure_impl: substituição textual única, hash-guarded.
-  SELECT pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure) INTO d;
-  IF md5(d) <> '60be0fb336ca1537c063a001a213f7af' THEN RAISE EXCEPTION 'drift: receivable_impl %', md5(d); END IF;
-  old_frag := $f$  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
-    FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;$f$;
-  new_frag := $f$  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
+  IF o IS NULL OR length(o) = 0 OR (length(d) - length(replace(d, o, ''))) / length(o) <> 1 THEN
+    RAISE EXCEPTION 'fragment_not_unique:%', tag;
+  END IF;
+  RETURN replace(d, o, n);
+END $s$;
+
+DO $$
+DECLARE d text;
+BEGIN
+  IF current_setting('request.jwt.claim.role', true) IS NOT NULL
+     OR current_setting('request.jwt.claims', true) IS NOT NULL AND current_setting('request.jwt.claims', true) <> '' THEN
+    RAISE EXCEPTION 'run_as_owner_only';
+  END IF;
+  IF to_regprocedure('platform_private.c2_owner_order_create_allowed(uuid,uuid)') IS NOT NULL
+     OR to_regprocedure('platform_private.c2_owner_order_guard(uuid,uuid,uuid)') IS NOT NULL
+     OR to_regprocedure('platform_private.c2_owner_plan_assigned(uuid,uuid)') IS NOT NULL THEN
+    RAISE EXCEPTION 'already_installed_or_drift';
+  END IF;
+  -- Hash guard de TODOS os corpos alterados antes de qualquer escrita.
+  IF md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure)) <> 'f86f43f9d9ad3ed97b840fcc02c79476'
+  OR md5(pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure)) <> '136b4d59f794d5ff379a7c2ca19455e2'
+  OR md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) <> '85be378d0751a26470cb98cc641a230f'
+  OR md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) <> 'f9882718027ac4a09810e6e0bf133c61'
+  OR md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure)) <> '60be0fb336ca1537c063a001a213f7af'
+  OR md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure)) <> '0b11150214b3bded49e1a7e1a4b0e80e' THEN
+    RAISE EXCEPTION 'drift: baseline hash mismatch';
+  END IF;
+END $$;
+
+-- (A) Autoridade única do writer do cliente comercial.
+CREATE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid, _partner uuid)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE c jsonb;
+BEGIN
+  -- c2_ord_writer_v1: nunca confia em parâmetro de uid que não seja o JWT atual.
+  IF _uid IS NULL OR _partner IS NULL OR auth.uid() IS DISTINCT FROM _uid THEN RETURN false; END IF;
+  -- Gestor B2B vigente (user_roles canônico; revogação remove a linha). Técnico isolado nunca compra.
+  IF NOT public.has_role(_uid,'parceiro_b2b'::public.app_role) THEN RETURN false; END IF;
+  c := platform_private.b2b_commercial_context();
+  IF c IS NULL OR c->>'contract' <> 'C2_MULTIPROFILE_V1' OR c->>'mode' <> 'commercial_owner'
+     OR (c->>'partner_id')::uuid IS DISTINCT FROM _partner OR COALESCE((c->>'manager')::boolean,false) IS NOT TRUE THEN
+    RETURN false;
+  END IF;
+  -- Cliente comercial = sem organização própria; tenant dono ativo e coerente com perfil/vínculo.
+  IF EXISTS (SELECT 1 FROM public.organizations o WHERE o.partner_account_id = _partner) THEN RETURN false; END IF;
+  IF NOT COALESCE(platform_private.b2b_phase1_partner_visible(_partner,true),false) THEN RETURN false; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_users pu
+      JOIN public.partner_accounts pa ON pa.id = pu.partner_id
+      JOIN public.profiles p ON p.user_id = pu.user_id
+      JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id
+     WHERE pu.user_id = _uid AND pu.partner_id = _partner
+       AND pu.revoked_at IS NULL AND (pu.valid_from IS NULL OR pu.valid_from <= now())
+       AND pa.ativo AND pa.deleted_at IS NULL AND o.ativo AND o.status = 'ativa'
+       AND p.ativo AND p.organization_id = pu.tenant_id AND pu.tenant_id = o.id
+       AND (c->>'tenant_id')::uuid = o.id
+       AND public.is_valid_b2b_partner_user(_uid, pa.id)) THEN
+    RETURN false;
+  END IF;
+  RETURN EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'pedidos_b2b')
+     AND EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'catalogo_precos');
+END $function$;
+
+CREATE FUNCTION platform_private.c2_owner_plan_assigned(_partner uuid, _plan uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+  SELECT public.fn_b2b_plan_selectable(_plan) AND EXISTS (
+    SELECT 1 FROM public.commercial_payment_plan_assignments a
+     WHERE a.plan_id = _plan AND a.partner_id = _partner
+       AND a.buyer_scope = 'partner' AND a.status = 'published'
+       AND a.valid_from <= CURRENT_DATE AND (a.valid_until IS NULL OR a.valid_until >= CURRENT_DATE));
+$function$;
+
+CREATE FUNCTION platform_private.c2_owner_order_guard(_uid uuid, _partner uuid, _plan uuid)
+RETURNS void LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+BEGIN
+  -- Internos e superadmin seguem as regras existentes da função chamadora.
+  IF public.is_platform_superadmin(_uid)
+     OR public.has_role(_uid,'administrador'::public.app_role) OR public.has_role(_uid,'financeiro'::public.app_role)
+     OR public.has_role(_uid,'gestor_comercial'::public.app_role) THEN
+    RETURN;
+  END IF;
+  -- Parceiro com organização própria (fornecedor legado): comportamento inalterado.
+  IF EXISTS (SELECT 1 FROM public.organizations o WHERE o.partner_account_id = _partner) THEN RETURN; END IF;
+  IF NOT platform_private.c2_owner_order_create_allowed(_uid,_partner) THEN
+    RAISE EXCEPTION 'C2_OWNER_ORDER_CLOSED' USING ERRCODE='42501';
+  END IF;
+  IF _plan IS NULL OR NOT platform_private.c2_owner_plan_assigned(_partner,_plan) THEN
+    RAISE EXCEPTION 'plan_not_assigned' USING ERRCODE='42501';
+  END IF;
+END $function$;
+
+REVOKE ALL ON FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION platform_private.c2_owner_plan_assigned(uuid,uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION platform_private.c2_owner_order_guard(uuid,uuid,uuid) FROM PUBLIC, anon, authenticated;
+
+DO $$
+DECLARE d text;
+BEGIN
+  -- (B) técnico cumulativo com gestor B2B pode seguir para o ramo gestor (singleton + parceiro).
+  d := pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$  IF public.has_role(_uid,'parceiro_b2b_tecnico'::app_role) THEN$o$,
+$n$  IF public.has_role(_uid,'parceiro_b2b_tecnico'::app_role) AND NOT public.has_role(_uid,'parceiro_b2b'::app_role) THEN -- c2_ord_cumulative$n$, 'assert');
+  EXECUTE d;
+
+  -- (C) guard do writer em criação e simulação (convert_* reutiliza create).
+  d := pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);$o$,
+$n$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);
+  PERFORM platform_private.c2_owner_order_guard(v_uid, p_partner_id, p_payment_plan_id); -- c2_ord_guard$n$, 'create');
+  EXECUTE d;
+  d := pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);$o$,
+$n$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);
+  PERFORM platform_private.c2_owner_order_guard(v_uid, p_partner_id, p_payment_plan_id); -- c2_ord_guard$n$, 'simulate');
+  EXECUTE d;
+
+  -- (D) geração do título.
+  d := pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
+    FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;$o$,
+$n$  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
     FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;
   -- c2_ord_owner_tenant: cliente comercial sem tenant próprio fatura no tenant dono.
   IF v_org_count = 0 THEN
@@ -22,22 +147,74 @@ BEGIN
       FROM public.partner_accounts pa JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id
      WHERE pa.id = v_order.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
        AND o.ativo IS TRUE AND o.status = 'ativa';
-  END IF;$f$;
-  IF (length(d) - length(replace(d, old_frag, ''))) / length(old_frag) <> 1 THEN RAISE EXCEPTION 'fragment_not_unique'; END IF;
-  EXECUTE replace(d, old_frag, new_frag);
+  END IF;$n$, 'impl_tenant');
+  d := pg_temp.c2_swap(d,
+$o$  IF v_uid IS NOT NULL THEN
+    PERFORM platform_private.assert_b2b_partner_scope(v_uid,v_order.partner_id);$o$,
+$n$  IF v_uid IS NOT NULL THEN
+    -- c2_ord_internal_scope: emissor interno é limitado por h15 = tenant do título (abaixo);
+    -- quem tem papel B2B externo continua passando pelo assert canônico.
+    IF public.has_role(v_uid,'parceiro_b2b'::app_role) OR public.has_role(v_uid,'parceiro_b2b_tecnico'::app_role) THEN
+      PERFORM platform_private.assert_b2b_partner_scope(v_uid,v_order.partner_id);
+    END IF;$n$, 'impl_scope');
+  d := pg_temp.c2_swap(d,
+$o$  SELECT id INTO v_category_id FROM public.financial_categories
+   WHERE upper(COALESCE(type::text,'')) IN ('RECEITA','INCOME') AND COALESCE(active,true) = true
+   ORDER BY created_at ASC LIMIT 1;
+  IF v_category_id IS NULL THEN
+    SELECT id INTO v_category_id FROM public.financial_categories ORDER BY created_at ASC LIMIT 1;
+  END IF;
+  IF v_category_id IS NULL THEN
+    RAISE EXCEPTION 'Nenhuma categoria financeira cadastrada — cadastre uma categoria de receita antes de gerar cobranças B2B';
+  END IF;
 
-  -- (2) projeção: acrescenta order_capabilities, derivada das mesmas provas de catalog.
-  SELECT pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure) INTO d;
-  IF md5(d) <> '136b4d59f794d5ff379a7c2ca19455e2' THEN RAISE EXCEPTION 'drift: projection %', md5(d); END IF;
-  old_frag := $f$jsonb_build_object('capabilities',jsonb_build_object('contract','C2_CAT_V1',
-   'catalog_read',catalog,'sheets_read',sheets));$f$;
-  new_frag := $f$jsonb_build_object('capabilities',jsonb_build_object('contract','C2_CAT_V1',
+  SELECT id INTO v_payment_method_id FROM public.payment_methods
+   WHERE lower(name) = lower(COALESCE(v_settings.default_payment_method,'pix')) LIMIT 1;$o$,
+$n$  -- c2_ord_strict_refs: financial_categories/payment_methods são catálogos globais (sem organization_id
+  -- no schema canônico); resolução estrita, sem fallback de tipo/inativo, falha explícita.
+  SELECT id INTO v_category_id FROM public.financial_categories
+   WHERE upper(btrim(type)) = 'RECEITA' AND active IS TRUE
+   ORDER BY created_at ASC, id ASC LIMIT 1;
+  IF v_category_id IS NULL THEN
+    RAISE EXCEPTION 'B2B_REVENUE_CATEGORY_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+  IF NULLIF(btrim(COALESCE(v_settings.default_payment_method,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'B2B_PAYMENT_METHOD_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+  IF (SELECT count(*) FROM public.payment_methods pm
+       WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method))) <> 1 THEN
+    RAISE EXCEPTION 'B2B_PAYMENT_METHOD_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+  SELECT pm.id INTO v_payment_method_id FROM public.payment_methods pm
+   WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method));
+  IF v_partner.client_id IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM public.clientes cl WHERE cl.id = v_partner.client_id AND cl.organization_id = v_org) THEN
+    RAISE EXCEPTION 'B2B_CUSTOMER_TENANT_MISMATCH' USING ERRCODE='42501';
+  END IF;$n$, 'impl_refs');
+  EXECUTE d;
+
+  -- (E) aprovação atômica com cobrança na aprovação.
+  d := pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$    EXCEPTION WHEN OTHERS THEN
+      INSERT INTO public.partner_order_audit_logs(order_id, partner_id, acao, dados_novos)$o$,
+$n$    EXCEPTION WHEN OTHERS THEN
+      -- c2_ord_atomic_approval: sem título, a aprovação não acontece (rollback do UPDATE).
+      IF v_settings.billing_trigger = 'na_aprovacao' THEN
+        RAISE EXCEPTION 'B2B_APPROVAL_BILLING_FAILED: %', SQLERRM USING ERRCODE='P0001';
+      END IF;
+      INSERT INTO public.partner_order_audit_logs(order_id, partner_id, acao, dados_novos)$n$, 'trigger');
+  EXECUTE d;
+
+  -- (F) projeção: capacidade do writer = mesma função do servidor.
+  d := pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$jsonb_build_object('capabilities',jsonb_build_object('contract','C2_CAT_V1',
+   'catalog_read',catalog,'sheets_read',sheets));$o$,
+$n$jsonb_build_object('capabilities',jsonb_build_object('contract','C2_CAT_V1',
    'catalog_read',catalog,'sheets_read',sheets))||jsonb_build_object('order_capabilities',jsonb_build_object(
-   'contract','C2_OWNER_ORDER_V1','order_create', permitted AND catalog AND (c->>'mode')='commercial_owner'
-     AND public.has_role(u,'parceiro_b2b') AND NOT public.has_role(u,'parceiro_b2b_tecnico')
-     AND EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='pedidos_b2b')));$f$;
-  IF (length(d) - length(replace(d, old_frag, ''))) / length(old_frag) <> 1 THEN RAISE EXCEPTION 'fragment_not_unique_projection'; END IF;
-  EXECUTE replace(d, old_frag, new_frag);
+   'contract','C2_OWNER_ORDER_V1','order_create', permitted AND catalog
+     AND platform_private.c2_owner_order_create_allowed(u,(result->>'id')::uuid))); -- c2_ord_projection$n$, 'projection');
+  EXECUTE d;
 END $$;
--- ACL preservada (CREATE OR REPLACE mantém proacl); conferida no postflight.
 COMMIT;
