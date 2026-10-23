@@ -1117,6 +1117,9 @@ export default function Configuracoes() {
               if (!open) {
                 externalDialog.current.open = false;
                 externalDialog.current.generation += 1;
+                // Fechamento EXPLÍCITO descarta o rascunho retido; apenas a
+                // pausa transitória (unmount sem este handler) o preserva.
+                if (editDraftKey) clearPauseState(editDraftKey);
               }
               setEditOpen(open);
               if (!open) {
@@ -1152,6 +1155,7 @@ export default function Configuracoes() {
                       snapshotReady={!vinculos.isFetching && !vinculos.isError}
                       snapshotError={vinculos.isError}
                       isCurrent={externalCurrent}
+                      draftKey={editDraftKey ?? undefined}
                       onSuccess={() => {
                         if (!externalCurrent()) return;
                         queryClient.invalidateQueries({ queryKey: ['admin-users', profile?.organization_id, user?.id] });
@@ -1160,6 +1164,7 @@ export default function Configuracoes() {
                         toast({ title: 'Usuário atualizado' });
                         externalDialog.current.open = false;
                         externalDialog.current.generation += 1;
+                        if (editDraftKey) clearPauseState(editDraftKey);
                         setEditOpen(false);
                       }}
                       onError={message => {
