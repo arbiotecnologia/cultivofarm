@@ -4,7 +4,16 @@
   "baseline_sha256": "74a7aec6f927f2814d9af3f120c580aa77b171dcbbbf34ab042d65f4aef507a5",
   "candidate_sha256": "931ba9fa46ebea265fd3fc9105e07f383c2f44ad3ff7879a84a2cd18b78ca095",
   "verify_jwt": true,
-  "promoted": false,
-  "deployed": false,
-  "reason": "supabase/functions changes may automatically deploy; exact canonical patch staged outside watched directory"
+  "promoted": true,
+  "deployed": true,
+  "deployed_by": "auditor",
+  "deployed_version": 103,
+  "deployed_status": "ACTIVE",
+  "deploy_evidence": "relatada pelo proprietário 23/10 17:55 UTC: create-user v103 ACTIVE verify_jwt=true, conteúdo EXATO coordinated/edge/create-user/index.ts @67bca16c",
+  "canonical_sync": {
+    "synced_at": "2026-10-23T17:55Z",
+    "canonical_sha256_after": "931ba9fa46ebea265fd3fc9105e07f383c2f44ad3ff7879a84a2cd18b78ca095",
+    "matches_deployed": true,
+    "purpose": "evitar que próximo deploy automático reverta a Edge hosted para o baseline antigo; nenhuma mudança funcional nova"
+  }
 }
