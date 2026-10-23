@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 23:03 — encerramento documental após revisão independente
+- [ ] Restaurar117 entradas SHA256SUMS de cadda8f7; preservar hashes históricos intactos, atualizar só arquivos alterados e acrescentar novos com paths relativos ao pacote; verificar na pasta correta.
+- [x] Registrar relato independente: build cadda PASS34,8s/14testes PASS; aba real parceiro recuperou semreload, catálogo readonly visível apóscontenção e criação false; JWT B archive403/42501 C2P1_FORBIDDEN, A published intacta. Sem novo deploy.
+- [x] Encerrar mudanças funcionais desta fila: só documentação/manifesto autorizados; publicação independente e reativação writer não executadas.
+
 ## 23/10 23:00 — NovoPedido real e expectativa histórica
 - [x] Testar B2BRouteGuard/Layout/EntitlementOutlet/NovoPedido e hooks reais com QueryClient e transporte local instrumentado: partner/tenant, negação/loading sem queries descendentes; sem sessões/SQL/publicação.
 - [x] Atualizar separadamente expectativa antiga financeiro=contas_receber, featureRouteMap intocado;21/21 testes em5 arquivos PASS, build monitor23:03:18 OK, patch/SHA para revisão. Sem typecheck manual/homologação JWT real.
@@ -7,7 +12,7 @@
 ## 23/10 22:58 — contenção independente e patch UI
 - [x] Registrar c2_owner_orders_writer_containment SUCCESS relatado: create_allowed SELECT false, eligibility fechada, financeiro/approval preservados; POST release antigo não representa estado pós-contenção deliberado. Não reaplicar/reabrir writer.
 - [x] Validar patch mínimo EntitlementOutlet:5/5 testes contexto exato, queries zero negado/pendente, troca partner/tenant e negação na troca com QueryClient real. Diff/SHA preparados; build monitor23:00:02 OK, sem typecheck manual/publicação ou alteração baseline SQL.
-- [ ] Recuperação da aba real e revisão/publicação do patch: aguardam ação/autorização independente; writer permanece fechado. Demais pendências históricas intactas.
+- [x] Recuperação da aba real semreload e catálogo readonly apóscontenção comprovados pelo relato independente23:03; criação false. Publicação continua independente, sem autorização ao agente. Demais pendências históricas intactas.
 
 ## 23/10 22:56 — C2-ORD implantado independente / bloqueio catálogo preview
 - [x] Registrar Codex c2_owner_orders_p1_composed baseado b38e2c26, PRE/POST integrais mesma transação SUCCESS e POST externo PASS relatados; eligibility preservada, sem pedido/título, não reaplicar nem editar baseline antigo.

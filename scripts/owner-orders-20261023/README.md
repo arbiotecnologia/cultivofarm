@@ -1,5 +1,10 @@
 # C2-ORD v4 — P1 e eligibility instalados (REVIEW, restante inativo)
 
+## 23/10 23:03 — fila funcional encerrada, manifesto restaurado
+Revisão independente d9d13b3b detectou truncamento do manifesto ao resolver caminhos do pacote no root. Restaurar a lista completa de117 entradas de `cadda8f7`, sem substituir hashes de arquivos históricos intactos, atualizar apenas alterados e acrescentar novos; paths relativos a esta pasta. Verificação correta: `sha256sum -c SHA256SUMS` **dentro de scripts/owner-orders-20261023**. O manifesto não inclui a si mesmo. O manifesto específico frontend `catalog-outlet-fix.sha256` mantém sua convenção explícita relativa ao root do projeto e é verificado nesse root.
+
+Proprietário confirma build independente cadda PASS34,8s e14testes PASS; aba real parceiro recuperada semreload apóscontenção, catálogo readonly visível e criação false. JWT B archive HTTP403/42501 C2P1_FORBIDDEN, fixtureA published intacta. São evidências independentes relatadas, não testes repetidos pelo agente. Nenhum novo deploy apóscontenção. Fila atual encerrada sem novas mudanças funcionais/runtime/SQL; publicação somente independente, criação segue contida, pendências antigas permanecem.
+
 ## 23/10 22:58 — CONTENÇÃO instalada externamente, writer fechado
 Codex `c2_owner_orders_writer_containment` SUCCESS segundo proprietário: create_allowed SELECT false, eligibility ACL false para authenticated, correções financeiras/approval preservadas. Registro `applied/c2_owner_orders_writer_containment.md`. **POST release esperado não descreve mais o estado atual por decisão explícita; não reaplicar release/candidato antigo ou reparar isso como drift.** Baselines históricos intocados. UI local corrigida e testes ampliados partner/tenant/queries em revisão; sem auto-publicação ou writer até UI revisada/publicada e autorização independente.
 
