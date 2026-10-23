@@ -1,10 +1,11 @@
 # Validação local — 23/10/2026
 
-**44 checks PASS no PostgreSQL descartável; 1/1 regressão Vitest PASS.** Não é homologação hosted Auth/JWT/RLS.
+**46 checks PASS no PostgreSQL descartável; 1/1 regressão Vitest PASS.** Não é homologação hosted Auth/JWT/RLS.
 
 Comando: `python3 scripts/owner-orders-20261023/internal-origin-composition-20261023/test-local.py`.
 
 - Fidelidade MD5 dos corpos capturados; 44 triggers atuais ligados; PRE integral containment e POST composição-contida PASS.
+- PRE negativo rejeita RLS desativada e policy permissiva adicional, sem alterar políticas no candidato.
 - RPC baseline reproduz `B2B_INTERNAL_ACTOR_DENIED`; candidata cria gestor singleton e gestor+técnico via RPC real, preço1L180, três parcelas, sem título pré-aprovação.
 - Técnico isolado/produtor/gestorB→A/A→B negados sem qualquer nova linha nas tabelas observadas; revogação nega criação.
 - AdminA aprova e gera exatamente um título/3 parcelas; parcelas coincidem com cronograma (inclusive data/valor) e ownerA. Billing repetido não duplica título.
