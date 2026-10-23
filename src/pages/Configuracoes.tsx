@@ -45,6 +45,8 @@ import { tipoAcessoDoUsuario, ROTULO_TIPO_ACESSO, estadoVinculo, edicaoBloqueada
 import { carregarVinculosUsuarios } from "@/lib/configuracoes/userLinksQuery";
 import { carregarUsuariosAdmin, definirStatusUsuario, montarArgsListagem, placeholderMesmaConsulta, type UsuarioListado } from "@/lib/configuracoes/usuariosListQuery";
 import { ExternalCommonUserEditBoundary } from "@/components/configuracoes/ExternalCommonUserEditForm";
+import { PartnerLifecycleFields } from "@/components/configuracoes/PartnerLifecycleFields";
+import { ExternalRegistrationFields } from "@/components/configuracoes/ExternalRegistrationFields";
 import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from "@/lib/configuracoes/externalUserEditGate";
 type LinhaUsuario = { user_id: string; roles?: string[] | null };
 import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
@@ -270,39 +272,23 @@ export default function Configuracoes() {
   const [primaryClient, setPrimaryClient] = useState<string | null>(null);
   const requestKey = useRef(crypto.randomUUID());
   const createFence = useStorageAccessScope("tenant-user-registration");
-  const [linkSearch, setLinkSearch] = useState("");
-  const linkTerm = useDebounce(linkSearch, 300);
-  const [linkPage, setLinkPage] = useState(0);
+  const [verifiedClients, setVerifiedClients] = useState<string[]>([]);
   const changeKind = (kind: UserRegistrationKind) => {
+    if (createSubmitLock.current || receiptAttempt.current) return;
     setRegistrationKind(kind); setNewUser({ ...initialNewUser, nome: newUser.nome, email: newUser.email, roles: kind === "internal" ? ["administrativo"] : [kind === "b2b" ? "parceiro_b2b" : "cliente_produtor"] });
-    setSelectedClients([]); setPrimaryClient(null); setLinkSearch(""); setLinkPage(0); requestKey.current = crypto.randomUUID();
+    setSelectedClients([]); setPrimaryClient(null); setVerifiedClients([]); requestKey.current = crypto.randomUUID();
   };
-  useEffect(() => { setLinkPage(0); }, [linkTerm, registrationKind]);
   useEffect(() => {
-    setCreateOpen(false); setSelectedClients([]); setPrimaryClient(null); setNewUser(initialNewUser); setCreateResumo(null); setCreateErros({});
+    receiptAttempt.current = null;
+    setCreateOpen(false); setSelectedClients([]); setPrimaryClient(null); setVerifiedClients([]); setNewUser(initialNewUser); setCreateResumo(null); setCreateErros({});
     requestKey.current = crypto.randomUUID();
   }, [createFence.scope, initialNewUser]);
-  const links = useQuery({
-    queryKey: ["external-user-link-options", createFence.scope, registrationKind, linkTerm, linkPage],
-    enabled: createOpen && createFence.ready && isAdmin && registrationKind !== "internal",
-    retry: false,
-    queryFn: async ({ signal }) => {
-      const current = createFence.capture();
-      const query = registrationKind === "b2b"
-        ? supabase.from("partner_accounts").select("id, razao_social", { count: "exact" }).filter("commercial_owner_organization_id", "eq", profile?.organization_id ?? "").eq("ativo", true).is("deleted_at", null).ilike("razao_social", `%${linkTerm.replace(/[%_]/g, "")}%`).order("razao_social")
-        : supabase.from("clientes").select("id, nome", { count: "exact" }).filter("organization_id", "eq", profile?.organization_id ?? "").eq("status_cliente", "ativo").ilike("nome", `%${linkTerm.replace(/[%_]/g, "")}%`).order("nome");
-      const { data, error, count } = await query.range(linkPage * 20, linkPage * 20 + 19).abortSignal(signal);
-      if (!current()) throw new Error("Contexto alterado.");
-      if (error) throw new Error("Não foi possível consultar os vínculos.");
-      return { items: (data ?? []).map(row => ({ id: row.id, label: "nome" in row ? row.nome : row.razao_social })), total: count ?? 0 };
-    },
-  });
-  useEffect(() => { void queryClient.cancelQueries({ queryKey: ["external-user-link-options"] }); queryClient.removeQueries({ queryKey: ["external-user-link-options"], predicate: query => query.queryKey[1] !== createFence.scope }); }, [createFence.scope, queryClient]);
 
   const [createErros, setCreateErros] = useState<ErrosNovoUsuario>({});
   const [createResumo, setCreateResumo] = useState<string | null>(null);
   const campoRefs = useRef<Record<string, HTMLElement | null>>({});
   const createSubmitLock = useRef(false);
+  const receiptAttempt = useRef<{ key: string; fingerprint: string } | null>(null);
   const registrarCampo = (campo: CampoNovoUsuario) => (el: HTMLElement | null) => { campoRefs.current[campo] = el; };
   const erroProps = (campo: CampoNovoUsuario) =>
     createErros[campo]
@@ -313,7 +299,7 @@ export default function Configuracoes() {
     mutationFn: async ({ current }: { current: () => boolean }) => {
       if (!current() || !isAdmin) throw new Error("Sessão indisponível para cadastro.");
       if (registrationKind !== "internal" && !EXTERNAL_USER_ACTIVATION_REVIEWED) throw new Error("Cadastro externo aguardando revisão para liberação.");
-      const payload: any = registrationKind !== "internal" ? externalUserPayload({ ...newUser, cliente_ids: selectedClients, principal_cliente_id: primaryClient }, registrationKind, requestKey.current) : {
+      const payload: any = registrationKind !== "internal" ? externalUserPayload({ ...newUser, cliente_ids: selectedClients, principal_cliente_id: primaryClient, verified_client_ids: verifiedClients }, registrationKind, requestKey.current) : {
         ...newUser,
         nome: newUser.nome.trim(),
         email: newUser.email.trim(),
@@ -327,6 +313,13 @@ export default function Configuracoes() {
         cliente_ids: [],
         principal_cliente_id: null,
       };
+      if (!current()) throw new Error("Sessão indisponível para cadastro.");
+      if (registrationKind !== "internal") {
+        const fingerprint = JSON.stringify(payload);
+        if (receiptAttempt.current?.key === requestKey.current && receiptAttempt.current.fingerprint !== fingerprint)
+          throw new Error("Preserve os dados da solicitação pendente para verificar o mesmo cadastro.");
+        receiptAttempt.current = { key: requestKey.current, fingerprint };
+      }
       const { data, error } = await supabase.functions.invoke("create-user", { body: payload });
       if (error) {
         const corpo = await lerCorpoErroFuncao(error);
@@ -346,6 +339,7 @@ export default function Configuracoes() {
       setNewUser(initialNewUser);
       setCreateErros({});
       setCreateResumo(null);
+      receiptAttempt.current = null; requestKey.current = crypto.randomUUID();
     },
     onError: (e: Error, { current }) => {
       if (!current()) return;
@@ -366,7 +360,7 @@ export default function Configuracoes() {
         password: newUser.password,
         roles: newUser.roles,
         partner_id: newUser.partner_id,
-        cliente_ids: selectedClients, principal_cliente_id: primaryClient,
+        cliente_ids: selectedClients, principal_cliente_id: primaryClient, verified_client_ids: verifiedClients,
       }, registrationKind);
       setCreateErros(erros);
       const primeiro = primeiroCampoInvalido(erros);
@@ -392,12 +386,15 @@ export default function Configuracoes() {
     : null;
   const editTipo = tipoAcessoDoUsuario(editOrig?.roles);
   const editSomenteLeitura = edicaoBloqueadaPorTipo(editTipo);
+  const externalLifecycleCandidate = (editOrig?.roles ?? []).length > 0 && (editOrig?.roles ?? []).every(r => ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"].includes(r));
+  const [editPartner, setEditPartner] = useState("");
   const externalCommonCandidate = EXTERNAL_USER_EDIT_PHASE2_REVIEWED && (editTipo === 'producer' || editTipo === 'b2b');
   const externalScope = JSON.stringify([tenantEmailScope.scope, editOpen, editUser?.user_id]);
   const externalDialog = useRef({ scope: externalScope, generation: 0, open: editOpen });
   if (externalDialog.current.scope !== externalScope) {
     externalDialog.current = { scope: externalScope, generation: externalDialog.current.generation + 1, open: editOpen };
   }
+  useEffect(() => { setEditPartner(""); }, [externalScope]);
   const externalGeneration = externalDialog.current.generation;
   const externalCurrent = () => externalDialog.current.open && externalDialog.current.scope === externalScope && externalDialog.current.generation === externalGeneration;
 
@@ -474,7 +471,7 @@ export default function Configuracoes() {
       );
       setEditErros(erros);
       const primeiro = primeiroCampoInvalidoEdicao(erros);
-      if (primeiro) throw erroLocalEdicao(erros[primeiro]!);
+      if (primeiro) throw erroLocalEdicao(erros[primeiro] ?? "Confira os campos.");
 
       // Limite de vínculos: rejeitado localmente, nunca truncado silenciosamente.
       const excesso = validarLimiteClienteIds([]);
@@ -825,10 +822,11 @@ export default function Configuracoes() {
                             <div role="radiogroup" aria-labelledby="tipo-cadastro-label" className="grid grid-cols-3 gap-2 mt-1">
                               {([
                                 { kind: "internal" as UserRegistrationKind, titulo: "Interno", descricao: "Equipe da empresa" },
-                                { kind: "b2b" as UserRegistrationKind, titulo: "Parceiro B2B", descricao: "Gestor do parceiro comercial" },
+                                { kind: "b2b" as UserRegistrationKind, titulo: "Parceiro B2B", descricao: "Perfis externos do parceiro" },
                                 { kind: "producer" as UserRegistrationKind, titulo: "Cliente Produtor", descricao: "Vinculado a clientes" },
                               ]).map(opcao => (
-                                <button
+                                <Button
+                                  variant="outline"
                                   key={opcao.kind}
                                   type="button"
                                   role="radio"
@@ -839,7 +837,7 @@ export default function Configuracoes() {
                                 >
                                   <span className="block text-sm font-medium">{opcao.titulo}</span>
                                   <span className="block text-xs text-muted-foreground">{opcao.descricao}</span>
-                                </button>
+                                </Button>
                               ))}
                             </div>
                           </div>
@@ -851,23 +849,14 @@ export default function Configuracoes() {
                              </div>
                           )}
                           {registrationKind !== "internal" && <>
-<p role="status" className="text-sm text-muted-foreground">{EXTERNAL_USER_ACTIVATION_REVIEWED
-                              ? "Cadastro externo liberado: perfil externo exclusivo, vínculo obrigatório com um registro da própria empresa e primeiro acesso definido pelo titular. Técnico B2B permanece indisponível."
-                              : "Cadastro externo aguardando revisão para liberação."}</p>
-                            <Label htmlFor="buscar-vinculo">{registrationKind === "b2b" ? "Parceiro vinculado" : "Clientes vinculados"}</Label>
-                            <Input id="buscar-vinculo" value={linkSearch} onChange={event => setLinkSearch(event.target.value)} placeholder="Buscar vínculo" />
-                            {links.isLoading || (links.isFetching && !links.data) ? <p role="status" className="text-sm text-muted-foreground">Carregando opções…</p> : links.isError ? <div role="alert" className="text-sm text-destructive">Não foi possível consultar os vínculos. <Button variant="link" size="sm" onClick={() => links.refetch()}>Tentar novamente</Button></div> : <div className="space-y-2">
-                              {links.data?.items.map(item => <label key={item.id} className="flex items-center gap-2 text-sm">
-                                <Checkbox checked={registrationKind === "b2b" ? newUser.partner_id === item.id : selectedClients.includes(item.id)} onCheckedChange={checked => {
-                                  if (registrationKind === "b2b") setNewUser({ ...newUser, partner_id: checked === true ? item.id : "" });
-                                  else { const next = checked === true ? [...selectedClients, item.id] : selectedClients.filter(id => id !== item.id); setSelectedClients(next); if (!next.includes(primaryClient ?? "")) setPrimaryClient(next[0] ?? null); }
-                                }} />{item.label}
-                                {registrationKind === "producer" && selectedClients.includes(item.id) && <Button size="sm" variant="ghost" onClick={() => setPrimaryClient(item.id)}>{primaryClient === item.id ? "Principal" : "Tornar principal"}</Button>}
-                              </label>)}
-                              {links.data && !links.data.items.length && <p className="text-sm text-muted-foreground">{ajudaSemElegiveis(registrationKind === "b2b" ? "b2b" : "producer", linkSearch)}</p>}
-                            </div>}
-                            <div className="flex justify-between"><Button variant="outline" size="sm" disabled={linkPage === 0} onClick={() => setLinkPage(page => page - 1)}>Anterior</Button><Button variant="outline" size="sm" disabled={(linkPage + 1) * 20 >= (links.data?.total ?? 0)} onClick={() => setLinkPage(page => page + 1)}>Próxima</Button></div>
-                            {createErros.partner_id && <p role="alert" className="text-sm text-destructive">{createErros.partner_id}</p>}{createErros.cliente_ids && <p role="alert" className="text-sm text-destructive">{createErros.cliente_ids}</p>}
+                            <ExternalRegistrationFields key={createFence.scope} companyLabel={organizationProfile.data?.nome} roles={newUser.roles} partnerId={newUser.partner_id}
+                              clients={selectedClients} primary={primaryClient} disabled={createUser.isPending}
+                              onRoles={next => setNewUser(old => ({ ...old, roles: next }))}
+                              onPartner={id => setNewUser(old => ({ ...old, partner_id: id }))}
+                              onClients={(ids, primary) => { setSelectedClients(ids); setPrimaryClient(primary); setVerifiedClients([]); }} onVerified={setVerifiedClients} />
+                            {createErros.roles && <p role="alert">{createErros.roles}</p>}
+                            {createErros.partner_id && <p role="alert">{createErros.partner_id}</p>}
+                            {createErros.cliente_ids && <p role="alert">{createErros.cliente_ids}</p>}
                           </>}
                           <div>
                             <Label htmlFor="novo-nome">Nome *</Label>
@@ -908,9 +897,6 @@ export default function Configuracoes() {
                                 );
                               })}
                             </div>
-<p className="text-xs text-muted-foreground mt-1">{EXTERNAL_USER_ACTIVATION_REVIEWED
-                                ? "Cadastros externos (Parceiro B2B gestor e Cliente Produtor) usam perfil exclusivo, vínculo obrigatório da própria empresa e primeiro acesso pelo titular. Técnico B2B permanece indisponível."
-                                : PARTNER_REGISTRATION_UNAVAILABLE}</p>
                             {createErros.roles && <p id="erro-roles" className="text-xs text-destructive mt-1">{createErros.roles}</p>}
                           </div>
                            </>}
@@ -936,9 +922,6 @@ export default function Configuracoes() {
                 </div>
               </CardHeader>
               <CardContent className={isMobile ? "p-3" : "p-6"}>
-<p role="status" className="text-sm text-muted-foreground mb-4">{EXTERNAL_USER_ACTIVATION_REVIEWED
-                  ? "Cadastros externos liberados: Parceiro B2B (gestor) e Cliente Produtor com perfil exclusivo, vínculo obrigatório da própria empresa e primeiro acesso definido pelo titular. Técnico B2B permanece indisponível."
-                  : "Cadastros externos aguardam revisão para liberação. Técnico B2B permanece indisponível."}</p>
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                   <div className="relative flex-1">
@@ -1011,7 +994,7 @@ export default function Configuracoes() {
                               ))}
                             </div>
                           )},
-                          { label: "Tipo de acesso", value: ROTULO_TIPO_ACESSO[tipoAcessoDoUsuario(u.roles)] },
+                          { label: "Tipo de acesso", value: (tipoAcessoDoUsuario(u.roles) === "b2b_tecnico" ? "Parceiro B2B — Técnico" : ROTULO_TIPO_ACESSO[tipoAcessoDoUsuario(u.roles)]) },
                           { label: "Vínculo", value: renderVinculo(u) },
                           { label: "Identificação", value: formatCpfCnpj(u.cpf_cnpj) || "—" },
                           { label: "Telefone", value: formatTelefone(u.telefone) || "—" },
@@ -1134,8 +1117,17 @@ export default function Configuracoes() {
                 {editUser && (
                   <div className="space-y-3">
                     <div><Label>Email</Label><Input value={editUser.email || ""} disabled className="bg-muted" /></div>
-                    <div><Label>Tipo de acesso</Label><p className="text-sm">{ROTULO_TIPO_ACESSO[editTipo]}</p></div>
+                    <div><Label>Tipo de acesso</Label><p className="text-sm">{(editTipo === "b2b_tecnico" ? "Parceiro B2B — Técnico" : ROTULO_TIPO_ACESSO[editTipo])}</p></div>
                     <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(editOrig ?? editUser, true)}</div></div>
+                    {isAdmin && externalLifecycleCandidate && canTenantEmail && !vinculos.isFetching && !vinculos.isError && <>
+                      {!vinculos.data?.get(editUser.user_id)?.parceiro?.partner_id && <ExternalRegistrationFields
+                        key={`partner:${externalScope}`} companyLabel={organizationProfile.data?.nome} partnerOnly roles={[]} partnerId={editPartner} clients={[]} primary={null}
+                        onRoles={() => {}} onPartner={setEditPartner} onClients={() => {}} onVerified={() => {}} />}
+                      {(vinculos.data?.get(editUser.user_id)?.parceiro?.partner_id || editPartner) && <PartnerLifecycleFields
+                        key={`${externalScope}:${editPartner}:${editUser.user_id}`}
+                        partnerId={vinculos.data?.get(editUser.user_id)?.parceiro?.partner_id ?? editPartner}
+                        userId={editUser.user_id} />}
+                    </>}
                     {externalCommonCandidate && <ExternalCommonUserEditBoundary
                       key={`${externalScope}:${externalGeneration}`}
                       target={editUser} scope={externalScope} actorId={user?.id ?? ''} organizationId={profile?.organization_id ?? ''}

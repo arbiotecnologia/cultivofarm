@@ -44,15 +44,22 @@ export default function MobileLayout() {
   const { config, defaults } = useSystemConfig();
   const nomeEmpresa = config?.nome_empresa || defaults.nome_empresa;
 
-  const isProdutor = roles.includes("cliente_produtor");
-  const hasTechnical = contexts?.available_contexts.includes("technical") === true;
-  const isAdmin = roles.includes("administrador");
+  // C2 (INACTIVE candidate): mode/menus derive ONLY from the canonical fresh projection
+  // (C2_MULTIPROFILE_V1 adds "producer"). Raw roles never grant producer mode; an error or
+  // missing projection never falls back to roles or to stale data.
+  const available: readonly string[] = !isError && contexts ? contexts.available_contexts : [];
+  const isProdutor = available.includes("producer");
+  const hasTechnical = available.includes("technical");
+  // Single explicit legacy bypass, only after a successful projection; never producer mode.
+  const isAdmin = !isError && !!contexts && roles.includes("administrador");
   const activeCtx = getActivePortalContext();
   // Modo técnico: usuário escolheu técnico E realmente tem acesso técnico.
   // Fallback: sem contexto ativo, se não é produtor mas tem técnico → técnico.
   const isTechnicalMode =
     (activeCtx === "technical" && hasTechnical) ||
-    (!activeCtx && !isProdutor && hasTechnical);
+    // Without a canonical producer context (incl. partial revocation with a stale visual
+    // "producer" choice) the remaining technical context is used.
+    (!isProdutor && hasTechnical);
   const isProducerMode = !isTechnicalMode && isProdutor;
 
   // Semeia contexto visual quando ausente (fluxos legados sem passar pelo seletor).
@@ -76,7 +83,7 @@ export default function MobileLayout() {
 
   if (!user) return <Navigate to="/app/login" replace />;
 
-  if (!isProdutor && !isAdmin && (isError || !contexts)) return <PortalContextUnavailable refetch={refetch} />;
+  if (isError || !contexts) return <PortalContextUnavailable refetch={refetch} />;
 
   // Sem produtor e sem acesso técnico e sem admin → não deveria estar aqui.
   if (!isProdutor && !hasTechnical && !isAdmin) {

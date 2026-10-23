@@ -1,42 +1,39 @@
-import { validarNovoUsuario, type ErrosNovoUsuario, type NovoUsuarioInput } from "./usuariosValidation";
-
-// Review gate only; the existing Edge/server/RLS remain authoritative.
-export const EXTERNAL_USER_ACTIVATION_REVIEWED = true;
+import { validarNovoUsuario, type ErrosNovoUsuario, type NovoUsuarioInput } from "@/lib/configuracoes/usuariosValidation";
+export const EXTERNAL_USER_ACTIVATION_REVIEWED = true; // Inactive coordinated copy only.
 export type UserRegistrationKind = "internal" | "b2b" | "producer";
+export const EXTERNAL_ROLES = ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"] as const;
+export const EXTERNAL_LABELS = { parceiro_b2b: "Gestor B2B", parceiro_b2b_tecnico: "Técnico B2B", cliente_produtor: "Cliente/Produtor" };
 export interface ExternalUserDraft extends NovoUsuarioInput {
   principal_cliente_id?: string | null;
+  verified_client_ids?: string[];
 }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function validateUserDraft(input: ExternalUserDraft, kind: UserRegistrationKind): ErrosNovoUsuario {
-  const errors = validarNovoUsuario(input);
   if (kind === "internal") {
-    if (input.roles.some(role => ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"].includes(role))) errors.roles = "Selecione somente perfis internos.";
+    const errors = validarNovoUsuario(input);
+    if (input.roles.some(r => EXTERNAL_ROLES.some(x => x === r))) errors.roles = "Selecione somente perfis internos.";
     return errors;
   }
-  delete errors.password; // Holder uses the existing first-access flow; never an operator password.
+  // Reuse name/email checks, not the legacy mutually-exclusive role validation.
+  const errors = validarNovoUsuario({ ...input, roles: ["administrativo"], password: "Synthetic1" });
   if (input.password) errors.password = "Não informe senha para este cadastro.";
-  const role = kind === "b2b" ? "parceiro_b2b" : "cliente_produtor";
-  if (input.roles.length !== 1 || input.roles[0] !== role) errors.roles = "O perfil externo deve ser exclusivo.";
-  if (kind === "b2b") {
-    if (!uuid.test(input.partner_id ?? "")) errors.partner_id = "Selecione o parceiro vinculado.";
-    if (input.cliente_ids?.length || input.principal_cliente_id) errors.cliente_ids = "Este cadastro deve vincular somente o parceiro.";
-  } else {
-    const clients = input.cliente_ids ?? [];
-    if (!clients.length || clients.length > 100 || clients.some(id => !uuid.test(id)) || new Set(clients).size !== clients.length || !clients.includes(input.principal_cliente_id ?? "")) errors.cliente_ids = "Selecione clientes válidos e um cliente principal.";
-    if (input.partner_id) errors.partner_id = "Este cadastro deve vincular somente os clientes selecionados.";
-  }
+  if (!input.roles.length || new Set(input.roles).size !== input.roles.length || input.roles.some(r => !EXTERNAL_ROLES.some(x => x === r))) errors.roles = "Selecione somente os perfis externos autorizados.";
+  const partner = input.roles.some(r => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico");
+  if (partner ? !uuid.test(input.partner_id ?? "") : !!input.partner_id) errors.partner_id = partner ? "Selecione o parceiro da sua empresa." : "Produtor exclusivo não deve vincular parceiro.";
+  const clients = input.cliente_ids ?? [];
+  if (input.roles.includes("cliente_produtor")) {
+    if (!clients.length || clients.length > 100 || new Set(clients).size !== clients.length || clients.some(id => !uuid.test(id)) || !clients.includes(input.principal_cliente_id ?? "") || clients.some(id => !input.verified_client_ids?.includes(id))) errors.cliente_ids = "Selecione clientes ativos com fazenda ativa na sua empresa e um cliente principal.";
+  } else if (clients.length || input.principal_cliente_id) errors.cliente_ids = "Clientes de produtor exigem o perfil Cliente/Produtor.";
   return errors;
 }
 export function externalUserPayload(input: ExternalUserDraft, kind: Exclude<UserRegistrationKind, "internal">, key: string) {
   if (Object.keys(validateUserDraft(input, kind)).length || !uuid.test(key)) throw new Error("Cadastro externo inválido.");
-  return {
-    nome: input.nome.trim(), email: input.email.trim().toLowerCase(),
-    role: kind === "b2b" ? "parceiro_b2b" : "cliente_produtor",
-    roles: [kind === "b2b" ? "parceiro_b2b" : "cliente_produtor"],
-    partner_id: kind === "b2b" ? input.partner_id : null,
-    partner_papel: kind === "b2b" ? "gestor" : null,
-    cliente_ids: kind === "producer" ? input.cliente_ids : [],
-    principal_cliente_id: kind === "producer" ? input.principal_cliente_id : null,
-    idempotency_key: key,
-  }; // No tenant, credential, password or technical-client authority in the payload.
+  const roles = [...input.roles].sort();
+  const partner = roles.some(r => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico");
+  return { nome: input.nome.trim(), email: input.email.trim().toLowerCase(), roles, external_roles: [...roles],
+    partner_id: partner ? input.partner_id : null,
+    partner_papel: partner ? roles.includes("parceiro_b2b") ? "gestor" : "tecnico" : null,
+    cliente_ids: roles.includes("cliente_produtor") ? [...(input.cliente_ids ?? [])] : [],
+    principal_cliente_id: roles.includes("cliente_produtor") ? input.principal_cliente_id : null,
+    idempotency_key: key }; // No role alias for cumulative payload, tenant, password or farm grant.
 }

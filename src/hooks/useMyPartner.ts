@@ -1,3 +1,5 @@
+import { readOwnFinanceCapability } from "@/lib/comercial/financeAccess";
+import { decodeC2Partner, isC2ExternalScope } from "@/lib/authz/multiProfileContract";
 import { readCatalogCapabilities } from "@/lib/catalogo/catalogAccess";
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -8,10 +10,10 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 export type PartnerUserPapel = "gestor" | "tecnico";
 
 export function useMyPartner() {
-  const { roles, profile } = useAuth();
+  const { user, roles, profile } = useAuth();
   const fence = useStorageAccessScope("my-commercial-partner");
   const client = useQueryClient();
-  const role = roles.length === 1 ? roles[0] : null;
+  const role = isC2ExternalScope(roles) ? roles.includes("parceiro_b2b") ? "parceiro_b2b" : roles.includes("parceiro_b2b_tecnico") ? "parceiro_b2b_tecnico" : null : null;
   const ready = fence.ready && profile?.senha_provisoria === false &&
     (role === "parceiro_b2b" || role === "parceiro_b2b_tecnico");
   useEffect(() => {
@@ -37,7 +39,7 @@ export function useMyPartner() {
       if (!rawContext) return null;
       if (typeof rawContext !== "object" || Array.isArray(rawContext))
         throw new Error("partner_context_unavailable");
-      const context = rawContext as Record<string, unknown>;
+      const context = decodeC2Partner(rawContext,user?.id ?? "",profile?.organization_id ?? "",roles);
       if (typeof context.partner_id !== "string" || context.organization_id !== profile?.organization_id ||
         context.role !== role || (context.papel !== "gestor" && context.papel !== "tecnico") ||
         !["commercial_owner", "legacy_partner_tenant"].includes(String(context.mode)))
@@ -48,12 +50,13 @@ export function useMyPartner() {
       if (!rawPartner) return null;
       if (typeof rawPartner !== "object" || Array.isArray(rawPartner)) throw new Error("partner_context_unavailable");
       const partner = rawPartner as Record<string, unknown>;
+      if (partner.contract !== "C2_MULTIPROFILE_V1" || partner.actor_id !== user?.id || partner.tenant_id !== profile?.organization_id || JSON.stringify(partner.external_roles) !== JSON.stringify(context.external_roles)) throw new Error("partner_context_unavailable");
       if (partner.id !== context.partner_id || partner.papel !== context.papel || partner.mode !== context.mode || partner.ativo !== true)
         throw new Error("partner_context_unavailable");
       if (typeof partner.razao_social !== "string" || typeof partner.codigo !== "string") throw new Error("partner_context_unavailable");
       return { id: context.partner_id, codigo: partner.codigo, razao_social: partner.razao_social,
         nome_fantasia: typeof partner.nome_fantasia === "string" ? partner.nome_fantasia : null,
-        ativo: true, capabilities: readCatalogCapabilities(partner.capabilities), papel: context.papel as PartnerUserPapel,
+        ativo: true, financeRead: readOwnFinanceCapability(partner.finance_capabilities), capabilities: readCatalogCapabilities(partner.capabilities), papel: context.papel as PartnerUserPapel,
         mode: context.mode as "commercial_owner" | "legacy_partner_tenant" };
     },
   });

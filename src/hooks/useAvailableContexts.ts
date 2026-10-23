@@ -1,3 +1,4 @@
+import { decodeC2Contexts, isC2ExternalScope } from "@/lib/authz/multiProfileContract";
 import { useContext, useEffect, useRef } from "react";
 import { PortalContextFreshness } from "@/lib/portalContextFreshness";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +11,7 @@ import { internalContextProbe } from "@/lib/authz/internalContextProbe";
 import { getHomeForRole } from "@/lib/permissions";
 import { PRODUTOR_HOME_PATH } from "@/lib/navigation/safeHome";
 
-export type PortalContext = "b2b" | "technical" | "admin";
+export type PortalContext = "b2b" | "technical" | "producer" | "admin";
 
 // Technical guards own freshness. Descendant readers (including switch/menu
 // hooks) inherit their policy without changing default readers in other portals.
@@ -92,9 +93,10 @@ export function useAvailableContexts({ requireFresh = false }: { requireFresh?: 
       if (error) throw new Error("portal_context_unavailable");
       // Absent/malformed payload is unavailable, never an explicit denial.
       if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("portal_context_unavailable");
+      if (isC2ExternalScope(roles)) decodeC2Contexts(data,user?.id ?? "",profile?.organization_id ?? "",roles);
       const raw = (data ?? {}) as unknown as Partial<AvailableContexts>;
       if (!Array.isArray(raw.available_contexts) || typeof raw.has_technical_access !== "boolean") throw new Error("portal_context_unavailable");
-      const valid = (value: unknown): value is PortalContext => value === "admin" || value === "b2b" || value === "technical";
+      const valid = (value: unknown): value is PortalContext => value === "admin" || value === "b2b" || value === "technical" || value === "producer";
       const contexts = Array.isArray(raw.available_contexts) ? raw.available_contexts.filter(valid) : [];
       return {
         available_contexts: contexts,
@@ -137,7 +139,7 @@ export function useAvailableContexts({ requireFresh = false }: { requireFresh?: 
     isFetching: result.isFetching || (exclusiveOperator && operatorHomeQuery.isFetching),
     refetch: exclusiveOperator ? () => Promise.all([result.refetch(), operatorHomeQuery.refetch()]) : result.refetch,
     // Do not expose a previous successful grant during a refetch or after error.
-    data: ready && (!requireFresh || (!result.isFetching && !result.isError)) ? result.data : undefined, ready, scope,
+    data: ready && !result.isError && (!requireFresh || (!result.isFetching && !result.isError)) ? result.data : undefined, ready, scope,
     isLoading: loading || (ready && (result.isLoading || (exclusiveOperator && operatorHomeQuery.isLoading))) };
 
 }
