@@ -1,0 +1,19 @@
+# Catálogo — sondagens idênticas / renovação natural (23/10/2026)
+
+## Diagnóstico reproduzido e correção local
+AuthProvider configurava `refreshOnConfirmation=true` para B2B. O monitor classificava toda confirmação elegível como mudança de época, mesmo com fingerprint idêntico: cancel/clear de queries, refresh de perfil, key de boundary nova e desmontagem do NovoPedido. Entitlements perdiam seu cache e o layout podia renderizar Cliente comercial sem menus. O forwarding do Outlet não é a causa desta regressão.
+
+Patch mínimo na integração: `refreshOnConfirmation=false`; timers/cadência/poll/lease15s/revogação e contratos do monitor intactos. Sondagem saudável idêntica preserva o DOM do modal e carrinho, sem recarregar perfil/catálogo. O teste mede queries para impedir aumento de carga. Fingerprint mudou: mantém cancelamento/época/refresh e descarte.
+
+TOKEN_REFRESHED continua **destrutivo para autoridade**: stop síncrono, cancel/clear, perfil/roles frescos e probe canônico; conteúdo fica oculto durante incerteza. Uma retenção volátil one-shot no AuthProvider guarda SOMENTE parceiro/item/volume/quantidade e item do modal. Após mesmo vetor confirmado, NovoPedido reconstrói escolhas com catálogo/volumes frescos; preços/hash/plano/simulação/recibos/idempotência/textos/datas/área/URLs NÃO retornam. Modal reabre para seleção, não preserva campos internos em renovação. Nunca mantém subtree/autoridade visível durante refresh. Revogação/expiração/offline/Retry/falha de loader/vetor divergente descartam retenção; restauração observada de vínculo não revive carrinho.
+
+## Evidências locais
+Teste novo monta AuthProvider, monitor, QueryClient, B2BRouteGuard, PortalParceiroLayout, EntitlementOutlet, NovoPedido e hooks comerciais reais. Apenas SDK/relógio e widgets periféricos são controlados; sem rede, sem mocks de Auth/entitlements/domínio e zero criação de pedido. Antes do patch, sondagens idênticas e renovação saudável perdiam modal/carrinho. Após: 8 cenários novos e regressões existentes passaram (110/110 em8 arquivos); validação específica do saneamento da retenção executada separadamente. Build/typecheck automático observado OK; sem build/typecheck manual.
+
+Não é homologação JWT/RLS/browser de sessão real. Nenhuma sessão foi recarregada/restaurada, nenhum pedido/título/banco/SQL/Edge/publicação pelo agente. Recuperação real e publicação deste patch aguardam revisão independente. Probes não certificam ABA não observado entre consultas; TTL não aumentado. Modal semvolume segue bloqueado e1L usa o diálogo canônico, com fixture local sem alterar produtos reais.
+
+## Estado hospedado relatado pelo proprietário23:14
+UI publicada9fc18e7a; preview/produção index-DFNxASjt.js. Migration independente `c2_reopen_reviewed_writer_after_outlet_fix` SUCCESS, somente `c2_owner_order_create_allowed` revisado b38; PREcontenção/POSTrelease assertivos mesma transação e POSTexterno PASS. Reabertura externa substitui a contenção anterior por decisão do proprietário: não reaplicar releases/baselines/SQL. Zero pedidos criados, BAC2 semvolume corretamente bloqueado, Bombarbio1L disponível conforme relato. Pendências anteriores intactas.
+
+## Revisão/rollback
+`baseline/` contém cópias byte-exatas dos dois runtimes antes desta rodada; não editar snapshots históricos. `frontend.patch` usa caminhos relativos ao root; `SHA256SUMS` desta pasta usa caminhos relativos a esta pasta. `runtime.sha256` usa root. Rollback local restaura esses dois baselines, remove o helper/novos testes somente sob revisão; não faz SQL, não muda ACL nem reaplica contenção. Rollback reintroduziria remount saudável antigo, não é publicação automática.
