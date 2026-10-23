@@ -1,5 +1,7 @@
 # P1 implantado externamente — não reaplicar
 
+Atualização relatada22:43: frontend f351d6d5 publicado, salvar/reabrir método AUDIT-AR preservado em homologação REAL admin A; B UI não lista A. Arquivamento negativo48dcac7d por adminB autorizado, mas botão desapareceu, sem tentativa de escrita real; NÃO concluído. Nenhuma sessão recarregada pelo agente.
+
 Relato do proprietário em 23/10/2026 21:18 UTC, implantação por Codex:
 - Migration `20261023211007_c2_private_assignments_financial_settings`.
 - Supabase canônico `swzpzcwiasxmjutrmvkm`.

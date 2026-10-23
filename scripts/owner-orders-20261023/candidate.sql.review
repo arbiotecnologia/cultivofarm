@@ -35,6 +35,10 @@ BEGIN
      OR to_regprocedure('platform_private.c2_order_actor_scope(uuid,uuid)') IS NOT NULL THEN
     RAISE EXCEPTION 'already_installed_or_drift';
   END IF;
+  IF md5(pg_get_functiondef('platform_private.c2p1_settings_allowed(uuid,boolean)'::regprocedure)) IS DISTINCT FROM '57baa5fd657952d9383ad0c422c1d028'
+  OR md5(pg_get_functiondef('platform_private.c2p1_settings_fence()'::regprocedure)) IS DISTINCT FROM 'f87cc2894dc551d242c2586f17e2cdd4'
+  OR md5(pg_get_functiondef('platform_private.c2p1_update_settings(uuid,jsonb,jsonb)'::regprocedure)) IS DISTINCT FROM '1d64475b433bd8557fd399be3b491a38'
+  OR md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'c08432be20b610b424c45b73ec9610ae' THEN RAISE EXCEPTION 'P1_dependency_drift'; END IF;
   -- Hash guard de TODOS os corpos alterados antes de qualquer escrita.
   IF md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure)) <> 'f86f43f9d9ad3ed97b840fcc02c79476'
   OR md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure)) <> 'c3f2997746f24bc2efd15db5c0ccc862'
@@ -77,6 +81,7 @@ BEGIN
      WHERE pu.user_id = _uid AND pu.partner_id = _partner
        AND pu.revoked_at IS NULL AND (pu.valid_from IS NULL OR pu.valid_from <= now())
        AND pa.ativo AND pa.deleted_at IS NULL AND o.ativo AND o.status = 'ativa'
+       AND (o.partner_account_id IS NULL OR o.partner_account_id = _partner)
        AND p.ativo AND p.organization_id = pu.tenant_id AND pu.tenant_id = o.id
        AND (c->>'tenant_id')::uuid = o.id
        AND public.is_valid_b2b_partner_user(_uid, pa.id)) THEN
@@ -162,6 +167,10 @@ $n$  PERFORM platform_private.c2_order_actor_scope(v_uid, p_partner_id); -- c2_o
   -- (D) geração do título.
   d := pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure);
   d := pg_temp.c2_swap(d,
+$o$    INSERT INTO public.partner_financial_settings(partner_id) VALUES (v_order.partner_id) RETURNING * INTO v_settings;$o$,
+$n$    -- c2_ord_p1_no_provision: only the existing P1 CAS RPC creates settings.
+    RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001';$n$, 'impl_no_settings_insert');
+  d := pg_temp.c2_swap(d,
 $o$  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
     FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;$o$,
 $n$  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
@@ -216,6 +225,23 @@ $n$  -- c2_ord_strict_refs: financial_categories/payment_methods são catálogos
        SELECT 1 FROM public.clientes cl WHERE cl.id = v_partner.client_id AND cl.organization_id = v_org) THEN
     RAISE EXCEPTION 'B2B_CUSTOMER_TENANT_MISMATCH' USING ERRCODE='42501';
   END IF;$n$, 'impl_refs');
+  EXECUTE d;
+
+  -- P1 internal owner/ownorg authority is required for owner-side approval/billing.
+  -- The phase1 helper intentionally remains unchanged for every sibling caller.
+  d := pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$IF NOT public.b2b_phase1_order_visible(p_order_id) THEN$o$,
+$n$IF NOT (public.b2b_phase1_order_visible(p_order_id) OR EXISTS (
+    SELECT 1 FROM public.partner_orders po WHERE po.id=p_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN$n$, 'approve_p1_owner');
+  EXECUTE d;
+  d := pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure);
+  d := pg_temp.c2_swap(d,
+$o$ELSIF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN$o$,
+$n$ELSIF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (
+    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN$n$, 'billing_p1_owner');
   EXECUTE d;
 
   -- (F) projeção: capacidade do writer = mesma função do servidor.

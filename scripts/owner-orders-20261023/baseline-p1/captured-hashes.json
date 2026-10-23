@@ -1,0 +1,46 @@
+[
+  {
+    "name": "public.fn_generate_receivable_installments",
+    "hash": "9c6ef883bb4a97928a5179bc63e9ca31"
+  },
+  {
+    "name": "public.tg_auto_b2b_receivable",
+    "hash": "0f679538fe394924b140e54938a3bb9e"
+  },
+  {
+    "name": "public.approve_partner_order",
+    "hash": "09eb9e7442cc59c7c72b4d39f3567a53"
+  },
+  {
+    "name": "public.fn_b2b_order_billing_eligibility",
+    "hash": "db977875e15ea49ce10fb3e5388d7dfb"
+  },
+  {
+    "name": "public.create_partner_order_secure",
+    "hash": "624f6e3d45e5af7d039d5da8f784d787"
+  },
+  {
+    "name": "platform_private.c2p1_settings_allowed",
+    "hash": "57baa5fd657952d9383ad0c422c1d028"
+  },
+  {
+    "name": "platform_private.c2p1_settings_fence",
+    "hash": "f87cc2894dc551d242c2586f17e2cdd4"
+  },
+  {
+    "name": "platform_private.issue_ticket",
+    "hash": "c32ad23a9db8574af85da8fcfc45af43"
+  },
+  {
+    "name": "platform_private.has_ticket",
+    "hash": "29adae3347e8a5ff23327fa86fceb54b"
+  },
+  {
+    "name": "public.generate_b2b_receivable_secure",
+    "hash": "c08432be20b610b424c45b73ec9610ae"
+  },
+  {
+    "name": "platform_private.b2b_actor_scope",
+    "hash": "c3f2997746f24bc2efd15db5c0ccc862"
+  }
+]

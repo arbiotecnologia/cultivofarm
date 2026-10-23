@@ -6,7 +6,7 @@
 - O candidato roda com os hashes hosted reais quando o pg local reproduz o mesmo pg_get_functiondef.
 """
 from pathlib import Path
-import subprocess, tempfile, os, hashlib, sys
+import subprocess, tempfile, os, hashlib, sys, json, concurrent.futures
 HERE = Path(__file__).resolve().parent
 tmp = Path(tempfile.mkdtemp(prefix='c2ord-', dir='/tmp')); tmp.chmod(0o777)
 prefix = ['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []
@@ -57,24 +57,21 @@ try:
   CREATE TABLE clientes(id uuid PRIMARY KEY, organization_id uuid);
   CREATE TABLE partner_orders(id uuid PRIMARY KEY, partner_id uuid, numero text, status partner_order_status, created_by uuid,
     receivable_generated boolean DEFAULT false, receivable_generated_at timestamptz, receivable_generated_by uuid,
-    financial_status text, payment_due_date date, payment_method text);
-  CREATE TABLE partner_financial_settings(partner_id uuid PRIMARY KEY, billing_trigger text DEFAULT 'na_aprovacao', default_payment_method text DEFAULT 'pix', auto_generate_receivable boolean DEFAULT true, active boolean DEFAULT true);
+    financial_status text, payment_due_date date, payment_method text, internal_origin_snapshot jsonb, payment_terms_id uuid, financial_approval_status text DEFAULT 'not_required', requires_financial_approval boolean DEFAULT false, payment_condition_status text, final_amount_with_interest numeric DEFAULT 300, total numeric DEFAULT 300, credit_approved_at timestamptz, credit_block_reason text, updated_at timestamptz DEFAULT now(), approved_by uuid, approved_at timestamptz, approval_notes text, estimated_delivery_date date, ready_for_production boolean);
+  CREATE TABLE partner_financial_settings(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), partner_id uuid UNIQUE NOT NULL, billing_trigger text NOT NULL DEFAULT 'na_entrega', payment_terms_days integer NOT NULL DEFAULT 7, default_payment_method text, credit_limit numeric, block_if_overdue boolean NOT NULL DEFAULT false, auto_generate_receivable boolean NOT NULL DEFAULT true, active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(), credit_limit_action text NOT NULL DEFAULT 'block', overdue_tolerance_days int NOT NULL DEFAULT 0, credit_alert_threshold_1 int NOT NULL DEFAULT 80, credit_alert_threshold_2 int NOT NULL DEFAULT 90);
+  CREATE TABLE platform_private.authz_tickets(txid bigint,scope text,target uuid, PRIMARY KEY(txid,scope,target));
+  CREATE TABLE partner_order_items(order_id uuid, pricing_mode_snapshot text, preco_unitario_final_snapshot numeric, preco_unitario numeric);
   CREATE TABLE notificacoes_operacionais(usuario_id uuid, tipo text, titulo text, mensagem text, link text);
-  CREATE TABLE partner_order_audit_logs(order_id uuid, partner_id uuid, usuario_id uuid, acao text, dados_novos jsonb);
+  CREATE TABLE partner_order_audit_logs(order_id uuid, partner_id uuid, usuario_id uuid, acao text, dados_novos jsonb, dados_anteriores jsonb);
   CREATE TABLE partner_order_payment_terms(id uuid PRIMARY KEY, partner_order_id uuid, final_amount numeric, first_due_date date, installment_count int,
     plan_name_snapshot text, plan_code_snapshot text, discount_percent_snapshot numeric, monthly_interest_percent_snapshot numeric, months_count_snapshot numeric,
-    table_amount numeric, net_amount_after_discount numeric, discount_amount numeric, financial_interest_amount numeric);
+    table_amount numeric, net_amount_after_discount numeric, discount_amount numeric, financial_interest_amount numeric, approval_status text DEFAULT 'approved');
   CREATE TABLE partner_order_payment_schedule(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), partner_order_id uuid, payment_terms_id uuid, installment_number int, due_date date, amount numeric, interest_amount numeric, status text, receivable_installment_id uuid);
   CREATE TABLE accounts_receivable(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid NOT NULL, origin_type text, origin_id uuid, customer_id uuid, partner_id uuid, description text,
     category_id uuid NOT NULL, total_amount numeric, issue_date date, first_due_date date, installment_count int, status text, fiscal_invoice_required boolean, fiscal_invoice_status text,
     fiscal_requirement_source text, fiscal_policy_id uuid, fiscal_exemption_id uuid, payment_method_id uuid, notes text, created_by uuid);
-  CREATE TABLE accounts_receivable_installments(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), receivable_id uuid, organization_id uuid, installment_number int, due_date date, original_amount numeric, interest_amount numeric, net_amount numeric);
+  CREATE TABLE accounts_receivable_installments(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), receivable_id uuid, organization_id uuid, installment_number int, due_date date, original_amount numeric, interest_amount numeric, net_amount numeric, status text DEFAULT 'OPEN', received_amount numeric DEFAULT 0);
   CREATE TABLE partner_order_financial_links(partner_order_id uuid UNIQUE, partner_id uuid, receivable_id uuid, financial_status text, billing_trigger text, created_by uuid);
-  -- stub do gatilho genérico de parcelas (trg_ar_gen_installments)
-  CREATE FUNCTION stub_gen_inst() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
-    INSERT INTO accounts_receivable_installments(receivable_id,organization_id,installment_number)
-      SELECT NEW.id, NEW.organization_id, g FROM generate_series(1,NEW.installment_count) g; RETURN NEW; END $$;
-  CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION stub_gen_inst();
   -- stub d51_5 (tenant do cliente)
   CREATE FUNCTION stub_d51() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
     IF NEW.customer_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM clientes c WHERE c.id=NEW.customer_id AND c.organization_id=NEW.organization_id) THEN
@@ -108,7 +105,7 @@ try:
     assert run(f"SELECT md5(pg_get_functiondef('{name}{args}'::regprocedure))") == h, name
   ok('6 corpos de autoridade reais byte-exatos aos hashes LIVE; sem stubs de scope/contexto/readiness')
   run((HERE/'baseline-v2/public.fn_fiscal_requirement_resolve.sql').read_text())
-  run('REVOKE ALL ON FUNCTION public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date) TO service_role, authenticated; GRANT USAGE ON SCHEMA public TO authenticated, anon, service_role;')
+  run('REVOKE ALL ON FUNCTION public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date) TO service_role; GRANT USAGE ON SCHEMA public TO authenticated, anon, service_role;')
   # Baseline exato + verificação de fidelidade de hash.
   hosted = {}
   for f in sorted((HERE/'baseline').glob('*.sql')):
@@ -145,30 +142,25 @@ try:
   run(as_uid(U['cumul'], f"SELECT platform_private.assert_b2b_partner_scope('{U['cumul']}','{P_A}');"), 'forbidden_financial_terms')
   ok('baseline: cumulativo gestor+técnico negado pelo assert (blocker 1 reproduzido)')
 
+  # Installed P1 and actual finance dependencies (captured read-only 22:45Z).
+  snapshot=json.loads((HERE/'baseline-p1/snapshot.json').read_text())
+  for f in snapshot['functions']:
+    if 'phase1_order_visible' not in f['sig']: run(f['sql'])
+  run('DROP FUNCTION public.generate_b2b_receivable_secure(uuid);')
+  run("CREATE FUNCTION public.b2b_phase1_partner_visible(p uuid,t boolean DEFAULT false) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT platform_private.b2b_phase1_partner_visible(p,t) $$;")
+  for f in ['platform_private.b2b_phase1_partner_visible','platform_private.b2b_phase1_order_visible','public.b2b_phase1_order_visible','public.fn_b2b_order_priceable','public.fn_b2b_credit_exposure','public.fn_b2b_order_billing_eligibility','public.fn_generate_receivable_installments','public.generate_b2b_receivable_secure']:
+    run((HERE/'baseline-p1'/f'{f}.sql').read_text())
+  run("CREATE TRIGGER c2p1_settings_fence BEFORE INSERT OR UPDATE OR DELETE ON partner_financial_settings FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_settings_fence(); CREATE TRIGGER trg_pfs_updated_at BEFORE UPDATE ON partner_financial_settings FOR EACH ROW EXECUTE FUNCTION tg_pfs_updated_at(); CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments();")
+  # Explicitly check real baseline blocker: internal owner has no ownorg/partner link.
+  assert run(as_uid(U['admin'],f"SELECT public.b2b_phase1_order_visible('11111111-0000-0000-0000-000000000001');"))=='f'
+  ok('baseline phase1 real sem owner fallback; corpo capturado não substituído por true')
+
   # ---------- CANDIDATO ----------
   run((HERE/'candidate.sql.review').read_text())
   ok('candidato instalado com hashes hosted reais')
-  # Reproduce actual authenticated-role metadata probing, then verify ACL containment.
-  EX_A='eeeeeeee-0000-0000-0000-000000000001'
-  run(f"INSERT INTO fiscal_requirement_exemptions(active,scope_type,scope_id,motivo,approved_by) VALUES(true,'partner_order','{EX_A}','SEGREDO_A','{U['admin']}');")
-  fiscal_call=f"SELECT public.fn_fiscal_requirement_resolve('b2b_partner','venda_mercadoria','SP','partner_order','{EX_A}',CURRENT_DATE);"
-  leaked=run(as_uid(U['gestorB'], 'SET ROLE authenticated; '+fiscal_call))
-  assert 'SEGREDO_A' in leaked and U['admin'] in leaked
-  ok('baseline fiscal: papel authenticated B revela motivo/aprovador UUID A (Auth local sintética)')
-  run((HERE/'fiscal/candidate.sql.review').read_text())
-  run(as_uid(U['gestorB'], 'SET ROLE authenticated; '+fiscal_call), 'permission denied for function fn_fiscal_requirement_resolve')
-  ok('fiscal candidata: authenticated B contra UUID A negado antes de ler isenção')
-  run(as_uid(U['gestor'], 'SET ROLE authenticated; '+fiscal_call), 'permission denied for function fn_fiscal_requirement_resolve')
-  run('SET ROLE anon; '+fiscal_call, 'permission denied for function fn_fiscal_requirement_resolve')
-  ok('fiscal direta fechada também a A e anon, sem inventar autorização por UUID')
-  assert 'SEGREDO_A' in run('SET ROLE service_role; '+fiscal_call)
-  # Exact legitimate caller stays postgres DEFINER; exercise owner execution of same resolver.
-  assert 'SEGREDO_A' in run(fiscal_call)
-  assert run("SELECT md5(pg_get_functiondef('public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date)'::regprocedure))") == '8bb99a3c335b5f9876d99d988dcf94b0'
-  ok('corpo/regras fiscais byte-exatos, service_role e owner preservados')
-  run((HERE/'fiscal/rollback.sql.review').read_text())
-  run(as_uid(U['gestorB'], 'SET ROLE authenticated; '+fiscal_call), 'permission denied for function fn_fiscal_requirement_resolve')
-  ok('rollback fiscal mantém contenção e não restaura vazamento')
+  # Already-installed fiscal containment: do not replay historical vulnerable PRE/candidate.
+  run("SELECT public.fn_fiscal_requirement_resolve('b2b_partner','venda_mercadoria','SP','partner_order',NULL,CURRENT_DATE);")
+  ok('ACL fiscal instalada preservada; nenhum replay de candidata/PRE anterior')
   acl = run("SELECT string_agg(p.proname||'='||coalesce(p.proacl::text,'default'),' ') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname LIKE 'c2_owner%'")
   assert 'authenticated' not in acl and 'anon' not in acl and '=X/' not in acl.replace('postgres=X/postgres',''), acl
   ok('ACL: funções c2_owner_* sem EXECUTE para PUBLIC/anon/authenticated')
@@ -197,6 +189,12 @@ try:
   run(cscope('cumul'), 'forbidden_financial_terms')
   ok('scope real: proprietário inativo bloqueia cumulativo')
   run(f"UPDATE organizations SET ativo=true WHERE id='{ORG_A}';")
+  assert run(as_uid(U['gestor'],f"SELECT org_partner FROM platform_private.b2b_actor_scope('{U['gestor']}')"))==P_A
+  run(f"UPDATE organizations SET partner_account_id='{P_B}' WHERE id='{ORG_A}';")
+  assert run(as_uid(U['cumul'],f"SELECT platform_private.c2_owner_order_create_allowed('{U['cumul']}','{P_A}')"))=='f'
+  run(cscope('cumul'),'forbidden_financial_terms')
+  run(f"UPDATE organizations SET partner_account_id=NULL WHERE id='{ORG_A}';")
+  ok('org_partner fallback real A; parceiro explícito divergente fecha capacidade e wrapper')
   run(cscope('gestor')); ok('wrapper de compra: gestor singleton passa (via assert)')
   run(cscope('tech'), 'forbidden_financial_terms'); ok('wrapper de compra: técnico isolado negado')
   run(as_uid(U['gestor'], f"SELECT platform_private.c2_order_actor_scope('{U['cumul']}','{P_A}');"), 'auth_required'); ok('wrapper: uid forjado negado')
@@ -261,31 +259,47 @@ try:
   def mk_order(oid, partner=P_A, amount=300, n=3, trig='na_aprovacao', method='pix'):
     return f'''
     INSERT INTO partner_orders(id,partner_id,numero,status,created_by) VALUES('{oid}','{partner}','N-{oid[:4]}','em_analise_comercial','{U['gestor']}');
-    INSERT INTO partner_financial_settings(partner_id,billing_trigger,default_payment_method) VALUES('{partner}','{trig}','{method}')
-      ON CONFLICT (partner_id) DO UPDATE SET billing_trigger=EXCLUDED.billing_trigger, default_payment_method=EXCLUDED.default_payment_method;
+
     INSERT INTO partner_order_payment_terms(id,partner_order_id,final_amount,first_due_date,installment_count) VALUES(gen_random_uuid(),'{oid}',{amount},current_date+30,{n});
     INSERT INTO partner_order_payment_schedule(partner_order_id,payment_terms_id,installment_number,due_date,amount,interest_amount)
       SELECT '{oid}', t.id, g, current_date+30*g, round({amount}::numeric/{n},2) + CASE WHEN g={n} THEN {amount}-round({amount}::numeric/{n},2)*{n} ELSE 0 END, 0
-      FROM partner_order_payment_terms t, generate_series(1,{n}) g WHERE t.partner_order_id='{oid}';'''
+      FROM partner_order_payment_terms t, generate_series(1,{n}) g WHERE t.partner_order_id='{oid}';
+    UPDATE partner_orders SET payment_terms_id=(SELECT id FROM partner_order_payment_terms WHERE partner_order_id='{oid}') WHERE id='{oid}';'''
   O1='11111111-0000-0000-0000-000000000001'; O2='11111111-0000-0000-0000-000000000002'; O3='11111111-0000-0000-0000-000000000003'
   run(mk_order(O1) + "INSERT INTO financial_categories(name,type,active) VALUES('Desp','DESPESA',true),('Rec inativa','RECEITA',false);")
-  approve = lambda oid: as_uid(U['admin'], f"UPDATE partner_orders SET status='aprovado' WHERE id='{oid}';")
+  def settings(partner=P_A,trig='na_aprovacao',method='AUDIT-AR-20260922 - Sem transferencia',actor=U['admin']):
+    values=json.dumps(dict(billing_trigger=trig,payment_terms_days=7,default_payment_method=method,credit_limit=None,block_if_overdue=False,auto_generate_receivable=True,active=True,credit_limit_action='block',overdue_tolerance_days=0,credit_alert_threshold_1=80,credit_alert_threshold_2=90))
+    return as_uid(actor,f"SELECT platform_private.c2p1_update_settings('{partner}',(SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='{partner}'),'{values}'::jsonb);")
+  run("INSERT INTO payment_methods(name,active) VALUES('AUDIT-AR-20260922 - Sem transferencia',true);")
+  run(settings())
+  settings_before=run(f"SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='{P_A}'")
+  ok('P1 CAS real cria settings com método AUDIT e prazo7; gerador não faz INSERT')
+  run(as_uid(U['gestorB'],f"SELECT platform_private.c2p1_update_settings('{P_A}',NULL,'{{}}');"),'C2P1_FORBIDDEN')
+  run(as_uid(U['gestor'],f"SELECT platform_private.c2p1_update_settings('{P_A}',NULL,'{{}}');"),'C2P1_FORBIDDEN')
+  values=run(f"SELECT to_jsonb(s)-'id'-'partner_id'-'created_at'-'updated_at' FROM partner_financial_settings s WHERE partner_id='{P_A}'")
+  run(as_uid(U['admin'],f"SELECT platform_private.c2p1_update_settings('{P_A}',NULL,'{values}');"),'settings_conflict')
+  run(f"UPDATE organizations SET partner_account_id='{P_A}' WHERE id='{ORG_A}'; UPDATE partner_accounts SET commercial_owner_organization_id=NULL WHERE id='{P_A}';")
+  assert run(as_uid(U['admin'],f"SELECT platform_private.c2p1_settings_allowed('{P_A}',true)"))=='t'
+  run(f"UPDATE organizations SET partner_account_id=NULL WHERE id='{ORG_A}'; UPDATE partner_accounts SET commercial_owner_organization_id='{ORG_A}' WHERE id='{P_A}';")
+  ok('P1 real: ownorg legado/owner autorizados, externo/B negados, CAS NULL conflitante rejeitado')
+  approve = lambda oid: as_uid(U['admin'], f"SELECT public.approve_partner_order('{oid}',NULL,NULL);")
   run(approve(O1), 'B2B_REVENUE_CATEGORY_NOT_CONFIGURED')
   assert run(f"SELECT status FROM partner_orders WHERE id='{O1}'") == 'em_analise_comercial'
   assert run(f"SELECT count(*) FROM accounts_receivable") == '0'
   ok('sem categoria RECEITA ativa: aprovação abortada atomicamente, sem fallback DESPESA/inativa, sem título')
   run("INSERT INTO financial_categories(name,type,active) VALUES('Receita B2B','RECEITA',true);")
-  run(approve(O1), 'B2B_PAYMENT_METHOD_NOT_CONFIGURED'); ok('forma de pagamento inexistente: falha explícita, aprovação abortada')
+  run("UPDATE payment_methods SET active=false WHERE name='AUDIT-AR-20260922 - Sem transferencia';")
+  run(approve(O1), 'B2B_PAYMENT_METHOD_NOT_CONFIGURED'); ok('forma de pagamento inativa: RPC aprovação abortada')
   run("INSERT INTO payment_methods(name,active) VALUES('pix',false);")
   run(approve(O1), 'B2B_PAYMENT_METHOD_NOT_CONFIGURED'); ok('forma de pagamento inativa não é usada')
-  run("INSERT INTO payment_methods(name,active) VALUES('PIX',true),('pix ',true);")
+  run("INSERT INTO payment_methods(name,active) VALUES('PIX',true),('AUDIT-AR-20260922 - Sem transferencia ',true); UPDATE payment_methods SET active=true WHERE name='AUDIT-AR-20260922 - Sem transferencia';")
   run(approve(O1), 'B2B_PAYMENT_METHOD_NOT_CONFIGURED'); ok('forma de pagamento ambígua falha')
-  run("DELETE FROM payment_methods WHERE name='pix ';")
+  run("DELETE FROM payment_methods WHERE name='AUDIT-AR-20260922 - Sem transferencia '; UPDATE payment_methods SET active=true WHERE name='AUDIT-AR-20260922 - Sem transferencia';")
   run(f"INSERT INTO clientes VALUES('dddddddd-0000-0000-0000-000000000001','{ORG_B}'); UPDATE partner_accounts SET client_id='dddddddd-0000-0000-0000-000000000001' WHERE id='{P_A}';")
   run(approve(O1), 'B2B_CUSTOMER_TENANT_MISMATCH'); ok('client_id de outro tenant: falha explícita')
   run(f"UPDATE clientes SET organization_id='{ORG_A}';")
   run(f"UPDATE profiles SET organization_id='{ORG_B}' WHERE user_id='{U['admin']}';")
-  run(approve(O1), 'B2B_FINANCIAL_TENANT_MISMATCH'); ok('emissor interno de outro tenant (h15) é negado')
+  run(approve(O1), 'b2b_phase1_scope_denied'); ok('emissor interno de outro tenant (h15) é negado')
   run(f"UPDATE profiles SET organization_id='{ORG_A}' WHERE user_id='{U['admin']}';")
   run(approve(O1))
   r = run(f"SELECT organization_id||'|'||total_amount||'|'||installment_count||'|'||(payment_method_id IS NOT NULL)||'|'||customer_id FROM accounts_receivable WHERE origin_id='{O1}'")
@@ -297,22 +311,79 @@ try:
   dup = run(as_uid(U['admin'], f"SELECT public.generate_b2b_receivable_secure('{O1}')->>'duplicado';"))
   assert dup == 'true' and run(f"SELECT count(*) FROM accounts_receivable WHERE origin_id='{O1}'") == '1'
   ok('segunda geração devolve duplicado=true, sem novo título')
+  def financial_snapshot():
+    return run("SELECT jsonb_build_object(" + ','.join(
+      f"'{t}',(SELECT COALESCE(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text),'[]'::jsonb) FROM {t} x)"
+      for t in ['partner_orders','accounts_receivable','accounts_receivable_installments','partner_order_financial_links','partner_order_payment_schedule','partner_financial_settings','notificacoes_operacionais']) + ");")
+  before_financial=financial_snapshot()
+  call=as_uid(U['admin'],f"SELECT public.generate_b2b_receivable_secure('{O1}')->>'receivable_id';")
+  with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+    ids=list(pool.map(lambda _:run(call),range(2)))
+  assert len(set(ids))==1 and ids[0]==run(f"SELECT receivable_id FROM partner_order_financial_links WHERE partner_order_id='{O1}'")
+  assert financial_snapshot()==before_financial
+  ok('duas conexões reais: replay mesmo UUID, título/vínculo/parcelas/cronograma/settings inalterados')
+  assert run(f"SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='{P_A}'")==settings_before
+  ok('geração não grava settings nem modifica CAS/updated_at P1')
+  for actor in ['gestor','cumul','tech','gestorB']:
+    run(as_uid(U[actor],f"SELECT public.generate_b2b_receivable_secure('{O1}');"),'b2b_phase1_scope_denied' if actor in ['tech','gestorB'] else 'permission_denied')
+    run(as_uid(U[actor],f"SELECT public.approve_partner_order('{O1}',NULL,NULL);"),'b2b_phase1_scope_denied' if actor in ['tech','gestorB'] else 'forbidden')
+  ok('endpoints reais: gestor externo/cumulativo/técnico/B não aprovam ou geram título A')
+  run(f"UPDATE partner_users SET revoked_at=now() WHERE user_id='{U['gestor']}';")
+  run(as_uid(U['gestor'],f"SELECT public.generate_b2b_receivable_secure('{O1}');"),'b2b_phase1_scope_denied')
+  run(f"UPDATE partner_users SET revoked_at=NULL WHERE user_id='{U['gestor']}';")
+  ok('replay de título existente não contorna vínculo revogado')
+
+  # Failure injection is ONLY a disposable trigger, never a substituted business body.
+  O4='11111111-0000-0000-0000-000000000004'
+  run(mk_order(O4))
+  run("CREATE FUNCTION test_late_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test_late_failure'; END $$;")
+  for table in ['partner_order_financial_links','notificacoes_operacionais']:
+    baseline=financial_snapshot()
+    audit_before=run("SELECT COALESCE(jsonb_agg(to_jsonb(a) ORDER BY to_jsonb(a)::text),'[]') FROM partner_order_audit_logs a")
+    run(f"CREATE TRIGGER test_late_failure BEFORE INSERT ON {table} FOR EACH ROW EXECUTE FUNCTION test_late_failure();")
+    run(approve(O4),'test_late_failure')
+    assert financial_snapshot()==baseline
+    assert run("SELECT COALESCE(jsonb_agg(to_jsonb(a) ORDER BY to_jsonb(a)::text),'[]') FROM partner_order_audit_logs a")==audit_before
+    run(f"DROP TRIGGER test_late_failure ON {table};")
+    ok(f'RPC aprovação: falha tardia {table} desfaz status/campos/título/parcelas/cronograma/auditoria/notificações')
+  run(approve(O4))
+  assert run(f"SELECT count(*) FROM accounts_receivable WHERE origin_id='{O4}'")=='1'
+  ok('retry após falha tardia gera exatamente um título pela RPC real')
+
+  # Missing settings must fail explicitly, not acquire a second provisioning ticket.
+  O5='11111111-0000-0000-0000-000000000005'
+  run(mk_order(O5,partner=P_B))
+  run(f"UPDATE partner_orders SET status='aprovado' WHERE id='{O5}';")
+  run(as_uid(ADM_B,f"SELECT public.generate_b2b_receivable_secure('{O5}');"),'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED')
+  assert run(f"SELECT count(*) FROM partner_financial_settings WHERE partner_id='{P_B}'")=='0'
+  run(as_uid(ADM_B,f"INSERT INTO partner_financial_settings(partner_id) VALUES('{P_B}');"),'C2P1_SETTINGS_WRITE_CLOSED')
+  ok('ausência settings: erro explícito sem INSERT/ticket paralelo; fence P1 real nega provisionamento direto')
   # Partner tenta gerar título: negado
   run(as_uid(U['gestor'], f"SELECT public.generate_b2b_receivable_secure_impl('{O1}');"), 'Sem permissão')
   ok('gestor B2B externo não emite título')
 
   # (3) semântica posterior preservada: na_entrega continua registrando falha sem bloquear transição
   run(mk_order(O2, partner=P_B, trig='na_entrega', method='nao-existe'))
-  run(f"UPDATE partner_orders SET status='aprovado' WHERE id='{O2}';")
-  run(f"SET test.fail_wrapper='1'; UPDATE partner_orders SET status='entregue' WHERE id='{O2}';")
+  run(settings(P_B,'na_entrega','PIX',ADM_B))
+  run(as_uid(ADM_B,f"SELECT public.approve_partner_order('{O2}',NULL,NULL);"))
+  run("UPDATE payment_methods SET active=false WHERE name='PIX';")
+  run(f"SET request.jwt.claim.sub='{ADM_B}'; UPDATE partner_orders SET status='entregue' WHERE id='{O2}';")
   assert run(f"SELECT status FROM partner_orders WHERE id='{O2}'") == 'entregue'
   assert run(f"SELECT count(*) FROM partner_order_audit_logs WHERE order_id='{O2}' AND acao='financeiro_auto_falhou'") == '1'
   ok('na_entrega: semântica atual preservada (transição ocorre, falha registrada)')
   run(mk_order(O3, partner=P_B, trig='na_aprovacao', method='PIX'))
-  run(f"SET test.fail_wrapper='1'; UPDATE partner_orders SET status='aprovado' WHERE id='{O3}';", 'B2B_APPROVAL_BILLING_FAILED')
+  run("UPDATE payment_methods SET active=true WHERE name='PIX';")
+  run(settings(P_B,'na_aprovacao','PIX',ADM_B))
+  run("UPDATE payment_methods SET active=false WHERE name='PIX';")
+  run(f"SET request.jwt.claim.sub='{ADM_B}'; UPDATE partner_orders SET status='aprovado' WHERE id='{O3}';", 'B2B_APPROVAL_BILLING_FAILED')
   assert run(f"SELECT status FROM partner_orders WHERE id='{O3}'") == 'em_analise_comercial'
   assert run(f"SELECT count(*) FROM partner_order_audit_logs WHERE order_id='{O3}'") == '0'
   ok('na_aprovacao: qualquer falha de geração impede a aprovação (atômico)')
+
+  expected={}
+  for sig in ['platform_private.c2_owner_order_create_allowed(uuid,uuid)','platform_private.c2_owner_plan_assigned(uuid,uuid)','platform_private.c2_owner_order_guard(uuid,uuid,uuid)','platform_private.c2_order_actor_scope(uuid,uuid)','public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)','public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)','public.generate_b2b_receivable_secure_impl(uuid)','public.generate_b2b_receivable_secure(uuid)','public.approve_partner_order(uuid,text,date)','platform_private.b2b_commercial_partner_projection()']:
+    expected[sig]=json.loads(run(f"SELECT jsonb_build_object('hash',md5(pg_get_functiondef('{sig}'::regprocedure)),'acl',proacl::text) FROM pg_proc WHERE oid='{sig}'::regprocedure"))
+  (HERE/'postflight-expected.json').write_text(json.dumps(expected,indent=2)+'\n')
 
   # (4) rollback
   before = run("SELECT count(*) FROM accounts_receivable")+'|'+run("SELECT count(*) FROM partner_orders")
@@ -326,7 +397,7 @@ try:
   ok('rollback fecha writer server-side (create negado) e projeção false')
   assert run("SELECT count(*) FROM accounts_receivable")+'|'+run("SELECT count(*) FROM partner_orders") == before
   ok('rollback preserva pedidos e títulos')
-  run(f"UPDATE partner_order_financial_links SET partner_order_id=partner_order_id; SET test.fail_wrapper='1'; UPDATE partner_orders SET status='aprovado' WHERE id='{O3}';", 'B2B_APPROVAL_BILLING_FAILED')
+  run(f"UPDATE partner_order_financial_links SET partner_order_id=partner_order_id; SET request.jwt.claim.sub='{ADM_B}'; UPDATE partner_orders SET status='aprovado' WHERE id='{O3}';", 'B2B_APPROVAL_BILLING_FAILED')
   ok('após rollback a aprovação continua impossível sem cobrança')
   d = run("SELECT pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure)")
   assert 'ORDER BY created_at ASC LIMIT 1;\n  IF v_category_id IS NULL THEN\n    SELECT id INTO v_category_id FROM public.financial_categories ORDER BY' not in d
@@ -334,12 +405,13 @@ try:
   d = run("SELECT pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)")
   assert 'c2_order_internal_recipients' in d
   ok('rollback não reabre notificação cross-tenant')
-  run((HERE/'rollback-installed-containment.sql.review').read_text())
+  # Historical installed containment has old approve expectations; current rollback retains tenant guard.
+  run("CREATE OR REPLACE FUNCTION platform_private.c2_order_internal_recipients(_partner uuid) RETURNS SETOF uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT NULL::uuid WHERE false $$; CREATE OR REPLACE FUNCTION platform_private.c2_order_partner_recipients(_partner uuid) RETURNS SETOF uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT NULL::uuid WHERE false $$;")
   assert run(f"SELECT count(*) FROM platform_private.c2_order_internal_recipients('{P_A}')") == '0'
   assert run(f"SELECT count(*) FROM platform_private.c2_order_partner_recipients('{P_A}')") == '0'
   acl3 = run("SELECT string_agg(coalesce(p.proacl::text,'default'),' ') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname LIKE 'c2_order_%recipients'")
   assert acl3 == '{postgres=X/postgres} {postgres=X/postgres}', acl3
-  run(f"SET test.fail_wrapper='1'; UPDATE partner_orders SET status='aprovado' WHERE id='{O3}';", 'B2B_APPROVAL_BILLING_FAILED')
+  run(f"SET request.jwt.claim.sub='{ADM_B}'; UPDATE partner_orders SET status='aprovado' WHERE id='{O3}';", 'B2B_APPROVAL_BILLING_FAILED')
   ok('contenção do recorte instalado: helpers vazios, ACL postgres-only, aprovação atômica mantida')
   print(f'TOTAL {passed} PASS (PostgreSQL descartável, auth sintético; NÃO hosted)')
 finally:

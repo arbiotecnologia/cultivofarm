@@ -1,6 +1,7 @@
 -- REVIEW ONLY (C2-ORD v3 rollback do candidato restante). Fecha o writer SERVER-SIDE.
 -- assert_b2b_partner_scope nunca foi alterado pelo v3 (nada a restaurar). Mantém: aprovação atômica,
 -- destinatários restritos (20261023192728), resolução estrita e escopo do título. Não apaga pedidos/títulos.
+-- P1 CAS/fence, owner checks in approval/billing and no automatic settings INSERT remain installed.
 BEGIN;
 SET LOCAL lock_timeout = '5s';
 DO $$
@@ -11,6 +12,11 @@ BEGIN
   END IF;
   IF md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure)) <> 'f86f43f9d9ad3ed97b840fcc02c79476' THEN
     RAISE EXCEPTION 'assert_drift';
+  END IF;
+  IF md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) IS DISTINCT FROM '31bbe8f7d3c940eb9862bf7c7b7fad20'
+  OR md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure)) IS DISTINCT FROM '9c8c8a736bcd1d77ee2f237a8a59b4ce'
+  OR md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure)) IS DISTINCT FROM '3b7b046290cb10ba0af08e88cabd26ce' THEN
+    RAISE EXCEPTION 'installed_financial_containment_drift';
   END IF;
 END $$;
 -- Writer fechado: guard nega todo cliente comercial externo; wrapper nega o cumulativo; projeção false.
