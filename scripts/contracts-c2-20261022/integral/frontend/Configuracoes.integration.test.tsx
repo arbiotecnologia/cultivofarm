@@ -140,7 +140,7 @@ it("edição cumulativa e revogação usam um único botão com conjunto final e
   expect(s.rpc.mock.calls.filter(c => c[0] === "link_partner_user").at(-1)?.[1]).toMatchObject({ p_action: "revoke_roles", p_roles: ["parceiro_b2b_tecnico"], p_expected: "b".repeat(32) });
 });
 it("edição com CAS conflitante exige releitura antes de usar nova versão", async () => {
-  s.conflict = true; await openEdit(); fireEvent.change(screen.getByRole("textbox", { name: "Motivo" }), { target: { value: "Revisão sintética" } });
+  s.conflict = true; await openEdit(); fireEvent.change(within(screen.getByRole("region", { name: "Acessos do parceiro" })).getByRole("textbox", { name: "Motivo" }), { target: { value: "Revisão sintética" } });
   fireEvent.click(screen.getByRole("button", { name: "Confirmar perfis" })); await screen.findByRole("button", { name: "Atualizar dados" });
   expect(screen.getByRole("button", { name: "Confirmar perfis" })).toBeDisabled(); s.version = "c".repeat(32); s.conflict = false;
   fireEvent.click(screen.getByRole("button", { name: "Atualizar dados" })); await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar perfis" })).toBeEnabled());
@@ -158,7 +158,7 @@ it("produtor existente sem parceiro pode escolher parceiro no mesmo editor antes
 });
 it("erro de edição preserva seleção e não anuncia confirmação", async () => {
   s.denied = true; await openEdit(); fireEvent.click(screen.getByRole("checkbox", { name: "Consultor técnico B2B" }));
-  fireEvent.change(screen.getByRole("textbox", { name: "Motivo" }), { target: { value: "Revisão sintética" } });
+  fireEvent.change(within(screen.getByRole("region", { name: "Acessos do parceiro" })).getByRole("textbox", { name: "Motivo" }), { target: { value: "Revisão sintética" } });
   fireEvent.click(screen.getByRole("button", { name: "Confirmar perfis" })); await screen.findByText("Não foi possível confirmar. Preserve a tentativa para verificar novamente.");
   expect(screen.getByRole("checkbox", { name: "Consultor técnico B2B" })).toBeChecked(); expect(screen.queryByText("Alteração confirmada.")).not.toBeInTheDocument();
 });
