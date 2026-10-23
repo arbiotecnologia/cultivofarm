@@ -33,15 +33,17 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   rpc: (name: string) => {
     const request = (async () => {
     if (name === "get_my_commercial_partner_context") {
+      return { data: state.context, error: null };
+    }
+    if (name === "get_my_commercial_partner_projection") {
+      const ctx = state.context as Record<string, unknown> | null;
+      return { data: ctx ? { ...ctx, id: ctx.partner_id, codigo: "B2B", razao_social: "Parceiro", ativo: true, capabilities: { contract: "C2_CAT_V1", catalog_read: true, sheets_read: true } } : null };
+    }
+    if (name === "get_my_available_portal_contexts") {
       state.contextCalls++;
       const override = state.override; state.override = undefined;
       return { data: override ? await override() : state.context, error: null };
     }
-    if (name === "get_my_commercial_partner_projection") {
-      const ctx = state.context as Record<string, unknown> | null;
-      return { data: ctx ? { ...ctx, id: ctx.partner_id, codigo: "B2B", razao_social: "Parceiro", ativo: true, capabilities: { catalog_read: true, sheets_read: true } } : null };
-    }
-    if (name === "get_my_available_portal_contexts") return { data: { available_contexts: ["b2b"], has_b2b_access: true, has_technical_access: false } };
     if (name === "get_partner_catalog_secure") return state.catalog();
     if (name === "b2b_read_simulations") return state.simulations();
     throw new Error(`unexpected RPC: ${name}`);
@@ -61,7 +63,7 @@ import { usePartnerSimulations } from "@/hooks/usePartnerSimulations";
 import { useAuthenticatedBlobUrls } from "@/hooks/useAuthenticatedBlobUrls";
 import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
 
-const ctx = (partner = P) => ({ contract: "C2_MULTIPROFILE_V1", actor_id: U, tenant_id: O, external_roles: [...state.roles], manager: state.roles.includes("parceiro_b2b"), technician: state.roles.includes("parceiro_b2b_tecnico"), partner_id: partner, organization_id: O, commercial_owner_organization_id: O,
+const ctx = (partner = P) => ({ contract: "C2_MULTIPROFILE_V1", actor_id: U, tenant_id: O, ready: true, producer_links_valid: false, available_contexts: state.roles.includes("parceiro_b2b") ? ["b2b"] : ["technical"], has_b2b_access: state.roles.includes("parceiro_b2b"), has_technical_access: state.roles.includes("parceiro_b2b_tecnico"), external_roles: [...state.roles], manager: state.roles.includes("parceiro_b2b"), technician: state.roles.includes("parceiro_b2b_tecnico"), partner_id: partner, organization_id: O, commercial_owner_organization_id: O,
   role: state.roles[0], papel: state.roles[0] === "parceiro_b2b_tecnico" ? "tecnico" : "gestor", mode: "commercial_owner" });
 const tick = async (ms = 0) => {
   await act(async () => { await vi.advanceTimersByTimeAsync(ms); });
@@ -190,7 +192,7 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     expect(screen.getByText("A restaurado")).toBeTruthy(); expect(screen.queryByText("A obsoleto")).toBeNull();
     expect(JSON.stringify(client.getQueryCache().getAll().map(q => q.state.data))).not.toContain("obsoleto");
   });
-  it.each(["15000", true, {}, [], { ...ctx(), papel: "tecnico" }])("resposta inválida %j pausa na integração sem fallback", async raw => {
+  it.each(["15000", true, {}, [], { ...ctx(), actor_id: P }])("resposta inválida %j pausa na integração sem fallback", async raw => {
     state.context = raw; const client = setup(); await tick(); paused(client); const calls = state.contextCalls;
     await tick(30_000); expect(state.contextCalls).toBe(calls);
   });
@@ -200,8 +202,8 @@ describe("B2B sessão aberta — monitor existente e tela/cache reais", () => {
     Object.defineProperty(document, "visibilityState", { value: "visible" }); act(() => window.dispatchEvent(new Event("focus"))); await tick();
     expect(screen.queryByText("portal aberto")).toBeNull(); resolve?.(ctx()); await tick(); expect(screen.getByText("portal aberto")).toBeTruthy();
   });
-  it.each([{ roles: ["cliente_produtor"] }, { roles: ["administrador"] }, { roles: ["parceiro_b2b", "administrador"] }, { roles: ["parceiro_b2b", "parceiro_b2b_tecnico"] }])("não inicia probe para roles $roles", async ({ roles }) => {
-    state.roles = roles; setup(); await tick(); await tick(30_000); expect(state.contextCalls).toBe(0);
+  it.each([{ roles: ["administrador"] }, { roles: ["parceiro_b2b", "administrador"] }])("não inicia probe C2 para roles internos $roles", async ({ roles }) => {
+    state.roles = roles; setup(); await tick(); const calls = state.contextCalls; await tick(30_000); expect(state.contextCalls).toBe(calls);
   });
   it("técnico-only não monta portal gestor mesmo com projeção válida", async () => { state.roles = ["parceiro_b2b_tecnico"]; state.context = ctx(); setup(); await tick(); expect(screen.getByText("acesso negado")).toBeTruthy(); expect(screen.queryByText("portal aberto")).toBeNull(); expect(state.catalog).not.toHaveBeenCalled(); });
   it("gate fechado não inicia monitor B2B", async () => { state.gate = false; setup(); await tick(); const calls = state.contextCalls; await tick(30_000); expect(state.contextCalls).toBe(calls); expect(screen.getByText("portal aberto")).toBeTruthy(); });
