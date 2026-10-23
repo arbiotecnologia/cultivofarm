@@ -48,6 +48,8 @@ import { ExternalCommonUserEditBoundary } from "@/components/configuracoes/Exter
 import { PartnerLifecycleFields } from "@/components/configuracoes/PartnerLifecycleFields";
 import { ExternalRegistrationFields } from "@/components/configuracoes/ExternalRegistrationFields";
 import { EXTERNAL_USER_EDIT_PHASE2_REVIEWED } from "@/lib/configuracoes/externalUserEditGate";
+import { pauseStateKey, readPauseState, writePauseState, clearPauseState } from "@/lib/authz/pauseRetainedState";
+import { resolveConfiguracoesTab } from "@/lib/configuracoes/configuracoesTabs";
 type LinhaUsuario = { user_id: string; roles?: string[] | null };
 import { EXTERNAL_USER_ACTIVATION_REVIEWED, validateUserDraft, externalUserPayload, type UserRegistrationKind } from "@/lib/configuracoes/externalUserDraft";
 import { useDebounce } from "@/hooks/useDebounce";
