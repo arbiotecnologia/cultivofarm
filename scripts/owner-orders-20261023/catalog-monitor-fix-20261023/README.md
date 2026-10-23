@@ -17,3 +17,16 @@ UI publicada9fc18e7a; preview/produção index-DFNxASjt.js. Migration independen
 
 ## Revisão/rollback
 `baseline/` contém cópias byte-exatas dos dois runtimes antes desta rodada; não editar snapshots históricos. `frontend.patch` usa caminhos relativos ao root; `SHA256SUMS` desta pasta usa caminhos relativos a esta pasta. `runtime.sha256` usa root. Rollback local restaura esses dois baselines, remove o helper/novos testes somente sob revisão; não faz SQL, não muda ACL nem reaplica contenção. Rollback reintroduziria remount saudável antigo, não é publicação automática.
+
+## Complemento independente23:21–23:24 — NO-GO para causa única/homologação real
+Proprietário informa nova contenção `c2_writer_containment_during_real_session_regression` SUCCESS: helperSELECTfalse, financeiro correto preservado, zero pedido. Substitui reabertura23:14; não reaplicarSQL/reabrir writer. timeOrigin1792797076368.5 estável/navigation navigate, consoleerrors vazio/diagnostics=[] confirmam relato sem reload, não causa única.
+
+Duas revisões read-only independentes: uma rastreou todas as fontes; outra executou teste atual11/11 contra baselines byte-exatos com aliases temporários comprovados:9PASS/2FAIL antespatch (poll idêntico e refresh perdiam modal),11PASS após. Logs/configurações temporários em /tmp/catalog-verify. Nenhuma sessão/banco/build acessado pelos revisores.
+
+**Diagnóstico vazio é compatível com polling B2B:** onDiagnostic só está ligado em escopos environmental internos. Teste registra probes aumentarem com ring vazio. TOKEN_REFRESHED, por outro lado, registra auth_refresh no código local; ring vazio não prova ausência universal, mas enfraquece essa hipótese se bundle/instrumentação forem iguais e ring não limpo. Não foi verificado o bundle real nesta rodada.
+
+**Foco/hidden→visible continuam diferentes de poll periódico:** B2B chama revalidate explícito, entra pending, cancela/clear e desmonta mesmo se resposta final igual. Teste reproduz descarte nesse caminho; patch NÃO o corrige, NÃO autoriza manter grant durante incerteza nem altera política ambiental. Não prometer que patch elimina todos os fechamentos. Mudança real/TTL/offline mantém descarte.
+
+**Cliente comercial é outro ramo normal:** feature catalogo_precos ausente ou capacidade catalog_read falsa da projeção produz fallback comercial sem erro de transporte; testes separados reproduzem ambos. Entitlements/projeção não possuem polling próprio curto; cache clear no monitor pode provocar releituras/loading. Refetch saudável idêntico dessas queries mantém modal/carrinho no teste. Nenhuma evidência hosted prova qual resposta chegou na aba real.
+
+Cobertura ampliada usa defaults QueryClient iguais App(stale5min/gc10min/mountfalse/focusfalse/reconnecttrue/retry1), UserMenu real com seus leitores de contextos/switch,13cenários integração. Sidebar/notifications/branding ainda simulados; não prova sóNotifications/menus reais. SDK local usa Promise imediata/abortSignal sem transporte real: não certifica JWT/PostgREST/latência/cancelamento HTTP. Testes não legitimam ampliar TTL/claims/roles nem publicar. Próxima homologação independente deve observar, sem IDs/tokens, estado monitor + entitlement + flags de projeção + foco e comparar artefato publicado; transportes HTTP locais controlados e sessão real permanecem pendentes.
