@@ -380,3 +380,26 @@ ALTER FUNCTION platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb) OWNE
 ALTER FUNCTION platform_private.c2p1_item_fence() OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_item_fence() FROM PUBLIC,anon,authenticated,service_role;
 
 ALTER FUNCTION platform_private.c2p1_assignment_children_fence() OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_assignment_children_fence() FROM PUBLIC,anon,authenticated,service_role;
+-- Secondary rule audit: no global-plan log inherits tenant authority.
+CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_snapshot_allowed(p_data jsonb,p_partner uuid)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$ BEGIN
+ IF p_data IS NULL THEN RETURN true; END IF;
+ RETURN jsonb_typeof(p_data)='object' AND p_data ? 'buyer_scope'
+ AND (p_data->>'partner_id')::uuid IS NOT DISTINCT FROM p_partner
+ AND platform_private.c2p1_assignment_allowed(p_data->>'buyer_scope',(p_data->>'partner_id')::uuid,(p_data->>'customer_id')::uuid);
+ EXCEPTION WHEN invalid_text_representation THEN RETURN false; END $$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_log_allowed(p_action text,p_partner uuid,p_before jsonb,p_after jsonb)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT COALESCE(p_action IN ('price_rule_insert','price_rule_update','price_rule_delete')
+ AND (p_before IS NOT NULL OR p_after IS NOT NULL)
+ AND platform_private.c2p1_rule_snapshot_allowed(p_before,p_partner)
+ AND platform_private.c2p1_rule_snapshot_allowed(p_after,p_partner),false);
+$$;
+CREATE POLICY c2p1_rule_audit_guard ON public.commercial_audit_log AS RESTRICTIVE FOR SELECT TO authenticated
+USING(platform_private.c2p1_rule_log_allowed(acao,partner_id,dados_anteriores,dados_novos));
+REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON public.commercial_audit_log FROM anon,authenticated;
+ALTER FUNCTION platform_private.c2p1_rule_snapshot_allowed(jsonb,uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION platform_private.c2p1_rule_snapshot_allowed(jsonb,uuid) FROM PUBLIC,anon,authenticated,service_role;
+ALTER FUNCTION platform_private.c2p1_rule_log_allowed(text,uuid,jsonb,jsonb) OWNER TO postgres;
+REVOKE ALL ON FUNCTION platform_private.c2p1_rule_log_allowed(text,uuid,jsonb,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION platform_private.c2p1_rule_log_allowed(text,uuid,jsonb,jsonb) TO authenticated;
