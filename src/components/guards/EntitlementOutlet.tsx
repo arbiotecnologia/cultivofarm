@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useOutletContext } from "react-router-dom";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { isPathEntitled, featureForPath } from "@/lib/saas/featureRouteMap";
 import ForaDoPlano from "@/components/guards/ForaDoPlano";
@@ -11,11 +11,14 @@ import ForaDoPlano from "@/components/guards/ForaDoPlano";
  */
 export function EntitlementOutlet() {
   const { pathname } = useLocation();
+  const context = useOutletContext<unknown>();
   const entitlements = useEntitlements();
   if (featureForPath(pathname) && !isPathEntitled(pathname, entitlements)) {
     return <ForaDoPlano status={entitlements.status} />;
   }
-  return <Outlet />;
+  // The nested outlet must not replace the parent layout's resource context.
+  // This only forwards the existing value after the unchanged plan barrier.
+  return <Outlet context={context} />;
 }
 
 export default EntitlementOutlet;
