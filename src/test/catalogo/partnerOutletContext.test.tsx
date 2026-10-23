@@ -9,7 +9,9 @@ const partner = { id: "partner-A" };
 const context = { partner };
 function Consumer() {
   state.calls++;
-  const { partner: scoped } = useOutletContext<typeof context>();
+  const received = useOutletContext<typeof context>();
+  expect(received).toBe(context);
+  const { partner: scoped } = received;
   return <output>{scoped.id}</output>;
 }
 function mount() {

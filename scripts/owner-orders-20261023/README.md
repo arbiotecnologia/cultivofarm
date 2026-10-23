@@ -1,5 +1,10 @@
 # C2-ORD v4 — P1 e eligibility instalados (REVIEW, restante inativo)
 
+## 23/10 22:56 — C2-ORD implantado externamente / bloqueio frontend
+Codex implantou `c2_owner_orders_p1_composed` baseado b38e2c26, conforme proprietário: PRE/POST integrais na mesma transação SUCCESS, POST READ ONLY externo PASS, eligibility ACL preservada; nenhum pedido/título criado. Registro `applied/c2_owner_orders_p1_composed.md`. **Não reaplicar os scripts candidatos abaixo nem modificar os snapshots/baselines históricos**. As afirmações antigas de “restante inativo/writer fechado” documentam a revisão anterior; agora SQL foi implantado externamente, sem homologação pós completa e sem novos pedidos autorizados pelo agente.
+
+Frontend publicado ainda f351d6d5 segundo proprietário. Erro real no preview catálogo reproduzido independentemente sem HMR: EntitlementOutlet intermediário renderizava Outlet sem repassar contexto do layout. Correção local encaminha o mesmo contexto após o gate de plano inalterado; sem modificar rotas/permissões/hooks de pedidos ou reabrir ACL. Testes providers/rota em `src/test/catalogo/partnerOutletContext.test.tsx`; sem reload/retry de recarga da sessão real, SQL ou publicação.
+
 ## 23/10 22:54 — implantação eligibility confirmada externamente
 Proprietário confirma Codex `c2_billing_eligibility_internal_only`: somente REVOKE EXECUTE de PUBLIC/anon/authenticated, corpo MD5 `db977875e15ea49ce10fb3e5388d7dfb` intacto, postgres/service_role preservados, PRE/POST PASS. Registro em `applied/billing-eligibility-current-acl.md`; não reaplicar. Candidato v4 mantém guardas internal-only já coordenadas em `preflight.sql`, `candidate.sql.review`, `postflight.sql`, `rollback.sql.review`; nenhum guard exige grant antigo e nenhum desses scripts altera ACL do helper. Nove hashes dos corpos candidatos permanecem iguais à v3, revisão v4 identifica somente a dependência/guardas de contenção e registros coordenados. Writer continua fechado.
 
