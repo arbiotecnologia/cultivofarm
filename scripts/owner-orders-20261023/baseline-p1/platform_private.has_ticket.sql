@@ -7,3 +7,4 @@ AS $function$
   SELECT EXISTS (SELECT 1 FROM platform_private.authz_tickets
                  WHERE txid = txid_current() AND scope = _scope AND target = _target);
 $function$
+

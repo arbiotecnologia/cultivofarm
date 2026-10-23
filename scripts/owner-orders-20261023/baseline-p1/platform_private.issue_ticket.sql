@@ -7,3 +7,4 @@ AS $function$
   INSERT INTO platform_private.authz_tickets(txid, scope, target)
   VALUES (txid_current(), _scope, _target) ON CONFLICT DO NOTHING;
 $function$
+

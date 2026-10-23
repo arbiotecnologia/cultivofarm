@@ -13,3 +13,4 @@ AS $function$
  (o.partner_account_id=pa.id OR EXISTS(SELECT 1 FROM public.organizations owner
  WHERE owner.id=pa.commercial_owner_organization_id AND owner.id=o.id AND owner.ativo IS TRUE AND owner.status='ativa')));
 $function$
+
