@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 20:10 — P1 prioritário antes do writer
+- [x] Candidata P1 inativa em scripts/owner-orders-20261023/p1-isolation: leitura/listagem e família assignment/sibling por destino, planos globais intactos; prova REAL B relatada, Arquivar NÃO acionado. 50/50 PostgreSQL sintético.
+- [x] Preparar owner ativo/ownorg interno com h15/perfil/roles, CAS servidor, método ativo, PRE/rollback e patch financeiro inativo; 5/5 SDK candidato e19/19 regressões. Sem hosted SQL/dados/publicação.
+- [ ] Gate P1: PRE/POST integral/closure de locks e hashes pós exatos, types/build candidato independente; default sem tenant e Superadmin sem autoridade interna fechados explicitamente. Ver README; não liberar writer.
+- [ ] Homologação REAL A/B e revisão independente dos dois recortes antes de liberar writer; pendências antigas mantidas.
+
 ## 23/10 19:55 — revisão pós-914d06c
 - [x] Complemento20:03 frontend local: seletor tenant/roles sem pedido, mesmo diálogo/métodos ativos, legado inválido explícito, rascunho sem reset/CAS concorrente e publicação com cancel/releitura; diff/hashes junto revisão fiscal. 44/44, TypeScript e build isolado PASS. Sem dados/SQL/publicação.
 - [ ] Homologação real do formulário bloqueada: policy restritiva exige Superadmin ou org própria; teste4 has_partner_org=false. Não ampliar RLS nesta correção frontend; revisão de autoridade owner específica ainda necessária para admin tenant configurar teste4. Usuário financeiro/gestor sem SELECT partner_accounts também fica contido.

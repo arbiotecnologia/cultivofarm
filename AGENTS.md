@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- C2-ORD P1 candidates follow their review directory rules; assignment scopes and settings CAS remain inactive until independent pre/postflight and real A/B checks — prevents premature writer release.
 - Partner finance settings reuse the existing dialog/table: tenant-filtered active targets, canonical active methods and full-baseline conditional writes with no upsert; scoped publication cancels stale reads before refetch — prevents silent defaults, lost drafts and concurrent overwrites without widening RLS.
 - Owner catalogue filters live below AuthProvider above Routes, scoped by actor/tenant/partner/portal; guard/epoch remounts preserve no rows or authority — prevents filter resets without extending access.
 - Partner own-finance reviews follow their directory AGENTS.md; obligation projections never expose supplier-internal balances or enable documents/writes — preserves financial scope.

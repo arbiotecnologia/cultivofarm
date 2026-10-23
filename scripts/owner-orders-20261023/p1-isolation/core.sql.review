@@ -1,0 +1,318 @@
+CREATE OR REPLACE FUNCTION platform_private.c2p1_internal_actor(p_roles public.app_role[])
+RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT public.h15_actor_organization() WHERE auth.uid() IS NOT NULL
+ AND EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id
+ WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND o.ativo IS TRUE AND o.status='ativa'
+ AND platform_private.platform_actor_access_ready(p.user_id))
+ AND EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid() AND role=ANY(p_roles))
+ AND NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid()
+ AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor'));
+$$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_assignment_allowed(p_scope text,p_partner uuid,p_customer uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT COALESCE(CASE
+ WHEN p_scope='partner' AND p_partner IS NOT NULL AND p_customer IS NULL THEN EXISTS(
+ SELECT 1 FROM public.partner_accounts pa JOIN public.organizations owner ON owner.id=pa.commercial_owner_organization_id
+ WHERE pa.id=p_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL AND owner.ativo IS TRUE AND owner.status='ativa'
+ AND owner.id=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]))
+ WHEN p_scope='producer' AND p_partner IS NULL AND p_customer IS NOT NULL THEN EXISTS(
+ SELECT 1 FROM public.clientes c JOIN public.organizations o ON o.id=c.organization_id
+ WHERE c.id=p_customer AND c.status_cliente='ativo' AND o.ativo IS TRUE AND o.status='ativa'
+ AND o.id=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]))
+ ELSE false END,false);
+$$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_settings_allowed(p_partner uuid,p_write boolean DEFAULT false)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT EXISTS(SELECT 1 FROM public.partner_accounts pa JOIN public.organizations o
+ ON o.id=platform_private.c2p1_internal_actor(CASE WHEN p_write THEN
+ ARRAY['administrador','financeiro','gestor','gestor_comercial']::public.app_role[] ELSE
+ ARRAY['administrador','financeiro','gestor','gestor_comercial','administrativo']::public.app_role[] END)
+ WHERE pa.id=p_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+ AND o.ativo IS TRUE AND o.status='ativa' AND
+ (o.partner_account_id=pa.id OR EXISTS(SELECT 1 FROM public.organizations owner
+ WHERE owner.id=pa.commercial_owner_organization_id AND owner.id=o.id AND owner.ativo IS TRUE AND owner.status='ativa')));
+$$;
+
+
+CREATE OR REPLACE FUNCTION platform_private.c2p1_assignment_fence()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF TG_OP='DELETE' THEN RAISE EXCEPTION 'C2P1_ASSIGNMENT_DELETE_CLOSED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=auth.uid() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.user_roles WHERE user_id=auth.uid() ORDER BY role FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.organizations WHERE id IN (public.h15_actor_organization(),
+ (SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id=NEW.partner_id),
+ (SELECT organization_id FROM public.clientes WHERE id=NEW.customer_id)) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.partner_accounts WHERE id IN (NEW.partner_id,CASE WHEN TG_OP='UPDATE' THEN OLD.partner_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.clientes WHERE id IN (NEW.customer_id,CASE WHEN TG_OP='UPDATE' THEN OLD.customer_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ IF TG_OP='UPDATE' AND NOT platform_private.c2p1_assignment_allowed(OLD.buyer_scope,OLD.partner_id,OLD.customer_id)
+ THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF NOT platform_private.c2p1_assignment_allowed(NEW.buyer_scope,NEW.partner_id,NEW.customer_id)
+ THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER c2p1_assignment_fence BEFORE INSERT OR UPDATE OR DELETE
+ON public.commercial_payment_plan_assignments FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_assignment_fence();
+ALTER POLICY cppa_admin_read ON public.commercial_payment_plan_assignments
+USING (platform_private.c2p1_assignment_allowed(buyer_scope,partner_id,customer_id));
+REVOKE INSERT,UPDATE,DELETE ON public.commercial_payment_plan_assignments FROM anon,authenticated;
+
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_list_assignments(p_status text DEFAULT NULL::text)
+ RETURNS SETOF commercial_payment_plan_assignments
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  RETURN QUERY SELECT * FROM public.commercial_payment_plan_assignments a
+    WHERE platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id) AND (p_status IS NULL OR a.status = p_status)
+    ORDER BY a.created_at DESC;
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_upsert_assignment(p_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_valid_from date, p_valid_until date, p_motivo text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_id uuid; v_before jsonb;
+BEGIN
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  IF NOT platform_private.c2p1_assignment_allowed(p_buyer_scope,p_partner_id,p_customer_id) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF p_id IS NULL THEN
+    INSERT INTO public.commercial_payment_plan_assignments
+      (plan_id,buyer_scope,partner_id,customer_id,valid_from,valid_until,motivo,created_by,updated_by)
+    VALUES (p_plan_id,p_buyer_scope,p_partner_id,p_customer_id,
+            COALESCE(p_valid_from,CURRENT_DATE),p_valid_until,p_motivo,auth.uid(),auth.uid())
+    RETURNING id INTO v_id;
+    PERFORM public.fn_cc_audit('assignment',v_id,'create',NULL,
+      to_jsonb((SELECT a FROM public.commercial_payment_plan_assignments a WHERE a.id=v_id)),p_motivo);
+  ELSE
+    SELECT to_jsonb(a) INTO v_before FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id) FOR UPDATE;
+    IF v_before IS NULL THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+    IF (v_before->>'status') <> 'draft' THEN RAISE EXCEPTION 'assignment_not_editable'; END IF;
+    UPDATE public.commercial_payment_plan_assignments
+       SET plan_id=p_plan_id, buyer_scope=p_buyer_scope, partner_id=p_partner_id, customer_id=p_customer_id,
+           valid_from=COALESCE(p_valid_from,valid_from), valid_until=p_valid_until,
+           motivo=p_motivo, updated_by=auth.uid()
+     WHERE id=p_id RETURNING id INTO v_id;
+    PERFORM public.fn_cc_audit('assignment',v_id,'update',v_before,
+      to_jsonb((SELECT a FROM public.commercial_payment_plan_assignments a WHERE a.id=v_id)),p_motivo);
+  END IF;
+  RETURN v_id;
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_submit_assignment(p_id uuid, p_motivo text DEFAULT NULL::text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  PERFORM 1 FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id) FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  UPDATE public.commercial_payment_plan_assignments
+     SET status='pending_approval', submitted_by=auth.uid(), submitted_at=now(), updated_by=auth.uid()
+   WHERE id=p_id AND status='draft';
+  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_transition'; END IF;
+  PERFORM public.fn_cc_audit('assignment',p_id,'submit',NULL,NULL,p_motivo);
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_publish_assignment(p_id uuid, p_motivo text DEFAULT NULL::text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  PERFORM 1 FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id) FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_publish(auth.uid()) THEN RAISE EXCEPTION 'not_authorized_publish'; END IF;
+  UPDATE public.commercial_payment_plan_assignments
+     SET status='published', published_by=auth.uid(), published_at=now(), updated_by=auth.uid()
+   WHERE id=p_id AND status IN ('draft','pending_approval');
+  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_transition'; END IF;
+  PERFORM public.fn_cc_audit('assignment',p_id,'publish',NULL,NULL,p_motivo);
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_archive_assignment(p_id uuid, p_motivo text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  PERFORM 1 FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id) FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_publish(auth.uid()) THEN RAISE EXCEPTION 'not_authorized_publish'; END IF;
+  IF p_motivo IS NULL OR length(btrim(p_motivo)) = 0 THEN RAISE EXCEPTION 'motivo_required'; END IF;
+  UPDATE public.commercial_payment_plan_assignments
+     SET status='archived', archived_by=auth.uid(), archived_at=now(), updated_by=auth.uid()
+   WHERE id=p_id AND status <> 'archived';
+  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_transition'; END IF;
+  PERFORM public.fn_cc_audit('assignment',p_id,'archive',NULL,NULL,p_motivo);
+END $function$
+;
+
+ALTER POLICY b2b_financial_settings_tenant_guard ON public.partner_financial_settings
+USING (platform_private.c2p1_settings_allowed(partner_id,false))
+WITH CHECK (platform_private.c2p1_settings_allowed(partner_id,true));
+REVOKE INSERT,UPDATE,DELETE ON public.partner_financial_settings FROM anon,authenticated;
+ALTER TABLE public.partner_financial_settings DROP CONSTRAINT partner_financial_settings_default_payment_method_check;
+ALTER TABLE public.partner_financial_settings ALTER COLUMN default_payment_method DROP DEFAULT;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_settings_fence()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF TG_OP='DELETE' OR NOT platform_private.c2p1_settings_allowed(NEW.partner_id,true)
+ OR NOT platform_private.has_ticket('c2p1_settings_write',NEW.partner_id) THEN
+ RAISE EXCEPTION 'C2P1_SETTINGS_WRITE_CLOSED' USING ERRCODE='42501'; END IF;
+ IF TG_OP='UPDATE' AND (NEW.id IS DISTINCT FROM OLD.id OR NEW.partner_id IS DISTINCT FROM OLD.partner_id
+ OR NEW.created_at IS DISTINCT FROM OLD.created_at) THEN
+ RAISE EXCEPTION 'C2P1_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF (SELECT count(*) FROM public.payment_methods WHERE active IS TRUE AND name=NEW.default_payment_method)<>1
+ THEN RAISE EXCEPTION 'C2P1_PAYMENT_METHOD_INVALID' USING ERRCODE='22023'; END IF;
+ IF NEW.credit_limit::text IN ('NaN','Infinity','-Infinity') OR NEW.credit_limit<0
+ OR NEW.credit_alert_threshold_1::text IN ('NaN','Infinity','-Infinity')
+ OR NEW.credit_alert_threshold_2::text IN ('NaN','Infinity','-Infinity')
+ OR NEW.credit_alert_threshold_1 NOT BETWEEN 0 AND 100 OR NEW.credit_alert_threshold_2 NOT BETWEEN 0 AND 100
+ OR NEW.credit_alert_threshold_1>NEW.credit_alert_threshold_2
+ THEN RAISE EXCEPTION 'C2P1_FINANCIAL_VALUES_INVALID' USING ERRCODE='22023'; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER c2p1_settings_fence BEFORE INSERT OR UPDATE OR DELETE ON public.partner_financial_settings
+FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_settings_fence();
+CREATE OR REPLACE FUNCTION public.tg_pfs_updated_at() RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $$
+BEGIN NEW.updated_at=GREATEST(clock_timestamp(),OLD.updated_at+interval '1 microsecond'); RETURN NEW; END $$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_update_settings(p_partner_id uuid,p_expected jsonb,p_values jsonb)
+RETURNS public.partner_financial_settings LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE oldrow public.partner_financial_settings; newrow public.partner_financial_settings; result public.partner_financial_settings; k text;
+BEGIN
+ IF NOT platform_private.c2p1_settings_allowed(p_partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ -- Serialize absence and updates by canonical partner; lock actor/roles/organizations against revocation.
+ PERFORM 1 FROM public.profiles WHERE user_id=auth.uid() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.user_roles WHERE user_id=auth.uid() ORDER BY role FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.organizations WHERE id=public.h15_actor_organization() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.partner_accounts WHERE id=p_partner_id FOR UPDATE;
+ IF NOT platform_private.c2p1_settings_allowed(p_partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF p_values IS NULL OR jsonb_typeof(p_values)<>'object' THEN RAISE EXCEPTION 'C2P1_INVALID_PAYLOAD' USING ERRCODE='22023'; END IF;
+ FOR k IN SELECT jsonb_object_keys(p_values) LOOP
+ IF k NOT IN ('billing_trigger','payment_terms_days','default_payment_method','credit_limit','block_if_overdue','auto_generate_receivable','active','credit_limit_action','overdue_tolerance_days','credit_alert_threshold_1','credit_alert_threshold_2')
+ THEN RAISE EXCEPTION 'C2P1_INVALID_PAYLOAD' USING ERRCODE='22023'; END IF;
+ END LOOP;
+ IF (SELECT count(*) FROM jsonb_object_keys(p_values))<>11 THEN RAISE EXCEPTION 'C2P1_INVALID_PAYLOAD' USING ERRCODE='22023'; END IF;
+ SELECT * INTO oldrow FROM public.partner_financial_settings WHERE partner_id=p_partner_id FOR UPDATE;
+ IF FOUND THEN
+ IF p_expected IS NULL OR p_expected<>to_jsonb(oldrow) THEN RAISE EXCEPTION 'settings_conflict' USING ERRCODE='40001'; END IF;
+ ELSE
+ IF p_expected IS NOT NULL THEN RAISE EXCEPTION 'settings_conflict' USING ERRCODE='40001'; END IF;
+ END IF;
+ newrow=jsonb_populate_record(NULL::public.partner_financial_settings,p_values);
+ -- Exact canonical name; method row lock prevents concurrent deactivation through commit.
+ PERFORM 1 FROM public.payment_methods WHERE name=newrow.default_payment_method AND active IS TRUE FOR SHARE;
+ IF (SELECT count(*) FROM public.payment_methods WHERE name=newrow.default_payment_method AND active IS TRUE)<>1
+ THEN RAISE EXCEPTION 'C2P1_PAYMENT_METHOD_INVALID' USING ERRCODE='22023'; END IF;
+ PERFORM platform_private.issue_ticket('c2p1_settings_write',p_partner_id);
+ IF oldrow.id IS NULL THEN
+ INSERT INTO public.partner_financial_settings(partner_id,billing_trigger,payment_terms_days,default_payment_method,credit_limit,block_if_overdue,auto_generate_receivable,active,credit_limit_action,overdue_tolerance_days,credit_alert_threshold_1,credit_alert_threshold_2)
+ VALUES(p_partner_id,newrow.billing_trigger,newrow.payment_terms_days,newrow.default_payment_method,newrow.credit_limit,newrow.block_if_overdue,newrow.auto_generate_receivable,newrow.active,newrow.credit_limit_action,newrow.overdue_tolerance_days,newrow.credit_alert_threshold_1,newrow.credit_alert_threshold_2) RETURNING * INTO result;
+ ELSE
+ UPDATE public.partner_financial_settings SET billing_trigger=newrow.billing_trigger,payment_terms_days=newrow.payment_terms_days,default_payment_method=newrow.default_payment_method,credit_limit=newrow.credit_limit,block_if_overdue=newrow.block_if_overdue,auto_generate_receivable=newrow.auto_generate_receivable,active=newrow.active,credit_limit_action=newrow.credit_limit_action,overdue_tolerance_days=newrow.overdue_tolerance_days,credit_alert_threshold_1=newrow.credit_alert_threshold_1,credit_alert_threshold_2=newrow.credit_alert_threshold_2 WHERE id=oldrow.id RETURNING * INTO result;
+ END IF;
+ DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='c2p1_settings_write' AND target=p_partner_id;
+ RETURN result;
+END $$;
+CREATE OR REPLACE FUNCTION public.rpc_update_partner_financial_settings(p_partner_id uuid,p_expected jsonb,p_values jsonb)
+RETURNS public.partner_financial_settings LANGUAGE sql SECURITY INVOKER SET search_path='' AS $$
+ SELECT platform_private.c2p1_update_settings(p_partner_id,p_expected,p_values);
+$$;
+
+
+ALTER FUNCTION platform_private.c2p1_internal_actor(public.app_role[]) OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_internal_actor(public.app_role[]) FROM PUBLIC,anon,authenticated,service_role;
+
+GRANT EXECUTE ON FUNCTION platform_private.c2p1_internal_actor(public.app_role[]) TO authenticated;
+
+ALTER FUNCTION platform_private.c2p1_assignment_allowed(text,uuid,uuid) OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_assignment_allowed(text,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+
+GRANT EXECUTE ON FUNCTION platform_private.c2p1_assignment_allowed(text,uuid,uuid) TO authenticated;
+
+ALTER FUNCTION platform_private.c2p1_settings_allowed(uuid,boolean) OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_settings_allowed(uuid,boolean) FROM PUBLIC,anon,authenticated,service_role;
+
+GRANT EXECUTE ON FUNCTION platform_private.c2p1_settings_allowed(uuid,boolean) TO authenticated;
+
+ALTER FUNCTION platform_private.c2p1_assignment_fence() OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_assignment_fence() FROM PUBLIC,anon,authenticated,service_role;
+
+ALTER FUNCTION platform_private.c2p1_settings_fence() OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_settings_fence() FROM PUBLIC,anon,authenticated,service_role;
+
+ALTER FUNCTION platform_private.c2p1_update_settings(uuid,jsonb,jsonb) OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_update_settings(uuid,jsonb,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+
+GRANT EXECUTE ON FUNCTION platform_private.c2p1_update_settings(uuid,jsonb,jsonb) TO authenticated;
+
+REVOKE ALL ON FUNCTION public.rpc_update_partner_financial_settings(uuid,jsonb,jsonb) FROM PUBLIC,anon,service_role; GRANT EXECUTE ON FUNCTION public.rpc_update_partner_financial_settings(uuid,jsonb,jsonb) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_publish_item_prices(p_ids uuid[], p_motivo text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE r record; v_rule uuid; v_count int := 0;
+BEGIN
+  IF NOT public.fn_cc_can_publish(auth.uid()) THEN RAISE EXCEPTION 'not_authorized_publish'; END IF;
+  IF p_ids IS NULL OR array_length(p_ids,1) IS NULL THEN RAISE EXCEPTION 'no_items'; END IF;
+
+  FOR r IN SELECT * FROM public.commercial_condition_item_prices
+            WHERE id = ANY(p_ids) AND status IN ('draft','pending_approval') FOR UPDATE
+  LOOP
+    IF NOT platform_private.c2p1_assignment_allowed(r.buyer_scope,r.partner_id,r.customer_id) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+    IF r.buyer_scope = 'default' THEN RAISE EXCEPTION 'default_scope_not_publishable'; END IF;
+    IF NOT EXISTS (SELECT 1 FROM public.commercial_payment_plan_assignments a
+                    WHERE a.status='published' AND a.plan_id=r.plan_id
+                      AND a.buyer_scope=r.buyer_scope
+                      AND a.partner_id IS NOT DISTINCT FROM r.partner_id
+                      AND a.customer_id IS NOT DISTINCT FROM r.customer_id) THEN
+      RAISE EXCEPTION 'assignment_not_published';
+    END IF;
+
+    UPDATE public.commercial_price_rules
+       SET active=false, updated_by=auth.uid(), updated_at=now()
+     WHERE active
+       AND plan_id = r.plan_id AND buyer_scope = r.buyer_scope
+       AND partner_id IS NOT DISTINCT FROM r.partner_id
+       AND customer_id IS NOT DISTINCT FROM r.customer_id
+       AND product_id IS NOT DISTINCT FROM r.product_id
+       AND microrganismo_id IS NOT DISTINCT FROM r.microrganismo_id
+       AND unit_type = r.unit_type
+       AND volume_ml IS NOT DISTINCT FROM r.volume_ml;
+
+    INSERT INTO public.commercial_price_rules
+      (buyer_scope,partner_id,customer_id,plan_id,product_id,microrganismo_id,unit_type,volume_ml,
+       pricing_mode,condition_price,discount_percent,min_quantity,currency,valid_from,valid_until,active,motivo,
+       created_by,updated_by)
+    VALUES (r.buyer_scope,r.partner_id,r.customer_id,r.plan_id,r.product_id,r.microrganismo_id,
+       r.unit_type,r.volume_ml,r.pricing_mode,
+       CASE WHEN r.pricing_mode='fixed_item_price' THEN r.condition_price ELSE NULL END,
+       CASE WHEN r.pricing_mode='discount_from_base' THEN r.discount_percent ELSE NULL END,
+       COALESCE(r.min_quantity,0),
+       COALESCE(r.currency,'BRL'),r.valid_from,r.valid_until,true,
+       COALESCE(p_motivo, r.motivo), auth.uid(), auth.uid())
+    RETURNING id INTO v_rule;
+
+    UPDATE public.commercial_condition_item_prices
+       SET status='published', published_by=auth.uid(), published_at=now(),
+           published_rule_id=v_rule, updated_by=auth.uid()
+     WHERE id = r.id;
+
+    PERFORM public.fn_cc_audit('item_price', r.id, 'publish', to_jsonb(r),
+      jsonb_build_object('price_rule_id', v_rule), p_motivo);
+    v_count := v_count + 1;
+  END LOOP;
+
+  RETURN jsonb_build_object('published', v_count);
+END $function$;

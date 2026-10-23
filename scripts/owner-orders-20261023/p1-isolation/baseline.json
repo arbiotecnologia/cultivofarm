@@ -1,0 +1,568 @@
+{
+  "tables": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "force": false,
+      "table": "commercial_payment_plan_assignments"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "force": false,
+      "table": "partner_financial_settings"
+    }
+  ],
+  "columns": [
+    {
+      "data_type": "uuid",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "id",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "plan_id",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "data_type": "text",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "buyer_scope",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "partner_id",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "customer_id",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "text",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "status",
+      "is_nullable": "NO",
+      "column_default": "'draft'::text"
+    },
+    {
+      "data_type": "date",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "valid_from",
+      "is_nullable": "NO",
+      "column_default": "CURRENT_DATE"
+    },
+    {
+      "data_type": "date",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "valid_until",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "text",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "motivo",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "submitted_by",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "submitted_at",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "published_by",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "published_at",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "archived_by",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "archived_at",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "created_by",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "updated_by",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "created_at",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "commercial_payment_plan_assignments",
+      "column_name": "updated_at",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "partner_financial_settings",
+      "column_name": "id",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "partner_financial_settings",
+      "column_name": "partner_id",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "data_type": "text",
+      "table_name": "partner_financial_settings",
+      "column_name": "billing_trigger",
+      "is_nullable": "NO",
+      "column_default": "'na_entrega'::text"
+    },
+    {
+      "data_type": "integer",
+      "table_name": "partner_financial_settings",
+      "column_name": "payment_terms_days",
+      "is_nullable": "NO",
+      "column_default": "7"
+    },
+    {
+      "data_type": "text",
+      "table_name": "partner_financial_settings",
+      "column_name": "default_payment_method",
+      "is_nullable": "YES",
+      "column_default": "'pix'::text"
+    },
+    {
+      "data_type": "numeric",
+      "table_name": "partner_financial_settings",
+      "column_name": "credit_limit",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "boolean",
+      "table_name": "partner_financial_settings",
+      "column_name": "block_if_overdue",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "data_type": "boolean",
+      "table_name": "partner_financial_settings",
+      "column_name": "auto_generate_receivable",
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "data_type": "boolean",
+      "table_name": "partner_financial_settings",
+      "column_name": "active",
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "partner_financial_settings",
+      "column_name": "created_at",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "partner_financial_settings",
+      "column_name": "updated_at",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "data_type": "text",
+      "table_name": "partner_financial_settings",
+      "column_name": "credit_limit_action",
+      "is_nullable": "NO",
+      "column_default": "'block'::text"
+    },
+    {
+      "data_type": "integer",
+      "table_name": "partner_financial_settings",
+      "column_name": "overdue_tolerance_days",
+      "is_nullable": "NO",
+      "column_default": "0"
+    },
+    {
+      "data_type": "integer",
+      "table_name": "partner_financial_settings",
+      "column_name": "credit_alert_threshold_1",
+      "is_nullable": "NO",
+      "column_default": "80"
+    },
+    {
+      "data_type": "integer",
+      "table_name": "partner_financial_settings",
+      "column_name": "credit_alert_threshold_2",
+      "is_nullable": "NO",
+      "column_default": "90"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "payment_methods",
+      "column_name": "id",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "data_type": "text",
+      "table_name": "payment_methods",
+      "column_name": "name",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "data_type": "boolean",
+      "table_name": "payment_methods",
+      "column_name": "active",
+      "is_nullable": "NO",
+      "column_default": "true"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "payment_methods",
+      "column_name": "created_at",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "commercial_payment_plan_assignments",
+      "permissive": "PERMISSIVE",
+      "policyname": "cppa_admin_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(( SELECT is_platform_superadmin(auth.uid()) AS is_platform_superadmin) OR ((NOT ( SELECT platform_private.has_role(auth.uid(), 'parceiro_b2b_tecnico'::app_role) AS has_role)) AND (EXISTS ( SELECT 1\n   FROM ((profiles p\n     JOIN organizations o ON ((o.id = p.organization_id)))\n     JOIN partner_accounts pa ON ((pa.id = o.partner_account_id)))\n  WHERE ((p.user_id = ( SELECT auth.uid() AS uid)) AND (p.ativo = true) AND (o.ativo = true) AND (o.status = 'ativa'::text) AND (pa.id = partner_financial_settings.partner_id) AND (pa.ativo = true) AND (pa.deleted_at IS NULL))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "partner_financial_settings",
+      "permissive": "RESTRICTIVE",
+      "policyname": "b2b_financial_settings_tenant_guard",
+      "schemaname": "public",
+      "with_check": "(( SELECT is_platform_superadmin(auth.uid()) AS is_platform_superadmin) OR ((NOT ( SELECT platform_private.has_role(auth.uid(), 'parceiro_b2b_tecnico'::app_role) AS has_role)) AND (EXISTS ( SELECT 1\n   FROM ((profiles p\n     JOIN organizations o ON ((o.id = p.organization_id)))\n     JOIN partner_accounts pa ON ((pa.id = o.partner_account_id)))\n  WHERE ((p.user_id = ( SELECT auth.uid() AS uid)) AND (p.ativo = true) AND (o.ativo = true) AND (o.status = 'ativa'::text) AND (pa.id = partner_financial_settings.partner_id) AND (pa.ativo = true) AND (pa.deleted_at IS NULL))))))"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "partner_financial_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "pfs_admin_fin_insert",
+      "schemaname": "public",
+      "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "partner_financial_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "pfs_admin_fin_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "partner_financial_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "pfs_admin_fin_update",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "partner_financial_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "pfs_b2b_readers",
+      "schemaname": "public",
+      "with_check": null
+    }
+  ],
+  "triggers": [
+    {
+      "table": "commercial_payment_plan_assignments",
+      "definition": "CREATE TRIGGER trg_cppa_touch BEFORE UPDATE ON public.commercial_payment_plan_assignments FOR EACH ROW EXECUTE FUNCTION tg_commercial_conditions_touch()"
+    },
+    {
+      "table": "partner_financial_settings",
+      "definition": "CREATE TRIGGER trg_pfs_governance_audit AFTER INSERT OR DELETE OR UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION tg_governance_audit()"
+    },
+    {
+      "table": "partner_financial_settings",
+      "definition": "CREATE TRIGGER trg_pfs_updated_at BEFORE UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION tg_pfs_updated_at()"
+    }
+  ],
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "434063ba6290a00f57291d4ef0f4d41e",
+      "owner": "postgres",
+      "signature": "public.tg_governance_audit()",
+      "definition": "CREATE OR REPLACE FUNCTION public.tg_governance_audit()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE v_partner uuid;\nBEGIN\n  v_partner := CASE WHEN TG_TABLE_NAME='partner_financial_settings' THEN COALESCE(NEW.partner_id, OLD.partner_id) ELSE NULL END;\n  INSERT INTO financial_governance_audit_log(usuario_id, partner_id, acao, dados_anteriores, dados_novos)\n  VALUES (auth.uid(), v_partner,\n    TG_TABLE_NAME || '_' || lower(TG_OP),\n    CASE WHEN TG_OP IN ('UPDATE','DELETE') THEN to_jsonb(OLD) END,\n    CASE WHEN TG_OP IN ('INSERT','UPDATE') THEN to_jsonb(NEW) END);\n  RETURN COALESCE(NEW, OLD);\nEND;$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "4d90e93d521a4819d9085f28d742030f",
+      "owner": "postgres",
+      "signature": "public.has_role(uuid, app_role)",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role app_role)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.has_role(_user_id,_role); $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "owner": "postgres",
+      "signature": "public.h15_actor_organization()",
+      "definition": "CREATE OR REPLACE FUNCTION public.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.h15_actor_organization(); $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "4d2bad7cc6d3514d78bf326ffd421685",
+      "owner": "postgres",
+      "signature": "public.rpc_cc_archive_assignment(uuid, text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.rpc_cc_archive_assignment(p_id uuid, p_motivo text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT public.fn_cc_can_publish(auth.uid()) THEN RAISE EXCEPTION 'not_authorized_publish'; END IF;\n  IF p_motivo IS NULL OR length(btrim(p_motivo)) = 0 THEN RAISE EXCEPTION 'motivo_required'; END IF;\n  UPDATE public.commercial_payment_plan_assignments\n     SET status='archived', archived_by=auth.uid(), archived_at=now(), updated_by=auth.uid()\n   WHERE id=p_id AND status <> 'archived';\n  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_transition'; END IF;\n  PERFORM public.fn_cc_audit('assignment',p_id,'archive',NULL,NULL,p_motivo);\nEND $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "bab0263b346fd60cf5d48edb77c480a7",
+      "owner": "postgres",
+      "signature": "public.rpc_cc_list_assignments(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.rpc_cc_list_assignments(p_status text DEFAULT NULL::text)\n RETURNS SETOF commercial_payment_plan_assignments\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;\n  RETURN QUERY SELECT * FROM public.commercial_payment_plan_assignments a\n    WHERE (p_status IS NULL OR a.status = p_status)\n    ORDER BY a.created_at DESC;\nEND $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "cbac9f242ee58d13033fe71e87fe4ef7",
+      "owner": "postgres",
+      "signature": "public.rpc_cc_publish_assignment(uuid, text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.rpc_cc_publish_assignment(p_id uuid, p_motivo text DEFAULT NULL::text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT public.fn_cc_can_publish(auth.uid()) THEN RAISE EXCEPTION 'not_authorized_publish'; END IF;\n  UPDATE public.commercial_payment_plan_assignments\n     SET status='published', published_by=auth.uid(), published_at=now(), updated_by=auth.uid()\n   WHERE id=p_id AND status IN ('draft','pending_approval');\n  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_transition'; END IF;\n  PERFORM public.fn_cc_audit('assignment',p_id,'publish',NULL,NULL,p_motivo);\nEND $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "23962321235641af83417f8bd9b7f6c1",
+      "owner": "postgres",
+      "signature": "public.rpc_cc_submit_assignment(uuid, text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.rpc_cc_submit_assignment(p_id uuid, p_motivo text DEFAULT NULL::text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;\n  UPDATE public.commercial_payment_plan_assignments\n     SET status='pending_approval', submitted_by=auth.uid(), submitted_at=now(), updated_by=auth.uid()\n   WHERE id=p_id AND status='draft';\n  IF NOT FOUND THEN RAISE EXCEPTION 'invalid_transition'; END IF;\n  PERFORM public.fn_cc_audit('assignment',p_id,'submit',NULL,NULL,p_motivo);\nEND $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "41c071d93b67929ace9f4fb126a9b0f1",
+      "owner": "postgres",
+      "signature": "public.rpc_cc_upsert_assignment(uuid, uuid, text, uuid, uuid, date, date, text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.rpc_cc_upsert_assignment(p_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_valid_from date, p_valid_until date, p_motivo text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE v_id uuid; v_before jsonb;\nBEGIN\n  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;\n  IF p_id IS NULL THEN\n    INSERT INTO public.commercial_payment_plan_assignments\n      (plan_id,buyer_scope,partner_id,customer_id,valid_from,valid_until,motivo,created_by,updated_by)\n    VALUES (p_plan_id,p_buyer_scope,p_partner_id,p_customer_id,\n            COALESCE(p_valid_from,CURRENT_DATE),p_valid_until,p_motivo,auth.uid(),auth.uid())\n    RETURNING id INTO v_id;\n    PERFORM public.fn_cc_audit('assignment',v_id,'create',NULL,\n      to_jsonb((SELECT a FROM public.commercial_payment_plan_assignments a WHERE a.id=v_id)),p_motivo);\n  ELSE\n    SELECT to_jsonb(a) INTO v_before FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id;\n    IF v_before IS NULL THEN RAISE EXCEPTION 'assignment_not_found'; END IF;\n    IF (v_before->>'status') <> 'draft' THEN RAISE EXCEPTION 'assignment_not_editable'; END IF;\n    UPDATE public.commercial_payment_plan_assignments\n       SET plan_id=p_plan_id, buyer_scope=p_buyer_scope, partner_id=p_partner_id, customer_id=p_customer_id,\n           valid_from=COALESCE(p_valid_from,valid_from), valid_until=p_valid_until,\n           motivo=p_motivo, updated_by=auth.uid()\n     WHERE id=p_id RETURNING id INTO v_id;\n    PERFORM public.fn_cc_audit('assignment',v_id,'update',v_before,\n      to_jsonb((SELECT a FROM public.commercial_payment_plan_assignments a WHERE a.id=v_id)),p_motivo);\n  END IF;\n  RETURN v_id;\nEND $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "3dfe79d976821244d9b7a7f893d765f2",
+      "owner": "postgres",
+      "signature": "public.is_platform_superadmin(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_platform_superadmin(_user_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM public.user_roles r\n    WHERE r.user_id = _user_id AND r.role = 'superadmin'::public.app_role\n  )\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "ce9f7e08298e28d4c0acfef8bfbc61ef",
+      "owner": "postgres",
+      "signature": "public.fn_cc_audit(text, uuid, text, jsonb, jsonb, text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_cc_audit(p_entity text, p_entity_id uuid, p_action text, p_before jsonb, p_after jsonb, p_motivo text)\n RETURNS void\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  INSERT INTO public.commercial_condition_audit_log(entity, entity_id, action, actor_id, before_data, after_data, motivo)\n  VALUES (p_entity, p_entity_id, p_action, auth.uid(), p_before, p_after, p_motivo);\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "439d9c28f69029b9c71fddbef1054e57",
+      "owner": "postgres",
+      "signature": "public.fn_cc_can_prepare(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_cc_can_prepare(p_uid uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT p_uid IS NOT NULL AND (\n    public.has_role(p_uid,'administrador'::app_role) OR\n    public.has_role(p_uid,'financeiro'::app_role) OR\n    public.has_role(p_uid,'gestor_comercial'::app_role));\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "26414374df904f0b5aa6a936b8309cb9",
+      "owner": "postgres",
+      "signature": "public.fn_cc_can_publish(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_cc_can_publish(p_uid uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT p_uid IS NOT NULL AND (\n    public.has_role(p_uid,'administrador'::app_role) OR\n    public.has_role(p_uid,'financeiro'::app_role));\n$function$\n"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "e573921e5debcc13930a325e1a986c6a",
+      "owner": "postgres",
+      "signature": "public.tg_commercial_conditions_touch()",
+      "definition": "CREATE OR REPLACE FUNCTION public.tg_commercial_conditions_touch()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  NEW.updated_at := now();\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "059b7caf39815957f27ca809edce4c59",
+      "owner": "postgres",
+      "signature": "public.tg_pfs_updated_at()",
+      "definition": "CREATE OR REPLACE FUNCTION public.tg_pfs_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN NEW.updated_at = now(); RETURN NEW; END $function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "048249c0c2106c3761e26eacb8d0de84",
+      "owner": "postgres",
+      "signature": "platform_private.platform_actor_access_ready(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)\n AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));\n$function$\n"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "64e10608403238a41a9baf92857ca881",
+      "owner": "postgres",
+      "signature": "platform_private.h15_actor_organization()",
+      "definition": "CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);\n$function$\n"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "commercial_payment_plan_assignments_customer_id_fkey",
+      "table": "commercial_payment_plan_assignments",
+      "definition": "FOREIGN KEY (customer_id) REFERENCES clientes(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "commercial_payment_plan_assignments_partner_id_fkey",
+      "table": "commercial_payment_plan_assignments",
+      "definition": "FOREIGN KEY (partner_id) REFERENCES partner_accounts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "commercial_payment_plan_assignments_pkey",
+      "table": "commercial_payment_plan_assignments",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "commercial_payment_plan_assignments_plan_id_fkey",
+      "table": "commercial_payment_plan_assignments",
+      "definition": "FOREIGN KEY (plan_id) REFERENCES commercial_payment_plans(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "commercial_payment_plan_assignments_status_check",
+      "table": "commercial_payment_plan_assignments",
+      "definition": "CHECK ((status = ANY (ARRAY['draft'::text, 'pending_approval'::text, 'published'::text, 'archived'::text])))"
+    },
+    {
+      "name": "cppa_buyer_scope_ck",
+      "table": "commercial_payment_plan_assignments",
+      "definition": "CHECK ((buyer_scope = ANY (ARRAY['partner'::text, 'producer'::text, 'default'::text])))"
+    },
+    {
+      "name": "cppa_scope_target_ck",
+      "table": "commercial_payment_plan_assignments",
+      "definition": "CHECK ((((buyer_scope = 'partner'::text) AND (partner_id IS NOT NULL) AND (customer_id IS NULL)) OR ((buyer_scope = 'producer'::text) AND (customer_id IS NOT NULL) AND (partner_id IS NULL)) OR ((buyer_scope = 'default'::text) AND (partner_id IS NULL) AND (customer_id IS NULL))))"
+    },
+    {
+      "name": "cppa_validity_ck",
+      "table": "commercial_payment_plan_assignments",
+      "definition": "CHECK (((valid_until IS NULL) OR (valid_until >= valid_from)))"
+    },
+    {
+      "name": "partner_financial_settings_billing_trigger_check",
+      "table": "partner_financial_settings",
+      "definition": "CHECK ((billing_trigger = ANY (ARRAY['na_aprovacao'::text, 'na_producao_finalizada'::text, 'na_entrega'::text, 'manual'::text])))"
+    },
+    {
+      "name": "partner_financial_settings_default_payment_method_check",
+      "table": "partner_financial_settings",
+      "definition": "CHECK ((default_payment_method = ANY (ARRAY['pix'::text, 'boleto'::text, 'transferencia'::text, 'dinheiro'::text, 'cartao'::text, 'prazo'::text])))"
+    },
+    {
+      "name": "partner_financial_settings_partner_id_fkey",
+      "table": "partner_financial_settings",
+      "definition": "FOREIGN KEY (partner_id) REFERENCES partner_accounts(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "partner_financial_settings_partner_id_key",
+      "table": "partner_financial_settings",
+      "definition": "UNIQUE (partner_id)"
+    },
+    {
+      "name": "partner_financial_settings_payment_terms_days_check",
+      "table": "partner_financial_settings",
+      "definition": "CHECK ((payment_terms_days >= 0))"
+    },
+    {
+      "name": "partner_financial_settings_pkey",
+      "table": "partner_financial_settings",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "pfs_credit_limit_action_check",
+      "table": "partner_financial_settings",
+      "definition": "CHECK ((credit_limit_action = ANY (ARRAY['block'::text, 'approval_required'::text])))"
+    },
+    {
+      "name": "pfs_tolerance_check",
+      "table": "partner_financial_settings",
+      "definition": "CHECK ((overdue_tolerance_days >= 0))"
+    }
+  ]
+}

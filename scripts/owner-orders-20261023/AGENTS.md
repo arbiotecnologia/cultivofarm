@@ -3,3 +3,4 @@
 - Fiscal UUID resolution is service/owner-only; authenticated users use existing authorized callers, and rollback retains this containment — prevents exemption metadata probing.
 - Scope tests load the captured b2b_actor_scope, is_valid_b2b_partner_user and C2 context/readiness bodies, never replacements; synthetic Auth and other reduced dependencies remain explicitly uncertified — prevents false JWT evidence.
 - Financial settings frontend patches preserve current RLS and use full-row CAS/insert-only absence; an inaccessible commercial-owner fixture remains blocked until separately reviewed server authority exists — prevents UI repair from bypassing tenant containment.
+- P1 review candidates reuse assignment RPCs and the settings table with actor-derived target scope and server CAS; global plans never authorize private assignments, and direct settings writes remain closed behind private transaction tickets — prevents cross-tenant publication and lost updates.

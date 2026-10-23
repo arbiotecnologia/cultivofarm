@@ -1,5 +1,8 @@
 # C2-ORD v3 — rebase sobre o recorte instalado 20261023192728 (REVIEW, restante inativo)
 
+## Prioridade20:10 — P1, não liberar writer
+Candidata/preflight/rollback/testes em `p1-isolation/README.md`: atribuições privadas por destino (inclui família RPC e sibling publicação de item), owner/ownorg settings com CAS servidor e método ativo. **50/50 PG sintético + 5/5 Vitest candidato + 19/19 regressões**; sem aplicar/publicar/dados/sessões. PRE/POST integral, tipos/produção candidato e JWT/UI A/B reais permanecem NO-GO. Este pacote supera o blocker owner somente como proposta INATIVA; runtime não promovido.
+
 ## Revisão pós-914d06c — 23/10 19:55 UTC
 ### Complemento 20:03 — formulário financeiro e publicação
 - Patch frontend em `frontend-settings.patch`, baseline byte-exato em `frontend-baseline/`, hashes em `frontend-settings.sha256`. Fonte runtime local corrigida; **não publicada**. Fiscal ACL-only intacto e não aplicado.
