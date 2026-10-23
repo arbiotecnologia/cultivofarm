@@ -37,6 +37,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 } }));
 
 import { AuthProvider } from "@/hooks/useAuth";
+import { clearAuthzDiagnostics, readAuthzDiagnostics } from "@/lib/authz/localDiagnostics";
 import Layout from "@/pages/portal-parceiro/PortalParceiroLayout";
 import NovoPedido from "@/pages/portal-parceiro/NovoPedido";
 import { EntitlementOutlet } from "@/components/guards/EntitlementOutlet";
@@ -114,6 +115,36 @@ it("same confirmed probes retain the real modal DOM and cart without profile rel
   expect(state.table.mock.calls.filter(([name]) => name === "profiles")).toHaveLength(profileReads);
   expect(catalogCalls()).toHaveLength(reads); expect(state.writes).not.toHaveBeenCalled();
   expect(state.rpc.mock.calls.filter(([name]) => name === "get_my_available_portal_contexts").length).toBeLessThanOrEqual(6);
+});
+it("healthy B2B probes can have an empty diagnostics ring; emptiness is not absence of probing", async () => {
+  clearAuthzDiagnostics(); mount(); await tick(1000);
+  const reads = state.rpc.mock.calls.filter(([name]) => name === "get_my_available_portal_contexts").length;
+  await tick(21_000);
+  expect(state.rpc.mock.calls.filter(([name]) => name === "get_my_available_portal_contexts").length).toBeGreaterThan(reads);
+  expect(readAuthzDiagnostics()).toEqual([]);
+});
+it("same-vector context/partner/entitlement refetches preserve the actual modal and cart without cache clearing", async () => {
+  const { client } = mount(); await tick(1000); await addItem(); const modal = await openModal();
+  const before = state.rpc.mock.calls.length;
+  const reread = client.refetchQueries({ predicate: q => ["my-partner", "available-portal-contexts", "saas"].includes(String(q.queryKey[0])) });
+  await tick(1000); await reread;
+  expect(state.rpc.mock.calls.length).toBeGreaterThan(before);
+  expect(screen.getByRole("dialog")).toBe(modal); expect(screen.getByText("Carrinho (1)")).toBeTruthy();
+  expect(state.writes).not.toHaveBeenCalled();
+});
+it("focus/visibility revalidation still hides uncertain authority, even when the eventual vector is unchanged", async () => {
+  mount(); await tick(1000); await addItem(); await openModal();
+  let resolve: ((value: { data: unknown; error: null }) => void) | undefined;
+  state.holdProbe = () => new Promise(r => { resolve = r; });
+  act(() => window.dispatchEvent(new Event("focus"))); await tick(100);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByText("Carrinho (1)")).toBeNull();
+  state.holdProbe = undefined;
+  act(() => resolve?.({ data: { contract: "C2_MULTIPROFILE_V1", actor_id: state.actor, tenant_id: state.tenant, ready: true,
+    available_contexts: ["b2b"], has_b2b_access: true, has_technical_access: false, partner_id: state.partner, profile_stamp: "v1", link_version: 1 }, error: null }));
+  await tick(1000);
+  expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getByText("Carrinho (0)")).toBeTruthy();
+  expect(state.writes).not.toHaveBeenCalled();
 });
 it("BAC2-like missing volume stays blocked while a 1 L item uses the canonical dialog", async () => {
   state.hasVolume = false; mount(); await tick(1000); const dialog = await openModal();
