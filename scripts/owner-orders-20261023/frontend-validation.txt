@@ -1,0 +1,51 @@
+$ vitest run --run src/test/financeiro/partnerSettings.test.tsx src/test/financeiro/partnerSettingsMutation.test.tsx src/test/comercial/assignmentPublication.test.tsx "src/test/financeiro/b2bFinancial.session.test.tsx" src/test/visita/mobileCivilDate.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/visita/mobileCivilDate.test.ts (11 tests) 14ms
+ ✓ src/test/financeiro/partnerSettingsMutation.test.tsx (5 tests) 51ms
+ ✓ src/test/comercial/assignmentPublication.test.tsx (3 tests) 258ms
+ ✓ src/test/financeiro/b2bFinancial.session.test.tsx (14 tests) 753ms
+ ✓ src/test/financeiro/partnerSettings.test.tsx (11 tests) 761ms
+   ✓ configuração financeira canônica — UI sintética, sem escrita hosted > permite abrir o mesmo diálogo antes do primeiro pedido  318ms
+
+ Test Files  5 passed (5)
+      Tests  44 passed (44)
+   Start at  17:08:26
+   Duration  6.39s (transform 839ms, setup 2.02s, collect 4.30s, tests 1.84s, environment 10.74s, prepare 1.25s)
+
+
+TypeScript exit=0
+vite v5.4.19 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 16 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 4769 modules transformed.
+rendering chunks...
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /tmp/c2ord-frontend-review/src/lib/portalBroadcast.ts is dynamically imported by /tmp/c2ord-frontend-review/src/hooks/useAuth.tsx but also statically imported by /tmp/c2ord-frontend-review/src/hooks/useAuth.tsx, /tmp/c2ord-frontend-review/src/hooks/useSwitchPortal.ts, /tmp/c2ord-frontend-review/src/pages/Configuracoes.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /tmp/c2ord-frontend-review/src/lib/offlineDb.ts is dynamically imported by /tmp/c2ord-frontend-review/src/pages/app/MobileCheckin.tsx, /tmp/c2ord-frontend-review/src/pages/app/MobileVisitaWizard.tsx, /tmp/c2ord-frontend-review/src/pages/app/wizard/WizardCampoStep.tsx but also statically imported by /tmp/c2ord-frontend-review/src/components/app/PendingMediaRecovery.tsx, /tmp/c2ord-frontend-review/src/components/visita/CheckinCard.tsx, /tmp/c2ord-frontend-review/src/components/visita/PresencaCheckoutButton.tsx, /tmp/c2ord-frontend-review/src/hooks/useOfflineSync.ts, /tmp/c2ord-frontend-review/src/pages/AuditoriaSync.tsx, /tmp/c2ord-frontend-review/src/pages/app/MobileRegistrarOcorrencia.tsx, /tmp/c2ord-frontend-review/src/pages/app/MobileVisitaWizard.tsx, /tmp/c2ord-frontend-review/src/pages/app/wizard/WizardCampoStep.tsx, /tmp/c2ord-frontend-review/src/pages/app/wizard/WizardCheckinStep.tsx, /tmp/c2ord-frontend-review/src/pages/app/wizard/WizardDiagnosticoStep.tsx, /tmp/c2ord-frontend-review/src/pages/app/wizard/WizardRecomendacaoStep.tsx, dynamic import will not move module into another chunk.
+
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /tmp/c2ord-frontend-review/src/lib/mediaUpload.ts is dynamically imported by /tmp/c2ord-frontend-review/src/pages/VisitaTecnica.tsx but also statically imported by /tmp/c2ord-frontend-review/src/hooks/useMediaUploadQueue.ts, /tmp/c2ord-frontend-review/src/hooks/useOfflineSync.ts, /tmp/c2ord-frontend-review/src/pages/app/wizard/WizardAnexosStep.tsx, dynamic import will not move module into another chunk.
+
+computing gzip size...
+dist/index.html                                1.90 kB │ gzip:     0.66 kB
+dist/assets/index-Bjv2JZhz.css               136.33 kB │ gzip:    22.41 kB
+dist/assets/calendarIcs-D7UIWbsH.js            0.91 kB │ gzip:     0.58 kB
+dist/assets/PainelOperacional-Bm5GNQKu.js     11.49 kB │ gzip:     3.67 kB
+dist/assets/PortalExecutivo-C4ZTq6HV.js       17.10 kB │ gzip:     5.01 kB
+dist/assets/purify.es-dhnUglUx.js             24.29 kB │ gzip:     9.13 kB
+dist/assets/index.es-DzGjzdhl.js             150.83 kB │ gzip:    51.45 kB
+dist/assets/index-C4cqIlC5.js                152.34 kB │ gzip:    49.44 kB
+dist/assets/html2canvas.esm-CBrSDip1.js      201.42 kB │ gzip:    47.70 kB
+dist/assets/App-BdjW4k5U.js                5,905.20 kB │ gzip: 1,561.84 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 40.57s
