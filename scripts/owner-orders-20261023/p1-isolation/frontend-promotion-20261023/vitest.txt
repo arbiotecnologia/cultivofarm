@@ -1,0 +1,15 @@
+$ vitest run src/test/financeiro/partnerSettingsMutation.test.tsx src/test/financeiro/partnerSettings.test.tsx "src/test/financeiro/b2bFinancial.session.test.tsx" src/test/comercial/assignmentPublication.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/comercial/assignmentPublication.test.tsx (3 tests) 274ms
+ ✓ src/test/financeiro/partnerSettingsMutation.test.tsx (20 tests) 518ms
+ ✓ src/test/financeiro/b2bFinancial.session.test.tsx (14 tests) 794ms
+ ✓ src/test/financeiro/partnerSettings.test.tsx (11 tests) 876ms
+   ✓ configuração financeira canônica — UI sintética, sem escrita hosted > permite abrir o mesmo diálogo antes do primeiro pedido  389ms
+
+ Test Files  4 passed (4)
+      Tests  48 passed (48)
+   Start at  18:08:41
+   Duration  6.63s (transform 693ms, setup 1.32s, collect 4.30s, tests 2.46s, environment 8.85s, prepare 1.05s)
+
