@@ -120,9 +120,10 @@ export function ExternalCommonUserEditForm(props: Props) {
   const attempt = useRef<{ payload: string; key: string } | null>(retainedConflict ? null : retained?.attempt ?? null);
   const draftKey = props.draftKey;
   const inFlight = useRef(false);
+  const finished = useRef(false);
   const persist = useRef<() => void>(() => {});
   persist.current = () => {
-    if (!draftKey) return;
+    if (!draftKey || finished.current) return;
     const baseline: RetainedBaseline = {
       scope: snapshot.scope, actorId: snapshot.actorId, organizationId: snapshot.organizationId,
       userId: snapshot.target.user_id, updatedAt: snapshot.target.updated_at,
@@ -193,7 +194,8 @@ export function ExternalCommonUserEditForm(props: Props) {
       });
       inFlight.current = false;
       if (!current()) return;
-      setUnconfirmed(false);
+      // Confirmado: o diálogo dono descarta o rascunho; nada mais é retido.
+      finished.current = true;
       latest.current.onSuccess(); // callback fences again at its owning dialog
     } catch (e) {
       inFlight.current = false;
