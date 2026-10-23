@@ -65,6 +65,23 @@ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN
  AND (i.plan_id IS DISTINCT FROM NEW.plan_id OR i.buyer_scope IS DISTINCT FROM NEW.buyer_scope OR i.partner_id IS DISTINCT FROM NEW.partner_id OR i.customer_id IS DISTINCT FROM NEW.customer_id))
  THEN RAISE EXCEPTION 'C2P1_ASSIGNMENT_LINK_IMMUTABLE' USING ERRCODE='42501'; END IF; RETURN NEW; END $$;
 CREATE TRIGGER c2p1_assignment_children_fence BEFORE UPDATE ON public.commercial_payment_plan_assignments FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_assignment_children_fence();
+CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_fence()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE r public.commercial_price_rules;
+BEGIN
+ IF TG_OP='DELETE' THEN r=OLD; ELSE r=NEW; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=auth.uid() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.user_roles WHERE user_id=auth.uid() ORDER BY role FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.organizations WHERE id=public.h15_actor_organization() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.partner_accounts WHERE id IN(r.partner_id,CASE WHEN TG_OP='UPDATE' THEN OLD.partner_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.clientes WHERE id IN(r.customer_id,CASE WHEN TG_OP='UPDATE' THEN OLD.customer_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ IF NOT platform_private.c2p1_assignment_allowed(r.buyer_scope,r.partner_id,r.customer_id)
+ OR (TG_OP='UPDATE' AND NOT platform_private.c2p1_assignment_allowed(OLD.buyer_scope,OLD.partner_id,OLD.customer_id)) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+CREATE TRIGGER c2p1_rule_fence BEFORE INSERT OR UPDATE OR DELETE ON public.commercial_price_rules FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_rule_fence();
+ALTER FUNCTION platform_private.c2p1_rule_fence() OWNER TO postgres;
+REVOKE ALL ON FUNCTION platform_private.c2p1_rule_fence() FROM PUBLIC,anon,authenticated,service_role;
 ALTER POLICY ccip_admin_read ON public.commercial_condition_item_prices USING(platform_private.c2p1_item_allowed(assignment_id,plan_id,buyer_scope,partner_id,customer_id));
 ALTER POLICY ccal_admin_read ON public.commercial_condition_audit_log USING(platform_private.c2p1_history_allowed(entity,entity_id,before_data,after_data));
 ALTER POLICY cpr_internal_select ON public.commercial_price_rules USING(platform_private.c2p1_assignment_allowed(buyer_scope,partner_id,customer_id));
