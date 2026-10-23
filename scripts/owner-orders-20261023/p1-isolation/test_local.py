@@ -157,7 +157,8 @@ try:
  test('A mixed histórico invisível',actor(A,f"SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500) WHERE action='synthetic_history';"),0)
  test('B mixed histórico invisível',actor(B,f"SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500) WHERE action='synthetic_history';"),0)
  # Delete via canonical RPC preserves scoped before-image audit and no arbitrary row recreation.
- test('A excluir draft próprio permitido',actor(A,f"SELECT rpc_cc_delete_item_price('{ai}','audit');SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500) WHERE action='delete';"),1)
+ test('A excluir draft próprio mantém log sem confiar órfão',actor(A,f"SELECT rpc_cc_delete_item_price('{ai}','audit');SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500) WHERE action='delete';"),0)
+ test('log deleted preservado no banco',f"SELECT count(*) FROM commercial_condition_audit_log WHERE entity_id='{ai}' AND action='delete';",1)
  test('B histórico deletedA fechado',actor(B,f"SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500);"),0)
  run(f"INSERT INTO user_roles VALUES('{A}','parceiro_b2b_tecnico');")
  test('externo cumulativo não lê itens',actor(A,"SELECT count(*) FROM rpc_cc_list_item_prices(NULL,NULL,NULL);"),0)
