@@ -679,9 +679,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (next === "expired") renewalRef.current = null;
         if (next === "pending" || next === "expired") {
+          // Pausa transitória: cancela/limpa consultas (nada obsoleto é servido)
+          // mas NÃO incrementa a época. A época só muda com mudança real de
+          // fingerprint (onEpochChange), identidade ou Retry explícito — assim
+          // uma recuperação com o MESMO fingerprint não remonta consumidores
+          // nem invalida fences/escopos (regressão real pós-C2: timeout de
+          // RTT ~10s resetava a aba/rascunho de /configuracoes).
           void queryClient.cancelQueries();
           queryClient.clear();
-          setAuthzEpoch((e) => e + 1);
         }
         setAuthzState(next);
       },
