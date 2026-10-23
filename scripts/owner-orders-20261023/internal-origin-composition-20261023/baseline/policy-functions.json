@@ -1,0 +1,33 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "881cdf48a5b20df4d93e42ef1edf1bee",
+      "sig": "platform_private.c2_producer_links(p_user uuid, p_org uuid)",
+      "sql": "CREATE OR REPLACE FUNCTION platform_private.c2_producer_links(p_user uuid, p_org uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT platform_private.platform_actor_access_ready(p_user)\n AND EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id\n JOIN public.user_clientes uc ON uc.user_id=p.user_id JOIN public.clientes c ON c.id=uc.cliente_id\n JOIN public.fazendas f ON f.cliente_id=c.id\n WHERE p.user_id=p_user AND p.organization_id=p_org AND p.ativo AND o.ativo AND o.status='ativa'\n AND uc.is_active AND uc.revoked_at IS NULL AND uc.valid_from<=now()\n AND (uc.valid_until IS NULL OR uc.valid_until>=now())\n AND c.organization_id=p_org AND c.status_cliente='ativo' AND f.organization_id=p_org AND f.ativo);\n$function$\n",
+      "owner": "postgres"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "ecada72965cd1042fc1502b37864ab42",
+      "sig": "platform_private.c2p1_assignment_allowed(p_scope text, p_partner uuid, p_customer uuid)",
+      "sql": "CREATE OR REPLACE FUNCTION platform_private.c2p1_assignment_allowed(p_scope text, p_partner uuid, p_customer uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT COALESCE(CASE\n WHEN p_scope='partner' AND p_partner IS NOT NULL AND p_customer IS NULL THEN EXISTS(\n SELECT 1 FROM public.partner_accounts pa JOIN public.organizations owner ON owner.id=pa.commercial_owner_organization_id\n WHERE pa.id=p_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL AND owner.ativo IS TRUE AND owner.status='ativa'\n AND owner.id=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]))\n WHEN p_scope='producer' AND p_partner IS NULL AND p_customer IS NOT NULL THEN EXISTS(\n SELECT 1 FROM public.clientes c JOIN public.organizations o ON o.id=c.organization_id\n WHERE c.id=p_customer AND c.status_cliente='ativo' AND o.ativo IS TRUE AND o.status='ativa'\n AND o.id=platform_private.c2p1_internal_actor(ARRAY['administrador','financeiro','gestor_comercial']::public.app_role[]))\n ELSE false END,false);\n$function$\n",
+      "owner": "postgres"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "97bab97591a9f662bad7b1ccf837bfcd",
+      "sig": "platform_private.c2p1_internal_actor(p_roles app_role[])",
+      "sql": "CREATE OR REPLACE FUNCTION platform_private.c2p1_internal_actor(p_roles app_role[])\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT public.h15_actor_organization() WHERE auth.uid() IS NOT NULL\n AND EXISTS(SELECT 1 FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id\n WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND o.ativo IS TRUE AND o.status='ativa'\n AND platform_private.platform_actor_access_ready(p.user_id))\n AND EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid() AND role=ANY(p_roles))\n AND NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid()\n AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor'));\n$function$\n",
+      "owner": "postgres"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "0e303620d70fa5d9d8b5c6702ee8526f",
+      "sig": "platform_private.c2p1_item_allowed(p_assignment uuid, p_plan uuid, p_scope text, p_partner uuid, p_customer uuid)",
+      "sql": "CREATE OR REPLACE FUNCTION platform_private.c2p1_item_allowed(p_assignment uuid, p_plan uuid, p_scope text, p_partner uuid, p_customer uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT platform_private.c2p1_assignment_allowed(p_scope,p_partner,p_customer) AND\n (p_assignment IS NULL OR EXISTS(SELECT 1 FROM public.commercial_payment_plan_assignments a\n WHERE a.id=p_assignment AND a.plan_id=p_plan AND a.buyer_scope=p_scope\n AND a.partner_id IS NOT DISTINCT FROM p_partner AND a.customer_id IS NOT DISTINCT FROM p_customer\n AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id)));\n$function$\n",
+      "owner": "postgres"
+    }
+  ]
+}

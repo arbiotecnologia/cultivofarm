@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- External-order origin composition follows its review-directory rules; server-owned proof never replaces internal origin, and operational readiness stays closed independently of order approval — prevents buyer-to-internal privilege escalation.
 - Identical eligible B2B probes renew only the existing lease; natural token renewal fences all reads and may restore only validated user choices after the same canonical vector and fresh catalogue/volumes, never prices/hashes/receipts — prevents periodic remounts without extending authority.
 - Intermediate entitlement outlets forward the exact parent outlet context only after their existing gate passes — prevents resource-context loss without granting authority.
 - C2-ORD P1 follows review directory rules; applied releases must be recorded without replay and local settings fixes never activate C2 order writers — prevents premature writer release.

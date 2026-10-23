@@ -1,0 +1,395 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "fa5e890dc647392efc238460ac16d6a2",
+      "sig": "public.fn_catalogo_preco_canonico(p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric)",
+      "sql": "CREATE OR REPLACE FUNCTION public.fn_catalogo_preco_canonico(p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric DEFAULT NULL::numeric)\n RETURNS numeric\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_litro   numeric(18,6);\n  v_distint integer;\n  v_dose_ha numeric;\n  v_unit    numeric(18,6);\nBEGIN\n  IF num_nonnulls(p_product_id, p_microrganismo_id) <> 1 THEN RETURN NULL; END IF;\n  IF p_unit_type IS NULL OR p_unit_type NOT IN ('hectare','litro','dose','unidade') THEN RETURN NULL; END IF;\n\n  SELECT count(DISTINCT round(cv.preco_litro_brl,2)), min(round(cv.preco_litro_brl,2))\n    INTO v_distint, v_litro\n  FROM public.catalogo_volumes cv\n  WHERE cv.ativo = true\n    AND cv.preco_litro_brl IS NOT NULL\n    AND cv.produto_id IS NOT DISTINCT FROM p_product_id\n    AND cv.microrganismo_id IS NOT DISTINCT FROM p_microrganismo_id;\n\n  IF COALESCE(v_distint,0) <> 1 OR COALESCE(v_litro,0) <= 0 THEN\n    RETURN NULL;\n  END IF;\n\n  IF p_unit_type = 'unidade' THEN\n    IF COALESCE(p_volume_ml,0) <= 0 THEN RETURN NULL; END IF;\n    SELECT round(cv.preco_brl,2) INTO v_unit\n    FROM public.catalogo_volumes cv\n    WHERE cv.ativo = true\n      AND cv.volume_ml = p_volume_ml\n      AND cv.produto_id IS NOT DISTINCT FROM p_product_id\n      AND cv.microrganismo_id IS NOT DISTINCT FROM p_microrganismo_id\n    ORDER BY cv.volume_ml\n    LIMIT 1;\n    RETURN COALESCE(v_unit, round(v_litro * (p_volume_ml / 1000.0), 2));\n  END IF;\n\n  IF p_unit_type = 'litro' THEN RETURN v_litro; END IF;\n  IF p_unit_type = 'dose'  THEN RETURN round(v_litro / 10.0, 2); END IF;\n\n  -- hectare\n  IF p_product_id IS NOT NULL THEN\n    SELECT pr.dose_ml_ha INTO v_dose_ha FROM public.produtos pr WHERE pr.id = p_product_id;\n  ELSE\n    SELECT mo.dose_ml_ha INTO v_dose_ha FROM public.microrganismos mo WHERE mo.id = p_microrganismo_id;\n  END IF;\n  IF COALESCE(v_dose_ha,0) <= 0 THEN RETURN NULL; END IF;\n  RETURN round(v_litro * (v_dose_ha / 1000.0), 2);\nEND\n$function$\n",
+      "owner": "postgres"
+    }
+  ],
+  "relations": [
+    {
+      "name": "catalogo_volumes",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notnull": true
+        },
+        {
+          "name": "item_tipo",
+          "type": "text",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "produto_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "microrganismo_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "volume_ml",
+          "type": "numeric",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "rotulo",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "preco_brl",
+          "type": "numeric",
+          "default": "0",
+          "notnull": true
+        },
+        {
+          "name": "moeda",
+          "type": "text",
+          "default": "'BRL'::text",
+          "notnull": true
+        },
+        {
+          "name": "ativo",
+          "type": "boolean",
+          "default": "true",
+          "notnull": true
+        },
+        {
+          "name": "ordem",
+          "type": "integer",
+          "default": "0",
+          "notnull": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        },
+        {
+          "name": "preco_litro_brl",
+          "type": "numeric",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "valor_dose_100ml_brl",
+          "type": "numeric",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "doses_por_volume",
+          "type": "numeric",
+          "default": null,
+          "notnull": false
+        }
+      ]
+    },
+    {
+      "name": "commercial_condition_item_prices",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notnull": true
+        },
+        {
+          "name": "assignment_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "plan_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "buyer_scope",
+          "type": "text",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "partner_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "customer_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "product_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "microrganismo_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "unit_type",
+          "type": "text",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "volume_ml",
+          "type": "numeric",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "min_quantity",
+          "type": "numeric",
+          "default": "0",
+          "notnull": true
+        },
+        {
+          "name": "pricing_mode",
+          "type": "text",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "condition_price",
+          "type": "numeric",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "discount_percent",
+          "type": "numeric",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "default": "'BRL'::text",
+          "notnull": true
+        },
+        {
+          "name": "valid_from",
+          "type": "date",
+          "default": "CURRENT_DATE",
+          "notnull": true
+        },
+        {
+          "name": "valid_until",
+          "type": "date",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'draft'::text",
+          "notnull": true
+        },
+        {
+          "name": "motivo",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "is_exception",
+          "type": "boolean",
+          "default": "false",
+          "notnull": true
+        },
+        {
+          "name": "published_rule_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "published_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        }
+      ]
+    },
+    {
+      "name": "commercial_payment_plan_assignments",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notnull": true
+        },
+        {
+          "name": "plan_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "buyer_scope",
+          "type": "text",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "partner_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "customer_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'draft'::text",
+          "notnull": true
+        },
+        {
+          "name": "valid_from",
+          "type": "date",
+          "default": "CURRENT_DATE",
+          "notnull": true
+        },
+        {
+          "name": "valid_until",
+          "type": "date",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "motivo",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "submitted_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "published_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "archived_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "updated_by",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        }
+      ]
+    }
+  ]
+}
