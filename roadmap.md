@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 23:21 — evidência real adicional e contenção
+- [x] Registrar relato: timeOrigin1792797076368.5 estável/navigation navigate, sem reload, console vazio/diagnostics=[]; contenção independente c2_writer_containment_during_real_session_regression SUCCESS, helperSELECTfalse, financeiro preservado, zero pedidos. Não aplicar SQL/reabrir writer/publicar.
+- [x] Duas revisões read-only independentes: baseline byte-exato9PASS/2FAIL vs atual11PASS; confirma perda periódica/refresh, não causa única hosted. Ring vazio compatível com probes B2B (diagnóstico environmental-only). Foco/visible usa revalidate explícito e desmonta por pending; NÃO alterado. Features/capabilities ausentes reproduzem Cliente comercial sem erro; refetch idêntico preserva modal. UserMenu real/defaults QueryClient reais,120/120 PASS em9arquivos; sem mudança runtime adicional nesta rodada, build automáticoOK.
+- [ ] Prova HTTP local com SDK real e homologação da aba real/artefato: transporte atual imediato e shell parcialmente simulado não certificam origem do fallback real; depende de recorte de validação e revisão independente. Writer contido, sem SQL/publicação.
+
 ## 23/10 23:14 — regressão catálogo durante sondagens/renovação
 - [x] Reproduzir perda modal/carrinho antespatch; AuthProvider/monitor/QueryClient/rota/NovoPedido/hook reais, só SDK/relógio/shell simulados. Sondagens idênticas não remontam; renovação oculta autoridade e reconstitui somente escolhas após vetor igual + catálogo/volumes frescos. Revogação/deadline/offline/troca/Retry descartam.110/110 regressões +5/5 saneamento PASS; build/typecheck automático OK, sem manual/JWT hosted.
 - [x] Baselines byte-exatos/patch/hashes em scripts/owner-orders-20261023/catalog-monitor-fix-20261023; release9fc18e7a/index-DFNxASjt e reabertura Codex registrados como relato independente. Manifesto principal127/127 PASS,121 linhas anteriores preservadas. Sem SQL/publicação/sessões/pedidos reais. Pendências históricas preservadas.
