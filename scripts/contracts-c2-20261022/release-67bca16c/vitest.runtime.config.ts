@@ -2,11 +2,21 @@
 import { defineConfig } from "vitest/config";
 import base from "../../../vitest.config";
 import path from "node:path";
+import fs from "node:fs";
 const root = path.resolve(__dirname, "../../..");
 const source = (p: string) => path.join(root, "src", p);
+const loadedSource = new Set<string>();
 export default defineConfig({ ...base,
   plugins: [...(base.plugins ?? []), {
     name: "c2-promoted-source-only", enforce: "pre" as const,
+    transform(_code: string, id: string) {
+      if (id.includes("/runtime-copies/")) throw new Error("release_tests_loaded_candidate_copy");
+      if (id.startsWith(source(""))) {
+        loadedSource.add(path.relative(root, id.split("?")[0]));
+        fs.mkdirSync("/tmp/c2-release", { recursive: true });
+        fs.writeFileSync("/tmp/c2-release/loaded-src.txt", [...loadedSource].sort().join("\n") + "\n");
+      }
+    },
     resolveId(id: string, importer?: string) {
       if (!importer || !id.startsWith(".")) return;
       // Existing candidate tests import these helpers relatively. Route the
