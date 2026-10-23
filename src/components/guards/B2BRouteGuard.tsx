@@ -1,3 +1,4 @@
+import { isC2ExternalScope } from "@/lib/authz/multiProfileContract";
 import { ReactNode, useContext, useEffect } from "react";
 import { CatalogFilterMemoryContext } from "@/lib/catalogo/catalogFilterPreferences";
 import { Navigate, useLocation } from "react-router-dom";
@@ -33,8 +34,7 @@ export function B2BRouteGuard({ children }: { children: ReactNode }) {
   const { data, ready, isLoading, isError } = useAvailableContexts();
   // has_b2b_access historically includes the management context. A real B2B
   // context additionally proves the partner binding; management alone cannot.
-  const exclusivePartner = roles.length === 1 &&
-    (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico");
+  const exclusivePartner = isC2ExternalScope(roles) && roles.includes("parceiro_b2b");
   const hasPartnerContext = exclusivePartner && own.ready && !!own.data && !own.isError &&
     data?.has_b2b_access === true && data.available_contexts.includes("b2b");
   const denied =

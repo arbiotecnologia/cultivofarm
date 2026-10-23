@@ -6,6 +6,7 @@ import type { PortalContext } from "@/hooks/useAvailableContexts";
  * Nunca derivar destino do papel principal: sempre do contexto.
  */
 export const PORTAL_CONTEXT_HOME: Record<PortalContext, string> = {
+  producer: "/app",
   b2b: "/portal-parceiro/dashboard",
   technical: "/app",
   admin: "/dashboard/geral",
@@ -64,6 +65,7 @@ export function pickPrimaryRole(roles: AppRole[]): AppRole | null {
 
 /** Roles que participam do fluxo multiportal via RPC. */
 const PORTAL_ROLES: AppRole[] = [
+  "cliente_produtor",
   "parceiro_b2b",
   "parceiro_b2b_tecnico",
   "consultor_tecnico",

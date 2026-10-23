@@ -1,5 +1,13 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 17:20 — preparação release67bca16c autorizada
+- [x] Driftcheck20 baseline/candidato/revisão exata; promover20 arquivos src sem SQL hosted/publicação/dados/sessões.
+- [x] Edge canônica patch exato separado; não tocar supabase/functions pois mudanças podem disparar deploy automático proibido.
+- [x] Cadeia src real260/260; TypeScript src PASS; Edge13/13/check PASS; build automático OK. SafeHome produtor introduzido corrigido/testado; fixtures antigas baseline30PASS, variante C2 atual28PASS.
+- [x] Relatório/hashes20/Edge verify_jwt/rollback deny-only/REST postflight real em release-67bca16c; sem declarar JWT homologado.
+- [ ] Build produção independente: log automático não informa mode/comando e dist ausente; execução no checkout do auditor pendente, sem afirmar certificação produção.
+- [ ] Execução coordenada SQL/Edge/publicação e homologação real aguardam proprietário/auditor; atribuição cumulativa só novas abas versão nova, existentes sem reload.
+
 ## 23/10 — complemento de revisão C2 inativo
 - [x] Histórico core privado + API INVOKER, réplica/rollback/preflight; SQL integral67 e histórico40 PASS.
 - [x] Mensagem financeira contextual; leitores publicados singleton/admin6 PASS, integral134 PASS/tipos20 PASS; arquivos/contagens esclarecidos.

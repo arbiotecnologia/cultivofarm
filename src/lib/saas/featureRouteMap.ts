@@ -37,6 +37,7 @@ const PREFIXOS: ReadonlyArray<readonly [string, string]> = [
   // Portais especializados — somente correspondências inequívocas.
   ["/app/visita", "visitas_tecnicas"],
   ["/app/checkin", "visitas_tecnicas"],
+  ["/portal-parceiro/financeiro", "contas_receber"],
   ["/portal-parceiro/pedidos", "pedidos_b2b"],
   ["/portal-parceiro/solicitacoes", "pedidos_b2b"],
   ["/portal-parceiro/novo", "pedidos_b2b"],

@@ -215,8 +215,8 @@ function SelecionarPortalContent() {
           aria-label="Portais disponíveis"
         >
           {data.available_contexts.map((ctx) => {
-            const label = ctx === "admin" ? "Gestão" : ctx === "technical" ? "Portal Técnico" : "Portal Parceiro B2B";
-            const Icon = ctx === "admin" ? LayoutDashboard : ctx === "technical" ? Sprout : Store;
+            const label = ctx === "admin" ? "Gestão" : ctx === "technical" ? "Portal Técnico" : ctx === "producer" ? "Portal Cliente/Produtor" : "Portal Parceiro B2B";
+            const Icon = ctx === "admin" ? LayoutDashboard : ctx === "technical" || ctx === "producer" ? Sprout : Store;
             return <Card key={ctx} className="flex flex-col border-2 transition hover:border-primary focus-within:border-primary">
               <CardHeader className="space-y-3">
                 <Icon className="h-6 w-6 text-primary" aria-hidden="true" />

@@ -1,0 +1,10 @@
+{
+  "canonical_target": "supabase/functions/create-user/index.ts",
+  "review_source": "scripts/contracts-c2-20261022/coordinated/edge/create-user/index.ts",
+  "baseline_sha256": "74a7aec6f927f2814d9af3f120c580aa77b171dcbbbf34ab042d65f4aef507a5",
+  "candidate_sha256": "931ba9fa46ebea265fd3fc9105e07f383c2f44ad3ff7879a84a2cd18b78ca095",
+  "verify_jwt": true,
+  "promoted": false,
+  "deployed": false,
+  "reason": "supabase/functions changes may automatically deploy; exact canonical patch staged outside watched directory"
+}

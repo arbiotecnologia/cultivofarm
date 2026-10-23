@@ -1,3 +1,4 @@
+import { isC2ExternalScope } from "@/lib/authz/multiProfileContract";
 import { ReactNode, useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -30,11 +31,12 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
 
   const isAdmin = roles.includes("administrador");
   const hasTechnical = data?.available_contexts.includes("technical") === true;
-  const isProducer = roles.includes("cliente_produtor");
+  const external = isC2ExternalScope(roles);
+  const isProducer = external ? data?.available_contexts.includes("producer") === true : roles.includes("cliente_produtor");
   const isMonitoredConsultant = CONSULTANT_CONTEXT_MONITOR_ENABLED && roles.length === 1 && roles[0] === "consultor_tecnico" &&
     typeof profile?.organization_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profile.organization_id);
   const isMonitoredManagerConsultant = MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED && isManagerConsultantScope(roles, profile?.organization_id);
-  const monitoredTechnical = isMonitoredConsultant || isMonitoredManagerConsultant || authzResidualScope;
+  const monitoredTechnical = external || isMonitoredConsultant || isMonitoredManagerConsultant || authzResidualScope;
   const denied =
     !loading &&
     (!monitoredTechnical || authzReady) &&
@@ -53,7 +55,7 @@ export function AppPortalGuard({ children }: { children?: ReactNode }) {
   }, [denied, location.pathname]);
 
   // Pause before readers depending on authzReady; retry stays on this URL.
-  if (!loading && user && (isProducer || monitoredTechnical || authzLatchBlocked) && !authzReady) {
+  if (!loading && user && (external || isProducer || monitoredTechnical || authzLatchBlocked) && !authzReady) {
     return <AuthzEpochBoundary>{null}</AuthzEpochBoundary>;
   }
 

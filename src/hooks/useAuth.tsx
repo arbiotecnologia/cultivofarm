@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { subscribePortalEvents } from "@/lib/portalBroadcast";
 import { clearActivePortalContext } from "@/lib/activePortalContext";
 import { AUTHZ_CACHE_FOUNDATION_ENABLED, AUTHZ_CACHE_ROLLOUT_SCOPE, PRODUCER_CONTEXT_MONITOR_ENABLED, FINANCIAL_CONTEXT_MONITOR_ENABLED, COMPANY_ADMIN_CONTEXT_MONITOR_ENABLED, CONSULTANT_CONTEXT_MONITOR_ENABLED, OPERATOR_CONTEXT_MONITOR_ENABLED, MANAGER_CONSULTANT_CONTEXT_MONITOR_ENABLED } from "@/lib/authz/authzEpochGate";
+import { c2ContextProbe, isC2ExternalScope } from "@/lib/authz/multiProfileContract";
 import { b2bContextProbe } from "@/lib/authz/b2bContextProbe";
 import { producerContextProbe } from "@/lib/authz/producerContextProbe";
 import { recordAuthzDiagnostic, clearAuthzDiagnostics } from "@/lib/authz/localDiagnostics";
@@ -542,6 +543,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authzState, setAuthzState] = useState<AuthzMonitorState>("idle");
   const authzMonitorRef = useRef<AuthzEpochMonitor | null>(null);
   const b2bContextOnly = AUTHZ_CACHE_ROLLOUT_SCOPE === "b2b-context";
+  const cumulativeExternal = b2bContextOnly && isC2ExternalScope(roles);
   const producerContextOnly = b2bContextOnly && PRODUCER_CONTEXT_MONITOR_ENABLED &&
     roles.length === 1 && roles[0] === "cliente_produtor";
   const financialContextOnly = b2bContextOnly && FINANCIAL_CONTEXT_MONITOR_ENABLED &&
@@ -574,7 +576,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Auto-recovery limited to the scopes already homologated (pair/residual/admin/finance).
   const autoRecoveryScope = environmentalContextOnly;
   const isExternalUser = b2bContextOnly
-    ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || (roles.length === 1 && (roles[0] === "parceiro_b2b" || roles[0] === "parceiro_b2b_tecnico"))
+    ? managerConsultantContextOnly || residualContextOnly || operatorContextOnly || consultantContextOnly || companyAdminContextOnly || financialContextOnly || producerContextOnly || cumulativeExternal
     : roles.some((r) => EXTERNAL_AUTHZ_ROLES.includes(r));
   const principalReady = !!user?.id && profile?.user_id === user.id && profile.ativo === true &&
     profile.senha_provisoria === false && !!profile.organization_id;
@@ -604,6 +606,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (residualRole) return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", residualRole);
         if (managerConsultantContextOnly || financialContextOnly || companyAdminContextOnly || consultantContextOnly || operatorContextOnly) {
           return internalContextProbe(user?.id ?? "", profile?.organization_id ?? "", managerConsultantContextOnly ? MANAGER_CONSULTANT_ROLES : operatorContextOnly ? "operador_onfarm" : consultantContextOnly ? "consultor_tecnico" : companyAdminContextOnly ? "administrador" : "financeiro");
+        }
+        if (cumulativeExternal) {
+          const { data,error } = await supabase.rpc("get_my_available_portal_contexts");
+          if (error) throw new Error("c2_probe_unavailable");
+          return c2ContextProbe(data,user?.id ?? "",profile?.organization_id ?? "",roles);
         }
         if (producerContextOnly) {
           return producerContextProbe(user?.id ?? "", profile?.organization_id ?? "");

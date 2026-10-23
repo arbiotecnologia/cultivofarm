@@ -28,7 +28,7 @@
 - Partner own-finance reviews follow their directory AGENTS.md; obligation projections never expose supplier-internal balances or enable documents/writes — preserves financial scope.
 - Manager own-dashboard candidates follow their directory AGENTS.md and reuse only the existing own-order read; no full dashboard/financial mounts — prevents supplier-internal disclosure.
 - C2-CAT owner routes require canonical read capabilities and mount only catalog/grid or sheets, never NovoPedido; C2.1 writers remain inactive until coordinated readers/provisioning — prevents catalogue access from enabling payment/cart channels.
-- C2 administrative lifecycle stays candidate-only with its directory AGENTS.md; writers cannot be installed separately from reviewed capability readers/provisioning — prevents cumulative roles from breaking access or reopening channels.
+- C2 release sources may be prepared locally after exact-manifest review; hosted writers require coordinated readers/provisioning, and Edge source promotion must avoid automatic deployment — prevents partial activation.
 - B2B candidates preserve OIDs through metadata overloads; scoped whitelisted sheets retain approved content, REST postflight gates promotion and frontend reversal retains server filters — avoids return breaks and security rollback leaks.
 - Pair/residual ineligibility uses one canonical re-resolution, rearmed only by valid confirmation; tests exhaust automation through transport before Retry assertions — preserves fail-closed isolation and single-flight.
 - Desktop/mobile recovery share one form and the existing canonical redirect policy, with synchronous pending lock and account-neutral states — prevents divergent recovery and local duplicate sends.
