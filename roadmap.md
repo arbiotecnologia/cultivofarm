@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 21:18 — P1 aplicado externo; regressão salvar/reabrir
+- [ ] Registrar aplicação Codex migration20261023211007/PRE/POST/dados iguais, JWT B lista vazia/A própria publicada, publicação bafe3e23/deploybcca6f2f e método AUDIT salvo UI updated_at21:18:08.481422+00, na_entrega/prazo7 intactos.
+- [ ] Reproduzir e corrigir hook+dialog com QueryClient real: cache canônico scope atual, cancel reads antigos/await invalidação, baseline somente após leitura inicial fresca, rascunho sujo/CAS/fences preservados.
+- [ ] Testes integrados salvar/reabrir/tardios/tenant/revogação/conflito, tipos/build candidato, diff/SHA e artefato publicado read-only; sem banco/dados/writerC2/publicação.
+- [ ] Arquivamento negativo B bloqueado pela revisão automática Codex, aguarda confirmação específica; NÃO tentar outro mecanismo. Pendências antigas e homologação real integral preservadas.
+
 ## 23/10 21:06 — promoção frontend P1 autorizada, sem publicação
 - [x] Promover somente hook RPC financeiro para src; selector/mutation owner ativo OU ownorg legado interno sob RLS, RPC/CAS autoritativos, sem writes diretos ou liberar writer C2.
 - [x] 48/48 testes owner/ownorg/B/externos/CAS/fences/diálogo/publicação; tsgo app/node EXIT0, Vite production cópia integrada PASS36,15s (aviso chunks), preview OK. NÃO tsc/JWT/UI real; diff/SHA frontend-promotion-20261023.
