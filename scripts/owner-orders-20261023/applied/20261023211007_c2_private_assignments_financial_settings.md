@@ -1,5 +1,7 @@
 # P1 implantado externamente — não reaplicar
 
+Atualização independente22:54: após negativo REAL admin B HTTP403, atribuição A `48dcac7d-d4a0-4058-bdf4-5461fee89f45` permanece `published`, `archived_at=NULL`, `archived_by=NULL`, conforme proprietário. Sem nova tentativa ou consulta pelo agente; encerra apenas esse caso negativo.
+
 Atualização independente relatada22:52: API `rpc_cc_archive_assignment`, sessão JWT REAL admin B, teste explicitamente autorizado e executado pelo auditor, HTTP403 `C2P1_FORBIDDEN`/42501. **Negação real de escrita comprovada pelo relato**; substitui pendência anterior específica de arquivamento, não é execução do agente nem homologação geral.
 
 Complemento relatado22:50 pelo proprietário: produção fence exige autorização owner/ownorg **e** ticket P1 de escrita e método ativo exato; fallback INSERT do gerador baseline é incompatível. Os9 hashesv3 conferem na revisão independente. Negativo SQL **simulado** adminB arquivar A retornou `C2P1_FORBIDDEN` com rollback; não é JWT real nem execução do agente, não encerra homologação real. Candidata de erro explícito permanece inativa.

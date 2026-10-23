@@ -1,10 +1,15 @@
-# C2-ORD v3 — rebase sobre o recorte instalado 20261023192728 (REVIEW, restante inativo)
+# C2-ORD v4 — P1 e eligibility instalados (REVIEW, restante inativo)
+
+## 23/10 22:54 — implantação eligibility confirmada externamente
+Proprietário confirma Codex `c2_billing_eligibility_internal_only`: somente REVOKE EXECUTE de PUBLIC/anon/authenticated, corpo MD5 `db977875e15ea49ce10fb3e5388d7dfb` intacto, postgres/service_role preservados, PRE/POST PASS. Registro em `applied/billing-eligibility-current-acl.md`; não reaplicar. Candidato v4 mantém guardas internal-only já coordenadas em `preflight.sql`, `candidate.sql.review`, `postflight.sql`, `rollback.sql.review`; nenhum guard exige grant antigo e nenhum desses scripts altera ACL do helper. Nove hashes dos corpos candidatos permanecem iguais à v3, revisão v4 identifica somente a dependência/guardas de contenção e registros coordenados. Writer continua fechado.
+
+Negativo REAL B archive403: A continua `published`, `archived_at/by=NULL`, segundo proprietário; não houve nova tentativa pelo agente. Pendências antigas preservadas.
 
 ## 23/10 22:43 — rebase P1 instalado; status atual NO-GO
 ### Atualização22:52–22:54 — eligibility e arquivamento
 Negativo **REAL API/JWT admin B** `rpc_cc_archive_assignment` HTTP403 `C2P1_FORBIDDEN`/42501 relatado pelo proprietário: encerra somente essa negação específica, não homologação geral; registros antigos abaixo sobre ausência do teste são históricos.
 
-Consulta hosted READ ONLY canônica agora mostra eligibility **já internal-only**: authenticated=false, anon=false, service_role=true, owner postgres, MD5 `db977875e15ea49ce10fb3e5388d7dfb`, ACL postgres/service_role. Não atribuir implantação ao agente nem inventar autor/migration da ACL. Único caller SQL direto atual: impl DEFINER/postgres. Não há cliente de produto repo; Edge harness contém só probe de ACL. Histórico/réplica com authenticated não é estado atual e não deve ser promovido. Detalhes: `billing-eligibility-callers.md` e `applied/billing-eligibility-current-acl.md`.
+Consulta hosted READ ONLY canônica mostra eligibility **já internal-only**: authenticated=false, anon=false, service_role=true, owner postgres, MD5 `db977875e15ea49ce10fb3e5388d7dfb`, ACL postgres/service_role. Implantação Codex identificada depois pelo relato22:54 acima; não executada pelo agente. Único caller SQL direto atual: impl DEFINER/postgres. Não há cliente de produto repo; Edge harness contém só probe de ACL. Histórico/réplica com authenticated não é estado atual e não deve ser promovido. Detalhes: `billing-eligibility-callers.md` e `applied/billing-eligibility-current-acl.md`.
 
 `billing-eligibility-invariant.sql` incorporado em PRE/candidato/POST/rollback: valida corpo/owner/ACL/privilégios efetivos e grafo textual direto; **nenhuma alteração de ACL, wrapper ou fiscal resolver**. Candidato mudou apenas nas guardas desta rodada; nove hashes de corpos revisados continuam os anteriores. Teste atual **69/69 checks PostgreSQL descartável via Vitest1/1 PASS**22:54: B/anon não invocam gate, owner/service conseguem, aprovação com impl real segue gerando título e rollback mantém ACL fechada. Auth e schema reduzidos: não JWT real do gate nem certificação transitiva integral. Writer e gates anteriores permanecem NO-GO.
 

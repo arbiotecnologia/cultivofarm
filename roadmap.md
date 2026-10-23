@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 22:54 — implantação independente eligibility / v4
+- [x] Registrar Codex c2_billing_eligibility_internal_only, somente REVOKE PUBLIC/anon/authenticated, corpo intacto db977875e15ea49ce10fb3e5388d7dfb e postgres/service_role, PRE/POST PASS relatados; não reaplicar.
+- [x] Candidato v4 mantém guardas ACL atuais em PRE/candidato/POST/rollback sem reabrir grant; nove hashes de corpos v3 intactos. Writer fechado; nenhuma escrita hosted/publicação.
+- [x] Registrar relato negativo REAL B archive403 e A published com archived_at/byNULL; não repetir teste, pendências antigas preservadas.
+
 ## 23/10 22:52 — superfície billing eligibility
 - [x] Registrar negação REAL API archive A/admin B HTTP403 C2P1_FORBIDDEN/42501 relatada pelo proprietário; não repetir teste.
 - [x] Callers repo/SQL auditados: nenhum cliente de produto, Edge só probe, SQL atual único impl DEFINER/postgres. Consulta READ ONLY canônica: authenticated/anon=false, service=true; internal-only já vigente, não atribuir implantação.
