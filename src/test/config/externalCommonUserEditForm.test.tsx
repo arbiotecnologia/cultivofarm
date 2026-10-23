@@ -27,7 +27,7 @@ function deferred() {
   const promise = new Promise<typeof result>(r => { resolve = r; });
   return { promise, resolve };
 }
-function form(props = base, key = '1') {
+function form(props: typeof base & { draftKey?: string } = base, key = '1') {
   return <Dialog open><DialogContent aria-describedby={undefined}><DialogTitle>Editar Usuário</DialogTitle>
     <ExternalCommonUserEditForm key={key} {...props} />
   </DialogContent></Dialog>;
