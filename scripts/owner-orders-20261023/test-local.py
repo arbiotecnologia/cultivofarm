@@ -146,6 +146,7 @@ try:
   snapshot=json.loads((HERE/'baseline-p1/snapshot.json').read_text())
   for f in snapshot['functions']:
     if 'phase1_order_visible' not in f['sig']: run(f['sql'])
+  run('DROP FUNCTION public.generate_b2b_receivable_secure(uuid);')
   run("CREATE FUNCTION public.b2b_phase1_partner_visible(p uuid,t boolean DEFAULT false) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT platform_private.b2b_phase1_partner_visible(p,t) $$;")
   for f in ['platform_private.b2b_phase1_partner_visible','platform_private.b2b_phase1_order_visible','public.b2b_phase1_order_visible','public.fn_b2b_order_priceable','public.fn_b2b_credit_exposure','public.fn_b2b_order_billing_eligibility','public.fn_generate_receivable_installments','public.generate_b2b_receivable_secure']:
     run((HERE/'baseline-p1'/f'{f}.sql').read_text())
