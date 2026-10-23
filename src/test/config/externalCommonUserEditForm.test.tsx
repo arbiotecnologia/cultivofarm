@@ -9,6 +9,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: {
   rpc(this: { rest: typeof transport }, name: string, args: unknown) { return this.rest.rpc(name, args); },
 } }));
 import { ExternalCommonUserEditBoundary, ExternalCommonUserEditForm, type ExternalCommonTarget } from '@/components/configuracoes/ExternalCommonUserEditForm';
+import { clearAllPauseStates, clearPauseState } from '@/lib/authz/pauseRetainedState';
 
 const target: ExternalCommonTarget = {
   user_id: '11111111-1111-4111-8111-111111111111', updated_at: '2026-10-16T22:00:00Z',
@@ -185,5 +186,56 @@ describe('diálogo real de dados comuns externos (gate simulado só no teste)', 
     await waitFor(() => expect(base.onError).toHaveBeenCalledTimes(1));
     const button = screen.getByRole('button', { name: 'Recarregue a lista para tentar novamente' });
     expect(button).toBeDisabled(); fireEvent.click(button); expect(transport.rpc).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('retenção volátil do rascunho durante pausa transitória (draftKey)', () => {
+  beforeEach(() => clearAllPauseStates());
+
+  it('unmount por pausa e remount com a MESMA chave restaura o rascunho digitado', async () => {
+    const view = render(form({ ...base, draftKey: 'k:epoch0:target1' }));
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Rascunho em pausa' } });
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Ajuste pendente' } });
+    view.rerender(<></>); // pausa de autorização: boundary oculta e desmonta
+    view.rerender(form({ ...base, draftKey: 'k:epoch0:target1' }, 'remount'));
+    expect(screen.getByLabelText('Cargo')).toHaveValue('Rascunho em pausa');
+    expect(screen.getByLabelText('Motivo')).toHaveValue('Ajuste pendente');
+  });
+
+  it('época nova (revogação) torna o rascunho retido inalcançável — deny', async () => {
+    const view = render(form({ ...base, draftKey: 'k:epoch0:target1' }));
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Rascunho em pausa' } });
+    view.rerender(<></>);
+    view.rerender(form({ ...base, draftKey: 'k:epoch1:target1' }, 'remount'));
+    expect(screen.getByLabelText('Cargo')).toHaveValue('Original');
+    expect(screen.getByLabelText('Motivo')).toHaveValue('');
+  });
+
+  it('sem draftKey não há retenção (comportamento publicado inalterado)', async () => {
+    const view = render(form());
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Rascunho em pausa' } });
+    view.rerender(<></>);
+    view.rerender(form(base, 'remount'));
+    expect(screen.getByLabelText('Cargo')).toHaveValue('Original');
+  });
+
+  it('fechamento explícito (clearPauseState) descarta o rascunho retido', async () => {
+    const view = render(form({ ...base, draftKey: 'k:epoch0:target1' }));
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Rascunho em pausa' } });
+    clearPauseState('k:epoch0:target1'); // handler de fechamento do diálogo
+    view.rerender(<></>);
+    view.rerender(form({ ...base, draftKey: 'k:epoch0:target1' }, 'remount'));
+    expect(screen.getByLabelText('Cargo')).toHaveValue('Original');
+  });
+
+  it('rascunho restaurado não enfraquece os fences CAS do envio', async () => {
+    const view = render(form({ ...base, draftKey: 'k:epoch0:target1' }));
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Rascunho em pausa' } });
+    view.rerender(<></>);
+    view.rerender(form({ ...base, draftKey: 'k:epoch0:target1' }, 'remount'));
+    fireEvent.click(save());
+    await waitFor(() => expect(base.onSuccess).toHaveBeenCalledTimes(1));
+    expect(transport.rpc.mock.calls[0][1].p_profile._external_edit.expected_version).toBe('a'.repeat(64));
+    expect(transport.rpc.mock.calls[0][1].p_profile.cargo).toBe('Rascunho em pausa');
   });
 });
