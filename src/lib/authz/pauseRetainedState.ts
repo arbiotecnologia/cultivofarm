@@ -54,3 +54,5 @@ export function clearPauseState(key: string): void {
 export function clearAllPauseStates(): void {
   store.clear();
 }
+
+// retrigger: verificacao de build pos-restauracao (sem efeito funcional)
