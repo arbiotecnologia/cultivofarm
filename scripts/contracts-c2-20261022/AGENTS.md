@@ -7,3 +7,4 @@
 - Local PostgreSQL tests use synthetic Auth and reduced schema; hosted JWT/RLS, full trigger integration and portal activation remain unverified — prevents false certification.
 - Lifecycle history uses a bounded keyset-paginated canonical RPC with actor and whitelisted before/after state scoped to partner, target and tenant — prevents raw/global audit exposure.
 - Coordinated runtime copies, Edge tests and assembly stay under the review package; promotion requires whole-chain validation including structural drift and rollback ACL — prevents tests of separate slices from implying installation readiness.
+- Cumulative creation uses the canonical Configuracoes form with one external role set and matching Edge alias; lifecycle confirms the final set through one action, preserving receipts and server-owned client/farm grants — prevents exclusive or contradictory administrative flows.

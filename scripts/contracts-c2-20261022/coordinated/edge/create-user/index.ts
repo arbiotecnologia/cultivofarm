@@ -101,6 +101,15 @@ export async function handler(req: Request, clientFactory: typeof createClient =
       ? Array.from(new Set(rolesInput.filter(Boolean)))
       : (role ? [role] : []);
 
+    // Optional explicit cumulative alias must match, never independently grants.
+    if (body.external_roles !== undefined && (!Array.isArray(body.external_roles) ||
+      body.external_roles.length !== rolesArr.length || new Set(body.external_roles).size !== body.external_roles.length ||
+      body.external_roles.some((r: unknown) => typeof r !== "string" || !rolesArr.includes(r)))) {
+      return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Existing entrypoint, actor-scoped preflight. Never authorize this branch
     // with the elevated SDK or turn a partner role into a cumulative staff role.
     if (rolesArr.some((r) => ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"].includes(r))) {

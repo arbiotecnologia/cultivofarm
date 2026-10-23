@@ -21,18 +21,12 @@ for p in sorted(fin.rglob('*')):
 lc = S / 'contracts-c2-20261022/frontend'
 add('src/lib/configuracoes/partnerLifecycle.ts', lc / 'partnerLifecycle.ts', 'c2.1-admin')
 add('src/components/configuracoes/PartnerLifecycleFields.tsx', lc / 'PartnerLifecycleFields.tsx', 'c2.1-admin')
-# Configuracoes: apply the reviewed 2-hunk patch against CURRENT src with exact context.
-cfg = (ROOT / 'src/pages/Configuracoes.tsx').read_text()
-imp_anchor = 'import { ExternalCommonUserEditBoundary } from "@/components/configuracoes/ExternalCommonUserEditForm";\n'
-mount_anchor = '                    <div><Label>Vínculo atual</Label><div className="border rounded-md p-2">{renderVinculo(editOrig ?? editUser, true)}</div></div>\n'
-assert cfg.count(imp_anchor) == 1 and cfg.count(mount_anchor) == 1, 'Configuracoes drift'
-cfg = cfg.replace(imp_anchor, imp_anchor + 'import { PartnerLifecycleFields } from "@/components/configuracoes/PartnerLifecycleFields";\n')
-cfg = cfg.replace(mount_anchor, mount_anchor + """                    {isAdmin && !vinculos.isFetching && !vinculos.isError && vinculos.data?.get(editUser.user_id)?.parceiro?.partner_id && <PartnerLifecycleFields
-                      key={`${externalScope}:${editUser.user_id}`}
-                      partnerId={vinculos.data.get(editUser.user_id)?.parceiro?.partner_id ?? ''}
-                      userId={editUser.user_id}
-                    />}
-""")
+# Full canonical form candidate, pinned to the reviewed runtime baseline. Never
+# regenerate the old exclusive form or silently adopt runtime drift.
+assert sha(ROOT / 'src/pages/Configuracoes.tsx') == '45fb8236e4d2db0d4daf58597206eb9c183b37e42de2a4d9e0cb9a7b420d8f39', 'Configuracoes drift'
+cfg = (H / 'Configuracoes.tsx').read_text()
+add('src/lib/configuracoes/externalUserDraft.ts', H / 'externalUserDraft.ts', 'c2-registration')
+add('src/components/configuracoes/ExternalRegistrationFields.tsx', H / 'ExternalRegistrationFields.tsx', 'c2-registration')
 out = H / 'runtime-copies'
 shutil.rmtree(out, ignore_errors=True)
 for rel, (src, _) in sources.items():
