@@ -1,0 +1,42 @@
+{
+  "platform_private.c2_owner_order_create_allowed(uuid,uuid)": {
+    "acl": "{postgres=X/postgres}",
+    "hash": "5f0a08d1d4f8d8c5a7ae58e24c71071e"
+  },
+  "platform_private.c2_owner_plan_assigned(uuid,uuid)": {
+    "acl": "{postgres=X/postgres}",
+    "hash": "4a8d57d888dace76bd1fa257c3a19c82"
+  },
+  "platform_private.c2_owner_order_guard(uuid,uuid,uuid)": {
+    "acl": "{postgres=X/postgres}",
+    "hash": "01d6cb10289af56ecfdbb38e43646e3a"
+  },
+  "platform_private.c2_order_actor_scope(uuid,uuid)": {
+    "acl": "{postgres=X/postgres}",
+    "hash": "6802c693f459a92e70dade0c73d7faba"
+  },
+  "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": {
+    "acl": null,
+    "hash": "12ea8b410e8fadf2da8f72fc1bbc83cf"
+  },
+  "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": {
+    "acl": null,
+    "hash": "37d4f45e388ed7b38f6f397b672629ee"
+  },
+  "public.generate_b2b_receivable_secure_impl(uuid)": {
+    "acl": null,
+    "hash": "3b7b046290cb10ba0af08e88cabd26ce"
+  },
+  "public.generate_b2b_receivable_secure(uuid)": {
+    "acl": null,
+    "hash": "9c8c8a736bcd1d77ee2f237a8a59b4ce"
+  },
+  "public.approve_partner_order(uuid,text,date)": {
+    "acl": null,
+    "hash": "31bbe8f7d3c940eb9862bf7c7b7fad20"
+  },
+  "platform_private.b2b_commercial_partner_projection()": {
+    "acl": null,
+    "hash": "ebd6bf6f252676ba21445427a7057588"
+  }
+}
