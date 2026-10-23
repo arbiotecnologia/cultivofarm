@@ -202,3 +202,13 @@ it.each(["partner", "tenant"])("real %s change retires modal and cart", async ki
   else { state.tenant = "55555555-5555-4555-8555-555555555555"; act(() => state.authCb?.("TOKEN_REFRESHED", { user: { id: state.actor } })); await tick(1000); }
   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getByText("Carrinho (0)")).toBeTruthy(); expect(state.writes).not.toHaveBeenCalled();
 });
+it("observed A-B-A partner transitions never resurrect the A cart or modal", async () => {
+  mount(); await tick(1000); await addItem(); await openModal();
+  const a = state.partner;
+  state.partner = "44444444-4444-4444-8444-444444444444"; state.linkVersion++;
+  await tick(10_100);
+  expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getByText("Carrinho (0)")).toBeTruthy();
+  state.partner = a; state.linkVersion++; await tick(10_100);
+  expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getByText("Carrinho (0)")).toBeTruthy();
+  expect(screen.getByText(product())).toBeTruthy(); expect(state.writes).not.toHaveBeenCalled();
+});
