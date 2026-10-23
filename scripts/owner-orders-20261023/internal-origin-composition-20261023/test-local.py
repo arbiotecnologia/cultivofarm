@@ -118,6 +118,14 @@ def create(u,key,p=P,h=None,obs='Synthetic'):
     h=h or simulate(u,p)['cart_hash']
     return f"SELECT public.create_partner_order_secure('{p}','{obs}','{items}',NULL,'{PLAN}',NULL,NULL,'{h}','{key}')"
 hashA=simulate(G)['cart_hash'];ok('real simulation resolves canonical 1L price 180')
+accounting=(H/'preflight-accounting.sql').read_text().replace('007bb519-cba0-4704-be2c-cb93ad010048',A).replace('8f57c7dd-0557-4041-b401-7a00f7244626',B)
+pg.sql(accounting);ok('accounting gate accepts genuinely validated synthetic fixture only')
+pg.sql(f"SET session_replication_role=replica; UPDATE public.company_fiscal_settings SET configuration_status='DRAFT',accounting_validated_at=NULL WHERE id='{SETTINGS}'; SET session_replication_role=origin;")
+failure=pg.sql(accounting,ok=False);ok('accounting preflight blocks DRAFT and NULL attestation','C2_ACCOUNTING_PREREQUISITE_BLOCKED' in failure)
+before=snapshot();actor(G,create(G,'draft-null',h=hashA)+';',err='B2B_INTERNAL_ISSUER_NOT_VALIDATED');ok('runtime blocks DRAFT NULL without partial order',snapshot()==before)
+pg.sql(f"SET session_replication_role=replica; UPDATE public.company_fiscal_settings SET is_active=false WHERE id='{SETTINGS}'; SET session_replication_role=origin;")
+failure=pg.sql(accounting,ok=False);ok('accounting preflight blocks absent active configuration','C2_ACCOUNTING_PREREQUISITE_BLOCKED' in failure)
+pg.sql(f"SET session_replication_role=replica; UPDATE public.company_fiscal_settings SET is_active=true,configuration_status='VALIDATED',accounting_validated_at=now() WHERE id='{SETTINGS}'; SET session_replication_role=origin;")
 ok('private origin/ticket functions not executable by authenticated',pg.sql("SELECT NOT has_function_privilege('authenticated','platform_private.c2_external_origin_assert(jsonb,uuid,uuid)','EXECUTE') AND NOT has_function_privilege('authenticated','platform_private.issue_ticket(text,uuid)','EXECUTE')")=='t')
 # Original guard must reproduce reported denial (candidate retained for subsequent tests).
 guard=pg.sql("SELECT pg_get_functiondef('platform_private.b2b_internal_order_snapshot_guard()'::regprocedure)")+'\n'
@@ -133,6 +141,10 @@ for u in [G,GT]:
 for u,p in [(T,P),(PR,P),(GB,P),(G,Q)]:
     before=snapshot();actor(u,create(G,'denied-'+str(u),p,h=hashA)+';',err='');ok('negative public create leaves all state unchanged',snapshot()==before)
 oid=orders[0]
+# Execute the child trigger as local owner with each synthetic caller, independently of RLS zero-row filters.
+for u in [G,GT,T,PR,GB,ADMIN_B]:
+    before=snapshot();failure=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{{\"sub\":\"{u}\",\"role\":\"authenticated\",\"iat\":{int(time.time())}}}',true); UPDATE public.partner_order_payment_schedule SET status='paid' WHERE partner_order_id='{oid}'; COMMIT;",ok=False)
+    ok('child guard denies external/foreign administration '+str(u),'C2_EXTERNAL_OWNER_DENIED' in failure and snapshot()==before)
 actor(ADMIN,f"SELECT public.approve_partner_order('{oid}',NULL,NULL);")
 ok('real approval/billing atomic with one title and no production readiness',pg.sql(f"SELECT status||'|'||ready_for_production||'|'||receivable_generated FROM public.partner_orders WHERE id='{oid}'")=='aprovado|false|true' and pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}' AND organization_id='{A}'")=='1')
 ok('H6 installments match exact contractual dates/amounts',pg.sql(f"SELECT count(*) FROM public.partner_order_payment_schedule s JOIN public.accounts_receivable_installments a ON a.id=s.receivable_installment_id WHERE s.partner_order_id='{oid}' AND a.due_date=s.due_date AND a.net_amount=s.amount")=='3')
