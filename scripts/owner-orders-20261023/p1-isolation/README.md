@@ -1,4 +1,13 @@
-# P1 — SQL em revisão; hook RPC promovido localmente, não publicado
+# P1 — implantado externamente; correção de reabertura não publicada
+
+## 23/10 21:18 — aplicação externa e regressão frontend
+Codex implantou `20261023211007_c2_private_assignments_financial_settings`, PRE/POST PASS/dados iguais e JWT B nova aba sem atribuições/A própria publicada, conforme relato do proprietário. Frontend bafe3e23/deploybcca6f2f publicado e método AUDIT salvo via UI real, prazo7/na_entrega intactos. Registro em `../applied/20261023211007_c2_private_assignments_financial_settings.md`; NÃO reaplicar os SQL/PRE antigos.
+
+Correção local somente hook+dialog: cancelar reads exatos anteriores após RPC, adotar retorno canônico no scope capturado e aguardar invalidação/releitura com rechecks de fence; nenhuma escrita direta. Cada montagem do reader settings força leitura fresca apesar do default global refetchOnMount=false. Baseline novo só nasce após leitura desta montagem sem fetch em curso; baseline já estabelecido e edição suja nunca rebaseiam, mudança real gera conflito. Diff/SHA/validações em `cache-reopen-20261023/`. 59/59 Vitest (11 integração real QueryClient/hooks/dialog), tsgo app/node EXIT0 e Vite production cópia integrada PASS26,04s com aviso chunks. Sem banco/dados/publicação/writer C2/arquivamento.
+
+Artefato público correto confirmado: meta build-mvlgu8zf, commit anunciado bafe3e23b135646bd1b9f49ffa0a61fd6c09b1cb e deploybcca6f2f; entry index-b876l0_R.js importa lazy App-g15BlqsQ.js. SHA App público `3ea109c28dcf93873be3fd40318c648f3905921ba2df277e451202b298ddadae` igual à cópia integrada anterior à correção. Contém RPC e invalidação exata antiga: não é evidência de artefato velho. Leitura estática pública apenas, não sessão/nova aba autenticada. Arquivamento negativo B bloqueado por revisão automática Codex permanece pendente de confirmação específica, sem contornar mecanismo.
+
+As seções abaixo conservam o histórico da candidata anterior à implantação; status de aplicação/publicação/método e testes são superados por este registro, não instrução de reaplicação.
 
 ## Promoção autorizada 23/10 21:06 UTC
 Somente `src/hooks/useB2BFinanceiro.ts` promovido: RPC `rpc_update_partner_financial_settings` com baseline completo/NULL ausência, sem UPDATE/INSERT/UPSERT direto ou fallback. Selector e mutation leem a organização ativa do ator via RLS e aceitam commercial owner OU `organizations.partner_account_id` próprio; roles externas continuam negadas. A RPC/RLS, h15 e CAS servidor são autoritativos; nenhum UUID/storage concede autoridade. Não altera diálogo, rotas, entitlements, monitor ou writer C2.

@@ -1,16 +1,17 @@
 # F2-B — auditoria e preparação revisável
 
 ## 23/10 21:18 — P1 aplicado externo; regressão salvar/reabrir
-- [ ] Registrar aplicação Codex migration20261023211007/PRE/POST/dados iguais, JWT B lista vazia/A própria publicada, publicação bafe3e23/deploybcca6f2f e método AUDIT salvo UI updated_at21:18:08.481422+00, na_entrega/prazo7 intactos.
-- [ ] Reproduzir e corrigir hook+dialog com QueryClient real: cache canônico scope atual, cancel reads antigos/await invalidação, baseline somente após leitura inicial fresca, rascunho sujo/CAS/fences preservados.
-- [ ] Testes integrados salvar/reabrir/tardios/tenant/revogação/conflito, tipos/build candidato, diff/SHA e artefato publicado read-only; sem banco/dados/writerC2/publicação.
+- [x] Registrar aplicação Codex migration20261023211007/PRE/POST/dados iguais, JWT B lista vazia/A própria publicada, publicação bafe3e23/deploybcca6f2f e método AUDIT salvo UI updated_at21:18:08.481422+00, na_entrega/prazo7 intactos em applied; relato externo, não reaplicar.
+- [x] Reproduzir e corrigir hook+dialog com QueryClient real: cache canônico scope atual, cancel reads antigos/await invalidação, baseline somente após leitura inicial fresca, rascunho sujo/CAS/fences preservados.
+- [x] 59/59 testes (11 integrados), tsgo app/node0 e produção cópia integrada PASS26,04s; diff/SHA cache-reopen-20261023. Artefato App público SHA igual à build anterior/commit/deploy anunciados corretos; sem banco/dados/writerC2/publicação.
+- [ ] Homologação real salvar/reabrir desta correção após revisão/publicação explícitas; sessão external_unmanaged indisponível ao agente, não afirmar JWT/UI do fix.
 - [ ] Arquivamento negativo B bloqueado pela revisão automática Codex, aguarda confirmação específica; NÃO tentar outro mecanismo. Pendências antigas e homologação real integral preservadas.
 
 ## 23/10 21:06 — promoção frontend P1 autorizada, sem publicação
 - [x] Promover somente hook RPC financeiro para src; selector/mutation owner ativo OU ownorg legado interno sob RLS, RPC/CAS autoritativos, sem writes diretos ou liberar writer C2.
 - [x] 48/48 testes owner/ownorg/B/externos/CAS/fences/diálogo/publicação; tsgo app/node EXIT0, Vite production cópia integrada PASS36,15s (aviso chunks), preview OK. NÃO tsc/JWT/UI real; diff/SHA frontend-promotion-20261023.
 - [x] Registrar relato ACL fiscal c2_fiscal_resolver_internal_only aplicada pelo proprietário em applied (corpo intacto, postgres/service_role), sem consulta nova nem cópia migration fabricada; nunca reaplicar.
-- [ ] Aplicação SQL P1, POST/hashes e JWT/UI A/B aguardam proprietário/revisão; writer C2 continua fechado, método pix/plan published teste4 e pendências antigas preservados.
+- [x] Aplicação P1/POST e JWT leitura A/B relatados em21:18; método AUDIT salvo por UI externa. Substitui pendência de implantação e estado pix; writer C2 e homologações restantes fechados.
 
 ## 23/10 20:10 — P1 prioritário antes do writer
 - [x] Complemento20:19 candidato inativo: history/list/upsert/delete/matrix/batch/publish/copy/simulate + RLS itens/rules e dois logs, vínculos assignment/rule, PRE família/trigger LIVE e rollback comum; 102/102 PG sintético + 5/5 SDK. Cópia default/logs globais e histórico sem alvo provado fechados, preservados. Sem pedido/título/hosted/publicação; ver limites README.
