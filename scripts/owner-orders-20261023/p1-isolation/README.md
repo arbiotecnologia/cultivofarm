@@ -1,4 +1,11 @@
-# P1 — atribuições privadas e configuração financeira (INATIVO)
+# P1 — SQL em revisão; hook RPC promovido localmente, não publicado
+
+## Promoção autorizada 23/10 21:06 UTC
+Somente `src/hooks/useB2BFinanceiro.ts` promovido: RPC `rpc_update_partner_financial_settings` com baseline completo/NULL ausência, sem UPDATE/INSERT/UPSERT direto ou fallback. Selector e mutation leem a organização ativa do ator via RLS e aceitam commercial owner OU `organizations.partner_account_id` próprio; roles externas continuam negadas. A RPC/RLS, h15 e CAS servidor são autoritativos; nenhum UUID/storage concede autoridade. Não altera diálogo, rotas, entitlements, monitor ou writer C2.
+
+Revisão independente d99 e PRE integral READ ONLY PASS em produção são **relato do proprietário**, não execução do agente. SQL P1 ainda aguarda aplicação pelo proprietário; não publicar frontend até aplicação/POST coerentes e revisão. Sem API disponível/autoridade válida o hook falha fechado, nunca volta ao writer direto. Fiscal `c2_fiscal_resolver_internal_only` relatado como implantado pelo proprietário: registro em `../applied/c2_fiscal_resolver_internal_only.md`; não reaplicar o PRE fiscal de ACL anterior. Plano teste4 publicado e método pix preservados, sem DML.
+
+Diff/SHA/evidências desta promoção: `frontend-promotion-20261023/README.md`. **48/48 Vitest** em quatro arquivos (20 RPC/escopos + 11 diálogo + 14 sessão + 3 publicação); primeira execução 47 PASS/1 FAIL por interferência do selector no teste de troca tenant, corrigida isolando aquele teste da listagem, sem relaxar a negação. **tsgo app/node EXIT0**, cópia integrada `/tmp/p1-frontend-promoted-check`; **Vite production PASS 36,15s**, aviso de chunks grandes. Não foi tsc: checker usado foi tsgo; não afirmar tsc executado. Preview automático build OK. SDK/Auth simulados, **não JWT/PostgREST/UI real**; sessão external_unmanaged, homologação autenticada indisponível ao agente.
 
 Prioridade antes de liberar writer. Produção NÃO corrigida por este pacote: nenhum SQL/DML/Edge/publicação/sessão executado. Prova REAL B é relato independente do auditor: Fagner/admin tenant `8f57c7dd-0557-4041-b401-7a00f7244626` viu assignmentA `48dcac7d-d4a0-4058-bdf4-5461fee89f45` publicado; NÃO acionou Arquivar. Leitura de catálogo hosted confirmou a família sem tenant e policy única role-only.
 
@@ -9,7 +16,7 @@ Prioridade antes de liberar writer. Produção NÃO corrigida por este pacote: n
 - `candidate.sql.review`: transação autocontida PRE + core. `core.sql.review` serve apenas ao teste descartável; nunca instalar sem PRE.
 - `postflight.sql`: verificar depois de instalação independente. Acrescentar captura/comparação exata de hashes pós e catálogo completo pelo auditor antes do GO; o postflight atual verifica propriedades críticas, não certifica igualdade completa do schema.
 - `rollback.sql.review`: fecha leitura/ações de atribuição e settings, mantém fences, timestamp monotônico, método canônico e histórico; não restaura policy/ACL vulneráveis. Sem DROP de tabela/dado/histórico ou restauração do CHECK fixo.
-- `frontend.patch`, `frontend-baseline.ts`, `useB2BFinanceiro.ts`: patch inativo no hook existente. O formulário/diálogo/fences de rascunho e seleção não mudam. Promover SOMENTE coordenado com API; runtime atual continua baseline.
+- `frontend.patch` conserva o diff histórico owner-only; NÃO aplicar essa versão obsoleta. `frontend-baseline.ts` preserva baseline; `useB2BFinanceiro.ts` agora é cópia exata promovida. Usar o novo diff em `frontend-promotion-20261023/` e coordenar publicação com API/POST; diálogo/fences não mudam.
 
 ## Regras
 Atribuição partner usa `partner_accounts.commercial_owner_organization_id` ativo; producer usa `clientes.organization_id` e cliente ativo. Ator exige h15/readiness, perfil e organização ativos, papéis internos canônicos; externos mesmo cumulativos negados. Leitura direta e RPC list usam a mesma autorização. Create/update validam novo destino e destino anterior; submit/publish/archive autorizam antes de expor estado, bloqueiam linha e trigger revalida targets antigos/novos. DML direto fecha. Planos globais permanecem globais; nenhuma alteração no catálogo de planos.

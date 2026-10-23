@@ -1,9 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 23/10 21:06 — promoção frontend P1 autorizada, sem publicação
-- [ ] Promover somente hook RPC financeiro para src; alinhar selector/mutation com owner ativo OU ownorg legado interno, mantendo RPC/RLS autoritativos, fences e CAS servidor.
-- [ ] Testar positivos/negativos owner/ownorg/B/externos e registrar validações de tipos/build com limites honestos; entregar diff/SHA.
-- [ ] Registrar ACL fiscal c2_fiscal_resolver_internal_only aplicada pelo proprietário (corpo intacto, postgres/service_role); nunca reaplicar.
+- [x] Promover somente hook RPC financeiro para src; selector/mutation owner ativo OU ownorg legado interno sob RLS, RPC/CAS autoritativos, sem writes diretos ou liberar writer C2.
+- [x] 48/48 testes owner/ownorg/B/externos/CAS/fences/diálogo/publicação; tsgo app/node EXIT0, Vite production cópia integrada PASS36,15s (aviso chunks), preview OK. NÃO tsc/JWT/UI real; diff/SHA frontend-promotion-20261023.
+- [x] Registrar relato ACL fiscal c2_fiscal_resolver_internal_only aplicada pelo proprietário em applied (corpo intacto, postgres/service_role), sem consulta nova nem cópia migration fabricada; nunca reaplicar.
 - [ ] Aplicação SQL P1, POST/hashes e JWT/UI A/B aguardam proprietário/revisão; writer C2 continua fechado, método pix/plan published teste4 e pendências antigas preservados.
 
 ## 23/10 20:10 — P1 prioritário antes do writer
