@@ -17,8 +17,8 @@ A,B,P,Q,CLI,CLI_B,PROD,PLAN,SETTINGS=map(U,range(1,10))
 ADMIN,ADMIN_B,G,GT,T,PR,GB=map(U,range(100,107))
 def actor(u,s,err=None):
     claims=json.dumps({'sub':u,'role':'authenticated','iat':int(time.time())})
-    result=pg.sql(f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{claims}',true); SELECT current_setting('session_replication_role'); {s} COMMIT;",ok=not err)
-    if err:assert err in result,result[-1800:]
+    result=pg.sql(f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{claims}',true); SELECT current_setting('session_replication_role'); {s} COMMIT;",ok=err is None)
+    if err is not None:assert 'ERROR:' in result and err in result,result[-1800:]
     return result
 def val(u,s):return actor(u,s).splitlines()[-1]
 def snapshot():
