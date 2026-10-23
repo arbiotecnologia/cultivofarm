@@ -73,6 +73,15 @@ ok('history public INVOKER/private DEFINER minimal ACL', pg.sql((H.parent / 'coo
 r = subprocess.run(pg.psql(), input=install.encode(), capture_output=True)
 ok('re-install fails closed on drift (idempotent guard)', r.returncode != 0 and b'drift' in r.stderr, r.stderr[-300:])
 # ---- admin cadastro: cumulative external assignments through the canonical writer ----
+for n, legacy_role in [(701, 'parceiro_b2b'), (702, 'cliente_produtor')]:
+    partner_arg = f"'{P}'::uuid" if legacy_role == 'parceiro_b2b' else 'NULL::uuid'
+    clients_arg = 'ARRAY[]::uuid[]' if legacy_role == 'parceiro_b2b' else f"ARRAY['{CLI}']::uuid[]"
+    primary_arg = 'NULL::uuid' if legacy_role == 'parceiro_b2b' else f"'{CLI}'::uuid"
+    receipt = json.loads(val(ADMIN_A, f"SELECT public.b2b_claim_provisioning({partner_arg},'{U(n)}','legacy{n}@synthetic.invalid','Legacy synthetic','{legacy_role}'::public.app_role,{clients_arg},{primary_arg})::text;"))
+    pg.sql(f"INSERT INTO auth.users(id,email,raw_app_meta_data,raw_user_meta_data) VALUES ('{receipt['user_id']}','legacy{n}@synthetic.invalid',jsonb_build_object('b2b_provisioning_receipt','{receipt['claim_id']}'),'{{}}');")
+    finished = pg.sql(f"BEGIN; SET LOCAL ROLE service_role; SELECT set_config('request.jwt.claims','{{\"role\":\"service_role\"}}',true); SELECT public.b2b_finish_provisioning('{receipt['claim_id']}','{receipt['fence']}','{receipt['user_id']}')::text; COMMIT;").splitlines()[-1]
+    ok('published scalar claim + new finish preserves '+legacy_role, json.loads(finished).get('success') is True)
+    ok('legacy finish exact singleton '+legacy_role, pg.sql(f"SELECT array_agg(role::text ORDER BY role::text)=ARRAY['{legacy_role}'] FROM public.user_roles WHERE user_id='{receipt['user_id']}';") == 't')
 link(ADMIN_A, G, ['parceiro_b2b'], 'assign')
 link(ADMIN_A, T, ['parceiro_b2b_tecnico'], 'assign')
 link(ADMIN_A, GT, ['parceiro_b2b', 'parceiro_b2b_tecnico'], 'assign')
