@@ -1,6 +1,10 @@
 # Validação local — 23/10/2026
 
-**46 checks PASS no PostgreSQL descartável; 1/1 regressão Vitest PASS.** Não é homologação hosted Auth/JWT/RLS.
+**56 checks PASS no PostgreSQL descartável nesta rodada; 1/1 regressão Vitest PASS na rodada anterior, não repetida.** Não é homologação hosted Auth/JWT/RLS.
+
+Complemento 23:55: PRE contábil aceita apenas fixture sintética validada, bloqueia DRAFT/atestado NULL e ausência de configuração ativa; create DRAFT/NULL reverte sem pedido parcial. Seis negativos do trigger de filhos, executados como owner local com caller sintético, negam alteração de cronograma por gestor singleton/cumulativo, técnico/produtor e gestor/admin B com `C2_EXTERNAL_OWNER_DENIED`; estado integral inalterado. Aprovação/cobrança owner A seguem passando na cadeia capturada. Nenhuma nova mudança nos corpos candidatos foi necessária para a composição dos filhos.
+
+Produção conforme relato independente: A ativo DRAFT/atestado NULL; B semconfig. **Bloqueio humano contábil permanece aberto**, sem fabricar atestado/CNPJ ou alterar dados para PASS. Fixture positiva local não representa estado de produção. Nenhuma consulta hosted nesta rodada; writer permanece false e pacote inativo.
 
 Comando: `python3 scripts/owner-orders-20261023/internal-origin-composition-20261023/test-local.py`.
 

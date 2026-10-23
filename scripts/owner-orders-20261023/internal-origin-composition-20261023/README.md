@@ -10,6 +10,14 @@ Foram capturados 44 triggers atuais de pedidos, itens, termos, cronograma, vínc
 
 ## Correção proposta
 
+### Bloqueio humano contábil obrigatório — complemento 23:55 UTC
+
+Segundo consulta readonly relatada pelo proprietário, owner A `007bb519-cba0-4704-be2c-cb93ad010048` possui uma configuração ativa **DRAFT**, com `accounting_validated_at=NULL`; owner B `8f57c7dd-0557-4041-b401-7a00f7244626` não possui configuração. Esses dados NÃO foram alterados nem novamente consultados pelo agente.
+
+O requisito é indispensável para emitir a prova de origem: **NO-GO concreto para implantação/reabertura** até revisão contábil humana legítima do owner A pelo fluxo autorizado. Não preencher CNPJ/nome/atestado fictícios, marcar VALIDATED apenas para passar ou relaxar o guard. `preflight-accounting.sql` é READ ONLY e obrigatório junto do PRE estrutural; retorna `C2_ACCOUNTING_PREREQUISITE_BLOCKED` enquanto A não estiver realmente pronto. B é diagnóstico, não pedido de criação de configuração. PASS estrutural não significa prontidão contábil.
+
+A composição dos filhos já separa `c2_external_origin_assert` do `b2b_internal_assert_origin`: origem interna continua passando exclusivamente pelo assert interno; origem externa exige ticket somente durante create e autoridade interna owner P1 nas alterações posteriores. Novos negativos executam o trigger independentemente da filtragem RLS e negam gestor singleton/cumulativo, técnico, produtor e atores B após create. Isso não concede administração financeira interna ao comprador.
+
 - Prova externa explícita e imutável `c2_external_origin_snapshot`, separada da origem interna; NULL legado NÃO autoriza promoção.
 - Emissão exclusivamente na transação do create canônico, após guards/cart/hash/replay, usando o `issue_ticket` privado existente. Ticket txid/partner consumido ao terminar; sem GUC, claims de papel inventadas, trigger-depth ou desativação de RLS.
 - Owner/credor/emissor derivados de `commercial_owner_organization_id` ativo e único estabelecimento fiscal validado desse owner; cliente precisa pertencer ao mesmo owner. Sem organização própria do parceiro e sem UUID/payload como prova de autoridade.
@@ -26,6 +34,7 @@ Prefixo: `scripts/owner-orders-20261023/internal-origin-composition-20261023/`
 |---|---|
 | Capturas/hash/ACL/trigger/policies | `baseline/` |
 | PRE integral READ ONLY | `preflight.sql` |
+| PRE contábil obrigatório READ ONLY | `preflight-accounting.sql` |
 | Candidato transacional **inativo** | `candidate.sql.review` |
 | POST assertivo READ ONLY, writer ainda contido | `postflight.sql` |
 | Rollback deny-only, sem apagar snapshots/histórico | `rollback.sql.review` |
