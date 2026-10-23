@@ -1,4 +1,6 @@
 -- READ ONLY. Operator must prove canonical ref swzpzcwiasxmjutrmvkm externally.
+-- MANDATORY HUMAN GATE: preflight-accounting.sql must also PASS; structural PASS alone is NO-GO.
+-- Owner A reported DRAFT/accounting_validated_at NULL; owner B has no configuration. Never fabricate validation.
 BEGIN TRANSACTION READ ONLY;
 DO $guard$ BEGIN
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.audit_partner_order_payment_terms()'::regprocedure AND md5(pg_get_functiondef(oid))='96b68bec5b11f2a414f333c68a00d765' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.audit_partner_order_payment_terms'; END IF;
