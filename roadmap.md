@@ -2,7 +2,7 @@
 
 ## 23/10 23:25 — confirmação independente e vetor completo
 - [x] Registrar observação passiva CDP25responsesHTTP200/264–345ms: esta rodada não sugere gateway lento, conforme proprietário; sem atribuir prova a novas consultas do agente. Contenção23:21 vigente.
-- [ ] Revisar vetor efetivo C2 singleton/cumulativo e legacy B2B; executar provas de revogação, ABA observado e tenantchange e fechar pacote sem SQL/publicação/novas mudanças funcionais.
+- [x] Vetor efetivo C2 singleton/cumulativo completo e fallback legacy revistos sem alterar decoder/contrato; testes concretos adicionados.51/51 focados e158/158 em11arquivos PASS. Integração14cenários prova revogação/tenantchange/ABA observado; ABA entre polls NÃO certificado. Build automático23:25:56OK; nenhum tipo/build manual. Pacote atualizado sem SQL/publicação/sessões/pedidos; contenção vigente.
 
 ## 23/10 23:21 — evidência real adicional e contenção
 - [x] Registrar relato: timeOrigin1792797076368.5 estável/navigation navigate, sem reload, console vazio/diagnostics=[]; contenção independente c2_writer_containment_during_real_session_regression SUCCESS, helperSELECTfalse, financeiro preservado, zero pedidos. Não aplicar SQL/reabrir writer/publicar.
