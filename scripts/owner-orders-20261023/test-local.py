@@ -54,6 +54,7 @@ try:
     receivable_generated boolean DEFAULT false, receivable_generated_at timestamptz, receivable_generated_by uuid,
     financial_status text, payment_due_date date, payment_method text);
   CREATE TABLE partner_financial_settings(partner_id uuid PRIMARY KEY, billing_trigger text DEFAULT 'na_aprovacao', default_payment_method text DEFAULT 'pix', auto_generate_receivable boolean DEFAULT true, active boolean DEFAULT true);
+  CREATE TABLE notificacoes_operacionais(usuario_id uuid, tipo text, titulo text, mensagem text, link text);
   CREATE TABLE partner_order_audit_logs(order_id uuid, partner_id uuid, usuario_id uuid, acao text, dados_novos jsonb);
   CREATE TABLE partner_order_payment_terms(id uuid PRIMARY KEY, partner_order_id uuid, final_amount numeric, first_due_date date, installment_count int,
     plan_name_snapshot text, plan_code_snapshot text, discount_percent_snapshot numeric, monthly_interest_percent_snapshot numeric, months_count_snapshot numeric,
@@ -116,11 +117,11 @@ try:
     run(body.decode())
   sigs = {'platform_private.assert_b2b_partner_scope':'(uuid,uuid)','platform_private.b2b_commercial_partner_projection':'()',
     'public.create_partner_order_secure':'(uuid,text,jsonb,date,uuid,date,integer,text,text)','public.simulate_b2b_payment_plan_secure':'(uuid,uuid,jsonb,date)',
-    'public.generate_b2b_receivable_secure_impl':'(uuid)','public.tg_auto_b2b_receivable':'()','public.fn_b2b_plan_selectable':'(uuid,timestamp with time zone)'}
+    'public.generate_b2b_receivable_secure_impl':'(uuid)','public.tg_auto_b2b_receivable':'()','public.fn_b2b_plan_selectable':'(uuid,timestamp with time zone)','public.approve_partner_order':'(uuid,text,date)'}
   for fn, s in sigs.items():
     local = run(f"SELECT md5(pg_get_functiondef('{fn}{s}'::regprocedure))")
     assert local == hosted[fn], f'fidelidade {fn}: local {local} != hosted {hosted[fn]}'
-  ok('pg_get_functiondef local reproduz md5 hosted dos 7 corpos baseline')
+  ok('pg_get_functiondef local reproduz md5 hosted dos 8 corpos baseline')
   run("CREATE TRIGGER trg_auto_b2b_receivable AFTER UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable();")
 
   # Fixtures sintéticas: A (owner org A) e B (owner org B); clientes comerciais sem org própria.
@@ -180,6 +181,33 @@ try:
   proj = run(as_uid(U['tech'], "SELECT platform_private.b2b_commercial_partner_projection()->'order_capabilities';"))
   assert '"order_create": false' in proj, proj
   ok('projeção: order_create=true cumulativo, false técnico isolado')
+
+  # (G) destinatários de notificação
+  ADM_B='00000000-0000-0000-0000-000000000077'; ADM_OFF='00000000-0000-0000-0000-000000000078'; GC_A='00000000-0000-0000-0000-000000000079'
+  run(f"""INSERT INTO profiles VALUES('{ADM_B}','{ORG_B}'),('{ADM_OFF}','{ORG_A}',false),('{GC_A}','{ORG_A}');
+    INSERT INTO user_roles VALUES('{ADM_B}','administrador'),('{ADM_OFF}','administrador'),('{GC_A}','gestor_comercial'),('{U['gestor']}','gestor');""")
+  rec = run(f"SELECT string_agg(r::text,',' ORDER BY r) FROM platform_private.c2_order_internal_recipients('{P_A}') r")
+  assert rec == ','.join(sorted([U['admin'], GC_A])), rec
+  ok('novo pedido de A notifica só admin/gestor_comercial ATIVOS do tenant A (B e inativo excluídos)')
+  recb = run(f"SELECT string_agg(r::text,',') FROM platform_private.c2_order_internal_recipients('{P_B}') r")
+  assert recb == ADM_B, recb
+  ok('novo pedido de B não notifica ninguém de A')
+  d = run("SELECT pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)")
+  assert 'c2_order_internal_recipients(p_partner_id)' in d and "WHERE ur.role IN ('administrador','gestor_comercial')" not in d
+  ok('create usa destinatários do tenant dono (consulta global removida)')
+  run(f"UPDATE partner_users SET revoked_at=now() WHERE user_id='{U['tech']}'; UPDATE profiles SET ativo=false WHERE user_id='{U['cumul']}';")
+  pr = run(f"SELECT string_agg(r::text,',') FROM platform_private.c2_order_partner_recipients('{P_A}') r")
+  assert pr == U['gestor'], pr
+  ok('aprovação notifica só vínculos vigentes com perfil ativo (revogado/inativo excluídos)')
+  assert run(f"SELECT count(*) FROM platform_private.c2_order_partner_recipients('{P_B}') r WHERE r='{U['gestor']}'") == '0'
+  ok('aprovação de B não notifica usuário de A')
+  d = run("SELECT pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)")
+  assert 'c2_order_partner_recipients(v_pid)' in d and 'FROM public.partner_users WHERE partner_id = v_pid' not in d
+  ok('approve usa destinatários vigentes')
+  run(f"UPDATE partner_users SET revoked_at=NULL WHERE user_id='{U['tech']}'; UPDATE profiles SET ativo=true WHERE user_id='{U['cumul']}';")
+  acl2 = run("SELECT string_agg(coalesce(p.proacl::text,'default'),' ') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname LIKE 'c2_order_%'")
+  assert 'authenticated' not in acl2 and 'anon' not in acl2 and '=X/postgres' in acl2, acl2
+  ok('ACL dos destinatários fechada a clientes')
 
   # (2) título: tenant dono, categoria/método estritos, cliente, parcelas, duplicidade
   def mk_order(oid, partner=P_A, amount=300, n=3, trig='na_aprovacao', method='pix'):
@@ -255,6 +283,9 @@ try:
   d = run("SELECT pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure)")
   assert 'ORDER BY created_at ASC LIMIT 1;\n  IF v_category_id IS NULL THEN\n    SELECT id INTO v_category_id FROM public.financial_categories ORDER BY' not in d
   ok('após rollback não há fallback de categoria')
+  d = run("SELECT pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)")
+  assert 'c2_order_internal_recipients' in d
+  ok('rollback não reabre notificação cross-tenant')
   print(f'TOTAL {passed} PASS (PostgreSQL descartável, auth sintético; NÃO hosted)')
 finally:
   subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'stop','-m','immediate'],capture_output=True)
