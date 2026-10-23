@@ -274,6 +274,7 @@ export default function Configuracoes() {
   const createFence = useStorageAccessScope("tenant-user-registration");
   const [verifiedClients, setVerifiedClients] = useState<string[]>([]);
   const changeKind = (kind: UserRegistrationKind) => {
+    if (createSubmitLock.current || receiptAttempt.current) return;
     setRegistrationKind(kind); setNewUser({ ...initialNewUser, nome: newUser.nome, email: newUser.email, roles: kind === "internal" ? ["administrativo"] : [kind === "b2b" ? "parceiro_b2b" : "cliente_produtor"] });
     setSelectedClients([]); setPrimaryClient(null); setVerifiedClients([]); requestKey.current = crypto.randomUUID();
   };
@@ -338,6 +339,7 @@ export default function Configuracoes() {
       setNewUser(initialNewUser);
       setCreateErros({});
       setCreateResumo(null);
+      receiptAttempt.current = null; requestKey.current = crypto.randomUUID();
     },
     onError: (e: Error, { current }) => {
       if (!current()) return;

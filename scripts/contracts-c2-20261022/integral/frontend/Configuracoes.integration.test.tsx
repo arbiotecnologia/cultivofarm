@@ -162,3 +162,14 @@ it("erro de edição preserva seleção e não anuncia confirmação", async () 
   fireEvent.click(screen.getByRole("button", { name: "Confirmar perfis" })); await screen.findByText("Não foi possível confirmar. Preserve a tentativa para verificar novamente.");
   expect(screen.getByRole("checkbox", { name: "Consultor técnico B2B" })).toBeChecked(); expect(screen.queryByText("Alteração confirmada.")).not.toBeInTheDocument();
 });
+it("troca tenant durante edição descarta resultado tardio sem confirmar nem reutilizar CAS", async () => {
+  const original = s.rpc.getMockImplementation(); let resolve: (v: unknown) => void = () => {};
+  s.rpc.mockImplementation((name, args) => name === "link_partner_user" ? { abortSignal: () => new Promise(r => { resolve = r; }) } : original?.(name, args));
+  const { view, element } = await openEdit();
+  fireEvent.change(within(screen.getByRole("region", { name: "Acessos do parceiro" })).getByRole("textbox", { name: "Motivo" }), { target: { value: "Revisão sintética" } });
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar perfis" })); await waitFor(() => expect(s.rpc.mock.calls.filter(c => c[0] === "link_partner_user")).toHaveLength(1));
+  s.org = "tenant-B"; s.rows = []; view.rerender(element());
+  await act(async () => resolve({ data: { ok: true, user_id: target, partner_id: partner, action: "revoke_roles", version: "b".repeat(32), reader_activation: false }, error: null }));
+  expect(screen.queryByText("Alteração confirmada.")).not.toBeInTheDocument();
+  expect(s.rpc.mock.calls.filter(c => c[0] === "link_partner_user")).toHaveLength(1);
+});
