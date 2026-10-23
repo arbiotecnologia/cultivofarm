@@ -25,6 +25,8 @@ pre = guard({})
 chain=json.loads((B/'chain.json').read_text())
 triggers='\n'.join(f"IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.{t['table']}'::regclass AND tgname={quote(t['name'])} AND tgenabled={quote(t['enabled'])} AND pg_get_triggerdef(oid)={quote(t['sql'])}) THEN RAISE EXCEPTION 'origin_trigger_drift:{t['table']}.{t['name']}'; END IF;" for t in chain['triggers'])
 pre += 'DO $guard$ BEGIN\n'+triggers+'\nEND $guard$;\n'
+trigger_tables=','.join(quote('public.'+t) for t in sorted(set(t['table'] for t in chain['triggers'])))
+pre+=f"DO $$ BEGIN IF (SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgrelid::regclass::text IN ({','.join(quote(t['table']) for t in [dict(table=x) for x in sorted(set(t['table'] for t in chain['triggers']))])}))<>{len(chain['triggers'])} THEN RAISE EXCEPTION 'origin_unexpected_trigger'; END IF; END $$;\n"
 policies=json.loads((B/'policies.json').read_text())
 tables=sorted(set(p['tablename'] for p in policies))
 policy_literal=quote(json.dumps(policies))
@@ -137,4 +139,7 @@ if (H/'postflight-hashes.json').exists():
     post=guard(expected)+policy_guard
     post+='DO $guard$ BEGIN\n'+triggers+'\nEND $guard$;\n'
     post+="DO $$ BEGIN IF has_function_privilege('authenticated','platform_private.c2_external_origin_assert(jsonb,uuid,uuid)','EXECUTE') OR has_function_privilege('anon','platform_private.c2_external_origin_assert(jsonb,uuid,uuid)','EXECUTE') THEN RAISE EXCEPTION 'origin_private_helper_exposed'; END IF; IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='zz_c2_external_final_state' AND tgenabled='O') THEN RAISE EXCEPTION 'origin_final_guard_missing'; END IF; END $$;\n"
+    if (H/'postflight-new-functions.json').exists():
+        for sig,h in json.loads((H/'postflight-new-functions.json').read_text()).items():
+            post+=f"DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='{sig}'::regprocedure AND md5(pg_get_functiondef(oid))='{h}' AND pg_get_userbyid(proowner)='postgres') OR has_function_privilege('authenticated','{sig}','EXECUTE') OR has_function_privilege('anon','{sig}','EXECUTE') THEN RAISE EXCEPTION 'origin_new_helper_drift'; END IF; END $$;\n"
     (H/'postflight.sql').write_text('-- READ ONLY; validates composed containment, NOT writer reopening.\nBEGIN TRANSACTION READ ONLY;\n'+post+'ROLLBACK;\n')

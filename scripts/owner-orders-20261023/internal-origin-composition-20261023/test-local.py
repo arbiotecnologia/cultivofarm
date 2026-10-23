@@ -76,6 +76,7 @@ for name in json.loads((H/'expected-source.json').read_text()):
     f=next(f for f in fns.values() if f['sig'].split('(')[0]==name)
     post[name]=pg.sql(f"SELECT md5(pg_get_functiondef('{f['sig']}'::regprocedure))")
 (H/'postflight-hashes.json').write_text(json.dumps(post,indent=2)+'\n')
+(H/'postflight-new-functions.json').write_text(json.dumps({s:pg.sql(f"SELECT md5(pg_get_functiondef('{s}'::regprocedure))") for s in ['platform_private.c2_external_origin_assert(jsonb,uuid,uuid)','platform_private.c2_external_final_state_guard()']},indent=2)+'\n')
 subprocess.run([sys.executable,str(H/'assemble.py')],check=True)
 pg.sql((H/'postflight.sql').read_text());ok('assertive READ ONLY postflight composed containment')
 ok('candidate leaves writer containment false',pg.sql(f"SELECT platform_private.c2_owner_order_create_allowed('{G}','{P}')")=='f')
@@ -112,6 +113,7 @@ def create(u,key,p=P,h=None,obs='Synthetic'):
     h=h or simulate(u,p)['cart_hash']
     return f"SELECT public.create_partner_order_secure('{p}','{obs}','{items}',NULL,'{PLAN}',NULL,NULL,'{h}','{key}')"
 hashA=simulate(G)['cart_hash'];ok('real simulation resolves canonical 1L price 180')
+ok('private origin/ticket functions not executable by authenticated',pg.sql("SELECT NOT has_function_privilege('authenticated','platform_private.c2_external_origin_assert(jsonb,uuid,uuid)','EXECUTE') AND NOT has_function_privilege('authenticated','platform_private.issue_ticket(text,uuid)','EXECUTE')")=='t')
 # Original guard must reproduce reported denial (candidate retained for subsequent tests).
 guard=pg.sql("SELECT pg_get_functiondef('platform_private.b2b_internal_order_snapshot_guard()'::regprocedure)")+'\n'
 pg.sql((H/'baseline/platform_private.b2b_internal_order_snapshot_guard.sql').read_text())
@@ -159,5 +161,11 @@ pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET r
 key=str(uuid.uuid4());call=create(G,key);first=val(G,call+';');before=snapshot();again=val(G,call+';');ok('create idempotency same result and no new writes',first==again and snapshot()==before)
 before=snapshot();actor(G,create(G,key,obs='Changed')+';',err='idempotency_conflict');ok('conflicting replay no writes',snapshot()==before)
 before=snapshot();actor(G,create(G,'wronghash',h='invalid')+';',err='price_changed');ok('incorrect hash no writes',snapshot()==before)
+pg.sql(f"SET session_replication_role=replica; UPDATE public.company_fiscal_settings SET configuration_status='DRAFT' WHERE id='{SETTINGS}'; SET session_replication_role=origin;")
+before=snapshot();actor(G,create(G,'issuerinvalid',h=hashA)+';',err='B2B_INTERNAL_ISSUER_NOT_VALIDATED');ok('unvalidated owner issuer rejected atomically',snapshot()==before)
+pg.sql(f"SET session_replication_role=replica; UPDATE public.company_fiscal_settings SET configuration_status='VALIDATED' WHERE id='{SETTINGS}'; SET session_replication_role=origin;")
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_accounts SET client_id='{CLI_B}' WHERE id='{P}'; SET session_replication_role=origin;")
+before=snapshot();actor(G,create(G,'foreignclient',h=hashA)+';',err='C2_EXTERNAL_CLIENT_DENIED');ok('owner/client cross-tenant denied atomically',snapshot()==before)
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_accounts SET client_id='{CLI}' WHERE id='{P}'; SET session_replication_role=origin;")
 pg.sql((H/'rollback.sql.review').read_text());before=snapshot();actor(G,create(G,'contained',h=hashA)+';',err='C2_OWNER_ORDER_CLOSED');ok('rollback closes writer and preserves historical data',snapshot()==before)
 print('TOTAL',len(checks),'PASS; synthetic Auth, no hosted JWT/RLS certification')
