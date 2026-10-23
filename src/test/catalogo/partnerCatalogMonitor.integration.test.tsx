@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -52,6 +52,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   state.hasVolume = true; state.holdProbe = undefined;
   Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
+  onlineManager.setOnline(true);
   state.table.mockImplementation((table: string) => {
     if (table === "profiles" || table === "user_roles") {
       const q: Record<string, unknown> = {};
