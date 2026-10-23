@@ -1,0 +1,700 @@
+--- a/src/pages/financeiro/FinanceiroB2B.tsx
++++ b/src/pages/financeiro/FinanceiroB2B.tsx
+@@ -1,4 +1,4 @@
+-import { useState, useMemo } from "react";
++import { useState, useMemo, useEffect, useRef } from "react";
+ import { Link } from "react-router-dom";
+ import { Card, CardContent } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+@@ -21,9 +21,13 @@
+   useCancelB2BReceivable,
+   usePartnerFinancialSettings,
+   useUpdatePartnerFinancialSettings,
++  useFinancialSettingsPartners,
++  useFinancialSettingsMethods,
+ } from "@/hooks/useB2BFinanceiro";
+ import { brl, fmtDate } from "@/lib/financial/format";
+ import { useAuth } from "@/hooks/useAuth";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { activePaymentMethodValid, canConfigurePartnerSettings, emptyPartnerSettings, samePartnerSettings, type PartnerSettings } from "@/lib/financeiro/partnerSettings";
+ 
+ const finStatusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+   pendente: "secondary",
+@@ -35,7 +39,8 @@
+ };
+ 
+ export default function FinanceiroB2B() {
+-  const { role } = useAuth();
++  const { role, roles } = useAuth();
++  const fence = useStorageAccessScope("b2b-financial");
+   const [filters, setFilters] = useState<{ status?: string; financial_status?: string; q?: string }>({});
+   const [settingsFor, setSettingsFor] = useState<{ partner_id: string; partner_name: string } | null>(null);
+ 
+@@ -48,7 +53,10 @@
+ 
+   const canGenerate = role === "administrador" || role === "financeiro" || role === "gestor";
+   const canCancel = role === "administrador" || role === "financeiro";
+-  const canSettings = canGenerate;
++  const canSettings = fence.ready && canConfigurePartnerSettings(roles);
++  const partners = useFinancialSettingsPartners(canSettings);
++  const [selectedPartner, setSelectedPartner] = useState("");
++  useEffect(() => { setSettingsFor(null); setSelectedPartner(""); }, [fence.scope]);
+ 
+   const filtered = useMemo(
+     () =>
+@@ -77,6 +85,21 @@
+       </div>
+ 
+ 
++      {canSettings && <div className="flex flex-wrap gap-2 items-end">
++        <div className="space-y-1 min-w-0 w-full sm:w-80">
++          <Label htmlFor="financial-partner">Parceiro</Label>
++          <Select value={selectedPartner} onValueChange={setSelectedPartner} disabled={!partners.data || partners.isFetching}>
++            <SelectTrigger id="financial-partner"><SelectValue placeholder="Selecionar parceiro" /></SelectTrigger>
++            <SelectContent>{(partners.data ?? []).map(p => <SelectItem key={p.id} value={p.id}>{p.nome_fantasia || p.razao_social}</SelectItem>)}</SelectContent>
++          </Select>
++        </div>
++        <Button variant="outline" disabled={!partners.data?.some(p => p.id === selectedPartner) || partners.isFetching}
++          onClick={() => { const p = partners.data?.find(p => p.id === selectedPartner); if (p) setSettingsFor({ partner_id: p.id, partner_name: p.nome_fantasia || p.razao_social }); }}>
++          <Settings2 className="h-4 w-4 mr-1" />Configurar parceiro
++        </Button>
++        {partners.isError && <p role="alert" className="text-sm text-destructive">Parceiros indisponíveis para esta sessão.</p>}
++      </div>}
++
+       <Card>
+         <CardContent className="pt-6 space-y-3">
+           <div className="flex flex-wrap gap-2 items-end">
+@@ -195,57 +218,63 @@
+         </CardContent>
+       </Card>
+ 
+-      <PartnerFinancialSettingsDialog
++      {canSettings && settingsFor && <PartnerFinancialSettingsDialog
++        key={`${fence.scope}:${settingsFor.partner_id}`}
+         open={!!settingsFor}
+         onClose={() => setSettingsFor(null)}
+         partner={settingsFor}
+-      />
++      />}
+     </div>
+   );
+ }
+ 
+-function PartnerFinancialSettingsDialog({
++export function PartnerFinancialSettingsDialog({
+   open, onClose, partner,
+ }: {
+   open: boolean; onClose: () => void; partner: { partner_id: string; partner_name: string } | null;
+ }) {
+-  const { data: settings, isLoading } = usePartnerFinancialSettings(partner?.partner_id);
++  const { roles } = useAuth();
++  const fence = useStorageAccessScope("b2b-financial");
++  const allowed = fence.ready && canConfigurePartnerSettings(roles);
++  const query = usePartnerFinancialSettings(partner?.partner_id, open && allowed);
++  const methods = useFinancialSettingsMethods(open && allowed);
+   const save = useUpdatePartnerFinancialSettings();
+-  const [form, setForm] = useState<any>({});
+-
+-  useMemo(() => {
+-    if (settings) setForm(settings);
+-    else if (partner)
+-      setForm({
+-        partner_id: partner.partner_id,
+-        billing_trigger: "na_entrega",
+-        payment_terms_days: 7,
+-        default_payment_method: "pix",
+-        auto_generate_receivable: true,
+-        block_if_overdue: false,
+-        active: true,
+-      });
+-  }, [settings, partner]);
+-
+-  if (!partner) return null;
++  const [baseline, setBaseline] = useState<PartnerSettings | null | undefined>(undefined);
++  const [form, setForm] = useState<PartnerSettings>(() => emptyPartnerSettings(partner?.partner_id ?? ""));
++  const [failure, setFailure] = useState<string | null>(null);
++  const submitting = useRef(false);
++  useEffect(() => {
++    if (baseline !== undefined || !query.isSuccess || query.data === undefined || !partner) return;
++    setBaseline(query.data);
++    setForm(query.data ?? emptyPartnerSettings(partner.partner_id));
++  }, [baseline, query.isSuccess, query.data, partner]);
++  const conflict = baseline !== undefined && query.data !== undefined && !samePartnerSettings(baseline, query.data);
++  const validMethod = activePaymentMethodValid(form.default_payment_method, methods.data ?? []);
++  const ready = allowed && baseline !== undefined && query.isSuccess && !query.isFetching && !query.isError
++    && methods.isSuccess && !methods.isFetching && !methods.isError && validMethod && !conflict && !failure;
++  const numbersValid = Number.isInteger(form.payment_terms_days) && form.payment_terms_days >= 0
++    && (form.credit_limit === null || Number.isFinite(form.credit_limit) && form.credit_limit >= 0);
++  if (!partner || !allowed) return null;
+ 
+   return (
+-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+-      <DialogContent className="max-w-lg">
++    <Dialog open={open} onOpenChange={(v) => !v && !submitting.current && onClose()}>
++      <DialogContent className="max-w-lg" aria-describedby={undefined}>
+         <DialogHeader>
+           <DialogTitle>Configuração Financeira — {partner.partner_name}</DialogTitle>
+         </DialogHeader>
+-        {isLoading ? (
++        {(conflict || failure) && <p role="alert" className="text-sm text-destructive">{conflict || failure === "settings_conflict" ? "A configuração mudou. Seu rascunho foi preservado; feche e reabra para revisar a versão atual." : "Não foi possível confirmar o salvamento. Seu rascunho foi preservado; feche e reabra para conferir."}</p>}
++        {(query.isError || methods.isError) && <p role="alert" className="text-sm text-destructive">Configuração ou métodos indisponíveis. Salvamento bloqueado.</p>}
++        {baseline === undefined ? (
+           <div className="py-8 text-center text-muted-foreground">Carregando…</div>
+         ) : (
+           <div className="space-y-3">
+             <div>
+-              <Label>Gatilho de cobrança</Label>
++              <Label htmlFor="billing-trigger">Gatilho de cobrança</Label>
+               <Select
+                 value={form.billing_trigger ?? "na_entrega"}
+                 onValueChange={(v) => setForm((f: any) => ({ ...f, billing_trigger: v }))}
+               >
+-                <SelectTrigger><SelectValue /></SelectTrigger>
++                <SelectTrigger id="billing-trigger"><SelectValue /></SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="na_aprovacao">Na aprovação</SelectItem>
+                   <SelectItem value="na_producao_finalizada">Produção finalizada</SelectItem>
+@@ -256,26 +285,29 @@
+             </div>
+             <div className="grid grid-cols-2 gap-3">
+               <div>
+-                <Label>Prazo (dias)</Label>
++                <Label htmlFor="payment-days">Prazo (dias)</Label>
+                 <Input
++                  id="payment-days"
+                   type="number" min={0}
+                   value={form.payment_terms_days ?? 7}
+                   onChange={(e) => setForm((f: any) => ({ ...f, payment_terms_days: Number(e.target.value) }))}
+                 />
+               </div>
+               <div>
+-                <Label>Forma padrão</Label>
++                <Label htmlFor="default-method">Forma padrão</Label>
+                 <Select
+-                  value={form.default_payment_method ?? "pix"}
++                  value={form.default_payment_method ?? ""}
+                   onValueChange={(v) => setForm((f: any) => ({ ...f, default_payment_method: v }))}
+                 >
+-                  <SelectTrigger><SelectValue /></SelectTrigger>
++                  <SelectTrigger id="default-method"><SelectValue placeholder="Selecionar método ativo" /></SelectTrigger>
+                   <SelectContent>
+-                    {["pix","boleto","transferencia","dinheiro","cartao","prazo"].map(m => (
+-                      <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
++                    {form.default_payment_method && !validMethod && <SelectItem disabled value={form.default_payment_method}>{form.default_payment_method} — inválido/inativo</SelectItem>}
++                    {(methods.data ?? []).filter(m => activePaymentMethodValid(m.name, methods.data ?? [])).map(m => (
++                      <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
++                {methods.isSuccess && !validMethod && <p role="alert" className="text-sm text-destructive">Selecione explicitamente um método ativo cadastrado.</p>}
+               </div>
+             </div>
+             <div>
+@@ -309,12 +341,19 @@
+           </div>
+         )}
+         <DialogFooter>
+-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
++          <Button variant="ghost" disabled={save.isPending} onClick={onClose}>Cancelar</Button>
+           <Button
+-            disabled={save.isPending}
+-            onClick={() =>
+-              save.mutate({ ...form, partner_id: partner.partner_id }, { onSuccess: onClose })
+-            }
++            disabled={save.isPending || !ready || !numbersValid}
++            onClick={async () => {
++              if (!ready || !numbersValid || submitting.current || baseline === undefined) return;
++              const current = fence.capture();
++              submitting.current = true;
++              try {
++                await save.mutateAsync({ draft: { ...form, partner_id: partner.partner_id }, baseline });
++                if (current()) onClose();
++              } catch (error) { if (current()) setFailure(error instanceof Error ? error.message : "unconfirmed"); }
++              finally { submitting.current = false; }
++            }}
+           >Salvar</Button>
+         </DialogFooter>
+       </DialogContent>
+--- a/src/hooks/useB2BFinanceiro.ts
++++ b/src/hooks/useB2BFinanceiro.ts
+@@ -2,6 +2,9 @@
+ import { supabase } from "@/integrations/supabase/client";
+ import { toast } from "sonner";
+ import { useScopedB2BFinancialQuery } from "@/hooks/useB2BFinancialScope";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import { useAuth } from "@/hooks/useAuth";
++import { activePaymentMethodValid, canConfigurePartnerSettings, settingsFields, type PartnerSettings } from "@/lib/financeiro/partnerSettings";
+ 
+ const sb = supabase as any;
+ 
+@@ -124,10 +127,10 @@
+   });
+ }
+ 
+-export function usePartnerFinancialSettings(partner_id: string | null | undefined) {
++export function usePartnerFinancialSettings(partner_id: string | null | undefined, enabled = true) {
+   return useScopedB2BFinancialQuery({
+     queryKey: ["pfs", partner_id],
+-    enabled: !!partner_id,
++    enabled: enabled && !!partner_id,
+     queryFn: async () => {
+       const { data, error } = await sb
+         .from("partner_financial_settings")
+@@ -135,23 +138,82 @@
+         .eq("partner_id", partner_id)
+         .maybeSingle();
+       if (error) throw error;
+-      return data;
++      return data as PartnerSettings | null;
+     },
+   });
+ }
+ 
+ export function useUpdatePartnerFinancialSettings() {
+   const qc = useQueryClient();
++  const fence = useStorageAccessScope("b2b-financial");
++  const { roles, profile } = useAuth();
+   return useMutation({
+-    mutationFn: async (payload: any) => {
+-      const { error } = await sb.from("partner_financial_settings").upsert(payload, { onConflict: "partner_id" });
++    mutationFn: async ({ draft, baseline }: { draft: PartnerSettings; baseline: PartnerSettings | null }) => {
++      const current = fence.capture();
++      const org = profile?.organization_id;
++      if (!current() || !org || !canConfigurePartnerSettings(roles)) throw new Error("financial_context_unavailable");
++      if (baseline && (baseline.partner_id !== draft.partner_id || !baseline.id || !baseline.updated_at)) throw new Error("settings_conflict");
++      // RLS remains authoritative. Check exact tenant-owned active target, not cached selector rows.
++      const { data: partner, error: partnerError } = await sb.from("partner_accounts")
++        .select("id").eq("id", draft.partner_id).eq("commercial_owner_organization_id", org)
++        .eq("ativo", true).is("deleted_at", null).maybeSingle();
++      if (!current()) throw new Error("financial_context_changed");
++      if (partnerError || !partner) throw new Error("financial_partner_unavailable");
++      const { data: methods, error: methodError } = await sb.from("payment_methods").select("name, active").eq("active", true);
++      if (!current()) throw new Error("financial_context_changed");
++      if (methodError || !activePaymentMethodValid(draft.default_payment_method, methods ?? [])) throw new Error("payment_method_invalid");
++      const payload = Object.fromEntries(settingsFields.map(field => [field, draft[field]]));
++      let query;
++      if (baseline) {
++        // Full baseline predicates also catch existing writers that do not advance updated_at.
++        const stamp = new Date(Math.max(Date.now(), Date.parse(baseline.updated_at ?? "") + 1)).toISOString();
++        query = sb.from("partner_financial_settings").update({ ...payload, updated_at: stamp })
++          .eq("id", baseline.id).eq("partner_id", draft.partner_id).eq("updated_at", baseline.updated_at);
++        for (const field of settingsFields) query = baseline[field] === null
++          ? query.is(field, null) : query.eq(field, baseline[field]);
++      } else {
++        // Unique partner_id denies concurrent insertion; never upsert over somebody else's new row.
++        query = sb.from("partner_financial_settings").insert({ ...payload, partner_id: draft.partner_id });
++      }
++      const { data, error } = await query.select("*").maybeSingle();
++      if (!current()) throw new Error("financial_context_changed");
++      if (error?.code === "23505" || (!error && !data)) throw new Error("settings_conflict");
+       if (error) throw error;
++      return { row: data as PartnerSettings, scope: fence.scope };
+     },
+-    onSuccess: (_d, v: any) => {
++    onSuccess: (result, v) => {
++      if (!fence.ready || result.scope !== fence.scope) return;
+       toast.success("Configuração salva");
+-      qc.invalidateQueries({ queryKey: ["pfs", v.partner_id] });
++      void qc.invalidateQueries({ queryKey: ["pfs", v.draft.partner_id, result.scope], exact: true });
++    },
++    onError: () => {}, // Dialog preserves draft and distinguishes conflict/uncertainty.
++  });
++}
++
++export function useFinancialSettingsPartners(enabled: boolean) {
++  const { profile, roles } = useAuth();
++  return useScopedB2BFinancialQuery({
++    queryKey: ["pfs-partners", profile?.organization_id],
++    enabled: enabled && canConfigurePartnerSettings(roles),
++    queryFn: async (): Promise<Array<{ id: string; razao_social: string; nome_fantasia: string | null }>> => {
++      if (!profile?.organization_id) throw new Error("financial_context_unavailable");
++      const { data, error } = await sb.from("partner_accounts").select("id, razao_social, nome_fantasia")
++        .eq("commercial_owner_organization_id", profile.organization_id).eq("ativo", true)
++        .is("deleted_at", null).order("razao_social").limit(1000);
++      if (error) throw error;
++      return data ?? [];
++    },
++  });
++}
++
++export function useFinancialSettingsMethods(enabled: boolean) {
++  return useScopedB2BFinancialQuery({
++    queryKey: ["pfs-methods"], enabled,
++    queryFn: async (): Promise<Array<{ id: string; name: string; active: boolean }>> => {
++      const { data, error } = await sb.from("payment_methods").select("id, name, active").eq("active", true).order("name");
++      if (error) throw error;
++      return data ?? [];
+     },
+-    onError: (e: any) => toast.error(e.message),
+   });
+ }
+ 
+--- a/src/hooks/useB2BFinancialScope.ts
++++ b/src/hooks/useB2BFinancialScope.ts
+@@ -3,7 +3,7 @@
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ 
+ const financialKeys = new Set([
+-  "b2b-receivables", "b2b-financial-kpis", "pfs", "portal-partner-financial",
++  "b2b-receivables", "b2b-financial-kpis", "pfs", "pfs-partners", "pfs-methods", "portal-partner-financial",
+   "partner-credit", "portal-partner-credit", "b2b-gov-kpis", "b2b-aging",
+   "b2b-aging-det", "b2b-forecast", "b2b-profit", "b2b-exec-alerts",
+   "b2b-carteira-kpis", "b2b-exec-dashboard", "partner-risk-score", "fgr",
+@@ -34,6 +34,6 @@
+       return data;
+     },
+   });
+-  return { ...result, data: fence.ready ? result.data : undefined, ready: fence.ready,
++  return { ...result, data: fence.ready && !result.isError ? result.data : undefined, ready: fence.ready,
+     scope: fence.scope };
+ }
+\ No newline at end of file
+--- a/src/hooks/useCommercialConditions.ts
++++ b/src/hooks/useCommercialConditions.ts
+@@ -8,6 +8,7 @@
+  */
+ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ 
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ const rpc = (name: string, args?: Record<string, unknown>) => (supabase as any).rpc(name, args);
+@@ -89,14 +90,19 @@
+ const CC_KEY = ["commercial-conditions"] as const;
+ 
+ export function usePlanAssignments(status?: ConditionStatus) {
+-  return useQuery({
+-    queryKey: [...CC_KEY, "assignments", status ?? "all"],
+-    queryFn: async (): Promise<PlanAssignment[]> => {
+-      const { data, error } = await rpc("rpc_cc_list_assignments", { p_status: status ?? null });
++  const fence = useStorageAccessScope("commercial-conditions-assignments");
++  const result = useQuery({
++    queryKey: [...CC_KEY, "assignments", status ?? "all", fence.scope],
++    enabled: fence.ready, retry: false,
++    queryFn: async ({ signal }): Promise<PlanAssignment[]> => {
++      const current = fence.capture();
++      const { data, error } = await (supabase as any).rpc("rpc_cc_list_assignments", { p_status: status ?? null }).abortSignal(signal);
++      if (!current() || signal.aborted) throw new Error("commercial_context_changed");
+       if (error) throw new Error(conditionErrorMessage(error.message));
+       return (data ?? []) as PlanAssignment[];
+     },
+   });
++  return { ...result, data: fence.ready && !result.isError ? result.data : undefined };
+ }
+ 
+ export function useConditionItemPrices(planId?: string | null, status?: ConditionStatus) {
+@@ -173,9 +179,24 @@
+ }
+ 
+ export function usePublishAssignment() {
+-  return useCcMutation(async ({ id, motivo }: { id: string; motivo?: string | null }) => {
+-    const { error } = await rpc("rpc_cc_publish_assignment", { p_id: id, p_motivo: motivo ?? null });
+-    if (error) throw new Error(conditionErrorMessage(error.message));
++  const qc = useQueryClient();
++  const fence = useStorageAccessScope("commercial-conditions-assignments");
++  return useMutation({
++    mutationFn: async ({ id, motivo }: { id: string; motivo?: string | null }) => {
++      const current = fence.capture();
++      if (!current()) throw new Error("commercial_context_unavailable");
++      const { error } = await rpc("rpc_cc_publish_assignment", { p_id: id, p_motivo: motivo ?? null });
++      if (!current()) throw new Error("commercial_context_changed");
++      if (error) throw new Error(conditionErrorMessage(error.message));
++      // Cancel pre-publication reads before refetch: an old draft must not win the race.
++      const predicate = (q: { queryKey: readonly unknown[] }) => q.queryKey[0] === CC_KEY[0]
++        && q.queryKey[1] === "assignments" && q.queryKey.at(-1) === fence.scope;
++      await qc.cancelQueries({ predicate });
++      if (!current()) throw new Error("commercial_context_changed");
++      await qc.invalidateQueries({ queryKey: CC_KEY });
++      if (!current()) throw new Error("commercial_context_changed");
++      await qc.invalidateQueries({ queryKey: ["commercial-payment-plans", "selectable"] });
++    },
+   });
+ }
+ 
+--- /dev/null
++++ b/src/lib/financeiro/partnerSettings.ts
+@@ -0,0 +1,45 @@
++export interface PartnerSettings {
++  id?: string;
++  partner_id: string;
++  updated_at?: string;
++  billing_trigger: string;
++  payment_terms_days: number;
++  default_payment_method: string | null;
++  credit_limit: number | null;
++  block_if_overdue: boolean;
++  auto_generate_receivable: boolean;
++  active: boolean;
++  credit_limit_action: string;
++  overdue_tolerance_days: number;
++  credit_alert_threshold_1: number;
++  credit_alert_threshold_2: number;
++}
++
++export const settingsFields = [
++  "billing_trigger", "payment_terms_days", "default_payment_method", "credit_limit",
++  "block_if_overdue", "auto_generate_receivable", "active", "credit_limit_action",
++  "overdue_tolerance_days", "credit_alert_threshold_1", "credit_alert_threshold_2",
++] as const;
++
++export function emptyPartnerSettings(partner_id: string): PartnerSettings {
++  return { partner_id, billing_trigger: "na_entrega", payment_terms_days: 7,
++    default_payment_method: null, credit_limit: null, block_if_overdue: false,
++    auto_generate_receivable: true, active: true, credit_limit_action: "block",
++    overdue_tolerance_days: 0, credit_alert_threshold_1: 80, credit_alert_threshold_2: 90 };
++}
++
++export function samePartnerSettings(a: PartnerSettings | null, b: PartnerSettings | null): boolean {
++  if (!a || !b) return a === b;
++  return a.id === b.id && a.partner_id === b.partner_id && a.updated_at === b.updated_at
++    && settingsFields.every(field => a[field] === b[field]);
++}
++
++export function canConfigurePartnerSettings(roles: readonly string[]): boolean {
++  return !roles.some(role => ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"].includes(role))
++    && roles.some(role => ["administrador", "financeiro", "gestor", "gestor_comercial"].includes(role));
++}
++
++export function activePaymentMethodValid(name: string | null, methods: readonly { name: string; active?: boolean }[]): boolean {
++  return !!name?.trim() && methods.filter(method => method.active !== false
++    && method.name.trim().toLowerCase() === name.trim().toLowerCase()).length === 1;
++}
+\ No newline at end of file
+--- /dev/null
++++ b/src/test/financeiro/partnerSettings.test.tsx
+@@ -0,0 +1,108 @@
++import { render, screen, fireEvent, waitFor, renderHook, act } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import type { ReactNode } from "react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { activePaymentMethodValid, canConfigurePartnerSettings, emptyPartnerSettings, samePartnerSettings } from "@/lib/financeiro/partnerSettings";
++
++const state = vi.hoisted(() => ({
++  roles: ["administrador"], settings: null as any, fetching: false, error: false,
++  save: vi.fn(),
++  methods: [{ id: "3b73824e-f205-47b9-a499-06f02091b247", name: "AUDIT-AR-20260922 - Sem transferencia", active: true }],
++}));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ roles: state.roles, role: state.roles[0] }) }));
++vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => ({ ready: true, scope: "A", capture: () => () => true }) }));
++vi.mock("@/hooks/useB2BFinanceiro", () => ({
++  usePartnerFinancialSettings: () => ({ data: state.error ? undefined : state.settings, isSuccess: !state.error, isError: state.error, isFetching: state.fetching }),
++  useFinancialSettingsMethods: () => ({ data: state.methods, isSuccess: true, isFetching: false, isError: false }),
++  useUpdatePartnerFinancialSettings: () => ({ isPending: false, mutateAsync: state.save }),
++  useFinancialSettingsPartners: () => ({ data: [{ id: "P", razao_social: "Parceiro sem pedidos", nome_fantasia: null }], isFetching: false }),
++  useB2BReceivables: () => ({ data: [], isLoading: false }),
++  useGenerateB2BReceivable: () => ({}), useCancelB2BReceivable: () => ({}),
++}));
++vi.mock("@/components/ui/select", () => ({
++  Select: ({ children, value, onValueChange, disabled }: any) => <select value={value} onChange={e => onValueChange(e.target.value)} disabled={disabled}><option value="" />{children}</select>,
++  SelectTrigger: () => null, SelectValue: () => null,
++  SelectContent: ({ children }: any) => <>{children}</>,
++  SelectItem: ({ children, value, disabled }: any) => <option value={value} disabled={disabled}>{children}</option>,
++}));
++vi.mock("react-router-dom", () => ({ Link: ({ children }: any) => <a>{children}</a> }));
++import FinanceiroB2B, { PartnerFinancialSettingsDialog } from "@/pages/financeiro/FinanceiroB2B";
++const partner = { partner_id: "P", partner_name: "Teste" };
++const method = "AUDIT-AR-20260922 - Sem transferencia";
++const row = () => ({ ...emptyPartnerSettings("P"), id: "S", updated_at: "2026-10-23T20:00:00Z", default_payment_method: method });
++beforeEach(() => { state.roles = ["administrador"]; state.settings = row(); state.fetching = false; state.error = false; state.save.mockReset().mockResolvedValue({}); });
++describe("configuração financeira canônica — UI sintética, sem escrita hosted", () => {
++  it("permite abrir o mesmo diálogo antes do primeiro pedido", async () => {
++    render(<FinanceiroB2B />);
++    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "P" } });
++    fireEvent.click(screen.getByRole("button", { name: "Configurar parceiro" }));
++    expect(await screen.findByRole("button", { name: "Salvar" })).toBeEnabled();
++  });
++  it("nega configurações ao técnico singleton e ao parceiro cumulativo", () => {
++    state.roles = ["parceiro_b2b", "parceiro_b2b_tecnico"];
++    render(<FinanceiroB2B />);
++    expect(screen.queryByRole("button", { name: "Configurar parceiro" })).toBeNull();
++  });
++  it("preserva método legado inválido sem default silencioso", async () => {
++    state.settings = { ...row(), default_payment_method: "pix" };
++    render(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
++    await waitFor(() => expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled());
++    expect(screen.getAllByRole("combobox")[1]).toHaveValue("pix");
++    fireEvent.change(screen.getAllByRole("combobox")[1], { target: { value: method } });
++    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
++    await waitFor(() => expect(state.save).toHaveBeenCalledTimes(1));
++    expect(state.save.mock.calls[0][0].draft.default_payment_method).toBe(method);
++    expect(state.save.mock.calls[0][0].draft.billing_trigger).toBe("na_entrega");
++    expect(state.save.mock.calls[0][0].baseline.default_payment_method).toBe("pix");
++  });
++  it("não reseta edição por refetch igual e salva com baseline original", async () => {
++    const view = render(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
++    fireEvent.change(await screen.findByLabelText("Prazo (dias)"), { target: { value: "12" } });
++    state.settings = { ...row() }; view.rerender(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
++    expect(screen.getByLabelText("Prazo (dias)")).toHaveValue(12);
++    fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
++    await waitFor(() => expect(state.save).toHaveBeenCalledTimes(1));
++    expect(state.save.mock.calls[0][0].baseline.payment_terms_days).toBe(7);
++  });
++  it("bloqueia CAS alterado e preserva rascunho", async () => {
++    const view = render(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
++    fireEvent.change(await screen.findByLabelText("Prazo (dias)"), { target: { value: "12" } });
++    state.settings = { ...row(), payment_terms_days: 9 }; view.rerender(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
++    expect(screen.getByLabelText("Prazo (dias)")).toHaveValue(12);
++    expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled();
++    expect(state.save).not.toHaveBeenCalled();
++  });
++  it("deduplica cliques pendentes e bloqueia reenvio incerto", async () => {
++    let reject: (e: Error) => void = () => {};
++    state.save.mockImplementation(() => new Promise((_resolve, r) => { reject = r; }));
++    render(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
++    const save = await screen.findByRole("button", { name: "Salvar" });
++    await waitFor(() => expect(save).toBeEnabled());
++    fireEvent.click(save); fireEvent.click(save);
++    expect(state.save).toHaveBeenCalledTimes(1);
++    await act(async () => reject(new Error("network_uncertain")));
++    expect(save).toBeDisabled();
++  });
++  it("bloqueia salvamento durante refetch ou negação", async () => {
++    const view = render(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
++    await waitFor(() => expect(screen.getByRole("button", { name: "Salvar" })).toBeEnabled());
++    state.fetching = true; view.rerender(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
++    expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled();
++    state.fetching = false; state.error = true; view.rerender(<PartnerFinancialSettingsDialog open partner={partner} onClose={vi.fn()} />);
++    expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled();
++  });
++});
++describe("regras de configuração", () => {
++  it("não inventa pix para configuração ausente", () => expect(emptyPartnerSettings("P").default_payment_method).toBeNull());
++  it("exige método ativo único sem fallback arbitrário", () => {
++    expect(activePaymentMethodValid(method, state.methods)).toBe(true);
++    expect(activePaymentMethodValid("pix", state.methods)).toBe(false);
++    expect(activePaymentMethodValid(method, [...state.methods, ...state.methods])).toBe(false);
++    expect(activePaymentMethodValid(method, [{ name: method, active: false }])).toBe(false);
++  });
++  it("detecta mudança mesmo sem updated_at avançado", () => expect(samePartnerSettings(row(), { ...row(), billing_trigger: "manual" })).toBe(false));
++  it("não concede capacidades internas por acumular papel externo", () => {
++    expect(canConfigurePartnerSettings(["administrador"])).toBe(true);
++    expect(canConfigurePartnerSettings(["financeiro", "parceiro_b2b_tecnico"])).toBe(false);
++  });
++});
+\ No newline at end of file
+--- /dev/null
++++ b/src/test/financeiro/partnerSettingsMutation.test.tsx
+@@ -0,0 +1,62 @@
++import { act, renderHook } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import type { ReactNode } from "react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++import { emptyPartnerSettings } from "@/lib/financeiro/partnerSettings";
++const state = vi.hoisted(() => ({ org: "A", partner: true, rows: 1, duplicate: false, operations: [] as Array<{ table: string; calls: Array<[string, unknown, unknown]> }> }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ roles: ["administrador"], profile: { organization_id: state.org } }) }));
++vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => {
++  const org = state.org;
++  return { ready: true, scope: org, capture: () => () => org === state.org };
++} }));
++vi.mock("@/hooks/useB2BFinancialScope", () => ({ useScopedB2BFinancialQuery: vi.fn() }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: (table: string) => {
++  const op = { table, calls: [] as Array<[string, unknown, unknown]> }; state.operations.push(op);
++  const chain: any = {};
++  for (const method of ["select", "eq", "is", "maybeSingle", "update", "insert"]) chain[method] = (a: unknown, b: unknown) => { op.calls.push([method, a, b]); return chain; };
++  chain.then = (resolve: (x: unknown) => void) => {
++    if (table === "partner_accounts") resolve({ data: state.partner ? { id: "P" } : null, error: null });
++    else if (table === "payment_methods") resolve({ data: [{ name: "AUDIT-AR-20260922 - Sem transferencia", active: true }], error: null });
++    else resolve({ data: state.rows ? { id: "S" } : null, error: state.duplicate ? { code: "23505" } : null });
++  };
++  return chain;
++} } }));
++import { useUpdatePartnerFinancialSettings } from "@/hooks/useB2BFinanceiro";
++const row = () => ({ ...emptyPartnerSettings("P"), id: "S", updated_at: "2026-10-23T20:00:00Z", default_payment_method: "AUDIT-AR-20260922 - Sem transferencia" });
++function setup() {
++  const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
++  const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
++  return renderHook(() => useUpdatePartnerFinancialSettings(), { wrapper });
++}
++beforeEach(() => { state.org = "A"; state.partner = true; state.rows = 1; state.duplicate = false; state.operations = []; });
++describe("CAS e owner — SDK simulado, sem provar RLS hosted", () => {
++  it("usa tenant exato e baseline completo na atualização atômica", async () => {
++    const hook = setup(); const baseline = row();
++    await act(async () => hook.result.current.mutateAsync({ draft: { ...baseline, payment_terms_days: 12 }, baseline }));
++    expect(state.operations[0].calls).toContainEqual(["eq", "commercial_owner_organization_id", "A"]);
++    const update = state.operations.find(op => op.table === "partner_financial_settings");
++    expect(update?.calls).toContainEqual(["eq", "updated_at", baseline.updated_at]);
++    expect(update?.calls).toContainEqual(["eq", "payment_terms_days", 7]);
++    expect(update?.calls).toContainEqual(["is", "credit_limit", null]);
++    expect(update?.calls.some(([method]) => method === "update")).toBe(true);
++  });
++  it("conflito de baseline retorna erro sem sucesso silencioso", async () => {
++    state.rows = 0; const hook = setup();
++    await act(async () => { await expect(hook.result.current.mutateAsync({ draft: row(), baseline: row() })).rejects.toThrow("settings_conflict"); });
++  });
++  it("nega parceiro B antes de escrever", async () => {
++    state.partner = false; const hook = setup();
++    await act(async () => { await expect(hook.result.current.mutateAsync({ draft: row(), baseline: row() })).rejects.toThrow("financial_partner_unavailable"); });
++    expect(state.operations.some(op => op.table === "partner_financial_settings")).toBe(false);
++  });
++  it("inserção concorrente não faz upsert nem sobrescreve", async () => {
++    state.duplicate = true; const hook = setup();
++    await act(async () => { await expect(hook.result.current.mutateAsync({ draft: row(), baseline: null })).rejects.toThrow("settings_conflict"); });
++    expect(state.operations.at(-1)?.calls.some(([method]) => method === "insert")).toBe(true);
++  });
++  it("não escreve método inexistente", async () => {
++    const hook = setup();
++    await act(async () => { await expect(hook.result.current.mutateAsync({ draft: { ...row(), default_payment_method: "pix" }, baseline: row() })).rejects.toThrow("payment_method_invalid"); });
++    expect(state.operations.some(op => op.table === "partner_financial_settings")).toBe(false);
++  });
++});
+\ No newline at end of file
+--- /dev/null
++++ b/src/test/comercial/assignmentPublication.test.tsx
+@@ -0,0 +1,56 @@
++import { act, renderHook, waitFor } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import type { ReactNode } from "react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++const state = vi.hoisted(() => ({ published: false, pending: false, aborts: 0, scope: "A", ready: true, late: [] as Array<() => void> }));
++vi.mock("@/hooks/useStorageAccessScope", () => ({ useStorageAccessScope: () => {
++  const scope = state.scope;
++  return { ready: state.ready, scope, capture: () => () => state.ready && state.scope === scope };
++} }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (name: string) => {
++  if (name === "rpc_cc_publish_assignment") { state.published = true; return Promise.resolve({ error: null }); }
++  const status = state.published ? "published" : "draft";
++  const data = [{ id: "48dcac7d-d4a0-4058-bdf4-5461fee89f45", status }];
++  return { abortSignal: (signal: AbortSignal) => {
++    if (!state.pending || state.published) return Promise.resolve({ data, error: null });
++    return new Promise(resolve => {
++      signal.addEventListener("abort", () => { state.aborts++; });
++      state.late.push(() => resolve({ data, error: null }));
++    });
++  } };
++} } }));
++import { usePlanAssignments, usePublishAssignment } from "@/hooks/useCommercialConditions";
++beforeEach(() => { state.published = false; state.pending = false; state.aborts = 0; state.scope = "A"; state.ready = true; state.late = []; });
++function setup() {
++  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++  const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
++  const hook = renderHook(() => ({ list: usePlanAssignments(), publish: usePublishAssignment() }), { wrapper });
++  return { client, hook };
++}
++describe("publicação com releitura canônica — servidor simulado", () => {
++  it("substitui rascunho pela atribuição published confirmada", async () => {
++    const { hook, client } = setup();
++    await waitFor(() => expect(hook.result.current.list.data?.[0].status).toBe("draft"));
++    await act(async () => hook.result.current.publish.mutateAsync({ id: "48dcac7d-d4a0-4058-bdf4-5461fee89f45" }));
++    await waitFor(() => expect(hook.result.current.list.data?.[0].status).toBe("published"));
++    hook.unmount(); client.clear();
++  });
++  it("cancela rascunho em voo; resposta tardia não vence publicação", async () => {
++    state.pending = true;
++    const { hook, client } = setup();
++    await waitFor(() => expect(state.late).toHaveLength(1));
++    await act(async () => hook.result.current.publish.mutateAsync({ id: "48dcac7d-d4a0-4058-bdf4-5461fee89f45" }));
++    await waitFor(() => expect(hook.result.current.list.data?.[0].status).toBe("published"));
++    await act(async () => state.late.forEach(resolve => resolve()));
++    expect(state.aborts).toBe(1);
++    expect(hook.result.current.list.data?.[0].status).toBe("published");
++    hook.unmount(); client.clear();
++  });
++  it("esconde cache ao mudar tenant/contexto", async () => {
++    const { hook, client } = setup();
++    await waitFor(() => expect(hook.result.current.list.data).toHaveLength(1));
++    state.scope = "B"; state.pending = true; hook.rerender();
++    expect(hook.result.current.list.data).toBeUndefined();
++    hook.unmount(); client.clear();
++  });
++});
+\ No newline at end of file
