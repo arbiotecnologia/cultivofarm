@@ -1,4 +1,5 @@
 # C2-ORD review
+- C2-ORD rebase requires installed P1 settings CAS/ticket contracts; billing never provisions settings, owner checks extend only reviewed approval/billing endpoints, and whole financial replay/late-failure tests remain synthetic — prevents trigger bypass and false certification.
 - Unapplied SQL remains review-only; record owner-installed releases separately and never replay their preflights or restore vulnerable ACLs — prevents partial release and rollback leaks.
 - Fiscal UUID resolution is service/owner-only; authenticated users use existing authorized callers, and rollback retains this containment — prevents exemption metadata probing.
 - Scope tests load the captured b2b_actor_scope, is_valid_b2b_partner_user and C2 context/readiness bodies, never replacements; synthetic Auth and other reduced dependencies remain explicitly uncertified — prevents false JWT evidence.

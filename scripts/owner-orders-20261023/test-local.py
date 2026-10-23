@@ -274,6 +274,14 @@ try:
   run(settings())
   settings_before=run(f"SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='{P_A}'")
   ok('P1 CAS real cria settings com método AUDIT e prazo7; gerador não faz INSERT')
+  run(as_uid(U['gestorB'],f"SELECT platform_private.c2p1_update_settings('{P_A}',NULL,'{{}}');"),'C2P1_FORBIDDEN')
+  run(as_uid(U['gestor'],f"SELECT platform_private.c2p1_update_settings('{P_A}',NULL,'{{}}');"),'C2P1_FORBIDDEN')
+  values=run(f"SELECT to_jsonb(s)-'id'-'partner_id'-'created_at'-'updated_at' FROM partner_financial_settings s WHERE partner_id='{P_A}'")
+  run(as_uid(U['admin'],f"SELECT platform_private.c2p1_update_settings('{P_A}',NULL,'{values}');"),'settings_conflict')
+  run(f"UPDATE organizations SET partner_account_id='{P_A}' WHERE id='{ORG_A}'; UPDATE partner_accounts SET commercial_owner_organization_id=NULL WHERE id='{P_A}';")
+  assert run(as_uid(U['admin'],f"SELECT platform_private.c2p1_settings_allowed('{P_A}',true)"))=='t'
+  run(f"UPDATE organizations SET partner_account_id=NULL WHERE id='{ORG_A}'; UPDATE partner_accounts SET commercial_owner_organization_id='{ORG_A}' WHERE id='{P_A}';")
+  ok('P1 real: ownorg legado/owner autorizados, externo/B negados, CAS NULL conflitante rejeitado')
   approve = lambda oid: as_uid(U['admin'], f"SELECT public.approve_partner_order('{oid}',NULL,NULL);")
   run(approve(O1), 'B2B_REVENUE_CATEGORY_NOT_CONFIGURED')
   assert run(f"SELECT status FROM partner_orders WHERE id='{O1}'") == 'em_analise_comercial'
