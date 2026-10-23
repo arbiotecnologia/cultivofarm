@@ -1,4 +1,4 @@
-"""C2-ORD v2 em PostgreSQL DESCARTÁVEL. NÃO é prova hosted/JWT/RLS.
+"""C2-ORD v3 (rebased sobre 20261023192728 instalado) em PostgreSQL DESCARTÁVEL. NÃO é prova hosted/JWT/RLS.
 - Corpos alterados: baseline/*.sql capturados byte-exato do hosted (md5 conferido abaixo).
 - Dependências (has_role, contexto, entitlements, eligibility, fiscal, wrapper, gatilho de parcelas)
   são STUBS reduzidos; auth.uid() vem de GUC sintético request.jwt.claim.sub.
@@ -123,6 +123,12 @@ try:
     assert local == hosted[fn], f'fidelidade {fn}: local {local} != hosted {hosted[fn]}'
   ok('pg_get_functiondef local reproduz md5 hosted dos 8 corpos baseline')
   run("CREATE TRIGGER trg_auto_b2b_receivable AFTER UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable();")
+  run((HERE/'applied/20261023192728_c2_orders_tenant_notifications_atomic_approval.sql').read_text())
+  for fn, s2, h in [('public.create_partner_order_secure','(uuid,text,jsonb,date,uuid,date,integer,text,text)','624f6e3d45e5af7d039d5da8f784d787'),
+      ('public.approve_partner_order','(uuid,text,date)','09eb9e7442cc59c7c72b4d39f3567a53'),('public.tg_auto_b2b_receivable','()','0f679538fe394924b140e54938a3bb9e'),
+      ('platform_private.c2_order_internal_recipients','(uuid)','d4936c87a3ab62d26816a11a032dfe0f'),('platform_private.c2_order_partner_recipients','(uuid)','70b381094ae1f3ac87d0fa8e28274dac')]:
+    got = run(f"SELECT md5(pg_get_functiondef('{fn}{s2}'::regprocedure))"); assert got == h, (fn, got)
+  ok('migração instalada 20261023192728 reaplicada localmente reproduz os 5 hashes pós-implantação relatados')
 
   # Fixtures sintéticas: A (owner org A) e B (owner org B); clientes comerciais sem org própria.
   run(f'''
@@ -151,7 +157,12 @@ try:
   # (1) autorização
   def scope(u, p=P_A): return as_uid(U[u], f"SELECT platform_private.assert_b2b_partner_scope('{U[u]}','{p}');")
   run(scope('gestor')); ok('gestor B2B passa no assert')
-  run(scope('cumul')); ok('gestor+técnico cumulativo passa no assert (ramo gestor singleton)')
+  run(scope('cumul'), 'forbidden_financial_terms'); ok('assert legado intacto: cumulativo continua negado nos callers legados')
+  cscope = lambda u, p=P_A: as_uid(U[u], f"SELECT platform_private.c2_order_actor_scope('{U[u]}','{p}');")
+  run(cscope('cumul')); ok('wrapper de compra: cumulativo passa com autoridade C2 completa')
+  run(cscope('gestor')); ok('wrapper de compra: gestor singleton passa (via assert)')
+  run(cscope('tech'), 'forbidden_financial_terms'); ok('wrapper de compra: técnico isolado negado')
+  run(as_uid(U['gestor'], f"SELECT platform_private.c2_order_actor_scope('{U['cumul']}','{P_A}');"), 'auth_required'); ok('wrapper: uid forjado negado')
   run(scope('tech'), 'forbidden_financial_terms'); ok('técnico isolado continua negado')
   run(scope('gestorB', P_A), 'forbidden_partner'); ok('A→B: gestor de B negado no parceiro A')
   def guard(u, p=P_A, plan=PLAN): return as_uid(U[u], f"SELECT platform_private.c2_owner_order_guard('{U[u]}','{p}','{plan}');")
@@ -168,7 +179,7 @@ try:
   ok('create/simulate aplicam o guard server-side (não só a flag do menu)')
   # Revogações
   run(f"DELETE FROM user_roles WHERE user_id='{U['cumul']}' AND role='parceiro_b2b';")
-  run(scope('cumul'), 'forbidden_financial_terms'); run(guard('cumul'), 'C2_OWNER_ORDER_CLOSED')
+  run(cscope('cumul'), 'forbidden_financial_terms'); run(guard('cumul'), 'C2_OWNER_ORDER_CLOSED')
   ok('revogar gestor do cumulativo ⇒ técnico residual não compra')
   run(f"INSERT INTO user_roles VALUES('{U['cumul']}','parceiro_b2b'); UPDATE partner_users SET revoked_at=now() WHERE user_id='{U['gestor']}';")
   run(guard('gestor'), 'C2_OWNER_ORDER_CLOSED'); ok('vínculo revogado ⇒ writer fechado')
@@ -270,8 +281,8 @@ try:
   before = run("SELECT count(*) FROM accounts_receivable")+'|'+run("SELECT count(*) FROM partner_orders")
   run((HERE/'rollback.sql.review').read_text())
   assert run("SELECT md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure))") == hosted['platform_private.assert_b2b_partner_scope']
-  ok('rollback restaura assert byte-exato (md5 hosted)')
-  run(guard('gestor'), 'C2_OWNER_ORDER_CLOSED'); run(scope('cumul'), 'forbidden_financial_terms')
+  ok('assert byte-exato hosted em toda a vida do candidato')
+  run(guard('gestor'), 'C2_OWNER_ORDER_CLOSED'); run(cscope('cumul'), 'forbidden_financial_terms')
   run(as_uid(U['gestor'], f"SELECT public.create_partner_order_secure('{P_A}',NULL,'[{{}}]'::jsonb,NULL,'{PLAN}',NULL,NULL,'h','k');"), 'C2_OWNER_ORDER_CLOSED')
   proj = run(as_uid(U['gestor'], "SELECT platform_private.b2b_commercial_partner_projection()->'order_capabilities'->>'order_create';"))
   assert proj == 'false', proj
@@ -286,6 +297,13 @@ try:
   d = run("SELECT pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)")
   assert 'c2_order_internal_recipients' in d
   ok('rollback não reabre notificação cross-tenant')
+  run((HERE/'rollback-installed-containment.sql.review').read_text())
+  assert run(f"SELECT count(*) FROM platform_private.c2_order_internal_recipients('{P_A}')") == '0'
+  assert run(f"SELECT count(*) FROM platform_private.c2_order_partner_recipients('{P_A}')") == '0'
+  acl3 = run("SELECT string_agg(coalesce(p.proacl::text,'default'),' ') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname LIKE 'c2_order_%recipients'")
+  assert acl3 == '{postgres=X/postgres} {postgres=X/postgres}', acl3
+  run(f"SET test.fail_wrapper='1'; UPDATE partner_orders SET status='aprovado' WHERE id='{O3}';", 'B2B_APPROVAL_BILLING_FAILED')
+  ok('contenção do recorte instalado: helpers vazios, ACL postgres-only, aprovação atômica mantida')
   print(f'TOTAL {passed} PASS (PostgreSQL descartável, auth sintético; NÃO hosted)')
 finally:
   subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'stop','-m','immediate'],capture_output=True)
