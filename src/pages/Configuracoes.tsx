@@ -376,9 +376,26 @@ export default function Configuracoes() {
     }
   }
 
-  // Edit user dialog
-  const [editOpen, setEditOpen] = useState(false);
-  const [editUser, setEditUser] = useState<any>(null);
+  // Edit user dialog — retenção volátil durante pausa transitória de
+  // autorização: a chave inclui identidade + época, portanto revogação ou
+  // troca de identidade torna o estado retido inalcançável (fail-closed).
+  // Nada é exibido enquanto expirado; o estado apenas re-semeia a UI após a
+  // recuperação com o MESMO vetor de autorização.
+  const editPauseKey = pauseStateKey({ userId: user?.id, organizationId: profile?.organization_id, roles: roles ?? [], epoch: authzEpoch }) + ":config-edit";
+  const [editOpen, setEditOpen] = useState<boolean>(() => {
+    const retained = readPauseState<{ open: boolean; target: any }>(editPauseKey);
+    return isAdmin && retained?.open === true && !!retained.target;
+  });
+  const [editUser, setEditUser] = useState<any>(() => {
+    const retained = readPauseState<{ open: boolean; target: any }>(editPauseKey);
+    return isAdmin && retained?.open === true && retained.target ? retained.target : null;
+  });
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (editOpen && editUser) writePauseState(editPauseKey, { open: true, target: editUser });
+    else clearPauseState(editPauseKey);
+  }, [isAdmin, editPauseKey, editOpen, editUser]);
+  const editDraftKey = editUser?.user_id ? `${editPauseKey}:draft:${editUser.user_id}` : null;
   const editOrig: LinhaUsuario | null = editUser
     ? ((usersPage as LinhaUsuario[]).find((u) => u.user_id === editUser.user_id) ?? (editUser as LinhaUsuario))
     : null;
