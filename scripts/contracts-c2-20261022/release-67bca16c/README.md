@@ -1,6 +1,16 @@
 # Release concreto C2 + financeiro — revisão fonte67bca16c
 
-**Preparação local autorizada17:20UTC23/10/2026. Não publicado; banco/Edge hosted continuam baseline até execução coordenada do proprietário.**
+**Preparação local autorizada17:20UTC23/10/2026.**
+
+## Implantação coordenada executada pelo auditor — 23/10 17:55 UTC (evidências relatadas pelo proprietário)
+- **SQL:** migration integral `c2_integral_multiprofile_own_finance_reviewed` (67bca16c) aplicada com SUCCESS; postflight INVOKER/core ACL PASS; `b2b_actor_scope` intacto; overload legacy financeiro0/uuid permanece fechado; novo caminho anon negado.
+- **Edge:** `create-user` v103 ACTIVE com `verify_jwt=true`, conteúdo EXATO de `scripts/contracts-c2-20261022/coordinated/edge/create-user/index.ts` @67bca16c (SHA256 `931ba9fa46ebea265fd3fc9105e07f383c2f44ad3ff7879a84a2cd18b78ca095`).
+- **Frontend:** deploy hosting `86b2e88d-fe58-4c3d-8cd9-704b92ca9932` iniciado pelo auditor; app publicado observado com bundle `build-mvl8yand` e novo lifecycle.
+- **Verificação independente relatada:** build Vite production 4763 módulos PASS; safeHome 12 PASS.
+- **UI real relatada (não verificada pelo agente):** adminA lista6 e lifecycle3checkbox; adminB lista2 sem A; parceiroA vê menu Financeiro e lista vazia autorizada.
+- **Advisor diff** (ignorando observed_at): nenhum finding novo.
+- **Sincronização canônica autorizada:** `supabase/functions/create-user/index.ts` copiado byte-exato do candidato implantado (SHA256 final `931ba9fa46ebea265fd3fc9105e07f383c2f44ad3ff7879a84a2cd18b78ca095`, idêntico ao deploy v103), mantendo `verify_jwt=true`. Propósito: impedir que um próximo deploy automático reverta a Edge hosted para o baseline antigo. Nenhuma mudança funcional nova, nenhum SQL executado pelo agente, nenhuma republicação do frontend.
+- **Não declarar** multiperfil/revogação completos: homologação integral A/B de atribuição cumulativa, revogação parcial/total e reativação em sessões reais continua pendente.
 
 ## Artefatos
 - `manifest20.json`: cópia byte-exata do manifesto de `67bca16c580bacf0305f478740d454361bf45af4`;20 fontes promovidas para src após verificar existência/ausência do baseline, hash baseline e candidato, conteúdo exato no commit aprovado. SHA256SUMS lista20 hashes reais finais.

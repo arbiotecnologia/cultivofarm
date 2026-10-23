@@ -1,21 +1,21 @@
+// INACTIVE REVIEW COPY — never place under supabase/functions before approval.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { z } from "npm:zod@3";
 
 // Code-reviewed activation, never request/env authority; server guards still apply.
 const B2B_PROVISIONING_CHANNELS_REVIEWED = true;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-Deno.serve(async (req) => {
+function requiredEnv(key: string) { const value = Deno.env.get(key); if (!value) throw new Error("configuration_unavailable"); return value; }
+export async function handler(req: Request, clientFactory: typeof createClient = createClient) {
   let compensate: (() => Promise<void>) | undefined;
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    if (req.method !== "POST") return new Response(JSON.stringify({error:"method_not_allowed"}), {status:405,headers:{...corsHeaders,"Content-Type":"application/json"}});
+    if (Deno.env.get("SUPABASE_URL") !== "https://swzpzcwiasxmjutrmvkm.supabase.co") return new Response(JSON.stringify({error:"configuration_unavailable"}), {status:503,headers:{...corsHeaders,"Content-Type":"application/json"}});
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
@@ -24,9 +24,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const anonClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+    const anonClient = clientFactory(
+      requiredEnv("SUPABASE_URL"),
+      requiredEnv("SUPABASE_ANON_KEY"),
       { global: { headers: { Authorization: authHeader } } }
     );
 
@@ -41,9 +41,9 @@ Deno.serve(async (req) => {
 
     const callerId = claimsData.claims.sub;
 
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    const adminClient = clientFactory(
+      requiredEnv("SUPABASE_URL"),
+      requiredEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
 
     // Preserve caller JWT/iat for the canonical credential fence.
@@ -72,7 +72,20 @@ Deno.serve(async (req) => {
     }
     const actorOrganizationId = actorProfile.organization_id;
 
-    const body = await req.json();
+    let input: unknown;
+    try { input = await req.json(); } catch { return new Response(JSON.stringify({error:"invalid_json"}),{status:400,headers:{...corsHeaders,"Content-Type":"application/json"}}); }
+    const parsed = z.object({
+      email:z.string().trim().email().max(254),nome:z.string().trim().min(1).max(200),
+      roles:z.array(z.string().max(40)).max(13).optional(),role:z.string().max(40).optional(),
+      partner_id:z.string().uuid().nullable().optional(),partner_papel:z.string().max(20).nullable().optional(),
+      cliente_id:z.string().uuid().nullable().optional(),cliente_ids:z.array(z.string().uuid()).max(100).optional(),
+      principal_cliente_id:z.string().uuid().nullable().optional(),
+      telefone:z.string().max(50).nullable().optional(),cargo:z.string().max(200).nullable().optional(),
+      cpf_cnpj:z.string().max(30).nullable().optional(),crea:z.string().max(50).nullable().optional(),especialidade:z.string().max(200).nullable().optional(),
+      password:z.string().max(200).nullable().optional(),
+    }).passthrough().safeParse(input);
+    if (!parsed.success) return new Response(JSON.stringify({error:"invalid_input"}),{status:400,headers:{...corsHeaders,"Content-Type":"application/json"}});
+    const body = parsed.data;
     const {
       email, password, nome, role,
       roles: rolesInput,
@@ -88,6 +101,15 @@ Deno.serve(async (req) => {
       ? Array.from(new Set(rolesInput.filter(Boolean)))
       : (role ? [role] : []);
 
+    // Optional explicit cumulative alias must match, never independently grants.
+    if (body.external_roles !== undefined && (!Array.isArray(body.external_roles) ||
+      body.external_roles.length !== rolesArr.length || new Set(body.external_roles).size !== body.external_roles.length ||
+      body.external_roles.some((r: unknown) => typeof r !== "string" || !rolesArr.includes(r)))) {
+      return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Existing entrypoint, actor-scoped preflight. Never authorize this branch
     // with the elevated SDK or turn a partner role into a cumulative staff role.
     if (rolesArr.some((r) => ["parceiro_b2b", "parceiro_b2b_tecnico", "cliente_produtor"].includes(r))) {
@@ -98,9 +120,10 @@ Deno.serve(async (req) => {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const dedicatedRole = rolesArr[0];
+      const dedicatedRole = rolesArr.includes("parceiro_b2b") ? "parceiro_b2b" : rolesArr.includes("parceiro_b2b_tecnico") ? "parceiro_b2b_tecnico" : "cliente_produtor";
       const expectedPapel = dedicatedRole === "parceiro_b2b_tecnico" ? "tecnico" : "gestor";
-      const isProducer = dedicatedRole === "cliente_produtor";
+      const isProducer = rolesArr.includes("cliente_produtor");
+      const hasPartner = rolesArr.some(r => r === "parceiro_b2b" || r === "parceiro_b2b_tecnico");
       const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
       const clients = Array.isArray(cliente_ids) ? cliente_ids : cliente_id ? [cliente_id] : [];
       const primary = principal_cliente_id ?? clients[0] ?? null;
@@ -108,25 +131,15 @@ Deno.serve(async (req) => {
       const conflictingClients = (cliente_ids != null && !Array.isArray(cliente_ids)) ||
         (cliente_id != null && (!uuid(cliente_id) || (Array.isArray(cliente_ids) &&
           (cliente_ids.length !== 1 || cliente_ids[0] !== cliente_id))));
-      if (forgedScope || conflictingClients || (!["parceiro_b2b", "cliente_produtor"].includes(dedicatedRole)) || rolesArr.length !== 1 || (Array.isArray(rolesInput) && rolesInput.length !== 1) ||
-        (role && role !== dedicatedRole) || (!isProducer && (!uuid(partner_id) || clients.length || primary ||
-        (partner_papel != null && partner_papel !== expectedPapel))) ||
-        (isProducer && (partner_id != null || partner_papel != null || clients.length < 1 || clients.length > 100 ||
-        !clients.every(uuid) || new Set(clients).size !== clients.length || !clients.includes(primary)))) {
+      if (forgedScope || conflictingClients || rolesArr.length < 1 || rolesArr.length > 3 ||
+        rolesArr.some(r => !["parceiro_b2b","parceiro_b2b_tecnico","cliente_produtor"].includes(r)) ||
+        (Array.isArray(rolesInput) && (rolesInput.length !== rolesArr.length || rolesInput.some(r => typeof r !== "string"))) ||
+        (role != null && (rolesArr.length !== 1 || role !== dedicatedRole)) ||
+        (hasPartner ? !uuid(partner_id) || (partner_papel != null && partner_papel !== expectedPapel) : partner_id != null || partner_papel != null) ||
+        (isProducer ? clients.length < 1 || clients.length > 100 || !clients.every(uuid) || new Set(clients).size !== clients.length || !clients.includes(primary) : clients.length > 0 || primary != null)) {
         return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
-      }
-      if (!isProducer) {
-        const { data: preflight, error: preflightError } = await anonClient.rpc("b2b_provisioning_preflight", {
-          p_partner: partner_id, p_role: dedicatedRole, p_papel: expectedPapel,
-        });
-        if (preflightError || preflight?.organization_id !== actorOrganizationId ||
-          preflight?.partner_id !== partner_id || preflight?.role !== dedicatedRole || preflight?.papel !== expectedPapel) {
-          return new Response(JSON.stringify({ error: "b2b_provisioning_forbidden" }), {
-            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
       }
       const reply = (value: unknown, status: number) => new Response(JSON.stringify(value), {
         status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
@@ -144,11 +157,15 @@ Deno.serve(async (req) => {
         return reply({ error: "b2b_provisioning_invalid" }, 400);
       }
       const { data: claim, error: claimError } = await anonClient.rpc("b2b_claim_provisioning", {
-        p_partner: isProducer ? null : partner_id, p_key: key, p_email: email.trim().toLowerCase(), p_nome: nome.trim(),
-        p_role: dedicatedRole, p_clients: clients, p_primary: primary,
+        p_partner: hasPartner ? partner_id : null, p_key: key, p_email: email.trim().toLowerCase(), p_nome: nome.trim(),
+        p_roles: [...rolesArr].sort(), p_clients: clients, p_primary: primary,
       });
       if (claimError || !claim?.claim_id || !claim?.fence || !claim?.user_id ||
-        claim.organization_id !== actorOrganizationId) return reply({ error: "b2b_provisioning_conflict" }, 409);
+        claim.organization_id !== actorOrganizationId || claim.contract !== "C2_MULTIPROFILE_V1" ||
+        claim.actor_id !== callerId || claim.partner_id !== (hasPartner ? partner_id : null) ||
+        claim.readers_ready !== true || claim.provisioning_ready !== true ||
+        !Array.isArray(claim.external_roles) || JSON.stringify([...claim.external_roles].sort()) !== JSON.stringify([...rolesArr].sort()) ||
+        (isProducer && claim.producer_links_valid !== true)) return reply({ error: "b2b_provisioning_conflict" }, 409);
       const receiptArgs = { p_claim: claim.claim_id, p_fence: claim.fence, p_user: claim.user_id };
       const reconcileOrCompensate = async () => {
         const { data: state, error } = await adminClient.rpc("b2b_prepare_provisioning_compensation", receiptArgs);
@@ -380,4 +397,5 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
-});
+}
+if (import.meta.main) Deno.serve(req => handler(req));
