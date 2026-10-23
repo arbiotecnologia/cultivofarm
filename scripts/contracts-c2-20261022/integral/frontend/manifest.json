@@ -99,7 +99,7 @@
   "path": "src/pages/Configuracoes.tsx",
   "package": "c2.1-admin",
   "baseline_sha256": "45fb8236e4d2db0d4daf58597206eb9c183b37e42de2a4d9e0cb9a7b420d8f39",
-  "candidate_sha256": "427bd8cff0138a9616057d383e10915cd5a7c748f50a4b90000294f94be559a8"
+  "candidate_sha256": "a6904e3dd488cb1e3ed1eb5fd19d6fd4fabb2a409007d47cd3d29cdac7ba46ad"
  },
  {
   "path": "src/pages/SelecionarPortal.tsx",
