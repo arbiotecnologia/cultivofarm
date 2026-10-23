@@ -29,6 +29,7 @@ import { AtribuicoesPlanosTab } from "@/components/comercial/AtribuicoesPlanosTa
 import { MatrizConfiguravelTab } from "@/components/comercial/MatrizConfiguravelTab";
 import { AlertCircle, Plus, Pencil, GitBranch, Star, Loader2 } from "lucide-react";
 import { useTabParam } from "@/lib/navigation/useTabParam";
+import { formatCivilDateDisplay } from "@/lib/date-utils";
 
 const PAGE_SIZE = 20;
 
@@ -59,7 +60,7 @@ const brl = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 const fmtDate = (v: string | null) =>
-  v ? new Date(v).toLocaleDateString("pt-BR") : "—";
+  v ? formatCivilDateDisplay(v) : "—";
 
 /**
  * Preview do cronograma. Retorna null quando qualquer parâmetro financeiro

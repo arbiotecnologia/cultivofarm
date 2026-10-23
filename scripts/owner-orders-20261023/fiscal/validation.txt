@@ -1,0 +1,99 @@
+Base revision: 914d06c62ff840ae313d373147907f3761624230
+PASS 6 corpos de autoridade reais byte-exatos aos hashes LIVE; sem stubs de scope/contexto/readiness
+PASS pg_get_functiondef local reproduz md5 hosted dos 8 corpos baseline
+PASS migração instalada 20261023192728 reaplicada localmente reproduz os 5 hashes pós-implantação relatados
+PASS baseline: cumulativo gestor+técnico negado pelo assert (blocker 1 reproduzido)
+PASS candidato instalado com hashes hosted reais
+PASS baseline fiscal: papel authenticated B revela motivo/aprovador UUID A (Auth local sintética)
+PASS fiscal candidata: authenticated B contra UUID A negado antes de ler isenção
+PASS fiscal direta fechada também a A e anon, sem inventar autorização por UUID
+PASS corpo/regras fiscais byte-exatos, service_role e owner preservados
+PASS rollback fiscal mantém contenção e não restaura vazamento
+PASS ACL: funções c2_owner_* sem EXECUTE para PUBLIC/anon/authenticated
+PASS gestor B2B passa no assert
+PASS assert legado intacto: cumulativo continua negado nos callers legados
+PASS wrapper de compra: cumulativo passa com autoridade C2 completa
+PASS corpos reais aceitam gestor+técnico+produtor, sem conferir vínculos de produtor pelo stub
+PASS readiness real: senha provisória bloqueia cumulativo
+PASS scope real: tenant do vínculo divergente bloqueia cumulativo
+PASS is_valid real: vínculo futuro bloqueia cumulativo
+PASS scope real: proprietário inativo bloqueia cumulativo
+PASS wrapper de compra: gestor singleton passa (via assert)
+PASS wrapper de compra: técnico isolado negado
+PASS wrapper: uid forjado negado
+PASS técnico isolado continua negado
+PASS A→B: gestor de B negado no parceiro A
+PASS guard libera gestor e cumulativo com plano atribuído
+PASS guard nega técnico isolado
+PASS guard nega usuário sem vínculo/papel
+PASS guard nega A→B
+PASS plano ativo porém não atribuído ao parceiro é negado
+PASS uid de parâmetro diferente do JWT nunca autoriza
+PASS create/simulate aplicam o guard server-side (não só a flag do menu)
+PASS revogar gestor do cumulativo ⇒ técnico residual não compra
+PASS vínculo revogado ⇒ writer fechado
+PASS sem entitlement pedidos_b2b ⇒ writer fechado
+PASS projeção: order_create=true cumulativo, false técnico isolado
+PASS novo pedido de A notifica só admin/gestor_comercial ATIVOS do tenant A (B e inativo excluídos)
+PASS novo pedido de B não notifica ninguém de A
+PASS create usa destinatários do tenant dono (consulta global removida)
+PASS aprovação notifica só vínculos vigentes com perfil ativo (revogado/inativo excluídos)
+PASS aprovação de B não notifica usuário de A
+PASS approve usa destinatários vigentes
+PASS ACL dos destinatários fechada a clientes
+PASS sem categoria RECEITA ativa: aprovação abortada atomicamente, sem fallback DESPESA/inativa, sem título
+PASS forma de pagamento inexistente: falha explícita, aprovação abortada
+PASS forma de pagamento inativa não é usada
+PASS forma de pagamento ambígua falha
+PASS client_id de outro tenant: falha explícita
+PASS emissor interno de outro tenant (h15) é negado
+PASS aprovação gera 1 título no tenant dono, parcelas 3 somando 300 (cronograma canônico)
+PASS segunda geração devolve duplicado=true, sem novo título
+PASS gestor B2B externo não emite título
+PASS na_entrega: semântica atual preservada (transição ocorre, falha registrada)
+PASS na_aprovacao: qualquer falha de geração impede a aprovação (atômico)
+PASS assert byte-exato hosted em toda a vida do candidato
+PASS rollback fecha writer server-side (create negado) e projeção false
+PASS rollback preserva pedidos e títulos
+PASS após rollback a aprovação continua impossível sem cobrança
+PASS após rollback não há fallback de categoria
+PASS rollback não reabre notificação cross-tenant
+PASS contenção do recorte instalado: helpers vazios, ACL postgres-only, aprovação atômica mantida
+TOTAL 60 PASS (PostgreSQL descartável, auth sintético; NÃO hosted)
+
+Vitest (TZ=America/Sao_Paulo):
+$ vitest run src/test/visita/mobileCivilDate.test.ts src/test/saas/commercial-money-editor.test.tsx src/test/comercial/ownerOrderAccess.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/visita/mobileCivilDate.test.ts (11 tests) 8ms
+ ✓ src/test/comercial/ownerOrderAccess.test.ts (3 tests) 6ms
+ ✓ src/test/saas/commercial-money-editor.test.tsx (9 tests) 4862ms
+   ✓ editor de versão comercial > exibe seletor fixo de moeda e mantém o valor ao trocar a moeda  374ms
+   ✓ editor de versão comercial > salva, recarrega o baseline canônico, preserva motivo e limpa a confirmação  1096ms
+   ✓ editor de versão comercial > motivo não suja o draft e a chave muda somente após alteração comercial  521ms
+   ✓ editor de versão comercial > aceita motivo com dois caracteres e não aceita um caractere  434ms
+   ✓ editor de versão comercial > mostra o catálogo global e módulos vazios para cada plano sem compartilhar seleção  719ms
+   ✓ editor de versão comercial > desabilita publicação após alteração comercial até novo save  1364ms
+   ✓ editor de versão comercial > normaliza o preço para a RPC e apresenta os textos amigáveis de limites  313ms
+
+ Test Files  3 passed (3)
+      Tests  23 passed (23)
+   Start at  17:00:15
+   Duration  10.49s (transform 531ms, setup 968ms, collect 1.41s, tests 4.88s, environment 5.84s, prepare 733ms)
+
+
+Candidate TypeScript: PASS (tsgo, tsconfig.app.json; isolated full references)
+Candidate production Vite: PASS
+dist/assets/PortalExecutivo-BJ0jO6k4.js       17.10 kB │ gzip:     5.02 kB
+dist/assets/purify.es-dhnUglUx.js             24.29 kB │ gzip:     9.25 kB
+dist/assets/index.es-DZjZzv4P.js             150.83 kB │ gzip:    51.97 kB
+dist/assets/index-CnJt_PgA.js                152.33 kB │ gzip:    50.04 kB
+dist/assets/html2canvas.esm-CBrSDip1.js      201.42 kB │ gzip:    48.26 kB
+dist/assets/App-B-V14TT5.js                5,898.56 kB │ gzip: 1,574.46 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 37.21s

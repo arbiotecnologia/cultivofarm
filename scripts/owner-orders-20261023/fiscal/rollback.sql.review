@@ -1,0 +1,10 @@
+-- Containment rollback: never restore authenticated exemption UUID probing.
+-- No rules/data/body changes to reverse. Preserve owner/service callers.
+BEGIN;
+DO $$
+BEGIN
+  IF md5(pg_get_functiondef('public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date)'::regprocedure))
+       <> '8bb99a3c335b5f9876d99d988dcf94b0' THEN RAISE EXCEPTION 'fiscal_resolver_drift'; END IF;
+END $$;
+REVOKE EXECUTE ON FUNCTION public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date) FROM PUBLIC, anon, authenticated;
+COMMIT;

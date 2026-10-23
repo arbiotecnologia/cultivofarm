@@ -14,6 +14,8 @@ BEGIN
     ('public.approve_partner_order(uuid,text,date)','09eb9e7442cc59c7c72b4d39f3567a53','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
     ('public.cancel_b2b_receivable_secure(uuid,text)','9935ddb807b0b3da89dfb7d18fea267e','{postgres=X/postgres,service_role=X/postgres}'),
     ('platform_private.b2b_actor_scope(uuid)','c3f2997746f24bc2efd15db5c0ccc862','{postgres=X/postgres,service_role=X/postgres}'),
+    ('public.is_valid_b2b_partner_user(uuid,uuid)','0bb0dea04be8ca84c66db7ca6329876c','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
+    ('platform_private.b2b_commercial_context()','2f1063f00281c4ca78dcebaab81a9446','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'),
     ('platform_private.c2_order_internal_recipients(uuid)','d4936c87a3ab62d26816a11a032dfe0f','{postgres=X/postgres}'),
     ('platform_private.c2_order_partner_recipients(uuid)','70b381094ae1f3ac87d0fa8e28274dac','{postgres=X/postgres}'),
     ('public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date)','8bb99a3c335b5f9876d99d988dcf94b0',NULL),
@@ -24,6 +26,10 @@ BEGIN
       RAISE EXCEPTION 'acl_drift % %', r.sig, (SELECT proacl::text FROM pg_proc WHERE oid = r.sig::regprocedure);
     END IF;
   END LOOP;
+  -- Accept only original ACL or independently installed fiscal containment, same body.
+  IF (SELECT proacl::text FROM pg_proc WHERE oid='public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date)'::regprocedure)
+     NOT IN ('{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}',
+             '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'fiscal_acl_drift'; END IF;
   IF to_regprocedure('platform_private.c2_owner_order_create_allowed(uuid,uuid)') IS NOT NULL
      OR to_regprocedure('platform_private.c2_order_actor_scope(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'already_installed'; END IF;
   IF NOT EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations WHERE version='20261023192728') THEN RAISE EXCEPTION 'installed_slice_missing'; END IF;

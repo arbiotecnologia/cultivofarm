@@ -37,6 +37,9 @@ BEGIN
   END IF;
   -- Hash guard de TODOS os corpos alterados antes de qualquer escrita.
   IF md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure)) <> 'f86f43f9d9ad3ed97b840fcc02c79476'
+  OR md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure)) <> 'c3f2997746f24bc2efd15db5c0ccc862'
+  OR md5(pg_get_functiondef('public.is_valid_b2b_partner_user(uuid,uuid)'::regprocedure)) <> '0bb0dea04be8ca84c66db7ca6329876c'
+  OR md5(pg_get_functiondef('platform_private.b2b_commercial_context()'::regprocedure)) <> '2f1063f00281c4ca78dcebaab81a9446'
   OR md5(pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure)) <> '136b4d59f794d5ff379a7c2ca19455e2'
   OR md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) <> '624f6e3d45e5af7d039d5da8f784d787'
   OR md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) <> 'f9882718027ac4a09810e6e0bf133c61'

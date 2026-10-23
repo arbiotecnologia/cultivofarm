@@ -1,5 +1,26 @@
 # C2-ORD v3 — rebase sobre o recorte instalado 20261023192728 (REVIEW, restante inativo)
 
+## Revisão pós-914d06c — 23/10 19:55 UTC
+- Fiscal: candidata **ACL-only** em `fiscal/candidate.sql.review`, pre/postflight e rollback separado. O corpo permanece md5 `8bb99a3c335b5f9876d99d988dcf94b0`; não altera regra/isenção/globalidade, OID ou assinatura. Fecha EXECUTE direto de authenticated/PUBLIC/anon (inclui B sondando UUID A). Owner postgres e service_role preservados.
+- Call graph LIVE capturado: único caller SQL = `generate_b2b_receivable_secure_impl(uuid)`, DEFINER/postgres; nenhum caller frontend/Edge direto localizado. Portanto a correção mínima não cria mais um resolver nem inventa permissões fiscais por UUID. Chamador legítimo continua executando como postgres após sua própria autorização; nenhuma regra fiscal muda. Rollback mantém contenção, não restaura ACL vulnerável.
+- PostgreSQL descartável: **60/60 PASS**, incluindo reprodução do vazamento com `SET ROLE authenticated`/identidade sintética B e isenção sintética A, negação após candidata e rollback, service/owner e aprovação legítima gerando título através do resolver real. **Não é JWT/RLS hosted**, não é pedido/isenção real.
+- `b2b_actor_scope`, `is_valid_b2b_partner_user`, `b2b_commercial_context`, readiness e h15 usam **6 corpos LIVE reais** com MD5 local conferido; não são stubs. Wrapper `c2_order_actor_scope` é o corpo candidato real. Positivos gestor/técnico cumulativo/mais produtor; negativos técnico-only, tenant divergente, vínculo futuro/revogado, proprietário inativo, senha provisória e gestor revogado. `assert_b2b_partner_scope` intacto; crédito/preços/conversão legados não ampliados. Dependências não-alvo continuam reduzidas (has_role, entitlement, visibilidade fase1, links produtor, eligibility, wrapper/parcelas/d51); nenhuma homologação integral alegada.
+- Frontend candidato atual montado isoladamente em `/tmp/c2ord-frontend-review`, com `src` copiado e referências existentes: **TypeScript PASS**, **Vite production PASS** (37,21s; aviso de tamanho de bundle, sem erro). Primeira tentativa de tipos falhou por referências ausentes na montagem; montagem corrigida, sem mudar código para esconder erros. Vitest **23/23** em 3 arquivos; `TZ=America/Sao_Paulo`.
+- Vigência do plano canônico capturado `2026-10-23 00:00:00+00` → `2026-10-30 00:00:00+00`: `CommercialPaymentPlansPage` passa a usar `formatCivilDateDisplay` no desktop/mobile; armazenamento/validação de vigência e timestamps de eventos intactos. Casos concretos 23/10 e 30/10 cobertos. Homologação de tela autenticada não disponível neste projeto external_unmanaged; não simular sessão real.
+
+### Caminho exato do formulário e bloqueio real (não inventar opção)
+**Gestão interna → Financeiro B2B (`/financeiro/b2b`) → linha de pedido do parceiro → ícone engrenagem “Configurar parceiro” → “Configuração Financeira — [parceiro]” → “Forma padrão” / “Gatilho de cobrança” → Salvar.**
+Fonte: `src/pages/financeiro/FinanceiroB2B.tsx`, `PartnerFinancialSettingsDialog`; salva `partner_financial_settings` pelo hook existente. **Não** é “Forma de pagamento preferida” do cadastro comercial (esse outro campo grava `partner_accounts.forma_pagamento_preferida`).
+
+**Hoje esse caminho não atende o alvo:** só há engrenagem em linhas de pedidos, e o seletor “Forma padrão” tem valores fixos `pix/boleto/transferencia/dinheiro/cartao/prazo`; NÃO oferece o nome do método ativo de auditoria. Não foi criada rota/formulário paralelo, não foi habilitado writer nem criado pedido para acessar a engrenagem. Ajuste focal do formulário existente (acesso sem pedido + métodos globais ativos) depende de recorte revisável próprio; informar o bloqueio é preferível a instruir um clique inexistente. Nenhuma configuração foi gravada.
+
+Estado-alvo **apenas** parceiro `7e52de9a-4bed-4d1e-8200-3255a805465c`: `default_payment_method='AUDIT-AR-20260922 - Sem transferencia'`, método ativo LIVE `3b73824e-f205-47b9-a499-06f02091b247`; `billing_trigger='na_entrega'` preservado. Plano `62147f24-299e-40dd-a6a0-05718b21c55f` e atribuição `48dcac7d-d4a0-4058-bdf4-5461fee89f45` publicados/vigentes 23/10–30/10 confirmados READ ONLY. `fixture-teste4.sql.review` agora só SELECT: remove proposta obsoleta de duplicar atribuição/arquivar no rollback.
+
+### Gates ainda abertos
+Revisão independente/aplicação fiscal e restante C2-ORD; REST com JWT real após aplicação (roteiro `fiscal/rest-negative.py`); idempotência concorrente/preço/hash com carrinho real; caminho canônico de configuração sem pedido; monitor financeiro intermitente, cancelamento/estorno, multiperfil B e demais pendências antigas. Sem SQL hosted/DML/deploy/roles/sessões/reload/publicação nesta entrega.
+
+> Seções abaixo são histórico v2/v3 anterior; achados “fiscal não corrigido”, stubs de scope e atribuição ausente foram superados **somente no candidato local** descrito acima. Produção não mudou.
+
 ## Já instalado em produção (pelo auditor, via MCP) — não reaplicar
 `applied/20261023192728_c2_orders_tenant_notifications_atomic_approval.sql` é a cópia byte-exata de
 `supabase_migrations.schema_migrations` (md5 `5744e639…`, SHA-256 `40ec89d6…`). Contém só (G) destinatários
