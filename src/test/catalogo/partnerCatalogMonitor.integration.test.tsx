@@ -94,7 +94,7 @@ const product = () => `Produto ${state.tenant}/${state.partner}`;
 const catalogCalls = () => state.rpc.mock.calls.filter(([name]) => name === "get_partner_catalog_secure");
 
 async function tick(ms = 100) { for (let elapsed = 0; elapsed < ms; elapsed += 50) await act(async () => { await vi.advanceTimersByTimeAsync(Math.min(50, ms - elapsed)); }); }
-async function openModal() { fireEvent.click(screen.getByRole("button", { name: "Adicionar", exact: true })); await tick(); return screen.getByRole("dialog"); }
+async function openModal() { fireEvent.click(screen.getByRole("button", { name: "Adicionar" })); await tick(); return screen.getByRole("dialog"); }
 async function addItem() { const modal = await openModal(); fireEvent.click(within(modal).getByRole("button", { name: "Adicionar ao carrinho" })); await tick(); }
 it("same confirmed probes retain the real modal DOM and cart without profile reload/cache reset", async () => {
   mount(); await tick(1000); await addItem(); const modal = await openModal();
