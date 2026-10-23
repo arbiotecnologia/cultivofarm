@@ -1,0 +1,6 @@
+BEGIN;
+DO $$ BEGIN IF current_setting('c2p1.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'C2P1_REF_NOT_VERIFIED'; END IF; END $$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_assignment_allowed(p_scope text,p_partner uuid,p_customer uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT false $$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_settings_allowed(p_partner uuid,p_write boolean DEFAULT false) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT false $$;
+REVOKE EXECUTE ON FUNCTION public.rpc_update_partner_financial_settings(uuid,jsonb,jsonb),platform_private.c2p1_update_settings(uuid,jsonb,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;
