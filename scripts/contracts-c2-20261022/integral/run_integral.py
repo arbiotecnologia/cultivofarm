@@ -3,7 +3,7 @@ byte-identical by md5/fingerprint) -> install.sql.review (single transaction, un
 -> real-trigger scenarios with SYNTHETIC Auth claims (request.jwt.claims GUC, role
 authenticated) -> idempotency -> rollback.sql.review -> post-rollback denial.
 NOT hosted JWT/RLS/REST evidence. No hosted connection is used."""
-import json, uuid, subprocess
+import json, uuid, subprocess, time
 from pathlib import Path
 import pg, fidelity
 H = Path(__file__).resolve().parent
@@ -14,7 +14,7 @@ def ok(name, cond, detail=''):
 def U(n): return f'00000000-0000-4000-8000-{n:012d}'
 ORG_A, ORG_B, P, Q, CLI, FAZ, CLI_B = U(1), U(2), U(3), U(4), U(5), U(6), U(7)
 ADMIN_A, ADMIN_B, G, T, PR, GT, ALL3, XB = (U(100 + i) for i in range(8))
-def claims(u): return json.dumps({'sub': u, 'role': 'authenticated', 'iat': 4102444800})
+def claims(u): return json.dumps({'sub': u, 'role': 'authenticated', 'iat': int(time.time())})
 def as_user(u, s, expect_ok=True):
     q = f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{claims(u)}',true);\n{s}\nCOMMIT;"
     return pg.sql(q, ok=expect_ok)
@@ -48,7 +48,7 @@ INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,st
 INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled) SELECT '{U(921)}',id,true FROM public.saas_features;
 UPDATE public.saas_plan_versions SET status='PUBLISHED',price_amount=0,currency='BRL',billing_cycle='monthly',trial_days=7,published_at=now()-interval '1 day',features_snapshot='["sintetico"]' WHERE id='{U(921)}';
 INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_version_id,status,started_at) VALUES ('{ORG_A}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day'),('{ORG_B}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day');
-INSERT INTO public.partner_accounts(id,razao_social,ativo,commercial_owner_organization_id) VALUES ('{P}','Parceiro P sintetico',true,'{ORG_A}'),('{Q}','Parceiro Q sintetico',true,'{ORG_B}');
+INSERT INTO public.partner_accounts(id,codigo,razao_social,ativo,commercial_owner_organization_id) VALUES ('{P}','P-SINTETICO','Parceiro P sintetico',true,'{ORG_A}'),('{Q}','Q-SINTETICO','Parceiro Q sintetico',true,'{ORG_B}');
 SET session_replication_role=origin;
 """)
 # BOOTSTRAP ONLY: the canonical "always one active administrador" guard needs an existing
@@ -69,9 +69,19 @@ INSERT INTO public.fazendas(id,cliente_id,nome,organization_id,ativo) VALUES ('{
 install = (H / 'install.sql.review').read_text()
 ok('install has exactly one COMMIT', install.count('COMMIT;') == 1)
 pg.sql(install)
+ok('history public INVOKER/private DEFINER minimal ACL', pg.sql((H.parent / 'coordinated/history-postflight.sql').read_text()) == '1')
 r = subprocess.run(pg.psql(), input=install.encode(), capture_output=True)
 ok('re-install fails closed on drift (idempotent guard)', r.returncode != 0 and b'drift' in r.stderr, r.stderr[-300:])
 # ---- admin cadastro: cumulative external assignments through the canonical writer ----
+for n, legacy_role in [(701, 'parceiro_b2b'), (702, 'cliente_produtor')]:
+    partner_arg = f"'{P}'::uuid" if legacy_role == 'parceiro_b2b' else 'NULL::uuid'
+    clients_arg = 'ARRAY[]::uuid[]' if legacy_role == 'parceiro_b2b' else f"ARRAY['{CLI}']::uuid[]"
+    primary_arg = 'NULL::uuid' if legacy_role == 'parceiro_b2b' else f"'{CLI}'::uuid"
+    receipt = json.loads(val(ADMIN_A, f"SELECT public.b2b_claim_provisioning({partner_arg},'{U(n)}','legacy{n}@synthetic.invalid','Legacy synthetic','{legacy_role}'::public.app_role,{clients_arg},{primary_arg})::text;"))
+    pg.sql(f"INSERT INTO auth.users(id,email,raw_app_meta_data,raw_user_meta_data) VALUES ('{receipt['user_id']}','legacy{n}@synthetic.invalid',jsonb_build_object('b2b_provisioning_receipt','{receipt['claim_id']}'),'{{}}');")
+    finished = pg.sql(f"BEGIN; SET LOCAL ROLE service_role; SELECT set_config('request.jwt.claims','{{\"role\":\"service_role\"}}',true); SELECT public.b2b_finish_provisioning('{receipt['claim_id']}','{receipt['fence']}','{receipt['user_id']}')::text; COMMIT;").splitlines()[-1]
+    ok('published scalar claim + new finish preserves '+legacy_role, json.loads(finished).get('success') is True)
+    ok('legacy finish exact singleton '+legacy_role, pg.sql(f"SELECT array_agg(role::text ORDER BY role::text)=ARRAY['{legacy_role}'] FROM public.user_roles WHERE user_id='{receipt['user_id']}';") == 't')
 link(ADMIN_A, G, ['parceiro_b2b'], 'assign')
 link(ADMIN_A, T, ['parceiro_b2b_tecnico'], 'assign')
 link(ADMIN_A, GT, ['parceiro_b2b', 'parceiro_b2b_tecnico'], 'assign')
@@ -87,6 +97,18 @@ ok('gestor+tecnico+produtor -> three portals', ctx(ALL3) == ['b2b', 'producer', 
 ok('contract shape C2_MULTIPROFILE_V1 actor/tenant', contexts(GT).get('contract') == 'C2_MULTIPROFILE_V1' and contexts(GT).get('actor_id') == GT and contexts(GT).get('tenant_id') == ORG_A)
 ok('tenant B gestor isolated to Q', ctx(XB) == ['b2b'] and contexts(XB).get('partner_id') == Q)
 ok('admin A has no external portal from cadastro', 'b2b' not in ctx(ADMIN_A) and 'producer' not in ctx(ADMIN_A))
+# Actual replica responses for the immutable published-reader regression suite.
+# Synthetic identities only; never capture hosted sessions or rows.
+observations = {}
+for label, u in [('gestor', G), ('tecnico', T), ('produtor', PR), ('admin', ADMIN_A)]:
+    observations[label] = {'actor': u, 'tenant': ORG_A, 'contexts': contexts(u),
+        'context': json.loads(val(u, "SELECT coalesce(public.get_my_commercial_partner_context()::text,'null');")),
+        'projection': json.loads(val(u, "SELECT coalesce(public.get_my_commercial_partner_projection()::text,'null');"))}
+(H / 'frontend/published-singleton-observations.json').write_text(json.dumps(observations, indent=2)+'\n')
+ok('direct private history denies foreign tenant admin', 'forbidden' in as_user(ADMIN_B, f"SELECT platform_private.get_partner_user_lifecycle('{P}','{G}',20,NULL,NULL);", False))
+ok('direct private history denies external actor', 'forbidden' in as_user(G, f"SELECT platform_private.get_partner_user_lifecycle('{P}','{G}',20,NULL,NULL);", False))
+ok('history API and core preserve identical CAS and page', val(ADMIN_A, f"SELECT public.get_partner_user_lifecycle('{P}','{G}',1,NULL,NULL)=platform_private.get_partner_user_lifecycle('{P}','{G}',1,NULL,NULL);") == 't')
+ok('history page limit 51 denied', 'invalid_page' in as_user(ADMIN_A, f"SELECT public.get_partner_user_lifecycle('{P}','{G}',51,NULL,NULL);", False))
 # negatives: cross-tenant / self / internal role writes
 ok('admin B cannot assign on partner P (tenant A)', 'forbidden' in link(ADMIN_B, G, ['parceiro_b2b_tecnico'], 'assign', expect_ok=False, expected='0' * 32))
 ok('self-assignment denied', 'forbidden' in link(G, G, ['parceiro_b2b_tecnico'], 'assign', expect_ok=False, expected='0' * 32))
@@ -151,6 +173,9 @@ ok('projection keeps catalogue capability', 'C2_CAT_V1' in proj)
 ok('auth gate whitelist intact after install', pg.sql("SELECT md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure));") == 'b0dd9a14d5fd799a40df0975baf4c5a6')
 # ---- ROLLBACK (integral, deny-only) ----
 pg.sql((H / 'rollback.sql.review').read_text())
+for sig in ['public.get_partner_user_lifecycle(uuid,uuid)', 'public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)', 'platform_private.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)']:
+    for who in ['anon','authenticated','service_role']:
+        ok('rollback history ACL '+sig+' '+who, pg.sql(f"SELECT NOT has_function_privilege('{who}','{sig}','EXECUTE');") == 't')
 ok('rollback: finance reader closed', 'permission denied' in fin(G, expect_ok=False))
 ok('rollback: external contexts closed', ctx(G) == [] and ctx(GT) == [])
 ok('rollback: writers closed', 'permission denied' in link(ADMIN_A, T, ['parceiro_b2b'], 'assign', expect_ok=False, expected='0' * 32))

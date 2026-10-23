@@ -23,6 +23,7 @@ IF (SELECT md5(pg_get_functiondef('platform_private.external_provisioning_scope(
 IF (SELECT md5(pg_get_functiondef('public.register_my_login_redirect_secure(text)'::regprocedure))) IS DISTINCT FROM '307a558b389c0f2863b3429b6e7c1849' OR (SELECT proacl::text FROM pg_proc WHERE oid='public.register_my_login_redirect_secure(text)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.register_my_login_redirect_secure(text)'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'c2_coordinated_drift'; END IF;
 IF (SELECT md5(pg_get_functiondef('public.set_my_context_preference(text,boolean)'::regprocedure))) IS DISTINCT FROM '9a1ff2b6bb65114f55d90082d6559f42' OR (SELECT proacl::text FROM pg_proc WHERE oid='public.set_my_context_preference(text,boolean)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.set_my_context_preference(text,boolean)'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'c2_coordinated_drift'; END IF;
 END $$;
+SELECT 1 / CASE WHEN to_regprocedure('platform_private.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)') IS NULL AND to_regprocedure('public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)') IS NULL AND to_regprocedure('public.get_partner_user_lifecycle(uuid,uuid)') IS NULL THEN 1 ELSE 0 END AS lifecycle_not_installed;
 ALTER TABLE platform_private.b2b_provisioning_receipts ADD COLUMN external_roles public.app_role[];
 ALTER TABLE public.user_access_preferences DROP CONSTRAINT user_access_preferences_last_context_chk, DROP CONSTRAINT user_access_preferences_preferred_context_chk;
 ALTER TABLE public.user_access_preferences ADD CONSTRAINT user_access_preferences_last_context_chk CHECK(last_context IS NULL OR last_context IN ('b2b','technical','producer','admin')), ADD CONSTRAINT user_access_preferences_preferred_context_chk CHECK(preferred_context IS NULL OR preferred_context IN ('b2b','technical','producer','admin'));
@@ -741,7 +742,7 @@ $api$;
 REVOKE ALL ON FUNCTION public.link_partner_user(uuid,uuid,text[],text,text,uuid,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.link_partner_user(uuid,uuid,text[],text,text,uuid,text) TO authenticated;
 -- Dedicated scoped state/history projection; never exposes global audit rows.
-CREATE FUNCTION public.get_partner_user_lifecycle(p_partner_id uuid,p_user_id uuid,p_limit integer,p_before timestamptz,p_before_id uuid)
+CREATE FUNCTION platform_private.get_partner_user_lifecycle(p_partner_id uuid,p_user_id uuid,p_limit integer,p_before timestamptz,p_before_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $read$
 DECLARE actor uuid:=auth.uid(); org uuid; state jsonb; history jsonb; next_cursor jsonb;
 BEGIN
@@ -788,13 +789,34 @@ BEGIN
  INTO history,next_cursor;
  RETURN jsonb_build_object('state',state,'version',md5(state::text),'history',history,'next_cursor',next_cursor);
 END $read$;
-REVOKE ALL ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION platform_private.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION platform_private.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid) TO authenticated;
+CREATE FUNCTION public.get_partner_user_lifecycle(p_partner_id uuid,p_user_id uuid,p_limit integer,p_before timestamptz,p_before_id uuid)
+RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $api$
+ SELECT platform_private.get_partner_user_lifecycle(p_partner_id,p_user_id,p_limit,p_before,p_before_id);
+$api$;
+REVOKE ALL ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid) TO authenticated;
 -- Preserve the uninstalled candidate's two-argument contract; bounded first page.
 CREATE FUNCTION public.get_partner_user_lifecycle(p_partner_id uuid,p_user_id uuid)
 RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $api$
  SELECT public.get_partner_user_lifecycle(p_partner_id,p_user_id,20,NULL::timestamptz,NULL::uuid);
 $api$;
-REVOKE ALL ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.get_partner_user_lifecycle(uuid,uuid) TO authenticated;
+-- READ ONLY assertion after installation; no JWT/RLS certification.
+SELECT 1 / CASE WHEN NOT p.prosecdef AND core.prosecdef
+ AND p.proconfig=ARRAY['search_path=""']::text[] AND core.proconfig=ARRAY['search_path=""']::text[]
+ AND NOT has_function_privilege('anon',p.oid,'EXECUTE')
+ AND NOT has_function_privilege('anon',core.oid,'EXECUTE')
+ AND NOT has_function_privilege('service_role',p.oid,'EXECUTE')
+ AND NOT has_function_privilege('service_role',core.oid,'EXECUTE')
+ AND has_function_privilege('authenticated',p.oid,'EXECUTE')
+ AND has_function_privilege('authenticated',core.oid,'EXECUTE')
+ AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE')
+ AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(core.proacl,acldefault('f',core.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE')
+ THEN 1 ELSE 0 END AS lifecycle_private_core_acl
+FROM pg_proc p CROSS JOIN pg_proc core
+WHERE p.oid='public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)'::regprocedure
+ AND core.oid='platform_private.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)'::regprocedure;
 COMMIT;
