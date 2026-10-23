@@ -32,6 +32,14 @@ describe("H9-G 2D — destino seguro do botão Voltar", () => {
     expect(resolveSafeHome({ hasUser: true, roles: ["financeiro"] })).toBe("/financeiro");
   });
 
+  it("contexto canônico produtor residual volta a /app sem herdar o portal B2B", () => {
+    expect(resolveSafeHome({ hasUser: true, roles: ["parceiro_b2b", "cliente_produtor"], availableContexts: ["producer"] })).toBe("/app");
+  });
+
+  it("contextos B2B e produtor autorizados mantêm o seletor canônico", () => {
+    expect(resolveSafeHome({ hasUser: true, roles: ["parceiro_b2b", "cliente_produtor"], availableContexts: ["b2b", "producer"] })).toBe("/selecionar-portal");
+  });
+
   it("admin volta ao dashboard geral mesmo com contextos de portal", () => {
     expect(
       resolveSafeHome({

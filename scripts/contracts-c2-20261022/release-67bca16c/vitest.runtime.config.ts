@@ -36,6 +36,6 @@ export default defineConfig({ ...base,
     "src/test/config/monitorRetryReresolve.integration.test.tsx",
     "src/test/config/retryLoadingRace.integration.test.tsx",
     "src/test/config/portalContextRecovery.integration.test.tsx",
-    "src/test/config/b2bOpenSession.integration.test.tsx",
+    "src/test/visita/safeHome.test.ts",
   ] },
 });

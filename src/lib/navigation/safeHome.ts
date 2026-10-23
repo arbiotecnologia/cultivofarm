@@ -67,7 +67,7 @@ export interface SafeHomeInput {
   roles?: readonly string[] | null;
   primaryRole?: string | null;
   /** Contextos de portal resolvidos pela RPC segura (opcional). */
-  availableContexts?: readonly ("b2b" | "technical" | "admin")[] | null;
+  availableContexts?: readonly ("b2b" | "technical" | "admin" | "producer")[] | null;
 }
 
 export function resolveSafeHome(input: SafeHomeInput): string {
@@ -84,6 +84,7 @@ export function resolveSafeHome(input: SafeHomeInput): string {
   const contexts = availableContexts ?? null;
   if (contexts && contexts.length >= 2) return SELECIONAR_PORTAL_PATH;
   if (contexts && contexts.length === 1 && contexts[0] === "b2b") return B2B_HOME_PATH;
+  if (contexts && contexts.length === 1 && contexts[0] === "producer") return PRODUTOR_HOME_PATH;
 
   if (effective === "cliente_produtor") return PRODUTOR_HOME_PATH;
   if (effective) return getHomeForRole(effective);
