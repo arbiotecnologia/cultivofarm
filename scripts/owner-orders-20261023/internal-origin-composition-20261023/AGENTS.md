@@ -1,0 +1,3 @@
+- External origin proof is a separate immutable server-owned snapshot issued only by the authorized canonical create RPC under a private txid ticket; internal snapshots, legacy NULL containment and operational readiness remain unchanged — prevents external buyers from impersonating internal actors.
+- This review never reopens the owner writer; local positive tests explicitly replace containment with the previously reviewed helper only inside disposable PostgreSQL — prevents a candidate from becoming an authorization release.
+- Test the captured trigger chain and pricing bodies with synthetic Auth explicitly labelled; failed or missing scenarios remain blockers, never hosted certification — prevents false release readiness.
