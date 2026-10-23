@@ -98,8 +98,7 @@ export function PartnerLifecycleFields({ partnerId, userId }: { partnerId: strin
     </fieldset>
     <label className="block">Motivo<Input value={reason} maxLength={500} disabled={busy} onChange={e => setReason(e.target.value)} /></label>
     <div className="flex flex-wrap gap-2">
-      <Button disabled={disabled} onClick={() => void save("assign")}>Confirmar perfis</Button>
-      <Button variant="outline" disabled={disabled} onClick={() => void save("revoke_roles")}>Revogar perfis retirados</Button>
+      <Button disabled={disabled || !reason.trim() || !!read.data.state.link?.revoked_at} onClick={() => void save(roles.some(r => !read.data?.state.roles.includes(r)) ? "assign" : "revoke_roles")}>Confirmar perfis</Button>
       <Button variant="outline" disabled={disabled || !read.data.state.link || !!read.data.state.link.revoked_at} onClick={() => void save("unlink")}>Desvincular parceiro</Button>
       <Button variant="outline" disabled={disabled || !read.data.state.link?.revoked_at} onClick={() => void save("reactivate")}>Reativar vínculo</Button>
       {conflict && <Button variant="outline" disabled={busy} onClick={() => void refresh()}>Atualizar dados</Button>}
