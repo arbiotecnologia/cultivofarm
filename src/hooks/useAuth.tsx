@@ -740,7 +740,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             recordAuthzDiagnostic({ event: "auto_retry", state: "expired", reason: "timeout",
               visible: document.visibilityState === "visible", online: navigator.onLine,
               rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
-            revalidateAuthzRef.current({ transient: true });
+            revalidateAuthzRef.current();
           }, decision.delayMs);
         } else if (uid) {
           // Role-change candidate: an "ineligible" pair/residual probe may run the
@@ -758,7 +758,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               recordAuthzDiagnostic({ event: "auto_retry", state: "expired", reason: "ineligible",
                 visible: document.visibilityState === "visible", online: navigator.onLine,
                 rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
-              revalidateAuthzRef.current({ transient: true });
+              revalidateAuthzRef.current();
             }, 0);
           }
         }
@@ -828,7 +828,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Retry re-resolves profile/roles through the existing loader (fresh reads,
   // not cached roles), single-flight and generation-fenced. Same scope then
   // re-polls the same monitor; a different scope recreates or stays paused.
-  const revalidateAuthz = (opts?: { transient?: boolean }) => {
+  const revalidateAuthz = () => {
     cancelAutoRecovery();
     const uid = user?.id;
     const current = monitoredLatchRef.current;
@@ -848,12 +848,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
     clearActivePortalContext();
     window.dispatchEvent(new Event("portal-client-preferences-cleared"));
-    // Recuperação transitória (automática, mesmo fingerprint confirmado) NÃO
-    // incrementa a época: consumidores e formulários não são remontados
-    // (regressão real pós-C2). Retry manual (gesto explícito) mantém o bump
-    // revisado; mudança real de fingerprint dispara onEpochChange; escopo
-    // divergente incrementa abaixo, antes do loader.
-    if (!opts?.transient) setAuthzEpoch((e) => e + 1);
+    // A época NÃO é incrementada aqui: se a re-resolução confirmar o MESMO
+    // escopo/fingerprint (recuperação transitória, inclusive a automática),
+    // consumidores e formulários não são remontados (regressão real pós-C2).
+    // Mudança real de fingerprint dispara onEpochChange (que incrementa a
+    // época); escopo divergente incrementa abaixo, antes do loader.
     const cachedRoles = [...roles].sort();
     const cachedOrg = profile?.organization_id ?? null;
     // Retry yields only to identity change/sign-out/unmount or a newer loader
