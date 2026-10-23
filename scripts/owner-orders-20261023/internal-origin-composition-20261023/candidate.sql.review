@@ -508,7 +508,7 @@ BEGIN
   DELETE FROM platform_private.authz_tickets WHERE txid=txid_current() AND scope='c2_external_order_create' AND target=p_partner_id;
   RETURN v_result;
 END
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION platform_private.b2b_internal_order_snapshot_guard()
  RETURNS trigger
@@ -604,7 +604,7 @@ BEGIN
  ELSIF NEW.status IS DISTINCT FROM OLD.status AND public.fn_b2b_status_is_operational(NEW.status) AND OLD.internal_economic_snapshot IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_UNSEALED_OPERATION' USING ERRCODE='42501';
  END IF;
  RETURN NEW;
-END $function$
+END $function$;
 
 CREATE OR REPLACE FUNCTION platform_private.b2b_internal_child_snapshot_guard()
  RETURNS trigger
@@ -637,7 +637,7 @@ BEGIN
   END IF;
  END LOOP;
  IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
-END $function$
+END $function$;
 
 CREATE OR REPLACE FUNCTION public.approve_partner_order(p_order_id uuid, p_approval_notes text DEFAULT NULL::text, p_estimated_delivery_date date DEFAULT NULL::date)
  RETURNS void
@@ -720,7 +720,7 @@ BEGIN
     INTO v_final_status, v_final_ready, v_block
     FROM public.partner_orders WHERE id = p_order_id;
 
-  IF v_final_status <> 'aprovado' OR v_final_ready IS NOT TRUE THEN
+  IF v_final_status <> 'aprovado' OR (v_final_ready IS NOT TRUE AND NOT EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot IS NOT NULL AND internal_economic_snapshot IS NOT NULL)) THEN
     RAISE EXCEPTION 'credit_block: %', COALESCE(v_block, 'aprovacao_credito_pendente');
   END IF;
 
@@ -739,7 +739,7 @@ BEGIN
             '/portal-parceiro/pedidos');
   END LOOP;
 END
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure_impl(p_partner_order_id uuid)
  RETURNS jsonb
@@ -965,7 +965,7 @@ BEGIN
     'status', 'OPEN'
   );
 END 
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()
  RETURNS trigger
@@ -1005,6 +1005,6 @@ BEGIN
   END LOOP;
   RETURN NEW;
 END
-$function$
+$function$;
 
 COMMIT;
