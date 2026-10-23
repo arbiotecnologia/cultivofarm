@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 23:14 — regressão catálogo durante sondagens/renovação
+- [x] Reproduzir perda modal/carrinho antespatch; AuthProvider/monitor/QueryClient/rota/NovoPedido/hook reais, só SDK/relógio/shell simulados. Sondagens idênticas não remontam; renovação oculta autoridade e reconstitui somente escolhas após vetor igual + catálogo/volumes frescos. Revogação/deadline/offline/troca/Retry descartam.110/110 regressões +5/5 saneamento PASS; build/typecheck automático OK, sem manual/JWT hosted.
+- [x] Baselines byte-exatos/patch/hashes em scripts/owner-orders-20261023/catalog-monitor-fix-20261023; release9fc18e7a/index-DFNxASjt e reabertura Codex registrados como relato independente. Manifesto principal127/127 PASS,121 linhas anteriores preservadas. Sem SQL/publicação/sessões/pedidos reais. Pendências históricas preservadas.
+- [ ] Homologação da aba real e publicação do novo patch: dependem da revisão e ação independente do proprietário; não executadas pelo agente.
+
 ## 23/10 23:03 — encerramento documental após revisão independente
 - [x] Restaurar117 entradas de cadda8f7,115 linhas históricas byte-for-byte; atualizar só README/relatório já alterados, acrescentar4 novos, total121/121 PASS com sha256sum -c SHA256SUMS na pasta do pacote. SHA final486a01b078b5d5e94052ce60f770c77c84bdd0f868ed6fa0e2f7f188d7301540. Runtime/SQL/snapshots intactos nesta rodada.
 - [x] Registrar relato independente: build cadda PASS34,8s/14testes PASS; aba real parceiro recuperou semreload, catálogo readonly visível apóscontenção e criação false; JWT B archive403/42501 C2P1_FORBIDDEN, A published intacta. Sem novo deploy.

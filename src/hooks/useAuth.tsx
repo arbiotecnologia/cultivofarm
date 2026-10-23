@@ -17,6 +17,7 @@ import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLE
 import { initialAutoRecovery, onExpire as autoRecoveryOnExpire, onValid as autoRecoveryOnValid, type AutoRecoveryState } from "@/lib/authz/transientTimeoutRecovery";
 import { initialRoleChangeReresolve, onExpire as roleChangeOnExpire, onValid as roleChangeOnValid, type RoleChangeReresolveState } from "@/lib/authz/roleChangeReresolve";
 import { clearAllPauseStates } from "@/lib/authz/pauseRetainedState";
+import { safePartnerOrderDraft, type SafePartnerOrderDraft } from "@/lib/authz/safePartnerOrderDraft";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -89,6 +90,8 @@ interface AuthContextType {
   authzResidualScope: boolean;
   setSafeOSDraft: (draft: SafeOSRenewalDraft | null) => void;
   takeSafeOSDraft: () => SafeOSRenewalDraft | null;
+  setSafePartnerOrderDraft: (draft: SafePartnerOrderDraft | null) => void;
+  takeSafePartnerOrderDraft: () => SafePartnerOrderDraft | null;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -111,6 +114,8 @@ const AuthContext = createContext<AuthContextType>({
   authzResidualScope: false,
   setSafeOSDraft: () => {},
   takeSafeOSDraft: () => null,
+  setSafePartnerOrderDraft: () => {},
+  takeSafePartnerOrderDraft: () => null,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -137,6 +142,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadedUserIdRef = useRef<string | null>(null);
   const safeDraftRef = useRef<SafeOSRenewalDraft | null>(null);
   const renewalRef = useRef<{ draft: SafeOSRenewalDraft; scope: string; fingerprint: string; confirmed: boolean } | null>(null);
+  const partnerDraftRef = useRef<SafePartnerOrderDraft | null>(null);
+  const partnerRenewalRef = useRef<{ draft: SafePartnerOrderDraft; scope: string; fingerprint: string; confirmed: boolean } | null>(null);
   const resolvedScopeRef = useRef("");
   // Monitored-session latch: once this session observed a monitored scope,
   // a later re-resolution into an unmonitored/unknown/empty scope stays
@@ -179,6 +186,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return receipt?.confirmed && receipt.scope === resolvedScopeRef.current && authzMonitorRef.current?.checkAccess()
       ? { ...receipt.draft } : null;
   };
+  const setSafePartnerOrderDraft = (draft: SafePartnerOrderDraft | null) => {
+    partnerDraftRef.current = draft ? safePartnerOrderDraft(draft) : null;
+  };
+  const takeSafePartnerOrderDraft = () => {
+    const receipt = partnerRenewalRef.current;
+    partnerRenewalRef.current = null;
+    return receipt?.confirmed && receipt.scope === resolvedScopeRef.current && authzMonitorRef.current?.checkAccess()
+      ? safePartnerOrderDraft(receipt.draft) : null;
+  };
 
   const clearIdentityState = () => {
     setProfile(null);
@@ -191,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       visible: document.visibilityState === "visible", online: navigator.onLine,
       rttMs: performance.now() - startedAt, leaseRemainingMs: null, requestRemainingMs: null });
   const failLoad = () => {
+    partnerRenewalRef.current = null;
     loadedUserIdRef.current = null;
     renewalRef.current = null;
     clearIdentityState();
@@ -224,6 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!renewal || recoveryUsed || !navigator.onLine || !mountedRef.current ||
         activeUserIdRef.current !== userId || gen !== generationRef.current) return false;
       renewalRef.current = null;
+      partnerRenewalRef.current = null;
       safeDraftRef.current = null;
       clearIdentityState();
       setError(null);
@@ -288,6 +306,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (profile.ativo === false) {
+        partnerRenewalRef.current = null;
         renewalRef.current = null;
         loadedUserIdRef.current = null;
         setError("Sua conta está inativa.");
@@ -352,6 +371,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = async () => {
     if (user) {
+      partnerRenewalRef.current = null;
       renewalRef.current = null;
       safeDraftRef.current = null;
       setLoading(true);
@@ -408,6 +428,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (identityChanged || authorizationChanged || !nextUserId) {
           const monitor = authzMonitorRef.current;
           const fingerprint = monitor?.currentFingerprint();
+          // Only healthy same-identity natural renewal carries user choices.
+          // Stop/cancel/clear below still fences every old query and mounted UI.
+          partnerRenewalRef.current = event === "TOKEN_REFRESHED" && !identityChanged && nextUserId &&
+            partnerDraftRef.current && monitor?.checkAccess() && fingerprint
+            ? { draft: safePartnerOrderDraft(partnerDraftRef.current) ?? partnerDraftRef.current,
+                scope: resolvedScopeRef.current, fingerprint, confirmed: false } : null;
+          partnerDraftRef.current = null;
           renewalRef.current = event === "TOKEN_REFRESHED" && !identityChanged && nextUserId &&
             safeDraftRef.current && monitor?.checkAccess() && fingerprint
             ? { draft: { ...safeDraftRef.current }, scope: resolvedScopeRef.current, fingerprint, confirmed: false } : null;
@@ -660,11 +687,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       renewBeforeDeadline: environmentalContextOnly,
       // Reviewed environmental scopes, local numeric/boolean allowlist; no identity or transport data.
       onDiagnostic: environmentalContextOnly ? recordAuthzDiagnostic : undefined,
-      // Preserve published B2B confirmation refresh. Producer/financial renew
-      // the lease without remount on identical observed context; real changes,
-      // explicit revalidation, expiry and identity still retire the view.
+      // Healthy identical probes renew only the existing lease, not the view.
+      // Changed vectors, expiry and explicit Retry retain their existing fences.
       // No claim of detecting an unobserved transient ABA between polls.
-      refreshOnConfirmation: b2bContextOnly && !producerContextOnly && !financialContextOnly && !companyAdminContextOnly && !consultantContextOnly && !operatorContextOnly && !managerConsultantContextOnly && !residualContextOnly,
+      refreshOnConfirmation: false,
       onStateChange: (next) => {
         if (next === "valid") {
           if (autoRecoveryRef.current.userId !== (user?.id ?? null)) autoRecoveryRef.current = { userId: user?.id ?? null, s: initialAutoRecovery() };
@@ -680,6 +706,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             visible: document.visibilityState === "visible", online: navigator.onLine,
             rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
         }
+        if (next === "valid" && partnerRenewalRef.current) {
+          const receipt = partnerRenewalRef.current;
+          if (receipt.scope === principalScope && receipt.fingerprint === monitor.currentFingerprint() && monitor.checkAccess()) {
+            receipt.confirmed = true;
+          } else partnerRenewalRef.current = null;
+        }
+        if (next === "expired") partnerRenewalRef.current = null;
         if (next === "expired") renewalRef.current = null;
         if (next === "pending" || next === "expired") {
           // Pausa transitória: cancela/limpa consultas (nada obsoleto é servido)
@@ -694,6 +727,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthzState(next);
       },
       onEpochChange: () => {
+        partnerRenewalRef.current = null;
+        partnerDraftRef.current = null;
         renewalRef.current = null;
         clearResume(); // nova época nunca retoma navegação anterior
         // Nova época (fingerprint mudou): geração++, cancela/limpa consultas,
@@ -712,6 +747,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void refresh();
       },
       onExpire: (reason) => {
+        partnerRenewalRef.current = null;
+        partnerDraftRef.current = null;
         renewalRef.current = null;
         // Retomada de navegação: SOMENTE timeout confirmado; demais motivos descartam.
         if (reason === "timeout") armResumeOnTimeout(resumePrincipalKey(user?.id, profile?.organization_id, roles), Date.now());
@@ -829,6 +866,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // not cached roles), single-flight and generation-fenced. Same scope then
   // re-polls the same monitor; a different scope recreates or stays paused.
   const revalidateAuthz = (opts?: { transient?: boolean }) => {
+    partnerRenewalRef.current = null;
+    partnerDraftRef.current = null;
     cancelAutoRecovery();
     const uid = user?.id;
     const current = monitoredLatchRef.current;
@@ -929,6 +968,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   revalidateAuthzRef.current = revalidateAuthz;
 
   const signOut = async () => {
+    partnerRenewalRef.current = null;
+    partnerDraftRef.current = null;
     clearResume();
     cancelLoader();
     cancelAutoRecovery();
@@ -978,6 +1019,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         revalidateAuthz: () => revalidateAuthz(),
         setSafeOSDraft,
         takeSafeOSDraft,
+        setSafePartnerOrderDraft,
+        takeSafePartnerOrderDraft,
       }}
     >
       {children}

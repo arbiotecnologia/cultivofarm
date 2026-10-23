@@ -52,6 +52,7 @@ import {
 } from "@/lib/catalogo/unidades";
 import { DOSES_POR_LITRO, resolverCustoHa } from "@/lib/catalogo/pricing";
 import { round2 } from "@/lib/catalogo/formatUnidades";
+import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 
 const nfmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
@@ -108,7 +109,7 @@ const doseLitroHaFor = (p: CatalogItem | undefined): number | null => {
 
 export default function NovoPedido() {
   const { partner } = useOutletContext<{ partner: any }>();
-  const { role } = useAuth();
+  const { role, setSafePartnerOrderDraft, takeSafePartnerOrderDraft } = useAuth();
   const location = useLocation();
   const isRoleTecnico = role === "parceiro_b2b_tecnico";
   const isSimuladorRoute = location.pathname.includes("/portal-parceiro/simulador");
@@ -139,6 +140,44 @@ export default function NovoPedido() {
   const [requestedDate, setRequestedDate] = useState<string>("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [addRow, setAddRow] = useState<CatalogoUnificadoRow | null>(null);
+  const volumes = useCatalogoVolumes();
+  const renewalApplied = useRef(false);
+  // Natural renewal never restores prices/hash/plan/text or a submit receipt.
+  // Rebuild only choices present in the freshly authorized catalogue/volumes.
+  useEffect(() => {
+    if (renewalApplied.current || !catalogGestor.isSuccess || !volumes.isSuccess || isSimulationMode) return;
+    renewalApplied.current = true;
+    const draft = takeSafePartnerOrderDraft?.();
+    if (!draft || draft.partnerId !== partner?.id) return;
+    const next: Record<string, CartItem> = {};
+    for (const choice of draft.items) {
+      const item = catalogMap.get(choice.itemId);
+      const volume = volumes.data.porProdutoId.get(choice.itemId)?.find(v => v.id === choice.volumeId) ??
+        volumes.data.porMicrorganismoId.get(choice.itemId)?.find(v => v.id === choice.volumeId);
+      if (!item || !volume || !volume.ativo || volume.item_tipo !== item.item_tipo || volume.volume_ml <= 0) continue;
+      const price = round2(Number(item.valor_litro_brl ?? 0) * volume.volume_ml / 1000);
+      if (!Number.isFinite(price) || price <= 0) continue;
+      const full = round2(Number(item.preco_tabela_litro || item.valor_litro_brl) * volume.volume_ml / 1000);
+      next[`${choice.itemId}::${choice.volumeId}`] = {
+        item_id: item.item_id, item_tipo: item.item_tipo, product_id: item.product_id, nome: item.nome,
+        quantidade: choice.quantity, preco_unitario: price, subtotal: round2(price * choice.quantity),
+        preco_unitario_cheio: full, subtotal_cheio: round2(full * choice.quantity),
+        desconto_percentual: item.desconto_percentual, unidade_pedido: "volume_comercial",
+        volume_id: volume.id, volume_ml: volume.volume_ml, volume_rotulo: volume.rotulo, area_ha: null,
+      };
+    }
+    setCart(next);
+    if (draft.addItemId) setAddRow(partnerCatalogRows(catalog).find(row => row.id === draft.addItemId) ?? null);
+  }, [catalogGestor.isSuccess, catalog, catalogMap, volumes.isSuccess, volumes.data, isSimulationMode, partner?.id, takeSafePartnerOrderDraft]);
+  useEffect(() => {
+    setSafePartnerOrderDraft?.(!isSimulationMode && partner?.id ? {
+      partnerId: partner.id, addItemId: addRow?.id ?? null,
+      items: Object.values(cart).filter(item => item.volume_id && item.quantidade > 0).map(item => ({
+        itemId: item.item_id, volumeId: item.volume_id ?? "", quantity: item.quantidade,
+      })),
+    } : null);
+    return () => setSafePartnerOrderDraft?.(null);
+  }, [cart, addRow?.id, isSimulationMode, partner?.id, setSafePartnerOrderDraft]);
   // Favoritos / modelos de pedido
   const saveTemplate = useSaveOrderTemplate();
   const [favOpen, setFavOpen] = useState(false);
