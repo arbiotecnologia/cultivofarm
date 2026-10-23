@@ -45,6 +45,9 @@ for f in fns.values():
     for role in ['anon','authenticated','service_role']:
         if f['acl'] and role+'=X/' in f['acl']:pg.sql(f"GRANT EXECUTE ON FUNCTION {f['sig']} TO {role};")
     if f['acl'] and f['acl'].startswith('{=X/'):pg.sql(f"GRANT EXECUTE ON FUNCTION {f['sig']} TO PUBLIC;")
+    # Capture fidelity only, before fixtures/scenarios: preserve historical ACL array ordering.
+    acl="NULL" if f['acl'] is None else "'"+f['acl'].replace("'","''")+"'::aclitem[]"
+    pg.sql(f"UPDATE pg_proc SET proacl={acl} WHERE oid='{f['sig']}'::regprocedure")
     got=pg.sql(f"SELECT md5(pg_get_functiondef('{f['sig']}'::regprocedure)) FROM pg_proc WHERE oid='{f['sig']}'::regprocedure")
     assert got==f['md5'],(f['sig'],got,f['md5'])
 ok('captured business/authorization/pricing bodies reproduce all MD5s')
