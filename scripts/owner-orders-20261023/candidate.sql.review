@@ -1,16 +1,15 @@
--- REVIEW ONLY (C2-ORD v2) — NÃO APLICAR sem revisão independente e preflight.sql PASS.
+-- REVIEW ONLY (C2-ORD v3, rebased sobre 20261023192728 instalado: G e E NÃO são reaplicados) — NÃO APLICAR sem revisão independente e preflight.sql PASS.
 -- Baseline exato capturado READ ONLY em 2026-10-23 (ver baseline/*.sql + SHA em README).
 -- Mudanças (todas hash-guarded, substituição textual única, CREATE OR REPLACE preserva proacl):
 --  (A) platform_private.c2_owner_order_create_allowed / c2_owner_plan_assigned / c2_owner_order_guard
 --      — autoridade server-side única do writer do cliente comercial (sem ACL para clientes).
---  (B) assert_b2b_partner_scope: técnico só é negado quando NÃO é também gestor B2B (parceiro_b2b).
---  (C) create_partner_order_secure / simulate_b2b_payment_plan_secure: chamam o guard logo após o assert.
+--  (B) c2_order_actor_scope: wrapper só de create/simulate; assert_b2b_partner_scope e callers legados intactos.
+--  (C) create/simulate: trocam a chamada do assert pelo wrapper + guard.
 --  (D) generate_b2b_receivable_secure_impl: tenant dono, escopo interno por h15, categoria RECEITA ativa
 --      estrita, forma de pagamento ativa e única, cliente no mesmo tenant; falha explícita.
---  (E) tg_auto_b2b_receivable: billing_trigger='na_aprovacao' falha ⇒ aprovação abortada (atômica);
---      demais gatilhos mantêm a semântica atual (log financeiro_auto_falhou).
+--  (E) JÁ INSTALADO em 20261023192728 (somente conferido por hash).
 --  (F) projeção: order_capabilities derivada de (A).
---  (G) notificações de criação/aprovação restritas ao tenant dono e a vínculos/perfis ativos.
+--  (G) JÁ INSTALADO em 20261023192728 (somente conferido por hash).
 BEGIN;
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '60s';
@@ -32,17 +31,21 @@ BEGIN
   END IF;
   IF to_regprocedure('platform_private.c2_owner_order_create_allowed(uuid,uuid)') IS NOT NULL
      OR to_regprocedure('platform_private.c2_owner_order_guard(uuid,uuid,uuid)') IS NOT NULL
-     OR to_regprocedure('platform_private.c2_owner_plan_assigned(uuid,uuid)') IS NOT NULL THEN
+     OR to_regprocedure('platform_private.c2_owner_plan_assigned(uuid,uuid)') IS NOT NULL
+     OR to_regprocedure('platform_private.c2_order_actor_scope(uuid,uuid)') IS NOT NULL THEN
     RAISE EXCEPTION 'already_installed_or_drift';
   END IF;
   -- Hash guard de TODOS os corpos alterados antes de qualquer escrita.
   IF md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure)) <> 'f86f43f9d9ad3ed97b840fcc02c79476'
   OR md5(pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure)) <> '136b4d59f794d5ff379a7c2ca19455e2'
-  OR md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) <> '85be378d0751a26470cb98cc641a230f'
+  OR md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) <> '624f6e3d45e5af7d039d5da8f784d787'
   OR md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) <> 'f9882718027ac4a09810e6e0bf133c61'
   OR md5(pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure)) <> '60be0fb336ca1537c063a001a213f7af'
-  OR md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure)) <> '0b11150214b3bded49e1a7e1a4b0e80e'
-  OR md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) <> '8e266945b058393ce780b1d10b20f6b3' THEN
+  -- Recorte já instalado (20261023192728) deve estar presente e intacto; não é reaplicado.
+  OR md5(pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure)) <> '0f679538fe394924b140e54938a3bb9e'
+  OR md5(pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)) <> '09eb9e7442cc59c7c72b4d39f3567a53'
+  OR md5(pg_get_functiondef('platform_private.c2_order_internal_recipients(uuid)'::regprocedure)) <> 'd4936c87a3ab62d26816a11a032dfe0f'
+  OR md5(pg_get_functiondef('platform_private.c2_order_partner_recipients(uuid)'::regprocedure)) <> '70b381094ae1f3ac87d0fa8e28274dac' THEN
     RAISE EXCEPTION 'drift: baseline hash mismatch';
   END IF;
 END $$;
@@ -112,66 +115,45 @@ REVOKE ALL ON FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid)
 REVOKE ALL ON FUNCTION platform_private.c2_owner_plan_assigned(uuid,uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION platform_private.c2_owner_order_guard(uuid,uuid,uuid) FROM PUBLIC, anon, authenticated;
 
--- (G) Destinatários de notificação: somente tenant dono e usuários ativos/autorizados.
-CREATE FUNCTION platform_private.c2_order_internal_recipients(_partner uuid)
-RETURNS SETOF uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
-  SELECT DISTINCT ur.user_id
-    FROM public.partner_accounts pa
-    JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id AND o.ativo IS TRUE AND o.status = 'ativa'
-    JOIN public.profiles p ON p.organization_id = o.id AND p.ativo IS TRUE
-    JOIN public.user_roles ur ON ur.user_id = p.user_id
-   WHERE pa.id = _partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
-     AND ur.role IN ('administrador'::public.app_role,'gestor_comercial'::public.app_role);
-$function$;
-CREATE FUNCTION platform_private.c2_order_partner_recipients(_partner uuid)
-RETURNS SETOF uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
-  SELECT DISTINCT pu.user_id
-    FROM public.partner_users pu
-    JOIN public.partner_accounts pa ON pa.id = pu.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
-    JOIN public.profiles p ON p.user_id = pu.user_id AND p.ativo IS TRUE AND p.organization_id = pu.tenant_id
-   WHERE pu.partner_id = _partner AND pu.revoked_at IS NULL
-     AND (pu.valid_from IS NULL OR pu.valid_from <= now())
-     AND public.is_valid_b2b_partner_user(pu.user_id, pu.partner_id);
-$function$;
-REVOKE ALL ON FUNCTION platform_private.c2_order_internal_recipients(uuid) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION platform_private.c2_order_partner_recipients(uuid) FROM PUBLIC, anon, authenticated;
+-- (B) Escopo do comprador: assert_b2b_partner_scope NÃO é alterado (callers legados intactos).
+-- Só create/simulate usam este wrapper; o cumulativo passa apenas com a autoridade C2 completa.
+CREATE FUNCTION platform_private.c2_order_actor_scope(_uid uuid, _partner uuid)
+RETURNS void LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
+DECLARE s record;
+BEGIN
+  IF public.has_role(_uid,'parceiro_b2b_tecnico'::public.app_role) AND public.has_role(_uid,'parceiro_b2b'::public.app_role)
+     AND NOT public.is_platform_superadmin(_uid) THEN
+    IF _uid IS NULL OR auth.uid() IS DISTINCT FROM _uid THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+    IF NOT platform_private.c2_owner_order_create_allowed(_uid,_partner) THEN
+      RAISE EXCEPTION 'forbidden_financial_terms' USING ERRCODE='42501';
+    END IF;
+    SELECT * INTO s FROM platform_private.b2b_actor_scope(_uid);
+    IF NOT s.profile_ok THEN RAISE EXCEPTION 'inactive_scope' USING ERRCODE='42501'; END IF;
+    IF s.org_partner IS DISTINCT FROM _partner OR NOT s.partner_valid
+       OR s.user_partner_count <> 1 OR s.user_partner IS DISTINCT FROM _partner THEN
+      RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501';
+    END IF;
+    RETURN;
+  END IF;
+  PERFORM platform_private.assert_b2b_partner_scope(_uid,_partner);
+END $function$;
+REVOKE ALL ON FUNCTION platform_private.c2_order_actor_scope(uuid,uuid) FROM PUBLIC, anon, authenticated;
 
 DO $$
 DECLARE d text;
 BEGIN
-  -- (B) técnico cumulativo com gestor B2B pode seguir para o ramo gestor (singleton + parceiro).
-  d := pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure);
-  d := pg_temp.c2_swap(d,
-$o$  IF public.has_role(_uid,'parceiro_b2b_tecnico'::app_role) THEN$o$,
-$n$  IF public.has_role(_uid,'parceiro_b2b_tecnico'::app_role) AND NOT public.has_role(_uid,'parceiro_b2b'::app_role) THEN -- c2_ord_cumulative$n$, 'assert');
-  EXECUTE d;
-
   -- (C) guard do writer em criação e simulação (convert_* reutiliza create).
   d := pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure);
   d := pg_temp.c2_swap(d,
 $o$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);$o$,
-$n$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);
+$n$  PERFORM platform_private.c2_order_actor_scope(v_uid, p_partner_id); -- c2_ord_scope
   PERFORM platform_private.c2_owner_order_guard(v_uid, p_partner_id, p_payment_plan_id); -- c2_ord_guard$n$, 'create');
   EXECUTE d;
   d := pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure);
   d := pg_temp.c2_swap(d,
 $o$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);$o$,
-$n$  PERFORM platform_private.assert_b2b_partner_scope(v_uid, p_partner_id);
+$n$  PERFORM platform_private.c2_order_actor_scope(v_uid, p_partner_id); -- c2_ord_scope
   PERFORM platform_private.c2_owner_order_guard(v_uid, p_partner_id, p_payment_plan_id); -- c2_ord_guard$n$, 'simulate');
-  EXECUTE d;
-
-  -- (G) notificação de novo pedido: só admin/gestor_comercial ativos do tenant dono.
-  d := pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure);
-  d := pg_temp.c2_swap(d,
-$o$    SELECT DISTINCT ur.user_id FROM public.user_roles ur
-     WHERE ur.role IN ('administrador','gestor_comercial')$o$,
-$n$    SELECT r AS user_id FROM platform_private.c2_order_internal_recipients(p_partner_id) r -- c2_ord_recipients$n$, 'create_recipients');
-  EXECUTE d;
-  -- (G) notificação de aprovação: só vínculos vigentes e perfis ativos.
-  d := pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure);
-  d := pg_temp.c2_swap(d,
-$o$  FOR v_partner_user IN SELECT user_id FROM public.partner_users WHERE partner_id = v_pid LOOP$o$,
-$n$  FOR v_partner_user IN SELECT r FROM platform_private.c2_order_partner_recipients(v_pid) r LOOP -- c2_ord_recipients$n$, 'approve_recipients');
   EXECUTE d;
 
   -- (D) geração do título.
@@ -231,19 +213,6 @@ $n$  -- c2_ord_strict_refs: financial_categories/payment_methods são catálogos
        SELECT 1 FROM public.clientes cl WHERE cl.id = v_partner.client_id AND cl.organization_id = v_org) THEN
     RAISE EXCEPTION 'B2B_CUSTOMER_TENANT_MISMATCH' USING ERRCODE='42501';
   END IF;$n$, 'impl_refs');
-  EXECUTE d;
-
-  -- (E) aprovação atômica com cobrança na aprovação.
-  d := pg_get_functiondef('public.tg_auto_b2b_receivable()'::regprocedure);
-  d := pg_temp.c2_swap(d,
-$o$    EXCEPTION WHEN OTHERS THEN
-      INSERT INTO public.partner_order_audit_logs(order_id, partner_id, acao, dados_novos)$o$,
-$n$    EXCEPTION WHEN OTHERS THEN
-      -- c2_ord_atomic_approval: sem título, a aprovação não acontece (rollback do UPDATE).
-      IF v_settings.billing_trigger = 'na_aprovacao' THEN
-        RAISE EXCEPTION 'B2B_APPROVAL_BILLING_FAILED: %', SQLERRM USING ERRCODE='P0001';
-      END IF;
-      INSERT INTO public.partner_order_audit_logs(order_id, partner_id, acao, dados_novos)$n$, 'trigger');
   EXECUTE d;
 
   -- (F) projeção: capacidade do writer = mesma função do servidor.

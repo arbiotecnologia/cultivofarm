@@ -1,30 +1,20 @@
--- REVIEW ONLY (C2-ORD v2 rollback). Fecha o writer SERVER-SIDE e reverte apenas a ampliação do técnico cumulativo.
--- Não restaura: fallback de categoria/forma de pagamento, aprovação sem título nem escopo antigo do título
--- (o corpo antigo falhava para emissor interno e aprovava sem cobrança). Não apaga pedidos/títulos/links.
+-- REVIEW ONLY (C2-ORD v3 rollback do candidato restante). Fecha o writer SERVER-SIDE.
+-- assert_b2b_partner_scope nunca foi alterado pelo v3 (nada a restaurar). Mantém: aprovação atômica,
+-- destinatários restritos (20261023192728), resolução estrita e escopo do título. Não apaga pedidos/títulos.
 BEGIN;
 SET LOCAL lock_timeout = '5s';
-CREATE FUNCTION pg_temp.c2_swap(d text, o text, n text, tag text) RETURNS text LANGUAGE plpgsql AS $s$
-BEGIN
-  IF (length(d) - length(replace(d, o, ''))) / length(o) <> 1 THEN RAISE EXCEPTION 'fragment_not_unique:%', tag; END IF;
-  RETURN replace(d, o, n);
-END $s$;
 DO $$
-DECLARE d text;
 BEGIN
-  IF to_regprocedure('platform_private.c2_owner_order_create_allowed(uuid,uuid)') IS NULL THEN
+  IF to_regprocedure('platform_private.c2_owner_order_create_allowed(uuid,uuid)') IS NULL
+     OR to_regprocedure('platform_private.c2_order_actor_scope(uuid,uuid)') IS NULL THEN
     RAISE EXCEPTION 'not_installed';
   END IF;
-  -- 1) Writer fechado: guard passa a negar todo cliente comercial externo; projeção devolve false.
-  CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid, _partner uuid)
-  RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $f$ SELECT false; $f$;
-  REVOKE ALL ON FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid) FROM PUBLIC, anon, authenticated;
-
-  -- 2) Técnico cumulativo volta a ser negado em assert (corpo original exato).
-  d := pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure);
-  d := pg_temp.c2_swap(d,
-$o$  IF public.has_role(_uid,'parceiro_b2b_tecnico'::app_role) AND NOT public.has_role(_uid,'parceiro_b2b'::app_role) THEN -- c2_ord_cumulative$o$,
-$n$  IF public.has_role(_uid,'parceiro_b2b_tecnico'::app_role) THEN$n$, 'assert');
-  IF md5(d) <> 'f86f43f9d9ad3ed97b840fcc02c79476' THEN RAISE EXCEPTION 'rollback_hash_mismatch_assert %', md5(d); END IF;
-  EXECUTE d;
+  IF md5(pg_get_functiondef('platform_private.assert_b2b_partner_scope(uuid,uuid)'::regprocedure)) <> 'f86f43f9d9ad3ed97b840fcc02c79476' THEN
+    RAISE EXCEPTION 'assert_drift';
+  END IF;
 END $$;
+-- Writer fechado: guard nega todo cliente comercial externo; wrapper nega o cumulativo; projeção false.
+CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid, _partner uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $f$ SELECT false; $f$;
+REVOKE ALL ON FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid) FROM PUBLIC, anon, authenticated;
 COMMIT;

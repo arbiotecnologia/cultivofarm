@@ -634,3 +634,7 @@
 - [ ] Idempotência concorrente/troca de preço apenas estática; fiscal por tenant não auditado; listagem de planos ignora vínculo revogado.
 - [x] C2-ORD v2: notificação de novo pedido restrita a admin/gestor_comercial ativos do tenant dono; aprovação só a vínculos vigentes/perfis ativos (43/43 local).
 - [ ] Sessão real A financeiro: verificando→vazio→pausada, retry voltou vazio — candidato não instalado, não reproduzido; investigar sem aumentar verificação nem reload.
+- [x] 20261023192728 (G destinatários + E aprovação atômica) instalado pelo auditor; cópia exata em scripts/owner-orders-20261023/applied; candidato v3 rebased sem reaplicar; contenção preparada.
+- [x] Guard multiperfil via wrapper só de create/simulate; assert legado intacto (49/49 local).
+- [ ] Fixture teste4 (plano + método de auditoria) preparado, não executado; fiscal: 0 políticas ⇒ pendente parametrização; sondagem de isenções por autenticado registrada.
+- [ ] Prévia A: /sem-permissao intermitente e nó desanexado por remontagem — pendência do monitor, sem reload.
