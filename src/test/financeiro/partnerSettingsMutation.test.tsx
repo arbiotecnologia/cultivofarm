@@ -42,10 +42,10 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 } }));
 import { useUpdatePartnerFinancialSettings, useFinancialSettingsPartners } from "@/hooks/useB2BFinanceiro";
 const row = () => ({ ...emptyPartnerSettings("P"), id: "S", updated_at: "2026-10-23T20:00:00Z", default_payment_method: "AUDIT-AR-20260922 - Sem transferencia" });
-function setup() {
+function setup(listEnabled = true) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-  return { hook: renderHook(() => ({ mutation: useUpdatePartnerFinancialSettings(), partners: useFinancialSettingsPartners(true) }), { wrapper }), client };
+  return { hook: renderHook(() => ({ mutation: useUpdatePartnerFinancialSettings(), partners: useFinancialSettingsPartners(listEnabled) }), { wrapper }), client };
 }
 beforeEach(() => { Object.assign(state, { org: "A", roles: ["administrador"], ready: true, ownPartner: null,
   orgActive: true, owner: "A", partner: true, partnerActive: true, rows: 1, duplicate: false,
@@ -121,7 +121,7 @@ describe("P1 RPC promovida — SDK simulado, NÃO JWT/RLS hosted", () => {
   }
   for (const table of ["organizations", "partner_accounts", "payment_methods"]) {
     it(`troca tenant durante ${table} impede escrita`, async () => {
-      state.changedAt = table; const { hook, client } = setup();
+      state.changedAt = table; const { hook, client } = setup(false);
       await act(async () => { await expect(hook.result.current.mutation.mutateAsync({ draft: row(), baseline: row() })).rejects.toThrow("financial_context_changed"); });
       expect(state.operations.some(op => op.table === "rpc_update_partner_financial_settings")).toBe(false);
       hook.unmount(); client.clear();
