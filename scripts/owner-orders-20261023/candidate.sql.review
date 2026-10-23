@@ -1,0 +1,43 @@
+-- REVIEW ONLY — NÃO APLICAR sem revisão independente e preflight.sql PASS.
+-- Recorte C2-ORD: (1) título B2B de cliente comercial nasce no tenant dono
+-- (partner_accounts.commercial_owner_organization_id), fail-closed em ambiguidade;
+-- (2) projeção canônica expõe order_capabilities (writer server-side explícito).
+-- Sem novas tabelas, sem alterar ACL, create_partner_order_secure, aprovação ou crédito.
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+DO $$
+DECLARE d text; old_frag text; new_frag text; h text;
+BEGIN
+  IF current_setting('request.jwt.claim.role', true) IS NOT NULL THEN RAISE EXCEPTION 'run_as_owner_only'; END IF;
+  -- (1) generate_b2b_receivable_secure_impl: substituição textual única, hash-guarded.
+  SELECT pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure) INTO d;
+  IF md5(d) <> '60be0fb336ca1537c063a001a213f7af' THEN RAISE EXCEPTION 'drift: receivable_impl %', md5(d); END IF;
+  old_frag := $f$  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
+    FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;$f$;
+  new_frag := $f$  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
+    FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;
+  -- c2_ord_owner_tenant: cliente comercial sem tenant próprio fatura no tenant dono.
+  IF v_org_count = 0 THEN
+    SELECT count(*), min(o.id::text)::uuid INTO v_org_count, v_org
+      FROM public.partner_accounts pa JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id
+     WHERE pa.id = v_order.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+       AND o.ativo IS TRUE AND o.status = 'ativa';
+  END IF;$f$;
+  IF (length(d) - length(replace(d, old_frag, ''))) / length(old_frag) <> 1 THEN RAISE EXCEPTION 'fragment_not_unique'; END IF;
+  EXECUTE replace(d, old_frag, new_frag);
+
+  -- (2) projeção: acrescenta order_capabilities, derivada das mesmas provas de catalog.
+  SELECT pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure) INTO d;
+  IF md5(d) <> '136b4d59f794d5ff379a7c2ca19455e2' THEN RAISE EXCEPTION 'drift: projection %', md5(d); END IF;
+  old_frag := $f$jsonb_build_object('capabilities',jsonb_build_object('contract','C2_CAT_V1',
+   'catalog_read',catalog,'sheets_read',sheets));$f$;
+  new_frag := $f$jsonb_build_object('capabilities',jsonb_build_object('contract','C2_CAT_V1',
+   'catalog_read',catalog,'sheets_read',sheets))||jsonb_build_object('order_capabilities',jsonb_build_object(
+   'contract','C2_OWNER_ORDER_V1','order_create', permitted AND catalog AND (c->>'mode')='commercial_owner'
+     AND public.has_role(u,'parceiro_b2b') AND NOT public.has_role(u,'parceiro_b2b_tecnico')
+     AND EXISTS(SELECT 1 FROM platform_private.entitlements_for_user(u) e WHERE e.feature_key='pedidos_b2b')));$f$;
+  IF (length(d) - length(replace(d, old_frag, ''))) / length(old_frag) <> 1 THEN RAISE EXCEPTION 'fragment_not_unique_projection'; END IF;
+  EXECUTE replace(d, old_frag, new_frag);
+END $$;
+-- ACL preservada (CREATE OR REPLACE mantém proacl); conferida no postflight.
+COMMIT;

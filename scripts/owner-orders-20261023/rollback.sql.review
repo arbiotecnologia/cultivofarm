@@ -1,0 +1,24 @@
+-- REVIEW ONLY. Rollback deny-only: remove os dois fragmentos C2-ORD, restaurando
+-- os corpos com hash exato do preflight. Títulos já emitidos NÃO são apagados
+-- (histórico financeiro imutável; trg_h6d_ar_no_delete).
+BEGIN;
+DO $$
+DECLARE d text; a text; b text;
+BEGIN
+  SELECT pg_get_functiondef('public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure) INTO d;
+  a := position('  -- c2_ord_owner_tenant:' in d);
+  IF a = 0 THEN RAISE EXCEPTION 'not_installed_receivable'; END IF;
+  b := position('  END IF;' in substr(d, a::int)) + a::int - 1 + length('  END IF;');
+  d := substr(d, 1, a::int - 2) || substr(d, b::int);  -- remove "\n" + bloco
+  IF md5(d) <> '60be0fb336ca1537c063a001a213f7af' THEN RAISE EXCEPTION 'rollback_hash_mismatch_receivable %', md5(d); END IF;
+  EXECUTE d;
+
+  SELECT pg_get_functiondef('platform_private.b2b_commercial_partner_projection()'::regprocedure) INTO d;
+  a := position('||jsonb_build_object(''order_capabilities''' in d);
+  IF a = 0 THEN RAISE EXCEPTION 'not_installed_projection'; END IF;
+  b := position('''pedidos_b2b'')));' in d) + length('''pedidos_b2b'')));');
+  d := substr(d, 1, a::int - 1) || ';' || substr(d, b::int);
+  IF md5(d) <> '136b4d59f794d5ff379a7c2ca19455e2' THEN RAISE EXCEPTION 'rollback_hash_mismatch_projection %', md5(d); END IF;
+  EXECUTE d;
+END $$;
+COMMIT;
