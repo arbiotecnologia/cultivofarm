@@ -16,6 +16,7 @@ import { safeOSRenewalDraft, type SafeOSRenewalDraft } from "@/lib/authz/safeOSR
 import { internalContextProbe, isManagerConsultantScope, MANAGER_CONSULTANT_ROLES } from "@/lib/authz/internalContextProbe";
 import { initialAutoRecovery, onExpire as autoRecoveryOnExpire, onValid as autoRecoveryOnValid, type AutoRecoveryState } from "@/lib/authz/transientTimeoutRecovery";
 import { initialRoleChangeReresolve, onExpire as roleChangeOnExpire, onValid as roleChangeOnValid, type RoleChangeReresolveState } from "@/lib/authz/roleChangeReresolve";
+import { clearAllPauseStates } from "@/lib/authz/pauseRetainedState";
 import {
   createAuthzEpochMonitor,
   type AuthzEpochMonitor,
@@ -420,6 +421,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             rttMs: null, leaseRemainingMs: null, requestRemainingMs: null });
         }
         if (identityChanged || !nextUserId) monitoredLatchRef.current = null;
+        // Troca de identidade/saída descarta TODA retenção volátil de pausa.
+        if (identityChanged || !nextUserId) clearAllPauseStates();
         // Retomada de navegação: renovação natural do MESMO usuário arma; troca/saída descarta.
         if (identityChanged || !nextUserId) clearResume();
         else if (event === "TOKEN_REFRESHED") armResumeOnRenewal(Date.now());
@@ -679,9 +682,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (next === "expired") renewalRef.current = null;
         if (next === "pending" || next === "expired") {
+          // Pausa transitória: cancela/limpa consultas (nada obsoleto é servido)
+          // mas NÃO incrementa a época. A época só muda com mudança real de
+          // fingerprint (onEpochChange), identidade ou Retry explícito — assim
+          // uma recuperação com o MESMO fingerprint não remonta consumidores
+          // nem invalida fences/escopos (regressão real pós-C2: timeout de
+          // RTT ~10s resetava a aba/rascunho de /configuracoes).
           void queryClient.cancelQueries();
           queryClient.clear();
-          setAuthzEpoch((e) => e + 1);
         }
         setAuthzState(next);
       },
@@ -830,8 +838,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (retryInFlightRef.current) return;
     setRetryPending(true);
-    // Synchronous fence before any await: drafts, caches, portal selection
-    // and epoch-keyed content (Blobs revoked on unmount) are retired.
+    // Synchronous fence before any await: drafts, caches and portal selection
+    // are retired; the boundary already hides content while retryPending.
     renewalRef.current = null;
     safeDraftRef.current = null;
     // Fences in-flight loader answers (the latest loader re-reads freshly).
@@ -840,7 +848,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear();
     clearActivePortalContext();
     window.dispatchEvent(new Event("portal-client-preferences-cleared"));
-    setAuthzEpoch((e) => e + 1);
+    // A época NÃO é incrementada aqui: se a re-resolução confirmar o MESMO
+    // escopo/fingerprint (recuperação transitória, inclusive a automática),
+    // consumidores e formulários não são remontados (regressão real pós-C2).
+    // Mudança real de fingerprint dispara onEpochChange (que incrementa a
+    // época); escopo divergente incrementa abaixo, antes do loader.
     const cachedRoles = [...roles].sort();
     const cachedOrg = profile?.organization_id ?? null;
     // Retry yields only to identity change/sign-out/unmount or a newer loader
@@ -893,7 +905,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         // Divergent active set: re-resolve via the existing loader. The
         // monitor for the resulting scope is (re)started after commit, never
-        // the old-scope monitor from this closure.
+        // the old-scope monitor from this closure. Epoch bump aqui: o escopo
+        // mudou de fato, então conteúdo época-keyed do escopo antigo é
+        // retirado antes da nova confirmação.
+        setAuthzEpoch((e) => e + 1);
         loadedUserIdRef.current = uid;
         retryRevalidateRef.current = true;
         setLoading(true);
