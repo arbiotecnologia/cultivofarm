@@ -100,19 +100,18 @@ describe('pausa transitória não muda a época (regressão /configuracoes)', ()
     }
   });
 
-  it('Retry MANUAL (gesto explícito) mantém o bump revisado da época', async () => {
+  it('Retry MANUAL (gesto explícito, sem tentativa em voo) mantém o bump revisado da época', async () => {
     mount();
     await adv(10_000);
     const before = epochOf();
     expect(before).not.toBeNull();
     s.perCall = 16_000;
-    await adv(16_500);
+    // Avança até a expiração exata, antes do backoff automático (1,5 s).
+    for (let t = 0; t < 20_000 && content(); t += 250) await adv(250);
     s.perCall = 50;
     expect(content()).toBeNull();
-    // Antes do backoff automático (1,5 s): clique explícito no boundary.
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); });
     await adv(20_000);
-    if (!content()) console.log('DBG', document.body.textContent);
     expect(content()).toBeTruthy();
     expect(epochOf()).toBe((before as number) + 1);
   });
