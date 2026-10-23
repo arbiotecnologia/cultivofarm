@@ -239,4 +239,76 @@ describe('retenção volátil do rascunho durante pausa transitória (draftKey)'
     expect(transport.rpc.mock.calls[0][1].p_profile._external_edit.expected_version).toBe('a'.repeat(64));
     expect(transport.rpc.mock.calls[0][1].p_profile.cargo).toBe('Rascunho em pausa');
   });
+
+  it('P1: remount com CAS NOVO (edição concorrente) bloqueia em conflito — nunca envia rascunho antigo sob versão nova', async () => {
+    const view = render(form({ ...base, draftKey: 'k' }));
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Old local draft' } });
+    reason();
+    view.rerender(<></>);
+    const concurrent = { ...target, updated_at: '2026-10-16T23:00:00Z', cargo: 'Concurrent server edit' };
+    view.rerender(form({ ...base, target: concurrent, expectedVersion: 'b'.repeat(64), draftKey: 'k' }, 'remount'));
+    expect(screen.getByRole('alert')).toHaveTextContent(/mudaram durante a pausa/);
+    const button = screen.getByRole('button', { name: 'Conflito: reabra o usuário' });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    await act(async () => { await Promise.resolve(); });
+    expect(transport.rpc).not.toHaveBeenCalled();
+    expect(base.onSuccess).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['expectedVersion', { expectedVersion: 'b'.repeat(64) }],
+    ['updated_at', { target: { ...target, updated_at: '2026-10-16T23:00:00Z' } }],
+    ['papéis', { target: { ...target, roles: ['parceiro_b2b'] } }],
+    ['escopo', { scope: 'actor:tenant:target:2' }],
+  ])('baseline divergente (%s) bloqueia sem chamar a RPC', async (_label, delta) => {
+    const view = render(form({ ...base, draftKey: 'k' }));
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Old local draft' } });
+    reason();
+    view.rerender(<></>);
+    view.rerender(form({ ...base, ...delta, draftKey: 'k' } as typeof base & { draftKey: string }, 'remount'));
+    expect(screen.getByRole('button', { name: 'Conflito: reabra o usuário' })).toBeDisabled();
+    expect(transport.rpc).not.toHaveBeenCalled();
+  });
+
+  it('mesmo CAS após pausa recupera: envia rascunho com a versão e updated_at ORIGINAIS', async () => {
+    const view = render(form({ ...base, draftKey: 'k' }));
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Old local draft' } });
+    reason();
+    view.rerender(<></>);
+    view.rerender(form({ ...base, draftKey: 'k' }, 'remount'));
+    expect(screen.queryByRole('alert')).toBeNull();
+    fireEvent.click(save());
+    await waitFor(() => expect(base.onSuccess).toHaveBeenCalledTimes(1));
+    const args = transport.rpc.mock.calls[0][1];
+    expect(args.p_profile._external_edit.expected_version).toBe('a'.repeat(64));
+    expect(args.p_expected_updated_at).toBe(target.updated_at);
+    expect(args.p_profile.cargo).toBe('Old local draft');
+  });
+
+  it('envio em voo desmontado pela pausa: retry após remount (mesmo CAS) reutiliza a MESMA chave de idempotência', async () => {
+    const first = deferred();
+    transport.abortSignal.mockReturnValueOnce(first.promise);
+    const view = render(form({ ...base, draftKey: 'k' }));
+    fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Old local draft' } });
+    reason();
+    fireEvent.click(save());
+    await waitFor(() => expect(transport.rpc).toHaveBeenCalledTimes(1));
+    view.rerender(<></>); // pausa durante o envio
+    await act(async () => { first.resolve(result); await Promise.resolve(); });
+    expect(base.onSuccess).not.toHaveBeenCalled(); // resposta tardia não reabre
+    view.rerender(form({ ...base, draftKey: 'k' }, 'remount'));
+    expect(screen.getByText(/envio anterior não foi confirmado/)).toBeTruthy();
+    fireEvent.click(save());
+    await waitFor(() => expect(base.onSuccess).toHaveBeenCalledTimes(1));
+    expect(transport.rpc.mock.calls[1][1].p_profile._external_edit.idempotency_key)
+      .toBe(transport.rpc.mock.calls[0][1].p_profile._external_edit.idempotency_key);
+  });
+
+  it('retido sem baseline (formato antigo) é ignorado — fail-closed', async () => {
+    const { writePauseState } = await import('@/lib/authz/pauseRetainedState');
+    writePauseState('k', { profile: { cargo: 'Formato antigo' }, reason: 'x' });
+    render(form({ ...base, draftKey: 'k' }));
+    expect(screen.getByLabelText('Cargo')).toHaveValue('Original');
+  });
 });

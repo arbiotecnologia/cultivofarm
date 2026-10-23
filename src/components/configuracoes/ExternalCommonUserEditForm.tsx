@@ -37,7 +37,36 @@ type Props = {
   draftKey?: string;
 };
 
-type RetainedDraft = { profile: CommonExternalEdit['profile']; reason: string };
+/**
+ * Contexto CAS completo sob o qual o rascunho foi digitado. Restaurar valores
+ * sob outro baseline (versão/updated_at/escopo/ator/tenant/papéis) seria um
+ * rebase silencioso: proibido. O rascunho só volta editável/enviável quando o
+ * baseline atual é idêntico; caso contrário o formulário fica bloqueado em
+ * conflito, mantendo o CAS original (nunca adota o CAS novo).
+ */
+type RetainedBaseline = {
+  scope: string; actorId: string; organizationId: string;
+  userId: string; updatedAt: string; roles: string[]; version: string | undefined;
+};
+type RetainedDraft = {
+  baseline: RetainedBaseline;
+  profile: CommonExternalEdit['profile'];
+  reason: string;
+  /** Tentativa já emitida (mesmo payload ⇒ mesma chave de idempotência no retry). */
+  attempt: { payload: string; key: string } | null;
+  /** Envio em voo quando a pausa desmontou o formulário: resultado não confirmado. */
+  unconfirmed: boolean;
+};
+const baselineOf = (p: Pick<Props, 'scope' | 'actorId' | 'organizationId' | 'target' | 'expectedVersion'>): RetainedBaseline => ({
+  scope: p.scope, actorId: p.actorId, organizationId: p.organizationId,
+  userId: p.target.user_id, updatedAt: p.target.updated_at, roles: [...p.target.roles].sort(), version: p.expectedVersion,
+});
+const sameBaseline = (a: RetainedBaseline, b: RetainedBaseline) =>
+  a.scope === b.scope && a.actorId === b.actorId && a.organizationId === b.organizationId &&
+  a.userId === b.userId && a.updatedAt === b.updatedAt && a.version === b.version &&
+  JSON.stringify(a.roles) === JSON.stringify(b.roles);
+const isRetainedDraft = (v: unknown): v is RetainedDraft =>
+  !!v && typeof v === 'object' && 'baseline' in v && 'profile' in v && typeof (v as RetainedDraft).reason === 'string';
 
 /** The screen waits for the first complete snapshot, then retains the draft across refetches. */
 export function ExternalCommonUserEditBoundary(props: Props) {
@@ -60,28 +89,51 @@ export function ExternalCommonUserEditBoundary(props: Props) {
 /** Mounted only through the closed review gate. No identity/role/link/status writes. */
 export function ExternalCommonUserEditForm(props: Props) {
   const id = useId();
-  // Freeze the CAS and target together, never refresh the CAS under an edited draft.
-  const [snapshot] = useState(() => ({
-    scope: props.scope, actorId: props.actorId, organizationId: props.organizationId,
-    target: { ...props.target, roles: [...props.target.roles] }, version: props.expectedVersion,
-    generation: crypto.randomUUID(),
-  }));
   // Rascunho retido lido UMA vez na montagem; a chave carrega época/identidade,
   // então revogação torna o rascunho antigo inalcançável (fail-closed).
-  const retainedDraft = useRef<RetainedDraft | null>(
-    props.draftKey ? readPauseState<RetainedDraft>(props.draftKey) : null,
-  );
+  const [retained] = useState<RetainedDraft | null>(() => {
+    const raw = props.draftKey ? readPauseState<unknown>(props.draftKey) : null;
+    return isRetainedDraft(raw) ? raw : null;
+  });
+  // Baseline divergente: conflito explícito, sem rebase do rascunho no CAS novo.
+  const [retainedConflict] = useState(() => !!retained && !sameBaseline(retained.baseline, baselineOf(props)));
+  // Freeze the CAS and target together, never refresh the CAS under an edited draft.
+  // Com rascunho retido, o CAS congelado é SEMPRE o do baseline original.
+  const [snapshot] = useState(() => {
+    const b = retained?.baseline;
+    return {
+      scope: b?.scope ?? props.scope, actorId: b?.actorId ?? props.actorId,
+      organizationId: b?.organizationId ?? props.organizationId,
+      target: b ? { ...props.target, user_id: b.userId, updated_at: b.updatedAt, roles: [...b.roles] }
+        : { ...props.target, roles: [...props.target.roles] },
+      version: b ? b.version : props.expectedVersion,
+      generation: crypto.randomUUID(),
+    };
+  });
   const [profile, setProfile] = useState<CommonExternalEdit['profile']>(() => ({
     nome: props.target.nome, telefone: props.target.telefone, cargo: props.target.cargo,
     cpf_cnpj: props.target.cpf_cnpj, crea: props.target.crea, especialidade: props.target.especialidade,
-    ...retainedDraft.current?.profile,
+    ...retained?.profile,
   }));
-  const [reason, setReason] = useState(() => retainedDraft.current?.reason ?? '');
+  const [reason, setReason] = useState(() => retained?.reason ?? '');
+  const [unconfirmed, setUnconfirmed] = useState(() => !retainedConflict && !!retained?.unconfirmed);
+  const attempt = useRef<{ payload: string; key: string } | null>(retainedConflict ? null : retained?.attempt ?? null);
   const draftKey = props.draftKey;
-  useEffect(() => {
-    if (!draftKey) return;
-    writePauseState(draftKey, { profile, reason });
-  }, [draftKey, profile, reason]);
+  const inFlight = useRef(false);
+  const finished = useRef(false);
+  const persist = useRef<() => void>(() => {});
+  persist.current = () => {
+    if (!draftKey || finished.current) return;
+    const baseline: RetainedBaseline = {
+      scope: snapshot.scope, actorId: snapshot.actorId, organizationId: snapshot.organizationId,
+      userId: snapshot.target.user_id, updatedAt: snapshot.target.updated_at,
+      roles: [...snapshot.target.roles].sort(), version: snapshot.version,
+    };
+    writePauseState<RetainedDraft>(draftKey, {
+      baseline, profile, reason, attempt: attempt.current, unconfirmed: unconfirmed || inFlight.current,
+    });
+  };
+  useEffect(() => { persist.current(); }, [draftKey, profile, reason, unconfirmed]);
   const [pending, setPending] = useState(false);
   const [reloadRequired, setReloadRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,11 +142,15 @@ export function ExternalCommonUserEditForm(props: Props) {
   const mounted = useRef(false);
   const latest = useRef(props);
   latest.current = props;
-  const attempt = useRef<{ payload: string; key: string } | null>(null);
   useEffect(() => {
     mounted.current = true;
     epoch.current += 1;
-    return () => { mounted.current = false; epoch.current += 1; };
+    return () => {
+      mounted.current = false; epoch.current += 1;
+      // Envio em voo durante o unmount: resultado desconhecido; o retry após
+      // remontagem reutiliza a MESMA chave (recibo do servidor deduplica).
+      if (inFlight.current) persist.current();
+    };
   }, []);
 
   const errors = validateCommonExternalEdit(profile, reason);
@@ -105,7 +161,7 @@ export function ExternalCommonUserEditForm(props: Props) {
     JSON.stringify(snapshot.target.roles) === JSON.stringify(props.target.roles);
 
   const submit = async () => {
-    if (lock.current || reloadRequired || !EXTERNAL_USER_EDIT_PHASE2_REVIEWED ||
+    if (lock.current || reloadRequired || retainedConflict || !EXTERNAL_USER_EDIT_PHASE2_REVIEWED ||
       !snapshotValid || Object.keys(errors).length || !props.isCurrent() || !snapshot.version) return;
     lock.current = true; // before any await or React update
     const capturedEpoch = epoch.current;
@@ -130,14 +186,21 @@ export function ExternalCommonUserEditForm(props: Props) {
       if (attempt.current && attempt.current.payload !== payload) input.idempotencyKey = crypto.randomUUID();
       attempt.current = { payload: JSON.stringify(buildCommonExternalEdit(input)), key: input.idempotencyKey };
       if (!current()) return;
+      inFlight.current = true;
+      persist.current();
       await executarComDeadlineEdicao(async signal => {
         if (!signal || !current()) throw new Error('user_edit_result_unconfirmed');
         return submitCommonExternalEditCandidate(supabase as unknown as CandidateClient, input, signal);
       });
+      inFlight.current = false;
       if (!current()) return;
+      // Confirmado: o diálogo dono descarta o rascunho; nada mais é retido.
+      finished.current = true;
       latest.current.onSuccess(); // callback fences again at its owning dialog
     } catch (e) {
+      inFlight.current = false;
       if (!current()) return;
+      setUnconfirmed(false);
       const failure = classificarErroRpcEdicao(e);
       if (failure.exigeRecarga) setReloadRequired(true);
       setError(failure.message);
@@ -148,8 +211,15 @@ export function ExternalCommonUserEditForm(props: Props) {
     }
   };
 
+  const blocked = reloadRequired || retainedConflict;
   return <div className="space-y-3">
-    <fieldset disabled={pending || reloadRequired || !EXTERNAL_USER_EDIT_PHASE2_REVIEWED || !snapshotValid} className="space-y-3 disabled:opacity-70">
+    {retainedConflict && <p role="alert" className="text-xs text-destructive">
+      Os dados deste usuário mudaram durante a pausa de acesso. Seu rascunho não foi enviado nem aplicado aos dados novos; feche e reabra o usuário para editar a versão atual.
+    </p>}
+    {unconfirmed && !retainedConflict && <p role="status" className="text-xs text-muted-foreground">
+      O envio anterior não foi confirmado. Salvar novamente repete a mesma solicitação, sem duplicar a alteração.
+    </p>}
+    <fieldset disabled={pending || blocked || !EXTERNAL_USER_EDIT_PHASE2_REVIEWED || !snapshotValid} className="space-y-3 disabled:opacity-70">
       {(['nome', 'telefone', 'cargo', 'cpf_cnpj'] as const).map(field => {
         const label = { nome: 'Nome', telefone: 'Telefone', cargo: 'Cargo', cpf_cnpj: 'CPF/CNPJ' }[field];
         const message = field === 'nome' || field === 'telefone' ? errors[field] : undefined;
@@ -166,10 +236,10 @@ export function ExternalCommonUserEditForm(props: Props) {
         {errors.motivo && <p id={`${id}-reason-error`} className="text-xs text-destructive">{errors.motivo}</p>}
       </div>
     </fieldset>
-    {!snapshotValid && <p role="status" className="text-xs text-muted-foreground">Recarregue a lista e reabra o usuário para conferir os dados.</p>}
+    {!snapshotValid && !retainedConflict && <p role="status" className="text-xs text-muted-foreground">Recarregue a lista e reabra o usuário para conferir os dados.</p>}
     {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
-    <Button className="w-full" onClick={() => void submit()} disabled={pending || reloadRequired || !EXTERNAL_USER_EDIT_PHASE2_REVIEWED || !snapshotValid || Object.keys(errors).length > 0}>
-      {pending ? 'Salvando...' : reloadRequired ? 'Recarregue a lista para tentar novamente' : 'Salvar Alterações'}
+    <Button className="w-full" onClick={() => void submit()} disabled={pending || blocked || !EXTERNAL_USER_EDIT_PHASE2_REVIEWED || !snapshotValid || Object.keys(errors).length > 0}>
+      {pending ? 'Salvando...' : retainedConflict ? 'Conflito: reabra o usuário' : reloadRequired ? 'Recarregue a lista para tentar novamente' : 'Salvar Alterações'}
     </Button>
   </div>;
 }

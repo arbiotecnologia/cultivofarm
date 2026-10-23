@@ -617,3 +617,10 @@
 - [x] Candidata em scripts/catalog-c1b-partner-scope-20261021: CREATE OR REPLACE b2b_actor_scope com fallback ao vínculo validado (is_valid_b2b_partner_user intocada, md5 verificado); org com parceiro prevalece e divergência nega; revogação/inativo/tenant divergente/multipapel negam. 15/15 harness local; SHA256SUMS bcf3f4d1.
 - [ ] Auditor revisar/aplicar candidata e repetir testes na sessão B2B (teste4). Verificar entitlement catalogo_precos no postflight (impedimento separado se faltar).
 - [ ] Incompatibilidade multipapel (count(user_roles)=1) registrada para a fase de contratos funcionais — não aberta nesta correção.
+
+## 23/10 — Regressão pausa transitória /configuracoes (pós-C2) — correção local, não publicada
+- [x] Recuperação AUTOMÁTICA de timeout com mesmo fingerprint não incrementa época; Retry MANUAL mantém o bump revisado (teste dedicado); ineligible/mudança de fingerprint/escopo divergente continuam incrementando.
+- [x] Rascunho externo retido guarda baseline CAS completo (escopo/ator/tenant/alvo/updated_at/papéis/versão), tentativa e estado não confirmado; baseline divergente bloqueia em conflito sem rebase; mesmo CAS recupera com a mesma chave de idempotência.
+- [ ] PartnerLifecycleFields (checkboxes/motivo de perfis) SEM retenção: pausa ainda descarta a seleção; não prometer preservação.
+- [ ] Homologação real A/B: entrada pelo “Trocar de portal” bloqueada por pausas/remount na rodada 18:02–18:04Z; pós-revogação “sem permissão” e Voltar → /portal-parceiro/pedidos pausado — não reproduzido localmente nem certificado.
+- [ ] 38 falhas em 7 arquivos de teste idênticas (nome a nome) às de 28699adf, anterior a esta rodada; origem anterior não atribuída nem corrigida.
