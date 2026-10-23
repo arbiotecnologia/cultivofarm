@@ -88,6 +88,14 @@ ok('gestor+tecnico+produtor -> three portals', ctx(ALL3) == ['b2b', 'producer', 
 ok('contract shape C2_MULTIPROFILE_V1 actor/tenant', contexts(GT).get('contract') == 'C2_MULTIPROFILE_V1' and contexts(GT).get('actor_id') == GT and contexts(GT).get('tenant_id') == ORG_A)
 ok('tenant B gestor isolated to Q', ctx(XB) == ['b2b'] and contexts(XB).get('partner_id') == Q)
 ok('admin A has no external portal from cadastro', 'b2b' not in ctx(ADMIN_A) and 'producer' not in ctx(ADMIN_A))
+# Actual replica responses for the immutable published-reader regression suite.
+# Synthetic identities only; never capture hosted sessions or rows.
+observations = {}
+for label, u in [('gestor', G), ('tecnico', T), ('produtor', PR), ('admin', ADMIN_A)]:
+    observations[label] = {'actor': u, 'tenant': ORG_A, 'contexts': contexts(u),
+        'context': json.loads(val(u, "SELECT coalesce(public.get_my_commercial_partner_context()::text,'null');")),
+        'projection': json.loads(val(u, "SELECT coalesce(public.get_my_commercial_partner_projection()::text,'null');"))}
+(H / 'frontend/published-singleton-observations.json').write_text(json.dumps(observations, indent=2)+'\n')
 ok('direct private history denies foreign tenant admin', 'forbidden' in as_user(ADMIN_B, f"SELECT platform_private.get_partner_user_lifecycle('{P}','{G}',20,NULL,NULL);", False))
 ok('direct private history denies external actor', 'forbidden' in as_user(G, f"SELECT platform_private.get_partner_user_lifecycle('{P}','{G}',20,NULL,NULL);", False))
 ok('history API and core preserve identical CAS and page', val(ADMIN_A, f"SELECT public.get_partner_user_lifecycle('{P}','{G}',1,NULL,NULL)=platform_private.get_partner_user_lifecycle('{P}','{G}',1,NULL,NULL);") == 't')
