@@ -1,5 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 23:21 — evidência real adicional e contenção
+- [x] Registrar relato: timeOrigin1792797076368.5 estável/navigation navigate, sem reload, console vazio/diagnostics=[]; contenção independente c2_writer_containment_during_real_session_regression SUCCESS, helperSELECTfalse, financeiro preservado, zero pedidos. Não aplicar SQL/reabrir writer/publicar.
+- [ ] Auditar independentemente hooks/guards/contextos e lacunas de diagnóstico; testar cadeia completa incluindo leitores do menu, sem atribuir todo sintoma ao monitor nem homologar sessão real.
+
 ## 23/10 23:14 — regressão catálogo durante sondagens/renovação
 - [x] Reproduzir perda modal/carrinho antespatch; AuthProvider/monitor/QueryClient/rota/NovoPedido/hook reais, só SDK/relógio/shell simulados. Sondagens idênticas não remontam; renovação oculta autoridade e reconstitui somente escolhas após vetor igual + catálogo/volumes frescos. Revogação/deadline/offline/troca/Retry descartam.110/110 regressões +5/5 saneamento PASS; build/typecheck automático OK, sem manual/JWT hosted.
 - [x] Baselines byte-exatos/patch/hashes em scripts/owner-orders-20261023/catalog-monitor-fix-20261023; release9fc18e7a/index-DFNxASjt e reabertura Codex registrados como relato independente. Manifesto principal127/127 PASS,121 linhas anteriores preservadas. Sem SQL/publicação/sessões/pedidos reais. Pendências históricas preservadas.
