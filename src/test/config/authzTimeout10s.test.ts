@@ -25,7 +25,15 @@ function setup(overrides: Partial<Parameters<typeof createAuthzEpochMonitor>[0]>
     ...overrides,
   };
   const monitor = createAuthzEpochMonitor(deps);
-  const advance = async (ms: number) => { clock += ms; await vi.advanceTimersByTimeAsync(ms); };
+  // Avanço em passos: timers precisam disparar com o relógio monotônico do
+  // instante agendado (um salto único faria o poll de t10 já ver t15.1).
+  const advance = async (ms: number) => {
+    for (let t = 0; t < ms; t += 100) {
+      const step = Math.min(100, ms - t);
+      clock += step;
+      await vi.advanceTimersByTimeAsync(step);
+    }
+  };
   return { monitor, deps, fetcher, advance };
 }
 

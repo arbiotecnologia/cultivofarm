@@ -233,6 +233,7 @@ describe('retenção volátil do rascunho durante pausa transitória (draftKey)'
     fireEvent.change(screen.getByLabelText('Cargo'), { target: { value: 'Rascunho em pausa' } });
     view.rerender(<></>);
     view.rerender(form({ ...base, draftKey: 'k:epoch0:target1' }, 'remount'));
+    reason();
     fireEvent.click(save());
     await waitFor(() => expect(base.onSuccess).toHaveBeenCalledTimes(1));
     expect(transport.rpc.mock.calls[0][1].p_profile._external_edit.expected_version).toBe('a'.repeat(64));
