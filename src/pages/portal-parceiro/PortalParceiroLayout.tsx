@@ -3,6 +3,7 @@ import { ownerCatalogRoute } from "@/lib/catalogo/catalogAccess";
 import { ownFinanceRoute } from "@/lib/comercial/financeAccess";
 import { OwnerFinance } from "@/components/comercial/OwnerFinance";
 import { OwnerCatalog } from "@/components/catalogo/OwnerCatalog";
+import { ownerOrderRoute } from "@/lib/comercial/ownerOrderAccess";
 import { CatalogFilterMemoryContext, createCatalogFilterMemory } from "@/lib/catalogo/catalogFilterPreferences";
 import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -57,6 +58,8 @@ export default function PortalParceiroLayout() {
       : undefined);
   const canReadOwnFinance = partnerReady && !partnerError && entitlements.status === "ready" && ownFinanceRoute(location.pathname, ownPartner?.financeRead === true, entitlements.features);
   const canReadOwnerRoute = partnerReady && !partnerError && ownerCatalogRoute(location.pathname, ownPartner?.capabilities) && isPathEntitled(location.pathname, entitlements);
+  const canCreateOwnerOrder = canReadOwnerRoute && entitlements.status === "ready" &&
+    ownerOrderRoute(location.pathname, ownPartner?.orderCreate === true, entitlements.features);
   const { data: contexts } = useAvailableContexts();
   const switchPortal = useSwitchPortal();
   const canSwitchPortal = !!contexts && contexts.available_contexts.length >= 2;
@@ -207,7 +210,11 @@ export default function PortalParceiroLayout() {
         )}
         {commercialOwner && canReadOwnFinance ? <OwnerFinance key={ownPartner.id} partnerId={ownPartner.id} capability={ownPartner.financeRead === true} /> : commercialOwner && canReadOwnerRoute ? (
           location.pathname === "/portal-parceiro/catalogo"
-            ? <OwnerCatalog key={JSON.stringify([preferenceIdentity, ownPartner.id])} partnerId={ownPartner.id} filterPreferences={filterPreferences} />
+            ? canCreateOwnerOrder
+              // Carrinho canônico (NovoPedido → simulate/create_partner_order_secure) somente
+              // com capacidade server-side explícita; caso contrário catálogo somente leitura.
+              ? <Outlet key={ownPartner.id} context={{ partner: ownPartner }} />
+              : <OwnerCatalog key={JSON.stringify([preferenceIdentity, ownPartner.id])} partnerId={ownPartner.id} filterPreferences={filterPreferences} />
             : <Outlet context={{ partner: ownPartner }} />
         ) : commercialOwner ? (
           <section className="space-y-4" aria-label="Cliente comercial">
