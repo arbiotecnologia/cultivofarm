@@ -1,28 +1,15 @@
--- REVIEW ONLY — configuração canônica de teste SOMENTE para teste4 (parceiro 7e52de9a…, tenant 007bb519…).
--- NÃO executar sem autorização específica. Não cria pedido, título, NF-e, pagamento, papel nem método global.
--- Plano: AUDIT-C2-20261023 (62147f24…), já existente e ativo. Forma: método existente
--- 'AUDIT-AR-20260922 - Sem transferencia' (3b73824e…) — evita criar 'pix' global, que alteraria os outros 4 parceiros.
--- Escritas por tabela canônica; se houver RPC de publicação de atribuição (rpc_cc_upsert/submit/publish_assignment),
--- o revisor deve preferi-la em sessão real de gestor comercial — este arquivo documenta o estado-alvo.
-BEGIN;
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM public.partner_accounts WHERE id='7e52de9a-4bed-4d1e-8200-3255a805465c'
-       AND commercial_owner_organization_id='007bb519-cba0-4704-be2c-cb93ad010048' AND ativo AND deleted_at IS NULL) THEN
-    RAISE EXCEPTION 'teste4_partner_drift'; END IF;
-  IF NOT EXISTS (SELECT 1 FROM public.commercial_payment_plans WHERE id='62147f24-299e-40dd-a6a0-05718b21c55f'
-       AND code='AUDIT-C2-20261023' AND active AND superseded_by_id IS NULL) THEN RAISE EXCEPTION 'plan_drift'; END IF;
-  IF (SELECT count(*) FROM public.payment_methods WHERE active AND name='AUDIT-AR-20260922 - Sem transferencia') <> 1 THEN
-    RAISE EXCEPTION 'method_drift'; END IF;
-  IF EXISTS (SELECT 1 FROM public.commercial_payment_plan_assignments
-       WHERE partner_id='7e52de9a-4bed-4d1e-8200-3255a805465c') THEN RAISE EXCEPTION 'assignment_exists_review'; END IF;
-END $$;
-INSERT INTO public.commercial_payment_plan_assignments(plan_id, buyer_scope, partner_id, status, valid_from, motivo)
-VALUES ('62147f24-299e-40dd-a6a0-05718b21c55f','partner','7e52de9a-4bed-4d1e-8200-3255a805465c','published', current_date,
-        'AUDIT-C2-ORD fixture teste4 — sem cobrança real');
-UPDATE public.partner_financial_settings
-   SET default_payment_method = 'AUDIT-AR-20260922 - Sem transferencia'
- WHERE partner_id = '7e52de9a-4bed-4d1e-8200-3255a805465c' AND default_payment_method = 'pix';
--- billing_trigger permanece 'na_entrega' (nenhum título nasce na aprovação de teste).
-COMMIT;
--- Reversão: archive da atribuição via rpc_cc_archive_assignment e restaurar default_payment_method='pix'.
+-- READ ONLY: plano e atribuição JÁ EXISTEM. Não duplicar nem arquivar.
+-- Alvo humano solicitado: somente default_payment_method deste parceiro para
+-- 'AUDIT-AR-20260922 - Sem transferencia'; billing_trigger deve permanecer na_entrega.
+-- A UI atual NÃO oferece o método e só abre configurações a partir de pedido existente.
+-- Portanto não há caminho funcional completo hoje; não criar pedido para alcançar o formulário.
+SELECT id, plan_id, partner_id, status, valid_from, valid_until
+FROM public.commercial_payment_plan_assignments
+WHERE id='48dcac7d-d4a0-4058-bdf4-5461fee89f45'
+ AND plan_id='62147f24-299e-40dd-a6a0-05718b21c55f'
+ AND partner_id='7e52de9a-4bed-4d1e-8200-3255a805465c';
+SELECT id, name, active FROM public.payment_methods
+WHERE name='AUDIT-AR-20260922 - Sem transferencia' AND active;
+SELECT partner_id, default_payment_method, billing_trigger
+FROM public.partner_financial_settings
+WHERE partner_id='7e52de9a-4bed-4d1e-8200-3255a805465c';

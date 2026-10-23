@@ -148,6 +148,27 @@ try:
   # ---------- CANDIDATO ----------
   run((HERE/'candidate.sql.review').read_text())
   ok('candidato instalado com hashes hosted reais')
+  # Reproduce actual authenticated-role metadata probing, then verify ACL containment.
+  EX_A='eeeeeeee-0000-0000-0000-000000000001'
+  run(f"INSERT INTO fiscal_requirement_exemptions(active,scope_type,scope_id,motivo,approved_by) VALUES(true,'partner_order','{EX_A}','SEGREDO_A','{U['admin']}');")
+  fiscal_call=f"SELECT public.fn_fiscal_requirement_resolve('b2b_partner','venda_mercadoria','SP','partner_order','{EX_A}',CURRENT_DATE);"
+  leaked=run(as_uid(U['gestorB'], 'SET ROLE authenticated; '+fiscal_call))
+  assert 'SEGREDO_A' in leaked and U['admin'] in leaked
+  ok('baseline fiscal: papel authenticated B revela motivo/aprovador UUID A (Auth local sintética)')
+  run((HERE/'fiscal/candidate.sql.review').read_text())
+  run(as_uid(U['gestorB'], 'SET ROLE authenticated; '+fiscal_call), 'permission denied for function fn_fiscal_requirement_resolve')
+  ok('fiscal candidata: authenticated B contra UUID A negado antes de ler isenção')
+  run(as_uid(U['gestor'], 'SET ROLE authenticated; '+fiscal_call), 'permission denied for function fn_fiscal_requirement_resolve')
+  run('SET ROLE anon; '+fiscal_call, 'permission denied for function fn_fiscal_requirement_resolve')
+  ok('fiscal direta fechada também a A e anon, sem inventar autorização por UUID')
+  assert 'SEGREDO_A' in run('SET ROLE service_role; '+fiscal_call)
+  # Exact legitimate caller stays postgres DEFINER; exercise owner execution of same resolver.
+  assert 'SEGREDO_A' in run(fiscal_call)
+  assert run("SELECT md5(pg_get_functiondef('public.fn_fiscal_requirement_resolve(text,text,text,text,uuid,date)'::regprocedure))") == '8bb99a3c335b5f9876d99d988dcf94b0'
+  ok('corpo/regras fiscais byte-exatos, service_role e owner preservados')
+  run((HERE/'fiscal/rollback.sql.review').read_text())
+  run(as_uid(U['gestorB'], 'SET ROLE authenticated; '+fiscal_call), 'permission denied for function fn_fiscal_requirement_resolve')
+  ok('rollback fiscal mantém contenção e não restaura vazamento')
   acl = run("SELECT string_agg(p.proname||'='||coalesce(p.proacl::text,'default'),' ') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname LIKE 'c2_owner%'")
   assert 'authenticated' not in acl and 'anon' not in acl and '=X/' not in acl.replace('postgres=X/postgres',''), acl
   ok('ACL: funções c2_owner_* sem EXECUTE para PUBLIC/anon/authenticated')
@@ -159,6 +180,23 @@ try:
   run(scope('cumul'), 'forbidden_financial_terms'); ok('assert legado intacto: cumulativo continua negado nos callers legados')
   cscope = lambda u, p=P_A: as_uid(U[u], f"SELECT platform_private.c2_order_actor_scope('{U[u]}','{p}');")
   run(cscope('cumul')); ok('wrapper de compra: cumulativo passa com autoridade C2 completa')
+  run(f"INSERT INTO user_roles VALUES('{U['cumul']}','cliente_produtor');")
+  run(cscope('cumul'))
+  assert run(as_uid(U['cumul'], f"SELECT public.is_valid_b2b_partner_user('{U['cumul']}','{P_A}');")) == 't'
+  ok('corpos reais aceitam gestor+técnico+produtor, sem conferir vínculos de produtor pelo stub')
+  run(f"DELETE FROM user_roles WHERE user_id='{U['cumul']}' AND role='cliente_produtor'; UPDATE profiles SET senha_provisoria=true WHERE user_id='{U['cumul']}';")
+  run(cscope('cumul'), 'forbidden_financial_terms')
+  ok('readiness real: senha provisória bloqueia cumulativo')
+  run(f"UPDATE profiles SET senha_provisoria=false WHERE user_id='{U['cumul']}'; UPDATE partner_users SET tenant_id='{ORG_B}' WHERE user_id='{U['cumul']}';")
+  run(cscope('cumul'), 'forbidden_financial_terms')
+  ok('scope real: tenant do vínculo divergente bloqueia cumulativo')
+  run(f"UPDATE partner_users SET tenant_id='{ORG_A}', valid_from=now()+interval '1 day' WHERE user_id='{U['cumul']}';")
+  run(cscope('cumul'), 'forbidden_financial_terms')
+  ok('is_valid real: vínculo futuro bloqueia cumulativo')
+  run(f"UPDATE partner_users SET valid_from=now()-interval '1 day' WHERE user_id='{U['cumul']}'; UPDATE organizations SET ativo=false WHERE id='{ORG_A}';")
+  run(cscope('cumul'), 'forbidden_financial_terms')
+  ok('scope real: proprietário inativo bloqueia cumulativo')
+  run(f"UPDATE organizations SET ativo=true WHERE id='{ORG_A}';")
   run(cscope('gestor')); ok('wrapper de compra: gestor singleton passa (via assert)')
   run(cscope('tech'), 'forbidden_financial_terms'); ok('wrapper de compra: técnico isolado negado')
   run(as_uid(U['gestor'], f"SELECT platform_private.c2_order_actor_scope('{U['cumul']}','{P_A}');"), 'auth_required'); ok('wrapper: uid forjado negado')

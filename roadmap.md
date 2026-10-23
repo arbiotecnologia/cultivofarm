@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 19:55 — revisão pós-914d06c
+- [ ] Preparar contenção fiscal ACL com pre/postflight/hashes e rollback que não reabra sondagem de UUID; negativos authenticated B/A locais, sem alegar JWT hosted.
+- [ ] Testar C2-ORD com corpos reais b2b_actor_scope/is_valid/contexto/readiness; preservar legado e recorte instalado.
+- [ ] Corrigir vigência civil do plano 23/10–30/10; validar frontend candidato e documentar caminho/bloqueio do formulário financeiro.
+- [ ] Configuração humana teste4 aguarda formulário funcional: não alterar fixture/parceiros; plano62147f24 e atribuição48dcac7d já existem, não duplicar. Pendências antigas continuam abertas.
+
 ## 23/10 17:55 — implantação coordenada C2 executada pelo auditor
 - [x] Registrar evidências relatadas: migration integral `c2_integral_multiprofile_own_finance_reviewed` SUCCESS, postflight INVOKER/core ACL PASS, `b2b_actor_scope` intacto, legacy financeiro fechado, anon negado; Edge create-user v103 ACTIVE verify_jwt=true conteúdo exato 67bca16c; hosting deploy 86b2e88d iniciado, bundle build-mvl8yand com novo lifecycle; build Vite production 4763 módulos PASS, safeHome 12 PASS; UI real adminA lista6/lifecycle3, adminB lista2 sem A, parceiroA Financeiro com lista vazia autorizada; advisor diff sem findings novos.
 - [x] Sincronizar SOMENTE `supabase/functions/create-user/index.ts` byte-exato com o candidato implantado (SHA256 931ba9fa46ebea265fd3fc9105e07f383c2f44ad3ff7879a84a2cd18b78ca095), verify_jwt=true preservado, sem mudança funcional — evita reversão da Edge hosted em próximo deploy automático. Redeploy automático da mesma Edge autorizado pelo proprietário.
