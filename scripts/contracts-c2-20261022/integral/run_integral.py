@@ -69,6 +69,7 @@ INSERT INTO public.fazendas(id,cliente_id,nome,organization_id,ativo) VALUES ('{
 install = (H / 'install.sql.review').read_text()
 ok('install has exactly one COMMIT', install.count('COMMIT;') == 1)
 pg.sql(install)
+ok('history public INVOKER/private DEFINER minimal ACL', pg.sql((H.parent / 'coordinated/history-postflight.sql').read_text()) == '1')
 r = subprocess.run(pg.psql(), input=install.encode(), capture_output=True)
 ok('re-install fails closed on drift (idempotent guard)', r.returncode != 0 and b'drift' in r.stderr, r.stderr[-300:])
 # ---- admin cadastro: cumulative external assignments through the canonical writer ----
@@ -87,6 +88,10 @@ ok('gestor+tecnico+produtor -> three portals', ctx(ALL3) == ['b2b', 'producer', 
 ok('contract shape C2_MULTIPROFILE_V1 actor/tenant', contexts(GT).get('contract') == 'C2_MULTIPROFILE_V1' and contexts(GT).get('actor_id') == GT and contexts(GT).get('tenant_id') == ORG_A)
 ok('tenant B gestor isolated to Q', ctx(XB) == ['b2b'] and contexts(XB).get('partner_id') == Q)
 ok('admin A has no external portal from cadastro', 'b2b' not in ctx(ADMIN_A) and 'producer' not in ctx(ADMIN_A))
+ok('direct private history denies foreign tenant admin', 'forbidden' in as_user(ADMIN_B, f"SELECT platform_private.get_partner_user_lifecycle('{P}','{G}',20,NULL,NULL);", False))
+ok('direct private history denies external actor', 'forbidden' in as_user(G, f"SELECT platform_private.get_partner_user_lifecycle('{P}','{G}',20,NULL,NULL);", False))
+ok('history API and core preserve identical CAS and page', val(ADMIN_A, f"SELECT public.get_partner_user_lifecycle('{P}','{G}',1,NULL,NULL)=platform_private.get_partner_user_lifecycle('{P}','{G}',1,NULL,NULL);") == 't')
+ok('history page limit 51 denied', 'invalid_page' in as_user(ADMIN_A, f"SELECT public.get_partner_user_lifecycle('{P}','{G}',51,NULL,NULL);", False))
 # negatives: cross-tenant / self / internal role writes
 ok('admin B cannot assign on partner P (tenant A)', 'forbidden' in link(ADMIN_B, G, ['parceiro_b2b_tecnico'], 'assign', expect_ok=False, expected='0' * 32))
 ok('self-assignment denied', 'forbidden' in link(G, G, ['parceiro_b2b_tecnico'], 'assign', expect_ok=False, expected='0' * 32))
@@ -151,6 +156,9 @@ ok('projection keeps catalogue capability', 'C2_CAT_V1' in proj)
 ok('auth gate whitelist intact after install', pg.sql("SELECT md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure));") == 'b0dd9a14d5fd799a40df0975baf4c5a6')
 # ---- ROLLBACK (integral, deny-only) ----
 pg.sql((H / 'rollback.sql.review').read_text())
+for sig in ['public.get_partner_user_lifecycle(uuid,uuid)', 'public.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)', 'platform_private.get_partner_user_lifecycle(uuid,uuid,integer,timestamptz,uuid)']:
+    for who in ['anon','authenticated','service_role']:
+        ok('rollback history ACL '+sig+' '+who, pg.sql(f"SELECT NOT has_function_privilege('{who}','{sig}','EXECUTE');") == 't')
 ok('rollback: finance reader closed', 'permission denied' in fin(G, expect_ok=False))
 ok('rollback: external contexts closed', ctx(G) == [] and ctx(GT) == [])
 ok('rollback: writers closed', 'permission denied' in link(ADMIN_A, T, ['parceiro_b2b'], 'assign', expect_ok=False, expected='0' * 32))
