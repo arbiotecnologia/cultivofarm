@@ -258,7 +258,7 @@ export function PartnerFinancialSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && !submitting.current && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Configuração Financeira — {partner.partner_name}</DialogTitle>
         </DialogHeader>

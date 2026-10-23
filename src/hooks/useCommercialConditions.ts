@@ -193,7 +193,7 @@ export function usePublishAssignment() {
         && q.queryKey[1] === "assignments" && q.queryKey.at(-1) === fence.scope;
       await qc.cancelQueries({ predicate });
       if (!current()) throw new Error("commercial_context_changed");
-      await qc.invalidateQueries({ predicate });
+      await qc.invalidateQueries({ queryKey: CC_KEY });
       if (!current()) throw new Error("commercial_context_changed");
       await qc.invalidateQueries({ queryKey: ["commercial-payment-plans", "selectable"] });
     },
