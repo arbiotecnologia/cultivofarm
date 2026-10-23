@@ -2,6 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useScopedB2BFinancialQuery } from "@/hooks/useB2BFinancialScope";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useAuth } from "@/hooks/useAuth";
+import { activePaymentMethodValid, canConfigurePartnerSettings, settingsFields, type PartnerSettings } from "@/lib/financeiro/partnerSettings";
 
 const sb = supabase as any;
 
@@ -124,10 +127,10 @@ export function useB2BFinancialKpis(filters: { from?: string; to?: string; partn
   });
 }
 
-export function usePartnerFinancialSettings(partner_id: string | null | undefined) {
+export function usePartnerFinancialSettings(partner_id: string | null | undefined, enabled = true) {
   return useScopedB2BFinancialQuery({
     queryKey: ["pfs", partner_id],
-    enabled: !!partner_id,
+    enabled: enabled && !!partner_id,
     queryFn: async () => {
       const { data, error } = await sb
         .from("partner_financial_settings")
@@ -135,23 +138,82 @@ export function usePartnerFinancialSettings(partner_id: string | null | undefine
         .eq("partner_id", partner_id)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data as PartnerSettings | null;
     },
   });
 }
 
 export function useUpdatePartnerFinancialSettings() {
   const qc = useQueryClient();
+  const fence = useStorageAccessScope("b2b-financial");
+  const { roles, profile } = useAuth();
   return useMutation({
-    mutationFn: async (payload: any) => {
-      const { error } = await sb.from("partner_financial_settings").upsert(payload, { onConflict: "partner_id" });
+    mutationFn: async ({ draft, baseline }: { draft: PartnerSettings; baseline: PartnerSettings | null }) => {
+      const current = fence.capture();
+      const org = profile?.organization_id;
+      if (!current() || !org || !canConfigurePartnerSettings(roles)) throw new Error("financial_context_unavailable");
+      if (baseline && (baseline.partner_id !== draft.partner_id || !baseline.id || !baseline.updated_at)) throw new Error("settings_conflict");
+      // RLS remains authoritative. Check exact tenant-owned active target, not cached selector rows.
+      const { data: partner, error: partnerError } = await sb.from("partner_accounts")
+        .select("id").eq("id", draft.partner_id).eq("commercial_owner_organization_id", org)
+        .eq("ativo", true).is("deleted_at", null).maybeSingle();
+      if (!current()) throw new Error("financial_context_changed");
+      if (partnerError || !partner) throw new Error("financial_partner_unavailable");
+      const { data: methods, error: methodError } = await sb.from("payment_methods").select("name, active").eq("active", true);
+      if (!current()) throw new Error("financial_context_changed");
+      if (methodError || !activePaymentMethodValid(draft.default_payment_method, methods ?? [])) throw new Error("payment_method_invalid");
+      const payload = Object.fromEntries(settingsFields.map(field => [field, draft[field]]));
+      let query;
+      if (baseline) {
+        // Full baseline predicates also catch existing writers that do not advance updated_at.
+        const stamp = new Date(Math.max(Date.now(), Date.parse(baseline.updated_at ?? "") + 1)).toISOString();
+        query = sb.from("partner_financial_settings").update({ ...payload, updated_at: stamp })
+          .eq("id", baseline.id).eq("partner_id", draft.partner_id).eq("updated_at", baseline.updated_at);
+        for (const field of settingsFields) query = baseline[field] === null
+          ? query.is(field, null) : query.eq(field, baseline[field]);
+      } else {
+        // Unique partner_id denies concurrent insertion; never upsert over somebody else's new row.
+        query = sb.from("partner_financial_settings").insert({ ...payload, partner_id: draft.partner_id });
+      }
+      const { data, error } = await query.select("*").maybeSingle();
+      if (!current()) throw new Error("financial_context_changed");
+      if (error?.code === "23505" || (!error && !data)) throw new Error("settings_conflict");
       if (error) throw error;
+      return { row: data as PartnerSettings, scope: fence.scope };
     },
-    onSuccess: (_d, v: any) => {
+    onSuccess: (result, v) => {
+      if (!fence.ready || result.scope !== fence.scope) return;
       toast.success("Configuração salva");
-      qc.invalidateQueries({ queryKey: ["pfs", v.partner_id] });
+      void qc.invalidateQueries({ queryKey: ["pfs", v.draft.partner_id, result.scope], exact: true });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: () => {}, // Dialog preserves draft and distinguishes conflict/uncertainty.
+  });
+}
+
+export function useFinancialSettingsPartners(enabled: boolean) {
+  const { profile, roles } = useAuth();
+  return useScopedB2BFinancialQuery({
+    queryKey: ["pfs-partners", profile?.organization_id],
+    enabled: enabled && canConfigurePartnerSettings(roles),
+    queryFn: async (): Promise<Array<{ id: string; razao_social: string; nome_fantasia: string | null }>> => {
+      if (!profile?.organization_id) throw new Error("financial_context_unavailable");
+      const { data, error } = await sb.from("partner_accounts").select("id, razao_social, nome_fantasia")
+        .eq("commercial_owner_organization_id", profile.organization_id).eq("ativo", true)
+        .is("deleted_at", null).order("razao_social").limit(1000);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useFinancialSettingsMethods(enabled: boolean) {
+  return useScopedB2BFinancialQuery({
+    queryKey: ["pfs-methods"], enabled,
+    queryFn: async (): Promise<Array<{ id: string; name: string; active: boolean }>> => {
+      const { data, error } = await sb.from("payment_methods").select("id, name, active").eq("active", true).order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
   });
 }
 

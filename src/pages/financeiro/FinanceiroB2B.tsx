@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,13 @@ import {
   useCancelB2BReceivable,
   usePartnerFinancialSettings,
   useUpdatePartnerFinancialSettings,
+  useFinancialSettingsPartners,
+  useFinancialSettingsMethods,
 } from "@/hooks/useB2BFinanceiro";
 import { brl, fmtDate } from "@/lib/financial/format";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { activePaymentMethodValid, canConfigurePartnerSettings, emptyPartnerSettings, samePartnerSettings, type PartnerSettings } from "@/lib/financeiro/partnerSettings";
 
 const finStatusVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   pendente: "secondary",
@@ -35,7 +39,8 @@ const finStatusVariant: Record<string, "default" | "secondary" | "outline" | "de
 };
 
 export default function FinanceiroB2B() {
-  const { role } = useAuth();
+  const { role, roles } = useAuth();
+  const fence = useStorageAccessScope("b2b-financial");
   const [filters, setFilters] = useState<{ status?: string; financial_status?: string; q?: string }>({});
   const [settingsFor, setSettingsFor] = useState<{ partner_id: string; partner_name: string } | null>(null);
 
@@ -48,7 +53,10 @@ export default function FinanceiroB2B() {
 
   const canGenerate = role === "administrador" || role === "financeiro" || role === "gestor";
   const canCancel = role === "administrador" || role === "financeiro";
-  const canSettings = canGenerate;
+  const canSettings = fence.ready && canConfigurePartnerSettings(roles);
+  const partners = useFinancialSettingsPartners(canSettings);
+  const [selectedPartner, setSelectedPartner] = useState("");
+  useEffect(() => { setSettingsFor(null); setSelectedPartner(""); }, [fence.scope]);
 
   const filtered = useMemo(
     () =>
@@ -76,6 +84,21 @@ export default function FinanceiroB2B() {
         </div>
       </div>
 
+
+      {canSettings && <div className="flex flex-wrap gap-2 items-end">
+        <div className="space-y-1 min-w-0 w-full sm:w-80">
+          <Label htmlFor="financial-partner">Parceiro</Label>
+          <Select value={selectedPartner} onValueChange={setSelectedPartner} disabled={!partners.data || partners.isFetching}>
+            <SelectTrigger id="financial-partner"><SelectValue placeholder="Selecionar parceiro" /></SelectTrigger>
+            <SelectContent>{(partners.data ?? []).map(p => <SelectItem key={p.id} value={p.id}>{p.nome_fantasia || p.razao_social}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <Button variant="outline" disabled={!partners.data?.some(p => p.id === selectedPartner) || partners.isFetching}
+          onClick={() => { const p = partners.data?.find(p => p.id === selectedPartner); if (p) setSettingsFor({ partner_id: p.id, partner_name: p.nome_fantasia || p.razao_social }); }}>
+          <Settings2 className="h-4 w-4 mr-1" />Configurar parceiro
+        </Button>
+        {partners.isError && <p role="alert" className="text-sm text-destructive">Parceiros indisponíveis para esta sessão.</p>}
+      </div>}
 
       <Card>
         <CardContent className="pt-6 space-y-3">
@@ -195,57 +218,63 @@ export default function FinanceiroB2B() {
         </CardContent>
       </Card>
 
-      <PartnerFinancialSettingsDialog
+      {canSettings && settingsFor && <PartnerFinancialSettingsDialog
+        key={`${fence.scope}:${settingsFor.partner_id}`}
         open={!!settingsFor}
         onClose={() => setSettingsFor(null)}
         partner={settingsFor}
-      />
+      />}
     </div>
   );
 }
 
-function PartnerFinancialSettingsDialog({
+export function PartnerFinancialSettingsDialog({
   open, onClose, partner,
 }: {
   open: boolean; onClose: () => void; partner: { partner_id: string; partner_name: string } | null;
 }) {
-  const { data: settings, isLoading } = usePartnerFinancialSettings(partner?.partner_id);
+  const { roles } = useAuth();
+  const fence = useStorageAccessScope("b2b-financial");
+  const allowed = fence.ready && canConfigurePartnerSettings(roles);
+  const query = usePartnerFinancialSettings(partner?.partner_id, open && allowed);
+  const methods = useFinancialSettingsMethods(open && allowed);
   const save = useUpdatePartnerFinancialSettings();
-  const [form, setForm] = useState<any>({});
-
-  useMemo(() => {
-    if (settings) setForm(settings);
-    else if (partner)
-      setForm({
-        partner_id: partner.partner_id,
-        billing_trigger: "na_entrega",
-        payment_terms_days: 7,
-        default_payment_method: "pix",
-        auto_generate_receivable: true,
-        block_if_overdue: false,
-        active: true,
-      });
-  }, [settings, partner]);
-
-  if (!partner) return null;
+  const [baseline, setBaseline] = useState<PartnerSettings | null | undefined>(undefined);
+  const [form, setForm] = useState<PartnerSettings>(() => emptyPartnerSettings(partner?.partner_id ?? ""));
+  const [failure, setFailure] = useState<string | null>(null);
+  const submitting = useRef(false);
+  useEffect(() => {
+    if (baseline !== undefined || !query.isSuccess || query.data === undefined || !partner) return;
+    setBaseline(query.data);
+    setForm(query.data ?? emptyPartnerSettings(partner.partner_id));
+  }, [baseline, query.isSuccess, query.data, partner]);
+  const conflict = baseline !== undefined && query.data !== undefined && !samePartnerSettings(baseline, query.data);
+  const validMethod = activePaymentMethodValid(form.default_payment_method, methods.data ?? []);
+  const ready = allowed && baseline !== undefined && query.isSuccess && !query.isFetching && !query.isError
+    && methods.isSuccess && !methods.isFetching && !methods.isError && validMethod && !conflict && !failure;
+  const numbersValid = Number.isInteger(form.payment_terms_days) && form.payment_terms_days >= 0
+    && (form.credit_limit === null || Number.isFinite(form.credit_limit) && form.credit_limit >= 0);
+  if (!partner || !allowed) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
+    <Dialog open={open} onOpenChange={(v) => !v && !submitting.current && onClose()}>
+      <DialogContent className="max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Configuração Financeira — {partner.partner_name}</DialogTitle>
         </DialogHeader>
-        {isLoading ? (
+        {(conflict || failure) && <p role="alert" className="text-sm text-destructive">{conflict || failure === "settings_conflict" ? "A configuração mudou. Seu rascunho foi preservado; feche e reabra para revisar a versão atual." : "Não foi possível confirmar o salvamento. Seu rascunho foi preservado; feche e reabra para conferir."}</p>}
+        {(query.isError || methods.isError) && <p role="alert" className="text-sm text-destructive">Configuração ou métodos indisponíveis. Salvamento bloqueado.</p>}
+        {baseline === undefined ? (
           <div className="py-8 text-center text-muted-foreground">Carregando…</div>
         ) : (
           <div className="space-y-3">
             <div>
-              <Label>Gatilho de cobrança</Label>
+              <Label htmlFor="billing-trigger">Gatilho de cobrança</Label>
               <Select
                 value={form.billing_trigger ?? "na_entrega"}
                 onValueChange={(v) => setForm((f: any) => ({ ...f, billing_trigger: v }))}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="billing-trigger"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="na_aprovacao">Na aprovação</SelectItem>
                   <SelectItem value="na_producao_finalizada">Produção finalizada</SelectItem>
@@ -256,26 +285,29 @@ function PartnerFinancialSettingsDialog({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Prazo (dias)</Label>
+                <Label htmlFor="payment-days">Prazo (dias)</Label>
                 <Input
+                  id="payment-days"
                   type="number" min={0}
                   value={form.payment_terms_days ?? 7}
                   onChange={(e) => setForm((f: any) => ({ ...f, payment_terms_days: Number(e.target.value) }))}
                 />
               </div>
               <div>
-                <Label>Forma padrão</Label>
+                <Label htmlFor="default-method">Forma padrão</Label>
                 <Select
-                  value={form.default_payment_method ?? "pix"}
+                  value={form.default_payment_method ?? ""}
                   onValueChange={(v) => setForm((f: any) => ({ ...f, default_payment_method: v }))}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="default-method"><SelectValue placeholder="Selecionar método ativo" /></SelectTrigger>
                   <SelectContent>
-                    {["pix","boleto","transferencia","dinheiro","cartao","prazo"].map(m => (
-                      <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
+                    {form.default_payment_method && !validMethod && <SelectItem disabled value={form.default_payment_method}>{form.default_payment_method} — inválido/inativo</SelectItem>}
+                    {(methods.data ?? []).filter(m => activePaymentMethodValid(m.name, methods.data ?? [])).map(m => (
+                      <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {methods.isSuccess && !validMethod && <p role="alert" className="text-sm text-destructive">Selecione explicitamente um método ativo cadastrado.</p>}
               </div>
             </div>
             <div>
@@ -309,12 +341,19 @@ function PartnerFinancialSettingsDialog({
           </div>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" disabled={save.isPending} onClick={onClose}>Cancelar</Button>
           <Button
-            disabled={save.isPending}
-            onClick={() =>
-              save.mutate({ ...form, partner_id: partner.partner_id }, { onSuccess: onClose })
-            }
+            disabled={save.isPending || !ready || !numbersValid}
+            onClick={async () => {
+              if (!ready || !numbersValid || submitting.current || baseline === undefined) return;
+              const current = fence.capture();
+              submitting.current = true;
+              try {
+                await save.mutateAsync({ draft: { ...form, partner_id: partner.partner_id }, baseline });
+                if (current()) onClose();
+              } catch (error) { if (current()) setFailure(error instanceof Error ? error.message : "unconfirmed"); }
+              finally { submitting.current = false; }
+            }}
           >Salvar</Button>
         </DialogFooter>
       </DialogContent>

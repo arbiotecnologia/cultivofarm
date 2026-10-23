@@ -8,6 +8,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rpc = (name: string, args?: Record<string, unknown>) => (supabase as any).rpc(name, args);
@@ -89,14 +90,19 @@ export function conditionErrorMessage(message: string | undefined): string {
 const CC_KEY = ["commercial-conditions"] as const;
 
 export function usePlanAssignments(status?: ConditionStatus) {
-  return useQuery({
-    queryKey: [...CC_KEY, "assignments", status ?? "all"],
-    queryFn: async (): Promise<PlanAssignment[]> => {
-      const { data, error } = await rpc("rpc_cc_list_assignments", { p_status: status ?? null });
+  const fence = useStorageAccessScope("commercial-conditions-assignments");
+  const result = useQuery({
+    queryKey: [...CC_KEY, "assignments", status ?? "all", fence.scope],
+    enabled: fence.ready, retry: false,
+    queryFn: async ({ signal }): Promise<PlanAssignment[]> => {
+      const current = fence.capture();
+      const { data, error } = await (supabase as any).rpc("rpc_cc_list_assignments", { p_status: status ?? null }).abortSignal(signal);
+      if (!current() || signal.aborted) throw new Error("commercial_context_changed");
       if (error) throw new Error(conditionErrorMessage(error.message));
       return (data ?? []) as PlanAssignment[];
     },
   });
+  return { ...result, data: fence.ready && !result.isError ? result.data : undefined };
 }
 
 export function useConditionItemPrices(planId?: string | null, status?: ConditionStatus) {
@@ -173,9 +179,24 @@ export function useSubmitAssignment() {
 }
 
 export function usePublishAssignment() {
-  return useCcMutation(async ({ id, motivo }: { id: string; motivo?: string | null }) => {
-    const { error } = await rpc("rpc_cc_publish_assignment", { p_id: id, p_motivo: motivo ?? null });
-    if (error) throw new Error(conditionErrorMessage(error.message));
+  const qc = useQueryClient();
+  const fence = useStorageAccessScope("commercial-conditions-assignments");
+  return useMutation({
+    mutationFn: async ({ id, motivo }: { id: string; motivo?: string | null }) => {
+      const current = fence.capture();
+      if (!current()) throw new Error("commercial_context_unavailable");
+      const { error } = await rpc("rpc_cc_publish_assignment", { p_id: id, p_motivo: motivo ?? null });
+      if (!current()) throw new Error("commercial_context_changed");
+      if (error) throw new Error(conditionErrorMessage(error.message));
+      // Cancel pre-publication reads before refetch: an old draft must not win the race.
+      const predicate = (q: { queryKey: readonly unknown[] }) => q.queryKey[0] === CC_KEY[0]
+        && q.queryKey[1] === "assignments" && q.queryKey.at(-1) === fence.scope;
+      await qc.cancelQueries({ predicate });
+      if (!current()) throw new Error("commercial_context_changed");
+      await qc.invalidateQueries({ queryKey: CC_KEY });
+      if (!current()) throw new Error("commercial_context_changed");
+      await qc.invalidateQueries({ queryKey: ["commercial-payment-plans", "selectable"] });
+    },
   });
 }
 
