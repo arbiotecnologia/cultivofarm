@@ -215,7 +215,7 @@ try:
   r = run(f"SELECT organization_id||'|'||total_amount||'|'||installment_count||'|'||(payment_method_id IS NOT NULL)||'|'||customer_id FROM accounts_receivable WHERE origin_id='{O1}'")
   assert r == f"{ORG_A}|300|3|true|dddddddd-0000-0000-0000-000000000001", r
   s = run(f"SELECT sum(net_amount)||'|'||count(*) FROM accounts_receivable_installments i JOIN accounts_receivable a ON a.id=i.receivable_id WHERE a.origin_id='{O1}'")
-  assert s == '300|3', s
+  assert s in ('300|3','300.00|3'), s
   assert run(f"SELECT status FROM partner_orders WHERE id='{O1}'") == 'aprovado'
   ok('aprovação gera 1 título no tenant dono, parcelas 3 somando 300 (cronograma canônico)')
   dup = run(as_uid(U['admin'], f"SELECT public.generate_b2b_receivable_secure('{O1}')->>'duplicado';"))
