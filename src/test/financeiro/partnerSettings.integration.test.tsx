@@ -144,6 +144,9 @@ describe("P1 hook+dialog+QueryClient integrados — SDK sintético, sem DML host
       if (change === "tenant") state.auth.profile.organization_id = "OB";
       if (change === "revocation") state.auth.authzReady = false;
       if (change === "epoch") state.auth.authzEpoch += 1;
+      // New-context reads are held separately: this assertion concerns adoption of the old RPC,
+      // not an independently authorized fresh read by the new context.
+      state.holdReads = true;
       view.rerender(<QueryClientProvider client={client}><Harness /></QueryClientProvider>);
       await act(async () => state.pendingRpc?.());
       const values = client.getQueryCache().getAll().map(q => q.state.data);

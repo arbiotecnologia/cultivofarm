@@ -131,6 +131,8 @@ export function usePartnerFinancialSettings(partner_id: string | null | undefine
   return useScopedB2BFinancialQuery({
     queryKey: ["pfs", partner_id],
     enabled: enabled && !!partner_id,
+    // App disables refetch-on-mount globally; each newly opened settings dialog needs a fresh CAS baseline.
+    refetchOnMount: "always",
     queryFn: async () => {
       const { data, error } = await sb
         .from("partner_financial_settings")
@@ -173,12 +175,20 @@ export function useUpdatePartnerFinancialSettings() {
       if (!current()) throw new Error("financial_context_changed");
       if (error?.code === "23505" || (!error && !data)) throw new Error("settings_conflict");
       if (error) throw error;
+      if (data.partner_id !== draft.partner_id) throw new Error("settings_response_invalid");
+      const key = ["pfs", draft.partner_id, fence.scope];
+      // Serialize canonical adoption against pre-RPC reads. Cancellation rejects late SDK results
+      // even if the transport does not support abort; never seed another actor/tenant/epoch.
+      await qc.cancelQueries({ queryKey: key, exact: true });
+      if (!current()) throw new Error("financial_context_changed");
+      qc.setQueryData(key, data as PartnerSettings);
+      await qc.invalidateQueries({ queryKey: key, exact: true, refetchType: "active" }, { throwOnError: true });
+      if (!current()) throw new Error("financial_context_changed");
       return { row: data as PartnerSettings, scope: fence.scope };
     },
     onSuccess: (result, v) => {
       if (!fence.ready || result.scope !== fence.scope) return;
       toast.success("Configuração salva");
-      void qc.invalidateQueries({ queryKey: ["pfs", v.draft.partner_id, result.scope], exact: true });
     },
     onError: () => {}, // Dialog preserves draft and distinguishes conflict/uncertainty.
   });
