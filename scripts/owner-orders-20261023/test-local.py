@@ -185,7 +185,7 @@ try:
   # (G) destinatários de notificação
   ADM_B='00000000-0000-0000-0000-000000000077'; ADM_OFF='00000000-0000-0000-0000-000000000078'; GC_A='00000000-0000-0000-0000-000000000079'
   run(f"""INSERT INTO profiles(user_id,organization_id,ativo) VALUES('{ADM_B}','{ORG_B}',true),('{ADM_OFF}','{ORG_A}',false),('{GC_A}','{ORG_A}',true);
-    INSERT INTO user_roles VALUES('{ADM_B}','administrador'),('{ADM_OFF}','administrador'),('{GC_A}','gestor_comercial'),('{U['gestor']}','gestor');""")
+    INSERT INTO user_roles VALUES('{ADM_B}','administrador'),('{ADM_OFF}','administrador'),('{GC_A}','gestor_comercial');""")
   rec = run(f"SELECT string_agg(r::text,',' ORDER BY r) FROM platform_private.c2_order_internal_recipients('{P_A}') r")
   assert rec == ','.join(sorted([U['admin'], GC_A])), rec
   ok('novo pedido de A notifica só admin/gestor_comercial ATIVOS do tenant A (B e inativo excluídos)')
