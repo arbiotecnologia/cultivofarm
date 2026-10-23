@@ -80,7 +80,7 @@ INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_versi
 INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES('{CLI}','Client A','C-A','{A}'),('{CLI_B}','Client B','C-B','{B}');
 INSERT INTO public.partner_accounts(id,codigo,razao_social,ativo,commercial_owner_organization_id,client_id) VALUES('{P}','P','Partner A',true,'{A}','{CLI}'),('{Q}','Q','Partner B',true,'{B}','{CLI_B}');
 INSERT INTO public.company_fiscal_settings(id,organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj) VALUES('{SETTINGS}','{A}',true,'VALIDATED',now(),'Synthetic issuer','00000000000000'),('{U(10)}','{B}',true,'VALIDATED',now(),'Synthetic issuer B','11111111111111');
-INSERT INTO public.produtos(id,nome,tipo,codigo,ativo,b2b_enabled,valor_litro_brl) VALUES('{PROD}','Synthetic product','inseticida','TEST',true,true,180);
+INSERT INTO public.produtos(id,nome,tipo,codigo,ativo,b2b_enabled,valor_litro_brl,created_at,updated_at) VALUES('{PROD}','Synthetic product','inseticida','TEST',true,true,180,now(),now());
 INSERT INTO public.catalogo_volumes(item_tipo,produto_id,volume_ml,preco_brl,preco_litro_brl,ativo) VALUES('produto','{PROD}',1000,180,180,true);
 INSERT INTO public.commercial_payment_plans(id,name,code,active,installment_count,discount_percent,monthly_interest_percent,months_count,interest_type,max_days) VALUES('{PLAN}','Synthetic','TEST',true,3,0,0,0,'none',7);
 INSERT INTO public.commercial_payment_plan_assignments(plan_id,buyer_scope,partner_id,status,valid_from) VALUES('{PLAN}','partner','{P}','published',current_date-1),('{PLAN}','partner','{Q}','published',current_date-1);
