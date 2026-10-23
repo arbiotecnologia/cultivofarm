@@ -1,5 +1,7 @@
 # P1 implantado externamente — não reaplicar
 
+Atualização independente relatada22:52: API `rpc_cc_archive_assignment`, sessão JWT REAL admin B, teste explicitamente autorizado e executado pelo auditor, HTTP403 `C2P1_FORBIDDEN`/42501. **Negação real de escrita comprovada pelo relato**; substitui pendência anterior específica de arquivamento, não é execução do agente nem homologação geral.
+
 Complemento relatado22:50 pelo proprietário: produção fence exige autorização owner/ownorg **e** ticket P1 de escrita e método ativo exato; fallback INSERT do gerador baseline é incompatível. Os9 hashesv3 conferem na revisão independente. Negativo SQL **simulado** adminB arquivar A retornou `C2P1_FORBIDDEN` com rollback; não é JWT real nem execução do agente, não encerra homologação real. Candidata de erro explícito permanece inativa.
 
 Atualização relatada22:43: frontend f351d6d5 publicado, salvar/reabrir método AUDIT-AR preservado em homologação REAL admin A; B UI não lista A. Arquivamento negativo48dcac7d por adminB autorizado, mas botão desapareceu, sem tentativa de escrita real; NÃO concluído. Nenhuma sessão recarregada pelo agente.

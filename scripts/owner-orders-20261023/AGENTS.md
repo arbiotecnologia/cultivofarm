@@ -1,4 +1,5 @@
 # C2-ORD review
+- Billing eligibility is an immutable internal-only LIVE dependency; preserve its body/owner/ACL and single internal caller in PRE/POST/rollback, never restore authenticated grants or add a wrapper without a proven client — prevents UUID financial disclosure.
 - C2-ORD rebase requires installed P1 settings CAS/ticket contracts; billing never provisions settings, owner checks extend only reviewed approval/billing endpoints, and whole financial replay/late-failure tests remain synthetic — prevents trigger bypass and false certification.
 - Unapplied SQL remains review-only; record owner-installed releases separately and never replay their preflights or restore vulnerable ACLs — prevents partial release and rollback leaks.
 - Fiscal UUID resolution is service/owner-only; authenticated users use existing authorized callers, and rollback retains this containment — prevents exemption metadata probing.
