@@ -7,4 +7,5 @@ it("C2-ORD P1: actual captured finance functions in disposable PostgreSQL, not h
   expect(output).toContain("duas conexões reais: replay mesmo UUID");
   expect(output).toContain("RPC aprovação: falha tardia partner_order_financial_links");
   expect(output).toContain("P1 real: ownorg legado/owner autorizados");
+  expect(output).toContain("ausência settings: B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED; rollback integral sem título/parcelas/vínculo/cronograma/settings parciais; fence P1 intacto");
 }, 60_000);
