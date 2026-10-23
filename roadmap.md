@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 22:43 — rebase restante C2-ORD sobre P1 instalado
+- [x] Registrar relato f351d6d5 publicado e salvar/reabrir AUDIT homologado REAL admin A; P1/fiscal instalados e B UI sem A. Não recarregar sessões ou reaplicar.
+- [ ] Revisar/rebase candidato v3, scope comercial sem org própria, inserção settings versus ticket P1, PRE/POST/rollback e testes locais com corpos reais; writer fechado até implantação independente.
+- [ ] Arquivamento negativo48dcac7d por adminB autorizado, botão ausente, nenhuma escrita executada; teste não concluído. Pendências antigas preservadas.
+
 ## 23/10 21:18 — P1 aplicado externo; regressão salvar/reabrir
 - [x] Registrar aplicação Codex migration20261023211007/PRE/POST/dados iguais, JWT B lista vazia/A própria publicada, publicação bafe3e23/deploybcca6f2f e método AUDIT salvo UI updated_at21:18:08.481422+00, na_entrega/prazo7 intactos em applied; relato externo, não reaplicar.
 - [x] Reproduzir e corrigir hook+dialog com QueryClient real: cache canônico scope atual, cancel reads antigos/await invalidação, baseline somente após leitura inicial fresca, rascunho sujo/CAS/fences preservados.
