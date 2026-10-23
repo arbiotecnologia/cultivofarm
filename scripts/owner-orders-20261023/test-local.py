@@ -354,10 +354,21 @@ try:
   O5='11111111-0000-0000-0000-000000000005'
   run(mk_order(O5,partner=P_B))
   run(f"UPDATE partner_orders SET status='aprovado' WHERE id='{O5}';")
+  missing_settings_before=financial_snapshot()
+  missing_settings_schedule_before=run(f"SELECT COALESCE(jsonb_agg(to_jsonb(s) ORDER BY to_jsonb(s)::text),'[]') FROM partner_order_payment_schedule s WHERE partner_order_id='{O5}'")
+  missing_settings_audit_before=run("SELECT COALESCE(jsonb_agg(to_jsonb(a) ORDER BY to_jsonb(a)::text),'[]') FROM partner_order_audit_logs a")
   run(as_uid(ADM_B,f"SELECT public.generate_b2b_receivable_secure('{O5}');"),'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED')
+  assert financial_snapshot()==missing_settings_before
+  assert run("SELECT COALESCE(jsonb_agg(to_jsonb(a) ORDER BY to_jsonb(a)::text),'[]') FROM partner_order_audit_logs a")==missing_settings_audit_before
+  assert run(f"SELECT count(*) FROM accounts_receivable WHERE origin_id='{O5}'")=='0'
+  assert run(f"SELECT count(*) FROM partner_order_financial_links WHERE partner_order_id='{O5}'")=='0'
+  # mk_order already seeds the contractual schedule; a failed billing attempt
+  # must preserve it, not remove historical rows or manufacture new ones.
+  assert run(f"SELECT COALESCE(jsonb_agg(to_jsonb(s) ORDER BY to_jsonb(s)::text),'[]') FROM partner_order_payment_schedule s WHERE partner_order_id='{O5}'")==missing_settings_schedule_before
   assert run(f"SELECT count(*) FROM partner_financial_settings WHERE partner_id='{P_B}'")=='0'
   run(as_uid(ADM_B,f"INSERT INTO partner_financial_settings(partner_id) VALUES('{P_B}');"),'C2P1_SETTINGS_WRITE_CLOSED')
-  ok('ausência settings: erro explícito sem INSERT/ticket paralelo; fence P1 real nega provisionamento direto')
+  assert financial_snapshot()==missing_settings_before
+  ok('ausência settings: B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED; rollback integral sem título/parcelas/vínculo/cronograma/settings parciais; fence P1 intacto')
   # Partner tenta gerar título: negado
   run(as_uid(U['gestor'], f"SELECT public.generate_b2b_receivable_secure_impl('{O1}');"), 'Sem permissão')
   ok('gestor B2B externo não emite título')

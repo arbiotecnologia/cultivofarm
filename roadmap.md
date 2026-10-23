@@ -4,7 +4,8 @@
 - [x] Registrar relato f351d6d5 publicado e salvar/reabrir AUDIT homologado REAL admin A; P1/fiscal instalados e B UI sem A. Não recarregar sessões ou reaplicar.
 - [x] Rebase v3: fallback org_partner real/teste divergência, remover INSERT settings, owner P1 nos dois endpoints approval/billing; PRE composição atual/POST hashes/rollback deny. 68 checks PG descartáveis +18 Vitest PASS; Auth/schema reduzidos, não JWT/homologação real.
 - [ ] Revisão independente PRE/POST integral hosted/cadeia triggers/locks e create positivo/preço/hash/idempotência; writer continua fechado até implantação independente. Nenhuma sessão/dado real alterado.
-- [ ] Arquivamento negativo48dcac7d por adminB autorizado, botão ausente, nenhuma escrita executada; teste não concluído. Pendências antigas preservadas.
+- [x] Complemento22:50: registrar9 hashesv3 conferidos pelo auditor e SQL simulado adminB archive A `C2P1_FORBIDDEN`/rollback; reforçar teste settings ausente com erro claro e rollback financeiro integral, sem ticket/bypass.
+- [ ] Arquivamento negativo48dcac7d por adminB com JWT real: botão ausente, sem tentativa real; simulado negativo relatado22:50 não encerra homologação. Pendências antigas preservadas.
 
 ## 23/10 21:18 — P1 aplicado externo; regressão salvar/reabrir
 - [x] Registrar aplicação Codex migration20261023211007/PRE/POST/dados iguais, JWT B lista vazia/A própria publicada, publicação bafe3e23/deploybcca6f2f e método AUDIT salvo UI updated_at21:18:08.481422+00, na_entrega/prazo7 intactos em applied; relato externo, não reaplicar.
