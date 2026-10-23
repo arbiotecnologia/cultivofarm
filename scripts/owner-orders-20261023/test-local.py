@@ -284,7 +284,7 @@ try:
   run(approve(O1), 'B2B_PAYMENT_METHOD_NOT_CONFIGURED'); ok('forma de pagamento inativa: RPC aprovação abortada')
   run("INSERT INTO payment_methods(name,active) VALUES('pix',false);")
   run(approve(O1), 'B2B_PAYMENT_METHOD_NOT_CONFIGURED'); ok('forma de pagamento inativa não é usada')
-  run("INSERT INTO payment_methods(name,active) VALUES('PIX',true),('AUDIT-AR-20260922 - Sem transferencia ',true);")
+  run("INSERT INTO payment_methods(name,active) VALUES('PIX',true),('AUDIT-AR-20260922 - Sem transferencia ',true); UPDATE payment_methods SET active=true WHERE name='AUDIT-AR-20260922 - Sem transferencia';")
   run(approve(O1), 'B2B_PAYMENT_METHOD_NOT_CONFIGURED'); ok('forma de pagamento ambígua falha')
   run("DELETE FROM payment_methods WHERE name='AUDIT-AR-20260922 - Sem transferencia '; UPDATE payment_methods SET active=true WHERE name='AUDIT-AR-20260922 - Sem transferencia';")
   run(f"INSERT INTO clientes VALUES('dddddddd-0000-0000-0000-000000000001','{ORG_B}'); UPDATE partner_accounts SET client_id='dddddddd-0000-0000-0000-000000000001' WHERE id='{P_A}';")
