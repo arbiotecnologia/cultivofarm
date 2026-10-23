@@ -1,8 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 23/10 20:10 — P1 prioritário antes do writer
-- [ ] Preparar isolamento de leitura direta/listagem e criação/edição/submissão/publicação/arquivamento de atribuições por destino canônico; planos globais separados. Prova REAL B relatada pelo auditor: assignmentA publicado visível, Arquivar NÃO acionado.
-- [ ] Preparar autoridade financeira owner ativo + ownorg legado com h15/perfil/roles, CAS servidor e método ativo; candidato/preflight/rollback deny-only/testes, sem hosted SQL/dados/publicação.
+- [x] Candidata P1 inativa em scripts/owner-orders-20261023/p1-isolation: leitura/listagem e família assignment/sibling por destino, planos globais intactos; prova REAL B relatada, Arquivar NÃO acionado. 50/50 PostgreSQL sintético.
+- [x] Preparar owner ativo/ownorg interno com h15/perfil/roles, CAS servidor, método ativo, PRE/rollback e patch financeiro inativo; 5/5 SDK candidato e19/19 regressões. Sem hosted SQL/dados/publicação.
+- [ ] Gate P1: PRE/POST integral/closure de locks e hashes pós exatos, types/build candidato independente; default sem tenant e Superadmin sem autoridade interna fechados explicitamente. Ver README; não liberar writer.
 - [ ] Homologação REAL A/B e revisão independente dos dois recortes antes de liberar writer; pendências antigas mantidas.
 
 ## 23/10 19:55 — revisão pós-914d06c
