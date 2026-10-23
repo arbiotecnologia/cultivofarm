@@ -1,7 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 23/10 23:03 — encerramento documental após revisão independente
-- [ ] Restaurar117 entradas SHA256SUMS de cadda8f7; preservar hashes históricos intactos, atualizar só arquivos alterados e acrescentar novos com paths relativos ao pacote; verificar na pasta correta.
+- [x] Restaurar117 entradas de cadda8f7,115 linhas históricas byte-for-byte; atualizar só README/relatório já alterados, acrescentar4 novos, total121/121 PASS com sha256sum -c SHA256SUMS na pasta do pacote. SHA final486a01b078b5d5e94052ce60f770c77c84bdd0f868ed6fa0e2f7f188d7301540. Runtime/SQL/snapshots intactos nesta rodada.
 - [x] Registrar relato independente: build cadda PASS34,8s/14testes PASS; aba real parceiro recuperou semreload, catálogo readonly visível apóscontenção e criação false; JWT B archive403/42501 C2P1_FORBIDDEN, A published intacta. Sem novo deploy.
 - [x] Encerrar mudanças funcionais desta fila: só documentação/manifesto autorizados; publicação independente e reativação writer não executadas.
 
