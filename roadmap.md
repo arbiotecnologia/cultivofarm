@@ -1,18 +1,23 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 22:52 — superfície billing eligibility
+- [x] Registrar negação REAL API archive A/admin B HTTP403 C2P1_FORBIDDEN/42501 relatada pelo proprietário; não repetir teste.
+- [x] Callers repo/SQL auditados: nenhum cliente de produto, Edge só probe, SQL atual único impl DEFINER/postgres. Consulta READ ONLY canônica: authenticated/anon=false, service=true; internal-only já vigente, não atribuir implantação.
+- [x] Guardas corpo/owner/ACL/call graph incorporadas em PRE/candidato/POST/rollback;69 PG checks via Vitest1 PASS, B/anon negados e owner/service/aprovação preservados. Sem ACL/schema/fiscal alterados, deploy ou liberação writer; homologação real do gate e cadeia integral permanecem pendentes da revisão independente.
+
 ## 23/10 22:43 — rebase restante C2-ORD sobre P1 instalado
 - [x] Registrar relato f351d6d5 publicado e salvar/reabrir AUDIT homologado REAL admin A; P1/fiscal instalados e B UI sem A. Não recarregar sessões ou reaplicar.
 - [x] Rebase v3: fallback org_partner real/teste divergência, remover INSERT settings, owner P1 nos dois endpoints approval/billing; PRE composição atual/POST hashes/rollback deny. 68 checks PG descartáveis +18 Vitest PASS; Auth/schema reduzidos, não JWT/homologação real.
 - [ ] Revisão independente PRE/POST integral hosted/cadeia triggers/locks e create positivo/preço/hash/idempotência; writer continua fechado até implantação independente. Nenhuma sessão/dado real alterado.
 - [x] Complemento22:50: registrar9 hashesv3 conferidos pelo auditor e SQL simulado adminB archive A `C2P1_FORBIDDEN`/rollback; reforçar teste settings ausente com erro claro e rollback financeiro integral, sem ticket/bypass.
-- [ ] Arquivamento negativo48dcac7d por adminB com JWT real: botão ausente, sem tentativa real; simulado negativo relatado22:50 não encerra homologação. Pendências antigas preservadas.
+- [x] Arquivamento negativo48dcac7d por adminB: REAL API/JWT autorizado relatado22:52, HTTP403 C2P1_FORBIDDEN/42501. Encerra só a negação específica; pendências antigas preservadas.
 
 ## 23/10 21:18 — P1 aplicado externo; regressão salvar/reabrir
 - [x] Registrar aplicação Codex migration20261023211007/PRE/POST/dados iguais, JWT B lista vazia/A própria publicada, publicação bafe3e23/deploybcca6f2f e método AUDIT salvo UI updated_at21:18:08.481422+00, na_entrega/prazo7 intactos em applied; relato externo, não reaplicar.
 - [x] Reproduzir e corrigir hook+dialog com QueryClient real: cache canônico scope atual, cancel reads antigos/await invalidação, baseline somente após leitura inicial fresca, rascunho sujo/CAS/fences preservados.
 - [x] 59/59 testes (11 integrados), tsgo app/node0 e produção cópia integrada PASS26,04s; diff/SHA cache-reopen-20261023. Artefato App público SHA igual à build anterior/commit/deploy anunciados corretos; sem banco/dados/writerC2/publicação.
 - [x] Homologação real salvar/reabrir relatada22:43 em f351d6d5 publicado, admin A; não executada pelo agente nem homologação integral.
-- [ ] Arquivamento negativo B autorizado posteriormente, botão desapareceu e nenhuma escrita executada; não concluído. Pendências antigas e homologação real integral preservadas.
+- [x] Arquivamento negativo B: API/JWT REAL autorizado relatado22:52, HTTP403 C2P1_FORBIDDEN/42501; homologação integral e pendências antigas preservadas.
 
 ## 23/10 21:06 — promoção frontend P1 autorizada, sem publicação
 - [x] Promover somente hook RPC financeiro para src; selector/mutation owner ativo OU ownorg legado interno sob RLS, RPC/CAS autoritativos, sem writes diretos ou liberar writer C2.
