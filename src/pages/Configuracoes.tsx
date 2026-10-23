@@ -90,7 +90,7 @@ import { FUSOS_BRASIL, REGIMES_TRIBUTARIOS } from "@/lib/saas/orgOnboarding";
 
 export default function Configuracoes() {
   const isMobile = useIsMobile();
-  const { profile, role, roles, user } = useAuth();
+  const { profile, role, roles, user, authzEpoch = 0 } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -107,18 +107,16 @@ export default function Configuracoes() {
   const canFin = isAdmin || role === "gestor" || role === "financeiro";
   const organizationProfile = useOnboardingState(isAdmin && !!profile?.organization_id);
   const tabParam = searchParams.get("tab");
-  const initialTab =
-    tabParam === "usuarios" && isAdmin
-      ? "usuarios"
-      : tabParam === "financeiro" && canFin
-        ? "financeiro"
-        : tabParam === "meu-plano" && canMeuPlano
-          ? "meu-plano"
-          : tabParam === "aparencia" && isPlatformSuperadmin
-            ? "aparencia"
-            : tabParam && ["perfil", "empresa", "catalogos", "sla-b2b"].includes(tabParam)
-            ? tabParam
-            : "perfil";
+  // Aba CONTROLADA pela URL: sobrevive a remontagens transitórias (pausa de
+  // autorização) sem reter nada sensível — apenas o nome da aba, validado
+  // contra as permissões atuais a cada render.
+  const activeTab = resolveConfiguracoesTab(tabParam, { isAdmin, canFin, canMeuPlano, isPlatformSuperadmin });
+  const handleTabChange = (value: string) => {
+    const sp = new URLSearchParams(searchParams);
+    if (value === "perfil") sp.delete("tab");
+    else sp.set("tab", value);
+    setSearchParams(sp, { replace: true });
+  };
 
 
   // Profile edit state
