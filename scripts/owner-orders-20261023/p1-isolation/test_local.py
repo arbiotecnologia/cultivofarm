@@ -1,7 +1,7 @@
 """P1 PostgreSQL descartável: Auth sintética/dependências reduzidas; não JWT hosted."""
 from pathlib import Path
 import json, subprocess, tempfile, os, shutil, concurrent.futures
-H=Path(__file__).resolve().parent; d=json.loads((H/'baseline.json').read_text())
+H=Path(__file__).resolve().parent; d=json.loads((H/'baseline.json').read_text()); channels=json.loads((H/'channels-baseline.json').read_text())
 tmp=Path(tempfile.mkdtemp(prefix='c2p1-',dir='/tmp'));tmp.chmod(0o777)
 prefix=['setpriv','--reuid=1000','--regid=1000','--clear-groups'] if os.getuid()==0 else []
 base=['psql','-X','-h',str(tmp),'-p','55539','-U','postgres','-qAt','-v','ON_ERROR_STOP=1']
@@ -36,8 +36,10 @@ try:
  CREATE TABLE platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz);
  CREATE TABLE partner_accounts(id uuid PRIMARY KEY,commercial_owner_organization_id uuid,ativo boolean,deleted_at timestamptz);
  CREATE TABLE clientes(id uuid PRIMARY KEY,organization_id uuid,status_cliente text);
- CREATE TABLE commercial_payment_plans(id uuid PRIMARY KEY);
- CREATE TABLE commercial_condition_audit_log(entity text,entity_id uuid,action text,actor_id uuid,before_data jsonb,after_data jsonb,motivo text);
+ CREATE TABLE commercial_payment_plans(id uuid PRIMARY KEY,pricing_mode text DEFAULT 'discount_from_base');
+ CREATE TABLE produtos(id uuid PRIMARY KEY,nome text,ativo boolean); CREATE TABLE microrganismos(id uuid PRIMARY KEY,nome text,ativo boolean);
+ CREATE TABLE commercial_condition_audit_log(id uuid DEFAULT gen_random_uuid() PRIMARY KEY,entity text,entity_id uuid,action text,actor_id uuid,before_data jsonb,after_data jsonb,motivo text,created_at timestamptz DEFAULT now());
+ CREATE TABLE commercial_audit_log(usuario_id uuid,partner_id uuid,order_id uuid,acao text,dados_anteriores jsonb,dados_novos jsonb); GRANT ALL ON commercial_audit_log TO authenticated,anon; ALTER TABLE commercial_audit_log ENABLE ROW LEVEL SECURITY;
  CREATE TABLE financial_governance_audit_log(usuario_id uuid,partner_id uuid,acao text,dados_anteriores jsonb,dados_novos jsonb);
  CREATE TABLE platform_private.authz_tickets(txid bigint,scope text,target uuid,PRIMARY KEY(txid,scope,target));
  ALTER TABLE platform_private.authz_tickets ENABLE ROW LEVEL SECURITY;REVOKE ALL ON platform_private.authz_tickets FROM PUBLIC,anon,authenticated,service_role;
@@ -63,17 +65,35 @@ try:
  for table in ('partner_financial_settings','commercial_payment_plan_assignments'):run('ALTER TABLE '+table+' ENABLE ROW LEVEL SECURITY;')
  for p in d['policies']:
   run(f"CREATE POLICY {p['policyname']} ON public.{p['tablename']} AS {p['permissive']} FOR {p['cmd']} TO authenticated"+(' USING ('+p['qual']+')' if p['qual'] else '')+(' WITH CHECK ('+p['with_check']+')' if p['with_check'] else '')+';')
- run(f"INSERT INTO organizations VALUES('{OA}',true,'ativa',NULL),('{OB}',true,'ativa',NULL);INSERT INTO profiles VALUES('{A}','{OA}',true,false),('{B}','{OB}',true,false);INSERT INTO user_roles VALUES('{A}','administrador'),('{B}','administrador');INSERT INTO partner_accounts VALUES('{P}','{OA}',true,NULL),('{PB}','{OB}',true,NULL);INSERT INTO clientes VALUES('{C}','{OA}','ativo');INSERT INTO commercial_payment_plans VALUES('{PLAN}');INSERT INTO commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status) VALUES('{ASN}','{PLAN}','partner','{P}','published');INSERT INTO payment_methods(name) VALUES('AUDIT-AR-20260922 - Sem transferencia');")
+ run(f"INSERT INTO organizations VALUES('{OA}',true,'ativa',NULL),('{OB}',true,'ativa',NULL);INSERT INTO profiles VALUES('{A}','{OA}',true,false),('{B}','{OB}',true,false);INSERT INTO user_roles VALUES('{A}','administrador'),('{B}','administrador');INSERT INTO partner_accounts VALUES('{P}','{OA}',true,NULL),('{PB}','{OB}',true,NULL);INSERT INTO clientes VALUES('{C}','{OA}','ativo');INSERT INTO commercial_payment_plans(id) VALUES('{PLAN}');INSERT INTO commercial_payment_plan_assignments(id,plan_id,buyer_scope,partner_id,status) VALUES('{ASN}','{PLAN}','partner','{P}','published');INSERT INTO payment_methods(name) VALUES('AUDIT-AR-20260922 - Sem transferencia');")
  test('reproduz leak direto B antes',actor(B,f"SELECT count(*) FROM commercial_payment_plan_assignments WHERE id='{ASN}';"),1)
  test('reproduz leak RPC B antes',actor(B,f"SELECT count(*) FROM rpc_cc_list_assignments(NULL) WHERE id='{ASN}';"),1)
  # core is separate from hosted catalog preflight: it does not pretend reduced schema passes hosted gate.
- run("""CREATE TABLE commercial_condition_item_prices(id uuid PRIMARY KEY,plan_id uuid,buyer_scope text,partner_id uuid,customer_id uuid,status text,product_id uuid,microrganismo_id uuid,unit_type text,volume_ml numeric,pricing_mode text,condition_price numeric,discount_percent numeric,min_quantity numeric,currency text,valid_from date,valid_until date,motivo text,published_by uuid,published_at timestamptz,published_rule_id uuid,updated_by uuid);
- CREATE TABLE commercial_price_rules(id uuid DEFAULT gen_random_uuid(),plan_id uuid,buyer_scope text,partner_id uuid,customer_id uuid,active boolean,product_id uuid,microrganismo_id uuid,unit_type text,volume_ml numeric,pricing_mode text,condition_price numeric,discount_percent numeric,min_quantity numeric,currency text,valid_from date,valid_until date,motivo text,created_by uuid,updated_by uuid,updated_at timestamptz);
- """)
+ for table in ('commercial_condition_item_prices','commercial_price_rules'):
+  cols=[]
+  for c in channels['columns']:
+   if c['table_name']==table:cols.append(c['column_name']+' '+c['data_type']+(' NOT NULL' if c['is_nullable']=='NO' else '')+(' DEFAULT '+c['column_default'] if c['column_default'] else ''))
+  run('CREATE TABLE public.'+table+'('+','.join(cols)+');GRANT ALL ON public.'+table+' TO authenticated,anon;ALTER TABLE public.'+table+' ENABLE ROW LEVEL SECURITY;')
+ for c in sorted(channels['constraints'],key=lambda c:('PRIMARY KEY' not in c['definition'],'FOREIGN KEY' in c['definition'])):
+  if c['table']=='commercial_condition_audit_log':continue
+  if 'EXCLUDE' not in c['definition']:run('ALTER TABLE public.'+c['table']+' ADD CONSTRAINT '+c['name']+' '+c['definition']+';')
+ run("ALTER TABLE partner_accounts ADD COLUMN client_id uuid; CREATE FUNCTION _saas_user_has_feature(uuid,text) RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;")
+ run('SET check_function_bodies=off;'+(H/'channels-baseline.sql').read_text())
+ for f in channels['functions']:
+  run('REVOKE ALL ON FUNCTION public.'+f['signature']+' FROM PUBLIC,anon,authenticated,service_role;'+('GRANT EXECUTE ON FUNCTION public.'+f['signature']+' TO authenticated;' if 'authenticated=' in (f['acl'] or '') else ''))
+ for p in channels['policies']:
+  run('CREATE POLICY '+p['policyname']+' ON public.'+p['tablename']+' FOR SELECT TO authenticated USING ('+p['qual']+');')
+ run("ALTER TABLE commercial_condition_audit_log ENABLE ROW LEVEL SECURITY;GRANT ALL ON commercial_condition_audit_log TO authenticated,anon;CREATE POLICY cau_admin_select ON commercial_audit_log FOR SELECT TO authenticated USING(platform_private.has_role(auth.uid(),'administrador'));CREATE POLICY cau_authenticated_insert ON commercial_audit_log FOR INSERT TO authenticated WITH CHECK(auth.uid() IS NOT NULL);")
+ run("CREATE TRIGGER trg_ccip_touch BEFORE UPDATE ON commercial_condition_item_prices FOR EACH ROW EXECUTE FUNCTION tg_commercial_conditions_touch();")
+ run("SET check_function_bodies=off;"+'\n'.join(f['body']+';' for f in json.loads((H/'channels-trigger-baseline.json').read_text())['functions']))
+ run("CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON commercial_condition_item_prices FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('catalogo_precos');CREATE TRIGGER trg_commercial_price_rules_audit AFTER INSERT OR UPDATE OR DELETE ON commercial_price_rules FOR EACH ROW EXECUTE FUNCTION tg_commercial_price_rules_audit();")
+ run(f"INSERT INTO produtos VALUES('{C}','Synthetic',true);INSERT INTO commercial_condition_audit_log(entity,entity_id,action) VALUES('assignment','{ASN}','publish');")
+ test('reproduz leak histórico B antes',actor(B,f"SELECT count(*) FROM rpc_cc_history('assignment','{ASN}',100);"),1)
  run((H/'core.sql.review').read_text())
+ run((H/'channels-core.sql.review').read_text())
  run("SET c2p1.review_project_ref='swzpzcwiasxmjutrmvkm';"+(H/'postflight.sql').read_text())
  n+=1;print('PASS postflight candidato local completo')
- run(f"INSERT INTO commercial_condition_item_prices(id,plan_id,buyer_scope,partner_id,status,pricing_mode) VALUES('{ASN}','{PLAN}','partner','{P}','draft','discount_from_base');")
+ run(f"SET request.jwt.claim.sub='{A}';INSERT INTO commercial_condition_item_prices(id,assignment_id,plan_id,buyer_scope,partner_id,status,pricing_mode,product_id,unit_type,discount_percent) VALUES('{ASN}','{ASN}','{PLAN}','partner','{P}','draft','discount_from_base','{C}','litro',10);")
  test('B publicação item irmão A negada',actor(B,f"SELECT rpc_cc_publish_item_prices(ARRAY['{ASN}'::uuid],'audit');"),err='C2P1_FORBIDDEN')
  test('item irmão sem efeito após negação',f"SELECT status FROM commercial_condition_item_prices WHERE id='{ASN}';",'draft')
  test('A publicação item irmão permitida',actor(A,f"SELECT rpc_cc_publish_item_prices(ARRAY['{ASN}'::uuid],'audit')->>'published';"),1)
@@ -93,6 +113,69 @@ try:
  test('produtor A criar permitido',up(A,'NULL','producer','NULL',f"'{C}'"))
  test('B produtor A negado',up(B,'NULL','producer','NULL',f"'{C}'"),err='C2P1_FORBIDDEN')
  test('DML direto assignment negado',actor(A,f"UPDATE commercial_payment_plan_assignments SET status='archived' WHERE id='{ASN}';"),err='permission denied')
+
+ # Canonical RPC signatures, synthetic inputs only; every mutation stays disposable.
+ CB='bbbbbbbb-3333-0000-0000-000000000001'
+ run(f"INSERT INTO clientes VALUES('{CB}','{OB}','ativo');")
+ bid=run(up(B,'NULL','partner',f"'{PB}'",'NULL'))
+ def item(uid,ident='NULL',asn=ASN,partner=P,scope='partner',customer='NULL'):
+  return actor(uid,f"SELECT rpc_cc_upsert_item_price({ident},'{asn}','{PLAN}','{scope}',{'NULL' if partner is None else chr(39)+partner+chr(39)},{customer},'{C}',NULL,'litro',NULL,0,'discount_from_base',NULL,10,CURRENT_DATE,NULL,false,'audit');")
+ ai=run(item(A));bi=run(item(B,asn=bid,partner=PB))
+ test('B lê somente item próprio RPC',actor(B,f"SELECT count(*) FROM rpc_cc_list_item_prices(NULL,NULL,NULL) WHERE id IN ('{ASN}','{ai}','{bi}');"),1)
+ test('A lê somente itens A direto',actor(A,f"SELECT count(*) FROM commercial_condition_item_prices WHERE id='{bi}';"),0)
+ test('B filtrar assignment A vazio',actor(B,f"SELECT count(*) FROM rpc_cc_list_item_prices('{PLAN}',NULL,'{ASN}');"),0)
+ test('B history assignmentA vazio RPC',actor(B,f"SELECT count(*) FROM rpc_cc_history('assignment','{ASN}',100);"),0)
+ test('B history itemA vazio direto',actor(B,f"SELECT count(*) FROM commercial_condition_audit_log WHERE entity_id='{ai}';"),0)
+ test('A history itemA preservado',actor(A,f"SELECT count(*) FROM rpc_cc_history('item_price','{ai}',100);"),1)
+ test('B criar item destino A negado',item(B),err='C2P1_FORBIDDEN')
+ test('B editar item A destino B negado',item(B,ident=f"'{ai}'",asn=bid,partner=PB),err='C2P1_FORBIDDEN')
+ test('A ligar assignment B em item A negado',item(A,asn=bid),err='C2P1_FORBIDDEN')
+ test('A retarget itemA para B negado',item(A,ident=f"'{ai}'",asn=bid,partner=PB),err='C2P1_FORBIDDEN')
+ test('B excluir item A negado',actor(B,f"SELECT rpc_cc_delete_item_price('{ai}','audit');"),err='C2P1_FORBIDDEN')
+ test('A preview próprio permitido',actor(A,f"SELECT jsonb_array_length(rpc_cc_bulk_adjust_preview(ARRAY['{ai}'::uuid],5)->'preview');"),1)
+ test('B preview A negado',actor(B,f"SELECT rpc_cc_bulk_adjust_preview(ARRAY['{ai}'::uuid],5);"),err='C2P1_FORBIDDEN')
+ test('batch misto A/B nega integralmente',actor(A,f"SELECT rpc_cc_bulk_adjust_apply(ARRAY['{ai}'::uuid,'{bi}'::uuid],5,'audit');"),err='C2P1_FORBIDDEN')
+ test('batch negado sem preço alterado',f"SELECT discount_percent FROM commercial_condition_item_prices WHERE id='{ai}';",10)
+ test('A batch próprio atualiza',actor(A,f"SELECT rpc_cc_bulk_adjust_apply(ARRAY['{ai}'::uuid],5,'audit')->>'updated';"),1)
+ test('A batch preço concreto',f"SELECT discount_percent FROM commercial_condition_item_prices WHERE id='{ai}';",'15.0000')
+ test('B não lê novo log batch A',actor(B,f"SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500);"),0)
+ test('B matrix A negado',actor(B,f"SELECT rpc_cc_validate_matrix('{PLAN}','partner','{P}',NULL);"),err='C2P1_FORBIDDEN')
+ test('A matrix própria permitida',actor(A,f"SELECT rpc_cc_validate_matrix('{PLAN}','partner','{P}',NULL)->>'draft_count';"),1)
+ test('B matrix própria permitida',actor(B,f"SELECT rpc_cc_validate_matrix('{PLAN}','partner','{PB}',NULL)->>'draft_count';"),1)
+ test('cópia default sem autoridade fechada',actor(A,f"SELECT rpc_cc_copy_default_table('{PLAN}','partner','{P}',NULL,'audit');"),err='C2P1_DEFAULT_SOURCE_CLOSED')
+ test('publicação batch mista nega tudo',actor(A,f"SELECT rpc_cc_publish_item_prices(ARRAY['{ai}'::uuid,'{bi}'::uuid],'audit');"),err='C2P1_FORBIDDEN')
+ test('mista sem status alterado',f"SELECT status FROM commercial_condition_item_prices WHERE id='{ai}';",'draft')
+ test('A não publica item B',actor(A,f"SELECT rpc_cc_publish_item_prices(ARRAY['{bi}'::uuid],'audit');"),err='C2P1_FORBIDDEN')
+ test('B publica sua atribuição',actor(B,f"SELECT rpc_cc_publish_assignment('{bid}','audit');"))
+ test('B publica seu item',actor(B,f"SELECT rpc_cc_publish_item_prices(ARRAY['{bi}'::uuid],'audit')->>'published';"),1)
+ test('B lê zero regra A direta',actor(B,f"SELECT count(*) FROM commercial_price_rules WHERE partner_id='{P}';"),0)
+ test('B segundo histórico regra A invisível',actor(B,f"SELECT count(*) FROM commercial_audit_log WHERE partner_id='{P}';"),0)
+ test('A segundo histórico regra A preservado',actor(A,f"SELECT count(*) FROM commercial_audit_log WHERE partner_id='{P}';"),1)
+ test('A segundo histórico regra B invisível',actor(A,f"SELECT count(*) FROM commercial_audit_log WHERE partner_id='{PB}';"),0)
+ test('B segundo histórico próprio preservado',actor(B,f"SELECT count(*) FROM commercial_audit_log WHERE partner_id='{PB}';"),1)
+ test('A regra B invisível direto',actor(A,f"SELECT count(*) FROM commercial_price_rules WHERE partner_id='{PB}';"),0)
+ test('log writer direto fechado',actor(A,f"SELECT fn_cc_audit('assignment','{ASN}','fake',NULL,NULL,'audit');"),err='permission denied')
+ test('DML item direto fechado',actor(A,f"UPDATE commercial_condition_item_prices SET discount_percent=99 WHERE id='{ai}';"),err='permission denied')
+ test('DML log direto fechado',actor(A,f"INSERT INTO commercial_audit_log(acao) VALUES('fake');"),err='permission denied')
+ test('resolver ACL authenticated preservada fechada',actor(A,"SELECT fn_resolve_commercial_price('partner',NULL,NULL,NULL,NULL,NULL,'litro',NULL,CURRENT_DATE,1);"),err='permission denied')
+ test('B simulate A nega antes do resolver',actor(B,f"SELECT rpc_cc_simulate_price('partner','{P}',NULL,'{PLAN}','{C}',NULL,'litro',NULL,CURRENT_DATE,1);"),err='COMMERCIAL_PARTNER_SCOPE_DENIED')
+ # Mixed before/after snapshot cannot launder foreign historical data into a current A entity.
+ run(f"INSERT INTO commercial_condition_audit_log(entity,entity_id,action,before_data,after_data) SELECT 'item_price','{ai}','synthetic_history',to_jsonb(b),to_jsonb(a) FROM commercial_condition_item_prices a,commercial_condition_item_prices b WHERE a.id='{ai}' AND b.id='{bi}';")
+ test('A mixed histórico invisível',actor(A,f"SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500) WHERE action='synthetic_history';"),0)
+ test('B mixed histórico invisível',actor(B,f"SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500) WHERE action='synthetic_history';"),0)
+ run(f"UPDATE profiles SET ativo=false WHERE user_id='{B}';")
+ test('B perfil revogado itens fechados',actor(B,'SELECT count(*) FROM rpc_cc_list_item_prices(NULL,NULL,NULL);'),0)
+ test('B perfil revogado histórico fechado',actor(B,'SELECT count(*) FROM rpc_cc_history(NULL,NULL,500);'),0)
+ run(f"UPDATE profiles SET ativo=true WHERE user_id='{B}';")
+ test('B perfil reativado próprio recuperado',actor(B,f"SELECT count(*) FROM rpc_cc_list_item_prices(NULL,NULL,NULL) WHERE id='{bi}';"),1)
+ # Delete via canonical RPC preserves scoped before-image audit and no arbitrary row recreation.
+ test('A excluir draft próprio mantém log sem confiar órfão',actor(A,f"SELECT rpc_cc_delete_item_price('{ai}','audit');SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500) WHERE action='delete';"),0)
+ test('log deleted preservado no banco',f"SELECT count(*) FROM commercial_condition_audit_log WHERE entity_id='{ai}' AND action='delete';",1)
+ test('B histórico deletedA fechado',actor(B,f"SELECT count(*) FROM rpc_cc_history('item_price','{ai}',500);"),0)
+ run(f"INSERT INTO user_roles VALUES('{A}','parceiro_b2b_tecnico');")
+ test('externo cumulativo não lê itens',actor(A,"SELECT count(*) FROM rpc_cc_list_item_prices(NULL,NULL,NULL);"),0)
+ test('externo cumulativo não lê history',actor(A,"SELECT count(*) FROM rpc_cc_history(NULL,NULL,500);"),0)
+ run(f"DELETE FROM user_roles WHERE user_id='{A}' AND role='parceiro_b2b_tecnico';")
  test('B settings A negado',update(B),err='C2P1_FORBIDDEN')
  saved=json.loads(run(update()));assert saved['billing_trigger']=='na_entrega';n+=1;print('PASS owner A cria settings sem pedido com método AUDIT')
  test('A leitura settings',actor(A,f"SELECT count(*) FROM partner_financial_settings WHERE partner_id='{P}';"),1)
@@ -136,6 +219,9 @@ try:
  test('rollback leitura assignment fechada',actor(B,'SELECT count(*) FROM rpc_cc_list_assignments(NULL);'),0)
  test('rollback writer assignment fechado',up(A,'NULL','partner',f"'{P}'",'NULL'),err='C2P1_FORBIDDEN')
  test('rollback settings RPC fechado',update(),err='permission denied')
+ test('rollback history fechado',actor(A,'SELECT count(*) FROM rpc_cc_history(NULL,NULL,500);'),0)
+ test('rollback item leitura fechada',actor(A,'SELECT count(*) FROM rpc_cc_list_item_prices(NULL,NULL,NULL);'),0)
+ test('rollback regra log leitura fechada',actor(A,'SELECT count(*) FROM commercial_audit_log;'),0)
  test('histórico assignment original preservado',f"SELECT status FROM commercial_payment_plan_assignments WHERE id='{ASN}';",'published')
  test('anon não lê assignments',actor(B,'SELECT count(*) FROM commercial_payment_plan_assignments;',role='anon'),0)
  test('ref ausente preflight nega',(H/'preflight.sql').read_text(),err='C2P1_REF_NOT_VERIFIED')

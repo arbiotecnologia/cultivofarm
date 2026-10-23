@@ -1,0 +1,18 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+  "rls": true,
+  "force": false,
+  "policies": [
+    {
+      "name": "cau_admin_select",
+      "cmd": "SELECT",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role))"
+    },
+    {
+      "name": "cau_authenticated_insert",
+      "cmd": "INSERT",
+      "with_check": "(( SELECT auth.uid() AS uid) IS NOT NULL)"
+    }
+  ]
+}

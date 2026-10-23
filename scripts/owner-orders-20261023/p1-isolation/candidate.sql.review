@@ -98,6 +98,154 @@ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.
 IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.authz_tickets'::regclass AND relacl::text='{postgres=arwdDxtm/postgres}' AND relrowsecurity) THEN RAISE EXCEPTION 'C2P1_TICKET_TABLE_DRIFT'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_publish_item_prices(uuid[],text)') AND md5(pg_get_functiondef(oid))='bf203e6ca0aea3de80d7fd7b264c9414' AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'C2P1_SIBLING_DRIFT'; END IF;
 END $$;
+
+DO $$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_archive_assignment(uuid,text)') AND md5(pg_get_functiondef(oid))='4d2bad7cc6d3514d78bf326ffd421685' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_bulk_adjust_apply(uuid[],numeric,text)') AND md5(pg_get_functiondef(oid))='c6002df6aa00e9f73e8f8d41b4107e50' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_bulk_adjust_preview(uuid[],numeric)') AND md5(pg_get_functiondef(oid))='3c655d608d223c3e1101508eb689a886' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_validate_matrix(uuid,text,uuid,uuid)') AND md5(pg_get_functiondef(oid))='e3b94ad47b93b02c9717a6a694163552' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_copy_default_table(uuid,text,uuid,uuid,text)') AND md5(pg_get_functiondef(oid))='fe870f2cbe456a6785419ce2f7d3af42' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_delete_item_price(uuid,text)') AND md5(pg_get_functiondef(oid))='045b6434b6af53f59b34acd5a740967d' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_history(text,uuid,integer)') AND md5(pg_get_functiondef(oid))='e6392dd0ee3e317197f6900159721091' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_list_assignments(text)') AND md5(pg_get_functiondef(oid))='bab0263b346fd60cf5d48edb77c480a7' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_list_item_prices(uuid,text,uuid)') AND md5(pg_get_functiondef(oid))='79f9d8c270512cd6e148a565818856bc' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_publish_assignment(uuid,text)') AND md5(pg_get_functiondef(oid))='cbac9f242ee58d13033fe71e87fe4ef7' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_publish_item_prices(uuid[],text)') AND md5(pg_get_functiondef(oid))='bf203e6ca0aea3de80d7fd7b264c9414' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_submit_assignment(uuid,text)') AND md5(pg_get_functiondef(oid))='23962321235641af83417f8bd9b7f6c1' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_upsert_assignment(uuid,uuid,text,uuid,uuid,date,date,text)') AND md5(pg_get_functiondef(oid))='41c071d93b67929ace9f4fb126a9b0f1' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_upsert_item_price(uuid,uuid,uuid,text,uuid,uuid,uuid,uuid,text,numeric,numeric,text,numeric,numeric,date,date,boolean,text)') AND md5(pg_get_functiondef(oid))='89fabd798c5bda7c1815ac39e0db501a' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cc_audit(text,uuid,text,jsonb,jsonb,text)') AND md5(pg_get_functiondef(oid))='ce9f7e08298e28d4c0acfef8bfbc61ef' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cc_validate_item_input(uuid,text,numeric,numeric)') AND md5(pg_get_functiondef(oid))='c85e81c4710c3984afdaeeca9218023c' AND COALESCE(proacl::text,'')='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cc_simulate_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)') AND md5(pg_get_functiondef(oid))='2afeec0b301a1d72c4403147df3eb2f4' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.tg_commercial_price_rules_touch()') AND md5(pg_get_functiondef(oid))='3287ab9869a5dc8a27ae0a6173c6914f' AND COALESCE(proacl::text,'')='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)') AND md5(pg_get_functiondef(oid))='0df0d9005d46b667db4433d3eae59e27' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_CHANNEL_FUNCTION_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.commercial_condition_audit_log'::regclass AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'C2P1_CHANNEL_TABLE_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.commercial_condition_item_prices'::regclass AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'C2P1_CHANNEL_TABLE_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.commercial_price_rules'::regclass AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'C2P1_CHANNEL_TABLE_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='commercial_condition_audit_log' AND policyname='ccal_admin_read' AND qual='(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))' AND cmd='SELECT' AND permissive='PERMISSIVE' AND roles::text='{authenticated}') THEN RAISE EXCEPTION 'C2P1_CHANNEL_POLICY_DRIFT'; END IF;
+IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='commercial_condition_audit_log')<>1 THEN RAISE EXCEPTION 'C2P1_CHANNEL_POLICY_SET_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='commercial_condition_item_prices' AND policyname='ccip_admin_read' AND qual='(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))' AND cmd='SELECT' AND permissive='PERMISSIVE' AND roles::text='{authenticated}') THEN RAISE EXCEPTION 'C2P1_CHANNEL_POLICY_DRIFT'; END IF;
+IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='commercial_condition_item_prices')<>1 THEN RAISE EXCEPTION 'C2P1_CHANNEL_POLICY_SET_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='commercial_price_rules' AND policyname='cpr_internal_select' AND qual='(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role))' AND cmd='SELECT' AND permissive='PERMISSIVE' AND roles::text='{authenticated}') THEN RAISE EXCEPTION 'C2P1_CHANNEL_POLICY_DRIFT'; END IF;
+IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='commercial_price_rules')<>1 THEN RAISE EXCEPTION 'C2P1_CHANNEL_POLICY_SET_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log' AND column_name='id' AND data_type='uuid' AND is_nullable='NO' AND COALESCE(column_default,'')='gen_random_uuid()') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log' AND column_name='entity' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log' AND column_name='entity_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log' AND column_name='action' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log' AND column_name='actor_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log' AND column_name='before_data' AND data_type='jsonb' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log' AND column_name='after_data' AND data_type='jsonb' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log' AND column_name='motivo' AND data_type='text' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log' AND column_name='created_at' AND data_type='timestamp with time zone' AND is_nullable='NO' AND COALESCE(column_default,'')='now()') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='id' AND data_type='uuid' AND is_nullable='NO' AND COALESCE(column_default,'')='gen_random_uuid()') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='assignment_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='plan_id' AND data_type='uuid' AND is_nullable='NO' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='buyer_scope' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='partner_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='customer_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='product_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='microrganismo_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='unit_type' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='volume_ml' AND data_type='numeric' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='min_quantity' AND data_type='numeric' AND is_nullable='NO' AND COALESCE(column_default,'')='0') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='pricing_mode' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='condition_price' AND data_type='numeric' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='discount_percent' AND data_type='numeric' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='currency' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='''BRL''::text') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='valid_from' AND data_type='date' AND is_nullable='NO' AND COALESCE(column_default,'')='CURRENT_DATE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='valid_until' AND data_type='date' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='status' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='''draft''::text') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='motivo' AND data_type='text' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='is_exception' AND data_type='boolean' AND is_nullable='NO' AND COALESCE(column_default,'')='false') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='published_rule_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='published_by' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='published_at' AND data_type='timestamp with time zone' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='created_by' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='updated_by' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='created_at' AND data_type='timestamp with time zone' AND is_nullable='NO' AND COALESCE(column_default,'')='now()') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices' AND column_name='updated_at' AND data_type='timestamp with time zone' AND is_nullable='NO' AND COALESCE(column_default,'')='now()') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='id' AND data_type='uuid' AND is_nullable='NO' AND COALESCE(column_default,'')='gen_random_uuid()') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='buyer_scope' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='partner_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='customer_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='plan_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='product_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='microrganismo_id' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='unit_type' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='volume_ml' AND data_type='numeric' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='pricing_mode' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='condition_price' AND data_type='numeric' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='currency' AND data_type='text' AND is_nullable='NO' AND COALESCE(column_default,'')='''BRL''::text') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='valid_from' AND data_type='date' AND is_nullable='NO' AND COALESCE(column_default,'')='CURRENT_DATE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='valid_until' AND data_type='date' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='active' AND data_type='boolean' AND is_nullable='NO' AND COALESCE(column_default,'')='true') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='motivo' AND data_type='text' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='created_at' AND data_type='timestamp with time zone' AND is_nullable='NO' AND COALESCE(column_default,'')='now()') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='updated_at' AND data_type='timestamp with time zone' AND is_nullable='NO' AND COALESCE(column_default,'')='now()') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='created_by' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='updated_by' AND data_type='uuid' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='discount_percent' AND data_type='numeric' AND is_nullable='YES' AND COALESCE(column_default,'')='') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules' AND column_name='min_quantity' AND data_type='numeric' AND is_nullable='NO' AND COALESCE(column_default,'')='0') THEN RAISE EXCEPTION 'C2P1_CHANNEL_COLUMN_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_audit_log'::regclass AND conname='commercial_condition_audit_log_entity_check' AND pg_get_constraintdef(oid)='CHECK ((entity = ANY (ARRAY[''assignment''::text, ''item_price''::text, ''plan''::text, ''bulk_adjust''::text])))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_audit_log'::regclass AND conname='commercial_condition_audit_log_pkey' AND pg_get_constraintdef(oid)='PRIMARY KEY (id)') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='ccip_buyer_scope_ck' AND pg_get_constraintdef(oid)='CHECK ((buyer_scope = ANY (ARRAY[''partner''::text, ''producer''::text, ''default''::text])))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='ccip_item_ck' AND pg_get_constraintdef(oid)='CHECK ((((product_id IS NOT NULL) AND (microrganismo_id IS NULL)) OR ((product_id IS NULL) AND (microrganismo_id IS NOT NULL))))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='ccip_mode_value_ck' AND pg_get_constraintdef(oid)='CHECK ((((pricing_mode = ''fixed_item_price''::text) AND (condition_price IS NOT NULL)) OR ((pricing_mode = ''discount_from_base''::text) AND (discount_percent IS NOT NULL)) OR (pricing_mode = ''quote_only''::text)))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='ccip_scope_target_ck' AND pg_get_constraintdef(oid)='CHECK ((((buyer_scope = ''partner''::text) AND (partner_id IS NOT NULL) AND (customer_id IS NULL)) OR ((buyer_scope = ''producer''::text) AND (customer_id IS NOT NULL) AND (partner_id IS NULL)) OR ((buyer_scope = ''default''::text) AND (partner_id IS NULL) AND (customer_id IS NULL))))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='ccip_validity_ck' AND pg_get_constraintdef(oid)='CHECK (((valid_until IS NULL) OR (valid_until >= valid_from)))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='ccip_volume_ck' AND pg_get_constraintdef(oid)='CHECK (((unit_type <> ''unidade''::text) OR (volume_ml IS NOT NULL)))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_assignment_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (assignment_id) REFERENCES commercial_payment_plan_assignments(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_condition_price_check' AND pg_get_constraintdef(oid)='CHECK (((condition_price IS NULL) OR (condition_price >= (0)::numeric)))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_customer_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (customer_id) REFERENCES clientes(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_discount_percent_check' AND pg_get_constraintdef(oid)='CHECK (((discount_percent IS NULL) OR ((discount_percent >= (0)::numeric) AND (discount_percent <= (100)::numeric))))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_microrganismo_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_min_quantity_check' AND pg_get_constraintdef(oid)='CHECK ((min_quantity >= (0)::numeric))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_partner_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (partner_id) REFERENCES partner_accounts(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_pkey' AND pg_get_constraintdef(oid)='PRIMARY KEY (id)') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_plan_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (plan_id) REFERENCES commercial_payment_plans(id) ON DELETE RESTRICT') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_pricing_mode_check' AND pg_get_constraintdef(oid)='CHECK ((pricing_mode = ANY (ARRAY[''fixed_item_price''::text, ''discount_from_base''::text, ''quote_only''::text])))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_product_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (product_id) REFERENCES produtos(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_published_rule_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (published_rule_id) REFERENCES commercial_price_rules(id) ON DELETE SET NULL') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_status_check' AND pg_get_constraintdef(oid)='CHECK ((status = ANY (ARRAY[''draft''::text, ''pending_approval''::text, ''published''::text, ''archived''::text])))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass AND conname='commercial_condition_item_prices_unit_type_check' AND pg_get_constraintdef(oid)='CHECK ((unit_type = ANY (ARRAY[''hectare''::text, ''dose''::text, ''litro''::text, ''unidade''::text])))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='commercial_price_rules_customer_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (customer_id) REFERENCES clientes(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='commercial_price_rules_microrganismo_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (microrganismo_id) REFERENCES microrganismos(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='commercial_price_rules_partner_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (partner_id) REFERENCES partner_accounts(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='commercial_price_rules_pkey' AND pg_get_constraintdef(oid)='PRIMARY KEY (id)') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='commercial_price_rules_plan_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (plan_id) REFERENCES commercial_payment_plans(id) ON DELETE RESTRICT') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='commercial_price_rules_product_id_fkey' AND pg_get_constraintdef(oid)='FOREIGN KEY (product_id) REFERENCES produtos(id) ON DELETE CASCADE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_buyer_identity_chk' AND pg_get_constraintdef(oid)='CHECK ((((buyer_scope = ''partner''::text) AND (partner_id IS NOT NULL) AND (customer_id IS NULL)) OR ((buyer_scope = ''producer''::text) AND (customer_id IS NOT NULL) AND (partner_id IS NULL))))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_buyer_scope_chk' AND pg_get_constraintdef(oid)='CHECK ((buyer_scope = ANY (ARRAY[''partner''::text, ''producer''::text])))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_condition_price_chk' AND pg_get_constraintdef(oid)='CHECK ((((pricing_mode = ''fixed_item_price''::text) AND (condition_price IS NOT NULL) AND (condition_price > (0)::numeric)) OR ((pricing_mode <> ''fixed_item_price''::text) AND (condition_price IS NULL))))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_currency_chk' AND pg_get_constraintdef(oid)='CHECK ((currency = ''BRL''::text))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_discount_percent_range' AND pg_get_constraintdef(oid)='CHECK (((discount_percent IS NULL) OR ((discount_percent >= (0)::numeric) AND (discount_percent <= (100)::numeric))))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_item_xor_chk' AND pg_get_constraintdef(oid)='CHECK ((num_nonnulls(product_id, microrganismo_id) = 1))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_min_quantity_nonneg' AND pg_get_constraintdef(oid)='CHECK ((min_quantity >= (0)::numeric))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_no_overlap' AND pg_get_constraintdef(oid)='EXCLUDE USING gist (COALESCE(partner_id, ''00000000-0000-0000-0000-000000000000''::uuid) WITH =, COALESCE(customer_id, ''00000000-0000-0000-0000-000000000000''::uuid) WITH =, COALESCE(plan_id, ''00000000-0000-0000-0000-000000000000''::uuid) WITH =, COALESCE(product_id, ''00000000-0000-0000-0000-000000000000''::uuid) WITH =, COALESCE(microrganismo_id, ''00000000-0000-0000-0000-000000000000''::uuid) WITH =, unit_type WITH =, COALESCE(volume_ml, (- (1)::numeric)) WITH =, daterange(valid_from, valid_until, ''[]''::text) WITH &&) WHERE (active)') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_plan_required_chk' AND pg_get_constraintdef(oid)='CHECK (((pricing_mode <> ''fixed_item_price''::text) OR (plan_id IS NOT NULL)))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_pricing_mode_chk' AND pg_get_constraintdef(oid)='CHECK ((pricing_mode = ANY (ARRAY[''fixed_item_price''::text, ''discount_from_base''::text, ''quote_only''::text])))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_unit_type_chk' AND pg_get_constraintdef(oid)='CHECK ((unit_type = ANY (ARRAY[''hectare''::text, ''litro''::text, ''dose''::text, ''unidade''::text])))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_validity_chk' AND pg_get_constraintdef(oid)='CHECK (((valid_until IS NULL) OR (valid_until >= valid_from)))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass AND conname='cpr_volume_chk' AND pg_get_constraintdef(oid)='CHECK ((((unit_type = ''unidade''::text) AND (volume_ml IS NOT NULL) AND (volume_ml > (0)::numeric)) OR ((unit_type <> ''unidade''::text) AND (volume_ml IS NULL))))') THEN RAISE EXCEPTION 'C2P1_CHANNEL_CONSTRAINT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.commercial_condition_item_prices'::regclass AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ccip_touch BEFORE UPDATE ON public.commercial_condition_item_prices FOR EACH ROW EXECUTE FUNCTION tg_commercial_conditions_touch()' AND tgenabled='O') THEN RAISE EXCEPTION 'C2P1_CHANNEL_TRIGGER_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.commercial_condition_item_prices'::regclass AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.commercial_condition_item_prices FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature(''catalogo_precos'')' AND tgenabled='O') THEN RAISE EXCEPTION 'C2P1_CHANNEL_TRIGGER_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.commercial_price_rules'::regclass AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_commercial_price_rules_audit AFTER INSERT OR DELETE OR UPDATE ON public.commercial_price_rules FOR EACH ROW EXECUTE FUNCTION tg_commercial_price_rules_audit()' AND tgenabled='O') THEN RAISE EXCEPTION 'C2P1_CHANNEL_TRIGGER_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.commercial_price_rules'::regclass AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_commercial_price_rules_plan_mode BEFORE INSERT OR UPDATE ON public.commercial_price_rules FOR EACH ROW EXECUTE FUNCTION tg_commercial_price_rules_plan_mode_guard()' AND tgenabled='O') THEN RAISE EXCEPTION 'C2P1_CHANNEL_TRIGGER_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.commercial_price_rules'::regclass AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_commercial_price_rules_producer_inert BEFORE INSERT OR UPDATE ON public.commercial_price_rules FOR EACH ROW EXECUTE FUNCTION tg_commercial_price_rules_producer_inert()' AND tgenabled='O') THEN RAISE EXCEPTION 'C2P1_CHANNEL_TRIGGER_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.commercial_price_rules'::regclass AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_commercial_price_rules_touch BEFORE INSERT OR UPDATE ON public.commercial_price_rules FOR EACH ROW EXECUTE FUNCTION tg_commercial_price_rules_touch()' AND tgenabled='O') THEN RAISE EXCEPTION 'C2P1_CHANNEL_TRIGGER_DRIFT'; END IF;
+IF (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_audit_log')<>9 OR (SELECT count(*) FROM pg_constraint WHERE conrelid='public.commercial_condition_audit_log'::regclass)<>2 OR (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.commercial_condition_audit_log'::regclass AND NOT tgisinternal)<>0 THEN RAISE EXCEPTION 'C2P1_CHANNEL_SET_DRIFT'; END IF;
+IF (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_condition_item_prices')<>27 OR (SELECT count(*) FROM pg_constraint WHERE conrelid='public.commercial_condition_item_prices'::regclass)<>20 OR (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.commercial_condition_item_prices'::regclass AND NOT tgisinternal)<>2 THEN RAISE EXCEPTION 'C2P1_CHANNEL_SET_DRIFT'; END IF;
+IF (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_price_rules')<>22 OR (SELECT count(*) FROM pg_constraint WHERE conrelid='public.commercial_price_rules'::regclass)<>19 OR (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.commercial_price_rules'::regclass AND NOT tgisinternal)<>4 THEN RAISE EXCEPTION 'C2P1_CHANNEL_SET_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.tg_commercial_price_rules_audit()') AND md5(pg_get_functiondef(oid))='3d644370c3ca3a154c3b5f2ac06faa0b' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_TRIGGER_BODY_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._saas_trg_require_feature()') AND md5(pg_get_functiondef(oid))='13ed48832f81cbb35434688ca35fda4b' AND COALESCE(proacl::text,'')='{postgres=X/postgres,service_role=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_TRIGGER_BODY_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.tg_commercial_price_rules_plan_mode_guard()') AND md5(pg_get_functiondef(oid))='96504996cf8141227757807e33b33055' AND COALESCE(proacl::text,'')='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_TRIGGER_BODY_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.tg_commercial_price_rules_producer_inert()') AND md5(pg_get_functiondef(oid))='d17634b9bbe99dacc0338c1cc173d573' AND COALESCE(proacl::text,'')='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_TRIGGER_BODY_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.tg_commercial_price_rules_touch()') AND md5(pg_get_functiondef(oid))='3287ab9869a5dc8a27ae0a6173c6914f' AND COALESCE(proacl::text,'')='{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2P1_TRIGGER_BODY_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.commercial_audit_log'::regclass AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND relrowsecurity AND NOT relforcerowsecurity) OR (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='commercial_audit_log')<>2 THEN RAISE EXCEPTION 'C2P1_SECONDARY_AUDIT_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='commercial_audit_log' AND policyname='cau_admin_select' AND cmd='SELECT' AND roles::text='{authenticated}' AND permissive='PERMISSIVE' AND qual='(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))') OR NOT EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='commercial_audit_log' AND policyname='cau_authenticated_insert' AND cmd='INSERT' AND roles::text='{authenticated}' AND permissive='PERMISSIVE' AND with_check='(( SELECT auth.uid() AS uid) IS NOT NULL)') THEN RAISE EXCEPTION 'C2P1_SECONDARY_AUDIT_POLICY_DRIFT'; END IF;
+IF (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='commercial_audit_log')<>8 OR (SELECT count(*) FROM pg_constraint WHERE conrelid='public.commercial_audit_log'::regclass)<>1 OR EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.commercial_audit_log'::regclass AND NOT tgisinternal) THEN RAISE EXCEPTION 'C2P1_SECONDARY_STRUCTURE_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.commercial_audit_log'::regclass AND conname='commercial_audit_log_pkey' AND pg_get_constraintdef(oid)='PRIMARY KEY (id)') THEN RAISE EXCEPTION 'C2P1_SECONDARY_CONSTRAINT_DRIFT'; END IF;
+END $$;
 CREATE OR REPLACE FUNCTION platform_private.c2p1_internal_actor(p_roles public.app_role[])
 RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT public.h15_actor_organization() WHERE auth.uid() IS NOT NULL
@@ -416,4 +564,445 @@ BEGIN
 
   RETURN jsonb_build_object('published', v_count);
 END $function$;
+
+-- INACTIVE REVIEW: canonical destination, no inferred tenant on global plans.
+CREATE OR REPLACE FUNCTION platform_private.c2p1_item_allowed(p_assignment uuid,p_plan uuid,p_scope text,p_partner uuid,p_customer uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT platform_private.c2p1_assignment_allowed(p_scope,p_partner,p_customer) AND
+ (p_assignment IS NULL OR EXISTS(SELECT 1 FROM public.commercial_payment_plan_assignments a
+ WHERE a.id=p_assignment AND a.plan_id=p_plan AND a.buyer_scope=p_scope
+ AND a.partner_id IS NOT DISTINCT FROM p_partner AND a.customer_id IS NOT DISTINCT FROM p_customer
+ AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id)));
+$$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_snapshot_allowed(p_entity text,p_id uuid,p_data jsonb)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF p_data IS NULL THEN RETURN true; END IF;
+ IF jsonb_typeof(p_data)<>'object' THEN RETURN false; END IF;
+ IF p_entity='assignment' THEN
+ RETURN (p_data->>'id')::uuid=p_id AND platform_private.c2p1_assignment_allowed(p_data->>'buyer_scope',(p_data->>'partner_id')::uuid,(p_data->>'customer_id')::uuid);
+ ELSIF p_entity='item_price' THEN
+ IF NOT (p_data ? 'buyer_scope') THEN
+ -- Publication output contains only server-produced rule ID: verify full chain.
+ RETURN EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i JOIN public.commercial_price_rules r ON r.id=i.published_rule_id
+ WHERE i.id=p_id AND r.id=(p_data->>'price_rule_id')::uuid AND r.plan_id=i.plan_id AND r.buyer_scope=i.buyer_scope
+ AND r.partner_id IS NOT DISTINCT FROM i.partner_id AND r.customer_id IS NOT DISTINCT FROM i.customer_id
+ AND r.product_id IS NOT DISTINCT FROM i.product_id AND r.microrganismo_id IS NOT DISTINCT FROM i.microrganismo_id
+ AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id));
+ END IF;
+ RETURN (p_data->>'id')::uuid=p_id AND platform_private.c2p1_item_allowed((p_data->>'assignment_id')::uuid,(p_data->>'plan_id')::uuid,p_data->>'buyer_scope',(p_data->>'partner_id')::uuid,(p_data->>'customer_id')::uuid);
+ END IF;
+ RETURN false;
+EXCEPTION WHEN invalid_text_representation THEN RETURN false;
+END $$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_history_allowed(p_entity text,p_id uuid,p_before jsonb,p_after jsonb)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT COALESCE(p_id IS NOT NULL AND p_entity IN ('assignment','item_price')
+ AND platform_private.c2p1_snapshot_allowed(p_entity,p_id,p_before)
+ AND platform_private.c2p1_snapshot_allowed(p_entity,p_id,p_after)
+ AND CASE WHEN p_entity='assignment' THEN EXISTS(SELECT 1 FROM public.commercial_payment_plan_assignments a WHERE a.id=p_id AND platform_private.c2p1_assignment_allowed(a.buyer_scope,a.partner_id,a.customer_id))
+ ELSE EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.id=p_id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id)) END,false);
+$$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_item_fence()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE r public.commercial_condition_item_prices;
+BEGIN
+ IF TG_OP='DELETE' THEN r=OLD; ELSE r=NEW; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=auth.uid() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.user_roles WHERE user_id=auth.uid() ORDER BY role FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.organizations WHERE id IN (public.h15_actor_organization(),(SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id=r.partner_id),(SELECT organization_id FROM public.clientes WHERE id=r.customer_id)) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.partner_accounts WHERE id IN(r.partner_id,CASE WHEN TG_OP='UPDATE' THEN OLD.partner_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.clientes WHERE id IN(r.customer_id,CASE WHEN TG_OP='UPDATE' THEN OLD.customer_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.commercial_payment_plan_assignments WHERE id IN(r.assignment_id,CASE WHEN TG_OP='UPDATE' THEN OLD.assignment_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ IF NOT platform_private.c2p1_item_allowed(r.assignment_id,r.plan_id,r.buyer_scope,r.partner_id,r.customer_id)
+ OR (TG_OP='UPDATE' AND NOT platform_private.c2p1_item_allowed(OLD.assignment_id,OLD.plan_id,OLD.buyer_scope,OLD.partner_id,OLD.customer_id)) THEN
+ RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF TG_OP='UPDATE' AND (NEW.id IS DISTINCT FROM OLD.id OR NEW.created_at IS DISTINCT FROM OLD.created_at) THEN RAISE EXCEPTION 'C2P1_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF TG_OP<>'DELETE' AND r.published_rule_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.commercial_price_rules pr WHERE pr.id=r.published_rule_id AND pr.plan_id=r.plan_id AND pr.buyer_scope=r.buyer_scope
+ AND pr.partner_id IS NOT DISTINCT FROM r.partner_id AND pr.customer_id IS NOT DISTINCT FROM r.customer_id
+ AND pr.product_id IS NOT DISTINCT FROM r.product_id AND pr.microrganismo_id IS NOT DISTINCT FROM r.microrganismo_id
+ AND pr.unit_type=r.unit_type AND pr.volume_ml IS NOT DISTINCT FROM r.volume_ml) THEN RAISE EXCEPTION 'C2P1_RULE_LINK_INVALID' USING ERRCODE='42501'; END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+CREATE TRIGGER c2p1_item_fence BEFORE INSERT OR UPDATE OR DELETE ON public.commercial_condition_item_prices FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_item_fence();
+CREATE OR REPLACE FUNCTION platform_private.c2p1_assignment_children_fence()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$ BEGIN
+ IF EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.assignment_id=OLD.id
+ AND (i.plan_id IS DISTINCT FROM NEW.plan_id OR i.buyer_scope IS DISTINCT FROM NEW.buyer_scope OR i.partner_id IS DISTINCT FROM NEW.partner_id OR i.customer_id IS DISTINCT FROM NEW.customer_id))
+ THEN RAISE EXCEPTION 'C2P1_ASSIGNMENT_LINK_IMMUTABLE' USING ERRCODE='42501'; END IF; RETURN NEW; END $$;
+CREATE TRIGGER c2p1_assignment_children_fence BEFORE UPDATE ON public.commercial_payment_plan_assignments FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_assignment_children_fence();
+CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_fence()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE r public.commercial_price_rules;
+BEGIN
+ IF TG_OP='DELETE' THEN r=OLD; ELSE r=NEW; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=auth.uid() FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.user_roles WHERE user_id=auth.uid() ORDER BY role FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.organizations WHERE id IN (public.h15_actor_organization(),(SELECT commercial_owner_organization_id FROM public.partner_accounts WHERE id=r.partner_id),(SELECT organization_id FROM public.clientes WHERE id=r.customer_id)) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.partner_accounts WHERE id IN(r.partner_id,CASE WHEN TG_OP='UPDATE' THEN OLD.partner_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ PERFORM 1 FROM public.clientes WHERE id IN(r.customer_id,CASE WHEN TG_OP='UPDATE' THEN OLD.customer_id ELSE NULL END) ORDER BY id FOR SHARE NOWAIT;
+ IF NOT platform_private.c2p1_assignment_allowed(r.buyer_scope,r.partner_id,r.customer_id)
+ OR (TG_OP='UPDATE' AND NOT platform_private.c2p1_assignment_allowed(OLD.buyer_scope,OLD.partner_id,OLD.customer_id)) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.published_rule_id=OLD.id AND (NEW.id IS DISTINCT FROM OLD.id OR i.plan_id IS DISTINCT FROM NEW.plan_id OR i.buyer_scope IS DISTINCT FROM NEW.buyer_scope OR i.partner_id IS DISTINCT FROM NEW.partner_id OR i.customer_id IS DISTINCT FROM NEW.customer_id OR i.product_id IS DISTINCT FROM NEW.product_id OR i.microrganismo_id IS DISTINCT FROM NEW.microrganismo_id OR i.unit_type IS DISTINCT FROM NEW.unit_type OR i.volume_ml IS DISTINCT FROM NEW.volume_ml)) THEN RAISE EXCEPTION 'C2P1_RULE_LINK_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+CREATE TRIGGER c2p1_rule_fence BEFORE INSERT OR UPDATE OR DELETE ON public.commercial_price_rules FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_rule_fence();
+ALTER FUNCTION platform_private.c2p1_rule_fence() OWNER TO postgres;
+REVOKE ALL ON FUNCTION platform_private.c2p1_rule_fence() FROM PUBLIC,anon,authenticated,service_role;
+ALTER POLICY ccip_admin_read ON public.commercial_condition_item_prices USING(platform_private.c2p1_item_allowed(assignment_id,plan_id,buyer_scope,partner_id,customer_id));
+ALTER POLICY ccal_admin_read ON public.commercial_condition_audit_log USING(platform_private.c2p1_history_allowed(entity,entity_id,before_data,after_data));
+ALTER POLICY cpr_internal_select ON public.commercial_price_rules USING(platform_private.c2p1_assignment_allowed(buyer_scope,partner_id,customer_id));
+REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON public.commercial_condition_item_prices,public.commercial_condition_audit_log,public.commercial_price_rules FROM anon,authenticated;
+-- The log writer is internal-only: arbitrary authenticated JSON must never become trusted history.
+REVOKE EXECUTE ON FUNCTION public.fn_cc_audit(text,uuid,text,jsonb,jsonb,text) FROM PUBLIC,anon,authenticated;
+
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_history(p_entity text DEFAULT NULL::text, p_entity_id uuid DEFAULT NULL::uuid, p_limit integer DEFAULT 100)
+ RETURNS SETOF commercial_condition_audit_log
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  RETURN QUERY SELECT * FROM public.commercial_condition_audit_log l
+    WHERE platform_private.c2p1_history_allowed(l.entity,l.entity_id,l.before_data,l.after_data) AND (p_entity IS NULL OR l.entity=p_entity)
+      AND (p_entity_id IS NULL OR l.entity_id=p_entity_id)
+    ORDER BY l.created_at DESC LIMIT GREATEST(0,LEAST(COALESCE(p_limit,100),500));
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_list_item_prices(p_plan_id uuid DEFAULT NULL::uuid, p_status text DEFAULT NULL::text, p_assignment_id uuid DEFAULT NULL::uuid)
+ RETURNS SETOF commercial_condition_item_prices
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  RETURN QUERY SELECT * FROM public.commercial_condition_item_prices i
+   WHERE platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id) AND (p_plan_id IS NULL OR i.plan_id = p_plan_id)
+     AND (p_status IS NULL OR i.status = p_status)
+     AND (p_assignment_id IS NULL OR i.assignment_id = p_assignment_id)
+   ORDER BY i.updated_at DESC;
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_upsert_item_price(p_id uuid, p_assignment_id uuid, p_plan_id uuid, p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric, p_min_quantity numeric, p_pricing_mode text, p_condition_price numeric, p_discount_percent numeric, p_valid_from date, p_valid_until date, p_is_exception boolean, p_motivo text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_id uuid; v_before jsonb;
+BEGIN
+ IF NOT platform_private.c2p1_item_allowed(p_assignment_id,p_plan_id,p_buyer_scope,p_partner_id,p_customer_id) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  IF p_is_exception AND (p_motivo IS NULL OR length(btrim(p_motivo))=0) THEN
+    RAISE EXCEPTION 'motivo_required_for_exception';
+  END IF;
+  PERFORM public.fn_cc_validate_item_input(p_plan_id, p_pricing_mode, p_condition_price, p_discount_percent);
+
+  IF p_id IS NULL THEN
+    INSERT INTO public.commercial_condition_item_prices
+      (assignment_id,plan_id,buyer_scope,partner_id,customer_id,product_id,microrganismo_id,
+       unit_type,volume_ml,min_quantity,pricing_mode,condition_price,discount_percent,
+       valid_from,valid_until,is_exception,motivo,created_by,updated_by)
+    VALUES (p_assignment_id,p_plan_id,p_buyer_scope,p_partner_id,p_customer_id,p_product_id,p_microrganismo_id,
+       p_unit_type,p_volume_ml,COALESCE(p_min_quantity,0),p_pricing_mode,p_condition_price,p_discount_percent,
+       COALESCE(p_valid_from,CURRENT_DATE),p_valid_until,COALESCE(p_is_exception,false),p_motivo,auth.uid(),auth.uid())
+    RETURNING id INTO v_id;
+    PERFORM public.fn_cc_audit('item_price',v_id,'create',NULL,
+      to_jsonb((SELECT i FROM public.commercial_condition_item_prices i WHERE i.id=v_id)),p_motivo);
+  ELSE
+    SELECT to_jsonb(i) INTO v_before FROM public.commercial_condition_item_prices i WHERE i.id=p_id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id) FOR UPDATE;
+    IF v_before IS NULL THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+    IF (v_before->>'status') NOT IN ('draft','pending_approval') THEN RAISE EXCEPTION 'item_price_not_editable'; END IF;
+    UPDATE public.commercial_condition_item_prices
+       SET assignment_id=p_assignment_id, plan_id=p_plan_id, buyer_scope=p_buyer_scope,
+           partner_id=p_partner_id, customer_id=p_customer_id, product_id=p_product_id,
+           microrganismo_id=p_microrganismo_id, unit_type=p_unit_type, volume_ml=p_volume_ml,
+           min_quantity=COALESCE(p_min_quantity,0), pricing_mode=p_pricing_mode,
+           condition_price=p_condition_price, discount_percent=p_discount_percent,
+           valid_from=COALESCE(p_valid_from,valid_from), valid_until=p_valid_until,
+           is_exception=COALESCE(p_is_exception,false), motivo=p_motivo, updated_by=auth.uid()
+     WHERE id=p_id RETURNING id INTO v_id;
+    PERFORM public.fn_cc_audit('item_price',v_id,'update',v_before,
+      to_jsonb((SELECT i FROM public.commercial_condition_item_prices i WHERE i.id=v_id)),p_motivo);
+  END IF;
+  RETURN v_id;
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_delete_item_price(p_id uuid, p_motivo text DEFAULT NULL::text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_before jsonb;
+BEGIN
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  SELECT to_jsonb(i) INTO v_before FROM public.commercial_condition_item_prices i WHERE i.id=p_id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id) FOR UPDATE;
+  IF v_before IS NULL THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF (v_before->>'status') <> 'draft' THEN RAISE EXCEPTION 'only_draft_can_be_deleted'; END IF;
+  DELETE FROM public.commercial_condition_item_prices WHERE id=p_id;
+  PERFORM public.fn_cc_audit('item_price',p_id,'delete',v_before,NULL,p_motivo);
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_bulk_adjust_preview(p_ids uuid[], p_percent numeric)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v jsonb;
+BEGIN
+ IF p_ids IS NULL OR cardinality(p_ids)=0 OR EXISTS(SELECT 1 FROM unnest(p_ids) x(id) WHERE x.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.id=x.id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id))) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'id',i.id,'pricing_mode',i.pricing_mode,
+           'current_price',i.condition_price,'current_discount',i.discount_percent,
+           'new_price', CASE WHEN i.pricing_mode='fixed_item_price'
+                             THEN round(i.condition_price*(1+p_percent/100.0),2) END,
+           'new_discount', CASE WHEN i.pricing_mode='discount_from_base'
+                                THEN LEAST(100,GREATEST(0,round(i.discount_percent+p_percent,4))) END)),'[]'::jsonb)
+    INTO v FROM public.commercial_condition_item_prices i
+   WHERE i.id = ANY(p_ids) AND i.status IN ('draft','pending_approval');
+  RETURN jsonb_build_object('preview', v);
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_bulk_adjust_apply(p_ids uuid[], p_percent numeric, p_motivo text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_count int; r record;
+BEGIN
+ IF p_ids IS NULL OR cardinality(p_ids)=0 OR EXISTS(SELECT 1 FROM unnest(p_ids) x(id) WHERE x.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.id=x.id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id))) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  IF p_motivo IS NULL OR length(btrim(p_motivo))=0 THEN RAISE EXCEPTION 'motivo_required'; END IF;
+  PERFORM 1 FROM public.commercial_condition_item_prices i WHERE i.id=ANY(p_ids) AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id) ORDER BY i.id FOR UPDATE;
+  IF p_ids IS NULL OR cardinality(p_ids)=0 OR EXISTS(SELECT 1 FROM unnest(p_ids) x(id) WHERE x.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.id=x.id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id))) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+
+  UPDATE public.commercial_condition_item_prices i
+     SET condition_price = CASE WHEN i.pricing_mode='fixed_item_price'
+                                THEN round(i.condition_price*(1+p_percent/100.0),2) ELSE i.condition_price END,
+         discount_percent = CASE WHEN i.pricing_mode='discount_from_base'
+                                 THEN LEAST(100,GREATEST(0,round(i.discount_percent+p_percent,4))) ELSE i.discount_percent END,
+         motivo = p_motivo, updated_by = auth.uid()
+   WHERE i.id = ANY(p_ids) AND i.status IN ('draft','pending_approval');
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  FOR r IN SELECT * FROM public.commercial_condition_item_prices WHERE id=ANY(p_ids) AND status IN ('draft','pending_approval') LOOP
+    PERFORM public.fn_cc_audit('item_price',r.id,'bulk_adjust',NULL,to_jsonb(r),p_motivo);
+  END LOOP;
+  RETURN jsonb_build_object('updated', v_count);
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_validate_matrix(p_plan_id uuid, p_buyer_scope text, p_partner_id uuid DEFAULT NULL::uuid, p_customer_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_missing jsonb; v_drafts int; v_quote int;
+BEGIN
+ IF NOT platform_private.c2p1_assignment_allowed(p_buyer_scope,p_partner_id,p_customer_id) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF NOT public.fn_cc_can_prepare(auth.uid()) THEN RAISE EXCEPTION 'not_authorized'; END IF;
+  SELECT COALESCE(jsonb_agg(jsonb_build_object('tipo',tipo,'id',id,'nome',nome)),'[]'::jsonb) INTO v_missing
+  FROM (
+    SELECT 'produto' tipo, p.id, p.nome FROM public.produtos p
+     WHERE COALESCE(p.ativo,true)
+       AND NOT EXISTS (SELECT 1 FROM public.commercial_condition_item_prices i
+            WHERE platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id) AND i.plan_id=p_plan_id AND i.product_id=p.id AND i.buyer_scope=p_buyer_scope
+              AND i.partner_id IS NOT DISTINCT FROM p_partner_id
+              AND i.customer_id IS NOT DISTINCT FROM p_customer_id
+              AND i.status IN ('draft','pending_approval','published'))
+    UNION ALL
+    SELECT 'microrganismo', m.id, m.nome FROM public.microrganismos m
+     WHERE COALESCE(m.ativo,true)
+       AND NOT EXISTS (SELECT 1 FROM public.commercial_condition_item_prices i
+            WHERE platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id) AND i.plan_id=p_plan_id AND i.microrganismo_id=m.id AND i.buyer_scope=p_buyer_scope
+              AND i.partner_id IS NOT DISTINCT FROM p_partner_id
+              AND i.customer_id IS NOT DISTINCT FROM p_customer_id
+              AND i.status IN ('draft','pending_approval','published'))
+  ) s;
+  SELECT count(*) FILTER (WHERE status='draft'), count(*) FILTER (WHERE pricing_mode='quote_only')
+    INTO v_drafts, v_quote
+  FROM public.commercial_condition_item_prices
+   WHERE platform_private.c2p1_item_allowed(assignment_id,plan_id,buyer_scope,partner_id,customer_id) AND plan_id=p_plan_id AND buyer_scope=p_buyer_scope
+     AND partner_id IS NOT DISTINCT FROM p_partner_id
+     AND customer_id IS NOT DISTINCT FROM p_customer_id;
+  RETURN jsonb_build_object('ok', jsonb_array_length(v_missing)=0,
+    'missing_items', v_missing, 'draft_count', COALESCE(v_drafts,0), 'quote_only_count', COALESCE(v_quote,0));
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_copy_default_table(p_plan_id uuid, p_target_scope text, p_partner_id uuid, p_customer_id uuid, p_motivo text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$ BEGIN RAISE EXCEPTION 'C2P1_DEFAULT_SOURCE_CLOSED' USING ERRCODE='42501'; END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_simulate_price(p_buyer_scope text, p_partner_id uuid, p_customer_id uuid, p_plan_id uuid, p_product_id uuid, p_microrganismo_id uuid, p_unit_type text, p_volume_ml numeric DEFAULT NULL::numeric, p_ref_date date DEFAULT CURRENT_DATE, p_quantity numeric DEFAULT NULL::numeric)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_org uuid;
+BEGIN
+ IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+ v_org := public.h15_actor_organization();
+ IF v_org IS NULL THEN RAISE EXCEPTION 'ACTIVE_TENANT_REQUIRED' USING ERRCODE='42501'; END IF;
+ IF NOT public.fn_cc_can_prepare(v_uid) OR NOT public._saas_user_has_feature(v_uid,'catalogo_precos') THEN
+  RAISE EXCEPTION 'not_authorized' USING ERRCODE='42501';
+ END IF;
+ IF COALESCE(p_buyer_scope,'partner') <> 'partner' OR p_customer_id IS NOT NULL THEN
+  RAISE EXCEPTION 'PRODUCER_DIRECT_NOT_ENABLED' USING ERRCODE='P0001';
+ END IF;
+ -- Only commercial ownership proves internal A. CNPJ, tenant P and user links never authorize here.
+ IF p_partner_id IS NULL OR NOT EXISTS (
+  SELECT 1 FROM public.partner_accounts pa
+  WHERE pa.id=p_partner_id AND pa.commercial_owner_organization_id=v_org
+   AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+   AND (pa.client_id IS NULL OR EXISTS (
+    SELECT 1 FROM public.clientes c WHERE c.id=pa.client_id AND c.organization_id=v_org
+   ))
+ ) THEN RAISE EXCEPTION 'COMMERCIAL_PARTNER_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_quantity IS NOT NULL AND (p_quantity <= 0 OR p_quantity::text IN ('NaN','Infinity','-Infinity')) THEN
+  RAISE EXCEPTION 'QUANTITY_INVALID' USING ERRCODE='22023';
+ END IF;
+ IF p_volume_ml IS NOT NULL AND (p_volume_ml <= 0 OR p_volume_ml::text IN ('NaN','Infinity','-Infinity')) THEN
+  RAISE EXCEPTION 'VOLUME_INVALID' USING ERRCODE='22023';
+ END IF;
+ IF NOT platform_private.c2p1_assignment_allowed('partner',p_partner_id,NULL) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ -- Read-only canonical resolver; no order, credit, receivable, snapshot or fiscal writes.
+ RETURN public.fn_resolve_commercial_price('partner',p_partner_id,NULL,p_plan_id,
+  p_product_id,p_microrganismo_id,p_unit_type,p_volume_ml,p_ref_date,p_quantity);
+END $function$
+;
+
+CREATE OR REPLACE FUNCTION public.rpc_cc_publish_item_prices(p_ids uuid[], p_motivo text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE r record; v_rule uuid; v_count int := 0;
+BEGIN
+  IF NOT public.fn_cc_can_publish(auth.uid()) THEN RAISE EXCEPTION 'not_authorized_publish'; END IF;
+  IF p_ids IS NULL OR array_length(p_ids,1) IS NULL THEN RAISE EXCEPTION 'no_items'; END IF;
+
+  IF EXISTS(SELECT 1 FROM unnest(p_ids) x(id) WHERE x.id IS NULL OR NOT EXISTS(SELECT 1 FROM public.commercial_condition_item_prices i WHERE i.id=x.id AND platform_private.c2p1_item_allowed(i.assignment_id,i.plan_id,i.buyer_scope,i.partner_id,i.customer_id))) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  FOR r IN SELECT * FROM public.commercial_condition_item_prices
+            WHERE id = ANY(p_ids) AND status IN ('draft','pending_approval') FOR UPDATE
+  LOOP
+    IF NOT platform_private.c2p1_assignment_allowed(r.buyer_scope,r.partner_id,r.customer_id) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+    IF NOT platform_private.c2p1_item_allowed(r.assignment_id,r.plan_id,r.buyer_scope,r.partner_id,r.customer_id) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
+    PERFORM 1 FROM public.commercial_payment_plan_assignments a WHERE a.plan_id=r.plan_id AND a.buyer_scope=r.buyer_scope AND a.partner_id IS NOT DISTINCT FROM r.partner_id AND a.customer_id IS NOT DISTINCT FROM r.customer_id AND (r.assignment_id IS NULL OR a.id=r.assignment_id) AND a.status='published' ORDER BY a.id FOR SHARE NOWAIT;
+    IF NOT FOUND THEN RAISE EXCEPTION 'assignment_not_published'; END IF;
+    IF r.buyer_scope = 'default' THEN RAISE EXCEPTION 'default_scope_not_publishable'; END IF;
+    IF NOT EXISTS (SELECT 1 FROM public.commercial_payment_plan_assignments a
+                    WHERE (r.assignment_id IS NULL OR a.id=r.assignment_id) AND a.status='published' AND a.plan_id=r.plan_id
+                      AND a.buyer_scope=r.buyer_scope
+                      AND a.partner_id IS NOT DISTINCT FROM r.partner_id
+                      AND a.customer_id IS NOT DISTINCT FROM r.customer_id) THEN
+      RAISE EXCEPTION 'assignment_not_published';
+    END IF;
+
+    UPDATE public.commercial_price_rules
+       SET active=false, updated_by=auth.uid(), updated_at=now()
+     WHERE active
+       AND plan_id = r.plan_id AND buyer_scope = r.buyer_scope
+       AND partner_id IS NOT DISTINCT FROM r.partner_id
+       AND customer_id IS NOT DISTINCT FROM r.customer_id
+       AND product_id IS NOT DISTINCT FROM r.product_id
+       AND microrganismo_id IS NOT DISTINCT FROM r.microrganismo_id
+       AND unit_type = r.unit_type
+       AND volume_ml IS NOT DISTINCT FROM r.volume_ml;
+
+    INSERT INTO public.commercial_price_rules
+      (buyer_scope,partner_id,customer_id,plan_id,product_id,microrganismo_id,unit_type,volume_ml,
+       pricing_mode,condition_price,discount_percent,min_quantity,currency,valid_from,valid_until,active,motivo,
+       created_by,updated_by)
+    VALUES (r.buyer_scope,r.partner_id,r.customer_id,r.plan_id,r.product_id,r.microrganismo_id,
+       r.unit_type,r.volume_ml,r.pricing_mode,
+       CASE WHEN r.pricing_mode='fixed_item_price' THEN r.condition_price ELSE NULL END,
+       CASE WHEN r.pricing_mode='discount_from_base' THEN r.discount_percent ELSE NULL END,
+       COALESCE(r.min_quantity,0),
+       COALESCE(r.currency,'BRL'),r.valid_from,r.valid_until,true,
+       COALESCE(p_motivo, r.motivo), auth.uid(), auth.uid())
+    RETURNING id INTO v_rule;
+
+    UPDATE public.commercial_condition_item_prices
+       SET status='published', published_by=auth.uid(), published_at=now(),
+           published_rule_id=v_rule, updated_by=auth.uid()
+     WHERE id = r.id;
+
+    PERFORM public.fn_cc_audit('item_price', r.id, 'publish', to_jsonb(r),
+      jsonb_build_object('price_rule_id', v_rule), p_motivo);
+    v_count := v_count + 1;
+  END LOOP;
+
+  RETURN jsonb_build_object('published', v_count);
+END $function$;
+
+
+ALTER FUNCTION platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid) OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid) FROM PUBLIC,anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid) TO authenticated;
+
+ALTER FUNCTION platform_private.c2p1_snapshot_allowed(text,uuid,jsonb) OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_snapshot_allowed(text,uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+
+ALTER FUNCTION platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb) OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb) FROM PUBLIC,anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION platform_private.c2p1_history_allowed(text,uuid,jsonb,jsonb) TO authenticated;
+
+ALTER FUNCTION platform_private.c2p1_item_fence() OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_item_fence() FROM PUBLIC,anon,authenticated,service_role;
+
+ALTER FUNCTION platform_private.c2p1_assignment_children_fence() OWNER TO postgres; REVOKE ALL ON FUNCTION platform_private.c2p1_assignment_children_fence() FROM PUBLIC,anon,authenticated,service_role;
+-- Secondary rule audit: no global-plan log inherits tenant authority.
+CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_snapshot_allowed(p_data jsonb,p_partner uuid)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$ BEGIN
+ IF p_data IS NULL THEN RETURN true; END IF;
+ RETURN jsonb_typeof(p_data)='object' AND p_data ? 'buyer_scope'
+ AND (p_data->>'partner_id')::uuid IS NOT DISTINCT FROM p_partner
+ AND platform_private.c2p1_assignment_allowed(p_data->>'buyer_scope',(p_data->>'partner_id')::uuid,(p_data->>'customer_id')::uuid)
+ AND EXISTS(SELECT 1 FROM public.commercial_price_rules r WHERE r.id=(p_data->>'id')::uuid
+ AND r.buyer_scope=p_data->>'buyer_scope' AND r.partner_id IS NOT DISTINCT FROM (p_data->>'partner_id')::uuid
+ AND r.customer_id IS NOT DISTINCT FROM (p_data->>'customer_id')::uuid
+ AND platform_private.c2p1_assignment_allowed(r.buyer_scope,r.partner_id,r.customer_id));
+ EXCEPTION WHEN invalid_text_representation THEN RETURN false; END $$;
+CREATE OR REPLACE FUNCTION platform_private.c2p1_rule_log_allowed(p_action text,p_partner uuid,p_before jsonb,p_after jsonb)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT COALESCE(p_action IN ('price_rule_insert','price_rule_update','price_rule_delete')
+ AND (p_before IS NOT NULL OR p_after IS NOT NULL)
+ AND platform_private.c2p1_rule_snapshot_allowed(p_before,p_partner)
+ AND platform_private.c2p1_rule_snapshot_allowed(p_after,p_partner),false);
+$$;
+CREATE POLICY c2p1_rule_audit_guard ON public.commercial_audit_log AS RESTRICTIVE FOR SELECT TO authenticated
+USING(platform_private.c2p1_rule_log_allowed(acao,partner_id,dados_anteriores,dados_novos));
+REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON public.commercial_audit_log FROM anon,authenticated;
+ALTER FUNCTION platform_private.c2p1_rule_snapshot_allowed(jsonb,uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION platform_private.c2p1_rule_snapshot_allowed(jsonb,uuid) FROM PUBLIC,anon,authenticated,service_role;
+ALTER FUNCTION platform_private.c2p1_rule_log_allowed(text,uuid,jsonb,jsonb) OWNER TO postgres;
+REVOKE ALL ON FUNCTION platform_private.c2p1_rule_log_allowed(text,uuid,jsonb,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION platform_private.c2p1_rule_log_allowed(text,uuid,jsonb,jsonb) TO authenticated;
+
+DO $$ BEGIN
+IF current_setting('c2p1.review_project_ref',true) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'C2P1_REF_NOT_VERIFIED'; END IF;
+IF has_table_privilege('authenticated','public.partner_financial_settings','UPDATE') OR has_table_privilege('authenticated','public.commercial_payment_plan_assignments','UPDATE') THEN RAISE EXCEPTION 'C2P1_DIRECT_WRITE_OPEN'; END IF;
+IF has_function_privilege('anon','public.rpc_update_partner_financial_settings(uuid,jsonb,jsonb)','EXECUTE') OR has_function_privilege('anon','platform_private.c2p1_update_settings(uuid,jsonb,jsonb)','EXECUTE') THEN RAISE EXCEPTION 'C2P1_ANON_OPEN'; END IF;
+IF NOT has_function_privilege('authenticated','public.rpc_update_partner_financial_settings(uuid,jsonb,jsonb)','EXECUTE') THEN RAISE EXCEPTION 'C2P1_API_CLOSED'; END IF;
+IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname LIKE 'c2p1_%' AND (pg_get_userbyid(p.proowner)<>'postgres' OR p.proconfig IS DISTINCT FROM ARRAY['search_path=""']::text[])) THEN RAISE EXCEPTION 'C2P1_CORE_METADATA_DRIFT'; END IF;
+IF EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.partner_financial_settings'::regclass AND conname='partner_financial_settings_default_payment_method_check') THEN RAISE EXCEPTION 'C2P1_LEGACY_METHOD_CHECK'; END IF;
+IF (SELECT count(*) FROM pg_trigger WHERE tgrelid IN ('public.partner_financial_settings'::regclass,'public.commercial_payment_plan_assignments'::regclass) AND tgname IN ('c2p1_settings_fence','c2p1_assignment_fence') AND tgenabled='O')<>2 THEN RAISE EXCEPTION 'C2P1_FENCE_MISSING'; END IF;
+IF (SELECT count(*) FROM pg_trigger WHERE tgname IN ('c2p1_item_fence','c2p1_rule_fence','c2p1_assignment_children_fence') AND tgenabled='O')<>3 THEN RAISE EXCEPTION 'C2P1_CHANNEL_FENCE_MISSING'; END IF;
+IF has_table_privilege('authenticated','public.commercial_condition_item_prices','UPDATE') OR has_table_privilege('authenticated','public.commercial_price_rules','UPDATE') OR has_table_privilege('authenticated','public.commercial_condition_audit_log','INSERT') OR has_table_privilege('authenticated','public.commercial_audit_log','INSERT') OR has_function_privilege('authenticated','public.fn_cc_audit(text,uuid,text,jsonb,jsonb,text)','EXECUTE') THEN RAISE EXCEPTION 'C2P1_CHANNEL_WRITE_OPEN'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='commercial_audit_log' AND policyname='c2p1_rule_audit_guard' AND permissive='RESTRICTIVE') THEN RAISE EXCEPTION 'C2P1_SECONDARY_AUDIT_OPEN'; END IF;
+END $$;
+
 COMMIT;

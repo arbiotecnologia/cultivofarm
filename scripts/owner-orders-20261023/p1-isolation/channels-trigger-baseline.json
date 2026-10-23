@@ -1,0 +1,39 @@
+{
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "3d644370c3ca3a154c3b5f2ac06faa0b",
+      "body": "CREATE OR REPLACE FUNCTION public.tg_commercial_price_rules_audit()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  INSERT INTO public.commercial_audit_log (usuario_id, partner_id, order_id, acao, dados_anteriores, dados_novos)\n  VALUES (\n    auth.uid(),\n    COALESCE(NEW.partner_id, OLD.partner_id),\n    NULL,\n    'price_rule_' || lower(TG_OP),\n    CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE to_jsonb(OLD) END,\n    CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE to_jsonb(NEW) END\n  );\n  RETURN COALESCE(NEW, OLD);\nEND $function$\n",
+      "owner": "postgres",
+      "signature": "tg_commercial_price_rules_audit()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "13ed48832f81cbb35434688ca35fda4b",
+      "body": "CREATE OR REPLACE FUNCTION public._saas_trg_require_feature()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_key text := TG_ARGV[0];\nBEGIN\n  IF v_uid IS NULL THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM public.profiles p\n    JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n    WHERE p.user_id = v_uid AND p.ativo IS TRUE AND p.organization_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'saas_context_unavailable: usu\u00e1rio ativo e empresa s\u00e3o obrigat\u00f3rios'\n      USING ERRCODE = '42501';\n  END IF;\n  IF NOT public._saas_user_has_feature(v_uid, v_key) THEN\n    RAISE EXCEPTION 'saas_feature_not_entitled: funcionalidade n\u00e3o contratada ou assinatura indispon\u00edvel'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n",
+      "owner": "postgres",
+      "signature": "_saas_trg_require_feature()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "96504996cf8141227757807e33b33055",
+      "body": "CREATE OR REPLACE FUNCTION public.tg_commercial_price_rules_plan_mode_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nDECLARE v_mode text;\nBEGIN\n  IF NEW.plan_id IS NOT NULL THEN\n    SELECT pricing_mode INTO v_mode FROM public.commercial_payment_plans WHERE id = NEW.plan_id;\n    IF v_mode IS NOT NULL AND v_mode <> NEW.pricing_mode THEN\n      RAISE EXCEPTION 'PRICE_RULE_MODE_CONFLICT: regra % conflita com pricing_mode % do plano', NEW.pricing_mode, v_mode\n        USING ERRCODE='P0001';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "owner": "postgres",
+      "signature": "tg_commercial_price_rules_plan_mode_guard()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "d17634b9bbe99dacc0338c1cc173d573",
+      "body": "CREATE OR REPLACE FUNCTION public.tg_commercial_price_rules_producer_inert()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.buyer_scope = 'customer' AND COALESCE(NEW.active,true) THEN\n    RAISE EXCEPTION 'PRODUCER_DIRECT_NOT_ENABLED' USING ERRCODE='P0001';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "owner": "postgres",
+      "signature": "tg_commercial_price_rules_producer_inert()"
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "3287ab9869a5dc8a27ae0a6173c6914f",
+      "body": "CREATE OR REPLACE FUNCTION public.tg_commercial_price_rules_touch()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  NEW.updated_at := now();\n  IF TG_OP = 'INSERT' THEN\n    NEW.created_by := COALESCE(NEW.created_by, auth.uid());\n  END IF;\n  NEW.updated_by := COALESCE(auth.uid(), NEW.updated_by);\n  RETURN NEW;\nEND $function$\n",
+      "owner": "postgres",
+      "signature": "tg_commercial_price_rules_touch()"
+    }
+  ]
+}
