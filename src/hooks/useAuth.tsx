@@ -164,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   const activeUserIdRef = useRef<string | null>(null);
   const retryRevalidateRef = useRef(false);
-  const revalidateAuthzRef = useRef<() => void>(() => {});
+  const revalidateAuthzRef = useRef<(opts?: { transient?: boolean }) => void>(() => {});
   const autoRecoveryRef = useRef<{ userId: string | null; s: AutoRecoveryState }>({ userId: null, s: initialAutoRecovery() });
   const roleChangeRef = useRef<{ userId: string | null; s: RoleChangeReresolveState }>({ userId: null, s: initialRoleChangeReresolve() });
   const autoRecoveryTimerRef = useRef<number | null>(null);
