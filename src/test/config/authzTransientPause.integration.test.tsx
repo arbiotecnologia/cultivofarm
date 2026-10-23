@@ -2,7 +2,7 @@
 // authzEpoch e remontava /configuracoes — aba voltava a "Meu perfil pessoal" e
 // o modal de edição perdia o rascunho. AuthProvider real + monitor real +
 // boundary real; transporte e relógio simulados. Não é prova JWT/RLS hosted.
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const s = vi.hoisted(() => ({
@@ -98,5 +98,21 @@ describe('pausa transitória não muda a época (regressão /configuracoes)', ()
       expect(content()).toBeTruthy();
       expect(epochOf()).toBe(before);
     }
+  });
+
+  it('Retry MANUAL (gesto explícito) mantém o bump revisado da época', async () => {
+    mount();
+    await adv(10_000);
+    const before = epochOf();
+    expect(before).not.toBeNull();
+    s.perCall = 16_000;
+    await adv(16_500);
+    s.perCall = 50;
+    expect(content()).toBeNull();
+    // Antes do backoff automático (1,5 s): clique explícito no boundary.
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' })); });
+    await adv(5_000);
+    expect(content()).toBeTruthy();
+    expect(epochOf()).toBe((before as number) + 1);
   });
 });
