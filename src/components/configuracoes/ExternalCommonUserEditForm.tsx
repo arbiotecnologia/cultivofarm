@@ -66,11 +66,22 @@ export function ExternalCommonUserEditForm(props: Props) {
     target: { ...props.target, roles: [...props.target.roles] }, version: props.expectedVersion,
     generation: crypto.randomUUID(),
   }));
+  // Rascunho retido lido UMA vez na montagem; a chave carrega época/identidade,
+  // então revogação torna o rascunho antigo inalcançável (fail-closed).
+  const retainedDraft = useRef<RetainedDraft | null>(
+    props.draftKey ? readPauseState<RetainedDraft>(props.draftKey) : null,
+  );
   const [profile, setProfile] = useState<CommonExternalEdit['profile']>(() => ({
     nome: props.target.nome, telefone: props.target.telefone, cargo: props.target.cargo,
     cpf_cnpj: props.target.cpf_cnpj, crea: props.target.crea, especialidade: props.target.especialidade,
+    ...retainedDraft.current?.profile,
   }));
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState(() => retainedDraft.current?.reason ?? '');
+  const draftKey = props.draftKey;
+  useEffect(() => {
+    if (!draftKey) return;
+    writePauseState(draftKey, { profile, reason });
+  }, [draftKey, profile, reason]);
   const [pending, setPending] = useState(false);
   const [reloadRequired, setReloadRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
