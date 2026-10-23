@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 20:10 — P1 prioritário antes do writer
+- [ ] Preparar isolamento de leitura direta/listagem e criação/edição/submissão/publicação/arquivamento de atribuições por destino canônico; planos globais separados. Prova REAL B relatada pelo auditor: assignmentA publicado visível, Arquivar NÃO acionado.
+- [ ] Preparar autoridade financeira owner ativo + ownorg legado com h15/perfil/roles, CAS servidor e método ativo; candidato/preflight/rollback deny-only/testes, sem hosted SQL/dados/publicação.
+- [ ] Homologação REAL A/B e revisão independente dos dois recortes antes de liberar writer; pendências antigas mantidas.
+
 ## 23/10 19:55 — revisão pós-914d06c
 - [x] Complemento20:03 frontend local: seletor tenant/roles sem pedido, mesmo diálogo/métodos ativos, legado inválido explícito, rascunho sem reset/CAS concorrente e publicação com cancel/releitura; diff/hashes junto revisão fiscal. 44/44, TypeScript e build isolado PASS. Sem dados/SQL/publicação.
 - [ ] Homologação real do formulário bloqueada: policy restritiva exige Superadmin ou org própria; teste4 has_partner_org=false. Não ampliar RLS nesta correção frontend; revisão de autoridade owner específica ainda necessária para admin tenant configurar teste4. Usuário financeiro/gestor sem SELECT partner_accounts também fica contido.
