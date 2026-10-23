@@ -35,6 +35,7 @@ for r in relations['relations']:
         pg.sql(f"CREATE TABLE public.{r['name']} ({','.join(cols)}); GRANT ALL ON public.{r['name']} TO service_role;")
 # Overlay current captured functions/ACL. No stubs replace business/authorization/pricing functions.
 fns={}
+pg.sql((H/'baseline/platform_private.c2p1_internal_actor.sql').read_text())
 for source in ['snapshot.json','pricing.json','dependencies.json','relations.json']:
     for f in json.loads((H/'baseline'/source).read_text())['functions'] or []:
         f=dict(f);f['sig']=re.sub(r'([,(])\s*\w+\s+',r'\1',f['sig']);fns[f['sig']]=f
