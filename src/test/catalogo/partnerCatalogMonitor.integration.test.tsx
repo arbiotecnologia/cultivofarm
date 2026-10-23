@@ -110,7 +110,7 @@ it("same-identity token refresh hides old authority then restores cart choices a
   mount(); await tick(1000); await addItem(); await openModal();
   act(() => state.authCb?.("TOKEN_REFRESHED", { user: { id: state.actor } }));
   expect(screen.queryByRole("dialog")).toBeNull();
-  await tick();
+  await tick(1000);
   expect(screen.getByRole("dialog")).toBeTruthy();
   expect(screen.getByText("Carrinho (1)")).toBeTruthy();
   expect(catalogCalls().length).toBeGreaterThanOrEqual(2); expect(state.writes).not.toHaveBeenCalled();
@@ -119,7 +119,7 @@ it("effective revocation retires modal/cart; observed restoration never revives 
   mount(); await tick(1000); await addItem(); await openModal(); state.revoked = true;
   await tick(10_100); expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.queryByText("Carrinho (1)")).toBeNull();
   state.revoked = false; state.linkVersion++;
-  act(() => state.authCb?.("TOKEN_REFRESHED", { user: { id: state.actor } })); await tick();
+  act(() => state.authCb?.("TOKEN_REFRESHED", { user: { id: state.actor } })); await tick(1000);
   expect(screen.queryByRole("dialog")).toBeNull(); expect(screen.getByText("Carrinho (0)")).toBeTruthy();
 });
 it.each(["partner", "tenant"])("real %s change retires modal and cart", async kind => {
