@@ -1,4 +1,4 @@
--- REVIEW ONLY (C2-ORD v3, rebased sobre 20261023192728 instalado: G e E NÃO são reaplicados) — NÃO APLICAR sem revisão independente e preflight.sql PASS.
+-- REVIEW ONLY (C2-ORD v4, P1 e c2_billing_eligibility_internal_only instalados; G/E e ACL eligibility NÃO são reaplicados) — NÃO APLICAR sem revisão independente e preflight.sql PASS.
 -- Baseline exato capturado READ ONLY em 2026-10-23 (ver baseline/*.sql + SHA em README).
 -- Mudanças (todas hash-guarded, substituição textual única, CREATE OR REPLACE preserva proacl):
 --  (A) platform_private.c2_owner_order_create_allowed / c2_owner_plan_assigned / c2_owner_order_guard
