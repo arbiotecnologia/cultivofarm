@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- Intermediate entitlement outlets forward the exact parent outlet context only after their existing gate passes — prevents resource-context loss without granting authority.
 - C2-ORD P1 follows review directory rules; applied releases must be recorded without replay and local settings fixes never activate C2 order writers — prevents premature writer release.
 - Partner finance settings use server CAS with active owner/ownorg RLS and internal-only controls; confirmed saves cancel old reads, seed only fenced canonical cache and await refetch. Fresh-open baseline waits for mount read; established dirty drafts never rebase — prevents stale reopen and lost updates.
 - Owner catalogue filters live below AuthProvider above Routes, scoped by actor/tenant/partner/portal; guard/epoch remounts preserve no rows or authority — prevents filter resets without extending access.

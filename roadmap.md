@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 23/10 22:56 — C2-ORD implantado independente / bloqueio catálogo preview
+- [x] Registrar Codex c2_owner_orders_p1_composed baseado b38e2c26, PRE/POST integrais mesma transação SUCCESS e POST externo PASS relatados; eligibility preservada, sem pedido/título, não reaplicar nem editar baseline antigo.
+- [x] Reproduzir sem HMR contexto partner perdido no EntitlementOutlet intermediário real; teste falha com erro idêntico. Corrigir encaminhamento exato de contexto após gate existente, sem permissões novas.
+- [x] Provider/rota com React Router real: reproduz erro idêntico antes;6/6 focados PASS depois, build observado OK. Suíte ampliada25 PASS/2 FAIL, ambas repetidas no gate anterior isolado (baseline19 PASS/2 FAIL), não corrigir fora do recorte. Sem reload/retry recarga, SQL/publicação; pós sessões reais ainda pendente, frontend publicado f351 e B403/A archived_atNULL registrados.
+
 ## 23/10 22:54 — implantação independente eligibility / v4
 - [x] Registrar Codex c2_billing_eligibility_internal_only, somente REVOKE PUBLIC/anon/authenticated, corpo intacto db977875e15ea49ce10fb3e5388d7dfb e postgres/service_role, PRE/POST PASS relatados; não reaplicar.
 - [x] Candidato v4 mantém guardas ACL atuais em PRE/candidato/POST/rollback sem reabrir grant; nove hashes de corpos v3 intactos. Writer fechado; nenhuma escrita hosted/publicação.
