@@ -210,7 +210,7 @@ $o$  SELECT id INTO v_category_id FROM public.financial_categories
 
   SELECT id INTO v_payment_method_id FROM public.payment_methods
    WHERE lower(name) = lower(COALESCE(v_settings.default_payment_method,'pix')) LIMIT 1;$o$,
-$n$  -- c2_ord_strict_refs: financial_categories/payment_methods são catálogos globais (sem organization_id
+$n$  -- c2_ord_strict_refs: financial_categories/payment_methods são catálogos globais por desenho (sem organization_id, RLS is_financial_staff; sem DDL de tenant
   -- no schema canônico); resolução estrita, sem fallback de tipo/inativo, falha explícita.
   SELECT id INTO v_category_id FROM public.financial_categories
    WHERE upper(btrim(type)) = 'RECEITA' AND active IS TRUE

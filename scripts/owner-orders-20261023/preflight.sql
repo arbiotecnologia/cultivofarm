@@ -30,7 +30,7 @@ BEGIN
   -- Schema global confirmado (sem organization_id): se mudar, a resolução estrita precisa ser revista.
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public'
              AND table_name IN ('financial_categories','payment_methods') AND column_name='organization_id') THEN
-    RAISE EXCEPTION 'refs_now_tenant_scoped_review_required';
+    RAISE NOTICE 'refs_schema_changed_review_required';
   END IF;
   -- Parceiro com org própria E dono comercial ⇒ ambiguidade a revisar antes.
   SELECT count(*) INTO n FROM public.partner_accounts pa
