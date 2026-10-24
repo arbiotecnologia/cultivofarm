@@ -58,3 +58,5 @@
 
 - Read nested AGENTS.md before edits — preserves review rules.
 - Current-base order reconciliation follows its nested review rules; independent wrapper release requires current-guard reproduction and never inherits composition readiness — prevents shipping an unproven lock patch with accounting dependencies.
+
+- Manual financial installment creation follows scripts/financial-installments-initial-20261024/AGENTS.md; custom schedules are validated and inserted once through server-private transaction context, never post-insert snapshot edits — preserves immutability.

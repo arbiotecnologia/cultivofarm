@@ -1,0 +1,5 @@
+{
+  "rpc_create_financial_title(text,jsonb)": "0778b876b300e08d53f1cf7790394fc5",
+  "fn_generate_receivable_installments()": "fba70619b461c468a8c645ce1c3a8ed8",
+  "fn_generate_payable_installments()": "f4b15f02171e321e5ca0370255ccbff1"
+}

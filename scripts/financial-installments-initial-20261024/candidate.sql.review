@@ -1,0 +1,474 @@
+BEGIN;
+DO $guard$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.d51_5_validate_financial_tenant_links()') AND md5(pg_get_functiondef(oid))='f470a25ba7e65b366c62ad3ac8aa3112' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:d51_5_validate_financial_tenant_links()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_generate_payable_installments()') AND md5(pg_get_functiondef(oid))='6d541374b274b2a23707ffa591963581' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_generate_payable_installments()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_generate_receivable_installments()') AND md5(pg_get_functiondef(oid))='9c6ef883bb4a97928a5179bc63e9ca31' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_generate_receivable_installments()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_h6_guard_ap_installment_snapshot()') AND md5(pg_get_functiondef(oid))='6f5a1baf716b5fc170cabccbbdcdef79' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_h6_guard_ap_installment_snapshot()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_h6_guard_ar_installment_snapshot()') AND md5(pg_get_functiondef(oid))='c3f26bc5217a5d86227c7e74f762b3ad' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_h6_guard_ar_installment_snapshot()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_h6d_block_hard_delete()') AND md5(pg_get_functiondef(oid))='5c07dd23a0c9355c3fe11811004b0381' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_h6d_block_hard_delete()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.guard_tenant_organization_id()') AND md5(pg_get_functiondef(oid))='d01a740c1e3e02407131d2b9228bf658' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:guard_tenant_organization_id()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.h15_actor_organization()') AND md5(pg_get_functiondef(oid))='55edafec08bcc84a00f1526c14334a2c' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:h15_actor_organization()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.is_financial_staff(uuid)') AND md5(pg_get_functiondef(oid))='6e8f2fa7b92ca7e039d092353b3ebfe2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:is_financial_staff(uuid)' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.h15_actor_organization()') AND md5(pg_get_functiondef(oid))='64e10608403238a41a9baf92857ca881' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:platform_private.h15_actor_organization()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_create_financial_title(text,jsonb)') AND md5(pg_get_functiondef(oid))='382850b085f3a867b914c307f7ac7c10' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:rpc_create_financial_title(text,jsonb)' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='protect_payable_allocation' AND pg_get_triggerdef(oid)='CREATE TRIGGER protect_payable_allocation BEFORE UPDATE OF total_amount, cost_center_id ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION finance_private.protect_allocated_payable()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='tenant_organization_guard' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_ap_gen_installments' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ap_gen_installments AFTER INSERT ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_generate_payable_installments()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_ap_uat' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ap_uat BEFORE UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_audit_ap' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_audit_ap AFTER INSERT OR DELETE OR UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_h6_ap_snapshot' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ap_snapshot BEFORE UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_h6d_ap_no_delete' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ap_no_delete BEFORE DELETE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_saas_gate' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature(''contas_pagar'')' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable_installments'::regclass AND tgname='d51_5_validate_tenant_links' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, payable_id ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable_installments'::regclass AND tgname='tenant_organization_guard' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable_installments'::regclass AND tgname='trg_h6_api_snapshot' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_api_snapshot BEFORE UPDATE ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_ap_installment_snapshot()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable_installments'::regclass AND tgname='trg_h6d_api_no_delete' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_api_no_delete BEFORE DELETE ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='d51_5_validate_tenant_links' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, customer_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='tenant_organization_guard' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_ar_gen_installments' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_ar_uat' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ar_uat BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_audit_ar' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_audit_ar AFTER INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_h6_ar_snapshot' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ar_snapshot BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_h6d_ar_no_delete' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ar_no_delete BEFORE DELETE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_saas_gate' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature(''contas_receber'')' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_sync_b2b_financial_status' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_sync_b2b_financial_status AFTER UPDATE OF status ON public.accounts_receivable FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION tg_sync_b2b_financial_status()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='d51_5_validate_tenant_links' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, receivable_id ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='tenant_organization_guard' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_h6_ari_snapshot' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ari_snapshot BEFORE UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_ar_installment_snapshot()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_h6d_ari_no_delete' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ari_no_delete BEFORE DELETE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_recalc_risk_on_ar_change' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_recalc_risk_on_ar_change AFTER INSERT OR UPDATE OF status, received_amount ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION tg_recalc_risk_on_ar_change()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_payable'::regclass AND relrowsecurity=true AND relforcerowsecurity=false AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_TABLE_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_payable_installments'::regclass AND relrowsecurity=true AND relforcerowsecurity=false AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_TABLE_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable'::regclass AND relrowsecurity=true AND relforcerowsecurity=false AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_TABLE_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable_installments'::regclass AND relrowsecurity=true AND relforcerowsecurity=false AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_TABLE_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "PERMISSIVE", "policyname": "accounts_payable_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "PERMISSIVE", "policyname": "accounts_payable_select_financial", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "PERMISSIVE", "policyname": "accounts_payable_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_payable_installments_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_payable_installments_select_financial", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_payable_installments_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_select_financial", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "((origin_type = ''B2B_ORDER''::text) AND (platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role)))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_b2b_readers", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "((origin_type = ''B2B_ORDER''::text) AND platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> ''partner_id''::text))::uuid AS uuid)))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_partner_select_own_b2b", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''cliente_produtor''::app_role) AND (customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (partner_id IS NULL) AND (origin_type IS DISTINCT FROM ''B2B_ORDER''::text))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_producer_read", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_select_financial", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "((platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role)) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = ''B2B_ORDER''::text)))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_b2b_readers", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = ''B2B_ORDER''::text) AND (ar.partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> ''partner_id''::text))::uuid AS uuid))))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_partner_select_own_b2b", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''cliente_produtor''::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (ar.partner_id IS NULL) AND (ar.origin_type IS DISTINCT FROM ''B2B_ORDER''::text)))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_producer_read", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+END $guard$;
+CREATE TABLE IF NOT EXISTS platform_private.financial_initial_installments (
+ transaction_id bigint NOT NULL, title_id uuid NOT NULL, kind text NOT NULL,
+ actor_id uuid NOT NULL, organization_id uuid NOT NULL, installments jsonb NOT NULL,
+ PRIMARY KEY(transaction_id,title_id,kind)
+);
+REVOKE ALL ON platform_private.financial_initial_installments FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.financial_initial_installments ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE FUNCTION public.rpc_create_financial_title(p_kind text, p_payload jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_org uuid := platform_private.h15_actor_organization();
+  v_total numeric(14,2);
+  v_count int;
+  v_first_due date;
+  v_category uuid;
+  v_cc uuid;
+  v_desc text;
+  v_notes text;
+  v_issue date;
+  v_title_id uuid := gen_random_uuid();
+  v_installments jsonb;
+  v_sum numeric(14,2) := 0;
+  v_inst jsonb;
+  v_fk_col text;
+  v_table text;
+  v_fiscal_req boolean;
+  v_customer uuid;
+  v_supplier_id uuid;
+  v_supplier_name text;
+  v_payment uuid;
+  v_supplier_invoice_date date;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF NOT public.is_financial_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão para criar títulos financeiros.' USING ERRCODE='insufficient_privilege';
+  END IF;
+
+  IF v_org IS NULL THEN RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE='42501'; END IF;
+  IF (p_payload ? 'organization_id' AND NULLIF(p_payload->>'organization_id','')::uuid IS DISTINCT FROM v_org)
+     OR (p_payload ? 'tenant_id' AND NULLIF(p_payload->>'tenant_id','')::uuid IS DISTINCT FROM v_org) THEN
+    RAISE EXCEPTION 'FINANCIAL_TENANT_MISMATCH' USING ERRCODE='42501';
+  END IF;
+  IF p_kind IS NULL OR p_kind NOT IN ('receivable','payable') THEN
+    RAISE EXCEPTION 'Tipo de título inválido: %', p_kind USING ERRCODE='check_violation';
+  END IF;
+
+  IF p_kind = 'payable' THEN
+ IF NULLIF(btrim(p_payload->>'supplier_name'),'') IS NULL AND NULLIF(p_payload->>'supplier_id','') IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SUPPLIER' USING ERRCODE='23514'; END IF;
+ IF jsonb_typeof(p_payload) IS DISTINCT FROM 'object' OR NULLIF(btrim(p_payload->>'description'),'') IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_DESCRIPTION' USING ERRCODE='23514'; END IF;
+ IF COALESCE((p_payload->>'total_amount')::numeric,0) <= 0 OR (p_payload->>'total_amount')::numeric::text IN ('NaN','Infinity','-Infinity') OR (p_payload->>'total_amount')::numeric <> round((p_payload->>'total_amount')::numeric,2) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_AMOUNT' USING ERRCODE='23514'; END IF;
+ IF COALESCE((p_payload->>'installment_count')::numeric,1) NOT BETWEEN 1 AND 36 OR COALESCE((p_payload->>'installment_count')::numeric,1) <> trunc(COALESCE((p_payload->>'installment_count')::numeric,1)) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COUNT' USING ERRCODE='23514'; END IF;
+ IF NOT EXISTS (SELECT 1 FROM public.financial_categories WHERE id=NULLIF(p_payload->>'category_id','')::uuid AND active AND type IN ('DESPESA','AMBOS')) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_CATEGORY' USING ERRCODE='23514'; END IF;
+ IF NULLIF(p_payload->>'cost_center_id','') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.financial_cost_centers WHERE id=(p_payload->>'cost_center_id')::uuid AND active) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COST_CENTER' USING ERRCODE='23514'; END IF;
+ IF p_payload ? 'installments' THEN
+ IF jsonb_typeof(p_payload->'installments') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENTS' USING ERRCODE='23514'; END IF;
+ IF jsonb_array_length(p_payload->'installments') <> COALESCE((p_payload->>'installment_count')::int,1) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COUNT' USING ERRCODE='23514'; END IF;
+ FOR v_inst IN SELECT * FROM jsonb_array_elements(p_payload->'installments') LOOP
+ IF jsonb_typeof(v_inst) IS DISTINCT FROM 'object' OR COALESCE((v_inst->>'amount')::numeric,0) <= 0 OR (v_inst->>'amount')::numeric::text IN ('NaN','Infinity','-Infinity') OR (v_inst->>'amount')::numeric <> round((v_inst->>'amount')::numeric,2) OR NULLIF(v_inst->>'due_date','')::date IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;
+ END LOOP;
+ IF EXISTS (SELECT 1 FROM jsonb_array_elements(p_payload->'installments') WITH ORDINALITY AS x(item,seq) WHERE (item->>'installment_number')::numeric IS DISTINCT FROM seq::numeric) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SEQUENCE' USING ERRCODE='23514'; END IF;
+ IF (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(p_payload->'installments') x) IS DISTINCT FROM (p_payload->>'total_amount')::numeric THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514'; END IF;
+ END IF;
+ END IF;
+ 
+ v_desc := NULLIF(p_payload->>'description','');
+  v_category   := NULLIF(p_payload->>'category_id','')::uuid;
+  v_cc         := NULLIF(p_payload->>'cost_center_id','')::uuid;
+  v_total      := COALESCE((p_payload->>'total_amount')::numeric, 0);
+  v_count      := COALESCE((p_payload->>'installment_count')::int, 1);
+  v_first_due  := NULLIF(p_payload->>'first_due_date','')::date;
+  v_issue      := COALESCE(NULLIF(p_payload->>'issue_date','')::date, (pg_catalog.now() AT TIME ZONE 'America/Sao_Paulo')::date);
+  v_notes      := NULLIF(p_payload->>'notes','');
+  v_installments := p_payload->'installments';
+
+  IF v_desc IS NULL THEN RAISE EXCEPTION 'Descrição obrigatória.'; END IF;
+  IF v_category IS NULL THEN RAISE EXCEPTION 'Categoria obrigatória.'; END IF;
+  IF v_total <= 0 THEN RAISE EXCEPTION 'Valor total deve ser maior que zero.'; END IF;
+  IF v_first_due IS NULL THEN RAISE EXCEPTION '1º vencimento obrigatório.'; END IF;
+  IF v_count < 1 OR v_count > 36 THEN RAISE EXCEPTION 'Nº de parcelas deve estar entre 1 e 36.'; END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM financial_categories WHERE id = v_category) THEN
+    RAISE EXCEPTION 'Categoria inexistente.';
+  END IF;
+
+  IF p_kind = 'receivable' THEN
+ IF jsonb_typeof(p_payload) IS DISTINCT FROM 'object' OR NULLIF(btrim(p_payload->>'description'),'') IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_DESCRIPTION' USING ERRCODE='23514'; END IF;
+ IF COALESCE((p_payload->>'total_amount')::numeric,0) <= 0 OR (p_payload->>'total_amount')::numeric::text IN ('NaN','Infinity','-Infinity') OR (p_payload->>'total_amount')::numeric <> round((p_payload->>'total_amount')::numeric,2) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_AMOUNT' USING ERRCODE='23514'; END IF;
+ IF COALESCE((p_payload->>'installment_count')::numeric,1) NOT BETWEEN 1 AND 36 OR COALESCE((p_payload->>'installment_count')::numeric,1) <> trunc(COALESCE((p_payload->>'installment_count')::numeric,1)) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COUNT' USING ERRCODE='23514'; END IF;
+ IF NOT EXISTS (SELECT 1 FROM public.financial_categories WHERE id=NULLIF(p_payload->>'category_id','')::uuid AND active AND type IN ('RECEITA','AMBOS')) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_CATEGORY' USING ERRCODE='23514'; END IF;
+ IF NULLIF(p_payload->>'cost_center_id','') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.financial_cost_centers WHERE id=(p_payload->>'cost_center_id')::uuid AND active) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COST_CENTER' USING ERRCODE='23514'; END IF;
+ IF p_payload ? 'installments' THEN
+ IF jsonb_typeof(p_payload->'installments') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENTS' USING ERRCODE='23514'; END IF;
+ IF jsonb_array_length(p_payload->'installments') <> COALESCE((p_payload->>'installment_count')::int,1) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COUNT' USING ERRCODE='23514'; END IF;
+ FOR v_inst IN SELECT * FROM jsonb_array_elements(p_payload->'installments') LOOP
+ IF jsonb_typeof(v_inst) IS DISTINCT FROM 'object' OR COALESCE((v_inst->>'amount')::numeric,0) <= 0 OR (v_inst->>'amount')::numeric::text IN ('NaN','Infinity','-Infinity') OR (v_inst->>'amount')::numeric <> round((v_inst->>'amount')::numeric,2) OR NULLIF(v_inst->>'due_date','')::date IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;
+ END LOOP;
+ IF EXISTS (SELECT 1 FROM jsonb_array_elements(p_payload->'installments') WITH ORDINALITY AS x(item,seq) WHERE (item->>'installment_number')::numeric IS DISTINCT FROM seq::numeric) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SEQUENCE' USING ERRCODE='23514'; END IF;
+ IF (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(p_payload->'installments') x) IS DISTINCT FROM (p_payload->>'total_amount')::numeric THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514'; END IF;
+ END IF;
+ END IF;
+ -- Validar parcelas customizadas (se fornecidas)
+  IF v_installments IS NOT NULL AND jsonb_typeof(v_installments) = 'array' THEN
+    IF jsonb_array_length(v_installments) <> v_count THEN
+      RAISE EXCEPTION 'Qtd de parcelas customizadas (%) difere de installment_count (%)',
+        jsonb_array_length(v_installments), v_count;
+    END IF;
+    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP
+      v_sum := v_sum + COALESCE((v_inst->>'amount')::numeric, 0);
+    END LOOP;
+    IF abs(v_sum - v_total) > 0.01 THEN
+      RAISE EXCEPTION 'Soma das parcelas (%) difere do total (%)', v_sum, v_total;
+    END IF;
+  END IF;
+
+  IF v_total * 100 < v_count THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;
+  IF NOT isfinite(v_issue) OR NOT isfinite(v_first_due) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;
+  IF v_installments IS NOT NULL THEN
+    IF EXISTS(SELECT 1 FROM jsonb_array_elements(v_installments) x WHERE NOT isfinite((x->>'due_date')::date)) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;
+    INSERT INTO platform_private.financial_initial_installments
+      VALUES(txid_current(),v_title_id,p_kind,v_uid,v_org,v_installments);
+  END IF;
+
+  IF p_kind = 'receivable' THEN
+    v_customer   := NULLIF(p_payload->>'customer_id','')::uuid;
+    v_payment    := NULLIF(p_payload->>'payment_method_id','')::uuid;
+    v_fiscal_req := COALESCE((p_payload->>'fiscal_invoice_required')::boolean, false);
+    IF v_customer IS NULL THEN RAISE EXCEPTION 'Cliente obrigatório.'; END IF;
+
+    INSERT INTO accounts_receivable (
+      id, organization_id, customer_id, description, category_id, cost_center_id,
+      total_amount, issue_date, first_due_date, installment_count,
+      notes, created_by, origin_type,
+      fiscal_invoice_required, fiscal_invoice_status, payment_method_id
+    ) VALUES (
+      v_title_id, v_org, v_customer, v_desc, v_category, v_cc,
+      v_total, v_issue, v_first_due, v_count,
+      v_notes, v_uid, 'MANUAL',
+      v_fiscal_req,
+      CASE WHEN v_fiscal_req THEN 'PENDING' ELSE 'NOT_REQUIRED' END,
+      v_payment
+    ) RETURNING id INTO v_title_id;
+
+    v_table  := 'accounts_receivable_installments';
+    v_fk_col := 'receivable_id';
+  ELSE
+    v_supplier_id   := NULLIF(p_payload->>'supplier_id','')::uuid;
+    v_supplier_name := NULLIF(p_payload->>'supplier_name','');
+    v_supplier_invoice_date := NULLIF(p_payload->>'supplier_invoice_date','')::date;
+    IF v_supplier_id IS NULL AND v_supplier_name IS NULL THEN
+      RAISE EXCEPTION 'Fornecedor obrigatório.';
+    END IF;
+
+    INSERT INTO accounts_payable (
+      id, organization_id, supplier_id, supplier_name, description, category_id, cost_center_id,
+      total_amount, issue_date, first_due_date, installment_count,
+      notes, created_by, origin_type, supplier_invoice_date
+    ) VALUES (
+      v_title_id, v_org, v_supplier_id, v_supplier_name, v_desc, v_category, v_cc,
+      v_total, v_issue, v_first_due, v_count,
+      v_notes, v_uid, 'MANUAL', v_supplier_invoice_date
+    ) RETURNING id INTO v_title_id;
+
+    v_table  := 'accounts_payable_installments';
+    v_fk_col := 'payable_id';
+  END IF;
+
+  -- Parcelas personalizadas já inseridas inicialmente pelo trigger.
+  IF v_installments IS NOT NULL AND jsonb_typeof(v_installments) = 'array' THEN
+    INSERT INTO financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)
+    VALUES (v_table, v_title_id, 'FINANCIAL_INSTALLMENTS_CUSTOMIZED', NULL,
+            jsonb_build_object('installment_count', v_count, 'total_amount', v_total), v_uid);
+  END IF;
+
+  INSERT INTO financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)
+  VALUES (
+    CASE WHEN p_kind='receivable' THEN 'accounts_receivable' ELSE 'accounts_payable' END,
+    v_title_id,
+    CASE WHEN p_kind='receivable' THEN 'AR_MANUAL_CREATED' ELSE 'AP_MANUAL_CREATED' END,
+    NULL,
+    jsonb_build_object(
+      'total_amount', v_total,
+      'installment_count', v_count,
+      'first_due_date', v_first_due,
+      'category_id', v_category
+    ),
+    v_uid
+  );
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'kind', p_kind,
+    'title_id', v_title_id,
+    'installment_count', v_count,
+    'total_amount', v_total
+  );
+END;
+$function$
+;
+CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  i int;
+  v_context platform_private.financial_initial_installments;
+  v_inst jsonb;
+  v_qtd int := NEW.installment_count;
+  v_base numeric(14,2) := ROUND(NEW.total_amount / v_qtd, 2);
+  v_acc numeric(14,2) := 0;
+  v_amt numeric(14,2);
+BEGIN
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';
+  END IF;
+  DELETE FROM platform_private.financial_initial_installments
+    WHERE transaction_id=txid_current() AND title_id=NEW.id AND kind='receivable'
+    RETURNING * INTO v_context;
+  IF FOUND THEN
+    IF v_context.actor_id IS DISTINCT FROM auth.uid() OR v_context.organization_id IS DISTINCT FROM NEW.organization_id
+       OR NEW.created_by IS DISTINCT FROM v_context.actor_id OR NEW.origin_type <> 'MANUAL'
+       OR platform_private.h15_actor_organization() IS DISTINCT FROM NEW.organization_id
+       OR NOT public.is_financial_staff(auth.uid()) THEN
+      RAISE EXCEPTION 'FIN_INITIAL_CONTEXT_DENIED' USING ERRCODE='42501';
+    END IF;
+    IF jsonb_array_length(v_context.installments) <> NEW.installment_count
+       OR (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(v_context.installments) x) IS DISTINCT FROM NEW.total_amount THEN
+      RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514';
+    END IF;
+    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_context.installments) LOOP
+      INSERT INTO public.accounts_receivable_installments(organization_id,receivable_id,installment_number,due_date,original_amount,net_amount,status)
+        VALUES(NEW.organization_id,NEW.id,(v_inst->>'installment_number')::int,(v_inst->>'due_date')::date,
+          (v_inst->>'amount')::numeric,(v_inst->>'amount')::numeric,'OPEN');
+    END LOOP;
+    RETURN NEW;
+  END IF;
+  FOR i IN 1..v_qtd LOOP
+    IF i < v_qtd THEN
+      v_amt := v_base;
+      v_acc := v_acc + v_amt;
+    ELSE
+      v_amt := NEW.total_amount - v_acc;
+    END IF;
+    INSERT INTO public.accounts_receivable_installments
+      (receivable_id, installment_number, due_date, original_amount, net_amount, status, organization_id)
+    VALUES
+      (NEW.id, i, (NEW.first_due_date + ((i-1) || ' months')::interval)::date, v_amt, v_amt, 'OPEN', NEW.organization_id);
+  END LOOP;
+  RETURN NEW;
+END
+$function$
+;
+CREATE OR REPLACE FUNCTION public.fn_generate_payable_installments()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  i int;
+  v_context platform_private.financial_initial_installments;
+  v_inst jsonb;
+  v_qtd int := NEW.installment_count;
+  v_base numeric(14,2) := ROUND(NEW.total_amount / v_qtd, 2);
+  v_acc numeric(14,2) := 0;
+  v_amt numeric(14,2);
+BEGIN
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE='23514';
+  END IF;
+  DELETE FROM platform_private.financial_initial_installments
+    WHERE transaction_id=txid_current() AND title_id=NEW.id AND kind='payable'
+    RETURNING * INTO v_context;
+  IF FOUND THEN
+    IF v_context.actor_id IS DISTINCT FROM auth.uid() OR v_context.organization_id IS DISTINCT FROM NEW.organization_id
+       OR NEW.created_by IS DISTINCT FROM v_context.actor_id OR NEW.origin_type <> 'MANUAL'
+       OR platform_private.h15_actor_organization() IS DISTINCT FROM NEW.organization_id
+       OR NOT public.is_financial_staff(auth.uid()) THEN
+      RAISE EXCEPTION 'FIN_INITIAL_CONTEXT_DENIED' USING ERRCODE='42501';
+    END IF;
+    IF jsonb_array_length(v_context.installments) <> NEW.installment_count
+       OR (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(v_context.installments) x) IS DISTINCT FROM NEW.total_amount THEN
+      RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514';
+    END IF;
+    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_context.installments) LOOP
+      INSERT INTO public.accounts_payable_installments(organization_id,payable_id,installment_number,due_date,original_amount,net_amount,status)
+        VALUES(NEW.organization_id,NEW.id,(v_inst->>'installment_number')::int,(v_inst->>'due_date')::date,
+          (v_inst->>'amount')::numeric,(v_inst->>'amount')::numeric,'OPEN');
+    END LOOP;
+    RETURN NEW;
+  END IF;
+  FOR i IN 1..v_qtd LOOP
+    IF i < v_qtd THEN
+      v_amt := v_base;
+      v_acc := v_acc + v_amt;
+    ELSE
+      v_amt := NEW.total_amount - v_acc;
+    END IF;
+    INSERT INTO public.accounts_payable_installments
+      (organization_id, payable_id, installment_number, due_date, original_amount, net_amount, status)
+    VALUES
+      (NEW.organization_id, NEW.id, i, (NEW.first_due_date + ((i-1) || ' months')::interval)::date, v_amt, v_amt, 'OPEN');
+  END LOOP;
+  RETURN NEW;
+END $function$
+;
+DO $guard$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.d51_5_validate_financial_tenant_links()') AND md5(pg_get_functiondef(oid))='f470a25ba7e65b366c62ad3ac8aa3112' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:d51_5_validate_financial_tenant_links()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_generate_payable_installments()') AND md5(pg_get_functiondef(oid))='f4b15f02171e321e5ca0370255ccbff1' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_generate_payable_installments()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_generate_receivable_installments()') AND md5(pg_get_functiondef(oid))='fba70619b461c468a8c645ce1c3a8ed8' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_generate_receivable_installments()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_h6_guard_ap_installment_snapshot()') AND md5(pg_get_functiondef(oid))='6f5a1baf716b5fc170cabccbbdcdef79' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_h6_guard_ap_installment_snapshot()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_h6_guard_ar_installment_snapshot()') AND md5(pg_get_functiondef(oid))='c3f26bc5217a5d86227c7e74f762b3ad' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_h6_guard_ar_installment_snapshot()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_h6d_block_hard_delete()') AND md5(pg_get_functiondef(oid))='5c07dd23a0c9355c3fe11811004b0381' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:fn_h6d_block_hard_delete()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.guard_tenant_organization_id()') AND md5(pg_get_functiondef(oid))='d01a740c1e3e02407131d2b9228bf658' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:guard_tenant_organization_id()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.h15_actor_organization()') AND md5(pg_get_functiondef(oid))='55edafec08bcc84a00f1526c14334a2c' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:h15_actor_organization()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.is_financial_staff(uuid)') AND md5(pg_get_functiondef(oid))='6e8f2fa7b92ca7e039d092353b3ebfe2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:is_financial_staff(uuid)' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.h15_actor_organization()') AND md5(pg_get_functiondef(oid))='64e10608403238a41a9baf92857ca881' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:platform_private.h15_actor_organization()' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_create_financial_title(text,jsonb)') AND md5(pg_get_functiondef(oid))='0778b876b300e08d53f1cf7790394fc5' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_FUNCTION_DRIFT:rpc_create_financial_title(text,jsonb)' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='protect_payable_allocation' AND pg_get_triggerdef(oid)='CREATE TRIGGER protect_payable_allocation BEFORE UPDATE OF total_amount, cost_center_id ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION finance_private.protect_allocated_payable()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='tenant_organization_guard' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_ap_gen_installments' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ap_gen_installments AFTER INSERT ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_generate_payable_installments()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_ap_uat' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ap_uat BEFORE UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_audit_ap' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_audit_ap AFTER INSERT OR DELETE OR UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_h6_ap_snapshot' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ap_snapshot BEFORE UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_h6d_ap_no_delete' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ap_no_delete BEFORE DELETE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable'::regclass AND tgname='trg_saas_gate' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature(''contas_pagar'')' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable_installments'::regclass AND tgname='d51_5_validate_tenant_links' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, payable_id ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable_installments'::regclass AND tgname='tenant_organization_guard' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable_installments'::regclass AND tgname='trg_h6_api_snapshot' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_api_snapshot BEFORE UPDATE ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_ap_installment_snapshot()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_payable_installments'::regclass AND tgname='trg_h6d_api_no_delete' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_api_no_delete BEFORE DELETE ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='d51_5_validate_tenant_links' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, customer_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='tenant_organization_guard' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_ar_gen_installments' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_ar_uat' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ar_uat BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_audit_ar' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_audit_ar AFTER INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_h6_ar_snapshot' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ar_snapshot BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_h6d_ar_no_delete' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ar_no_delete BEFORE DELETE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_saas_gate' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature(''contas_receber'')' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_sync_b2b_financial_status' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_sync_b2b_financial_status AFTER UPDATE OF status ON public.accounts_receivable FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION tg_sync_b2b_financial_status()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='d51_5_validate_tenant_links' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, receivable_id ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='tenant_organization_guard' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_h6_ari_snapshot' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ari_snapshot BEFORE UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_ar_installment_snapshot()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_h6d_ari_no_delete' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ari_no_delete BEFORE DELETE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_recalc_risk_on_ar_change' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_recalc_risk_on_ar_change AFTER INSERT OR UPDATE OF status, received_amount ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION tg_recalc_risk_on_ar_change()' AND tgenabled='O') THEN RAISE EXCEPTION 'FIN_INITIAL_TRIGGER_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_payable'::regclass AND relrowsecurity=true AND relforcerowsecurity=false AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_TABLE_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_payable_installments'::regclass AND relrowsecurity=true AND relforcerowsecurity=false AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_TABLE_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable'::regclass AND relrowsecurity=true AND relforcerowsecurity=false AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_TABLE_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable_installments'::regclass AND relrowsecurity=true AND relforcerowsecurity=false AND relacl::text='{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'FIN_INITIAL_TABLE_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "PERMISSIVE", "policyname": "accounts_payable_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "PERMISSIVE", "policyname": "accounts_payable_select_financial", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "PERMISSIVE", "policyname": "accounts_payable_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_payable", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_payable_installments_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_payable_installments_select_financial", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_payable_installments_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_payable_installments", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_select_financial", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "((origin_type = ''B2B_ORDER''::text) AND (platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role)))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_b2b_readers", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "((origin_type = ''B2B_ORDER''::text) AND platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> ''partner_id''::text))::uuid AS uuid)))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_partner_select_own_b2b", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''cliente_produtor''::app_role) AND (customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (partner_id IS NULL) AND (origin_type IS DISTINCT FROM ''B2B_ORDER''::text))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_producer_read", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_select_financial", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "((platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role)) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = ''B2B_ORDER''::text)))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_b2b_readers", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = ''B2B_ORDER''::text) AND (ar.partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> ''partner_id''::text))::uuid AS uuid))))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_partner_select_own_b2b", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''cliente_produtor''::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (ar.partner_id IS NULL) AND (ar.origin_type IS DISTINCT FROM ''B2B_ORDER''::text)))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_producer_read", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_policies x WHERE to_jsonb(x)='{"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}'::jsonb) THEN RAISE EXCEPTION 'FIN_INITIAL_POLICY_DRIFT' USING ERRCODE='42501'; END IF;
+END $guard$;
+DO $private$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.financial_initial_installments'::regclass AND relrowsecurity AND pg_get_userbyid(relowner)='postgres' AND NOT has_table_privilege('authenticated',oid,'INSERT') AND NOT has_table_privilege('anon',oid,'INSERT') AND NOT has_table_privilege('service_role',oid,'INSERT')) THEN RAISE EXCEPTION 'FIN_INITIAL_PRIVATE_DRIFT' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM platform_private.financial_initial_installments) THEN RAISE EXCEPTION 'FIN_INITIAL_CONTEXT_NOT_EMPTY' USING ERRCODE='42501'; END IF;
+END $private$;
+COMMIT;

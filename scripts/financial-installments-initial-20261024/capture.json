@@ -1,0 +1,676 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "tables": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "name": "accounts_payable",
+      "force": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "name": "accounts_payable_installments",
+      "force": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "name": "accounts_receivable",
+      "force": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "name": "accounts_receivable_installments",
+      "force": false
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_payable_insert_financial",
+      "schemaname": "public",
+      "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "is_financial_staff(( SELECT auth.uid() AS uid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_payable_select_financial",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "is_financial_staff(( SELECT auth.uid() AS uid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_payable_update_financial",
+      "schemaname": "public",
+      "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "false",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_insert",
+      "schemaname": "public",
+      "with_check": "false"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "false",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_update",
+      "schemaname": "public",
+      "with_check": "false"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable",
+      "permissive": "RESTRICTIVE",
+      "policyname": "tenant_isolation_d51_5",
+      "schemaname": "public",
+      "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable_installments",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_payable_installments_insert_financial",
+      "schemaname": "public",
+      "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "is_financial_staff(( SELECT auth.uid() AS uid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable_installments",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_payable_installments_select_financial",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "is_financial_staff(( SELECT auth.uid() AS uid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable_installments",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_payable_installments_update_financial",
+      "schemaname": "public",
+      "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "false",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable_installments",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable_installments",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_insert",
+      "schemaname": "public",
+      "with_check": "false"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "false",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable_installments",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_update",
+      "schemaname": "public",
+      "with_check": "false"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_payable_installments",
+      "permissive": "RESTRICTIVE",
+      "policyname": "tenant_isolation_d51_5",
+      "schemaname": "public",
+      "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_receivable_insert_financial",
+      "schemaname": "public",
+      "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "is_financial_staff(( SELECT auth.uid() AS uid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_receivable_select_financial",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "is_financial_staff(( SELECT auth.uid() AS uid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_receivable_update_financial",
+      "schemaname": "public",
+      "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((origin_type = 'B2B_ORDER'::text) AND (platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "PERMISSIVE",
+      "policyname": "ar_b2b_readers",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((origin_type = 'B2B_ORDER'::text) AND platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b'::app_role) AND (partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> 'partner_id'::text))::uuid AS uuid)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "PERMISSIVE",
+      "policyname": "ar_partner_select_own_b2b",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::app_role) AND (customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (partner_id IS NULL) AND (origin_type IS DISTINCT FROM 'B2B_ORDER'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "PERMISSIVE",
+      "policyname": "ar_producer_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "false",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_insert",
+      "schemaname": "public",
+      "with_check": "false"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "false",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_update",
+      "schemaname": "public",
+      "with_check": "false"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable",
+      "permissive": "RESTRICTIVE",
+      "policyname": "tenant_isolation_d51_5",
+      "schemaname": "public",
+      "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_receivable_installments_insert_financial",
+      "schemaname": "public",
+      "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "is_financial_staff(( SELECT auth.uid() AS uid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_receivable_installments_select_financial",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "is_financial_staff(( SELECT auth.uid() AS uid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "PERMISSIVE",
+      "policyname": "accounts_receivable_installments_update_financial",
+      "schemaname": "public",
+      "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor_comercial'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role)) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = 'B2B_ORDER'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "PERMISSIVE",
+      "policyname": "ari_b2b_readers",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'parceiro_b2b'::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = 'B2B_ORDER'::text) AND (ar.partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> 'partner_id'::text))::uuid AS uuid))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "PERMISSIVE",
+      "policyname": "ari_partner_select_own_b2b",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), 'cliente_produtor'::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (ar.partner_id IS NULL) AND (ar.origin_type IS DISTINCT FROM 'B2B_ORDER'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "PERMISSIVE",
+      "policyname": "ari_producer_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "false",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_insert",
+      "schemaname": "public",
+      "with_check": "false"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "false",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "RESTRICTIVE",
+      "policyname": "financial_rpc_only_update",
+      "schemaname": "public",
+      "with_check": "false"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "accounts_receivable_installments",
+      "permissive": "RESTRICTIVE",
+      "policyname": "tenant_isolation_d51_5",
+      "schemaname": "public",
+      "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+    }
+  ],
+  "triggers": [
+    {
+      "name": "protect_payable_allocation",
+      "table": "accounts_payable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER protect_payable_allocation BEFORE UPDATE OF total_amount, cost_center_id ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION finance_private.protect_allocated_payable()"
+    },
+    {
+      "name": "tenant_organization_guard",
+      "table": "accounts_payable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+    },
+    {
+      "name": "trg_ap_gen_installments",
+      "table": "accounts_payable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_ap_gen_installments AFTER INSERT ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_generate_payable_installments()"
+    },
+    {
+      "name": "trg_ap_uat",
+      "table": "accounts_payable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_ap_uat BEFORE UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    },
+    {
+      "name": "trg_audit_ap",
+      "table": "accounts_payable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_audit_ap AFTER INSERT OR DELETE OR UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()"
+    },
+    {
+      "name": "trg_h6_ap_snapshot",
+      "table": "accounts_payable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_h6_ap_snapshot BEFORE UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()"
+    },
+    {
+      "name": "trg_h6d_ap_no_delete",
+      "table": "accounts_payable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_h6d_ap_no_delete BEFORE DELETE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()"
+    },
+    {
+      "name": "trg_saas_gate",
+      "table": "accounts_payable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_payable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('contas_pagar')"
+    },
+    {
+      "name": "d51_5_validate_tenant_links",
+      "table": "accounts_payable_installments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, payable_id ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()"
+    },
+    {
+      "name": "tenant_organization_guard",
+      "table": "accounts_payable_installments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+    },
+    {
+      "name": "trg_h6_api_snapshot",
+      "table": "accounts_payable_installments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_h6_api_snapshot BEFORE UPDATE ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_ap_installment_snapshot()"
+    },
+    {
+      "name": "trg_h6d_api_no_delete",
+      "table": "accounts_payable_installments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_h6d_api_no_delete BEFORE DELETE ON public.accounts_payable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()"
+    },
+    {
+      "name": "d51_5_validate_tenant_links",
+      "table": "accounts_receivable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, customer_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()"
+    },
+    {
+      "name": "tenant_organization_guard",
+      "table": "accounts_receivable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+    },
+    {
+      "name": "trg_ar_gen_installments",
+      "table": "accounts_receivable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments()"
+    },
+    {
+      "name": "trg_ar_uat",
+      "table": "accounts_receivable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_ar_uat BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    },
+    {
+      "name": "trg_audit_ar",
+      "table": "accounts_receivable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_audit_ar AFTER INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()"
+    },
+    {
+      "name": "trg_h6_ar_snapshot",
+      "table": "accounts_receivable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_h6_ar_snapshot BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()"
+    },
+    {
+      "name": "trg_h6d_ar_no_delete",
+      "table": "accounts_receivable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_h6d_ar_no_delete BEFORE DELETE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()"
+    },
+    {
+      "name": "trg_saas_gate",
+      "table": "accounts_receivable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature('contas_receber')"
+    },
+    {
+      "name": "trg_sync_b2b_financial_status",
+      "table": "accounts_receivable",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_sync_b2b_financial_status AFTER UPDATE OF status ON public.accounts_receivable FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION tg_sync_b2b_financial_status()"
+    },
+    {
+      "name": "d51_5_validate_tenant_links",
+      "table": "accounts_receivable_installments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, receivable_id ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()"
+    },
+    {
+      "name": "tenant_organization_guard",
+      "table": "accounts_receivable_installments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+    },
+    {
+      "name": "trg_h6_ari_snapshot",
+      "table": "accounts_receivable_installments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_h6_ari_snapshot BEFORE UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_ar_installment_snapshot()"
+    },
+    {
+      "name": "trg_h6d_ari_no_delete",
+      "table": "accounts_receivable_installments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_h6d_ari_no_delete BEFORE DELETE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()"
+    },
+    {
+      "name": "trg_recalc_risk_on_ar_change",
+      "table": "accounts_receivable_installments",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_recalc_risk_on_ar_change AFTER INSERT OR UPDATE OF status, received_amount ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION tg_recalc_risk_on_ar_change()"
+    }
+  ],
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "f470a25ba7e65b366c62ad3ac8aa3112",
+      "body": "CREATE OR REPLACE FUNCTION public.d51_5_validate_financial_tenant_links()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_new jsonb := to_jsonb(NEW);\n  v_org uuid;\n  v_parent_id uuid;\nBEGIN\n  BEGIN\n    v_org := NULLIF(v_new->>'organization_id', '')::uuid;\n  EXCEPTION WHEN invalid_text_representation THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_INVALID' USING ERRCODE = '23514';\n  END;\n\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n\n  IF TG_TABLE_NAME = 'accounts_receivable' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_receivable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'receivable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable ar WHERE ar.id = v_parent_id AND ar.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_payable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'payable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable ap WHERE ap.id = v_parent_id AND ap.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'receivable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable_installments ari WHERE ari.id = v_parent_id AND ari.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'payable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable_installments api WHERE api.id = v_parent_id AND api.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'financial_receipts' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n    v_parent_id := NULLIF(v_new->>'payment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.receivable_payments rp WHERE rp.id = v_parent_id AND rp.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
+      "owner": "postgres",
+      "signature": "d51_5_validate_financial_tenant_links()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "6d541374b274b2a23707ffa591963581",
+      "body": "CREATE OR REPLACE FUNCTION public.fn_generate_payable_installments()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  i int;\n  v_qtd int := NEW.installment_count;\n  v_base numeric(14,2) := ROUND(NEW.total_amount / v_qtd, 2);\n  v_acc numeric(14,2) := 0;\n  v_amt numeric(14,2);\nBEGIN\n  IF NEW.organization_id IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE='23514';\n  END IF;\n  FOR i IN 1..v_qtd LOOP\n    IF i < v_qtd THEN\n      v_amt := v_base;\n      v_acc := v_acc + v_amt;\n    ELSE\n      v_amt := NEW.total_amount - v_acc;\n    END IF;\n    INSERT INTO public.accounts_payable_installments\n      (organization_id, payable_id, installment_number, due_date, original_amount, net_amount, status)\n    VALUES\n      (NEW.organization_id, NEW.id, i, (NEW.first_due_date + ((i-1) || ' months')::interval)::date, v_amt, v_amt, 'OPEN');\n  END LOOP;\n  RETURN NEW;\nEND $function$\n",
+      "owner": "postgres",
+      "signature": "fn_generate_payable_installments()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "9c6ef883bb4a97928a5179bc63e9ca31",
+      "body": "CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  i int;\n  v_qtd int := NEW.installment_count;\n  v_base numeric(14,2) := ROUND(NEW.total_amount / v_qtd, 2);\n  v_acc numeric(14,2) := 0;\n  v_amt numeric(14,2);\nBEGIN\n  IF NEW.organization_id IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n  FOR i IN 1..v_qtd LOOP\n    IF i < v_qtd THEN\n      v_amt := v_base;\n      v_acc := v_acc + v_amt;\n    ELSE\n      v_amt := NEW.total_amount - v_acc;\n    END IF;\n    INSERT INTO public.accounts_receivable_installments\n      (receivable_id, installment_number, due_date, original_amount, net_amount, status, organization_id)\n    VALUES\n      (NEW.id, i, (NEW.first_due_date + ((i-1) || ' months')::interval)::date, v_amt, v_amt, 'OPEN', NEW.organization_id);\n  END LOOP;\n  RETURN NEW;\nEND\n$function$\n",
+      "owner": "postgres",
+      "signature": "fn_generate_receivable_installments()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "6f5a1baf716b5fc170cabccbbdcdef79",
+      "body": "CREATE OR REPLACE FUNCTION public.fn_h6_guard_ap_installment_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.payable_id IS DISTINCT FROM OLD.payable_id\n     OR NEW.installment_number IS DISTINCT FROM OLD.installment_number\n     OR NEW.original_amount IS DISTINCT FROM OLD.original_amount\n     OR NEW.due_date IS DISTINCT FROM OLD.due_date\n     OR NEW.net_amount IS DISTINCT FROM OLD.net_amount\n     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN\n    RAISE EXCEPTION 'Parcela imutavel: titulo, numero, valor original, vencimento, valor liquido e data de criacao nao podem ser alterados.'\n      USING ERRCODE='check_violation';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "owner": "postgres",
+      "signature": "fn_h6_guard_ap_installment_snapshot()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "c3f26bc5217a5d86227c7e74f762b3ad",
+      "body": "CREATE OR REPLACE FUNCTION public.fn_h6_guard_ar_installment_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.receivable_id IS DISTINCT FROM OLD.receivable_id\n     OR NEW.installment_number IS DISTINCT FROM OLD.installment_number\n     OR NEW.original_amount IS DISTINCT FROM OLD.original_amount\n     OR NEW.due_date IS DISTINCT FROM OLD.due_date\n     OR NEW.net_amount IS DISTINCT FROM OLD.net_amount\n     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN\n    RAISE EXCEPTION 'Parcela imutavel: titulo, numero, valor original, vencimento, valor liquido e data de criacao nao podem ser alterados.'\n      USING ERRCODE='check_violation';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "owner": "postgres",
+      "signature": "fn_h6_guard_ar_installment_snapshot()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "5c07dd23a0c9355c3fe11811004b0381",
+      "body": "CREATE OR REPLACE FUNCTION public.fn_h6d_block_hard_delete()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF public.fn_h6d_hard_delete_allowed() THEN\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'Registro financeiro (%) nao pode ser excluido: cancele pelo fluxo formal (rpc_cancel_accounts_receivable / rpc_cancel_accounts_payable).', TG_TABLE_NAME\n    USING ERRCODE='check_violation';\nEND $function$\n",
+      "owner": "postgres",
+      "signature": "fn_h6d_block_hard_delete()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "d01a740c1e3e02407131d2b9228bf658",
+      "body": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "owner": "postgres",
+      "signature": "guard_tenant_organization_id()"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "body": "CREATE OR REPLACE FUNCTION public.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.h15_actor_organization(); $function$\n",
+      "owner": "postgres",
+      "signature": "h15_actor_organization()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+      "body": "CREATE OR REPLACE FUNCTION public.is_financial_staff(_uid uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nBEGIN\n  IF NOT public.fn_authz_uid_scope_ok(_uid) THEN\n    RETURN false;\n  END IF;\n  RETURN has_role(_uid, 'administrador'::app_role)\n      OR has_role(_uid, 'gestor'::app_role)\n      OR has_role(_uid, 'financeiro'::app_role);\nEND;\n$function$\n",
+      "owner": "postgres",
+      "signature": "is_financial_staff(uuid)"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "64e10608403238a41a9baf92857ca881",
+      "body": "CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);\n$function$\n",
+      "owner": "postgres",
+      "signature": "platform_private.h15_actor_organization()"
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "382850b085f3a867b914c307f7ac7c10",
+      "body": "CREATE OR REPLACE FUNCTION public.rpc_create_financial_title(p_kind text, p_payload jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_org uuid := platform_private.h15_actor_organization();\n  v_total numeric(14,2);\n  v_count int;\n  v_first_due date;\n  v_category uuid;\n  v_cc uuid;\n  v_desc text;\n  v_notes text;\n  v_issue date;\n  v_title_id uuid;\n  v_installments jsonb;\n  v_sum numeric(14,2) := 0;\n  v_inst jsonb;\n  v_fk_col text;\n  v_table text;\n  v_fiscal_req boolean;\n  v_customer uuid;\n  v_supplier_id uuid;\n  v_supplier_name text;\n  v_payment uuid;\n  v_supplier_invoice_date date;\nBEGIN\n  IF v_uid IS NULL THEN\n    RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';\n  END IF;\n  IF NOT public.is_financial_staff(v_uid) THEN\n    RAISE EXCEPTION 'Sem permissão para criar títulos financeiros.' USING ERRCODE='insufficient_privilege';\n  END IF;\n\n  IF v_org IS NULL THEN RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE='42501'; END IF;\n  IF (p_payload ? 'organization_id' AND NULLIF(p_payload->>'organization_id','')::uuid IS DISTINCT FROM v_org)\n     OR (p_payload ? 'tenant_id' AND NULLIF(p_payload->>'tenant_id','')::uuid IS DISTINCT FROM v_org) THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_MISMATCH' USING ERRCODE='42501';\n  END IF;\n  IF p_kind IS NULL OR p_kind NOT IN ('receivable','payable') THEN\n    RAISE EXCEPTION 'Tipo de título inválido: %', p_kind USING ERRCODE='check_violation';\n  END IF;\n\n  IF p_kind = 'payable' THEN\r\n IF NULLIF(btrim(p_payload->>'supplier_name'),'') IS NULL AND NULLIF(p_payload->>'supplier_id','') IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SUPPLIER' USING ERRCODE='23514'; END IF;\r\n IF jsonb_typeof(p_payload) IS DISTINCT FROM 'object' OR NULLIF(btrim(p_payload->>'description'),'') IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_DESCRIPTION' USING ERRCODE='23514'; END IF;\r\n IF COALESCE((p_payload->>'total_amount')::numeric,0) <= 0 OR (p_payload->>'total_amount')::numeric::text IN ('NaN','Infinity','-Infinity') OR (p_payload->>'total_amount')::numeric <> round((p_payload->>'total_amount')::numeric,2) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_AMOUNT' USING ERRCODE='23514'; END IF;\r\n IF COALESCE((p_payload->>'installment_count')::numeric,1) NOT BETWEEN 1 AND 36 OR COALESCE((p_payload->>'installment_count')::numeric,1) <> trunc(COALESCE((p_payload->>'installment_count')::numeric,1)) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COUNT' USING ERRCODE='23514'; END IF;\r\n IF NOT EXISTS (SELECT 1 FROM public.financial_categories WHERE id=NULLIF(p_payload->>'category_id','')::uuid AND active AND type IN ('DESPESA','AMBOS')) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_CATEGORY' USING ERRCODE='23514'; END IF;\r\n IF NULLIF(p_payload->>'cost_center_id','') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.financial_cost_centers WHERE id=(p_payload->>'cost_center_id')::uuid AND active) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COST_CENTER' USING ERRCODE='23514'; END IF;\r\n IF p_payload ? 'installments' THEN\r\n IF jsonb_typeof(p_payload->'installments') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENTS' USING ERRCODE='23514'; END IF;\r\n IF jsonb_array_length(p_payload->'installments') <> COALESCE((p_payload->>'installment_count')::int,1) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COUNT' USING ERRCODE='23514'; END IF;\r\n FOR v_inst IN SELECT * FROM jsonb_array_elements(p_payload->'installments') LOOP\r\n IF jsonb_typeof(v_inst) IS DISTINCT FROM 'object' OR COALESCE((v_inst->>'amount')::numeric,0) <= 0 OR (v_inst->>'amount')::numeric::text IN ('NaN','Infinity','-Infinity') OR (v_inst->>'amount')::numeric <> round((v_inst->>'amount')::numeric,2) OR NULLIF(v_inst->>'due_date','')::date IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;\r\n END LOOP;\r\n IF EXISTS (SELECT 1 FROM jsonb_array_elements(p_payload->'installments') WITH ORDINALITY AS x(item,seq) WHERE (item->>'installment_number')::numeric IS DISTINCT FROM seq::numeric) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SEQUENCE' USING ERRCODE='23514'; END IF;\r\n IF (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(p_payload->'installments') x) IS DISTINCT FROM (p_payload->>'total_amount')::numeric THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514'; END IF;\r\n END IF;\r\n END IF;\r\n \r\n v_desc := NULLIF(p_payload->>'description','');\n  v_category   := NULLIF(p_payload->>'category_id','')::uuid;\n  v_cc         := NULLIF(p_payload->>'cost_center_id','')::uuid;\n  v_total      := COALESCE((p_payload->>'total_amount')::numeric, 0);\n  v_count      := COALESCE((p_payload->>'installment_count')::int, 1);\n  v_first_due  := NULLIF(p_payload->>'first_due_date','')::date;\n  v_issue      := COALESCE(NULLIF(p_payload->>'issue_date','')::date, (pg_catalog.now() AT TIME ZONE 'America/Sao_Paulo')::date);\n  v_notes      := NULLIF(p_payload->>'notes','');\n  v_installments := p_payload->'installments';\n\n  IF v_desc IS NULL THEN RAISE EXCEPTION 'Descrição obrigatória.'; END IF;\n  IF v_category IS NULL THEN RAISE EXCEPTION 'Categoria obrigatória.'; END IF;\n  IF v_total <= 0 THEN RAISE EXCEPTION 'Valor total deve ser maior que zero.'; END IF;\n  IF v_first_due IS NULL THEN RAISE EXCEPTION '1º vencimento obrigatório.'; END IF;\n  IF v_count < 1 OR v_count > 36 THEN RAISE EXCEPTION 'Nº de parcelas deve estar entre 1 e 36.'; END IF;\n\n  IF NOT EXISTS (SELECT 1 FROM financial_categories WHERE id = v_category) THEN\n    RAISE EXCEPTION 'Categoria inexistente.';\n  END IF;\n\n  IF p_kind = 'receivable' THEN\r\n IF jsonb_typeof(p_payload) IS DISTINCT FROM 'object' OR NULLIF(btrim(p_payload->>'description'),'') IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_DESCRIPTION' USING ERRCODE='23514'; END IF;\r\n IF COALESCE((p_payload->>'total_amount')::numeric,0) <= 0 OR (p_payload->>'total_amount')::numeric::text IN ('NaN','Infinity','-Infinity') OR (p_payload->>'total_amount')::numeric <> round((p_payload->>'total_amount')::numeric,2) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_AMOUNT' USING ERRCODE='23514'; END IF;\r\n IF COALESCE((p_payload->>'installment_count')::numeric,1) NOT BETWEEN 1 AND 36 OR COALESCE((p_payload->>'installment_count')::numeric,1) <> trunc(COALESCE((p_payload->>'installment_count')::numeric,1)) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COUNT' USING ERRCODE='23514'; END IF;\r\n IF NOT EXISTS (SELECT 1 FROM public.financial_categories WHERE id=NULLIF(p_payload->>'category_id','')::uuid AND active AND type IN ('RECEITA','AMBOS')) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_CATEGORY' USING ERRCODE='23514'; END IF;\r\n IF NULLIF(p_payload->>'cost_center_id','') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.financial_cost_centers WHERE id=(p_payload->>'cost_center_id')::uuid AND active) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COST_CENTER' USING ERRCODE='23514'; END IF;\r\n IF p_payload ? 'installments' THEN\r\n IF jsonb_typeof(p_payload->'installments') IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENTS' USING ERRCODE='23514'; END IF;\r\n IF jsonb_array_length(p_payload->'installments') <> COALESCE((p_payload->>'installment_count')::int,1) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_COUNT' USING ERRCODE='23514'; END IF;\r\n FOR v_inst IN SELECT * FROM jsonb_array_elements(p_payload->'installments') LOOP\r\n IF jsonb_typeof(v_inst) IS DISTINCT FROM 'object' OR COALESCE((v_inst->>'amount')::numeric,0) <= 0 OR (v_inst->>'amount')::numeric::text IN ('NaN','Infinity','-Infinity') OR (v_inst->>'amount')::numeric <> round((v_inst->>'amount')::numeric,2) OR NULLIF(v_inst->>'due_date','')::date IS NULL THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;\r\n END LOOP;\r\n IF EXISTS (SELECT 1 FROM jsonb_array_elements(p_payload->'installments') WITH ORDINALITY AS x(item,seq) WHERE (item->>'installment_number')::numeric IS DISTINCT FROM seq::numeric) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SEQUENCE' USING ERRCODE='23514'; END IF;\r\n IF (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(p_payload->'installments') x) IS DISTINCT FROM (p_payload->>'total_amount')::numeric THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514'; END IF;\r\n END IF;\r\n END IF;\r\n -- Validar parcelas customizadas (se fornecidas)\n  IF v_installments IS NOT NULL AND jsonb_typeof(v_installments) = 'array' THEN\n    IF jsonb_array_length(v_installments) <> v_count THEN\n      RAISE EXCEPTION 'Qtd de parcelas customizadas (%) difere de installment_count (%)',\n        jsonb_array_length(v_installments), v_count;\n    END IF;\n    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP\n      v_sum := v_sum + COALESCE((v_inst->>'amount')::numeric, 0);\n    END LOOP;\n    IF abs(v_sum - v_total) > 0.01 THEN\n      RAISE EXCEPTION 'Soma das parcelas (%) difere do total (%)', v_sum, v_total;\n    END IF;\n  END IF;\n\n  IF p_kind = 'receivable' THEN\n    v_customer   := NULLIF(p_payload->>'customer_id','')::uuid;\n    v_payment    := NULLIF(p_payload->>'payment_method_id','')::uuid;\n    v_fiscal_req := COALESCE((p_payload->>'fiscal_invoice_required')::boolean, false);\n    IF v_customer IS NULL THEN RAISE EXCEPTION 'Cliente obrigatório.'; END IF;\n\n    INSERT INTO accounts_receivable (\n      organization_id, customer_id, description, category_id, cost_center_id,\n      total_amount, issue_date, first_due_date, installment_count,\n      notes, created_by, origin_type,\n      fiscal_invoice_required, fiscal_invoice_status, payment_method_id\n    ) VALUES (\n      v_org, v_customer, v_desc, v_category, v_cc,\n      v_total, v_issue, v_first_due, v_count,\n      v_notes, v_uid, 'MANUAL',\n      v_fiscal_req,\n      CASE WHEN v_fiscal_req THEN 'PENDING' ELSE 'NOT_REQUIRED' END,\n      v_payment\n    ) RETURNING id INTO v_title_id;\n\n    v_table  := 'accounts_receivable_installments';\n    v_fk_col := 'receivable_id';\n  ELSE\n    v_supplier_id   := NULLIF(p_payload->>'supplier_id','')::uuid;\n    v_supplier_name := NULLIF(p_payload->>'supplier_name','');\n    v_supplier_invoice_date := NULLIF(p_payload->>'supplier_invoice_date','')::date;\n    IF v_supplier_id IS NULL AND v_supplier_name IS NULL THEN\n      RAISE EXCEPTION 'Fornecedor obrigatório.';\n    END IF;\n\n    INSERT INTO accounts_payable (\n      organization_id, supplier_id, supplier_name, description, category_id, cost_center_id,\n      total_amount, issue_date, first_due_date, installment_count,\n      notes, created_by, origin_type, supplier_invoice_date\n    ) VALUES (\n      v_org, v_supplier_id, v_supplier_name, v_desc, v_category, v_cc,\n      v_total, v_issue, v_first_due, v_count,\n      v_notes, v_uid, 'MANUAL', v_supplier_invoice_date\n    ) RETURNING id INTO v_title_id;\n\n    v_table  := 'accounts_payable_installments';\n    v_fk_col := 'payable_id';\n  END IF;\n\n  -- Substituir parcelas geradas pelo trigger quando o cliente envia customizadas\n  IF v_installments IS NOT NULL AND jsonb_typeof(v_installments) = 'array' THEN\n    -- Preserve generated installments; update below without hard deletion.\n    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP\n      EXECUTE format(\n        'UPDATE %I SET due_date=$3, original_amount=$4, net_amount=$4 WHERE %I=$1 AND installment_number=$2',\n        v_table, v_fk_col\n      ) USING v_title_id,\n              COALESCE((v_inst->>'installment_number')::int, 1),\n              (v_inst->>'due_date')::date,\n              (v_inst->>'amount')::numeric;\n    END LOOP;\n\n    INSERT INTO financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)\n    VALUES (v_table, v_title_id, 'FINANCIAL_INSTALLMENTS_CUSTOMIZED', NULL,\n            jsonb_build_object('installment_count', v_count, 'total_amount', v_total), v_uid);\n  END IF;\n\n  INSERT INTO financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)\n  VALUES (\n    CASE WHEN p_kind='receivable' THEN 'accounts_receivable' ELSE 'accounts_payable' END,\n    v_title_id,\n    CASE WHEN p_kind='receivable' THEN 'AR_MANUAL_CREATED' ELSE 'AP_MANUAL_CREATED' END,\n    NULL,\n    jsonb_build_object(\n      'total_amount', v_total,\n      'installment_count', v_count,\n      'first_due_date', v_first_due,\n      'category_id', v_category\n    ),\n    v_uid\n  );\n\n  RETURN jsonb_build_object(\n    'success', true,\n    'kind', p_kind,\n    'title_id', v_title_id,\n    'installment_count', v_count,\n    'total_amount', v_total\n  );\nEND;\n$function$\n",
+      "owner": "postgres",
+      "signature": "rpc_create_financial_title(text,jsonb)"
+    }
+  ]
+}
