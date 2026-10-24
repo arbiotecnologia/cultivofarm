@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 14:07 — acesso claro ao pedido canônico
+- [ ] Auditar parceiro/comercial em HEAD e esclarecer compra própria versus venda a cliente/parceiro, sem novo writer.
+- [ ] Implementar entradas contextuais, detalhes dos bloqueios sem diagnóstico contábil inventado e percurso condicionado; testar capacidades/rotas/loading/revogação/A-B locais.
+- [ ] Homologação real e continuidade pedido→financeiro→fiscal→entrega dependem de revisão independente, writer autorizado e contabilidade real A pendente; sem SQL hosted/publicação/sessões.
+
 ## 24/10 03:12 — parcelas manuais imutáveis
 - [x] Captura SELECT canônica; AR/AP reproduziram23514 por UPDATE de parcelas imutáveis, nenhuma operação hosted mutante.
 - [x] Pacote financial-installments-initial-20261024 independente INATIVO: contexto privado txid/título/ator/tenant, inserção inicial correta, PREPOST/rollback completo; fragmento futuro manual+B2B testado sem alterar final-integrated histórico.
