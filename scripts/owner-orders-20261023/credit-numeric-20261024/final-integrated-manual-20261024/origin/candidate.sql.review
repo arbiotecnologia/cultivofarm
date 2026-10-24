@@ -2,7 +2,27 @@ BEGIN;
 -- INACTIVE REVIEW ONLY. Does not reopen writer; no internal-origin bypass or RLS change.
 -- Reconciled: preserves LIVE manual initial-installments correction (private context, exact .34/.33/.33 split,
 -- custom dates inserted first) and adds the B2B contractual schedule branch on top of it.
+-- Owner A accounting gate runs FIRST in this same transaction, locking only A settings rows FOR SHARE until COMMIT;
+-- preflight-accounting.sql remains a separate READ ONLY diagnostic. Never validates/fabricates attestation.
 SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='60s';
+DO $accounting_gate$
+DECLARE n integer; ready boolean;
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid WHERE i.indrelid='public.company_fiscal_settings'::regclass AND c.relname='ux_company_fiscal_settings_active_organization' AND i.indisunique AND i.indisvalid AND pg_get_indexdef(i.indexrelid)='CREATE UNIQUE INDEX ux_company_fiscal_settings_active_organization ON public.company_fiscal_settings USING btree (organization_id) WHERE (is_active IS TRUE)') THEN
+   RAISE EXCEPTION 'C2_ACCOUNTING_GATE_INDEX_DRIFT' USING ERRCODE='42501';
+ END IF;
+ PERFORM 1 FROM public.company_fiscal_settings c WHERE c.organization_id='007bb519-cba0-4704-be2c-cb93ad010048' ORDER BY c.id FOR SHARE;
+ SELECT count(*),coalesce(bool_and(c.configuration_status='VALIDATED'
+   AND c.accounting_validated_at IS NOT NULL
+   AND nullif(btrim(c.legal_name),'') IS NOT NULL
+   AND nullif(btrim(c.cnpj),'') IS NOT NULL),false)
+ INTO n,ready FROM public.company_fiscal_settings c
+ WHERE c.organization_id='007bb519-cba0-4704-be2c-cb93ad010048' AND c.is_active IS TRUE;
+ IF n<>1 OR NOT ready THEN
+   RAISE EXCEPTION 'C2_ACCOUNTING_PREREQUISITE_BLOCKED: owner A requires one genuinely accounting-validated active fiscal configuration; human review required, writer must stay false'
+   USING ERRCODE='42501';
+ END IF;
+END $accounting_gate$;
 DO $guard$ BEGIN
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.audit_partner_order_payment_terms()'::regprocedure AND md5(pg_get_functiondef(oid))='96b68bec5b11f2a414f333c68a00d765' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.audit_partner_order_payment_terms'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_guard_credit_approval_fields()'::regprocedure AND md5(pg_get_functiondef(oid))='8902498ed09c4c5804b1749ee0c31cd7' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_guard_credit_approval_fields'; END IF;
