@@ -5,6 +5,7 @@ s=(H/'test-local.py').read_text()
 setup=s[:s.index('# Preflight must pass unchanged')]
 fixtures=s[s.index('pg.sql(f"""\nSET session_replication_role=replica;'):s.index("hashA=simulate(G)")]
 # Setup origin directory is used only for current captured baseline; no candidate or positive helper applied.
+setup=setup.replace("H=Path(__file__).resolve().parent","H=V/'origin'")
 exec(compile(setup,str(H/'test-local.py'),'exec'))
 exec(compile(fixtures,str(H/'test-local.py'),'exec'))
 for admin,partner,org in [(ADMIN,P,A),(ADMIN_B,Q,B)]:
