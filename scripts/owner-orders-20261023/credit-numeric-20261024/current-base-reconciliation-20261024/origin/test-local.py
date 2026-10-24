@@ -24,6 +24,15 @@ def val(u,s):return actor(u,s).splitlines()[-1]
 def snapshot():
     tables=['partner_orders','partner_order_items','partner_order_payment_terms','partner_order_payment_schedule','partner_order_idempotency','partner_financial_settings','accounts_receivable','accounts_receivable_installments','partner_order_financial_links','partner_order_audit_logs','production_timeline_events','notificacoes_operacionais','financial_audit_log','production_planning']
     return {t:pg.sql(f"SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]') FROM public.{t} t") for t in tables}
+
+def exact_denied(u,sql,state,message,owner=False):
+ claims=json.dumps({'sub':u,'role':'authenticated','iat':int(time.time())})
+ role='' if owner else 'SET LOCAL ROLE authenticated;'
+ before=snapshot()
+ err=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; {role} SELECT set_config('request.jwt.claims','{claims}',true); {sql}; COMMIT;",ok=False)
+ assert 'ERROR:  '+state+': '+message in err,err[-2200:]
+ assert snapshot()==before,'denial had effects'
+
 pg.start();pg.sql((I/'replica.sql').read_text())
 pg.sql("SET check_function_bodies=off;")
 pg.sql((H/'baseline/extra-structure.sql').read_text())
@@ -85,6 +94,7 @@ for name in json.loads((H/'expected-source.json').read_text()):
 subprocess.run([sys.executable,str(H/'assemble.py')],check=True)
 pg.sql((H/'postflight.sql').read_text());ok('assertive READ ONLY postflight composed containment')
 ok('candidate leaves writer containment false',pg.sql(f"SELECT platform_private.c2_owner_order_create_allowed('{G}','{P}')")=='f')
+exec(compile((H.parent/'atomicity.py').read_text(),str(H.parent/'atomicity.py'),'exec'))
 # Positive test setup ONLY: reviewed writer body from existing v4 source, never hosted/release.
 old=(ROOT/'scripts/owner-orders-20261023/candidate.sql.review').read_text(); start=old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); end=old.index('END $function$;',start)+len('END $function$;')
 pg.sql(old[start:end].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1))
@@ -139,7 +149,7 @@ for u in [G,GT]:
     ok('positive singleton/cumulative total180 owner/issuer/creditor A',row['total']==180 and row['c2_external_origin_snapshot']['organization_id']==A and row['c2_external_origin_snapshot']['creditor_organization_id']==A and row['c2_external_origin_snapshot']['issuer_organization_id']==A and row['internal_origin_snapshot'] is None)
     ok('three canonical schedule rows and no title before approval',pg.sql(f"SELECT count(*) FROM public.partner_order_payment_schedule WHERE partner_order_id='{oid}'")=='3' and pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}'")=='0')
 for u,p in [(T,P),(PR,P),(GB,P),(G,Q)]:
-    before=snapshot();actor(u,create(G,'denied-'+str(u),p,h=hashA)+';',err='');ok('negative public create leaves all state unchanged',snapshot()==before)
+    before=snapshot();exact_denied(u,create(G,'denied-'+str(u),p,h=hashA),'42501',{T:'forbidden_financial_terms'}.get(u,'forbidden_partner'));ok('negative public create leaves all state unchanged',snapshot()==before)
 oid=orders[0]
 # Execute the child trigger as local owner with each synthetic caller, independently of RLS zero-row filters.
 for u in [G,GT,T,PR,GB,ADMIN_B]:
@@ -151,6 +161,14 @@ ok('H6 installments match exact contractual dates/amounts',pg.sql(f"SELECT count
 for table,where in [('partner_orders',f"id='{oid}'"),('partner_order_items',f"order_id='{oid}'"),('partner_order_payment_terms',f"partner_order_id='{oid}'"),('partner_order_payment_schedule',f"partner_order_id='{oid}'"),('accounts_receivable',f"origin_id='{oid}'"),('accounts_receivable_installments',f"receivable_id IN (SELECT id FROM public.accounts_receivable WHERE origin_id='{oid}')")]:
     ok('authenticated B cannot read A '+table,val(ADMIN_B,f'SELECT count(*) FROM public.{table} WHERE {where};')=='0')
 ok('authenticated A reads own title',val(ADMIN,f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}';")=='1')
+tenant_id=pg.sql(f"SELECT id FROM public.accounts_receivable WHERE origin_id='{oid}'")
+ok('tenant propagated all installments',pg.sql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id='{tenant_id}' AND organization_id='{A}'")=='3')
+exact_denied(ADMIN,f"INSERT INTO public.accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,net_amount,status,organization_id) VALUES('{tenant_id}',99,current_date,1,1,'OPEN',NULL)",'23514','FINANCIAL_TENANT_REQUIRED',owner=True)
+ok('NULL installment tenant exact canonical denial')
+exact_denied(ADMIN_B,f"INSERT INTO public.accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,net_amount,status,organization_id) VALUES('{tenant_id}',99,current_date,1,1,'OPEN','{B}')",'23514','FINANCIAL_RECEIVABLE_TENANT_MISMATCH',owner=True)
+ok('crossed installment parent exact canonical denial')
+exact_denied(ADMIN,f"INSERT INTO public.accounts_receivable(description,original_amount,net_amount,installments_count,first_due_date,status,organization_id) VALUES('NULL local',1,1,3,current_date,'OPEN',NULL)",'23514','FINANCIAL_TENANT_REQUIRED',owner=True)
+ok('NULL title tenant exact canonical denial')
 before=snapshot();actor(ADMIN,f"UPDATE public.partner_orders SET c2_external_origin_snapshot=jsonb_set(c2_external_origin_snapshot,'{{creditor_organization_id}}','\"{B}\"') WHERE id='{oid}';");ok('RLS blocks direct origin change',snapshot()==before)
 # Owner-superuser trigger execution with synthetic actor proves the trigger independently of RLS zero-row updates.
 pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{{\"sub\":\"{ADMIN}\",\"role\":\"authenticated\",\"iat\":{int(time.time())}}}',true); UPDATE public.partner_orders SET c2_external_origin_snapshot=jsonb_set(c2_external_origin_snapshot,'{{creditor_organization_id}}','\"{B}\"') WHERE id='{oid}'; COMMIT;",ok=False)
@@ -159,7 +177,7 @@ before=snapshot();actor(ADMIN,f"UPDATE public.partner_order_items SET quantidade
 actor(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{oid}');")
 ok('billing replay one title',pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}'")=='1')
 for u in [T,PR,GB,ADMIN_B]:
-    before=snapshot();actor(u,f"SELECT public.approve_partner_order('{orders[1]}',NULL,NULL);",err='');ok('unauthorized approval unchanged',snapshot()==before)
+    before=snapshot();exact_denied(u,f"SELECT public.approve_partner_order('{orders[1]}',NULL,NULL)",'42501','b2b_phase1_scope_denied');ok('unauthorized approval unchanged',snapshot()==before)
 before=snapshot();pg.sql("CREATE FUNCTION public.test_fail_link() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'TEST_LATE_FAIL'; END $$; CREATE TRIGGER zz_test_fail BEFORE INSERT ON public.partner_order_financial_links FOR EACH ROW EXECUTE FUNCTION public.test_fail_link();")
 actor(ADMIN,f"SELECT public.approve_partner_order('{orders[1]}',NULL,NULL);",err='B2B_APPROVAL_BILLING_FAILED')
 ok('late billing failure rolls back approval/title/installments/schedule/audits',snapshot()==before)
@@ -190,7 +208,7 @@ for u in [G,GT]:
 credit=next(f for sig,f in fns.items() if sig.startswith('public.fn_b2b_credit_exposure('))
 ok('LIVE numeric exact preserved',pg.sql(f"SELECT md5(pg_get_functiondef('{credit['sig']}'::regprocedure))")=='213ac31f3a30816ead75365b0d1fed18')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic revocation' WHERE user_id='{G}'; SET session_replication_role=origin;")
-before=snapshot();actor(G,create(G,'revoked',h=hashA)+';',err='');ok('revoked manager rejected with no writes',snapshot()==before)
+before=snapshot();exact_denied(G,create(G,'revoked',h=hashA),'42501','forbidden_partner');ok('revoked manager rejected with no writes',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
 key=str(uuid.uuid4());call=create(G,key);first=val(G,call+';');before=snapshot();again=val(G,call+';');ok('create idempotency same result and no new writes',first==again and snapshot()==before)
 before=snapshot();actor(G,create(G,key,obs='Changed')+';',err='idempotency_conflict');ok('conflicting replay no writes',snapshot()==before)
