@@ -42,6 +42,7 @@ import { useOrdersSlaMap } from "@/hooks/useOrdersSlaMap";
 import { b2bToast } from "@/lib/b2bToast";
 import { PedidoItemProdutoInfo } from "@/components/pedidos-b2b/PedidoItemProdutoInfo";
 import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection";
+import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntry";
 
 
 
@@ -152,7 +153,7 @@ export default function PedidosB2B() {
           action: "approve-order",
           orderNumero,
           loading: `Aprovando pedido ${orderNumero}…`,
-          success: `Pedido ${orderNumero} aprovado e liberado para produção`,
+          success: `Pedido ${orderNumero} aprovado comercialmente`,
         },
       );
       setDetail(null);
@@ -228,6 +229,7 @@ export default function PedidosB2B() {
         </p>
       </div>
 
+      <CommercialOrderEntry />
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row gap-2 md:items-center justify-between">

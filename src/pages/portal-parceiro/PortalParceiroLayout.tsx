@@ -25,6 +25,7 @@ import { usePortalBranding } from "@/hooks/useBranding";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { isPathEntitled } from "@/lib/saas/featureRouteMap";
 import { CommercialOwnOrders } from "@/components/comercial/CommercialOwnOrders";
+import { PartnerOrderEntry } from "@/components/comercial/PartnerOrderEntry";
 
 import {
   Select,
@@ -200,6 +201,12 @@ export default function PortalParceiroLayout() {
       />
 
       <main className="flex-1 p-4 md:p-6 overflow-x-auto">
+        {commercialOwner && externalManager && ["/portal-parceiro/dashboard", "/portal-parceiro/catalogo"].includes(location.pathname) &&
+          <PartnerOrderEntry
+            pending={entitlements.status === "loading" || isLoading}
+            canReadCatalog={partnerReady && !partnerError && ownerCatalogRoute("/portal-parceiro/catalogo", ownPartner?.capabilities) && isPathEntitled("/portal-parceiro/catalogo", entitlements)}
+            canCreate={partnerReady && !partnerError && ownerCatalogRoute("/portal-parceiro/catalogo", ownPartner?.capabilities) && isPathEntitled("/portal-parceiro/catalogo", entitlements) && entitlements.status === "ready" && ownerOrderRoute("/portal-parceiro/catalogo", ownPartner?.orderCreate === true, entitlements.features)}
+          />}
         {isStaff && partner && (
           <div
             className="mb-4 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
