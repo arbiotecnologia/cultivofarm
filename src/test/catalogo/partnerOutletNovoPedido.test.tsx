@@ -65,6 +65,7 @@ beforeEach(() => {
       codigo: "LOCAL", razao_social: "Parceiro local", capabilities: { contract: "C2_CAT_V1", catalog_read: true, sheets_read: true },
       order_capabilities: { contract: "C2_OWNER_ORDER_V1", order_create: state.orderCreate } });
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([]);
+    if (name === "log_my_access_denied_secure") return response(null);
     if (name === "get_partner_catalog_secure") return response([{
       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",
       produto_nome: `Produto ${state.tenant}/${args?.p_partner_id}`, produto_codigo: "LOCAL", familia_catalogo: "biologico",
