@@ -15,7 +15,7 @@ it("integrates reconciled origin, receipt lock order and the LIVE manual install
   expect(stdout).toContain("integrated fixed same barrier waits row without receipt both commit");
   expect(stdout).toContain("integrated fixed one title three tenant A installments one link");
   expect(stdout).toContain("B same fixtures own title three tenant installments positive");
-  expect(stdout).toContain("complete candidate.sql.review failing POST preserves catalog");
+  expect(stdout).toContain("complete candidate.synthetic-owner.sql failing POST preserves catalog");
   expect(stdout).toContain("complete containment.sql.review failing POST preserves catalog");
   expect(stdout).toContain("containment preserves corrected wrapper exact hash");
   expect(stdout).toContain("LIVE numeric exact preserved");
