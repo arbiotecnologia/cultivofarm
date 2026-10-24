@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 24/10 14:07 — acesso claro ao pedido canônico
-- [ ] Auditar parceiro/comercial em HEAD e esclarecer compra própria versus venda a cliente/parceiro, sem novo writer.
-- [ ] Implementar entradas contextuais, detalhes dos bloqueios sem diagnóstico contábil inventado e percurso condicionado; testar capacidades/rotas/loading/revogação/A-B locais.
+- [x] Auditar parceiro/comercial em HEAD: consulta contida substitui carrinho, comercial analisa pedidos sem formulário autorizado de nova venda; nenhuma impersonação/novo writer.
+- [x] Entradas contextuais/detalhes/percurso condicionado; 45/45 em5arquivosPASS com transporte/Auth sintéticos, build automáticoOK. Revisão docs/order-entry-clarity-20261024.md; candidate SQL SHA byte-exato b5e4acbf.
 - [ ] Homologação real e continuidade pedido→financeiro→fiscal→entrega dependem de revisão independente, writer autorizado e contabilidade real A pendente; sem SQL hosted/publicação/sessões.
 
 ## 24/10 03:12 — parcelas manuais imutáveis
