@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 00:47 — concorrência PostgreSQL e negativas
+- [ ] Exercitar duas conexões independentes com create mesma chave e aprovação/cobrança concorrentes, funções capturadas/credito LIVE, sem sucesso pós-entrega inventado.
+- [ ] Ampliar escritas A/B e revogação parcial com Auth sintética, preservar baselines/SQL históricos e documentar resultados/impedimentos.
+- [ ] Produção permanece writerfalse/contabilidadeDRAFT; nenhuma operação hospedada/publicação autorizada neste recorte.
+
 ## 24/10 00:41 — implantação numérica pelo auditor
 - [x] Registrar implantação independente c2_credit_percentage_numeric_capacity_only SUCCESS/PREPOST/8casosreadonlyPASS relatados, sem execução Lovable; não reaplicar candidato antigo.
 - [x] Reconfirmar 123checks locais da função completa:Vitest1/1PASS54.70s; rebase PRE/POST/rollback apenas hashnovo demonstrado byte-exato, SQL/baselineshistóricos/ACL/writerfalse preservados.
