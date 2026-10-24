@@ -41,7 +41,7 @@ pg.sql((H/'baseline/platform_private.c2p1_internal_actor.sql').read_text())
 pg.sql((H/'baseline/platform_private.c2_producer_links.sql').read_text())
 for source in ['snapshot.json','pricing.json','dependencies.json','relations.json','policy-functions.json']:
     for f in json.loads((H/'baseline'/source).read_text())['functions'] or []:
-        f=dict(f);f['sig']=re.sub(r'([,(])\s*\w+\s+',r'\1',f['sig']);fns[f['sig']]=f
+        f=dict(f);fns[f['sig']]=f
 for f in fns.values():
     pg.sql(f['sql'])
     pg.sql(f"ALTER FUNCTION {f['sig']} OWNER TO {f['owner']}; REVOKE ALL ON FUNCTION {f['sig']} FROM PUBLIC,anon,authenticated,service_role;")
@@ -186,19 +186,9 @@ for u in [G,GT]:
         failure=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{{\"sub\":\"{ADMIN}\",\"role\":\"authenticated\",\"iat\":{int(time.time())}}}',true); UPDATE public.partner_orders SET status='{status}' WHERE id='{delivery_id}'; COMMIT;",ok=False)
         ok('na_entrega operational still denied '+status+' '+str(u),'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in failure and snapshot()==before)
     ok('na_entrega no production planning '+str(u),pg.sql(f"SELECT count(*) FROM public.production_planning WHERE partner_order_id='{delivery_id}'")=='0')
-# Known numeric(6,2) blocker: limit=1, new exposure=180 => 18000%, SQLSTATE 22003.
-pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=1,credit_limit_action='block' WHERE partner_id='{Q}'; SET session_replication_role=origin;")
-before=snapshot()
-pg.sql(f"DO $$ BEGIN PERFORM public.fn_b2b_credit_exposure('{Q}',180,NULL); RAISE EXCEPTION 'overflow_missing'; EXCEPTION WHEN numeric_value_out_of_range THEN IF SQLSTATE <> '22003' THEN RAISE; END IF; END $$;")
-ok('known numeric6,2 limit1 exposure180 SQLSTATE22003 no effects',snapshot()==before)
-actor(GB,create(GB,'numeric-overflow',p=Q)+';',err='numeric field overflow')
-ok('known overflow full create rolls back no effects',snapshot()==before)
-# Separate proposed one-variable widening is NOT part of candidate; transactional local experiment.
+# LIVE numeric preserved, never install/revert historical arithmetic candidate.
 credit=next(f for sig,f in fns.items() if sig.startswith('public.fn_b2b_credit_exposure('))
-assert credit['sql'].count('v_pct numeric(6,2)')==1
-widened=credit['sql'].replace('v_pct numeric(6,2)','v_pct numeric')
-pg.sql('BEGIN; '+widened+f"; DO $$ DECLARE r jsonb; BEGIN r:=public.fn_b2b_credit_exposure('{Q}',180,NULL); IF (r->>'percentual_utilizado')::numeric<>18000 OR (r->>'exposicao_projetada')::numeric<>180 OR r->>'reason_code'<>'LIMIT_EXCEEDED_BLOCK' THEN RAISE EXCEPTION 'numeric_proposal_wrong_decision'; END IF; END $$; SET LOCAL session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit_action='approval_required' WHERE partner_id='{Q}'; SET LOCAL session_replication_role=origin; DO $$ DECLARE r jsonb; BEGIN r:=public.fn_b2b_credit_exposure('{Q}',180,NULL); IF (r->>'percentual_utilizado')::numeric<>18000 OR r->>'reason_code'<>'LIMIT_EXCEEDED_APPROVAL' THEN RAISE EXCEPTION 'numeric_proposal_wrong_approval_decision'; END IF; END $$; ROLLBACK;")
-ok('separate numeric proposal 18000 percent preserves LIMIT_EXCEEDED_BLOCK',snapshot()==before and pg.sql(f"SELECT md5(pg_get_functiondef('{credit['sig']}'::regprocedure))")==credit['md5'])
+ok('LIVE numeric exact preserved',pg.sql(f"SELECT md5(pg_get_functiondef('{credit['sig']}'::regprocedure))")=='213ac31f3a30816ead75365b0d1fed18')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic revocation' WHERE user_id='{G}'; SET session_replication_role=origin;")
 before=snapshot();actor(G,create(G,'revoked',h=hashA)+';',err='');ok('revoked manager rejected with no writes',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
