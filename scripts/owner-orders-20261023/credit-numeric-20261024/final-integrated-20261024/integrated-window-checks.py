@@ -1,7 +1,7 @@
 """Reuse historical deterministic lock barriers with the current captured composed chain."""
 def transaction(u,sql,name):
     claims=json.dumps({'sub':u,'role':'authenticated','iat':int(time.time())})
-    return f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SET LOCAL application_name='{name}'; SET LOCAL deadlock_timeout='5s'; SELECT set_config('request.jwt.claims','{claims}',true); {sql}; COMMIT;"
+    return f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL deadlock_timeout='5s'; SET LOCAL ROLE authenticated; SET LOCAL application_name='{name}'; SELECT set_config('request.jwt.claims','{claims}',true); {sql}; COMMIT;"
 """Deterministic intermediate windows; captured bodies, synthetic Auth, disposable PostgreSQL only."""
 def spawn(u,sql,name):
     p=pg.popen('');p.stdin.write(transaction(u,sql,name));p.stdin.close();return p

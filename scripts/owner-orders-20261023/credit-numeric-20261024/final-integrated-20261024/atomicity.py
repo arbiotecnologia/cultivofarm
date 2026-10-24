@@ -22,6 +22,6 @@ def command(name,fail=False):
  if fail:
   assert process.returncode!=0 and 'DELIBERATE_POST_FAILURE' in stderr,stderr[-2000:]
   assert catalog_state()==before,'partial DDL/owner/ACL committed'
-   assert pg.sql("SELECT md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))")==wrapper_before,'wrapper changed on failed POST'
+  assert pg.sql("SELECT md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))")==wrapper_before,'wrapper changed on failed POST'
  else: assert process.returncode==0,stderr[-2000:]
  ok('complete '+name+(' failing POST preserves catalog' if fail else ' one transaction'))
