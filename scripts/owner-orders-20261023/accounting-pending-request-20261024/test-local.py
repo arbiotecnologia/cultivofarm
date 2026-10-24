@@ -159,6 +159,8 @@ ok('two concurrent creates with same key return one pending order',res[0]==res[1
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic revocation 2' WHERE user_id='{G}'; SET session_replication_role=origin;")
 denied(G,create(P,'conc-1',hc),'42501');ok('revoked manager replay of existing key denied (no idempotent leak after revocation)')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
+err=pg.sql((D/'restore-live.sql.review').read_text(),ok=False)
+ok('restore-live refuses with pending/external history (C2AP_FULL_RESTORE_BLOCKED_HISTORY), no DDL, rows kept','C2AP_FULL_RESTORE_BLOCKED_HISTORY' in err and all(md5(k)==v for k,v in E['candidate'].items()) and pg.sql("SELECT count(*)>0 FROM public.partner_orders WHERE c2_external_origin_snapshot IS NOT NULL")=='t')
 # Rollback
 bad=inj((D/'rollback.sql.review').read_text(),'C2AP_INJECTED_RB')
 assert 'C2AP_INJECTED_RB' in pg.sql(bad,ok=False);ok('rollback failing POST preserves candidate',md5('platform_private.b2b_internal_order_snapshot_guard()')==E['candidate']['platform_private.b2b_internal_order_snapshot_guard()'])
