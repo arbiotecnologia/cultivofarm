@@ -1,0 +1,42 @@
+-- REVIEW ONLY. Code reversal to captured wrapper; reintroduces reproduced deadlock window.
+BEGIN;
+SET LOCAL lock_timeout='5s';
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='7d5fdc7473f3d71dea3e4fa13ca1efcd' AND pg_get_userbyid(proowner)='postgres' AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'receipt_lock_rollback_pre_drift'; END IF; IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='213ac31f3a30816ead75365b0d1fed18') THEN RAISE EXCEPTION 'credit_live_drift'; END IF; END $$;
+CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
+
+  IF auth.uid() IS NULL THEN
+    IF pg_trigger_depth()=0 THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  ELSIF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (
+    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (pg_trigger_depth() > 0 or public.has_role(auth.uid(), 'administrador'::public.app_role)
+      or public.has_role(auth.uid(), 'gestor'::public.app_role)
+      or public.has_role(auth.uid(), 'financeiro'::public.app_role)) THEN
+    RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';
+  END IF;
+  IF p_partner_order_id IS NULL THEN
+    RAISE EXCEPTION 'partner_order_id_required' USING ERRCODE='P0001';
+  END IF;
+
+  -- Serializa concorrencia real (clique duplo / chamadas simultaneas).
+  -- Chave unica bigint: assinatura pg_advisory_xact_lock(bigint).
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended('b2b_receivable:' || p_partner_order_id::text, 0)
+  );
+
+  IF NOT public.fn_b2b_order_priceable(p_partner_order_id) THEN
+    RAISE EXCEPTION 'order_not_priceable_quote_required' USING ERRCODE='P0001';
+  END IF;
+
+  RETURN public.generate_b2b_receivable_secure_impl(p_partner_order_id);
+END $function$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='d501850eb4f0071e19be006f891a63e1' AND pg_get_userbyid(proowner)='postgres' AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'receipt_lock_rollback_post_drift'; END IF; IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='213ac31f3a30816ead75365b0d1fed18') THEN RAISE EXCEPTION 'credit_live_drift'; END IF; END $$;
+COMMIT;
