@@ -4,6 +4,10 @@ import json,hashlib
 N=Path(__file__).resolve().parent
 H=N.parent/'internal-origin-composition-20261023'
 source=(H/'test-local.py').read_text()
+for name in ['preflight.sql','candidate.sql.review','postflight.sql','rollback.sql.review']:
+    original=(H/name).read_text();rebased=(N/'origin-rebase'/name).read_text()
+    assert original.count('3bcc92e68f80b86bc01db7b5e94ee4c6')==1
+    assert original.replace('3bcc92e68f80b86bc01db7b5e94ee4c6','213ac31f3a30816ead75365b0d1fed18')==rebased,name
 # Reuse captured setup, triggers and actual RPC scenarios; no substitute business functions.
 prefix=source[:source.index('# Known numeric(6,2) blocker:')]
 suffix=source[source.index('pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now()'):]
