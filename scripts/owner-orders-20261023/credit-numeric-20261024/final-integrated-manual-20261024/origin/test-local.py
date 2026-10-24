@@ -118,6 +118,37 @@ subprocess.run([sys.executable,str(H/'assemble.py')],check=True)
 pg.sql((H/'postflight.sql').read_text());ok('assertive READ ONLY postflight composed containment')
 ok('candidate leaves writer containment false',pg.sql(f"SELECT platform_private.c2_owner_order_create_allowed('{G}','{P}')")=='f')
 command('postflight.sql');command('containment.sql.review',True)
+# Manual initial-installments path through the COMPOSED AR/AP bodies: the LIVE correction
+# (exact .34/.33/.33, custom dates inserted first, private context) must survive composition.
+cat_rec=pg.sql("SELECT id FROM public.financial_categories WHERE type='RECEITA' AND active LIMIT 1")
+cat_des=pg.sql("SELECT id FROM public.financial_categories WHERE type='DESPESA' AND active LIMIT 1")
+def manual_payload(total,amounts,dates,kind='receivable'):
+    p=dict(description='TESTE LOCAL',category_id=cat_rec if kind=='receivable' else cat_des,total_amount=total,issue_date='2026-10-24',first_due_date='2026-10-24',installment_count=3,installments=[dict(installment_number=i+1,due_date=dates[i],amount=amounts[i]) for i in range(3)])
+    if kind=='receivable': p['customer_id']=CLI
+    else: p['supplier_name']='Fornecedor ficticio local'
+    return p
+def manual_call(p,kind='receivable'):
+    return f"SELECT public.rpc_create_financial_title('{kind}','{json.dumps(p)}'::jsonb);"
+for kind in ['receivable','payable']:
+    fk='receivable_id' if kind=='receivable' else 'payable_id'
+    table=f'accounts_{kind}_installments'
+    dates=['2026-10-27','2026-12-02','2027-02-11']
+    result=json.loads(val(ADMIN,manual_call(manual_payload(1,[.34,.33,.33],dates),kind)))
+    tid=result['title_id']
+    ok('composed manual '+kind+' 1/3 exact .34/.33/.33 inserted first',pg.sql(f"SELECT string_agg(original_amount::text,',' ORDER BY installment_number) FROM public.{table} WHERE {fk}='{tid}'")=='0.34,0.33,0.33')
+    ok('composed manual '+kind+' custom dates inserted first',pg.sql(f"SELECT string_agg(due_date::text,',' ORDER BY installment_number) FROM public.{table} WHERE {fk}='{tid}'")=='2026-10-27,2026-12-02,2027-02-11')
+    ok('composed manual '+kind+' tenant propagated to all installments',pg.sql(f"SELECT count(*) FROM public.{table} WHERE {fk}='{tid}' AND organization_id='{A}'")=='3')
+    result=json.loads(val(ADMIN,manual_call(manual_payload(.99,[.33,.33,.33],dates),kind)))
+    ok('composed manual '+kind+' .99/3',result['success'] is True)
+    before=snapshot();actor(ADMIN,manual_call(manual_payload(.01,[.01,0,0],dates),kind),err='FIN_TITLE_INVALID_INSTALLMENT');ok('composed manual '+kind+' .01/3 denied no effects',snapshot()==before)
+    failure=pg.sql(f"UPDATE public.{table} SET original_amount=.35 WHERE {fk}='{tid}' AND installment_number=1;",ok=False)
+    ok('composed manual '+kind+' later snapshot mutation still denied','Parcela imutavel' in failure)
+    before=snapshot();actor(ADMIN,manual_call(dict(manual_payload(1,[.34,.33,.33],dates),organization_id=B),kind),err='FINANCIAL_TENANT_MISMATCH');ok('composed manual '+kind+' cross-tenant payload denied no effects',snapshot()==before)
+exact_denied(ADMIN,f"INSERT INTO platform_private.financial_initial_installments VALUES(txid_current(),gen_random_uuid(),'receivable','{ADMIN}','{A}','[]')",'42501','permission denied')
+ok('private context table inaccessible to authenticated')
+ok('private context empty after manual successes and failures',pg.sql("SELECT count(*) FROM platform_private.financial_initial_installments")=='0')
+composed_ar=pg.sql("SELECT md5(pg_get_functiondef('public.fn_generate_receivable_installments()'::regprocedure))")
+ok('composed AR is neither historical composed nor plain LIVE manual hash',composed_ar not in ('de469bfc11719e288cd0970411c57c97','fba70619b461c468a8c645ce1c3a8ed8'))
 # Positive test setup ONLY: reviewed writer body from existing v4 source, never hosted/release.
 old=(ROOT/'scripts/owner-orders-20261023/candidate.sql.review').read_text(); start=old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); end=old.index('END $function$;',start)+len('END $function$;')
 pg.sql(old[start:end].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1))
