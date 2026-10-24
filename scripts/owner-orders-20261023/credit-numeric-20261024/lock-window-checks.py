@@ -49,6 +49,7 @@ def guarded_apply(name):
     pg.sql((V/name).read_text())
     pg.sql(gate) # synthetic fixture only, never part of the deployment candidate
 
+exec(compile((N/'receipt-atomicity-checks.py').read_text(),str(N/'receipt-atomicity-checks.py'),'exec'))
 guarded_apply('preflight.sql');guarded_apply('candidate.sql.review');guarded_apply('postflight.sql')
 ok('variant PRE/POST guard body owner ACL; ACL unchanged',pg.sql(f"SELECT pg_get_userbyid(proowner)||'|'||proacl::text FROM pg_proc WHERE oid='{sig}'::regprocedure")==acl_before)
 oid=json.loads(val(G,create(G,'window-fixed')+';'))['id']
