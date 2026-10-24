@@ -15,6 +15,8 @@ md5=lambda sig:pg.sql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))")
 C30D=D.parent.parent/'commercial-order-entry-20261024'
 c30=(C30D/'candidate.sql.review').read_text();c30=c30[c30.index('END $pre$;')+len('END $pre$;'):c30.index('DO $post$')]
 pg.sql('BEGIN;'+c30+'COMMIT;')
+pg.sql("REVOKE ALL ON FUNCTION public.get_partner_catalog_secure(uuid) FROM PUBLIC,anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION public.get_partner_catalog_secure(uuid) TO service_role; GRANT EXECUTE ON FUNCTION public.get_partner_catalog_secure(uuid) TO authenticated;")  # captured LIVE ACL order
+ok('catalog ACL equals captured LIVE literal',pg.sql("SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure")=='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')
 C30=json.loads((C30D/'expected.json').read_text())['candidate']
 ok('LIVE 30dc8243 objects reproduced byte-exact in harness',all(md5(k)==v for k,v in C30.items()))
 CAP=json.loads((D/'live-capture-20261024-1540.json').read_text())
