@@ -1,6 +1,6 @@
-# Validação local — revisão 24/10/2026 00:14 UTC
+# Validação local — revisão 24/10/2026 00:20 UTC
 
-**69 checks PASS no PostgreSQL descartável; 1/1 Vitest da composição PASS (39s).** Não é homologação hosted Auth/JWT/RLS.
+**84 checks PASS no PostgreSQL descartável; 1/1 Vitest da composição PASS.** Não é homologação hosted Auth/JWT/RLS.
 
 Revisão independente 9c62ecab relatada pelo proprietário: PRE integral readonly canônico PASS; PRE contábil 42501/C2_ACCOUNTING_PREREQUISITE_BLOCKED esperado. A preencheu CNPJ/razão social reais, continua DRAFT sem atestado. Nenhuma nova consulta ou alteração hosted pelo agente nesta rodada; bloqueio humano mantido.
 
@@ -8,7 +8,11 @@ Correções desta rodada: mensagem externa comunica aprovação comercial sem pr
 
 Overflow conhecido: limite1/exposição180 gera 18000%, incompatível com numeric6,2, SQLSTATE22003; função capturada e create completo negados sem efeitos. Experimento separado `v_pct numeric` conserva LIMIT_EXCEEDED_BLOCK e LIMIT_EXCEEDED_APPROVAL, depois ROLLBACK e MD5 original. Proposta documental em `numeric-overflow-proposal.md`, não integrada ao candidato.
 
-PRE estrutural/contábil e rollback permanecem byte-exatos; POST e expected-source atualizados só para approve/impl modificados. Capturas históricas intactas. Snapshot das tentativas negadas inclui agora settings, além de pedidos/filhos/idempotência/financeiro/audits/notificações/planejamento.
+PRE estrutural/contábil e candidato permanecem intactos nesta revisão00:20; rollback agora contém create/approve/impl com PRE hash/owner/ACL/policies/triggers e POST transacional. Capturas históricas intactas. Snapshot das tentativas negadas inclui settings, além de pedidos/filhos/idempotência/financeiro/audits/notificações/planejamento.
+
+Testes de contenção: criação externa prévia pendente/aprovado com e sem título; seis negações approve/generate (inclui replay) com snapshot integral idêntico, create fechado e instalação sem alterar história. Corpo/ACL driftados rejeitados atomicamente. Create interno canônico positivo; aprovação/cobrança internas mantêm **B2B_INTERNAL_DOWNSTREAM_UNVERIFIED** antes e depois, devido à barreira LIVE já existente. Não se substituiu esse guard para fabricar sucesso interno; preservação de negação comprovada, sucesso interno não certificado. Legado NULL retém order_not_priceable_quote_required.
+
+Revisão independente read-only `sub_kkgvtff2` confirmou desenho da contenção e destacou quiescência obrigatória, mas sua leitura antecedeu o término da execução; qualquer afirmação de sucesso interno nessa leitura é superada pelos resultados reais acima. Ref canônico e drenagem precisam de prova externa antes de execução; SQL não cancela in-flight. Contábil continua bloqueio humano para implantação/reabertura. NO-GO operacional mantido.
 
 Complemento 23:55: PRE contábil aceita apenas fixture sintética validada, bloqueia DRAFT/atestado NULL e ausência de configuração ativa; create DRAFT/NULL reverte sem pedido parcial. Seis negativos do trigger de filhos, executados como owner local com caller sintético, negam alteração de cronograma por gestor singleton/cumulativo, técnico/produtor e gestor/admin B com `C2_EXTERNAL_OWNER_DENIED`; estado integral inalterado. Aprovação/cobrança owner A seguem passando na cadeia capturada. Nenhuma nova mudança nos corpos candidatos foi necessária para a composição dos filhos.
 
@@ -28,7 +32,7 @@ Comando: `python3 scripts/owner-orders-20261023/internal-origin-composition-2026
 - Configuração ausente em pedido elegível retorna `B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED`, sem INSERT automático nem título parcial.
 - Replay do create mantém mesmo retorno/nenhuma nova linha; fingerprint divergente `idempotency_conflict`; hash incorreto `price_changed`; rollback mantém dados e helperfalse.
 
-Regressão desta rodada: `bun run test src/test/saas/c2-orders-origin-composition-postgres.test.ts`: **1 teste PASS**, executa os 69 checks da composição; o harness P1 anterior não foi repetido.
+Regressão desta rodada: `bun run test src/test/saas/c2-orders-origin-composition-postgres.test.ts`: **1 teste PASS**, executa os 84 checks da composição; o harness P1 anterior não foi repetido.
 
 Build automático da prévia observado **OK**; nenhum runtime frontend alterado. Typecheck/build manual não executados conforme restrição do ambiente. Nenhum teste de navegador/sessão executado; nenhuma ação hospedada de DDL/DML, publicação, role ou sessão.
 

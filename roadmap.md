@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 24/10 00:20 — contenção de pedidos externos existentes
-- [ ] Preparar rollback de contenção hash/ACL guardado para create/approve/generate externos, preservando origens internas e histórico; sem implantação.
-- [ ] Testar criação externa seguida contenção, aprovação/cobrança negadas sem efeitos e origens internas preservadas; negativos de drift e relatos/manifestos.
+- [x] Preparar rollback de contenção hash/ACL guardado para create/approve/generate externos, preservando origens internas e histórico; sem implantação.
+- [x] Testar criação externa seguida contenção:84checks sintéticos, approve/generate negados sem efeitos/replay, drift corpo/ACL abortado; create interno positivo e negações downstream internas preservadas antes/depois (sucesso interno não certificado). Relatos/manifestos atualizados.
 - [ ] Gate contábil/JWT real e quiescência antes de eventual operação hospedada dependem do proprietário; pfs real na_entrega active/auto true preservada.
 
 ## 24/10 00:14 — revisão independente 9c62ecab / pacote inativo

@@ -41,7 +41,7 @@ Prefixo: `scripts/owner-orders-20261023/internal-origin-composition-20261023/`
 | PRE contábil obrigatório READ ONLY | `preflight-accounting.sql` |
 | Candidato transacional **inativo** | `candidate.sql.review` |
 | POST assertivo READ ONLY, writer ainda contido | `postflight.sql` |
-| Rollback deny-only, sem apagar snapshots/histórico | `rollback.sql.review` |
+| Contenção guardada create/approve/generate externos, não reversão de código | `rollback.sql.review` |
 | Montador determinístico local | `assemble.py` |
 | Testes PostgreSQL | `test-local.py` |
 | Proposta numérica separada, não integrada | `numeric-overflow-proposal.md` |
@@ -51,6 +51,16 @@ Prefixo: `scripts/owner-orders-20261023/internal-origin-composition-20261023/`
 Os scripts SQL NÃO comprovam o endpoint Supabase sozinhos. Operador deve validar externamente o ref exato `swzpzcwiasxmjutrmvkm` antes de qualquer execução; divergência/ausência fecha. PRE exige containment atual byte-exato, owners/ACLs, triggers e conjunto integral de policies/flags RLS, incluindo ausência de policies extras. Segunda instalação aborta. POST espera composição com helper false, **não** release antigo/reabertura.
 
 ## Revisão independente e limites
+
+### Contenção ampliada — complemento 24/10 00:20 UTC
+
+O rollback antigo fechava apenas novos pedidos. O atual exige os **78 corpos/owners/ACL esperados pós-composição**, policies/RLS e todos os triggers, incluindo helpers privados/final guard, antes de alterar qualquer função. O helper de criação aceita apenas hash false capturado ou o hash revisado reaberto `5f0a08d1d4f8d8c5a7ae58e24c71071e`, com owner/ACL originais. Estado inesperado/parcial aborta, sem aplicar silenciosamente.
+
+Na mesma transação fecha create e adiciona **42501/C2_EXTERNAL_OPERATIONS_CONTAINED** em approve e generate impl, imediatamente após o lock/leitura do pedido, antes de aprovação, auditorias financeiras ou retorno de replay. Origem externa identificada pelo snapshot imutável do servidor; nenhum payload/role escolhe a contenção. Origem interna e NULL legado mantêm corpos e gates existentes. POST embutido verifica os três corpos normalizados e owner/ACL antes do COMMIT. Não DROP/reverte coluna, não apaga dados nem restaura grants.
+
+**É contenção, não reversão do código de composição.** O `postflight.sql` de composição deixa de ser o estado esperado para approve/impl após contê-los; não reaplicar release para “reparar” essa divergência. Antes de executar, proprietário deve provar ref canônico e **pausar/drenar operações afetadas**. Lock com timeout não cancela invocações já iniciadas nem certifica quiescência. Sem essa prova, NO-GO operacional. Pré-requisito contábil permanece para implantação/reabertura, não deve impedir emergência de contenção de um pacote já instalado.
+
+84 checks sintéticos: externos criados antes da contenção (pendente, aprovado com título e aprovado sem título), approve/generate negados sem efeitos incluindo replay, histórico/snapshots idênticos, drift de corpo/ACL abortado. Create interno canônico usa organização própria autorizada; approval/generate retornam a mesma contenção downstream antes/depois, **não** sucesso interno inventado. Legado NULL mantém negação original de preço. Sucesso financeiro interno permanece não homologado porque o guard LIVE já o bloqueia. Pfs real **na_entrega/active/auto=true** confirmado pelo proprietário, não alterado.
 
 Revisão read-only independente apontou selagem antes do crédito e ausência de comparação integral RLS; ambos receberam barreiras/testes locais. Revisão integral final pelo proprietário continua obrigatória; não há homologação JWT/PostgREST hospedada desta composição.
 
