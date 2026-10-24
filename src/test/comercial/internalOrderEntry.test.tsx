@@ -29,12 +29,11 @@ function ProbeOrder() {
   return <div data-testid="order" data-partner={partner.id} data-mount={String(++mounts)}>
     <button onClick={() => setCart(c => [...c, "item"])}>add</button><span data-testid="cart">{cart.length}</span></div>;
 }
-function renderPage(url: string) {
-  const qc = new QueryClient();
-  return render(<QueryClientProvider client={qc}><MemoryRouter initialEntries={[url]}><Routes>
+const tree = (qc: QueryClient, url: string) => <QueryClientProvider client={qc}><MemoryRouter initialEntries={[url]}><Routes>
     <Route path="/comercial/pedidos-b2b/novo" element={<ComercialNovoPedido />}><Route index element={<ProbeOrder />} /></Route>
-  </Routes></MemoryRouter></QueryClientProvider>);
-}
+  </Routes></MemoryRouter></QueryClientProvider>;
+let qc: QueryClient;
+function renderPage(url: string) { qc = new QueryClient(); return render(tree(qc, url)); }
 beforeEach(() => { rpc.mockReset(); mounts = 0; auth.profile.organization_id = A; auth.authzEpoch = 1; auth.roles = ["gestor_comercial"]; });
 afterEach(cleanup);
 
@@ -83,12 +82,15 @@ describe("rota comercial real com transporte sintético", () => {
     expect(order.getAttribute("data-partner")).toBe(PA);
     fireEvent.click(screen.getByText("add"));
     expect(screen.getByTestId("cart").textContent).toBe("1");
-    auth.authzEpoch = 2; // revogação/renovação de autoridade
-    view.rerender(view.container.firstChild ? <QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={[`/comercial/pedidos-b2b/novo?parceiro=${PA}`]}><Routes>
-      <Route path="/comercial/pedidos-b2b/novo" element={<ComercialNovoPedido />}><Route index element={<ProbeOrder />} /></Route></Routes></MemoryRouter></QueryClientProvider> : <></>);
+    auth.authzEpoch = 2; // revogação/renovação de autoridade: mesma árvore, mesmo QueryClient
+    view.rerender(tree(qc, `/comercial/pedidos-b2b/novo?parceiro=${PA}`));
     const again = await screen.findByTestId("order");
     expect(screen.getByTestId("cart").textContent).toBe("0");
     expect(Number(again.getAttribute("data-mount"))).toBeGreaterThan(Number(order.getAttribute("data-mount")));
+    auth.profile.organization_id = B; // troca de empresa: resposta de A não serve, nada monta
+    view.rerender(tree(qc, `/comercial/pedidos-b2b/novo?parceiro=${PA}`));
+    await screen.findByText(/fora do contrato/);
+    expect(screen.queryByTestId("order")).toBeNull();
   });
   it("revogado (actor_not_allowed): nenhum pedido e nenhum link no painel", async () => {
     rpc.mockResolvedValue({ data: { ...capA, order_create: false, profile_ok: false, reason: "actor_not_allowed", partners: [] }, error: null });
