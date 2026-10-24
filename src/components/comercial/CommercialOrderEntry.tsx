@@ -1,20 +1,22 @@
+import { Link } from "react-router-dom";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { OrderJourney } from "./OrderJourney";
+import { INTERNAL_ORDER_REASON_TEXT, type InternalOrderEntryState } from "@/lib/comercial/internalOrderEntry";
 
-export function CommercialOrderEntry() {
+/** Recebe o contrato já lido do servidor; sem ele, nenhum link é exibido. */
+export function CommercialOrderEntry({ state }: { state?: InternalOrderEntryState }) {
+  const allowed = state?.state === "allowed";
   return <section aria-label="Registrar venda ou pedido" className="space-y-3">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="text-lg font-semibold">Registrar venda para cliente / parceiro</h2>
-      <span role="status" className="text-sm text-muted-foreground">Início de venda pelo comercial ainda não liberado pelo servidor</span>
+      <h2 className="text-lg font-semibold">Registrar venda para parceiro da carteira</h2>
+      {allowed && <Button asChild><Link to="/comercial/pedidos-b2b/novo"><Plus aria-hidden="true" />Registrar venda</Link></Button>}
     </div>
-    <details className="text-sm">
-      <summary className="cursor-pointer text-primary">Detalhes das pendências</summary>
-      <div className="space-y-2 py-2 text-muted-foreground">
-        <p>Esta área analisa pedidos enviados pelos parceiros. O registro de venda pelo comercial usará o mesmo pedido, simulação e envio do Portal Parceiro, sem formulário paralelo.</p>
-        <p>Hoje o servidor só aceita pedido do comercial para o parceiro vinculado à própria empresa, não para outros parceiros ou clientes da carteira. Liberar a venda para a carteira depende de uma regra nova no servidor, ainda em revisão.</p>
-        <p>Além disso, pedidos de origem interna exigem a configuração fiscal da empresa emissora validada pela contabilidade. Essa validação está pendente e não é feita nesta tela.</p>
-        <p>Comprar para a própria empresa continua sendo feito no catálogo do Portal Parceiro, quando esse acesso estiver autorizado. Acesso comercial, técnico ou financeiro não concede essa compra.</p>
-      </div>
-    </details>
+    <p role="status" data-reason={state?.state === "blocked" ? state.reason : undefined} className="text-sm text-muted-foreground">
+      {!state ? "Verificando liberação no servidor."
+        : allowed ? "Venda para parceiros da carteira desta empresa, sujeita à análise comercial."
+        : INTERNAL_ORDER_REASON_TEXT[state.reason]}
+    </p>
     <OrderJourney />
   </section>;
 }

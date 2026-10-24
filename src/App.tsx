@@ -617,7 +617,7 @@ const App = () => (
                  <Route path="/portal-executivo" element={<PreservedNavigate to="/dashboard/executivo" />} />
                  <Route path="/comercial/parceiros" element={<Navigate to="/clientes?aba=parceiros" replace />} />
                  <Route path="/comercial/pedidos-b2b" element={<RoleGuard><PedidosB2B /></RoleGuard>} />
-                 <Route path="/comercial/pedidos-b2b/novo" element={<RoleGuard><ComercialNovoPedido /></RoleGuard>}><Route index element={<NovoPedido />} /></Route>
+                 <Route path="/comercial/pedidos-b2b/novo" element={<RoleGuard><ComercialNovoPedido /></RoleGuard>}><Route index element={<ParceiroNovoPedido />} /></Route>
                  <Route path="/comercial/solicitacoes-b2b" element={<RoleGuard><ComercialSolicitacoesB2B /></RoleGuard>} />
                  <Route path="/comercial/dashboard-b2b" element={<Navigate to="/comercial/dashboard-consolidado" replace />} />
                  <Route path="/comercial/campanhas" element={<RoleGuard><CampanhasComerciais /></RoleGuard>} />

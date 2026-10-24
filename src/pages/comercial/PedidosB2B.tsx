@@ -63,6 +63,7 @@ const STATUS_OPTIONS = [
 
 export default function PedidosB2B() {
   const { role } = useAuth();
+  const internalEntry = useInternalOrderEntry();
   const canApproveCredit =
     role === "administrador" || role === "gestor" || role === "financeiro";
   const [statusFilter, setStatusFilter] = useState<string>("aguardando_aprovacao_credito");
