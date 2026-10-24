@@ -20,5 +20,14 @@ it("integrates reconciled origin, receipt lock order and the LIVE manual install
   expect(stdout).toContain("containment preserves corrected wrapper exact hash");
   expect(stdout).toContain("LIVE numeric exact preserved");
   expect(stdout).toContain("revoked manager rejected with no writes");
+  expect(stdout).toContain("candidate starts with owner A accounting gate before any guard/DDL");
+  for (const label of ["owner A configuration absent", "owner A DRAFT with NULL attestation", "owner A VALIDATED status but NULL accounting_validated_at", "owner A NULL CNPJ", "owner A only inactive configuration"]) {
+    expect(stdout).toContain(`direct candidate rejected atomically before DDL: ${label}`);
+  }
+  expect(stdout).toContain("A attestation cannot change while gate transaction is open");
+  expect(stdout).toContain("second active A configuration conflicts on partial unique index");
+  expect(stdout).toContain("owner B settings are not locked by A gate");
+  expect(stdout).toContain("inactive candidate applied directly with validated synthetic owner");
+  expect(stdout).toContain("TOTAL 127 PASS");
   expect(stdout).toContain("synthetic Auth, no hosted JWT/RLS certification");
 }, 240_000);
