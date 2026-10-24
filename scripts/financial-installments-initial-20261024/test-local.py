@@ -136,6 +136,15 @@ def main():
   run('DROP TRIGGER local_late_fail ON financial_audit_log;');assert run('SELECT count(*) FROM platform_private.financial_initial_installments;').stdout.strip()=='0';ok('private context empty after success and failure')
   run(f"UPDATE profiles SET ativo=false WHERE user_id='{U}';");denied('inactive actor',call(payload()),'42501','FINANCIAL_TENANT_REQUIRED');run(f"UPDATE profiles SET ativo=true WHERE user_id='{U}';")
   run(f"DELETE FROM user_roles WHERE user_id='{U}';");denied('role revoked',call(payload()),'42501','Sem permissão');run(f"INSERT INTO user_roles VALUES('{U}','financeiro');")
+  # Future composition fragment preserves exact B2B contractual branch separately.
+  prior=run("SELECT pg_get_functiondef('public.fn_generate_receivable_installments()'::regprocedure);").stdout.strip()
+  run("ALTER TABLE accounts_receivable ADD COLUMN origin_id uuid; ALTER TABLE accounts_receivable_installments ADD COLUMN interest_amount numeric; CREATE TABLE partner_orders(id uuid, payment_terms_id uuid, c2_external_origin_snapshot jsonb); CREATE TABLE partner_order_payment_schedule(partner_order_id uuid,payment_terms_id uuid,installment_number int,due_date date,amount numeric,interest_amount numeric);")
+  run((H/'future-composed-function.sql.review').read_text())
+  run(call(payload()));ok('future composed manual 1/3 exact branch')
+  order='66666666-6666-4666-8666-666666666666';terms='77777777-7777-4777-8777-777777777777';title='88888888-8888-4888-8888-888888888888'
+  run(f"SELECT set_config('test.uid','',false); INSERT INTO partner_orders VALUES('{order}','{terms}','{{}}'); INSERT INTO partner_order_payment_schedule VALUES('{order}','{terms}',1,'2026-10-27',.34,0),('{order}','{terms}',2,'2026-12-02',.33,0),('{order}','{terms}',3,'2027-02-11',.33,0); INSERT INTO accounts_receivable(id,organization_id,customer_id,origin_type,origin_id,total_amount,installment_count,first_due_date) VALUES('{title}','{A}','{C}','B2B_ORDER','{order}',1,3,'2026-10-24');")
+  assert run(f"SELECT string_agg(original_amount::text||':'||due_date::text,',' ORDER BY installment_number) FROM accounts_receivable_installments WHERE receivable_id='{title}';").stdout.strip()=='0.34:2026-10-27,0.33:2026-12-02,0.33:2027-02-11';ok('future composed B2B contractual cents dates tenant branch')
+  run(prior+';')
   command('rollback.sql.review',True);command('rollback.sql.review');command('preflight.sql')
   # No rewrite of immutable captures; rollback keeps empty private infrastructure.
   print(f'TOTAL {count} PASS; synthetic Auth, reduced schema, no hosted JWT/RLS certification')

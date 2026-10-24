@@ -78,6 +78,14 @@ def bodies():
   (H/(sig.split('(')[0]+'.diff')).write_text(''.join(difflib.unified_diff(f['body'].splitlines(True),s.splitlines(True),fromfile='LIVE',tofile='candidate')))
 def assemble():
  bodies()
+ final=H.parent/'owner-orders-20261023/credit-numeric-20261024/final-integrated-20261024/origin/candidate.sql.review'
+ source=final.read_text()
+ start=source.index('CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()')
+ end=source.index('$function$;',start)+len('$function$;')
+ composed=source[start:end]
+ branch=composed[composed.index("  IF NEW.origin_type='B2B_ORDER'"):composed.index('  FOR i IN 1..v_qtd LOOP')]
+ manual=(H/'fn_generate_receivable_installments.sql.review').read_text()
+ (H/'future-composed-function.sql.review').write_text(manual.replace('  FOR i IN 1..v_qtd LOOP',branch+'  FOR i IN 1..v_qtd LOOP'))
  if not (H/'post-hashes.json').exists(): return
  pre=guard(); post=guard(True)
  private_guard="""DO $private$ BEGIN
