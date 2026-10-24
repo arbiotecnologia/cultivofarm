@@ -179,7 +179,7 @@ for u in [G,GT]:
     actor(ADMIN,f"SELECT public.approve_partner_order('{delivery_id}',NULL,NULL);")
     ok('na_entrega external approval no title singleton/cumulative '+str(u),pg.sql(f"SELECT status||'|'||ready_for_production||'|'||receivable_generated FROM public.partner_orders WHERE id='{delivery_id}'")=='aprovado|false|false' and pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{delivery_id}'")=='0' and pg.sql(f"SELECT count(*) FROM public.partner_order_financial_links WHERE partner_order_id='{delivery_id}'")=='0')
     before=snapshot()
-    actor(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{delivery_id}');",err='order_not_eligible')
+    actor(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{delivery_id}');",err='C2_EXTERNAL_DELIVERY_REQUIRED')
     ok('na_entrega before delivery billing denied no effects '+str(u),snapshot()==before)
     for status in ['em_producao','entregue']:
         before=snapshot()
