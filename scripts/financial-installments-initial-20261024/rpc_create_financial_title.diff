@@ -1,0 +1,76 @@
+--- LIVE
++++ candidate
+@@ -15,7 +15,7 @@
+   v_desc text;
+   v_notes text;
+   v_issue date;
+-  v_title_id uuid;
++  v_title_id uuid := gen_random_uuid();
+   v_installments jsonb;
+   v_sum numeric(14,2) := 0;
+   v_inst jsonb;
+@@ -112,6 +112,14 @@
+     END IF;
+   END IF;
+ 
++  IF v_total * 100 < v_count THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;
++  IF NOT isfinite(v_issue) OR NOT isfinite(v_first_due) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;
++  IF v_installments IS NOT NULL THEN
++    IF EXISTS(SELECT 1 FROM jsonb_array_elements(v_installments) x WHERE NOT isfinite((x->>'due_date')::date)) THEN RAISE EXCEPTION 'FIN_TITLE_INVALID_INSTALLMENT' USING ERRCODE='23514'; END IF;
++    INSERT INTO platform_private.financial_initial_installments
++      VALUES(txid_current(),v_title_id,p_kind,v_uid,v_org,v_installments);
++  END IF;
++
+   IF p_kind = 'receivable' THEN
+     v_customer   := NULLIF(p_payload->>'customer_id','')::uuid;
+     v_payment    := NULLIF(p_payload->>'payment_method_id','')::uuid;
+@@ -119,12 +127,12 @@
+     IF v_customer IS NULL THEN RAISE EXCEPTION 'Cliente obrigatório.'; END IF;
+ 
+     INSERT INTO accounts_receivable (
+-      organization_id, customer_id, description, category_id, cost_center_id,
++      id, organization_id, customer_id, description, category_id, cost_center_id,
+       total_amount, issue_date, first_due_date, installment_count,
+       notes, created_by, origin_type,
+       fiscal_invoice_required, fiscal_invoice_status, payment_method_id
+     ) VALUES (
+-      v_org, v_customer, v_desc, v_category, v_cc,
++      v_title_id, v_org, v_customer, v_desc, v_category, v_cc,
+       v_total, v_issue, v_first_due, v_count,
+       v_notes, v_uid, 'MANUAL',
+       v_fiscal_req,
+@@ -143,11 +151,11 @@
+     END IF;
+ 
+     INSERT INTO accounts_payable (
+-      organization_id, supplier_id, supplier_name, description, category_id, cost_center_id,
++      id, organization_id, supplier_id, supplier_name, description, category_id, cost_center_id,
+       total_amount, issue_date, first_due_date, installment_count,
+       notes, created_by, origin_type, supplier_invoice_date
+     ) VALUES (
+-      v_org, v_supplier_id, v_supplier_name, v_desc, v_category, v_cc,
++      v_title_id, v_org, v_supplier_id, v_supplier_name, v_desc, v_category, v_cc,
+       v_total, v_issue, v_first_due, v_count,
+       v_notes, v_uid, 'MANUAL', v_supplier_invoice_date
+     ) RETURNING id INTO v_title_id;
+@@ -156,19 +164,8 @@
+     v_fk_col := 'payable_id';
+   END IF;
+ 
+-  -- Substituir parcelas geradas pelo trigger quando o cliente envia customizadas
++  -- Parcelas personalizadas já inseridas inicialmente pelo trigger.
+   IF v_installments IS NOT NULL AND jsonb_typeof(v_installments) = 'array' THEN
+-    -- Preserve generated installments; update below without hard deletion.
+-    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP
+-      EXECUTE format(
+-        'UPDATE %I SET due_date=$3, original_amount=$4, net_amount=$4 WHERE %I=$1 AND installment_number=$2',
+-        v_table, v_fk_col
+-      ) USING v_title_id,
+-              COALESCE((v_inst->>'installment_number')::int, 1),
+-              (v_inst->>'due_date')::date,
+-              (v_inst->>'amount')::numeric;
+-    END LOOP;
+-
+     INSERT INTO financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)
+     VALUES (v_table, v_title_id, 'FINANCIAL_INSTALLMENTS_CUSTOMIZED', NULL,
+             jsonb_build_object('installment_count', v_count, 'total_amount', v_total), v_uid);
