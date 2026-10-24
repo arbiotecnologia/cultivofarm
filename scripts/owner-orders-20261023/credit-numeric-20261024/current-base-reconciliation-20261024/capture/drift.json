@@ -1,0 +1,7 @@
+[
+  {
+    "sig": "public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+    "old": "3bcc92e68f80b86bc01db7b5e94ee4c6",
+    "current": "213ac31f3a30816ead75365b0d1fed18"
+  }
+]
