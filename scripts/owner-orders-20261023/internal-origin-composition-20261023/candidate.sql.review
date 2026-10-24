@@ -856,6 +856,11 @@ BEGIN
     RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001';
   END IF;
 
+  -- External manual billing must honor configured delivery prerequisite too.
+  IF v_order.c2_external_origin_snapshot IS NOT NULL AND v_settings.billing_trigger='na_entrega' AND v_order.status IS DISTINCT FROM 'entregue' THEN
+    RAISE EXCEPTION 'C2_EXTERNAL_DELIVERY_REQUIRED' USING ERRCODE='42501';
+  END IF;
+
   v_uf := to_jsonb(v_partner) ->> 'uf';
 
   -- Derivação fiscal (fail-closed; nunca NOT_REQUIRED silencioso)
