@@ -136,7 +136,23 @@ bodies={changed[0]:create,changed[1]:order,'platform_private.b2b_internal_child_
 (H/'candidate.sql.review').write_text('-- INACTIVE REVIEW ONLY. Does not reopen writer; no internal-origin bypass or RLS change.\nBEGIN;\nSET LOCAL lock_timeout=\'5s\'; SET LOCAL statement_timeout=\'60s\';\n'+pre+"ALTER TABLE public.partner_orders ADD COLUMN c2_external_origin_snapshot jsonb;\n"+helper+'\n'.join(s.rstrip()+';\n' for s in bodies.values())+final_guard+'\nCOMMIT;\n')
 # Rollback is containment only: preserve immutable snapshots/history and all composed financial guards.
 contain=functions['platform_private.c2_owner_order_create_allowed']['sql']
-(H/'rollback.sql.review').write_text('-- Deny-only containment, preserves all snapshots/data/financial guards.\nBEGIN;\n'+contain.rstrip()+';\nCOMMIT;\n')
+contained_approve=swap(approve,"  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;", "  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;\n  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot IS NOT NULL) THEN\n    RAISE EXCEPTION 'C2_EXTERNAL_OPERATIONS_CONTAINED' USING ERRCODE='42501';\n  END IF;")
+contained_impl=swap(impl,"  IF NOT FOUND THEN RAISE EXCEPTION 'Pedido não encontrado'; END IF;", "  IF NOT FOUND THEN RAISE EXCEPTION 'Pedido não encontrado'; END IF;\n  IF v_order.c2_external_origin_snapshot IS NOT NULL THEN\n    RAISE EXCEPTION 'C2_EXTERNAL_OPERATIONS_CONTAINED' USING ERRCODE='42501';\n  END IF;")
+# Exact normalized PG hashes are captured by disposable tests; no guessed source hashes.
+if (H/'postflight-hashes.json').exists() and (H/'postflight-new-functions.json').exists():
+    composed=json.loads((H/'postflight-hashes.json').read_text())
+    rollback_pre=guard(composed)+policy_guard+'DO $guard$ BEGIN\n'+triggers+'\nEND $guard$;\n'+trigger_count_guard(1)
+    closed=functions['platform_private.c2_owner_order_create_allowed']['md5']
+    rollback_pre=rollback_pre.replace("md5(pg_get_functiondef(oid))='"+closed+"'", "md5(pg_get_functiondef(oid)) IN ('"+closed+"','5f0a08d1d4f8d8c5a7ae58e24c71071e')")
+    for sig,h in json.loads((H/'postflight-new-functions.json').read_text()).items():
+        rollback_pre+=f"DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='{sig}'::regprocedure AND md5(pg_get_functiondef(oid))='{h}' AND pg_get_userbyid(proowner)='postgres' AND proacl::text='{{postgres=X/postgres}}') THEN RAISE EXCEPTION 'containment_helper_drift:{sig}'; END IF; END $$;\n"
+    rollback_pre+="DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='zz_c2_external_final_state' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER zz_c2_external_final_state BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_external_final_state_guard()') THEN RAISE EXCEPTION 'containment_final_trigger_drift'; END IF; END $$;\n"
+    # Embedded transactional POST checks normalized bodies plus original metadata.
+    endpoint_post=''
+    for name,source in [('public.approve_partner_order',contained_approve),('public.generate_b2b_receivable_secure_impl',contained_impl),('platform_private.c2_owner_order_create_allowed',contain)]:
+        f=functions[name]
+        endpoint_post+=f"DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='{f['sig']}'::regprocedure AND md5(pg_get_functiondef(oid))=md5({quote(source)}) AND pg_get_userbyid(proowner)='{f['owner']}' AND proacl::text IS NOT DISTINCT FROM {quote(f['acl'])}) THEN RAISE EXCEPTION 'containment_post_drift:{name}'; END IF; END $$;\n"
+    (H/'rollback.sql.review').write_text('-- CONTAINMENT ONLY, NOT CODE REVERSAL. Canonical ref must be proven externally.\n-- Owner must quiesce/drain affected writers BEFORE running; this does not cancel in-flight invocations.\n-- Expected composed release or reviewed reopened helper ONLY; unexpected/partially contained states abort.\nBEGIN;\nSET LOCAL lock_timeout=\'5s\'; SET LOCAL statement_timeout=\'60s\';\nLOCK TABLE public.partner_orders IN SHARE ROW EXCLUSIVE MODE;\n'+rollback_pre+'\n'+contain.rstrip()+';\n'+contained_approve.rstrip()+';\n'+contained_impl.rstrip()+';\n'+endpoint_post+'COMMIT;\n')
 print('assembled',len(functions),'dependency guards;',len(bodies),'changed bodies; writer remains false')
 if (H/'postflight-hashes.json').exists():
     expected=json.loads((H/'postflight-hashes.json').read_text())

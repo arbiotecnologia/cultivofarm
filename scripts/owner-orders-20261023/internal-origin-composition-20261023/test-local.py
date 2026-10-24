@@ -211,5 +211,41 @@ pg.sql(f"SET session_replication_role=replica; UPDATE public.company_fiscal_sett
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_accounts SET client_id='{CLI_B}' WHERE id='{P}'; SET session_replication_role=origin;")
 before=snapshot();actor(G,create(G,'foreignclient',h=hashA)+';',err='C2_EXTERNAL_CLIENT_DENIED');ok('owner/client cross-tenant denied atomically',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_accounts SET client_id='{CLI}' WHERE id='{P}'; SET session_replication_role=origin;")
-pg.sql((H/'rollback.sql.review').read_text());before=snapshot();actor(G,create(G,'contained',h=hashA)+';',err='C2_OWNER_ORDER_CLOSED');ok('rollback closes writer and preserves historical data',snapshot()==before)
+# Stage both approved/title-existing and pending external orders before containment.
+pending_external=json.loads(val(G,create(G,'containment-pending',h=hashA)+';'))['id']
+# Internal path uses actual canonical create/approval, not a replacement or invented NULL origin.
+pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET partner_account_id='{Q}' WHERE id='{B}'; UPDATE public.partner_financial_settings SET credit_limit=0,billing_trigger='na_aprovacao' WHERE partner_id='{Q}'; SET session_replication_role=origin;")
+internal_id=json.loads(val(ADMIN_B,create(ADMIN_B,'containment-internal',p=Q)+';'))['id']
+ok('canonical internal origin created before containment',pg.sql(f"SELECT internal_origin_snapshot IS NOT NULL AND c2_external_origin_snapshot IS NULL FROM public.partner_orders WHERE id='{internal_id}'")=='t')
+before=snapshot();actor(ADMIN_B,f"SELECT public.approve_partner_order('{internal_id}',NULL,NULL);",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
+ok('internal approval original downstream containment before rollback',snapshot()==before)
+actor(ADMIN_B,f"SELECT public.generate_b2b_receivable_secure('{internal_id}');",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
+ok('internal billing original downstream denial before rollback',snapshot()==before)
+rollback=(H/'rollback.sql.review').read_text()
+approve_sig='public.approve_partner_order(uuid,text,date)'
+saved_approve=pg.sql(f"SELECT pg_get_functiondef('{approve_sig}'::regprocedure)")+'\n'
+pg.sql(saved_approve.replace('BEGIN\n','BEGIN\n  -- deliberate synthetic drift\n',1))
+before=snapshot();failure=pg.sql(rollback,ok=False);print(failure,flush=True)
+ok('containment rejects body drift atomically','origin_dependency_drift:public.approve_partner_order' in failure and snapshot()==before and pg.sql("SELECT md5(pg_get_functiondef('platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure))")=='5f0a08d1d4f8d8c5a7ae58e24c71071e')
+pg.sql(saved_approve)
+pg.sql(f"GRANT EXECUTE ON FUNCTION {approve_sig} TO anon;")
+failure=pg.sql(rollback,ok=False)
+ok('containment rejects ACL drift atomically','origin_dependency_drift:public.approve_partner_order' in failure and snapshot()==before)
+pg.sql(f"REVOKE EXECUTE ON FUNCTION {approve_sig} FROM anon;")
+before=snapshot();pg.sql(rollback)
+ok('containment install changes no history or snapshots',snapshot()==before)
+before=snapshot();actor(G,create(G,'contained',h=hashA)+';',err='C2_OWNER_ORDER_CLOSED');ok('rollback closes writer and preserves historical data',snapshot()==before)
+for external in [pending_external,orders[0],orders[1]]:
+    for operation in [f"SELECT public.approve_partner_order('{external}',NULL,NULL);",f"SELECT public.generate_b2b_receivable_secure('{external}');"]:
+        before=snapshot();actor(ADMIN,operation,err='C2_EXTERNAL_OPERATIONS_CONTAINED')
+        ok('contained external approval/billing denied no effects '+external,snapshot()==before)
+before=snapshot()
+actor(ADMIN_B,f"SELECT public.approve_partner_order('{internal_id}',NULL,NULL);",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
+ok('internal approval original downstream denial preserved after containment',snapshot()==before)
+actor(ADMIN_B,f"SELECT public.generate_b2b_receivable_secure('{internal_id}');",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
+ok('internal billing original downstream denial preserved after containment',snapshot()==before)
+legacy=U(880)
+pg.sql(f"SET session_replication_role=replica; INSERT INTO public.partner_orders(id,numero,partner_id,status,created_by) VALUES('{legacy}','LEGACY-CONTAINMENT','{P}','rascunho','{ADMIN}'); SET session_replication_role=origin;")
+before=snapshot();actor(ADMIN,f"SELECT public.approve_partner_order('{legacy}',NULL,NULL);",err='order_not_priceable_quote_required')
+ok('legacy NULL retains original denial not external containment',snapshot()==before)
 print('TOTAL',len(checks),'PASS; synthetic Auth, no hosted JWT/RLS certification')
