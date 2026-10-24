@@ -1,8 +1,15 @@
 """Assemble inactive SQL from immutable read-only captures; never connects to hosted DB."""
 from pathlib import Path
-import json, hashlib, re
+import json, hashlib, re, sys
 H = Path(__file__).resolve().parent
 B = H / 'baseline'
+OUT=H
+numeric_expected={}
+if '--credit-numeric' in sys.argv:
+    N=H.parent/'credit-numeric-20261024'
+    numeric_expected={'public.fn_b2b_credit_exposure':json.loads((N/'expected.json').read_text())['patched_md5']}
+    OUT=N/'origin-rebase'
+    OUT.mkdir(exist_ok=True)
 functions = {}
 for name in ['snapshot.json', 'pricing.json', 'dependencies.json','relations.json','policy-functions.json']:
     for f in json.loads((B/name).read_text())['functions']:
@@ -17,7 +24,7 @@ def swap(body, old, new):
 def guard(expected):
     checks=[]
     for name, f in functions.items():
-        h=expected.get(name,f['md5'])
+        h=numeric_expected.get(name,expected.get(name,f['md5']))
         checks.append(f"IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='{f['sig']}'::regprocedure AND md5(pg_get_functiondef(oid))='{h}' AND pg_get_userbyid(proowner)='{f['owner']}' AND proacl::text IS NOT DISTINCT FROM {quote(f['acl'])}) THEN RAISE EXCEPTION 'origin_dependency_drift:{name}'; END IF;")
     return 'DO $guard$ BEGIN\n'+'\n'.join(checks)+'\nEND $guard$;\n'
 def quote(s): return 'NULL' if s is None else "'"+s.replace("'","''")+"'"
