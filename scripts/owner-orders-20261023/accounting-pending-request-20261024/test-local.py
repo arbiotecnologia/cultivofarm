@@ -123,6 +123,40 @@ denied(G,create(P,'after-revoke',hA),'42501');ok('revoked manager cannot create'
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
 r3=json.loads(val(G,create(P,'pend-2',sim(G,P)['cart_hash'])+';'))
 ok('restored link creates again as pending (A DRAFT again)',order(r3['id'])['c2_external_origin_snapshot']['contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')
+# --- 30dc8243 commercial entry preserved on top of the composed candidate (A DRAFT again here) ---
+capA=json.loads(val(ADMIN,"SELECT public.c2_internal_order_entry_capability_v1();"))
+ok('internal A capability still fail-closed issuer_not_validated (A DRAFT)',capA['order_create'] is False and capA['reason']=='issuer_not_validated')
+denied(ADMIN,f"SELECT public.simulate_b2b_payment_plan_secure('{Q}','{PLAN}','{items}',NULL)",'C2_INTERNAL_TARGET_DENIED:target_outside_portfolio');ok('internal A -> foreign B partner still C2_INTERNAL_TARGET_DENIED (30dc branch reached)')
+hI=json.loads(val(ADMIN,f"SELECT public.simulate_b2b_payment_plan_secure('{P}','{PLAN}','{items}',NULL);"))['cart_hash']
+denied(ADMIN,create(P,'int-a-draft',hI),'B2B_INTERNAL_ISSUER_NOT_VALIDATED');ok('internal A create with DRAFT issuer still denied; no pending path for internal actors')
+# --- insufficient credit: honest pending request, no credit decision, no hidden transition ---
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=100,credit_limit_action='approval_required' WHERE partner_id='{P}'; SET session_replication_role=origin;")
+c1=counts();rc=json.loads(val(G,create(P,'pend-credit',sim(G,P)['cart_hash'])+';'));oc=order(rc['id'])
+ok('insufficient credit: request lands aguardando_aprovacao_credito as PENDING_ACCOUNTING, nothing approved',oc['status']=='aguardando_aprovacao_credito' and oc['c2_external_origin_snapshot']['contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' and oc['credit_approved_at'] is None and oc['approved_at'] is None and oc['ready_for_production'] is False)
+ok('insufficient-credit create generated no title/installment/link/NF',counts()==c1)
+denied(ADMIN,f"SELECT public.approve_partner_order('{rc['id']}',NULL,NULL)",'C2_ACCOUNTING_PENDING');ok('owner approval of credit-pending request denied C2_ACCOUNTING_PENDING')
+for col,v in [('credit_approved_at','now()'),('status',"'em_analise_comercial'"),('status',"'aprovado'")]:
+    before=snapshot();err=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET {col}={v} WHERE id='{rc['id']}'; COMMIT;",ok=False)
+    assert 'ERROR' in err and snapshot()==before,err[-600:]
+ok('no hidden credit decision or status hop out of aguardando_aprovacao_credito while pending')
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
+# --- no existence oracle for foreign / missing orders before authorization ---
+MISSING=U(999)
+for fn in ["approve_partner_order('{i}',NULL,NULL)","generate_b2b_receivable_secure('{i}')"]:
+    ef=pg.sql(f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN_B)}',true); SELECT public.{fn.format(i=r3['id'])}; COMMIT;",ok=False)
+    em=pg.sql(f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN_B)}',true); SELECT public.{fn.format(i=MISSING)}; COMMIT;",ok=False)
+    msg=lambda e:e.split('ERROR:')[1].splitlines()[0].strip()
+    assert 'C2_ACCOUNTING_PENDING' not in ef and 'B2B_INTERNAL_DOWNSTREAM' not in ef and msg(ef)==msg(em),(ef[-400:],em[-400:])
+ok('B admin: approve/generate on foreign pending A order give the same denial as a missing order (no accounting reason leaked)')
+# --- concurrency: same idempotency key from two backends -> one order ---
+from concurrent.futures import ThreadPoolExecutor
+hc=sim(G,P)['cart_hash'];n0=pg.sql("SELECT count(*) FROM public.partner_orders")
+with ThreadPoolExecutor(2) as ex:res=list(ex.map(lambda _:json.loads(val(G,create(P,'conc-1',hc)+';'))['id'],range(2)))
+ok('two concurrent creates with same key return one pending order',res[0]==res[1] and int(pg.sql("SELECT count(*) FROM public.partner_orders"))==int(n0)+1 and order(res[0])['c2_external_origin_snapshot']['contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')
+# revocation after pending creation: revoked manager cannot read via create replay either
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic revocation 2' WHERE user_id='{G}'; SET session_replication_role=origin;")
+denied(G,create(P,'conc-1',hc),'42501');ok('revoked manager replay of existing key denied (no idempotent leak after revocation)')
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
 # Rollback
 bad=inj((D/'rollback.sql.review').read_text(),'C2AP_INJECTED_RB')
 assert 'C2AP_INJECTED_RB' in pg.sql(bad,ok=False);ok('rollback failing POST preserves candidate',md5('platform_private.b2b_internal_order_snapshot_guard()')==E['candidate']['platform_private.b2b_internal_order_snapshot_guard()'])
