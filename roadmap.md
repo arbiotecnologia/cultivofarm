@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 24/10 00:47 — concorrência PostgreSQL e negativas
-- [ ] Exercitar duas conexões independentes com create mesma chave e aprovação/cobrança concorrentes, funções capturadas/credito LIVE, sem sucesso pós-entrega inventado.
-- [ ] Ampliar escritas A/B e revogação parcial com Auth sintética, preservar baselines/SQL históricos e documentar resultados/impedimentos.
+- [x] Exercitar duas conexões independentes:150checks/Vitest1/1PASS77.99s, create mesma chave exatamente um pedido; na_entrega pré-entrega nega, na_aprovacao separada primeira cobrança/concorrência sem duplicação.
+- [x] Ampliar escritas A/B e revogação parcial com Auth sintética, preservar baselines/SQL históricos e documentar resultados/impedimentos em concurrency-review.md; nenhuma falha SQL exigiu correção.
 - [ ] Produção permanece writerfalse/contabilidadeDRAFT; nenhuma operação hospedada/publicação autorizada neste recorte.
 
 ## 24/10 00:41 — implantação numérica pelo auditor

@@ -28,6 +28,8 @@ Antes de qualquer execução hospedada, o operador deve comprovar externamente o
 
 ## Resultado e limites honestos
 
+**Revisão concorrente 24/10 00:47:** `concurrency-review.md`, `test-concurrency.py` e `concurrency-checks.py`; teste integrado `src/test/saas/c2-order-concurrency-postgres.test.ts` PASS1/1, 150 checks completos. Duas conexões com espera real de lock comprovam create mesma chave, aprovações/primeira geração/replay; `na_entrega` pré-entrega nega sem efeitos e pós-entrega continua bloqueado. Negativas A/B e revogação parcial cobertas com Auth sintética. Nenhum SQL/baseline alterado; detalhes/impedimentos no relatório.
+
 123 checks locais PASS; `src/test/saas/c2-credit-numeric-postgres.test.ts` automatiza a cadeia. Usamos corpos reais capturados, 44 triggers e políticas capturadas sobre replica parcial e Auth sintética; **não certifica JWT/PostgREST/RLS hospedado**.
 
 - Limite 1/exposição 180 agora resulta 18000% e BLOCK ou APPROVAL conforme a ação existente, sem erro 22003 do percentual.

@@ -1,5 +1,7 @@
 # Validação local — 24/10/2026
 
+- Revisão concorrente00:47: teste novo PASS1/1, 150checks (123 anteriores+27), 77.99s às00:56UTC; chamadas simultâneas reais em conexões independentes com lock observável, primeira criação/cobrança e negativasA/B/revogaçãoparcial. `concurrency-review.md` detalha logs canônicos de replay, na_entrega sem título e bloqueios preservados. Sem falha SQL demonstrada/sem SQL alterado; Auth sintética, sem hostedJWT.
+
 - Atualização 00:41 UTC: auditor informa implantação independente `c2_credit_percentage_numeric_capacity_only` SUCCESS, PRE/POST transacionais e POST externo PASS; hash novo/owner/ACL preservados, writerfalse. Oito casos DO readonly independentes PASS e fixtureA180 conserva NO_LIMIT_DEFINED/zero numérico. Relato externo, não execução Lovable; candidato antigo não reaplicar. Variante origin-rebase corresponde ao hash agora instalado; composição permanece inativa.
 - Reexecução Lovable local 00:42 UTC: `bun run test src/test/saas/c2-credit-numeric-postgres.test.ts` PASS (1/1, 54.70s; harness completo 123 checks), incluindo comparação byte-exata dos quatro SQL rebase e PRE com writerfalse/novo hash, corpo completo capturado, atomicidade/replay/na_entrega e contenção de origem preservando crédito corrigido. Nenhuma alteração SQL necessária na variante já preparada; hashes SQL e baselines históricos intactos. Não é teste hosted/JWT. Build automático observado OK às00:42:07Z; runtime não alterado.
 
