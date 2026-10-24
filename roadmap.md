@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 15:26 — compra B2B com pendência contábil honesta (pacote INATIVO)
+- [x] `scripts/owner-orders-20261023/accounting-pending-request-20261024/`: b5 byte-exato + overlay pendente/promoção auditada; 41 PASS descartável (Auth sintética).
+- [ ] Revisão independente e aplicação pelo auditor; capturas de `LIVE-DEPENDENCIES.md`. Bloqueio: execução externa.
+- [ ] Frontend: estado "aguardando validação contábil" e ação de promoção para o comercial, após revisão SQL.
+- [ ] Validação contábil real de A; classificação fiscal MG e NF-e. Bloqueio: contabilidade/dados fiscais.
+
 ## 24/10 15:05 — catálogo da carteira comercial (pacote INATIVO ae29da6)
 - [x] Captura LIVE `get_partner_catalog_secure` (uuid/V2) reproduzida MD5/owner/ACL; patch mínimo só no gate `forbidden_partner` via `c2_internal_order_target_reason`; PRE/POST/rollback com hashes; 47 PASS PostgreSQL descartável (Auth sintética).
 - [x] Helpers LIVE reais (visibilidade/preço/volume) sem stubs, guardados em PRE/POST; fixture MG sintética identificada; 54 PASS descartável; criação não depende de b5.

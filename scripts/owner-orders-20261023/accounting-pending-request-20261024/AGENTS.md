@@ -1,0 +1,4 @@
+- Package is INACTIVE review-only; it composes b5 (final-integrated-manual) byte-exact plus an overlay in one transaction and must never be applied hosted without independent review — prevents partial release.
+- Unvalidated issuers yield only the honest C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1 snapshot (no issuer identity/attestation); approval, credit, economics seal, billing, production, NF and delivery stay denied server-side until explicit audited promotion — prevents false VALIDATED.
+- Promotion is the only pending→V1 transition: internal owner of the same org, CAS updated_at, private txid ticket, current VALIDATED settings, audit log — prevents self-promotion and cross-tenant writes.
+- Tests use disposable PostgreSQL, synthetic Auth and identified MG fixtures only; never certify hosted JWT/RLS or accounting — distinguishes local evidence.
