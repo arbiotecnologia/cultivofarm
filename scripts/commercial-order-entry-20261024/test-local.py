@@ -23,7 +23,7 @@ def denied(u,sql,needle):
 cap=lambda u:json.loads(val(u,"SELECT public.c2_internal_order_entry_capability_v1()"))
 # Baseline LIVE: internal A cannot target its portfolio partner (org_partner rule).
 denied(ADMIN,SIM(P),'42501: forbidden_partner');ok('baseline internal A portfolio simulate denied forbidden_partner')
-ext_before=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{json.dumps({'sub':G,'role':'authenticated','iat':int(time.time())})}',true); {create(G,'ext-1')}; COMMIT;",ok=False).split('ERROR:')[1].splitlines()[0]
+ext_before=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{json.dumps({'sub':G,'role':'authenticated','iat':int(time.time())})}',true); {create(G,'ext-1',h='x')}; COMMIT;",ok=False).split('ERROR:')[1].splitlines()[0]
 pg.sql((D/'preflight.sql').read_text());ok('preflight READ ONLY passes on captured LIVE')
 # Failing POST in the same transaction must preserve everything.
 bad=(D/'candidate.sql.review').read_text().replace('COMMIT;\n','DO $x$ BEGIN RAISE EXCEPTION $$C2IOE_INJECTED_POST_FAILURE$$; END $x$;\nCOMMIT;\n')
@@ -47,7 +47,7 @@ simA=json.loads(val(ADMIN,SIM(P)));ok('internal A simulates own portfolio partne
 denied(ADMIN,SIM(Q),'42501: C2_INTERNAL_TARGET_DENIED:target_outside_portfolio');ok('internal A foreign B partner simulate denied, no effects')
 denied(ADMIN_B,create(ADMIN_B,'b-on-a',p=P,h=simA['cart_hash']),'42501: C2_INTERNAL_TARGET_DENIED:target_outside_portfolio');ok('internal B create on A partner denied, no effects')
 denied(T,SIM(P),'42501: forbidden_financial_terms');ok('technician denial unchanged')
-ext_after=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{json.dumps({'sub':G,'role':'authenticated','iat':int(time.time())})}',true); {create(G,'ext-2')}; COMMIT;",ok=False).split('ERROR:')[1].splitlines()[0]
+ext_after=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{json.dumps({'sub':G,'role':'authenticated','iat':int(time.time())})}',true); {create(G,'ext-2',h='x')}; COMMIT;",ok=False).split('ERROR:')[1].splitlines()[0]
 ok('external manager create outcome byte-identical to LIVE: '+ext_after.strip(),ext_before==ext_after)
 denied(ADMIN,f"SELECT public.create_partner_order_secure('{P}','x','{items}',NULL,'{PLAN}',NULL,NULL,NULL,'k-nohash')",'cart_hash_required');ok('hash required')
 r1=json.loads(val(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'])));r2=json.loads(val(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'])))
