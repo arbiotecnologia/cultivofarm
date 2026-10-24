@@ -10,12 +10,13 @@ def transaction(u, sql, name, hold=False):
 
 def pair(u, sql1, sql2, second_error=None):
     """First RPC completed but uncommitted; prove second backend waits on its lock."""
-    p1=pg.popen('');p1.stdin.write(transaction(u,sql1,'c2_concurrent_first',True));p1.stdin.close()
+    p1=subprocess.Popen(pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,bufsize=0)
+    p1.stdin.write(transaction(u,sql1,'c2_concurrent_first',True).encode());p1.stdin.close()
     lines=[];deadline=time.monotonic()+15
     while time.monotonic()<deadline:
         ready,_,_=select.select([p1.stdout],[],[],1)
         if ready:
-            line=p1.stdout.readline();lines.append(line)
+            line=p1.stdout.readline().decode();lines.append(line)
             if 'CONCURRENT_HOLD' in line:break
             if not line:raise AssertionError(p1.stderr.read())
     else:raise AssertionError('first session never reached uncommitted hold')
@@ -25,7 +26,7 @@ def pair(u, sql1, sql2, second_error=None):
         if pg.sql("SELECT count(*) FROM pg_stat_activity WHERE application_name='c2_concurrent_second' AND wait_event_type='Lock'")=='1':
             waited=True;break
         time.sleep(.03)
-    tail=p1.stdout.read();error1=p1.stderr.read();p1.wait(timeout=15)
+    tail=p1.stdout.read().decode();error1=p1.stderr.read().decode();p1.wait(timeout=15)
     out2=p2.stdout.read();error2=p2.stderr.read();p2.wait(timeout=15)
     assert waited,'no proven lock overlap between distinct backends'
     assert p1.returncode==0,error1
