@@ -1,0 +1,10 @@
+# Validação local — 24/10/2026
+
+- Captura canônica preservada; MD5 baseline `3bcc92e68f80b86bc01db7b5e94ee4c6`, novo normalizado `213ac31f3a30816ead75365b0d1fed18`.
+- PostgreSQL descartável: 123 checks PASS, incluindo crédito real, drift corpo/ACL, rollback guardado, limites, precedence, inválidos, na_entrega e falha tardia/replay da RPC real capturada.
+- Vitest conjunto: 2 arquivos/2 testes PASS (123 checks numéricos + 84 checks do pacote original), 54.57s. Ambos usam replica parcial/Auth sintética.
+- Comparação byte-exata dos quatro arquivos origin-rebase versus homônimos do pacote original: cada um muda somente uma ocorrência MD5 crédito, nenhuma outra linha. Pré-condição rebase: correção aritmética já instalada; não comparar esse candidato de composição com o candidato aritmético.
+- Revisão readonly independente confirmou mudança exclusiva typmod e guards de crédito; apontou ambiguidade na descrição da variante/ordem, esclarecida em README e comparação automatizada. Não houve revisão hosted.
+- Guard financeiro capturado negou aprovação de pedido pendente de crédito (`credit_pending`); mantido. Outro pedido dentro do limite testou aprovação comercial na_entrega sem título; cobrança pré-entrega negada sem efeitos.
+- Calculador interno conserva aceitação anterior de NULL/negativo/NaN/UUID inexistente; não há nova validação de domínio neste recorte. Numeric(14,2) continua falhando 22003 para Infinity e valores fora de capacidade. Create rejeita quantidade zero/negativa. Concorrência/idempotência paralela e caminho pós-entrega não certificados.
+- Sem SQL hospedado, publicação, dados reais, alteração de papéis/sessões, reabertura writer ou validação contábil. Correção aritmética revisável separadamente; origem continua NO-GO pelo gate humano contábil, quiescência/revisão e JWT real.
