@@ -1,0 +1,3 @@
+-- Read-only capture 23/10/2026: replica-only missing idempotency relation.
+CREATE TABLE public.partner_order_idempotency(id uuid NOT NULL DEFAULT gen_random_uuid(),partner_id uuid NOT NULL,idempotency_key text NOT NULL,cart_hash text NOT NULL,order_id uuid,result_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,created_by uuid,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),request_fingerprint text);
+GRANT ALL ON public.partner_order_idempotency TO service_role;
