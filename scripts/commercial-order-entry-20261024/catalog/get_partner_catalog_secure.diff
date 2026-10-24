@@ -1,0 +1,23 @@
+--- live/get_partner_catalog_secure.sql
++++ candidate/get_partner_catalog_secure.sql
+@@ -1,3 +1,4 @@
++-- C2_INTERNAL_ORDER_ENTRY_V1 catalogue: only the partner gate changes; visibility, prices, sheets, V2 wrapper untouched.
+ CREATE OR REPLACE FUNCTION public.get_partner_catalog_secure(p_partner_id uuid)
+  RETURNS TABLE(item_id uuid, item_tipo text, product_id uuid, produto_nome text, produto_codigo text, descricao_curta text, preco_tabela numeric, desconto_percentual numeric, preco_parceiro numeric, produto_ativo boolean, resumo_curto text, explicacao_b2b text, beneficios_principais text, ficha_status text, ficha_aprovada boolean, valor_dose_brl numeric, valor_litro_brl numeric, valor_ha_brl numeric, unidade_preco_principal text)
+  LANGUAGE plpgsql
+@@ -22,7 +23,9 @@
+       RAISE EXCEPTION 'forbidden_financial_terms' USING ERRCODE='42501';
+     END IF;
+     SELECT * INTO s FROM platform_private.b2b_actor_scope(v_uid);
+-    IF NOT s.profile_ok OR s.org_partner IS DISTINCT FROM p_partner_id OR NOT s.partner_valid THEN
++    IF (NOT s.profile_ok OR s.org_partner IS DISTINCT FROM p_partner_id OR NOT s.partner_valid)
++       AND NOT (platform_private.b2b_internal_commercial_actor()
++                AND platform_private.c2_internal_order_target_reason(v_uid, p_partner_id) IS NULL) THEN
+       RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501';
+     END IF;
+     IF public.has_role(v_uid,'parceiro_b2b'::app_role) THEN
+@@ -77,3 +80,4 @@
+ END;
+ $function$
+ ;
++ALTER FUNCTION public.get_partner_catalog_secure(uuid) OWNER TO postgres;
