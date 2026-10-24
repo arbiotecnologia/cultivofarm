@@ -30,7 +30,7 @@ INSERT INTO public.microrganismos(id,nome,tipo,created_at,ativo,b2b_enabled,codi
 INSERT INTO public.product_technical_profiles(produto_id,status_validacao,resumo_curto,explicacao_produtor) VALUES('{PROD}','aprovado','resumo aprovado','uso aprovado'),('{PROD3}','rascunho','nao publicar','nao publicar');
 INSERT INTO public.catalog_tenant_visibility(organization_id,entity_type,produto_id,hidden) VALUES('{A}','produto','{PROD2}',true);
 SET session_replication_role=origin;""")
-def catq(u,p):return val(u,f"SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.item_id),'[]') FROM public.get_partner_catalog_secure('{p}',true) x")
+def catq(u,p):return val(u,f"SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.item_id),'[]') FROM public.get_partner_catalog_secure('{p}',true) x;")
 def caterr(u,p,v2=True):
     claims=json.dumps({'sub':u,'role':'authenticated','iat':int(time.time())})
     arg=f"'{p}',true" if v2 else f"'{p}'"
