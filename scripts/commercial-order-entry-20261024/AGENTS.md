@@ -1,0 +1,3 @@
+- This package is review-only and INACTIVE; never apply hosted, never reopen the owner writer, never bypass the issuer accounting gate or B2B_INTERNAL_DOWNSTREAM_UNVERIFIED — prevents false sale activation.
+- Internal order entry reuses create_partner_order_secure/simulate/NovoPedido with server-derived partner lists; URL IDs only select and never authorize — prevents cross-tenant ordering.
+- Widening assert_b2b_partner_scope for internal actors is an authorization change requiring explicit owner decision and separate review — prevents silent RBAC expansion.

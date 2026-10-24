@@ -1,0 +1,33 @@
+-- INATIVO — revisão independente obrigatória. NÃO aplicar sem autorização do proprietário.
+-- Leitura mínima, sem escrita, sem preço, sem settings. Não altera create/simulate.
+-- Retorna order_create=false sempre que o emissor da empresa do ator não estiver VALIDATED,
+-- mantendo o mesmo critério do trigger b2b_internal_order_snapshot_guard (LIVE).
+BEGIN;
+CREATE OR REPLACE FUNCTION public.c2_internal_order_entry_capability_v1()
+ RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $f$
+DECLARE uid uuid := auth.uid(); org uuid; ok boolean; partners jsonb;
+BEGIN
+  IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  org := public.h15_actor_organization();
+  -- Mesmo ator do LIVE (fn_cc_can_prepare + feature) e sem papéis externos.
+  IF org IS NULL OR NOT public.fn_cc_can_prepare(uid) OR NOT public._saas_user_has_feature(uid,'pedidos_b2b')
+     OR EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=uid AND r.role IN ('parceiro_b2b','parceiro_b2b_tecnico')) THEN
+    RETURN jsonb_build_object('contract','C2_INTERNAL_ORDER_ENTRY_V1','order_create',false,'organization_id',org,'reason','actor_not_allowed','partners','[]'::jsonb);
+  END IF;
+  SELECT count(*)=1 AND bool_and(c.configuration_status='VALIDATED' AND c.accounting_validated_at IS NOT NULL
+         AND nullif(btrim(c.legal_name),'') IS NOT NULL AND nullif(btrim(c.cnpj),'') IS NOT NULL)
+    INTO ok FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE;
+  SELECT COALESCE(jsonb_agg(jsonb_build_object('partner_id',p.id,'commercial_owner_organization_id',org) ORDER BY p.id),'[]'::jsonb)
+    INTO partners FROM public.partner_accounts p
+   WHERE p.commercial_owner_organization_id=org AND p.ativo IS TRUE AND p.deleted_at IS NULL
+     -- Hoje create/simulate LIVE só aceitam o parceiro da própria organização (org_partner).
+     AND p.id = (SELECT s.org_partner FROM platform_private.b2b_actor_scope(uid) s);
+  RETURN jsonb_build_object('contract','C2_INTERNAL_ORDER_ENTRY_V1','order_create',COALESCE(ok,false) AND jsonb_array_length(partners)>0,
+    'organization_id',org,'reason',CASE WHEN NOT COALESCE(ok,false) THEN 'issuer_not_validated' WHEN jsonb_array_length(partners)=0 THEN 'no_partner_in_scope' ELSE NULL END,
+    'partners',partners);
+END $f$;
+REVOKE ALL ON FUNCTION public.c2_internal_order_entry_capability_v1() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.c2_internal_order_entry_capability_v1() TO authenticated, service_role;
+-- Abortar intencionalmente: arquivo de revisão. Trocar por COMMIT apenas em release aprovada.
+ROLLBACK;
