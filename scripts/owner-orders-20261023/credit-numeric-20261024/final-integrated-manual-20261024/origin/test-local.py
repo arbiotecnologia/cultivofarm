@@ -76,7 +76,7 @@ for sig,src,h,acl in [
     ('public.fn_generate_receivable_installments()',FIN/'fn_generate_receivable_installments.sql.review',live_hashes['fn_generate_receivable_installments()'],'{postgres=X/postgres,service_role=X/postgres}'),
     ('public.fn_generate_payable_installments()',FIN/'fn_generate_payable_installments.sql.review',live_hashes['fn_generate_payable_installments()'],'{postgres=X/postgres,service_role=X/postgres}'),
     ('public.rpc_create_financial_title(text,jsonb)',FIN/'rpc_create_financial_title.sql.review',live_hashes['rpc_create_financial_title(text,jsonb)'],'{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')]:
-    pg.sql(src.read_text())
+    pg.sql(src.read_bytes().decode())
     pg.sql(f"REVOKE ALL ON FUNCTION {sig} FROM PUBLIC,anon,authenticated,service_role;")
     for role in ['anon','authenticated','service_role']:
         if role+'=X/' in acl:pg.sql(f"GRANT EXECUTE ON FUNCTION {sig} TO {role};")

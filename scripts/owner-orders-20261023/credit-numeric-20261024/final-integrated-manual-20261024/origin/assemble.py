@@ -38,7 +38,8 @@ assert live_hashes['fn_generate_receivable_installments()'] == 'fba70619b461c468
 assert live_hashes['fn_generate_payable_installments()'] == 'f4b15f02171e321e5ca0370255ccbff1'
 assert live_hashes['rpc_create_financial_title(text,jsonb)'] == '0778b876b300e08d53f1cf7790394fc5'
 for name, (sig, h, path, acl) in live_manual.items():
-    body = path.read_text()
+    # Byte-exact read: the deployed RPC source contains CRLF lines that pg_get_functiondef preserves.
+    body = path.read_bytes().decode()
     f = functions.get(name, {})
     f.update({'sig': sig, 'sql': body, 'md5': h, 'owner': 'postgres', 'acl': acl})
     functions[name] = f
@@ -169,7 +170,7 @@ impl=swap(impl,"  v_uf := to_jsonb(v_partner) ->> 'uf';", "  -- External manual 
 # H6 installment immutability: the composed AR body is the reviewed future-composed
 # reference = LIVE manual private-context branch + B2B contractual schedule branch.
 # Never rebuild it from the historical pre-fix captured body.
-future=(FIN/'future-composed-function.sql.review').read_text()
+future=(FIN/'future-composed-function.sql.review').read_bytes().decode()
 b2b_branch="  IF NEW.origin_type='B2B_ORDER' AND EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=NEW.origin_id AND o.c2_external_origin_snapshot IS NOT NULL) THEN\n    INSERT INTO public.accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,net_amount,status,organization_id,interest_amount)\n    SELECT NEW.id,s.installment_number,s.due_date,s.amount,s.amount,'OPEN',NEW.organization_id,s.interest_amount\n    FROM public.partner_order_payment_schedule s JOIN public.partner_orders o ON o.id=s.partner_order_id AND o.payment_terms_id=s.payment_terms_id\n    WHERE o.id=NEW.origin_id ORDER BY s.installment_number;\n    IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id=NEW.id)<>v_qtd THEN RAISE EXCEPTION 'B2B_INSTALLMENT_CARDINALITY_INVALID' USING ERRCODE='23514'; END IF;\n    RETURN NEW;\n  END IF;\n"
 rebuilt=swap(functions['public.fn_generate_receivable_installments']['sql'],'  FOR i IN 1..v_qtd LOOP',b2b_branch+'  FOR i IN 1..v_qtd LOOP')
 assert rebuilt.rstrip()==future.rstrip(), 'future-composed reference is not LIVE manual body + B2B branch'
