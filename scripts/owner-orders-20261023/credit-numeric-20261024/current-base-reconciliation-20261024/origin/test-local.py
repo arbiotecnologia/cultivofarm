@@ -171,6 +171,10 @@ exact_denied(ADMIN_B,f"INSERT INTO public.accounts_receivable_installments(recei
 ok('crossed installment parent exact canonical denial')
 exact_denied(ADMIN,f"INSERT INTO public.accounts_receivable(description,total_amount,installment_count,first_due_date,status,organization_id) VALUES('NULL local',1,3,current_date,'OPEN',NULL)",'23514','FINANCIAL_TENANT_REQUIRED',owner=True)
 ok('NULL title tenant exact canonical denial')
+other=json.loads(val(GB,create(GB,'tenant-B-positive',p=Q)+';'))['id']
+actor(ADMIN_B,f"SELECT public.approve_partner_order('{other}',NULL,NULL);")
+ok('B same fixtures own title three tenant installments positive',pg.sql(f"SELECT count(*) FROM public.accounts_receivable_installments i JOIN public.accounts_receivable a ON a.id=i.receivable_id WHERE a.origin_id='{other}' AND a.organization_id='{B}' AND i.organization_id='{B}'")=='3')
+
 before=snapshot();actor(ADMIN,f"UPDATE public.partner_orders SET c2_external_origin_snapshot=jsonb_set(c2_external_origin_snapshot,'{{creditor_organization_id}}','\"{B}\"') WHERE id='{oid}';");ok('RLS blocks direct origin change',snapshot()==before)
 # Owner-superuser trigger execution with synthetic actor proves the trigger independently of RLS zero-row updates.
 pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{{\"sub\":\"{ADMIN}\",\"role\":\"authenticated\",\"iat\":{int(time.time())}}}',true); UPDATE public.partner_orders SET c2_external_origin_snapshot=jsonb_set(c2_external_origin_snapshot,'{{creditor_organization_id}}','\"{B}\"') WHERE id='{oid}'; COMMIT;",ok=False)
