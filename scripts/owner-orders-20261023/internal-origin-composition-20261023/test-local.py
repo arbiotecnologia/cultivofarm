@@ -219,8 +219,8 @@ internal_id=json.loads(val(ADMIN_B,create(ADMIN_B,'containment-internal',p=Q)+';
 ok('canonical internal origin created before containment',pg.sql(f"SELECT internal_origin_snapshot IS NOT NULL AND c2_external_origin_snapshot IS NULL FROM public.partner_orders WHERE id='{internal_id}'")=='t')
 before=snapshot();actor(ADMIN_B,f"SELECT public.approve_partner_order('{internal_id}',NULL,NULL);",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
 ok('internal approval original downstream containment before rollback',snapshot()==before)
-actor(ADMIN_B,f"SELECT public.generate_b2b_receivable_secure('{internal_id}');",err='billing_not_eligible:ORDER_NOT_APPROVED')
-ok('internal billing original eligibility denial before rollback',snapshot()==before)
+actor(ADMIN_B,f"SELECT public.generate_b2b_receivable_secure('{internal_id}');",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
+ok('internal billing original downstream denial before rollback',snapshot()==before)
 rollback=(H/'rollback.sql.review').read_text()
 approve_sig='public.approve_partner_order(uuid,text,date)'
 saved_approve=pg.sql(f"SELECT pg_get_functiondef('{approve_sig}'::regprocedure)")+'\n'
@@ -242,8 +242,8 @@ for external in [pending_external,orders[0],orders[1]]:
 before=snapshot()
 actor(ADMIN_B,f"SELECT public.approve_partner_order('{internal_id}',NULL,NULL);",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
 ok('internal approval original downstream denial preserved after containment',snapshot()==before)
-actor(ADMIN_B,f"SELECT public.generate_b2b_receivable_secure('{internal_id}');",err='billing_not_eligible:ORDER_NOT_APPROVED')
-ok('internal billing original eligibility denial preserved after containment',snapshot()==before)
+actor(ADMIN_B,f"SELECT public.generate_b2b_receivable_secure('{internal_id}');",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
+ok('internal billing original downstream denial preserved after containment',snapshot()==before)
 legacy=U(880)
 pg.sql(f"SET session_replication_role=replica; INSERT INTO public.partner_orders(id,numero,partner_id,status,created_by) VALUES('{legacy}','LEGACY-CONTAINMENT','{P}','rascunho','{ADMIN}'); SET session_replication_role=origin;")
 before=snapshot();actor(ADMIN,f"SELECT public.approve_partner_order('{legacy}',NULL,NULL);",err='order_not_priceable_quote_required')
