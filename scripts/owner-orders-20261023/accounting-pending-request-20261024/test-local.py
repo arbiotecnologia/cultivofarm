@@ -90,9 +90,9 @@ denied(ADMIN,f"SELECT public.c2_promote_accounting_pending_order_v1('{r1['id']}'
 ok('promotion created no title/installment/link/NF',counts()==c0)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.company_fiscal_settings SET configuration_status='DRAFT',accounting_validated_at=NULL WHERE id='{SETTINGS}'; SET session_replication_role=origin;")
 # Revocation
-pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now() WHERE user_id='{G}'; SET session_replication_role=origin;")
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic revocation' WHERE user_id='{G}'; SET session_replication_role=origin;")
 denied(G,create(P,'after-revoke',hA),'42501');ok('revoked manager cannot create')
-pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
 r3=json.loads(val(G,create(P,'pend-2',sim(G,P)['cart_hash'])+';'))
 ok('restored link creates again as pending (A DRAFT again)',order(r3['id'])['c2_external_origin_snapshot']['contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')
 # Rollback
