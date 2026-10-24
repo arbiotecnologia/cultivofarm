@@ -74,8 +74,10 @@ pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_s
 bill_id=json.loads(val(G,create(G,'concurrent-supported-billing')+';'))['id']
 pair(ADMIN,f"SELECT public.approve_partner_order('{bill_id}',NULL,NULL)",f"SELECT public.generate_b2b_receivable_secure('{bill_id}')")
 ok('supported na_aprovacao approval versus generation exactly one title three installments',pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{bill_id}'")=='1' and pg.sql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id IN (SELECT id FROM public.accounts_receivable WHERE origin_id='{bill_id}')")=='3' and pg.sql(f"SELECT count(*) FROM public.partner_order_financial_links WHERE partner_order_id='{bill_id}'")=='1')
-before=snapshot();pair(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{bill_id}')",f"SELECT public.generate_b2b_receivable_secure('{bill_id}')")
-ok('two concurrent billing replays no additional effects',snapshot()==before)
+before=snapshot();audit_count=int(pg.sql(f"SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id='{bill_id}' AND acao='financeiro_duplicidade_bloqueada'"))
+pair(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{bill_id}')",f"SELECT public.generate_b2b_receivable_secure('{bill_id}')")
+after=snapshot()
+ok('two concurrent billing replays no financial duplication only canonical audit',all(after[t]==v for t,v in before.items() if t!='partner_order_audit_logs') and int(pg.sql(f"SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id='{bill_id}' AND acao='financeiro_duplicidade_bloqueada'"))==audit_count+2)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET billing_trigger='na_entrega' WHERE partner_id='{P}'; SET session_replication_role=origin;")
 # Fresh negative calls, not merely RLS reads.
 for u,p in [(ADMIN_B,P),(GB,P),(ADMIN,Q),(G,Q)]:
