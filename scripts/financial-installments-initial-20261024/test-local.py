@@ -14,7 +14,7 @@ def setup():
  s="""CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
  CREATE SCHEMA auth; CREATE SCHEMA platform_private; CREATE SCHEMA finance_private;
  GRANT USAGE ON SCHEMA public,auth,platform_private TO authenticated,anon,service_role;
- CREATE TYPE app_role AS ENUM ('administrador','gestor','financeiro','consultor_tecnico','gestor_comercial');
+ CREATE TYPE app_role AS ENUM ('administrador','gestor','financeiro','consultor_tecnico','gestor_comercial','administrativo','parceiro_b2b','cliente_produtor');
  CREATE TABLE organizations(id uuid PRIMARY KEY,ativo boolean DEFAULT true);
  CREATE TABLE profiles(user_id uuid PRIMARY KEY,organization_id uuid,ativo boolean DEFAULT true);
  CREATE TABLE user_roles(user_id uuid,role app_role);
@@ -22,13 +22,16 @@ def setup():
  CREATE FUNCTION platform_private.platform_actor_access_ready(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT true$$;
  CREATE FUNCTION fn_authz_uid_scope_ok(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT $1=auth.uid()$$;
  CREATE FUNCTION has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$SELECT EXISTS(SELECT 1 FROM user_roles WHERE user_id=$1 AND role=$2)$$;
+ CREATE FUNCTION platform_private.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT public.has_role($1,$2)$$;
+ CREATE FUNCTION platform_private.b2b_commercial_context() RETURNS jsonb LANGUAGE sql STABLE AS $$SELECT '{}'::jsonb$$;
+ CREATE FUNCTION get_cliente_ids_for_user(uuid) RETURNS uuid[] LANGUAGE sql STABLE AS $$SELECT '{}'::uuid[]$$;
  CREATE TABLE clientes(id uuid PRIMARY KEY,organization_id uuid);
  CREATE TABLE financial_categories(id uuid PRIMARY KEY,active boolean,type text);
  CREATE TABLE financial_cost_centers(id uuid PRIMARY KEY,active boolean);
  CREATE TABLE financial_audit_log(entity_type text,entity_id uuid,action text,old_data jsonb,new_data jsonb,performed_by uuid);
  """
  for kind in ['receivable','payable']:
-  s+=f"""CREATE TABLE accounts_{kind}(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid,customer_id uuid,supplier_id uuid,supplier_name text,description text,category_id uuid,cost_center_id uuid,total_amount numeric(14,2),issue_date date,first_due_date date,installment_count int,notes text,created_by uuid,origin_type text,status text DEFAULT 'OPEN',fiscal_invoice_required boolean,fiscal_invoice_status text,payment_method_id uuid,supplier_invoice_date date,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
+  s+=f"""CREATE TABLE accounts_{kind}(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid,customer_id uuid,partner_id uuid,supplier_id uuid,supplier_name text,description text,category_id uuid,cost_center_id uuid,total_amount numeric(14,2),issue_date date,first_due_date date,installment_count int,notes text,created_by uuid,origin_type text,status text DEFAULT 'OPEN',fiscal_invoice_required boolean,fiscal_invoice_status text,payment_method_id uuid,supplier_invoice_date date,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
  CREATE TABLE accounts_{kind}_installments(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),organization_id uuid,{kind}_id uuid REFERENCES accounts_{kind}(id),installment_number int,due_date date,original_amount numeric(14,2),net_amount numeric(14,2),received_amount numeric DEFAULT 0,paid_amount numeric DEFAULT 0,status text,created_at timestamptz DEFAULT now(),UNIQUE({kind}_id,installment_number));
  """
  # Exact captured functions (including authorization wrappers); only their downstream
