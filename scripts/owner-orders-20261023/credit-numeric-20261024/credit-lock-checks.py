@@ -20,7 +20,11 @@ p1=open_hold(G,create(G,'lock-baseline-create'),'c2_credit_create')
 p2=pg.popen('');p2.stdin.write(transaction(ADMIN,f"SELECT public.approve_partner_order('{target}',NULL,NULL)",'c2_credit_approve'));p2.stdin.close()
 deadline=time.monotonic()+1.5
 while p2.poll() is None and time.monotonic()<deadline:time.sleep(.02)
-ok('baseline approve commits while create credit lock still held',p2.poll()==0 and p1.poll() is None)
+if not (p2.poll()==0 and p1.poll() is None):
+    print('LOCK_DIAGNOSTIC',pg.sql("SELECT application_name||'|'||coalesce(wait_event,'') FROM pg_stat_activity WHERE application_name IN ('c2_credit_create','c2_credit_approve')"),flush=True)
+    finish(p2)
+    raise AssertionError('baseline approve did not commit during create hold')
+ok('baseline approve commits while create credit lock still held')
 finish(p2);finish(p1)
 ok('baseline interleave no premature title or financial exploit demonstrated',pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{target}'")=='0')
 
