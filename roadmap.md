@@ -1,5 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 01:10 — barreiras intermediárias e negativas estritas
+- [ ] Reproduzir janela row/receipt dentro das RPCs completas, crédito positivo/formal e autorizações com SQLSTATE+mensagem/controles positivos.
+- [ ] Corrigir somente falha reproduzida em variante separada PRE/POST/contenção; manter SQL histórico/crédito LIVE/writer false/contabilidade DRAFT e executar suíte.
+
 ## 24/10 00:58 — create versus approve / locks de crédito
 - [x] Duas conexões/corpos capturados: trigger de crédito serializa create-versus-approve nas duas ordens, sem deadlock/título prematuro; divergência hash explícita confirmada sem exploit demonstrado. Oito checks adicionais, total158.
 - [x] Sem falha SQL demonstrada, nenhuma variante corretiva especulativa; baselines/rollback/origin-rebase intactos, implicações da contenção registradas em credit-lock-review.md.
