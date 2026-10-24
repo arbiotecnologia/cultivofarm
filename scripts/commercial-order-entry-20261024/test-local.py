@@ -50,7 +50,7 @@ denied(T,SIM(P),'42501: forbidden_financial_terms');ok('technician denial unchan
 ext_after=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{json.dumps({'sub':G,'role':'authenticated','iat':int(time.time())})}',true); {create(G,'ext-2',h='x')}; COMMIT;",ok=False).split('ERROR:')[1].splitlines()[0]
 ok('external manager create outcome byte-identical to LIVE: '+ext_after.strip(),ext_before==ext_after)
 denied(ADMIN,f"SELECT public.create_partner_order_secure('{P}','x','{items}',NULL,'{PLAN}',NULL,NULL,NULL,'k-nohash')",'cart_hash_required');ok('hash required')
-r1=json.loads(val(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'])));r2=json.loads(val(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'])))
+r1=json.loads(val(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'])));r2=json.loads(val(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'])));print('R',r1,r2)
 ok('idempotent replay returns same order',r1['id']==r2['id'])
 denied(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'],obs='changed'),'idempotency_conflict');ok('same key different request conflicts')
 ok('created order has server internal origin, not production-ready',pg.sql(f"SELECT internal_origin_snapshot->>'organization_id'||'/'||ready_for_production FROM public.partner_orders WHERE id='{r1['id']}'")==A+'/false')
