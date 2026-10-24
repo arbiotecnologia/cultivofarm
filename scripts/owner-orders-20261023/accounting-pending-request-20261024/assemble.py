@@ -1,0 +1,110 @@
+"""Assemble review-only SQL for the accounting-pending external request evolution.
+Never connects to any database. Builds on the reviewed b5 package (final-integrated-manual-20261024)
+byte-for-byte and fails closed if any patch anchor is not found exactly once."""
+import json, sys
+from pathlib import Path
+D = Path(__file__).resolve().parent
+B5 = D.parent / 'credit-numeric-20261024/final-integrated-manual-20261024/origin'
+ROOT = Path('/dev-server')
+E = json.loads((D / 'expected.json').read_text())
+b5 = (B5 / 'candidate.sql.review').read_text()
+b5_post = (B5 / 'postflight.sql').read_text()
+OWNER_A = '007bb519-cba0-4704-be2c-cb93ad010048'
+
+def once(hay, needle, label):
+    n = hay.count(needle)
+    if n != 1: sys.exit(f'ANCHOR_{label}: found {n}')
+
+def fn(sig_start):
+    i = b5.index(sig_start); j = b5.index('END $function$;', i) + len('END $function$;')
+    return b5[i:j]
+
+# 1) Install-time accounting gate is replaced by per-order honest pending state (see guard patch).
+g0 = b5.index('DO $accounting_gate$'); g1 = b5.index('END $accounting_gate$;') + len('END $accounting_gate$;\n')
+body = b5[:g0] + '-- Install-time owner A gate removed: accounting readiness is enforced per order (C2_ACCOUNTING_PENDING) below.\n' + b5[g1:]
+assert body.rstrip().endswith('COMMIT;')
+body = body.rstrip()[:-len('COMMIT;')]
+
+# 2) Snapshot guard: external create records honest pending origin when issuer is not validated.
+guard = fn('CREATE OR REPLACE FUNCTION platform_private.b2b_internal_order_snapshot_guard()')
+ext0 = guard.index("IF TG_OP='INSERT' AND platform_private.has_ticket('c2_external_order_create',NEW.partner_id) THEN")
+ext1 = guard.index('  PERFORM platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);', ext0)
+seg = guard[ext0:ext1]
+a0 = seg.index("  IF candidate_count<>1 THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_AMBIGUOUS'")
+v1 = seg.index("  NEW.c2_external_origin_snapshot:=jsonb_build_object('contract','C2_EXTERNAL_ORDER_ORIGIN_V1'")
+v1_line = seg[v1:]
+assert v1_line.count('\n') == 1
+new_seg = seg[:a0] + """  IF candidate_count>1 THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+  IF candidate_count=1 THEN SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active FOR SHARE; END IF;
+  IF candidate_count=1 AND cs.configuration_status='VALIDATED' AND cs.accounting_validated_at IS NOT NULL AND nullif(btrim(cs.legal_name),'') IS NOT NULL AND nullif(btrim(cs.cnpj),'') IS NOT NULL THEN
+""" + '  ' + v1_line + """  ELSE
+   -- C2_ACCOUNTING_PENDING_V1: honest non-fiscal request; no issuer identity/attestation is copied or invented.
+   NEW.c2_external_origin_snapshot:=jsonb_build_object('contract','C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1','schema_version','1','organization_id',org,'creditor_organization_id',org,'actor_user_id',uid,'partner_id',NEW.partner_id,'issuer_state',CASE WHEN candidate_count=0 THEN 'NOT_CONFIGURED' ELSE coalesce(cs.configuration_status,'UNKNOWN') END,'company_settings_id',cs.id,'accounting_validated',false);
+  END IF;
+"""
+guard_p = guard.replace(seg, new_seg, 1)
+imm_old = "  IF NEW.c2_external_origin_snapshot IS DISTINCT FROM OLD.c2_external_origin_snapshot OR NEW.internal_origin_snapshot"
+once(guard_p, imm_old, 'IMMUTABLE')
+guard_p = guard_p.replace(imm_old, "  IF (NEW.c2_external_origin_snapshot IS DISTINCT FROM OLD.c2_external_origin_snapshot AND NOT platform_private.c2_accounting_promotion_ok(OLD.c2_external_origin_snapshot,NEW.c2_external_origin_snapshot,NEW.id)) OR NEW.internal_origin_snapshot")
+ast_old = "  PERFORM platform_private.c2_external_origin_assert(OLD.c2_external_origin_snapshot,OLD.partner_id,OLD.cliente_id);"
+once(guard_p, ast_old, 'UPDATE_ASSERT')
+guard_p = guard_p.replace(ast_old, ast_old + "\n  PERFORM platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);")
+
+# 3) Origin assert accepts exactly two server contracts.
+ast = fn('CREATE FUNCTION platform_private.c2_external_origin_assert(s jsonb, partner uuid, client uuid)')
+c_old = " OR s->>'contract' IS DISTINCT FROM 'C2_EXTERNAL_ORDER_ORIGIN_V1'\n OR NOT platform_private.b2b_internal_origin_valid(s)\n"
+once(ast, c_old, 'ASSERT_CONTRACT')
+ast_p = ast.replace(c_old, " OR NOT platform_private.c2_external_origin_contract_valid(s)\n").replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION', 1)
+
+# 4) Approval and billing deny pending requests explicitly before any write.
+appr = fn('CREATE OR REPLACE FUNCTION public.approve_partner_order(p_order_id uuid')
+nf = "  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;\n"
+once(appr, nf, 'APPROVE')
+PENDING_CHECK = "IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id={id} AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;"
+appr_p = appr.replace(nf, nf + '  ' + PENDING_CHECK.format(id='p_order_id') + '\n')
+gen = fn('CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order_id uuid)')
+d_old = " IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;\n"
+once(gen, d_old, 'GENERATE')
+gen_p = gen.replace(d_old, d_old + ' ' + PENDING_CHECK.format(id='p_partner_order_id') + '\n')
+
+# 5) Reviewed v4 owner writer (replaces LIVE SELECT false).
+old = (ROOT / 'scripts/owner-orders-20261023/candidate.sql.review').read_text()
+w0 = old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); w1 = old.index('END $function$;', w0) + len('END $function$;')
+writer = old[w0:w1].replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION', 1)
+
+new_fns = (D / 'src/new-functions.sql').read_text()
+overlay = '\n-- ===== C2_ACCOUNTING_PENDING_V1 overlay (same transaction) =====\n' + '\n'.join([
+    ast_p + ';', guard_p + ';', appr_p + ';', gen_p + ';', writer + ';',
+    'ALTER FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid) OWNER TO postgres;',
+    'REVOKE ALL ON FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid) FROM PUBLIC,anon,authenticated;',
+    new_fns])
+(D / 'src/patched-bodies.sql').write_text('\n'.join([ast_p, guard_p, appr_p, gen_p, writer]) + '\n')
+
+def proc(sig, md5, label):
+    return f"IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='{sig}'::regprocedure AND md5(pg_get_functiondef(oid))='{md5}' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION '{label}:{sig}'; END IF;"
+post = "DO $c2ap_post$ BEGIN\n " + "\n ".join([proc(k, v, 'C2AP_POST_DRIFT') for k, v in E['candidate'].items()] + [
+    "IF has_function_privilege('authenticated','platform_private.c2_owner_order_create_allowed(uuid,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_external_origin_contract_valid(jsonb)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_accounting_pending_guard()','EXECUTE') OR has_function_privilege('anon','public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)','EXECUTE') OR NOT has_function_privilege('authenticated','public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)','EXECUTE') THEN RAISE EXCEPTION 'C2AP_POST_ACL'; END IF;",
+    "IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='zz_c2_accounting_pending' AND tgenabled='O') THEN RAISE EXCEPTION 'C2AP_POST_TRIGGER'; END IF;"]) + "\nEND $c2ap_post$;\n"
+head = "-- REVIEW ONLY / INACTIVE. Never apply without independent review and owner-run release.\n-- Composes the reviewed b5 package (minus install-time accounting gate) + C2_ACCOUNTING_PENDING_V1 in ONE transaction.\n-- Opens only the canonical external request; approval, billing, NF and delivery stay closed while the issuer is not validated.\n"
+(D / 'candidate.sql.review').write_text(head + body + overlay + '\n' + post + 'COMMIT;\n')
+# Preflight = b5 structural preflight verbatim (READ ONLY; LIVE writer false a0417d is part of it).
+(D / 'preflight.sql').write_text(head + (B5 / 'preflight.sql').read_text())
+# Postflight = b5 postflight with the five overlaid hashes substituted + own POST.
+pf = b5_post
+for k, v in E['b5_to_candidate'].items():
+    if pf.count(k) != 1: sys.exit(f'POSTFLIGHT_ANCHOR {k}: {pf.count(k)}')
+    pf = pf.replace(k, v)
+pf = pf.rstrip()
+assert pf.endswith('COMMIT;')
+(D / 'postflight.sql').write_text(head + pf[:-len('COMMIT;')] + post + "SELECT 'C2AP_POSTFLIGHT_PASS';\nCOMMIT;\n")
+# Rollback: restore exact b5 bodies + LIVE writer false, drop overlay objects. Orders/snapshots preserved.
+live_writer = (B5 / 'baseline/platform_private.c2_owner_order_create_allowed.sql').read_text().strip()
+rb_pre = "DO $c2ap_rb_pre$ BEGIN\n " + "\n ".join(proc(k, v, 'C2AP_ROLLBACK_PRE_DRIFT') for k, v in E['candidate'].items()) + "\nEND $c2ap_rb_pre$;\n"
+rb_post = "DO $c2ap_rb_post$ BEGIN\n " + "\n ".join([proc(k, v, 'C2AP_ROLLBACK_POST_DRIFT') for k, v in E['b5_hashes'].items()] + [
+    "IF to_regprocedure('public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)') IS NOT NULL OR to_regprocedure('platform_private.c2_accounting_pending_guard()') IS NOT NULL THEN RAISE EXCEPTION 'C2AP_ROLLBACK_PRESENT'; END IF;"]) + "\nEND $c2ap_rb_post$;\n"
+(D / 'rollback.sql.review').write_text(head + "-- Rollback: writer back to LIVE false; b5 bodies restored byte-exact; pending requests stay as immutable history (frozen: b5 assert rejects the pending contract on any update).\nBEGIN;\nSET LOCAL lock_timeout='5s';\n" + rb_pre +
+    "DROP TRIGGER zz_c2_accounting_pending ON public.partner_orders;\n" +
+    '\n'.join([ast + ';'.replace('', ''), guard + ';', appr + ';', gen + ';']).replace('CREATE FUNCTION platform_private.c2_external_origin_assert', 'CREATE OR REPLACE FUNCTION platform_private.c2_external_origin_assert', 1) +
+    "\n" + live_writer + ";\nALTER FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid) OWNER TO postgres;\n" +
+    "DROP FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timestamptz);\nDROP FUNCTION platform_private.c2_accounting_pending_guard();\nDROP FUNCTION platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid);\nDROP FUNCTION platform_private.c2_external_origin_contract_valid(jsonb);\n" + rb_post + "COMMIT;\n")
+print('assembled')
