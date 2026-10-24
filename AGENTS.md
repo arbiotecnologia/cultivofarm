@@ -57,3 +57,4 @@
 - External edits use gated admin RPC; await first CAS, retain drafts/receipts on refetch and fence identity generations — prevents loading deadlocks/stale effects.
 
 - Read nested AGENTS.md before edits — preserves review rules.
+- Current-base order reconciliation follows its nested review rules; independent wrapper release requires current-guard reproduction and never inherits composition readiness — prevents shipping an unproven lock patch with accounting dependencies.
