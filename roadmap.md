@@ -1,10 +1,15 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 00:41 — implantação numérica pelo auditor
+- [x] Registrar implantação independente c2_credit_percentage_numeric_capacity_only SUCCESS/PREPOST/8casosreadonlyPASS relatados, sem execução Lovable; não reaplicar candidato antigo.
+- [ ] Reconfirmar 123checks locais da função completa e rebase PRE/POST/rollback apenas hashnovo, preservando baselineshistóricos/ACL/writerfalse.
+- [ ] Composição segue inativa: revisão/quiescência/JWT e requisito contábil humano dependem do proprietário; implantação numérica não libera pedidos/fiscal.
+
 ## 24/10 00:32 — correção numérica de crédito separada
 - [x] Preparar recorte exclusivo v_pct numeric(6,2) → numeric com PRE/POST/rollback hash/owner/ACL guardados, sem implantação.
 - [x] Testar corpo capturado, limites/precedência/valores inválidos e cadeia create/idempotência/atomicidade/na_entrega:123 checks sintéticos, Vitest conjunto2/2PASS; concorrência/pós-entrega/JWT não certificados.
 - [x] Demonstrar rebase somente do hash de dependência da composição em variante separada; esclarecer que exige patch numérico instalado antes, não é candidato aritmético.
-- [ ] Revisão independente final/implantação aritmética dependem do proprietário; writer/gate contábil permanecem fechados, origem NO-GO por contabilidade/quiescência/JWT.
+- [x] Implantação aritmética concluída pelo auditor conforme atualização00:41; writer/gate contábil permanecem fechados, origem NO-GO por contabilidade/quiescência/JWT.
 
 ## 24/10 00:20 — contenção de pedidos externos existentes
 - [x] Preparar rollback de contenção hash/ACL guardado para create/approve/generate externos, preservando origens internas e histórico; sem implantação.
