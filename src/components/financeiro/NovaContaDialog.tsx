@@ -75,6 +75,7 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
   const [erroParcelas, setErroParcelas] = useState<string | null>(null);
   const [exigeConferencia, setExigeConferencia] = useState(false);
   const [tentouEnviar, setTentouEnviar] = useState(false);
+  const [erroCriacao, setErroCriacao] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -82,6 +83,7 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
     setErroParcelas(null);
     setExigeConferencia(false);
     setTentouEnviar(false);
+    setErroCriacao(null);
     setInstallments(
       isReceivable ? gerarParcelasReceber(0, 1, today).parcelas : generateInstallments(0, 1, today),
     );
@@ -212,11 +214,14 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
     },
     onError: (e: any) => {
       if (!isReceivable) {
-        toast.error(e?.message || "Falha ao criar título financeiro");
+        const mensagem = e?.message || "Falha ao criar título financeiro";
+        setErroCriacao(mensagem);
+        toast.error(mensagem);
         return;
       }
       const { mensagem, exigeConferencia: exige } = classificarErroNovaConta(e);
       if (exige) setExigeConferencia(true);
+      setErroCriacao(mensagem);
       toast.error(mensagem);
     },
 
@@ -384,9 +389,12 @@ export function NovaContaDialog({ open, onClose, kind }: Props) {
         </div>
 
         <DialogFooter>
+          {erroCriacao && (
+            <p className="text-sm text-destructive" role="alert" aria-live="polite">{erroCriacao}</p>
+          )}
           <Button variant="outline" onClick={onClose} disabled={enviando}>Cancelar</Button>
           <Button
-            onClick={() => { setTentouEnviar(true); save.mutate(); }}
+            onClick={() => { setTentouEnviar(true); setErroCriacao(null); save.mutate(); }}
             disabled={enviando || travado || (!isReceivable && !form.description)}
           >
             {enviando ? "Salvando…" : "Salvar"}
