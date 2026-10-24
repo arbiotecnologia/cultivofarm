@@ -22,7 +22,7 @@ def actor(u,s,err=None):
     return result
 def val(u,s):return actor(u,s).splitlines()[-1]
 def snapshot():
-    tables=['partner_orders','partner_order_items','partner_order_payment_terms','partner_order_payment_schedule','partner_order_idempotency','accounts_receivable','accounts_receivable_installments','partner_order_financial_links','partner_order_audit_logs','production_timeline_events','notificacoes_operacionais','financial_audit_log','production_planning']
+    tables=['partner_orders','partner_order_items','partner_order_payment_terms','partner_order_payment_schedule','partner_order_idempotency','partner_financial_settings','accounts_receivable','accounts_receivable_installments','partner_order_financial_links','partner_order_audit_logs','production_timeline_events','notificacoes_operacionais','financial_audit_log','production_planning']
     return {t:pg.sql(f"SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]') FROM public.{t} t") for t in tables}
 pg.start();pg.sql((I/'replica.sql').read_text())
 pg.sql("SET check_function_bodies=off;")
@@ -172,6 +172,33 @@ actor(ADMIN,f"SELECT public.approve_partner_order('{orders[1]}',NULL,NULL);")
 before=snapshot();pg.sql(f"SET session_replication_role=replica; DELETE FROM public.partner_financial_settings WHERE partner_id='{P}'; SET session_replication_role=origin;")
 actor(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{orders[1]}');",err='B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED');ok('missing settings explicitly denied without automatic insert or partial title',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; INSERT INTO public.partner_financial_settings(partner_id,billing_trigger,default_payment_method,active,auto_generate_receivable) VALUES('{P}','na_aprovacao','TEST-METHOD',true,true); SET session_replication_role=origin;")
+# REAL fixture is na_entrega. Only disposable synthetic settings change here.
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET billing_trigger='na_entrega' WHERE partner_id='{P}'; SET session_replication_role=origin;")
+for u in [G,GT]:
+    delivery_id=json.loads(val(u,create(u,str(uuid.uuid4()))+';'))['id']
+    actor(ADMIN,f"SELECT public.approve_partner_order('{delivery_id}',NULL,NULL);")
+    ok('na_entrega external approval no title singleton/cumulative '+str(u),pg.sql(f"SELECT status||'|'||ready_for_production||'|'||receivable_generated FROM public.partner_orders WHERE id='{delivery_id}'")=='aprovado|false|false' and pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{delivery_id}'")=='0' and pg.sql(f"SELECT count(*) FROM public.partner_order_financial_links WHERE partner_order_id='{delivery_id}'")=='0')
+    before=snapshot()
+    actor(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{delivery_id}');",err='order_not_eligible')
+    ok('na_entrega before delivery billing denied no effects '+str(u),snapshot()==before)
+    for status in ['em_producao','entregue']:
+        before=snapshot()
+        failure=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{{\"sub\":\"{ADMIN}\",\"role\":\"authenticated\",\"iat\":{int(time.time())}}}',true); UPDATE public.partner_orders SET status='{status}' WHERE id='{delivery_id}'; COMMIT;",ok=False)
+        ok('na_entrega operational still denied '+status+' '+str(u),'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' in failure and snapshot()==before)
+    ok('na_entrega no production planning '+str(u),pg.sql(f"SELECT count(*) FROM public.production_planning WHERE partner_order_id='{delivery_id}'")=='0')
+# Known numeric(6,2) blocker: limit=1, new exposure=180 => 18000%, SQLSTATE 22003.
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=1,credit_limit_action='block' WHERE partner_id='{Q}'; SET session_replication_role=origin;")
+before=snapshot()
+pg.sql(f"DO $$ BEGIN PERFORM public.fn_b2b_credit_exposure('{Q}',180,NULL); RAISE EXCEPTION 'overflow_missing'; EXCEPTION WHEN numeric_value_out_of_range THEN IF SQLSTATE <> '22003' THEN RAISE; END IF; END $$;")
+ok('known numeric6,2 limit1 exposure180 SQLSTATE22003 no effects',snapshot()==before)
+actor(GB,create(GB,'numeric-overflow',p=Q)+';',err='numeric field overflow')
+ok('known overflow full create rolls back no effects',snapshot()==before)
+# Separate proposed one-variable widening is NOT part of candidate; transactional local experiment.
+credit=next(f for sig,f in fns.items() if sig.startswith('public.fn_b2b_credit_exposure('))
+assert credit['sql'].count('v_pct numeric(6,2)')==1
+widened=credit['sql'].replace('v_pct numeric(6,2)','v_pct numeric')
+pg.sql('BEGIN; '+widened+f"; DO $$ DECLARE r jsonb; BEGIN r:=public.fn_b2b_credit_exposure('{Q}',180,NULL); IF (r->>'percentual_utilizado')::numeric<>18000 OR (r->>'exposicao_projetada')::numeric<>180 OR r->>'reason_code'<>'LIMIT_EXCEEDED_BLOCK' THEN RAISE EXCEPTION 'numeric_proposal_wrong_decision'; END IF; END $$; ROLLBACK;")
+ok('separate numeric proposal 18000 percent preserves LIMIT_EXCEEDED_BLOCK',snapshot()==before and pg.sql(f"SELECT md5(pg_get_functiondef('{credit['sig']}'::regprocedure))")==credit['md5'])
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic revocation' WHERE user_id='{G}'; SET session_replication_role=origin;")
 before=snapshot();actor(G,create(G,'revoked',h=hashA)+';',err='');ok('revoked manager rejected with no writes',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")

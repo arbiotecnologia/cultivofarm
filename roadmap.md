@@ -1,5 +1,12 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 00:14 — revisão independente 9c62ecab / pacote inativo
+- [x] Registrar relato do proprietário: PRE estrutural integral readonly canônico PASS; PRE contábil 42501/C2_ACCOUNTING_PREREQUISITE_BLOCKED esperado. A preencheu CNPJ/razão social reais, continua DRAFT sem atestado; não alterar dados nem relaxar pré-requisito.
+- [ ] Corrigir mensagem externa de aprovação comercial sem promessa de produção; preservar ramo interno capturado.
+- [ ] Testar na_entrega singleton/cumulativo: aprovação sem título, cobrança pré-entrega sem efeitos e operação negada; reproduzir numeric6,2 limite1/exposição180 e propor ajuste mínimo separado.
+- [ ] Finalizar relatos, PRE/POST/rollback e manifestos completos; somente revisão local, writerfalse e nenhuma implantação.
+- [ ] Bloqueio humano contábil e homologação JWT da composição continuam dependentes do proprietário; pendências históricas preservadas.
+
 ## 23/10 23:55 — bloqueio contábil e composição dos filhos
 - [x] Registrar relato readonly: ownerA1ativoDRAFT/accounting_validated_atNULL; ownerBsemconfig. Adicionar `preflight-accounting.sql` obrigatório junto do PRE estrutural, sem alterações contábeis/DDL/DML hospedados.
 - [x] Validar composição existente dos filhos:56checks PostgreSQL descartável PASS, incluindo DRAFT/NULL/ausência e seis negativos de administração por externos/B; aprovação/cobrança owner preservadas. Auth sintética, não homologação JWT. Pacote revisável inativo/writerfalse, sem deployment.
