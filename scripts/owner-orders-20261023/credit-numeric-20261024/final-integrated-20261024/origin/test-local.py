@@ -96,7 +96,7 @@ for name in json.loads((H/'expected-source.json').read_text()):
 subprocess.run([sys.executable,str(H/'assemble.py')],check=True)
 pg.sql((H/'postflight.sql').read_text());ok('assertive READ ONLY postflight composed containment')
 ok('candidate leaves writer containment false',pg.sql(f"SELECT platform_private.c2_owner_order_create_allowed('{G}','{P}')")=='f')
-command('postflight.sql');command('rollback.sql.review',True)
+command('postflight.sql');command('containment.sql.review',True)
 # Positive test setup ONLY: reviewed writer body from existing v4 source, never hosted/release.
 old=(ROOT/'scripts/owner-orders-20261023/candidate.sql.review').read_text(); start=old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); end=old.index('END $function$;',start)+len('END $function$;')
 pg.sql(old[start:end].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1))
@@ -144,6 +144,7 @@ guard=pg.sql("SELECT pg_get_functiondef('platform_private.b2b_internal_order_sna
 pg.sql((H/'baseline/platform_private.b2b_internal_order_snapshot_guard.sql').read_text())
 actor(G,create(G,'baseline',h=hashA)+';',err='B2B_INTERNAL_ACTOR_DENIED');ok('baseline full RPC reproduces B2B_INTERNAL_ACTOR_DENIED')
 pg.sql(guard)
+exec(compile((H.parent/'integrated-window-checks.py').read_text(),str(H.parent/'integrated-window-checks.py'),'exec'))
 orders=[]
 for u in [G,GT]:
     result=json.loads(val(u,create(u,str(uuid.uuid4()))+';')); oid=result['id'];orders.append(oid)
@@ -203,7 +204,7 @@ for u in [G,GT]:
     actor(ADMIN,f"SELECT public.approve_partner_order('{delivery_id}',NULL,NULL);")
     ok('na_entrega external approval no title singleton/cumulative '+str(u),pg.sql(f"SELECT status||'|'||ready_for_production||'|'||receivable_generated FROM public.partner_orders WHERE id='{delivery_id}'")=='aprovado|false|false' and pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{delivery_id}'")=='0' and pg.sql(f"SELECT count(*) FROM public.partner_order_financial_links WHERE partner_order_id='{delivery_id}'")=='0')
     before=snapshot()
-    actor(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{delivery_id}');",err='C2_EXTERNAL_DELIVERY_REQUIRED')
+    exact_denied(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{delivery_id}')",'42501','C2_EXTERNAL_DELIVERY_REQUIRED')
     ok('na_entrega before delivery billing denied no effects '+str(u),snapshot()==before)
     for status in ['em_producao','entregue']:
         before=snapshot()
@@ -235,7 +236,7 @@ before=snapshot();actor(ADMIN_B,f"SELECT public.approve_partner_order('{internal
 ok('internal approval original downstream containment before rollback',snapshot()==before)
 actor(ADMIN_B,f"SELECT public.generate_b2b_receivable_secure('{internal_id}');",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
 ok('internal billing original downstream denial before rollback',snapshot()==before)
-rollback=(H/'rollback.sql.review').read_text()
+rollback=(H/'containment.sql.review').read_text()
 approve_sig='public.approve_partner_order(uuid,text,date)'
 saved_approve=pg.sql(f"SELECT pg_get_functiondef('{approve_sig}'::regprocedure)")+'\n'
 pg.sql(saved_approve.replace('BEGIN\n','BEGIN\n  -- deliberate synthetic drift\n',1))
@@ -246,12 +247,13 @@ pg.sql(f"GRANT EXECUTE ON FUNCTION {approve_sig} TO anon;")
 failure=pg.sql(rollback,ok=False)
 ok('containment rejects ACL drift atomically','origin_dependency_drift:public.approve_partner_order' in failure and snapshot()==before)
 pg.sql(f"REVOKE EXECUTE ON FUNCTION {approve_sig} FROM anon;")
-before=snapshot();pg.sql(rollback)
+before=snapshot();command('containment.sql.review')
+ok('containment preserves corrected wrapper exact hash',pg.sql("SELECT md5(pg_get_functiondef('public.generate_b2b_receivable_secure(uuid)'::regprocedure))")== '31eeb54e4b69d97c311629a37e553faf')
 ok('containment install changes no history or snapshots',snapshot()==before)
 before=snapshot();actor(G,create(G,'contained',h=hashA)+';',err='C2_OWNER_ORDER_CLOSED');ok('rollback closes writer and preserves historical data',snapshot()==before)
 for external in [pending_external,orders[0],orders[1]]:
     for operation in [f"SELECT public.approve_partner_order('{external}',NULL,NULL);",f"SELECT public.generate_b2b_receivable_secure('{external}');"]:
-        before=snapshot();actor(ADMIN,operation,err='C2_EXTERNAL_OPERATIONS_CONTAINED')
+        before=snapshot();exact_denied(ADMIN,operation,'42501','C2_EXTERNAL_OPERATIONS_CONTAINED')
         ok('contained external approval/billing denied no effects '+external,snapshot()==before)
 before=snapshot()
 actor(ADMIN_B,f"SELECT public.approve_partner_order('{internal_id}',NULL,NULL);",err='B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')
