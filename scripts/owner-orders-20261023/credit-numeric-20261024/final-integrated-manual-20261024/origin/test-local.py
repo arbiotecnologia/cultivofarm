@@ -118,6 +118,33 @@ subprocess.run([sys.executable,str(H/'assemble.py')],check=True)
 pg.sql((H/'postflight.sql').read_text());ok('assertive READ ONLY postflight composed containment')
 ok('candidate leaves writer containment false',pg.sql(f"SELECT platform_private.c2_owner_order_create_allowed('{G}','{P}')")=='f')
 command('postflight.sql');command('containment.sql.review',True)
+# Positive test setup ONLY: reviewed writer body from existing v4 source, never hosted/release.
+old=(ROOT/'scripts/owner-orders-20261023/candidate.sql.review').read_text(); start=old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); end=old.index('END $function$;',start)+len('END $function$;')
+pg.sql(old[start:end].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1))
+pg.sql(f"""
+SET session_replication_role=replica;
+INSERT INTO public.organizations(id,nome,ativo,status) VALUES('{A}','A synthetic',true,'ativa'),('{B}','B synthetic',true,'ativa');
+INSERT INTO public.saas_modules(id,key,name,active) VALUES('{U(900)}','b2b','B2B',true);
+INSERT INTO public.saas_features(id,module_id,key,name,active) VALUES('{U(910)}','{U(900)}','catalogo_precos','Cat',true),('{U(911)}','{U(900)}','pedidos_b2b','Order',true),('{U(912)}','{U(900)}','contas_receber','CR',true),('{U(913)}','{U(900)}','contas_pagar','CP',true);
+INSERT INTO public.saas_plans(id,key,name,active,is_default,created_at,updated_at) VALUES('{U(920)}','test','Test',true,false,now(),now());
+INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,features_snapshot,limits_snapshot) VALUES('{U(921)}','{U(920)}',1,'Test','DRAFT',now()-interval '1 day','[]','{{}}');
+INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled) SELECT '{U(921)}',id,true FROM public.saas_features;
+UPDATE public.saas_plan_versions SET status='PUBLISHED',price_amount=0,currency='BRL',billing_cycle='monthly',trial_days=7,published_at=now()-interval '1 day',features_snapshot='["test"]' WHERE id='{U(921)}';
+INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_version_id,status,started_at) VALUES('{A}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day'),('{B}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day');
+INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES('{CLI}','Client A','C-A','{A}'),('{CLI_B}','Client B','C-B','{B}');
+INSERT INTO public.partner_accounts(id,codigo,razao_social,ativo,commercial_owner_organization_id,client_id) VALUES('{P}','P','Partner A',true,'{A}','{CLI}'),('{Q}','Q','Partner B',true,'{B}','{CLI_B}');
+INSERT INTO public.company_fiscal_settings(id,organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj) VALUES('{SETTINGS}','{A}',true,'VALIDATED',now(),'Synthetic issuer','00000000000000'),('{U(10)}','{B}',true,'VALIDATED',now(),'Synthetic issuer B','11111111111111');
+INSERT INTO public.produtos(id,nome,tipo,codigo,ativo,b2b_enabled,valor_litro_brl,created_at,updated_at) VALUES('{PROD}','Synthetic product','inseticida','TEST',true,true,180,now(),now());
+INSERT INTO public.catalogo_volumes(item_tipo,produto_id,volume_ml,preco_brl,preco_litro_brl,ativo) VALUES('produto','{PROD}',1000,180,180,true);
+INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,active,installment_count,discount_percent,monthly_interest_percent,months_count,interest_type,max_days) VALUES('{PLAN}','Synthetic','TEST','custom',true,3,0,0,0,'none',7);
+INSERT INTO public.commercial_payment_plan_assignments(plan_id,buyer_scope,partner_id,status,valid_from) VALUES('{PLAN}','partner','{P}','published',current_date-1),('{PLAN}','partner','{Q}','published',current_date-1);
+INSERT INTO public.financial_categories(name,type,active) VALUES('Revenue','RECEITA',true),('Expense','DESPESA',true);
+INSERT INTO public.payment_methods(name,active) VALUES('TEST-METHOD',true);
+INSERT INTO public.partner_financial_settings(partner_id,billing_trigger,default_payment_method,active,auto_generate_receivable) VALUES('{P}','na_aprovacao','TEST-METHOD',true,true),('{Q}','na_aprovacao','TEST-METHOD',true,true);
+SET session_replication_role=origin;
+""")
+for u,org,roles,p in [(ADMIN,A,['administrador'],None),(ADMIN_B,B,['administrador'],None),(G,A,['parceiro_b2b'],P),(GT,A,['parceiro_b2b','parceiro_b2b_tecnico'],P),(T,A,['parceiro_b2b_tecnico'],P),(PR,A,['cliente_produtor'],None),(GB,B,['parceiro_b2b'],Q)]:
+    pg.sql(f"SET session_replication_role=replica; INSERT INTO auth.users(id,email,raw_app_meta_data,raw_user_meta_data) VALUES('{u}','{u}@synthetic.invalid','{{}}','{{}}'); INSERT INTO public.profiles(user_id,organization_id,ativo,senha_provisoria,nome) VALUES('{u}','{org}',true,false,'Actor'); "+';'.join(f"INSERT INTO public.user_roles(user_id,role) VALUES('{u}','{r}')" for r in roles)+';'+(f"INSERT INTO public.partner_users(user_id,partner_id,tenant_id,revoked_at,valid_from,version) VALUES('{u}','{p}','{org}',NULL,now()-interval '1 day',1);" if p else '')+'SET session_replication_role=origin;')
 # Manual initial-installments path through the COMPOSED AR/AP bodies: the LIVE correction
 # (exact .34/.33/.33, custom dates inserted first, private context) must survive composition.
 cat_rec=pg.sql("SELECT id FROM public.financial_categories WHERE type='RECEITA' AND active LIMIT 1")
@@ -149,33 +176,6 @@ ok('private context table inaccessible to authenticated')
 ok('private context empty after manual successes and failures',pg.sql("SELECT count(*) FROM platform_private.financial_initial_installments")=='0')
 composed_ar=pg.sql("SELECT md5(pg_get_functiondef('public.fn_generate_receivable_installments()'::regprocedure))")
 ok('composed AR is neither historical composed nor plain LIVE manual hash',composed_ar not in ('de469bfc11719e288cd0970411c57c97','fba70619b461c468a8c645ce1c3a8ed8'))
-# Positive test setup ONLY: reviewed writer body from existing v4 source, never hosted/release.
-old=(ROOT/'scripts/owner-orders-20261023/candidate.sql.review').read_text(); start=old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); end=old.index('END $function$;',start)+len('END $function$;')
-pg.sql(old[start:end].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1))
-pg.sql(f"""
-SET session_replication_role=replica;
-INSERT INTO public.organizations(id,nome,ativo,status) VALUES('{A}','A synthetic',true,'ativa'),('{B}','B synthetic',true,'ativa');
-INSERT INTO public.saas_modules(id,key,name,active) VALUES('{U(900)}','b2b','B2B',true);
-INSERT INTO public.saas_features(id,module_id,key,name,active) VALUES('{U(910)}','{U(900)}','catalogo_precos','Cat',true),('{U(911)}','{U(900)}','pedidos_b2b','Order',true),('{U(912)}','{U(900)}','contas_receber','CR',true),('{U(913)}','{U(900)}','contas_pagar','CP',true);
-INSERT INTO public.saas_plans(id,key,name,active,is_default,created_at,updated_at) VALUES('{U(920)}','test','Test',true,false,now(),now());
-INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,features_snapshot,limits_snapshot) VALUES('{U(921)}','{U(920)}',1,'Test','DRAFT',now()-interval '1 day','[]','{{}}');
-INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled) SELECT '{U(921)}',id,true FROM public.saas_features;
-UPDATE public.saas_plan_versions SET status='PUBLISHED',price_amount=0,currency='BRL',billing_cycle='monthly',trial_days=7,published_at=now()-interval '1 day',features_snapshot='["test"]' WHERE id='{U(921)}';
-INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_version_id,status,started_at) VALUES('{A}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day'),('{B}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day');
-INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES('{CLI}','Client A','C-A','{A}'),('{CLI_B}','Client B','C-B','{B}');
-INSERT INTO public.partner_accounts(id,codigo,razao_social,ativo,commercial_owner_organization_id,client_id) VALUES('{P}','P','Partner A',true,'{A}','{CLI}'),('{Q}','Q','Partner B',true,'{B}','{CLI_B}');
-INSERT INTO public.company_fiscal_settings(id,organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj) VALUES('{SETTINGS}','{A}',true,'VALIDATED',now(),'Synthetic issuer','00000000000000'),('{U(10)}','{B}',true,'VALIDATED',now(),'Synthetic issuer B','11111111111111');
-INSERT INTO public.produtos(id,nome,tipo,codigo,ativo,b2b_enabled,valor_litro_brl,created_at,updated_at) VALUES('{PROD}','Synthetic product','inseticida','TEST',true,true,180,now(),now());
-INSERT INTO public.catalogo_volumes(item_tipo,produto_id,volume_ml,preco_brl,preco_litro_brl,ativo) VALUES('produto','{PROD}',1000,180,180,true);
-INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,active,installment_count,discount_percent,monthly_interest_percent,months_count,interest_type,max_days) VALUES('{PLAN}','Synthetic','TEST','custom',true,3,0,0,0,'none',7);
-INSERT INTO public.commercial_payment_plan_assignments(plan_id,buyer_scope,partner_id,status,valid_from) VALUES('{PLAN}','partner','{P}','published',current_date-1),('{PLAN}','partner','{Q}','published',current_date-1);
-INSERT INTO public.financial_categories(name,type,active) VALUES('Revenue','RECEITA',true),('Expense','DESPESA',true);
-INSERT INTO public.payment_methods(name,active) VALUES('TEST-METHOD',true);
-INSERT INTO public.partner_financial_settings(partner_id,billing_trigger,default_payment_method,active,auto_generate_receivable) VALUES('{P}','na_aprovacao','TEST-METHOD',true,true),('{Q}','na_aprovacao','TEST-METHOD',true,true);
-SET session_replication_role=origin;
-""")
-for u,org,roles,p in [(ADMIN,A,['administrador'],None),(ADMIN_B,B,['administrador'],None),(G,A,['parceiro_b2b'],P),(GT,A,['parceiro_b2b','parceiro_b2b_tecnico'],P),(T,A,['parceiro_b2b_tecnico'],P),(PR,A,['cliente_produtor'],None),(GB,B,['parceiro_b2b'],Q)]:
-    pg.sql(f"SET session_replication_role=replica; INSERT INTO auth.users(id,email,raw_app_meta_data,raw_user_meta_data) VALUES('{u}','{u}@synthetic.invalid','{{}}','{{}}'); INSERT INTO public.profiles(user_id,organization_id,ativo,senha_provisoria,nome) VALUES('{u}','{org}',true,false,'Actor'); "+';'.join(f"INSERT INTO public.user_roles(user_id,role) VALUES('{u}','{r}')" for r in roles)+';'+(f"INSERT INTO public.partner_users(user_id,partner_id,tenant_id,revoked_at,valid_from,version) VALUES('{u}','{p}','{org}',NULL,now()-interval '1 day',1);" if p else '')+'SET session_replication_role=origin;')
 items=json.dumps([{'item_tipo':'produto','item_id':PROD,'quantidade':1,'unidade_medida':'unidade','volume_ml':1000}])
 def simulate(u,p=P):return json.loads(val(u,f"SELECT public.simulate_b2b_payment_plan_secure('{p}','{PLAN}','{items}',NULL)"))
 def create(u,key,p=P,h=None,obs='Synthetic'):
