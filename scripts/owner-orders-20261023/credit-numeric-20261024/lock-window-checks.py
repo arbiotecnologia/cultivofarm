@@ -36,7 +36,7 @@ oid=json.loads(val(G,create(G,'window-baseline')+';'))['id']
 before_count=pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}'")
 gw,receipt,ra,rg=window(oid)
 print('WINDOW_BASELINE',gw,receipt,ra[0],rg[0],(ra[2]+rg[2])[-900:],flush=True)
-deadlock=('40P01' in ra[2]+rg[2]) or ('deadlock detected' in ra[2]+rg[2])
+deadlock='40P01' in ra[2]+rg[2]
 ok('baseline intermediate window approve row then generator receipt reproduces 40P01',deadlock and receipt=='1' and gw=='transactionid')
 ok('baseline deadlock leaves at most one title',int(pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}'"))<=1 and before_count=='0')
 sig='public.generate_b2b_receivable_secure(uuid)'
@@ -55,6 +55,23 @@ receipt=pg.sql(f"SELECT count(*) FROM pg_locks l JOIN pg_stat_activity s USING(p
 release(b,pid);ra=done(a);rg=done(g)
 ok('fixed same window generator waits row without receipt and both commit',receipt=='0' and ra[0]==0 and rg[0]==0)
 ok('fixed window exactly one title three installments one link',pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}'")=='1' and pg.sql(f"SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id IN (SELECT id FROM public.accounts_receivable WHERE origin_id='{oid}')")=='3' and pg.sql(f"SELECT count(*) FROM public.partner_order_financial_links WHERE partner_order_id='{oid}'")=='1')
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET billing_trigger='na_entrega' WHERE partner_id='{P}'; SET session_replication_role=origin;")
+pending=json.loads(val(G,create(G,'fixed-no-delivery')+';'))['id']
+actor(ADMIN,f"SELECT public.approve_partner_order('{pending}',NULL,NULL);")
+before=snapshot();denied(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{pending}')",'42501','C2_EXTERNAL_DELIVERY_REQUIRED')
+ok('fixed na_entrega still denies premature billing exact 42501 no effects',snapshot()==before)
+drift=(V/'function.sql.review').read_text().replace('BEGIN\n','BEGIN\n -- deliberate local drift\n',1)
+pg.sql(drift);failure=pg.sql((V/'rollback.sql.review').read_text(),ok=False)
+ok('variant rollback rejects wrong hash','receipt_lock_rollback_pre_drift' in failure)
+pg.sql((V/'function.sql.review').read_text())
 pg.sql((V/'rollback.sql.review').read_text())
 ok('variant rollback restores exact baseline body and ACL',pg.sql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))")==base_md5 and pg.sql(f"SELECT pg_get_userbyid(proowner)||'|'||proacl::text FROM pg_proc WHERE oid='{sig}'::regprocedure")==acl_before)
+# Containment is not code reversal: replay historical containment tests against the new wrapper hash.
+pg.sql((V/'candidate.sql.review').read_text())
+saved_wrapper=pg.sql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)")+'\n'
+source=(N/'test-local.py').read_text()
+suffix=source if False else suffix
+suffix=suffix.replace("rollback=(N/'origin-rebase/rollback.sql.review').read_text()","rollback=(V/'containment.sql.review').read_text()")
+# Restore only in disposable PostgreSQL after complete containment tests, never a hosted deployment instruction.
+suffix += "\npg.sql((V/'baseline.sql').read_text())\nok('final disposable teardown wrapper baseline restored')\n"
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET billing_trigger='na_entrega',auto_generate_receivable=true WHERE partner_id='{P}'; SET session_replication_role=origin;")
