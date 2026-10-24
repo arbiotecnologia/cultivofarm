@@ -87,8 +87,25 @@ const product = () => `Produto ${state.tenant}/${state.partner}`;
 const catalogCalls = () => state.rpc.mock.calls.filter(([name]) => name === "get_partner_catalog_secure");
 it("real layout/guard/outlet/NovoPedido reaches its real catalogue hook with the parent's partner", async () => {
   mount(); await screen.findByText(product());
+  expect(screen.getByRole("link", { name: "Selecionar produto / Novo pedido" })).toHaveAttribute("href", "/portal-parceiro/catalogo");
+  expect(screen.getByRole("button", { name: "Adicionar ao pedido" })).toBeEnabled();
   expect(catalogCalls().map(([, args]) => args.p_partner_id)).toEqual([state.partner]);
   expect(state.writes).not.toHaveBeenCalled(); expect(state.table.mock.calls).toEqual([["catalogo_volumes"]]);
+});
+it("contained capability keeps only catalogue readers, never cart/plan/subscription writers", async () => {
+  state.orderCreate = false;
+  mount(); await screen.findByText(product());
+  expect(screen.getByRole("link", { name: "Consultar produtos" })).toHaveAttribute("href", "/portal-parceiro/catalogo");
+  expect(screen.queryByRole("button", { name: "Adicionar ao pedido" })).toBeNull();
+  expect(state.rpc.mock.calls.some(([name]) => name === "rpc_b2b_list_selectable_payment_plans")).toBe(false);
+  expect(state.table).not.toHaveBeenCalled(); expect(state.subscriptions).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
+});
+it("revoked creation capability removes the real cart subtree without enabling another writer", async () => {
+  const view = mount(); await screen.findByRole("button", { name: "Adicionar ao pedido" });
+  state.orderCreate = false; state.epoch++; view.update();
+  await screen.findByRole("link", { name: "Consultar produtos" });
+  expect(screen.queryByRole("button", { name: "Adicionar ao pedido" })).toBeNull();
+  expect(state.writes).not.toHaveBeenCalled();
 });
 it("real route replaces partner then tenant through current canonical projection without old product rows", async () => {
   const view = mount(); const first = product(); await screen.findByText(first);
