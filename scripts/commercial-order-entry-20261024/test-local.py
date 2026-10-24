@@ -15,6 +15,7 @@ pg.sql((O/'baseline/platform_private.c2_owner_order_create_allowed.sql').read_te
 E=json.loads((D/'expected.json').read_text())
 md5=lambda sig:pg.sql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))")
 ok('LIVE writer false exact',md5('platform_private.c2_owner_order_create_allowed(uuid,uuid)')=='a0417d6727d78412849916a95b250bde')
+exec(compile((D/'catalog/catalog_harness.py').read_text(),str(D/'catalog/catalog_harness.py'),'exec'))
 def counts():return pg.sql("SELECT (SELECT count(*) FROM public.partner_orders)||'/'||(SELECT count(*) FROM public.accounts_receivable)||'/'||(SELECT count(*) FROM public.accounts_receivable_installments)||'/'||(SELECT count(*) FROM public.partner_order_financial_links)")
 SIM=lambda p:f"SELECT public.simulate_b2b_payment_plan_secure('{p}','{PLAN}','{items}',NULL)"
 def denied(u,sql,needle):
@@ -37,7 +38,8 @@ print('CANDIDATE_MD5',json.dumps(cand))
 if E['candidate']:assert E['candidate']==cand,(E['candidate'],cand)
 pg.sql((D/'postflight.sql').read_text());ok('postflight READ ONLY passes')
 c=cap(ADMIN);ok('capability A lists only own portfolio from row owner',[x['partner_id'] for x in c['partners']]==[P] and c['partners'][0]['commercial_owner_organization_id']==A and c['organization_id']==A)
-ok('capability stays closed: catalog reader pending',c['order_create'] is False and c['reason']=='catalog_reader_pending' and c['profile_ok'] is True)
+ok('capability opens only with validated issuer, feature and reviewed catalogue reader',c['order_create'] is True and c['reason'] is None and c['profile_ok'] is True)
+catalog_post_checks()
 c=cap(ADMIN_B);ok('capability B lists only B portfolio',[x['partner_id'] for x in c['partners']]==[Q])
 for u in [G,T,GT,PR]:
     c=cap(u);assert c['order_create'] is False and c['reason']=='actor_not_allowed' and c['partners']==[],c
@@ -71,6 +73,7 @@ assert 'C2IOE_INJECTED_RB_FAILURE' in pg.sql(bad,ok=False)
 ok('rollback failing POST preserves candidate',md5('platform_private.c2_order_actor_scope(uuid,uuid)')==cand['platform_private.c2_order_actor_scope(uuid,uuid)'])
 pg.sql((D/'rollback.sql.review').read_text())
 ok('rollback restores exact LIVE scope and removes new functions',md5('platform_private.c2_order_actor_scope(uuid,uuid)')==E['live_scope'])
+catalog_rollback_checks()
 denied(ADMIN,SIM(P),'42501: forbidden_partner');ok('after rollback internal portfolio closed again; created order history kept',pg.sql(f"SELECT count(*) FROM public.partner_orders WHERE id='{r1['id']}'")=='1')
 ok('writer still false',md5('platform_private.c2_owner_order_create_allowed(uuid,uuid)')=='a0417d6727d78412849916a95b250bde')
 print('TOTAL',len(checks),'PASS; synthetic Auth, no hosted JWT/RLS certification')
