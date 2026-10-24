@@ -104,7 +104,7 @@ BEGIN
     -- Same catalogue feature as the canonical reader (b2b_actor_scope.has_catalog / catalogo_precos).
     IF r IS NULL AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_actor_scope(uid) x WHERE x.has_catalog IS TRUE) THEN r := 'catalog_feature_disabled'; END IF;
     -- Catalogue reader must be exactly the reviewed portfolio-aware body; any drift closes order entry.
-    IF r IS NULL AND md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM '__CATALOG_MD5__' THEN r := 'catalog_reader_pending'; END IF;
+    IF r IS NULL AND md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'b5684d350603d1db77ab9f1db0f4b253' THEN r := 'catalog_reader_pending'; END IF;
   END IF;
   RETURN jsonb_build_object('contract','C2_INTERNAL_ORDER_ENTRY_V1','organization_id',org,
     'profile_ok', r IS DISTINCT FROM 'inactive_scope' AND r IS DISTINCT FROM 'actor_not_allowed',
@@ -208,6 +208,7 @@ DO $post$ BEGIN
  IF (SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid,boolean)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid,boolean)'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'C2IOE_ACL_DRIFT:public.get_partner_catalog_secure(uuid,boolean)'; END IF;
  IF (SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'C2IOE_ACL_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
  IF to_regprocedure('platform_private.c1b_catalog_visibility_scope(uuid)') IS NULL THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_MISSING:c1b_catalog_visibility_scope'; END IF;
+ IF md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM 'b5684d350603d1db77ab9f1db0f4b253' THEN RAISE EXCEPTION 'C2IOE_POST_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
  IF has_function_privilege('authenticated','platform_private.c2_internal_order_target_reason(uuid,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_order_actor_scope(uuid,uuid)','EXECUTE') OR has_function_privilege('anon','public.c2_internal_order_entry_capability_v1()','EXECUTE') OR NOT has_function_privilege('authenticated','public.c2_internal_order_entry_capability_v1()','EXECUTE') THEN RAISE EXCEPTION 'C2IOE_POST_ACL'; END IF;
 END $post$;
 COMMIT;

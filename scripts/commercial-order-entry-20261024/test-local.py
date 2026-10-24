@@ -35,7 +35,7 @@ cand={'platform_private.c2_order_actor_scope(uuid,uuid)':md5('platform_private.c
  'platform_private.c2_internal_order_target_reason(uuid,uuid)':md5('platform_private.c2_internal_order_target_reason(uuid,uuid)'),
  'public.c2_internal_order_entry_capability_v1()':md5('public.c2_internal_order_entry_capability_v1()'),'public.get_partner_catalog_secure(uuid)':md5('public.get_partner_catalog_secure(uuid)')}
 print('CANDIDATE_MD5',json.dumps(cand))
-if not E["candidate"]: raise SystemExit("BOOTSTRAP")
+if len(E["candidate"])<2: raise SystemExit("BOOTSTRAP")
 if E['candidate']:assert E['candidate']==cand,(E['candidate'],cand)
 pg.sql((D/'postflight.sql').read_text());ok('postflight READ ONLY passes')
 c=cap(ADMIN);ok('capability A lists only own portfolio from row owner',[x['partner_id'] for x in c['partners']]==[P] and c['partners'][0]['commercial_owner_organization_id']==A and c['organization_id']==A)

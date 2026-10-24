@@ -7,5 +7,7 @@
   "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "12ea8b410e8fadf2da8f72fc1bbc83cf",
   "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e388ed7b38f6f397b672629ee"
  },
- "candidate": {}
+ "candidate": {
+  "public.get_partner_catalog_secure(uuid)": "b5684d350603d1db77ab9f1db0f4b253"
+ }
 }
