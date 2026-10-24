@@ -1,0 +1,1 @@
+Pacote FINAL integrado INATIVO: ver ../README.md. Único recomendado para estado composto; candidato inclui wrapper corrigido, contenção preserva fix e writer false. Contabilidade real continua bloqueada.

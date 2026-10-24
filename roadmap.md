@@ -777,3 +777,9 @@
 - [x] Plano e atribuição teste4 já existentes confirmados READ ONLY; arquivo de fixture convertido para SELECT-only, sem duplicação/arquivamento. Contenção fiscal candidata pronta, não instalada.
 - [ ] Método teste4 aguarda formulário canônico funcional: engrenagem só aparece em pedido e seletor fixo não oferece método ativo AUDIT; não criar pedido para acessá-lo. Fiscal continua pendente parametrização em produção.
 - [ ] Prévia A: /sem-permissao intermitente e nó desanexado por remontagem — pendência do monitor, sem reload.
+
+## 24/10 02:46 — composição final integrada
+- [x] Variante final-integrated-20261024: origem reconciliada e wrapper row-before-receipt na mesma transação; histórico preservado.
+- [x] Uma suíte focal 1/1 PASS: barreira 40P01 antes/fix depois, tenants A/B, negações exatas e POST falho integral candidato/contenção.
+- [x] Entrega integrada revisável concluída; sem hosted mutante/publicação/writer.
+- [ ] Implantação/homologação independente: bloqueada pela contabilidade real A DRAFT e revisão do auditor.

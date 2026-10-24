@@ -1,0 +1,2 @@
+- Recommend only the integrated origin and row-before-receipt package for composed deployment; its transaction and containment preserve the corrected wrapper and current tenant/credit guards — prevents installing the demonstrated deadlock.
+- Keep review inactive, writer false and accounting gate mandatory; synthetic disposable tests never certify hosted JWT/RLS.
