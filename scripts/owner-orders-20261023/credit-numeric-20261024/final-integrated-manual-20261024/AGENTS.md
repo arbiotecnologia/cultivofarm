@@ -1,0 +1,4 @@
+- Recommend only this reconciled package for composed deployment: it preserves the LIVE manual initial-installments correction (RPC 0778b876, AR fba70619, AP f4b15f02) and adds the B2B contractual branch via the verbatim future-composed reference — the historical final-integrated candidate would overwrite the deployed manual fix.
+- The six non-AR composed bodies must stay byte-exact to the reviewed final-integrated candidate; assemble.py fails closed if the future-composed AR body is not exactly LIVE manual body + B2B branch.
+- The deployed RPC source contains CRLF lines; always read it with read_bytes().decode() — text-mode reads change the pg_get_functiondef hash.
+- Keep review inactive, writer false and the accounting gate mandatory; synthetic disposable tests never certify hosted JWT/RLS.
