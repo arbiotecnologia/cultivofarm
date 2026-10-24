@@ -54,7 +54,13 @@ LIVE = {k: live_md5(k) for k in RESTORE}
 E['live_restore'] = LIVE
 cand_pins = "\n ".join(proc(k, v, 'C2AP_RESTORE_PRE_DRIFT') for k, v in E['candidate'].items())
 live_pins = "\n ".join(proc(k, v, 'C2AP_RESTORE_POST_DRIFT') for k, v in LIVE.items())
-bodies = "\n".join((B5 / 'baseline' / f).read_text().strip() + ';' for f in RESTORE.values())
+import re as _re
+_b5a=(B5/'assemble.py').read_text()
+_fin=_re.search(r"^FIN\s*=\s*(.+)$",_b5a,_re.M).group(1)
+FIN=eval(_fin,{'Path':Path,'ROOT':ROOT,'H':B5,'D':B5,'OUT':B5})
+# LIVE manual correction (e99d634) body is the deployed AR source, not the older b5 baseline file.
+RESTORE['public.fn_generate_receivable_installments()']=FIN/'fn_generate_receivable_installments.sql.review'
+bodies = "\n".join(((B5 / 'baseline' / f) if isinstance(f,str) else f).read_bytes().decode().strip() + ';' for f in RESTORE.values())
 restore = head + """-- FULL RESTORE TO PRE-IMPLANTATION LIVE (function set + column) — REVIEW ONLY.
 -- Fail-closed precondition: no partner_orders row carries c2_external_origin_snapshot (no pending/external history).
 -- If history exists this script aborts BEFORE any DDL; use rollback.sql.review (partial containment) instead.
