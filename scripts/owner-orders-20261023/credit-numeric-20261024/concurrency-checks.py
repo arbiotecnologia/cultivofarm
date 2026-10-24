@@ -3,7 +3,7 @@ import select
 
 def transaction(u, sql, name, hold=False):
     claims=json.dumps({'sub':u,'role':'authenticated','iat':int(time.time())})
-    return (f"BEGIN; SET LOCAL statement_timeout='12s'; SET LOCAL lock_timeout='8s'; "
+    return (f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL statement_timeout='12s'; SET LOCAL lock_timeout='8s'; "
             f"SET LOCAL application_name='{name}'; SET LOCAL ROLE authenticated; "
             f"SELECT set_config('request.jwt.claims','{claims}',true); {sql}; "
             + ("SELECT 'CONCURRENT_HOLD'; SELECT pg_sleep(2); " if hold else '') + "COMMIT;")
