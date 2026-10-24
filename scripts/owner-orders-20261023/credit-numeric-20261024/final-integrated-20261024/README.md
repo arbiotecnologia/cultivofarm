@@ -1,31 +1,34 @@
-# Reconciliação da base atual — revisão inativa
+# Pacote FINAL integrado — INATIVO, somente revisão
 
-## Captura e preservação
-- SELECTs de metadados/corpos no Supabase externo configurado `swzpzcwiasxmjutrmvkm`, 24/10/2026 01:53–01:54 UTC. Não houve DDL/DML hosted, publicação ou alteração de sessão.
-- `capture/functions.json`: 78 corpos, assinaturas, owners e ACLs. `capture/structure.json`: 44 triggers, policies e RLS. Capturas em consultas separadas, não snapshot REPEATABLE READ único; PRE integral deve ser reexecutado pelo auditor.
-- Base confirmada: aprovação `31bbe8f7d3c940eb9862bf7c7b7fad20`, wrapper `9c8c8a736bcd1d77ee2f237a8a59b4ce`, crédito `213ac31f3a30816ead75365b0d1fed18`, writer false `a0417d6727d78412849916a95b250bde`.
-- Parcelas LIVE `9c6ef883bb4a97928a5179bc63e9ca31`, postgres, ACL postgres/service_role. NULL falha `23514/FINANCIAL_TENANT_REQUIRED`; INSERT propaga tenant do título. O corpo reconciliado conserva esses bytes e acrescenta apenas o ramo contratual já revisado. Seu hash composto é `de469bfc11719e288cd0970411c57c97`: não é hash da base LIVE, nem autorização para simplesmente trocar hashes.
-- Históricos fora deste novo diretório não foram sobrescritos. O inventário herdado já continha o corpo LIVE de parcelas; a diferença adicional contra a nova captura foi exclusivamente crédito LIVE. O POST de parcelas verifica o corpo composto, não restaura versão vulnerável.
+## Recomendação única para instalar o estado composto
+Promover somente este pacote: origem reconciliada **e** wrapper row-before-receipt são instalados na mesma transação, com PRE e POST completos. Os candidatos históricos de origem sem wrapper corrigido não devem ser promovidos isoladamente. Nenhum histórico foi sobrescrito.
 
-## Scripts de origem (dependentes da contabilidade)
-1. `origin/preflight.sql`: READ ONLY, corpos/owners/ACL, triggers, conjunto de policies/RLS; não libera implantação sozinho.
-2. `origin/preflight-accounting.sql`: gate humano obrigatório, real A DRAFT permanece bloqueado.
-3. `origin/candidate.sql.review`: composição de origem, INATIVA; writer false. PRE e POST completos estão na mesma transação.
-4. `origin/postflight.sql`: READ ONLY assertivo.
-5. `origin/rollback.sql.review`: contenção de create/approve/generate externos existentes; não reversão de código, não cancela in-flight; drenar escritores antes. PRE/POST guardados na mesma transação, preservando tenant/ACL/crédito/histórico.
+## Base e preservação
+Reutiliza a captura canônica somente leitura de 24/10 01:53–01:54 UTC em `capture/`, com 78 funções e 44 triggers; as consultas não formam snapshot único. O auditor deve reexecutar PRE integral no ref `swzpzcwiasxmjutrmvkm`.
+- PRE wrapper LIVE: `9c8c8a736bcd1d77ee2f237a8a59b4ce`; POST e contenção: `31eeb54e4b69d97c311629a37e553faf`.
+- PRE aprovação: `31bbe8f7d3c940eb9862bf7c7b7fad20`.
+- Crédito LIVE preservado: `213ac31f3a30816ead75365b0d1fed18`.
+- Writer permanece false: `a0417d6727d78412849916a95b250bde`.
+- Parcelas PRE LIVE `9c6ef883bb4a97928a5179bc63e9ca31`; ramo contratual composto `de469bfc11719e288cd0970411c57c97` conserva rejeição de tenant NULL e propagação de organization_id.
+Owners, ACLs, RLS/policies e triggers capturados são guardados integralmente. Não há concessão de autoridade nem reabertura do writer.
 
-## Recorte wrapper independente: NO-GO demonstrado
-`test-current-base.py` instala somente corpos/triggers/RLS atuais capturados, **sem composição nem reabertura do helper**. Create interno canônico positivo A e B em fixtures sintéticas; aprovação retorna `42501/B2B_INTERNAL_DOWNSTREAM_UNVERIFIED` porque tenta readiness=true. Wrapper retorna o mesmo erro para origem interna **antes de row/receipt**. Duas conexões com row segurada confirmam que a geração termina nessa negação, sem aguardar lock.
+## Caminhos para revisão independente
+1. `origin/preflight.sql`: estrutural READ ONLY sobre base LIVE atual.
+2. `origin/preflight-accounting.sql`: gate humano obrigatório, READ ONLY; A DRAFT continua bloqueado com 42501/C2_ACCOUNTING_PREREQUISITE_BLOCKED.
+3. `origin/candidate.sql.review`: sete corpos compostos, PRE/POST completos dentro de uma transação, incluindo CREATE do wrapper corrigido e POST 31eeb.
+4. `origin/postflight.sql`: POST integral READ ONLY.
+5. `origin/containment.sql.review`: PRE/POST integrais, fecha create e aprovação/cobrança externas, preserva wrapper corrigido, snapshots, histórico e branches internos. `origin/rollback.sql.review` é cópia idêntica de contenção, **não reversão de código**. Exige drenar escritores; não cancela chamadas in-flight.
+6. `origin/assemble.py`: geração local; remove somente delimitadores externos ao normalizar os comandos.
 
-Assim não foi reproduzido o deadlock funcional approve/generate nessa base protegida: origem interna é contida; NULL legado não autoriza aprovação; origem externa composta não está instalada. Não emitimos candidate/rollback independente “pronto” sem prova, nem removemos trigger/limpamos JWT para fabricar sucesso. O deadlock anterior pertence ao estado composto testado, não certifica essa base hosted.
+## Uma suíte focal
+Comando: `bun run test -- src/test/saas/c2-final-integrated-postgres.test.ts --maxWorkers=1 --no-file-parallelism`.
+Rodada final: **1/1 PASS**, 74,69s teste (76,37s total). Nenhuma suíte não afetada foi reexecutada.
+- PostgreSQL descartável, mesma cadeia capturada e fixtures: aprovação segura linha e aguarda barreira de crédito; wrapper LIVE segura receipt e aguarda linha, reproduzindo SQLSTATE **40P01** no estado composto.
+- Mesma barreira após fix: geração aguarda linha sem receipt; ambas chamadas concluem; exatamente um título, três parcelas tenant A e um vínculo.
+- A/B positivos com títulos/parcelas próprios; NULL título/parcela 23514/FINANCIAL_TENANT_REQUIRED e parcela B→título A 23514/FINANCIAL_RECEIVABLE_TENANT_MISMATCH.
+- Negativas de create/approve/revogação exigem SQLSTATE/mensagem de autorização e snapshot sem efeitos; na_entrega nega cobrança antes entrega com 42501/C2_EXTERNAL_DELIVERY_REQUIRED.
+- Comandos completos candidate/containment com falha deliberada depois do POST: catálogo de corpos/owners/ACL e hash wrapper anterior preservados; checkpoints de DO/DDL compartilham um txid por comando. PRE/POST READ ONLY completos executados; contenção completa bem-sucedida preserva wrapper 31eeb.
+- Auth sintética e réplica parcial; a substituição temporária do helper por seu corpo revisado e atestados VALIDATED existem somente nas fixtures descartáveis. Não certifica JWT/RLS hosted, contabilidade real ou pós-entrega na_entrega.
 
-## Evidências locais
-- `bun run test -- src/test/saas/c2-current-base-reconciliation-postgres.test.ts --maxWorkers=1 --no-file-parallelism`: 2/2 PASS, 99,80s; cadeia reconciliada **91 checks**, base independente **8 checks**.
-- `bun run test -- src/test/saas/c2-credit-numeric-postgres.test.ts --maxWorkers=1 --no-file-parallelism`: 1/1 PASS, 49,10s; crédito/cadeia histórica **123 checks**.
-- Execução paralela inicial: 3 testes passaram, mas executor reportou timeout onTaskUpdate e saída 1; não contamos essa rodada como PASS. Reexecuções isoladas sem erro.
-- Candidate completo com falha deliberada após POST preserva catálogo baseline; contenção/rollback completo falho preserva catálogo composto. Notices em todos DO/DDL/checkpoints verificam um único txid por comando. PRE/POST READ ONLY completos também executados; contenção completa bem-sucedida executada no final da cadeia.
-- A título/3 parcelas tenant A, B título/3 parcelas tenant B; NULL título/parcela `23514/FINANCIAL_TENANT_REQUIRED`; parcela B→título A `23514/FINANCIAL_RECEIVABLE_TENANT_MISMATCH`; negações de create/approve/revogação exigem SQLSTATE/mensagem específicos e snapshot sem efeitos.
-- `na_entrega`: aprovação comercial sem título; cobrança antecipada `C2_EXTERNAL_DELIVERY_REQUIRED`; operação/pós-entrega continuam fechadas. Não simula homologação pós-entrega.
-
-## Limites
-Auth sintética e réplica parcialmente reconstruída, não JWT/RLS hosted. Fixtures contábeis VALIDATED são exclusivamente locais, não atestado real. Sem typecheck/build manual; build automático observado OK. Contabilidade real, revisão transacional independente e homologação hosted continuam bloqueios. Writer e sessões reais intactos.
+## Bloqueios e estado
+Contabilidade real A DRAFT, revisão independente e homologação hosted permanecem pendentes. PRE estrutural PASS não libera implantação. Sem SQL hosted mutante, publicação, mudança de sessões/dados reais ou abertura writer. Build automático observado OK; não houve build/typecheck manual.

@@ -779,6 +779,7 @@
 - [ ] Prévia A: /sem-permissao intermitente e nó desanexado por remontagem — pendência do monitor, sem reload.
 
 ## 24/10 02:46 — composição final integrada
-- [ ] Variante nova: origem reconciliada e wrapper row-before-receipt na mesma transação; histórico preservado.
-- [ ] Uma suíte focal: barreira antes/depois, tenants A/B, negações exatas e POST falho integral candidato/contenção.
-- [ ] Entrega revisável; contabilidade real bloqueada, sem hosted mutante/publicação/writer.
+- [x] Variante final-integrated-20261024: origem reconciliada e wrapper row-before-receipt na mesma transação; histórico preservado.
+- [x] Uma suíte focal 1/1 PASS: barreira 40P01 antes/fix depois, tenants A/B, negações exatas e POST falho integral candidato/contenção.
+- [x] Entrega integrada revisável concluída; sem hosted mutante/publicação/writer.
+- [ ] Implantação/homologação independente: bloqueada pela contabilidade real A DRAFT e revisão do auditor.
