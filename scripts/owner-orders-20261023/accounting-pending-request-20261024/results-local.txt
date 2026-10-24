@@ -1,0 +1,42 @@
+PASS captured business/authorization/pricing bodies reproduce all MD5s
+PASS LIVE manual correction bodies and private context table reproduce deployed MD5s
+PASS all 44 current order/children/financial triggers installed; actions use origin mode
+PASS b5 structural preflight READ ONLY passes on captured LIVE (writer false)
+PASS candidate failing POST rolls back atomically (writer still false, no overlay)
+PASS candidate installs with owner A NOT validated (no install-time accounting gate)
+PASS composed postflight READ ONLY passes
+PASS external manager A creates canonical request while A accounting is DRAFT
+PASS pending snapshot carries no issuer identity/attestation
+PASS client derived server-side from partner; not production-ready
+PASS create generated no title/installment/link/NF: 0/0/0/0
+PASS idempotent replay same order, no writes
+PASS same key different payload conflicts
+PASS notifications (if any) only to owner A users: ''
+PASS approval denied while accounting pending, no effects
+PASS billing denied while accounting pending, no effects
+PASS direct privileged status jumps (approve/production/delivery/invoiced) denied by server guards
+PASS pending snapshot cannot be self-promoted by direct write
+PASS A manager cannot order for B partner
+PASS B manager cannot order for A partner
+PASS isolated technician cannot order
+PASS plan assigned only to B partner rejected for A partner
+PASS non-B2B item rejected
+PASS B (synthetic validated MG fixture) creates V1 origin with issuer identity
+PASS A admin cannot approve B order
+PASS validated B fixture: approval generates exactly one title link + 3 installments, no NF: 1/3/0
+PASS foreign owner B cannot promote A request (no oracle)
+PASS buyer cannot promote own request
+PASS owner A promotion denied while A still DRAFT
+PASS stale expected updated_at rejected (CAS)
+PASS promotion after fixture validation seals V1 from current settings, original actor kept
+PASS promotion audited with previous and new origin
+PASS second promotion rejected explicitly
+PASS promotion created no title/installment/link/NF
+PASS revoked manager cannot create
+PASS restored link creates again as pending (A DRAFT again)
+PASS rollback failing POST preserves candidate
+PASS rollback restores exact b5 bodies and LIVE writer false
+PASS history kept: pending and promoted orders remain
+PASS after rollback pending request is frozen (b5 assert rejects pending contract)
+PASS after rollback external create closed again
+TOTAL 41 PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification
