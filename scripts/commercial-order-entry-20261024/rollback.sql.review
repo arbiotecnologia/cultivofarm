@@ -8,6 +8,10 @@ DO $pre$ BEGIN
  IF md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure)) IS DISTINCT FROM 'c3f2997746f24bc2efd15db5c0ccc862' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:platform_private.b2b_actor_scope(uuid)'; END IF;
  IF md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) IS DISTINCT FROM '12ea8b410e8fadf2da8f72fc1bbc83cf' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF;
  IF md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) IS DISTINCT FROM '37d4f45e388ed7b38f6f397b672629ee' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'; END IF;
+ IF md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid,boolean)'::regprocedure)) IS DISTINCT FROM '1391adc2133b922e2dcea4b1d3e26820' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.get_partner_catalog_secure(uuid,boolean)'; END IF;
+ IF (SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid,boolean)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid,boolean)'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'C2IOE_ACL_DRIFT:public.get_partner_catalog_secure(uuid,boolean)'; END IF;
+ IF (SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'C2IOE_ACL_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
+ IF to_regprocedure('platform_private.c1b_catalog_visibility_scope(uuid)') IS NULL THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_MISSING:c1b_catalog_visibility_scope'; END IF;
  IF md5(pg_get_functiondef('platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '54c4327d63f48e39f598129ff9dd8f09' THEN RAISE EXCEPTION 'C2IOE_ROLLBACK_PRE_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'C2IOE_ROLLBACK_PRE_DRIFT:platform_private.c2_internal_order_target_reason(uuid,uuid)'; END IF;
  IF md5(pg_get_functiondef('public.c2_internal_order_entry_capability_v1()'::regprocedure)) IS DISTINCT FROM '88b3cd5499bf3f674601851f7dab848d' THEN RAISE EXCEPTION 'C2IOE_ROLLBACK_PRE_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
@@ -39,6 +43,86 @@ END $function$;
 ALTER FUNCTION platform_private.c2_order_actor_scope(uuid,uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION platform_private.c2_order_actor_scope(uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION platform_private.c2_order_actor_scope(uuid,uuid) TO postgres;
+CREATE OR REPLACE FUNCTION public.get_partner_catalog_secure(p_partner_id uuid)
+ RETURNS TABLE(item_id uuid, item_tipo text, product_id uuid, produto_nome text, produto_codigo text, descricao_curta text, preco_tabela numeric, desconto_percentual numeric, preco_parceiro numeric, produto_ativo boolean, resumo_curto text, explicacao_b2b text, beneficios_principais text, ficha_status text, ficha_aprovada boolean, valor_dose_brl numeric, valor_litro_brl numeric, valor_ha_brl numeric, unidade_preco_principal text)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_visibility_scope uuid[];
+  v_uid uuid := auth.uid();
+  v_super boolean; s record; r record;
+  v_pid uuid; v_mid uuid; j_ha jsonb; j_li jsonb; j_do jsonb;
+  n_ha numeric; n_li numeric; n_do numeric; v_base numeric; v_unid text;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  IF p_partner_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.partner_accounts pa
+       WHERE pa.id = p_partner_id AND pa.ativo = true AND pa.deleted_at IS NULL) THEN
+    RAISE EXCEPTION 'partner_not_found' USING ERRCODE='42501';
+  END IF;
+  v_super := public.is_platform_superadmin(v_uid);
+  IF NOT v_super THEN
+    IF public.has_role(v_uid,'parceiro_b2b_tecnico'::app_role) THEN
+      RAISE EXCEPTION 'forbidden_financial_terms' USING ERRCODE='42501';
+    END IF;
+    SELECT * INTO s FROM platform_private.b2b_actor_scope(v_uid);
+    IF NOT s.profile_ok OR s.org_partner IS DISTINCT FROM p_partner_id OR NOT s.partner_valid THEN
+      RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501';
+    END IF;
+    IF public.has_role(v_uid,'parceiro_b2b'::app_role) THEN
+      IF s.user_partner_count <> 1 OR s.user_partner IS DISTINCT FROM p_partner_id THEN
+        RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501';
+      END IF;
+    ELSIF NOT (public.has_role(v_uid,'administrador'::app_role) OR public.has_role(v_uid,'gestor_comercial'::app_role)) THEN
+      RAISE EXCEPTION 'forbidden_role' USING ERRCODE='42501';
+    END IF;
+    IF NOT s.has_catalog THEN RAISE EXCEPTION 'feature_not_entitled' USING ERRCODE='42501'; END IF;
+  END IF;
+
+  v_visibility_scope := platform_private.c1b_catalog_visibility_scope(p_partner_id);
+  FOR r IN
+    SELECT p.id, 'produto'::text AS tipo, p.nome, p.codigo, p.ativo,
+           ptp.status_validacao, ptp.resumo_curto, ptp.explicacao_b2b, ptp.beneficio_combinado AS beneficios
+      FROM public.produtos p LEFT JOIN public.product_technical_profiles ptp ON ptp.produto_id = p.id
+     WHERE p.ativo = true AND p.b2b_enabled = true AND NOT EXISTS (SELECT 1 FROM public.catalog_tenant_visibility cv WHERE cv.organization_id=ANY(v_visibility_scope) AND cv.entity_type='produto' AND cv.hidden IS TRUE AND cv.produto_id=p.id)
+    UNION ALL
+    SELECT m.id, 'microrganismo'::text, m.nome, m.codigo, m.ativo,
+           mtp.status_validacao, mtp.resumo_curto, mtp.explicacao_b2b, mtp.beneficios_agronomicos
+      FROM public.microrganismos m LEFT JOIN public.microorganism_technical_profiles mtp ON mtp.microrganismo_id = m.id
+     WHERE m.ativo = true AND m.b2b_enabled = true AND NOT EXISTS (SELECT 1 FROM public.catalog_tenant_visibility cv WHERE cv.organization_id=ANY(v_visibility_scope) AND cv.entity_type='microrganismo' AND cv.hidden IS TRUE AND cv.microrganismo_id=m.id)
+  LOOP
+    v_pid := CASE WHEN r.tipo='produto' THEN r.id END;
+    v_mid := CASE WHEN r.tipo='microrganismo' THEN r.id END;
+    j_ha := public.fn_b2b_resolve_base_unit_price(p_partner_id, v_pid, v_mid, 'hectare', NULL, current_date);
+    j_li := public.fn_b2b_resolve_base_unit_price(p_partner_id, v_pid, v_mid, 'litro',   NULL, current_date);
+    j_do := public.fn_b2b_resolve_base_unit_price(p_partner_id, v_pid, v_mid, 'dose',    NULL, current_date);
+    n_ha := CASE WHEN COALESCE((j_ha->>'ok')::boolean,false) THEN NULLIF((j_ha->>'base_price')::numeric,0) END;
+    n_li := CASE WHEN COALESCE((j_li->>'ok')::boolean,false) THEN NULLIF((j_li->>'base_price')::numeric,0) END;
+    n_do := CASE WHEN COALESCE((j_do->>'ok')::boolean,false) THEN NULLIF((j_do->>'base_price')::numeric,0) END;
+    v_unid := CASE WHEN n_ha IS NOT NULL THEN 'hectare' WHEN n_li IS NOT NULL THEN 'litro'
+                   WHEN n_do IS NOT NULL THEN 'dose_100ml' ELSE 'sob_consulta' END;
+    v_base := COALESCE(n_ha, n_li, n_do);
+    item_id := r.id; item_tipo := r.tipo; product_id := v_pid;
+    produto_nome := r.nome; produto_codigo := r.codigo;
+    descricao_curta := CASE WHEN r.status_validacao='aprovado' THEN LEFT(COALESCE(r.resumo_curto,''),220) END;
+    preco_tabela := ROUND(v_base,2);
+    desconto_percentual := CASE WHEN v_base IS NOT NULL THEN 0::numeric END;
+    preco_parceiro := ROUND(v_base,2);
+    produto_ativo := r.ativo;
+    resumo_curto := CASE WHEN r.status_validacao='aprovado' THEN r.resumo_curto END;
+    explicacao_b2b := CASE WHEN r.status_validacao='aprovado' THEN r.explicacao_b2b END;
+    beneficios_principais := CASE WHEN r.status_validacao='aprovado' THEN r.beneficios END;
+    ficha_status := COALESCE(r.status_validacao,'sem_ficha');
+    ficha_aprovada := (r.status_validacao = 'aprovado');
+    valor_dose_brl := ROUND(n_do,2); valor_litro_brl := ROUND(n_li,2); valor_ha_brl := ROUND(n_ha,2);
+    unidade_preco_principal := v_unid;
+    RETURN NEXT;
+  END LOOP;
+END;
+$function$
+;
+ALTER FUNCTION public.get_partner_catalog_secure(uuid) OWNER TO postgres;
 DROP FUNCTION public.c2_internal_order_entry_capability_v1();
 DROP FUNCTION platform_private.c2_internal_order_target_reason(uuid,uuid);
 DO $post$ BEGIN
@@ -47,7 +131,12 @@ DO $post$ BEGIN
  IF md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure)) IS DISTINCT FROM 'c3f2997746f24bc2efd15db5c0ccc862' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:platform_private.b2b_actor_scope(uuid)'; END IF;
  IF md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) IS DISTINCT FROM '12ea8b410e8fadf2da8f72fc1bbc83cf' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF;
  IF md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) IS DISTINCT FROM '37d4f45e388ed7b38f6f397b672629ee' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'; END IF;
+ IF md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid,boolean)'::regprocedure)) IS DISTINCT FROM '1391adc2133b922e2dcea4b1d3e26820' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.get_partner_catalog_secure(uuid,boolean)'; END IF;
+ IF (SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid,boolean)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid,boolean)'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'C2IOE_ACL_DRIFT:public.get_partner_catalog_secure(uuid,boolean)'; END IF;
+ IF (SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION 'C2IOE_ACL_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
+ IF to_regprocedure('platform_private.c1b_catalog_visibility_scope(uuid)') IS NULL THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_MISSING:c1b_catalog_visibility_scope'; END IF;
  IF md5(pg_get_functiondef('platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '6802c693f459a92e70dade0c73d7faba' THEN RAISE EXCEPTION 'C2IOE_ROLLBACK_POST_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM '2c1944f3f95e4d2b44675306d5905b61' THEN RAISE EXCEPTION 'C2IOE_ROLLBACK_POST_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
  IF to_regprocedure('public.c2_internal_order_entry_capability_v1()') IS NOT NULL OR to_regprocedure('platform_private.c2_internal_order_target_reason(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'C2IOE_ROLLBACK_POST_PRESENT'; END IF;
 END $post$;
 COMMIT;

@@ -83,8 +83,10 @@ BEGIN
       INTO partners FROM public.partner_accounts p
      WHERE platform_private.c2_internal_order_target_reason(uid,p.id) IS NULL;
     IF r IS NULL AND jsonb_array_length(partners)=0 THEN r := 'no_partner_in_scope'; END IF;
-    -- Catalogue reader still denies internal portfolio targets (LIVE get_partner_catalog_secure(uuid) body uncaptured).
-    IF r IS NULL THEN r := 'catalog_reader_pending'; END IF;
+    -- Same catalogue feature as the canonical reader (b2b_actor_scope.has_catalog / catalogo_precos).
+    IF r IS NULL AND NOT EXISTS (SELECT 1 FROM platform_private.b2b_actor_scope(uid) x WHERE x.has_catalog IS TRUE) THEN r := 'catalog_feature_disabled'; END IF;
+    -- Catalogue reader must be exactly the reviewed portfolio-aware body; any drift closes order entry.
+    IF r IS NULL AND md5(pg_get_functiondef('public.get_partner_catalog_secure(uuid)'::regprocedure)) IS DISTINCT FROM '__CATALOG_MD5__' THEN r := 'catalog_reader_pending'; END IF;
   END IF;
   RETURN jsonb_build_object('contract','C2_INTERNAL_ORDER_ENTRY_V1','organization_id',org,
     'profile_ok', r IS DISTINCT FROM 'inactive_scope' AND r IS DISTINCT FROM 'actor_not_allowed',
