@@ -449,7 +449,9 @@ export default function PedidosB2B() {
                       </>
                     ) : (
                       <div className="text-xs text-muted-foreground">
-                        Apenas Administrador, Gestor ou Financeiro podem aprovar crédito.
+                        {isAccountingPending(detail)
+                          ? "Decisão de crédito bloqueada enquanto a contabilidade da empresa estiver pendente."
+                          : "Apenas Administrador, Gestor ou Financeiro podem aprovar crédito."}
                       </div>
                     )}
                   </div>
