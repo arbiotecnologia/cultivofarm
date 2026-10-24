@@ -1,0 +1,885 @@
+-- REVIEW ONLY / INACTIVE. Never apply without independent review and owner-run release.
+-- Composes the reviewed b5 package (minus install-time accounting gate) + C2_ACCOUNTING_PENDING_V1 in ONE transaction.
+-- Opens only the canonical external request; approval, billing, NF and delivery stay closed while the issuer is not validated.
+-- FULL RESTORE TO PRE-IMPLANTATION LIVE (function set + column) — REVIEW ONLY.
+-- Fail-closed precondition: no partner_orders row carries c2_external_origin_snapshot (no pending/external history).
+-- If history exists this script aborts BEFORE any DDL; use rollback.sql.review (partial containment) instead.
+-- Preserves 30dc8243 (commercial entry/catalog) and the LIVE manual initial-installments correction byte-exact.
+BEGIN;
+SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='60s';
+LOCK TABLE public.partner_orders IN SHARE ROW EXCLUSIVE MODE;
+DO $c2ap_30dc_c2ap_30dc_restore_pre$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='54c4327d63f48e39f598129ff9dd8f09' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_PRE:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='07d7c9002cbfe17497c9ee4a92d5a928' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_PRE:platform_private.c2_internal_order_target_reason(uuid,uuid)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.c2_internal_order_entry_capability_v1()'::regprocedure AND md5(pg_get_functiondef(oid))='e2619c71becfebf38c8d03562ff11ce2' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_PRE:public.c2_internal_order_entry_capability_v1()'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='b5684d350603d1db77ab9f1db0f4b253' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_PRE:public.get_partner_catalog_secure(uuid)'; END IF;
+ IF (SELECT proacl::text FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}' OR (SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_PRE_ACL:30dc8243'; END IF;
+ IF has_function_privilege('authenticated','platform_private.c2_internal_order_target_reason(uuid,uuid)','EXECUTE') OR has_function_privilege('anon','public.c2_internal_order_entry_capability_v1()','EXECUTE') OR NOT has_function_privilege('authenticated','public.c2_internal_order_entry_capability_v1()','EXECUTE') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_PRE_PRIV:30dc8243'; END IF;
+END $c2ap_30dc_c2ap_30dc_restore_pre$;
+DO $c2ap_restore_pre$ BEGIN
+ 
+ IF EXISTS(SELECT 1 FROM public.partner_orders WHERE c2_external_origin_snapshot IS NOT NULL) THEN
+  RAISE EXCEPTION 'C2AP_FULL_RESTORE_BLOCKED_HISTORY: external/pending orders exist; only partial containment (rollback.sql.review) is possible without destroying history' USING ERRCODE='55000';
+ END IF;
+END $c2ap_restore_pre$;
+DROP TRIGGER zz_c2_accounting_pending ON public.partner_orders;
+DROP TRIGGER zz_c2_external_final_state ON public.partner_orders;
+CREATE OR REPLACE FUNCTION public.create_partner_order_secure(p_partner_id uuid, p_observacoes text DEFAULT NULL::text, p_items jsonb DEFAULT '[]'::jsonb, p_requested_delivery_date date DEFAULT NULL::date, p_payment_plan_id uuid DEFAULT NULL::uuid, p_first_due_date date DEFAULT NULL::date, p_installment_count integer DEFAULT NULL::integer, p_expected_cart_hash text DEFAULT NULL::text, p_idempotency_key text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_is_admin boolean; v_is_finance boolean; v_is_gestor boolean; v_is_internal boolean;
+  v_is_partner boolean; v_is_partner_tech boolean; v_user_partner uuid;
+  v_order_id uuid; v_numero text; v_plan record; v_cart jsonb; v_line jsonb;
+  v_quote boolean; v_table numeric(14,2); v_disc numeric(14,2); v_net numeric(14,2);
+  v_interest numeric(14,2); v_final numeric(14,2); v_hash text;
+  v_installments integer; v_first_due date; v_terms_id uuid;
+  v_status partner_order_status; v_fin_status text; v_approval_status text;
+  v_credit jsonb; v_block_reason text := NULL;
+  v_inst numeric(14,2); v_accum numeric(14,2) := 0;
+  v_amount_i numeric(14,2); v_principal_i numeric(14,2); v_interest_i numeric(14,2);
+  v_due_i date; v_admin record; i integer;
+  v_idem text; v_prev_idem record; v_result jsonb;
+  v_items_canon text; v_req_fp text;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
+  PERFORM platform_private.c2_order_actor_scope(v_uid, p_partner_id); -- c2_ord_scope
+  PERFORM platform_private.c2_owner_order_guard(v_uid, p_partner_id, p_payment_plan_id); -- c2_ord_guard
+  IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN RAISE EXCEPTION 'empty_cart'; END IF;
+  IF p_payment_plan_id IS NULL THEN RAISE EXCEPTION 'payment_plan_required'; END IF;
+
+  -- assinatura autoritativa obrigatoria para TODOS os chamadores
+  IF NULLIF(btrim(COALESCE(p_expected_cart_hash,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'cart_hash_required';
+  END IF;
+  v_idem := NULLIF(btrim(COALESCE(p_idempotency_key,'')),'');
+  IF v_idem IS NULL THEN RAISE EXCEPTION 'idempotency_key_required'; END IF;
+  IF length(v_idem) > 120 THEN RAISE EXCEPTION 'invalid_idempotency_key'; END IF;
+
+  -- ---------------------------------------------------------------
+  -- request fingerprint canônico: reqfp_v2
+  -- Cobre todos os parâmetros materialmente capazes de alterar o
+  -- pedido resultante. Itens são normalizados (tipo|id|quantidade
+  -- numérica canônica) e ordenados deterministicamente; textos são
+  -- normalizados por btrim. cart_hash continua validado à parte.
+  -- ---------------------------------------------------------------
+  SELECT COALESCE(string_agg(t, ';' ORDER BY t), '')
+    INTO v_items_canon
+    FROM (
+      SELECT lower(COALESCE(btrim(l->>'item_tipo'), '-')) || '|' ||
+             lower(COALESCE(btrim(l->>'item_id'), '-'))   || '|' ||
+             COALESCE(trim(to_char(COALESCE(NULLIF(btrim(l->>'quantidade'),'')::numeric, 0),
+                                   'FM9999999990.000000')), '0') AS t
+        FROM jsonb_array_elements(COALESCE(p_items,'[]'::jsonb)) AS l
+    ) s;
+
+  v_req_fp := encode(sha256(convert_to(
+      'reqfp_v2'
+      || '|partner='   || p_partner_id::text
+      || '|plan='      || COALESCE(p_payment_plan_id::text,'-')
+      || '|delivery='  || COALESCE(p_requested_delivery_date::text,'-')
+      || '|firstdue='  || COALESCE(p_first_due_date::text,'-')
+      || '|inst='      || COALESCE(p_installment_count::text,'-')
+      || '|obs='       || COALESCE(btrim(p_observacoes),'-')
+      || '|items='     || v_items_canon
+    ,'UTF8')),'hex');
+
+  v_is_admin        := has_role(v_uid,'administrador'::app_role);
+  v_is_finance      := has_role(v_uid,'financeiro'::app_role);
+  v_is_gestor       := has_role(v_uid,'gestor_comercial'::app_role);
+  v_is_internal     := v_is_admin OR v_is_finance OR v_is_gestor;
+  v_is_partner      := has_role(v_uid,'parceiro_b2b'::app_role);
+  v_is_partner_tech := has_role(v_uid,'parceiro_b2b_tecnico'::app_role);
+  v_user_partner    := public.get_user_partner_id();
+
+  IF has_role(v_uid,'cliente_produtor'::app_role) AND NOT (v_is_internal OR v_is_partner) THEN
+    RAISE EXCEPTION 'PRODUCER_DIRECT_NOT_ENABLED';
+  END IF;
+
+  IF v_is_partner_tech AND NOT (v_is_internal OR v_is_partner) THEN
+    RAISE EXCEPTION 'partner_tech_cannot_create_order';
+  END IF;
+
+  IF NOT v_is_internal THEN
+    IF NOT v_is_partner OR v_user_partner IS NULL OR v_user_partner <> p_partner_id THEN
+      RAISE EXCEPTION 'forbidden_partner';
+    END IF;
+  END IF;
+
+  PERFORM 1 FROM public.partner_accounts WHERE id = p_partner_id AND ativo = true;
+  IF NOT FOUND THEN RAISE EXCEPTION 'partner_not_found'; END IF;
+
+  -- idempotencia (lock deterministico #1: parceiro+chave)
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:' || p_partner_id::text || ':' || v_idem, 0));
+  SELECT * INTO v_prev_idem FROM public.partner_order_idempotency
+   WHERE partner_id = p_partner_id AND idempotency_key = v_idem;
+  IF FOUND THEN
+    -- linhas históricas sem fingerprint não podem ser reexecutadas em
+    -- silêncio apenas com cart_hash: fail-safe, sem criar pedido.
+    IF v_prev_idem.request_fingerprint IS NULL THEN
+      RAISE EXCEPTION 'idempotency_legacy_unverifiable';
+    END IF;
+    IF v_prev_idem.cart_hash IS DISTINCT FROM p_expected_cart_hash THEN
+      RAISE EXCEPTION 'idempotency_conflict';
+    END IF;
+    IF v_prev_idem.request_fingerprint IS DISTINCT FROM v_req_fp THEN
+      RAISE EXCEPTION 'idempotency_conflict';
+    END IF;
+    RETURN v_prev_idem.result_snapshot;
+  END IF;
+
+  SELECT * INTO v_plan FROM public.commercial_payment_plans WHERE id = p_payment_plan_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'plan_not_found'; END IF;
+  IF NOT public.fn_b2b_plan_selectable(v_plan.id) THEN RAISE EXCEPTION 'plan_not_selectable'; END IF;
+  IF v_plan.active = false THEN RAISE EXCEPTION 'plan_inactive'; END IF;
+  IF v_plan.monthly_interest_percent < 0 THEN RAISE EXCEPTION 'invalid_interest_rate'; END IF;
+  IF v_plan.discount_percent > 40 AND NOT v_is_admin THEN RAISE EXCEPTION 'discount_exceeds_limit'; END IF;
+
+  v_credit := public.fn_b2b_credit_exposure(p_partner_id, 0, NULL);
+  IF COALESCE((v_credit->>'block_if_overdue')::boolean,false)
+     AND COALESCE((v_credit->>'tem_vencidos')::boolean,false) THEN
+    RAISE EXCEPTION 'credit_blocked_overdue';
+  END IF;
+
+  IF NOT v_is_internal THEN
+    v_installments := GREATEST(COALESCE(v_plan.installment_count,1),1);
+  ELSE
+    IF p_installment_count IS NOT NULL AND p_installment_count <= 0 THEN
+      RAISE EXCEPTION 'invalid_installment_count';
+    END IF;
+    v_installments := GREATEST(COALESCE(p_installment_count, v_plan.installment_count, 1), 1);
+  END IF;
+
+  v_cart  := public.fn_resolve_b2b_cart(p_partner_id, p_payment_plan_id, p_items, current_date);
+  v_quote := COALESCE((v_cart->>'quote_required')::boolean,false);
+  v_table := (v_cart->>'table_amount')::numeric;
+  v_disc  := (v_cart->>'discount_amount')::numeric;
+  v_net   := (v_cart->>'net_amount')::numeric;
+  v_final := CASE WHEN v_quote THEN 0
+                  ELSE public.fn_b2b_apply_interest(v_net, v_plan.interest_type,
+                         v_plan.monthly_interest_percent, v_plan.months_count) END;
+
+  v_hash := public.fn_b2b_cart_hash(p_partner_id, p_payment_plan_id, v_cart, v_final);
+  IF p_expected_cart_hash <> v_hash THEN
+    RAISE EXCEPTION 'price_changed';
+  END IF;
+
+  IF v_quote THEN v_table := 0; v_disc := 0; v_net := 0; END IF;
+  v_interest := ROUND(v_final - v_net, 2);
+
+  IF NOT v_quote AND v_plan.minimum_order_amount IS NOT NULL AND v_table < v_plan.minimum_order_amount THEN
+    RAISE EXCEPTION 'below_minimum_order_amount';
+  END IF;
+
+  IF p_first_due_date IS NOT NULL AND p_first_due_date < current_date THEN
+    RAISE EXCEPTION 'invalid_due_date';
+  END IF;
+  v_first_due := COALESCE(p_first_due_date, current_date + v_plan.max_days);
+
+  IF v_plan.requires_financial_approval OR v_plan.requires_guarantee THEN
+    v_fin_status := 'pending'; v_approval_status := 'pending';
+  ELSE
+    v_fin_status := 'not_required'; v_approval_status := 'not_required';
+  END IF;
+
+  IF v_first_due > current_date + v_plan.max_days THEN
+    IF NOT v_is_internal OR NOT (v_plan.requires_financial_approval OR v_plan.requires_guarantee) THEN
+      v_first_due := current_date + v_plan.max_days;
+    ELSE
+      v_fin_status := 'pending'; v_approval_status := 'pending';
+    END IF;
+  END IF;
+
+  IF v_quote THEN
+    v_status := 'aguardando_cotacao'::partner_order_status;
+  ELSE
+    -- lock deterministico #2: credito do parceiro
+    PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || p_partner_id::text, 0));
+    v_credit := public.fn_b2b_credit_exposure(p_partner_id, v_final, NULL);
+
+    IF COALESCE((v_credit->>'block_if_overdue')::boolean,false)
+       AND COALESCE((v_credit->>'tem_vencidos')::boolean,false) THEN
+      RAISE EXCEPTION 'credit_blocked_overdue';
+    END IF;
+
+    IF COALESCE((v_credit->>'credit_limit')::numeric,0) > 0
+       AND (v_credit->>'exposicao_projetada')::numeric > (v_credit->>'credit_limit')::numeric THEN
+      IF COALESCE(v_credit->>'credit_limit_action','block') = 'approval_required' THEN
+        v_status := 'aguardando_aprovacao_credito'::partner_order_status;
+        v_block_reason := 'limite_excedido';
+      ELSE
+        RAISE EXCEPTION 'credit_limit_exceeded';
+      END IF;
+    ELSE
+      v_status := 'em_analise_comercial'::partner_order_status;
+    END IF;
+  END IF;
+
+  INSERT INTO public.partner_orders(
+    partner_id, status, subtotal, desconto_total, total, observacoes, created_by,
+    requested_delivery_date, ready_for_production, payment_plan_id, payment_condition_status,
+    credit_block_reason
+  ) VALUES (
+    p_partner_id, v_status, 0, 0, 0, NULLIF(p_observacoes,''), v_uid,
+    p_requested_delivery_date, false, p_payment_plan_id,
+    CASE WHEN v_quote THEN 'quote_required' ELSE 'defined' END,
+    v_block_reason
+  ) RETURNING id, numero INTO v_order_id, v_numero;
+
+  FOR v_line IN SELECT * FROM jsonb_array_elements(v_cart->'lines') LOOP
+    INSERT INTO public.partner_order_items(
+      order_id, product_id, microrganismo_id, quantidade, preco_unitario,
+      desconto_percentual, subtotal, unidade_medida, volume_ml,
+      produto_nome_snapshot, produto_codigo_snapshot,
+      preco_tabela_snapshot, desconto_percentual_snapshot, preco_unitario_final_snapshot,
+      pricing_mode_snapshot, price_source_snapshot, base_price_snapshot,
+      condition_price_snapshot, plan_discount_percent_snapshot,
+      unit_type_snapshot, volume_ml_snapshot, price_rule_id_snapshot
+    ) VALUES (
+      v_order_id,
+      CASE WHEN v_line->>'item_tipo'='produto' THEN (v_line->>'item_id')::uuid END,
+      CASE WHEN v_line->>'item_tipo'='microrganismo' THEN (v_line->>'item_id')::uuid END,
+      (v_line->>'quantidade')::numeric,
+      CASE WHEN v_quote THEN 0 ELSE COALESCE((v_line->>'final_unit_price')::numeric, 0) END,
+      CASE WHEN v_quote THEN 0 ELSE COALESCE((v_line->>'plan_discount_percent')::numeric, 0) END,
+      CASE WHEN v_quote THEN 0 ELSE COALESCE((v_line->>'line_final_amount')::numeric, 0) END,
+      v_line->>'unidade_medida',
+      NULLIF(v_line->>'volume_ml','')::numeric,
+      v_line->>'nome', v_line->>'codigo',
+      CASE WHEN v_quote THEN 0 ELSE COALESCE((v_line->>'base_price')::numeric, 0) END,
+      CASE WHEN v_quote THEN 0 ELSE COALESCE((v_line->>'plan_discount_percent')::numeric, 0) END,
+      CASE WHEN v_quote THEN 0 ELSE COALESCE((v_line->>'final_unit_price')::numeric, 0) END,
+      v_line->>'pricing_mode', v_line->>'price_source',
+      CASE WHEN v_quote THEN NULL ELSE NULLIF(v_line->>'base_price','')::numeric END,
+      CASE WHEN v_quote THEN NULL ELSE NULLIF(v_line->>'condition_price','')::numeric END,
+      CASE WHEN v_quote THEN NULL ELSE NULLIF(v_line->>'plan_discount_percent','')::numeric END,
+      v_line->>'unidade_medida',
+      NULLIF(v_line->>'volume_ml','')::numeric,
+      NULLIF(v_line->>'rule_id','')::uuid
+    );
+  END LOOP;
+
+  IF NOT v_quote THEN
+    INSERT INTO public.partner_order_payment_terms(
+      partner_order_id, payment_plan_id, plan_name_snapshot, plan_code_snapshot,
+      discount_percent_snapshot, monthly_interest_percent_snapshot, months_count_snapshot,
+      installment_count, first_due_date, interest_type_snapshot,
+      table_amount, discount_amount, net_amount_after_discount,
+      financial_interest_amount, final_amount, approval_status, created_by,
+      pricing_mode_snapshot, credit_decision_snapshot
+    ) VALUES (
+      v_order_id, v_plan.id, v_plan.name, v_plan.code,
+      v_plan.discount_percent, v_plan.monthly_interest_percent, v_plan.months_count,
+      v_installments, v_first_due, v_plan.interest_type,
+      v_table, v_disc, v_net, v_interest, v_final, v_approval_status, v_uid,
+      COALESCE(v_plan.pricing_mode,'discount_from_base'), v_credit
+    ) RETURNING id INTO v_terms_id;
+
+    IF v_installments = 1 THEN
+      INSERT INTO public.partner_order_payment_schedule(
+        partner_order_id, payment_terms_id, installment_number, due_date,
+        amount, principal_amount, interest_amount)
+      VALUES (v_order_id, v_terms_id, 1, v_first_due, v_final, v_net, v_interest);
+    ELSE
+      v_inst := ROUND(v_final / v_installments, 2);
+      FOR i IN 1..v_installments LOOP
+        IF i < v_installments THEN v_amount_i := v_inst; ELSE v_amount_i := ROUND(v_final - v_accum,2); END IF;
+        v_accum := v_accum + v_amount_i;
+        v_principal_i := ROUND(v_amount_i * (v_net / NULLIF(v_final,0)), 2);
+        v_interest_i  := ROUND(v_amount_i - v_principal_i, 2);
+        v_due_i := v_first_due + ((i-1)*30);
+        INSERT INTO public.partner_order_payment_schedule(
+          partner_order_id, payment_terms_id, installment_number, due_date,
+          amount, principal_amount, interest_amount)
+        VALUES (v_order_id, v_terms_id, i, v_due_i, v_amount_i, v_principal_i, v_interest_i);
+      END LOOP;
+    END IF;
+  END IF;
+
+  UPDATE public.partner_orders SET
+    subtotal = v_table, desconto_total = v_disc, total = v_final,
+    payment_terms_id = v_terms_id,
+    table_amount = v_table, commercial_discount_amount = v_disc,
+    net_amount_after_discount = v_net, financial_interest_amount = v_interest,
+    final_amount_with_interest = v_final,
+    requires_financial_approval = (NOT v_quote AND (v_plan.requires_financial_approval OR v_plan.requires_guarantee)),
+    financial_approval_status = CASE WHEN v_quote THEN 'not_required' ELSE v_fin_status END
+  WHERE id = v_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+  VALUES (v_order_id, p_partner_id, v_uid, 'created_via_rpc',
+          jsonb_build_object('numero', v_numero, 'total', v_final,
+                             'items', jsonb_array_length(p_items),
+                             'pricing_mode', COALESCE(v_plan.pricing_mode,'discount_from_base'),
+                             'quote_required', v_quote,
+                             'cart_hash', v_hash,
+                             'hash_validated', true,
+                             'idempotency_key', v_idem,
+                             'fingerprint_algo', 'reqfp_v2',
+                             'credit_reason_code', v_credit->>'reason_code',
+                             'requested_delivery_date', p_requested_delivery_date));
+
+  IF NOT v_quote THEN
+    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+    VALUES (v_order_id, p_partner_id, v_uid, 'payment_terms_defined',
+            jsonb_build_object('payment_plan_id', v_plan.id, 'plan_code', v_plan.code,
+              'table_amount', v_table, 'discount_amount', v_disc,
+              'net_amount_after_discount', v_net, 'financial_interest_amount', v_interest,
+              'final_amount', v_final, 'first_due_date', v_first_due,
+              'installment_count', v_installments,
+              'requires_financial_approval', (v_plan.requires_financial_approval OR v_plan.requires_guarantee)));
+  END IF;
+
+  IF COALESCE((v_credit->>'credit_limit')::numeric,0) <= 0 THEN
+    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+    VALUES (v_order_id, p_partner_id, v_uid, 'credit_limit_not_defined',
+            jsonb_build_object('reason_code', v_credit->>'reason_code',
+                               'exposicao_projetada', v_credit->>'exposicao_projetada'));
+  END IF;
+
+  FOR v_admin IN
+    SELECT r AS user_id FROM platform_private.c2_order_internal_recipients(p_partner_id) r -- c2_ord_recipients
+  LOOP
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_admin.user_id,
+            CASE WHEN v_quote THEN 'pedido_b2b_cotacao' ELSE 'pedido_b2b_novo' END,
+            CASE WHEN v_quote THEN 'Cotação B2B ' || v_numero ELSE 'Novo pedido B2B ' || v_numero END,
+            CASE WHEN v_quote THEN 'Pedido sob consulta aguardando cotação comercial.'
+                 ELSE 'Novo pedido B2B aguardando análise comercial. Total: R$ ' || to_char(v_final,'FM999G999G990D00') END,
+            '/comercial/pedidos-b2b');
+  END LOOP;
+
+  v_result := jsonb_build_object(
+    'id', v_order_id, 'numero', v_numero,
+    'status', v_status::text,
+    'pricing_mode', COALESCE(v_plan.pricing_mode,'discount_from_base'),
+    'quote_required', v_quote,
+    'cart_hash', v_hash,
+    'idempotency_key', v_idem,
+    'subtotal', v_table, 'desconto_total', v_disc, 'total', v_final,
+    'table_amount', v_table, 'discount_amount', v_disc,
+    'net_amount_after_discount', v_net, 'financial_interest_amount', v_interest,
+    'final_amount', v_final,
+    'payment_terms_id', v_terms_id,
+    'credit_reason_code', v_credit->>'reason_code',
+    'credit_block_reason', v_block_reason,
+    'requires_financial_approval', (NOT v_quote AND (v_plan.requires_financial_approval OR v_plan.requires_guarantee)),
+    'financial_approval_status', CASE WHEN v_quote THEN 'not_required' ELSE v_fin_status END);
+
+  INSERT INTO public.partner_order_idempotency(
+    partner_id, idempotency_key, cart_hash, order_id, result_snapshot, created_by, request_fingerprint)
+  VALUES (p_partner_id, v_idem, p_expected_cart_hash, v_order_id, v_result, v_uid, v_req_fp);
+
+  RETURN v_result;
+END
+$function$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_internal_order_snapshot_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE org uuid; uid uuid:=auth.uid(); cs public.company_fiscal_settings; candidate_count integer; economic jsonb; terms public.partner_order_payment_terms; items jsonb; schedule jsonb;
+BEGIN
+ IF TG_OP='INSERT' THEN
+  IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  org:=public.h15_actor_organization();
+  IF org IS NULL OR NOT public.fn_cc_can_prepare(uid) OR NOT public._saas_user_has_feature(uid,'pedidos_b2b') THEN RAISE EXCEPTION 'B2B_INTERNAL_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+  -- No client/CNPJ/organizations.partner_account_id inference. All caller snapshots rejected.
+  IF NEW.internal_origin_snapshot IS NOT NULL OR NEW.internal_economic_snapshot IS NOT NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_SERVER_ONLY' USING ERRCODE='42501'; END IF;
+  SELECT count(*) INTO candidate_count FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE;
+  IF candidate_count<>1 THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+  SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE FOR SHARE;
+  IF cs.configuration_status IS DISTINCT FROM 'VALIDATED' OR cs.accounting_validated_at IS NULL OR nullif(btrim(cs.legal_name),'') IS NULL OR nullif(btrim(cs.cnpj),'') IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_NOT_VALIDATED' USING ERRCODE='42501'; END IF;
+  NEW.internal_origin_snapshot:=jsonb_build_object('schema_version','1','organization_id',org,'creditor_organization_id',org,'issuer_organization_id',org,'company_settings_id',cs.id,'company_configuration_version',cs.configuration_version,'issuer_legal_name',cs.legal_name,'issuer_cnpj',cs.cnpj,'actor_user_id',uid,'partner_id',NEW.partner_id);
+  PERFORM platform_private.b2b_internal_assert_origin(NEW.internal_origin_snapshot,NEW.partner_id,NEW.cliente_id);
+  IF NEW.ready_for_production IS TRUE THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF; IF NEW.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') THEN RAISE EXCEPTION 'B2B_INTERNAL_INITIAL_STATUS_DENIED' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+ END IF;
+ IF NEW.internal_origin_snapshot IS DISTINCT FROM OLD.internal_origin_snapshot OR NEW.internal_economic_snapshot IS DISTINCT FROM OLD.internal_economic_snapshot THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF OLD.internal_origin_snapshot IS NULL THEN
+  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') THEN RAISE EXCEPTION 'B2B_INTERNAL_LEGACY_ORIGIN_UNPROVEN' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+ END IF;
+ PERFORM platform_private.b2b_internal_assert_origin(OLD.internal_origin_snapshot,OLD.partner_id,OLD.cliente_id);
+ IF NEW.partner_id IS DISTINCT FROM OLD.partner_id OR NEW.cliente_id IS DISTINCT FROM OLD.cliente_id OR NEW.created_by IS DISTINCT FROM OLD.created_by THEN RAISE EXCEPTION 'B2B_INTERNAL_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF OLD.internal_economic_snapshot IS NOT NULL AND (to_jsonb(NEW)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','ready_for_production','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','ready_for_production','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes']) THEN RAISE EXCEPTION 'B2B_INTERNAL_ECONOMICS_IMMUTABLE' USING ERRCODE='42501'; END IF;
+ IF NEW.status IS DISTINCT FROM OLD.status AND OLD.status IN ('cancelado','reprovado') THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMINAL_STATUS' USING ERRCODE='42501'; END IF;
+ IF NEW.ready_for_production IS TRUE THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF; IF public.fn_b2b_status_is_operational(NEW.status) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF; IF NEW.ready_for_production IS TRUE AND NEW.status<>'aprovado' THEN RAISE EXCEPTION 'B2B_INTERNAL_UNSEALED_OPERATION' USING ERRCODE='42501'; END IF; IF NEW.status='aprovado' AND OLD.status IS DISTINCT FROM NEW.status THEN
+  IF NOT (public.has_role(uid,'administrador'::public.app_role) OR public.has_role(uid,'gestor_comercial'::public.app_role)) OR OLD.status NOT IN ('em_analise_comercial','solicitado','rascunho') OR NEW.payment_condition_status IS DISTINCT FROM 'defined' THEN RAISE EXCEPTION 'B2B_INTERNAL_APPROVAL_DENIED' USING ERRCODE='42501'; END IF;
+  SELECT * INTO terms FROM public.partner_order_payment_terms t WHERE t.id=NEW.payment_terms_id AND t.partner_order_id=NEW.id FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMS_REQUIRED' USING ERRCODE='42501'; END IF;
+  IF NEW.total IS NULL OR NEW.total::text IN ('NaN','Infinity','-Infinity') OR NEW.total<0 OR terms.final_amount IS DISTINCT FROM NEW.total OR NEW.desconto_total<0 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id) OR EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.quantidade IS NULL OR i.quantidade<=0 OR i.quantidade::text IN ('NaN','Infinity','-Infinity') OR i.preco_unitario IS NULL OR i.preco_unitario<0 OR i.preco_unitario::text IN ('NaN','Infinity','-Infinity') OR i.desconto_percentual IS NULL OR i.desconto_percentual<0 OR i.desconto_percentual>100 OR i.desconto_percentual::text IN ('NaN','Infinity','-Infinity'))) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;
+  SELECT jsonb_agg(to_jsonb(i)-ARRAY['created_at'] ORDER BY i.id) INTO items FROM public.partner_order_items i WHERE i.order_id=NEW.id;
+  SELECT jsonb_agg(to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number,s.id) INTO schedule FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND s.payment_terms_id=terms.id;
+  IF schedule IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_REQUIRED' USING ERRCODE='22023'; END IF;
+ IF NEW.subtotal IS NULL OR NEW.desconto_total IS NULL OR NEW.subtotal::text IN ('NaN','Infinity','-Infinity') OR NEW.desconto_total::text IN ('NaN','Infinity','-Infinity') OR NEW.subtotal<0 OR NEW.desconto_total<0 OR NEW.desconto_total>NEW.subtotal OR terms.discount_percent_snapshot IS NULL OR terms.discount_percent_snapshot::text IN ('NaN','Infinity','-Infinity') OR terms.discount_percent_snapshot<0 OR terms.discount_percent_snapshot>100 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.subtotal IS NULL OR i.subtotal<0 OR i.subtotal::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT round(sum(i.subtotal),2) FROM public.partner_order_items i WHERE i.order_id=NEW.id) IS DISTINCT FROM round(terms.net_amount_after_discount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND (s.payment_terms_id IS DISTINCT FROM terms.id OR s.installment_number<=0 OR s.due_date IS NULL OR s.amount IS NULL OR s.principal_amount IS NULL OR s.interest_amount IS NULL OR s.amount<0 OR s.principal_amount<0 OR s.interest_amount<0 OR s.amount::text IN ('NaN','Infinity','-Infinity') OR s.principal_amount::text IN ('NaN','Infinity','-Infinity') OR s.interest_amount::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT count(*) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT count(DISTINCT s.installment_number) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT round(sum(s.amount),2) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM round(terms.final_amount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_INVALID' USING ERRCODE='22023'; END IF;
+  economic:=jsonb_build_object('schema_version','1','origin',OLD.internal_origin_snapshot,'items',items,'terms',to_jsonb(terms)-ARRAY['updated_at','approval_status','approved_by','approved_at','approval_notes'],'schedule',schedule,'subtotal',NEW.subtotal,'discount',NEW.desconto_total,'total',NEW.total,'sealed_by',uid);
+  NEW.internal_economic_snapshot:=economic;
+ ELSIF NEW.status IS DISTINCT FROM OLD.status AND public.fn_b2b_status_is_operational(NEW.status) AND OLD.internal_economic_snapshot IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_UNSEALED_OPERATION' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $function$;
+CREATE OR REPLACE FUNCTION platform_private.b2b_internal_child_snapshot_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE old_parent uuid; new_parent uuid; parent uuid; o public.partner_orders; before_value jsonb; after_value jsonb;
+BEGIN
+ IF TG_TABLE_NAME='partner_order_items' THEN
+  IF TG_OP<>'INSERT' THEN old_parent:=OLD.order_id; END IF;
+  IF TG_OP<>'DELETE' THEN new_parent:=NEW.order_id; END IF;
+ ELSE
+  IF TG_OP<>'INSERT' THEN old_parent:=OLD.partner_order_id; END IF;
+  IF TG_OP<>'DELETE' THEN new_parent:=NEW.partner_order_id; END IF;
+ END IF;
+ FOR parent IN SELECT DISTINCT x FROM unnest(ARRAY[old_parent,new_parent]) x WHERE x IS NOT NULL ORDER BY x LOOP
+  SELECT * INTO o FROM public.partner_orders WHERE id=parent FOR UPDATE;
+  IF o.internal_origin_snapshot IS NOT NULL THEN
+   PERFORM platform_private.b2b_internal_assert_origin(o.internal_origin_snapshot,o.partner_id,o.cliente_id);
+   IF o.status IN ('cancelado','reprovado') THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMINAL_STATUS' USING ERRCODE='42501'; END IF;
+   IF o.internal_economic_snapshot IS NOT NULL THEN
+    IF TG_OP<>'UPDATE' THEN RAISE EXCEPTION 'B2B_INTERNAL_ECONOMICS_IMMUTABLE' USING ERRCODE='42501'; END IF;
+    before_value:=to_jsonb(OLD); after_value:=to_jsonb(NEW);
+    IF TG_TABLE_NAME='partner_order_payment_terms' THEN before_value:=before_value-ARRAY['updated_at','approval_status','approved_by','approved_at','approval_notes']; after_value:=after_value-ARRAY['updated_at','approval_status','approved_by','approved_at','approval_notes'];
+    ELSIF TG_TABLE_NAME='partner_order_payment_schedule' THEN before_value:=before_value-ARRAY['status','receivable_installment_id']; after_value:=after_value-ARRAY['status','receivable_installment_id']; END IF;
+    IF before_value IS DISTINCT FROM after_value THEN RAISE EXCEPTION 'B2B_INTERNAL_ECONOMICS_IMMUTABLE' USING ERRCODE='42501'; END IF;
+   END IF;
+  END IF;
+ END LOOP;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $function$;
+CREATE OR REPLACE FUNCTION public.approve_partner_order(p_order_id uuid, p_approval_notes text DEFAULT NULL::text, p_estimated_delivery_date date DEFAULT NULL::date)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_pid uuid; v_prev partner_order_status; v_partner_user uuid; v_numero text;
+  v_final_status partner_order_status; v_final_ready boolean; v_block text;
+  v_amount numeric(14,2); v_credit_ok timestamptz; v_credit jsonb; v_reason text;
+BEGIN
+
+  IF NOT (public.b2b_phase1_order_visible(p_order_id) OR EXISTS (
+    SELECT 1 FROM public.partner_orders po WHERE po.id=p_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
+  IF NOT (has_role(v_uid,'administrador') OR has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'forbidden';
+  END IF;
+
+  SELECT partner_id, status, numero,
+         ROUND(COALESCE(final_amount_with_interest, total, 0),2), credit_approved_at
+    INTO v_pid, v_prev, v_numero, v_amount, v_credit_ok
+    FROM public.partner_orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;
+
+  IF v_prev = 'aguardando_cotacao' THEN
+    RAISE EXCEPTION 'quote_required: defina o preco da cotacao antes de aprovar';
+  END IF;
+  IF NOT public.fn_b2b_order_priceable(p_order_id) THEN
+    RAISE EXCEPTION 'order_not_priceable_quote_required';
+  END IF;
+
+  IF v_prev IN ('aprovado','reprovado','cancelado') THEN
+    RAISE EXCEPTION 'already_processed: pedido já está em status %', v_prev;
+  END IF;
+
+  IF v_prev = 'aguardando_aprovacao_credito' THEN
+    RAISE EXCEPTION 'credit_pending: aprove o crédito antes da análise comercial';
+  END IF;
+
+  IF v_prev NOT IN ('em_analise_comercial','solicitado','rascunho') THEN
+    RAISE EXCEPTION 'invalid_status_transition: %', v_prev;
+  END IF;
+
+  -- H4-001/H4-003: reavaliar credito na aprovacao, com lock por parceiro.
+  PERFORM pg_advisory_xact_lock(hashtext('b2b_credit:' || v_pid::text));
+  v_credit := public.fn_b2b_credit_exposure(v_pid, 0, NULL);
+  v_reason := COALESCE(v_credit->>'reason_code','OK');
+
+  IF v_credit_ok IS NULL THEN
+    IF v_reason IN ('LIMIT_EXCEEDED_BLOCK','OVERDUE_BLOCK') THEN
+      UPDATE public.partner_orders
+         SET credit_block_reason = v_reason, updated_at = now()
+       WHERE id = p_order_id;
+      RAISE EXCEPTION 'credit_block_on_approval: %', v_reason;
+    ELSIF v_reason = 'LIMIT_EXCEEDED_APPROVAL' THEN
+      -- fail-closed: exige aprovacao financeira formal (approve_b2b_credit).
+      UPDATE public.partner_orders
+         SET credit_block_reason = v_reason, updated_at = now()
+       WHERE id = p_order_id;
+      RAISE EXCEPTION 'credit_approval_required: %', v_reason;
+    END IF;
+  END IF;
+
+  UPDATE public.partner_orders
+     SET status = 'aprovado', approved_by = v_uid, approved_at = now(),
+         approval_notes = NULLIF(p_approval_notes,''),
+         estimated_delivery_date = COALESCE(p_estimated_delivery_date, estimated_delivery_date),
+         ready_for_production = true, updated_at = now()
+   WHERE id = p_order_id AND status = v_prev;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'concurrent_update: status do pedido mudou durante a aprovação';
+  END IF;
+
+  SELECT status, ready_for_production, credit_block_reason
+    INTO v_final_status, v_final_ready, v_block
+    FROM public.partner_orders WHERE id = p_order_id;
+
+  IF v_final_status <> 'aprovado' OR v_final_ready IS NOT TRUE THEN
+    RAISE EXCEPTION 'credit_block: %', COALESCE(v_block, 'aprovacao_credito_pendente');
+  END IF;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_anteriores, dados_novos)
+  VALUES (p_order_id, v_pid, v_uid, 'approved',
+          jsonb_build_object('status', v_prev),
+          jsonb_build_object('status','aprovado','approval_notes',p_approval_notes,
+                             'estimated_delivery_date',p_estimated_delivery_date,
+                             'credit_reason_code', v_reason));
+
+  FOR v_partner_user IN SELECT r FROM platform_private.c2_order_partner_recipients(v_pid) r LOOP -- c2_ord_recipients
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_partner_user, 'pedido_b2b_aprovado',
+            'Pedido ' || v_numero || ' aprovado',
+            'Seu pedido foi aprovado e seguirá para planejamento de produção.',
+            '/portal-parceiro/pedidos');
+  END LOOP;
+END
+$function$;
+CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
+
+  IF auth.uid() IS NULL THEN
+    IF pg_trigger_depth()=0 THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  ELSIF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (
+    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (pg_trigger_depth() > 0 or public.has_role(auth.uid(), 'administrador'::public.app_role)
+      or public.has_role(auth.uid(), 'gestor'::public.app_role)
+      or public.has_role(auth.uid(), 'financeiro'::public.app_role)) THEN
+    RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';
+  END IF;
+  IF p_partner_order_id IS NULL THEN
+    RAISE EXCEPTION 'partner_order_id_required' USING ERRCODE='P0001';
+  END IF;
+
+  -- Serializa concorrencia real (clique duplo / chamadas simultaneas).
+  -- Chave unica bigint: assinatura pg_advisory_xact_lock(bigint).
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended('b2b_receivable:' || p_partner_order_id::text, 0)
+  );
+
+  IF NOT public.fn_b2b_order_priceable(p_partner_order_id) THEN
+    RAISE EXCEPTION 'order_not_priceable_quote_required' USING ERRCODE='P0001';
+  END IF;
+
+  RETURN public.generate_b2b_receivable_secure_impl(p_partner_order_id);
+END $function$;
+CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure_impl(p_partner_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_order record;
+  v_partner record;
+  v_settings record;
+  v_terms record;
+  v_receivable_id uuid;
+  v_category_id uuid;
+  v_payment_method_id uuid;
+  v_existing uuid;
+  v_sch record;
+  v_ari_id uuid;
+  v_installments_json jsonb := '[]'::jsonb;
+  v_system_call boolean := (v_uid IS NULL);
+  v_gate jsonb;
+  v_fiscal jsonb;
+  v_uf text;
+  v_org uuid;
+  v_org_count integer; -- b2b_f1_financial_tenant
+BEGIN
+  IF NOT v_system_call THEN
+    IF NOT (has_role(v_uid,'administrador') OR has_role(v_uid,'financeiro') OR has_role(v_uid,'gestor') OR has_role(v_uid,'gestor_comercial')) THEN
+      INSERT INTO public.partner_order_audit_logs(order_id, usuario_id, acao, dados_novos)
+        VALUES (p_partner_order_id, v_uid, 'financeiro_permissao_negada', jsonb_build_object('motivo','sem permissão'));
+      RAISE EXCEPTION 'Sem permissão para gerar cobrança B2B';
+    END IF;
+  END IF;
+
+  SELECT * INTO v_order FROM public.partner_orders WHERE id = p_partner_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Pedido não encontrado'; END IF;
+
+  -- Deterministic partner ownership, never caller-supplied organization.
+  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
+    FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;
+  -- c2_ord_owner_tenant: cliente comercial sem tenant próprio fatura no tenant dono.
+  IF v_org_count = 0 THEN
+    SELECT count(*), min(o.id::text)::uuid INTO v_org_count, v_org
+      FROM public.partner_accounts pa JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id
+     WHERE pa.id = v_order.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+       AND o.ativo IS TRUE AND o.status = 'ativa';
+  END IF;
+  IF v_org_count <> 1 OR v_org IS NULL THEN
+    RAISE EXCEPTION 'B2B_FINANCIAL_TENANT_AMBIGUOUS' USING ERRCODE='42501';
+  END IF;
+  IF v_uid IS NOT NULL THEN
+    -- c2_ord_internal_scope: emissor interno é limitado por h15 = tenant do título (abaixo);
+    -- quem tem papel B2B externo continua passando pelo assert canônico.
+    IF public.has_role(v_uid,'parceiro_b2b'::app_role) OR public.has_role(v_uid,'parceiro_b2b_tecnico'::app_role) THEN
+      PERFORM platform_private.assert_b2b_partner_scope(v_uid,v_order.partner_id);
+    END IF;
+    IF NOT public.is_platform_superadmin(v_uid) AND public.h15_actor_organization() IS DISTINCT FROM v_org THEN
+      RAISE EXCEPTION 'B2B_FINANCIAL_TENANT_MISMATCH' USING ERRCODE='42501';
+    END IF;
+  END IF;
+
+  -- GATE Fase C: elegibilidade server-side
+  v_gate := public.fn_b2b_order_billing_eligibility(p_partner_order_id);
+  IF NOT (v_gate->>'eligible')::boolean THEN
+    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+      VALUES (p_partner_order_id, v_order.partner_id, v_uid, 'financeiro_bloqueado_gate', v_gate);
+    RAISE EXCEPTION 'billing_not_eligible:%', v_gate->>'reason_code';
+  END IF;
+
+  -- H6C-001: condicao canonica vinculada ao pedido (nunca a mais recente).
+  SELECT * INTO v_terms FROM public.partner_order_payment_terms
+    WHERE id = NULLIF(v_gate->>'payment_terms_id','')::uuid
+      AND partner_order_id = p_partner_order_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_canonical'; END IF;
+
+  SELECT receivable_id INTO v_existing FROM public.partner_order_financial_links WHERE partner_order_id = p_partner_order_id;
+  IF v_existing IS NOT NULL THEN
+    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+      VALUES (p_partner_order_id, v_order.partner_id, v_uid, 'financeiro_duplicidade_bloqueada', jsonb_build_object('receivable_id', v_existing));
+    RETURN jsonb_build_object('receivable_id', v_existing, 'partner_order_id', p_partner_order_id, 'duplicado', true);
+  END IF;
+
+  SELECT * INTO v_partner FROM public.partner_accounts WHERE id = v_order.partner_id;
+  SELECT * INTO v_settings FROM public.partner_financial_settings WHERE partner_id = v_order.partner_id;
+  IF NOT FOUND THEN
+    -- c2_ord_p1_no_provision: only the existing P1 CAS RPC creates settings.
+    RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+
+  v_uf := to_jsonb(v_partner) ->> 'uf';
+
+  -- Derivação fiscal (fail-closed; nunca NOT_REQUIRED silencioso)
+  v_fiscal := public.fn_fiscal_requirement_resolve(
+    'b2b_partner', 'venda_mercadoria', v_uf, 'partner_order', p_partner_order_id, CURRENT_DATE);
+
+  -- c2_ord_strict_refs: financial_categories/payment_methods são catálogos globais por desenho (sem organization_id, RLS is_financial_staff; sem DDL de tenant
+  -- no schema canônico); resolução estrita, sem fallback de tipo/inativo, falha explícita.
+  SELECT id INTO v_category_id FROM public.financial_categories
+   WHERE upper(btrim(type)) = 'RECEITA' AND active IS TRUE
+   ORDER BY created_at ASC, id ASC LIMIT 1;
+  IF v_category_id IS NULL THEN
+    RAISE EXCEPTION 'B2B_REVENUE_CATEGORY_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+  IF NULLIF(btrim(COALESCE(v_settings.default_payment_method,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'B2B_PAYMENT_METHOD_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+  IF (SELECT count(*) FROM public.payment_methods pm
+       WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method))) <> 1 THEN
+    RAISE EXCEPTION 'B2B_PAYMENT_METHOD_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+  SELECT pm.id INTO v_payment_method_id FROM public.payment_methods pm
+   WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method));
+  IF v_partner.client_id IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM public.clientes cl WHERE cl.id = v_partner.client_id AND cl.organization_id = v_org) THEN
+    RAISE EXCEPTION 'B2B_CUSTOMER_TENANT_MISMATCH' USING ERRCODE='42501';
+  END IF;
+
+  INSERT INTO public.accounts_receivable(
+    organization_id, origin_type, origin_id, customer_id, partner_id, description,
+    category_id, total_amount, issue_date, first_due_date, installment_count,
+    status, fiscal_invoice_required, fiscal_invoice_status,
+    fiscal_requirement_source, fiscal_policy_id, fiscal_exemption_id,
+    payment_method_id, notes, created_by
+  ) VALUES (
+    v_org, 'B2B_ORDER', p_partner_order_id,
+    NULLIF(v_partner.client_id, NULL), v_order.partner_id,
+    format('Pedido B2B %s - %s', v_order.numero, COALESCE(v_partner.nome_fantasia, v_partner.razao_social)),
+    v_category_id, v_terms.final_amount, CURRENT_DATE, v_terms.first_due_date, v_terms.installment_count,
+    'OPEN',
+    (v_fiscal->>'required')::boolean,
+    v_fiscal->>'status',
+    v_fiscal->>'source',
+    NULLIF(v_fiscal->>'policy_id','')::uuid,
+    NULLIF(v_fiscal->>'exemption_id','')::uuid,
+    v_payment_method_id,
+    format(E'Condição: %s (%s)\nDesconto: %s%%  Juros: %s%% a.m. x %s meses\nTabela: %s  Líquido: %s  Final: %s\nFiscal: %s (%s)',
+           v_terms.plan_name_snapshot, v_terms.plan_code_snapshot,
+           v_terms.discount_percent_snapshot, v_terms.monthly_interest_percent_snapshot, v_terms.months_count_snapshot,
+           v_terms.table_amount, v_terms.net_amount_after_discount, v_terms.final_amount,
+           v_fiscal->>'status', v_fiscal->>'source'),
+    COALESCE(v_uid, v_order.created_by)
+  ) RETURNING id INTO v_receivable_id;
+
+  -- b2b_f1_fresh_title: no deletion; formal financial history protection preserved.
+
+  FOR v_sch IN
+    SELECT * FROM public.partner_order_payment_schedule
+     WHERE partner_order_id = p_partner_order_id AND payment_terms_id = v_terms.id
+     ORDER BY installment_number
+  LOOP
+    -- b2b_f1_reuse_installments: generic title trigger already created them.
+    IF (SELECT count(*) FROM public.accounts_receivable_installments
+         WHERE receivable_id=v_receivable_id AND installment_number=v_sch.installment_number
+           AND organization_id=v_org) <> 1 THEN
+      RAISE EXCEPTION 'B2B_INSTALLMENT_CARDINALITY_INVALID' USING ERRCODE='23514';
+    END IF;
+    UPDATE public.accounts_receivable_installments
+       SET due_date=v_sch.due_date, original_amount=v_sch.amount,
+           interest_amount=COALESCE(v_sch.interest_amount,0), net_amount=v_sch.amount
+     WHERE receivable_id=v_receivable_id AND installment_number=v_sch.installment_number
+       AND organization_id=v_org
+     RETURNING id INTO v_ari_id;
+
+    UPDATE public.partner_order_payment_schedule
+       SET status = 'generated', receivable_installment_id = v_ari_id
+     WHERE id = v_sch.id;
+
+    v_installments_json := v_installments_json || jsonb_build_array(jsonb_build_object(
+      'installment_number', v_sch.installment_number,
+      'due_date', v_sch.due_date,
+      'amount', v_sch.amount
+    ));
+  END LOOP;
+
+  INSERT INTO public.partner_order_financial_links(
+    partner_order_id, partner_id, receivable_id, financial_status, billing_trigger, created_by
+  ) VALUES (
+    p_partner_order_id, v_order.partner_id, v_receivable_id, 'gerado', v_settings.billing_trigger, v_uid
+  );
+
+  UPDATE public.partner_orders SET
+    financial_status = 'gerado',
+    receivable_generated = true,
+    receivable_generated_at = now(),
+    receivable_generated_by = v_uid,
+    payment_due_date = v_terms.first_due_date,
+    payment_method = COALESCE(v_settings.default_payment_method,'pix')
+  WHERE id = p_partner_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+  VALUES (p_partner_order_id, v_order.partner_id, v_uid, 'financeiro_gerado_com_plano',
+    jsonb_build_object(
+      'receivable_id', v_receivable_id,
+      'plan_code', v_terms.plan_code_snapshot,
+      'plan_name', v_terms.plan_name_snapshot,
+      'table_amount', v_terms.table_amount,
+      'discount_amount', v_terms.discount_amount,
+      'net_amount', v_terms.net_amount_after_discount,
+      'interest_amount', v_terms.financial_interest_amount,
+      'final_amount', v_terms.final_amount,
+      'first_due_date', v_terms.first_due_date,
+      'installment_count', v_terms.installment_count,
+      'fiscal', v_fiscal,
+      'gate', v_gate,
+      'installments', v_installments_json
+    ));
+
+  RETURN jsonb_build_object(
+    'receivable_id', v_receivable_id,
+    'partner_order_id', p_partner_order_id,
+    'valor', v_terms.final_amount,
+    'vencimento', v_terms.first_due_date,
+    'installment_count', v_terms.installment_count,
+    'fiscal_invoice_required', (v_fiscal->>'required')::boolean,
+    'fiscal_invoice_status', v_fiscal->>'status',
+    'fiscal_requirement_source', v_fiscal->>'source',
+    'status', 'OPEN'
+  );
+END 
+$function$;
+CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  i int;
+  v_qtd int := NEW.installment_count;
+  v_base numeric(14,2) := ROUND(NEW.total_amount / v_qtd, 2);
+  v_acc numeric(14,2) := 0;
+  v_amt numeric(14,2);
+BEGIN
+  IF NEW.organization_id IS NULL THEN
+    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';
+  END IF;
+  FOR i IN 1..v_qtd LOOP
+    IF i < v_qtd THEN
+      v_amt := v_base;
+      v_acc := v_acc + v_amt;
+    ELSE
+      v_amt := NEW.total_amount - v_acc;
+    END IF;
+    INSERT INTO public.accounts_receivable_installments
+      (receivable_id, installment_number, due_date, original_amount, net_amount, status, organization_id)
+    VALUES
+      (NEW.id, i, (NEW.first_due_date + ((i-1) || ' months')::interval)::date, v_amt, v_amt, 'OPEN', NEW.organization_id);
+  END LOOP;
+  RETURN NEW;
+END
+$function$;
+CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid, _partner uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ SELECT false; $function$;
+DROP FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timestamptz);
+DROP FUNCTION platform_private.c2_accounting_pending_guard();
+DROP FUNCTION platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid);
+DROP FUNCTION platform_private.c2_external_final_state_guard();
+DROP FUNCTION platform_private.c2_external_origin_assert(jsonb,uuid,uuid);
+DROP FUNCTION platform_private.c2_external_origin_contract_valid(jsonb);
+-- Column proven empty above (no data loss).
+ALTER TABLE public.partner_orders DROP COLUMN c2_external_origin_snapshot;
+DO $c2ap_restore_post$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure AND md5(pg_get_functiondef(oid))='12ea8b410e8fadf2da8f72fc1bbc83cf' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_RESTORE_POST_DRIFT:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_order_snapshot_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='7762688d23f6c1d1ef1a8cb79432810e' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_RESTORE_POST_DRIFT:platform_private.b2b_internal_order_snapshot_guard()'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_child_snapshot_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='e815c79d1faf09fa55b046d42e3729db' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_RESTORE_POST_DRIFT:platform_private.b2b_internal_child_snapshot_guard()'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.approve_partner_order(uuid,text,date)'::regprocedure AND md5(pg_get_functiondef(oid))='31bbe8f7d3c940eb9862bf7c7b7fad20' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_RESTORE_POST_DRIFT:public.approve_partner_order(uuid,text,date)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='9c8c8a736bcd1d77ee2f237a8a59b4ce' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_RESTORE_POST_DRIFT:public.generate_b2b_receivable_secure(uuid)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='3b7b046290cb10ba0af08e88cabd26ce' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_RESTORE_POST_DRIFT:public.generate_b2b_receivable_secure_impl(uuid)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_generate_receivable_installments()'::regprocedure AND md5(pg_get_functiondef(oid))='fba70619b461c468a8c645ce1c3a8ed8' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_RESTORE_POST_DRIFT:public.fn_generate_receivable_installments()'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='a0417d6727d78412849916a95b250bde' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_RESTORE_POST_DRIFT:platform_private.c2_owner_order_create_allowed(uuid,uuid)'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.partner_orders'::regclass AND attname='c2_external_origin_snapshot' AND NOT attisdropped)
+    OR to_regprocedure('platform_private.c2_external_origin_assert(jsonb,uuid,uuid)') IS NOT NULL
+    OR EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname IN ('zz_c2_accounting_pending','zz_c2_external_final_state'))
+ THEN RAISE EXCEPTION 'C2AP_RESTORE_POST_RESIDUE'; END IF;
+END $c2ap_restore_post$;
+DO $c2ap_30dc_c2ap_30dc_restore_post$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='54c4327d63f48e39f598129ff9dd8f09' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_POST:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='07d7c9002cbfe17497c9ee4a92d5a928' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_POST:platform_private.c2_internal_order_target_reason(uuid,uuid)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.c2_internal_order_entry_capability_v1()'::regprocedure AND md5(pg_get_functiondef(oid))='e2619c71becfebf38c8d03562ff11ce2' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_POST:public.c2_internal_order_entry_capability_v1()'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='b5684d350603d1db77ab9f1db0f4b253' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_POST:public.get_partner_catalog_secure(uuid)'; END IF;
+ IF (SELECT proacl::text FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}' OR (SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_POST_ACL:30dc8243'; END IF;
+ IF has_function_privilege('authenticated','platform_private.c2_internal_order_target_reason(uuid,uuid)','EXECUTE') OR has_function_privilege('anon','public.c2_internal_order_entry_capability_v1()','EXECUTE') OR NOT has_function_privilege('authenticated','public.c2_internal_order_entry_capability_v1()','EXECUTE') THEN RAISE EXCEPTION 'C2AP_30DC_RESTORE_POST_PRIV:30dc8243'; END IF;
+END $c2ap_30dc_c2ap_30dc_restore_post$;
+COMMIT;

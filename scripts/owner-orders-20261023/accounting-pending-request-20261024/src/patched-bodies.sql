@@ -234,8 +234,6 @@ CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order
 AS $function$
 BEGIN
  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
- IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
- IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;
 
   IF auth.uid() IS NULL THEN
     IF pg_trigger_depth()=0 THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
@@ -247,6 +245,8 @@ BEGIN
       or public.has_role(auth.uid(), 'financeiro'::public.app_role)) THEN
     RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';
   END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;
   IF p_partner_order_id IS NULL THEN
     RAISE EXCEPTION 'partner_order_id_required' USING ERRCODE='P0001';
   END IF;

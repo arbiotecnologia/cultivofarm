@@ -7,5 +7,15 @@
   "platform_private.c2_owner_order_create_allowed(uuid,uuid)": "a0417d6727d78412849916a95b250bde"
  },
  "candidate": {},
- "b5_to_candidate": {}
+ "b5_to_candidate": {},
+ "live_restore": {
+  "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "12ea8b410e8fadf2da8f72fc1bbc83cf",
+  "platform_private.b2b_internal_order_snapshot_guard()": "7762688d23f6c1d1ef1a8cb79432810e",
+  "platform_private.b2b_internal_child_snapshot_guard()": "e815c79d1faf09fa55b046d42e3729db",
+  "public.approve_partner_order(uuid,text,date)": "31bbe8f7d3c940eb9862bf7c7b7fad20",
+  "public.generate_b2b_receivable_secure(uuid)": "9c8c8a736bcd1d77ee2f237a8a59b4ce",
+  "public.generate_b2b_receivable_secure_impl(uuid)": "3b7b046290cb10ba0af08e88cabd26ce",
+  "public.fn_generate_receivable_installments()": "fba70619b461c468a8c645ce1c3a8ed8",
+  "platform_private.c2_owner_order_create_allowed(uuid,uuid)": "a0417d6727d78412849916a95b250bde"
+ }
 }

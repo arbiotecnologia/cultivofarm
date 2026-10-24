@@ -2,6 +2,14 @@
 -- Composes the reviewed b5 package (minus install-time accounting gate) + C2_ACCOUNTING_PENDING_V1 in ONE transaction.
 -- Opens only the canonical external request; approval, billing, NF and delivery stay closed while the issuer is not validated.
 BEGIN;
+DO $c2ap_30dc_c2ap_30dc_cand_drift$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='54c4327d63f48e39f598129ff9dd8f09' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_CAND_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='07d7c9002cbfe17497c9ee4a92d5a928' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_CAND_DRIFT:platform_private.c2_internal_order_target_reason(uuid,uuid)'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.c2_internal_order_entry_capability_v1()'::regprocedure AND md5(pg_get_functiondef(oid))='e2619c71becfebf38c8d03562ff11ce2' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_CAND_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='b5684d350603d1db77ab9f1db0f4b253' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_CAND_DRIFT:public.get_partner_catalog_secure(uuid)'; END IF;
+ IF (SELECT proacl::text FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}' OR (SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'C2AP_30DC_CAND_DRIFT_ACL:30dc8243'; END IF;
+ IF has_function_privilege('authenticated','platform_private.c2_internal_order_target_reason(uuid,uuid)','EXECUTE') OR has_function_privilege('anon','public.c2_internal_order_entry_capability_v1()','EXECUTE') OR NOT has_function_privilege('authenticated','public.c2_internal_order_entry_capability_v1()','EXECUTE') THEN RAISE EXCEPTION 'C2AP_30DC_CAND_DRIFT_PRIV:30dc8243'; END IF;
+END $c2ap_30dc_c2ap_30dc_cand_drift$;
 -- INACTIVE REVIEW ONLY. Does not reopen writer; no internal-origin bypass or RLS change.
 -- Reconciled: preserves LIVE manual initial-installments correction (private context, exact .34/.33/.33 split,
 -- custom dates inserted first) and adds the B2B contractual schedule branch on top of it.
@@ -65,7 +73,7 @@ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_partner
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='a0417d6727d78412849916a95b250bde' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_order_create_allowed'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_plan_assigned(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='4a8d57d888dace76bd1fa257c3a19c82' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_plan_assigned'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_guard(uuid,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='01d6cb10289af56ecfdbb38e43646e3a' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_order_guard'; END IF;
-IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='6802c693f459a92e70dade0c73d7faba' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_actor_scope'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='54c4327d63f48e39f598129ff9dd8f09' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_actor_scope'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_apply_interest(numeric,text,numeric,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='806e5d8789b08cd6790a10feaf95f26d' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_apply_interest'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='26fd3c7724a40b919f240f4021176115' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_cart_hash'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='213ac31f3a30816ead75365b0d1fed18' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_credit_exposure'; END IF;
@@ -1174,7 +1182,7 @@ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_partner
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='a0417d6727d78412849916a95b250bde' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_order_create_allowed'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_plan_assigned(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='4a8d57d888dace76bd1fa257c3a19c82' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_plan_assigned'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_guard(uuid,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='01d6cb10289af56ecfdbb38e43646e3a' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_order_guard'; END IF;
-IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='6802c693f459a92e70dade0c73d7faba' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_actor_scope'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='54c4327d63f48e39f598129ff9dd8f09' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_actor_scope'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_apply_interest(numeric,text,numeric,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='806e5d8789b08cd6790a10feaf95f26d' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_apply_interest'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='26fd3c7724a40b919f240f4021176115' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_cart_hash'; END IF;
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='213ac31f3a30816ead75365b0d1fed18' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_credit_exposure'; END IF;
@@ -1503,8 +1511,6 @@ CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order
 AS $function$
 BEGIN
  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
- IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
- IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;
 
   IF auth.uid() IS NULL THEN
     IF pg_trigger_depth()=0 THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
@@ -1516,6 +1522,8 @@ BEGIN
       or public.has_role(auth.uid(), 'financeiro'::public.app_role)) THEN
     RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';
   END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;
   IF p_partner_order_id IS NULL THEN
     RAISE EXCEPTION 'partner_order_id_required' USING ERRCODE='P0001';
   END IF;
@@ -1599,11 +1607,25 @@ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $func
 BEGIN
  -- While pending, only commercial review/quote, rejection or cancellation are possible: no approval,
  -- credit decision, economics seal, receivable, production, NF or delivery.
+ -- INSERT: the canonical create may land in em_analise_comercial, aguardando_cotacao or (insufficient credit)
+ -- aguardando_aprovacao_credito; nothing operational/financial may be set at creation.
+ IF TG_OP='INSERT' THEN
+  IF NEW.c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' AND (
+     NEW.status::text NOT IN ('em_analise_comercial','aguardando_cotacao','aguardando_aprovacao_credito')
+     OR NEW.ready_for_production IS TRUE OR NEW.receivable_generated IS TRUE OR NEW.internal_economic_snapshot IS NOT NULL
+     OR NEW.credit_approved_at IS NOT NULL OR NEW.approved_at IS NOT NULL) THEN
+   RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+  RETURN NEW;
+ END IF;
  IF OLD.c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1'
     AND NEW.c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
-  IF NEW.status::text NOT IN ('em_analise_comercial','aguardando_cotacao','cancelado','reprovado')
+  -- aguardando_aprovacao_credito may only stay as is (no hidden credit decision) or leave to cancel/reject.
+  IF NOT (NEW.status::text IN ('em_analise_comercial','aguardando_cotacao','cancelado','reprovado')
+          OR (NEW.status=OLD.status AND OLD.status::text='aguardando_aprovacao_credito'))
+     OR (OLD.status::text='aguardando_aprovacao_credito' AND NEW.status::text IN ('em_analise_comercial','aguardando_cotacao'))
      OR NEW.ready_for_production IS TRUE OR NEW.receivable_generated IS TRUE OR NEW.internal_economic_snapshot IS NOT NULL
-     OR NEW.credit_approved_at IS DISTINCT FROM OLD.credit_approved_at THEN
+     OR NEW.credit_approved_at IS DISTINCT FROM OLD.credit_approved_at OR NEW.approved_at IS DISTINCT FROM OLD.approved_at THEN
    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
   END IF;
  END IF;
@@ -1611,7 +1633,7 @@ BEGIN
 END $function$;
 ALTER FUNCTION platform_private.c2_accounting_pending_guard() OWNER TO postgres;
 REVOKE ALL ON FUNCTION platform_private.c2_accounting_pending_guard() FROM PUBLIC,anon,authenticated;
-CREATE TRIGGER zz_c2_accounting_pending BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_accounting_pending_guard();
+CREATE TRIGGER zz_c2_accounting_pending BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_accounting_pending_guard();
 
 CREATE FUNCTION public.c2_promote_accounting_pending_order_v1(p_order_id uuid, p_expected_updated_at timestamptz)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
@@ -1627,7 +1649,7 @@ BEGIN
  END IF;
  IF o.c2_external_origin_snapshot->>'contract' IS DISTINCT FROM 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN RAISE EXCEPTION 'C2AP_NOT_PENDING' USING ERRCODE='22023'; END IF;
  IF p_expected_updated_at IS NULL OR o.updated_at IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION 'C2AP_STALE' USING ERRCODE='40001'; END IF;
- IF o.status::text NOT IN ('em_analise_comercial','aguardando_cotacao') THEN RAISE EXCEPTION 'C2AP_STATUS_DENIED' USING ERRCODE='42501'; END IF;
+ IF o.status::text NOT IN ('em_analise_comercial','aguardando_cotacao','aguardando_aprovacao_credito') THEN RAISE EXCEPTION 'C2AP_STATUS_DENIED' USING ERRCODE='42501'; END IF;
  org:=(o.c2_external_origin_snapshot->>'organization_id')::uuid;
  SELECT count(*) INTO n FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active;
  IF n=1 THEN SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active FOR SHARE; END IF;
@@ -1646,15 +1668,6 @@ REVOKE ALL ON FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timest
 GRANT EXECUTE ON FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timestamptz) TO authenticated,service_role;
 
 DO $c2ap_post$ BEGIN
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='999e5e9fd9887595e252523fb2142726' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_POST_DRIFT:platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_order_snapshot_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='9cad2aaa995277b913f8b40816fea504' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_POST_DRIFT:platform_private.b2b_internal_order_snapshot_guard()'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.approve_partner_order(uuid,text,date)'::regprocedure AND md5(pg_get_functiondef(oid))='3b0ba480d035f5cc9b3ad02567b0f08f' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_POST_DRIFT:public.approve_partner_order(uuid,text,date)'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='cbe4499392540a2e70ed68ce0b854246' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_POST_DRIFT:public.generate_b2b_receivable_secure(uuid)'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='5f0a08d1d4f8d8c5a7ae58e24c71071e' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_POST_DRIFT:platform_private.c2_owner_order_create_allowed(uuid,uuid)'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_external_origin_contract_valid(jsonb)'::regprocedure AND md5(pg_get_functiondef(oid))='369fd07cd9c659b87941b9a3bf972868' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_POST_DRIFT:platform_private.c2_external_origin_contract_valid(jsonb)'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='05938c5e9abf096d560e57aad10af69f' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_POST_DRIFT:platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_accounting_pending_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='e9e00d85fc147b6c3ef1dd4dbf084536' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_POST_DRIFT:platform_private.c2_accounting_pending_guard()'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)'::regprocedure AND md5(pg_get_functiondef(oid))='22bef080df2ee8de32d745d65afce1ac' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_POST_DRIFT:public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)'; END IF;
  IF has_function_privilege('authenticated','platform_private.c2_owner_order_create_allowed(uuid,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_external_origin_contract_valid(jsonb)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_accounting_pending_guard()','EXECUTE') OR has_function_privilege('anon','public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)','EXECUTE') OR NOT has_function_privilege('authenticated','public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)','EXECUTE') THEN RAISE EXCEPTION 'C2AP_POST_ACL'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='zz_c2_accounting_pending' AND tgenabled='O') THEN RAISE EXCEPTION 'C2AP_POST_TRIGGER'; END IF;
 END $c2ap_post$;
