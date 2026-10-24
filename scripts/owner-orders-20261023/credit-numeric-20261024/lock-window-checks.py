@@ -43,7 +43,13 @@ sig='public.generate_b2b_receivable_secure(uuid)'
 acl_before=pg.sql(f"SELECT pg_get_userbyid(proowner)||'|'||proacl::text FROM pg_proc WHERE oid='{sig}'::regprocedure")
 base_md5=pg.sql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))")
 V=N/'receipt-lock-order-review'
-pg.sql((V/'preflight.sql').read_text());pg.sql((V/'candidate.sql.review').read_text());pg.sql((V/'postflight.sql').read_text())
+def guarded_apply(name):
+    gate=pg.sql("SELECT pg_get_functiondef('platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure)")+'\n'
+    pg.sql("CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid,_partner uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $function$ SELECT false; $function$;")
+    pg.sql((V/name).read_text())
+    pg.sql(gate) # synthetic fixture only, never part of the deployment candidate
+
+guarded_apply('preflight.sql');guarded_apply('candidate.sql.review');guarded_apply('postflight.sql')
 ok('variant PRE/POST guard body owner ACL; ACL unchanged',pg.sql(f"SELECT pg_get_userbyid(proowner)||'|'||proacl::text FROM pg_proc WHERE oid='{sig}'::regprocedure")==acl_before)
 oid=json.loads(val(G,create(G,'window-fixed')+';'))['id']
 key=pg.sql(f"SELECT hashtext('b2b_credit:'||'{P}')");b,pid=barrier(key)
@@ -64,13 +70,11 @@ drift=(V/'function.sql.review').read_text().replace('BEGIN\n','BEGIN\n -- delibe
 pg.sql(drift);failure=pg.sql((V/'rollback.sql.review').read_text(),ok=False)
 ok('variant rollback rejects wrong hash','receipt_lock_rollback_pre_drift' in failure)
 pg.sql((V/'function.sql.review').read_text())
-pg.sql((V/'rollback.sql.review').read_text())
+guarded_apply('rollback.sql.review')
 ok('variant rollback restores exact baseline body and ACL',pg.sql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))")==base_md5 and pg.sql(f"SELECT pg_get_userbyid(proowner)||'|'||proacl::text FROM pg_proc WHERE oid='{sig}'::regprocedure")==acl_before)
 # Containment is not code reversal: replay historical containment tests against the new wrapper hash.
-pg.sql((V/'candidate.sql.review').read_text())
+guarded_apply('candidate.sql.review')
 saved_wrapper=pg.sql(f"SELECT pg_get_functiondef('{sig}'::regprocedure)")+'\n'
-source=(N/'test-local.py').read_text()
-suffix=source if False else suffix
 suffix=suffix.replace("rollback=(N/'origin-rebase/rollback.sql.review').read_text()","rollback=(V/'containment.sql.review').read_text()")
 # Restore only in disposable PostgreSQL after complete containment tests, never a hosted deployment instruction.
 suffix += "\npg.sql((V/'baseline.sql').read_text())\nok('final disposable teardown wrapper baseline restored')\n"
