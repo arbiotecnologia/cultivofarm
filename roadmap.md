@@ -2,7 +2,9 @@
 
 ## 24/10 15:05 — catálogo da carteira comercial (pacote INATIVO ae29da6)
 - [x] Captura LIVE `get_partner_catalog_secure` (uuid/V2) reproduzida MD5/owner/ACL; patch mínimo só no gate `forbidden_partner` via `c2_internal_order_target_reason`; PRE/POST/rollback com hashes; 47 PASS PostgreSQL descartável (Auth sintética).
-- [ ] Revisão independente e aplicação pelo auditor; captura LIVE do hash de `c1b_catalog_visibility_scope`; PostgREST/JWT real A/B. Bloqueio: decisão/execução externa.
+- [x] Helpers LIVE reais (visibilidade/preço/volume) sem stubs, guardados em PRE/POST; fixture MG sintética identificada; 54 PASS descartável; criação não depende de b5.
+- [ ] Revisão final e aplicação pelo auditor; PostgREST/JWT real A/B. Bloqueio: decisão/execução externa.
+- [ ] Cenários MG interno/interestadual de classificação/regime/destinação no motor fiscal (fora deste pacote). Bloqueio: dados fiscais reais por produto/operação.
 - [ ] Validação contábil real de A (DRAFT ⇒ capacidade `issuer_not_validated`). Bloqueio: contabilidade.
 
 ## 24/10 14:07 — acesso claro ao pedido canônico

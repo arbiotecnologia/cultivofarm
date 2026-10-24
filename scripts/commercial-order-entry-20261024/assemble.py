@@ -21,8 +21,9 @@ def guard(sig,md5,label):
     return f"IF md5(pg_get_functiondef('{sig}'::regprocedure)) IS DISTINCT FROM '{md5}' THEN RAISE EXCEPTION '{label}:{sig}'; END IF;"
 def acl(sig,want,label):
     return f"IF (SELECT proacl::text FROM pg_proc WHERE oid='{sig}'::regprocedure) IS DISTINCT FROM '{want}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{sig}'::regprocedure) IS DISTINCT FROM 'postgres' THEN RAISE EXCEPTION '{label}:{sig}'; END IF;"
-deps=[guard(k,v,'C2IOE_DEPENDENCY_DRIFT') for k,v in E['dependencies'].items()]+[guard('public.get_partner_catalog_secure(uuid,boolean)',L2['md5'],'C2IOE_DEPENDENCY_DRIFT'),acl('public.get_partner_catalog_secure(uuid,boolean)',L2['acl'],'C2IOE_ACL_DRIFT'),acl('public.get_partner_catalog_secure(uuid)',L1['acl'],'C2IOE_ACL_DRIFT'),
- "IF to_regprocedure('platform_private.c1b_catalog_visibility_scope(uuid)') IS NULL THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_MISSING:c1b_catalog_visibility_scope'; END IF;"]
+HELP=json.loads((D/'catalog/live-helpers.json').read_text())
+deps=[guard(k,v,'C2IOE_DEPENDENCY_DRIFT') for k,v in E['dependencies'].items()]+[x for r in HELP for x in (guard(r['signature'],r['md5'],'C2IOE_DEPENDENCY_DRIFT'),acl(r['signature'],r['acl'],'C2IOE_ACL_DRIFT'))]+[guard('public.get_partner_catalog_secure(uuid,boolean)',L2['md5'],'C2IOE_DEPENDENCY_DRIFT'),acl('public.get_partner_catalog_secure(uuid,boolean)',L2['acl'],'C2IOE_ACL_DRIFT'),acl('public.get_partner_catalog_secure(uuid)',L1['acl'],'C2IOE_ACL_DRIFT'),
+]
 pre_live="DO $pre$ BEGIN\n SET LOCAL lock_timeout='5s';\n "+"\n ".join(deps+[guard('platform_private.c2_order_actor_scope(uuid,uuid)',E['live_scope'],'C2IOE_PRE_LIVE_DRIFT'),guard('public.get_partner_catalog_secure(uuid)',L1['md5'],'C2IOE_PRE_LIVE_DRIFT'),
  "IF to_regprocedure('public.c2_internal_order_entry_capability_v1()') IS NOT NULL OR to_regprocedure('platform_private.c2_internal_order_target_reason(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'C2IOE_PRE_ALREADY_PRESENT'; END IF;"])+"\nEND $pre$;\n"
 post_cand="DO $post$ BEGIN\n "+"\n ".join(deps+[guard(k,v,'C2IOE_POST_DRIFT') for k,v in E['candidate'].items()]+[
