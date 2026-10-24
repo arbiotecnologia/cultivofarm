@@ -68,7 +68,7 @@ before=snapshot();denied(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{
 ok('fixed na_entrega still denies premature billing exact 42501 no effects',snapshot()==before)
 drift=(V/'function.sql.review').read_text().replace('BEGIN\n','BEGIN\n -- deliberate local drift\n',1)
 pg.sql(drift);failure=pg.sql((V/'rollback.sql.review').read_text(),ok=False)
-ok('variant rollback rejects wrong hash','receipt_lock_rollback_pre_drift' in failure)
+ok('variant rollback rejects wrong hash','origin_dependency_drift:public.generate_b2b_receivable_secure' in failure)
 pg.sql((V/'function.sql.review').read_text())
 guarded_apply('rollback.sql.review')
 ok('variant rollback restores exact baseline body and ACL',pg.sql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))")==base_md5 and pg.sql(f"SELECT pg_get_userbyid(proowner)||'|'||proacl::text FROM pg_proc WHERE oid='{sig}'::regprocedure")==acl_before)
