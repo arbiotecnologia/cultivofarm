@@ -10,6 +10,21 @@ fixtures=s[s.index('pg.sql(f"""\nSET session_replication_role=replica;\nINSERT I
 exec(compile(setup,str(H/'test-local.py'),'exec'))
 E=json.loads((D/'expected.json').read_text())
 md5=lambda sig:pg.sql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))")
+# Emulate CURRENT LIVE: install 30dc8243 (commercial_portfolio_catalog_entry_guarded) exactly as reviewed, then
+# compare every captured 15:40 dependency hash; mismatches install the captured body (evidence) and are reported.
+C30D=D.parent.parent/'commercial-order-entry-20261024'
+c30=(C30D/'candidate.sql.review').read_text();c30=c30[c30.index('END $pre$;')+len('END $pre$;'):c30.index('DO $post$')]
+pg.sql('BEGIN;'+c30+'COMMIT;')
+C30=json.loads((C30D/'expected.json').read_text())['candidate']
+ok('LIVE 30dc8243 objects reproduced byte-exact in harness',all(md5(k)==v for k,v in C30.items()))
+CAP=json.loads((D/'live-capture-20261024-1540.json').read_text())
+for dep in CAP['dependencies']:
+    sig=dep['signature'].replace('(partner_order_status)','(public.partner_order_status)')
+    if md5(sig)!=dep['md5']:
+        print('CAPTURE_DRIFT_INSTALLED',sig);pg.sql(dep['definition']+';')
+    ok('captured LIVE dependency md5 '+dep['md5'][:8]+' '+sig,md5(sig)==dep['md5'])
+ok('captured LIVE entitlements_for_user md5 matches harness',md5('platform_private.entitlements_for_user(uuid)')==CAP['entitlements_for_user_md5'])
+ok('captured absent signature really absent in harness reference: fn_resolve_b2b_cart(uuid,jsonb,date)',pg.sql("SELECT to_regprocedure('public.fn_resolve_b2b_cart(uuid,jsonb,date)') IS NULL")=='t')
 pg.sql((D/'preflight.sql').read_text());ok('b5 structural preflight READ ONLY passes on captured LIVE (writer false)')
 cand=(D/'candidate.sql.review').read_text()
 if not E['candidate']:
@@ -26,6 +41,13 @@ bad=inj(cand,'C2AP_INJECTED_POST')
 assert 'C2AP_INJECTED_POST' in pg.sql(bad,ok=False)
 ok('candidate failing POST rolls back atomically (writer still false, no overlay)',md5('platform_private.c2_owner_order_create_allowed(uuid,uuid)')==E['b5_hashes']['platform_private.c2_owner_order_create_allowed(uuid,uuid)'] and pg.sql("SELECT to_regprocedure('platform_private.c2_accounting_pending_guard()') IS NULL")=='t')
 pg.sql(cand);ok('candidate installs with owner A NOT validated (no install-time accounting gate)')
+ok('30dc8243 preserved byte-exact after candidate',all(md5(k)==v for k,v in C30.items()))
+# Full restore (no history yet) returns to pre-implantation LIVE and keeps 30dc8243; then reinstall proves PRE again.
+pg.sql((D/'restore-live.sql.review').read_text())
+ok('restore-live returns exact pre-implantation LIVE bodies and drops column/objects',all(md5(k)==v for k,v in E['live_restore'].items()) and pg.sql("SELECT count(*) FROM pg_attribute WHERE attrelid='public.partner_orders'::regclass AND attname='c2_external_origin_snapshot' AND NOT attisdropped")=='0')
+ok('restore-live keeps 30dc8243 byte-exact',all(md5(k)==v for k,v in C30.items()))
+pg.sql((D/'preflight.sql').read_text());ok('preflight passes again after full restore')
+pg.sql(cand);ok('candidate re-installs after full restore')
 pg.sql((D/'postflight.sql').read_text());ok('composed postflight READ ONLY passes')
 exec(compile(fixtures,str(H/'test-local.py'),'exec'))
 SETB=U(10)
@@ -108,4 +130,7 @@ ok('history kept: pending and promoted orders remain',pg.sql(f"SELECT count(*) F
 before=snapshot();err=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET observacoes='x' WHERE id='{r3['id']}'; COMMIT;",ok=False)
 ok('after rollback pending request is frozen (b5 assert rejects pending contract)','C2_EXTERNAL_ORIGIN_DENIED' in err and snapshot()==before)
 denied(G,create(P,'after-rb',hA),'42501');ok('after rollback external create closed again')
+# Full restore must refuse while history exists (after rollback pending rows remain).
+err=pg.sql((D/'restore-live.sql.review').read_text().replace(E['candidate']['platform_private.b2b_internal_order_snapshot_guard()'],'__skip__'),ok=False)
+ok('restore-live refuses to run on non-candidate state (drift) — no partial DDL',('C2AP_RESTORE_PRE_DRIFT' in err or 'C2AP_30DC' in err) and md5('platform_private.b2b_internal_order_snapshot_guard()')==E['b5_hashes']['platform_private.b2b_internal_order_snapshot_guard()'])
 print('TOTAL',len(checks),'PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification')
