@@ -180,7 +180,31 @@ wrapper=(H/'wrapper.sql.review').read_text()
 assert hashlib.md5(wrapper.encode()).hexdigest()=='31eeb54e4b69d97c311629a37e553faf'
 bodies={'public.generate_b2b_receivable_secure':wrapper,changed[0]:create,changed[1]:order,'platform_private.b2b_internal_child_snapshot_guard':child,'public.approve_partner_order':approve,'public.generate_b2b_receivable_secure_impl':impl,'public.fn_generate_receivable_installments':installments}
 (OUT/'expected-source.json').write_text(json.dumps({n:hashlib.md5(s.encode()).hexdigest() for n,s in bodies.items()},indent=2)+'\n')
-(OUT/'candidate.sql.review').write_text('-- INACTIVE REVIEW ONLY. Does not reopen writer; no internal-origin bypass or RLS change.\n-- Reconciled: preserves LIVE manual initial-installments correction (private context, exact .34/.33/.33 split,\n-- custom dates inserted first) and adds the B2B contractual schedule branch on top of it.\nBEGIN;\nSET LOCAL lock_timeout=\'5s\'; SET LOCAL statement_timeout=\'60s\';\n'+pre+"ALTER TABLE public.partner_orders ADD COLUMN c2_external_origin_snapshot jsonb;\n"+helper+'\n'.join(s.rstrip()+';\n' for s in bodies.values())+final_guard+'\nCOMMIT;\n')
+# In-transaction accounting gate for owner A, BEFORE any guard/DDL. Locks only owner A's
+# fiscal-settings rows FOR SHARE until COMMIT (blocks UPDATE/DELETE/deactivation of the attested
+# row); the active-organization partial unique index makes any new/second active row for A
+# conflict. Other companies are not locked. Never validates or writes settings.
+OWNER_A='007bb519-cba0-4704-be2c-cb93ad010048'
+accounting_gate=f"""DO $accounting_gate$
+DECLARE n integer; ready boolean;
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid WHERE i.indrelid='public.company_fiscal_settings'::regclass AND c.relname='ux_company_fiscal_settings_active_organization' AND i.indisunique AND i.indisvalid AND pg_get_indexdef(i.indexrelid)='CREATE UNIQUE INDEX ux_company_fiscal_settings_active_organization ON public.company_fiscal_settings USING btree (organization_id) WHERE (is_active IS TRUE)') THEN
+   RAISE EXCEPTION 'C2_ACCOUNTING_GATE_INDEX_DRIFT' USING ERRCODE='42501';
+ END IF;
+ PERFORM 1 FROM public.company_fiscal_settings c WHERE c.organization_id='{OWNER_A}' ORDER BY c.id FOR SHARE;
+ SELECT count(*),coalesce(bool_and(c.configuration_status='VALIDATED'
+   AND c.accounting_validated_at IS NOT NULL
+   AND nullif(btrim(c.legal_name),'') IS NOT NULL
+   AND nullif(btrim(c.cnpj),'') IS NOT NULL),false)
+ INTO n,ready FROM public.company_fiscal_settings c
+ WHERE c.organization_id='{OWNER_A}' AND c.is_active IS TRUE;
+ IF n<>1 OR NOT ready THEN
+   RAISE EXCEPTION 'C2_ACCOUNTING_PREREQUISITE_BLOCKED: owner A requires one genuinely accounting-validated active fiscal configuration; human review required, writer must stay false'
+   USING ERRCODE='42501';
+ END IF;
+END $accounting_gate$;
+"""
+(OUT/'candidate.sql.review').write_text('-- INACTIVE REVIEW ONLY. Does not reopen writer; no internal-origin bypass or RLS change.\n-- Reconciled: preserves LIVE manual initial-installments correction (private context, exact .34/.33/.33 split,\n-- custom dates inserted first) and adds the B2B contractual schedule branch on top of it.\n-- Owner A accounting gate runs FIRST in this same transaction, locking only A settings rows FOR SHARE until COMMIT;\n-- preflight-accounting.sql remains a separate READ ONLY diagnostic. Never validates/fabricates attestation.\nBEGIN;\nSET LOCAL lock_timeout=\'5s\'; SET LOCAL statement_timeout=\'60s\';\n'+accounting_gate+pre+"ALTER TABLE public.partner_orders ADD COLUMN c2_external_origin_snapshot jsonb;\n"+helper+'\n'.join(s.rstrip()+';\n' for s in bodies.values())+final_guard+'\nCOMMIT;\n')
 # Rollback is containment only: preserve immutable snapshots/history and all composed financial guards.
 contain=functions['platform_private.c2_owner_order_create_allowed']['sql']
 contained_approve=swap(approve,"  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;", "  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;\n  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot IS NOT NULL) THEN\n    RAISE EXCEPTION 'C2_EXTERNAL_OPERATIONS_CONTAINED' USING ERRCODE='42501';\n  END IF;")

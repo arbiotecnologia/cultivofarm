@@ -1,8 +1,8 @@
-bc9937ccc4f892db7d54bf461bd577201adbd4eec2ec77814b12582e424a455f  ./AGENTS.md
-87243a9b3e6cbdf006b86512cf3b5359ca08d4c8dc0c1be0e00eba32231df256  ./README.md
+7f60e4aee54e4da54faf234d2d899bc247a25106cc4f955de5cd21cef87a678c  ./AGENTS.md
+abc12d020c13940f727bcc8d90a4f756963f87757f02926bccad40cb32c5d9e4  ./README.md
 b59c66351a7d805d23e1b73c203323b187b4c4dfa7360cf9e4245485293aaf6d  ./atomicity.py
 854354afa0eac376a9be784f80099a4fc271bf4c9b105431a02400cb907e64bc  ./integrated-window-checks.py
-71116700732d8b018639ee736ad6ae454c63ca9236fd6d5362c4e1c142a85d85  ./origin/assemble.py
+c189933e2ff60ae3840dfdad0a00f131835c8f6b8368ec10f229c9947665b5e1  ./origin/assemble.py
 3e7f07fd3e286bc5e19da8ac44acb07040d12ff95a8da174bab3c57cec0c6512  ./origin/baseline/chain.json
 c85fc0dc114e14b288a5786aca6cbf9c79c5f0b0a3cda1b0b30a25f0af0e657d  ./origin/baseline/dependencies.json
 92555593226775db6114c5641c9727db0965c1b5a90e5baa64397abd313d35ef  ./origin/baseline/extra-structure.sql
@@ -89,7 +89,7 @@ d94bdd206596d82251cd664e46b8b222c1128539e3bea73e381a7cdd28b038a1  ./origin/basel
 e424d82402eef384ed682b97c7f127863ba58fe702416adf427186e9ba600cff  ./origin/baseline/public.update_updated_at_column.sql
 9c39a2e83949e7e92d8a002aaba0de71949b53b35e3ba1c159b0fb4a396ab0a5  ./origin/baseline/relations.json
 eebb9956d53cc888134779a761378a2b3644095df389d09c94ccd5652a90ea5d  ./origin/baseline/snapshot.json
-29197da86bfa0fe4495e4d01acb5383d0ab56829a6cdbc18ebfdf42a247e5863  ./origin/candidate.sql.review
+0d69b27b43066fc6f57526177f9338d820ea5ac4608faadce078c57dbfb057aa  ./origin/candidate.sql.review
 cf5b5ada7d76ed9349e5f1f12ec2645cadee29b73f5e2d6027a61b0a607181c6  ./origin/containment.sql.review
 cf8010930bc4493680eabbf3ebd1310e87df34e193dcc52ec333586adb61b4f3  ./origin/expected-source.json
 9100058f1eef6ac5796978b23bdeda89532b5ae8738a3e0996d0593241d656a2  ./origin/postflight-hashes.json
@@ -98,5 +98,5 @@ a1281701e951efb134f3ac55202345dec23a736c1360806b501914bb02d096cf  ./origin/postf
 2fc607fd3aa454af2f7c34aa5bd8ff6155959a6ebcbca5f3867dbab7d6271712  ./origin/preflight-accounting.sql
 e2a789418c3016592adff22a742d283be053453850ed7d45acbf9422b88f107b  ./origin/preflight.sql
 cf5b5ada7d76ed9349e5f1f12ec2645cadee29b73f5e2d6027a61b0a607181c6  ./origin/rollback.sql.review
-3f6b4f5a8e7495e88392e0f9cb68e896a8ae3cbcf46f6bffa565dfc97f40fb82  ./origin/test-local.py
+60cecfc10e5b6c97c5205cf40510e94674bbfb5b6873d9ace300b2c8fba1ad2f  ./origin/test-local.py
 285258616e516614fb2782e0d8d6eafbbba7dce994fb4af5c19757fb9884f95d  ./origin/wrapper.sql.review

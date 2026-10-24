@@ -2,3 +2,4 @@
 - The six non-AR composed bodies must stay byte-exact to the reviewed final-integrated candidate; assemble.py fails closed if the future-composed AR body is not exactly LIVE manual body + B2B branch.
 - The deployed RPC source contains CRLF lines; always read it with read_bytes().decode() — text-mode reads change the pg_get_functiondef hash.
 - Keep review inactive, writer false and the accounting gate mandatory; synthetic disposable tests never certify hosted JWT/RLS.
+- Candidate embeds owner A's accounting gate as its first in-transaction statement, row-locking only A's settings FOR SHARE and relying on the active-org unique index; preflight-accounting stays a diagnostic — prevents gate/install drift without locking other companies.
