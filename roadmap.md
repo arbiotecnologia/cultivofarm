@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 00:20 — contenção de pedidos externos existentes
+- [ ] Preparar rollback de contenção hash/ACL guardado para create/approve/generate externos, preservando origens internas e histórico; sem implantação.
+- [ ] Testar criação externa seguida contenção, aprovação/cobrança negadas sem efeitos e origens internas preservadas; negativos de drift e relatos/manifestos.
+- [ ] Gate contábil/JWT real e quiescência antes de eventual operação hospedada dependem do proprietário; pfs real na_entrega active/auto true preservada.
+
 ## 24/10 00:14 — revisão independente 9c62ecab / pacote inativo
 - [x] Registrar relato do proprietário: PRE estrutural integral readonly canônico PASS; PRE contábil 42501/C2_ACCOUNTING_PREREQUISITE_BLOCKED esperado. A preencheu CNPJ/razão social reais, continua DRAFT sem atestado; não alterar dados nem relaxar pré-requisito.
 - [x] Corrigir mensagem externa de aprovação comercial sem promessa de produção; ramo interno capturado preservado, não homologado operacionalmente.
