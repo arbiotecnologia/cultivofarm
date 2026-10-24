@@ -1,0 +1,300 @@
+diff --git a/src/components/comercial/CommercialOrderEntry.tsx b/src/components/comercial/CommercialOrderEntry.tsx
+new file mode 100644
+index 00000000..dbfdd280
+--- /dev/null
++++ b/src/components/comercial/CommercialOrderEntry.tsx
+@@ -0,0 +1,19 @@
++import { OrderJourney } from "./OrderJourney";
++
++export function CommercialOrderEntry() {
++  return <section aria-label="Registrar venda ou pedido" className="space-y-3">
++    <div className="flex flex-wrap items-center justify-between gap-3">
++      <h2 className="text-lg font-semibold">Registrar venda para cliente / parceiro</h2>
++      <span role="status" className="text-sm text-muted-foreground">Início de venda indisponível nesta tela</span>
++    </div>
++    <details className="text-sm">
++      <summary className="cursor-pointer text-primary">Detalhes do início do pedido</summary>
++      <div className="space-y-2 py-2 text-muted-foreground">
++        <p>Esta área analisa pedidos enviados pelos parceiros. Não há aqui um formulário autorizado para registrar uma nova venda em nome de um cliente ou parceiro.</p>
++        <p>Comprar para a própria empresa é uma operação distinta, no catálogo do Portal Parceiro, quando esse portal e a criação estiverem autorizados para a identidade vinculada. Acesso comercial não concede esse acesso.</p>
++        <p>O início de venda pelo comercial permanece pendente de um fluxo autorizado; não é substituído por simulação, conta financeira manual ou emissão de nota.</p>
++      </div>
++    </details>
++    <OrderJourney />
++  </section>;
++}
+\ No newline at end of file
+diff --git a/src/components/comercial/OrderJourney.tsx b/src/components/comercial/OrderJourney.tsx
+new file mode 100644
+index 00000000..360c2f4d
+--- /dev/null
++++ b/src/components/comercial/OrderJourney.tsx
+@@ -0,0 +1,10 @@
++/** Informational only: never mounts downstream readers or financial/fiscal writers. */
++export function OrderJourney() {
++  return <section aria-label="Percurso do pedido" className="space-y-2 border-y border-border py-3">
++    <ol className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
++      {["Pedido", "Aprovação", "Financeiro", "Fiscal", "Entrega"].map((step, index) =>
++        <li key={step}><span className="text-muted-foreground">{index + 1}.</span> {step}</li>)}
++    </ol>
++    <p className="text-xs text-muted-foreground">Cada etapa depende das autorizações e validações próprias. Aprovação comercial não confirma cobrança, emissão fiscal ou entrega.</p>
++  </section>;
++}
+\ No newline at end of file
+diff --git a/src/components/comercial/PartnerOrderEntry.tsx b/src/components/comercial/PartnerOrderEntry.tsx
+new file mode 100644
+index 00000000..3a781cf2
+--- /dev/null
++++ b/src/components/comercial/PartnerOrderEntry.tsx
+@@ -0,0 +1,32 @@
++import { Link } from "react-router-dom";
++import { ShoppingCart } from "lucide-react";
++import { Button } from "@/components/ui/button";
++import { OrderJourney } from "./OrderJourney";
++
++/** Receives existing layout gates, not raw IDs/roles as proof of authority. */
++export function PartnerOrderEntry({ canReadCatalog, canCreate, pending = false }: {
++  canReadCatalog: boolean; canCreate: boolean; pending?: boolean;
++}) {
++  return <section aria-label="Comprar para minha empresa" className="space-y-3 mb-4">
++    <div className="flex flex-wrap items-center justify-between gap-3">
++      <h2 className="text-lg font-semibold">Comprar para minha empresa</h2>
++      {canReadCatalog && !pending && <Button asChild variant={canCreate ? "default" : "outline"}>
++        <Link to="/portal-parceiro/catalogo"><ShoppingCart aria-hidden="true" />{canCreate ? "Selecionar produto / Novo pedido" : "Consultar produtos"}</Link>
++      </Button>}
++    </div>
++    <p role="status" className="text-sm text-muted-foreground">{pending
++      ? "Verificando disponibilidade do catálogo e do pedido."
++      : canCreate ? "Pedido para a empresa vinculada ao seu acesso, sujeito à análise comercial."
++      : canReadCatalog ? "Catálogo disponível para consulta. A criação de pedidos não está autorizada neste acesso."
++      : "Catálogo e criação de pedido indisponíveis neste acesso."}</p>
++    {!canCreate && !pending && <details className="text-sm">
++      <summary className="cursor-pointer text-primary">Detalhes das pendências</summary>
++      <div className="space-y-2 py-2 text-muted-foreground">
++        <p>{canReadCatalog ? "A autorização de consulta não libera o carrinho. O servidor não informou um motivo específico para a indisponibilidade de criação."
++          : "O acesso depende do vínculo da empresa, do perfil, do plano e das capacidades confirmadas pelo servidor. Esta tela não identifica qual requisito impediu o acesso."}</p>
++        <p>A equipe responsável deve conferir a liberação de pedidos e os requisitos comerciais e contábeis. Nenhuma validação ou liberação é feita aqui.</p>
++      </div>
++    </details>}
++    <OrderJourney />
++  </section>;
++}
+\ No newline at end of file
+diff --git a/src/pages/comercial/PedidosB2B.tsx b/src/pages/comercial/PedidosB2B.tsx
+index 747f343d..8e9f98d8 100644
+--- a/src/pages/comercial/PedidosB2B.tsx
++++ b/src/pages/comercial/PedidosB2B.tsx
+@@ -42,6 +42,7 @@ import { useOrdersSlaMap } from "@/hooks/useOrdersSlaMap";
+ import { b2bToast } from "@/lib/b2bToast";
+ import { PedidoItemProdutoInfo } from "@/components/pedidos-b2b/PedidoItemProdutoInfo";
+ import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection";
++import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntry";
+ 
+ 
+ 
+@@ -152,7 +153,7 @@ export default function PedidosB2B() {
+           action: "approve-order",
+           orderNumero,
+           loading: `Aprovando pedido ${orderNumero}…`,
+-          success: `Pedido ${orderNumero} aprovado e liberado para produção`,
++          success: `Pedido ${orderNumero} aprovado comercialmente`,
+         },
+       );
+       setDetail(null);
+@@ -228,6 +229,7 @@ export default function PedidosB2B() {
+         </p>
+       </div>
+ 
++      <CommercialOrderEntry />
+       <Card>
+         <CardHeader className="pb-3">
+           <div className="flex flex-col md:flex-row gap-2 md:items-center justify-between">
+diff --git a/src/pages/portal-parceiro/NovoPedido.tsx b/src/pages/portal-parceiro/NovoPedido.tsx
+index 339c2424..7c4c2969 100644
+--- a/src/pages/portal-parceiro/NovoPedido.tsx
++++ b/src/pages/portal-parceiro/NovoPedido.tsx
+@@ -563,7 +563,7 @@ export default function NovoPedido() {
+     const p = catalogMap.get(row.id);
+     return (
+       <Button size="sm" onClick={() => setAddRow(row)} disabled={!p}>
+-        <Plus className="h-4 w-4 mr-1" /> Adicionar
++        <Plus className="h-4 w-4 mr-1" /> {isSimulationMode ? "Adicionar à simulação" : "Adicionar ao pedido"}
+       </Button>
+     );
+   };
+@@ -575,11 +575,11 @@ export default function NovoPedido() {
+     <div className="space-y-4 max-w-6xl mx-auto pb-32 md:pb-4">
+       <div>
+         <h1 className="text-xl md:text-2xl font-bold">
+-          {isCatalogoRoute ? "Catálogo" : isSimulationMode ? "Simulador B2B" : "Novo Pedido"}
++          {isCatalogoRoute ? "Selecionar produtos para o pedido" : isSimulationMode ? "Simulador B2B" : "Novo Pedido"}
+         </h1>
+         <p className="text-sm text-muted-foreground">
+           {isCatalogoRoute
+-            ? "Consulte produtos e microrganismos, monte uma simulação ou efetive um pedido."
++            ? "Pedido para a empresa vinculada ao seu acesso. O envio depende da validação de preços e da autorização do servidor."
+             : isSimulationMode
+             ? "Esta simulação utiliza valores de tabela, sem desconto. Condições comerciais finais são aplicadas apenas em pedido oficial."
+             : "Selecione produtos e/ou microrganismos. Condição comercial B2B aplicada."}
+diff --git a/src/pages/portal-parceiro/PortalParceiroLayout.tsx b/src/pages/portal-parceiro/PortalParceiroLayout.tsx
+index 4bcd44b0..4afeada5 100644
+--- a/src/pages/portal-parceiro/PortalParceiroLayout.tsx
++++ b/src/pages/portal-parceiro/PortalParceiroLayout.tsx
+@@ -25,6 +25,7 @@ import { usePortalBranding } from "@/hooks/useBranding";
+ import { useEntitlements } from "@/hooks/useEntitlements";
+ import { isPathEntitled } from "@/lib/saas/featureRouteMap";
+ import { CommercialOwnOrders } from "@/components/comercial/CommercialOwnOrders";
++import { PartnerOrderEntry } from "@/components/comercial/PartnerOrderEntry";
+ 
+ import {
+   Select,
+@@ -200,6 +201,12 @@ export default function PortalParceiroLayout() {
+       />
+ 
+       <main className="flex-1 p-4 md:p-6 overflow-x-auto">
++        {commercialOwner && externalManager && ["/portal-parceiro/dashboard", "/portal-parceiro/catalogo"].includes(location.pathname) &&
++          <PartnerOrderEntry
++            pending={entitlements.status === "loading" || isLoading}
++            canReadCatalog={partnerReady && !partnerError && ownerCatalogRoute("/portal-parceiro/catalogo", ownPartner?.capabilities) && isPathEntitled("/portal-parceiro/catalogo", entitlements)}
++            canCreate={partnerReady && !partnerError && ownerCatalogRoute("/portal-parceiro/catalogo", ownPartner?.capabilities) && isPathEntitled("/portal-parceiro/catalogo", entitlements) && entitlements.status === "ready" && ownerOrderRoute("/portal-parceiro/catalogo", ownPartner?.orderCreate === true, entitlements.features)}
++          />}
+         {isStaff && partner && (
+           <div
+             className="mb-4 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+diff --git a/src/test/catalogo/ownerCatalogFilters.session.test.tsx b/src/test/catalogo/ownerCatalogFilters.session.test.tsx
+index 008935d7..e9b1f3fc 100644
+--- a/src/test/catalogo/ownerCatalogFilters.session.test.tsx
++++ b/src/test/catalogo/ownerCatalogFilters.session.test.tsx
+@@ -53,7 +53,10 @@ it.each(["tenant", "role"])("clears %s changes during ready=true/pending even wh
+   state.pending = true; view.update();
+   if (kind === "tenant") state.tenant = "B"; else state.role = "parceiro_b2b_tecnico";
+   view.update(); state.tenant = "T"; state.role = "parceiro_b2b"; view.update();
+-  state.pending = false; view.update(); expect(search()).toHaveValue("");
++  state.pending = false; view.update();
++  // Revocation redirects away from the catalogue; restored authority never navigates itself back.
++  if (kind === "role") fireEvent.click(screen.getByText("Voltar catálogo"));
++  expect(search()).toHaveValue("");
+   expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "false");
+ });
+ it("real Layout/Owner/Grid preserves filter during monitor pause/resume without protected rows or drawers", () => {
+diff --git a/src/test/catalogo/partnerCatalogMonitor.integration.test.tsx b/src/test/catalogo/partnerCatalogMonitor.integration.test.tsx
+index 4c45efde..b6b7c9b9 100644
+--- a/src/test/catalogo/partnerCatalogMonitor.integration.test.tsx
++++ b/src/test/catalogo/partnerCatalogMonitor.integration.test.tsx
+@@ -110,7 +110,7 @@ const product = () => `Produto ${state.tenant}/${state.partner}`;
+ const catalogCalls = () => state.rpc.mock.calls.filter(([name]) => name === "get_partner_catalog_secure");
+ 
+ async function tick(ms = 100) { for (let elapsed = 0; elapsed < ms; elapsed += 50) await act(async () => { await vi.advanceTimersByTimeAsync(Math.min(50, ms - elapsed)); }); }
+-async function openModal() { fireEvent.click(screen.getByRole("button", { name: "Adicionar" })); await tick(); return screen.getByRole("dialog"); }
++async function openModal() { fireEvent.click(screen.getByRole("button", { name: "Adicionar ao pedido" })); await tick(); return screen.getByRole("dialog"); }
+ async function addItem() { const modal = await openModal(); fireEvent.click(within(modal).getByRole("button", { name: "Adicionar ao carrinho" })); await tick(); }
+ it("same confirmed probes retain the real modal DOM and cart without profile reload/cache reset", async () => {
+   mount(); await tick(1000); await addItem(); const modal = await openModal();
+diff --git a/src/test/catalogo/partnerOutletNovoPedido.test.tsx b/src/test/catalogo/partnerOutletNovoPedido.test.tsx
+index 805a92db..e9f7e3e1 100644
+--- a/src/test/catalogo/partnerOutletNovoPedido.test.tsx
++++ b/src/test/catalogo/partnerOutletNovoPedido.test.tsx
+@@ -9,7 +9,7 @@ const state = vi.hoisted(() => ({
+   actor: "11111111-1111-4111-8111-111111111111",
+   tenant: "22222222-2222-4222-8222-222222222222",
+   partner: "33333333-3333-4333-8333-333333333333",
+-  epoch: 0, entitled: true, loadingPlan: false, orderCreate: true,
++  epoch: 0, entitled: true, loadingPlan: false, orderCreate: true, foreignProjection: false,
+   rpc: vi.fn(), table: vi.fn(), writes: vi.fn(), subscriptions: vi.fn(),
+ }));
+ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
+@@ -50,7 +50,7 @@ function response(data: unknown) {
+   return Object.assign(promise, { abortSignal: () => promise });
+ }
+ beforeEach(() => {
+-  Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, entitled: true, loadingPlan: false, orderCreate: true });
++  Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, entitled: true, loadingPlan: false, orderCreate: true, foreignProjection: false });
+   vi.clearAllMocks();
+   state.table.mockImplementation((table: string) => {
+     if (table !== "catalogo_volumes") throw new Error(`Unexpected table read: ${table}`);
+@@ -61,10 +61,11 @@ beforeEach(() => {
+       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
+       partner_id: state.partner, external_roles: ["parceiro_b2b"], manager: true, technician: false, role: "parceiro_b2b", papel: "gestor" };
+     if (name === "get_my_commercial_partner_context") return response(context);
+-    if (name === "get_my_commercial_partner_projection") return response({ ...context, id: state.partner, ativo: true,
++    if (name === "get_my_commercial_partner_projection") return response({ ...context, tenant_id: state.foreignProjection ? "foreign-tenant" : state.tenant, id: state.partner, ativo: true,
+       codigo: "LOCAL", razao_social: "Parceiro local", capabilities: { contract: "C2_CAT_V1", catalog_read: true, sheets_read: true },
+       order_capabilities: { contract: "C2_OWNER_ORDER_V1", order_create: state.orderCreate } });
+     if (name === "rpc_b2b_list_selectable_payment_plans") return response([]);
++    if (name === "log_my_access_denied_secure") return response(null);
+     if (name === "get_partner_catalog_secure") return response([{
+       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",
+       produto_nome: `Produto ${state.tenant}/${args?.p_partner_id}`, produto_codigo: "LOCAL", familia_catalogo: "biologico",
+@@ -87,9 +88,26 @@ const product = () => `Produto ${state.tenant}/${state.partner}`;
+ const catalogCalls = () => state.rpc.mock.calls.filter(([name]) => name === "get_partner_catalog_secure");
+ it("real layout/guard/outlet/NovoPedido reaches its real catalogue hook with the parent's partner", async () => {
+   mount(); await screen.findByText(product());
++  expect(screen.getByRole("link", { name: "Selecionar produto / Novo pedido" })).toHaveAttribute("href", "/portal-parceiro/catalogo");
++  expect(screen.getByRole("button", { name: "Adicionar ao pedido" })).toBeEnabled();
+   expect(catalogCalls().map(([, args]) => args.p_partner_id)).toEqual([state.partner]);
+   expect(state.writes).not.toHaveBeenCalled(); expect(state.table.mock.calls).toEqual([["catalogo_volumes"]]);
+ });
++it("contained capability keeps only catalogue readers, never cart/plan/subscription writers", async () => {
++  state.orderCreate = false;
++  mount(); await screen.findByText(product());
++  expect(screen.getByRole("link", { name: "Consultar produtos" })).toHaveAttribute("href", "/portal-parceiro/catalogo");
++  expect(screen.queryByRole("button", { name: "Adicionar ao pedido" })).toBeNull();
++  expect(state.rpc.mock.calls.some(([name]) => name === "rpc_b2b_list_selectable_payment_plans")).toBe(false);
++  expect(state.table).not.toHaveBeenCalled(); expect(state.subscriptions).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
++});
++it("revoked creation capability removes the real cart subtree without enabling another writer", async () => {
++  const view = mount(); await screen.findByRole("button", { name: "Adicionar ao pedido" });
++  state.orderCreate = false; state.epoch++; view.update();
++  await screen.findByRole("link", { name: "Consultar produtos" });
++  expect(screen.queryByRole("button", { name: "Adicionar ao pedido" })).toBeNull();
++  expect(state.writes).not.toHaveBeenCalled();
++});
+ it("real route replaces partner then tenant through current canonical projection without old product rows", async () => {
+   const view = mount(); const first = product(); await screen.findByText(first);
+   state.partner = "44444444-4444-4444-8444-444444444444"; state.epoch++; view.update();
+@@ -106,4 +124,11 @@ it.each(["denied", "loading"])("%s plan never mounts NovoPedido or its queries u
+   expect(state.rpc.mock.calls.some(([name]) => name === "rpc_b2b_list_selectable_payment_plans")).toBe(false);
+   expect(state.subscriptions).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
+   expect(state.table).not.toHaveBeenCalled();
++});
++it("a foreign tenant projection cannot mount catalogue, entry link or cart even when it claims creation", async () => {
++  state.foreignProjection = true;
++  mount(); await screen.findByText("Negado");
++  expect(catalogCalls()).toHaveLength(0);
++  expect(screen.queryByRole("link", { name: "Selecionar produto / Novo pedido" })).toBeNull();
++  expect(state.table).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
+ });
+\ No newline at end of file
+diff --git a/src/test/comercial/orderEntry.test.tsx b/src/test/comercial/orderEntry.test.tsx
+new file mode 100644
+index 00000000..27e1ca27
+--- /dev/null
++++ b/src/test/comercial/orderEntry.test.tsx
+@@ -0,0 +1,26 @@
++import { cleanup, render, screen } from "@testing-library/react";
++import { MemoryRouter } from "react-router-dom";
++import { afterEach, expect, it } from "vitest";
++import { PartnerOrderEntry } from "@/components/comercial/PartnerOrderEntry";
++import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntry";
++import { ownFinanceActorAllowed } from "@/lib/comercial/financeAccess";
++import { readOwnerOrderCapability, ownerOrderRoute } from "@/lib/comercial/ownerOrderAccess";
++afterEach(cleanup);
++it("pending access offers no navigation to an order even with a previous capability", () => {
++  render(<MemoryRouter><PartnerOrderEntry pending canReadCatalog canCreate /></MemoryRouter>);
++  expect(screen.queryByRole("link")).toBeNull();
++});
++it("catalog denial offers no buyer link or mutation command", () => {
++  render(<MemoryRouter><PartnerOrderEntry canReadCatalog={false} canCreate={false} /></MemoryRouter>);
++  expect(screen.queryByRole("link")).toBeNull(); expect(screen.queryByRole("button")).toBeNull();
++});
++it("commercial guidance never routes staff into buyer impersonation or a fabricated sale writer", () => {
++  render(<MemoryRouter><CommercialOrderEntry /></MemoryRouter>);
++  expect(screen.queryByRole("link")).toBeNull(); expect(screen.queryByRole("button")).toBeNull();
++});
++it("catalogue-only contract cannot grant order creation or finance, including technical scope", () => {
++  const catalogOnly = { contract: "C2_CAT_V1", order_create: true };
++  expect(readOwnerOrderCapability(catalogOnly)).toBe(false);
++  expect(ownerOrderRoute("/portal-parceiro/catalogo", false, new Set(["pedidos_b2b"]))).toBe(false);
++  expect(ownFinanceActorAllowed(["parceiro_b2b_tecnico"], true)).toBe(false);
++});
+\ No newline at end of file
