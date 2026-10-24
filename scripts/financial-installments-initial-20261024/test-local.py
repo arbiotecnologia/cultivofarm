@@ -14,7 +14,7 @@ def setup():
  s="""CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
  CREATE SCHEMA auth; CREATE SCHEMA platform_private; CREATE SCHEMA finance_private;
  GRANT USAGE ON SCHEMA public,auth,platform_private TO authenticated,anon,service_role;
- CREATE TYPE app_role AS ENUM ('administrador','gestor','financeiro','consultor_tecnico');
+ CREATE TYPE app_role AS ENUM ('administrador','gestor','financeiro','consultor_tecnico','gestor_comercial');
  CREATE TABLE organizations(id uuid PRIMARY KEY,ativo boolean DEFAULT true);
  CREATE TABLE profiles(user_id uuid PRIMARY KEY,organization_id uuid,ativo boolean DEFAULT true);
  CREATE TABLE user_roles(user_id uuid,role app_role);
