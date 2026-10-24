@@ -1,0 +1,2 @@
+- Capture current canonical metadata read-only and preserve every historical baseline; reconciled origin and independent wrapper reviews are separate — prevents blind hash replacement or accounting activation.
+- Independent wrapper readiness requires reproduction with current guards intact; denial before the conflicting locks is a concrete blocker, never a passing financial/deadlock certification.
