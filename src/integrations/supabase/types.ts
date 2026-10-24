@@ -21198,6 +21198,7 @@ export type Database = {
         Args: { p_alvos: Json; p_kind: string; p_parent_id: string }
         Returns: Json
       }
+      c2_internal_order_entry_capability_v1: { Args: never; Returns: Json }
       calculate_valor_dose_from_litro: {
         Args: { p_valor_litro: number }
         Returns: number
