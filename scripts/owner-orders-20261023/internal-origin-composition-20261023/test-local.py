@@ -222,7 +222,7 @@ approve_sig='public.approve_partner_order(uuid,text,date)'
 saved_approve=pg.sql(f"SELECT pg_get_functiondef('{approve_sig}'::regprocedure)")+'\n'
 pg.sql(saved_approve.replace('BEGIN\n','BEGIN\n  -- deliberate synthetic drift\n',1))
 before=snapshot();failure=pg.sql(rollback,ok=False);print(failure,flush=True)
-ok('containment rejects body drift atomically','origin_dependency_drift:public.approve_partner_order' in failure and snapshot()==before and pg.sql(f"SELECT platform_private.c2_owner_order_create_allowed('{G}','{P}')")=='t')
+ok('containment rejects body drift atomically','origin_dependency_drift:public.approve_partner_order' in failure and snapshot()==before and pg.sql("SELECT md5(pg_get_functiondef('platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure))")=='5f0a08d1d4f8d8c5a7ae58e24c71071e')
 pg.sql(saved_approve)
 pg.sql(f"GRANT EXECUTE ON FUNCTION {approve_sig} TO anon;")
 failure=pg.sql(rollback,ok=False)
