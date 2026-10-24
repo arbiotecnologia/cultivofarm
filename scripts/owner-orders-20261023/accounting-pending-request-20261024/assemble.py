@@ -16,7 +16,7 @@ def once(hay, needle, label):
     if n != 1: sys.exit(f'ANCHOR_{label}: found {n}')
 
 def fn(sig_start):
-    i = b5.index(sig_start); j = b5.index('END $function$;', i) + len('END $function$;')
+    i = b5.index(sig_start); k = b5.index('$function$', i); j = b5.index('$function$', k + 10) + len('$function$')
     return b5[i:j]
 
 # 1) Install-time accounting gate is replaced by per-order honest pending state (see guard patch).
@@ -69,7 +69,7 @@ gen_p = gen.replace(d_old, d_old + ' ' + PENDING_CHECK.format(id='p_partner_orde
 
 # 5) Reviewed v4 owner writer (replaces LIVE SELECT false).
 old = (ROOT / 'scripts/owner-orders-20261023/candidate.sql.review').read_text()
-w0 = old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); w1 = old.index('END $function$;', w0) + len('END $function$;')
+w0 = old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); w1 = old.index('END $function$', w0) + len('END $function$')
 writer = old[w0:w1].replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION', 1)
 
 new_fns = (D / 'src/new-functions.sql').read_text()
