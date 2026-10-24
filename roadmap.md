@@ -1,9 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## 24/10 03:12 — parcelas manuais imutáveis
-- [ ] Capturar base canônica READ ONLY e reproduzir criação R$1/3 e datas customizadas; verificar payable.
-- [ ] Preparar candidato independente com inserção inicial correta, PRE/POST/rollback e conciliação final-integrated sem aplicar.
-- [ ] Testar PostgreSQL descartável, atomicidade, A/B/cruzado e edição negada; erro persistente no diálogo.
+- [x] Captura SELECT canônica; AR/AP reproduziram23514 por UPDATE de parcelas imutáveis, nenhuma operação hosted mutante.
+- [x] Pacote financial-installments-initial-20261024 independente INATIVO: contexto privado txid/título/ator/tenant, inserção inicial correta, PREPOST/rollback completo; fragmento futuro manual+B2B testado sem alterar final-integrated histórico.
+- [x] 33/33Vitest em3arquivosPASS: PG descartável/Authsintética, AR/AP1/3,.99/3,.01/3negado/datas/atomicidade/A/B/cruzado/edição negada; erro persistente no diálogo. Build automáticoOK; sem build/typecheck manual ou JWT real.
 - [ ] Implantação/homologação JWT dependem da revisão independente; sem hosted mutante/publicação/fiscal/writer/contabilidade.
 
 ## 24/10 01:52 — reconciliação tenant e base atual
