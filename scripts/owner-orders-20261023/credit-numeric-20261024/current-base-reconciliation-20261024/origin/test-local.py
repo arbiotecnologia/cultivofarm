@@ -169,7 +169,7 @@ exact_denied(ADMIN,f"INSERT INTO public.accounts_receivable_installments(receiva
 ok('NULL installment tenant exact canonical denial')
 exact_denied(ADMIN_B,f"INSERT INTO public.accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,net_amount,status,organization_id) VALUES('{tenant_id}',99,current_date,1,1,'OPEN','{B}')",'23514','FINANCIAL_RECEIVABLE_TENANT_MISMATCH',owner=True)
 ok('crossed installment parent exact canonical denial')
-exact_denied(ADMIN,f"INSERT INTO public.accounts_receivable(description,original_amount,net_amount,installments_count,first_due_date,status,organization_id) VALUES('NULL local',1,1,3,current_date,'OPEN',NULL)",'23514','FINANCIAL_TENANT_REQUIRED',owner=True)
+exact_denied(ADMIN,f"INSERT INTO public.accounts_receivable(description,total_amount,installment_count,first_due_date,status,organization_id) VALUES('NULL local',1,3,current_date,'OPEN',NULL)",'23514','FINANCIAL_TENANT_REQUIRED',owner=True)
 ok('NULL title tenant exact canonical denial')
 before=snapshot();actor(ADMIN,f"UPDATE public.partner_orders SET c2_external_origin_snapshot=jsonb_set(c2_external_origin_snapshot,'{{creditor_organization_id}}','\"{B}\"') WHERE id='{oid}';");ok('RLS blocks direct origin change',snapshot()==before)
 # Owner-superuser trigger execution with synthetic actor proves the trigger independently of RLS zero-row updates.
