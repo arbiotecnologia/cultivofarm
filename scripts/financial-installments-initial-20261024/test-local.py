@@ -33,7 +33,7 @@ def setup():
  """
  # Exact captured functions (including authorization wrappers); only their downstream
  # Auth readiness/role dependencies above are synthetic.
- for f in D['functions']:
+ for f in sorted(D['functions'],key=lambda f: 0 if f['signature'].startswith('platform_private.') else 1):
   s+=f['body']+';\n'+f"REVOKE ALL ON FUNCTION {('public.' if not f['signature'].startswith('platform_private.') else '')+f['signature']} FROM PUBLIC;\n"
   for role in re.findall(r'(\w+)=X/',f['acl']): s+=f"GRANT EXECUTE ON FUNCTION {('public.' if not f['signature'].startswith('platform_private.') else '')+f['signature']} TO {role};\n"
  funcs=set(f['signature'].split('(')[0] for f in D['functions'])
