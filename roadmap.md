@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 00:32 — correção numérica de crédito separada
+- [ ] Preparar recorte exclusivo v_pct numeric(6,2) → numeric com PRE/POST/rollback hash/owner/ACL guardados, sem implantação.
+- [ ] Testar corpo capturado, limites/precedência/valores inválidos e cadeia create/idempotência/atomicidade/na_entrega em PostgreSQL descartável.
+- [ ] Demonstrar rebase somente do hash de dependência da composição; revisão independente e implantação aritmética dependem do proprietário, writer e gate contábil permanecem fechados.
+
 ## 24/10 00:20 — contenção de pedidos externos existentes
 - [x] Preparar rollback de contenção hash/ACL guardado para create/approve/generate externos, preservando origens internas e histórico; sem implantação.
 - [x] Testar criação externa seguida contenção:84checks sintéticos, approve/generate negados sem efeitos/replay, drift corpo/ACL abortado; create interno positivo e negações downstream internas preservadas antes/depois (sucesso interno não certificado). Relatos/manifestos atualizados.
