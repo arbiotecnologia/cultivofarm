@@ -1,3 +1,4 @@
 - Keep this arithmetic release separate: replace only the captured v_pct typmod and guard exact body/owner/ACL before and after; never activate order writers or accounting — prevents an arithmetic repair from becoming an authorization release.
 - The auditor-installed numeric body is a LIVE dependency for the origin-rebase review; never replay historical arithmetic candidates or revert it through origin containment — preserves the deployed repair without enabling orders.
 - Credit fixtures and order-chain checks use disposable PostgreSQL with synthetic Auth; retain invalid-input behavior and report remaining numeric typmod limits — prevents broadened acceptance or false hosted certification.
+- Concurrent tests reuse the captured fixture chain and prove separate backend lock overlap; supported na_aprovacao billing never substitutes for unreviewed na_entrega post-delivery — prevents replay-only or fabricated delivery certification.
