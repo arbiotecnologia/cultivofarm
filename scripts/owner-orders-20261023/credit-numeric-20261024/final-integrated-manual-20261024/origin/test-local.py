@@ -106,8 +106,51 @@ pg.sql('ALTER TABLE public.partner_orders ENABLE ROW LEVEL SECURITY; CREATE POLI
 failure=pg.sql((H/'preflight.sql').read_text(),ok=False);ok('PRE denies unexpected permissive policy','origin_policy_set_drift' in failure)
 pg.sql('DROP POLICY synthetic_unexpected ON public.partner_orders;')
 exec(compile((H.parent/'atomicity.py').read_text(),str(H.parent/'atomicity.py'),'exec'))
-command('preflight.sql');command('candidate.sql.review',True)
-pg.sql((H/'candidate.sql.review').read_text());ok('inactive candidate parsed/applied only in disposable PG')
+# In-transaction accounting gate: run the COMPLETE candidate directly (owner A UUID mapped to synthetic A).
+OWNER_A='007bb519-cba0-4704-be2c-cb93ad010048'
+production_candidate=(H/'candidate.sql.review').read_text()
+ok('candidate starts with owner A accounting gate before any guard/DDL',production_candidate.index('DO $accounting_gate$')<production_candidate.index('DO $guard$')<production_candidate.index('ALTER TABLE public.partner_orders ADD COLUMN'))
+SYN=H/'candidate.synthetic-owner.sql'
+SYN.write_text(production_candidate.replace(OWNER_A,A))
+def settings(sql):pg.sql(f"SET session_replication_role=replica; {sql}; SET session_replication_role=origin;")
+def gate_rejects(label):
+    before=catalog_state()
+    err=pg.sql(SYN.read_text(),ok=False)
+    assert 'C2_ACCOUNTING_PREREQUISITE_BLOCKED' in err,err[-1500:]
+    assert catalog_state()==before,'gate failure left DDL'
+    assert pg.sql("SELECT count(*) FROM pg_attribute WHERE attrelid='public.partner_orders'::regclass AND attname='c2_external_origin_snapshot' AND NOT attisdropped")=='0'
+    ok('direct candidate rejected atomically before DDL: '+label)
+gate_rejects('owner A configuration absent')
+settings(f"INSERT INTO public.company_fiscal_settings(id,organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj) VALUES('{SETTINGS}','{A}',true,'DRAFT',NULL,'Synthetic issuer','00000000000000'),('{U(10)}','{B}',true,'VALIDATED',now(),'Synthetic issuer B','11111111111111')")
+gate_rejects('owner A DRAFT with NULL attestation')
+settings(f"UPDATE public.company_fiscal_settings SET configuration_status='VALIDATED' WHERE id='{SETTINGS}'")
+gate_rejects('owner A VALIDATED status but NULL accounting_validated_at')
+settings(f"UPDATE public.company_fiscal_settings SET accounting_validated_at=now(),cnpj=NULL WHERE id='{SETTINGS}'")
+gate_rejects('owner A NULL CNPJ')
+settings(f"UPDATE public.company_fiscal_settings SET cnpj='00000000000000',is_active=false WHERE id='{SETTINGS}'")
+gate_rejects('owner A only inactive configuration')
+settings(f"UPDATE public.company_fiscal_settings SET is_active=true WHERE id='{SETTINGS}'")
+ok('owner B validation never satisfies owner A gate (checked above with B VALIDATED)')
+# Lock scope: hold the gate inside an open transaction; A row changes wait/fail, B is unaffected.
+gate_block=SYN.read_text(); gate_block=gate_block[gate_block.index('DO $accounting_gate$'):gate_block.index('END $accounting_gate$;')+len('END $accounting_gate$;')]
+holder=pg.popen('');holder.stdin.write("SET application_name='c2_accounting_gate_holder'; BEGIN; "+gate_block+" SELECT pg_sleep(8); ROLLBACK;\n");holder.stdin.close()
+for _ in range(100):
+    if pg.sql("SELECT count(*) FROM pg_stat_activity WHERE application_name='c2_accounting_gate_holder' AND query LIKE '%pg_sleep%' AND state='active'")=='1':break
+    time.sleep(.1)
+else:raise AssertionError('gate holder did not start')
+err=pg.sql(f"SET lock_timeout='500ms'; UPDATE public.company_fiscal_settings SET accounting_validated_at=NULL WHERE id='{SETTINGS}';",ok=False)
+ok('A attestation cannot change while gate transaction is open','lock timeout' in err)
+err=pg.sql(f"SET lock_timeout='500ms'; UPDATE public.company_fiscal_settings SET is_active=false WHERE id='{SETTINGS}';",ok=False)
+ok('A deactivation cannot happen while gate transaction is open','lock timeout' in err)
+err=pg.sql(f"SET lock_timeout='500ms'; SET session_replication_role=replica; INSERT INTO public.company_fiscal_settings(id,organization_id,is_active,configuration_status,legal_name,cnpj) VALUES('{U(11)}','{A}',true,'DRAFT','x','1');",ok=False)
+ok('second active A configuration conflicts on partial unique index','ux_company_fiscal_settings_active_organization' in err)
+pg.sql(f"SET lock_timeout='500ms'; BEGIN; UPDATE public.company_fiscal_settings SET legal_name=legal_name WHERE id='{U(10)}'; ROLLBACK;")
+ok('owner B settings are not locked by A gate')
+holder.stdout.read();holder.stderr.read();holder.wait(timeout=30)
+ok('A settings unchanged after lock probes',pg.sql(f"SELECT configuration_status||is_active::text||(accounting_validated_at IS NOT NULL)::text FROM public.company_fiscal_settings WHERE id='{SETTINGS}'")=='VALIDATEDtruetrue')
+command('preflight.sql');command(SYN.name,True)
+pg.sql(SYN.read_text());ok('inactive candidate applied directly with validated synthetic owner (disposable PG only)')
+SYN.unlink()
 post={}
 for name in json.loads((H/'expected-source.json').read_text()):
     f=next(f for f in fns.values() if f['sig'].split('(')[0]==name)
@@ -133,7 +176,6 @@ UPDATE public.saas_plan_versions SET status='PUBLISHED',price_amount=0,currency=
 INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_version_id,status,started_at) VALUES('{A}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day'),('{B}','{U(920)}','{U(921)}','ACTIVE',now()-interval '1 day');
 INSERT INTO public.clientes(id,nome,codigo_cliente,organization_id) VALUES('{CLI}','Client A','C-A','{A}'),('{CLI_B}','Client B','C-B','{B}');
 INSERT INTO public.partner_accounts(id,codigo,razao_social,ativo,commercial_owner_organization_id,client_id) VALUES('{P}','P','Partner A',true,'{A}','{CLI}'),('{Q}','Q','Partner B',true,'{B}','{CLI_B}');
-INSERT INTO public.company_fiscal_settings(id,organization_id,is_active,configuration_status,accounting_validated_at,legal_name,cnpj) VALUES('{SETTINGS}','{A}',true,'VALIDATED',now(),'Synthetic issuer','00000000000000'),('{U(10)}','{B}',true,'VALIDATED',now(),'Synthetic issuer B','11111111111111');
 INSERT INTO public.produtos(id,nome,tipo,codigo,ativo,b2b_enabled,valor_litro_brl,created_at,updated_at) VALUES('{PROD}','Synthetic product','inseticida','TEST',true,true,180,now(),now());
 INSERT INTO public.catalogo_volumes(item_tipo,produto_id,volume_ml,preco_brl,preco_litro_brl,ativo) VALUES('produto','{PROD}',1000,180,180,true);
 INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,active,installment_count,discount_percent,monthly_interest_percent,months_count,interest_type,max_days) VALUES('{PLAN}','Synthetic','TEST','custom',true,3,0,0,0,'none',7);
