@@ -11,12 +11,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const INTERNAL_ORDER_BLOCK_REASONS = [
   "auth_required", "actor_not_allowed", "inactive_scope", "feature_disabled", "issuer_ambiguous",
-  "issuer_not_validated", "no_partner_in_scope", "catalog_reader_pending",
+  "issuer_not_validated", "no_partner_in_scope", "catalog_reader_pending", "catalog_feature_disabled",
   // Somente cliente:
   "contract_not_installed", "unavailable", "invalid_response",
 ] as const;
 export type InternalOrderBlockReason = typeof INTERNAL_ORDER_BLOCK_REASONS[number];
-const SERVER_REASONS = new Set<string>(INTERNAL_ORDER_BLOCK_REASONS.slice(0, 8));
+const SERVER_REASONS = new Set<string>(INTERNAL_ORDER_BLOCK_REASONS.slice(0, 9));
 
 export interface InternalOrderTarget { partnerId: string; razaoSocial: string }
 export type InternalOrderEntryState =
@@ -68,6 +68,7 @@ export const INTERNAL_ORDER_REASON_TEXT: Record<InternalOrderBlockReason, string
   issuer_not_validated: "A configuração fiscal da empresa ainda não foi validada pela contabilidade.",
   no_partner_in_scope: "Não há parceiros ativos na carteira desta empresa.",
   catalog_reader_pending: "A leitura do catálogo para a carteira ainda não foi liberada no servidor.",
+  catalog_feature_disabled: "O plano da empresa não inclui o catálogo de preços B2B.",
   contract_not_installed: "A liberação deste recurso ainda não foi instalada no servidor.",
   unavailable: "Não foi possível confirmar a liberação agora.",
   invalid_response: "Resposta do servidor fora do contrato esperado; acesso mantido fechado.",

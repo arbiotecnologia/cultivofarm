@@ -43,6 +43,7 @@ describe("leitor do contrato — espelha guards sem inventar owner", () => {
     expect(readInternalOrderEntryCapability({ ...capA, contract: "C2_OWNER_ORDER_V1" }, A).state).toBe("blocked");
     expect(readInternalOrderEntryCapability({ ...capA, profile_ok: false }, A).state).toBe("blocked");
     expect(readInternalOrderEntryCapability({ ...capA, order_create: false, reason: "issuer_not_validated" }, A)).toEqual({ state: "blocked", reason: "issuer_not_validated" });
+    expect(readInternalOrderEntryCapability({ ...capA, order_create: false, reason: "catalog_feature_disabled" }, A)).toEqual({ state: "blocked", reason: "catalog_feature_disabled" });
     expect(readInternalOrderEntryCapability({ ...capA, order_create: false, reason: "inventado" }, A)).toEqual({ state: "blocked", reason: "invalid_response" });
     expect(readOwnerOrderCapability(capA)).toBe(false);
   });
