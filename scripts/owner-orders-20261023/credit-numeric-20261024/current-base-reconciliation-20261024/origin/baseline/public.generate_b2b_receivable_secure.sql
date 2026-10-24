@@ -1,0 +1,36 @@
+CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+ IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
+
+  IF auth.uid() IS NULL THEN
+    IF pg_trigger_depth()=0 THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  ELSIF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (
+    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF NOT (pg_trigger_depth() > 0 or public.has_role(auth.uid(), 'administrador'::public.app_role)
+      or public.has_role(auth.uid(), 'gestor'::public.app_role)
+      or public.has_role(auth.uid(), 'financeiro'::public.app_role)) THEN
+    RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';
+  END IF;
+  IF p_partner_order_id IS NULL THEN
+    RAISE EXCEPTION 'partner_order_id_required' USING ERRCODE='P0001';
+  END IF;
+
+  -- Serializa concorrencia real (clique duplo / chamadas simultaneas).
+  -- Chave unica bigint: assinatura pg_advisory_xact_lock(bigint).
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended('b2b_receivable:' || p_partner_order_id::text, 0)
+  );
+
+  IF NOT public.fn_b2b_order_priceable(p_partner_order_id) THEN
+    RAISE EXCEPTION 'order_not_priceable_quote_required' USING ERRCODE='P0001';
+  END IF;
+
+  RETURN public.generate_b2b_receivable_secure_impl(p_partner_order_id);
+END $function$
