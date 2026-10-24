@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 01:10 — barreiras intermediárias e negativas estritas
+- [x] Reproduzido deadlock40P01 na janela interna row/receipt por barreira de lock existente, sem alterar lógica; limite positivo/ramo formal pré-preparado localmente e negativasSQLSTATE42501+mensagens/controles positivos.
+- [x] Variante receipt-lock-order-review troca somente ordem row/receipt do wrapper; PREPOST integrais/rollbackguardado/contenção compatível testados. Suíte2/2PASS concorrência177checks102.41s/crédito123checks59.53s; sem hosted/publish/baselines alterados.
+- [ ] Concessão formal por approve_b2b_credit sem corpo atual capturado, JWT real e pós-entrega na_entrega não certificados; contabilidadeDRAFT/writerfalse e revisão independente bloqueiam implantação.
+
 ## 24/10 00:58 — create versus approve / locks de crédito
 - [x] Duas conexões/corpos capturados: trigger de crédito serializa create-versus-approve nas duas ordens, sem deadlock/título prematuro; divergência hash explícita confirmada sem exploit demonstrado. Oito checks adicionais, total158.
 - [x] Sem falha SQL demonstrada, nenhuma variante corretiva especulativa; baselines/rollback/origin-rebase intactos, implicações da contenção registradas em credit-lock-review.md.

@@ -1,5 +1,7 @@
 # Complemento create versus approve — 24/10 00:58
 
+**Atualização01:10:** hipótese row/receipt foi reproduzida em janela intermediária (40P01), não em create-versus-approve; variante e provas finais em `receipt-lock-order-review/README.md`. Este relatório histórico não implica ausência de falhas no caminho financeiro completo.
+
 Achado independente informado: para fixture hospedada A, create=6409308924409657986, approve=1059961474, same_lock=false. Não repetimos consulta hospedada. Divergência das expressões foi confirmada também para o parceiro sintético local.
 
 ## Resultado e interpretação

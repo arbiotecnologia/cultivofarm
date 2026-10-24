@@ -3,7 +3,7 @@ import select
 
 def transaction(u, sql, name, hold=False):
     claims=json.dumps({'sub':u,'role':'authenticated','iat':int(time.time())})
-    return (f"BEGIN; SET LOCAL statement_timeout='12s'; SET LOCAL lock_timeout='8s'; "
+    return (f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL statement_timeout='12s'; SET LOCAL lock_timeout='8s'; "
             f"SET LOCAL application_name='{name}'; SET LOCAL ROLE authenticated; "
             f"SELECT set_config('request.jwt.claims','{claims}',true); {sql}; "
             + ("SELECT 'CONCURRENT_HOLD'; SELECT pg_sleep(2); " if hold else '') + "COMMIT;")
@@ -33,6 +33,12 @@ def pair(u, sql1, sql2, second_error=None):
     if second_error is None:assert p2.returncode==0,error2
     else:assert p2.returncode!=0 and second_error in error2,error2
     return ''.join(lines)+tail,out2
+
+def denied(u,sql,state,msg):
+    p=pg.popen('');p.stdin.write(transaction(u,sql,'c2_strict_auth'));p.stdin.close()
+    p.stdout.read();err=p.stderr.read();p.wait(timeout=15)
+    assert p.returncode!=0 and f'ERROR:  {state}:' in err and msg in err,err
+    return err
 
 def result(out):
     return next(json.loads(line) for line in out.splitlines() if line.startswith('{') and '"id"' in line)
@@ -88,22 +94,22 @@ ok('two first generators supported na_aprovacao exactly one title three installm
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET billing_trigger='na_entrega',auto_generate_receivable=true WHERE partner_id='{P}'; SET session_replication_role=origin;")
 # Fresh negative calls, not merely RLS reads.
 for u,p in [(ADMIN_B,P),(GB,P),(ADMIN,Q),(G,Q)]:
-    before=snapshot();actor(u,create(G,'cross-write-'+u,p,h=hashA)+';',err='')
+    before=snapshot();denied(u,create(G,'cross-write-'+u,p,h=hashA),'42501','forbidden_partner')
     ok('cross tenant create write denied '+u,snapshot()==before)
 for u in [ADMIN_B,GB,T,PR]:
     for sql in [f"SELECT public.approve_partner_order('{next_id}',NULL,NULL)",f"SELECT public.generate_b2b_receivable_secure('{bill_id}')"]:
-        before=snapshot();actor(u,sql+';',err='');ok('foreign or nonfinancial mutation denied '+u,snapshot()==before)
+        before=snapshot();denied(u,sql,'42501','b2b_phase1_scope_denied');ok('foreign or nonfinancial mutation denied '+u,snapshot()==before)
 # Independent removal of each external role; no internal role ever granted.
 pg.sql(f"SET session_replication_role=replica; DELETE FROM public.user_roles WHERE user_id='{GT}' AND role='parceiro_b2b_tecnico'; SET session_replication_role=origin;")
 res=json.loads(val(GT,create(GT,'partial-tech-removed')+';'))
 ok('partial technical revocation retains manager create',pg.sql(f"SELECT count(*) FROM public.partner_orders WHERE id='{res['id']}'")=='1')
 pg.sql(f"SET session_replication_role=replica; INSERT INTO public.user_roles(user_id,role) VALUES('{GT}','parceiro_b2b_tecnico'); DELETE FROM public.user_roles WHERE user_id='{GT}' AND role='parceiro_b2b'; SET session_replication_role=origin;")
-before=snapshot();actor(GT,create(G,'partial-manager-removed',h=hashA)+';',err='')
+before=snapshot();denied(GT,create(G,'partial-manager-removed',h=hashA),'42501','forbidden_financial_terms')
 ok('partial manager revocation technical residual cannot create',snapshot()==before and pg.sql(f"SELECT count(*) FROM public.user_roles WHERE user_id='{GT}' AND role='parceiro_b2b_tecnico'")=='1')
-before=snapshot();actor(GT,create(G,'partial-tech-removed',h=hashA)+';',err='')
+before=snapshot();denied(GT,create(G,'partial-tech-removed',h=hashA),'42501','forbidden_financial_terms')
 ok('revoked manager cannot replay own earlier receipt',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; INSERT INTO public.user_roles(user_id,role) VALUES('{GT}','parceiro_b2b'); UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic concurrency revocation' WHERE user_id='{GT}'; SET session_replication_role=origin;")
-before=snapshot();actor(GT,create(G,'partial-link-revoked',h=hashA)+';',err='')
+before=snapshot();denied(GT,create(G,'partial-link-revoked',h=hashA),'42501','forbidden_financial_terms')
 ok('revoked partner link denies cumulative writer all effects',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{GT}'; SET session_replication_role=origin;")
 ok('concurrency preserves credit LIVE body',pg.sql("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))")=='213ac31f3a30816ead75365b0d1fed18')

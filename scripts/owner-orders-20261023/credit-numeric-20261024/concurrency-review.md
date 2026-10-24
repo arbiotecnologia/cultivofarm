@@ -1,5 +1,7 @@
 # Concorrência e negativas — revisão 24/10 00:47
 
+Atualização01:10: janela intermediária reproduziu40P01; correção mínima separada testada e guardada em `receipt-lock-order-review/`. Suíte final2/2PASS,177checksconcorrência/123crédito; negativas de autorização agora estritas. O resultado anterior sem falha só cobria holds pós-retorno.
+
 Complemento 00:58 em `credit-lock-review.md`: oito checks create-versus-approve adicionais (total158), trigger canônico serializa os dois caminhos ordinários; divergência explícita permanece, sem exploit/falha SQL demonstrada e sem variante corretiva. SQL/baselines intactos.
 
 Continuação solicitada de `dc990cd1751b7e3cf898b4999b279434ff03bb9a`. Auditor informa numeric LIVE e PRE estrutural origin-rebase hosted PASS; não foram repetidos pelo Lovable. Contabilidade A permanece DRAFT e writer false. Hash correto de crédito: `213ac31f3a30816ead75365b0d1fed18`.
