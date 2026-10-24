@@ -1,5 +1,9 @@
 """Captured full trigger chain + business/pricing bodies; synthetic Auth/fixtures, NOT hosted JWT.
 No connection to production; historical replica schema is explicitly partial.
+Reconciled variant: overlays the LIVE manual initial-installments correction
+(RPC 0778b876, AR fba70619, AP f4b15f02) and its private context table before the
+candidate, then proves the composed AR body preserves the manual .34/.33/.33 and
+custom-dates path alongside the B2B contractual branch.
 """
 from pathlib import Path
 import sys,json,time,uuid,subprocess,re
@@ -63,6 +67,23 @@ for f in fns.values():
     got=pg.sql(f"SELECT md5(pg_get_functiondef('{f['sig']}'::regprocedure)) FROM pg_proc WHERE oid='{f['sig']}'::regprocedure")
     assert got==f['md5'],(f['sig'],got,f['md5'])
 ok('captured business/authorization/pricing bodies reproduce all MD5s')
+# Overlay the LIVE manual initial-installments correction (deployed by the auditor,
+# commit e99d634): three exact bodies with deployed ACLs plus the private context table.
+FIN=ROOT/'scripts/financial-installments-initial-20261024'
+live_hashes=json.loads((FIN/'post-hashes.json').read_text())
+pg.sql("CREATE TABLE platform_private.financial_initial_installments (transaction_id bigint NOT NULL, title_id uuid NOT NULL, kind text NOT NULL, actor_id uuid NOT NULL, organization_id uuid NOT NULL, installments jsonb NOT NULL, PRIMARY KEY(transaction_id,title_id,kind)); REVOKE ALL ON platform_private.financial_initial_installments FROM PUBLIC,anon,authenticated,service_role; ALTER TABLE platform_private.financial_initial_installments ENABLE ROW LEVEL SECURITY;")
+for sig,src,h,acl in [
+    ('public.fn_generate_receivable_installments()',FIN/'fn_generate_receivable_installments.sql.review',live_hashes['fn_generate_receivable_installments()'],'{postgres=X/postgres,service_role=X/postgres}'),
+    ('public.fn_generate_payable_installments()',FIN/'fn_generate_payable_installments.sql.review',live_hashes['fn_generate_payable_installments()'],'{postgres=X/postgres,service_role=X/postgres}'),
+    ('public.rpc_create_financial_title(text,jsonb)',FIN/'rpc_create_financial_title.sql.review',live_hashes['rpc_create_financial_title(text,jsonb)'],'{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')]:
+    pg.sql(src.read_text())
+    pg.sql(f"REVOKE ALL ON FUNCTION {sig} FROM PUBLIC,anon,authenticated,service_role;")
+    for role in ['anon','authenticated','service_role']:
+        if role+'=X/' in acl:pg.sql(f"GRANT EXECUTE ON FUNCTION {sig} TO {role};")
+    pg.sql(f"UPDATE pg_proc SET proacl='{acl}'::aclitem[] WHERE oid='{sig}'::regprocedure")
+    got=pg.sql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))")
+    assert got==h,(sig,got,h)
+ok('LIVE manual correction bodies and private context table reproduce deployed MD5s')
 chain=json.loads((H/'baseline/chain.json').read_text())
 for t in chain['triggers']:
     pg.sql(f"DROP TRIGGER IF EXISTS {t['name']} ON public.{t['table']}; "+t['sql']+';')
