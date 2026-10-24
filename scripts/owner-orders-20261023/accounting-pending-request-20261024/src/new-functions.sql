@@ -28,11 +28,25 @@ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $func
 BEGIN
  -- While pending, only commercial review/quote, rejection or cancellation are possible: no approval,
  -- credit decision, economics seal, receivable, production, NF or delivery.
+ -- INSERT: the canonical create may land in em_analise_comercial, aguardando_cotacao or (insufficient credit)
+ -- aguardando_aprovacao_credito; nothing operational/financial may be set at creation.
+ IF TG_OP='INSERT' THEN
+  IF NEW.c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' AND (
+     NEW.status::text NOT IN ('em_analise_comercial','aguardando_cotacao','aguardando_aprovacao_credito')
+     OR NEW.ready_for_production IS TRUE OR NEW.receivable_generated IS TRUE OR NEW.internal_economic_snapshot IS NOT NULL
+     OR NEW.credit_approved_at IS NOT NULL OR NEW.approved_at IS NOT NULL) THEN
+   RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
+  END IF;
+  RETURN NEW;
+ END IF;
  IF OLD.c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1'
     AND NEW.c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN
-  IF NEW.status::text NOT IN ('em_analise_comercial','aguardando_cotacao','cancelado','reprovado')
+  -- aguardando_aprovacao_credito may only stay as is (no hidden credit decision) or leave to cancel/reject.
+  IF NOT (NEW.status::text IN ('em_analise_comercial','aguardando_cotacao','cancelado','reprovado')
+          OR (NEW.status=OLD.status AND OLD.status::text='aguardando_aprovacao_credito'))
+     OR (OLD.status::text='aguardando_aprovacao_credito' AND NEW.status::text IN ('em_analise_comercial','aguardando_cotacao'))
      OR NEW.ready_for_production IS TRUE OR NEW.receivable_generated IS TRUE OR NEW.internal_economic_snapshot IS NOT NULL
-     OR NEW.credit_approved_at IS DISTINCT FROM OLD.credit_approved_at THEN
+     OR NEW.credit_approved_at IS DISTINCT FROM OLD.credit_approved_at OR NEW.approved_at IS DISTINCT FROM OLD.approved_at THEN
    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
   END IF;
  END IF;
@@ -40,7 +54,7 @@ BEGIN
 END $function$;
 ALTER FUNCTION platform_private.c2_accounting_pending_guard() OWNER TO postgres;
 REVOKE ALL ON FUNCTION platform_private.c2_accounting_pending_guard() FROM PUBLIC,anon,authenticated;
-CREATE TRIGGER zz_c2_accounting_pending BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_accounting_pending_guard();
+CREATE TRIGGER zz_c2_accounting_pending BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_accounting_pending_guard();
 
 CREATE FUNCTION public.c2_promote_accounting_pending_order_v1(p_order_id uuid, p_expected_updated_at timestamptz)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
@@ -56,7 +70,7 @@ BEGIN
  END IF;
  IF o.c2_external_origin_snapshot->>'contract' IS DISTINCT FROM 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN RAISE EXCEPTION 'C2AP_NOT_PENDING' USING ERRCODE='22023'; END IF;
  IF p_expected_updated_at IS NULL OR o.updated_at IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION 'C2AP_STALE' USING ERRCODE='40001'; END IF;
- IF o.status::text NOT IN ('em_analise_comercial','aguardando_cotacao') THEN RAISE EXCEPTION 'C2AP_STATUS_DENIED' USING ERRCODE='42501'; END IF;
+ IF o.status::text NOT IN ('em_analise_comercial','aguardando_cotacao','aguardando_aprovacao_credito') THEN RAISE EXCEPTION 'C2AP_STATUS_DENIED' USING ERRCODE='42501'; END IF;
  org:=(o.c2_external_origin_snapshot->>'organization_id')::uuid;
  SELECT count(*) INTO n FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active;
  IF n=1 THEN SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active FOR SHARE; END IF;
