@@ -7,6 +7,7 @@ H=O
 s=(O/'test-local.py').read_text()
 setup=s[:s.index('# Preflight must pass unchanged')]
 fixtures=s[s.index('pg.sql(f"""\nSET session_replication_role=replica;'):s.index("hashA=simulate(G)")]
+setup=setup.replace("H=Path(__file__).resolve().parent","H=O")
 exec(compile(setup,str(O/'test-local.py'),'exec'))
 exec(compile(fixtures,str(O/'test-local.py'),'exec'))
 # Restore captured LIVE writer=false (the harness installs a reviewed positive writer for other suites).
