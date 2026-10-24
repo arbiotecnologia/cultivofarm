@@ -173,6 +173,12 @@ if (H/'postflight-hashes.json').exists():
         for sig,h in json.loads((H/'postflight-new-functions.json').read_text()).items():
             post+=f"DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='{sig}'::regprocedure AND md5(pg_get_functiondef(oid))='{h}' AND pg_get_userbyid(proowner)='postgres') OR has_function_privilege('authenticated','{sig}','EXECUTE') OR has_function_privilege('anon','{sig}','EXECUTE') THEN RAISE EXCEPTION 'origin_new_helper_drift'; END IF; END $$;\n"
     (OUT/'postflight.sql').write_text('-- READ ONLY; validates composed containment, NOT writer reopening.\nBEGIN TRANSACTION READ ONLY;\n'+post+'ROLLBACK;\n')
+    candidate=H/'candidate.sql.review'
+    candidate.write_text(candidate.read_text().removesuffix('COMMIT;\n')+post+'COMMIT;\n')
+    # Repeat exact immutable helper and final-trigger checks after containment writes.
+    rollback=H/'rollback.sql.review'
+    helper_post=''.join(rollback_pre[rollback_pre.index('DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='):])
+    rollback.write_text(rollback.read_text().removesuffix('COMMIT;\n')+helper_post+'COMMIT;\n')
 import importlib.util
 spec=importlib.util.spec_from_file_location('normalize_review', H.parent.parent/'receipt-lock-order-review/assemble.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
