@@ -1,0 +1,11 @@
+{
+ "b5_hashes": {
+  "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)": "c79689aa1070534ce43edde279ee5682",
+  "platform_private.b2b_internal_order_snapshot_guard()": "da7a558c06878344c6e5ce70bb1c8e89",
+  "public.approve_partner_order(uuid,text,date)": "7cf8b7a2fae31088529df4c5656ebc40",
+  "public.generate_b2b_receivable_secure(uuid)": "31eeb54e4b69d97c311629a37e553faf",
+  "platform_private.c2_owner_order_create_allowed(uuid,uuid)": "a0417d6727d78412849916a95b250bde"
+ },
+ "candidate": {},
+ "b5_to_candidate": {}
+}
