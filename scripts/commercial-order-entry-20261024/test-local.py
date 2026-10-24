@@ -60,7 +60,7 @@ ok('issuer DRAFT closes capability with structured reason',cap(ADMIN)['reason']=
 s2=json.loads(val(ADMIN,SIM(P)))
 denied(ADMIN,create(ADMIN,'int-a-draft',h=s2['cart_hash']),'42501: B2B_INTERNAL_ISSUER_NOT_VALIDATED');ok('accounting gate preserved: DRAFT create denied, no effects')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.company_fiscal_settings SET configuration_status='VALIDATED',accounting_validated_at=now() WHERE id='{SETTINGS}'; UPDATE public.profiles SET ativo=false WHERE user_id='{ADMIN}'; SET session_replication_role=origin;")
-denied(ADMIN,SIM(P),'42501: C2_INTERNAL_TARGET_DENIED');ok('inactive profile denied')
+denied(ADMIN,SIM(P),'42501: inactive_scope');ok('inactive profile denied by unchanged LIVE path; capability closed',cap(ADMIN)['profile_ok'] is False)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.profiles SET ativo=true WHERE user_id='{ADMIN}'; DELETE FROM public.user_roles WHERE user_id='{ADMIN}'; SET session_replication_role=origin;")
 ok('revoked role closes capability',cap(ADMIN)['reason']=='actor_not_allowed')
 pg.sql(f"SET session_replication_role=replica; INSERT INTO public.user_roles(user_id,role) VALUES('{ADMIN}','administrador'),('{ADMIN}','parceiro_b2b'); SET session_replication_role=origin;")
