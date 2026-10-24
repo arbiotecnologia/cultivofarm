@@ -2,7 +2,7 @@
 
 ## 24/10 00:41 — implantação numérica pelo auditor
 - [x] Registrar implantação independente c2_credit_percentage_numeric_capacity_only SUCCESS/PREPOST/8casosreadonlyPASS relatados, sem execução Lovable; não reaplicar candidato antigo.
-- [ ] Reconfirmar 123checks locais da função completa e rebase PRE/POST/rollback apenas hashnovo, preservando baselineshistóricos/ACL/writerfalse.
+- [x] Reconfirmar 123checks locais da função completa:Vitest1/1PASS54.70s; rebase PRE/POST/rollback apenas hashnovo demonstrado byte-exato, SQL/baselineshistóricos/ACL/writerfalse preservados.
 - [ ] Composição segue inativa: revisão/quiescência/JWT e requisito contábil humano dependem do proprietário; implantação numérica não libera pedidos/fiscal.
 
 ## 24/10 00:32 — correção numérica de crédito separada
