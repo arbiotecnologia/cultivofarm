@@ -84,6 +84,8 @@ failure=pg.sql((H/'preflight.sql').read_text(),ok=False);ok('PRE denies disabled
 pg.sql('ALTER TABLE public.partner_orders ENABLE ROW LEVEL SECURITY; CREATE POLICY synthetic_unexpected ON public.partner_orders FOR SELECT TO authenticated USING (true);')
 failure=pg.sql((H/'preflight.sql').read_text(),ok=False);ok('PRE denies unexpected permissive policy','origin_policy_set_drift' in failure)
 pg.sql('DROP POLICY synthetic_unexpected ON public.partner_orders;')
+exec(compile((H.parent/'atomicity.py').read_text(),str(H.parent/'atomicity.py'),'exec'))
+command('preflight.sql');command('candidate.sql.review',True)
 pg.sql((H/'candidate.sql.review').read_text());ok('inactive candidate parsed/applied only in disposable PG')
 post={}
 for name in json.loads((H/'expected-source.json').read_text()):
@@ -94,7 +96,7 @@ for name in json.loads((H/'expected-source.json').read_text()):
 subprocess.run([sys.executable,str(H/'assemble.py')],check=True)
 pg.sql((H/'postflight.sql').read_text());ok('assertive READ ONLY postflight composed containment')
 ok('candidate leaves writer containment false',pg.sql(f"SELECT platform_private.c2_owner_order_create_allowed('{G}','{P}')")=='f')
-exec(compile((H.parent/'atomicity.py').read_text(),str(H.parent/'atomicity.py'),'exec'))
+command('postflight.sql');command('rollback.sql.review',True)
 # Positive test setup ONLY: reviewed writer body from existing v4 source, never hosted/release.
 old=(ROOT/'scripts/owner-orders-20261023/candidate.sql.review').read_text(); start=old.index('CREATE FUNCTION platform_private.c2_owner_order_create_allowed'); end=old.index('END $function$;',start)+len('END $function$;')
 pg.sql(old[start:end].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1))
