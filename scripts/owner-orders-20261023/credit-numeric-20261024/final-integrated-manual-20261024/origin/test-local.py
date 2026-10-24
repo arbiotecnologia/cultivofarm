@@ -125,7 +125,7 @@ pg.sql(f"""
 SET session_replication_role=replica;
 INSERT INTO public.organizations(id,nome,ativo,status) VALUES('{A}','A synthetic',true,'ativa'),('{B}','B synthetic',true,'ativa');
 INSERT INTO public.saas_modules(id,key,name,active) VALUES('{U(900)}','b2b','B2B',true);
-INSERT INTO public.saas_features(id,module_id,key,name,active) VALUES('{U(910)}','{U(900)}','catalogo_precos','Cat',true),('{U(911)}','{U(900)}','pedidos_b2b','Order',true),('{U(912)}','{U(900)}','contas_receber','CR',true);
+INSERT INTO public.saas_features(id,module_id,key,name,active) VALUES('{U(910)}','{U(900)}','catalogo_precos','Cat',true),('{U(911)}','{U(900)}','pedidos_b2b','Order',true),('{U(912)}','{U(900)}','contas_receber','CR',true),('{U(913)}','{U(900)}','contas_pagar','CP',true);
 INSERT INTO public.saas_plans(id,key,name,active,is_default,created_at,updated_at) VALUES('{U(920)}','test','Test',true,false,now(),now());
 INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,features_snapshot,limits_snapshot) VALUES('{U(921)}','{U(920)}',1,'Test','DRAFT',now()-interval '1 day','[]','{{}}');
 INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled) SELECT '{U(921)}',id,true FROM public.saas_features;
@@ -138,7 +138,7 @@ INSERT INTO public.produtos(id,nome,tipo,codigo,ativo,b2b_enabled,valor_litro_br
 INSERT INTO public.catalogo_volumes(item_tipo,produto_id,volume_ml,preco_brl,preco_litro_brl,ativo) VALUES('produto','{PROD}',1000,180,180,true);
 INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,active,installment_count,discount_percent,monthly_interest_percent,months_count,interest_type,max_days) VALUES('{PLAN}','Synthetic','TEST','custom',true,3,0,0,0,'none',7);
 INSERT INTO public.commercial_payment_plan_assignments(plan_id,buyer_scope,partner_id,status,valid_from) VALUES('{PLAN}','partner','{P}','published',current_date-1),('{PLAN}','partner','{Q}','published',current_date-1);
-INSERT INTO public.financial_categories(name,type,active) VALUES('Revenue','RECEITA',true);
+INSERT INTO public.financial_categories(name,type,active) VALUES('Revenue','RECEITA',true),('Expense','DESPESA',true);
 INSERT INTO public.payment_methods(name,active) VALUES('TEST-METHOD',true);
 INSERT INTO public.partner_financial_settings(partner_id,billing_trigger,default_payment_method,active,auto_generate_receivable) VALUES('{P}','na_aprovacao','TEST-METHOD',true,true),('{Q}','na_aprovacao','TEST-METHOD',true,true);
 SET session_replication_role=origin;
