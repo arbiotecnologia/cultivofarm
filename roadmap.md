@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 14:07 — acesso claro ao pedido canônico
+- [x] Auditar parceiro/comercial em HEAD: consulta contida substitui carrinho, comercial analisa pedidos sem formulário autorizado de nova venda; nenhuma impersonação/novo writer.
+- [x] Entradas contextuais/detalhes/percurso condicionado; 45/45 em5arquivosPASS com transporte/Auth sintéticos, build automáticoOK. Revisão docs/order-entry-clarity-20261024.md; candidate SQL SHA byte-exato b5e4acbf.
+- [ ] Homologação real e continuidade pedido→financeiro→fiscal→entrega dependem de revisão independente, writer autorizado e contabilidade real A pendente; sem SQL hosted/publicação/sessões.
+
 ## 24/10 03:12 — parcelas manuais imutáveis
 - [x] Captura SELECT canônica; AR/AP reproduziram23514 por UPDATE de parcelas imutáveis, nenhuma operação hosted mutante.
 - [x] Pacote financial-installments-initial-20261024 independente INATIVO: contexto privado txid/título/ator/tenant, inserção inicial correta, PREPOST/rollback completo; fragmento futuro manual+B2B testado sem alterar final-integrated histórico.

@@ -563,7 +563,7 @@ export default function NovoPedido() {
     const p = catalogMap.get(row.id);
     return (
       <Button size="sm" onClick={() => setAddRow(row)} disabled={!p}>
-        <Plus className="h-4 w-4 mr-1" /> Adicionar
+        <Plus className="h-4 w-4 mr-1" /> {isSimulationMode ? "Adicionar à simulação" : "Adicionar ao pedido"}
       </Button>
     );
   };
@@ -575,11 +575,11 @@ export default function NovoPedido() {
     <div className="space-y-4 max-w-6xl mx-auto pb-32 md:pb-4">
       <div>
         <h1 className="text-xl md:text-2xl font-bold">
-          {isCatalogoRoute ? "Catálogo" : isSimulationMode ? "Simulador B2B" : "Novo Pedido"}
+          {isCatalogoRoute ? "Selecionar produtos para o pedido" : isSimulationMode ? "Simulador B2B" : "Novo Pedido"}
         </h1>
         <p className="text-sm text-muted-foreground">
           {isCatalogoRoute
-            ? "Consulte produtos e microrganismos, monte uma simulação ou efetive um pedido."
+            ? "Pedido para a empresa vinculada ao seu acesso. O envio depende da validação de preços e da autorização do servidor."
             : isSimulationMode
             ? "Esta simulação utiliza valores de tabela, sem desconto. Condições comerciais finais são aplicadas apenas em pedido oficial."
             : "Selecione produtos e/ou microrganismos. Condição comercial B2B aplicada."}

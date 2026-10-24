@@ -9,7 +9,7 @@ const state = vi.hoisted(() => ({
   actor: "11111111-1111-4111-8111-111111111111",
   tenant: "22222222-2222-4222-8222-222222222222",
   partner: "33333333-3333-4333-8333-333333333333",
-  epoch: 0, entitled: true, loadingPlan: false, orderCreate: true,
+  epoch: 0, entitled: true, loadingPlan: false, orderCreate: true, foreignProjection: false,
   rpc: vi.fn(), table: vi.fn(), writes: vi.fn(), subscriptions: vi.fn(),
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
@@ -50,7 +50,7 @@ function response(data: unknown) {
   return Object.assign(promise, { abortSignal: () => promise });
 }
 beforeEach(() => {
-  Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, entitled: true, loadingPlan: false, orderCreate: true });
+  Object.assign(state, { tenant: "22222222-2222-4222-8222-222222222222", partner: "33333333-3333-4333-8333-333333333333", epoch: 0, entitled: true, loadingPlan: false, orderCreate: true, foreignProjection: false });
   vi.clearAllMocks();
   state.table.mockImplementation((table: string) => {
     if (table !== "catalogo_volumes") throw new Error(`Unexpected table read: ${table}`);
@@ -61,10 +61,11 @@ beforeEach(() => {
       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
       partner_id: state.partner, external_roles: ["parceiro_b2b"], manager: true, technician: false, role: "parceiro_b2b", papel: "gestor" };
     if (name === "get_my_commercial_partner_context") return response(context);
-    if (name === "get_my_commercial_partner_projection") return response({ ...context, id: state.partner, ativo: true,
+    if (name === "get_my_commercial_partner_projection") return response({ ...context, tenant_id: state.foreignProjection ? "foreign-tenant" : state.tenant, id: state.partner, ativo: true,
       codigo: "LOCAL", razao_social: "Parceiro local", capabilities: { contract: "C2_CAT_V1", catalog_read: true, sheets_read: true },
       order_capabilities: { contract: "C2_OWNER_ORDER_V1", order_create: state.orderCreate } });
     if (name === "rpc_b2b_list_selectable_payment_plans") return response([]);
+    if (name === "log_my_access_denied_secure") return response(null);
     if (name === "get_partner_catalog_secure") return response([{
       catalog_contract: "C1B_DUAL_TENANT_V1", item_id: args?.p_partner_id, item_tipo: "produto",
       produto_nome: `Produto ${state.tenant}/${args?.p_partner_id}`, produto_codigo: "LOCAL", familia_catalogo: "biologico",
@@ -87,8 +88,25 @@ const product = () => `Produto ${state.tenant}/${state.partner}`;
 const catalogCalls = () => state.rpc.mock.calls.filter(([name]) => name === "get_partner_catalog_secure");
 it("real layout/guard/outlet/NovoPedido reaches its real catalogue hook with the parent's partner", async () => {
   mount(); await screen.findByText(product());
+  expect(screen.getByRole("link", { name: "Selecionar produto / Novo pedido" })).toHaveAttribute("href", "/portal-parceiro/catalogo");
+  expect(screen.getByRole("button", { name: "Adicionar ao pedido" })).toBeEnabled();
   expect(catalogCalls().map(([, args]) => args.p_partner_id)).toEqual([state.partner]);
   expect(state.writes).not.toHaveBeenCalled(); expect(state.table.mock.calls).toEqual([["catalogo_volumes"]]);
+});
+it("contained capability keeps only catalogue readers, never cart/plan/subscription writers", async () => {
+  state.orderCreate = false;
+  mount(); await screen.findByText(product());
+  expect(screen.getByRole("link", { name: "Consultar produtos" })).toHaveAttribute("href", "/portal-parceiro/catalogo");
+  expect(screen.queryByRole("button", { name: "Adicionar ao pedido" })).toBeNull();
+  expect(state.rpc.mock.calls.some(([name]) => name === "rpc_b2b_list_selectable_payment_plans")).toBe(false);
+  expect(state.table).not.toHaveBeenCalled(); expect(state.subscriptions).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
+});
+it("revoked creation capability removes the real cart subtree without enabling another writer", async () => {
+  const view = mount(); await screen.findByRole("button", { name: "Adicionar ao pedido" });
+  state.orderCreate = false; state.epoch++; view.update();
+  await screen.findByRole("link", { name: "Consultar produtos" });
+  expect(screen.queryByRole("button", { name: "Adicionar ao pedido" })).toBeNull();
+  expect(state.writes).not.toHaveBeenCalled();
 });
 it("real route replaces partner then tenant through current canonical projection without old product rows", async () => {
   const view = mount(); const first = product(); await screen.findByText(first);
@@ -106,4 +124,11 @@ it.each(["denied", "loading"])("%s plan never mounts NovoPedido or its queries u
   expect(state.rpc.mock.calls.some(([name]) => name === "rpc_b2b_list_selectable_payment_plans")).toBe(false);
   expect(state.subscriptions).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
   expect(state.table).not.toHaveBeenCalled();
+});
+it("a foreign tenant projection cannot mount catalogue, entry link or cart even when it claims creation", async () => {
+  state.foreignProjection = true;
+  mount(); await screen.findByText("Negado");
+  expect(catalogCalls()).toHaveLength(0);
+  expect(screen.queryByRole("link", { name: "Selecionar produto / Novo pedido" })).toBeNull();
+  expect(state.table).not.toHaveBeenCalled(); expect(state.writes).not.toHaveBeenCalled();
 });

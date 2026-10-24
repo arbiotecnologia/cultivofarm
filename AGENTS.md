@@ -60,3 +60,4 @@
 - Current-base order reconciliation follows its nested review rules; independent wrapper release requires current-guard reproduction and never inherits composition readiness — prevents shipping an unproven lock patch with accounting dependencies.
 
 - Manual financial installment creation follows scripts/financial-installments-initial-20261024/AGENTS.md; custom schedules are validated and inserted once through server-private transaction context, never post-insert snapshot edits — preserves immutability.
+- Order entry guidance consumes existing layout capability/entitlement gates and links only to the canonical partner catalogue; commercial analysis never impersonates a buyer or mounts a new sale writer — clarifies access without activating contained operations.

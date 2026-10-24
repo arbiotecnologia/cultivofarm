@@ -53,7 +53,10 @@ it.each(["tenant", "role"])("clears %s changes during ready=true/pending even wh
   state.pending = true; view.update();
   if (kind === "tenant") state.tenant = "B"; else state.role = "parceiro_b2b_tecnico";
   view.update(); state.tenant = "T"; state.role = "parceiro_b2b"; view.update();
-  state.pending = false; view.update(); expect(search()).toHaveValue("");
+  state.pending = false; view.update();
+  // Revocation redirects away from the catalogue; restored authority never navigates itself back.
+  if (kind === "role") fireEvent.click(screen.getByText("Voltar catálogo"));
+  expect(search()).toHaveValue("");
   expect(screen.getByRole("radio", { name: "Químicos" })).toHaveAttribute("aria-checked", "false");
 });
 it("real Layout/Owner/Grid preserves filter during monitor pause/resume without protected rows or drawers", () => {
