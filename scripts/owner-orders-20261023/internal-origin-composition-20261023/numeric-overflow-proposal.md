@@ -15,6 +15,6 @@ Alteração mínima proposta, em revisão financeira própria:
 
 `numeric` sem precisão fixa evita escolher um teto arbitrário sem conhecer os limites suportados. Manter integralmente fórmula `ROUND(...,2)`, limites/exposição, ordem das decisões, ações, JSON, assinatura, owner/ACL e callers. Não truncar, limitar percentual nem alterar limite financeiro para obter PASS.
 
-Experimento exclusivamente transacional no PostgreSQL descartável substitui essa única declaração, confirma **18000% / exposição180 / LIMIT_EXCEEDED_BLOCK** e faz ROLLBACK, verificando MD5 original reinstalado. O candidato principal e seu PRE/POST continuam exigindo a função original com o bloqueio conhecido.
+Experimento exclusivamente transacional no PostgreSQL descartável substitui essa única declaração, confirma **18000% / exposição180 / LIMIT_EXCEEDED_BLOCK** e **LIMIT_EXCEEDED_APPROVAL** conforme a ação configurada sinteticamente, e faz ROLLBACK, verificando MD5 original reinstalado e estado integral idêntico. O candidato principal e seu PRE/POST continuam exigindo a função original com o bloqueio conhecido.
 
 Antes de qualquer aplicação independente: PRE byte-exato de corpo/owner/ACL/callers; POST do novo corpo com decisão block e approval_required, casos sem limite/dentro do limite/vencidos, limites extremos e payloads inválidos; rollback deve manter writer contido e nunca abrir ACL. Esta proposta não é uma migration pronta nem uma certificação financeira integral.

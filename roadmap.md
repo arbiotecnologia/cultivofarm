@@ -2,8 +2,8 @@
 
 ## 24/10 00:14 — revisão independente 9c62ecab / pacote inativo
 - [x] Registrar relato do proprietário: PRE estrutural integral readonly canônico PASS; PRE contábil 42501/C2_ACCOUNTING_PREREQUISITE_BLOCKED esperado. A preencheu CNPJ/razão social reais, continua DRAFT sem atestado; não alterar dados nem relaxar pré-requisito.
-- [ ] Corrigir mensagem externa de aprovação comercial sem promessa de produção; preservar ramo interno capturado.
-- [ ] Testar na_entrega singleton/cumulativo: aprovação sem título, cobrança pré-entrega sem efeitos e operação negada; reproduzir numeric6,2 limite1/exposição180 e propor ajuste mínimo separado.
+- [x] Corrigir mensagem externa de aprovação comercial sem promessa de produção; ramo interno capturado preservado, não homologado operacionalmente.
+- [x] Testar na_entrega singleton/cumulativo: aprovação sem título e operação negada; reprodução revelou gerador manual permissivo pré-entrega, corrigido somente no impl externo com C2_EXTERNAL_DELIVERY_REQUIRED, eligibility intacta. numeric6,2 limite1/exposição180 reproduzido/rollback; proposta mínima separada `v_pct numeric`, não integrada.
 - [ ] Finalizar relatos, PRE/POST/rollback e manifestos completos; somente revisão local, writerfalse e nenhuma implantação.
 - [ ] Bloqueio humano contábil e homologação JWT da composição continuam dependentes do proprietário; pendências históricas preservadas.
 
