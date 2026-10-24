@@ -160,17 +160,17 @@ for kind in ['receivable','payable']:
     fk='receivable_id' if kind=='receivable' else 'payable_id'
     table=f'accounts_{kind}_installments'
     dates=['2026-10-27','2026-12-02','2027-02-11']
-    result=json.loads(val(ADMIN,manual_call(manual_payload(1,[.34,.33,.33],dates),kind)))
+    result=json.loads(val(ADMIN,manual_call(manual_payload(1,[.34,.33,.33],dates,kind),kind)))
     tid=result['title_id']
     ok('composed manual '+kind+' 1/3 exact .34/.33/.33 inserted first',pg.sql(f"SELECT string_agg(original_amount::text,',' ORDER BY installment_number) FROM public.{table} WHERE {fk}='{tid}'")=='0.34,0.33,0.33')
     ok('composed manual '+kind+' custom dates inserted first',pg.sql(f"SELECT string_agg(due_date::text,',' ORDER BY installment_number) FROM public.{table} WHERE {fk}='{tid}'")=='2026-10-27,2026-12-02,2027-02-11')
     ok('composed manual '+kind+' tenant propagated to all installments',pg.sql(f"SELECT count(*) FROM public.{table} WHERE {fk}='{tid}' AND organization_id='{A}'")=='3')
-    result=json.loads(val(ADMIN,manual_call(manual_payload(.99,[.33,.33,.33],dates),kind)))
+    result=json.loads(val(ADMIN,manual_call(manual_payload(.99,[.33,.33,.33],dates,kind),kind)))
     ok('composed manual '+kind+' .99/3',result['success'] is True)
-    before=snapshot();actor(ADMIN,manual_call(manual_payload(.01,[.01,0,0],dates),kind),err='FIN_TITLE_INVALID_INSTALLMENT');ok('composed manual '+kind+' .01/3 denied no effects',snapshot()==before)
+    before=snapshot();actor(ADMIN,manual_call(manual_payload(.01,[.01,0,0],dates,kind),kind),err='FIN_TITLE_INVALID_INSTALLMENT');ok('composed manual '+kind+' .01/3 denied no effects',snapshot()==before)
     failure=pg.sql(f"UPDATE public.{table} SET original_amount=.35 WHERE {fk}='{tid}' AND installment_number=1;",ok=False)
     ok('composed manual '+kind+' later snapshot mutation still denied','Parcela imutavel' in failure)
-    before=snapshot();actor(ADMIN,manual_call(dict(manual_payload(1,[.34,.33,.33],dates),organization_id=B),kind),err='FINANCIAL_TENANT_MISMATCH');ok('composed manual '+kind+' cross-tenant payload denied no effects',snapshot()==before)
+    before=snapshot();actor(ADMIN,manual_call(dict(manual_payload(1,[.34,.33,.33],dates,kind),organization_id=B),kind),err='FINANCIAL_TENANT_MISMATCH');ok('composed manual '+kind+' cross-tenant payload denied no effects',snapshot()==before)
 exact_denied(ADMIN,f"INSERT INTO platform_private.financial_initial_installments VALUES(txid_current(),gen_random_uuid(),'receivable','{ADMIN}','{A}','[]')",'42501','permission denied')
 ok('private context table inaccessible to authenticated')
 ok('private context empty after manual successes and failures',pg.sql("SELECT count(*) FROM platform_private.financial_initial_installments")=='0')
