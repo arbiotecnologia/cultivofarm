@@ -25,7 +25,7 @@ for old_call,new_call in [
 suffix=source[source.index('pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now()'):]
 revoked_old="actor(G,create(G,'revoked',h=hashA)+';',err='')"
 assert suffix.count(revoked_old)==1
-suffix=suffix.replace(revoked_old,"strict_denied(G,create(G,'revoked',h=hashA),'forbidden_financial_terms')")
+suffix=suffix.replace(revoked_old,"strict_denied(G,create(G,'revoked',h=hashA),'forbidden_partner')")
 suffix=suffix.replace("rollback=(H/'rollback.sql.review').read_text()","rollback=(N/'origin-rebase/rollback.sql.review').read_text()")
 preprobe="""
 pg.sql((N/'preflight.sql').read_text())

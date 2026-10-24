@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
 
 it("serializes canonical orders and billing with two real local PostgreSQL connections", async () => {
   const { stdout: output } = await promisify(execFile)("python3", ["scripts/owner-orders-20261023/credit-numeric-20261024/test-concurrency.py"], { encoding: "utf8", timeout: 240_000 });
-  expect(output).toContain("TOTAL 158 PASS; synthetic Auth, no hosted JWT/RLS certification");
+  expect(output).toContain("TOTAL 177 PASS; synthetic Auth, no hosted JWT/RLS certification");
   expect(output).toContain("two sessions same key exactly one order and identical receipt");
   expect(output).toContain("two sessions changed fingerprint conflict one order");
   expect(output).toContain("two approvals na_entrega one transition no title");
