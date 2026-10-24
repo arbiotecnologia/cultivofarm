@@ -222,6 +222,9 @@ import importlib.util
 spec=importlib.util.spec_from_file_location('normalize_review', H.parent.parent/'receipt-lock-order-review/assemble.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 for n in ('preflight.sql','candidate.sql.review','postflight.sql','rollback.sql.review'):
- p=H/n;p.write_text(m.normalize(p.read_text(),n in ('preflight.sql','postflight.sql')))
+ p=H/n
+ if not p.exists(): continue  # phase 1: postflight/rollback only exist after disposable hash capture
+ p.write_text(m.normalize(p.read_text(),n in ('preflight.sql','postflight.sql')))
 
-(H/'containment.sql.review').write_text((H/'rollback.sql.review').read_text())
+if (H/'rollback.sql.review').exists():
+ (H/'containment.sql.review').write_text((H/'rollback.sql.review').read_text())
