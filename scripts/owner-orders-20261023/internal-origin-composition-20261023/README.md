@@ -14,6 +14,8 @@ Foram capturados 44 triggers atuais de pedidos, itens, termos, cronograma, vínc
 
 Segundo consulta readonly relatada pelo proprietário, owner A `007bb519-cba0-4704-be2c-cb93ad010048` possui uma configuração ativa **DRAFT**, com `accounting_validated_at=NULL`; owner B `8f57c7dd-0557-4041-b401-7a00f7244626` não possui configuração. Esses dados NÃO foram alterados nem novamente consultados pelo agente.
 
+Revisão independente **9c62ecab**, relatada em 24/10 00:14 UTC: PRE estrutural integral readonly canônico PASS; PRE contábil negado com **42501/C2_ACCOUNTING_PREREQUISITE_BLOCKED**, esperado. A informou CNPJ/razão social reais, mas continua DRAFT sem atestado. Isso não atende à validação contábil nem autoriza alterar dados/pré-requisito. PRE da rodada atual permanece byte-exato ao revisado; POST atualizado é local, ainda não executado no canônico.
+
 O requisito é indispensável para emitir a prova de origem: **NO-GO concreto para implantação/reabertura** até revisão contábil humana legítima do owner A pelo fluxo autorizado. Não preencher CNPJ/nome/atestado fictícios, marcar VALIDATED apenas para passar ou relaxar o guard. `preflight-accounting.sql` é READ ONLY e obrigatório junto do PRE estrutural; retorna `C2_ACCOUNTING_PREREQUISITE_BLOCKED` enquanto A não estiver realmente pronto. B é diagnóstico, não pedido de criação de configuração. PASS estrutural não significa prontidão contábil.
 
 A composição dos filhos já separa `c2_external_origin_assert` do `b2b_internal_assert_origin`: origem interna continua passando exclusivamente pelo assert interno; origem externa exige ticket somente durante create e autoridade interna owner P1 nas alterações posteriores. Novos negativos executam o trigger independentemente da filtragem RLS e negam gestor singleton/cumulativo, técnico, produtor e atores B após create. Isso não concede administração financeira interna ao comprador.
@@ -23,6 +25,8 @@ A composição dos filhos já separa `c2_external_origin_assert` do `b2b_interna
 - Owner/credor/emissor derivados de `commercial_owner_organization_id` ativo e único estabelecimento fiscal validado desse owner; cliente precisa pertencer ao mesmo owner. Sem organização própria do parceiro e sem UUID/payload como prova de autoridade.
 - Guards de pai/filhos validam a prova e preservam selagem econômica/imutabilidade. Alteração administrativa posterior depende do owner interno ativo autorizado por P1, nunca dos papéis externos.
 - Aprovação externa pode selar e cobrar, mas mantém `ready_for_production=false`; etapas operacionais continuam negadas. Não reabre planejamento/produção/entrega/fiscal. Guard final `zz_c2_external_final_state` impede persistir uma selagem caso um guard de crédito posterior retire aprovação.
+- A notificação externa comunica aprovação comercial com planejamento ainda não liberado. O ramo interno retém a mensagem capturada, sem modificar seus gates/readiness; preservação textual não é homologação operacional interna.
+- Para `na_entrega`, aprovação externa não gera título. O teste novo revelou que o gerador manual original permitia cobrar antes da entrega: barreira específica no impl externo passa a negar com **42501/C2_EXTERNAL_DELIVERY_REQUIRED**, após configuração confirmada e antes de qualquer efeito financeiro. Eligibility internal-only permanece corpo/ACL intactos; não altera o comportamento interno. Produção/entrega continuam negadas, logo esse bloqueio externo não tem um caminho operacional de liberação neste pacote.
 - Parcelas de título externo são inseridas com datas/valores exatos do cronograma contratual (30 dias), evitando UPDATE de valores imutáveis H6 após inserir parcelas por meses civis. Fluxo interno original permanece preservado.
 - Não muda fiscal resolver, eligibility ACL/corpo, settings fence/CAS ou helper de contenção. Método ativo é o instalado P1; configuração ausente falha explicitamente, sem INSERT automático.
 
@@ -40,6 +44,7 @@ Prefixo: `scripts/owner-orders-20261023/internal-origin-composition-20261023/`
 | Rollback deny-only, sem apagar snapshots/histórico | `rollback.sql.review` |
 | Montador determinístico local | `assemble.py` |
 | Testes PostgreSQL | `test-local.py` |
+| Proposta numérica separada, não integrada | `numeric-overflow-proposal.md` |
 | Resultado e limites | `validation.md` |
 | Hashes | `SHA256SUMS` |
 
@@ -51,6 +56,6 @@ Revisão read-only independente apontou selagem antes do crédito e ausência de
 
 Dependências sintéticas/replica histórica: Auth, catálogo SaaS/assinaturas e fixtures locais; estrutura parcial de relações fora do recorte; seed usa `session_replication_role=replica` apenas na preparação. Chamadas testadas usam `SET LOCAL ROLE authenticated`, claims sintéticas e triggers ligados (`origin`); dois testes de invariantes de trigger usam execução owner local explicitamente identificada, sem chamar isso de RLS real.
 
-Achado adicional preservado: `fn_b2b_credit_exposure` usa `numeric(6,2)` para percentual. Limite local 1/exposição180 provoca overflow antes de avaliar bloqueio. Não alterado neste recorte; limite100/exposição180 exercita a decisão real e a barreira final. Essa faixa extrema permanece pendência de revisão financeira, não sucesso silencioso.
+Achado adicional preservado: `fn_b2b_credit_exposure` usa `numeric(6,2)` para percentual. Limite local 1/exposição180 provoca SQLSTATE22003 antes de avaliar bloqueio; função e create agora têm testes explícitos sem efeitos. Não alterado no candidato; limite100/exposição180 continua exercitando a decisão real e a barreira final. `numeric-overflow-proposal.md` propõe somente `v_pct numeric`, sem teto arbitrário nem mudança da fórmula/decisões; experimento local transacional cobre block/approval_required e restaura MD5 original. Continua pendência financeira separada, não correção instalada.
 
 Bloqueadores remanescentes: revisão final whole-chain, execução PRE/POST independente no canônico e provas JWT reais A/B/gestor cumulativo/revogação após implantação autorizada. Qualquer pedido para entrar em produção/entrega continua bloqueado por desenho e exige recorte próprio. Não reaplicar release antigo nem reabrir writer junto deste pacote.

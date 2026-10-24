@@ -2,7 +2,7 @@
   "public.create_partner_order_secure": "a29167995a98da7b9f0ee6620dd43550",
   "platform_private.b2b_internal_order_snapshot_guard": "da7a558c06878344c6e5ce70bb1c8e89",
   "platform_private.b2b_internal_child_snapshot_guard": "f9fcfca4588854d927f7f9a1bdbe4de7",
-  "public.approve_partner_order": "dfc11bd3e05fcdd1ea800c63bae2ecb5",
-  "public.generate_b2b_receivable_secure_impl": "8a9568b2e632204f35320132e009ada1",
+  "public.approve_partner_order": "7cf8b7a2fae31088529df4c5656ebc40",
+  "public.generate_b2b_receivable_secure_impl": "1bdac7fae6d702fb42d3a30539e9c9c3",
   "public.fn_generate_receivable_installments": "de469bfc11719e288cd0970411c57c97"
 }
