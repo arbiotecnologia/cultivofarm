@@ -2,6 +2,16 @@
 
 Base solicitada: `31369baf243e60cae1d3e4755c903124316934e2`. **Candidato inativo, sem SQL hospedado/publicação.**
 
+## Correção crítica de transação — revisão 01:38
+
+O commit `cfa13fdeaaeee0177584a9037d03cbca2954bece` continha ROLLBACK embutido antes do DDL: o PASS anterior **não comprovava atomicidade da instalação**. Não usar aqueles comandos para implantação.
+
+`assemble.py` remove somente linhas delimitadoras externas de transação ao normalizar a composição e envolve cada comando em um único BEGIN/COMMIT; mantém byte-exatos guards, DDL e corpos dollar-quoted. Pre/post usam BEGIN READ ONLY. Containment já tinha apenas um par e teve somente o posicionamento externo normalizado. Gerador idempotente, sem conexão de banco; baselines e origin-rebase não são alterados.
+
+`receipt-atomicity-checks.py` executa cada **comando completo** no PostgreSQL descartável, inserindo falha deliberada depois dos POSTs reais e antes do COMMIT; não extrai função. Candidate falho preserva MD5 baseline `9c8c8a736bcd1d77ee2f237a8a59b4ce`; rollback falho preserva MD5 novo `31eeb54e4b69d97c311629a37e553faf`; containment falho preserva todos os corpos/owners/ACLs do catálogo public/platform_private. Controles positivos executam candidate, rollback e pre/post completos. Instrumentação de todos os DOs/DDL externos observa **um único txid por comando**, sem aviso de transação ausente/aninhada. Nenhuma instrumentação/falha entra nos SQL entregues.
+
+Os seis novos checks passaram no harness (TOTAL183); resultado final da suíte abaixo. Pacote permanece inativo, writer false e fiscal/contabilidade pendentes.
+
 ## Falha reproduzida
 
 PostgreSQL descartável, funções/triggers canônicos completos e Auth sintética. Uma terceira conexão segura o lock de crédito hashtext existente. Approve entra na RPC, adquire row do pedido e espera nesse lock. Generate entra na RPC, adquire receipt advisory e espera pelo row de approve (`transactionid`). Liberar a barreira produz ciclo row/receipt: **SQLSTATE 40P01**, capturado dentro de `generate_b2b_receivable_secure_impl` (ou envolvido pelo tratamento de erro da aprovação se ela for a vítima). Não foi usado mock, trigger de pausa nem alteração da lógica para provocar a falha. Controle da barreira cancela somente a conexão coordenadora local; timeouts limitam o teste.
