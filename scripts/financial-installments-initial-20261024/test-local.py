@@ -3,7 +3,8 @@ Auth/readiness/SaaS/audit/unrelated title guards and reduced schema explicitly s
 No hosted connection, JWT, browser login or accounting validation.
 """
 from pathlib import Path
-import subprocess, tempfile, os, json, re, hashlib, importlib.util
+import subprocess, tempfile, os, json, re, hashlib, importlib.util, sys
+sys.dont_write_bytecode = True
 H=Path(__file__).resolve().parent
 spec=importlib.util.spec_from_file_location('assembly',H/'assemble.py'); a=importlib.util.module_from_spec(spec);spec.loader.exec_module(a)
 D=a.D

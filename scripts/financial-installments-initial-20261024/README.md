@@ -23,7 +23,7 @@ Owners e ACLs originais mantidos. H6 AR/AP, tenant links e autorização permane
 
 ## Testes e limites
 `bun run test -- src/test/financeiro/initialInstallmentsPostgres.test.ts src/test/financeiro/novaContaReceber.test.tsx src/test/financeiro/novaContaDeadline.test.ts --maxWorkers=1 --no-file-parallelism`
-**33/33 PASS em 3 arquivos (10,42s)**. PostgreSQL descartável executa funções financeiras/tenant/autorização capturadas, gatilhos definidos e políticas reais; Auth/readiness/SaaS/auditoria/outros guards de título têm dependências sintéticas e esquema reduzido explicitados em `test-local.py`. Não certifica JWT/RLS hosted ou contabilidade real.
+**33/33 PASS em 3 arquivos (10,42s); 45 verificações PostgreSQL locais PASS**. PostgreSQL descartável executa funções financeiras/tenant/autorização capturadas, gatilhos definidos e políticas reais; Auth/readiness/SaaS/auditoria/outros guards de título têm dependências sintéticas e esquema reduzido explicitados em `test-local.py`. Não certifica JWT/RLS hosted ou contabilidade real.
 
 Cobertura: erro antigo em AR/AP; R$1/3 .34/.33/.33 A/B; .99/3; .01/3 negado; datas customizadas; soma/numeração/datas infinitas inválidas; falha tardia com rollback título/parcelas/auditoria; tenant cruzado, cliente estrangeiro, RLS de leitura com controles positivos; revogação/perfil inativo; contexto inacessível; edição posterior negada; candidate e rollback **completos** com falha deliberada depois do POST, catálogo preservado, checkpoints com mesmo txid.
 Erro remoto fica visível no diálogo enquanto edição permanece; timeout/resposta incerta continuam exigindo conferência, sem retry automático. Aviso Radix de descrição já existente foi observado, não alterado.
