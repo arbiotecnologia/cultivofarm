@@ -108,7 +108,7 @@ const doseLitroHaFor = (p: CatalogItem | undefined): number | null => {
 };
 
 export default function NovoPedido() {
-  const { partner } = useOutletContext<{ partner: any }>();
+  const { partner, afterCreatePath } = useOutletContext<{ partner: any; afterCreatePath?: string }>();
   const { role, setSafePartnerOrderDraft, takeSafePartnerOrderDraft } = useAuth();
   const location = useLocation();
   const isRoleTecnico = role === "parceiro_b2b_tecnico";
@@ -499,7 +499,7 @@ export default function NovoPedido() {
           setSimulation(null);
           setCashSimulation(null);
           setConfirmOpen(false);
-          navigate("/portal-parceiro/pedidos");
+          navigate(afterCreatePath ?? "/portal-parceiro/pedidos");
         },
       },
     );

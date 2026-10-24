@@ -43,6 +43,7 @@ import { b2bToast } from "@/lib/b2bToast";
 import { PedidoItemProdutoInfo } from "@/components/pedidos-b2b/PedidoItemProdutoInfo";
 import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection";
 import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntry";
+import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
 
 
 
@@ -229,7 +230,7 @@ export default function PedidosB2B() {
         </p>
       </div>
 
-      <CommercialOrderEntry />
+      <CommercialOrderEntry state={internalEntry.ready ? internalEntry.data : undefined} />
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row gap-2 md:items-center justify-between">
