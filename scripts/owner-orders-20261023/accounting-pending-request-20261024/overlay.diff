@@ -1,0 +1,111 @@
+--- b5/platform_private.c2_external_origin_assert
++++ candidate/platform_private.c2_external_origin_assert
+@@ -1,4 +1,4 @@
+-CREATE FUNCTION platform_private.c2_external_origin_assert(s jsonb, partner uuid, client uuid)
++CREATE OR REPLACE FUNCTION platform_private.c2_external_origin_assert(s jsonb, partner uuid, client uuid)
+ RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
+ DECLARE uid uuid:=auth.uid(); org uuid; p public.partner_accounts;
+ BEGIN
+@@ -8,8 +8,7 @@
+  IF NOT FOUND OR p.ativo IS NOT TRUE OR p.deleted_at IS NOT NULL OR org IS NULL
+  OR NOT EXISTS(SELECT 1 FROM public.organizations o WHERE o.id=org AND o.ativo AND o.status='ativa')
+  OR EXISTS(SELECT 1 FROM public.organizations o WHERE o.partner_account_id=partner)
+- OR s->>'contract' IS DISTINCT FROM 'C2_EXTERNAL_ORDER_ORIGIN_V1'
+- OR NOT platform_private.b2b_internal_origin_valid(s)
++ OR NOT platform_private.c2_external_origin_contract_valid(s)
+  OR s->>'organization_id' IS DISTINCT FROM org::text OR s->>'partner_id' IS DISTINCT FROM partner::text
+  THEN RAISE EXCEPTION 'C2_EXTERNAL_ORIGIN_DENIED' USING ERRCODE='42501'; END IF;
+  IF client IS DISTINCT FROM p.client_id OR (client IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=client AND c.organization_id=org))
+--- b5/platform_private.b2b_internal_order_snapshot_guard
++++ candidate/platform_private.b2b_internal_order_snapshot_guard
+@@ -15,20 +15,24 @@
+   THEN RAISE EXCEPTION 'C2_EXTERNAL_CREATE_DENIED' USING ERRCODE='42501'; END IF;
+   SELECT p.commercial_owner_organization_id,p.client_id INTO org,NEW.cliente_id FROM public.partner_accounts p WHERE p.id=NEW.partner_id FOR SHARE;
+   SELECT count(*) INTO candidate_count FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active;
+-  IF candidate_count<>1 THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+-  SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active FOR SHARE;
+-  IF cs.configuration_status IS DISTINCT FROM 'VALIDATED' OR cs.accounting_validated_at IS NULL OR nullif(btrim(cs.legal_name),'') IS NULL OR nullif(btrim(cs.cnpj),'') IS NULL
+-  THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_NOT_VALIDATED' USING ERRCODE='42501'; END IF;
+-  NEW.c2_external_origin_snapshot:=jsonb_build_object('contract','C2_EXTERNAL_ORDER_ORIGIN_V1','schema_version','1','organization_id',org,'creditor_organization_id',org,'issuer_organization_id',org,'company_settings_id',cs.id,'company_configuration_version',cs.configuration_version,'issuer_legal_name',cs.legal_name,'issuer_cnpj',cs.cnpj,'actor_user_id',uid,'partner_id',NEW.partner_id);
++  IF candidate_count>1 THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_AMBIGUOUS' USING ERRCODE='42501'; END IF;
++  IF candidate_count=1 THEN SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active FOR SHARE; END IF;
++  IF candidate_count=1 AND cs.configuration_status='VALIDATED' AND cs.accounting_validated_at IS NOT NULL AND nullif(btrim(cs.legal_name),'') IS NOT NULL AND nullif(btrim(cs.cnpj),'') IS NOT NULL THEN
++    NEW.c2_external_origin_snapshot:=jsonb_build_object('contract','C2_EXTERNAL_ORDER_ORIGIN_V1','schema_version','1','organization_id',org,'creditor_organization_id',org,'issuer_organization_id',org,'company_settings_id',cs.id,'company_configuration_version',cs.configuration_version,'issuer_legal_name',cs.legal_name,'issuer_cnpj',cs.cnpj,'actor_user_id',uid,'partner_id',NEW.partner_id);
++  ELSE
++   -- C2_ACCOUNTING_PENDING_V1: honest non-fiscal request; no issuer identity/attestation is copied or invented.
++   NEW.c2_external_origin_snapshot:=jsonb_build_object('contract','C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1','schema_version','1','organization_id',org,'creditor_organization_id',org,'actor_user_id',uid,'partner_id',NEW.partner_id,'issuer_state',CASE WHEN candidate_count=0 THEN 'NOT_CONFIGURED' ELSE coalesce(cs.configuration_status,'UNKNOWN') END,'company_settings_id',cs.id,'accounting_validated',false);
++  END IF;
+   PERFORM platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);
+   IF NEW.ready_for_production OR NEW.status NOT IN ('em_analise_comercial','aguardando_cotacao','aguardando_aprovacao_credito') THEN RAISE EXCEPTION 'C2_EXTERNAL_INITIAL_STATE_DENIED' USING ERRCODE='42501'; END IF;
+   RETURN NEW;
+  END IF;
+  IF TG_OP='INSERT' AND NEW.c2_external_origin_snapshot IS NOT NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_SERVER_ONLY' USING ERRCODE='42501'; END IF;
+  IF TG_OP='UPDATE' AND (OLD.c2_external_origin_snapshot IS NOT NULL OR NEW.c2_external_origin_snapshot IS NOT NULL) THEN
+-  IF NEW.c2_external_origin_snapshot IS DISTINCT FROM OLD.c2_external_origin_snapshot OR NEW.internal_origin_snapshot IS DISTINCT FROM OLD.internal_origin_snapshot OR NEW.internal_economic_snapshot IS DISTINCT FROM OLD.internal_economic_snapshot
++  IF (NEW.c2_external_origin_snapshot IS DISTINCT FROM OLD.c2_external_origin_snapshot AND NOT platform_private.c2_accounting_promotion_ok(OLD.c2_external_origin_snapshot,NEW.c2_external_origin_snapshot,NEW.id)) OR NEW.internal_origin_snapshot IS DISTINCT FROM OLD.internal_origin_snapshot OR NEW.internal_economic_snapshot IS DISTINCT FROM OLD.internal_economic_snapshot
+   THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_IMMUTABLE' USING ERRCODE='42501'; END IF;
+   PERFORM platform_private.c2_external_origin_assert(OLD.c2_external_origin_snapshot,OLD.partner_id,OLD.cliente_id);
++  PERFORM platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);
+   IF NEW.partner_id IS DISTINCT FROM OLD.partner_id OR NEW.cliente_id IS DISTINCT FROM OLD.cliente_id OR NEW.created_by IS DISTINCT FROM OLD.created_by THEN RAISE EXCEPTION 'B2B_INTERNAL_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;
+   IF NEW.ready_for_production OR public.fn_b2b_status_is_operational(NEW.status) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
+   IF NEW.status IS DISTINCT FROM OLD.status AND OLD.status IN ('cancelado','reprovado') THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMINAL_STATUS' USING ERRCODE='42501'; END IF;
+--- b5/public.approve_partner_order
++++ candidate/public.approve_partner_order
+@@ -24,6 +24,7 @@
+     INTO v_pid, v_prev, v_numero, v_amount, v_credit_ok
+     FROM public.partner_orders WHERE id = p_order_id FOR UPDATE;
+   IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;
++  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;
+ 
+   IF v_prev = 'aguardando_cotacao' THEN
+     RAISE EXCEPTION 'quote_required: defina o preco da cotacao antes de aprovar';
+--- b5/uuid)
++++ candidate/uuid)
+@@ -7,6 +7,7 @@
+ BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;
++ IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;
+ 
+   IF auth.uid() IS NULL THEN
+     IF pg_trigger_depth()=0 THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+--- live/c2_owner_order_create_allowed
++++ candidate/c2_owner_order_create_allowed
+@@ -1,6 +1,32 @@
+ CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid, _partner uuid)
+- RETURNS boolean
+- LANGUAGE sql
+- STABLE SECURITY DEFINER
+- SET search_path TO ''
+-AS $function$ SELECT false; $function$
++RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO '' AS $function$
++DECLARE c jsonb;
++BEGIN
++  -- c2_ord_writer_v1: nunca confia em parâmetro de uid que não seja o JWT atual.
++  IF _uid IS NULL OR _partner IS NULL OR auth.uid() IS DISTINCT FROM _uid THEN RETURN false; END IF;
++  -- Gestor B2B vigente (user_roles canônico; revogação remove a linha). Técnico isolado nunca compra.
++  IF NOT public.has_role(_uid,'parceiro_b2b'::public.app_role) THEN RETURN false; END IF;
++  c := platform_private.b2b_commercial_context();
++  IF c IS NULL OR c->>'contract' <> 'C2_MULTIPROFILE_V1' OR c->>'mode' <> 'commercial_owner'
++     OR (c->>'partner_id')::uuid IS DISTINCT FROM _partner OR COALESCE((c->>'manager')::boolean,false) IS NOT TRUE THEN
++    RETURN false;
++  END IF;
++  -- Cliente comercial = sem organização própria; tenant dono ativo e coerente com perfil/vínculo.
++  IF EXISTS (SELECT 1 FROM public.organizations o WHERE o.partner_account_id = _partner) THEN RETURN false; END IF;
++  IF NOT COALESCE(platform_private.b2b_phase1_partner_visible(_partner,true),false) THEN RETURN false; END IF;
++  IF NOT EXISTS (SELECT 1 FROM public.partner_users pu
++      JOIN public.partner_accounts pa ON pa.id = pu.partner_id
++      JOIN public.profiles p ON p.user_id = pu.user_id
++      JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id
++     WHERE pu.user_id = _uid AND pu.partner_id = _partner
++       AND pu.revoked_at IS NULL AND (pu.valid_from IS NULL OR pu.valid_from <= now())
++       AND pa.ativo AND pa.deleted_at IS NULL AND o.ativo AND o.status = 'ativa'
++       AND (o.partner_account_id IS NULL OR o.partner_account_id = _partner)
++       AND p.ativo AND p.organization_id = pu.tenant_id AND pu.tenant_id = o.id
++       AND (c->>'tenant_id')::uuid = o.id
++       AND public.is_valid_b2b_partner_user(_uid, pa.id)) THEN
++    RETURN false;
++  END IF;
++  RETURN EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'pedidos_b2b')
++     AND EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'catalogo_precos');
++END $function$
