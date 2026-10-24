@@ -137,8 +137,9 @@ ok('insufficient-credit create generated no title/installment/link/NF',counts()=
 denied(ADMIN,f"SELECT public.approve_partner_order('{rc['id']}',NULL,NULL)",'C2_ACCOUNTING_PENDING');ok('owner approval of credit-pending request denied C2_ACCOUNTING_PENDING')
 for col,v in [('credit_approved_at','now()'),('status',"'em_analise_comercial'"),('status',"'aprovado'")]:
     before=snapshot();ob0=order(rc['id']);r=subprocess.run(['true']);out=pg.sql(f"\\set ON_ERROR_STOP 0\nBEGIN; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET {col}={v} WHERE id='{rc['id']}'; COMMIT;")
-    ob1=order(rc['id']);print('PENDING_UPDATE',col,v,'->', 'unchanged' if ob1==ob0 else {k:(ob0[k],ob1[k]) for k in ob0 if ob0[k]!=ob1[k]}, out[-300:])
-    assert snapshot()==before and ob1['status']==ob0['status'] and ob1['credit_approved_at'] is None,(col,v)
+    ob1=order(rc['id']);print('PENDING_UPDATE',col,v,'->', sorted(k for k in ob0 if ob0[k]!=ob1[k]))
+    # LIVE credit guard silently keeps the status (only updated_at may move); no decision/title/approval can result.
+    assert ob1['status']=='aguardando_aprovacao_credito' and ob1['credit_approved_at'] is None and ob1['approved_at'] is None and counts()==c1 and all(ob0[k]==ob1[k] for k in ob0 if k!='updated_at'),(col,v)
 ok('no hidden credit decision or status hop out of aguardando_aprovacao_credito while pending')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
 # --- no existence oracle for foreign / missing orders before authorization ---
