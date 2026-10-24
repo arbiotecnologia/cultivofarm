@@ -51,6 +51,8 @@ ext_after=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated;
 ok('external manager create outcome byte-identical to LIVE: '+ext_after.strip(),ext_before==ext_after)
 denied(ADMIN,f"SELECT public.create_partner_order_secure('{P}','x','{items}',NULL,'{PLAN}',NULL,NULL,NULL,'k-nohash')",'cart_hash_required');ok('hash required')
 r1=json.loads(val(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'])));r2=json.loads(val(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'])));print('R',r1,r2)
+print('IDEM',pg.sql("SELECT partner_id||' '||idempotency_key||' '||coalesce(request_fingerprint,'NULL') FROM public.partner_order_idempotency"))
+print('OWN',pg.sql("SELECT proowner::regrole||' '||prosecdef FROM pg_proc WHERE proname='create_partner_order_secure'"))
 ok('idempotent replay returns same order',r1['id']==r2['id'])
 denied(ADMIN,create(ADMIN,'int-a-1',h=simA['cart_hash'],obs='changed'),'idempotency_conflict');ok('same key different request conflicts')
 ok('created order has server internal origin, not production-ready',pg.sql(f"SELECT internal_origin_snapshot->>'organization_id'||'/'||ready_for_production FROM public.partner_orders WHERE id='{r1['id']}'")==A+'/false')
