@@ -7,9 +7,5 @@
   "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "12ea8b410e8fadf2da8f72fc1bbc83cf",
   "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e388ed7b38f6f397b672629ee"
  },
- "candidate": {
-  "platform_private.c2_order_actor_scope(uuid,uuid)": "54c4327d63f48e39f598129ff9dd8f09",
-  "platform_private.c2_internal_order_target_reason(uuid,uuid)": "07d7c9002cbfe17497c9ee4a92d5a928",
-  "public.c2_internal_order_entry_capability_v1()": "88b3cd5499bf3f674601851f7dab848d"
- }
+ "candidate": {}
 }
