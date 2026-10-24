@@ -28,7 +28,7 @@ def setup():
  CREATE TABLE financial_audit_log(entity_type text,entity_id uuid,action text,old_data jsonb,new_data jsonb,performed_by uuid);
  """
  for kind in ['receivable','payable']:
-  s+=f"""CREATE TABLE accounts_{kind}(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid,customer_id uuid,supplier_id uuid,supplier_name text,description text,category_id uuid,cost_center_id uuid,total_amount numeric(14,2),issue_date date,first_due_date date,installment_count int,notes text,created_by uuid,origin_type text,fiscal_invoice_required boolean,fiscal_invoice_status text,payment_method_id uuid,supplier_invoice_date date,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
+  s+=f"""CREATE TABLE accounts_{kind}(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid,customer_id uuid,supplier_id uuid,supplier_name text,description text,category_id uuid,cost_center_id uuid,total_amount numeric(14,2),issue_date date,first_due_date date,installment_count int,notes text,created_by uuid,origin_type text,status text DEFAULT 'OPEN',fiscal_invoice_required boolean,fiscal_invoice_status text,payment_method_id uuid,supplier_invoice_date date,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());
  CREATE TABLE accounts_{kind}_installments(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),organization_id uuid,{kind}_id uuid REFERENCES accounts_{kind}(id),installment_number int,due_date date,original_amount numeric(14,2),net_amount numeric(14,2),status text,created_at timestamptz DEFAULT now(),UNIQUE({kind}_id,installment_number));
  """
  # Exact captured functions (including authorization wrappers); only their downstream
