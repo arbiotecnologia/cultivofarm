@@ -190,6 +190,26 @@ describe("mapearErroNovaConta e criacaoBemSucedida", () => {
 });
 
 describe("NovaContaDialog — Conta a Receber", () => {
+  it("recusa remota preserva edição e exibe erro após o toast", async () => {
+    resultados = {
+      clientes: { data: [{ id: "c1", nome: "Cliente A" }], error: null },
+      financial_categories: { data: [{ id: "cat1", name: "Vendas", active: true }], error: null },
+      financial_cost_centers: { data: [], error: null },
+    };
+    rpcMock.mockResolvedValue({ data: null, error: { code: "23514", message: "Parcela imutavel" } });
+    abrir();
+    await selecionar("nc-cliente", "Cliente A");
+    await selecionar("nc-categoria", "Vendas");
+    preencherBase();
+    fireEvent.click(screen.getByRole("button", { name: /Salvar/i }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    vi.mocked(toast.error).mockClear();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByLabelText("Descrição *")).toHaveValue("  Venda  ");
+    expect(screen.getByRole("button", { name: /Salvar/i })).not.toBeDisabled();
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+  });
+
   it("cadastro válido chama a RPC uma vez com payload em centavos corretos", async () => {
     resultados = {
       clientes: { data: [{ id: "c1", nome: "Cliente A", codigo_cliente: "C1" }], error: null },
