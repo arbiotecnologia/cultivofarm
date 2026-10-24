@@ -169,7 +169,7 @@ before=snapshot();failure=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims'
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET auto_generate_receivable=false WHERE partner_id='{P}'; SET session_replication_role=origin;")
 actor(ADMIN,f"SELECT public.approve_partner_order('{orders[1]}',NULL,NULL);")
-before=snapshot();pg.sql(f"SET session_replication_role=replica; DELETE FROM public.partner_financial_settings WHERE partner_id='{P}'; SET session_replication_role=origin;")
+pg.sql(f"SET session_replication_role=replica; DELETE FROM public.partner_financial_settings WHERE partner_id='{P}'; SET session_replication_role=origin;");before=snapshot()
 actor(ADMIN,f"SELECT public.generate_b2b_receivable_secure('{orders[1]}');",err='B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED');ok('missing settings explicitly denied without automatic insert or partial title',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; INSERT INTO public.partner_financial_settings(partner_id,billing_trigger,default_payment_method,active,auto_generate_receivable) VALUES('{P}','na_aprovacao','TEST-METHOD',true,true); SET session_replication_role=origin;")
 # REAL fixture is na_entrega. Only disposable synthetic settings change here.
