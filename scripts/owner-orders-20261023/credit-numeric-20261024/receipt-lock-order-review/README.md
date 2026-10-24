@@ -40,6 +40,6 @@ Negativos cross-tenant create exigem **42501/forbidden_partner**; técnico exige
 
 ## Suíte e limites
 
-`bun run test src/test/saas/c2-order-concurrency-postgres.test.ts src/test/saas/c2-credit-numeric-postgres.test.ts`: **2/2 PASS** final após guards integrais, concorrência177 checks/102.41s e crédito123 checks/59.53s; duração103.99s, 01:35 UTC. O check final de teardown é emitido após TOTAL e não incluído nos177.
+`bun run test src/test/saas/c2-order-concurrency-postgres.test.ts src/test/saas/c2-credit-numeric-postgres.test.ts`: **2/2 PASS** final após correção transacional, concorrência183 checks/96.50s e crédito123 checks/54.05s; duração98.08s, 01:42 UTC. O check final de teardown é emitido após TOTAL e não incluído nos183. A execução anterior01:40 passou183 checks mas o Vitest falhou somente pela expectativa antiga177, atualizada antes desta execução final.
 
 Sem JWT/RLS/PostgREST hosted, contabilidade real, stress prolongado, concessão formal por RPC capturada, pós-entrega na_entrega ou sucesso operacional interno. O uso de dados sintéticos/replica restringe-se à montagem; chamadas testadas usam authenticated/origin. Baselines/origin-rebase aritmético preservados.
