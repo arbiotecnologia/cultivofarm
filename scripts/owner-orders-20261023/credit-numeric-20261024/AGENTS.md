@@ -2,3 +2,4 @@
 - The auditor-installed numeric body is a LIVE dependency for the origin-rebase review; never replay historical arithmetic candidates or revert it through origin containment — preserves the deployed repair without enabling orders.
 - Credit fixtures and order-chain checks use disposable PostgreSQL with synthetic Auth; retain invalid-input behavior and report remaining numeric typmod limits — prevents broadened acceptance or false hosted certification.
 - Concurrent tests reuse the captured fixture chain and prove separate backend lock overlap; supported na_aprovacao billing never substitutes for unreviewed na_entrega post-delivery — prevents replay-only or fabricated delivery certification.
+- Analyze effective credit triggers alongside explicit RPC locks and preserve unchanged candidates unless a failure is reproduced; source-only lock inversions remain pending — prevents false exploit claims and speculative SQL repairs.

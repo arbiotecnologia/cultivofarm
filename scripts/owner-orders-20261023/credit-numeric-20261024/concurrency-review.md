@@ -1,5 +1,7 @@
 # Concorrência e negativas — revisão 24/10 00:47
 
+Complemento 00:58 em `credit-lock-review.md`: oito checks create-versus-approve adicionais (total158), trigger canônico serializa os dois caminhos ordinários; divergência explícita permanece, sem exploit/falha SQL demonstrada e sem variante corretiva. SQL/baselines intactos.
+
 Continuação solicitada de `dc990cd1751b7e3cf898b4999b279434ff03bb9a`. Auditor informa numeric LIVE e PRE estrutural origin-rebase hosted PASS; não foram repetidos pelo Lovable. Contabilidade A permanece DRAFT e writer false. Hash correto de crédito: `213ac31f3a30816ead75365b0d1fed18`.
 
 ## Execução local
