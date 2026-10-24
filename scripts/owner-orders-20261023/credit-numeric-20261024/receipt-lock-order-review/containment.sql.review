@@ -1,7 +1,7 @@
+BEGIN;
 -- CONTAINMENT ONLY, NOT CODE REVERSAL. Canonical ref must be proven externally.
 -- Owner must quiesce/drain affected writers BEFORE running; this does not cancel in-flight invocations.
 -- Expected composed release or reviewed reopened helper ONLY; unexpected/partially contained states abort.
-BEGIN;
 SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='60s';
 LOCK TABLE public.partner_orders IN SHARE ROW EXCLUSIVE MODE;
 DO $guard$ BEGIN

@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 01:38 — correção crítica da composição transacional
+- [x] Removidos somente delimitadores externos embutidos dos cinco comandos receipt-lock-order-review; uma transação por arquivo, pre/post READ ONLY, sem mudar corpos/guards/baselines.
+- [x] Candidate/rollback/containment completos com falha deliberada no POST preservam hashes/owners/ACLs; todos checkpoints têm mesmo txid. Suíte2/2PASS, concorrência183checks96.50s/crédito123checks54.05s.
+- [ ] Implantação independente continua bloqueada pela revisão e contabilidade real pendente; writerfalse, sem hosted/publicação nesta correção.
+
 ## 24/10 01:10 — barreiras intermediárias e negativas estritas
 - [x] Reproduzido deadlock40P01 na janela interna row/receipt por barreira de lock existente, sem alterar lógica; limite positivo/ramo formal pré-preparado localmente e negativasSQLSTATE42501+mensagens/controles positivos.
 - [x] Variante receipt-lock-order-review troca somente ordem row/receipt do wrapper; PREPOST integrais/rollbackguardado/contenção compatível testados. Suíte2/2PASS concorrência177checks102.41s/crédito123checks59.53s; sem hosted/publish/baselines alterados.
