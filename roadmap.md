@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 00:58 — create versus approve / locks de crédito
+- [x] Duas conexões/corpos capturados: trigger de crédito serializa create-versus-approve nas duas ordens, sem deadlock/título prematuro; divergência hash explícita confirmada sem exploit demonstrado. Oito checks adicionais, total158.
+- [x] Sem falha SQL demonstrada, nenhuma variante corretiva especulativa; baselines/rollback/origin-rebase intactos, implicações da contenção registradas em credit-lock-review.md.
+- [ ] Revisão das janelas intermediárias/branches crédito formal e possível inversão row/receipt; JWT real/pós-entrega e implantação dependem de revisão independente e gate contábil humano; não certificados aqui.
+
 ## 24/10 00:47 — concorrência PostgreSQL e negativas
 - [x] Exercitar duas conexões independentes:150checks/Vitest1/1PASS77.99s, create mesma chave exatamente um pedido; na_entrega pré-entrega nega, na_aprovacao separada primeira cobrança/concorrência sem duplicação.
 - [x] Ampliar escritas A/B e revogação parcial com Auth sintética, preservar baselines/SQL históricos e documentar resultados/impedimentos em concurrency-review.md; nenhuma falha SQL exigiu correção.
