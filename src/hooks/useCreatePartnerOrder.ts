@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useStorageAccessScope } from "./useStorageAccessScope";
 import type { CatalogItemTipo } from "./usePartnerCatalog";
+import { isAccountingPending } from "@/lib/orderAccountingState";
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
 
@@ -98,10 +99,22 @@ export function useCreatePartnerOrder() {
       return data as { id: string; numero: string; total: number };
     },
 
-    onSuccess: (_data, _variables, context) => {
+    onSuccess: async (data, _variables, context) => {
       if (!context?.current()) return;
       qc.invalidateQueries({ queryKey: ["partner-orders"] });
-      toast.success("Pedido enviado para análise comercial!");
+      // Estado contábil lido do snapshot gravado pelo servidor (sob RLS); sem coluna/linha => mensagem padrão.
+      let pending = false;
+      try {
+        const { data: row } = await (supabase as any)
+          .from("partner_orders").select("*").eq("id", data?.id).maybeSingle();
+        pending = isAccountingPending(row);
+      } catch { pending = false; }
+      if (!context?.current()) return;
+      if (pending) {
+        toast.warning("Pedido registrado. A contabilidade da empresa fornecedora ainda está pendente: aprovação, cobrança, nota fiscal e entrega ficam bloqueadas até a validação.");
+      } else {
+        toast.success("Pedido enviado para análise comercial!");
+      }
     },
     onError: (err: any, _variables, context) => {
       if (!context?.current()) return;
@@ -121,6 +134,7 @@ export function useCreatePartnerOrder() {
       else if (msg.includes("idempotency_conflict")) toast.error("O carrinho mudou depois do envio. Refaça a simulação e confirme novamente.");
       else if (msg.includes("idempotency_key_required") || msg.includes("invalid_idempotency_key")) toast.error("Falha ao identificar o checkout. Recarregue a página e tente novamente.");
       else if (msg.includes("credit_limit_exceeded")) toast.error("Pedido excede o limite de crédito disponível do parceiro.");
+      else if (msg.includes("C2_ACCOUNTING_PENDING")) toast.error("Contabilidade da empresa pendente: esta etapa está bloqueada até a validação.");
       else if (msg.includes("forbidden_financial_terms")) toast.error("Seu perfil técnico não tem acesso a condições financeiras.");
 
       else if (msg.includes("product_unavailable")) toast.error("Um dos itens não está disponível");

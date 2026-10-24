@@ -4,6 +4,8 @@ import { usePartnerOrders } from "@/hooks/usePartnerOrders";
 import { useUnreadCountsByOrder } from "@/hooks/usePartnerUnreadMessages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AccountingPendingBadge } from "@/components/pedidos/AccountingPendingNotice";
+import { isAccountingPending } from "@/lib/orderAccountingState";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ShoppingCart, Eye, MessageSquare, FlaskConical } from "lucide-react";
@@ -116,6 +118,7 @@ export default function MeusPedidos() {
                                 {partnerOrderStatusLabelForPartner(o.status)}
                               </Badge>
                               <FaseSlaBadge info={slaMap?.get(o.id) ?? null} modoParceiro />
+                              {isAccountingPending(o) && <AccountingPendingBadge />}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
@@ -163,9 +166,12 @@ export default function MeusPedidos() {
                     >
                       <div className="flex justify-between items-start">
                         <div className="font-mono text-sm">{o.numero}</div>
-                        <Badge variant={partnerOrderStatusVariantForPartner(o.status)}>
-                          {partnerOrderStatusLabelForPartner(o.status)}
-                        </Badge>
+                        <div className="flex flex-wrap justify-end gap-1">
+                          <Badge variant={partnerOrderStatusVariantForPartner(o.status)}>
+                            {partnerOrderStatusLabelForPartner(o.status)}
+                          </Badge>
+                          {isAccountingPending(o) && <AccountingPendingBadge />}
+                        </div>
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Criado em {formatDate(o.created_at)}

@@ -10,6 +10,23 @@ fixtures=s[s.index('pg.sql(f"""\nSET session_replication_role=replica;\nINSERT I
 exec(compile(setup,str(H/'test-local.py'),'exec'))
 E=json.loads((D/'expected.json').read_text())
 md5=lambda sig:pg.sql(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure))")
+# Emulate CURRENT LIVE: install 30dc8243 (commercial_portfolio_catalog_entry_guarded) exactly as reviewed, then
+# compare every captured 15:40 dependency hash; mismatches install the captured body (evidence) and are reported.
+C30D=D.parent.parent/'commercial-order-entry-20261024'
+c30=(C30D/'candidate.sql.review').read_text();c30=c30[c30.index('END $pre$;')+len('END $pre$;'):c30.index('DO $post$')]
+pg.sql('BEGIN;'+c30+'COMMIT;')
+pg.sql("REVOKE ALL ON FUNCTION public.get_partner_catalog_secure(uuid) FROM PUBLIC,anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION public.get_partner_catalog_secure(uuid) TO service_role; GRANT EXECUTE ON FUNCTION public.get_partner_catalog_secure(uuid) TO authenticated;")  # captured LIVE ACL order
+ok('catalog ACL equals captured LIVE literal',pg.sql("SELECT proacl::text FROM pg_proc WHERE oid='public.get_partner_catalog_secure(uuid)'::regprocedure")=='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')
+C30=json.loads((C30D/'expected.json').read_text())['candidate']
+ok('LIVE 30dc8243 objects reproduced byte-exact in harness',all(md5(k)==v for k,v in C30.items()))
+CAP=json.loads((D/'live-capture-20261024-1540.json').read_text())
+for dep in CAP['dependencies']:
+    sig=dep['signature'].replace('(partner_order_status)','(public.partner_order_status)')
+    if md5(sig)!=dep['md5']:
+        print('CAPTURE_DRIFT_INSTALLED',sig);pg.sql(dep['definition']+';')
+    ok('captured LIVE dependency md5 '+dep['md5'][:8]+' '+sig,md5(sig)==dep['md5'])
+ok('captured LIVE entitlements_for_user md5 matches harness',md5('platform_private.entitlements_for_user(uuid)')==CAP['entitlements_for_user_md5'])
+ok('captured absent signature really absent in harness reference: fn_resolve_b2b_cart(uuid,jsonb,date)',pg.sql("SELECT to_regprocedure('public.fn_resolve_b2b_cart(uuid,jsonb,date)') IS NULL")=='t')
 pg.sql((D/'preflight.sql').read_text());ok('b5 structural preflight READ ONLY passes on captured LIVE (writer false)')
 cand=(D/'candidate.sql.review').read_text()
 if not E['candidate']:
@@ -26,6 +43,13 @@ bad=inj(cand,'C2AP_INJECTED_POST')
 assert 'C2AP_INJECTED_POST' in pg.sql(bad,ok=False)
 ok('candidate failing POST rolls back atomically (writer still false, no overlay)',md5('platform_private.c2_owner_order_create_allowed(uuid,uuid)')==E['b5_hashes']['platform_private.c2_owner_order_create_allowed(uuid,uuid)'] and pg.sql("SELECT to_regprocedure('platform_private.c2_accounting_pending_guard()') IS NULL")=='t')
 pg.sql(cand);ok('candidate installs with owner A NOT validated (no install-time accounting gate)')
+ok('30dc8243 preserved byte-exact after candidate',all(md5(k)==v for k,v in C30.items()))
+# Full restore (no history yet) returns to pre-implantation LIVE and keeps 30dc8243; then reinstall proves PRE again.
+pg.sql((D/'restore-live.sql.review').read_text())
+ok('restore-live returns exact pre-implantation LIVE bodies and drops column/objects',all(md5(k)==v for k,v in E['live_restore'].items()) and pg.sql("SELECT count(*) FROM pg_attribute WHERE attrelid='public.partner_orders'::regclass AND attname='c2_external_origin_snapshot' AND NOT attisdropped")=='0')
+ok('restore-live keeps 30dc8243 byte-exact',all(md5(k)==v for k,v in C30.items()))
+pg.sql((D/'preflight.sql').read_text());ok('preflight passes again after full restore')
+pg.sql(cand);ok('candidate re-installs after full restore')
 pg.sql((D/'postflight.sql').read_text());ok('composed postflight READ ONLY passes')
 exec(compile(fixtures,str(H/'test-local.py'),'exec'))
 SETB=U(10)
@@ -99,6 +123,44 @@ denied(G,create(P,'after-revoke',hA),'42501');ok('revoked manager cannot create'
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
 r3=json.loads(val(G,create(P,'pend-2',sim(G,P)['cart_hash'])+';'))
 ok('restored link creates again as pending (A DRAFT again)',order(r3['id'])['c2_external_origin_snapshot']['contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')
+# --- 30dc8243 commercial entry preserved on top of the composed candidate (A DRAFT again here) ---
+capA=json.loads(val(ADMIN,"SELECT public.c2_internal_order_entry_capability_v1();"))
+ok('internal A capability still fail-closed issuer_not_validated (A DRAFT)',capA['order_create'] is False and capA['reason']=='issuer_not_validated')
+denied(ADMIN,f"SELECT public.simulate_b2b_payment_plan_secure('{Q}','{PLAN}','{items}',NULL)",'C2_INTERNAL_TARGET_DENIED:target_outside_portfolio');ok('internal A -> foreign B partner still C2_INTERNAL_TARGET_DENIED (30dc branch reached)')
+hI=json.loads(val(ADMIN,f"SELECT public.simulate_b2b_payment_plan_secure('{P}','{PLAN}','{items}',NULL);"))['cart_hash']
+denied(ADMIN,create(P,'int-a-draft',hI),'B2B_INTERNAL_ISSUER_NOT_VALIDATED');ok('internal A create with DRAFT issuer still denied; no pending path for internal actors')
+# --- insufficient credit: honest pending request, no credit decision, no hidden transition ---
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=100,credit_limit_action='approval_required' WHERE partner_id='{P}'; SET session_replication_role=origin;")
+c1=counts();rc=json.loads(val(G,create(P,'pend-credit',sim(G,P)['cart_hash'])+';'));oc=order(rc['id'])
+ok('insufficient credit: request lands aguardando_aprovacao_credito as PENDING_ACCOUNTING, nothing approved',oc['status']=='aguardando_aprovacao_credito' and oc['c2_external_origin_snapshot']['contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' and oc['credit_approved_at'] is None and oc['approved_at'] is None and oc['ready_for_production'] is False)
+ok('insufficient-credit create generated no title/installment/link/NF',counts()==c1)
+denied(ADMIN,f"SELECT public.approve_partner_order('{rc['id']}',NULL,NULL)",'C2_ACCOUNTING_PENDING');ok('owner approval of credit-pending request denied C2_ACCOUNTING_PENDING')
+for col,v in [('credit_approved_at','now()'),('status',"'em_analise_comercial'"),('status',"'aprovado'")]:
+    before=snapshot();ob0=order(rc['id']);r=subprocess.run(['true']);out=pg.sql(f"\\set ON_ERROR_STOP 0\nBEGIN; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET {col}={v} WHERE id='{rc['id']}'; COMMIT;")
+    ob1=order(rc['id']);print('PENDING_UPDATE',col,v,'->', sorted(k for k in ob0 if ob0[k]!=ob1[k]))
+    # LIVE credit guard silently keeps the status (only updated_at may move); no decision/title/approval can result.
+    assert ob1['status']=='aguardando_aprovacao_credito' and ob1['credit_approved_at'] is None and ob1['approved_at'] is None and counts()==c1 and all(ob0[k]==ob1[k] for k in ob0 if k!='updated_at'),(col,v)
+ok('no hidden credit decision or status hop out of aguardando_aprovacao_credito while pending')
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
+# --- no existence oracle for foreign / missing orders before authorization ---
+MISSING=U(999)
+for fn in ["approve_partner_order('{i}',NULL,NULL)","generate_b2b_receivable_secure('{i}')"]:
+    ef=pg.sql(f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN_B)}',true); SELECT public.{fn.format(i=r3['id'])}; COMMIT;",ok=False)
+    em=pg.sql(f"BEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN_B)}',true); SELECT public.{fn.format(i=MISSING)}; COMMIT;",ok=False)
+    msg=lambda e:e.split('ERROR:')[1].splitlines()[0].strip()
+    assert 'C2_ACCOUNTING_PENDING' not in ef and 'B2B_INTERNAL_DOWNSTREAM' not in ef and msg(ef)==msg(em),(ef[-400:],em[-400:])
+ok('B admin: approve/generate on foreign pending A order give the same denial as a missing order (no accounting reason leaked)')
+# --- concurrency: same idempotency key from two backends -> one order ---
+from concurrent.futures import ThreadPoolExecutor
+hc=sim(G,P)['cart_hash'];n0=pg.sql("SELECT count(*) FROM public.partner_orders")
+with ThreadPoolExecutor(2) as ex:res=list(ex.map(lambda _:json.loads(val(G,create(P,'conc-1',hc)+';'))['id'],range(2)))
+ok('two concurrent creates with same key return one pending order',res[0]==res[1] and int(pg.sql("SELECT count(*) FROM public.partner_orders"))==int(n0)+1 and order(res[0])['c2_external_origin_snapshot']['contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')
+# revocation after pending creation: revoked manager cannot read via create replay either
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic revocation 2' WHERE user_id='{G}'; SET session_replication_role=origin;")
+denied(G,create(P,'conc-1',hc),'42501');ok('revoked manager replay of existing key denied (no idempotent leak after revocation)')
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
+err=pg.sql((D/'restore-live.sql.review').read_text(),ok=False)
+ok('restore-live refuses with pending/external history (C2AP_FULL_RESTORE_BLOCKED_HISTORY), no DDL, rows kept','C2AP_FULL_RESTORE_BLOCKED_HISTORY' in err and all(md5(k)==v for k,v in E['candidate'].items()) and pg.sql("SELECT count(*)>0 FROM public.partner_orders WHERE c2_external_origin_snapshot IS NOT NULL")=='t')
 # Rollback
 bad=inj((D/'rollback.sql.review').read_text(),'C2AP_INJECTED_RB')
 assert 'C2AP_INJECTED_RB' in pg.sql(bad,ok=False);ok('rollback failing POST preserves candidate',md5('platform_private.b2b_internal_order_snapshot_guard()')==E['candidate']['platform_private.b2b_internal_order_snapshot_guard()'])
@@ -108,4 +170,7 @@ ok('history kept: pending and promoted orders remain',pg.sql(f"SELECT count(*) F
 before=snapshot();err=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET observacoes='x' WHERE id='{r3['id']}'; COMMIT;",ok=False)
 ok('after rollback pending request is frozen (b5 assert rejects pending contract)','C2_EXTERNAL_ORIGIN_DENIED' in err and snapshot()==before)
 denied(G,create(P,'after-rb',hA),'42501');ok('after rollback external create closed again')
+# Full restore must refuse while history exists (after rollback pending rows remain).
+err=pg.sql((D/'restore-live.sql.review').read_text().replace(E['candidate']['platform_private.b2b_internal_order_snapshot_guard()'],'__skip__'),ok=False)
+ok('restore-live refuses to run on non-candidate state (drift) — no partial DDL',('C2AP_RESTORE_PRE_DRIFT' in err or 'C2AP_30DC' in err) and md5('platform_private.b2b_internal_order_snapshot_guard()')==E['b5_hashes']['platform_private.b2b_internal_order_snapshot_guard()'])
 print('TOTAL',len(checks),'PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification')

@@ -65,7 +65,9 @@ appr_p = appr.replace(nf, nf + '  ' + PENDING_CHECK.format(id='p_order_id') + '\
 gen = fn('CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order_id uuid)')
 d_old = " IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;\n"
 once(gen, d_old, 'GENERATE')
-gen_p = gen.replace(d_old, d_old + ' ' + PENDING_CHECK.format(id='p_partner_order_id') + '\n')
+auth_end = "    RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';\n  END IF;\n"
+once(gen, auth_end, 'GENERATE_AUTH')
+gen_p = gen.replace(d_old, '', 1).replace(auth_end, auth_end + ' ' + d_old.strip() + '\n ' + PENDING_CHECK.format(id='p_partner_order_id') + '\n', 1)
 
 # 5) Reviewed v4 owner writer (replaces LIVE SELECT false).
 old = (ROOT / 'scripts/owner-orders-20261023/candidate.sql.review').read_text()
@@ -110,4 +112,5 @@ rb_post = "DO $c2ap_rb_post$ BEGIN\n " + "\n ".join([proc(k, v, 'C2AP_ROLLBACK_P
     '\n'.join([ast + ';'.replace('', ''), guard + ';', appr + ';', gen + ';']).replace('CREATE FUNCTION platform_private.c2_external_origin_assert', 'CREATE OR REPLACE FUNCTION platform_private.c2_external_origin_assert', 1) +
     "\n" + live_writer + ";\nALTER FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid) OWNER TO postgres;\n" +
     "DROP FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timestamptz);\nDROP FUNCTION platform_private.c2_accounting_pending_guard();\nDROP FUNCTION platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid);\nDROP FUNCTION platform_private.c2_external_origin_contract_valid(jsonb);\n" + rb_post + "COMMIT;\n")
+exec(compile((D/'src/rebase_30dc.py').read_text(),'rebase_30dc.py','exec'))
 print('assembled')

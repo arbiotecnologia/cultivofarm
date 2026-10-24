@@ -1,9 +1,23 @@
 PASS captured business/authorization/pricing bodies reproduce all MD5s
 PASS LIVE manual correction bodies and private context table reproduce deployed MD5s
 PASS all 44 current order/children/financial triggers installed; actions use origin mode
+PASS catalog ACL equals captured LIVE literal
+PASS LIVE 30dc8243 objects reproduced byte-exact in harness
+PASS captured LIVE dependency md5 1b397fd4 public.fn_b2b_status_is_operational(public.partner_order_status)
+PASS captured LIVE dependency md5 2f1063f0 platform_private.b2b_commercial_context()
+PASS captured LIVE dependency md5 d4936c87 platform_private.c2_order_internal_recipients(uuid)
+PASS captured LIVE dependency md5 70b38109 platform_private.c2_order_partner_recipients(uuid)
+PASS captured LIVE dependency md5 a0417d67 platform_private.c2_owner_order_create_allowed(uuid,uuid)
+PASS captured LIVE entitlements_for_user md5 matches harness
+PASS captured absent signature really absent in harness reference: fn_resolve_b2b_cart(uuid,jsonb,date)
 PASS b5 structural preflight READ ONLY passes on captured LIVE (writer false)
 PASS candidate failing POST rolls back atomically (writer still false, no overlay)
 PASS candidate installs with owner A NOT validated (no install-time accounting gate)
+PASS 30dc8243 preserved byte-exact after candidate
+PASS restore-live returns exact pre-implantation LIVE bodies and drops column/objects
+PASS restore-live keeps 30dc8243 byte-exact
+PASS preflight passes again after full restore
+PASS candidate re-installs after full restore
 PASS composed postflight READ ONLY passes
 PASS external manager A creates canonical request while A accounting is DRAFT
 PASS pending snapshot carries no issuer identity/attestation
@@ -34,9 +48,24 @@ PASS second promotion rejected explicitly
 PASS promotion created no title/installment/link/NF
 PASS revoked manager cannot create
 PASS restored link creates again as pending (A DRAFT again)
+PASS internal A capability still fail-closed issuer_not_validated (A DRAFT)
+PASS internal A -> foreign B partner still C2_INTERNAL_TARGET_DENIED (30dc branch reached)
+PASS internal A create with DRAFT issuer still denied; no pending path for internal actors
+PASS insufficient credit: request lands aguardando_aprovacao_credito as PENDING_ACCOUNTING, nothing approved
+PASS insufficient-credit create generated no title/installment/link/NF
+PASS owner approval of credit-pending request denied C2_ACCOUNTING_PENDING
+PENDING_UPDATE credit_approved_at now() -> []
+PENDING_UPDATE status 'em_analise_comercial' -> ['updated_at']
+PENDING_UPDATE status 'aprovado' -> []
+PASS no hidden credit decision or status hop out of aguardando_aprovacao_credito while pending
+PASS B admin: approve/generate on foreign pending A order give the same denial as a missing order (no accounting reason leaked)
+PASS two concurrent creates with same key return one pending order
+PASS revoked manager replay of existing key denied (no idempotent leak after revocation)
+PASS restore-live refuses with pending/external history (C2AP_FULL_RESTORE_BLOCKED_HISTORY), no DDL, rows kept
 PASS rollback failing POST preserves candidate
 PASS rollback restores exact b5 bodies and LIVE writer false
 PASS history kept: pending and promoted orders remain
 PASS after rollback pending request is frozen (b5 assert rejects pending contract)
 PASS after rollback external create closed again
-TOTAL 41 PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification
+PASS restore-live refuses to run on non-candidate state (drift) — no partial DDL
+TOTAL 67 PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification

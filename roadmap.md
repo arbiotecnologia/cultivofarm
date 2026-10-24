@@ -1,7 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 24/10 15:26 — compra B2B com pendência contábil honesta (pacote INATIVO)
-- [x] `scripts/owner-orders-20261023/accounting-pending-request-20261024/`: b5 byte-exato + overlay pendente/promoção auditada; 41 PASS descartável (Auth sintética).
+- [x] `scripts/owner-orders-20261023/accounting-pending-request-20261024/`: rebase sobre LIVE 30dc8243 (scope 54c4327d), trava INSERT/UPDATE, sem oráculo, rollback parcial + restore-live completo condicionado; 67 PASS descartável (Auth sintética). UI mostra contabilidade pendente.
+- [ ] Revisão independente/instalação pelo auditor do pacote acima; teste JWT/RLS real A/B; validação contábil real de A; tela de promoção ainda não existe.
 - [ ] Revisão independente e aplicação pelo auditor; capturas de `LIVE-DEPENDENCIES.md`. Bloqueio: execução externa.
 - [ ] Frontend: estado "aguardando validação contábil" e ação de promoção para o comercial, após revisão SQL.
 - [ ] Validação contábil real de A; classificação fiscal MG e NF-e. Bloqueio: contabilidade/dados fiscais.

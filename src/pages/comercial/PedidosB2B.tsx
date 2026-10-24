@@ -1,3 +1,5 @@
+import { AccountingPendingNotice, AccountingPendingBadge } from "@/components/pedidos/AccountingPendingNotice";
+import { isAccountingPending } from "@/lib/orderAccountingState";
 import { useMemo, useState } from "react";
 import { usePartnerOrdersAdmin, PartnerOrderAdmin } from "@/hooks/usePartnerOrdersAdmin";
 import { usePartnerOrderItems } from "@/hooks/usePartnerOrders";
@@ -349,7 +351,7 @@ export default function PedidosB2B() {
               <DialogHeader>
                 <DialogTitle>Pedido {detail.numero}</DialogTitle>
                 <DialogDescription>
-                  {detail.partner_accounts?.razao_social} · {fmtDate(detail.created_at)} · <Badge variant={partnerOrderStatusVariant(detail.status)}>{partnerOrderStatusLabel(detail.status)}</Badge>
+                  {detail.partner_accounts?.razao_social} · {fmtDate(detail.created_at)} · <Badge variant={partnerOrderStatusVariant(detail.status)}>{partnerOrderStatusLabel(detail.status)}</Badge>{isAccountingPending(detail) && <> <AccountingPendingBadge /></>}
                 </DialogDescription>
               </DialogHeader>
 
@@ -391,6 +393,7 @@ export default function PedidosB2B() {
                   </div>
                 </div>
 
+                {isAccountingPending(detail) && <AccountingPendingNotice audience="commercial" />}
                 {detail.status === "aguardando_aprovacao_credito" && (
                   <div className="border rounded-md p-3 space-y-2 bg-destructive/5">
                     <div className="flex items-center gap-2 font-semibold text-sm">
@@ -418,7 +421,7 @@ export default function PedidosB2B() {
                     ) : (
                       <div className="text-xs text-muted-foreground">Carregando dados de crédito...</div>
                     )}
-                    {canApproveCredit ? (
+                    {canApproveCredit && !isAccountingPending(detail) ? (
                       <>
                         <Textarea
                           rows={2}
@@ -446,7 +449,9 @@ export default function PedidosB2B() {
                       </>
                     ) : (
                       <div className="text-xs text-muted-foreground">
-                        Apenas Administrador, Gestor ou Financeiro podem aprovar crédito.
+                        {isAccountingPending(detail)
+                          ? "Decisão de crédito bloqueada enquanto a contabilidade da empresa estiver pendente."
+                          : "Apenas Administrador, Gestor ou Financeiro podem aprovar crédito."}
                       </div>
                     )}
                   </div>
@@ -546,6 +551,7 @@ export default function PedidosB2B() {
                   onClick={handleApprove}
                   disabled={
                     approve.isPending ||
+                    isAccountingPending(detail) ||
                     !hasItems ||
                     detail.status === "aprovado" ||
                     detail.status === "aguardando_aprovacao_credito" ||
@@ -553,7 +559,9 @@ export default function PedidosB2B() {
                     detail.status === "aguardando_itens"
                   }
                   title={
-                    !hasItems
+                    isAccountingPending(detail)
+                      ? "Bloqueado: contabilidade da empresa pendente"
+                      : !hasItems
                       ? "Adicione ao menos 1 item para aprovar"
                       : detail.status === "aguardando_cotacao"
                         ? "Responda a cotação antes de aprovar"
