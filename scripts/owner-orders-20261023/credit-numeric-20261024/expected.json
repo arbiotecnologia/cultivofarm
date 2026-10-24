@@ -1,0 +1,10 @@
+{
+  "canonical_ref": "swzpzcwiasxmjutrmvkm",
+  "signature": "public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+  "owner": "postgres",
+  "acl": "{postgres=X/postgres,service_role=X/postgres}",
+  "baseline_md5": "3bcc92e68f80b86bc01db7b5e94ee4c6",
+  "patched_md5": "213ac31f3a30816ead75365b0d1fed18",
+  "baseline_sha256": "1655acbfb75860dc2e84f27e7eacc66c27b4ff0978e3d2cd1b75898f85a83b67",
+  "patched_sha256": "50d889367a861ca5eaa9d396282b1c277cac7d8bd39ac48a0c121693d802f386"
+}
