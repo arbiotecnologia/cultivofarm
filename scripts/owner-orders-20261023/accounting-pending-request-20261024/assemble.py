@@ -94,6 +94,9 @@ pf = b5_post
 for k, v in E['b5_to_candidate'].items():
     if pf.count(k) != 1: sys.exit(f'POSTFLIGHT_ANCHOR {k}: {pf.count(k)}')
     pf = pf.replace(k, v)
+old_cnt = "'public.partner_orders'::regclass))<>48 THEN RAISE EXCEPTION 'origin_unexpected_trigger'"
+if pf.count(old_cnt) != 1: sys.exit('POSTFLIGHT_TRIGGER_ANCHOR')
+pf = pf.replace(old_cnt, "'public.partner_orders'::regclass))<>49 THEN RAISE EXCEPTION 'origin_unexpected_trigger'")  # +zz_c2_accounting_pending
 pf = pf.rstrip()
 assert pf.endswith('COMMIT;')
 (D / 'postflight.sql').write_text(head + pf[:-len('COMMIT;')] + post + "SELECT 'C2AP_POSTFLIGHT_PASS';\nCOMMIT;\n")
