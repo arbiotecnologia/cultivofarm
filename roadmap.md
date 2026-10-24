@@ -1,5 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 00:58 — create versus approve / locks de crédito
+- [ ] Reproduzir duas conexões com corpos canônicos e locks divergentes; examinar ordem row/partner/receivable sem declarar exploit não demonstrado.
+- [ ] Se divergência funcional comprovada, preparar variante única guardada e contenção compatível sem alterar baselines, writer ou crédito LIVE; manter bloqueios humanos/JWT.
+
 ## 24/10 00:47 — concorrência PostgreSQL e negativas
 - [x] Exercitar duas conexões independentes:150checks/Vitest1/1PASS77.99s, create mesma chave exatamente um pedido; na_entrega pré-entrega nega, na_aprovacao separada primeira cobrança/concorrência sem duplicação.
 - [x] Ampliar escritas A/B e revogação parcial com Auth sintética, preservar baselines/SQL históricos e documentar resultados/impedimentos em concurrency-review.md; nenhuma falha SQL exigiu correção.
