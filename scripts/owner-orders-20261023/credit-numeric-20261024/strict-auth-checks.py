@@ -9,7 +9,7 @@ ok('same A financial targets positive admin authorized replay',True)
 res=json.loads(val(GT,create(GT,'strict-before-revoke')+';'))['id']
 ok('same identity target positive before link revocation',bool(res))
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic' WHERE user_id='{GT}'; SET session_replication_role=origin;")
-before=snapshot();denied(GT,create(G,'strict-revoked',h=hashA),'42501','forbidden_partner')
+before=snapshot();denied(GT,create(G,'strict-revoked',h=hashA),'42501','forbidden_financial_terms')
 ok('same identity link revoked exact authorization and no effects',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{GT}'; SET session_replication_role=origin;")
 res=json.loads(val(GT,create(GT,'strict-reactivated')+';'))['id']

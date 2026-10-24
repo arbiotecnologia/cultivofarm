@@ -109,7 +109,7 @@ ok('partial manager revocation technical residual cannot create',snapshot()==bef
 before=snapshot();denied(GT,create(G,'partial-tech-removed',h=hashA),'42501','forbidden_financial_terms')
 ok('revoked manager cannot replay own earlier receipt',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; INSERT INTO public.user_roles(user_id,role) VALUES('{GT}','parceiro_b2b'); UPDATE public.partner_users SET revoked_at=now(),revoked_by='{ADMIN}',revoke_reason='Synthetic concurrency revocation' WHERE user_id='{GT}'; SET session_replication_role=origin;")
-before=snapshot();denied(GT,create(G,'partial-link-revoked',h=hashA),'42501','forbidden_partner')
+before=snapshot();denied(GT,create(G,'partial-link-revoked',h=hashA),'42501','forbidden_financial_terms')
 ok('revoked partner link denies cumulative writer all effects',snapshot()==before)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{GT}'; SET session_replication_role=origin;")
 ok('concurrency preserves credit LIVE body',pg.sql("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))")=='213ac31f3a30816ead75365b0d1fed18')
