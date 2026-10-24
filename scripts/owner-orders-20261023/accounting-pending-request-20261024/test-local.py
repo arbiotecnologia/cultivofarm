@@ -20,7 +20,9 @@ if not E['candidate']:
     E['b5_to_candidate']={E['b5_hashes'][k]:E['candidate'][k] for k in E['b5_hashes']}
     (D/'expected.json').write_text(json.dumps(E,indent=1)+'\n');subprocess.run([sys.executable,str(D/'assemble.py')],check=True)
     raise SystemExit('BOOTSTRAP: hashes pinned, rerun')
-bad=cand.replace('COMMIT;\n','DO $x$ BEGIN RAISE EXCEPTION $$C2AP_INJECTED_POST$$; END $x$;\nCOMMIT;\n')
+inj=lambda t,tag:(lambda a:a[0]+'DO $x$ BEGIN RAISE EXCEPTION $$'+tag+'$$; END $x$;\n'+a[1]+a[2])(t.rpartition('\nCOMMIT;\n')[0:1]+('\nCOMMIT;\n',t.rpartition('\nCOMMIT;\n')[2]))
+assert cand.rstrip().endswith('\nCOMMIT;')
+bad=inj(cand,'C2AP_INJECTED_POST')
 assert 'C2AP_INJECTED_POST' in pg.sql(bad,ok=False)
 ok('candidate failing POST rolls back atomically (writer still false, no overlay)',md5('platform_private.c2_owner_order_create_allowed(uuid,uuid)')==E['b5_hashes']['platform_private.c2_owner_order_create_allowed(uuid,uuid)'] and pg.sql("SELECT to_regprocedure('platform_private.c2_accounting_pending_guard()') IS NULL")=='t')
 pg.sql(cand);ok('candidate installs with owner A NOT validated (no install-time accounting gate)')
@@ -94,7 +96,7 @@ pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET r
 r3=json.loads(val(G,create(P,'pend-2',sim(G,P)['cart_hash'])+';'))
 ok('restored link creates again as pending (A DRAFT again)',order(r3['id'])['c2_external_origin_snapshot']['contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1')
 # Rollback
-bad=(D/'rollback.sql.review').read_text().replace('COMMIT;\n','DO $x$ BEGIN RAISE EXCEPTION $$C2AP_INJECTED_RB$$; END $x$;\nCOMMIT;\n')
+bad=inj((D/'rollback.sql.review').read_text(),'C2AP_INJECTED_RB')
 assert 'C2AP_INJECTED_RB' in pg.sql(bad,ok=False);ok('rollback failing POST preserves candidate',md5('platform_private.b2b_internal_order_snapshot_guard()')==E['candidate']['platform_private.b2b_internal_order_snapshot_guard()'])
 pg.sql((D/'rollback.sql.review').read_text())
 ok('rollback restores exact b5 bodies and LIVE writer false',all(md5(k)==v for k,v in E['b5_hashes'].items()))
