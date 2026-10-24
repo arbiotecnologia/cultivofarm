@@ -8,6 +8,9 @@
   "public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)": "37d4f45e388ed7b38f6f397b672629ee"
  },
  "candidate": {
+  "platform_private.c2_order_actor_scope(uuid,uuid)": "54c4327d63f48e39f598129ff9dd8f09",
+  "platform_private.c2_internal_order_target_reason(uuid,uuid)": "07d7c9002cbfe17497c9ee4a92d5a928",
+  "public.c2_internal_order_entry_capability_v1()": "e2619c71becfebf38c8d03562ff11ce2",
   "public.get_partner_catalog_secure(uuid)": "b5684d350603d1db77ab9f1db0f4b253"
  }
 }
