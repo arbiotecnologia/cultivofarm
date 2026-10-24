@@ -1,5 +1,7 @@
 # Correção aritmética separada — revisão inativa
 
+**Estado 24/10 00:41 UTC:** recorte aritmético implantado independentemente pelo auditor como `c2_credit_percentage_numeric_capacity_only`, não pelo Lovable; POST externo hash novo/owner/ACL PASS e 8 casos readonly PASS conforme relato. Registro em `../applied/c2_credit_percentage_numeric_capacity_only.md`. **Não reaplicar o candidato aritmético antigo.** A composição/rebase continua inativa e NO-GO; baselines históricos permanecem intactos.
+
 Alvo: `public.fn_b2b_credit_exposure(uuid,numeric,uuid)`; fonte capturada do ref canônico `swzpzcwiasxmjutrmvkm`. A confirmação readonly de overflow em produção foi informada pelo proprietário; nesta rodada não houve acesso hospedado.
 
 **Única alteração:** `v_pct numeric(6,2)` → `v_pct numeric`. O restante de `pg_get_functiondef` é byte-exato, incluindo ROUND2, assinatura/defaults, STABLE/DEFINER/search_path, reason codes, precedência, limites e decisões. Owner postgres e ACL `{postgres=X/postgres,service_role=X/postgres}` permanecem intactos; não há GRANT, ticket novo, dado, writer ou validação fiscal.
@@ -13,7 +15,7 @@ Todos abaixo relativos a `scripts/owner-orders-20261023/credit-numeric-20261024/
 
 1. `baseline/function.{sql,json}` e `expected.json`: fonte imutável/metadata e hashes.
 2. `preflight.sql`: READ ONLY, baseline/body/owner/ACL exatos.
-3. `candidate.sql.review`: transação com PRE embutido → única declaração alterada → POST embutido. **Não aplicado.**
+3. `candidate.sql.review`: artefato histórico/teste da transação com PRE embutido → única declaração alterada → POST embutido. Recorte equivalente implantado pelo auditor; **não reaplicar**.
 4. `postflight.sql`: verificação READ ONLY externa do novo hash/owner/ACL.
 5. `rollback.sql.review`: transação guardada pelo novo hash/owner/ACL; restaura apenas typmod anterior e verifica baseline. Reintroduz o overflow conhecido; não é contenção de pedidos.
 6. `postflight-rollback.sql`: READ ONLY do baseline restaurado.

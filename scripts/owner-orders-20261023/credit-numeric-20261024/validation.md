@@ -1,5 +1,8 @@
 # Validação local — 24/10/2026
 
+- Atualização 00:41 UTC: auditor informa implantação independente `c2_credit_percentage_numeric_capacity_only` SUCCESS, PRE/POST transacionais e POST externo PASS; hash novo/owner/ACL preservados, writerfalse. Oito casos DO readonly independentes PASS e fixtureA180 conserva NO_LIMIT_DEFINED/zero numérico. Relato externo, não execução Lovable; candidato antigo não reaplicar. Variante origin-rebase corresponde ao hash agora instalado; composição permanece inativa.
+- Reexecução Lovable local 00:42 UTC: `bun run test src/test/saas/c2-credit-numeric-postgres.test.ts` PASS (1/1, 54.70s; harness completo 123 checks), incluindo comparação byte-exata dos quatro SQL rebase e PRE com writerfalse/novo hash, corpo completo capturado, atomicidade/replay/na_entrega e contenção de origem preservando crédito corrigido. Nenhuma alteração SQL necessária na variante já preparada; hashes SQL e baselines históricos intactos. Não é teste hosted/JWT. Build automático observado OK às00:42:07Z; runtime não alterado.
+
 - Captura canônica preservada; MD5 baseline `3bcc92e68f80b86bc01db7b5e94ee4c6`, novo normalizado `213ac31f3a30816ead75365b0d1fed18`.
 - PostgreSQL descartável: 123 checks PASS, incluindo crédito real, drift corpo/ACL, rollback guardado, limites, precedence, inválidos, na_entrega e falha tardia/replay da RPC real capturada.
 - Vitest conjunto: 2 arquivos/2 testes PASS (123 checks numéricos + 84 checks do pacote original), 54.57s. Ambos usam replica parcial/Auth sintética.
