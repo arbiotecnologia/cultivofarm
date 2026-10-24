@@ -1,0 +1,996 @@
+BEGIN;
+-- CONTAINMENT ONLY, NOT CODE REVERSAL. Canonical ref must be proven externally.
+-- Owner must quiesce/drain affected writers BEFORE running; this does not cancel in-flight invocations.
+-- Expected composed release or reviewed reopened helper ONLY; unexpected/partially contained states abort.
+-- Preserves the LIVE manual initial-installments correction and the private context table.
+SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='60s';
+LOCK TABLE public.partner_orders IN SHARE ROW EXCLUSIVE MODE;
+DO $guard$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.audit_partner_order_payment_terms()'::regprocedure AND md5(pg_get_functiondef(oid))='96b68bec5b11f2a414f333c68a00d765' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.audit_partner_order_payment_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_guard_credit_approval_fields()'::regprocedure AND md5(pg_get_functiondef(oid))='8902498ed09c4c5804b1749ee0c31cd7' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_guard_credit_approval_fields'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_guard_order_items_immutable()'::regprocedure AND md5(pg_get_functiondef(oid))='bc1c4dca3a9f5a247a3c098dcbe1c06f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_guard_order_items_immutable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_order_billing_eligibility(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='db977875e15ea49ce10fb3e5388d7dfb' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_order_billing_eligibility'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_financial_audit()'::regprocedure AND md5(pg_get_functiondef(oid))='46f777c2020ff9a059a80ae6dab4bd12' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_financial_audit'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_generate_receivable_installments()'::regprocedure AND md5(pg_get_functiondef(oid))='f632f15c9f46cb9889082fc533a27ea1' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_generate_receivable_installments'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_h6_guard_ar_installment_snapshot()'::regprocedure AND md5(pg_get_functiondef(oid))='c3f26bc5217a5d86227c7e74f762b3ad' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_h6_guard_ar_installment_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_h6_guard_title_snapshot()'::regprocedure AND md5(pg_get_functiondef(oid))='d9cc5c95f837de9d77cec2159e24bbf9' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_h6_guard_title_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_h6c_set_canonical_payment_terms()'::regprocedure AND md5(pg_get_functiondef(oid))='92eb0a19aed67bb829ccbec88aa9cf2d' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_h6c_set_canonical_payment_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_h6d_block_hard_delete()'::regprocedure AND md5(pg_get_functiondef(oid))='5c07dd23a0c9355c3fe11811004b0381' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_h6d_block_hard_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.partner_orders_audit_trigger()'::regprocedure AND md5(pg_get_functiondef(oid))='df139ef01591892436854b7f8c82f2db' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.partner_orders_audit_trigger'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_audit_partner_order_commercial()'::regprocedure AND md5(pg_get_functiondef(oid))='b537eb6807fbfc48b43b59d49ef7297a' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_audit_partner_order_commercial'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_auto_b2b_receivable()'::regprocedure AND md5(pg_get_functiondef(oid))='0f679538fe394924b140e54938a3bb9e' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_auto_b2b_receivable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_b2b_block_receivable_before_approval()'::regprocedure AND md5(pg_get_functiondef(oid))='9d559f2f04613704467cb488de0d842f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_b2b_block_receivable_before_approval'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_b2b_enforce_plan_selectable()'::regprocedure AND md5(pg_get_functiondef(oid))='3477a02b069c20ae3e1c832ecca6b1e7' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_b2b_enforce_plan_selectable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_block_partner_order_delete()'::regprocedure AND md5(pg_get_functiondef(oid))='55b4f2fa662f1d14dbbb663cb475d6a6' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_block_partner_order_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_block_partner_order_edit_after_op()'::regprocedure AND md5(pg_get_functiondef(oid))='2884dea0a9efa9ab7badac6bd8b5e46c' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_block_partner_order_edit_after_op'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_block_partner_order_items_after_op()'::regprocedure AND md5(pg_get_functiondef(oid))='6e7c1a8ac409cf64442396d48f73abb5' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_block_partner_order_items_after_op'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_notify_payment_terms_pending()'::regprocedure AND md5(pg_get_functiondef(oid))='671f9cb3a245cfccc30a27c16172d802' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_notify_payment_terms_pending'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_partner_order_items_resolve_pending()'::regprocedure AND md5(pg_get_functiondef(oid))='2e80e713bc0fe3785e1008405a0d02a3' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_partner_order_items_resolve_pending'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_partner_orders_credit_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='b24a3c30910832e8b14456d912a67589' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_partner_orders_credit_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_partner_orders_require_items()'::regprocedure AND md5(pg_get_functiondef(oid))='2b756289555b287255876e635a516c9a' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_partner_orders_require_items'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_pofl_updated_at()'::regprocedure AND md5(pg_get_functiondef(oid))='c06d5b386e01bceceefd80f420363c3b' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_pofl_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_recalc_risk_on_ar_change()'::regprocedure AND md5(pg_get_functiondef(oid))='2d38119a0bb885471ba0112c300a4144' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_recalc_risk_on_ar_change'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_refresh_engagement()'::regprocedure AND md5(pg_get_functiondef(oid))='87b1de282cdc198d0898cdc5ca08a4c4' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_refresh_engagement'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_sync_b2b_financial_status()'::regprocedure AND md5(pg_get_functiondef(oid))='e636fcf74c5e1c7c8037d5a17f525c27' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_sync_b2b_financial_status'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.trg_partner_order_timeline()'::regprocedure AND md5(pg_get_functiondef(oid))='833de323eb590a831924d5a5fcb490bd' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.trg_partner_order_timeline'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.trg_partner_order_to_planning_fn()'::regprocedure AND md5(pg_get_functiondef(oid))='e5915037d03892fffc5d388595cba685' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.trg_partner_order_to_planning_fn'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.update_updated_at_column()'::regprocedure AND md5(pg_get_functiondef(oid))='b1930ed5bca3be839f783c6202ab8147' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.update_updated_at_column'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.approve_partner_order(uuid,text,date)'::regprocedure AND md5(pg_get_functiondef(oid))='7cf8b7a2fae31088529df4c5656ebc40' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.approve_partner_order'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure AND md5(pg_get_functiondef(oid))='a29167995a98da7b9f0ee6620dd43550' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.create_partner_order_secure'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_cc_can_prepare(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='439d9c28f69029b9c71fddbef1054e57' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_cc_can_prepare'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='31eeb54e4b69d97c311629a37e553faf' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.generate_b2b_receivable_secure'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='1bdac7fae6d702fb42d3a30539e9c9c3' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.generate_b2b_receivable_secure_impl'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.is_valid_b2b_partner_user(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='0bb0dea04be8ca84c66db7ca6329876c' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.is_valid_b2b_partner_user'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_block_pofl_delete()'::regprocedure AND md5(pg_get_functiondef(oid))='14e8805a8633bef223ff842650b6d0cc' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_block_pofl_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.h15_actor_organization()'::regprocedure AND md5(pg_get_functiondef(oid))='64e10608403238a41a9baf92857ca881' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.h15_actor_organization'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public._saas_trg_require_feature()'::regprocedure AND md5(pg_get_functiondef(oid))='13ed48832f81cbb35434688ca35fda4b' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public._saas_trg_require_feature'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.issue_ticket(text,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='c32ad23a9db8574af85da8fcfc45af43' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.issue_ticket'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.has_ticket(text,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='29adae3347e8a5ff23327fa86fceb54b' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.has_ticket'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.guard_tenant_organization_id()'::regprocedure AND md5(pg_get_functiondef(oid))='d01a740c1e3e02407131d2b9228bf658' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.guard_tenant_organization_id'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.d51_5_validate_financial_tenant_links()'::regprocedure AND md5(pg_get_functiondef(oid))='f470a25ba7e65b366c62ad3ac8aa3112' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.d51_5_validate_financial_tenant_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_actor_scope(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='c3f2997746f24bc2efd15db5c0ccc862' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_actor_scope'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.h15_actor_organization()'::regprocedure AND md5(pg_get_functiondef(oid))='55edafec08bcc84a00f1526c14334a2c' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.h15_actor_organization'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_origin_valid(jsonb)'::regprocedure AND md5(pg_get_functiondef(oid))='70a7c317765a4888b38e8bf277ded7d3' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_origin_valid'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='6bbb61aa5899b18d13ac55d4f76f45e1' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_assert_origin'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_order_snapshot_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='da7a558c06878344c6e5ce70bb1c8e89' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_order_snapshot_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_child_snapshot_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='f9fcfca4588854d927f7f9a1bdbe4de7' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_child_snapshot_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_commercial_context()'::regprocedure AND md5(pg_get_functiondef(oid))='2f1063f00281c4ca78dcebaab81a9446' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_commercial_context'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_commercial_actor()'::regprocedure AND md5(pg_get_functiondef(oid))='6555396c4f8fe914177d2ccfc3891279' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_commercial_actor'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_internal_recipients(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='d4936c87a3ab62d26816a11a032dfe0f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_internal_recipients'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_partner_recipients(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='70b381094ae1f3ac87d0fa8e28274dac' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_partner_recipients'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid)) IN ('a0417d6727d78412849916a95b250bde','5f0a08d1d4f8d8c5a7ae58e24c71071e') AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_order_create_allowed'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_plan_assigned(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='4a8d57d888dace76bd1fa257c3a19c82' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_plan_assigned'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_guard(uuid,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='01d6cb10289af56ecfdbb38e43646e3a' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_order_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='6802c693f459a92e70dade0c73d7faba' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_actor_scope'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_apply_interest(numeric,text,numeric,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='806e5d8789b08cd6790a10feaf95f26d' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_apply_interest'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='26fd3c7724a40b919f240f4021176115' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_cart_hash'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='213ac31f3a30816ead75365b0d1fed18' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_credit_exposure'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_plan_selectable(uuid,timestamp with time zone)'::regprocedure AND md5(pg_get_functiondef(oid))='4cb833a3eae76cbebce920f34cd5d5ce' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_plan_selectable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date)'::regprocedure AND md5(pg_get_functiondef(oid))='c8b4584475698835b786dacdf1e0fc14' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_resolve_b2b_cart'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.get_user_partner_id()'::regprocedure AND md5(pg_get_functiondef(oid))='b334c3a454ebc4233d3b9e0d0a700d78' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.get_user_partner_id'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure AND md5(pg_get_functiondef(oid))='37d4f45e388ed7b38f6f397b672629ee' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.simulate_b2b_payment_plan_secure'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.b2b_phase1_order_visible(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='8812508716f279a88e3d5a31b15621d8' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.b2b_phase1_order_visible'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_phase1_order_visible(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='8504f07fbc3a7975accf919f386d00eb' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_phase1_order_visible'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.b2b_phase1_partner_visible(uuid,boolean)'::regprocedure AND md5(pg_get_functiondef(oid))='6b3defc01a66040146562c60ad224f03' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.b2b_phase1_partner_visible'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_phase1_partner_visible(uuid,boolean)'::regprocedure AND md5(pg_get_functiondef(oid))='915f516e605af7cc14584e2e762a2661' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_phase1_partner_visible'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_settings_allowed(uuid,boolean)'::regprocedure AND md5(pg_get_functiondef(oid))='57baa5fd657952d9383ad0c422c1d028' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_settings_allowed'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_settings_fence()'::regprocedure AND md5(pg_get_functiondef(oid))='f87cc2894dc551d242c2586f17e2cdd4' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_settings_fence'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_update_settings(uuid,jsonb,jsonb)'::regprocedure AND md5(pg_get_functiondef(oid))='1d64475b433bd8557fd399be3b491a38' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_update_settings'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_order_priceable(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='e8681bc3e8f87d86189a371a919cb3b9' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_order_priceable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='0df0d9005d46b667db4433d3eae59e27' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_resolve_commercial_price'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.platform_actor_access_ready(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='048249c0c2106c3761e26eacb8d0de84' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.platform_actor_access_ready'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='fa5e890dc647392efc238460ac16d6a2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_catalogo_preco_canonico'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_producer_links(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='881cdf48a5b20df4d93e42ef1edf1bee' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_producer_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_assignment_allowed(text,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='ecada72965cd1042fc1502b37864ab42' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_assignment_allowed'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_internal_actor(app_role[])'::regprocedure AND md5(pg_get_functiondef(oid))='97bab97591a9f662bad7b1ccf837bfcd' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_internal_actor'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='0e303620d70fa5d9d8b5c6702ee8526f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_item_allowed'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_generate_payable_installments()'::regprocedure AND md5(pg_get_functiondef(oid))='f4b15f02171e321e5ca0370255ccbff1' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_generate_payable_installments'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.rpc_create_financial_title(text,jsonb)'::regprocedure AND md5(pg_get_functiondef(oid))='0778b876b300e08d53f1cf7790394fc5' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.rpc_create_financial_title'; END IF;
+END $guard$;
+DO $guard$ BEGIN IF (SELECT coalesce(jsonb_agg(to_jsonb(p) ORDER BY tablename,policyname),'[]') FROM pg_policies p WHERE schemaname='public' AND tablename IN ('accounts_receivable','accounts_receivable_installments','partner_financial_settings','partner_order_financial_links','partner_order_idempotency','partner_order_items','partner_order_payment_schedule','partner_order_payment_terms','partner_orders')) IS DISTINCT FROM '[{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}, {"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_select_financial", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}, {"cmd": "SELECT", "qual": "((origin_type = ''B2B_ORDER''::text) AND (platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role)))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_b2b_readers", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "((origin_type = ''B2B_ORDER''::text) AND platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> ''partner_id''::text))::uuid AS uuid)))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_partner_select_own_b2b", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''cliente_produtor''::app_role) AND (customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (partner_id IS NULL) AND (origin_type IS DISTINCT FROM ''B2B_ORDER''::text))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_producer_read", "schemaname": "public", "with_check": null}, {"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}, {"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}, {"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}, {"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_select_financial", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}, {"cmd": "SELECT", "qual": "((platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role)) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = ''B2B_ORDER''::text)))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_b2b_readers", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = ''B2B_ORDER''::text) AND (ar.partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> ''partner_id''::text))::uuid AS uuid))))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_partner_select_own_b2b", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''cliente_produtor''::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (ar.partner_id IS NULL) AND (ar.origin_type IS DISTINCT FROM ''B2B_ORDER''::text)))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_producer_read", "schemaname": "public", "with_check": null}, {"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}, {"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}, {"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}, {"cmd": "ALL", "qual": "platform_private.c2p1_settings_allowed(partner_id, false)", "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "RESTRICTIVE", "policyname": "b2b_financial_settings_tenant_guard", "schemaname": "public", "with_check": "platform_private.c2p1_settings_allowed(partner_id, true)"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "PERMISSIVE", "policyname": "pfs_admin_fin_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "PERMISSIVE", "policyname": "pfs_admin_fin_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "PERMISSIVE", "policyname": "pfs_admin_fin_update", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role))", "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "PERMISSIVE", "policyname": "pfs_b2b_readers", "schemaname": "public", "with_check": null}, {"cmd": "ALL", "qual": "(platform_private.b2b_phase1_order_visible(partner_order_id) AND platform_private.b2b_phase1_partner_visible(partner_id, false))", "roles": ["authenticated"], "tablename": "partner_order_financial_links", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "(platform_private.b2b_phase1_order_visible(partner_order_id) AND platform_private.b2b_phase1_partner_visible(partner_id, false))"}, {"cmd": "ALL", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_financial_links", "permissive": "PERMISSIVE", "policyname": "pofl_admin_fin_all", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_financial_links", "permissive": "PERMISSIVE", "policyname": "pofl_b2b_readers", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(partner_id IN ( SELECT partner_users.partner_id\n   FROM partner_users\n  WHERE (partner_users.user_id = ( SELECT auth.uid() AS uid))))", "roles": ["authenticated"], "tablename": "partner_order_financial_links", "permissive": "PERMISSIVE", "policyname": "pofl_partner_select_own", "schemaname": "public", "with_check": null}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_partner_visible(partner_id, false)", "roles": ["authenticated"], "tablename": "partner_order_idempotency", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_partner_visible(partner_id, false)"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (partner_id = get_user_partner_id())))", "roles": ["authenticated"], "tablename": "partner_order_idempotency", "permissive": "PERMISSIVE", "policyname": "poi_select_scoped", "schemaname": "public", "with_check": null}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_order_visible(order_id)", "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_order_visible(order_id)"}, {"cmd": "DELETE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "PERMISSIVE", "policyname": "partner_order_items_delete", "schemaname": "public", "with_check": null}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "PERMISSIVE", "policyname": "partner_order_items_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(EXISTS ( SELECT 1\n   FROM partner_orders o\n  WHERE ((o.id = partner_order_items.order_id) AND (platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (o.partner_id = get_user_partner_id()))))))", "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "PERMISSIVE", "policyname": "partner_order_items_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "PERMISSIVE", "policyname": "partner_order_items_update", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_order_visible(partner_order_id)", "roles": ["authenticated"], "tablename": "partner_order_payment_schedule", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_order_visible(partner_order_id)"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_order_payment_schedule", "permissive": "PERMISSIVE", "policyname": "pops_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (EXISTS ( SELECT 1\n   FROM (partner_orders po\n     JOIN partner_users pu ON ((pu.partner_id = po.partner_id)))\n  WHERE ((po.id = partner_order_payment_schedule.partner_order_id) AND (pu.user_id = ( SELECT auth.uid() AS uid)))))))", "roles": ["authenticated"], "tablename": "partner_order_payment_schedule", "permissive": "PERMISSIVE", "policyname": "pops_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_payment_schedule", "permissive": "PERMISSIVE", "policyname": "pops_update", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_order_visible(partner_order_id)", "roles": ["authenticated"], "tablename": "partner_order_payment_terms", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_order_visible(partner_order_id)"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_order_payment_terms", "permissive": "PERMISSIVE", "policyname": "popt_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (EXISTS ( SELECT 1\n   FROM (partner_orders po\n     JOIN partner_users pu ON ((pu.partner_id = po.partner_id)))\n  WHERE ((po.id = partner_order_payment_terms.partner_order_id) AND (pu.user_id = ( SELECT auth.uid() AS uid)))))))", "roles": ["authenticated"], "tablename": "partner_order_payment_terms", "permissive": "PERMISSIVE", "policyname": "popt_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_payment_terms", "permissive": "PERMISSIVE", "policyname": "popt_update", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role)", "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "PERMISSIVE", "policyname": "Financeiro read partner_orders", "schemaname": "public", "with_check": null}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_partner_visible(partner_id, false)", "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_partner_visible(partner_id, false)"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "PERMISSIVE", "policyname": "partner_orders_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (partner_id = get_user_partner_id())))", "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "PERMISSIVE", "policyname": "partner_orders_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "PERMISSIVE", "policyname": "partner_orders_update", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}]'::jsonb THEN RAISE EXCEPTION 'origin_policy_set_drift'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:accounts_receivable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable_installments'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:accounts_receivable_installments'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_financial_settings'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_financial_settings'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_financial_links'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_financial_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_idempotency'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_idempotency'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_items'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_items'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_payment_schedule'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_payment_schedule'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_payment_terms'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_payment_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_orders'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_orders'; END IF;
+END $guard$;
+DO $guard$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='d51_5_validate_tenant_links' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, customer_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.d51_5_validate_tenant_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='tenant_organization_guard' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.tenant_organization_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_ar_gen_installments' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_ar_gen_installments'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_ar_uat' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ar_uat BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_ar_uat'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_audit_ar' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_audit_ar AFTER INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_audit_ar'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_h6_ar_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ar_snapshot BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_h6_ar_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_h6d_ar_no_delete' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ar_no_delete BEFORE DELETE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_h6d_ar_no_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_saas_gate' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature(''contas_receber'')') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_saas_gate'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_sync_b2b_financial_status' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_sync_b2b_financial_status AFTER UPDATE OF status ON public.accounts_receivable FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION tg_sync_b2b_financial_status()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_sync_b2b_financial_status'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='d51_5_validate_tenant_links' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, receivable_id ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.d51_5_validate_tenant_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='tenant_organization_guard' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.tenant_organization_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_h6_ari_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ari_snapshot BEFORE UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_ar_installment_snapshot()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.trg_h6_ari_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_h6d_ari_no_delete' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ari_no_delete BEFORE DELETE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.trg_h6d_ari_no_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_recalc_risk_on_ar_change' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_recalc_risk_on_ar_change AFTER INSERT OR UPDATE OF status, received_amount ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION tg_recalc_risk_on_ar_change()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.trg_recalc_risk_on_ar_change'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_financial_settings'::regclass AND tgname='c2p1_settings_fence' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER c2p1_settings_fence BEFORE INSERT OR DELETE OR UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_settings_fence()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_financial_settings.c2p1_settings_fence'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_financial_settings'::regclass AND tgname='trg_pfs_governance_audit' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_pfs_governance_audit AFTER INSERT OR DELETE OR UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION tg_governance_audit()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_financial_settings.trg_pfs_governance_audit'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_financial_settings'::regclass AND tgname='trg_pfs_updated_at' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_pfs_updated_at BEFORE UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION tg_pfs_updated_at()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_financial_settings.trg_pfs_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_financial_links'::regclass AND tgname='trg_b2b_block_receivable_before_approval' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_block_receivable_before_approval BEFORE INSERT ON public.partner_order_financial_links FOR EACH ROW EXECUTE FUNCTION tg_b2b_block_receivable_before_approval()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_financial_links.trg_b2b_block_receivable_before_approval'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_financial_links'::regclass AND tgname='trg_block_pofl_delete' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_block_pofl_delete BEFORE DELETE ON public.partner_order_financial_links FOR EACH ROW EXECUTE FUNCTION tg_block_pofl_delete()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_financial_links.trg_block_pofl_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_financial_links'::regclass AND tgname='trg_pofl_updated_at' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_pofl_updated_at BEFORE UPDATE ON public.partner_order_financial_links FOR EACH ROW EXECUTE FUNCTION tg_pofl_updated_at()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_financial_links.trg_pofl_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_items'::regclass AND tgname='trg_00_b2b_internal_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_items FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_child_snapshot_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_items.trg_00_b2b_internal_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_items'::regclass AND tgname='trg_b2b_order_items_immutable' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_order_items_immutable BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_items FOR EACH ROW EXECUTE FUNCTION fn_b2b_guard_order_items_immutable()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_items.trg_b2b_order_items_immutable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_items'::regclass AND tgname='trg_block_partner_order_items_after_op' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_block_partner_order_items_after_op BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_items FOR EACH ROW EXECUTE FUNCTION tg_block_partner_order_items_after_op()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_items.trg_block_partner_order_items_after_op'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_items'::regclass AND tgname='trg_partner_order_items_resolve_pending' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_order_items_resolve_pending AFTER INSERT ON public.partner_order_items FOR EACH ROW EXECUTE FUNCTION tg_partner_order_items_resolve_pending()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_items.trg_partner_order_items_resolve_pending'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_schedule'::regclass AND tgname='trg_00_b2b_internal_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_payment_schedule FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_child_snapshot_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_schedule.trg_00_b2b_internal_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_00_b2b_internal_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_child_snapshot_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_00_b2b_internal_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_b2b_plan_selectable_terms' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_plan_selectable_terms BEFORE INSERT OR UPDATE OF payment_plan_id ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION tg_b2b_enforce_plan_selectable()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_b2b_plan_selectable_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_h6c_set_canonical_payment_terms' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6c_set_canonical_payment_terms AFTER INSERT ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION fn_h6c_set_canonical_payment_terms()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_h6c_set_canonical_payment_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_popt_audit' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_popt_audit AFTER INSERT OR UPDATE ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION audit_partner_order_payment_terms()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_popt_audit'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_popt_updated_at' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_popt_updated_at BEFORE UPDATE ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_popt_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='partner_order_timeline_ins' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER partner_order_timeline_ins AFTER INSERT ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION trg_partner_order_timeline()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.partner_order_timeline_ins'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='partner_order_timeline_upd' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER partner_order_timeline_upd AFTER UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION trg_partner_order_timeline()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.partner_order_timeline_upd'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_00_b2b_internal_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_order_snapshot_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_00_b2b_internal_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_audit_po_commercial' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_audit_po_commercial AFTER UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_audit_partner_order_commercial()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_audit_po_commercial'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_auto_b2b_receivable' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_auto_b2b_receivable AFTER UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_auto_b2b_receivable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_b2b_guard_credit_approval_fields' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_guard_credit_approval_fields BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION fn_b2b_guard_credit_approval_fields()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_b2b_guard_credit_approval_fields'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_b2b_plan_selectable_orders' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_plan_selectable_orders BEFORE INSERT OR UPDATE OF payment_plan_id ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_b2b_enforce_plan_selectable()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_b2b_plan_selectable_orders'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_block_partner_order_delete' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_block_partner_order_delete BEFORE DELETE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_block_partner_order_delete()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_block_partner_order_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_block_partner_order_edit_after_op' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_block_partner_order_edit_after_op BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_block_partner_order_edit_after_op()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_block_partner_order_edit_after_op'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_notify_payment_terms_pending' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_notify_payment_terms_pending AFTER INSERT OR UPDATE OF requires_financial_approval, financial_approval_status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_notify_payment_terms_pending()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_notify_payment_terms_pending'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_order_to_planning' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_order_to_planning AFTER UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION trg_partner_order_to_planning_fn()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_order_to_planning'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_orders_audit' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_orders_audit AFTER INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION partner_orders_audit_trigger()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_orders_audit'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_orders_credit_guard' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_orders_credit_guard BEFORE INSERT OR UPDATE OF status, total ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_credit_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_orders_credit_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_orders_require_items' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_orders_require_items BEFORE UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_require_items()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_orders_require_items'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_orders_updated_at' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_orders_updated_at BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_orders_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_refresh_engagement' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_refresh_engagement AFTER INSERT OR DELETE OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_refresh_engagement()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_refresh_engagement'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_saas_gate' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature(''pedidos_b2b'')') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_saas_gate'; END IF;
+END $guard$;
+DO $$ BEGIN IF (SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgrelid IN ('public.accounts_receivable'::regclass,'public.accounts_receivable_installments'::regclass,'public.partner_financial_settings'::regclass,'public.partner_order_financial_links'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_schedule'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_orders'::regclass))<>48 THEN RAISE EXCEPTION 'origin_unexpected_trigger'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='platform_private' AND c.relname='financial_initial_installments' AND c.relrowsecurity AND NOT c.relforcerowsecurity) THEN RAISE EXCEPTION 'origin_private_context_table_drift'; END IF; IF has_table_privilege('anon','platform_private.financial_initial_installments','SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('authenticated','platform_private.financial_initial_installments','SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('service_role','platform_private.financial_initial_installments','SELECT,INSERT,UPDATE,DELETE') THEN RAISE EXCEPTION 'origin_private_context_exposed'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='c79689aa1070534ce43edde279ee5682' AND pg_get_userbyid(proowner)='postgres' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'containment_helper_drift:platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_external_final_state_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='3f1a5a6b11161bd8204293a8c64371e2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'containment_helper_drift:platform_private.c2_external_final_state_guard()'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='zz_c2_external_final_state' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER zz_c2_external_final_state BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_external_final_state_guard()') THEN RAISE EXCEPTION 'containment_final_trigger_drift'; END IF; END $$;
+
+CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid, _partner uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ SELECT false; $function$;
+CREATE OR REPLACE FUNCTION public.approve_partner_order(p_order_id uuid, p_approval_notes text DEFAULT NULL::text, p_estimated_delivery_date date DEFAULT NULL::date)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_pid uuid; v_prev partner_order_status; v_partner_user uuid; v_numero text;
+  v_final_status partner_order_status; v_final_ready boolean; v_block text;
+  v_amount numeric(14,2); v_credit_ok timestamptz; v_credit jsonb; v_reason text;
+BEGIN
+
+  IF NOT (public.b2b_phase1_order_visible(p_order_id) OR EXISTS (
+    SELECT 1 FROM public.partner_orders po WHERE po.id=p_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
+  IF NOT (has_role(v_uid,'administrador') OR has_role(v_uid,'gestor_comercial')) THEN
+    RAISE EXCEPTION 'forbidden';
+  END IF;
+
+  SELECT partner_id, status, numero,
+         ROUND(COALESCE(final_amount_with_interest, total, 0),2), credit_approved_at
+    INTO v_pid, v_prev, v_numero, v_amount, v_credit_ok
+    FROM public.partner_orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;
+  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot IS NOT NULL) THEN
+    RAISE EXCEPTION 'C2_EXTERNAL_OPERATIONS_CONTAINED' USING ERRCODE='42501';
+  END IF;
+
+  IF v_prev = 'aguardando_cotacao' THEN
+    RAISE EXCEPTION 'quote_required: defina o preco da cotacao antes de aprovar';
+  END IF;
+  IF NOT public.fn_b2b_order_priceable(p_order_id) THEN
+    RAISE EXCEPTION 'order_not_priceable_quote_required';
+  END IF;
+
+  IF v_prev IN ('aprovado','reprovado','cancelado') THEN
+    RAISE EXCEPTION 'already_processed: pedido já está em status %', v_prev;
+  END IF;
+
+  IF v_prev = 'aguardando_aprovacao_credito' THEN
+    RAISE EXCEPTION 'credit_pending: aprove o crédito antes da análise comercial';
+  END IF;
+
+  IF v_prev NOT IN ('em_analise_comercial','solicitado','rascunho') THEN
+    RAISE EXCEPTION 'invalid_status_transition: %', v_prev;
+  END IF;
+
+  -- H4-001/H4-003: reavaliar credito na aprovacao, com lock por parceiro.
+  PERFORM pg_advisory_xact_lock(hashtext('b2b_credit:' || v_pid::text));
+  v_credit := public.fn_b2b_credit_exposure(v_pid, 0, NULL);
+  v_reason := COALESCE(v_credit->>'reason_code','OK');
+
+  IF v_credit_ok IS NULL THEN
+    IF v_reason IN ('LIMIT_EXCEEDED_BLOCK','OVERDUE_BLOCK') THEN
+      UPDATE public.partner_orders
+         SET credit_block_reason = v_reason, updated_at = now()
+       WHERE id = p_order_id;
+      RAISE EXCEPTION 'credit_block_on_approval: %', v_reason;
+    ELSIF v_reason = 'LIMIT_EXCEEDED_APPROVAL' THEN
+      -- fail-closed: exige aprovacao financeira formal (approve_b2b_credit).
+      UPDATE public.partner_orders
+         SET credit_block_reason = v_reason, updated_at = now()
+       WHERE id = p_order_id;
+      RAISE EXCEPTION 'credit_approval_required: %', v_reason;
+    END IF;
+  END IF;
+
+  UPDATE public.partner_orders
+     SET status = 'aprovado', approved_by = v_uid, approved_at = now(),
+         approval_notes = NULLIF(p_approval_notes,''),
+         estimated_delivery_date = COALESCE(p_estimated_delivery_date, estimated_delivery_date),
+         ready_for_production = CASE WHEN c2_external_origin_snapshot IS NOT NULL THEN false ELSE true END, updated_at = now()
+   WHERE id = p_order_id AND status = v_prev;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'concurrent_update: status do pedido mudou durante a aprovação';
+  END IF;
+
+  SELECT status, ready_for_production, credit_block_reason
+    INTO v_final_status, v_final_ready, v_block
+    FROM public.partner_orders WHERE id = p_order_id;
+
+  IF v_final_status <> 'aprovado' OR (v_final_ready IS NOT TRUE AND NOT EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot IS NOT NULL AND internal_economic_snapshot IS NOT NULL)) THEN
+    RAISE EXCEPTION 'credit_block: %', COALESCE(v_block, 'aprovacao_credito_pendente');
+  END IF;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_anteriores, dados_novos)
+  VALUES (p_order_id, v_pid, v_uid, 'approved',
+          jsonb_build_object('status', v_prev),
+          jsonb_build_object('status','aprovado','approval_notes',p_approval_notes,
+                             'estimated_delivery_date',p_estimated_delivery_date,
+                             'credit_reason_code', v_reason));
+
+  FOR v_partner_user IN SELECT r FROM platform_private.c2_order_partner_recipients(v_pid) r LOOP -- c2_ord_recipients
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_partner_user, 'pedido_b2b_aprovado',
+            'Pedido ' || v_numero || ' aprovado',
+            CASE WHEN EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot IS NOT NULL)
+            THEN 'Seu pedido recebeu aprovação comercial. Planejamento de produção ainda não liberado.'
+            ELSE 'Seu pedido foi aprovado e seguirá para planejamento de produção.' END,
+            '/portal-parceiro/pedidos');
+  END LOOP;
+END
+$function$;
+CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure_impl(p_partner_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_order record;
+  v_partner record;
+  v_settings record;
+  v_terms record;
+  v_receivable_id uuid;
+  v_category_id uuid;
+  v_payment_method_id uuid;
+  v_existing uuid;
+  v_sch record;
+  v_ari_id uuid;
+  v_installments_json jsonb := '[]'::jsonb;
+  v_system_call boolean := (v_uid IS NULL);
+  v_gate jsonb;
+  v_fiscal jsonb;
+  v_uf text;
+  v_org uuid;
+  v_org_count integer; -- b2b_f1_financial_tenant
+BEGIN
+  IF NOT v_system_call THEN
+    IF NOT (has_role(v_uid,'administrador') OR has_role(v_uid,'financeiro') OR has_role(v_uid,'gestor') OR has_role(v_uid,'gestor_comercial')) THEN
+      INSERT INTO public.partner_order_audit_logs(order_id, usuario_id, acao, dados_novos)
+        VALUES (p_partner_order_id, v_uid, 'financeiro_permissao_negada', jsonb_build_object('motivo','sem permissão'));
+      RAISE EXCEPTION 'Sem permissão para gerar cobrança B2B';
+    END IF;
+  END IF;
+
+  SELECT * INTO v_order FROM public.partner_orders WHERE id = p_partner_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Pedido não encontrado'; END IF;
+  IF v_order.c2_external_origin_snapshot IS NOT NULL THEN
+    RAISE EXCEPTION 'C2_EXTERNAL_OPERATIONS_CONTAINED' USING ERRCODE='42501';
+  END IF;
+
+  -- Deterministic partner ownership, never caller-supplied organization.
+  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
+    FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;
+  -- c2_ord_owner_tenant: cliente comercial sem tenant próprio fatura no tenant dono.
+  IF v_org_count = 0 THEN
+    SELECT count(*), min(o.id::text)::uuid INTO v_org_count, v_org
+      FROM public.partner_accounts pa JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id
+     WHERE pa.id = v_order.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+       AND o.ativo IS TRUE AND o.status = 'ativa';
+  END IF;
+  IF v_org_count <> 1 OR v_org IS NULL THEN
+    RAISE EXCEPTION 'B2B_FINANCIAL_TENANT_AMBIGUOUS' USING ERRCODE='42501';
+  END IF;
+  IF v_uid IS NOT NULL THEN
+    -- c2_ord_internal_scope: emissor interno é limitado por h15 = tenant do título (abaixo);
+    -- quem tem papel B2B externo continua passando pelo assert canônico.
+    IF public.has_role(v_uid,'parceiro_b2b'::app_role) OR public.has_role(v_uid,'parceiro_b2b_tecnico'::app_role) THEN
+      PERFORM platform_private.assert_b2b_partner_scope(v_uid,v_order.partner_id);
+    END IF;
+    IF NOT public.is_platform_superadmin(v_uid) AND public.h15_actor_organization() IS DISTINCT FROM v_org THEN
+      RAISE EXCEPTION 'B2B_FINANCIAL_TENANT_MISMATCH' USING ERRCODE='42501';
+    END IF;
+  END IF;
+
+  IF v_order.c2_external_origin_snapshot IS NOT NULL THEN
+    PERFORM platform_private.c2_external_origin_assert(v_order.c2_external_origin_snapshot,v_order.partner_id,v_order.cliente_id);
+    IF v_org::text IS DISTINCT FROM v_order.c2_external_origin_snapshot->>'creditor_organization_id' THEN RAISE EXCEPTION 'C2_EXTERNAL_CREDITOR_DRIFT' USING ERRCODE='42501'; END IF;
+  END IF;
+
+  -- GATE Fase C: elegibilidade server-side
+  v_gate := public.fn_b2b_order_billing_eligibility(p_partner_order_id);
+  IF NOT (v_gate->>'eligible')::boolean THEN
+    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+      VALUES (p_partner_order_id, v_order.partner_id, v_uid, 'financeiro_bloqueado_gate', v_gate);
+    RAISE EXCEPTION 'billing_not_eligible:%', v_gate->>'reason_code';
+  END IF;
+
+  -- H6C-001: condicao canonica vinculada ao pedido (nunca a mais recente).
+  SELECT * INTO v_terms FROM public.partner_order_payment_terms
+    WHERE id = NULLIF(v_gate->>'payment_terms_id','')::uuid
+      AND partner_order_id = p_partner_order_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'payment_terms_not_canonical'; END IF;
+
+  SELECT receivable_id INTO v_existing FROM public.partner_order_financial_links WHERE partner_order_id = p_partner_order_id;
+  IF v_existing IS NOT NULL THEN
+    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+      VALUES (p_partner_order_id, v_order.partner_id, v_uid, 'financeiro_duplicidade_bloqueada', jsonb_build_object('receivable_id', v_existing));
+    RETURN jsonb_build_object('receivable_id', v_existing, 'partner_order_id', p_partner_order_id, 'duplicado', true);
+  END IF;
+
+  SELECT * INTO v_partner FROM public.partner_accounts WHERE id = v_order.partner_id;
+  SELECT * INTO v_settings FROM public.partner_financial_settings WHERE partner_id = v_order.partner_id;
+  IF NOT FOUND THEN
+    -- c2_ord_p1_no_provision: only the existing P1 CAS RPC creates settings.
+    RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+
+  -- External manual billing must honor configured delivery prerequisite too.
+  IF v_order.c2_external_origin_snapshot IS NOT NULL AND v_settings.billing_trigger='na_entrega' AND v_order.status IS DISTINCT FROM 'entregue' THEN
+    RAISE EXCEPTION 'C2_EXTERNAL_DELIVERY_REQUIRED' USING ERRCODE='42501';
+  END IF;
+
+  v_uf := to_jsonb(v_partner) ->> 'uf';
+
+  -- Derivação fiscal (fail-closed; nunca NOT_REQUIRED silencioso)
+  v_fiscal := public.fn_fiscal_requirement_resolve(
+    'b2b_partner', 'venda_mercadoria', v_uf, 'partner_order', p_partner_order_id, CURRENT_DATE);
+
+  -- c2_ord_strict_refs: financial_categories/payment_methods são catálogos globais por desenho (sem organization_id, RLS is_financial_staff; sem DDL de tenant
+  -- no schema canônico); resolução estrita, sem fallback de tipo/inativo, falha explícita.
+  SELECT id INTO v_category_id FROM public.financial_categories
+   WHERE upper(btrim(type)) = 'RECEITA' AND active IS TRUE
+   ORDER BY created_at ASC, id ASC LIMIT 1;
+  IF v_category_id IS NULL THEN
+    RAISE EXCEPTION 'B2B_REVENUE_CATEGORY_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+  IF NULLIF(btrim(COALESCE(v_settings.default_payment_method,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'B2B_PAYMENT_METHOD_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+  IF (SELECT count(*) FROM public.payment_methods pm
+       WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method))) <> 1 THEN
+    RAISE EXCEPTION 'B2B_PAYMENT_METHOD_NOT_CONFIGURED' USING ERRCODE='P0001';
+  END IF;
+  SELECT pm.id INTO v_payment_method_id FROM public.payment_methods pm
+   WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method));
+  IF v_partner.client_id IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM public.clientes cl WHERE cl.id = v_partner.client_id AND cl.organization_id = v_org) THEN
+    RAISE EXCEPTION 'B2B_CUSTOMER_TENANT_MISMATCH' USING ERRCODE='42501';
+  END IF;
+
+  INSERT INTO public.accounts_receivable(
+    organization_id, origin_type, origin_id, customer_id, partner_id, description,
+    category_id, total_amount, issue_date, first_due_date, installment_count,
+    status, fiscal_invoice_required, fiscal_invoice_status,
+    fiscal_requirement_source, fiscal_policy_id, fiscal_exemption_id,
+    payment_method_id, notes, created_by
+  ) VALUES (
+    v_org, 'B2B_ORDER', p_partner_order_id,
+    NULLIF(v_partner.client_id, NULL), v_order.partner_id,
+    format('Pedido B2B %s - %s', v_order.numero, COALESCE(v_partner.nome_fantasia, v_partner.razao_social)),
+    v_category_id, v_terms.final_amount, CURRENT_DATE, v_terms.first_due_date, v_terms.installment_count,
+    'OPEN',
+    (v_fiscal->>'required')::boolean,
+    v_fiscal->>'status',
+    v_fiscal->>'source',
+    NULLIF(v_fiscal->>'policy_id','')::uuid,
+    NULLIF(v_fiscal->>'exemption_id','')::uuid,
+    v_payment_method_id,
+    format(E'Condição: %s (%s)\nDesconto: %s%%  Juros: %s%% a.m. x %s meses\nTabela: %s  Líquido: %s  Final: %s\nFiscal: %s (%s)',
+           v_terms.plan_name_snapshot, v_terms.plan_code_snapshot,
+           v_terms.discount_percent_snapshot, v_terms.monthly_interest_percent_snapshot, v_terms.months_count_snapshot,
+           v_terms.table_amount, v_terms.net_amount_after_discount, v_terms.final_amount,
+           v_fiscal->>'status', v_fiscal->>'source'),
+    COALESCE(v_uid, v_order.created_by)
+  ) RETURNING id INTO v_receivable_id;
+
+  -- b2b_f1_fresh_title: no deletion; formal financial history protection preserved.
+
+  FOR v_sch IN
+    SELECT * FROM public.partner_order_payment_schedule
+     WHERE partner_order_id = p_partner_order_id AND payment_terms_id = v_terms.id
+     ORDER BY installment_number
+  LOOP
+    -- b2b_f1_reuse_installments: generic title trigger already created them.
+    IF (SELECT count(*) FROM public.accounts_receivable_installments
+         WHERE receivable_id=v_receivable_id AND installment_number=v_sch.installment_number
+           AND organization_id=v_org) <> 1 THEN
+      RAISE EXCEPTION 'B2B_INSTALLMENT_CARDINALITY_INVALID' USING ERRCODE='23514';
+    END IF;
+    UPDATE public.accounts_receivable_installments
+       SET due_date=v_sch.due_date, original_amount=v_sch.amount,
+           interest_amount=COALESCE(v_sch.interest_amount,0), net_amount=v_sch.amount
+     WHERE receivable_id=v_receivable_id AND installment_number=v_sch.installment_number
+       AND organization_id=v_org
+     RETURNING id INTO v_ari_id;
+
+    UPDATE public.partner_order_payment_schedule
+       SET status = 'generated', receivable_installment_id = v_ari_id
+     WHERE id = v_sch.id;
+
+    v_installments_json := v_installments_json || jsonb_build_array(jsonb_build_object(
+      'installment_number', v_sch.installment_number,
+      'due_date', v_sch.due_date,
+      'amount', v_sch.amount
+    ));
+  END LOOP;
+
+  INSERT INTO public.partner_order_financial_links(
+    partner_order_id, partner_id, receivable_id, financial_status, billing_trigger, created_by
+  ) VALUES (
+    p_partner_order_id, v_order.partner_id, v_receivable_id, 'gerado', v_settings.billing_trigger, v_uid
+  );
+
+  UPDATE public.partner_orders SET
+    financial_status = 'gerado',
+    receivable_generated = true,
+    receivable_generated_at = now(),
+    receivable_generated_by = v_uid,
+    payment_due_date = v_terms.first_due_date,
+    payment_method = COALESCE(v_settings.default_payment_method,'pix')
+  WHERE id = p_partner_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+  VALUES (p_partner_order_id, v_order.partner_id, v_uid, 'financeiro_gerado_com_plano',
+    jsonb_build_object(
+      'receivable_id', v_receivable_id,
+      'plan_code', v_terms.plan_code_snapshot,
+      'plan_name', v_terms.plan_name_snapshot,
+      'table_amount', v_terms.table_amount,
+      'discount_amount', v_terms.discount_amount,
+      'net_amount', v_terms.net_amount_after_discount,
+      'interest_amount', v_terms.financial_interest_amount,
+      'final_amount', v_terms.final_amount,
+      'first_due_date', v_terms.first_due_date,
+      'installment_count', v_terms.installment_count,
+      'fiscal', v_fiscal,
+      'gate', v_gate,
+      'installments', v_installments_json
+    ));
+
+  RETURN jsonb_build_object(
+    'receivable_id', v_receivable_id,
+    'partner_order_id', p_partner_order_id,
+    'valor', v_terms.final_amount,
+    'vencimento', v_terms.first_due_date,
+    'installment_count', v_terms.installment_count,
+    'fiscal_invoice_required', (v_fiscal->>'required')::boolean,
+    'fiscal_invoice_status', v_fiscal->>'status',
+    'fiscal_requirement_source', v_fiscal->>'source',
+    'status', 'OPEN'
+  );
+END 
+$function$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.approve_partner_order(uuid,text,date)'::regprocedure AND md5(pg_get_functiondef(oid))=md5('CREATE OR REPLACE FUNCTION public.approve_partner_order(p_order_id uuid, p_approval_notes text DEFAULT NULL::text, p_estimated_delivery_date date DEFAULT NULL::date)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''public''
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_pid uuid; v_prev partner_order_status; v_partner_user uuid; v_numero text;
+  v_final_status partner_order_status; v_final_ready boolean; v_block text;
+  v_amount numeric(14,2); v_credit_ok timestamptz; v_credit jsonb; v_reason text;
+BEGIN
+
+  IF NOT (public.b2b_phase1_order_visible(p_order_id) OR EXISTS (
+    SELECT 1 FROM public.partner_orders po WHERE po.id=p_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION ''b2b_phase1_scope_denied'' USING ERRCODE=''42501''; END IF;
+  IF v_uid IS NULL THEN RAISE EXCEPTION ''auth_required''; END IF;
+  IF NOT (has_role(v_uid,''administrador'') OR has_role(v_uid,''gestor_comercial'')) THEN
+    RAISE EXCEPTION ''forbidden'';
+  END IF;
+
+  SELECT partner_id, status, numero,
+         ROUND(COALESCE(final_amount_with_interest, total, 0),2), credit_approved_at
+    INTO v_pid, v_prev, v_numero, v_amount, v_credit_ok
+    FROM public.partner_orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION ''order_not_found''; END IF;
+  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot IS NOT NULL) THEN
+    RAISE EXCEPTION ''C2_EXTERNAL_OPERATIONS_CONTAINED'' USING ERRCODE=''42501'';
+  END IF;
+
+  IF v_prev = ''aguardando_cotacao'' THEN
+    RAISE EXCEPTION ''quote_required: defina o preco da cotacao antes de aprovar'';
+  END IF;
+  IF NOT public.fn_b2b_order_priceable(p_order_id) THEN
+    RAISE EXCEPTION ''order_not_priceable_quote_required'';
+  END IF;
+
+  IF v_prev IN (''aprovado'',''reprovado'',''cancelado'') THEN
+    RAISE EXCEPTION ''already_processed: pedido já está em status %'', v_prev;
+  END IF;
+
+  IF v_prev = ''aguardando_aprovacao_credito'' THEN
+    RAISE EXCEPTION ''credit_pending: aprove o crédito antes da análise comercial'';
+  END IF;
+
+  IF v_prev NOT IN (''em_analise_comercial'',''solicitado'',''rascunho'') THEN
+    RAISE EXCEPTION ''invalid_status_transition: %'', v_prev;
+  END IF;
+
+  -- H4-001/H4-003: reavaliar credito na aprovacao, com lock por parceiro.
+  PERFORM pg_advisory_xact_lock(hashtext(''b2b_credit:'' || v_pid::text));
+  v_credit := public.fn_b2b_credit_exposure(v_pid, 0, NULL);
+  v_reason := COALESCE(v_credit->>''reason_code'',''OK'');
+
+  IF v_credit_ok IS NULL THEN
+    IF v_reason IN (''LIMIT_EXCEEDED_BLOCK'',''OVERDUE_BLOCK'') THEN
+      UPDATE public.partner_orders
+         SET credit_block_reason = v_reason, updated_at = now()
+       WHERE id = p_order_id;
+      RAISE EXCEPTION ''credit_block_on_approval: %'', v_reason;
+    ELSIF v_reason = ''LIMIT_EXCEEDED_APPROVAL'' THEN
+      -- fail-closed: exige aprovacao financeira formal (approve_b2b_credit).
+      UPDATE public.partner_orders
+         SET credit_block_reason = v_reason, updated_at = now()
+       WHERE id = p_order_id;
+      RAISE EXCEPTION ''credit_approval_required: %'', v_reason;
+    END IF;
+  END IF;
+
+  UPDATE public.partner_orders
+     SET status = ''aprovado'', approved_by = v_uid, approved_at = now(),
+         approval_notes = NULLIF(p_approval_notes,''''),
+         estimated_delivery_date = COALESCE(p_estimated_delivery_date, estimated_delivery_date),
+         ready_for_production = CASE WHEN c2_external_origin_snapshot IS NOT NULL THEN false ELSE true END, updated_at = now()
+   WHERE id = p_order_id AND status = v_prev;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION ''concurrent_update: status do pedido mudou durante a aprovação'';
+  END IF;
+
+  SELECT status, ready_for_production, credit_block_reason
+    INTO v_final_status, v_final_ready, v_block
+    FROM public.partner_orders WHERE id = p_order_id;
+
+  IF v_final_status <> ''aprovado'' OR (v_final_ready IS NOT TRUE AND NOT EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot IS NOT NULL AND internal_economic_snapshot IS NOT NULL)) THEN
+    RAISE EXCEPTION ''credit_block: %'', COALESCE(v_block, ''aprovacao_credito_pendente'');
+  END IF;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_anteriores, dados_novos)
+  VALUES (p_order_id, v_pid, v_uid, ''approved'',
+          jsonb_build_object(''status'', v_prev),
+          jsonb_build_object(''status'',''aprovado'',''approval_notes'',p_approval_notes,
+                             ''estimated_delivery_date'',p_estimated_delivery_date,
+                             ''credit_reason_code'', v_reason));
+
+  FOR v_partner_user IN SELECT r FROM platform_private.c2_order_partner_recipients(v_pid) r LOOP -- c2_ord_recipients
+    INSERT INTO public.notificacoes_operacionais(usuario_id, tipo, titulo, mensagem, link)
+    VALUES (v_partner_user, ''pedido_b2b_aprovado'',
+            ''Pedido '' || v_numero || '' aprovado'',
+            CASE WHEN EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot IS NOT NULL)
+            THEN ''Seu pedido recebeu aprovação comercial. Planejamento de produção ainda não liberado.''
+            ELSE ''Seu pedido foi aprovado e seguirá para planejamento de produção.'' END,
+            ''/portal-parceiro/pedidos'');
+  END LOOP;
+END
+$function$
+') AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'containment_post_drift:public.approve_partner_order'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))=md5('CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure_impl(p_partner_order_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''public''
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_order record;
+  v_partner record;
+  v_settings record;
+  v_terms record;
+  v_receivable_id uuid;
+  v_category_id uuid;
+  v_payment_method_id uuid;
+  v_existing uuid;
+  v_sch record;
+  v_ari_id uuid;
+  v_installments_json jsonb := ''[]''::jsonb;
+  v_system_call boolean := (v_uid IS NULL);
+  v_gate jsonb;
+  v_fiscal jsonb;
+  v_uf text;
+  v_org uuid;
+  v_org_count integer; -- b2b_f1_financial_tenant
+BEGIN
+  IF NOT v_system_call THEN
+    IF NOT (has_role(v_uid,''administrador'') OR has_role(v_uid,''financeiro'') OR has_role(v_uid,''gestor'') OR has_role(v_uid,''gestor_comercial'')) THEN
+      INSERT INTO public.partner_order_audit_logs(order_id, usuario_id, acao, dados_novos)
+        VALUES (p_partner_order_id, v_uid, ''financeiro_permissao_negada'', jsonb_build_object(''motivo'',''sem permissão''));
+      RAISE EXCEPTION ''Sem permissão para gerar cobrança B2B'';
+    END IF;
+  END IF;
+
+  SELECT * INTO v_order FROM public.partner_orders WHERE id = p_partner_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION ''Pedido não encontrado''; END IF;
+  IF v_order.c2_external_origin_snapshot IS NOT NULL THEN
+    RAISE EXCEPTION ''C2_EXTERNAL_OPERATIONS_CONTAINED'' USING ERRCODE=''42501'';
+  END IF;
+
+  -- Deterministic partner ownership, never caller-supplied organization.
+  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
+    FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;
+  -- c2_ord_owner_tenant: cliente comercial sem tenant próprio fatura no tenant dono.
+  IF v_org_count = 0 THEN
+    SELECT count(*), min(o.id::text)::uuid INTO v_org_count, v_org
+      FROM public.partner_accounts pa JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id
+     WHERE pa.id = v_order.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+       AND o.ativo IS TRUE AND o.status = ''ativa'';
+  END IF;
+  IF v_org_count <> 1 OR v_org IS NULL THEN
+    RAISE EXCEPTION ''B2B_FINANCIAL_TENANT_AMBIGUOUS'' USING ERRCODE=''42501'';
+  END IF;
+  IF v_uid IS NOT NULL THEN
+    -- c2_ord_internal_scope: emissor interno é limitado por h15 = tenant do título (abaixo);
+    -- quem tem papel B2B externo continua passando pelo assert canônico.
+    IF public.has_role(v_uid,''parceiro_b2b''::app_role) OR public.has_role(v_uid,''parceiro_b2b_tecnico''::app_role) THEN
+      PERFORM platform_private.assert_b2b_partner_scope(v_uid,v_order.partner_id);
+    END IF;
+    IF NOT public.is_platform_superadmin(v_uid) AND public.h15_actor_organization() IS DISTINCT FROM v_org THEN
+      RAISE EXCEPTION ''B2B_FINANCIAL_TENANT_MISMATCH'' USING ERRCODE=''42501'';
+    END IF;
+  END IF;
+
+  IF v_order.c2_external_origin_snapshot IS NOT NULL THEN
+    PERFORM platform_private.c2_external_origin_assert(v_order.c2_external_origin_snapshot,v_order.partner_id,v_order.cliente_id);
+    IF v_org::text IS DISTINCT FROM v_order.c2_external_origin_snapshot->>''creditor_organization_id'' THEN RAISE EXCEPTION ''C2_EXTERNAL_CREDITOR_DRIFT'' USING ERRCODE=''42501''; END IF;
+  END IF;
+
+  -- GATE Fase C: elegibilidade server-side
+  v_gate := public.fn_b2b_order_billing_eligibility(p_partner_order_id);
+  IF NOT (v_gate->>''eligible'')::boolean THEN
+    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+      VALUES (p_partner_order_id, v_order.partner_id, v_uid, ''financeiro_bloqueado_gate'', v_gate);
+    RAISE EXCEPTION ''billing_not_eligible:%'', v_gate->>''reason_code'';
+  END IF;
+
+  -- H6C-001: condicao canonica vinculada ao pedido (nunca a mais recente).
+  SELECT * INTO v_terms FROM public.partner_order_payment_terms
+    WHERE id = NULLIF(v_gate->>''payment_terms_id'','''')::uuid
+      AND partner_order_id = p_partner_order_id;
+  IF NOT FOUND THEN RAISE EXCEPTION ''payment_terms_not_canonical''; END IF;
+
+  SELECT receivable_id INTO v_existing FROM public.partner_order_financial_links WHERE partner_order_id = p_partner_order_id;
+  IF v_existing IS NOT NULL THEN
+    INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+      VALUES (p_partner_order_id, v_order.partner_id, v_uid, ''financeiro_duplicidade_bloqueada'', jsonb_build_object(''receivable_id'', v_existing));
+    RETURN jsonb_build_object(''receivable_id'', v_existing, ''partner_order_id'', p_partner_order_id, ''duplicado'', true);
+  END IF;
+
+  SELECT * INTO v_partner FROM public.partner_accounts WHERE id = v_order.partner_id;
+  SELECT * INTO v_settings FROM public.partner_financial_settings WHERE partner_id = v_order.partner_id;
+  IF NOT FOUND THEN
+    -- c2_ord_p1_no_provision: only the existing P1 CAS RPC creates settings.
+    RAISE EXCEPTION ''B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'' USING ERRCODE=''P0001'';
+  END IF;
+
+  -- External manual billing must honor configured delivery prerequisite too.
+  IF v_order.c2_external_origin_snapshot IS NOT NULL AND v_settings.billing_trigger=''na_entrega'' AND v_order.status IS DISTINCT FROM ''entregue'' THEN
+    RAISE EXCEPTION ''C2_EXTERNAL_DELIVERY_REQUIRED'' USING ERRCODE=''42501'';
+  END IF;
+
+  v_uf := to_jsonb(v_partner) ->> ''uf'';
+
+  -- Derivação fiscal (fail-closed; nunca NOT_REQUIRED silencioso)
+  v_fiscal := public.fn_fiscal_requirement_resolve(
+    ''b2b_partner'', ''venda_mercadoria'', v_uf, ''partner_order'', p_partner_order_id, CURRENT_DATE);
+
+  -- c2_ord_strict_refs: financial_categories/payment_methods são catálogos globais por desenho (sem organization_id, RLS is_financial_staff; sem DDL de tenant
+  -- no schema canônico); resolução estrita, sem fallback de tipo/inativo, falha explícita.
+  SELECT id INTO v_category_id FROM public.financial_categories
+   WHERE upper(btrim(type)) = ''RECEITA'' AND active IS TRUE
+   ORDER BY created_at ASC, id ASC LIMIT 1;
+  IF v_category_id IS NULL THEN
+    RAISE EXCEPTION ''B2B_REVENUE_CATEGORY_NOT_CONFIGURED'' USING ERRCODE=''P0001'';
+  END IF;
+  IF NULLIF(btrim(COALESCE(v_settings.default_payment_method,'''')),'''') IS NULL THEN
+    RAISE EXCEPTION ''B2B_PAYMENT_METHOD_NOT_CONFIGURED'' USING ERRCODE=''P0001'';
+  END IF;
+  IF (SELECT count(*) FROM public.payment_methods pm
+       WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method))) <> 1 THEN
+    RAISE EXCEPTION ''B2B_PAYMENT_METHOD_NOT_CONFIGURED'' USING ERRCODE=''P0001'';
+  END IF;
+  SELECT pm.id INTO v_payment_method_id FROM public.payment_methods pm
+   WHERE pm.active IS TRUE AND lower(btrim(pm.name)) = lower(btrim(v_settings.default_payment_method));
+  IF v_partner.client_id IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM public.clientes cl WHERE cl.id = v_partner.client_id AND cl.organization_id = v_org) THEN
+    RAISE EXCEPTION ''B2B_CUSTOMER_TENANT_MISMATCH'' USING ERRCODE=''42501'';
+  END IF;
+
+  INSERT INTO public.accounts_receivable(
+    organization_id, origin_type, origin_id, customer_id, partner_id, description,
+    category_id, total_amount, issue_date, first_due_date, installment_count,
+    status, fiscal_invoice_required, fiscal_invoice_status,
+    fiscal_requirement_source, fiscal_policy_id, fiscal_exemption_id,
+    payment_method_id, notes, created_by
+  ) VALUES (
+    v_org, ''B2B_ORDER'', p_partner_order_id,
+    NULLIF(v_partner.client_id, NULL), v_order.partner_id,
+    format(''Pedido B2B %s - %s'', v_order.numero, COALESCE(v_partner.nome_fantasia, v_partner.razao_social)),
+    v_category_id, v_terms.final_amount, CURRENT_DATE, v_terms.first_due_date, v_terms.installment_count,
+    ''OPEN'',
+    (v_fiscal->>''required'')::boolean,
+    v_fiscal->>''status'',
+    v_fiscal->>''source'',
+    NULLIF(v_fiscal->>''policy_id'','''')::uuid,
+    NULLIF(v_fiscal->>''exemption_id'','''')::uuid,
+    v_payment_method_id,
+    format(E''Condição: %s (%s)\nDesconto: %s%%  Juros: %s%% a.m. x %s meses\nTabela: %s  Líquido: %s  Final: %s\nFiscal: %s (%s)'',
+           v_terms.plan_name_snapshot, v_terms.plan_code_snapshot,
+           v_terms.discount_percent_snapshot, v_terms.monthly_interest_percent_snapshot, v_terms.months_count_snapshot,
+           v_terms.table_amount, v_terms.net_amount_after_discount, v_terms.final_amount,
+           v_fiscal->>''status'', v_fiscal->>''source''),
+    COALESCE(v_uid, v_order.created_by)
+  ) RETURNING id INTO v_receivable_id;
+
+  -- b2b_f1_fresh_title: no deletion; formal financial history protection preserved.
+
+  FOR v_sch IN
+    SELECT * FROM public.partner_order_payment_schedule
+     WHERE partner_order_id = p_partner_order_id AND payment_terms_id = v_terms.id
+     ORDER BY installment_number
+  LOOP
+    -- b2b_f1_reuse_installments: generic title trigger already created them.
+    IF (SELECT count(*) FROM public.accounts_receivable_installments
+         WHERE receivable_id=v_receivable_id AND installment_number=v_sch.installment_number
+           AND organization_id=v_org) <> 1 THEN
+      RAISE EXCEPTION ''B2B_INSTALLMENT_CARDINALITY_INVALID'' USING ERRCODE=''23514'';
+    END IF;
+    UPDATE public.accounts_receivable_installments
+       SET due_date=v_sch.due_date, original_amount=v_sch.amount,
+           interest_amount=COALESCE(v_sch.interest_amount,0), net_amount=v_sch.amount
+     WHERE receivable_id=v_receivable_id AND installment_number=v_sch.installment_number
+       AND organization_id=v_org
+     RETURNING id INTO v_ari_id;
+
+    UPDATE public.partner_order_payment_schedule
+       SET status = ''generated'', receivable_installment_id = v_ari_id
+     WHERE id = v_sch.id;
+
+    v_installments_json := v_installments_json || jsonb_build_array(jsonb_build_object(
+      ''installment_number'', v_sch.installment_number,
+      ''due_date'', v_sch.due_date,
+      ''amount'', v_sch.amount
+    ));
+  END LOOP;
+
+  INSERT INTO public.partner_order_financial_links(
+    partner_order_id, partner_id, receivable_id, financial_status, billing_trigger, created_by
+  ) VALUES (
+    p_partner_order_id, v_order.partner_id, v_receivable_id, ''gerado'', v_settings.billing_trigger, v_uid
+  );
+
+  UPDATE public.partner_orders SET
+    financial_status = ''gerado'',
+    receivable_generated = true,
+    receivable_generated_at = now(),
+    receivable_generated_by = v_uid,
+    payment_due_date = v_terms.first_due_date,
+    payment_method = COALESCE(v_settings.default_payment_method,''pix'')
+  WHERE id = p_partner_order_id;
+
+  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, usuario_id, acao, dados_novos)
+  VALUES (p_partner_order_id, v_order.partner_id, v_uid, ''financeiro_gerado_com_plano'',
+    jsonb_build_object(
+      ''receivable_id'', v_receivable_id,
+      ''plan_code'', v_terms.plan_code_snapshot,
+      ''plan_name'', v_terms.plan_name_snapshot,
+      ''table_amount'', v_terms.table_amount,
+      ''discount_amount'', v_terms.discount_amount,
+      ''net_amount'', v_terms.net_amount_after_discount,
+      ''interest_amount'', v_terms.financial_interest_amount,
+      ''final_amount'', v_terms.final_amount,
+      ''first_due_date'', v_terms.first_due_date,
+      ''installment_count'', v_terms.installment_count,
+      ''fiscal'', v_fiscal,
+      ''gate'', v_gate,
+      ''installments'', v_installments_json
+    ));
+
+  RETURN jsonb_build_object(
+    ''receivable_id'', v_receivable_id,
+    ''partner_order_id'', p_partner_order_id,
+    ''valor'', v_terms.final_amount,
+    ''vencimento'', v_terms.first_due_date,
+    ''installment_count'', v_terms.installment_count,
+    ''fiscal_invoice_required'', (v_fiscal->>''required'')::boolean,
+    ''fiscal_invoice_status'', v_fiscal->>''status'',
+    ''fiscal_requirement_source'', v_fiscal->>''source'',
+    ''status'', ''OPEN''
+  );
+END 
+$function$
+') AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'containment_post_drift:public.generate_b2b_receivable_secure_impl'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))=md5('CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid, _partner uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''''
+AS $function$ SELECT false; $function$
+') AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'containment_post_drift:platform_private.c2_owner_order_create_allowed'; END IF; END $$;
+DO $guard$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.audit_partner_order_payment_terms()'::regprocedure AND md5(pg_get_functiondef(oid))='96b68bec5b11f2a414f333c68a00d765' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.audit_partner_order_payment_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_guard_credit_approval_fields()'::regprocedure AND md5(pg_get_functiondef(oid))='8902498ed09c4c5804b1749ee0c31cd7' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_guard_credit_approval_fields'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_guard_order_items_immutable()'::regprocedure AND md5(pg_get_functiondef(oid))='bc1c4dca3a9f5a247a3c098dcbe1c06f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_guard_order_items_immutable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_order_billing_eligibility(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='db977875e15ea49ce10fb3e5388d7dfb' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_order_billing_eligibility'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_financial_audit()'::regprocedure AND md5(pg_get_functiondef(oid))='46f777c2020ff9a059a80ae6dab4bd12' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_financial_audit'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_generate_receivable_installments()'::regprocedure AND md5(pg_get_functiondef(oid))='f632f15c9f46cb9889082fc533a27ea1' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_generate_receivable_installments'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_h6_guard_ar_installment_snapshot()'::regprocedure AND md5(pg_get_functiondef(oid))='c3f26bc5217a5d86227c7e74f762b3ad' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_h6_guard_ar_installment_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_h6_guard_title_snapshot()'::regprocedure AND md5(pg_get_functiondef(oid))='d9cc5c95f837de9d77cec2159e24bbf9' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_h6_guard_title_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_h6c_set_canonical_payment_terms()'::regprocedure AND md5(pg_get_functiondef(oid))='92eb0a19aed67bb829ccbec88aa9cf2d' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_h6c_set_canonical_payment_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_h6d_block_hard_delete()'::regprocedure AND md5(pg_get_functiondef(oid))='5c07dd23a0c9355c3fe11811004b0381' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_h6d_block_hard_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.partner_orders_audit_trigger()'::regprocedure AND md5(pg_get_functiondef(oid))='df139ef01591892436854b7f8c82f2db' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.partner_orders_audit_trigger'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_audit_partner_order_commercial()'::regprocedure AND md5(pg_get_functiondef(oid))='b537eb6807fbfc48b43b59d49ef7297a' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_audit_partner_order_commercial'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_auto_b2b_receivable()'::regprocedure AND md5(pg_get_functiondef(oid))='0f679538fe394924b140e54938a3bb9e' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_auto_b2b_receivable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_b2b_block_receivable_before_approval()'::regprocedure AND md5(pg_get_functiondef(oid))='9d559f2f04613704467cb488de0d842f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_b2b_block_receivable_before_approval'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_b2b_enforce_plan_selectable()'::regprocedure AND md5(pg_get_functiondef(oid))='3477a02b069c20ae3e1c832ecca6b1e7' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_b2b_enforce_plan_selectable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_block_partner_order_delete()'::regprocedure AND md5(pg_get_functiondef(oid))='55b4f2fa662f1d14dbbb663cb475d6a6' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_block_partner_order_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_block_partner_order_edit_after_op()'::regprocedure AND md5(pg_get_functiondef(oid))='2884dea0a9efa9ab7badac6bd8b5e46c' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_block_partner_order_edit_after_op'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_block_partner_order_items_after_op()'::regprocedure AND md5(pg_get_functiondef(oid))='6e7c1a8ac409cf64442396d48f73abb5' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_block_partner_order_items_after_op'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_notify_payment_terms_pending()'::regprocedure AND md5(pg_get_functiondef(oid))='671f9cb3a245cfccc30a27c16172d802' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_notify_payment_terms_pending'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_partner_order_items_resolve_pending()'::regprocedure AND md5(pg_get_functiondef(oid))='2e80e713bc0fe3785e1008405a0d02a3' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_partner_order_items_resolve_pending'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_partner_orders_credit_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='b24a3c30910832e8b14456d912a67589' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_partner_orders_credit_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_partner_orders_require_items()'::regprocedure AND md5(pg_get_functiondef(oid))='2b756289555b287255876e635a516c9a' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_partner_orders_require_items'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_pofl_updated_at()'::regprocedure AND md5(pg_get_functiondef(oid))='c06d5b386e01bceceefd80f420363c3b' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_pofl_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_recalc_risk_on_ar_change()'::regprocedure AND md5(pg_get_functiondef(oid))='2d38119a0bb885471ba0112c300a4144' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_recalc_risk_on_ar_change'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_refresh_engagement()'::regprocedure AND md5(pg_get_functiondef(oid))='87b1de282cdc198d0898cdc5ca08a4c4' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_refresh_engagement'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_sync_b2b_financial_status()'::regprocedure AND md5(pg_get_functiondef(oid))='e636fcf74c5e1c7c8037d5a17f525c27' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_sync_b2b_financial_status'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.trg_partner_order_timeline()'::regprocedure AND md5(pg_get_functiondef(oid))='833de323eb590a831924d5a5fcb490bd' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.trg_partner_order_timeline'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.trg_partner_order_to_planning_fn()'::regprocedure AND md5(pg_get_functiondef(oid))='e5915037d03892fffc5d388595cba685' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.trg_partner_order_to_planning_fn'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.update_updated_at_column()'::regprocedure AND md5(pg_get_functiondef(oid))='b1930ed5bca3be839f783c6202ab8147' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.update_updated_at_column'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.approve_partner_order(uuid,text,date)'::regprocedure AND md5(pg_get_functiondef(oid))='931feb2b8500457cd0f030fecc07a67e' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.approve_partner_order'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure AND md5(pg_get_functiondef(oid))='a29167995a98da7b9f0ee6620dd43550' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.create_partner_order_secure'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_cc_can_prepare(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='439d9c28f69029b9c71fddbef1054e57' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_cc_can_prepare'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='31eeb54e4b69d97c311629a37e553faf' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.generate_b2b_receivable_secure'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.generate_b2b_receivable_secure_impl(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='b4e801be268b50cbe8c8aa619ab43b77' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.generate_b2b_receivable_secure_impl'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.is_valid_b2b_partner_user(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='0bb0dea04be8ca84c66db7ca6329876c' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.is_valid_b2b_partner_user'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.tg_block_pofl_delete()'::regprocedure AND md5(pg_get_functiondef(oid))='14e8805a8633bef223ff842650b6d0cc' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.tg_block_pofl_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.h15_actor_organization()'::regprocedure AND md5(pg_get_functiondef(oid))='64e10608403238a41a9baf92857ca881' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.h15_actor_organization'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public._saas_trg_require_feature()'::regprocedure AND md5(pg_get_functiondef(oid))='13ed48832f81cbb35434688ca35fda4b' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public._saas_trg_require_feature'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.issue_ticket(text,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='c32ad23a9db8574af85da8fcfc45af43' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.issue_ticket'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.has_ticket(text,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='29adae3347e8a5ff23327fa86fceb54b' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.has_ticket'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.guard_tenant_organization_id()'::regprocedure AND md5(pg_get_functiondef(oid))='d01a740c1e3e02407131d2b9228bf658' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.guard_tenant_organization_id'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.d51_5_validate_financial_tenant_links()'::regprocedure AND md5(pg_get_functiondef(oid))='f470a25ba7e65b366c62ad3ac8aa3112' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.d51_5_validate_financial_tenant_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_actor_scope(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='c3f2997746f24bc2efd15db5c0ccc862' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_actor_scope'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.h15_actor_organization()'::regprocedure AND md5(pg_get_functiondef(oid))='55edafec08bcc84a00f1526c14334a2c' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.h15_actor_organization'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_origin_valid(jsonb)'::regprocedure AND md5(pg_get_functiondef(oid))='70a7c317765a4888b38e8bf277ded7d3' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_origin_valid'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='6bbb61aa5899b18d13ac55d4f76f45e1' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_assert_origin'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_order_snapshot_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='da7a558c06878344c6e5ce70bb1c8e89' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_order_snapshot_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_child_snapshot_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='f9fcfca4588854d927f7f9a1bdbe4de7' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_child_snapshot_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_commercial_context()'::regprocedure AND md5(pg_get_functiondef(oid))='2f1063f00281c4ca78dcebaab81a9446' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_commercial_context'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_internal_commercial_actor()'::regprocedure AND md5(pg_get_functiondef(oid))='6555396c4f8fe914177d2ccfc3891279' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_internal_commercial_actor'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_internal_recipients(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='d4936c87a3ab62d26816a11a032dfe0f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_internal_recipients'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_partner_recipients(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='70b381094ae1f3ac87d0fa8e28274dac' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_partner_recipients'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='a0417d6727d78412849916a95b250bde' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_order_create_allowed'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_plan_assigned(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='4a8d57d888dace76bd1fa257c3a19c82' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_plan_assigned'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_owner_order_guard(uuid,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='01d6cb10289af56ecfdbb38e43646e3a' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_owner_order_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='6802c693f459a92e70dade0c73d7faba' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_order_actor_scope'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_apply_interest(numeric,text,numeric,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='806e5d8789b08cd6790a10feaf95f26d' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_apply_interest'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_cart_hash(uuid,uuid,jsonb,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='26fd3c7724a40b919f240f4021176115' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_cart_hash'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='213ac31f3a30816ead75365b0d1fed18' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_credit_exposure'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_plan_selectable(uuid,timestamp with time zone)'::regprocedure AND md5(pg_get_functiondef(oid))='4cb833a3eae76cbebce920f34cd5d5ce' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_plan_selectable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_resolve_b2b_cart(uuid,uuid,jsonb,date)'::regprocedure AND md5(pg_get_functiondef(oid))='c8b4584475698835b786dacdf1e0fc14' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_resolve_b2b_cart'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.get_user_partner_id()'::regprocedure AND md5(pg_get_functiondef(oid))='b334c3a454ebc4233d3b9e0d0a700d78' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.get_user_partner_id'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure AND md5(pg_get_functiondef(oid))='37d4f45e388ed7b38f6f397b672629ee' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.simulate_b2b_payment_plan_secure'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.b2b_phase1_order_visible(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='8812508716f279a88e3d5a31b15621d8' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.b2b_phase1_order_visible'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_phase1_order_visible(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='8504f07fbc3a7975accf919f386d00eb' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_phase1_order_visible'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.b2b_phase1_partner_visible(uuid,boolean)'::regprocedure AND md5(pg_get_functiondef(oid))='6b3defc01a66040146562c60ad224f03' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.b2b_phase1_partner_visible'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.b2b_phase1_partner_visible(uuid,boolean)'::regprocedure AND md5(pg_get_functiondef(oid))='915f516e605af7cc14584e2e762a2661' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.b2b_phase1_partner_visible'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_settings_allowed(uuid,boolean)'::regprocedure AND md5(pg_get_functiondef(oid))='57baa5fd657952d9383ad0c422c1d028' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_settings_allowed'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_settings_fence()'::regprocedure AND md5(pg_get_functiondef(oid))='f87cc2894dc551d242c2586f17e2cdd4' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_settings_fence'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_update_settings(uuid,jsonb,jsonb)'::regprocedure AND md5(pg_get_functiondef(oid))='1d64475b433bd8557fd399be3b491a38' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_update_settings'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_b2b_order_priceable(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='e8681bc3e8f87d86189a371a919cb3b9' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_b2b_order_priceable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_resolve_commercial_price(text,uuid,uuid,uuid,uuid,uuid,text,numeric,date,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='0df0d9005d46b667db4433d3eae59e27' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_resolve_commercial_price'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.platform_actor_access_ready(uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='048249c0c2106c3761e26eacb8d0de84' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.platform_actor_access_ready'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_catalogo_preco_canonico(uuid,uuid,text,numeric)'::regprocedure AND md5(pg_get_functiondef(oid))='fa5e890dc647392efc238460ac16d6a2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_catalogo_preco_canonico'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_producer_links(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='881cdf48a5b20df4d93e42ef1edf1bee' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2_producer_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_assignment_allowed(text,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='ecada72965cd1042fc1502b37864ab42' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_assignment_allowed'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_internal_actor(app_role[])'::regprocedure AND md5(pg_get_functiondef(oid))='97bab97591a9f662bad7b1ccf837bfcd' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_internal_actor'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='0e303620d70fa5d9d8b5c6702ee8526f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:platform_private.c2p1_item_allowed'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.fn_generate_payable_installments()'::regprocedure AND md5(pg_get_functiondef(oid))='f4b15f02171e321e5ca0370255ccbff1' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.fn_generate_payable_installments'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.rpc_create_financial_title(text,jsonb)'::regprocedure AND md5(pg_get_functiondef(oid))='0778b876b300e08d53f1cf7790394fc5' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'origin_dependency_drift:public.rpc_create_financial_title'; END IF;
+END $guard$;
+DO $guard$ BEGIN IF (SELECT coalesce(jsonb_agg(to_jsonb(p) ORDER BY tablename,policyname),'[]') FROM pg_policies p WHERE schemaname='public' AND tablename IN ('accounts_receivable','accounts_receivable_installments','partner_financial_settings','partner_order_financial_links','partner_order_idempotency','partner_order_items','partner_order_payment_schedule','partner_order_payment_terms','partner_orders')) IS DISTINCT FROM '[{"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}, {"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_select_financial", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}, {"cmd": "SELECT", "qual": "((origin_type = ''B2B_ORDER''::text) AND (platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role)))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_b2b_readers", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "((origin_type = ''B2B_ORDER''::text) AND platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> ''partner_id''::text))::uuid AS uuid)))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_partner_select_own_b2b", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''cliente_produtor''::app_role) AND (customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (partner_id IS NULL) AND (origin_type IS DISTINCT FROM ''B2B_ORDER''::text))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "PERMISSIVE", "policyname": "ar_producer_read", "schemaname": "public", "with_check": null}, {"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}, {"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}, {"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_receivable", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_insert_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}, {"cmd": "SELECT", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_select_financial", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "is_financial_staff(( SELECT auth.uid() AS uid))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "accounts_receivable_installments_update_financial", "schemaname": "public", "with_check": "is_financial_staff(( SELECT auth.uid() AS uid))"}, {"cmd": "SELECT", "qual": "((platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role)) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = ''B2B_ORDER''::text)))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_b2b_readers", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.origin_type = ''B2B_ORDER''::text) AND (ar.partner_id = ( SELECT ((platform_private.b2b_commercial_context() ->> ''partner_id''::text))::uuid AS uuid))))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_partner_select_own_b2b", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''cliente_produtor''::app_role) AND (EXISTS ( SELECT 1\n   FROM accounts_receivable ar\n  WHERE ((ar.id = accounts_receivable_installments.receivable_id) AND (ar.customer_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))) AND (ar.partner_id IS NULL) AND (ar.origin_type IS DISTINCT FROM ''B2B_ORDER''::text)))))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "PERMISSIVE", "policyname": "ari_producer_read", "schemaname": "public", "with_check": null}, {"cmd": "DELETE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_delete", "schemaname": "public", "with_check": null}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_insert", "schemaname": "public", "with_check": "false"}, {"cmd": "UPDATE", "qual": "false", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "financial_rpc_only_update", "schemaname": "public", "with_check": "false"}, {"cmd": "ALL", "qual": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))", "roles": ["authenticated"], "tablename": "accounts_receivable_installments", "permissive": "RESTRICTIVE", "policyname": "tenant_isolation_d51_5", "schemaname": "public", "with_check": "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"}, {"cmd": "ALL", "qual": "platform_private.c2p1_settings_allowed(partner_id, false)", "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "RESTRICTIVE", "policyname": "b2b_financial_settings_tenant_guard", "schemaname": "public", "with_check": "platform_private.c2p1_settings_allowed(partner_id, true)"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "PERMISSIVE", "policyname": "pfs_admin_fin_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "PERMISSIVE", "policyname": "pfs_admin_fin_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "PERMISSIVE", "policyname": "pfs_admin_fin_update", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role))", "roles": ["authenticated"], "tablename": "partner_financial_settings", "permissive": "PERMISSIVE", "policyname": "pfs_b2b_readers", "schemaname": "public", "with_check": null}, {"cmd": "ALL", "qual": "(platform_private.b2b_phase1_order_visible(partner_order_id) AND platform_private.b2b_phase1_partner_visible(partner_id, false))", "roles": ["authenticated"], "tablename": "partner_order_financial_links", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "(platform_private.b2b_phase1_order_visible(partner_order_id) AND platform_private.b2b_phase1_partner_visible(partner_id, false))"}, {"cmd": "ALL", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_financial_links", "permissive": "PERMISSIVE", "policyname": "pofl_admin_fin_all", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''administrativo''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_financial_links", "permissive": "PERMISSIVE", "policyname": "pofl_b2b_readers", "schemaname": "public", "with_check": null}, {"cmd": "SELECT", "qual": "(partner_id IN ( SELECT partner_users.partner_id\n   FROM partner_users\n  WHERE (partner_users.user_id = ( SELECT auth.uid() AS uid))))", "roles": ["authenticated"], "tablename": "partner_order_financial_links", "permissive": "PERMISSIVE", "policyname": "pofl_partner_select_own", "schemaname": "public", "with_check": null}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_partner_visible(partner_id, false)", "roles": ["authenticated"], "tablename": "partner_order_idempotency", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_partner_visible(partner_id, false)"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (partner_id = get_user_partner_id())))", "roles": ["authenticated"], "tablename": "partner_order_idempotency", "permissive": "PERMISSIVE", "policyname": "poi_select_scoped", "schemaname": "public", "with_check": null}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_order_visible(order_id)", "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_order_visible(order_id)"}, {"cmd": "DELETE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "PERMISSIVE", "policyname": "partner_order_items_delete", "schemaname": "public", "with_check": null}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "PERMISSIVE", "policyname": "partner_order_items_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(EXISTS ( SELECT 1\n   FROM partner_orders o\n  WHERE ((o.id = partner_order_items.order_id) AND (platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (o.partner_id = get_user_partner_id()))))))", "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "PERMISSIVE", "policyname": "partner_order_items_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_items", "permissive": "PERMISSIVE", "policyname": "partner_order_items_update", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_order_visible(partner_order_id)", "roles": ["authenticated"], "tablename": "partner_order_payment_schedule", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_order_visible(partner_order_id)"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_order_payment_schedule", "permissive": "PERMISSIVE", "policyname": "pops_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (EXISTS ( SELECT 1\n   FROM (partner_orders po\n     JOIN partner_users pu ON ((pu.partner_id = po.partner_id)))\n  WHERE ((po.id = partner_order_payment_schedule.partner_order_id) AND (pu.user_id = ( SELECT auth.uid() AS uid)))))))", "roles": ["authenticated"], "tablename": "partner_order_payment_schedule", "permissive": "PERMISSIVE", "policyname": "pops_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_payment_schedule", "permissive": "PERMISSIVE", "policyname": "pops_update", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_order_visible(partner_order_id)", "roles": ["authenticated"], "tablename": "partner_order_payment_terms", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_order_visible(partner_order_id)"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_order_payment_terms", "permissive": "PERMISSIVE", "policyname": "popt_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (EXISTS ( SELECT 1\n   FROM (partner_orders po\n     JOIN partner_users pu ON ((pu.partner_id = po.partner_id)))\n  WHERE ((po.id = partner_order_payment_terms.partner_order_id) AND (pu.user_id = ( SELECT auth.uid() AS uid)))))))", "roles": ["authenticated"], "tablename": "partner_order_payment_terms", "permissive": "PERMISSIVE", "policyname": "popt_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_order_payment_terms", "permissive": "PERMISSIVE", "policyname": "popt_update", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "platform_private.has_role(( SELECT auth.uid() AS uid), ''financeiro''::app_role)", "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "PERMISSIVE", "policyname": "Financeiro read partner_orders", "schemaname": "public", "with_check": null}, {"cmd": "ALL", "qual": "platform_private.b2b_phase1_partner_visible(partner_id, false)", "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "RESTRICTIVE", "policyname": "b2b_phase1_tenant_guard", "schemaname": "public", "with_check": "platform_private.b2b_phase1_partner_visible(partner_id, false)"}, {"cmd": "INSERT", "qual": null, "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "PERMISSIVE", "policyname": "partner_orders_insert", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}, {"cmd": "SELECT", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role) OR (platform_private.has_role(( SELECT auth.uid() AS uid), ''parceiro_b2b''::app_role) AND (partner_id = get_user_partner_id())))", "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "PERMISSIVE", "policyname": "partner_orders_select", "schemaname": "public", "with_check": null}, {"cmd": "UPDATE", "qual": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))", "roles": ["authenticated"], "tablename": "partner_orders", "permissive": "PERMISSIVE", "policyname": "partner_orders_update", "schemaname": "public", "with_check": "(platform_private.has_role(( SELECT auth.uid() AS uid), ''administrador''::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), ''gestor_comercial''::app_role))"}]'::jsonb THEN RAISE EXCEPTION 'origin_policy_set_drift'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:accounts_receivable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.accounts_receivable_installments'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:accounts_receivable_installments'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_financial_settings'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_financial_settings'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_financial_links'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_financial_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_idempotency'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_idempotency'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_items'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_items'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_payment_schedule'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_payment_schedule'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_order_payment_terms'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_order_payment_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.partner_orders'::regclass AND relrowsecurity AND NOT relforcerowsecurity) THEN RAISE EXCEPTION 'origin_RLS_drift:partner_orders'; END IF;
+END $guard$;
+DO $guard$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='d51_5_validate_tenant_links' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, customer_id ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.d51_5_validate_tenant_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='tenant_organization_guard' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.tenant_organization_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_ar_gen_installments' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ar_gen_installments AFTER INSERT ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_ar_gen_installments'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_ar_uat' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_ar_uat BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_ar_uat'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_audit_ar' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_audit_ar AFTER INSERT OR DELETE OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_financial_audit()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_audit_ar'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_h6_ar_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ar_snapshot BEFORE UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_title_snapshot()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_h6_ar_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_h6d_ar_no_delete' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ar_no_delete BEFORE DELETE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_h6d_ar_no_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_saas_gate' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.accounts_receivable FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature(''contas_receber'')') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_saas_gate'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable'::regclass AND tgname='trg_sync_b2b_financial_status' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_sync_b2b_financial_status AFTER UPDATE OF status ON public.accounts_receivable FOR EACH ROW WHEN ((old.status IS DISTINCT FROM new.status)) EXECUTE FUNCTION tg_sync_b2b_financial_status()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable.trg_sync_b2b_financial_status'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='d51_5_validate_tenant_links' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER d51_5_validate_tenant_links BEFORE INSERT OR UPDATE OF organization_id, receivable_id ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.d51_5_validate_tenant_links'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='tenant_organization_guard' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.tenant_organization_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_h6_ari_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6_ari_snapshot BEFORE UPDATE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6_guard_ar_installment_snapshot()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.trg_h6_ari_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_h6d_ari_no_delete' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6d_ari_no_delete BEFORE DELETE ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.trg_h6d_ari_no_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.accounts_receivable_installments'::regclass AND tgname='trg_recalc_risk_on_ar_change' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_recalc_risk_on_ar_change AFTER INSERT OR UPDATE OF status, received_amount ON public.accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION tg_recalc_risk_on_ar_change()') THEN RAISE EXCEPTION 'origin_trigger_drift:accounts_receivable_installments.trg_recalc_risk_on_ar_change'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_financial_settings'::regclass AND tgname='c2p1_settings_fence' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER c2p1_settings_fence BEFORE INSERT OR DELETE OR UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION platform_private.c2p1_settings_fence()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_financial_settings.c2p1_settings_fence'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_financial_settings'::regclass AND tgname='trg_pfs_governance_audit' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_pfs_governance_audit AFTER INSERT OR DELETE OR UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION tg_governance_audit()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_financial_settings.trg_pfs_governance_audit'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_financial_settings'::regclass AND tgname='trg_pfs_updated_at' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_pfs_updated_at BEFORE UPDATE ON public.partner_financial_settings FOR EACH ROW EXECUTE FUNCTION tg_pfs_updated_at()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_financial_settings.trg_pfs_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_financial_links'::regclass AND tgname='trg_b2b_block_receivable_before_approval' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_block_receivable_before_approval BEFORE INSERT ON public.partner_order_financial_links FOR EACH ROW EXECUTE FUNCTION tg_b2b_block_receivable_before_approval()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_financial_links.trg_b2b_block_receivable_before_approval'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_financial_links'::regclass AND tgname='trg_block_pofl_delete' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_block_pofl_delete BEFORE DELETE ON public.partner_order_financial_links FOR EACH ROW EXECUTE FUNCTION tg_block_pofl_delete()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_financial_links.trg_block_pofl_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_financial_links'::regclass AND tgname='trg_pofl_updated_at' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_pofl_updated_at BEFORE UPDATE ON public.partner_order_financial_links FOR EACH ROW EXECUTE FUNCTION tg_pofl_updated_at()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_financial_links.trg_pofl_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_items'::regclass AND tgname='trg_00_b2b_internal_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_items FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_child_snapshot_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_items.trg_00_b2b_internal_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_items'::regclass AND tgname='trg_b2b_order_items_immutable' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_order_items_immutable BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_items FOR EACH ROW EXECUTE FUNCTION fn_b2b_guard_order_items_immutable()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_items.trg_b2b_order_items_immutable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_items'::regclass AND tgname='trg_block_partner_order_items_after_op' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_block_partner_order_items_after_op BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_items FOR EACH ROW EXECUTE FUNCTION tg_block_partner_order_items_after_op()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_items.trg_block_partner_order_items_after_op'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_items'::regclass AND tgname='trg_partner_order_items_resolve_pending' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_order_items_resolve_pending AFTER INSERT ON public.partner_order_items FOR EACH ROW EXECUTE FUNCTION tg_partner_order_items_resolve_pending()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_items.trg_partner_order_items_resolve_pending'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_schedule'::regclass AND tgname='trg_00_b2b_internal_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_payment_schedule FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_child_snapshot_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_schedule.trg_00_b2b_internal_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_00_b2b_internal_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR DELETE OR UPDATE ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_child_snapshot_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_00_b2b_internal_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_b2b_plan_selectable_terms' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_plan_selectable_terms BEFORE INSERT OR UPDATE OF payment_plan_id ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION tg_b2b_enforce_plan_selectable()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_b2b_plan_selectable_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_h6c_set_canonical_payment_terms' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_h6c_set_canonical_payment_terms AFTER INSERT ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION fn_h6c_set_canonical_payment_terms()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_h6c_set_canonical_payment_terms'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_popt_audit' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_popt_audit AFTER INSERT OR UPDATE ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION audit_partner_order_payment_terms()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_popt_audit'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_payment_terms'::regclass AND tgname='trg_popt_updated_at' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_popt_updated_at BEFORE UPDATE ON public.partner_order_payment_terms FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_order_payment_terms.trg_popt_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='partner_order_timeline_ins' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER partner_order_timeline_ins AFTER INSERT ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION trg_partner_order_timeline()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.partner_order_timeline_ins'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='partner_order_timeline_upd' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER partner_order_timeline_upd AFTER UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION trg_partner_order_timeline()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.partner_order_timeline_upd'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_00_b2b_internal_snapshot' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_00_b2b_internal_snapshot BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.b2b_internal_order_snapshot_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_00_b2b_internal_snapshot'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_audit_po_commercial' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_audit_po_commercial AFTER UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_audit_partner_order_commercial()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_audit_po_commercial'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_auto_b2b_receivable' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_auto_b2b_receivable AFTER UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_auto_b2b_receivable'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_b2b_guard_credit_approval_fields' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_guard_credit_approval_fields BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION fn_b2b_guard_credit_approval_fields()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_b2b_guard_credit_approval_fields'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_b2b_plan_selectable_orders' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_plan_selectable_orders BEFORE INSERT OR UPDATE OF payment_plan_id ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_b2b_enforce_plan_selectable()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_b2b_plan_selectable_orders'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_block_partner_order_delete' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_block_partner_order_delete BEFORE DELETE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_block_partner_order_delete()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_block_partner_order_delete'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_block_partner_order_edit_after_op' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_block_partner_order_edit_after_op BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_block_partner_order_edit_after_op()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_block_partner_order_edit_after_op'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_notify_payment_terms_pending' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_notify_payment_terms_pending AFTER INSERT OR UPDATE OF requires_financial_approval, financial_approval_status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_notify_payment_terms_pending()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_notify_payment_terms_pending'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_order_to_planning' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_order_to_planning AFTER UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION trg_partner_order_to_planning_fn()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_order_to_planning'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_orders_audit' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_orders_audit AFTER INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION partner_orders_audit_trigger()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_orders_audit'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_orders_credit_guard' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_orders_credit_guard BEFORE INSERT OR UPDATE OF status, total ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_credit_guard()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_orders_credit_guard'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_orders_require_items' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_orders_require_items BEFORE UPDATE OF status ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_require_items()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_orders_require_items'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_orders_updated_at' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_orders_updated_at BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_partner_orders_updated_at'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_refresh_engagement' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_refresh_engagement AFTER INSERT OR DELETE OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_refresh_engagement()') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_refresh_engagement'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_saas_gate' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_saas_gate BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION _saas_trg_require_feature(''pedidos_b2b'')') THEN RAISE EXCEPTION 'origin_trigger_drift:partner_orders.trg_saas_gate'; END IF;
+END $guard$;
+DO $$ BEGIN IF (SELECT count(*) FROM pg_trigger WHERE NOT tgisinternal AND tgrelid IN ('public.accounts_receivable'::regclass,'public.accounts_receivable_installments'::regclass,'public.partner_financial_settings'::regclass,'public.partner_order_financial_links'::regclass,'public.partner_order_items'::regclass,'public.partner_order_payment_schedule'::regclass,'public.partner_order_payment_terms'::regclass,'public.partner_orders'::regclass))<>48 THEN RAISE EXCEPTION 'origin_unexpected_trigger'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='platform_private' AND c.relname='financial_initial_installments' AND c.relrowsecurity AND NOT c.relforcerowsecurity) THEN RAISE EXCEPTION 'origin_private_context_table_drift'; END IF; IF has_table_privilege('anon','platform_private.financial_initial_installments','SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('authenticated','platform_private.financial_initial_installments','SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege('service_role','platform_private.financial_initial_installments','SELECT,INSERT,UPDATE,DELETE') THEN RAISE EXCEPTION 'origin_private_context_exposed'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='c79689aa1070534ce43edde279ee5682' AND pg_get_userbyid(proowner)='postgres' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'containment_helper_drift:platform_private.c2_external_origin_assert(jsonb,uuid,uuid)'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_external_final_state_guard()'::regprocedure AND md5(pg_get_functiondef(oid))='3f1a5a6b11161bd8204293a8c64371e2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text='{postgres=X/postgres}') THEN RAISE EXCEPTION 'containment_helper_drift:platform_private.c2_external_final_state_guard()'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='zz_c2_external_final_state' AND tgenabled='O' AND pg_get_triggerdef(oid)='CREATE TRIGGER zz_c2_external_final_state BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_external_final_state_guard()') THEN RAISE EXCEPTION 'containment_final_trigger_drift'; END IF; END $$;
+COMMIT;
