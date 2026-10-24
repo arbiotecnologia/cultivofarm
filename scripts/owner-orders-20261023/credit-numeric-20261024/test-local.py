@@ -17,7 +17,7 @@ pg.sql((N/'rollback.sql.review').read_text())
 pg.sql((N/'postflight-rollback.sql').read_text())
 """
 prefix=prefix.replace("# Preflight must pass unchanged against containment before any candidate mutation.","# Preflight must pass unchanged against containment before any candidate mutation.\n"+preprobe)
-env={'__file__':str(H/'test-local.py'),'__name__':'__main__','N':N}
+env={'__file__':str(H/'test-local.py'),'__name__':'__main__','N':N,'hashlib':hashlib}
 exec(compile(prefix,str(H/'test-local.py'),'exec'),env)
 exec(compile((N/'credit-checks.py').read_text(),str(N/'credit-checks.py'),'exec'),env)
 exec(compile(suffix,str(H/'test-local.py'),'exec'),env)
