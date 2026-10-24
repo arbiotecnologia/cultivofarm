@@ -77,7 +77,10 @@ before=snapshot();again=json.loads(val(GB,call+';'));ok('numeric create replay i
 before=snapshot();actor(GB,create(GB,'numeric-approval',p=Q,obs='Changed')+';',err='idempotency_conflict');ok('numeric conflict atomic unchanged',snapshot()==before)
 r=credit('0');excluded=credit('0',exclude="'"+oid+"'")
 ok('pending consumes credit exclude order exact180',r['comprometido_pendente']==180 and excluded['comprometido_pendente']==0)
-settings(1000);actor(ADMIN_B,f"SELECT public.approve_partner_order('{oid}',NULL,NULL);")
+before=snapshot();actor(ADMIN_B,f"SELECT public.approve_partner_order('{oid}',NULL,NULL);",err='credit_pending')
+ok('approval_required stays pending cannot bypass credit approval',snapshot()==before)
+settings(1000);oid=json.loads(val(GB,create(GB,'numeric-delivery',p=Q)+';'))['id']
+actor(ADMIN_B,f"SELECT public.approve_partner_order('{oid}',NULL,NULL);")
 ok('numeric na_entrega approval no title no planning',pg.sql(f"SELECT status||'|'||ready_for_production||'|'||receivable_generated FROM public.partner_orders WHERE id='{oid}'")=='aprovado|false|false' and pg.sql(f"SELECT count(*) FROM public.accounts_receivable WHERE origin_id='{oid}'")=='0')
 before=snapshot();actor(ADMIN_B,f"SELECT public.generate_b2b_receivable_secure('{oid}');",err='C2_EXTERNAL_DELIVERY_REQUIRED');ok('numeric na_entrega premature billing denied all effects',snapshot()==before)
 settings(0)
