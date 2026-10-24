@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 01:52 — reconciliação tenant e base atual
+- [x] Captura SELECT canônica78corpos/44triggers/policies/RLS; variante nova current-base-reconciliation-20261024, históricos preservados, tenantNULL23514 e propagação mantidos.
+- [x] Cadeia reconciliada91checks/baseatual8checks; Vitest2/2 isoladoPASS; crédito123checks/1PASS. PREPOST completos uma transação/falhaPOST candidate e contenção preservam catálogo. Execução paralela teve timeout executor, não contadaPASS.
+- [x] Independente wrapper não certificável: A/B createinterno positivo, wrapper/approve atuais negam42501B2B_INTERNAL_DOWNSTREAM_UNVERIFIED antes receipt; duasconexões sem reproduzir deadlock. Nenhum candidato independente pronto emitido.
+- [ ] Implantação origem depende contabilidade realDRAFT/revisão/JWT; wrapper independente depende caminho funcional autorizado reproduzível na baseatual. Sem hostedmutante/publish/writer/sessões.
+
 ## 24/10 01:38 — correção crítica da composição transacional
 - [x] Removidos somente delimitadores externos embutidos dos cinco comandos receipt-lock-order-review; uma transação por arquivo, pre/post READ ONLY, sem mudar corpos/guards/baselines.
 - [x] Candidate/rollback/containment completos com falha deliberada no POST preservam hashes/owners/ACLs; todos checkpoints têm mesmo txid. Suíte2/2PASS, concorrência183checks96.50s/crédito123checks54.05s.
