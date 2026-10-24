@@ -234,6 +234,7 @@ const ACCESS_MAP: Record<string, Partial<Record<AppRole, AccessLevel>>> = {
   "/executivo": { administrador: "rw", gestor: "rw" },
   "/comercial/parceiros": { administrador: "rw", gestor_comercial: "rw" },
   "/comercial/pedidos-b2b": { administrador: "rw", gestor_comercial: "rw" },
+  "/comercial/pedidos-b2b/novo": { administrador: "rw", gestor_comercial: "rw" },
   "/comercial/solicitacoes-b2b": { administrador: "rw", gestor_comercial: "rw", financeiro: "r" },
   "/comercial/dashboard-b2b": { administrador: "rw", gestor_comercial: "rw" },
   "/comercial/campanhas": { administrador: "rw", gestor_comercial: "rw" },

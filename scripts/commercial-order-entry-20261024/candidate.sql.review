@@ -1,0 +1,121 @@
+-- REVIEW ONLY / INACTIVE. Never apply without independent review and owner-run release.
+-- Single transaction: PRE, DDL and POST share one txid. Writer, accounting gate and downstream containment untouched.
+BEGIN;
+DO $pre$ BEGIN
+ SET LOCAL lock_timeout='5s';
+ IF md5(pg_get_functiondef('platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'a0417d6727d78412849916a95b250bde' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:platform_private.c2_owner_order_create_allowed(uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure)) IS DISTINCT FROM '6555396c4f8fe914177d2ccfc3891279' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:platform_private.b2b_internal_commercial_actor()'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure)) IS DISTINCT FROM 'c3f2997746f24bc2efd15db5c0ccc862' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:platform_private.b2b_actor_scope(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) IS DISTINCT FROM '12ea8b410e8fadf2da8f72fc1bbc83cf' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF;
+ IF md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) IS DISTINCT FROM '37d4f45e388ed7b38f6f397b672629ee' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '6802c693f459a92e70dade0c73d7faba' THEN RAISE EXCEPTION 'C2IOE_PRE_LIVE_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
+ IF to_regprocedure('public.c2_internal_order_entry_capability_v1()') IS NOT NULL OR to_regprocedure('platform_private.c2_internal_order_target_reason(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'C2IOE_PRE_ALREADY_PRESENT'; END IF;
+END $pre$;
+CREATE OR REPLACE FUNCTION platform_private.c2_internal_order_target_reason(_uid uuid, _partner uuid)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE s record; org uuid;
+BEGIN
+  -- Mirrors LIVE guards; NULL means allowed. Never authorizes by itself: callers must RAISE.
+  IF _uid IS NULL OR auth.uid() IS DISTINCT FROM _uid THEN RETURN 'auth_required'; END IF;
+  IF NOT platform_private.b2b_internal_commercial_actor() THEN RETURN 'actor_not_allowed'; END IF;
+  SELECT * INTO s FROM platform_private.b2b_actor_scope(_uid);
+  IF s.profile_ok IS NOT TRUE THEN RETURN 'inactive_scope'; END IF;
+  IF NOT public._saas_user_has_feature(_uid,'pedidos_b2b') THEN RETURN 'feature_disabled'; END IF;
+  org := public.h15_actor_organization();
+  IF org IS NULL THEN RETURN 'actor_not_allowed'; END IF;
+  IF _partner IS NULL THEN RETURN NULL; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_accounts p
+       WHERE p.id=_partner AND p.ativo IS TRUE AND p.deleted_at IS NULL AND p.commercial_owner_organization_id=org
+         AND (p.client_id IS NULL OR EXISTS (SELECT 1 FROM public.clientes c WHERE c.id=p.client_id AND c.organization_id=org))) THEN
+    RETURN 'target_outside_portfolio';
+  END IF;
+  RETURN NULL;
+END $function$;
+ALTER FUNCTION platform_private.c2_internal_order_target_reason(uuid,uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION platform_private.c2_internal_order_target_reason(uuid,uuid) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION platform_private.c2_order_actor_scope(_uid uuid, _partner uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE s record; r text;
+BEGIN
+  -- C2_INTERNAL_ORDER_ENTRY_V1: exclusive internal commercial actor (admin/gestor_comercial,
+  -- no external B2B role) may target only its own organization's portfolio.
+  IF platform_private.b2b_internal_commercial_actor() AND auth.uid() IS NOT DISTINCT FROM _uid THEN
+    r := platform_private.c2_internal_order_target_reason(_uid,_partner);
+    IF r IS NOT NULL OR _partner IS NULL THEN
+      RAISE EXCEPTION 'C2_INTERNAL_TARGET_DENIED:%', COALESCE(r,'target_required') USING ERRCODE='42501';
+    END IF;
+    RETURN;
+  END IF;
+  IF public.has_role(_uid,'parceiro_b2b_tecnico'::public.app_role) AND public.has_role(_uid,'parceiro_b2b'::public.app_role)
+     AND NOT public.is_platform_superadmin(_uid) THEN
+    IF _uid IS NULL OR auth.uid() IS DISTINCT FROM _uid THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+    IF NOT platform_private.c2_owner_order_create_allowed(_uid,_partner) THEN
+      RAISE EXCEPTION 'forbidden_financial_terms' USING ERRCODE='42501';
+    END IF;
+    SELECT * INTO s FROM platform_private.b2b_actor_scope(_uid);
+    IF NOT s.profile_ok THEN RAISE EXCEPTION 'inactive_scope' USING ERRCODE='42501'; END IF;
+    IF s.org_partner IS DISTINCT FROM _partner OR NOT s.partner_valid
+       OR s.user_partner_count <> 1 OR s.user_partner IS DISTINCT FROM _partner THEN
+      RAISE EXCEPTION 'forbidden_partner' USING ERRCODE='42501';
+    END IF;
+    RETURN;
+  END IF;
+  PERFORM platform_private.assert_b2b_partner_scope(_uid,_partner);
+END $function$;
+ALTER FUNCTION platform_private.c2_order_actor_scope(uuid,uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION platform_private.c2_order_actor_scope(uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.c2_internal_order_entry_capability_v1()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE uid uuid := auth.uid(); org uuid; r text; n integer; validated boolean; partners jsonb := '[]'::jsonb;
+BEGIN
+  IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
+  r := platform_private.c2_internal_order_target_reason(uid, NULL);
+  IF r IS NULL THEN
+    org := public.h15_actor_organization();
+    -- Same issuer predicate as LIVE b2b_internal_order_snapshot_guard; read only, no lock.
+    SELECT count(*), bool_and(c.configuration_status='VALIDATED' AND c.accounting_validated_at IS NOT NULL
+             AND nullif(btrim(c.legal_name),'') IS NOT NULL AND nullif(btrim(c.cnpj),'') IS NOT NULL)
+      INTO n, validated FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE;
+    IF n<>1 THEN r := 'issuer_ambiguous'; ELSIF validated IS NOT TRUE THEN r := 'issuer_not_validated'; END IF;
+    SELECT COALESCE(jsonb_agg(jsonb_build_object('partner_id',p.id,'razao_social',p.razao_social,
+             'commercial_owner_organization_id',p.commercial_owner_organization_id) ORDER BY p.razao_social, p.id),'[]'::jsonb)
+      INTO partners FROM public.partner_accounts p
+     WHERE platform_private.c2_internal_order_target_reason(uid,p.id) IS NULL;
+    IF r IS NULL AND jsonb_array_length(partners)=0 THEN r := 'no_partner_in_scope'; END IF;
+    -- Catalogue reader still denies internal portfolio targets (LIVE get_partner_catalog_secure(uuid) body uncaptured).
+    IF r IS NULL THEN r := 'catalog_reader_pending'; END IF;
+  END IF;
+  RETURN jsonb_build_object('contract','C2_INTERNAL_ORDER_ENTRY_V1','organization_id',org,
+    'profile_ok', r IS DISTINCT FROM 'inactive_scope' AND r IS DISTINCT FROM 'actor_not_allowed',
+    'order_create', r IS NULL, 'reason', r,
+    'partners', CASE WHEN org IS NULL THEN '[]'::jsonb ELSE partners END);
+END $function$;
+ALTER FUNCTION public.c2_internal_order_entry_capability_v1() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.c2_internal_order_entry_capability_v1() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.c2_internal_order_entry_capability_v1() TO authenticated, service_role;
+DO $post$ BEGIN
+ IF md5(pg_get_functiondef('platform_private.c2_owner_order_create_allowed(uuid,uuid)'::regprocedure)) IS DISTINCT FROM 'a0417d6727d78412849916a95b250bde' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:platform_private.c2_owner_order_create_allowed(uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_internal_commercial_actor()'::regprocedure)) IS DISTINCT FROM '6555396c4f8fe914177d2ccfc3891279' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:platform_private.b2b_internal_commercial_actor()'; END IF;
+ IF md5(pg_get_functiondef('platform_private.b2b_actor_scope(uuid)'::regprocedure)) IS DISTINCT FROM 'c3f2997746f24bc2efd15db5c0ccc862' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:platform_private.b2b_actor_scope(uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)) IS DISTINCT FROM '12ea8b410e8fadf2da8f72fc1bbc83cf' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF;
+ IF md5(pg_get_functiondef('public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'::regprocedure)) IS DISTINCT FROM '37d4f45e388ed7b38f6f397b672629ee' THEN RAISE EXCEPTION 'C2IOE_DEPENDENCY_DRIFT:public.simulate_b2b_payment_plan_secure(uuid,uuid,jsonb,date)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '54c4327d63f48e39f598129ff9dd8f09' THEN RAISE EXCEPTION 'C2IOE_POST_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure)) IS DISTINCT FROM '07d7c9002cbfe17497c9ee4a92d5a928' THEN RAISE EXCEPTION 'C2IOE_POST_DRIFT:platform_private.c2_internal_order_target_reason(uuid,uuid)'; END IF;
+ IF md5(pg_get_functiondef('public.c2_internal_order_entry_capability_v1()'::regprocedure)) IS DISTINCT FROM '88b3cd5499bf3f674601851f7dab848d' THEN RAISE EXCEPTION 'C2IOE_POST_DRIFT:public.c2_internal_order_entry_capability_v1()'; END IF;
+ IF has_function_privilege('authenticated','platform_private.c2_internal_order_target_reason(uuid,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_order_actor_scope(uuid,uuid)','EXECUTE') OR has_function_privilege('anon','public.c2_internal_order_entry_capability_v1()','EXECUTE') OR NOT has_function_privilege('authenticated','public.c2_internal_order_entry_capability_v1()','EXECUTE') THEN RAISE EXCEPTION 'C2IOE_POST_ACL'; END IF;
+END $post$;
+COMMIT;

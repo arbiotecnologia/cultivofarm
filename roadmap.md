@@ -794,6 +794,6 @@
 - [x] Uma suíte focal 1/1 PASS: barreira 40P01 antes/fix depois, tenants A/B, negações exatas e POST falho integral candidato/contenção.
 - [x] Entrega integrada revisável concluída; sem hosted mutante/publicação/writer.
 - [ ] Implantação/homologação independente: bloqueada pela contabilidade real A DRAFT e revisão do auditor.
-- [ ] Venda comercial para carteira: aguarda decisão do proprietário sobre ampliar assert_b2b_partner_scope e revisão do contrato inativo `scripts/commercial-order-entry-20261024/`.
+- [ ] Venda comercial para carteira: pacote inativo `scripts/commercial-order-entry-20261024/` pronto para revisão; aguarda captura READ ONLY do leitor de catálogo LIVE, revisão independente e instalação pelo proprietário.
 - [ ] Pedido interno A: aguarda validação contábil real do emissor A (DRAFT).
 - [ ] Compra própria externa: writer contido (c2_owner_order_create_allowed=false) até release independente.
