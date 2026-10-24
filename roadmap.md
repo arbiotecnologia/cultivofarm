@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 24/10 03:12 — parcelas manuais imutáveis
+- [ ] Capturar base canônica READ ONLY e reproduzir criação R$1/3 e datas customizadas; verificar payable.
+- [ ] Preparar candidato independente com inserção inicial correta, PRE/POST/rollback e conciliação final-integrated sem aplicar.
+- [ ] Testar PostgreSQL descartável, atomicidade, A/B/cruzado e edição negada; erro persistente no diálogo.
+- [ ] Implantação/homologação JWT dependem da revisão independente; sem hosted mutante/publicação/fiscal/writer/contabilidade.
+
 ## 24/10 01:52 — reconciliação tenant e base atual
 - [x] Captura SELECT canônica78corpos/44triggers/policies/RLS; variante nova current-base-reconciliation-20261024, históricos preservados, tenantNULL23514 e propagação mantidos.
 - [x] Cadeia reconciliada91checks/baseatual8checks; Vitest2/2 isoladoPASS; crédito123checks/1PASS. PREPOST completos uma transação/falhaPOST candidate e contenção preservam catálogo. Execução paralela teve timeout executor, não contadaPASS.
