@@ -49,7 +49,12 @@ BEGIN
      OR NEW.credit_approved_at IS DISTINCT FROM OLD.credit_approved_at OR NEW.approved_at IS DISTINCT FROM OLD.approved_at
      -- review e1e9aa2f: no credit/financial decision field may advance by any privileged path while pending.
      OR NEW.credit_approved_by IS DISTINCT FROM OLD.credit_approved_by OR NEW.credit_approval_notes IS DISTINCT FROM OLD.credit_approval_notes
-     OR NEW.approved_by IS DISTINCT FROM OLD.approved_by OR NEW.financial_approval_status IS DISTINCT FROM OLD.financial_approval_status THEN
+     OR NEW.approved_by IS DISTINCT FROM OLD.approved_by
+     -- review 61b28: the canonical create (same txn, private create ticket) initializes not_required -> pending/not_required;
+     -- any other change (e.g. -> approved) is a financial decision and stays denied while pending.
+     OR (NEW.financial_approval_status IS DISTINCT FROM OLD.financial_approval_status
+         AND NOT (platform_private.has_ticket('c2_external_order_create',NEW.partner_id)
+                  AND OLD.financial_approval_status='not_required' AND NEW.financial_approval_status IN ('pending','not_required'))) THEN
    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
   END IF;
  END IF;

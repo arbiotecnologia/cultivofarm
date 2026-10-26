@@ -28,6 +28,11 @@ for dep in CAP['dependencies']:
 # LIVE approve_b2b_credit captured READ ONLY 26/10 (md5 1d5ba930...), installed byte-exact with LIVE owner/ACL.
 pg.sql((D/'src/live-approve_b2b_credit.sql').read_text().strip()+";\nALTER FUNCTION public.approve_b2b_credit(uuid,text) OWNER TO postgres; REVOKE ALL ON FUNCTION public.approve_b2b_credit(uuid,text) FROM PUBLIC,anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION public.approve_b2b_credit(uuid,text) TO service_role; GRANT EXECUTE ON FUNCTION public.approve_b2b_credit(uuid,text) TO authenticated;")
 ok('captured LIVE approve_b2b_credit md5/ACL reproduced',md5('public.approve_b2b_credit(uuid,text)')=='1d5ba930634e165750352e9f44fa844f' and pg.sql("SELECT proacl::text FROM pg_proc WHERE oid='public.approve_b2b_credit(uuid,text)'::regprocedure")=='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')
+# LIVE approve_b2b_payment_terms_secure / respond_b2b_order_quote_secure captured READ ONLY 26/10, installed byte-exact.
+CAP2=json.loads((D/'src/live-capture-20261026.json').read_text())
+for sig,f in [('public.approve_b2b_payment_terms_secure(uuid,text)','live-approve_b2b_payment_terms_secure.sql'),('public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)','live-respond_b2b_order_quote_secure.sql')]:
+    pg.sql((D/'src'/f).read_text().strip()+f";\nALTER FUNCTION {sig} OWNER TO postgres; REVOKE ALL ON FUNCTION {sig} FROM PUBLIC,anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION {sig} TO service_role; GRANT EXECUTE ON FUNCTION {sig} TO authenticated;")
+    ok('captured LIVE '+sig+' md5/ACL reproduced',md5(sig)==CAP2[sig]['md5'] and pg.sql(f"SELECT proacl::text FROM pg_proc WHERE oid='{sig}'::regprocedure")==CAP2[sig]['acl'])
 ok('captured LIVE entitlements_for_user md5 matches harness',md5('platform_private.entitlements_for_user(uuid)')==CAP['entitlements_for_user_md5'])
 ok('captured absent signature really absent in harness reference: fn_resolve_b2b_cart(uuid,jsonb,date)',pg.sql("SELECT to_regprocedure('public.fn_resolve_b2b_cart(uuid,jsonb,date)') IS NULL")=='t')
 pg.sql((D/'preflight.sql').read_text());ok('b5 structural preflight READ ONLY passes on captured LIVE (writer false)')
@@ -269,6 +274,44 @@ pg.sql(f"SET session_replication_role=replica; INSERT INTO public.user_roles(use
 pa=_abc_bg(ADMIN_B,qb,'abc_c1');rq=json.loads(val(GB,create(Q,'abc-q3',hQ)+';'));o1,e1=pa.stdout.read(),pa.stderr.read();pa.wait(timeout=10)
 ok('[override] release + concurrent create same partner complete, no deadlock',pa.returncode==0 and '40P01' not in e1 and order(qb)['status']=='em_analise_comercial' and rq['id'])
 pg.sql(vis_def+';');ok('synthetic visibility override removed; LIVE body md5 restored',md5(VIS)==vis_md5)
+# ---- Priced external request with financial-approval/guarantee flags and quote (review 61b28), A DRAFT ----
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
+def plan_fix(n,code,extra_cols,extra_vals):
+    pid=U(n);pg.sql(f"SET session_replication_role=replica; INSERT INTO public.commercial_payment_plans(id,name,code,plan_type,active,installment_count,discount_percent,monthly_interest_percent,months_count,interest_type,max_days{extra_cols}) VALUES('{pid}','Fixture {code}','{code}','custom',true,3,0,0,0,'none',30{extra_vals}); INSERT INTO public.commercial_payment_plan_assignments(plan_id,buyer_scope,partner_id,status,valid_from) VALUES('{pid}','partner','{P}','published',current_date-1); SET session_replication_role=origin;");return pid
+PF=plan_fix(40,'FA',',requires_financial_approval',',true');PGU=plan_fix(41,'GU',',requires_guarantee',',true');PQ=plan_fix(42,'QO',',pricing_mode',",'quote_only'")
+def chk(oid,exp_fin):
+    o=order(oid);t=json.loads(pg.sql(f"SELECT coalesce(to_jsonb(t),'null') FROM public.partner_order_payment_terms t WHERE partner_order_id='{oid}'"))
+    sc=pg.sql(f"SELECT count(*)||'|'||coalesce(sum(amount),0) FROM public.partner_order_payment_schedule WHERE partner_order_id='{oid}'").split('|')
+    return o,t,sc
+c2=counts()
+for plan,label,exp in [(PLAN,'flags false','not_required'),(PF,'requires_financial_approval','pending'),(PGU,'requires_guarantee','pending')]:
+    h=sim(G,P,plan)['cart_hash'];r=json.loads(val(G,create(P,'flag-'+label,h,plan=plan)+';'));o,t,sc=chk(r['id'],exp)
+    ok(f'pending create ({label}): financial_approval_status={o["financial_approval_status"]} terms={t["approval_status"]}, accounting pending',o['c2_external_origin_snapshot']['contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' and o['financial_approval_status']==exp and t['approval_status']==exp and o['requires_financial_approval']==(exp=='pending'))
+    ok(f'pending create ({label}): schedule {sc[0]} installments sum {sc[1]} == terms {t["installment_count"]}/{t["final_amount"]} == order final',int(sc[0])==t['installment_count'] and float(sc[1])==float(t['final_amount'])==float(o['final_amount_with_interest']))
+    if exp=='pending':FIN_ORDER=r['id']
+ok('flag creates generated no title/installment/link/NF',counts()==c2)
+notif=pg.sql("SELECT coalesce(string_agg(DISTINCT p.organization_id::text,','),'') FROM public.notificacoes_operacionais n JOIN public.profiles p ON p.user_id=n.usuario_id WHERE n.link LIKE '%pedido%' OR n.source_id IS NOT NULL")
+ok('notifications (if any) only reach owner A users: '+repr(notif),notif in ('',A) or set(notif.split(','))<={A,B} and B not in pg.sql(f"SELECT coalesce(string_agg(DISTINCT p.organization_id::text,','),'') FROM public.notificacoes_operacionais n JOIN public.profiles p ON p.user_id=n.usuario_id JOIN public.partner_orders o ON o.partner_id='{P}' AND (n.source_id=o.id OR n.link LIKE '%'||o.id||'%')"))
+# Decision advance denied; initialization above was legitimate
+e=pg.sql(f"BEGIN; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET financial_approval_status='approved' WHERE id='{FIN_ORDER}'; COMMIT;",ok=False)
+ok('privileged pending->approved financial decision denied C2_ACCOUNTING_PENDING','C2_ACCOUNTING_PENDING' in e)
+denied(ADMIN,f"SELECT public.approve_b2b_payment_terms_secure('{FIN_ORDER}','x')",'b2b_phase1_scope_denied');ok('approve_b2b_payment_terms_secure (real scope) owner A denied, no effects')
+denied(ADMIN_B,f"SELECT public.approve_b2b_payment_terms_secure('{FIN_ORDER}','x')",'b2b_phase1_scope_denied');ok('approve_b2b_payment_terms_secure foreign B denied, same message')
+pg.sql("CREATE OR REPLACE FUNCTION platform_private.b2b_phase1_order_visible(p_order uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $f$ SELECT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=p_order) $f$;")
+denied(ADMIN,f"SELECT public.approve_b2b_payment_terms_secure('{FIN_ORDER}','x')",'C2_ACCOUNTING_PENDING')
+ok('[override] terms approval on pending: order guard aborts whole txn; terms stay pending, no audit/notification (atomic)',json.loads(pg.sql(f"SELECT to_jsonb(t) FROM public.partner_order_payment_terms t WHERE partner_order_id='{FIN_ORDER}'"))['approval_status']=='pending' and pg.sql(f"SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id='{FIN_ORDER}' AND acao='payment_terms_approved'")=='0')
+pg.sql(vis_def+';');assert md5(VIS)==vis_md5
+# Quote: external quote request is created honestly; LIVE respond asserts internal origin before visibility -> closed
+hq=sim(G,P,PQ)
+rq=json.loads(val(G,create(P,'flag-quote',hq['cart_hash'],plan=PQ)+';'));oq_=order(rq['id'])
+ok(f'quote_only plan: pending request lands {oq_["status"]} with not_required and no terms/schedule (quote_required={hq.get("quote_required")})',oq_['status']=='aguardando_cotacao' and oq_['financial_approval_status']=='not_required' and pg.sql(f"SELECT count(*) FROM public.partner_order_payment_terms WHERE partner_order_id='{rq['id']}'")=='0')
+items_q=pg.sql(f"SELECT jsonb_agg(jsonb_build_object('item_id',id,'unit_price',2)) FROM public.partner_order_items WHERE order_id='{rq['id']}'")
+eqA=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); SELECT public.respond_b2b_order_quote_secure('{rq['id']}','{items_q}'); COMMIT;",ok=False)
+eqB=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN_B)}',true); SELECT public.respond_b2b_order_quote_secure('{rq['id']}','{items_q}'); COMMIT;",ok=False)
+eqM=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); SELECT public.respond_b2b_order_quote_secure('{U(998)}','{items_q}'); COMMIT;",ok=False)
+first=lambda e:[l for l in e.splitlines() if l.startswith('ERROR:')][0]
+print('QUOTE_LIMITATION owner:',first(eqA),'| foreign:',first(eqB),'| missing:',first(eqM))
+ok('LIVE quote response closed for external request (internal-origin assert before visibility); owner/foreign/missing same error, no effects',first(eqA)==first(eqB)==first(eqM) and order(rq['id'])['status']=='aguardando_cotacao')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{Q}'; SET session_replication_role=origin;")
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
 # --- no existence oracle for foreign / missing orders before authorization ---

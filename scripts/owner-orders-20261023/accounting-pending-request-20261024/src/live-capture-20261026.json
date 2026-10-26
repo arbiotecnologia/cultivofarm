@@ -1,0 +1,12 @@
+{
+ "public.approve_b2b_payment_terms_secure(uuid,text)": {
+  "md5": "a61daa8542058bdbf239903d655c2a1b",
+  "owner": "postgres",
+  "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+ },
+ "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)": {
+  "md5": "e57d3a6416910937bd02c9180dff0cf1",
+  "owner": "postgres",
+  "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+ }
+}
