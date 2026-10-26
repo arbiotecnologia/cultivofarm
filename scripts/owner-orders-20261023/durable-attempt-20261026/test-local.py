@@ -93,7 +93,7 @@ for forged_ack in [None,old1['id']]:
 r=recover(advance=True,key=legacy_r['key'],generation=1,ack=old2['id']);ok('explicit exact legacy ACK reserves next generation',r['state']=='reserved' and r['generation']==2)
 rr=recover();ok('crash before fetch recovers SAME uncertain key, no absence inference',rr['state']=='uncertain' and rr['key']==r['key'])
 ok('advance and read expose canonical committed predecessor for lost ACK recovery',
- r['predecessors']==rr['predecessors'] and rr['predecessors'][0]['key']==legacy_r['key'] and rr['predecessors'][0]['state']=='committed' and rr['predecessors'][0]['order_id']==old2['id'])
+ all(r['predecessors'][0][k]==rr['predecessors'][0][k] for k in ['key','generation','state','order_id','numero']) and rr['predecessors'][0]['key']==legacy_r['key'] and rr['predecessors'][0]['state']=='committed' and rr['predecessors'][0]['order_id']==old2['id'])
 # BEFORE control: previous scope-taking write trigger creates actual idem->scope cycle.
 write_sig='platform_private.c2_attempt_journal_write_guard()'
 safe_write=pg.sql(f"SELECT pg_get_functiondef('{write_sig}'::regprocedure)")
@@ -138,7 +138,7 @@ pg.sql(safe_write);rr=recover();r=recover(advance=True,key=rr['key'],generation=
 nr=recover(advance=True,key=r['key'],generation=r['generation'])
 ok('explicit CAS advance closes old key before new generation',nr['generation']==r['generation']+1 and nr['key']!=r['key'] and pg.sql(f"SELECT count(*) FROM platform_private.partner_order_idempotency_closures WHERE idempotency_key='{r['key']}'")=='1')
 ok('other tab read proves closed predecessor through immutable chain',
- recover()['predecessors']==nr['predecessors'] and nr['predecessors'][-1]['key']==r['key'] and nr['predecessors'][-1]['state']=='closed' and len(nr['predecessors'])==nr['generation']-1)
+ [(x['key'],x['generation'],x['state']) for x in recover()['predecessors']]==[(x['key'],x['generation'],x['state']) for x in nr['predecessors']] and nr['predecessors'][-1]['key']==r['key'] and nr['predecessors'][-1]['state']=='closed' and len(nr['predecessors'])==nr['generation']-1)
 b=count(); e=error(G,create(P,r['key'],hA))
 ok('late old generation refused atomically',first(e)=='ERROR:  42501: C2DJ_REGISTERED_ATTEMPT_REQUIRED' and count()==b)
 commit=json.loads(val(G,create(P,nr['key'],hA)))
