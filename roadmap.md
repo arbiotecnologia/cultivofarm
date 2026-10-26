@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 26/10 23:54 — concorrência RTC/IBS-CBS e conciliação independente
+- [ ] Corrigir e testar leituras fora de ordem, leitura antes/durante save, duplo save, exceção/revogação nos hooks empresa/item; sem SQL/publicação.
+- [ ] Conciliar hashes/implantação global e company, race real relatada e 44 funções 40001 restantes.
+- [ ] Revisão da cadeia `rpc_fiscal_draft_save`: `draft_version <> p_expected_version` permite NULL bypass; depende de captura/revisão independente, sem alterar SQL neste recorte.
+
 ## 26/10 23:42 — RTC CAS aplicado e interface global de serviços
 - [x] Conciliação RTC registrada sem reaplicar SQL; hook real testa PT409/PT404, revisão preservada e ausência de retry.
 - [x] UI tenant serviços somente consulta; IBS/CBS usa fence global existente; revogação/contexto testados. Rota Superadmin segue negada, sem nova entrada global.
