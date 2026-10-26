@@ -7,19 +7,30 @@ Somente frontend. Sem DDL/RLS/cobrança/fiscal; sem publicação.
 envio → boundary desmonta → resposta perdida (rede, sem SQLSTATE) → remontagem com rascunho seguro → reenvio.
 Antes: duas chaves distintas (`reproducao-antes.txt`). Depois: mesma chave (`reproducao-depois.txt`).
 
-## Correção
-- `src/lib/authz/pendingOrderAttempt.ts`: memória de processo por usuário+empresa+papéis+parceiro (sem época),
-  guardando só chave + impressão das escolhas (itens/qtd/unidade/volume, plano, parcelas, data, observação).
-  Nunca preço, cart_hash, tokens ou recibos. Limpo por `clearAllPauseStates` (logout/troca de identidade).
-- Hook marca envio/resultado dentro do `mutationFn` (sobrevive à desmontagem): sucesso → confirmado;
-  erro com SQLSTATE no primeiro envio → descarta; rede/contexto alterado/`idempotency_conflict` → incerto.
-  Rejeição posterior a uma incerteza não descarta (envio anterior pode ter commitado).
-- Página: payload idêntico reutiliza a chave; payload alterado com tentativa incerta ou em andamento é bloqueado;
-  `onSuccess` por chamada é cercado por `useStorageAccessScope` e só limpa carrinho/navega se o carrinho
-  ainda é o enviado. Pedido confirmado fora da tela gera aviso e permite iniciar novo pedido.
+## Correção (revisada após bac65d)
+- `src/lib/authz/pendingOrderAttempt.ts`: memória de processo (sem storage persistente) por usuário+empresa+papéis+parceiro, sem época.
+  Retém: chave de idempotência; resumo NÃO criptográfico (cyrb53, 53 bits) do payload enviado — itens/qtd/unidade/volume,
+  observação, data, plano, parcelas e `first_due_date` (alinhado ao fingerprint do servidor) —, sem texto em claro;
+  e, só após confirmação, o NÚMERO do pedido para aviso ao mesmo ator. Não retém preço, `cart_hash`, tokens nem ID do pedido.
+  Limpo por `clearAllPauseStates` (logout/troca de identidade).
+- Hook valida que o slot recebido é o do ator/parceiro atuais e registra o resultado dentro do `mutationFn`.
+  Rejeição conclusiva somente com SQLSTATE de 5 caracteres nas classes 22, 23, 40, 42, P0 e sem `idempotency_conflict`,
+  e apenas se a chave nunca esteve incerta. PGRST*, código vazio, gateway/rede, 08/53/57/58/XX e desconhecidos => incerto.
+- Página: payload idêntico reutiliza a chave; payload alterado com tentativa incerta/em andamento é bloqueado.
+  `onSuccess` por chamada é cercado por `useStorageAccessScope` e compara o payload COMPLETO atual (ref viva) antes de
+  fechar o diálogo, limpar ou navegar.
+
+## Evidências
+- `reproducao-antes.txt`: chaves distintas antes da correção.
+- `revisao-bac65d-callback-antes.txt`: com a comparação antiga (só itens) os testes de data/observação falham.
+- `reproducao-depois.txt`: arquivo do teste com a correção.
+- `suites-relevantes.txt`: saída integral das suítes pedidos/comercial/catálogo/sessão de pedidos.
 
 ## Lacuna explícita
 Não existe canal canônico seguro para consultar pedido por chave de idempotência. Por isso a reconciliação
 é o reenvio idêntico (servidor deduplica) ou consulta manual em Meus Pedidos; envio alterado permanece
 bloqueado até confirmação, ou até logout. Tentativa incerta não sobrevive a recarregar a aba (sem storage persistente).
 Revogação de papel torna a tentativa inalcançável, sem liberá-la a outro ator.
+Limite do `cart_hash`: não é retido; o reenvio usa o hash da simulação atual. Se preço ou vencimento mudarem
+(nova simulação/dia), o reenvio idêntico pode ser impossível ou recusado; a tentativa permanece incerta (rejeição
+após incerteza não descarta), mantendo o envio alterado bloqueado em vez de duplicar.
