@@ -1,4 +1,4 @@
-# Pedido B2B com pendência contábil honesta — pacote INATIVO (revisões 8cad/38 e e1e9aa2f — lock de crédito e liberação de crédito, 26/10/2026)
+# Pedido B2B com pendência contábil honesta — pacote INATIVO (revisões 8cad/38, e1e9aa2f e 61b28 — final, 26/10/2026)
 
 Somente revisão. Nunca aplicar em produção sem revisão independente e liberação pelo auditor. Nenhum SQL hospedado foi executado e nada foi publicado.
 
@@ -20,7 +20,7 @@ Somente revisão. Nunca aplicar em produção sem revisão independente e libera
 - `platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz)` → `68aa322da9dd403beb776cfb333b1e27`
 - `public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)` → `3df7e1a806fb080283ad1ebad20d212c`
 - `public.approve_b2b_credit(uuid,text)` → `8127c7b697871fa1eecafa845a551eea` (LIVE `1d5ba930634e165750352e9f44fa844f`)
-- `platform_private.c2_accounting_pending_guard()` → `dac77645b64b1a15621ee5ab4e59b93d` (antes `49ba72a6…`)
+- `platform_private.c2_accounting_pending_guard()` → `669b19490a7a9700f0158db4b31885ad` (antes `dac77645…`/`49ba72a6…`)
 
 Pins b5/LIVE, restauração e rollback: `expected.json`. Manifesto: `SHA256SUMS`.
 
@@ -40,10 +40,17 @@ Pins b5/LIVE, restauração e rollback: `expected.json`. Manifesto: `SHA256SUMS`
 - Testes do ramo pós-lock usam override sintético de visibilidade só no banco descartável, restaurado com MD5 conferido.
 - Rollback e restore-live restauram o corpo LIVE `1d5ba930` byte-exato com ACL conferida.
 
+## Solicitação precificada, aprovação financeira e cotação (revisão 61b28)
+- Regressão corrigida: o create canônico insere com default `not_required` e depois faz UPDATE para `pending` quando o plano exige aprovação financeira ou garantia; o guard de e1e9aa2f bloqueava isso. Agora só é permitida a inicialização `not_required → pending/not_required` na mesma transação com o ticket privado `c2_external_order_create`; qualquer avanço de decisão (ex.: `approved`) continua negado.
+- Testado com A DRAFT: planos sem flags, `requires_financial_approval` e `requires_guarantee` criam pedido pendente com status financeiro e `approval_status` dos termos coerentes, 3 parcelas com soma = termos = total, sem título/parcela AR/vínculo/NF; notificações só para A.
+- `approve_b2b_payment_terms_secure` (LIVE `a61daa85…`, não alterado): escopo real nega owner A e estrangeiro B com a mesma mensagem; com override sintético de visibilidade, o guard do pedido aborta a transação inteira e os termos continuam `pending` (atômico), sem auditoria ou notificação. Sem bloqueio novo: o guard já prova a negação.
+- Cotação: plano `quote_only` cria solicitação pendente honesta em `aguardando_cotacao`, sem termos. `respond_b2b_order_quote_secure` (LIVE `e57d3a64…`, não alterado) executa `b2b_internal_assert_origin` antes da visibilidade e nega pedidos externos com `B2B_INTERNAL_ORIGIN_DENIED` (mesma resposta para owner, estrangeiro e inexistente). **Limitação: resposta de cotação para solicitação externa está fechada; não há caminho disponível.** Evolução fica para fase posterior explícita.
+- Liberação de crédito e aprovação de termos pelo owner seguem indisponíveis para pedidos externos (escopo `b2b_phase1_order_visible`); não ampliado, fase posterior.
+
 ## Arquivos
 `preflight.sql` (READ ONLY), `candidate.sql.review`, `postflight.sql` (READ ONLY; inclui ACL do wrapper/core e INVOKER/DEFINER), `rollback.sql.review` (contenção parcial: volta aos corpos b5 + writer false, mantém histórico; pedidos pendentes ficam congelados — não é retorno à baseline), `restore-live.sql.review` (retorno completo ao LIVE pré-implantação; aborta se houver qualquer linha com snapshot externo), `overlay.diff` (gerado por `assemble.py` a partir dos corpos finais; nunca editado à mão), `assemble.py`, `src/`, `test-local.py`, `results-local.txt`, `LIVE-DEPENDENCIES.md`.
 
-## Testes locais — 97/97 PASS (`results-local.txt`)
+## Testes locais — 113/113 PASS (`results-local.txt`)
 PostgreSQL descartável e Auth sintética; NÃO é JWT/RLS hospedado nem validação contábil. Inclui: PRE/POST, falha POST atômica, 30dc8243 preservado, A DRAFT pendente sem títulos/parcelas/vínculos/NF, idempotência/conflito/concorrência, notificações só para A, negações A/B/técnico/plano/item/revogação, B com fixture MG sintética VALIDATED (HOMOLOGATION), promoção (B, comprador e DRAFT negados; CAS; sucesso com fixture; auditoria; segunda negada), **duas conexões: A segura o lock do próprio pedido, a promoção de B é negada em ~0,03 s sem esperar e a de A espera (lock_timeout)**, wrapper INVOKER/core DEFINER, rollback e restore.
 
 ## Frontend (fora do pacote SQL, no código do app)
