@@ -251,7 +251,7 @@ def denied(u, p, k, sqlstate, msg, label):
 denied(GB, P, 'k-ok-1', '42501', 'forbidden_partner', 'B partner manager cannot probe/close A key')
 denied(G, Q, 'k-x', '42501', 'forbidden_partner', 'A manager cannot close for B partner')
 denied(T, P, 'k-ok-1', '42501', 'forbidden_financial_terms', 'isolated technician cannot close (canonical scope guard fires first)')
-denied(PR, P, 'k-ok-1', 'P0001', 'PRODUCER_DIRECT_NOT_ENABLED', 'producer cannot close')
+denied(PR, P, 'k-ok-1', '42501', 'forbidden_partner', 'producer cannot close (canonical scope guard fires first)')
 denied(G, P, '   ', 'P0001', 'idempotency_key_required', 'blank key rejected')
 denied(G, P, 'x' * 121, 'P0001', 'invalid_idempotency_key', 'oversized key rejected')
 ok('anon has no EXECUTE on wrapper/core/authz/guard', q("SELECT has_function_privilege('anon','public.close_partner_order_attempt_v1(uuid,text)','EXECUTE') OR has_function_privilege('anon','platform_private.c2_close_partner_order_attempt_core(uuid,text)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_partner_order_attempt_authz(uuid,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_attempt_closure_guard()','EXECUTE')") == 'f')
