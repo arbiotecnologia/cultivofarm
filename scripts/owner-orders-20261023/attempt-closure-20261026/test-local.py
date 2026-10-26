@@ -105,7 +105,7 @@ holder = bg(None, lock('k-race-a'), 'holder-a', hold=2)
 cr = bg(G, create(P, 'k-race-a', hA), 'create-a'); ok('race A: create queued on b2b_idem lock', waiting('create-a'))
 cl = bg(G, "SELECT public.close_partner_order_attempt_v1('%s','k-race-a')" % P, 'close-a'); ok('race A: close queued behind create', waiting('close-a'))
 done(holder); o1, e1 = done(cr); o2, e2 = done(cl)
-ok('race A: create committed and close answered committed', '"numero"' in o1 and '"state": "committed"' in o2.replace('":"', '": "') or ('committed' in o2 and 'closed"' not in o2))
+ok('race A: create committed and close answered committed', '"numero"' in o1 and 'committed' in o2 and '"closed"' not in o2)
 ok('race A: exactly one order for key and no closure', q("SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='k-race-a'") == '1' and q("SELECT count(*) FROM platform_private.partner_order_idempotency_closures WHERE idempotency_key='k-race-a'") == '0')
 
 # 4) Ordem B: fechamento enfileirado ANTES, envio tardio K1 depois => closed; K1 recusado.
