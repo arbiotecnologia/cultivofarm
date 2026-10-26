@@ -73,6 +73,7 @@ async function db(): Promise<IDBDatabase> {
 /** Store only opaque key/generation/state and SHA256 scope, never server receipts or payload. */
 export async function persistJournal(slot: string, j: Journal, current: () => boolean, _predecessor?: Journal, digest?: string) {
  currentOrThrow(current);
+ j=parseOrderJournal(j);
  const hash = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(slot));
  currentOrThrow(current);
  const key = Array.from(new Uint8Array(hash),n=>n.toString(16).padStart(2,'0')).join('');
