@@ -2,7 +2,7 @@
 -- READ ONLY: falha (rollback) em qualquer divergencia do LIVE capturado.
 BEGIN TRANSACTION READ ONLY;
 
-DO $$c2ac_pre$$
+DO $c2ac_pre$
 DECLARE r record;
 BEGIN
   -- alvo ausente
@@ -42,5 +42,5 @@ BEGIN
               JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=k.attnum) = ARRAY['partner_id','idempotency_key']::name[]) THEN
     RAISE EXCEPTION 'C2AC_DRIFT:poi_unique_key'; END IF;
   IF NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN RAISE EXCEPTION 'C2AC_DRIFT:pp_usage'; END IF;
-END $$c2ac_pre$$;
+END $c2ac_pre$;
 ROLLBACK;

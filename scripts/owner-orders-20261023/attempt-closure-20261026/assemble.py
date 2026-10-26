@@ -107,7 +107,7 @@ def fn(sig): return f"(SELECT p FROM pg_proc p WHERE p.oid = to_regprocedure('{s
 def live_asserts(tag):
     p = PINS
     return f"""
-DO $${tag}$$
+DO ${tag}$
 DECLARE r record;
 BEGIN
   -- alvo ausente
@@ -147,12 +147,12 @@ BEGIN
               JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=k.attnum) = ARRAY['partner_id','idempotency_key']::name[]) THEN
     RAISE EXCEPTION 'C2AC_DRIFT:poi_unique_key'; END IF;
   IF NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN RAISE EXCEPTION 'C2AC_DRIFT:pp_usage'; END IF;
-END $${tag}$$;
+END ${tag}$;
 """
 
 def post_asserts(tag):
     return f"""
-DO $${tag}$$
+DO ${tag}$
 DECLARE r record;
 BEGIN
   SELECT md5(prosrc) m, pg_get_userbyid(proowner) o, prosecdef s, proconfig c, proacl::text a INTO r FROM pg_proc WHERE oid=to_regprocedure('{CREATE_SIG}');
@@ -175,7 +175,7 @@ BEGIN
     RAISE EXCEPTION 'C2AC_POST:closures_acl_rls'; END IF;
   IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='platform_private.partner_order_idempotency_closures'::regclass AND NOT tgisinternal
         AND tgfoid=to_regprocedure('{IMMUT_SIG}')) <> 2 THEN RAISE EXCEPTION 'C2AC_POST:immutability_triggers'; END IF;
-END $${tag}$$;
+END ${tag}$;
 """
 
 def fbody(hdr, body): return f"{hdr}{body}$function$;\n"

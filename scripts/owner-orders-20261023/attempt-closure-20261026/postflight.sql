@@ -1,7 +1,7 @@
 -- INATIVO / REVISAO INDEPENDENTE. Nao aplicar sem autorizacao. Gerado por assemble.py.
 BEGIN TRANSACTION READ ONLY;
 
-DO $$c2ac_postflight$$
+DO $c2ac_postflight$
 DECLARE r record;
 BEGIN
   SELECT md5(prosrc) m, pg_get_userbyid(proowner) o, prosecdef s, proconfig c, proacl::text a INTO r FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)');
@@ -24,5 +24,5 @@ BEGIN
     RAISE EXCEPTION 'C2AC_POST:closures_acl_rls'; END IF;
   IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='platform_private.partner_order_idempotency_closures'::regclass AND NOT tgisinternal
         AND tgfoid=to_regprocedure('platform_private.c2_attempt_closure_immutable()')) <> 2 THEN RAISE EXCEPTION 'C2AC_POST:immutability_triggers'; END IF;
-END $$c2ac_postflight$$;
+END $c2ac_postflight$;
 ROLLBACK;

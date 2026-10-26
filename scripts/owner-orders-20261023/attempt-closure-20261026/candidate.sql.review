@@ -2,7 +2,7 @@
 -- Transacao unica: asserts LIVE antes do DDL; asserts POST antes do COMMIT.
 BEGIN;
 
-DO $$c2ac_cand_pre$$
+DO $c2ac_cand_pre$
 DECLARE r record;
 BEGIN
   -- alvo ausente
@@ -42,7 +42,7 @@ BEGIN
               JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=k.attnum) = ARRAY['partner_id','idempotency_key']::name[]) THEN
     RAISE EXCEPTION 'C2AC_DRIFT:poi_unique_key'; END IF;
   IF NOT has_schema_privilege('authenticated','platform_private','USAGE') THEN RAISE EXCEPTION 'C2AC_DRIFT:pp_usage'; END IF;
-END $$c2ac_cand_pre$$;
+END $c2ac_cand_pre$;
 
 CREATE TABLE platform_private.partner_order_idempotency_closures (
   partner_id uuid NOT NULL REFERENCES public.partner_accounts(id),
@@ -508,7 +508,7 @@ BEGIN
 END
 $function$;
 
-DO $$c2ac_cand_post$$
+DO $c2ac_cand_post$
 DECLARE r record;
 BEGIN
   SELECT md5(prosrc) m, pg_get_userbyid(proowner) o, prosecdef s, proconfig c, proacl::text a INTO r FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)');
@@ -531,5 +531,5 @@ BEGIN
     RAISE EXCEPTION 'C2AC_POST:closures_acl_rls'; END IF;
   IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='platform_private.partner_order_idempotency_closures'::regclass AND NOT tgisinternal
         AND tgfoid=to_regprocedure('platform_private.c2_attempt_closure_immutable()')) <> 2 THEN RAISE EXCEPTION 'C2AC_POST:immutability_triggers'; END IF;
-END $$c2ac_cand_post$$;
+END $c2ac_cand_post$;
 COMMIT;
