@@ -6,7 +6,7 @@ import type { CatalogItemTipo } from "./usePartnerCatalog";
 import { orderAccountingState } from "@/lib/orderAccountingState";
 import { useAuth } from "./useAuth";
 import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection, orderAttemptFingerprint } from "@/lib/authz/pendingOrderAttempt";
-import { prepareDurableOrder, recoverOrderJournal } from '@/lib/authz/orderJournal';
+import { prepareDurableOrder, recoverOrderJournal, type Journal } from '@/lib/authz/orderJournal';
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
 
@@ -52,6 +52,9 @@ export interface CreateOrderInput {
   idempotency_key: string;
   /** Slot volátil da tentativa (ator+empresa+papéis+parceiro), obtido de slotFor. */
   attempt_slot?: string | null;
+  /** Volatile per-click expectation, never persisted or sent as authority. */
+  journal_expected?: Journal;
+  current_payload?: () => boolean;
 }
 
 
@@ -108,8 +111,9 @@ export function useCreatePartnerOrder() {
       if (slot && slot !== slotFor(input.partner_id)) throw notSent(new Error("Contexto alterado."));
       const journalSlot = slotFor(input.partner_id);
       if (!journalSlot) throw notSent(new Error('Contexto indisponível.'));
-      const durable = await prepareDurableOrder(journalSlot,input.partner_id,current,orderAttemptFingerprint(input));
-      if (!current()) throw new Error('Contexto alterado.');
+      const dispatchCurrent=()=>current() && (input.current_payload?.() ?? true);
+      const durable = await prepareDurableOrder(journalSlot,input.partner_id,dispatchCurrent,orderAttemptFingerprint(input),input.journal_expected);
+      if (!dispatchCurrent()) throw new Error('Contexto ou carrinho alterado.');
       // Capability confirmed: all writers use server key; never fall back after storage/RPC error.
       const dispatchKey = durable?.key ?? input.idempotency_key;
 

@@ -9,7 +9,9 @@ export function useOrderJournal(partnerId: string | undefined) {
  const scope=useStorageAccessScope('partner-order-journal');
  const slot=partnerId ? orderAttemptSlot({userId:user?.id,organizationId:profile?.organization_id,roles},partnerId):null;
  const journal=useSyncExternalStore(subscribeJournal,()=>readObservedJournal(scope.ready?slot:null));
- const [mode,setMode]=useState<'checking'|'legacy'|'durable'|'blocked'>('checking');
+ const [status,setStatus]=useState<{scope:string;mode:'checking'|'legacy'|'durable'|'blocked'}>({scope:scope.scope,mode:'checking'});
+ const setMode=(mode:typeof status.mode)=>setStatus({scope:scope.scope,mode});
+ const mode=status.scope===scope.scope?status.mode:'checking';
  const [pending,setPending]=useState(false);
  const lock=useRef(false);
  useEffect(()=>{
@@ -33,5 +35,5 @@ export function useOrderJournal(partnerId: string | undefined) {
   }catch{if(current())setMode('blocked');}
   finally{lock.current=false;if(current())setPending(false);}
  };
- return {mode,journal,pending,recover};
+ return {mode,journal:mode==='durable'?journal:null,pending,recover};
 }

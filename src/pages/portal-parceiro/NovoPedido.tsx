@@ -533,7 +533,9 @@ export default function NovoPedido() {
     // remontagens contam envios em voo e nenhum desfecho apaga o outro.
     if(durableAttempt.mode==='legacy')markOrderAttemptSending(slot, prepared.key);
     createOrder.mutate(
-      { ...input, idempotency_key: prepared.key, attempt_slot: slot },
+      { ...input, idempotency_key: prepared.key, attempt_slot: slot,
+        journal_expected:durableAttempt.mode==='durable'?durableAttempt.journal??undefined:undefined,
+        current_payload:()=>fence() && orderAttemptFingerprint(liveInputRef.current)===fingerprint },
       {
         onSuccess: () => {
           // Callback por chamada também é cercado: resposta tardia de outro

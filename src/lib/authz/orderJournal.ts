@@ -42,7 +42,7 @@ async function db(): Promise<IDBDatabase> {
  return new Promise((resolve,reject)=>{
   let q: IDBOpenDBRequest;
   try { q = indexedDB.open('c2-order-journal-v1',1); } catch { reject(Error('journal_storage_unavailable')); return; }
-  q.onupgradeneeded = () => q.result.createObjectStore('slots');
+  q.onupgradeneeded = () => { if (!q.result.objectStoreNames.contains('slots')) q.result.createObjectStore('slots'); };
   q.onsuccess = () => resolve(q.result);
   q.onerror = q.onblocked = () => reject(Error('journal_storage_unavailable'));
  });
@@ -81,11 +81,13 @@ export async function recoverOrderJournal(slot: string, partner: string, current
   p_expected_generation:advance?.generation ?? null,p_advance:!!advance,p_ack_order:advance?.state==='committed'?advance.order_id:null},current);
  if (r.error) throw Error('journal_recovery_unavailable');
  const j=parseOrderJournal(r.data);
+ if(advance && (j.generation!==advance.generation+1 || j.key===advance.key || j.state!=='reserved')) throw Error('journal_advance_unconfirmed');
  await persistJournal(slot,j,current,advance); return j;
 }
-export async function prepareDurableOrder(slot: string, partner: string, current: () => boolean, digest: string) {
+export async function prepareDurableOrder(slot: string, partner: string, current: () => boolean, digest: string, expected?: Journal) {
  if (!await journalCapability(slot,partner,current)) return null;
  const j=await recoverOrderJournal(slot,partner,current);
+ if(expected && (j.key!==expected.key || j.generation!==expected.generation)) throw Error('journal_generation_changed');
  if (!['reserved','uncertain'].includes(j.state)) throw Error('journal_previous_order_requires_confirmation');
  await persistJournal(slot,j,current,undefined,digest);
  return j;
