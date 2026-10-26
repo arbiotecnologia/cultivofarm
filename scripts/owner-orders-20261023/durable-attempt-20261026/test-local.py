@@ -150,6 +150,10 @@ print('B_ERROR',first(e),flush=True)
 ok('B denied before disclose, no writes',first(e)=='ERROR:  42501: C2_INTERNAL_TARGET_DENIED:target_outside_portfolio' and count()==b)
 b=count();e=error(T,f"SELECT public.recover_partner_order_attempt_v1('{P}')")
 ok('technician singleton denied, no writes',first(e)=='ERROR:  42501: forbidden_financial_terms' and count()==b)
+# Same invalid requests through old/new real bodies preserve first canonical error.
+for sql in [create(P,'bad-classification',hA).replace("'"+hA+"'","NULL"),create(P,'bad-classification',hA).replace("'"+env['G0']['PLAN']+"'","NULL")]:
+ eo=error(G,sql.replace('public.create_partner_order_secure','public.test_old_create'));en=error(G,sql)
+ ok('dispatch guard preserves canonical invalid-input classification',first(eo)==first(en) and count()==b)
 e=error(G,create(P,'unregistered-downgrade-key',hA))
 ok('old/downgraded arbitrary key refused, no order',first(e)=='ERROR:  42501: C2DJ_REGISTERED_ATTEMPT_REQUIRED' and count()==b)
 
@@ -200,7 +204,13 @@ holder=holding('LOCK TABLE public.partner_order_idempotency IN ACCESS SHARE MODE
 t=time.monotonic();e=pg.sql('\\set VERBOSITY verbose\n'+(D/'rollback.sql.review').read_text(),ok=False)
 ok('containment in flight times out atomically without killing session',first(e)=='ERROR:  55P03: canceling statement due to lock timeout' and 4.5<time.monotonic()-t<8)
 release(holder);pg.sql(post)
+# Already authorized old call before idem survives replacement but cannot write after containment.
+pg.sql(stall_def);holder=holding('SELECT pg_advisory_xact_lock(777123)','containment-old-stall')
+old=start(create(P,'10000000-0000-4000-8000-000000000088',hA).replace('public.create_partner_order_secure','public.test_old_create'),'containment-old-call',G,"SELECT set_config('c2dj.test_stall','on',true); ")
+ok('containment old body authorized and paused before idem',waiting('containment-old-call'))
 pg.sql((D/'rollback.sql.review').read_text())
+release(holder);oo,ee=finish(old);pg.sql(assert_def)
+ok('contained authorized in-flight old body denied before commit, no partial writes',first(ee)=='ERROR:  42501: C2DJ_WRITER_CONTAINED' and count()==b)
 ok('containment retains immutable generations and closures',pg.sql('SELECT count(*) FROM platform_private.partner_order_attempt_journal')==snap)
 replay=json.loads(val(G,create(P,new['key'],hA)))
 # Existing replay returns before idempotency INSERT. No new order possible; replay is not a writer.
