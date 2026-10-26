@@ -158,3 +158,81 @@ it("resposta perdida + remontagem: reenvio idêntico reutiliza a MESMA chave", a
   await waitFor(() => expect(creates()).toHaveLength(2));
   expect(creates()[1].p_idempotency_key).toBe(creates()[0].p_idempotency_key);
 });
+
+import { clearAllPauseStates } from "@/lib/authz/pauseRetainedState";
+import { clearAllOrderAttempts } from "@/lib/authz/pendingOrderAttempt";
+beforeEach(() => clearAllOrderAttempts());
+
+async function lostThenRemount(draftQty?: number) {
+  const lost = lostResponse();
+  state.createImpl = () => lost.promise;
+  const first = mount();
+  await fillAndSubmit();
+  await waitFor(() => expect(creates()).toHaveLength(1));
+  first.unmount(); cleanup();
+  await act(async () => { lost.fail(); });
+  state.draft = draftQty ? { ...state.lastDraft, items: state.lastDraft.items.map((i: any) => ({ ...i, quantity: draftQty })) } : state.lastDraft;
+  state.createImpl = null;
+}
+
+it("payload alterado após resultado incerto NÃO gera outra chave: envio bloqueado", async () => {
+  await lostThenRemount(3);
+  mount();
+  await waitCart();
+  await fillAndSubmit(false);
+  await screen.findByText(/Não foi possível confirmar o envio anterior/);
+  await new Promise(r => setTimeout(r, 50));
+  expect(creates()).toHaveLength(1);
+});
+
+it("pedido aceito com resposta tardia durante desmontagem: aviso, carrinho novo preservado e nova chave só após confirmação", async () => {
+  let resolve!: () => void;
+  const p = new Promise(r => { resolve = () => r({ data: { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", total: 10 }, error: null }); });
+  state.createImpl = () => Object.assign(p, { abortSignal: () => p });
+  const first = mount();
+  await fillAndSubmit();
+  await waitFor(() => expect(creates()).toHaveLength(1));
+  first.unmount(); cleanup();
+  await act(async () => { resolve(); await p; });
+  state.draft = { ...state.lastDraft, items: state.lastDraft.items.map((i: any) => ({ ...i, quantity: 2 })) };
+  state.createImpl = null;
+  mount();
+  await waitCart();
+  // Nada navegou nem limpou o carrinho novo na montagem.
+  expect(screen.queryByText("Lista de pedidos")).toBeNull();
+  fireEvent.click((await screen.findAllByRole("button", { name: "Continuar para condição de pagamento" }))[0]);
+  await screen.findByText(/PB-001030 já foi registrado/);
+  fireEvent.click(await screen.findByRole("button", { name: /À vista/ }));
+  const submit = await screen.findByRole("button", { name: "Enviar pedido para análise" });
+  await waitFor(() => expect(submit).toBeEnabled());
+  fireEvent.click(submit);
+  await waitFor(() => expect(creates()).toHaveLength(2));
+  expect(creates()[1].p_idempotency_key).not.toBe(creates()[0].p_idempotency_key);
+});
+
+it("rejeição conclusiva do servidor no primeiro envio descarta a tentativa", async () => {
+  state.createImpl = () => response(null).then(() => ({ data: null, error: { message: "credit_limit_exceeded", code: "P0001" } })) as never;
+  mount();
+  await fillAndSubmit();
+  await waitFor(() => expect(creates()).toHaveLength(1));
+  expect(screen.queryByText(/Não foi possível confirmar/)).toBeNull();
+});
+
+it("outro ator não herda a tentativa; logout/troca de identidade limpa", async () => {
+  await lostThenRemount(3);
+  state.actorOverride = "44444444-4444-4444-8444-444444444444";
+  mount();
+  await waitCart();
+  await fillAndSubmit(false);
+  await waitFor(() => expect(creates()).toHaveLength(2));
+  expect(creates()[1].p_idempotency_key).not.toBe(creates()[0].p_idempotency_key);
+  cleanup();
+  // A volta: ainda incerto (só logout limpa); então logout limpa.
+  state.actorOverride = null;
+  clearAllPauseStates();
+  mount();
+  await waitCart();
+  await fillAndSubmit(false);
+  await waitFor(() => expect(creates()).toHaveLength(3));
+  expect(screen.queryByText(/Não foi possível confirmar/)).toBeNull();
+});
