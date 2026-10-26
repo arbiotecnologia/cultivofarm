@@ -25,6 +25,9 @@ for dep in CAP['dependencies']:
     if md5(sig)!=dep['md5']:
         print('CAPTURE_DRIFT_INSTALLED',sig);pg.sql(dep['definition']+';')
     ok('captured LIVE dependency md5 '+dep['md5'][:8]+' '+sig,md5(sig)==dep['md5'])
+# LIVE approve_b2b_credit captured READ ONLY 26/10 (md5 1d5ba930...), installed byte-exact with LIVE owner/ACL.
+pg.sql((D/'src/live-approve_b2b_credit.sql').read_text().strip()+";\nALTER FUNCTION public.approve_b2b_credit(uuid,text) OWNER TO postgres; REVOKE ALL ON FUNCTION public.approve_b2b_credit(uuid,text) FROM PUBLIC,anon,authenticated,service_role; GRANT EXECUTE ON FUNCTION public.approve_b2b_credit(uuid,text) TO service_role; GRANT EXECUTE ON FUNCTION public.approve_b2b_credit(uuid,text) TO authenticated;")
+ok('captured LIVE approve_b2b_credit md5/ACL reproduced',md5('public.approve_b2b_credit(uuid,text)')=='1d5ba930634e165750352e9f44fa844f' and pg.sql("SELECT proacl::text FROM pg_proc WHERE oid='public.approve_b2b_credit(uuid,text)'::regprocedure")=='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')
 ok('captured LIVE entitlements_for_user md5 matches harness',md5('platform_private.entitlements_for_user(uuid)')==CAP['entitlements_for_user_md5'])
 ok('captured absent signature really absent in harness reference: fn_resolve_b2b_cart(uuid,jsonb,date)',pg.sql("SELECT to_regprocedure('public.fn_resolve_b2b_cart(uuid,jsonb,date)') IS NULL")=='t')
 pg.sql((D/'preflight.sql').read_text());ok('b5 structural preflight READ ONLY passes on captured LIVE (writer false)')
@@ -213,6 +216,11 @@ for col,v in [('credit_approved_at','now()'),('status',"'em_analise_comercial'")
     # LIVE credit guard silently keeps the status (only updated_at may move); no decision/title/approval can result.
     assert ob1['status']=='aguardando_aprovacao_credito' and ob1['credit_approved_at'] is None and ob1['approved_at'] is None and counts()==c1 and all(ob0[k]==ob1[k] for k in ob0 if k!='updated_at'),(col,v)
 ok('no hidden credit decision or status hop out of aguardando_aprovacao_credito while pending')
+# PROBE approve_b2b_credit on pending
+before=snapshot();e=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); SELECT public.approve_b2b_credit('{rc['id']}','x'); COMMIT;",ok=False);print('PROBE_RPC',e[-300:],snapshot()==before)
+for col,v in [('credit_approved_by',f"'{ADMIN}'"),('credit_approval_notes',"'x'"),('financial_approval_status',"'approved'")]:
+    ob0=order(rc['id']);o=pg.sql(f"\\set ON_ERROR_STOP 0\nBEGIN; SELECT set_config('arbio.b2b_credit_approval','on',true); SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET {col}={v} WHERE id='{rc['id']}'; COMMIT;");ob1=order(rc['id']);print('PROBE',col,sorted(k for k in ob0 if ob0[k]!=ob1[k]),o[-200:])
+raise SystemExit('PROBE_END')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
 # --- no existence oracle for foreign / missing orders before authorization ---
 MISSING=U(999)
