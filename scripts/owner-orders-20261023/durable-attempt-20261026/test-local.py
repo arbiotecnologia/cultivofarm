@@ -77,11 +77,12 @@ pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET r
 b=count();e=error(G,f"SELECT public.recover_partner_order_attempt_v1('{P}')")
 ok('revoked authorization cannot recover or advance',first(e)=='ERROR:  42501: forbidden_partner' and count()==b)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
+known_id=recover()['order_id']
 pg.sql((D/'rollback.sql.review').read_text())
 ok('containment retains immutable generations and closures',pg.sql('SELECT count(*) FROM platform_private.partner_order_attempt_journal')==snap)
 replay=json.loads(val(G,create(P,new['key'],hA)))
 # Existing replay returns before idempotency INSERT. No new order possible; replay is not a writer.
-ok('contained known-key replay preserves existing order only',count()==b and replay['id']==recover.__name__ if False else count()==b and replay.get('id') is not None)
+ok('contained known-key replay preserves existing order only',count()==b and replay['id']==known_id)
 e=error(G,create(P,'downgrade-after-containment',hA))
 ok('containment/downgrade unknown key cannot create',first(e)=='ERROR:  42501: C2DJ_REGISTERED_ATTEMPT_REQUIRED' and count()==b)
 print('TOTAL',len(env['G0']['checks'])-base,'PASS package; synthetic Auth, no hosted/JWT certification',flush=True)
