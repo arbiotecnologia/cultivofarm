@@ -21,6 +21,8 @@ closedef = closedef.replace(ca,ca+'  PERFORM platform_private.c2_attempt_scope_l
 timeouts = "SET LOCAL lock_timeout='5s';\nSET LOCAL statement_timeout='60s';\n"
 pre = """DO $pre$ BEGIN
 IF current_database() IS NULL THEN RAISE EXCEPTION 'C2DJ_DATABASE_UNKNOWN'; END IF;
+IF current_setting('request.jwt.claims',true) IS NOT NULL AND current_setting('request.jwt.claims',true) <> ''
+ THEN RAISE EXCEPTION 'C2DJ_MIGRATION_CONTEXT_REQUIRED'; END IF;
 IF to_regclass('platform_private.partner_order_attempt_journal') IS NOT NULL THEN
  RAISE EXCEPTION 'C2DJ_TARGET_PRESENT'; END IF;
 END $pre$;
@@ -63,6 +65,14 @@ END $legacy$;
 -- LEGACY_CAPTURE_END
 """
 pre+=legacy
+pre+="""DO $closure_rows$ BEGIN
+IF (SELECT count(*) FROM platform_private.partner_order_idempotency_closures)<>1
+ OR NOT EXISTS(SELECT 1 FROM platform_private.partner_order_idempotency_closures
+ WHERE partner_id='7e52de9a-4bed-4d1e-8200-3255a805465c' AND idempotency_key='7eda3f91-52a8-457c-9abd-6980920b9c0c'
+ AND closed_by='beb25695-3957-48b0-aff8-6316520ea189' AND closed_org='007bb519-cba0-4704-be2c-cb93ad010048')
+ THEN RAISE EXCEPTION 'C2DJ_CLOSURE_ROWS_DRIFT'; END IF;
+END $closure_rows$;
+"""
 ddl = """
 CREATE TABLE platform_private.partner_order_attempt_journal (
  actor_id uuid NOT NULL, organization_id uuid NOT NULL, partner_id uuid NOT NULL REFERENCES public.partner_accounts(id),
@@ -113,6 +123,12 @@ BEGIN
  IF j.idempotency_key IS DISTINCT FROM p_key OR p_key IS NULL THEN
   RAISE EXCEPTION 'C2DJ_REGISTERED_ATTEMPT_REQUIRED' USING ERRCODE='42501'; END IF;
 END $function$;
+
+CREATE FUNCTION public.partner_order_journal_capability_v1(p_partner uuid) RETURNS jsonb
+LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
+ SELECT jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','enabled',true,'organization_id',
+ platform_private.c2_attempt_scope_lock(auth.uid(),p_partner));
+$function$;
 
 CREATE FUNCTION platform_private.c2_attempt_journal_write_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
@@ -192,6 +208,11 @@ $function$;
 private = ['c2_attempt_scope_lock(uuid,uuid)','c2_attempt_dispatch_guard(uuid,uuid,text)','c2_attempt_journal_write_guard()']
 core='platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'
 wrap='public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'
+cap='public.partner_order_journal_capability_v1(uuid)'
+# capability uses authorized core, not a direct private scope-lock ACL.
+ddl=ddl.replace("platform_private.c2_attempt_scope_lock(auth.uid(),p_partner));", "(platform_private.c2_recover_order_attempt_core(p_partner)->>'organization_id'));" ) if False else ddl
+# Do not expose scope-lock just to make a capability: reuse recover contract on explicit recovery only.
+ddl=re.sub(r'CREATE FUNCTION public.partner_order_journal_capability_v1.*?\$function\$;\n', '', ddl, flags=re.S)
 for s in ['platform_private.'+x for x in private]+[core,wrap]:
  ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\n'
 for s in [core,wrap]: ddl+=f'GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
@@ -236,6 +257,15 @@ IF EXISTS(SELECT 1 FROM platform_private.partner_order_attempt_journal j
  WHERE i.created_by=j.actor_id AND i.partner_id=j.partner_id AND i.idempotency_key=j.idempotency_key AND i.order_id=j.imported_order_id))
  THEN RAISE EXCEPTION 'C2DJ_IMPORT_DRIFT'; END IF;
 END $imports$;
+"""
+post+="""DO $canonical_metadata$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure
+ AND pg_get_userbyid(proowner)='postgres' AND prosecdef AND proconfig=ARRAY['search_path=public']::text[]
+ AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')
+ OR NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_close_partner_order_attempt_core(uuid,text)'::regprocedure
+ AND pg_get_userbyid(proowner)='postgres' AND prosecdef AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]
+ AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'C2DJ_CANONICAL_METADATA_DRIFT'; END IF;
+END $canonical_metadata$;
 """
 boundary="LOCK TABLE public.partner_order_idempotency IN ACCESS EXCLUSIVE MODE;\nLOCK TABLE public.partner_orders IN SHARE MODE;\n"
 header='-- INATIVO. Canonical target swzpzcwiasxmjutrmvkm. No automatic execution.\n'
