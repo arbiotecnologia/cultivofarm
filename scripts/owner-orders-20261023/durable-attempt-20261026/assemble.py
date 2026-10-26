@@ -198,6 +198,9 @@ BEGIN
   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501';
  END IF;
  nextgen := coalesce(j.generation,0)+1; nextkey := gen_random_uuid()::text;
+ IF j.idempotency_key IS NULL AND EXISTS(SELECT 1 FROM public.partner_order_idempotency i
+ WHERE i.created_by=uid AND i.partner_id=p_partner) THEN
+  RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501'; END IF;
  INSERT INTO platform_private.partner_order_attempt_journal(actor_id,organization_id,partner_id,generation,idempotency_key,predecessor_key)
  VALUES(uid,org,p_partner,nextgen,nextkey,j.idempotency_key);
  RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen);
@@ -256,6 +259,19 @@ IF EXISTS(SELECT 1 FROM platform_private.partner_order_attempt_journal j
  WHERE i.created_by=j.actor_id AND i.partner_id=j.partner_id AND i.idempotency_key=j.idempotency_key AND i.order_id=j.imported_order_id))
  THEN RAISE EXCEPTION 'C2DJ_IMPORT_DRIFT'; END IF;
 END $imports$;
+"""
+post+="""DO $journal_structure$ BEGIN
+IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='platform_private.partner_order_attempt_journal'::regclass AND NOT tgisinternal)<>2
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='platform_private.partner_order_attempt_journal'::regclass
+ AND tgname='c2dj_no_change' AND tgenabled='O' AND tgtype=27 AND tgfoid='platform_private.c2_attempt_closure_immutable()'::regprocedure)
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='platform_private.partner_order_attempt_journal'::regclass
+ AND tgname='c2dj_no_truncate' AND tgenabled='O' AND tgtype=34 AND tgfoid='platform_private.c2_attempt_closure_immutable()'::regprocedure)
+ OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='platform_private.partner_order_attempt_journal'::regclass
+ AND contype='p' AND pg_get_constraintdef(oid)='PRIMARY KEY (actor_id, organization_id, partner_id, generation)')
+ OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='platform_private.partner_order_attempt_journal'::regclass
+ AND contype='u' AND pg_get_constraintdef(oid)='UNIQUE (idempotency_key)')
+ THEN RAISE EXCEPTION 'C2DJ_JOURNAL_STRUCTURE_DRIFT'; END IF;
+END $journal_structure$;
 """
 post+="""DO $canonical_metadata$ BEGIN
 IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure
