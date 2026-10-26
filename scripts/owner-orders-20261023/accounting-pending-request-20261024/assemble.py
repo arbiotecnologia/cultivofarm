@@ -165,7 +165,7 @@ pairs=[('platform_private.c2_external_origin_assert',ast,'CREATE OR REPLACE FUNC
 out=[]
 for name,before,anchor in pairs:
     after=_final(anchor)
-    out+=difflib.unified_diff((before.strip()+'\n').splitlines(True),(after.strip()+'\n').splitlines(True),f'b5/{name}',f'candidate/{name}')
+    out+=difflib.unified_diff((before.strip()+'\n').splitlines(True),(after.strip()+'\n').splitlines(True),(f'live/{name}' if name in ('public.approve_b2b_credit','platform_private.c2_owner_order_create_allowed') else f'b5/{name}'),f'candidate/{name}')
 out+=difflib.unified_diff([],new_fns.splitlines(True),'/dev/null','candidate/src/new-functions.sql')
 (D/'overlay.diff').write_text(''.join(out))
 print('assembled')

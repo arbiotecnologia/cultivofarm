@@ -92,7 +92,7 @@
    IF p_partner_order_id IS NULL THEN
      RAISE EXCEPTION 'partner_order_id_required' USING ERRCODE='P0001';
    END IF;
---- b5/platform_private.c2_owner_order_create_allowed
+--- live/platform_private.c2_owner_order_create_allowed
 +++ candidate/platform_private.c2_owner_order_create_allowed
 @@ -1,6 +1,32 @@
  CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed(_uid uuid, _partner uuid)
@@ -132,7 +132,7 @@
 +  RETURN EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'pedidos_b2b')
 +     AND EXISTS (SELECT 1 FROM platform_private.entitlements_for_user(_uid) e WHERE e.feature_key = 'catalogo_precos');
 +END $function$
---- b5/public.approve_b2b_credit
+--- live/public.approve_b2b_credit
 +++ candidate/public.approve_b2b_credit
 @@ -21,6 +21,13 @@
    SELECT * INTO v_order FROM public.partner_orders
