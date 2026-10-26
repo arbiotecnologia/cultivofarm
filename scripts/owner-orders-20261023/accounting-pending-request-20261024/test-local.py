@@ -216,6 +216,60 @@ for col,v in [('credit_approved_at','now()'),('status',"'em_analise_comercial'")
     # LIVE credit guard silently keeps the status (only updated_at may move); no decision/title/approval can result.
     assert ob1['status']=='aguardando_aprovacao_credito' and ob1['credit_approved_at'] is None and ob1['approved_at'] is None and counts()==c1 and all(ob0[k]==ob1[k] for k in ob0 if k!='updated_at'),(col,v)
 ok('no hidden credit decision or status hop out of aguardando_aprovacao_credito while pending')
+# ---- approve_b2b_credit (captured LIVE 1d5ba930 -> candidate), review e1e9aa2f ----
+import subprocess as _sp2
+def _hold(sql):
+    h=_sp2.Popen(pg.psql(),stdin=_sp2.PIPE,stdout=_sp2.PIPE,stderr=_sp2.PIPE,text=True);h.stdin.write(f"BEGIN; {sql}; SELECT 'CONCURRENT_HOLD'; SELECT pg_sleep(2); COMMIT;\n");h.stdin.close()
+    while 'CONCURRENT_HOLD' not in h.stdout.readline():pass
+    return h
+def _abc_bg(u,oid,name):
+    c=json.dumps({'sub':u,'role':'authenticated','iat':int(time.time())})
+    p=_sp2.Popen(pg.psql(),stdin=_sp2.PIPE,stdout=_sp2.PIPE,stderr=_sp2.PIPE,text=True)
+    p.stdin.write(f"SET application_name='{name}';\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{c}',true); SELECT public.approve_b2b_credit('{oid}','n'); COMMIT;\n");p.stdin.close();return p
+def _waiting(name,ev=None):
+    for _ in range(40):
+        if pg.sql(f"SELECT count(*) FROM pg_stat_activity WHERE application_name='{name}' AND wait_event_type='Lock'"+(f" AND wait_event='{ev}'" if ev else ''))=='1':return True
+        time.sleep(.05)
+    return False
+abc_md5=md5('public.approve_b2b_credit(uuid,text)')
+ok('approve_b2b_credit candidate body installed (re-validation + pending check), LIVE ACL kept',abc_md5==E['candidate']['public.approve_b2b_credit(uuid,text)'] and pg.sql("SELECT proacl::text FROM pg_proc WHERE oid='public.approve_b2b_credit(uuid,text)'::regprocedure")=='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')
+ok('credit transition is exposure-neutral: aguardando_aprovacao_credito and em_analise_comercial both in v_pending',"'pendente','solicitado','em_analise_comercial',\n                      'aguardando_aprovacao_credito'" in pg.sql("SELECT pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure)"))
+# Negatives with real (unchanged) scope: owner A on its pending order, foreign B on A, missing id -> same denial, no effects
+denied(ADMIN,f"SELECT public.approve_b2b_credit('{rc['id']}','n')",'b2b_phase1_scope_denied');ok('owner A on pending A order: b2b_phase1_scope_denied (scope not widened), no effects')
+denied(ADMIN_B,f"SELECT public.approve_b2b_credit('{rc['id']}','n')",'b2b_phase1_scope_denied');ok('foreign B on A order: same denial, no effects')
+denied(ADMIN,f"SELECT public.approve_b2b_credit('{U(999)}','n')",'b2b_phase1_scope_denied');ok('missing order: same denial as foreign (no existence oracle)')
+# Direct writes: authenticated with the legacy GUC changes nothing (RLS); privileged writes on pending rows now raise
+for col,v in [('credit_approved_by',f"'{ADMIN}'"),('credit_approval_notes',"'x'"),('financial_approval_status',"'approved'"),('approved_by',f"'{ADMIN}'")]:
+    before=snapshot();pg.sql(f"\\set ON_ERROR_STOP 0\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('arbio.b2b_credit_approval','on',true); SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET {col}={v} WHERE id='{rc['id']}'; COMMIT;");assert snapshot()==before,col
+    e=pg.sql(f"BEGIN; SELECT set_config('arbio.b2b_credit_approval','on',true); SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET {col}={v} WHERE id='{rc['id']}'; COMMIT;",ok=False);assert 'C2_ACCOUNTING_PENDING' in e and snapshot()==before,(col,e[-300:])
+ok('pending: credit_approved_by/notes, approved_by, financial_approval_status cannot advance (authenticated no-op; privileged C2_ACCOUNTING_PENDING)')
+# Synthetic visibility override (disposable DB only, restored byte-exact) to reach the post-lock branches
+VIS='platform_private.b2b_phase1_order_visible(uuid)';vis_def=pg.sql(f"SELECT pg_get_functiondef('{VIS}'::regprocedure)");vis_md5=md5(VIS)
+pg.sql("CREATE OR REPLACE FUNCTION platform_private.b2b_phase1_order_visible(p_order uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public','pg_temp' AS $f$ SELECT EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=p_order) $f$;")
+denied(ADMIN,f"SELECT public.approve_b2b_credit('{rc['id']}','n')",'C2_ACCOUNTING_PENDING');ok('[override] visible pending order: explicit C2_ACCOUNTING_PENDING before any write')
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=1,credit_limit_action='approval_required' WHERE partner_id='{Q}'; SET session_replication_role=origin;")
+qa=json.loads(val(GB,create(Q,'abc-q1',hQ)+';'))['id'];qb=json.loads(val(GB,create(Q,'abc-q2',hQ)+';'))['id']
+ok('B validated orders land aguardando_aprovacao_credito',all(order(x)['status']=='aguardando_aprovacao_credito' for x in (qa,qb)))
+exp0=pg.sql(f"SELECT public.fn_b2b_credit_exposure('{Q}',0,NULL)->>'exposicao_projetada'")
+h=_hold(f"SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:'||'{Q}',0))")
+t0=time.time();r=json.loads(val(ADMIN_B,f"SELECT public.approve_b2b_credit('{qa}','ok');"));dt=time.time()-t0;_sp2.Popen.wait(h,timeout=10)
+oa=order(qa)
+ok(f'[override] credit release does not need the credit lock ({dt:.2f}s while held) and is exposure-neutral',dt<1.5 and r['status']=='em_analise_comercial' and oa['credit_approved_by']==ADMIN_B and pg.sql(f"SELECT public.fn_b2b_credit_exposure('{Q}',0,NULL)->>'exposicao_projetada'")==exp0)
+denied(ADMIN_B,f"SELECT public.approve_b2b_credit('{qa}','again')",'already_released');ok('[override] second release denied, fields unchanged')
+# create concurrent with credit release on same partner: neither waits on the other's lock domain incorrectly
+h=_hold(f"SELECT 1 FROM public.partner_orders WHERE id='{qb}' FOR UPDATE")
+pr=_abc_bg(ADMIN_B,qb,'abc_wait')
+ok('[override] release waits on row lock',_waiting('abc_wait','transactionid'))
+pg.sql(f"SET session_replication_role=replica; DELETE FROM public.user_roles WHERE user_id='{ADMIN_B}' AND role='administrador'; SET session_replication_role=origin;")
+before_b=order(qb);h.wait(timeout=10);out=pr.stdout.read();err=pr.stderr.read();pr.wait(timeout=10)
+ob=order(qb)
+ok('[override] revoked during row wait: forbidden after lock, no credit field/status/audit written','forbidden' in err and ob['status']=='aguardando_aprovacao_credito' and ob['credit_approved_by'] is None and ob['credit_approved_at'] is None and pg.sql(f"SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id='{qb}' AND acao='credito_aprovado'")=='0')
+pg.sql(f"SET session_replication_role=replica; INSERT INTO public.user_roles(user_id,role) VALUES('{ADMIN_B}','administrador'); SET session_replication_role=origin;")
+# two connections: credit release holding row, then approve_partner_order on another order + create run without deadlock
+pa=_abc_bg(ADMIN_B,qb,'abc_c1');rq=json.loads(val(GB,create(Q,'abc-q3',hQ)+';'));o1,e1=pa.stdout.read(),pa.stderr.read();pa.wait(timeout=10)
+ok('[override] release + concurrent create same partner complete, no deadlock',pa.returncode==0 and '40P01' not in e1 and order(qb)['status']=='em_analise_comercial' and rq['id'])
+pg.sql(vis_def+';');ok('synthetic visibility override removed; LIVE body md5 restored',md5(VIS)==vis_md5)
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{Q}'; SET session_replication_role=origin;")
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
 # --- no existence oracle for foreign / missing orders before authorization ---
 MISSING=U(999)

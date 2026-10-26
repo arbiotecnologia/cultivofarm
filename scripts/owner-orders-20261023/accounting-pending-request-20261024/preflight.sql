@@ -2,6 +2,10 @@
 -- Composes the reviewed b5 package (minus install-time accounting gate) + C2_ACCOUNTING_PENDING_V1 in ONE transaction.
 -- Opens only the canonical external request; approval, billing, NF and delivery stay closed while the issuer is not validated.
 BEGIN READ ONLY;
+DO $c2ap_abc_pre$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.approve_b2b_credit(uuid,text)'::regprocedure AND md5(pg_get_functiondef(oid))='1d5ba930634e165750352e9f44fa844f' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_ABC_PRE_DRIFT:public.approve_b2b_credit(uuid,text)'; END IF;
+ IF (SELECT proacl::text FROM pg_proc WHERE oid='public.approve_b2b_credit(uuid,text)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'C2AP_ABC_PRE_ACL'; END IF;
+END $c2ap_abc_pre$;
 DO $c2ap_30dc_c2ap_30dc_pre_drift$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_order_actor_scope(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='54c4327d63f48e39f598129ff9dd8f09' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_PRE_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_internal_order_target_reason(uuid,uuid)'::regprocedure AND md5(pg_get_functiondef(oid))='07d7c9002cbfe17497c9ee4a92d5a928' AND pg_get_userbyid(proowner)='postgres') THEN RAISE EXCEPTION 'C2AP_30DC_PRE_DRIFT:platform_private.c2_internal_order_target_reason(uuid,uuid)'; END IF;
