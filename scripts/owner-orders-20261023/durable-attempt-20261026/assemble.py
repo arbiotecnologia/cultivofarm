@@ -14,10 +14,17 @@ anchor = "  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:' || p_part
 assert body.count(anchor)==1
 patch = "  PERFORM platform_private.c2_attempt_dispatch_guard(v_uid,p_partner_id,v_idem);\n" + anchor
 newdef = definition.replace(anchor,patch,1)
+after_auth="  PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);\n"
+assert newdef.count(after_auth)==1
+newdef=newdef.replace(after_auth,after_auth+"  IF NOT EXISTS(SELECT 1 FROM platform_private.partner_order_attempt_journal j JOIN public.profiles p ON p.user_id=j.actor_id AND p.organization_id=j.organization_id AND p.ativo WHERE j.actor_id=v_uid AND j.partner_id=p_partner_id AND j.idempotency_key=v_idem) THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;\n")
 close_start = old.index('CREATE FUNCTION platform_private.c2_close_partner_order_attempt_core(')
 closedef = old[close_start:old.index('$function$;',close_start)+len('$function$;')].replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION',1)
 ca = '  PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);\n'
 closedef = closedef.replace(ca,ca+'  PERFORM platform_private.c2_attempt_scope_lock(v_uid,p_partner_id);\n',1)
+closedef=closedef.replace('  v_found boolean;', '  v_scope_org uuid; v_current_org uuid;\n  v_found boolean;',1)
+closedef=closedef.replace('  PERFORM platform_private.c2_attempt_scope_lock(v_uid,p_partner_id);','  v_scope_org := platform_private.c2_attempt_scope_lock(v_uid,p_partner_id);',1)
+last=closedef.rfind(ca)
+closedef=closedef[:last]+closedef[last:].replace(ca,ca+"  SELECT organization_id INTO v_current_org FROM public.profiles WHERE user_id=v_uid AND ativo;\n  IF v_current_org IS DISTINCT FROM v_scope_org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;\n",1)
 timeouts = "SET LOCAL lock_timeout='5s';\nSET LOCAL statement_timeout='60s';\n"
 pre = """DO $pre$ BEGIN
 IF current_database() IS NULL THEN RAISE EXCEPTION 'C2DJ_DATABASE_UNKNOWN'; END IF;
