@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { platformCatalogAccess } from "@/lib/catalogo/platformCatalogRead";
 
-/** Global product-only fence. No tenant operation uses this hook. RLS is authoritative. */
+/** Global fiscal catalogue fence (products and services). No tenant operation uses it. RLS is authoritative. */
 export function useProductFiscalAccess(resource: string) {
   const actor = useAuth();
   const platform = platformCatalogAccess(actor);

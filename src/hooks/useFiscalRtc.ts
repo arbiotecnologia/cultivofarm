@@ -2,10 +2,11 @@
  * Fase Fiscal 3.19.3 — Hook RTC/IBS-CBS (tipado, com revisão otimista).
  * RPCs: `rpc_fiscal_*_rtc_*` / `rpc_fiscal_*_ibs_cbs_*`.
  * Roles: leitura admin/gestor/financeiro; escrita empresa=admin;
- * escrita item=admin/financeiro. Códigos de erro: FISCAL_CONFLICT,
+ * escrita item global=Superadmin. Códigos de erro: FISCAL_CONFLICT,
  * FISCAL_FORBIDDEN, FISCAL_UNAUTHENTICATED, FISCAL_RTC_*.
  */
 import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -18,7 +19,7 @@ import {
 
 /** Adaptador local estreito para as RPCs ainda ausentes de types.ts.
  *  Não altera o cliente global. */
-type RpcResponse<T> = { data: T | null; error: { message: string } | null };
+type RpcResponse<T> = { data: T | null; error: { message: string; code?: string } | null };
 type NarrowRpc = <T>(
   fn: string,
   args?: Record<string, unknown>,
@@ -54,8 +55,12 @@ function parseEnvelope<T>(
   return { configuration: parsed.data, revision: rev, exists: Boolean(raw.exists) };
 }
 
-function toMessage(raw: string, fallback: string): string {
-  if (/FISCAL_CONFLICT/.test(raw))
+function toMessage(raw: string, fallback: string, code?: string): string {
+  if (/FISCAL_COMPANY_AMBIGUOUS/.test(raw))
+    return "Há mais de um cadastro fiscal para esta empresa. Solicite a revisão dos cadastros antes de salvar.";
+  if (/FISCAL_COMPANY_NOT_INITIALIZED/.test(raw))
+    return "Configure a empresa fiscal antes de editar o RTC.";
+  if (/FISCAL_CONFLICT/.test(raw) || code === "PT409")
     return "Os dados foram alterados por outra pessoa. Recarregue antes de salvar.";
   if (/FISCAL_FORBIDDEN|permission_denied|42501/.test(raw))
     return "Você não tem permissão para essa operação.";
@@ -84,17 +89,23 @@ const emptyCompany = (): RtcCompanyConfiguration => ({
 });
 
 export function useFiscalRtcCompany(options: { enabled?: boolean } = {}) {
-  const enabled = options.enabled ?? true;
+  const fence = useStorageAccessScope("company-rtc");
+  const adoptedScope = useRef("");
+  const enabled = (options.enabled ?? true) && fence.ready;
   const [state, setState] = useState<RtcHookState<RtcCompanyConfiguration>>({
     data: null, revision: "", loading: enabled, error: null, saving: false,
   });
 
   const load = useCallback(async () => {
+    if (!enabled) return;
+    const valid = fence.capture();
     setState((s) => ({ ...s, loading: true, error: null }));
     const { data, error } = await rpc<unknown>("rpc_fiscal_company_rtc_get");
+    if (!valid()) return;
+    adoptedScope.current = fence.scope;
     if (error) {
       setState({ data: null, revision: "", loading: false, saving: false,
-        error: toMessage(error.message, "Falha ao carregar configuração RTC.") });
+        error: toMessage(error.message, "Falha ao carregar configuração RTC.", error.code) });
       return;
     }
     const env = parseEnvelope<RtcCompanyConfiguration>(
@@ -106,11 +117,13 @@ export function useFiscalRtcCompany(options: { enabled?: boolean } = {}) {
     }
     setState({ data: env.configuration, revision: env.revision,
       loading: false, saving: false, error: null });
-  }, []);
+  }, [enabled, fence.scope]);
 
   useEffect(() => { if (enabled) void load(); }, [enabled, load]);
 
   const save = useCallback(async (payload: RtcCompanyConfiguration) => {
+    if (!enabled || adoptedScope.current !== fence.scope) return { ok: false as const };
+    const valid = fence.capture();
     setState((s) => ({ ...s, saving: true, error: null }));
     if (rtcHasSensitiveKey(payload)) {
       setState((s) => ({ ...s, saving: false,
@@ -126,9 +139,10 @@ export function useFiscalRtcCompany(options: { enabled?: boolean } = {}) {
       "rpc_fiscal_company_rtc_save",
       { payload: parsed.data, expected_revision: state.revision || null },
     );
+    if (!valid()) return { ok: false as const };
     if (error) {
       setState((s) => ({ ...s, saving: false,
-        error: toMessage(error.message, "Falha ao salvar RTC.") }));
+        error: toMessage(error.message, "Falha ao salvar RTC.", error.code) }));
       return { ok: false as const };
     }
     const env = parseEnvelope<RtcCompanyConfiguration>(
@@ -141,9 +155,10 @@ export function useFiscalRtcCompany(options: { enabled?: boolean } = {}) {
     setState({ data: env.configuration, revision: env.revision,
       loading: false, saving: false, error: null });
     return { ok: true as const };
-  }, [state.revision]);
+  }, [state.revision, enabled, fence.scope]);
 
-  return { ...state, reload: load, save };
+  const current = enabled && adoptedScope.current === fence.scope;
+  return { ...state, data: current ? state.data : null, revision: current ? state.revision : "", error: current ? state.error : null, saving: current && state.saving, reload: load, save };
 }
 
 /**
@@ -164,9 +179,8 @@ export function useFiscalRtcItem(
   options: { enabled?: boolean } = {},
 ) {
   const fence = useProductFiscalAccess(`product-rtc:${itemId}`);
-  const product = kind === "product";
   const adoptedScope = useRef("");
-  const enabled = (options.enabled ?? true) && !!itemId && (!product || fence.ready);
+  const enabled = (options.enabled ?? true) && !!itemId && fence.ready;
   const [state, setState] = useState<RtcHookState<IbsCbsItemConfiguration>>({
     data: null, revision: "", loading: enabled, error: null, saving: false,
   });
@@ -185,8 +199,8 @@ export function useFiscalRtcItem(
     : "p_profile_id";
 
   const load = useCallback(async () => {
-    if (!itemId || (product && !fence.ready)) return;
-    const valid = product ? fence.capture() : () => true;
+    if (!itemId || !enabled) return;
+    const valid = fence.capture();
     setState((s) => ({ ...s, loading: true, error: null }));
     const { data, error } = await rpc<unknown>(getFn, { [idKey]: itemId });
     if (!valid()) return;
@@ -205,13 +219,13 @@ export function useFiscalRtcItem(
     }
     setState({ data: env.configuration, revision: env.revision,
       loading: false, saving: false, error: null });
-  }, [itemId, getFn, idKey, product, fence.scope]);
+  }, [itemId, getFn, idKey, enabled, fence.scope]);
 
   useEffect(() => { if (enabled) void load(); }, [enabled, load]);
 
   const save = useCallback(async (payload: IbsCbsItemConfiguration) => {
-    if (!itemId || (product && (!fence.ready || !fence.canWrite))) return { ok: false as const };
-    const valid = product ? fence.capture() : () => true;
+    if (!itemId || !enabled || !fence.ready || !fence.canWrite || adoptedScope.current !== fence.scope) return { ok: false as const };
+    const valid = fence.capture();
     setState((s) => ({ ...s, saving: true, error: null }));
     if (rtcHasSensitiveKey(payload)) {
       setState((s) => ({ ...s, saving: false,
@@ -231,7 +245,7 @@ export function useFiscalRtcItem(
     adoptedScope.current = fence.scope;
     if (error) {
       setState((s) => ({ ...s, saving: false,
-        error: toMessage(error.message, "Falha ao salvar IBS/CBS.") }));
+        error: toMessage(error.message, "Falha ao salvar IBS/CBS.", error.code) }));
       return { ok: false as const };
     }
     const env = parseEnvelope<IbsCbsItemConfiguration>(
@@ -244,9 +258,10 @@ export function useFiscalRtcItem(
     setState({ data: env.configuration, revision: env.revision,
       loading: false, saving: false, error: null });
     return { ok: true as const };
-  }, [itemId, saveFn, idKey, state.revision, product, fence.scope, fence.canWrite]);
+  }, [itemId, saveFn, idKey, state.revision, enabled, fence.scope, fence.canWrite]);
 
-  return { ...state, data: product && (!fence.ready || adoptedScope.current !== fence.scope) ? null : state.data, reload: load, save };
+  const current = fence.ready && adoptedScope.current === fence.scope;
+  return { ...state, data: current ? state.data : null, revision: current ? state.revision : "", error: current ? state.error : null, saving: current && state.saving, reload: load, save };
 }
 
 export { emptyCompany as _emptyCompanyRtc };
