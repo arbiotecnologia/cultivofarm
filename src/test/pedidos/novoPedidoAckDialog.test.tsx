@@ -143,7 +143,7 @@ beforeEach(()=>{
     if(name==='recover_partner_order_attempt_v1'){
       const cur={contract:CT,key:srv.key,generation:srv.gen,state:'committed',order_id:srv.order,numero:srv.numero};
       if(!args?.p_advance) return Promise.resolve({data:cur,error:null});
-      if(args.p_expected_key!==srv.key||args.p_expected_generation!==srv.gen||args.p_ack_order!==srv.order) return Promise.resolve({data:null,error:{code:'40001'}});
+      if(args.p_expected_key!==srv.key||args.p_expected_generation!==srv.gen||args.p_ack_order!==srv.order) return Promise.resolve({data:null,error:{code:'PT409',message:'C2DJ_CAS_CONFLICT'}});
       const pred={key:srv.key,generation:srv.gen,state:'committed',order_id:srv.order,numero:srv.numero};
       const out={contract:CT,key:K2,generation:srv.gen+1,state:'reserved',predecessors:[pred]};
       return (hold??Promise.resolve()).then(()=>({data:out,error:null}));

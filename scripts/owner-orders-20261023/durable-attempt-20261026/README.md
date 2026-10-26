@@ -126,7 +126,7 @@ Se não houver journal, mas houver histórico do ator/parceiro em outra empresa,
 Recovery normal sempre reutiliza geração; ausência do pedido continua `uncertain`.
 Só avanço explicitamente solicitado usa close atômico. `closed` cria nova geração;
 `committed` só avança com `p_ack_order` igual ao UUID confirmado. ACK ausente/UUID de outro
-pedido não avança; replay do avanço antigo falha `40001/C2DJ_CAS_CONFLICT`.
+pedido não avança; replay do avanço antigo falha `PT409/C2DJ_CAS_CONFLICT (HTTP 409, não retentável; 40001 causava retry infinito do PostgREST — hotfix LIVE `b2b_journal_cas_http409_20261026`)`.
 ACK não prova que um humano leu a tela: cliente malicioso autorizado pode confirmar o UUID
 que recebeu. É uma intenção explícita autorizada, nunca uma atribuição de autorização à chave.
 Não usar o UUID como secret/token nem prometer uma garantia de interação humana server-side.
