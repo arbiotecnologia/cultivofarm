@@ -218,7 +218,7 @@ it("rejeição conclusiva do servidor no primeiro envio descarta a tentativa", a
   expect(screen.queryByText(/Não foi possível confirmar/)).toBeNull();
 });
 
-it("outro ator não herda a tentativa; logout/troca de identidade limpa", async () => {
+it("outro ator não herda a tentativa; logout NÃO libera a do ator original", async () => {
   await lostThenRemount(3);
   state.actorOverride = "44444444-4444-4444-8444-444444444444";
   mount();
@@ -227,14 +227,14 @@ it("outro ator não herda a tentativa; logout/troca de identidade limpa", async 
   await waitFor(() => expect(creates()).toHaveLength(2));
   expect(creates()[1].p_idempotency_key).not.toBe(creates()[0].p_idempotency_key);
   cleanup();
-  // A volta: ainda incerto (só logout limpa); então logout limpa.
+  // A volta após logout: continua incerto e bloqueado (só o servidor resolve).
   state.actorOverride = null;
   clearAllPauseStates();
   mount();
   await waitCart();
   await fillAndSubmit(false);
-  await waitFor(() => expect(creates()).toHaveLength(3));
-  expect(screen.queryByText(/Não foi possível confirmar/)).toBeNull();
+  await screen.findByText(/Não foi possível confirmar o envio anterior/);
+  expect(creates()).toHaveLength(2);
 });
 
 import { isConclusiveRejection, orderAttemptFingerprint } from "@/lib/authz/pendingOrderAttempt";
