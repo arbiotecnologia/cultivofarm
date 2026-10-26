@@ -150,6 +150,7 @@ beforeEach(()=>{
     return base(name,args);
   });
 });
+async function waitCart(){ await waitFor(()=>expect(screen.getAllByRole('button',{name:'Continuar para condição de pagamento'})[0]).toBeEnabled()); }
 const ackBtn=()=>screen.findByRole('button',{name:'Confirmar pedido existente e iniciar novo'});
 async function openDialog(){ await screen.findAllByText('Produto local'); fireEvent.click(await ackBtn()); return screen.findByRole('alertdialog'); }
 
