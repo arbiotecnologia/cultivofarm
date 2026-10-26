@@ -1,0 +1,55 @@
+==== attempt-closure-20261026 ====
+PASS harness create equals LIVE prosrc md5 7a634235 and LIVE ACL
+PASS harness c2_order_actor_scope equals LIVE functiondef/ACL
+HARNESS_PIN_SUBSTITUTIONS {}
+HARNESS_FIDELITY_FIX LIVE indexes recreated on reduced replica
+PASS preflight READ ONLY passes on captured LIVE state
+PASS preflight left no objects
+PASS preflight fails closed on create drift
+PASS injected POST failure aborts
+PASS after aborted candidate: no table, create still LIVE
+PASS candidate PRE drift aborts before any DDL
+PASS candidate applies in one transaction
+PASS postflight READ ONLY passes
+PASS core proconfig exact
+PASS candidate hashes match expected.json
+PASS full rollback (no closed keys) restores LIVE create and drops objects
+PASS preflight→candidate→postflight again after full rollback
+PASS close unused key => closed
+PASS close is idempotent
+PASS late create of closed key refused (idempotency_key_closed), no order
+PASS close after commit => committed with order id/numero
+PASS replay of committed key still returns same order
+PASS cumulative manager/technician of same partner sees committed
+PASS race A: create queued on b2b_idem lock
+PASS race A: close queued behind create
+PASS race A: create committed and close answered committed
+PASS race A: exactly one order for key and no closure
+PASS race B: close queued first
+PASS race B: late create queued after close
+PASS race B: close answered closed, late K1 refused, no order
+PASS after closing K1, K2 creates once
+PASS K1 arriving even later is still refused
+PASS lock held past lock_timeout => in_progress (unknown), ~5s
+PASS in_progress wrote no closure
+PASS B partner manager cannot probe/close A key (no state revealed) [ERROR:  42501: forbidden_partner]
+PASS A manager cannot close for B partner [ERROR:  42501: forbidden_partner]
+PASS isolated technician cannot close [ERROR:  42501: forbidden_financial_terms]
+PASS producer cannot close [ERROR:  42501: forbidden_partner]
+PASS blank key rejected [ERROR:  P0001: idempotency_key_required]
+PASS oversized key rejected [ERROR:  P0001: invalid_idempotency_key]
+PASS anon has no EXECUTE on wrapper/core
+PASS authenticated cannot read/write closures directly
+PASS revoked partner link cannot close/probe [ERROR:  42501: forbidden_partner]
+PASS revocation did NOT reopen closed key (protection independent of actor auth)
+PASS inactive profile cannot close/probe [ERROR:  42501: inactive_scope]
+PASS inactive partner cannot close/probe [ERROR:  42501: partner_not_found]
+PASS restored actor closes again normally
+PASS owner blocked: UPDATE
+PASS owner blocked: DELETE
+PASS owner blocked: TRUNCATE
+PASS full rollback refused while closed keys exist
+PASS containment rollback: no new closures possible
+PASS containment rollback: closed keys still refused by create
+PASS containment rollback: normal create/replay unaffected
+TOTAL 51 PASS deste pacote (+24 do harness base); Auth sintética, PostgreSQL descartável, sem JWT/RLS hospedado

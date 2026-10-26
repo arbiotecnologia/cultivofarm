@@ -13,6 +13,7 @@ pg, ok, val, actor, snapshot, create, jwt = (G0[k] for k in ('pg', 'ok', 'val', 
 G, GT, T, PR, GB, ADMIN, ADMIN_B, P, Q, hA, items = (G0[k] for k in ('G', 'GT', 'T', 'PR', 'GB', 'ADMIN', 'ADMIN_B', 'P', 'Q', 'hA', 'items'))
 U = G0['U']
 print('==== attempt-closure-20261026 ====', flush=True)
+BASE = len(G0['checks'])
 PINS = json.loads((D / 'live-pins.json').read_text())
 EXP = json.loads((D / 'expected.json').read_text())
 H = EXP['candidate_prosrc_md5']
@@ -135,7 +136,8 @@ done(holder)
 # 6) Autorização canônica atual antes de revelar estado (nada gravado nas negativas).
 def denied(u, p, k, needle, label):
     b = closures(); e = err(u, f"SELECT public.close_partner_order_attempt_v1('{p}','{k}')")
-    ok(label, needle in e and closures() == b and 'committed' not in e)
+    msg = next((l for l in e.splitlines() if l.startswith('ERROR:')), '')
+    ok(label + ' [' + msg[:110] + ']', needle in e and closures() == b and 'committed' not in e)
 denied(GB, P, 'k-ok-1', 'ERROR', 'B partner manager cannot probe/close A key (no state revealed)')
 denied(G, Q, 'k-x', 'ERROR', 'A manager cannot close for B partner')
 denied(T, P, 'k-ok-1', 'ERROR', 'isolated technician cannot close')
@@ -168,4 +170,4 @@ q(rb)
 ok('containment rollback: no new closures possible', 'permission denied' in err(G, f"SELECT public.close_partner_order_attempt_v1('{P}','k-new')"))
 ok('containment rollback: closed keys still refused by create', 'idempotency_key_closed' in err(G, create(P, 'k-race-b', hA)))
 ok('containment rollback: normal create/replay unaffected', json.loads(val(G, create(P, 'k-ok-1', hA) + ';'))['id'] == r['id'])
-print(f"TOTAL {sum(1 for c in G0['checks'] if c)} PASS (inclui {len(G0['checks'])} do harness base); Auth sintética, PostgreSQL descartável, sem JWT/RLS hospedado", flush=True)
+print(f"TOTAL {len(G0['checks'])-BASE} PASS deste pacote (+{BASE} do harness base); Auth sintética, PostgreSQL descartável, sem JWT/RLS hospedado", flush=True)
