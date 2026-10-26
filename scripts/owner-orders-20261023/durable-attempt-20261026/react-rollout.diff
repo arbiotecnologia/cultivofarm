@@ -1,0 +1,307 @@
+diff --git a/roadmap.md b/roadmap.md
+index ca6d492a..26e228a4 100644
+--- a/roadmap.md
++++ b/roadmap.md
+@@ -1,12 +1,12 @@
+ # F2-B — auditoria e preparação revisável
+ 
+ ## 26/10 19:01 — recuperação durável após fechar aba / mesma origem
+-- [ ] Integração19:26: React canônico por capability servidor, fallback001b só RPC ausente antesativação; journal obrigatório/create/recovery/close/CAS explícito, testes e pacote SQL inativo coordenado; sem aplicar/publicar.
++- [x] Integração19:26: React canônico por capability servidor, fallback001b só RPC ausente antesativação; reserva server+IndexedDB/CAS/fences/payload, ACK UUID explícito e close sem avanço.94Vitest/44PG/16audit/17prototypebrowser/14Reactbrowser PASS, sintéticos/controlados; build automáticoOK; SQL inativo e sem publicação.
+ - [x] Complemento19:24: arquivo exato antes2PASS/11FAIL Node22+fakeIndexedDB; depois schema UUID estrito, CAS monotônico, terminais não despacham;17 browser PASS; candidato INATIVO, provas locks preservadas. Auditoria local citada pelo proprietário não está neste checkout.
+ - [x] Revisão065f8633: barreira sem lockescopo, fronteira bounded+import última committed semACK, pins LIVE READ ONLY, ACK/CAS/40P01 antes/depois/rollout/revogação/tenant/POST/contenção; 44 PostgreSQL +15 browser +31 componentes PASS, sintéticos/controlados; sem aplicar/publicar.
+ - [x] Registrar relato independente: 001b3cad publicado, backend 5cd aplicado; A closed/PB001033 único/committed, B 403/42501 target_outside_portfolio. Não repetir operações produtivas.
+ - [x] Preparar contrato servidor INATIVO + protótipo IndexedDB fora de runtime: 20 PASS PostgreSQL descartável/Auth sintética, 12 PASS Chromium/IndexedDB real/transporte controlado e 31 PASS regressões publicadas. Saídas e comandos no pacote durable-attempt-20261026.
+-- [ ] Revisão/implantação independente do candidato com pins+importação atômica; integração React de recovery após instalação e provas JWT/abas reais pendentes. Feature OFF, sem hardgate impossível; versões antigas não recarregadas e chaves desconhecidas negadas pela candidata.
++- [ ] Revisão/implantação coordenada do candidato com pins+importação atômica+capability; frontend preparado, provas JWT/abas produtivas dependem do auditor. SQL inativo, sem hardgate impossível; versões antigas não recarregadas e chaves desconhecidas negadas pela candidata. Suíte externa40testes não disponível no checkout.
+ - [ ] Revisão independente, matriz completa/real A/B e eventual instalação/publicação pelo auditor; contabilidade A DRAFT e 36 falhas antigas permanecem abertas.
+ 
+ ## 24/10 15:26 — compra B2B com pendência contábil honesta (pacote INATIVO)
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/README.md b/scripts/owner-orders-20261023/durable-attempt-20261026/README.md
+index 7c3ff13e..3c63a597 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/README.md
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/README.md
+@@ -1,5 +1,45 @@
+ # Continuidade durável — candidato corrigido, INATIVO
+ 
++## Integração React 19:26 — rollout coordenado
++
++Frontend preparado no fluxo existente `NovoPedido/useCreatePartnerOrder/useCloseOrderAttempt`, sem rota/painel alternativo.
++`useOrderJournal` consulta automaticamente ao montar apenas o mesmo ator/empresa/parceiro; não faz polling nem fechamento automático.
++Capacidade nova `partner_order_journal_capability_v1(uuid)` usa wrapper INVOKER/core autorizado,
++corpos/ACL/config guardados no POST e revogados no rollback. SQL continua **INATIVO**, nove funções no pacote atualizado.
++Não instalar backend isoladamente: clientes001b sem reservas seriam contidos; implantação será coordenada pelo auditor.
++
++- Antes instalação, somente `PGRST202` citando exatamente a capability ausente permite comportamento001b.
++  Timeout/erro/403/schema inesperado não autoriza fallback. Evidência durável em IndexedDB ou capacidade previamente ativa impede downgrade.
++- Depois capability `C2_ORDER_JOURNAL_V1` ativa e escopada: **toda criação** do hook usa chave emitida pelo servidor,
++  recovery fresca + CAS IndexedDB (scope SHA256, key/generation/state/digest mínimo) antes de create.
++  Chave cliente do fluxo legado nunca é despachada nesse modo; nenhuma nota, preço, payload, token ou UUID de pedido é persistido.
++- Recovery pode responder `uncertain` logo após reserva sem dispatch: contrato completo atual `reserved/uncertain`
++  permite envio/replay da mesma key com mesmo digest. Não fabrica reserved localmente nem conclui ausência.
++  `unknown/in_progress/closed/committed`, schema incompleto ou erro não permite envio.
++- Antes/depois de awaits: fence de montagem/ator/empresa/papéis/época; payload atual precisa coincidir antes de dispatch.
++  Resposta create só é sucesso após recovery `committed` com UUID/key/generation correspondentes e gravação local concluída.
++  Falha de ACK mantém bloqueio e não reenvia; preços/plano/hash continuam resolvidos pelo simulate/create canônicos.
++- Reabrir aba com carrinho vazio ou IndexedDB removido reencontra servidor e mostra pedido na própria tela de catálogo.
++  Ação `Ver meus pedidos` usa rota existente; novo pedido exige confirmação explícita com UUID/key/generation CAS.
++  Fechar tentativa não cancela pedido nem avança; `closed` exige segundo clique `Iniciar nova tentativa`.
++  Recuperação/ACK/close aguardam persistência; sucesso tardio não apaga carrinho editado nem navega outro ator.
++- Duas abas recebem uma reserva servidor; IndexedDB serializa digest e transições terminais monotônicas.
++  Sem evento/poll que conceda autoridade: toda operação relê servidor. Mesma origem é limite permitido;
++  preview/domínio não compartilham IndexedDB. Abas abertas não são recarregadas nem encerradas pelo rollout.
++- Rollback continua deny-only: writer contido e recovery/capability sem EXECUTE, preservando journal/history/closures.
++  Frontend mostra indisponibilidade, nunca ignora journal. Capability removida + perda total local não é detectável pelo cliente;
++  por isso **barreira servidor jamais pode ser removida por downgrade**. Não restaurar writer permissivo.
++
++Provas desta etapa: 94/94 Vitest em9arquivos (29 novas integrações,65 regressões),44 PostgreSQL descartável,
++16 auditorias independentes do módulo original e14 Chromium/HTTP/IndexedDB com NovoPedido e hooks reais.
++Auth fornecida pelo harness é sintética; transporte HTTP é controlado/interceptado, não JWT/RLS hosted.
++O arquivo externo dos40testes referido pelo proprietário não foi disponibilizado neste checkout;
++não declarar que executamos aquela suíte específica. Os44 testes de transição/locks permanecem PASS.
++Harness/nova evidência em `test-react-browser.py`, `results-react-browser.txt`, `results-react-vitest.txt`;
++browser tem avisos de refs do instrumentador Vite, sem pageerror na execução final; screenshots foram examinados.
++diff/exactfiles/manifests em `react-rollout.diff`, `react-exactfiles.txt`, `SHA256SUMS`.
++Tipos/build são conferidos pela compilação automática, sem executar build/typecheck manual.
++
+ ## Complemento independente 19:24 — monotonicidade e despacho
+ 
+ O arquivo `typecheck-source/scripts/durable-journal-check.audit.mjs` citado pelo proprietário
+@@ -108,9 +148,8 @@ controlado **não são JWT/RLS hosted**, nem homologação A/B produtiva.
+ Feature `ORDER_JOURNAL_ENABLED=false`; adapter exige contrato autenticado válido como
+ capacidade, persistência local antes de despacho e fences pré/pós-await. Erro/unknown nunca
+ libera. Resultado committed é devolvido para exibição, não limpa carrinho/navega automaticamente.
+-UI React completa de NovoPedido com recovery de sessão **não foi integrada**: próxima promoção
+-depende de backend revisado/instalado e homologação ponta a ponta. Os 31 testes de componente
+-atuais provam fechamento publicado, não integração React deste journal.
++UI React agora preparada pela capability descrita acima, mas nenhuma instalação/publicação ocorreu;
++promoção coordenada e homologação JWT ponta a ponta continuam dependentes do auditor.
+ 
+ IndexedDB é apenas cache mínimo de chave/versão/estado e índice hash do escopo; sem JWT,
+ preços, observação ou payload. Mesma origem/perfil/contexto somente: preview e domínio
+@@ -130,6 +169,6 @@ Abas antigas não são alteradas/recarregadas: chaves desconhecidas serão negad
+   fechado permite voltar frontend; nunca excluir histórico ou reaplicar create permissivo.
+ 
+ Não há captura adicional indispensável para os alvos modificados desta versão: metadados
+-necessários foram obtidos em READ ONLY. Aprovação independente e UI integrada continuam
++necessários foram obtidos em READ ONLY. Aprovação independente e homologação JWT continuam
+ pendentes; **inativo não significa bloqueado por plano**, e candidato não equivale a autorização
+ de implantação. Não certificar outros triggers comerciais/fiscais fora da cadeia capturada.
+\ No newline at end of file
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py b/scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py
+index 21183e53..8cd54eb4 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py
+@@ -229,11 +229,8 @@ core='platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uu
+ wrap='public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'
+ capcore='platform_private.c2_order_journal_capability(uuid)'
+ capwrap='public.partner_order_journal_capability_v1(uuid)'
+-private+=['c2_order_journal_capability(uuid)']
+ for s in [capcore,capwrap]:
+  ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\nGRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
+-# Capability core is separately authorized, just like recovery core.
+-private.remove('c2_order_journal_capability(uuid)')
+ for s in ['platform_private.'+x for x in private]+[core,wrap]:
+  ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\n'
+ for s in [core,wrap]: ddl+=f'GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
+@@ -314,7 +311,7 @@ BEGIN RAISE EXCEPTION 'C2DJ_WRITER_CONTAINED' USING ERRCODE='42501'; END $functi
+ rb=header+'-- DENY ONLY, never downgrade to memory-only writer.\nBEGIN;\n'+timeouts+boundary+post+deny
+ for s in [core,wrap,capcore,capwrap]: rb+=f'REVOKE EXECUTE ON FUNCTION {s} FROM authenticated;\n'
+ deny_md5=hashlib.md5(deny.split('AS $function$')[1].split('$function$;')[0].encode()).hexdigest()
+-rb+=f"DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM '{deny_md5}' OR has_function_privilege('authenticated','{wrap}','EXECUTE') OR has_function_privilege('authenticated','{core}','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;\nCOMMIT;\n"
++rb+=f"DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM '{deny_md5}' OR has_function_privilege('authenticated','{wrap}','EXECUTE') OR has_function_privilege('authenticated','{core}','EXECUTE') OR has_function_privilege('authenticated','{capwrap}','EXECUTE') OR has_function_privilege('authenticated','{capcore}','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;\nCOMMIT;\n"
+ (D/'rollback.sql.review').write_text(rb)
+ (D/'expected.json').write_text(json.dumps({'base_source':'READ ONLY canonical swzpzcwiasxmjutrmvkm, 2026-10-26 19:12+; bodies corroborated against reviewed 5cd','poi_structure_md5':'3c5afe617195db177fe831c877473258','base':exp,'candidate':funcs,'containment_guard':deny_md5},indent=2)+'\n')
+ print('Generated inactive candidate; bounded atomic boundary and exact legacy pins. Functions:',len(funcs))
+\ No newline at end of file
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review b/scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review
+index ca8501a3..f311a6f1 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review
+@@ -69,5 +69,5 @@ REVOKE EXECUTE ON FUNCTION platform_private.c2_recover_order_attempt_core(uuid,t
+ REVOKE EXECUTE ON FUNCTION public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid) FROM authenticated;
+ REVOKE EXECUTE ON FUNCTION platform_private.c2_order_journal_capability(uuid) FROM authenticated;
+ REVOKE EXECUTE ON FUNCTION public.partner_order_journal_capability_v1(uuid) FROM authenticated;
+-DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM 'ef33f47654aa0495ae48d1f9e11e5a59' OR has_function_privilege('authenticated','public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;
++DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM 'ef33f47654aa0495ae48d1f9e11e5a59' OR has_function_privilege('authenticated','public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)','EXECUTE') OR has_function_privilege('authenticated','public.partner_order_journal_capability_v1(uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_order_journal_capability(uuid)','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;
+ COMMIT;
+diff --git a/src/hooks/useCloseOrderAttempt.ts b/src/hooks/useCloseOrderAttempt.ts
+index f69f5c35..b96ec407 100644
+--- a/src/hooks/useCloseOrderAttempt.ts
++++ b/src/hooks/useCloseOrderAttempt.ts
+@@ -27,8 +27,14 @@ export function useCloseOrderAttempt() {
+   const actor = useRef({ userId: user?.id, organizationId: profile?.organization_id, roles });
+   actor.current = { userId: user?.id, organizationId: profile?.organization_id, roles };
+   const [pending, setPending] = useState(false);
++  const closing=useRef(false);
+ 
+   const close = async (partnerId: string | null | undefined): Promise<CloseAttemptResult> => {
++    if(closing.current)return {kind:'not_eligible'};
++    closing.current=true;
++    try {return await performClose(partnerId);} finally {closing.current=false;}
++  };
++  const performClose = async (partnerId: string | null | undefined): Promise<CloseAttemptResult> => {
+     if (!ATTEMPT_CLOSURE_RPC_ENABLED || !scope.ready || !partnerId) return { kind: "not_eligible" };
+     const slot = orderAttemptSlot(actor.current, partnerId);
+     const durableFence=scope.capture();
+@@ -36,7 +42,8 @@ export function useCloseOrderAttempt() {
+     try {
+       if (await journalCapability(slot,partnerId,durableFence)) {
+         setPending(true);
+-        const result=await closeDurableOrder(slot,partnerId,durableFence);
++        const result=await closeDurableOrder(slot,partnerId,durableFence,
++          key=>(supabase.rpc as any)('close_partner_order_attempt_v1',{p_partner_id:partnerId,p_idempotency_key:key}));
+         if (!durableFence()) return {kind:'context_changed'};
+         if (result.state==='committed' && result.order_id && result.numero) return {kind:'committed',orderId:result.order_id,numero:result.numero};
+         return {kind:result.state==='closed'?'closed':'unknown'};
+diff --git a/src/hooks/useCreatePartnerOrder.ts b/src/hooks/useCreatePartnerOrder.ts
+index c35558b4..a8615072 100644
+--- a/src/hooks/useCreatePartnerOrder.ts
++++ b/src/hooks/useCreatePartnerOrder.ts
+@@ -157,7 +157,8 @@ export function useCreatePartnerOrder() {
+       if (error) throw error;
+       if (durable) {
+         // A lost acknowledgment remains blocked; never retry create automatically.
+-        await recoverOrderJournal(journalSlot,input.partner_id,current);
++        const acknowledged=await recoverOrderJournal(journalSlot,input.partner_id,current);
++        if(acknowledged.state!=='committed' || acknowledged.order_id!==created?.id || acknowledged.key!==dispatchKey || acknowledged.generation!==durable.generation) throw new Error('journal_commit_ack_unconfirmed');
+         if (!current()) throw new Error('Contexto alterado.');
+       }
+       return created as { id: string; numero: string; total: number };
+diff --git a/src/hooks/useOrderJournal.ts b/src/hooks/useOrderJournal.ts
+index f188b2ef..226dce86 100644
+--- a/src/hooks/useOrderJournal.ts
++++ b/src/hooks/useOrderJournal.ts
+@@ -21,8 +21,8 @@ export function useOrderJournal(partnerId: string | undefined) {
+   void journalCapability(slot,partnerId,current).then(async enabled=>{
+    if(!current())return;
+    if(!enabled){setMode('legacy');return;}
+-   setMode('durable');
+    await recoverOrderJournal(slot,partnerId,current);
++   if(current())setMode('durable');
+   }).catch(()=>{if(current())setMode('blocked');});
+  },[partnerId,slot,scope.scope]);
+  const recover=async(advance?:Journal)=>{
+@@ -30,8 +30,8 @@ export function useOrderJournal(partnerId: string | undefined) {
+   const current=scope.capture();lock.current=true;setPending(true);
+   try {
+    if(!await journalCapability(slot,partnerId,current)) {if(current())setMode('legacy');return;}
+-   if(current())setMode('durable');
+    await recoverOrderJournal(slot,partnerId,current,advance);
++   if(current())setMode('durable');
+   }catch{if(current())setMode('blocked');}
+   finally{lock.current=false;if(current())setPending(false);}
+  };
+diff --git a/src/lib/authz/orderJournal.ts b/src/lib/authz/orderJournal.ts
+index 69b3f6df..6032561b 100644
+--- a/src/lib/authz/orderJournal.ts
++++ b/src/lib/authz/orderJournal.ts
+@@ -30,12 +30,22 @@ async function rpc(name: string, args: Record<string, unknown>, current: () => b
+ export async function journalCapability(slot: string, partner: string, current: () => boolean): Promise<boolean> {
+  const r = await rpc('partner_order_journal_capability_v1',{p_partner:partner},current);
+  if (r.error) {
+-  if (!activated.has(slot) && r.error.code === 'PGRST202' && r.error.message?.includes('partner_order_journal_capability_v1')) return false;
++  if (!activated.has(slot) && r.error.code === 'PGRST202' && r.error.message?.includes('partner_order_journal_capability_v1')) {
++   // A previous durable installation cannot be ignored on reload/downgrade.
++   // Absence is only a compatibility signal from the server, never a key release.
++   if(typeof indexedDB!=='undefined') {
++    const d=await db();
++    try {const count=await new Promise<number>((resolve,reject)=>{const q=d.transaction('slots').objectStore('slots').count();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(Error('journal_storage_unavailable'));});
++     currentOrThrow(current);if(count>0)throw Error('journal_downgrade_blocked');
++    } finally {d.close();}
++   }
++   return false;
++  }
+   throw Error('journal_capability_unavailable');
+  }
+  const d = r.data as Record<string, unknown> | null;
+  const actor = JSON.parse(slot) as string[];
+- if (!d || d.contract !== JOURNAL_REVISION || d.enabled !== true || d.actor_id !== actor[0] || d.organization_id !== actor[1] || d.partner_id !== partner) throw Error('journal_capability_invalid');
++ if (!Array.isArray(actor) || actor.length!==3 || actor[2]!==partner || !d || d.contract !== JOURNAL_REVISION || d.enabled !== true || d.actor_id !== actor[0] || d.organization_id !== actor[1] || d.partner_id !== partner) throw Error('journal_capability_invalid');
+  activated.add(slot); return true;
+ }
+ async function db(): Promise<IDBDatabase> {
+@@ -92,10 +102,13 @@ export async function prepareDurableOrder(slot: string, partner: string, current
+  await persistJournal(slot,j,current,undefined,digest);
+  return j;
+ }
+-export async function closeDurableOrder(slot: string, partner: string, current: () => boolean) {
++export async function closeDurableOrder(slot: string, partner: string, current: () => boolean,
++ close: (key: string) => Promise<{error: unknown}>) {
+  const j=await recoverOrderJournal(slot,partner,current);
+  if (j.state==='committed' || j.state==='closed') return j;
+- const r=await rpc('close_partner_order_attempt_v1',{p_partner_id:partner,p_idempotency_key:j.key},current);
++ currentOrThrow(current);
++ const r=await close(j.key);
++ currentOrThrow(current);
+  if (r.error) throw Error('journal_closure_unavailable');
+  // Canonical recovery validates full state/UUID and persists terminal state; close never advances.
+  return recoverOrderJournal(slot,partner,current);
+diff --git a/src/pages/portal-parceiro/NovoPedido.tsx b/src/pages/portal-parceiro/NovoPedido.tsx
+index 6a3af936..e5649f14 100644
+--- a/src/pages/portal-parceiro/NovoPedido.tsx
++++ b/src/pages/portal-parceiro/NovoPedido.tsx
+@@ -221,6 +221,11 @@ export default function NovoPedido() {
+   const attempt = useSyncExternalStore(subscribeOrderAttempts, () => readOrderAttempt(attemptSlot));
+   const closeAttempt = useCloseOrderAttempt();
+   const durableAttempt=useOrderJournal(isSimulationMode?undefined:partner?.id);
++  useEffect(()=>{
++    // Terminal server receipt is shown on the same catalogue, including empty carts.
++    // Do not clear user edits or authorize a next generation.
++    if(durableAttempt.mode==='durable' && ['committed','closed'].includes(durableAttempt.journal?.state??'')) setConfirmOpen(false);
++  },[durableAttempt.mode,durableAttempt.journal?.state]);
+   // Aviso do último resultado de verificação, preso ao slot+chave que o produziu.
+   const [closeNote, setCloseNote] = useState<{ slot: string | null; key: string | null; text: string } | null>(null);
+ 
+diff --git a/src/test/pedidos/orderJournal.integration.test.tsx b/src/test/pedidos/orderJournal.integration.test.tsx
+index f73c868d..ade88952 100644
+--- a/src/test/pedidos/orderJournal.integration.test.tsx
++++ b/src/test/pedidos/orderJournal.integration.test.tsx
+@@ -53,9 +53,10 @@ it('unknown/failed capability never falls back, even when legacy memory key is p
+  await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow('journal_capability_unavailable');});expect(creates).toEqual([]);
+ });
+ it('exact absent RPC before activation preserves 001b, not network failure',async()=>{
+- const legacySlot=JSON.stringify([A,O,'77777777-7777-4777-8777-777777777777']);
++ const legacyPartner='77777777-7777-4777-8777-777777777777';
++ const legacySlot=JSON.stringify([A,O,legacyPartner]);
+  state.rpc.mockResolvedValue({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
+- expect(await journalCapability(legacySlot,P,()=>true)).toBe(false);
++ expect(await journalCapability(legacySlot,legacyPartner,()=>true)).toBe(false);
+ });
+ it('activated slot can never downgrade on missing RPC',async()=>{
+  await journalCapability(slot,P,()=>true);
+@@ -111,4 +112,33 @@ it('explicit committed ACK passes exact UUID/key/generation and next server key'
+ it('forged ACK cannot advance',async()=>{
+  terminal='committed';await expect(recoverOrderJournal(slot,P,()=>true,{...j('committed'),order_id:P})).rejects.toThrow();expect(generation).toBe(1);
+ });
++it('two mounted create hooks same tick share key, never client-generated keys',async()=>{
++ const one=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()}),two=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await Promise.allSettled([one.result.current.mutateAsync(input),two.result.current.mutateAsync(input)]);});
++ expect(creates.length).toBeGreaterThan(0);expect(new Set(creates)).toEqual(new Set([K]));expect(generation).toBe(1);
++});
++it.each(['actor','organization'] as const)('foreign capability %s cannot disclose or create',async(kind)=>{
++ state.rpc.mockResolvedValue({data:{contract,enabled:true,actor_id:kind==='actor'?P:A,organization_id:kind==='organization'?P:O,partner_id:P},error:null});
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow('journal_capability_invalid');});expect(creates).toEqual([]);
++});
++it('create commit followed by missing ACK blocks success without resending',async()=>{
++ const original=state.rpc.getMockImplementation();let recoveries=0;
++ state.rpc.mockImplementation((name:string,args:Record<string,unknown>)=>{
++  if(name==='recover_partner_order_attempt_v1' && ++recoveries===2)return ok({contract,state:'unknown'});
++  return original?.(name,args);
++ });
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow();});expect(creates).toEqual([K]);expect(terminal).toBe('committed');
++});
++it('persisted durable evidence blocks missing capability after memory loss',async()=>{
++ await persistJournal(JSON.stringify([P,O,P]),j('closed'),()=>true);
++ state.rpc.mockResolvedValue({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
++ await expect(journalCapability(JSON.stringify([P,O,P]),P,()=>true)).rejects.toThrow('journal_downgrade_blocked');
++});
++it('close double-click is synchronously single-flight before capability await',async()=>{
++ const h=renderHook(()=>useCloseOrderAttempt());
++ await act(async()=>{await Promise.all([h.result.current.close(P),h.result.current.close(P)]);});
++ expect(state.rpc.mock.calls.filter(([n])=>n==='close_partner_order_attempt_v1')).toHaveLength(1);
++});
+ it.each([null,{}, {contract,key:'-'.repeat(36),generation:1,state:'uncertain'}, {...j('committed'),order_id:undefined}])('strict schema rejects malformed receipt %#',(d)=>expect(()=>parseOrderJournal(d)).toThrow());
+\ No newline at end of file

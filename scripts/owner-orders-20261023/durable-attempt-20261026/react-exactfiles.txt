@@ -1,0 +1,14 @@
+Base da integração: 907b869036039db51ac63026c1dc4bae6b18716e
+roadmap.md
+scripts/owner-orders-20261023/durable-attempt-20261026/README.md
+scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py
+scripts/owner-orders-20261023/durable-attempt-20261026/results-react-browser.txt
+scripts/owner-orders-20261023/durable-attempt-20261026/results-react-vitest.txt
+scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review
+scripts/owner-orders-20261023/durable-attempt-20261026/test-react-browser.py
+src/hooks/useCloseOrderAttempt.ts
+src/hooks/useCreatePartnerOrder.ts
+src/hooks/useOrderJournal.ts
+src/lib/authz/orderJournal.ts
+src/pages/portal-parceiro/NovoPedido.tsx
+src/test/pedidos/orderJournal.integration.test.tsx
