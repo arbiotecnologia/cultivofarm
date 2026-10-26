@@ -19,7 +19,7 @@ for (const kind of ["company", "product", "service", "service_profile"] as const
   describe(`${kind}: operações reais do hook, Auth/transporte simulados`, () => {
     const original = kind === "company" ? { schema_version: 1 as const, rtc_environment: "HOMOLOGATION" as const } : { schema_version: 1 as const, aliquota_ibs_uf: 1 };
     const changed = kind === "company" ? { schema_version: 1 as const, rtc_environment: "NOT_CONFIGURED" as const } : { schema_version: 1 as const, aliquota_ibs_uf: 2 };
-    const response = (revision: string, configuration = original) => ({ data: { revision, configuration, exists: true }, error: null });
+    const response = (revision: string, configuration: typeof original | typeof changed = original) => ({ data: { revision, configuration, exists: true }, error: null });
     async function setup() {
       s.rpc.mockResolvedValue(response("R1"));
       const h = renderHook(() => kind === "company" ? useFiscalRtcCompany() : useFiscalRtcItem(kind, "item-A"));

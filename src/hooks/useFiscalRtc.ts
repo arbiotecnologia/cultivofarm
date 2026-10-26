@@ -238,13 +238,16 @@ export function useFiscalRtcItem(
   options: { enabled?: boolean } = {},
 ) {
   const fence = useProductFiscalAccess(`product-rtc:${kind}:${itemId}`);
-  const prefix = kind === "product" ? "product" : kind === "service" ? "service" : "service_profile";
-  const idKey = kind === "product" ? "p_product_id" : kind === "service" ? "p_service_id" : "p_profile_id";
+  const getFn = kind === "product" ? "rpc_fiscal_product_ibs_cbs_get"
+    : kind === "service" ? "rpc_fiscal_service_ibs_cbs_get" : "rpc_fiscal_service_profile_ibs_cbs_get";
+  const saveFn = kind === "product" ? "rpc_fiscal_product_ibs_cbs_save"
+    : kind === "service" ? "rpc_fiscal_service_ibs_cbs_save" : "rpc_fiscal_service_profile_ibs_cbs_save";
+  const idKey: "p_product_id" | "p_service_id" | "p_profile_id" = kind === "product" ? "p_product_id" : kind === "service" ? "p_service_id" : "p_profile_id";
   const args = useMemo(() => ({ [idKey]: itemId }), [idKey, itemId]);
   return useRtcOperations<IbsCbsItemConfiguration>({
     scope: fence.scope, enabled: (options.enabled ?? true) && !!itemId && fence.ready,
     canWrite: fence.canWrite, capture: fence.capture,
-    getFn: `rpc_fiscal_${prefix}_ibs_cbs_get`, saveFn: `rpc_fiscal_${prefix}_ibs_cbs_save`,
+    getFn, saveFn,
     args, parser: parseItem, label: "IBS/CBS",
   });
 }
