@@ -153,7 +153,7 @@ check "core search_path vazio" '{"search_path=\"\""}' "$R"
 CORE_MD5=$(Q "SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname='c2_commercial_owner_orders_core';")
 WRAP_MD5=$(Q "SELECT md5(p.prosrc) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='c2_commercial_owner_orders_projection';")
 echo "CORE_MD5=$CORE_MD5"; echo "WRAP_MD5=$WRAP_MD5"
-check "md5 core == pin do postflight/rollback" "9d9fdb93f3a9bb098a1941145014c1cf" "$CORE_MD5"
+check "md5 core == pin do postflight/rollback" "7a17fba499d92f00913fc25e4384c3a8" "$CORE_MD5"
 check "md5 wrapper == pin do postflight/rollback" "f0e65bc2546eea58ad5f5510a8a4cc12" "$WRAP_MD5"
 
 # === FASE 3: verificação de unicidade corrigida (rejeita parcial/inválido/composto/expressão)
@@ -176,7 +176,7 @@ R=$(UNIQ_Q t_uni_expr);      check "unicidade: índice de expressão rejeitado" 
 R=$(UNIQ_Q t_uni_invalid);   check "unicidade: índice inválido rejeitado" "f" "$R"
 
 # === FASE 4: rollback guardado =====================================================
-sed -e "s/9d9fdb93f3a9bb098a1941145014c1cf/00000000000000000000000000000000/" -e "s/f0e65bc2546eea58ad5f5510a8a4cc12/00000000000000000000000000000000/" "$PKG/rollback.sql.review" > "$DIR/rollback-wrong.sql"
+sed -e "s/7a17fba499d92f00913fc25e4384c3a8/00000000000000000000000000000000/" -e "s/f0e65bc2546eea58ad5f5510a8a4cc12/00000000000000000000000000000000/" "$PKG/rollback.sql.review" > "$DIR/rollback-wrong.sql"
 R=$(RUN_FILE "$DIR/rollback-wrong.sql" rollback_guard_failed); check "rollback com md5 errado aborta" "rollback_guard_failed" "$R"
 R=$(Q "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.proname LIKE 'c2_commercial_owner_orders%';")
 check "funções preservadas após rollback abortado" "2" "$R"

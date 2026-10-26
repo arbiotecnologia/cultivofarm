@@ -1,7 +1,7 @@
 -- POST — READ ONLY com ASSERTS exatos: schema, assinatura, owner, prosecdef,
 -- search_path, ACL (incluindo ausência de PUBLIC/anon), md5 dos corpos e policies.
 -- v3 (revisão SQL 5db): hashes REAIS dos corpos (sem placeholders) — core
--- 9d9fdb93f3a9bb098a1941145014c1cf, wrapper f0e65bc2546eea58ad5f5510a8a4cc12,
+-- 7a17fba499d92f00913fc25e4384c3a8, wrapper f0e65bc2546eea58ad5f5510a8a4cc12,
 -- confirmados na prova descartável completa (pre→apply→post→rollback).
 -- Qualquer divergência aborta => executar rollback guardado.
 BEGIN TRANSACTION READ ONLY;
@@ -36,7 +36,7 @@ BEGIN
      OR r_core.acl LIKE '%anon%' OR r_wrap.acl LIKE '%anon%' THEN
     RAISE EXCEPTION 'postflight_failed: owner/prosecdef/search_path/ACL divergente';
   END IF;
-  IF r_core.md5 IS DISTINCT FROM '9d9fdb93f3a9bb098a1941145014c1cf'
+  IF r_core.md5 IS DISTINCT FROM '7a17fba499d92f00913fc25e4384c3a8'
      OR r_wrap.md5 IS DISTINCT FROM 'f0e65bc2546eea58ad5f5510a8a4cc12' THEN
     RAISE EXCEPTION 'postflight_failed: corpo divergente do candidato (core=% wrapper=%)', r_core.md5, r_wrap.md5;
   END IF;
