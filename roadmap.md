@@ -1,7 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 26/10 23:54 — concorrência RTC/IBS-CBS e conciliação independente
-- [x] Corrigir leituras fora de ordem, leitura antes/durante save, duplo save e exceção/revogação:32 regressões falharam antes/passaram depois;45/45 com RTC existentes, Auth/transporte simulados; sem SQL/publicação.
+- [x] Corrigir leituras fora de ordem, leitura antes/durante save, duplo save e exceção/revogação:32 regressões falharam antes/passaram depois;162/162 finais em8arquivos, Auth/transporte simulados; validação automática build OK23:58:27, sem SQL/publicação.
 - [x] Conciliar hashes/implantação global e company, race real relatada e44 funções40001 restantes; sem recaptura ou reaplicação.
 - [ ] Revisão da cadeia `rpc_fiscal_draft_save`: `draft_version <> p_expected_version` permite NULL bypass; depende de captura/revisão independente, sem alterar SQL neste recorte.
 
