@@ -1,13 +1,15 @@
 import { expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+const walk = (d: string): string[] => readdirSync(d).flatMap(n => { const p = join(d, n); return statSync(p).isDirectory() ? (p.startsWith("src/test") ? [] : walk(p)) : [p]; });
 import { ATTEMPT_CLOSURE_RPC_ENABLED, parseAttemptClosure } from "@/lib/authz/attemptClosureContract";
 
 const C = "C2_ORDER_ATTEMPT_CLOSURE_V1";
 it("permanece desativado e sem consumidores na aplicação", () => {
   expect(ATTEMPT_CLOSURE_RPC_ENABLED).toBe(false);
-  const users = execSync("rg -l attemptClosureContract src --glob '!src/test/**' || true").toString().trim();
-  expect(users).toBe("src/lib/authz/attemptClosureContract.ts");
+  const users = walk("src").filter(p => /\.(ts|tsx)$/.test(p) && readFileSync(p, "utf8").includes("attemptClosureContract"));
+  expect(users).toEqual([]);
   expect(readFileSync("src/hooks/useCreatePartnerOrder.ts", "utf8")).not.toContain("close_partner_order_attempt_v1");
 });
 it("somente closed libera abandono; committed traz o pedido", () => {
