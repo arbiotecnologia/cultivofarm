@@ -226,6 +226,25 @@ export default function NovoPedido() {
     // Do not clear user edits or authorize a next generation.
     if(durableAttempt.mode==='durable' && ['committed','closed'].includes(durableAttempt.journal?.state??'')) setConfirmOpen(false);
   },[durableAttempt.mode,durableAttempt.journal?.state]);
+  // Confirmação explícita do pedido existente (diálogo React; nunca window.confirm).
+  // Captura key/geração/pedido/slot/escopo ao abrir; confirmar só avança se tudo
+  // ainda coincide. Cancelar/fechar não chama RPC nem altera o carrinho.
+  const [ackTarget,setAckTarget]=useState<{journal:import('@/lib/authz/orderJournal').Journal;slot:string|null;scope:string;fence:()=>boolean}|null>(null);
+  const ackLock=useRef(false);
+  const ackStillValid=(t:NonNullable<typeof ackTarget>)=>{
+    const j=durableAttempt.journal;
+    return t.fence() && pageScope.ready && pageScope.scope===t.scope && attemptSlot===t.slot && durableAttempt.mode==='durable' &&
+      !!j && j.state==='committed' && t.journal.state==='committed' && j.key===t.journal.key && j.generation===t.journal.generation &&
+      j.order_id===t.journal.order_id && j.numero===t.journal.numero;
+  };
+  useEffect(()=>{ if(ackTarget && !ackStillValid(ackTarget)) setAckTarget(null); });
+  const confirmAck=()=>{
+    const t=ackTarget; setAckTarget(null);
+    if(!t || ackLock.current || durableAttempt.pending) return;
+    if(!ackStillValid(t)){ toast.error("O pedido ou o contexto mudou. Nada foi confirmado; verifique novamente."); return; }
+    ackLock.current=true;
+    void durableAttempt.recover(t.journal).finally(()=>{ackLock.current=false;});
+  };
   // Aviso do último resultado de verificação, preso ao slot+chave que o produziu.
   const [closeNote, setCloseNote] = useState<{ slot: string | null; key: string | null; text: string } | null>(null);
 
@@ -652,9 +671,9 @@ export default function NovoPedido() {
               {durableAttempt.journal?.state==='committed' ? <>
                 <span className="block">Pedido {durableAttempt.journal.numero} já registrado. Consulte-o antes de iniciar outro pedido.</span>
                 <Button size="sm" variant="outline" onClick={()=>navigate(afterCreatePath??'/portal-parceiro/pedidos')}>Ver meus pedidos</Button>
-                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>{
+                <Button size="sm" variant="outline" disabled={durableAttempt.pending || !!ackTarget} onClick={()=>{
                   const j=durableAttempt.journal;
-                  if(j?.state==='committed' && window.confirm(`Confirmo que consultei o pedido ${j.numero} e desejo iniciar um novo pedido.`)) void durableAttempt.recover(j);
+                  if(j?.state==='committed' && pageScope.ready) setAckTarget({journal:j,slot:attemptSlot,scope:pageScope.scope,fence:pageScope.capture()});
                 }}>Confirmar pedido existente e iniciar novo</Button>
               </> : durableAttempt.journal?.state==='closed' ? <>
                 <span className="block">Envio anterior encerrado sem pedido. Seu carrinho foi mantido.</span>
