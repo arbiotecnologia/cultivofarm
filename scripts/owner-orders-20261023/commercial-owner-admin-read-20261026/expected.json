@@ -4,16 +4,18 @@
   "captured_in": "disposable PostgreSQL 17.9 (synthetic Auth via GUC; not hosted, not JWT/RLS proof)",
   "functions": {
     "platform_private.c2_commercial_owner_orders_core(text,uuid,timestamptz,timestamptz)": {
-      "body_md5": "7a566ca08dd1a383fbeb400608be1b30",
+      "body_md5": "9d9fdb93f3a9bb098a1941145014c1cf",
       "owner": "postgres",
       "security": "definer",
-      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "search_path": ""
     },
     "public.c2_commercial_owner_orders_projection(text,uuid,timestamptz,timestamptz)": {
       "body_md5": "f0e65bc2546eea58ad5f5510a8a4cc12",
       "owner": "postgres",
       "security": "invoker",
-      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "search_path": ""
     }
   },
   "untouched": {
@@ -27,8 +29,9 @@
   },
   "synthetic_proof": {
     "script": "proof-disposable-pg.sh",
-    "checks": 14,
+    "checks": 17,
     "fails": 0,
-    "notes": "Admin A lista a carteira da própria org; admin B (org estrangeira) recebe lista vazia; externo sem papel interno recebe 42501 actor_not_allowed; org inativa 42501 actor_scope_unavailable; anônimo 42501 auth_required; parceiros inativos/deletados excluídos; rollback guardado por md5 aborta em divergência e remove as 2 funções quando íntegro."
-  }
+    "notes": "v2 (revisão 107e6e05): search_path vazio com nomes qualificados; CREATE sem OR REPLACE com assert transacional de ausência. Admin A lista a carteira da própria org; admin B (org estrangeira) lista vazia; externo sem papel interno 42501 actor_not_allowed; org inativa e perfil revogado 42501 actor_scope_unavailable; anônimo 42501 auth_required; papel misto (admin+externo) resolve pela org do perfil ativo; parceiros inativos/deletados excluídos; rollback guardado por md5 aborta em divergência e remove as 2 funções quando íntegro."
+  },
+  "review": "107e6e05 incorporated: asserts transacionais em PRE/POST, dependências pinadas (has_role md5 05f82a3d57ca71ca6d966fd6c7cf1a1b, profiles.user_id único), policies partner_orders com hashes pinados."
 }
