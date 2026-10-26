@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 26/10 23:42 — RTC CAS aplicado e interface global de serviços
+- [ ] Conciliar implantação RTC informada pelo proprietário sem reaplicar SQL; testar hook real PT409/PT404, rascunho e ausência de retry.
+- [ ] Restringir interface IBS/CBS de serviços à autoridade global existente, sem ampliar acesso; testar revogação/contexto.
+- [ ] Entregar diff e resultados locais; hardening SQL dos serviços e homologação JWT dependem do auditor.
+
 ## 26/10 19:01 — recuperação durável após fechar aba / mesma origem
 - [x] Revisão19:45: predecessor canônico completo em recovery/advance, CAS de geração local dentro IndexedDB; controller antes0/3 depois3/3,46PG,17browser NovoPedido/HTTP controlado; sem limpeza arbitrária/publicação/SQLhosted. Revisão integrada/JWT real continuam pendentes.
 - [x] Integração19:26: React canônico por capability servidor, fallback001b só RPC ausente antesativação; reserva server+IndexedDB/CAS/fences/payload, ACK UUID explícito e close sem avanço.94Vitest/44PG/16audit/17prototypebrowser/14Reactbrowser PASS, sintéticos/controlados; build automáticoOK; SQL inativo e sem publicação.
