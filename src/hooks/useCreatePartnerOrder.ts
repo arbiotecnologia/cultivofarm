@@ -152,7 +152,9 @@ export function useCreatePartnerOrder() {
         },
       ) as typeof response;
       } catch (e) {
-        if (slot) markOrderAttemptUnresolved(slot, input.idempotency_key);
+        // Durable: own local reservation was already released (ownReleased); the
+        // server journal owns the uncertainty. Never decrement another reservation.
+        if (slot && !durable && !ownReleased) markOrderAttemptUnresolved(slot, input.idempotency_key);
         throw e;
       }
       const { data, error } = response;

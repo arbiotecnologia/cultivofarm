@@ -26,7 +26,10 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
     chain.then = (res: (v: unknown) => void, rej?: (e: unknown) => void) => new Promise(r => { entry.resolve = r; state.reads.push(entry); }).then(res, rej);
     return chain;
   },
-  rpc: (name: string, args: unknown) => new Promise(resolve => state.rpc.push({ name, args, resolve })),
+  // Pre-install capability absence (exact PGRST202) keeps the legacy 001b path under test.
+  rpc: (name: string, args: unknown) => name === "partner_order_journal_capability_v1"
+    ? Promise.resolve({ data: null, error: { code: "PGRST202", message: "Could not find public.partner_order_journal_capability_v1" } })
+    : new Promise(resolve => state.rpc.push({ name, args, resolve })),
   channel: (name: string) => {
     state.channels.push(name);
     const ch = { on: (_e: unknown, _f: unknown, h: () => void) => { state.rtHandlers.push(h); return ch; }, subscribe: () => ch };

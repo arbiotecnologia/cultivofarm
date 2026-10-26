@@ -84,3 +84,19 @@ it('transição legacy→durable no preflight: sucesso não deixa reserva local 
  expect(readOrderAttempt(slot)?.inflight ?? false).toBe(false);
  void gen;
 });
+
+it('durable: rejeição de transporte no create não decrementa outra reserva legacy concorrente',async()=>{
+ const P=partner();
+ state.rpc.mockImplementation((x:string)=>{
+  if(x==='partner_order_journal_capability_v1')return Promise.resolve({data:{contract,enabled:true,actor_id:A,organization_id:O,partner_id:P},error:null});
+  if(x==='recover_partner_order_attempt_v1')return Promise.resolve({data:{contract,key:K,generation:1,state:'uncertain'},error:null});
+  if(x==='create_partner_order_secure')return Promise.reject(new Error('Failed to fetch'));
+  return Promise.reject(Error('unexpected '+x));
+ });
+ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:wrapper()}); const slot=h.result.current.slotFor(P)!;
+ reserve(slot); reserve(slot);                       // outra reserva legacy da mesma key1 em voo
+ await act(async()=>{await expect(h.result.current.mutateAsync(mk(P,slot))).rejects.toThrow('Failed to fetch');});
+ expect(creates().map(c=>(c[1] as {p_idempotency_key:string}).p_idempotency_key)).toEqual([K]);
+ expect(readOrderAttempt(slot)?.inflight).toBe(true);
+ expect(readOrderAttempt(slot)?.key).toBe('key1');
+});
