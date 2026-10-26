@@ -139,7 +139,7 @@ ok(f'candidate under contention fails with lock_timeout 55P03 in bounded time ({
    first_error(ec).startswith('ERROR:  55P03: canceling statement due to lock timeout') and 4.5 <= dt < 9)
 ok('timed-out candidate installed nothing (atomic)', q("SELECT to_regclass('platform_private.partner_order_idempotency_closures') IS NULL") == 't' and pmd5(CREATE) == PINS['create_prosrc_md5']
    and q("SELECT count(*) FROM pg_trigger WHERE tgname='c2_attempt_closure_guard'") == '0')
-o, e = done(hold_cr); ok('authorized create holding the table committed normally', '"numero"' in o and orders() == str(int(st0[0]) + 1))
+o, e = done(hold_cr); print("HOLD_CR", o[-300:], e[-300:], flush=True); ok('authorized create holding the table committed normally', '"numero"' in o and orders() == str(int(st0[0]) + 1))
 
 # ======================= 1) Rollout: create ANTIGO em voo antes do lock ====================
 instrument(True)
