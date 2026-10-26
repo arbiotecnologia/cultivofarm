@@ -30,14 +30,15 @@ describe("serviço global — página real com leitores simulados", () => {
     s.role = "superadmin"; render(<FiscalServicos />);
     expect(screen.queryByRole("button", { name: "Novo perfil fiscal de serviço" })).toBeNull();
   });
-  it("retirada da autoridade em tela aberta remove confirmação de escrita", () => {
-    s.role = "superadmin"; s.write = true;
+  it("capacidade isolada não concede edição a admin; troca para plataforma preserva bloqueio da rota", () => {
+    s.role = "administrador"; s.write = true;
     const h = render(<FiscalServicos />);
-    fireEvent.click(screen.getByRole("button", { name: "Editar perfil fiscal SERV-A" }));
-    expect(screen.getByRole("button", { name: /^Salvar$/ })).toBeInTheDocument();
-    s.role = "financeiro"; s.write = false; h.rerender(<FiscalServicos />);
+    fireEvent.click(screen.getByRole("button", { name: "Ver perfil fiscal SERV-A" }));
     expect(screen.queryByRole("button", { name: /^Salvar$/ })).toBeNull();
     expect(s.card).toHaveBeenLastCalledWith({ kind: "service_profile", itemId: "profile", canEdit: false });
+    s.role = "superadmin"; h.rerender(<FiscalServicos />);
+    expect(screen.getByTestId("fiscal-servicos-forbidden")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Salvar$/ })).toBeNull();
     expect(s.save).not.toHaveBeenCalled();
   });
 });

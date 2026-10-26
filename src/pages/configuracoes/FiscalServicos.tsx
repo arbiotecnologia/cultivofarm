@@ -79,7 +79,7 @@ export default function FiscalServicos() {
   const { role } = useAuth();
   const access = getAccessLevel(role, "/configuracoes/fiscal/servicos");
   const fiscalAccess = useProductFiscalAccess("service-fiscal-editor");
-  const canEdit = access === "rw" && fiscalAccess.canWrite;
+  const canEdit = role === "superadmin" && access === "rw" && fiscalAccess.canWrite;
   const uiEnabled = FEATURE_FLAGS.fiscalServiceProfilesUi === true;
   const emissionLock = FEATURE_FLAGS.fiscalEmissionEnabled === false;
 
