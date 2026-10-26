@@ -1,0 +1,17 @@
+PASS committed never regresses to uncertain
+PASS committed never switches to another terminal
+PASS closed never regresses to uncertain
+PASS closed never switches to another terminal
+PASS canonical closed never dispatches
+PASS canonical committed never dispatches
+PASS canonical unknown never dispatches
+PASS canonical in_progress never dispatches
+PASS 36 hyphens rejected UUID
+PASS canonical missing contract rejected
+PASS committed incomplete metadata rejected
+PASS authorized full uncertain schema allows same key
+PASS revoked after RPC blocks dispatch
+PASS new generation cannot bypass unresolved predecessor
+PASS terminal predecessor permits new key, old generation cannot erase it
+PASS same generation conflicting key rejected transactionally
+TOTAL 16 PASS 0 FAIL
