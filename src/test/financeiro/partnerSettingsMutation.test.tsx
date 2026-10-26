@@ -128,3 +128,16 @@ describe("P1 RPC promovida — SDK simulado, NÃO JWT/RLS hosted", () => {
     });
   }
 });
+describe("c2_business_conflicts_http409_20261026 — PT409 em settings (SDK simulado)", () => {
+  it("PT409 vira settings_conflict, 1 RPC, sem auto-retry nem cache adotado; tenant B não alcança RPC", async () => {
+    state.rpcError = { code: "PT409", message: "c2p1_settings_conflict" };
+    const { hook, client } = setup(); const baseline = row();
+    await act(async () => { await expect(hook.result.current.mutation.mutateAsync({ draft: { ...baseline, payment_terms_days: 9 }, baseline })).rejects.toThrow("settings_conflict"); });
+    expect(state.operations.filter(op => op.table === "rpc_update_partner_financial_settings")).toHaveLength(1);
+    expect(client.getQueryData(["pfs", "P", "A"])).toBeUndefined();
+    state.operations = []; state.org = "B";
+    await act(async () => { await expect(hook.result.current.mutation.mutateAsync({ draft: baseline, baseline })).rejects.toThrow(); });
+    expect(state.operations.some(op => op.table === "rpc_update_partner_financial_settings")).toBe(false);
+    hook.unmount(); client.clear();
+  });
+});
