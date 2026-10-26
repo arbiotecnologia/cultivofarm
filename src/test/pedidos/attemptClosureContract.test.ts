@@ -9,7 +9,7 @@ const C = "C2_ORDER_ATTEMPT_CLOSURE_V1";
 it("consumido somente pelo hook de verificação por clique; create nunca chama close", () => {
   expect(ATTEMPT_CLOSURE_RPC_ENABLED).toBe(true);
   const users = walk("src").filter(p => /\.(ts|tsx)$/.test(p) && readFileSync(p, "utf8").includes("attemptClosureContract"));
-  expect(users).toEqual(["src/hooks/useCloseOrderAttempt.ts"]);
+  console.log("USERS", users); expect(users).toEqual(["src/hooks/useCloseOrderAttempt.ts"]);
   const rpcUsers = walk("src").filter(p => /\.(ts|tsx)$/.test(p) && readFileSync(p, "utf8").includes("close_partner_order_attempt_v1"));
   expect(rpcUsers).toEqual(["src/hooks/useCloseOrderAttempt.ts"]);
 });

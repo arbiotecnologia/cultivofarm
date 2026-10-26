@@ -201,6 +201,7 @@ it("committed com schema válido: mostra número e navega pelo caminho canônico
   verify();
   await screen.findByText(/PB-001031 já foi registrado/);
   fireEvent.click(screen.getByRole("button", { name: "Ver meus pedidos" }));
+  await new Promise(r => setTimeout(r, 100)); console.log("NAVDBG", document.body.textContent?.slice(0, 400));
   await screen.findByText("Lista de pedidos");
   expect(creates()).toHaveLength(1);
 });
@@ -255,6 +256,7 @@ it("revogação durante a verificação: closed tardio NÃO libera e carrinho ed
   state.revoked = true;
   await act(async () => { d.settle({ data: { contract: C, state: "closed" }, error: null }); });
   state.revoked = false;
+  await new Promise(r => setTimeout(r, 100)); console.log("REVDBG", [...document.querySelectorAll("[role=status],[role=alert]")].map(e => e.textContent).join(" | "));
   await screen.findByText(/Seu acesso mudou durante a verificação/);
   expect(readOrderAttempt(JSON.stringify([state.actor, state.tenant, state.partner]))?.ambiguous).toBe(true);
   await submitAgain();
