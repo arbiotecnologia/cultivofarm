@@ -37,4 +37,20 @@ await test('revoked after RPC blocks dispatch',async()=>{
  await j.adopt('revoked',uncertain,()=>true);let ready=true;
  await assert.rejects(j.beforeDispatch('revoked',uncertain,()=>ready,async()=>{ready=false;return canonical('uncertain')}));
 });
+await test('new generation cannot bypass unresolved predecessor',async()=>{
+ await j.adopt('advance-unresolved',uncertain,()=>true);
+ await assert.rejects(j.adopt('advance-unresolved',{...uncertain,key:'10000000-0000-4000-8000-000000000002',generation:2},()=>true));
+ assert.equal((await j.read('advance-unresolved')).generation,1);
+});
+await test('terminal predecessor permits new key, old generation cannot erase it',async()=>{
+ const s='advance-confirmed';await j.adopt(s,{...uncertain,state:'closed'},()=>true);
+ const next={...uncertain,key:'10000000-0000-4000-8000-000000000002',generation:2};
+ await j.adopt(s,next,()=>true);await assert.rejects(j.adopt(s,{...uncertain,state:'committed'},()=>true));
+ assert.deepEqual(await j.read(s),next);
+});
+await test('same generation conflicting key rejected transactionally',async()=>{
+ await j.adopt('key-conflict',uncertain,()=>true);
+ await assert.rejects(j.adopt('key-conflict',{...uncertain,key:'10000000-0000-4000-8000-000000000002'},()=>true));
+ assert.equal((await j.read('key-conflict')).key,key);
+});
 console.log('TOTAL',passes,'PASS',failures,'FAIL');process.exitCode=failures?1:0;

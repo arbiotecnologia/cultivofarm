@@ -16,7 +16,7 @@ export async function recoverJournal({ enabled = ORDER_JOURNAL_ENABLED, scope, c
 }
 export async function dispatchJournal({ enabled = ORDER_JOURNAL_ENABLED, scope, current, recover, create, expected }) {
  if (!enabled || !current()) throw Error('recovery_disabled_or_context');
- const key = await beforeDispatch(scope,{...expected,schema:1,state:'uncertain'},current,recover);
+ const key = await beforeDispatch(scope,expected,current,recover);
  const result = await create(key);
  if (!current()) throw Error('context_changed');
  return result; // caller still compares full current cart before cleanup/navigation.
