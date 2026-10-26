@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { useStorageAccessScope } from "./useStorageAccessScope";
 import type { CatalogItemTipo } from "./usePartnerCatalog";
 import { orderAccountingState } from "@/lib/orderAccountingState";
+import { useAuth } from "./useAuth";
+import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptSending, markOrderAttemptUnresolved, orderAttemptSlot } from "@/lib/authz/pendingOrderAttempt";
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
 
@@ -47,6 +49,8 @@ export interface CreateOrderInput {
    * carrinho devolvem o pedido já criado; carrinho diferente é recusado.
    */
   idempotency_key: string;
+  /** Slot volátil da tentativa (ator+empresa+papéis+parceiro), obtido de slotFor. */
+  attempt_slot?: string | null;
 }
 
 
@@ -82,8 +86,11 @@ export async function readCreatedOrderAccountingState(orderId: string | undefine
 export function useCreatePartnerOrder() {
   const qc = useQueryClient();
   const scope = useStorageAccessScope("partner-order-mutation");
+  const { user, profile, roles = [] } = useAuth();
+  const slotFor = (partnerId: string | null | undefined) => scope.ready
+    ? orderAttemptSlot({ userId: user?.id, organizationId: profile?.organization_id, roles }, partnerId) : null;
 
-  return useMutation({
+  const mutation = useMutation({
     onMutate: () => ({ current: scope.capture(), identity: scope.scope }),
     mutationFn: async (input: CreateOrderInput) => {
       const current = scope.capture();
@@ -100,7 +107,13 @@ export function useCreatePartnerOrder() {
         volume_ml: i.unidade_pedido === "volume_comercial" ? i.volume_ml ?? null : null,
       }));
 
-      const { data, error } = await supabase.rpc(
+      // A partir daqui o resultado é incerto até resposta conclusiva. O registro
+      // ocorre aqui (não em callbacks) para sobreviver a desmontagem da tela.
+      const slot = input.attempt_slot ?? null;
+      const sending = slot ? markOrderAttemptSending(slot, input.idempotency_key) : null;
+      let response: { data: unknown; error: { message?: string; code?: string } | null };
+      try {
+        response = await supabase.rpc(
         "create_partner_order_secure" as any,
         {
           p_partner_id: input.partner_id,
@@ -113,10 +126,22 @@ export function useCreatePartnerOrder() {
           p_expected_cart_hash: input.expected_cart_hash,
           p_idempotency_key: input.idempotency_key,
         },
-      );
+      ) as typeof response;
+      } catch (e) {
+        if (slot) markOrderAttemptUnresolved(slot, input.idempotency_key);
+        throw e;
+      }
+      const { data, error } = response;
+      const created = data as { id: string; numero: string; total: number } | null;
+      if (slot && sending) {
+        if (!error && created?.id) markOrderAttemptCommitted(slot, input.idempotency_key, { id: created.id, numero: created.numero ?? null });
+        else if (error?.code && !String(error.message ?? "").includes("idempotency_conflict"))
+          markOrderAttemptRejected(slot, input.idempotency_key, sending.wasAmbiguous);
+        else markOrderAttemptUnresolved(slot, input.idempotency_key);
+      }
       if (!current()) throw new Error("Contexto alterado.");
       if (error) throw error;
-      return data as { id: string; numero: string; total: number };
+      return created as { id: string; numero: string; total: number };
     },
 
     onSuccess: async (data, _variables, context) => {
@@ -185,4 +210,5 @@ export function useCreatePartnerOrder() {
       else toast.error(msg || "Erro ao criar pedido");
     },
   });
+  return Object.assign(mutation, { slotFor });
 }
