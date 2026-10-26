@@ -174,13 +174,51 @@ it("contrato não instalado: seção quieta, sem promessa nem erro visível", as
   expect(screen.queryByText("Pedidos da carteira da empresa")).toBeNull();
   expect(state.writes).not.toHaveBeenCalled();
 });
-it("realtime: canal único por escopo sobre partner_orders invalida e relê a carteira sem polling", async () => {
+it("sem realtime: nenhum canal postgres_changes é assinado pelo hook da carteira (RLS negaria os eventos)", async () => {
   mount();
   await screen.findByText("PB-001029");
-  const rt = state.channelCallbacks.filter((c) => c.name.startsWith("commercial-owner-orders-rt-") && c.filter.table === "partner_orders");
-  expect(rt.length).toBe(1);
+  const rt = state.channelCallbacks.filter((c) => c.name.startsWith("commercial-owner-orders-rt-"));
+  expect(rt.length).toBe(0);
+  expect(state.writes).not.toHaveBeenCalled();
+});
+it("lista vazia -> pedido: botão Atualizar visível mesmo vazio e o refresh manual revela o novo pedido", async () => {
+  state.ownerRows = [];
+  mount();
+  await screen.findByText("Nenhum pedido da carteira da empresa no momento.");
+  const refresh = screen.getByRole("button", { name: "Atualizar" });
   const callsBefore = state.rpc.mock.calls.filter(([n]) => n === "c2_commercial_owner_orders_projection").length;
-  rt[0].cb();
-  await waitFor(() => expect(state.rpc.mock.calls.filter(([n]) => n === "c2_commercial_owner_orders_projection").length).toBeGreaterThan(callsBefore));
+  state.ownerRows = [ORDER_ROW];
+  refresh.click();
+  await screen.findByText("PB-001029");
+  expect(state.rpc.mock.calls.filter(([n]) => n === "c2_commercial_owner_orders_projection").length).toBeGreaterThan(callsBefore);
+  expect(state.writes).not.toHaveBeenCalled();
+});
+it("erro de transporte: botão Tentar novamente visível e o refresh manual recupera a lista", async () => {
+  state.rpcMode = "error";
+  mount();
+  await screen.findByText(/Acompanhamento da carteira da empresa indisponível no momento/);
+  const retry = screen.getByRole("button", { name: "Tentar novamente" });
+  state.rpcMode = "allowed";
+  retry.click();
+  await screen.findByText("PB-001029");
+  expect(state.writes).not.toHaveBeenCalled();
+});
+it("revogação durante refresh: resposta atrasada 42501 esconde dados antigos, sem exibir carteira de escopo inválido", async () => {
+  let resolvePending: ((v: unknown) => void) | null = null;
+  mount();
+  await screen.findByText("PB-001029");
+  state.rpc.mockImplementation((name: string) => {
+    if (name === "c2_commercial_owner_orders_projection") {
+      const promise = new Promise((resolve) => { resolvePending = resolve; });
+      return Object.assign(promise, { abortSignal: () => promise });
+    }
+    if (name === "c2_internal_order_entry_capability_v1") return rpcError("PGRST202", "function not found");
+    state.writes(name); throw new Error(`Unexpected RPC: ${name}`);
+  });
+  screen.getByRole("button", { name: "Atualizar" }).click();
+  await waitFor(() => expect(resolvePending).not.toBeNull());
+  resolvePending!({ data: null, error: { code: "42501", message: "actor_not_allowed" } });
+  await waitFor(() => expect(screen.queryByText("PB-001029")).toBeNull());
+  expect(screen.queryByText("Pedidos da carteira da empresa")).toBeNull();
   expect(state.writes).not.toHaveBeenCalled();
 });
