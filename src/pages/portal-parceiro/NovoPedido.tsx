@@ -30,6 +30,7 @@ import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
 import { AddToCartDialog } from "@/components/catalogo/AddToCartDialog";
 import type { CatalogoUnificadoRow } from "@/hooks/useCatalogoUnificado";
 import { brl as fmt } from "@/lib/financial/format";
+import { formatDateDisplay } from "@/lib/date-utils";
 import { PrecoComDesconto } from "@/components/comercial/PrecoComDesconto";
 import { TotaisCarrinho } from "@/components/comercial/TotaisCarrinho";
 import {
@@ -167,17 +168,23 @@ export default function NovoPedido() {
       };
     }
     setCart(next);
+    // A data desejada é escolha volátil do usuário: restaura só se ainda válida;
+    // uma data vencida/inválida é descartada em vez de enviada silenciosamente.
+    if (draft.requestedDeliveryDate && isDeliveryDateValid(draft.requestedDeliveryDate)) {
+      setRequestedDate(draft.requestedDeliveryDate);
+    }
     if (draft.addItemId) setAddRow(partnerCatalogRows(catalog).find(row => row.id === draft.addItemId) ?? null);
   }, [catalogGestor.isSuccess, catalog, catalogMap, volumes.isSuccess, volumes.data, isSimulationMode, partner?.id, takeSafePartnerOrderDraft]);
   useEffect(() => {
     setSafePartnerOrderDraft?.(!isSimulationMode && partner?.id ? {
       partnerId: partner.id, addItemId: addRow?.id ?? null,
+      requestedDeliveryDate: requestedDate || null,
       items: Object.values(cart).filter(item => item.volume_id && item.quantidade > 0).map(item => ({
         itemId: item.item_id, volumeId: item.volume_id ?? "", quantity: item.quantidade,
       })),
     } : null);
     return () => setSafePartnerOrderDraft?.(null);
-  }, [cart, addRow?.id, isSimulationMode, partner?.id, setSafePartnerOrderDraft]);
+  }, [cart, addRow?.id, requestedDate, isSimulationMode, partner?.id, setSafePartnerOrderDraft]);
   // Favoritos / modelos de pedido
   const saveTemplate = useSaveOrderTemplate();
   const [favOpen, setFavOpen] = useState(false);
@@ -693,8 +700,9 @@ export default function NovoPedido() {
 
             {!isSimulationMode && (
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Data desejada de entrega</label>
+                <label htmlFor="requested-delivery-date" className="text-xs text-muted-foreground">Data desejada de entrega</label>
                 <Input
+                  id="requested-delivery-date"
                   type="date"
                   value={requestedDate}
                   onChange={(e) => setRequestedDate(e.target.value)}
@@ -855,6 +863,14 @@ export default function NovoPedido() {
               <div className="text-xs text-muted-foreground">Parceiro</div>
               <div className="font-medium">{partner?.razao_social}</div>
             </div>
+            {!isSimulationMode && (
+              <div>
+                <div className="text-xs text-muted-foreground">Data desejada de entrega</div>
+                <div className="font-medium" data-testid="resumo-requested-delivery-date">
+                  {requestedDate ? formatDateDisplay(requestedDate) : "Não informada"}
+                </div>
+              </div>
+            )}
             <div className="border rounded-md divide-y">
               {cartList.map((i) => (
                 <div key={i.key} className="p-2 flex justify-between gap-2 items-start">
