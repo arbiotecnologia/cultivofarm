@@ -102,10 +102,13 @@ export async function prepareDurableOrder(slot: string, partner: string, current
  await persistJournal(slot,j,current,undefined,digest);
  return j;
 }
-export async function closeDurableOrder(slot: string, partner: string, current: () => boolean) {
+export async function closeDurableOrder(slot: string, partner: string, current: () => boolean,
+ close: (key: string) => Promise<{error: unknown}>) {
  const j=await recoverOrderJournal(slot,partner,current);
  if (j.state==='committed' || j.state==='closed') return j;
- const r=await rpc('close_partner_order_attempt_v1',{p_partner_id:partner,p_idempotency_key:j.key},current);
+ currentOrThrow(current);
+ const r=await close(j.key);
+ currentOrThrow(current);
  if (r.error) throw Error('journal_closure_unavailable');
  // Canonical recovery validates full state/UUID and persists terminal state; close never advances.
  return recoverOrderJournal(slot,partner,current);

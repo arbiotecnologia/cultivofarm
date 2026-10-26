@@ -53,9 +53,10 @@ it('unknown/failed capability never falls back, even when legacy memory key is p
  await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow('journal_capability_unavailable');});expect(creates).toEqual([]);
 });
 it('exact absent RPC before activation preserves 001b, not network failure',async()=>{
- const legacySlot=JSON.stringify([A,O,P]);
+ const legacyPartner='77777777-7777-4777-8777-777777777777';
+ const legacySlot=JSON.stringify([A,O,legacyPartner]);
  state.rpc.mockResolvedValue({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
- expect(await journalCapability(legacySlot,P,()=>true)).toBe(false);
+ expect(await journalCapability(legacySlot,legacyPartner,()=>true)).toBe(false);
 });
 it('activated slot can never downgrade on missing RPC',async()=>{
  await journalCapability(slot,P,()=>true);

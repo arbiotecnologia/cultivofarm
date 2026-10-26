@@ -229,11 +229,8 @@ core='platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uu
 wrap='public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'
 capcore='platform_private.c2_order_journal_capability(uuid)'
 capwrap='public.partner_order_journal_capability_v1(uuid)'
-private+=['c2_order_journal_capability(uuid)']
 for s in [capcore,capwrap]:
  ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\nGRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
-# Capability core is separately authorized, just like recovery core.
-private.remove('c2_order_journal_capability(uuid)')
 for s in ['platform_private.'+x for x in private]+[core,wrap]:
  ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\n'
 for s in [core,wrap]: ddl+=f'GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
@@ -314,7 +311,7 @@ BEGIN RAISE EXCEPTION 'C2DJ_WRITER_CONTAINED' USING ERRCODE='42501'; END $functi
 rb=header+'-- DENY ONLY, never downgrade to memory-only writer.\nBEGIN;\n'+timeouts+boundary+post+deny
 for s in [core,wrap,capcore,capwrap]: rb+=f'REVOKE EXECUTE ON FUNCTION {s} FROM authenticated;\n'
 deny_md5=hashlib.md5(deny.split('AS $function$')[1].split('$function$;')[0].encode()).hexdigest()
-rb+=f"DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM '{deny_md5}' OR has_function_privilege('authenticated','{wrap}','EXECUTE') OR has_function_privilege('authenticated','{core}','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;\nCOMMIT;\n"
+rb+=f"DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM '{deny_md5}' OR has_function_privilege('authenticated','{wrap}','EXECUTE') OR has_function_privilege('authenticated','{core}','EXECUTE') OR has_function_privilege('authenticated','{capwrap}','EXECUTE') OR has_function_privilege('authenticated','{capcore}','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;\nCOMMIT;\n"
 (D/'rollback.sql.review').write_text(rb)
 (D/'expected.json').write_text(json.dumps({'base_source':'READ ONLY canonical swzpzcwiasxmjutrmvkm, 2026-10-26 19:12+; bodies corroborated against reviewed 5cd','poi_structure_md5':'3c5afe617195db177fe831c877473258','base':exp,'candidate':funcs,'containment_guard':deny_md5},indent=2)+'\n')
 print('Generated inactive candidate; bounded atomic boundary and exact legacy pins. Functions:',len(funcs))

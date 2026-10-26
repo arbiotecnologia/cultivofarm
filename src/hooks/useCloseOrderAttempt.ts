@@ -42,7 +42,8 @@ export function useCloseOrderAttempt() {
     try {
       if (await journalCapability(slot,partnerId,durableFence)) {
         setPending(true);
-        const result=await closeDurableOrder(slot,partnerId,durableFence);
+        const result=await closeDurableOrder(slot,partnerId,durableFence,
+          key=>(supabase.rpc as any)('close_partner_order_attempt_v1',{p_partner_id:partnerId,p_idempotency_key:key}));
         if (!durableFence()) return {kind:'context_changed'};
         if (result.state==='committed' && result.order_id && result.numero) return {kind:'committed',orderId:result.order_id,numero:result.numero};
         return {kind:result.state==='closed'?'closed':'unknown'};
