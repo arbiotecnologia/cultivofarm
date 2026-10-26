@@ -5,7 +5,7 @@ import { useFiscalRtcCompany, useFiscalRtcItem } from "@/hooks/useFiscalRtc";
 const s = vi.hoisted(() => ({ rpc: vi.fn(), actor: "A", org: "OA", roles: ["administrador"], ready: true, epoch: 0 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...args: unknown[]) => s.rpc(...args) } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: s.actor }, session: { user: { id: s.actor } }, profile: { id: s.actor, user_id: s.actor, organization_id: s.org, ativo: true, senha_provisoria: false }, roles: s.roles, loading: false, error: null, authzReady: s.ready, authzEpoch: s.epoch, checkAuthzAccess: () => s.ready }) }));
-const configuration = { schema_version: 1, rtc_environment: "HOMOLOGATION" };
+const configuration = { schema_version: 1, rtc_environment: "HOMOLOGATION" } as const;
 const envelope = { configuration, revision: "2026-10-26T23:00:00.000001Z", exists: true };
 const changed = { ...configuration, rtc_environment: "NOT_CONFIGURED" } as const;
 
