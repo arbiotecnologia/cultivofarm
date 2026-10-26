@@ -6,7 +6,7 @@ import json, subprocess, sys, time, hashlib
 D = Path(__file__).resolve().parent
 AP = D.parent / 'accounting-pending-request-20261024' / 'test-local.py'
 src = AP.read_text()
-setup = src[:src.index('c0=counts()')]
+setup = src[:src.index("r1=json.loads(val(G,create(P,'pend-1'")]
 G0 = {'__file__': str(AP), '__name__': 'harness'}
 exec(compile(setup, str(AP), 'exec'), G0)
 pg, ok, val, actor, snapshot, create, jwt = (G0[k] for k in ('pg', 'ok', 'val', 'actor', 'snapshot', 'create', 'jwt'))
