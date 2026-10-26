@@ -48,6 +48,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
 
 import Layout from "@/pages/portal-parceiro/PortalParceiroLayout";
 import NovoPedido from "@/pages/portal-parceiro/NovoPedido";
+import { recoverOrderJournal } from "@/lib/authz/orderJournal";
 import { EntitlementOutlet } from "@/components/guards/EntitlementOutlet";
 import { B2BRouteGuard } from "@/components/guards/B2BRouteGuard";
 
@@ -109,9 +110,15 @@ beforeEach(() => {
   });
 });
 afterEach(cleanup);
+let client!: QueryClient;
+const tree=()=><QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Routes>
+    <Route path="/portal-parceiro" element={<B2BRouteGuard><Layout /></B2BRouteGuard>}>
+      <Route element={<EntitlementOutlet />}><Route path="catalogo" element={<NovoPedido />} /></Route>
+      <Route path="pedidos" element={<p>Lista de pedidos</p>} />
+    </Route><Route path="/sem-permissao" element={<p>Negado</p>} />
+  </Routes></MemoryRouter></QueryClientProvider>;
 function mount() {
-  void 0;
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/portal-parceiro/catalogo"]}><Routes>
     <Route path="/portal-parceiro" element={<B2BRouteGuard><Layout /></B2BRouteGuard>}>
       <Route element={<EntitlementOutlet />}><Route path="catalogo" element={<NovoPedido />} /></Route>
@@ -167,30 +174,39 @@ it('duplo clique em confirmar avança uma única vez com key/geração/pedido ca
   const ok=screen.getByRole('button',{name:'Confirmar e iniciar novo'});
   fireEvent.click(ok); fireEvent.click(ok);
   await waitFor(()=>expect(advances()).toHaveLength(1));
-  fireEvent.click(await ackBtn()).valueOf();
-  await act(async()=>{release(); await Promise.resolve();});
+    await act(async()=>{release(); await Promise.resolve();});
   await waitFor(()=>expect(screen.queryByRole('button',{name:'Confirmar pedido existente e iniciar novo'})).toBeNull());
   expect(advances()).toHaveLength(1);
   expect(advances()[0]).toMatchObject({p_expected_key:K1,p_expected_generation:1,p_ack_order:ID1});
 });
-it('estado do servidor muda com o diálogo aberto: não confirma geração errada',async()=>{
+it('estado do servidor muda com o diálogo aberto (outra aba): não confirma geração errada',async()=>{
   mount(); await openDialog();
-  srv={key:K2,gen:2,order:'77777777-7777-4777-8777-777777777777',numero:'PB-001034'};
-  fireEvent.click(screen.getByRole('button',{name:'Verificar envio anterior'}).valueOf? screen.getByRole('button',{name:'Ver meus pedidos'}) : screen.getByRole('button',{name:'Ver meus pedidos'}));
-  // Releitura explícita pelo controlador real altera a geração observada.
-  await act(async()=>{ window.dispatchEvent(new Event('focus')); });
-  await waitFor(()=>expect(screen.queryByRole('alertdialog')).toBeNull(),{timeout:3000}).catch(()=>{});
-  const ok=screen.queryByRole('button',{name:'Confirmar e iniciar novo'});
-  if(ok) fireEvent.click(ok);
-  expect(advances().every(a=>a.p_expected_generation===1&&a.p_expected_key===K1)).toBe(true);
+  const NEXT='77777777-7777-4777-8777-777777777777';
+  srv={key:K2,gen:2,order:NEXT,numero:'PB-001034'};
+  const base=state.rpc.getMockImplementation()!;
+  state.rpc.mockImplementation((n:string,a?:Args)=>n==='recover_partner_order_attempt_v1'&&!a?.p_advance
+    ? Promise.resolve({data:{contract:CT,key:K2,generation:2,state:'committed',order_id:NEXT,numero:'PB-001034',predecessors:[{key:K1,generation:1,state:'committed',order_id:ID1,numero:'PB-001033'}]},error:null})
+    : base(n,a));
+  const ok=screen.getByRole('button',{name:'Confirmar e iniciar novo'});
+  // Releitura do controlador real (como outra aba) com o diálogo aberto.
+  await act(async()=>{ await recoverOrderJournal(JSON.stringify([state.actor,state.tenant,state.partner]),state.partner,()=>true); });
+  await waitFor(()=>expect(screen.queryByRole('alertdialog')).toBeNull());
+  fireEvent.click(ok);
+  await act(async()=>{});
+  expect(advances()).toHaveLength(0);
+  expect(await screen.findByText(/PB-001034/)).toBeTruthy();
+});
+it('revogação/troca de contexto com o diálogo aberto nega o avanço',async()=>{
+  mount(); await openDialog();
+  state.revoked=true;
+  fireEvent.click(screen.getByRole('button',{name:'Confirmar e iniciar novo'}));
+  await act(async()=>{});
+  expect(advances()).toHaveLength(0);
 });
 it('troca de papel com o diálogo aberto fecha sem avançar',async()=>{
   const v=mount(); await openDialog();
   state.roles=['parceiro_b2b','tecnico'];
-  v.rerender(v.container.firstChild as never);
-  await act(async()=>{});
-  const ok=screen.queryByRole('button',{name:'Confirmar e iniciar novo'});
-  if(ok) fireEvent.click(ok);
-  await act(async()=>{});
+  v.rerender(tree());
+  await waitFor(()=>expect(screen.queryByRole('alertdialog')).toBeNull());
   expect(advances()).toHaveLength(0);
 });
