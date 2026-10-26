@@ -78,15 +78,15 @@ def bg(u, sql, name, hold=None, end='COMMIT', extra=''):
     pre_ = f"\\set VERBOSITY verbose\nSET application_name='{name}';\nBEGIN;\n{extra}" + (f"SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwtc(u)}',true);\n" if u else '')
     body = pre_ + sql + ";\n" + (f"SELECT 'HOLDING'; SELECT pg_sleep({hold});\n" if hold else '') + f"{end};\n"
     p = subprocess.Popen(pg.psql(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    p.stdin.write(body); p.stdin.close()
+    p.stdin.write(body); p.stdin.close(); p._pre = ''
     if hold:
         while True:
-            line = p.stdout.readline()
+            line = p.stdout.readline(); p._pre += line
             if 'HOLDING' in line: break
             if not line: raise AssertionError(p.stderr.read())
     return p
 def done(p):
-    out, er = p.stdout.read(), p.stderr.read(); p.wait(timeout=60); return out, er
+    out, er = p.stdout.read(), p.stderr.read(); p.wait(timeout=60); return p._pre + out, er
 def waiting(name, event='advisory'):
     for _ in range(120):
         if q(f"SELECT count(*) FROM pg_stat_activity WHERE application_name='{name}' AND wait_event_type='Lock'" + (f" AND wait_event='{event}'" if event else '')) == '1': return True
@@ -139,7 +139,7 @@ ok(f'candidate under contention fails with lock_timeout 55P03 in bounded time ({
    first_error(ec).startswith('ERROR:  55P03: canceling statement due to lock timeout') and 4.5 <= dt < 9)
 ok('timed-out candidate installed nothing (atomic)', q("SELECT to_regclass('platform_private.partner_order_idempotency_closures') IS NULL") == 't' and pmd5(CREATE) == PINS['create_prosrc_md5']
    and q("SELECT count(*) FROM pg_trigger WHERE tgname='c2_attempt_closure_guard'") == '0')
-o, e = done(hold_cr); print("HOLD_CR", o[-300:], e[-300:], flush=True); ok('authorized create holding the table committed normally', '"numero"' in o and orders() == str(int(st0[0]) + 1))
+o, e = done(hold_cr); ok('authorized create holding the table committed normally', '"numero"' in o and orders() == str(int(st0[0]) + 1))
 
 # ======================= 1) Rollout: create ANTIGO em voo antes do lock ====================
 instrument(True)
