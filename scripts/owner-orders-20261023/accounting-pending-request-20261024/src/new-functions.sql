@@ -46,7 +46,10 @@ BEGIN
           OR (NEW.status=OLD.status AND OLD.status::text='aguardando_aprovacao_credito'))
      OR (OLD.status::text='aguardando_aprovacao_credito' AND NEW.status::text IN ('em_analise_comercial','aguardando_cotacao'))
      OR NEW.ready_for_production IS TRUE OR NEW.receivable_generated IS TRUE OR NEW.internal_economic_snapshot IS NOT NULL
-     OR NEW.credit_approved_at IS DISTINCT FROM OLD.credit_approved_at OR NEW.approved_at IS DISTINCT FROM OLD.approved_at THEN
+     OR NEW.credit_approved_at IS DISTINCT FROM OLD.credit_approved_at OR NEW.approved_at IS DISTINCT FROM OLD.approved_at
+     -- review e1e9aa2f: no credit/financial decision field may advance by any privileged path while pending.
+     OR NEW.credit_approved_by IS DISTINCT FROM OLD.credit_approved_by OR NEW.credit_approval_notes IS DISTINCT FROM OLD.credit_approval_notes
+     OR NEW.approved_by IS DISTINCT FROM OLD.approved_by OR NEW.financial_approval_status IS DISTINCT FROM OLD.financial_approval_status THEN
    RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501';
   END IF;
  END IF;

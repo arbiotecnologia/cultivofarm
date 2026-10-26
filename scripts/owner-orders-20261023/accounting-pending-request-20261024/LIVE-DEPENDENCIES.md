@@ -34,11 +34,11 @@ COMMIT;
 ```
 Se `false`, o pacote NÃO deve conceder USAGE por conta própria; trazer o resultado para revisão (a promoção ficaria indisponível, não insegura).
 
-## Lock de crédito — dependência não capturada (revisão 8cad/38)
-`public.approve_b2b_credit` também decide crédito e não consta da captura. Consulta READ ONLY:
+## Lock de crédito — inventário (revisão e1e9aa2f)
+Capturado READ ONLY: `public.approve_b2b_credit(uuid,text)` md5 `1d5ba930634e165750352e9f44fa844f`, owner postgres, ACL `{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}` (`src/live-approve_b2b_credit.sql`).
+Inventário LIVE informado: chave `hashtextextended('b2b_credit:'…,0)` em `tg_partner_orders_credit_guard`, `create_partner_order_secure`, `respond_b2b_order_quote_secure`; `approve_partner_order` usava `hashtext` (corrigido no candidato).
+Não capturado: `respond_b2b_order_quote_secure` (já usa a chave canônica; não alterado) e `approve_b2b_payment_terms_secure` (pode mexer em `partner_order_payment_terms.approval_status`). Consulta READ ONLY:
 ```sql
-SELECT p.oid::regprocedure AS sig, md5(pg_get_functiondef(p.oid)) AS md5, pg_get_userbyid(p.proowner) AS owner, p.proacl::text AS acl,
-       pg_get_functiondef(p.oid) AS definition
-FROM pg_proc p WHERE p.proname IN ('approve_b2b_credit') OR pg_get_functiondef(p.oid) ~ 'b2b_credit:' ORDER BY 1;
+SELECT p.oid::regprocedure, md5(pg_get_functiondef(p.oid)), pg_get_userbyid(p.proowner), p.proacl::text, pg_get_functiondef(p.oid)
+FROM pg_proc p WHERE p.proname IN ('respond_b2b_order_quote_secure','approve_b2b_payment_terms_secure') ORDER BY 1;
 ```
-Se algum corpo usar `hashtext('b2b_credit:'…)` ou decidir exposição sem a chave canônica, precisa entrar no mesmo domínio antes da liberação.

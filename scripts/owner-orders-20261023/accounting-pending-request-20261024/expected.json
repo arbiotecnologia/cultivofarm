@@ -14,9 +14,10 @@
   "platform_private.c2_owner_order_create_allowed(uuid,uuid)": "5f0a08d1d4f8d8c5a7ae58e24c71071e",
   "platform_private.c2_external_origin_contract_valid(jsonb)": "369fd07cd9c659b87941b9a3bf972868",
   "platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)": "05938c5e9abf096d560e57aad10af69f",
-  "platform_private.c2_accounting_pending_guard()": "49ba72a6d607f729dc40179ac9d5d30e",
+  "platform_private.c2_accounting_pending_guard()": "dac77645b64b1a15621ee5ab4e59b93d",
   "platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz)": "68aa322da9dd403beb776cfb333b1e27",
-  "public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)": "3df7e1a806fb080283ad1ebad20d212c"
+  "public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)": "3df7e1a806fb080283ad1ebad20d212c",
+  "public.approve_b2b_credit(uuid,text)": "8127c7b697871fa1eecafa845a551eea"
  },
  "b5_to_candidate": {
   "c79689aa1070534ce43edde279ee5682": "999e5e9fd9887595e252523fb2142726",
