@@ -44,6 +44,12 @@ export function useMyCommercialOrders(partnerId: string | null) {
   }, [client, fence.scope]);
   const result = useQuery({
     queryKey: ["commercial-own-orders", fence.scope], enabled: ready, retry: false,
+    // Produção tem refetchOnMount:false global (App.tsx): sem isto, o cache
+    // invalidado pelo create canônico ficaria stale mas NÃO seria relido ao
+    // voltar para MeusPedidos (leitor desmontado durante o catálogo).
+    // `true` (não "always") relê SOMENTE quando stale — cache fresco não gera
+    // leitura extra; enabled/fence continuam mandando.
+    refetchOnMount: true,
     queryFn: async ({ signal }) => {
       const current = fence.capture();
       const check = () => { if (!current() || signal.aborted) throw new Error("commercial_orders_context_changed"); };
