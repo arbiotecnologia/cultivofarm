@@ -1,0 +1,5 @@
+- Keep this package inactive and outside runtime; IndexedDB cannot establish first-use after total loss, and the installed closure contract cannot discover an unknown key — prevents silent duplicate keys.
+- Continuity uses one server-owned actor/organization/partner slot plus immutable generation history; prepare/recover always precedes create, and only explicit CAS advance after canonical closure or acknowledged commit changes generation — prevents eviction and downgrade bypass.
+- Candidate activation requires audited legacy-key reconciliation and bounded quiescence; old unregistered calls are fenced at idempotency write, but lock-order inversion during rollout remains a deployment gate — prevents claiming drain from CREATE OR REPLACE.
+- Rollback is deny-only on canonical idempotency writes and disables continuity RPCs while preserving all journals, closures and history — prevents downgrade to memory-only duplication.
+- Local PostgreSQL uses the captured create/closure chain with synthetic Auth; browser tests use real IndexedDB with controlled transport, never hosted JWT/RLS certification — prevents false real-session claims.

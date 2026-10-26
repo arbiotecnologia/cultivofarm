@@ -1,0 +1,53 @@
+PASS captured business/authorization/pricing bodies reproduce all MD5s
+PASS LIVE manual correction bodies and private context table reproduce deployed MD5s
+PASS all 44 current order/children/financial triggers installed; actions use origin mode
+PASS catalog ACL equals captured LIVE literal
+PASS LIVE 30dc8243 objects reproduced byte-exact in harness
+PASS captured LIVE dependency md5 1b397fd4 public.fn_b2b_status_is_operational(public.partner_order_status)
+PASS captured LIVE dependency md5 2f1063f0 platform_private.b2b_commercial_context()
+PASS captured LIVE dependency md5 d4936c87 platform_private.c2_order_internal_recipients(uuid)
+PASS captured LIVE dependency md5 70b38109 platform_private.c2_order_partner_recipients(uuid)
+PASS captured LIVE dependency md5 a0417d67 platform_private.c2_owner_order_create_allowed(uuid,uuid)
+PASS captured LIVE approve_b2b_credit md5/ACL reproduced
+PASS captured LIVE public.approve_b2b_payment_terms_secure(uuid,text) md5/ACL reproduced
+PASS captured LIVE public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text) md5/ACL reproduced
+PASS captured LIVE entitlements_for_user md5 matches harness
+PASS captured absent signature really absent in harness reference: fn_resolve_b2b_cart(uuid,jsonb,date)
+PASS b5 structural preflight READ ONLY passes on captured LIVE (writer false)
+PASS candidate failing POST rolls back atomically (writer still false, no overlay)
+PASS candidate installs with owner A NOT validated (no install-time accounting gate)
+PASS 30dc8243 preserved byte-exact after candidate
+PASS restore-live returns exact pre-implantation LIVE bodies and drops column/objects
+PASS restore-live keeps 30dc8243 byte-exact
+PASS preflight passes again after full restore
+PASS candidate re-installs after full restore
+PASS composed postflight READ ONLY passes
+==== attempt-closure-20261026 ====
+PASS harness create equals LIVE prosrc md5 7a634235 and LIVE ACL
+PASS harness c2_order_actor_scope equals LIVE functiondef/ACL
+HARNESS_PIN_SUBSTITUTIONS {}
+HARNESS_POI_INDEXES 
+HARNESS_FIDELITY_FIX LIVE indexes recreated on reduced replica
+==== durable-attempt INACTIVE ====
+PASS BEFORE: lost client memory / independent keys reproduces two orders
+PASS production candidate always blocks missing reconciliation before DDL
+PASS reserve is durable before ANY create
+PASS crash before fetch recovers SAME uncertain key, no absence inference
+PASS explicit CAS advance closes old key before new generation
+PASS late old generation refused atomically
+PASS crash after commit before ack recovers committed same order
+PASS committed without explicit order acknowledgement never creates new generation
+PASS explicit acknowledged committed advances once
+PASS old response / old generation CAS cannot advance current slot
+B_ERROR ERROR:  42501: C2_INTERNAL_TARGET_DENIED:target_outside_portfolio
+PASS B denied before disclose, no writes
+PASS technician singleton denied, no writes
+PASS old/downgraded arbitrary key refused, no order
+PASS two independent prepare callers share SAME reservation
+PASS concurrent canonical create exactly one order
+PASS journal immutable including owner
+PASS revoked authorization cannot recover or advance
+PASS containment retains immutable generations and closures
+PASS contained known-key replay preserves existing order only
+PASS containment/downgrade unknown key cannot create
+TOTAL 20 PASS package; synthetic Auth, no hosted/JWT certification

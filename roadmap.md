@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 26/10 19:01 — recuperação durável após fechar aba / mesma origem
+- [x] Registrar relato independente: 001b3cad publicado, backend 5cd aplicado; A closed/PB001033 único/committed, B 403/42501 target_outside_portfolio. Não repetir operações produtivas.
+- [x] Preparar contrato servidor INATIVO + protótipo IndexedDB fora de runtime: 20 PASS PostgreSQL descartável/Auth sintética, 12 PASS Chromium/IndexedDB real/transporte controlado e 31 PASS regressões publicadas. Saídas e comandos no pacote durable-attempt-20261026.
+- [ ] Ativação NO-GO: captura LIVE integral fresca, reconciliação de chaves legadas 001b e prova de rollout/lock inversion pendentes; hard gate incondicional antes de DDL. Migração memory→journal e interface integrada NÃO implementadas.
+- [ ] Revisão independente, matriz completa/real A/B e eventual instalação/publicação pelo auditor; contabilidade A DRAFT e 36 falhas antigas permanecem abertas.
+
 ## 24/10 15:26 — compra B2B com pendência contábil honesta (pacote INATIVO)
 - [x] `scripts/owner-orders-20261023/accounting-pending-request-20261024/`: rebase sobre LIVE 30dc8243 (scope 54c4327d), trava INSERT/UPDATE, sem oráculo, rollback parcial + restore-live completo condicionado; 67 PASS descartável (Auth sintética). UI mostra contabilidade pendente.
 - [ ] Revisão independente/instalação pelo auditor do pacote acima; teste JWT/RLS real A/B; validação contábil real de A; tela de promoção ainda não existe.
@@ -818,6 +824,5 @@
 - [x] Pacote attempt-closure-20261026: candidate/preflight/postflight/rollback contenção e total-se-vazio; 51 PASS sintéticos.
 - [x] Revisão 457951ca: barreira trigger no caminho de escrita (create antigo em voo), revalidação pós-lock em close/create, negativas SQLSTATE exatas, timeouts em candidate/rollbacks; 89 PASS sintéticos.
 - [x] Backend 5cdaf5d aplicado pelo auditor (b2b_order_attempt_closure_guarded_20261026).
-- [x] Interface: verificar/encerrar por clique em NovoPedido (não publicada), testes de componente/hook.
-- [ ] Homologação real A/B (roteiro HOMOLOGACAO-UI.md) e revisão antes de publicar.
-- [ ] Recarregar/entre abas/origens: pendente de contrato durável fim a fim.
+- [x] Interface publicada 001b3cad e homologação real A/B relatadas pelo proprietário em26/10 19:01; PB001033 único/close closed/committed/B403, sem execução produtiva do agente.
+- [ ] Recuperação após fechar aba/entre abas: pacote INATIVO durable-attempt-20261026, NO-GO pelos gates19:01 acima; entre origens não homologado.
