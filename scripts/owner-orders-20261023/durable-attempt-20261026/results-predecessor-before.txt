@@ -1,0 +1,4 @@
+FAIL explicit advance generation_transition_unconfirmed
+FAIL other tab recovers generation_transition_unconfirmed
+FAIL reopen after lost ACK generation_transition_unconfirmed
+TOTAL 0 PASS 3 FAIL

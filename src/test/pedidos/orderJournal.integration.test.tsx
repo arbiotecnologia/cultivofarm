@@ -27,7 +27,7 @@ beforeEach(()=>{
  state.rpc.mockReset();state.rpc.mockImplementation((name:string,args:Record<string,unknown>)=>{
   if(name==='partner_order_journal_capability_v1')return ok({contract,enabled:true,actor_id:state.actor,organization_id:state.org,partner_id:P});
   if(name==='recover_partner_order_attempt_v1') {
-   if(args.p_advance){if(args.p_expected_generation!==generation || args.p_expected_key!==K || (terminal==='committed' && args.p_ack_order!==ID))return Promise.resolve({data:null,error:{code:'40001'}});generation++;terminal='reserved';return ok({...j(terminal,generation),key:'66666666-6666-4666-8666-666666666666'});}
+   if(args.p_advance){if(args.p_expected_generation!==generation || args.p_expected_key!==K || (terminal==='committed' && args.p_ack_order!==ID))return Promise.resolve({data:null,error:{code:'40001'}});const predecessor={key:K,generation,state:terminal==='committed'?'committed':'closed',...(terminal==='committed'?{order_id:ID,numero:'PB-LOCAL'}:{})};generation++;terminal='reserved';return ok({...j(terminal,generation),key:'66666666-6666-4666-8666-666666666666',predecessors:[predecessor]});}
    return ok(j(terminal,generation));
   }
   if(name==='create_partner_order_secure'){creates.push(String(args.p_idempotency_key));terminal='committed';return ok({id:ID,numero:'PB-LOCAL',total:1});}
@@ -140,5 +140,26 @@ it('close double-click is synchronously single-flight before capability await',a
  const h=renderHook(()=>useCloseOrderAttempt());
  await act(async()=>{await Promise.all([h.result.current.close(P),h.result.current.close(P)]);});
  expect(state.rpc.mock.calls.filter(([n])=>n==='close_partner_order_attempt_v1')).toHaveLength(1);
+});
+it('A uncertain / B closed+advanced / A hook recovers N+1 with authoritative predecessor',async()=>{
+ await persistJournal(slot,j(),()=>true);
+ const next={...j('reserved',2),key:'66666666-6666-4666-8666-666666666666',predecessors:[{key:K,generation:1,state:'closed'}]};
+ state.rpc.mockImplementation((name:string)=>name==='partner_order_journal_capability_v1'?ok({contract,enabled:true,actor_id:A,organization_id:O,partner_id:P}):ok(next));
+ const h=renderHook(()=>useOrderJournal(P));
+ await vi.waitFor(()=>expect(h.result.current.journal?.generation).toBe(2));
+ await expect(persistJournal(slot,j(),()=>true)).rejects.toThrow('journal_stale_response');
+});
+it('reopen after advance ACK loss recovers without deleting uncertain local predecessor',async()=>{
+ await persistJournal(slot,j(),()=>true);
+ const next={...j('uncertain',2),key:'66666666-6666-4666-8666-666666666666',predecessors:[{key:K,generation:1,state:'committed',order_id:ID,numero:'PB-LOCAL'}]};
+ state.rpc.mockResolvedValue({data:next,error:null});
+ expect((await recoverOrderJournal(slot,P,()=>true)).generation).toBe(2);
+ expect((await recoverOrderJournal(slot,P,()=>true)).key).toBe(next.key);
+});
+it.each([undefined,[{key:P,generation:1,state:'closed'}],[{key:K,generation:1,state:'unknown'}]])('missing/foreign/nonterminal proof cannot bypass uncertain cache %#',async(proof)=>{
+ await persistJournal(slot,j(),()=>true);
+ state.rpc.mockResolvedValue({data:{...j('reserved',2),key:P,predecessors:proof},error:null});
+ await expect(recoverOrderJournal(slot,P,()=>true)).rejects.toThrow();
+ await persistJournal(slot,j(),()=>true);
 });
 it.each([null,{}, {contract,key:'-'.repeat(36),generation:1,state:'uncertain'}, {...j('committed'),order_id:undefined}])('strict schema rejects malformed receipt %#',(d)=>expect(()=>parseOrderJournal(d)).toThrow());

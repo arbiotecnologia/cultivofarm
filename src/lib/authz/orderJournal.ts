@@ -2,7 +2,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const JOURNAL_REVISION = 'C2_ORDER_JOURNAL_V1';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-export type Journal = { contract: typeof JOURNAL_REVISION; key: string; generation: number; state: 'reserved' | 'uncertain' | 'closed' | 'committed'; order_id?: string; numero?: string };
+export type Predecessor = {key:string;generation:number;state:'closed'|'committed';order_id?:string;numero?:string};
+export type Journal = { contract: typeof JOURNAL_REVISION; key: string; generation: number; state: 'reserved' | 'uncertain' | 'closed' | 'committed'; order_id?: string; numero?: string; predecessors?:Predecessor[] };
 export function parseOrderJournal(data: unknown): Journal {
  if (!data || typeof data !== 'object' || Array.isArray(data)) throw Error('journal_contract_invalid');
  const d = data as Record<string, unknown>;
@@ -10,7 +11,19 @@ export function parseOrderJournal(data: unknown): Journal {
   typeof d.generation !== 'number' || !Number.isSafeInteger(d.generation) || d.generation < 1 ||
   !['reserved','uncertain','closed','committed'].includes(String(d.state))) throw Error('journal_contract_invalid');
  if (d.state === 'committed' && (typeof d.order_id !== 'string' || !UUID.test(d.order_id) || typeof d.numero !== 'string' || !d.numero.trim())) throw Error('journal_contract_invalid');
+ const predecessors:Predecessor[]=[];
+ if(d.predecessors!==undefined) {
+  if(!Array.isArray(d.predecessors) || d.predecessors.length!==d.generation-1)throw Error('journal_predecessor_invalid');
+  const keys=new Set([d.key]);
+  for(const [index,p] of d.predecessors.entries()) {
+   if(!p || typeof p!=='object' || Array.isArray(p) || typeof p.key!=='string' || !UUID.test(p.key) || keys.has(p.key) ||
+    p.generation!==index+1 || !['closed','committed'].includes(p.state) ||
+    (p.state==='committed' && (typeof p.order_id!=='string' || !UUID.test(p.order_id) || typeof p.numero!=='string' || !p.numero.trim())))throw Error('journal_predecessor_invalid');
+   keys.add(p.key);predecessors.push({key:p.key,generation:p.generation,state:p.state,...(p.state==='committed'?{order_id:p.order_id,numero:p.numero.trim()}:{})});
+  }
+ }
  return { contract: JOURNAL_REVISION, key: d.key, generation: d.generation, state: d.state as Journal['state'],
+  ...(d.predecessors!==undefined?{predecessors}:{}),
   ...(d.state === 'committed' ? { order_id: String(d.order_id), numero: String(d.numero).trim() } : {}) };
 }
 const activated = new Set<string>();
@@ -58,8 +71,9 @@ async function db(): Promise<IDBDatabase> {
  });
 }
 /** Store only opaque key/generation/state and SHA256 scope, never server receipts or payload. */
-export async function persistJournal(slot: string, j: Journal, current: () => boolean, predecessor?: Journal, digest?: string) {
+export async function persistJournal(slot: string, j: Journal, current: () => boolean, _predecessor?: Journal, digest?: string) {
  currentOrThrow(current);
+ j=parseOrderJournal(j);
  const hash = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(slot));
  currentOrThrow(current);
  const key = Array.from(new Uint8Array(hash),n=>n.toString(16).padStart(2,'0')).join('');
@@ -75,8 +89,10 @@ export async function persistJournal(slot: string, j: Journal, current: () => bo
    if (old && (old.schema!==1 || !UUID.test(old.key ?? '') || !Number.isSafeInteger(old.generation) || Number(old.generation)<1 || !['uncertain','closed','committed'].includes(old.state ?? ''))) {problem='journal_storage_corrupt';tx.abort();return;}
    if (old && (Number(old.generation)>j.generation || (old.generation===j.generation &&
     (old.key!==j.key || (old.state!=='uncertain' && old.state!==state))))) {problem='journal_stale_response';tx.abort();return;}
-   if (old && Number(old.generation)<j.generation && old.state==='uncertain' &&
-    !(predecessor && predecessor.key===old.key && predecessor.generation===old.generation && ['closed','committed'].includes(predecessor.state))) {problem='journal_predecessor_unconfirmed';tx.abort();return;}
+   if(old && Number(old.generation)<j.generation) {
+    const proof=j.predecessors?.find(p=>p.key===old.key && p.generation===old.generation);
+    if(old.key===j.key || !proof || (old.state!=='uncertain' && old.state!==proof.state)) {problem='journal_predecessor_unconfirmed';tx.abort();return;}
+   }
    if(digest && old?.generation===j.generation && old.digest && old.digest!==digest) {problem='journal_payload_changed';tx.abort();return;}
    store.put({schema:1,key:j.key,generation:j.generation,state,
     ...(digest ? {digest} : old?.generation===j.generation && old.digest ? {digest:old.digest}:{})},key);
@@ -92,6 +108,11 @@ export async function recoverOrderJournal(slot: string, partner: string, current
  if (r.error) throw Error('journal_recovery_unavailable');
  const j=parseOrderJournal(r.data);
  if(advance && (j.generation!==advance.generation+1 || j.key===advance.key || j.state!=='reserved')) throw Error('journal_advance_unconfirmed');
+ if(advance) {
+  const proof=j.predecessors?.find(p=>p.key===advance.key && p.generation===advance.generation);
+  if(!proof || (advance.state==='committed' && (proof.state!=='committed' || proof.order_id!==advance.order_id)) ||
+   (advance.state==='closed' && proof.state!=='closed'))throw Error('journal_advance_unconfirmed');
+ }
  await persistJournal(slot,j,current,advance); return j;
 }
 export async function prepareDurableOrder(slot: string, partner: string, current: () => boolean, digest: string, expected?: Journal) {

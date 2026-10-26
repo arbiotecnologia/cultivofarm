@@ -161,11 +161,22 @@ CREATE FUNCTION platform_private.c2_recover_order_attempt_core(p_partner uuid,p_
  p_expected_generation bigint DEFAULT NULL,p_advance boolean DEFAULT false,p_ack_order uuid DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
 DECLARE uid uuid:=auth.uid(); org uuid; j platform_private.partner_order_attempt_journal;
-  result jsonb; nextgen bigint; nextkey text; fresh uuid;
+  result jsonb; nextgen bigint; nextkey text; fresh uuid; predecessors jsonb;
 BEGIN
  org := platform_private.c2_attempt_scope_lock(uid,p_partner);
  SELECT * INTO j FROM platform_private.partner_order_attempt_journal
  WHERE actor_id=uid AND organization_id=org AND partner_id=p_partner ORDER BY generation DESC LIMIT 1;
+ -- Immutable journal links plus canonical committed receipts/closure tombstones.
+ -- Read only: no inferred closure, no added locks, no client-supplied terminal proof.
+ SELECT coalesce(jsonb_agg(jsonb_build_object('key',h.idempotency_key,'generation',h.generation,
+   'state',CASE WHEN i.order_id IS NOT NULL THEN 'committed' WHEN c.idempotency_key IS NOT NULL THEN 'closed' ELSE 'unknown' END)
+   || CASE WHEN i.order_id IS NOT NULL THEN jsonb_build_object('order_id',i.order_id,'numero',o.numero) ELSE '{}'::jsonb END
+   ORDER BY h.generation),'[]'::jsonb) INTO predecessors
+ FROM platform_private.partner_order_attempt_journal h
+ LEFT JOIN public.partner_order_idempotency i ON i.partner_id=h.partner_id AND i.idempotency_key=h.idempotency_key AND i.created_by=uid
+ LEFT JOIN public.partner_orders o ON o.id=i.order_id
+ LEFT JOIN platform_private.partner_order_idempotency_closures c ON c.partner_id=h.partner_id AND c.idempotency_key=h.idempotency_key
+ WHERE h.actor_id=uid AND h.organization_id=org AND h.partner_id=p_partner AND h.generation<j.generation;
  IF p_advance THEN
   IF j.idempotency_key IS NULL OR p_expected_key IS DISTINCT FROM j.idempotency_key
    OR p_expected_generation IS DISTINCT FROM j.generation THEN
@@ -176,9 +187,10 @@ BEGIN
   IF fresh IS DISTINCT FROM org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
   IF result->>'state'='in_progress' THEN RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','unknown'); END IF;
   IF result->>'state'='committed' AND p_ack_order IS DISTINCT FROM (result->>'order_id')::uuid THEN
-   RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation); END IF;
+   RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation,'predecessors',predecessors); END IF;
   IF result->>'state' NOT IN ('closed','committed') OR result->>'state' IS NULL THEN
    RAISE EXCEPTION 'C2DJ_INVALID_CLOSURE'; END IF;
+  predecessors:=predecessors||jsonb_build_array(result||jsonb_build_object('key',j.idempotency_key,'generation',j.generation));
  ELSIF j.idempotency_key IS NOT NULL THEN
   -- Recovery is read-only with respect to closure; never auto-close an absent order.
   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:'||p_partner::text||':'||j.idempotency_key,0));
@@ -192,7 +204,7 @@ BEGIN
    result := jsonb_build_object('state',CASE WHEN EXISTS(SELECT 1 FROM platform_private.partner_order_idempotency_closures
     WHERE partner_id=p_partner AND idempotency_key=j.idempotency_key) THEN 'closed' ELSE 'uncertain' END);
   END IF;
-  RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation);
+  RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation,'predecessors',predecessors);
  ELSIF p_expected_key IS NOT NULL OR p_expected_generation IS NOT NULL THEN
   -- Lost legacy memory cannot be adopted by mere key knowledge.
   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501';
@@ -203,7 +215,7 @@ BEGIN
   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501'; END IF;
  INSERT INTO platform_private.partner_order_attempt_journal(actor_id,organization_id,partner_id,generation,idempotency_key,predecessor_key)
  VALUES(uid,org,p_partner,nextgen,nextkey,j.idempotency_key);
- RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen);
+ RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen,'predecessors',predecessors);
 END $function$;
 
 CREATE FUNCTION public.recover_partner_order_attempt_v1(p_partner uuid,p_expected_key text DEFAULT NULL,

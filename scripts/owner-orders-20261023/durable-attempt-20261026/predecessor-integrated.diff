@@ -1,0 +1,1058 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index adaddee7..d42a25f4 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -62,4 +62,5 @@
+ - Manual financial installment creation follows scripts/financial-installments-initial-20261024/AGENTS.md; custom schedules are validated and inserted once through server-private transaction context, never post-insert snapshot edits — preserves immutability.
+ - Order entry guidance consumes existing layout capability/entitlement gates and links only to the canonical partner catalogue; commercial analysis never impersonates a buyer or mounts a new sale writer — clarifies access without activating contained operations.
+ - Commercial internal order entry follows scripts/commercial-order-entry-20261024/AGENTS.md; UI stays closed until an installed server capability lists in-scope partners — prevents fake sale writers and URL-derived scope.
+-- Durable order recovery follows scripts/owner-orders-20261023/durable-attempt-20261026/AGENTS.md; local storage never proves first-use after total loss, and uninstalled continuity contracts stay outside runtime — prevents eviction/downgrade duplicates.
++- Durable order recovery follows its review-directory rules; React probes the server capability and keeps legacy dispatch only on exact pre-install RPC absence, while active continuity always reserves server keys and persists CAS before dispatch — prevents eviction/downgrade duplicates without installing SQL automatically.
++- Cross-generation order recovery follows the durable review-directory predecessor-chain rules; local expectations cannot authorize a jump — prevents stale uncertain cache deadends without weakening terminal CAS.
+diff --git a/roadmap.md b/roadmap.md
+index efb79694..50acf671 100644
+--- a/roadmap.md
++++ b/roadmap.md
+@@ -1,11 +1,13 @@
+ # F2-B — auditoria e preparação revisável
+ 
+ ## 26/10 19:01 — recuperação durável após fechar aba / mesma origem
++- [x] Revisão19:45: predecessor canônico completo em recovery/advance, CAS de geração local dentro IndexedDB; controller antes0/3 depois3/3,46PG,17browser NovoPedido/HTTP controlado; sem limpeza arbitrária/publicação/SQLhosted. Revisão integrada/JWT real continuam pendentes.
++- [x] Integração19:26: React canônico por capability servidor, fallback001b só RPC ausente antesativação; reserva server+IndexedDB/CAS/fences/payload, ACK UUID explícito e close sem avanço.94Vitest/44PG/16audit/17prototypebrowser/14Reactbrowser PASS, sintéticos/controlados; build automáticoOK; SQL inativo e sem publicação.
+ - [x] Complemento19:24: arquivo exato antes2PASS/11FAIL Node22+fakeIndexedDB; depois schema UUID estrito, CAS monotônico, terminais não despacham;17 browser PASS; candidato INATIVO, provas locks preservadas. Auditoria local citada pelo proprietário não está neste checkout.
+ - [x] Revisão065f8633: barreira sem lockescopo, fronteira bounded+import última committed semACK, pins LIVE READ ONLY, ACK/CAS/40P01 antes/depois/rollout/revogação/tenant/POST/contenção; 44 PostgreSQL +15 browser +31 componentes PASS, sintéticos/controlados; sem aplicar/publicar.
+ - [x] Registrar relato independente: 001b3cad publicado, backend 5cd aplicado; A closed/PB001033 único/committed, B 403/42501 target_outside_portfolio. Não repetir operações produtivas.
+ - [x] Preparar contrato servidor INATIVO + protótipo IndexedDB fora de runtime: 20 PASS PostgreSQL descartável/Auth sintética, 12 PASS Chromium/IndexedDB real/transporte controlado e 31 PASS regressões publicadas. Saídas e comandos no pacote durable-attempt-20261026.
+-- [ ] Revisão/implantação independente do candidato com pins+importação atômica; integração React de recovery após instalação e provas JWT/abas reais pendentes. Feature OFF, sem hardgate impossível; versões antigas não recarregadas e chaves desconhecidas negadas pela candidata.
++- [ ] Revisão/implantação coordenada do candidato com pins+importação atômica+capability; frontend preparado, provas JWT/abas produtivas dependem do auditor. SQL inativo, sem hardgate impossível; versões antigas não recarregadas e chaves desconhecidas negadas pela candidata. Suíte externa40testes não disponível no checkout.
+ - [ ] Revisão independente, matriz completa/real A/B e eventual instalação/publicação pelo auditor; contabilidade A DRAFT e 36 falhas antigas permanecem abertas.
+ 
+ ## 24/10 15:26 — compra B2B com pendência contábil honesta (pacote INATIVO)
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/AGENTS.md b/scripts/owner-orders-20261023/durable-attempt-20261026/AGENTS.md
+index 4e6cb7f4..4798a841 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/AGENTS.md
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/AGENTS.md
+@@ -1,6 +1,7 @@
+-- Keep this package inactive and outside runtime; IndexedDB cannot establish first-use after total loss, and the installed closure contract cannot discover an unknown key — prevents silent duplicate keys.
++- Keep SQL inactive pending coordinated installation; existing React order hooks may probe the reviewed server capability, and only exact pre-install absence preserves legacy behavior — prevents partial server activation from blocking old clients silently.
+ - Continuity uses one server-owned actor/organization/partner slot plus immutable generation history; prepare/recover always precedes create, and only explicit CAS advance after canonical closure or acknowledged commit changes generation — prevents eviction and downgrade bypass.
+ - Candidate activation pins audited legacy rows, imports their latest unacknowledged commit under bounded idempotency-table and order-table locks; the write barrier never takes scope and rejects unregistered keys first — prevents old-body lock inversion without pretending CREATE OR REPLACE drains calls.
+ - Rollback is deny-only on canonical idempotency writes and disables continuity RPCs while preserving all journals, closures and history — prevents downgrade to memory-only duplication.
+ - Local PostgreSQL uses the captured create/closure chain with synthetic Auth; browser tests use real IndexedDB with controlled transport, never hosted JWT/RLS certification — prevents false real-session claims.
+-- Local journal transitions are monotonic within each generation, terminal conflicts abort, and dispatch requires a fresh strictly parsed canonical nonterminal reply plus matching local CAS — prevents stale terminal regression and malformed/closed dispatch.
+\ No newline at end of file
++- Local journal transitions are monotonic within each generation, terminal conflicts abort, and dispatch requires a fresh strictly parsed canonical nonterminal reply plus matching local CAS — prevents stale terminal regression and malformed/closed dispatch.
++- Cross-generation recovery requires the authenticated immutable predecessor chain matched inside the IndexedDB CAS; client expectations alone never prove closure — prevents permanent stale-cache deadends without allowing old responses to regress.
+\ No newline at end of file
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/README.md b/scripts/owner-orders-20261023/durable-attempt-20261026/README.md
+index 7c3ff13e..6b2a849a 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/README.md
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/README.md
+@@ -1,5 +1,65 @@
+ # Continuidade durável — candidato corrigido, INATIVO
+ 
++## Revisão c7a7 — predecessor canônico / CAS entre gerações
++
++Reproduzido diretamente no controller: antes **0 PASS / 3 FAIL**, depois **3 PASS**
++para avanço explícito, recuperação por outra aba e reabertura após ACK perdido.
++O core candidato agora retorna `predecessors`: histórico terminal ordenado desde geração1,
++derivado apenas do journal imutável e dos recibos/tombstones canônicos do mesmo ator/empresa/parceiro.
++Avanço usa o fechamento validado do expected key; recovery não fecha nada nem infere ACK.
++O parser exige UUIDs estritos únicos, sequência completa e committed com UUID/numero;
++CAS IndexedDB compara o predecessor da geração local dentro da mesma transação.
++Só então instala a geração atual; prova não é persistida, apenas key/generation/state/digest.
++Resposta velha, terminal conflitante, prova ausente/foreign/unknown e mudança de contexto continuam negadas.
++Expectativa do cliente, permissões e limpeza arbitrária do storage não substituem essa prova.
++
++Backend9d4 anterior permanece sem instalação: esta extensão precisa revisão integrada e implantação coordenada.
++PRE base LIVE intacto; POST/rollback regenerados com core MD5 `81058861e8a72bc3b45401ba9893cb72`.
++Barreiras/create/close/locks/ACL não ampliados; rollback mantém contenção deny-only.
++Provas:46 checks PostgreSQL descartável/Auth sintética;17 Chromium com NovoPedido/hook/HTTP controlado,
++incluindo A uncertain/B close+advance ACK perdido/A recover e cache incerto antigo em outra origem de armazenamento do harness.
++Não há prova JWT/RLS hosted; dados produtivos, contabilidade DRAFT e abas reais permanecem intocados.
++
++## Integração React 19:26 — rollout coordenado
++
++Frontend preparado no fluxo existente `NovoPedido/useCreatePartnerOrder/useCloseOrderAttempt`, sem rota/painel alternativo.
++`useOrderJournal` consulta automaticamente ao montar apenas o mesmo ator/empresa/parceiro; não faz polling nem fechamento automático.
++Capacidade nova `partner_order_journal_capability_v1(uuid)` usa wrapper INVOKER/core autorizado,
++corpos/ACL/config guardados no POST e revogados no rollback. SQL continua **INATIVO**, nove funções no pacote atualizado.
++Não instalar backend isoladamente: clientes001b sem reservas seriam contidos; implantação será coordenada pelo auditor.
++
++- Antes instalação, somente `PGRST202` citando exatamente a capability ausente permite comportamento001b.
++  Timeout/erro/403/schema inesperado não autoriza fallback. Evidência durável em IndexedDB ou capacidade previamente ativa impede downgrade.
++- Depois capability `C2_ORDER_JOURNAL_V1` ativa e escopada: **toda criação** do hook usa chave emitida pelo servidor,
++  recovery fresca + CAS IndexedDB (scope SHA256, key/generation/state/digest mínimo) antes de create.
++  Chave cliente do fluxo legado nunca é despachada nesse modo; nenhuma nota, preço, payload, token ou UUID de pedido é persistido.
++- Recovery pode responder `uncertain` logo após reserva sem dispatch: contrato completo atual `reserved/uncertain`
++  permite envio/replay da mesma key com mesmo digest. Não fabrica reserved localmente nem conclui ausência.
++  `unknown/in_progress/closed/committed`, schema incompleto ou erro não permite envio.
++- Antes/depois de awaits: fence de montagem/ator/empresa/papéis/época; payload atual precisa coincidir antes de dispatch.
++  Resposta create só é sucesso após recovery `committed` com UUID/key/generation correspondentes e gravação local concluída.
++  Falha de ACK mantém bloqueio e não reenvia; preços/plano/hash continuam resolvidos pelo simulate/create canônicos.
++- Reabrir aba com carrinho vazio ou IndexedDB removido reencontra servidor e mostra pedido na própria tela de catálogo.
++  Ação `Ver meus pedidos` usa rota existente; novo pedido exige confirmação explícita com UUID/key/generation CAS.
++  Fechar tentativa não cancela pedido nem avança; `closed` exige segundo clique `Iniciar nova tentativa`.
++  Recuperação/ACK/close aguardam persistência; sucesso tardio não apaga carrinho editado nem navega outro ator.
++- Duas abas recebem uma reserva servidor; IndexedDB serializa digest e transições terminais monotônicas.
++  Sem evento/poll que conceda autoridade: toda operação relê servidor. Mesma origem é limite permitido;
++  preview/domínio não compartilham IndexedDB. Abas abertas não são recarregadas nem encerradas pelo rollout.
++- Rollback continua deny-only: writer contido e recovery/capability sem EXECUTE, preservando journal/history/closures.
++  Frontend mostra indisponibilidade, nunca ignora journal. Capability removida + perda total local não é detectável pelo cliente;
++  por isso **barreira servidor jamais pode ser removida por downgrade**. Não restaurar writer permissivo.
++
++Provas desta etapa: 94/94 Vitest em9arquivos (29 novas integrações,65 regressões),44 PostgreSQL descartável,
++16 auditorias independentes do módulo original e14 Chromium/HTTP/IndexedDB com NovoPedido e hooks reais.
++Auth fornecida pelo harness é sintética; transporte HTTP é controlado/interceptado, não JWT/RLS hosted.
++O arquivo externo dos40testes referido pelo proprietário não foi disponibilizado neste checkout;
++não declarar que executamos aquela suíte específica. Os44 testes de transição/locks permanecem PASS.
++Harness/nova evidência em `test-react-browser.py`, `results-react-browser.txt`, `results-react-vitest.txt`;
++browser tem avisos de refs do instrumentador Vite, sem pageerror na execução final; screenshots foram examinados.
++diff/exactfiles/manifests em `react-rollout.diff`, `react-exactfiles.txt`, `SHA256SUMS`.
++Tipos/build são conferidos pela compilação automática, sem executar build/typecheck manual.
++
+ ## Complemento independente 19:24 — monotonicidade e despacho
+ 
+ O arquivo `typecheck-source/scripts/durable-journal-check.audit.mjs` citado pelo proprietário
+@@ -108,9 +168,8 @@ controlado **não são JWT/RLS hosted**, nem homologação A/B produtiva.
+ Feature `ORDER_JOURNAL_ENABLED=false`; adapter exige contrato autenticado válido como
+ capacidade, persistência local antes de despacho e fences pré/pós-await. Erro/unknown nunca
+ libera. Resultado committed é devolvido para exibição, não limpa carrinho/navega automaticamente.
+-UI React completa de NovoPedido com recovery de sessão **não foi integrada**: próxima promoção
+-depende de backend revisado/instalado e homologação ponta a ponta. Os 31 testes de componente
+-atuais provam fechamento publicado, não integração React deste journal.
++UI React agora preparada pela capability descrita acima, mas nenhuma instalação/publicação ocorreu;
++promoção coordenada e homologação JWT ponta a ponta continuam dependentes do auditor.
+ 
+ IndexedDB é apenas cache mínimo de chave/versão/estado e índice hash do escopo; sem JWT,
+ preços, observação ou payload. Mesma origem/perfil/contexto somente: preview e domínio
+@@ -130,6 +189,6 @@ Abas antigas não são alteradas/recarregadas: chaves desconhecidas serão negad
+   fechado permite voltar frontend; nunca excluir histórico ou reaplicar create permissivo.
+ 
+ Não há captura adicional indispensável para os alvos modificados desta versão: metadados
+-necessários foram obtidos em READ ONLY. Aprovação independente e UI integrada continuam
++necessários foram obtidos em READ ONLY. Aprovação independente e homologação JWT continuam
+ pendentes; **inativo não significa bloqueado por plano**, e candidato não equivale a autorização
+ de implantação. Não certificar outros triggers comerciais/fiscais fora da cadeia capturada.
+\ No newline at end of file
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py b/scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py
+index 9ffa97a8..ad44cdba 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py
+@@ -161,11 +161,22 @@ CREATE FUNCTION platform_private.c2_recover_order_attempt_core(p_partner uuid,p_
+  p_expected_generation bigint DEFAULT NULL,p_advance boolean DEFAULT false,p_ack_order uuid DEFAULT NULL)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
+ DECLARE uid uuid:=auth.uid(); org uuid; j platform_private.partner_order_attempt_journal;
+-  result jsonb; nextgen bigint; nextkey text; fresh uuid;
++  result jsonb; nextgen bigint; nextkey text; fresh uuid; predecessors jsonb;
+ BEGIN
+  org := platform_private.c2_attempt_scope_lock(uid,p_partner);
+  SELECT * INTO j FROM platform_private.partner_order_attempt_journal
+  WHERE actor_id=uid AND organization_id=org AND partner_id=p_partner ORDER BY generation DESC LIMIT 1;
++ -- Immutable journal links plus canonical committed receipts/closure tombstones.
++ -- Read only: no inferred closure, no added locks, no client-supplied terminal proof.
++ SELECT coalesce(jsonb_agg(jsonb_build_object('key',h.idempotency_key,'generation',h.generation,
++   'state',CASE WHEN i.order_id IS NOT NULL THEN 'committed' WHEN c.idempotency_key IS NOT NULL THEN 'closed' ELSE 'unknown' END)
++   || CASE WHEN i.order_id IS NOT NULL THEN jsonb_build_object('order_id',i.order_id,'numero',o.numero) ELSE '{}'::jsonb END
++   ORDER BY h.generation),'[]'::jsonb) INTO predecessors
++ FROM platform_private.partner_order_attempt_journal h
++ LEFT JOIN public.partner_order_idempotency i ON i.partner_id=h.partner_id AND i.idempotency_key=h.idempotency_key AND i.created_by=uid
++ LEFT JOIN public.partner_orders o ON o.id=i.order_id
++ LEFT JOIN platform_private.partner_order_idempotency_closures c ON c.partner_id=h.partner_id AND c.idempotency_key=h.idempotency_key
++ WHERE h.actor_id=uid AND h.organization_id=org AND h.partner_id=p_partner AND h.generation<j.generation;
+  IF p_advance THEN
+   IF j.idempotency_key IS NULL OR p_expected_key IS DISTINCT FROM j.idempotency_key
+    OR p_expected_generation IS DISTINCT FROM j.generation THEN
+@@ -176,9 +187,10 @@ BEGIN
+   IF fresh IS DISTINCT FROM org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+   IF result->>'state'='in_progress' THEN RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','unknown'); END IF;
+   IF result->>'state'='committed' AND p_ack_order IS DISTINCT FROM (result->>'order_id')::uuid THEN
+-   RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation); END IF;
++   RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation,'predecessors',predecessors); END IF;
+   IF result->>'state' NOT IN ('closed','committed') OR result->>'state' IS NULL THEN
+    RAISE EXCEPTION 'C2DJ_INVALID_CLOSURE'; END IF;
++  predecessors:=predecessors||jsonb_build_array(result||jsonb_build_object('key',j.idempotency_key,'generation',j.generation));
+  ELSIF j.idempotency_key IS NOT NULL THEN
+   -- Recovery is read-only with respect to closure; never auto-close an absent order.
+   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:'||p_partner::text||':'||j.idempotency_key,0));
+@@ -192,7 +204,7 @@ BEGIN
+    result := jsonb_build_object('state',CASE WHEN EXISTS(SELECT 1 FROM platform_private.partner_order_idempotency_closures
+     WHERE partner_id=p_partner AND idempotency_key=j.idempotency_key) THEN 'closed' ELSE 'uncertain' END);
+   END IF;
+-  RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation);
++  RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation,'predecessors',predecessors);
+  ELSIF p_expected_key IS NOT NULL OR p_expected_generation IS NOT NULL THEN
+   -- Lost legacy memory cannot be adopted by mere key knowledge.
+   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501';
+@@ -203,7 +215,7 @@ BEGIN
+   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501'; END IF;
+  INSERT INTO platform_private.partner_order_attempt_journal(actor_id,organization_id,partner_id,generation,idempotency_key,predecessor_key)
+  VALUES(uid,org,p_partner,nextgen,nextkey,j.idempotency_key);
+- RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen);
++ RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen,'predecessors',predecessors);
+ END $function$;
+ 
+ CREATE FUNCTION public.recover_partner_order_attempt_v1(p_partner uuid,p_expected_key text DEFAULT NULL,
+@@ -211,10 +223,26 @@ CREATE FUNCTION public.recover_partner_order_attempt_v1(p_partner uuid,p_expecte
+ RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
+  SELECT platform_private.c2_recover_order_attempt_core(p_partner,p_expected_key,p_expected_generation,p_advance,p_ack_order);
+ $function$;
++
++CREATE FUNCTION platform_private.c2_order_journal_capability(p_partner uuid) RETURNS jsonb
++LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
++DECLARE org uuid;
++BEGIN
++ org:=platform_private.c2_attempt_scope_lock(auth.uid(),p_partner);
++ RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','enabled',true,'actor_id',auth.uid(),'organization_id',org,'partner_id',p_partner);
++END $function$;
++CREATE FUNCTION public.partner_order_journal_capability_v1(p_partner uuid) RETURNS jsonb
++LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
++ SELECT platform_private.c2_order_journal_capability(p_partner);
++$function$;
+ """
+ private = ['c2_attempt_scope_lock(uuid,uuid)','c2_attempt_dispatch_guard(uuid,uuid,text)','c2_attempt_journal_write_guard()']
+ core='platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'
+ wrap='public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'
++capcore='platform_private.c2_order_journal_capability(uuid)'
++capwrap='public.partner_order_journal_capability_v1(uuid)'
++for s in [capcore,capwrap]:
++ ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\nGRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
+ for s in ['platform_private.'+x for x in private]+[core,wrap]:
+  ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\n'
+ for s in [core,wrap]: ddl+=f'GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
+@@ -243,10 +271,10 @@ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='c2_attempt_journal_guard' A
+  THEN RAISE EXCEPTION 'C2DJ_TRIGGER'; END IF;
+ END $metadata$;
+ """
+-for s in ['platform_private.'+x for x in private]+[core,wrap]:
+- allowed="{postgres=X/postgres,authenticated=X/postgres}" if s in [core,wrap] else "{postgres=X/postgres}"
+- sec='false' if s==wrap else 'true'
+- config="ARRAY['search_path=\"\"']::text[]" if s==wrap else "ARRAY['search_path=\"\"','lock_timeout=5s']::text[]"
++for s in ['platform_private.'+x for x in private]+[core,wrap,capcore,capwrap]:
++ allowed="{postgres=X/postgres,authenticated=X/postgres}" if s in [core,wrap,capcore,capwrap] else "{postgres=X/postgres}"
++ sec='false' if s in [wrap,capwrap] else 'true'
++ config="ARRAY['search_path=\"\"']::text[]" if s in [wrap,capwrap] else "ARRAY['search_path=\"\"','lock_timeout=5s']::text[]"
+  post+=f"DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('{s}') AND pg_get_userbyid(proowner)='postgres' AND prosecdef={sec} AND proacl::text='{allowed}' AND proconfig={config}) THEN RAISE EXCEPTION 'C2DJ_METADATA:{s}'; END IF; END $acl$;\n"
+ post+="""DO $closure$ BEGIN
+ IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_closure_guard()'::regprocedure)
+@@ -293,9 +321,9 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $f
+ BEGIN RAISE EXCEPTION 'C2DJ_WRITER_CONTAINED' USING ERRCODE='42501'; END $function$;
+ """
+ rb=header+'-- DENY ONLY, never downgrade to memory-only writer.\nBEGIN;\n'+timeouts+boundary+post+deny
+-for s in [core,wrap]: rb+=f'REVOKE EXECUTE ON FUNCTION {s} FROM authenticated;\n'
++for s in [core,wrap,capcore,capwrap]: rb+=f'REVOKE EXECUTE ON FUNCTION {s} FROM authenticated;\n'
+ deny_md5=hashlib.md5(deny.split('AS $function$')[1].split('$function$;')[0].encode()).hexdigest()
+-rb+=f"DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM '{deny_md5}' OR has_function_privilege('authenticated','{wrap}','EXECUTE') OR has_function_privilege('authenticated','{core}','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;\nCOMMIT;\n"
++rb+=f"DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM '{deny_md5}' OR has_function_privilege('authenticated','{wrap}','EXECUTE') OR has_function_privilege('authenticated','{core}','EXECUTE') OR has_function_privilege('authenticated','{capwrap}','EXECUTE') OR has_function_privilege('authenticated','{capcore}','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;\nCOMMIT;\n"
+ (D/'rollback.sql.review').write_text(rb)
+ (D/'expected.json').write_text(json.dumps({'base_source':'READ ONLY canonical swzpzcwiasxmjutrmvkm, 2026-10-26 19:12+; bodies corroborated against reviewed 5cd','poi_structure_md5':'3c5afe617195db177fe831c877473258','base':exp,'candidate':funcs,'containment_guard':deny_md5},indent=2)+'\n')
+ print('Generated inactive candidate; bounded atomic boundary and exact legacy pins. Functions:',len(funcs))
+\ No newline at end of file
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/candidate.sql.review b/scripts/owner-orders-20261023/durable-attempt-20261026/candidate.sql.review
+index b9b218fe..cadebd8c 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/candidate.sql.review
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/candidate.sql.review
+@@ -170,11 +170,22 @@ CREATE FUNCTION platform_private.c2_recover_order_attempt_core(p_partner uuid,p_
+  p_expected_generation bigint DEFAULT NULL,p_advance boolean DEFAULT false,p_ack_order uuid DEFAULT NULL)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
+ DECLARE uid uuid:=auth.uid(); org uuid; j platform_private.partner_order_attempt_journal;
+-  result jsonb; nextgen bigint; nextkey text; fresh uuid;
++  result jsonb; nextgen bigint; nextkey text; fresh uuid; predecessors jsonb;
+ BEGIN
+  org := platform_private.c2_attempt_scope_lock(uid,p_partner);
+  SELECT * INTO j FROM platform_private.partner_order_attempt_journal
+  WHERE actor_id=uid AND organization_id=org AND partner_id=p_partner ORDER BY generation DESC LIMIT 1;
++ -- Immutable journal links plus canonical committed receipts/closure tombstones.
++ -- Read only: no inferred closure, no added locks, no client-supplied terminal proof.
++ SELECT coalesce(jsonb_agg(jsonb_build_object('key',h.idempotency_key,'generation',h.generation,
++   'state',CASE WHEN i.order_id IS NOT NULL THEN 'committed' WHEN c.idempotency_key IS NOT NULL THEN 'closed' ELSE 'unknown' END)
++   || CASE WHEN i.order_id IS NOT NULL THEN jsonb_build_object('order_id',i.order_id,'numero',o.numero) ELSE '{}'::jsonb END
++   ORDER BY h.generation),'[]'::jsonb) INTO predecessors
++ FROM platform_private.partner_order_attempt_journal h
++ LEFT JOIN public.partner_order_idempotency i ON i.partner_id=h.partner_id AND i.idempotency_key=h.idempotency_key AND i.created_by=uid
++ LEFT JOIN public.partner_orders o ON o.id=i.order_id
++ LEFT JOIN platform_private.partner_order_idempotency_closures c ON c.partner_id=h.partner_id AND c.idempotency_key=h.idempotency_key
++ WHERE h.actor_id=uid AND h.organization_id=org AND h.partner_id=p_partner AND h.generation<j.generation;
+  IF p_advance THEN
+   IF j.idempotency_key IS NULL OR p_expected_key IS DISTINCT FROM j.idempotency_key
+    OR p_expected_generation IS DISTINCT FROM j.generation THEN
+@@ -185,9 +196,10 @@ BEGIN
+   IF fresh IS DISTINCT FROM org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+   IF result->>'state'='in_progress' THEN RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','unknown'); END IF;
+   IF result->>'state'='committed' AND p_ack_order IS DISTINCT FROM (result->>'order_id')::uuid THEN
+-   RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation); END IF;
++   RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation,'predecessors',predecessors); END IF;
+   IF result->>'state' NOT IN ('closed','committed') OR result->>'state' IS NULL THEN
+    RAISE EXCEPTION 'C2DJ_INVALID_CLOSURE'; END IF;
++  predecessors:=predecessors||jsonb_build_array(result||jsonb_build_object('key',j.idempotency_key,'generation',j.generation));
+  ELSIF j.idempotency_key IS NOT NULL THEN
+   -- Recovery is read-only with respect to closure; never auto-close an absent order.
+   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:'||p_partner::text||':'||j.idempotency_key,0));
+@@ -201,7 +213,7 @@ BEGIN
+    result := jsonb_build_object('state',CASE WHEN EXISTS(SELECT 1 FROM platform_private.partner_order_idempotency_closures
+     WHERE partner_id=p_partner AND idempotency_key=j.idempotency_key) THEN 'closed' ELSE 'uncertain' END);
+   END IF;
+-  RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation);
++  RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation,'predecessors',predecessors);
+  ELSIF p_expected_key IS NOT NULL OR p_expected_generation IS NOT NULL THEN
+   -- Lost legacy memory cannot be adopted by mere key knowledge.
+   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501';
+@@ -212,7 +224,7 @@ BEGIN
+   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501'; END IF;
+  INSERT INTO platform_private.partner_order_attempt_journal(actor_id,organization_id,partner_id,generation,idempotency_key,predecessor_key)
+  VALUES(uid,org,p_partner,nextgen,nextkey,j.idempotency_key);
+- RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen);
++ RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen,'predecessors',predecessors);
+ END $function$;
+ 
+ CREATE FUNCTION public.recover_partner_order_attempt_v1(p_partner uuid,p_expected_key text DEFAULT NULL,
+@@ -220,6 +232,22 @@ CREATE FUNCTION public.recover_partner_order_attempt_v1(p_partner uuid,p_expecte
+ RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
+  SELECT platform_private.c2_recover_order_attempt_core(p_partner,p_expected_key,p_expected_generation,p_advance,p_ack_order);
+ $function$;
++
++CREATE FUNCTION platform_private.c2_order_journal_capability(p_partner uuid) RETURNS jsonb
++LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
++DECLARE org uuid;
++BEGIN
++ org:=platform_private.c2_attempt_scope_lock(auth.uid(),p_partner);
++ RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','enabled',true,'actor_id',auth.uid(),'organization_id',org,'partner_id',p_partner);
++END $function$;
++CREATE FUNCTION public.partner_order_journal_capability_v1(p_partner uuid) RETURNS jsonb
++LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
++ SELECT platform_private.c2_order_journal_capability(p_partner);
++$function$;
++REVOKE ALL ON FUNCTION platform_private.c2_order_journal_capability(uuid) FROM PUBLIC,anon,authenticated,service_role;
++GRANT EXECUTE ON FUNCTION platform_private.c2_order_journal_capability(uuid) TO authenticated;
++REVOKE ALL ON FUNCTION public.partner_order_journal_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
++GRANT EXECUTE ON FUNCTION public.partner_order_journal_capability_v1(uuid) TO authenticated;
+ REVOKE ALL ON FUNCTION platform_private.c2_attempt_scope_lock(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+ REVOKE ALL ON FUNCTION platform_private.c2_attempt_dispatch_guard(uuid,uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+ REVOKE ALL ON FUNCTION platform_private.c2_attempt_journal_write_guard() FROM PUBLIC,anon,authenticated,service_role;
+@@ -646,8 +674,10 @@ $function$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_scope_lock(uuid,uuid)')) IS DISTINCT FROM '8e6d6191d2821ec6e8d0ba07f4d8190c' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_scope_lock(uuid,uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)')) IS DISTINCT FROM '9e217430e43e594e51645ec6184abfa0' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()')) IS DISTINCT FROM '851aacc3e631832493a34bcb6106b53a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_journal_write_guard()'; END IF; END $post$;
+-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '1a166cfa7c4b16fcc10e7724b4a6492a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '81058861e8a72bc3b45401ba9893cb72' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM 'f5aa40591cfc0f436f579f20ce2f563a' THEN RAISE EXCEPTION 'C2DJ_POST:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)')) IS DISTINCT FROM 'f6d227ad7beaee697df0319911f847eb' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_order_journal_capability(uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)')) IS DISTINCT FROM '6ca96c9dbdc55adfc21bcc9d3aafebdb' THEN RAISE EXCEPTION 'C2DJ_POST:public.partner_order_journal_capability_v1(uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM '74cfb688546817e6236d5195d069e29e' THEN RAISE EXCEPTION 'C2DJ_POST:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM '4d7a7a49b27ab78fd33a6cdac75833c5' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $post$;
+ DO $metadata$ BEGIN
+@@ -666,6 +696,8 @@ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('pl
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_attempt_journal_write_guard()'; END IF; END $acl$;
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
++DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_order_journal_capability(uuid)'; END IF; END $acl$;
++DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.partner_order_journal_capability_v1(uuid)'; END IF; END $acl$;
+ DO $closure$ BEGIN
+ IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_closure_guard()'::regprocedure)
+  IS DISTINCT FROM '140ceb10660fb226fda78fb94277d17e' THEN RAISE EXCEPTION 'C2DJ_CLOSURE_DRIFT'; END IF;
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/expected.json b/scripts/owner-orders-20261023/durable-attempt-20261026/expected.json
+index d27af4f0..79f9c7a6 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/expected.json
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/expected.json
+@@ -13,8 +13,10 @@
+     "platform_private.c2_attempt_scope_lock(uuid,uuid)": "8e6d6191d2821ec6e8d0ba07f4d8190c",
+     "platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)": "9e217430e43e594e51645ec6184abfa0",
+     "platform_private.c2_attempt_journal_write_guard()": "851aacc3e631832493a34bcb6106b53a",
+-    "platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)": "1a166cfa7c4b16fcc10e7724b4a6492a",
++    "platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)": "81058861e8a72bc3b45401ba9893cb72",
+     "public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)": "f5aa40591cfc0f436f579f20ce2f563a",
++    "platform_private.c2_order_journal_capability(uuid)": "f6d227ad7beaee697df0319911f847eb",
++    "public.partner_order_journal_capability_v1(uuid)": "6ca96c9dbdc55adfc21bcc9d3aafebdb",
+     "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "74cfb688546817e6236d5195d069e29e",
+     "platform_private.c2_close_partner_order_attempt_core(uuid,text)": "4d7a7a49b27ab78fd33a6cdac75833c5"
+   },
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/journal-prototype.mjs b/scripts/owner-orders-20261023/durable-attempt-20261026/journal-prototype.mjs
+index 694e90cb..4308c8e1 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/journal-prototype.mjs
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/journal-prototype.mjs
+@@ -15,7 +15,18 @@ export function parseCanonical(value) {
+      !['reserved','uncertain','closed','committed'].includes(value.state)) throw Error('contract_invalid');
+  if(value.state==='committed' && (typeof value.order_id!=='string' || !UUID.test(value.order_id) ||
+      typeof value.numero!=='string' || !value.numero.trim())) throw Error('contract_invalid');
++ const predecessors=[];
++ if(value.predecessors!==undefined){
++  if(!Array.isArray(value.predecessors)||value.predecessors.length!==value.generation-1)throw Error('predecessor_invalid');
++  const keys=new Set([value.key]);
++  for(const [n,p] of value.predecessors.entries()){
++   if(!p||typeof p!=='object'||Array.isArray(p)||typeof p.key!=='string'||!UUID.test(p.key)||keys.has(p.key)||p.generation!==n+1||!['closed','committed'].includes(p.state)||
++    (p.state==='committed'&&(typeof p.order_id!=='string'||!UUID.test(p.order_id)||typeof p.numero!=='string'||!p.numero.trim())))throw Error('predecessor_invalid');
++   keys.add(p.key);predecessors.push({key:p.key,generation:p.generation,state:p.state,...(p.state==='committed'?{order_id:p.order_id,numero:p.numero.trim()}:{})});
++  }
++ }
+  return {contract:value.contract,key:value.key,generation:value.generation,state:value.state,
++  ...(value.predecessors!==undefined?{predecessors}:{}),
+   ...(value.state==='committed'?{order_id:value.order_id,numero:value.numero.trim()}: {})};
+ }
+ async function open() {
+@@ -39,8 +50,10 @@ export async function read(scope) {
+  }); } finally {db.close();}
+ }
+ // Server-issued reservation MUST already exist, even when the local database is empty.
+-export async function adopt(scope,reservation,current) {
++export async function adopt(scope,reservation,current,canonicalProof) {
+  if(!current() || !valid(reservation)) throw Error('context_or_contract_invalid');
++ const canonical=canonicalProof===undefined?undefined:parseCanonical(canonicalProof);
++ if(canonical && (canonical.key!==reservation.key || canonical.generation!==reservation.generation))throw Error('predecessor_invalid');
+  const db=await open();
+  try {return await new Promise((resolve,reject)=>{
+   const t=db.transaction('slots','readwrite'), store=t.objectStore('slots'), req=store.get(scope);
+@@ -54,7 +67,14 @@ export async function adopt(scope,reservation,current) {
+    // A new generation requires a different server-issued key and a terminal predecessor.
+    if(prev && prev.generation===reservation.generation && prev.state!=='uncertain' && prev.state!==reservation.state) {failure='terminal_state_conflict';t.abort();return;}
+    if(prev && reservation.generation>prev.generation &&
+-      (prev.state==='uncertain' || prev.key===reservation.key)) {failure='generation_transition_unconfirmed';t.abort();return;}
++      (prev.state==='uncertain' || prev.key===reservation.key)) {
++    const proof=canonical?.predecessors?.find(p=>p.key===prev.key && p.generation===prev.generation);
++    if(prev.key===reservation.key || !proof){failure='generation_transition_unconfirmed';t.abort();return;}
++   }
++   if(prev && reservation.generation>prev.generation && canonical){
++    const proof=canonical.predecessors?.find(p=>p.key===prev.key && p.generation===prev.generation);
++    if(!proof || (prev.state!=='uncertain' && proof.state!==prev.state)){failure='generation_transition_unconfirmed';t.abort();return;}
++   }
+    // Persist only opaque key, schema/version and state. No payload, price, token, actor IDs.
+    store.put({schema:1,key:reservation.key,generation:reservation.generation,state:reservation.state},scope);
+   };
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/postflight.sql b/scripts/owner-orders-20261023/durable-attempt-20261026/postflight.sql
+index 9ca7b97a..ebc598c5 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/postflight.sql
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/postflight.sql
+@@ -5,8 +5,10 @@ SET LOCAL statement_timeout='60s';
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_scope_lock(uuid,uuid)')) IS DISTINCT FROM '8e6d6191d2821ec6e8d0ba07f4d8190c' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_scope_lock(uuid,uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)')) IS DISTINCT FROM '9e217430e43e594e51645ec6184abfa0' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()')) IS DISTINCT FROM '851aacc3e631832493a34bcb6106b53a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_journal_write_guard()'; END IF; END $post$;
+-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '1a166cfa7c4b16fcc10e7724b4a6492a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '81058861e8a72bc3b45401ba9893cb72' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM 'f5aa40591cfc0f436f579f20ce2f563a' THEN RAISE EXCEPTION 'C2DJ_POST:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)')) IS DISTINCT FROM 'f6d227ad7beaee697df0319911f847eb' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_order_journal_capability(uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)')) IS DISTINCT FROM '6ca96c9dbdc55adfc21bcc9d3aafebdb' THEN RAISE EXCEPTION 'C2DJ_POST:public.partner_order_journal_capability_v1(uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM '74cfb688546817e6236d5195d069e29e' THEN RAISE EXCEPTION 'C2DJ_POST:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM '4d7a7a49b27ab78fd33a6cdac75833c5' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $post$;
+ DO $metadata$ BEGIN
+@@ -25,6 +27,8 @@ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('pl
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_attempt_journal_write_guard()'; END IF; END $acl$;
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
++DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_order_journal_capability(uuid)'; END IF; END $acl$;
++DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.partner_order_journal_capability_v1(uuid)'; END IF; END $acl$;
+ DO $closure$ BEGIN
+ IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_closure_guard()'::regprocedure)
+  IS DISTINCT FROM '140ceb10660fb226fda78fb94277d17e' THEN RAISE EXCEPTION 'C2DJ_CLOSURE_DRIFT'; END IF;
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs b/scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs
+index 5fd0b76b..1fa0de53 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs
+@@ -7,10 +7,15 @@ export async function recoverJournal({ enabled = ORDER_JOURNAL_ENABLED, scope, c
+  // The authenticated RPC response is the capability. Missing RPC/error never falls back.
+  const result = parseJournal(await rpc({ expected, acknowledge, advance }));
+  if (!current()) throw Error('context_changed');
++ if(advance){
++  const proof=result.predecessors?.find(p=>p.key===expected?.key && p.generation===expected?.generation);
++  if(!proof || result.generation!==expected.generation+1 || result.key===expected.key || result.state!=='reserved' ||
++    (acknowledge && (proof.state!=='committed' || proof.order_id!==acknowledge)))throw Error('advance_unconfirmed');
++ }
+  // Explicit advance must first persist the confirmed predecessor terminal state.
+  // A response alone cannot silently jump an unresolved local generation.
+  await adopt(scope, { schema: 1, key: result.key, generation: result.generation,
+-  state: result.state === 'reserved' ? 'uncertain' : result.state }, current);
++  state: result.state === 'reserved' ? 'uncertain' : result.state }, current,result);
+  if (!current()) throw Error('context_changed');
+  return result; // UI may show committed number; MUST NOT clear an edited cart here.
+ }
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review b/scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review
+index 6399ba5f..fc1584db 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review
+@@ -8,8 +8,10 @@ LOCK TABLE public.partner_orders IN SHARE MODE;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_scope_lock(uuid,uuid)')) IS DISTINCT FROM '8e6d6191d2821ec6e8d0ba07f4d8190c' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_scope_lock(uuid,uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)')) IS DISTINCT FROM '9e217430e43e594e51645ec6184abfa0' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()')) IS DISTINCT FROM '851aacc3e631832493a34bcb6106b53a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_journal_write_guard()'; END IF; END $post$;
+-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '1a166cfa7c4b16fcc10e7724b4a6492a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '81058861e8a72bc3b45401ba9893cb72' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM 'f5aa40591cfc0f436f579f20ce2f563a' THEN RAISE EXCEPTION 'C2DJ_POST:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)')) IS DISTINCT FROM 'f6d227ad7beaee697df0319911f847eb' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_order_journal_capability(uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)')) IS DISTINCT FROM '6ca96c9dbdc55adfc21bcc9d3aafebdb' THEN RAISE EXCEPTION 'C2DJ_POST:public.partner_order_journal_capability_v1(uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM '74cfb688546817e6236d5195d069e29e' THEN RAISE EXCEPTION 'C2DJ_POST:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM '4d7a7a49b27ab78fd33a6cdac75833c5' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $post$;
+ DO $metadata$ BEGIN
+@@ -28,6 +30,8 @@ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('pl
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_attempt_journal_write_guard()'; END IF; END $acl$;
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
++DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_order_journal_capability(uuid)'; END IF; END $acl$;
++DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.partner_order_journal_capability_v1(uuid)'; END IF; END $acl$;
+ DO $closure$ BEGIN
+ IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_closure_guard()'::regprocedure)
+  IS DISTINCT FROM '140ceb10660fb226fda78fb94277d17e' THEN RAISE EXCEPTION 'C2DJ_CLOSURE_DRIFT'; END IF;
+@@ -63,5 +67,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $f
+ BEGIN RAISE EXCEPTION 'C2DJ_WRITER_CONTAINED' USING ERRCODE='42501'; END $function$;
+ REVOKE EXECUTE ON FUNCTION platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid) FROM authenticated;
+ REVOKE EXECUTE ON FUNCTION public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid) FROM authenticated;
+-DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM 'ef33f47654aa0495ae48d1f9e11e5a59' OR has_function_privilege('authenticated','public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;
++REVOKE EXECUTE ON FUNCTION platform_private.c2_order_journal_capability(uuid) FROM authenticated;
++REVOKE EXECUTE ON FUNCTION public.partner_order_journal_capability_v1(uuid) FROM authenticated;
++DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM 'ef33f47654aa0495ae48d1f9e11e5a59' OR has_function_privilege('authenticated','public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)','EXECUTE') OR has_function_privilege('authenticated','public.partner_order_journal_capability_v1(uuid)','EXECUTE') OR has_function_privilege('authenticated','platform_private.c2_order_journal_capability(uuid)','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;
+ COMMIT;
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/test-install.sql b/scripts/owner-orders-20261023/durable-attempt-20261026/test-install.sql
+index b729efe3..66ac7860 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/test-install.sql
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/test-install.sql
+@@ -170,11 +170,22 @@ CREATE FUNCTION platform_private.c2_recover_order_attempt_core(p_partner uuid,p_
+  p_expected_generation bigint DEFAULT NULL,p_advance boolean DEFAULT false,p_ack_order uuid DEFAULT NULL)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
+ DECLARE uid uuid:=auth.uid(); org uuid; j platform_private.partner_order_attempt_journal;
+-  result jsonb; nextgen bigint; nextkey text; fresh uuid;
++  result jsonb; nextgen bigint; nextkey text; fresh uuid; predecessors jsonb;
+ BEGIN
+  org := platform_private.c2_attempt_scope_lock(uid,p_partner);
+  SELECT * INTO j FROM platform_private.partner_order_attempt_journal
+  WHERE actor_id=uid AND organization_id=org AND partner_id=p_partner ORDER BY generation DESC LIMIT 1;
++ -- Immutable journal links plus canonical committed receipts/closure tombstones.
++ -- Read only: no inferred closure, no added locks, no client-supplied terminal proof.
++ SELECT coalesce(jsonb_agg(jsonb_build_object('key',h.idempotency_key,'generation',h.generation,
++   'state',CASE WHEN i.order_id IS NOT NULL THEN 'committed' WHEN c.idempotency_key IS NOT NULL THEN 'closed' ELSE 'unknown' END)
++   || CASE WHEN i.order_id IS NOT NULL THEN jsonb_build_object('order_id',i.order_id,'numero',o.numero) ELSE '{}'::jsonb END
++   ORDER BY h.generation),'[]'::jsonb) INTO predecessors
++ FROM platform_private.partner_order_attempt_journal h
++ LEFT JOIN public.partner_order_idempotency i ON i.partner_id=h.partner_id AND i.idempotency_key=h.idempotency_key AND i.created_by=uid
++ LEFT JOIN public.partner_orders o ON o.id=i.order_id
++ LEFT JOIN platform_private.partner_order_idempotency_closures c ON c.partner_id=h.partner_id AND c.idempotency_key=h.idempotency_key
++ WHERE h.actor_id=uid AND h.organization_id=org AND h.partner_id=p_partner AND h.generation<j.generation;
+  IF p_advance THEN
+   IF j.idempotency_key IS NULL OR p_expected_key IS DISTINCT FROM j.idempotency_key
+    OR p_expected_generation IS DISTINCT FROM j.generation THEN
+@@ -185,9 +196,10 @@ BEGIN
+   IF fresh IS DISTINCT FROM org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+   IF result->>'state'='in_progress' THEN RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','unknown'); END IF;
+   IF result->>'state'='committed' AND p_ack_order IS DISTINCT FROM (result->>'order_id')::uuid THEN
+-   RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation); END IF;
++   RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation,'predecessors',predecessors); END IF;
+   IF result->>'state' NOT IN ('closed','committed') OR result->>'state' IS NULL THEN
+    RAISE EXCEPTION 'C2DJ_INVALID_CLOSURE'; END IF;
++  predecessors:=predecessors||jsonb_build_array(result||jsonb_build_object('key',j.idempotency_key,'generation',j.generation));
+  ELSIF j.idempotency_key IS NOT NULL THEN
+   -- Recovery is read-only with respect to closure; never auto-close an absent order.
+   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:'||p_partner::text||':'||j.idempotency_key,0));
+@@ -201,7 +213,7 @@ BEGIN
+    result := jsonb_build_object('state',CASE WHEN EXISTS(SELECT 1 FROM platform_private.partner_order_idempotency_closures
+     WHERE partner_id=p_partner AND idempotency_key=j.idempotency_key) THEN 'closed' ELSE 'uncertain' END);
+   END IF;
+-  RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation);
++  RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation,'predecessors',predecessors);
+  ELSIF p_expected_key IS NOT NULL OR p_expected_generation IS NOT NULL THEN
+   -- Lost legacy memory cannot be adopted by mere key knowledge.
+   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501';
+@@ -212,7 +224,7 @@ BEGIN
+   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501'; END IF;
+  INSERT INTO platform_private.partner_order_attempt_journal(actor_id,organization_id,partner_id,generation,idempotency_key,predecessor_key)
+  VALUES(uid,org,p_partner,nextgen,nextkey,j.idempotency_key);
+- RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen);
++ RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen,'predecessors',predecessors);
+ END $function$;
+ 
+ CREATE FUNCTION public.recover_partner_order_attempt_v1(p_partner uuid,p_expected_key text DEFAULT NULL,
+@@ -220,6 +232,22 @@ CREATE FUNCTION public.recover_partner_order_attempt_v1(p_partner uuid,p_expecte
+ RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
+  SELECT platform_private.c2_recover_order_attempt_core(p_partner,p_expected_key,p_expected_generation,p_advance,p_ack_order);
+ $function$;
++
++CREATE FUNCTION platform_private.c2_order_journal_capability(p_partner uuid) RETURNS jsonb
++LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
++DECLARE org uuid;
++BEGIN
++ org:=platform_private.c2_attempt_scope_lock(auth.uid(),p_partner);
++ RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','enabled',true,'actor_id',auth.uid(),'organization_id',org,'partner_id',p_partner);
++END $function$;
++CREATE FUNCTION public.partner_order_journal_capability_v1(p_partner uuid) RETURNS jsonb
++LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
++ SELECT platform_private.c2_order_journal_capability(p_partner);
++$function$;
++REVOKE ALL ON FUNCTION platform_private.c2_order_journal_capability(uuid) FROM PUBLIC,anon,authenticated,service_role;
++GRANT EXECUTE ON FUNCTION platform_private.c2_order_journal_capability(uuid) TO authenticated;
++REVOKE ALL ON FUNCTION public.partner_order_journal_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
++GRANT EXECUTE ON FUNCTION public.partner_order_journal_capability_v1(uuid) TO authenticated;
+ REVOKE ALL ON FUNCTION platform_private.c2_attempt_scope_lock(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+ REVOKE ALL ON FUNCTION platform_private.c2_attempt_dispatch_guard(uuid,uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+ REVOKE ALL ON FUNCTION platform_private.c2_attempt_journal_write_guard() FROM PUBLIC,anon,authenticated,service_role;
+@@ -646,8 +674,10 @@ $function$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_scope_lock(uuid,uuid)')) IS DISTINCT FROM '8e6d6191d2821ec6e8d0ba07f4d8190c' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_scope_lock(uuid,uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)')) IS DISTINCT FROM '9e217430e43e594e51645ec6184abfa0' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()')) IS DISTINCT FROM '851aacc3e631832493a34bcb6106b53a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_journal_write_guard()'; END IF; END $post$;
+-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '1a166cfa7c4b16fcc10e7724b4a6492a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '81058861e8a72bc3b45401ba9893cb72' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM 'f5aa40591cfc0f436f579f20ce2f563a' THEN RAISE EXCEPTION 'C2DJ_POST:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)')) IS DISTINCT FROM 'f6d227ad7beaee697df0319911f847eb' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_order_journal_capability(uuid)'; END IF; END $post$;
++DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)')) IS DISTINCT FROM '6ca96c9dbdc55adfc21bcc9d3aafebdb' THEN RAISE EXCEPTION 'C2DJ_POST:public.partner_order_journal_capability_v1(uuid)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM '74cfb688546817e6236d5195d069e29e' THEN RAISE EXCEPTION 'C2DJ_POST:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $post$;
+ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM '4d7a7a49b27ab78fd33a6cdac75833c5' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $post$;
+ DO $metadata$ BEGIN
+@@ -666,6 +696,8 @@ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('pl
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_attempt_journal_write_guard()'; END IF; END $acl$;
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
+ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
++DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_order_journal_capability(uuid)'; END IF; END $acl$;
++DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.partner_order_journal_capability_v1(uuid)'; END IF; END $acl$;
+ DO $closure$ BEGIN
+ IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_closure_guard()'::regprocedure)
+  IS DISTINCT FROM '140ceb10660fb226fda78fb94277d17e' THEN RAISE EXCEPTION 'C2DJ_CLOSURE_DRIFT'; END IF;
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/test-local.py b/scripts/owner-orders-20261023/durable-attempt-20261026/test-local.py
+index 48c7586e..79ce8251 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/test-local.py
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/test-local.py
+@@ -92,6 +92,8 @@ for forged_ack in [None,old1['id']]:
+  ok('missing/forged ACK never advances imported committed',rr['order_id']==old2['id'] and rr['generation']==1)
+ r=recover(advance=True,key=legacy_r['key'],generation=1,ack=old2['id']);ok('explicit exact legacy ACK reserves next generation',r['state']=='reserved' and r['generation']==2)
+ rr=recover();ok('crash before fetch recovers SAME uncertain key, no absence inference',rr['state']=='uncertain' and rr['key']==r['key'])
++ok('advance and read expose canonical committed predecessor for lost ACK recovery',
++ all(r['predecessors'][0][k]==rr['predecessors'][0][k] for k in ['key','generation','state','order_id','numero']) and rr['predecessors'][0]['key']==legacy_r['key'] and rr['predecessors'][0]['state']=='committed' and rr['predecessors'][0]['order_id']==old2['id'])
+ # BEFORE control: previous scope-taking write trigger creates actual idem->scope cycle.
+ write_sig='platform_private.c2_attempt_journal_write_guard()'
+ safe_write=pg.sql(f"SELECT pg_get_functiondef('{write_sig}'::regprocedure)")
+@@ -135,6 +137,8 @@ ok('AFTER forced overlap completes old create and recover with no deadlock',not
+ pg.sql(safe_write);rr=recover();r=recover(advance=True,key=rr['key'],generation=rr['generation'],ack=rr['order_id'])
+ nr=recover(advance=True,key=r['key'],generation=r['generation'])
+ ok('explicit CAS advance closes old key before new generation',nr['generation']==r['generation']+1 and nr['key']!=r['key'] and pg.sql(f"SELECT count(*) FROM platform_private.partner_order_idempotency_closures WHERE idempotency_key='{r['key']}'")=='1')
++ok('other tab read proves closed predecessor through immutable chain',
++ [(x['key'],x['generation'],x['state']) for x in recover()['predecessors']]==[(x['key'],x['generation'],x['state']) for x in nr['predecessors']] and nr['predecessors'][-1]['key']==r['key'] and nr['predecessors'][-1]['state']=='closed' and len(nr['predecessors'])==nr['generation']-1)
+ b=count(); e=error(G,create(P,r['key'],hA))
+ ok('late old generation refused atomically',first(e)=='ERROR:  42501: C2DJ_REGISTERED_ATTEMPT_REQUIRED' and count()==b)
+ commit=json.loads(val(G,create(P,nr['key'],hA)))
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/test-predecessor.audit.mjs b/scripts/owner-orders-20261023/durable-attempt-20261026/test-predecessor.audit.mjs
+new file mode 100644
+index 00000000..87642f6f
+--- /dev/null
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/test-predecessor.audit.mjs
+@@ -0,0 +1,20 @@
++import 'fake-indexeddb/auto';
++import assert from 'node:assert/strict';
++import { adopt, read } from './journal-prototype.mjs';
++import { recoverJournal } from './recovery-controller.mjs';
++const k='10000000-0000-4000-8000-000000000001', next='10000000-0000-4000-8000-000000000002';
++const old={schema:1,key:k,generation:1,state:'uncertain'};
++const reply={contract:'C2_ORDER_JOURNAL_V1',key:next,generation:2,state:'reserved',
++ predecessors:[{key:k,generation:1,state:'closed'}]};
++let failures=0;
++for(const scenario of ['explicit advance','other tab recovers','reopen after lost ACK']) {
++ try {
++  await adopt(scenario,old,()=>true);
++  await recoverJournal({enabled:true,scope:scenario,current:()=>true,
++   expected:old,advance:scenario==='explicit advance',rpc:async()=>reply});
++  assert.equal((await read(scenario)).key,next);
++  await assert.rejects(adopt(scenario,old,()=>true));
++  console.log('PASS',scenario);
++ }catch(e){failures++;console.log('FAIL',scenario,e.message);}
++}
++console.log('TOTAL',3-failures,'PASS',failures,'FAIL');process.exitCode=failures?1:0;
+\ No newline at end of file
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/test-react-browser.py b/scripts/owner-orders-20261023/durable-attempt-20261026/test-react-browser.py
+new file mode 100644
+index 00000000..689e9981
+--- /dev/null
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/test-react-browser.py
+@@ -0,0 +1,87 @@
++import asyncio,json,re
++from pathlib import Path
++from playwright.async_api import async_playwright
++ROOT=Path('/dev-server'); OUT=Path('/tmp/browser/durable-react-replay'); OUT.mkdir(parents=True,exist_ok=True)
++A='11111111-1111-4111-8111-111111111111';O='22222222-2222-4222-8222-222222222222';P='33333333-3333-4333-8333-333333333333';K='44444444-4444-4444-8444-444444444444';ID='55555555-5555-4555-8555-555555555555'
++state={'key':K,'generation':1,'state':'uncertain','orders':{},'calls':[],'cap':'active','failcreate':False,'bad':None,'revoke':False,'predecessors':[],'loseadvance':False}
++plan={'id':'plan-1','name':'À vista','code':'CASH','plan_type':'cash','max_days':0,'months_count':1,'installment_count':1,'discount_percent':0,'monthly_interest_percent':0,'interest_type':'none','requires_credit_approval':False,'requires_guarantee':False,'requires_financial_approval':False,'minimum_order_amount':None,'sort_order':1}
++html='''<html><body><div id="root"></div><script type="module">
++ import RefreshRuntime from '/@react-refresh';RefreshRuntime.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>type=>type;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module">
++import React from '/node_modules/.vite/deps/react.js?v=a850068f';import ReactDOM from'/node_modules/.vite/deps/react-dom_client.js?v=a850068f';import{QueryClient,QueryClientProvider}from'/node_modules/.vite/deps/@tanstack_react-query.js?v=a850068f';import{MemoryRouter,Routes,Route,Outlet}from'/node_modules/.vite/deps/react-router-dom.js?v=a850068f';import NovoPedido from '/src/pages/portal-parceiro/NovoPedido.tsx';import '/src/index.css';
++window.testActor='ACTOR';window.testReady=true;
++function Parent(){return React.createElement(Outlet,{context:{partner:{id:'PARTNER'},afterCreatePath:'/portal-parceiro/pedidos'}})}
++ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(QueryClientProvider,{client:new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}})},React.createElement(MemoryRouter,{initialEntries:['/portal-parceiro/catalogo']},React.createElement(Routes,null,React.createElement(Route,{element:React.createElement(Parent)},React.createElement(Route,{path:'/portal-parceiro/catalogo',element:React.createElement(NovoPedido)})),React.createElement(Route,{path:'/portal-parceiro/pedidos',element:React.createElement('p',null,'Pedidos exibidos')})))));
++</script></body></html>'''.replace('ACTOR',A).replace('PARTNER',P)
++auth=f'''export function useAuth(){{return {{user:{{id:window.testActor}},profile:{{user_id:window.testActor,organization_id:'{O}',ativo:true,senha_provisoria:false}},roles:['parceiro_b2b'],role:'parceiro_b2b',loading:false,authzReady:true,authzEpoch:0,checkAuthzAccess:()=>window.testReady}}}}'''
++async def main():
++ async with async_playwright() as p:
++  browser=await p.chromium.launch(headless=True);ctx=await browser.new_context(viewport={'width':1280,'height':1800}); passes=[]
++  async def route(r):
++   url=r.request.url
++   if '/src/hooks/useAuth.tsx' in url:return await r.fulfill(body=auth,content_type='application/javascript')
++   if url.split('?')[0].endswith('/src/hooks/usePartnerCatalogTecnico.ts'):return await r.fulfill(body='export function usePartnerCatalogTecnico(){return {data:[]}};export function useRealtimePartnerCatalogTecnico(){}',content_type='application/javascript')
++   if url.startswith('http://localhost:8080') and '/__durable_test' in url:return await r.fulfill(body=html,content_type='text/html')
++   if 'supabase.co' not in url:return await r.continue_()
++   if r.request.method=='OPTIONS':return await r.fulfill(status=200,headers={'access-control-allow-origin':'*','access-control-allow-headers':'*','access-control-allow-methods':'*'})
++   headers={'access-control-allow-origin':'*','content-type':'application/json'};name=url.split('/rpc/')[-1].split('?')[0];args=r.request.post_data_json if r.request.method=='POST' else {};state['calls'].append((name,args))
++   data=None;status=200
++   if '/auth/' in url:return await r.fulfill(status=401,headers=headers,body='{}')
++   if name=='partner_order_journal_capability_v1':
++    if state['cap']=='missing':status=404;data={'code':'PGRST202','message':'Could not find public.partner_order_journal_capability_v1'}
++    elif state['cap']=='error':status=503;data={'code':'XX000','message':'unavailable'}
++    else:data={'contract':'C2_ORDER_JOURNAL_V1','enabled':True,'actor_id':A,'organization_id':O,'partner_id':P}
++   elif name=='recover_partner_order_attempt_v1':
++    if args.get('p_advance'):
++     if args.get('p_expected_generation')!=state['generation'] or args.get('p_expected_key')!=state['key'] or (state['state']=='committed' and args.get('p_ack_order')!=ID):status=409;data={'code':'40001','message':'CAS'}
++     else:
++      state['predecessors'].append({'key':state['key'],'generation':state['generation'],'state':state['state'],**({'order_id':ID,'numero':'PB-LOCAL'} if state['state']=='committed' else {})})
++      state.update(key=f"66666666-6666-4666-8666-{state['generation']+1:012d}",generation=state['generation']+1,state='reserved')
++      if state['loseadvance']:return await r.abort('failed')
++    if data is None:data={'contract':'C2_ORDER_JOURNAL_V1','key':state['key'],'generation':state['generation'],'state':state['bad'] or state['state'],'predecessors':state['predecessors'],**({'order_id':ID,'numero':'PB-LOCAL'} if state['state']=='committed' else {})}
++    if state['revoke']:await asyncio.sleep(.2)
++   elif name=='close_partner_order_attempt_v1':state['state']='closed';data={'contract':'C2_ORDER_ATTEMPT_CLOSURE_V1','state':'closed'}
++   elif name=='get_partner_catalog_secure':data=[{'catalog_contract':'C1B_DUAL_TENANT_V1','item_id':P,'product_id':P,'item_tipo':'produto','produto_nome':'Produto local','produto_codigo':'LOCAL','familia_catalogo':'biologico','valor_litro_brl':10,'preco_parceiro':10,'desconto_percentual':0,'unidade_preco_principal':'litro','ficha_aprovada':False}]
++   elif name=='rpc_b2b_list_selectable_payment_plans':data=[plan]
++   elif name=='simulate_b2b_payment_plan_secure':data={'partner_id':P,'pricing_mode':'discount_from_base','quote_required':False,'cart_hash':'real-controlled-hash','payment_plan':plan,'amounts':{'table_amount':10,'discount_amount':0,'net_amount_after_discount':10,'financial_interest_amount':0,'final_amount':10},'schedule':[{'installment_number':1,'due_date':'2026-11-05','amount':10,'principal_amount':10,'interest_amount':0}],'warnings':[]}
++   elif name=='create_partner_order_secure':
++    key=args['p_idempotency_key'];state['orders'][key]=ID;state['state']='committed'
++    if state['failcreate']:return await r.abort('failed')
++    data={'id':ID,'numero':'PB-LOCAL','total':10}
++   elif '/rest/v1/catalogo_volumes' in url:data=[{'id':'vol-1','item_tipo':'produto','produto_id':P,'microrganismo_id':None,'volume_ml':1000,'rotulo':'1 L','preco_brl':10,'moeda':'BRL','ativo':True,'ordem':1}]
++   elif '/rest/v1/partner_orders' in url:data={'id':ID,'c2_external_origin_snapshot':{'contract':'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1','accounting_validated':False}}
++   else:return await r.fulfill(status=404,headers=headers,body=json.dumps({'code':'TEST_UNEXPECTED','message':name}))
++   await r.fulfill(status=status,headers=headers,body=json.dumps(data))
++  await ctx.route('**/*',route)
++  async def tab():
++   page=await ctx.new_page();page.on('pageerror',lambda e:print('PAGEERROR',str(e)));page.on('console',lambda m:print('CONSOLE',m.text) if m.type=='error' else None);await page.goto('http://localhost:8080/__durable_test');await page.get_by_role('button',name='Adicionar ao pedido',exact=True).wait_for();return page
++  def ok(label,value=True):assert value,label;passes.append(label);print('PASS',label)
++  async def fill(page):
++   await page.get_by_role('button',name='Adicionar ao pedido',exact=True).click();await page.get_by_role('button',name='Adicionar ao carrinho',exact=True).click();await page.get_by_role('button',name='Continuar para condição de pagamento',exact=True).first.click();await page.get_by_role('button',name=re.compile('À vista')).click();await page.get_by_role('button',name='Enviar pedido para análise',exact=True).wait_for()
++  a,b=await tab(),await tab();await a.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();await b.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for()
++  ok('two actual NovoPedido tabs share server reservation')
++  await b.get_by_role('button',name='Verificar e encerrar envio anterior',exact=True).click();await b.get_by_text('Envio anterior encerrado sem pedido.',exact=False).wait_for()
++  state['loseadvance']=True;await b.get_by_role('button',name='Iniciar nova tentativa',exact=True).click();await b.get_by_text('Não foi possível confirmar o envio anterior.',exact=False).wait_for();state['loseadvance']=False
++  await a.get_by_role('button',name='Verificar envio anterior',exact=True).click();await a.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();ok('A uncertain / B close+advance lost ACK / A recovers server generation',state['generation']==2)
++  await b.close();b=await tab();await b.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();ok('reopen after lost advance ACK recovers same generation without cache deletion',state['generation']==2)
++  # Retain obsolete local uncertainty in a separate same-origin context, as if B never observed terminal state.
++  lag=await browser.new_context(viewport={'width':1280,'height':1800});await lag.route('**/*',route);c=await lag.new_page();await c.goto('http://localhost:8080/__durable_test');await c.get_by_role('button',name='Adicionar ao pedido',exact=True).wait_for()
++  await c.evaluate("async()=>{const q=await new Promise(res=>{let r=indexedDB.open('c2-order-journal-v1',1);r.onsuccess=()=>res(r.result)});await new Promise(res=>{const t=q.transaction('slots','readwrite');t.objectStore('slots').openCursor().onsuccess=e=>{const c=e.target.result;if(c)c.update({schema:1,key:'44444444-4444-4444-8444-444444444444',generation:1,state:'uncertain'})};t.oncomplete=res});q.close()}")
++  await c.get_by_role('button',name='Verificar envio anterior',exact=True).click();await c.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();ok('stale uncertain IndexedDB is reconciled by canonical predecessor, not cleared');await c.close();await lag.close()
++  activekey=state['key']
++  await fill(a);await fill(b);state['failcreate']=True
++  await asyncio.gather(a.get_by_role('button',name='Enviar pedido para análise',exact=True).click(),b.get_by_role('button',name='Enviar pedido para análise',exact=True).click());await asyncio.sleep(.7)
++  ok('controlled HTTP lost replies create one order with server key',list(state['orders'])==[activekey]);await a.screenshot(path=str(OUT/'1_lost.png'))
++  await a.close();await b.close();state['failcreate']=False;a=await tab();await a.get_by_text('Pedido PB-LOCAL já registrado.',exact=False).wait_for();ok('close and reopen finds committed server order without cart');await a.screenshot(path=str(OUT/'2_recovered.png'))
++  await a.evaluate("async()=>{await new Promise((res,rej)=>{let q=indexedDB.deleteDatabase('c2-order-journal-v1');q.onsuccess=res;q.onerror=rej})}");await a.close();a=await tab();await a.get_by_text('Pedido PB-LOCAL já registrado.',exact=False).wait_for();ok('total IndexedDB loss does not create first-use key')
++  a.on('dialog',lambda d:d.dismiss());await a.get_by_role('button',name='Confirmar pedido existente e iniciar novo',exact=True).click();ok('dismissed confirmation never advances',state['generation']==2)
++  await a.close();a=await tab();a.on('dialog',lambda d:d.accept());await a.get_by_role('button',name='Confirmar pedido existente e iniciar novo',exact=True).click();await a.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();ok('explicit ACK carries exact UUID and CAS',state['generation']==3 and state['calls'][-1][1].get('p_ack_order')==ID)
++  await a.get_by_role('button',name='Verificar e encerrar envio anterior',exact=True).click();await a.get_by_text('Envio anterior encerrado sem pedido.',exact=False).wait_for();ok('close never auto-advances',state['generation']==3);await a.screenshot(path=str(OUT/'3_closed.png'))
++  await a.close();a=await tab();await a.get_by_text('Envio anterior encerrado sem pedido.',exact=False).wait_for();ok('reopen closed waits explicit new-attempt click',state['generation']==3)
++  state['bad']='unknown';await a.close();a=await tab();await a.get_by_text('Não foi possível confirmar o envio anterior.',exact=False).wait_for();ok('unknown canonical receipt blocks rather than deadend fallback');state['bad']=None
++  await a.close();await ctx.clear_cookies();a=await tab();await a.evaluate("async()=>{await new Promise((res,rej)=>{let q=indexedDB.deleteDatabase('c2-order-journal-v1');q.onsuccess=res;q.onerror=rej})}");await a.close();state['cap']='missing';a=await tab();await a.get_by_role('button',name='Adicionar ao pedido',exact=True).wait_for();await asyncio.sleep(.2);ok('RPC absent in fresh tab preserves legacy 001b',await a.locator('[data-journal]').count()==0);await a.close()
++  state['cap']='error';a=await tab();await a.get_by_text('Não foi possível confirmar o envio anterior.',exact=False).wait_for();ok('capability network/server error is not missing fallback');await a.close()
++  state['cap']='active';state['revoke']=True;a=await tab();await a.evaluate('window.testReady=false');await asyncio.sleep(.5);ok('revoked during recovery never exposes committed receipt',await a.get_by_text('Pedido PB-LOCAL já registrado.',exact=False).count()==0);await a.close();state['revoke']=False
++  a=await ctx.new_page();await a.goto('http://localhost:8080/__durable_test');await a.evaluate('window.testActor="77777777-7777-4777-8777-777777777777"');await a.get_by_text('Não foi possível confirmar o envio anterior.',exact=False).wait_for();ok('foreign actor capability fails closed without order reveal',await a.get_by_text('Pedido PB-LOCAL já registrado.',exact=False).count()==0);await a.close()
++  a=await ctx.new_page();await a.goto('http://localhost:8080/__durable_test');await a.evaluate("()=>{IDBFactory.prototype.open=()=>{throw Error('denied')}}");await a.get_by_text('Não foi possível confirmar o envio anterior.',exact=False).wait_for();ok('real browser storage failure prevents dispatch');await a.close()
++  print('TOTAL',len(passes),'PASS React/HTTP/IndexedDB real; synthetic Auth, no hosted writes');await browser.close()
++asyncio.run(main())
+diff --git a/src/lib/authz/orderJournal.ts b/src/lib/authz/orderJournal.ts
+new file mode 100644
+index 00000000..4b9482b0
+--- /dev/null
++++ b/src/lib/authz/orderJournal.ts
+@@ -0,0 +1,136 @@
++import { supabase } from '@/integrations/supabase/client';
++
++export const JOURNAL_REVISION = 'C2_ORDER_JOURNAL_V1';
++const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
++export type Predecessor = {key:string;generation:number;state:'closed'|'committed';order_id?:string;numero?:string};
++export type Journal = { contract: typeof JOURNAL_REVISION; key: string; generation: number; state: 'reserved' | 'uncertain' | 'closed' | 'committed'; order_id?: string; numero?: string; predecessors?:Predecessor[] };
++export function parseOrderJournal(data: unknown): Journal {
++ if (!data || typeof data !== 'object' || Array.isArray(data)) throw Error('journal_contract_invalid');
++ const d = data as Record<string, unknown>;
++ if (d.contract !== JOURNAL_REVISION || typeof d.key !== 'string' || !UUID.test(d.key) ||
++  typeof d.generation !== 'number' || !Number.isSafeInteger(d.generation) || d.generation < 1 ||
++  !['reserved','uncertain','closed','committed'].includes(String(d.state))) throw Error('journal_contract_invalid');
++ if (d.state === 'committed' && (typeof d.order_id !== 'string' || !UUID.test(d.order_id) || typeof d.numero !== 'string' || !d.numero.trim())) throw Error('journal_contract_invalid');
++ const predecessors:Predecessor[]=[];
++ if(d.predecessors!==undefined) {
++  if(!Array.isArray(d.predecessors) || d.predecessors.length!==d.generation-1)throw Error('journal_predecessor_invalid');
++  const keys=new Set([d.key]);
++  for(const [index,p] of d.predecessors.entries()) {
++   if(!p || typeof p!=='object' || Array.isArray(p) || typeof p.key!=='string' || !UUID.test(p.key) || keys.has(p.key) ||
++    p.generation!==index+1 || !['closed','committed'].includes(p.state) ||
++    (p.state==='committed' && (typeof p.order_id!=='string' || !UUID.test(p.order_id) || typeof p.numero!=='string' || !p.numero.trim())))throw Error('journal_predecessor_invalid');
++   keys.add(p.key);predecessors.push({key:p.key,generation:p.generation,state:p.state,...(p.state==='committed'?{order_id:p.order_id,numero:p.numero.trim()}:{})});
++  }
++ }
++ return { contract: JOURNAL_REVISION, key: d.key, generation: d.generation, state: d.state as Journal['state'],
++  ...(d.predecessors!==undefined?{predecessors}:{}),
++  ...(d.state === 'committed' ? { order_id: String(d.order_id), numero: String(d.numero).trim() } : {}) };
++}
++const activated = new Set<string>();
++const observed = new Map<string, Journal>();
++const listeners = new Set<() => void>();
++export const subscribeJournal = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
++export const readObservedJournal = (slot: string | null) => slot ? observed.get(slot) ?? null : null;
++function publish(slot: string, j: Journal) { observed.set(slot,j); listeners.forEach(l=>l()); }
++function currentOrThrow(current: () => boolean) { if (!current()) throw Error('journal_context_changed'); }
++async function rpc(name: string, args: Record<string, unknown>, current: () => boolean) {
++ currentOrThrow(current);
++ const response = await (supabase.rpc as any)(name,args);
++ currentOrThrow(current);
++ return response as { data: unknown; error: { code?: string; message?: string } | null };
++}
++/** Only the exact not-installed RPC error can preserve legacy mode. Never a network/permission fallback. */
++export async function journalCapability(slot: string, partner: string, current: () => boolean): Promise<boolean> {
++ const r = await rpc('partner_order_journal_capability_v1',{p_partner:partner},current);
++ if (r.error) {
++  if (!activated.has(slot) && r.error.code === 'PGRST202' && r.error.message?.includes('partner_order_journal_capability_v1')) {
++   // A previous durable installation cannot be ignored on reload/downgrade.
++   // Absence is only a compatibility signal from the server, never a key release.
++   if(typeof indexedDB!=='undefined') {
++    const d=await db();
++    try {const count=await new Promise<number>((resolve,reject)=>{const q=d.transaction('slots').objectStore('slots').count();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(Error('journal_storage_unavailable'));});
++     currentOrThrow(current);if(count>0)throw Error('journal_downgrade_blocked');
++    } finally {d.close();}
++   }
++   return false;
++  }
++  throw Error('journal_capability_unavailable');
++ }
++ const d = r.data as Record<string, unknown> | null;
++ const actor = JSON.parse(slot) as string[];
++ if (!Array.isArray(actor) || actor.length!==3 || actor[2]!==partner || !d || d.contract !== JOURNAL_REVISION || d.enabled !== true || d.actor_id !== actor[0] || d.organization_id !== actor[1] || d.partner_id !== partner) throw Error('journal_capability_invalid');
++ activated.add(slot); return true;
++}
++async function db(): Promise<IDBDatabase> {
++ return new Promise((resolve,reject)=>{
++  let q: IDBOpenDBRequest;
++  try { q = indexedDB.open('c2-order-journal-v1',1); } catch { reject(Error('journal_storage_unavailable')); return; }
++  q.onupgradeneeded = () => { if (!q.result.objectStoreNames.contains('slots')) q.result.createObjectStore('slots'); };
++  q.onsuccess = () => resolve(q.result);
++  q.onerror = q.onblocked = () => reject(Error('journal_storage_unavailable'));
++ });
++}
++/** Store only opaque key/generation/state and SHA256 scope, never server receipts or payload. */
++export async function persistJournal(slot: string, j: Journal, current: () => boolean, _predecessor?: Journal, digest?: string) {
++ currentOrThrow(current);
++ j=parseOrderJournal(j);
++ const hash = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(slot));
++ currentOrThrow(current);
++ const key = Array.from(new Uint8Array(hash),n=>n.toString(16).padStart(2,'0')).join('');
++ const d = await db();
++ currentOrThrow(current);
++ try { await new Promise<void>((resolve,reject)=>{
++  const tx=d.transaction('slots','readwrite'), store=tx.objectStore('slots'), q=store.get(key);
++  let problem='journal_storage_unavailable';
++  q.onsuccess=()=>{
++   if (!current()) {problem='journal_context_changed';tx.abort();return;}
++   const old=q.result as {schema?: number; key?: string; generation?: number; state?: string; digest?: string} | undefined;
++   const state=j.state==='reserved'?'uncertain':j.state;
++   if (old && (old.schema!==1 || !UUID.test(old.key ?? '') || !Number.isSafeInteger(old.generation) || Number(old.generation)<1 || !['uncertain','closed','committed'].includes(old.state ?? ''))) {problem='journal_storage_corrupt';tx.abort();return;}
++   if (old && (Number(old.generation)>j.generation || (old.generation===j.generation &&
++    (old.key!==j.key || (old.state!=='uncertain' && old.state!==state))))) {problem='journal_stale_response';tx.abort();return;}
++   if(old && Number(old.generation)<j.generation) {
++    const proof=j.predecessors?.find(p=>p.key===old.key && p.generation===old.generation);
++    if(old.key===j.key || !proof || (old.state!=='uncertain' && old.state!==proof.state)) {problem='journal_predecessor_unconfirmed';tx.abort();return;}
++   }
++   if(digest && old?.generation===j.generation && old.digest && old.digest!==digest) {problem='journal_payload_changed';tx.abort();return;}
++   store.put({schema:1,key:j.key,generation:j.generation,state,
++    ...(digest ? {digest} : old?.generation===j.generation && old.digest ? {digest:old.digest}:{})},key);
++  };
++  tx.oncomplete=()=>current()?resolve():reject(Error('journal_context_changed'));
++  tx.onerror=tx.onabort=()=>reject(Error(problem));
++ }); } finally {d.close();}
++ currentOrThrow(current); publish(slot,j);
++}
++export async function recoverOrderJournal(slot: string, partner: string, current: () => boolean, advance?: Journal) {
++ const r=await rpc('recover_partner_order_attempt_v1',{p_partner:partner,p_expected_key:advance?.key ?? null,
++  p_expected_generation:advance?.generation ?? null,p_advance:!!advance,p_ack_order:advance?.state==='committed'?advance.order_id:null},current);
++ if (r.error) throw Error('journal_recovery_unavailable');
++ const j=parseOrderJournal(r.data);
++ if(advance && (j.generation!==advance.generation+1 || j.key===advance.key || j.state!=='reserved')) throw Error('journal_advance_unconfirmed');
++ if(advance) {
++  const proof=j.predecessors?.find(p=>p.key===advance.key && p.generation===advance.generation);
++  if(!proof || (advance.state==='committed' && (proof.state!=='committed' || proof.order_id!==advance.order_id)) ||
++   (advance.state==='closed' && proof.state!=='closed'))throw Error('journal_advance_unconfirmed');
++ }
++ await persistJournal(slot,j,current,advance); return j;
++}
++export async function prepareDurableOrder(slot: string, partner: string, current: () => boolean, digest: string, expected?: Journal) {
++ if (!await journalCapability(slot,partner,current)) return null;
++ const j=await recoverOrderJournal(slot,partner,current);
++ if(expected && (j.key!==expected.key || j.generation!==expected.generation)) throw Error('journal_generation_changed');
++ if (!['reserved','uncertain'].includes(j.state)) throw Error('journal_previous_order_requires_confirmation');
++ await persistJournal(slot,j,current,undefined,digest);
++ return j;
++}
++export async function closeDurableOrder(slot: string, partner: string, current: () => boolean,
++ close: (key: string) => Promise<{error: unknown}>) {
++ const j=await recoverOrderJournal(slot,partner,current);
++ if (j.state==='committed' || j.state==='closed') return j;
++ currentOrThrow(current);
++ const r=await close(j.key);
++ currentOrThrow(current);
++ if (r.error) throw Error('journal_closure_unavailable');
++ // Canonical recovery validates full state/UUID and persists terminal state; close never advances.
++ return recoverOrderJournal(slot,partner,current);
++}
+\ No newline at end of file
+diff --git a/src/test/pedidos/orderJournal.integration.test.tsx b/src/test/pedidos/orderJournal.integration.test.tsx
+new file mode 100644
+index 00000000..78c072ad
+--- /dev/null
++++ b/src/test/pedidos/orderJournal.integration.test.tsx
+@@ -0,0 +1,165 @@
++import 'fake-indexeddb/auto';
++import { IDBFactory } from 'fake-indexeddb';
++import { act, renderHook } from '@testing-library/react';
++import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { type ReactNode } from 'react';
++import { beforeEach, expect, it, vi } from 'vitest';
++import { webcrypto } from 'node:crypto';
++const A='11111111-1111-4111-8111-111111111111', O='22222222-2222-4222-8222-222222222222', P='33333333-3333-4333-8333-333333333333';
++const K='44444444-4444-4444-8444-444444444444', ID='55555555-5555-4555-8555-555555555555';
++const state=vi.hoisted(()=>({actor:'11111111-1111-4111-8111-111111111111',org:'22222222-2222-4222-8222-222222222222',ready:true,rpc:vi.fn()}));
++vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({user:{id:state.actor},profile:{user_id:state.actor,organization_id:state.org,ativo:true,senha_provisoria:false},roles:['parceiro_b2b'],loading:false,authzReady:true,authzEpoch:0,checkAuthzAccess:()=>state.ready})}));
++vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:(...args:unknown[])=>state.rpc(...args),from:()=>({select:()=>({eq:()=>({maybeSingle:()=>Promise.resolve({data:null,error:null})})})})}}));
++vi.mock('sonner',()=>({toast:{success:vi.fn(),error:vi.fn(),warning:vi.fn(),info:vi.fn()}}));
++import { useCreatePartnerOrder } from '@/hooks/useCreatePartnerOrder';
++import { useOrderJournal } from '@/hooks/useOrderJournal';
++import { useCloseOrderAttempt } from '@/hooks/useCloseOrderAttempt';
++import { journalCapability, parseOrderJournal, persistJournal, prepareDurableOrder, recoverOrderJournal, type Journal } from '@/lib/authz/orderJournal';
++const slot=JSON.stringify([A,O,P]), contract='C2_ORDER_JOURNAL_V1';
++const j=(s:Journal['state']='uncertain',g=1):Journal=>({contract,key:K,generation:g,state:s,...(s==='committed'?{order_id:ID,numero:'PB-LOCAL'}:{})});
++const ok=(data:unknown)=>Promise.resolve({data,error:null});
++let generation=1, terminal:Journal['state']='uncertain', creates:string[]=[];
++const input={partner_id:P,items:[{item_id:P,item_tipo:'produto' as const,product_id:P,nome:'Local',quantidade:1,preco_unitario:1,desconto_percentual:0,subtotal:1,unidade_pedido:'litro' as const}],expected_cart_hash:'live-hash',idempotency_key:'client-never-dispatched'};
++const setup=()=>{const q=new QueryClient({defaultOptions:{mutations:{retry:false},queries:{retry:false}}});return ({children}:{children:ReactNode})=><QueryClientProvider client={q}>{children}</QueryClientProvider>;};
++beforeEach(()=>{
++ Object.assign(state,{actor:A,org:O,ready:true});generation=1;terminal='uncertain';creates=[];
++ vi.stubGlobal('indexedDB',new IDBFactory());vi.stubGlobal('crypto',webcrypto);
++ state.rpc.mockReset();state.rpc.mockImplementation((name:string,args:Record<string,unknown>)=>{
++  if(name==='partner_order_journal_capability_v1')return ok({contract,enabled:true,actor_id:state.actor,organization_id:state.org,partner_id:P});
++  if(name==='recover_partner_order_attempt_v1') {
++   if(args.p_advance){if(args.p_expected_generation!==generation || args.p_expected_key!==K || (terminal==='committed' && args.p_ack_order!==ID))return Promise.resolve({data:null,error:{code:'40001'}});const predecessor={key:K,generation,state:terminal==='committed'?'committed':'closed',...(terminal==='committed'?{order_id:ID,numero:'PB-LOCAL'}:{})};generation++;terminal='reserved';return ok({...j(terminal,generation),key:'66666666-6666-4666-8666-666666666666',predecessors:[predecessor]});}
++   return ok(j(terminal,generation));
++  }
++  if(name==='create_partner_order_secure'){creates.push(String(args.p_idempotency_key));terminal='committed';return ok({id:ID,numero:'PB-LOCAL',total:1});}
++  if(name==='close_partner_order_attempt_v1'){terminal='closed';return ok({contract:'C2_ORDER_ATTEMPT_CLOSURE_V1',state:'closed'});}
++  throw Error('unexpected '+name);
++ });
++});
++it.each(['closed','committed','unknown','in_progress'])('canonical %s blocks create independently of local uncertainty',async(s)=>{
++ state.rpc.mockImplementation((n:string)=>n==='partner_order_journal_capability_v1'?ok({contract,enabled:true,actor_id:A,organization_id:O,partner_id:P}):ok({...j(),state:s,...(s==='committed'?{order_id:ID,numero:'PB-LOCAL'}:{})}));
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow();});
++ expect(state.rpc.mock.calls.filter(([n])=>n==='create_partner_order_secure')).toHaveLength(0);
++});
++it('real hook dispatches only server key after storage, then waits committed acknowledgement',async()=>{
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await h.result.current.mutateAsync(input);});
++ expect(creates).toEqual([K]);
++ expect(state.rpc.mock.calls.filter(([n])=>n==='recover_partner_order_attempt_v1')).toHaveLength(2);
++});
++it('unknown/failed capability never falls back, even when legacy memory key is present',async()=>{
++ state.rpc.mockResolvedValue({data:null,error:{code:'42501'}});
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow('journal_capability_unavailable');});expect(creates).toEqual([]);
++});
++it('exact absent RPC before activation preserves 001b, not network failure',async()=>{
++ const legacyPartner='77777777-7777-4777-8777-777777777777';
++ const legacySlot=JSON.stringify([A,O,legacyPartner]);
++ state.rpc.mockResolvedValue({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
++ expect(await journalCapability(legacySlot,legacyPartner,()=>true)).toBe(false);
++});
++it('activated slot can never downgrade on missing RPC',async()=>{
++ await journalCapability(slot,P,()=>true);
++ state.rpc.mockResolvedValue({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
++ await expect(journalCapability(slot,P,()=>true)).rejects.toThrow();
++});
++it.each(['committed','closed'] as const)('terminal %s cannot regress or conflict in IndexedDB',async(s)=>{
++ await persistJournal(slot,j(s),()=>true);
++ await expect(persistJournal(slot,j(),()=>true)).rejects.toThrow('journal_stale_response');
++ await expect(persistJournal(slot,j(s==='closed'?'committed':'closed'),()=>true)).rejects.toThrow('journal_stale_response');
++});
++it('changed payload in another mounted hook is blocked before create',async()=>{
++ await prepareDurableOrder(slot,P,()=>true,'payload1');
++ await expect(prepareDurableOrder(slot,P,()=>true,'payload2')).rejects.toThrow('journal_payload_changed');expect(creates).toEqual([]);
++});
++it('storage denied after reserve never dispatches or falls back',async()=>{
++ vi.stubGlobal('indexedDB',{open:()=>{throw Error('denied');}});
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow();});expect(creates).toEqual([]);
++});
++it('revocation during recovery blocks journal writes and create',async()=>{
++ const original=state.rpc.getMockImplementation();
++ state.rpc.mockImplementation(async(n:string,a:Record<string,unknown>)=>{const r=await original?.(n,a);if(n==='recover_partner_order_attempt_v1')state.ready=false;return r;});
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow();});expect(creates).toEqual([]);
++});
++it('current payload edited during reservation is never sent',async()=>{
++ let unchanged=true;const original=state.rpc.getMockImplementation();
++ state.rpc.mockImplementation(async(n:string,a:Record<string,unknown>)=>{const r=await original?.(n,a);if(n==='recover_partner_order_attempt_v1')unchanged=false;return r;});
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await expect(h.result.current.mutateAsync({...input,current_payload:()=>unchanged})).rejects.toThrow();});expect(creates).toEqual([]);
++});
++it('fresh server generation must match click expectation',async()=>{
++ await expect(prepareDurableOrder(slot,P,()=>true,'x',{...j(),generation:2})).rejects.toThrow('journal_generation_changed');expect(creates).toEqual([]);
++});
++it('reopened React hook recovers server committed without any local storage',async()=>{
++ terminal='committed';const h=renderHook(()=>useOrderJournal(P));
++ await vi.waitFor(()=>expect(h.result.current.journal?.order_id).toBe(ID));h.unmount();
++ vi.stubGlobal('indexedDB',new IDBFactory());const reopened=renderHook(()=>useOrderJournal(P));
++ await vi.waitFor(()=>expect(reopened.result.current.journal?.numero).toBe('PB-LOCAL'));expect(creates).toEqual([]);
++});
++it('close hook persists closed and never advances automatically',async()=>{
++ const h=renderHook(()=>useCloseOrderAttempt());
++ await act(async()=>{expect(await h.result.current.close(P)).toEqual({kind:'closed'});});
++ expect(generation).toBe(1);expect(creates).toEqual([]);
++});
++it('explicit committed ACK passes exact UUID/key/generation and next server key',async()=>{
++ terminal='committed';const old=await recoverOrderJournal(slot,P,()=>true);
++ const next=await recoverOrderJournal(slot,P,()=>true,old);
++ expect(next.generation).toBe(2);expect(next.key).not.toBe(K);
++ expect(state.rpc.mock.calls.at(-1)?.[1]).toMatchObject({p_ack_order:ID,p_expected_key:K,p_expected_generation:1,p_advance:true});
++});
++it('forged ACK cannot advance',async()=>{
++ terminal='committed';await expect(recoverOrderJournal(slot,P,()=>true,{...j('committed'),order_id:P})).rejects.toThrow();expect(generation).toBe(1);
++});
++it('two mounted create hooks same tick share key, never client-generated keys',async()=>{
++ const one=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()}),two=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await Promise.allSettled([one.result.current.mutateAsync(input),two.result.current.mutateAsync(input)]);});
++ expect(creates.length).toBeGreaterThan(0);expect(new Set(creates)).toEqual(new Set([K]));expect(generation).toBe(1);
++});
++it.each(['actor','organization'] as const)('foreign capability %s cannot disclose or create',async(kind)=>{
++ state.rpc.mockResolvedValue({data:{contract,enabled:true,actor_id:kind==='actor'?P:A,organization_id:kind==='organization'?P:O,partner_id:P},error:null});
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow('journal_capability_invalid');});expect(creates).toEqual([]);
++});
++it('create commit followed by missing ACK blocks success without resending',async()=>{
++ const original=state.rpc.getMockImplementation();let recoveries=0;
++ state.rpc.mockImplementation((name:string,args:Record<string,unknown>)=>{
++  if(name==='recover_partner_order_attempt_v1' && ++recoveries===2)return ok({contract,state:'unknown'});
++  return original?.(name,args);
++ });
++ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
++ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow();});expect(creates).toEqual([K]);expect(terminal).toBe('committed');
++});
++it('persisted durable evidence blocks missing capability after memory loss',async()=>{
++ await persistJournal(JSON.stringify([P,O,P]),j('closed'),()=>true);
++ state.rpc.mockResolvedValue({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
++ await expect(journalCapability(JSON.stringify([P,O,P]),P,()=>true)).rejects.toThrow('journal_downgrade_blocked');
++});
++it('close double-click is synchronously single-flight before capability await',async()=>{
++ const h=renderHook(()=>useCloseOrderAttempt());
++ await act(async()=>{await Promise.all([h.result.current.close(P),h.result.current.close(P)]);});
++ expect(state.rpc.mock.calls.filter(([n])=>n==='close_partner_order_attempt_v1')).toHaveLength(1);
++});
++it('A uncertain / B closed+advanced / A hook recovers N+1 with authoritative predecessor',async()=>{
++ await persistJournal(slot,j(),()=>true);
++ const next={...j('reserved',2),key:'66666666-6666-4666-8666-666666666666',predecessors:[{key:K,generation:1,state:'closed'}]};
++ state.rpc.mockImplementation((name:string)=>name==='partner_order_journal_capability_v1'?ok({contract,enabled:true,actor_id:A,organization_id:O,partner_id:P}):ok(next));
++ const h=renderHook(()=>useOrderJournal(P));
++ await vi.waitFor(()=>expect(h.result.current.journal?.generation).toBe(2));
++ await expect(persistJournal(slot,j(),()=>true)).rejects.toThrow('journal_stale_response');
++});
++it('reopen after advance ACK loss recovers without deleting uncertain local predecessor',async()=>{
++ await persistJournal(slot,j(),()=>true);
++ const next={...j('uncertain',2),key:'66666666-6666-4666-8666-666666666666',predecessors:[{key:K,generation:1,state:'committed',order_id:ID,numero:'PB-LOCAL'}]};
++ state.rpc.mockResolvedValue({data:next,error:null});
++ expect((await recoverOrderJournal(slot,P,()=>true)).generation).toBe(2);
++ expect((await recoverOrderJournal(slot,P,()=>true)).key).toBe(next.key);
++});
++it.each([undefined,[{key:P,generation:1,state:'closed'}],[{key:K,generation:1,state:'unknown'}]])('missing/foreign/nonterminal proof cannot bypass uncertain cache %#',async(proof)=>{
++ await persistJournal(slot,j(),()=>true);
++ state.rpc.mockResolvedValue({data:{...j('reserved',2),key:P,predecessors:proof},error:null});
++ await expect(recoverOrderJournal(slot,P,()=>true)).rejects.toThrow();
++ await persistJournal(slot,j(),()=>true);
++});
++it.each([null,{}, {contract,key:'-'.repeat(36),generation:1,state:'uncertain'}, {...j('committed'),order_id:undefined}])('strict schema rejects malformed receipt %#',(d)=>expect(()=>parseOrderJournal(d)).toThrow());
+\ No newline at end of file

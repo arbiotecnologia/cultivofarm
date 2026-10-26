@@ -15,7 +15,18 @@ export function parseCanonical(value) {
      !['reserved','uncertain','closed','committed'].includes(value.state)) throw Error('contract_invalid');
  if(value.state==='committed' && (typeof value.order_id!=='string' || !UUID.test(value.order_id) ||
      typeof value.numero!=='string' || !value.numero.trim())) throw Error('contract_invalid');
+ const predecessors=[];
+ if(value.predecessors!==undefined){
+  if(!Array.isArray(value.predecessors)||value.predecessors.length!==value.generation-1)throw Error('predecessor_invalid');
+  const keys=new Set([value.key]);
+  for(const [n,p] of value.predecessors.entries()){
+   if(!p||typeof p!=='object'||Array.isArray(p)||typeof p.key!=='string'||!UUID.test(p.key)||keys.has(p.key)||p.generation!==n+1||!['closed','committed'].includes(p.state)||
+    (p.state==='committed'&&(typeof p.order_id!=='string'||!UUID.test(p.order_id)||typeof p.numero!=='string'||!p.numero.trim())))throw Error('predecessor_invalid');
+   keys.add(p.key);predecessors.push({key:p.key,generation:p.generation,state:p.state,...(p.state==='committed'?{order_id:p.order_id,numero:p.numero.trim()}:{})});
+  }
+ }
  return {contract:value.contract,key:value.key,generation:value.generation,state:value.state,
+  ...(value.predecessors!==undefined?{predecessors}:{}),
   ...(value.state==='committed'?{order_id:value.order_id,numero:value.numero.trim()}: {})};
 }
 async function open() {
@@ -39,8 +50,10 @@ export async function read(scope) {
  }); } finally {db.close();}
 }
 // Server-issued reservation MUST already exist, even when the local database is empty.
-export async function adopt(scope,reservation,current) {
+export async function adopt(scope,reservation,current,canonicalProof) {
  if(!current() || !valid(reservation)) throw Error('context_or_contract_invalid');
+ const canonical=canonicalProof===undefined?undefined:parseCanonical(canonicalProof);
+ if(canonical && (canonical.key!==reservation.key || canonical.generation!==reservation.generation))throw Error('predecessor_invalid');
  const db=await open();
  try {return await new Promise((resolve,reject)=>{
   const t=db.transaction('slots','readwrite'), store=t.objectStore('slots'), req=store.get(scope);
@@ -54,7 +67,14 @@ export async function adopt(scope,reservation,current) {
    // A new generation requires a different server-issued key and a terminal predecessor.
    if(prev && prev.generation===reservation.generation && prev.state!=='uncertain' && prev.state!==reservation.state) {failure='terminal_state_conflict';t.abort();return;}
    if(prev && reservation.generation>prev.generation &&
-      (prev.state==='uncertain' || prev.key===reservation.key)) {failure='generation_transition_unconfirmed';t.abort();return;}
+      (prev.state==='uncertain' || prev.key===reservation.key)) {
+    const proof=canonical?.predecessors?.find(p=>p.key===prev.key && p.generation===prev.generation);
+    if(prev.key===reservation.key || !proof){failure='generation_transition_unconfirmed';t.abort();return;}
+   }
+   if(prev && reservation.generation>prev.generation && canonical){
+    const proof=canonical.predecessors?.find(p=>p.key===prev.key && p.generation===prev.generation);
+    if(!proof || (prev.state!=='uncertain' && proof.state!==prev.state)){failure='generation_transition_unconfirmed';t.abort();return;}
+   }
    // Persist only opaque key, schema/version and state. No payload, price, token, actor IDs.
    store.put({schema:1,key:reservation.key,generation:reservation.generation,state:reservation.state},scope);
   };

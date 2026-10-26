@@ -4,3 +4,4 @@
 - Rollback is deny-only on canonical idempotency writes and disables continuity RPCs while preserving all journals, closures and history — prevents downgrade to memory-only duplication.
 - Local PostgreSQL uses the captured create/closure chain with synthetic Auth; browser tests use real IndexedDB with controlled transport, never hosted JWT/RLS certification — prevents false real-session claims.
 - Local journal transitions are monotonic within each generation, terminal conflicts abort, and dispatch requires a fresh strictly parsed canonical nonterminal reply plus matching local CAS — prevents stale terminal regression and malformed/closed dispatch.
+- Cross-generation recovery requires the authenticated immutable predecessor chain matched inside the IndexedDB CAS; client expectations alone never prove closure — prevents permanent stale-cache deadends without allowing old responses to regress.

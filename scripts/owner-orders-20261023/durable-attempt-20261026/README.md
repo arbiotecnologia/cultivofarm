@@ -1,5 +1,25 @@
 # Continuidade durável — candidato corrigido, INATIVO
 
+## Revisão c7a7 — predecessor canônico / CAS entre gerações
+
+Reproduzido diretamente no controller: antes **0 PASS / 3 FAIL**, depois **3 PASS**
+para avanço explícito, recuperação por outra aba e reabertura após ACK perdido.
+O core candidato agora retorna `predecessors`: histórico terminal ordenado desde geração1,
+derivado apenas do journal imutável e dos recibos/tombstones canônicos do mesmo ator/empresa/parceiro.
+Avanço usa o fechamento validado do expected key; recovery não fecha nada nem infere ACK.
+O parser exige UUIDs estritos únicos, sequência completa e committed com UUID/numero;
+CAS IndexedDB compara o predecessor da geração local dentro da mesma transação.
+Só então instala a geração atual; prova não é persistida, apenas key/generation/state/digest.
+Resposta velha, terminal conflitante, prova ausente/foreign/unknown e mudança de contexto continuam negadas.
+Expectativa do cliente, permissões e limpeza arbitrária do storage não substituem essa prova.
+
+Backend9d4 anterior permanece sem instalação: esta extensão precisa revisão integrada e implantação coordenada.
+PRE base LIVE intacto; POST/rollback regenerados com core MD5 `81058861e8a72bc3b45401ba9893cb72`.
+Barreiras/create/close/locks/ACL não ampliados; rollback mantém contenção deny-only.
+Provas:46 checks PostgreSQL descartável/Auth sintética;17 Chromium com NovoPedido/hook/HTTP controlado,
+incluindo A uncertain/B close+advance ACK perdido/A recover e cache incerto antigo em outra origem de armazenamento do harness.
+Não há prova JWT/RLS hosted; dados produtivos, contabilidade DRAFT e abas reais permanecem intocados.
+
 ## Integração React 19:26 — rollout coordenado
 
 Frontend preparado no fluxo existente `NovoPedido/useCreatePartnerOrder/useCloseOrderAttempt`, sem rota/painel alternativo.
