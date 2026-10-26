@@ -38,6 +38,7 @@ def h(text):
     return text
 pre, cand, post = (h((D / f).read_text()) for f in ('preflight.sql', 'candidate.sql.review', 'postflight.sql'))
 rb, rbfull = (h((D / f).read_text()) for f in ('rollback.sql.review', 'rollback-full-if-empty.sql.review'))
+print('HARNESS_POI_INDEXES', q("SELECT string_agg(c.relname||':'||i.indisunique||':'||(SELECT array_agg(a.attname ORDER BY k.ord) FROM unnest(i.indkey) WITH ORDINALITY k(attnum,ord) JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=k.attnum)::text, ' ') FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid WHERE i.indrelid='public.partner_order_idempotency'::regclass"), flush=True)
 q(pre); ok('preflight READ ONLY passes on captured LIVE state')
 ok('preflight left no objects', q("SELECT to_regclass('platform_private.partner_order_idempotency_closures') IS NULL") == 't')
 # drift: preflight must fail
