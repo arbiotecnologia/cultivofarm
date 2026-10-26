@@ -11,6 +11,8 @@ export function promotionErrorReason(err: unknown): PromotionErrorReason {
   if (msg.includes("context_changed")) return "context_changed";
   if (msg.includes("C2_ACCOUNTING_PENDING")) return "accounting_pending";
   if (msg.includes("C2AP_STALE")) return "stale";
+  // PT409 = conflito de negócio não retentável (substituiu 40001 no core, c2_business_conflicts_http409_20261026).
+  if (e.code === "PT409") return "stale";
   if (msg.includes("C2AP_NOT_PENDING")) return "not_pending";
   if (msg.includes("C2AP_STATUS_DENIED")) return "status";
   if (msg.includes("C2AP_ORDER_DENIED") || msg.includes("auth_required")) return "denied";

@@ -82,7 +82,7 @@ export function PartnerLifecycleFields({ partnerId, userId }: { partnerId: strin
     } catch (e) {
       if (!current()) return;
       const error = e && typeof e === "object" ? e as { code?: string; message?: string } : {};
-      if (error.code === "40001") { setConflict(true); setMessage("Os acessos mudaram. Atualize os dados antes de confirmar novamente."); }
+      if (error.code === "PT409" || error.code === "40001") { setConflict(true); setMessage("Os acessos mudaram. Atualize os dados antes de confirmar novamente."); }
       else setMessage("Não foi possível confirmar. Preserve a tentativa para verificar novamente.");
     } finally {
       if (lock.current === token) { lock.current = null; if (current()) setBusy(false); }

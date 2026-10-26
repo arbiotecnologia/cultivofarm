@@ -173,7 +173,8 @@ export function useUpdatePartnerFinancialSettings() {
         p_values: payload,
       });
       if (!current()) throw new Error("financial_context_changed");
-      if (error?.code === "23505" || (!error && !data)) throw new Error("settings_conflict");
+      // PT409: conflito CAS não retentável do c2p1_update_settings; preserva rascunho, sem auto-retry.
+      if (error?.code === "23505" || error?.code === "PT409" || (!error && !data)) throw new Error("settings_conflict");
       if (error) throw error;
       if (data.partner_id !== draft.partner_id) throw new Error("settings_response_invalid");
       const key = ["pfs", draft.partner_id, fence.scope];
