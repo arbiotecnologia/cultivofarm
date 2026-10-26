@@ -14040,6 +14040,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           area_total_ha: number | null
+          c2_external_origin_snapshot: Json | null
           cliente_id: string | null
           commercial_discount_amount: number | null
           commercial_notes: string | null
@@ -14092,6 +14093,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           area_total_ha?: number | null
+          c2_external_origin_snapshot?: Json | null
           cliente_id?: string | null
           commercial_discount_amount?: number | null
           commercial_notes?: string | null
@@ -14144,6 +14146,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           area_total_ha?: number | null
+          c2_external_origin_snapshot?: Json | null
           cliente_id?: string | null
           commercial_discount_amount?: number | null
           commercial_notes?: string | null
@@ -21199,6 +21202,10 @@ export type Database = {
         Returns: Json
       }
       c2_internal_order_entry_capability_v1: { Args: never; Returns: Json }
+      c2_promote_accounting_pending_order_v1: {
+        Args: { p_expected_updated_at: string; p_order_id: string }
+        Returns: Json
+      }
       calculate_valor_dose_from_litro: {
         Args: { p_valor_litro: number }
         Returns: number
