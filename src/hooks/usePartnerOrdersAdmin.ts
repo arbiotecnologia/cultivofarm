@@ -94,5 +94,5 @@ export function usePartnerOrdersAdmin(filters: AdminFilters = {}) {
     return () => { supabase.removeChannel(channel); };
   }, [qc, ready, actor.scope]);
 
-  return result;
+  return { ...result, actorScope: actor.scope, actorReady: actor.ready };
 }

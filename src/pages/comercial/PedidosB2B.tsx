@@ -1,6 +1,7 @@
 import { AccountingPendingNotice, AccountingPendingBadge } from "@/components/pedidos/AccountingPendingNotice";
 import { isAccountingPending } from "@/lib/orderAccountingState";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { PromoteAccountingPendingButton } from "@/components/pedidos/PromoteAccountingPendingButton";
 import { usePartnerOrdersAdmin, PartnerOrderAdmin } from "@/hooks/usePartnerOrdersAdmin";
 import { usePartnerOrderItems } from "@/hooks/usePartnerOrders";
 import { useUnreadCountsByOrder } from "@/hooks/usePartnerUnreadMessages";
@@ -64,12 +65,12 @@ const STATUS_OPTIONS = [
 ];
 
 export default function PedidosB2B() {
-  const { role } = useAuth();
+  const { role, roles = [] } = useAuth();
   const internalEntry = useInternalOrderEntry();
   const canApproveCredit =
     role === "administrador" || role === "gestor" || role === "financeiro";
   const [statusFilter, setStatusFilter] = useState<string>("aguardando_aprovacao_credito");
-  const { data: orders = [], isLoading } = usePartnerOrdersAdmin({
+  const { data: orders = [], isLoading, actorScope, actorReady } = usePartnerOrdersAdmin({
     status: statusFilter === "all" ? undefined : statusFilter,
   });
 
@@ -77,7 +78,12 @@ export default function PedidosB2B() {
   const { data: unread = {} } = useUnreadCountsByOrder(orderIds);
   const { data: slaMap } = useOrdersSlaMap(orderIds);
 
-  const [detail, setDetail] = useState<PartnerOrderAdmin | null>(null);
+  // Detalhe preso ao escopo do ator: troca de identidade/tenant/papéis/época ou revogação fecha o detalhe;
+  // enquanto aberto, a linha é atualizada pela leitura cercada (CAS usa o updated_at mais recente).
+  const [detailState, setDetailState] = useState<{ scope: string; order: PartnerOrderAdmin } | null>(null);
+  const detail = detailState && detailState.scope === actorScope && actorReady
+    ? (orders.find((o) => o.id === detailState.order.id) ?? detailState.order) : null;
+  const setDetail = (o: PartnerOrderAdmin | null) => setDetailState(o ? { scope: actorScope, order: o } : null);
   const [approvalNotes, setApprovalNotes] = useState("");
   const [estDate, setEstDate] = useState("");
   const [commercialNotes, setCommercialNotes] = useState("");
@@ -99,6 +105,11 @@ export default function PedidosB2B() {
   const requestItems = useRequestPartnerOrderItems();
   const [requestItemsOpen, setRequestItemsOpen] = useState(false);
   const [requestItemsMotivo, setRequestItemsMotivo] = useState("");
+  useEffect(() => {
+    // Troca de ator/tenant/revogação: fecha detalhe e todos os diálogos de ação derivados dele.
+    setDetailState(null); setRejectOpen(false); setTimelineOpen(false); setQuoteOpen(false); setRequestItemsOpen(false);
+  }, [actorScope]);
+  const canAttemptPromotion = roles.some((r) => r === "administrador" || r === "gestor" || r === "gestor_comercial");
   const itemsCount = items.length;
   const hasItems = itemsCount > 0;
 
@@ -394,6 +405,7 @@ export default function PedidosB2B() {
                 </div>
 
                 {isAccountingPending(detail) && <AccountingPendingNotice audience="commercial" />}
+                <PromoteAccountingPendingButton order={detail} canAttempt={canAttemptPromotion} />
                 {detail.status === "aguardando_aprovacao_credito" && (
                   <div className="border rounded-md p-3 space-y-2 bg-destructive/5">
                     <div className="flex items-center gap-2 font-semibold text-sm">
