@@ -17,8 +17,8 @@ beforeEach(() => { s.actor = "A"; s.org = "OA"; s.ready = true; s.epoch = 0; s.r
 
 for (const kind of ["company", "product", "service", "service_profile"] as const) {
   describe(`${kind}: operações reais do hook, Auth/transporte simulados`, () => {
-    const original = kind === "company" ? { schema_version: 1 as const, rtc_environment: "HOMOLOGATION" as const } : { schema_version: 1 as const, ibs_rate: 1 };
-    const changed = kind === "company" ? { schema_version: 1 as const, rtc_environment: "NOT_CONFIGURED" as const } : { schema_version: 1 as const, ibs_rate: 2 };
+    const original = kind === "company" ? { schema_version: 1 as const, rtc_environment: "HOMOLOGATION" as const } : { schema_version: 1 as const, aliquota_ibs_uf: 1 };
+    const changed = kind === "company" ? { schema_version: 1 as const, rtc_environment: "NOT_CONFIGURED" as const } : { schema_version: 1 as const, aliquota_ibs_uf: 2 };
     const response = (revision: string, configuration = original) => ({ data: { revision, configuration, exists: true }, error: null });
     async function setup() {
       s.rpc.mockResolvedValue(response("R1"));
