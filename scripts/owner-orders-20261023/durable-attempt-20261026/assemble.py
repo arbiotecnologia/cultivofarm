@@ -180,7 +180,7 @@ BEGIN
  IF p_advance THEN
   IF j.idempotency_key IS NULL OR p_expected_key IS DISTINCT FROM j.idempotency_key
    OR p_expected_generation IS DISTINCT FROM j.generation THEN
-   RAISE EXCEPTION 'C2DJ_CAS_CONFLICT' USING ERRCODE='40001'; END IF;
+   RAISE EXCEPTION 'C2DJ_CAS_CONFLICT' USING ERRCODE='PT409'; END IF;
   -- Explicit click only; existing atomic close is the ONLY way to abandon uncertain K.
   result := platform_private.c2_close_partner_order_attempt_core(p_partner,j.idempotency_key);
   SELECT organization_id INTO fresh FROM public.profiles WHERE user_id=uid AND ativo;
