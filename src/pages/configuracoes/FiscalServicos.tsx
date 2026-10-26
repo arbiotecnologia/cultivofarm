@@ -6,6 +6,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useProductFiscalAccess } from "@/hooks/useProductFiscalAccess";
 import { getAccessLevel } from "@/lib/permissions";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 import {
@@ -77,7 +78,8 @@ const STRING_FIELD_META: { key: StringField; label: string; numeric?: boolean; s
 export default function FiscalServicos() {
   const { role } = useAuth();
   const access = getAccessLevel(role, "/configuracoes/fiscal/servicos");
-  const canEdit = access === "rw";
+  const fiscalAccess = useProductFiscalAccess("service-fiscal-editor");
+  const canEdit = role === "superadmin" && access === "rw" && fiscalAccess.canWrite;
   const uiEnabled = FEATURE_FLAGS.fiscalServiceProfilesUi === true;
   const emissionLock = FEATURE_FLAGS.fiscalEmissionEnabled === false;
 
@@ -394,6 +396,7 @@ function EditDrawer({
 
   async function onSubmit(ev: React.FormEvent) {
     ev.preventDefault();
+    if (!canEdit || save.isPending) return;
     setErrors({});
     const parsed = serviceFiscalFormSchema.safeParse(values);
     if (!parsed.success) {

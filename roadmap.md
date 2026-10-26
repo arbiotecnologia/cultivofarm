@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 26/10 23:42 — RTC CAS aplicado e interface global de serviços
+- [x] Conciliação RTC registrada sem reaplicar SQL; hook real testa PT409/PT404, revisão preservada e ausência de retry.
+- [x] UI tenant serviços somente consulta; IBS/CBS usa fence global existente; revogação/contexto testados. Rota Superadmin segue negada, sem nova entrada global.
+- [x] 130/130 testes em7arquivos PASS (Auth/transporte simulados), build automático OK; relatório/diff em applied/fiscal_company_rtc_cas_http409_20261026.md.
+- [ ] Hardening servidor/CAS dos serviços e homologação JWT pelo auditor; canal global de edição de serviços não foi criado/autorizado. Cadastro direto e caches globais aguardam revisão completa.
+
 ## 26/10 19:01 — recuperação durável após fechar aba / mesma origem
 - [x] Revisão19:45: predecessor canônico completo em recovery/advance, CAS de geração local dentro IndexedDB; controller antes0/3 depois3/3,46PG,17browser NovoPedido/HTTP controlado; sem limpeza arbitrária/publicação/SQLhosted. Revisão integrada/JWT real continuam pendentes.
 - [x] Integração19:26: React canônico por capability servidor, fallback001b só RPC ausente antesativação; reserva server+IndexedDB/CAS/fences/payload, ACK UUID explícito e close sem avanço.94Vitest/44PG/16audit/17prototypebrowser/14Reactbrowser PASS, sintéticos/controlados; build automáticoOK; SQL inativo e sem publicação.
