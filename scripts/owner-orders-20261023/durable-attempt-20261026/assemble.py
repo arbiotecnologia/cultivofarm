@@ -152,7 +152,7 @@ ddl+=newdef+'\n'+closedef+'\n'
 funcs={}
 for match in re.finditer(r'CREATE(?: OR REPLACE)? FUNCTION ([\w.]+)\((.*?)\).*?AS \$function\$(.*?)\$function\$;',ddl,re.S):
  name,args,b=match.groups(); types=[]
- for a in args.split(','):
+ for a in (args.split(',') if args.strip() else []):
   t=a.strip().split()[1]; types.append(t)
  fs=name+'('+','.join(types)+')'
  # Canonical create uses integer, alias int etc not introduced.
