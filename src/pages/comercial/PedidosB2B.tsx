@@ -46,6 +46,7 @@ import { b2bToast } from "@/lib/b2bToast";
 import { PedidoItemProdutoInfo } from "@/components/pedidos-b2b/PedidoItemProdutoInfo";
 import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection";
 import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntry";
+import { CommercialOwnerOrdersSection } from "@/components/comercial/CommercialOwnerOrdersSection";
 import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
 
 
@@ -354,6 +355,11 @@ export default function PedidosB2B() {
           )}
         </CardContent>
       </Card>
+
+      {/* Canal administrativo da empresa dona da carteira: somente leitura, via RPC
+          canônica escopada. Quieto quando o contrato não está instalado, o ator não
+          é admin/gestor_comercial interno ou a carteira não tem pedidos no filtro. */}
+      {!isLoading && orders.length === 0 && <CommercialOwnerOrdersSection statusFilter={statusFilter} />}
 
       <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
