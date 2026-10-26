@@ -3,7 +3,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 ROOT=Path('/dev-server'); OUT=Path('/tmp/browser/durable-react-replay'); OUT.mkdir(parents=True,exist_ok=True)
 A='11111111-1111-4111-8111-111111111111';O='22222222-2222-4222-8222-222222222222';P='33333333-3333-4333-8333-333333333333';K='44444444-4444-4444-8444-444444444444';ID='55555555-5555-4555-8555-555555555555'
-state={'key':K,'generation':1,'state':'uncertain','orders':{},'calls':[],'cap':'active','failcreate':False,'bad':None,'revoke':False}
+state={'key':K,'generation':1,'state':'uncertain','orders':{},'calls':[],'cap':'active','failcreate':False,'bad':None,'revoke':False,'predecessors':[],'loseadvance':False}
 plan={'id':'plan-1','name':'À vista','code':'CASH','plan_type':'cash','max_days':0,'months_count':1,'installment_count':1,'discount_percent':0,'monthly_interest_percent':0,'interest_type':'none','requires_credit_approval':False,'requires_guarantee':False,'requires_financial_approval':False,'minimum_order_amount':None,'sort_order':1}
 html='''<html><body><div id="root"></div><script type="module">
  import RefreshRuntime from '/@react-refresh';RefreshRuntime.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>type=>type;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module">
@@ -33,8 +33,11 @@ async def main():
    elif name=='recover_partner_order_attempt_v1':
     if args.get('p_advance'):
      if args.get('p_expected_generation')!=state['generation'] or args.get('p_expected_key')!=state['key'] or (state['state']=='committed' and args.get('p_ack_order')!=ID):status=409;data={'code':'40001','message':'CAS'}
-     else:state.update(key='66666666-6666-4666-8666-666666666666',generation=state['generation']+1,state='reserved')
-    if data is None:data={'contract':'C2_ORDER_JOURNAL_V1','key':state['key'],'generation':state['generation'],'state':state['bad'] or state['state'],**({'order_id':ID,'numero':'PB-LOCAL'} if state['state']=='committed' else {})}
+     else:
+      state['predecessors'].append({'key':state['key'],'generation':state['generation'],'state':state['state'],**({'order_id':ID,'numero':'PB-LOCAL'} if state['state']=='committed' else {})})
+      state.update(key=f"66666666-6666-4666-8666-{state['generation']+1:012d}",generation=state['generation']+1,state='reserved')
+      if state['loseadvance']:return await r.abort('failed')
+    if data is None:data={'contract':'C2_ORDER_JOURNAL_V1','key':state['key'],'generation':state['generation'],'state':state['bad'] or state['state'],'predecessors':state['predecessors'],**({'order_id':ID,'numero':'PB-LOCAL'} if state['state']=='committed' else {})}
     if state['revoke']:await asyncio.sleep(.2)
    elif name=='close_partner_order_attempt_v1':state['state']='closed';data={'contract':'C2_ORDER_ATTEMPT_CLOSURE_V1','state':'closed'}
    elif name=='get_partner_catalog_secure':data=[{'catalog_contract':'C1B_DUAL_TENANT_V1','item_id':P,'product_id':P,'item_tipo':'produto','produto_nome':'Produto local','produto_codigo':'LOCAL','familia_catalogo':'biologico','valor_litro_brl':10,'preco_parceiro':10,'desconto_percentual':0,'unidade_preco_principal':'litro','ficha_aprovada':False}]
@@ -56,15 +59,24 @@ async def main():
    await page.get_by_role('button',name='Adicionar ao pedido',exact=True).click();await page.get_by_role('button',name='Adicionar ao carrinho',exact=True).click();await page.get_by_role('button',name='Continuar para condição de pagamento',exact=True).first.click();await page.get_by_role('button',name=re.compile('À vista')).click();await page.get_by_role('button',name='Enviar pedido para análise',exact=True).wait_for()
   a,b=await tab(),await tab();await a.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();await b.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for()
   ok('two actual NovoPedido tabs share server reservation')
+  await b.get_by_role('button',name='Verificar e encerrar envio anterior',exact=True).click();await b.get_by_text('Envio anterior encerrado sem pedido.',exact=False).wait_for()
+  state['loseadvance']=True;await b.get_by_role('button',name='Iniciar nova tentativa',exact=True).click();await b.get_by_text('Não foi possível confirmar o envio anterior.',exact=False).wait_for();state['loseadvance']=False
+  await a.get_by_role('button',name='Verificar envio anterior',exact=True).click();await a.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();ok('A uncertain / B close+advance lost ACK / A recovers server generation',state['generation']==2)
+  await b.close();b=await tab();await b.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();ok('reopen after lost advance ACK recovers same generation without cache deletion',state['generation']==2)
+  # Retain obsolete local uncertainty in a separate same-origin context, as if B never observed terminal state.
+  lag=await browser.new_context(viewport={'width':1280,'height':1800});await lag.route('**/*',route);c=await lag.new_page();await c.goto('http://localhost:8080/__durable_test');await c.get_by_role('button',name='Adicionar ao pedido',exact=True).wait_for()
+  await c.evaluate("async()=>{const q=await new Promise(res=>{let r=indexedDB.open('c2-order-journal-v1',1);r.onsuccess=()=>res(r.result)});await new Promise(res=>{const t=q.transaction('slots','readwrite');t.objectStore('slots').openCursor().onsuccess=e=>{const c=e.target.result;if(c)c.update({schema:1,key:'44444444-4444-4444-8444-444444444444',generation:1,state:'uncertain'})};t.oncomplete=res});q.close()}")
+  await c.get_by_role('button',name='Verificar envio anterior',exact=True).click();await c.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();ok('stale uncertain IndexedDB is reconciled by canonical predecessor, not cleared');await c.close();await lag.close()
+  activekey=state['key']
   await fill(a);await fill(b);state['failcreate']=True
   await asyncio.gather(a.get_by_role('button',name='Enviar pedido para análise',exact=True).click(),b.get_by_role('button',name='Enviar pedido para análise',exact=True).click());await asyncio.sleep(.7)
-  ok('controlled HTTP lost replies create one order with server key',list(state['orders'])==[K]);await a.screenshot(path=str(OUT/'1_lost.png'))
+  ok('controlled HTTP lost replies create one order with server key',list(state['orders'])==[activekey]);await a.screenshot(path=str(OUT/'1_lost.png'))
   await a.close();await b.close();state['failcreate']=False;a=await tab();await a.get_by_text('Pedido PB-LOCAL já registrado.',exact=False).wait_for();ok('close and reopen finds committed server order without cart');await a.screenshot(path=str(OUT/'2_recovered.png'))
   await a.evaluate("async()=>{await new Promise((res,rej)=>{let q=indexedDB.deleteDatabase('c2-order-journal-v1');q.onsuccess=res;q.onerror=rej})}");await a.close();a=await tab();await a.get_by_text('Pedido PB-LOCAL já registrado.',exact=False).wait_for();ok('total IndexedDB loss does not create first-use key')
-  a.on('dialog',lambda d:d.dismiss());await a.get_by_role('button',name='Confirmar pedido existente e iniciar novo',exact=True).click();ok('dismissed confirmation never advances',state['generation']==1)
-  await a.close();a=await tab();a.on('dialog',lambda d:d.accept());await a.get_by_role('button',name='Confirmar pedido existente e iniciar novo',exact=True).click();await a.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();ok('explicit ACK carries exact UUID and CAS',state['generation']==2 and state['calls'][-1][1].get('p_ack_order')==ID)
-  await a.get_by_role('button',name='Verificar e encerrar envio anterior',exact=True).click();await a.get_by_text('Envio anterior encerrado sem pedido.',exact=False).wait_for();ok('close never auto-advances',state['generation']==2);await a.screenshot(path=str(OUT/'3_closed.png'))
-  await a.close();a=await tab();await a.get_by_text('Envio anterior encerrado sem pedido.',exact=False).wait_for();ok('reopen closed waits explicit new-attempt click',state['generation']==2)
+  a.on('dialog',lambda d:d.dismiss());await a.get_by_role('button',name='Confirmar pedido existente e iniciar novo',exact=True).click();ok('dismissed confirmation never advances',state['generation']==2)
+  await a.close();a=await tab();a.on('dialog',lambda d:d.accept());await a.get_by_role('button',name='Confirmar pedido existente e iniciar novo',exact=True).click();await a.get_by_text('Tentativa identificada pelo servidor.',exact=False).wait_for();ok('explicit ACK carries exact UUID and CAS',state['generation']==3 and state['calls'][-1][1].get('p_ack_order')==ID)
+  await a.get_by_role('button',name='Verificar e encerrar envio anterior',exact=True).click();await a.get_by_text('Envio anterior encerrado sem pedido.',exact=False).wait_for();ok('close never auto-advances',state['generation']==3);await a.screenshot(path=str(OUT/'3_closed.png'))
+  await a.close();a=await tab();await a.get_by_text('Envio anterior encerrado sem pedido.',exact=False).wait_for();ok('reopen closed waits explicit new-attempt click',state['generation']==3)
   state['bad']='unknown';await a.close();a=await tab();await a.get_by_text('Não foi possível confirmar o envio anterior.',exact=False).wait_for();ok('unknown canonical receipt blocks rather than deadend fallback');state['bad']=None
   await a.close();await ctx.clear_cookies();a=await tab();await a.evaluate("async()=>{await new Promise((res,rej)=>{let q=indexedDB.deleteDatabase('c2-order-journal-v1');q.onsuccess=res;q.onerror=rej})}");await a.close();state['cap']='missing';a=await tab();await a.get_by_role('button',name='Adicionar ao pedido',exact=True).wait_for();await asyncio.sleep(.2);ok('RPC absent in fresh tab preserves legacy 001b',await a.locator('[data-journal]').count()==0);await a.close()
   state['cap']='error';a=await tab();await a.get_by_text('Não foi possível confirmar o envio anterior.',exact=False).wait_for();ok('capability network/server error is not missing fallback');await a.close()
