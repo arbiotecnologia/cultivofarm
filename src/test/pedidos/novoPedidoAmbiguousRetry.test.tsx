@@ -278,12 +278,11 @@ it("SQLSTATE conclusivo conhecido descarta; impressão inclui vencimento e não 
   expect(orderAttemptFingerprint({ ...base, first_due_date: "2026-11-06" })).not.toBe(fp);
 });
 
-function deferredCalls() {
+
+it("dois cliques no mesmo tick: a reserva síncrona bloqueia o segundo envio (1 RPC)", async () => {
   const pending: Array<(v: unknown) => void> = [];
   state.createImpl = () => { const p = new Promise(r => pending.push(r)); return Object.assign(p, { abortSignal: () => p }); };
-  return pending;
-}
-async function doubleClickSubmit() {
+  mount();
   await screen.findAllByText("Produto local");
   fireEvent.click(screen.getByRole("button", { name: "Adicionar ao pedido" }));
   fireEvent.click(await screen.findByRole("button", { name: "Adicionar ao carrinho" }));
@@ -291,39 +290,9 @@ async function doubleClickSubmit() {
   fireEvent.click(await screen.findByRole("button", { name: /À vista/ }));
   const submit = await screen.findByRole("button", { name: "Enviar pedido para análise" });
   await waitFor(() => expect(submit).toBeEnabled());
-  fireEvent.click(submit); fireEvent.click(submit);   // mesmo tick: isPending ainda não renderizou
-  await waitFor(() => expect(creates()).toHaveLength(2));
-  expect(creates()[1].p_idempotency_key).toBe(creates()[0].p_idempotency_key);
-}
-const REJECT = { data: null, error: { code: "P0001", message: "credit_limit_exceeded" } };
-const LOST = { data: null, error: { code: "", message: "Failed to fetch" } };
-const OK = { data: { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", total: 10 }, error: null };
-
-it.each([
-  ["rejeição do 1º, resposta do 2º perdida", [REJECT, LOST]],
-  ["resposta do 1º perdida, rejeição do 2º", [LOST, REJECT]],
-])("duplo envio: %s => retry reutiliza a MESMA chave", async (_l, outcomes) => {
-  const pending = deferredCalls();
-  const view = mount();
-  await doubleClickSubmit();
-  for (let i = 0; i < 2; i++) await act(async () => { pending[i](outcomes[i]); await new Promise(r => setTimeout(r, 0)); });
-  view.unmount(); cleanup();
-  state.draft = state.lastDraft; state.createImpl = null;
-  mount();
-  await waitCart();
-  await fillAndSubmit(false);
-  await waitFor(() => expect(creates()).toHaveLength(3));
-  expect(creates()[2].p_idempotency_key).toBe(creates()[0].p_idempotency_key);
-});
-
-it.each([
-  ["rejeição do 1º, sucesso do 2º", [REJECT, OK]],
-  ["sucesso do 1º, rejeição do 2º", [OK, REJECT]],
-])("duplo envio: %s => pedido confirmado, carrinho limpo e sem nova chave órfã", async (_l, outcomes) => {
-  const pending = deferredCalls();
-  mount();
-  await doubleClickSubmit();
-  for (let i = 0; i < 2; i++) await act(async () => { pending[i](outcomes[i]); await new Promise(r => setTimeout(r, 0)); });
-  await waitFor(() => expect(screen.queryByRole("button", { name: "Continuar para condição de pagamento" })).toBeNull());
-  expect(creates()).toHaveLength(2);
+  fireEvent.click(submit); fireEvent.click(submit);
+  await waitFor(() => expect(creates()).toHaveLength(1));
+  await new Promise(r => setTimeout(r, 50));
+  expect(creates()).toHaveLength(1);
+  await act(async () => { pending[0]({ data: null, error: { code: "", message: "Failed to fetch" } }); });
 });
