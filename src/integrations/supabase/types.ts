@@ -21201,6 +21201,15 @@ export type Database = {
         Args: { p_alvos: Json; p_kind: string; p_parent_id: string }
         Returns: Json
       }
+      c2_commercial_owner_orders_projection: {
+        Args: {
+          p_end?: string
+          p_partner_id?: string
+          p_start?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       c2_internal_order_entry_capability_v1: { Args: never; Returns: Json }
       c2_promote_accounting_pending_order_v1: {
         Args: { p_expected_updated_at: string; p_order_id: string }
