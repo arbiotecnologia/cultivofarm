@@ -7,10 +7,15 @@ export async function recoverJournal({ enabled = ORDER_JOURNAL_ENABLED, scope, c
  // The authenticated RPC response is the capability. Missing RPC/error never falls back.
  const result = parseJournal(await rpc({ expected, acknowledge, advance }));
  if (!current()) throw Error('context_changed');
+ if(advance){
+  const proof=result.predecessors?.find(p=>p.key===expected?.key && p.generation===expected?.generation);
+  if(!proof || result.generation!==expected.generation+1 || result.key===expected.key || result.state!=='reserved' ||
+    (acknowledge && (proof.state!=='committed' || proof.order_id!==acknowledge)))throw Error('advance_unconfirmed');
+ }
  // Explicit advance must first persist the confirmed predecessor terminal state.
  // A response alone cannot silently jump an unresolved local generation.
  await adopt(scope, { schema: 1, key: result.key, generation: result.generation,
-  state: result.state === 'reserved' ? 'uncertain' : result.state }, current);
+  state: result.state === 'reserved' ? 'uncertain' : result.state }, current,result);
  if (!current()) throw Error('context_changed');
  return result; // UI may show committed number; MUST NOT clear an edited cart here.
 }
