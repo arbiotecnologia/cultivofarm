@@ -138,8 +138,7 @@ export default function NovoPedido() {
   }, [catalog]);
 
   const [cart, setCart] = useState<Record<string, CartItem>>({});
-  const cartRef = useRef(cart);
-  cartRef.current = cart;
+
   const [obs, setObs] = useState("");
   
   const [requestedDate, setRequestedDate] = useState<string>("");
@@ -406,6 +405,12 @@ export default function NovoPedido() {
   }, [confirmOpen, simulationItems.length]);
 
 
+  const liveInputRef = useRef<Parameters<typeof orderAttemptFingerprint>[0]>({ partner_id: "", items: [] });
+  liveInputRef.current = {
+    partner_id: partner?.id ?? "", observacoes: obs || undefined, requested_delivery_date: requestedDate || null,
+    items: cartList.map(({ key, ...rest }) => rest), payment_plan_id: selectedPlanId,
+    first_due_date: simulation?.schedule?.[0]?.due_date ?? null, installment_count: selectedPlan?.installment_count ?? null,
+  };
   const handleSubmit = (opts?: { simStatus?: "rascunho" | "enviada_gestor" }) => {
     if (!partner?.id || cartList.length === 0 || cartInvalid) return;
     if (isSimulationMode) {
@@ -519,9 +524,10 @@ export default function NovoPedido() {
           // ator/empresa/época não limpa carrinho nem navega.
           if (!fence()) return;
           settleOrderAttempt(slot, prepared.key);
+          // Payload COMPLETO atual (itens, obs, data, plano, parcelas, vencimento):
+          // qualquer edição após o envio é preservada — sem fechar/limpar/navegar.
+          if (orderAttemptFingerprint(liveInputRef.current) !== fingerprint) return;
           setConfirmOpen(false);
-          // Carrinho editado depois do envio é preservado.
-          if (orderAttemptFingerprint({ ...input, items: Object.values(cartRef.current) }) !== fingerprint) return;
           setCart({});
           setObs("");
           setRequestedDate("");

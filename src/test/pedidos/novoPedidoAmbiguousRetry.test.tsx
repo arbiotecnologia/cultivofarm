@@ -236,3 +236,44 @@ it("outro ator não herda a tentativa; logout/troca de identidade limpa", async 
   await waitFor(() => expect(creates()).toHaveLength(3));
   expect(screen.queryByText(/Não foi possível confirmar/)).toBeNull();
 });
+
+import { isConclusiveRejection, orderAttemptFingerprint } from "@/lib/authz/pendingOrderAttempt";
+
+it.each([
+  ["data", () => fireEvent.change(screen.getByLabelText("Data desejada de entrega"), { target: { value: "2099-12-31" } }),
+    () => expect((screen.getByLabelText("Data desejada de entrega") as HTMLInputElement).value).toBe("2099-12-31")],
+  ["observação", () => fireEvent.change(screen.getByPlaceholderText("Observações internas do pedido (opcional)"), { target: { value: "nova obs" } }),
+    () => expect((screen.getByPlaceholderText("Observações internas do pedido (opcional)") as HTMLTextAreaElement).value).toBe("nova obs")],
+])("sucesso tardio não apaga %s editada enquanto a RPC estava pendente", async (_l, edit, check) => {
+  let resolve!: () => void;
+  const p = new Promise(r => { resolve = () => r({ data: { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", total: 10 }, error: null }); });
+  state.createImpl = () => Object.assign(p, { abortSignal: () => p });
+  mount();
+  await fillAndSubmit();
+  await waitFor(() => expect(creates()).toHaveLength(1));
+  edit();
+  await act(async () => { resolve(); await p; });
+  await new Promise(r => setTimeout(r, 50));
+  check();
+  expect(screen.getAllByText("Produto local").length).toBeGreaterThan(0);
+});
+
+it.each([
+  [{ code: "PGRST301", message: "JWT expired" }], [{ code: "", message: "Failed to fetch" }], [{ code: "08006", message: "conn" }],
+  [{ code: "57P01", message: "shutdown" }], [{ code: "XX000", message: "internal" }], [{ code: "P0001", message: "idempotency_conflict" }],
+  [{ message: "502 Bad Gateway" }],
+])("erro não conclusivo %j mantém a tentativa incerta", async (err) => {
+  expect(isConclusiveRejection(err as never)).toBe(false);
+  state.createImpl = () => response(null).then(() => ({ data: null, error: err })) as never;
+  mount();
+  await fillAndSubmit();
+  await screen.findByText(/Não foi possível confirmar o envio anterior/);
+});
+
+it("SQLSTATE conclusivo conhecido descarta; impressão inclui vencimento e não retém texto em claro", () => {
+  for (const code of ["P0001", "42501", "23505", "22003", "40001"]) expect(isConclusiveRejection({ code, message: "x" })).toBe(true);
+  const base = { partner_id: "p", observacoes: "segredo comercial", items: [], first_due_date: "2026-11-05" };
+  const fp = orderAttemptFingerprint(base);
+  expect(fp).not.toContain("segredo");
+  expect(orderAttemptFingerprint({ ...base, first_due_date: "2026-11-06" })).not.toBe(fp);
+});

@@ -1,0 +1,4 @@
+   × sucesso tardio não apaga data editada enquanto a RPC estava pendente 1742ms
+   × sucesso tardio não apaga observação editada enquanto a RPC estava pendente 1105ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  2 failed | 13 skipped (15)
