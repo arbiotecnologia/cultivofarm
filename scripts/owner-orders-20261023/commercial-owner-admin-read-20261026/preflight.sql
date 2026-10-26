@@ -1,5 +1,8 @@
 -- PRE — READ ONLY com ASSERTS transacionais: qualquer divergência aborta (NO-GO).
--- v2 (revisão 107e6e05): não é mais SELECT informativo; cada checagem falha fechado.
+-- v3 (revisão SQL 5db): unicidade de profiles.user_id verificada por NOME de coluna
+-- (pg_attribute), exigindo índice válido/pronto, NÃO parcial (indpred NULL) e chave
+-- única de exatamente uma coluna — a checagem anterior (indkey='1') olhava a coluna
+-- física nº 1 e aceitava índice parcial/inválido.
 BEGIN TRANSACTION READ ONLY;
 
 -- 1) Alvos ausentes (nunca reaplicar/sobrescrever).
@@ -14,7 +17,7 @@ BEGIN
 END;
 $$;
 
--- 2) Dependências pinadas: has_role (corpo + ACL), unicidade de profiles.user_id.
+-- 2) Dependências pinadas: has_role (corpo + ACL), unicidade exata de profiles.user_id.
 DO $$
 DECLARE v_md5 text; v_acl text;
 BEGIN
@@ -25,11 +28,22 @@ BEGIN
      OR v_acl IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN
     RAISE EXCEPTION 'preflight_failed: dependência platform_private.has_role divergente (md5=% acl=%)', v_md5, v_acl;
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_index i JOIN pg_class c ON c.oid = i.indrelid
-                  JOIN pg_namespace n ON n.oid = c.relnamespace
-                 WHERE n.nspname = 'public' AND c.relname = 'profiles' AND i.indisunique
-                   AND i.indkey::text = '1') THEN
-    RAISE EXCEPTION 'preflight_failed: profiles.user_id sem índice único';
+  -- Índice único EXATO sobre a coluna user_id: válido, pronto, não parcial,
+  -- chave de uma única coluna real (não expressão), identificada por attname.
+  IF NOT EXISTS (
+    SELECT 1
+      FROM pg_index i
+      JOIN pg_class c ON c.oid = i.indrelid
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+     WHERE n.nspname = 'public' AND c.relname = 'profiles'
+       AND i.indisunique AND i.indisvalid AND i.indisready
+       AND i.indpred IS NULL
+       AND i.indnkeyatts = 1 AND i.indnatts = 1
+       AND i.indkey[0] <> 0
+       AND (SELECT a.attname FROM pg_attribute a
+             WHERE a.attrelid = i.indrelid AND a.attnum = i.indkey[0]) = 'user_id'
+  ) THEN
+    RAISE EXCEPTION 'preflight_failed: profiles.user_id sem índice único exato, válido e não parcial';
   END IF;
 END;
 $$;
