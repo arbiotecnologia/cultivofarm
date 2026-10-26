@@ -27,7 +27,7 @@ beforeEach(()=>{
  state.rpc.mockReset();state.rpc.mockImplementation((name:string,args:Record<string,unknown>)=>{
   if(name==='partner_order_journal_capability_v1')return ok({contract,enabled:true,actor_id:state.actor,organization_id:state.org,partner_id:P});
   if(name==='recover_partner_order_attempt_v1') {
-   if(args.p_advance){if(args.p_expected_generation!==generation || args.p_expected_key!==K || (terminal==='committed' && args.p_ack_order!==ID))return Promise.resolve({data:null,error:{code:'40001'}});const predecessor={key:K,generation,state:terminal==='committed'?'committed':'closed',...(terminal==='committed'?{order_id:ID,numero:'PB-LOCAL'}:{})};generation++;terminal='reserved';return ok({...j(terminal,generation),key:'66666666-6666-4666-8666-666666666666',predecessors:[predecessor]});}
+   if(args.p_advance){if(args.p_expected_generation!==generation || args.p_expected_key!==K || (terminal==='committed' && args.p_ack_order!==ID))return Promise.resolve({data:null,error:{code:'PT409',message:'C2DJ_CAS_CONFLICT'}});const predecessor={key:K,generation,state:terminal==='committed'?'committed':'closed',...(terminal==='committed'?{order_id:ID,numero:'PB-LOCAL'}:{})};generation++;terminal='reserved';return ok({...j(terminal,generation),key:'66666666-6666-4666-8666-666666666666',predecessors:[predecessor]});}
    return ok(j(terminal,generation));
   }
   if(name==='create_partner_order_secure'){creates.push(String(args.p_idempotency_key));terminal='committed';return ok({id:ID,numero:'PB-LOCAL',total:1});}

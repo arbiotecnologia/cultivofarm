@@ -148,7 +148,7 @@ ok('committed without explicit order acknowledgement never creates new generatio
 new=recover(advance=True,key=nr['key'],generation=nr['generation'],ack=commit['id'])
 ok('explicit acknowledged committed advances once',new['generation']==nr['generation']+1)
 b=count();e=error(G,f"SELECT public.recover_partner_order_attempt_v1('{P}','{nr['key']}',{nr['generation']},true,'{commit['id']}')")
-ok('old response / old generation CAS cannot advance current slot',first(e)=='ERROR:  40001: C2DJ_CAS_CONFLICT' and recover()['key']==new['key'] and count()==b)
+ok('old response / old generation CAS cannot advance current slot',first(e)=='ERROR:  PT409: C2DJ_CAS_CONFLICT' and recover()['key']==new['key'] and count()==b)
 b=count();e=error(env['ADMIN_B'],f"SELECT public.recover_partner_order_attempt_v1('{P}')")
 print('B_ERROR',first(e),flush=True)
 ok('B denied before disclose, no writes',first(e)=='ERROR:  42501: C2_INTERNAL_TARGET_DENIED:target_outside_portfolio' and count()==b)

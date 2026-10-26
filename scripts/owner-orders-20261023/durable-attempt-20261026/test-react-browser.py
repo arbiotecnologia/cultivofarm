@@ -32,7 +32,7 @@ async def main():
     else:data={'contract':'C2_ORDER_JOURNAL_V1','enabled':True,'actor_id':A,'organization_id':O,'partner_id':P}
    elif name=='recover_partner_order_attempt_v1':
     if args.get('p_advance'):
-     if args.get('p_expected_generation')!=state['generation'] or args.get('p_expected_key')!=state['key'] or (state['state']=='committed' and args.get('p_ack_order')!=ID):status=409;data={'code':'40001','message':'CAS'}
+     if args.get('p_expected_generation')!=state['generation'] or args.get('p_expected_key')!=state['key'] or (state['state']=='committed' and args.get('p_ack_order')!=ID):status=409;data={'code':'PT409','message':'CAS'}
      else:
       state['predecessors'].append({'key':state['key'],'generation':state['generation'],'state':state['state'],**({'order_id':ID,'numero':'PB-LOCAL'} if state['state']=='committed' else {})})
       state.update(key=f"66666666-6666-4666-8666-{state['generation']+1:012d}",generation=state['generation']+1,state='reserved')
