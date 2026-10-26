@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Trash2, ShoppingCart, Plus, Star } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { partnerCatalogRows } from "@/lib/catalogo/partnerCatalogRows";
 import { CatalogoCardsGrid } from "@/components/catalogo/CatalogoCardsGrid";
@@ -685,6 +686,20 @@ export default function NovoPedido() {
               </>}
             </AlertDescription>
           </Alert>}
+          <AlertDialog open={!!ackTarget} onOpenChange={o=>{if(!o)setAckTarget(null);}}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar pedido existente</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Confirmo que consultei o pedido {ackTarget?.journal.numero} e desejo iniciar um novo pedido. O pedido existente não é alterado e seu carrinho é mantido.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                <AlertDialogAction disabled={durableAttempt.pending} onClick={confirmAck}>Confirmar e iniciar novo</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
       <div className="grid lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
