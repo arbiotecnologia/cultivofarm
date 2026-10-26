@@ -250,7 +250,7 @@ def denied(u, p, k, sqlstate, msg, label):
     b = state(); expect_error(label, err(u, CL(k).replace(f"'{P}'", f"'{p}'", 1)), sqlstate, msg, b)
 denied(GB, P, 'k-ok-1', '42501', 'forbidden_partner', 'B partner manager cannot probe/close A key')
 denied(G, Q, 'k-x', '42501', 'forbidden_partner', 'A manager cannot close for B partner')
-denied(T, P, 'k-ok-1', 'P0001', 'partner_tech_cannot_create_order', 'isolated technician cannot close')
+denied(T, P, 'k-ok-1', '42501', 'forbidden_financial_terms', 'isolated technician cannot close (canonical scope guard fires first)')
 denied(PR, P, 'k-ok-1', 'P0001', 'PRODUCER_DIRECT_NOT_ENABLED', 'producer cannot close')
 denied(G, P, '   ', 'P0001', 'idempotency_key_required', 'blank key rejected')
 denied(G, P, 'x' * 121, 'P0001', 'invalid_idempotency_key', 'oversized key rejected')
