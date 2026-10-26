@@ -1,10 +1,24 @@
 -- C2_COMMERCIAL_OWNER_ORDERS_V1 — leitura administrativa somente leitura da carteira
 -- do commercial owner. INATIVO: aplicar somente com autorização explícita do proprietário.
--- Transação única: qualquer falha aborta tudo (sem DDL parcial em autocommit).
+-- v2 (revisão 107e6e05): search_path vazio com nomes qualificados; CREATE sem OR REPLACE;
+-- assert transacional de ausência do alvo antes do DDL (nunca sobrescreve função criada
+-- entre preflight e apply). Transação única: qualquer falha aborta tudo.
 
 BEGIN;
 
-CREATE OR REPLACE FUNCTION platform_private.c2_commercial_owner_orders_core(
+-- Assert de ausência do alvo na MESMA transação do DDL.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+             WHERE n.nspname = 'public' AND p.proname = 'c2_commercial_owner_orders_projection')
+     OR EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+                WHERE n.nspname = 'platform_private' AND p.proname = 'c2_commercial_owner_orders_core') THEN
+    RAISE EXCEPTION 'target_already_exists: abortando para não sobrescrever função existente';
+  END IF;
+END;
+$$;
+
+CREATE FUNCTION platform_private.c2_commercial_owner_orders_core(
   p_status text DEFAULT NULL,
   p_partner_id uuid DEFAULT NULL,
   p_start timestamptz DEFAULT NULL,
@@ -12,7 +26,7 @@ CREATE OR REPLACE FUNCTION platform_private.c2_commercial_owner_orders_core(
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, platform_private
+SET search_path = ''
 AS $$
 DECLARE
   v_uid uuid := auth.uid();
@@ -23,8 +37,9 @@ BEGIN
     RAISE EXCEPTION 'auth_required' USING ERRCODE = '42501';
   END IF;
 
-  -- Organização canônica do ator derivada no servidor (perfil ativo + org ativa).
-  -- Nunca vem de parâmetro; perfil/org inativos => sem escopo.
+  -- Organização canônica do ator derivada no servidor: perfil ativo + org ativa.
+  -- profiles.user_id tem índice único (pin no preflight), logo a resolução é
+  -- determinística; o LIMIT 1 é defensivo. Nunca vem de parâmetro.
   SELECT p.organization_id INTO v_org
     FROM public.profiles p
     JOIN public.organizations o ON o.id = p.organization_id
@@ -38,7 +53,10 @@ BEGIN
     RAISE EXCEPTION 'actor_scope_unavailable' USING ERRCODE = '42501';
   END IF;
 
-  -- Somente administração interna da empresa dona da carteira.
+  -- Somente administração interna da empresa dona da carteira. Papéis externos
+  -- (parceiro_b2b etc.) não autorizam; superadmin sem papel interno também é
+  -- negado aqui — o canal do fornecedor é a lista administrativa existente.
+  -- Papel misto (administrador + papel externo) resolve pela org do perfil ativo.
   IF NOT (platform_private.has_role(v_uid, 'administrador'::public.app_role)
        OR platform_private.has_role(v_uid, 'gestor_comercial'::public.app_role)) THEN
     RAISE EXCEPTION 'actor_not_allowed' USING ERRCODE = '42501';
@@ -88,7 +106,7 @@ $$;
 REVOKE ALL ON FUNCTION platform_private.c2_commercial_owner_orders_core(text, uuid, timestamptz, timestamptz) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION platform_private.c2_commercial_owner_orders_core(text, uuid, timestamptz, timestamptz) TO authenticated, service_role;
 
-CREATE OR REPLACE FUNCTION public.c2_commercial_owner_orders_projection(
+CREATE FUNCTION public.c2_commercial_owner_orders_projection(
   p_status text DEFAULT NULL,
   p_partner_id uuid DEFAULT NULL,
   p_start timestamptz DEFAULT NULL,
@@ -96,7 +114,7 @@ CREATE OR REPLACE FUNCTION public.c2_commercial_owner_orders_projection(
 ) RETURNS jsonb
 LANGUAGE sql
 SECURITY INVOKER
-SET search_path = public, platform_private
+SET search_path = ''
 AS $$
   SELECT platform_private.c2_commercial_owner_orders_core(p_status, p_partner_id, p_start, p_end);
 $$;
