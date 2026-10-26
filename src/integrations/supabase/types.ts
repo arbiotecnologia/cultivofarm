@@ -22775,6 +22775,10 @@ export type Database = {
         Args: { _order_id: string }
         Returns: boolean
       }
+      partner_order_journal_capability_v1: {
+        Args: { p_partner: string }
+        Returns: Json
+      }
       partner_order_sla_status: {
         Args: { p_order_id: string }
         Returns: {
@@ -23433,6 +23437,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      recover_partner_order_attempt_v1: {
+        Args: {
+          p_ack_order?: string
+          p_advance?: boolean
+          p_expected_generation?: number
+          p_expected_key?: string
+          p_partner: string
+        }
+        Returns: Json
       }
       refresh_esteira_laboratorio: { Args: never; Returns: undefined }
       refresh_partner_engagement: {
