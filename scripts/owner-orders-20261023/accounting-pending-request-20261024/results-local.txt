@@ -8,6 +8,7 @@ PASS captured LIVE dependency md5 2f1063f0 platform_private.b2b_commercial_conte
 PASS captured LIVE dependency md5 d4936c87 platform_private.c2_order_internal_recipients(uuid)
 PASS captured LIVE dependency md5 70b38109 platform_private.c2_order_partner_recipients(uuid)
 PASS captured LIVE dependency md5 a0417d67 platform_private.c2_owner_order_create_allowed(uuid,uuid)
+PASS captured LIVE approve_b2b_credit md5/ACL reproduced
 PASS captured LIVE entitlements_for_user md5 matches harness
 PASS captured absent signature really absent in harness reference: fn_resolve_b2b_cart(uuid,jsonb,date)
 PASS b5 structural preflight READ ONLY passes on captured LIVE (writer false)
@@ -41,7 +42,7 @@ PASS validated B fixture: approval generates exactly one title link + 3 installm
 PASS approve, create and credit trigger share one credit advisory key expression
 PASS production-observed divergence reproduced for old expression (int4 vs int8 keys differ)
 PASS create for same partner waits on approve credit lock (status before em_analise_comercial)
-PASS other company A create not blocked by B credit lock (0.25s)
+PASS other company A create not blocked by B credit lock (0.23s)
 PASS both complete after serialization; no deadlock
 PASS approved order exactly one title link, new create no title
 PASS approve waits on create credit lock (same key) before exposure decision
@@ -53,7 +54,7 @@ PASS control: restored authority approves same order once
 PASS foreign owner B cannot promote A request (no oracle)
 PASS buyer cannot promote own request
 PASS owner A promotion denied while A still DRAFT
-PASS B promotion on A-locked order denied without waiting (0.03s, no lock_timeout)
+PASS B promotion on A-locked order denied without waiting (0.04s, no lock_timeout)
 PASS control: owner A promotion does wait on its own locked row (lock timeout), proving the lock is real
 PASS wrapper is SECURITY INVOKER and core SECURITY DEFINER
 PASS stale expected updated_at rejected (CAS)
@@ -73,6 +74,20 @@ PENDING_UPDATE credit_approved_at now() -> []
 PENDING_UPDATE status 'em_analise_comercial' -> ['updated_at']
 PENDING_UPDATE status 'aprovado' -> []
 PASS no hidden credit decision or status hop out of aguardando_aprovacao_credito while pending
+PASS approve_b2b_credit candidate body installed (re-validation + pending check), LIVE ACL kept
+PASS credit transition is exposure-neutral: aguardando_aprovacao_credito and em_analise_comercial both in v_pending
+PASS owner A on pending A order: b2b_phase1_scope_denied (scope not widened), no effects
+PASS foreign B on A order: same denial, no effects
+PASS missing order: same denial as foreign (no existence oracle)
+PASS pending: credit_approved_by/notes, approved_by, financial_approval_status cannot advance (authenticated no-op; privileged C2_ACCOUNTING_PENDING)
+PASS [override] visible pending order: explicit C2_ACCOUNTING_PENDING before any write
+PASS B validated orders land aguardando_aprovacao_credito
+PASS [override] credit release does not need the credit lock (0.05s while held) and is exposure-neutral
+PASS [override] second release denied, fields unchanged
+PASS [override] release waits on row lock
+PASS [override] revoked during row wait: forbidden after lock, no credit field/status/audit written
+PASS [override] release + concurrent create same partner complete, no deadlock
+PASS synthetic visibility override removed; LIVE body md5 restored
 PASS B admin: approve/generate on foreign pending A order give the same denial as a missing order (no accounting reason leaked)
 PASS two concurrent creates with same key return one pending order
 PASS revoked manager replay of existing key denied (no idempotent leak after revocation)
@@ -83,4 +98,4 @@ PASS history kept: pending and promoted orders remain
 PASS after rollback pending request is frozen (b5 assert rejects pending contract)
 PASS after rollback external create closed again
 PASS restore-live refuses to run on non-candidate state (drift) — no partial DDL
-TOTAL 82 PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification
+TOTAL 97 PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification
