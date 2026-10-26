@@ -56,7 +56,7 @@ for forged_ack in [None,old1['id']]:
  ok('missing/forged ACK never advances imported committed',rr['order_id']==old2['id'] and rr['generation']==1)
 r=recover(advance=True,key=legacy_r['key'],generation=1,ack=old2['id']);ok('explicit exact legacy ACK reserves next generation',r['state']=='reserved' and r['generation']==2)
 rr=recover();ok('crash before fetch recovers SAME uncertain key, no absence inference',rr['state']=='uncertain' and rr['key']==r['key'])
-nr=recover(advance=True,key=r['key'],generation=1)
+nr=recover(advance=True,key=r['key'],generation=2)
 ok('explicit CAS advance closes old key before new generation',nr['generation']==3 and nr['key']!=r['key'] and pg.sql(f"SELECT count(*) FROM platform_private.partner_order_idempotency_closures WHERE idempotency_key='{r['key']}'")=='1')
 b=count(); e=error(G,create(P,r['key'],hA))
 ok('late old generation refused atomically',first(e)=='ERROR:  42501: C2DJ_REGISTERED_ATTEMPT_REQUIRED' and count()==b)
