@@ -30,3 +30,4 @@ src/test/pedidos/novoPedidoDeliveryDate.test.tsx
 src/test/pedidos/orderJournal.integration.test.tsx
 src/test/pedidos/preDispatchSettlement.test.tsx
 src/test/pedidos/preDispatchSettlement.test.tsx
+src/test/pedidos/partnerOrdersAdminScope.test.tsx
