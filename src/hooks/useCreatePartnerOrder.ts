@@ -157,7 +157,8 @@ export function useCreatePartnerOrder() {
       if (error) throw error;
       if (durable) {
         // A lost acknowledgment remains blocked; never retry create automatically.
-        await recoverOrderJournal(journalSlot,input.partner_id,current);
+        const acknowledged=await recoverOrderJournal(journalSlot,input.partner_id,current);
+        if(acknowledged.state!=='committed' || acknowledged.order_id!==created?.id || acknowledged.key!==dispatchKey || acknowledged.generation!==durable.generation) throw new Error('journal_commit_ack_unconfirmed');
         if (!current()) throw new Error('Contexto alterado.');
       }
       return created as { id: string; numero: string; total: number };

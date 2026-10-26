@@ -21,8 +21,8 @@ export function useOrderJournal(partnerId: string | undefined) {
   void journalCapability(slot,partnerId,current).then(async enabled=>{
    if(!current())return;
    if(!enabled){setMode('legacy');return;}
-   setMode('durable');
    await recoverOrderJournal(slot,partnerId,current);
+   if(current())setMode('durable');
   }).catch(()=>{if(current())setMode('blocked');});
  },[partnerId,slot,scope.scope]);
  const recover=async(advance?:Journal)=>{
@@ -30,8 +30,8 @@ export function useOrderJournal(partnerId: string | undefined) {
   const current=scope.capture();lock.current=true;setPending(true);
   try {
    if(!await journalCapability(slot,partnerId,current)) {if(current())setMode('legacy');return;}
-   if(current())setMode('durable');
    await recoverOrderJournal(slot,partnerId,current,advance);
+   if(current())setMode('durable');
   }catch{if(current())setMode('blocked');}
   finally{lock.current=false;if(current())setPending(false);}
  };

@@ -1,5 +1,44 @@
 # Continuidade durável — candidato corrigido, INATIVO
 
+## Integração React 19:26 — rollout coordenado
+
+Frontend preparado no fluxo existente `NovoPedido/useCreatePartnerOrder/useCloseOrderAttempt`, sem rota/painel alternativo.
+`useOrderJournal` consulta automaticamente ao montar apenas o mesmo ator/empresa/parceiro; não faz polling nem fechamento automático.
+Capacidade nova `partner_order_journal_capability_v1(uuid)` usa wrapper INVOKER/core autorizado,
+corpos/ACL/config guardados no POST e revogados no rollback. SQL continua **INATIVO**, nove funções no pacote atualizado.
+Não instalar backend isoladamente: clientes001b sem reservas seriam contidos; implantação será coordenada pelo auditor.
+
+- Antes instalação, somente `PGRST202` citando exatamente a capability ausente permite comportamento001b.
+  Timeout/erro/403/schema inesperado não autoriza fallback. Evidência durável em IndexedDB ou capacidade previamente ativa impede downgrade.
+- Depois capability `C2_ORDER_JOURNAL_V1` ativa e escopada: **toda criação** do hook usa chave emitida pelo servidor,
+  recovery fresca + CAS IndexedDB (scope SHA256, key/generation/state/digest mínimo) antes de create.
+  Chave cliente do fluxo legado nunca é despachada nesse modo; nenhuma nota, preço, payload, token ou UUID de pedido é persistido.
+- Recovery pode responder `uncertain` logo após reserva sem dispatch: contrato completo atual `reserved/uncertain`
+  permite envio/replay da mesma key com mesmo digest. Não fabrica reserved localmente nem conclui ausência.
+  `unknown/in_progress/closed/committed`, schema incompleto ou erro não permite envio.
+- Antes/depois de awaits: fence de montagem/ator/empresa/papéis/época; payload atual precisa coincidir antes de dispatch.
+  Resposta create só é sucesso após recovery `committed` com UUID/key/generation correspondentes e gravação local concluída.
+  Falha de ACK mantém bloqueio e não reenvia; preços/plano/hash continuam resolvidos pelo simulate/create canônicos.
+- Reabrir aba com carrinho vazio ou IndexedDB removido reencontra servidor e mostra pedido na própria tela de catálogo.
+  Ação `Ver meus pedidos` usa rota existente; novo pedido exige confirmação explícita com UUID/key/generation CAS.
+  Fechar tentativa não cancela pedido nem avança; `closed` exige segundo clique `Iniciar nova tentativa`.
+  Recuperação/ACK/close aguardam persistência; sucesso tardio não apaga carrinho editado nem navega outro ator.
+- Duas abas recebem uma reserva servidor; IndexedDB serializa digest e transições terminais monotônicas.
+  Sem evento/poll que conceda autoridade: toda operação relê servidor. Mesma origem é limite permitido;
+  preview/domínio não compartilham IndexedDB. Abas abertas não são recarregadas nem encerradas pelo rollout.
+- Rollback continua deny-only: writer contido e recovery/capability sem EXECUTE, preservando journal/history/closures.
+  Frontend mostra indisponibilidade, nunca ignora journal. Capability removida + perda total local não é detectável pelo cliente;
+  por isso **barreira servidor jamais pode ser removida por downgrade**. Não restaurar writer permissivo.
+
+Provas desta etapa: 94/94 Vitest em9arquivos (29 novas integrações,65 regressões),44 PostgreSQL descartável,
+16 auditorias independentes do módulo original e11 Chromium/HTTP/IndexedDB com NovoPedido e hooks reais.
+Auth fornecida pelo harness é sintética; transporte HTTP é controlado/interceptado, não JWT/RLS hosted.
+O arquivo externo dos40testes referido pelo proprietário não foi disponibilizado neste checkout;
+não declarar que executamos aquela suíte específica. Os44 testes de transição/locks permanecem PASS.
+Harness/nova evidência em `test-react-browser.py`, `results-react-browser.txt`, `results-react-vitest.txt`;
+diff/exactfiles/manifests em `react-rollout.diff`, `react-exactfiles.txt`, `SHA256SUMS`.
+Tipos/build são conferidos pela compilação automática, sem executar build/typecheck manual.
+
 ## Complemento independente 19:24 — monotonicidade e despacho
 
 O arquivo `typecheck-source/scripts/durable-journal-check.audit.mjs` citado pelo proprietário
@@ -108,9 +147,8 @@ controlado **não são JWT/RLS hosted**, nem homologação A/B produtiva.
 Feature `ORDER_JOURNAL_ENABLED=false`; adapter exige contrato autenticado válido como
 capacidade, persistência local antes de despacho e fences pré/pós-await. Erro/unknown nunca
 libera. Resultado committed é devolvido para exibição, não limpa carrinho/navega automaticamente.
-UI React completa de NovoPedido com recovery de sessão **não foi integrada**: próxima promoção
-depende de backend revisado/instalado e homologação ponta a ponta. Os 31 testes de componente
-atuais provam fechamento publicado, não integração React deste journal.
+UI React agora preparada pela capability descrita acima, mas nenhuma instalação/publicação ocorreu;
+promoção coordenada e homologação JWT ponta a ponta continuam dependentes do auditor.
 
 IndexedDB é apenas cache mínimo de chave/versão/estado e índice hash do escopo; sem JWT,
 preços, observação ou payload. Mesma origem/perfil/contexto somente: preview e domínio
@@ -130,6 +168,6 @@ Abas antigas não são alteradas/recarregadas: chaves desconhecidas serão negad
   fechado permite voltar frontend; nunca excluir histórico ou reaplicar create permissivo.
 
 Não há captura adicional indispensável para os alvos modificados desta versão: metadados
-necessários foram obtidos em READ ONLY. Aprovação independente e UI integrada continuam
+necessários foram obtidos em READ ONLY. Aprovação independente e homologação JWT continuam
 pendentes; **inativo não significa bloqueado por plano**, e candidato não equivale a autorização
 de implantação. Não certificar outros triggers comerciais/fiscais fora da cadeia capturada.
