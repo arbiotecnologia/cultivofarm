@@ -320,6 +320,7 @@ BEGIN
   -- autorização canônica APÓS o lock e antes de revelar replay ou criar (ponto de
   -- linearização = esta instrução; revogação confirmada depois dela não é observada).
   PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);
+  IF NOT EXISTS(SELECT 1 FROM platform_private.partner_order_attempt_journal j JOIN public.profiles p ON p.user_id=j.actor_id AND p.organization_id=j.organization_id AND p.ativo WHERE j.actor_id=v_uid AND j.partner_id=p_partner_id AND j.idempotency_key=v_idem) THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
   -- Fechamento durável sob ESTE MESMO lock: recusa envio tardio antes de qualquer efeito.
   -- (Corpos antigos em voo são cobertos pelo trigger c2_attempt_closure_guard.)
   IF EXISTS (SELECT 1 FROM platform_private.partner_order_idempotency_closures c
@@ -599,11 +600,12 @@ AS $function$
 DECLARE
   v_uid uuid := auth.uid();
   v_idem text;
+  v_scope_org uuid; v_current_org uuid;
   v_found boolean; v_order_id uuid; v_numero text;
 BEGIN
   -- Autorização canônica ANTES do lock e de revelar qualquer estado.
   PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);
-  PERFORM platform_private.c2_attempt_scope_lock(v_uid,p_partner_id);
+  v_scope_org := platform_private.c2_attempt_scope_lock(v_uid,p_partner_id);
   v_idem := NULLIF(btrim(COALESCE(p_idempotency_key,'')),'');
   IF v_idem IS NULL THEN RAISE EXCEPTION 'idempotency_key_required'; END IF;
   IF length(v_idem) > 120 THEN RAISE EXCEPTION 'invalid_idempotency_key'; END IF;
@@ -619,6 +621,8 @@ BEGIN
   -- Revalida APÓS a espera: revogação/perfil/parceiro inativo confirmados durante a espera
   -- abortam sem revelar committed e sem gravar closed.
   PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);
+  SELECT organization_id INTO v_current_org FROM public.profiles WHERE user_id=v_uid AND ativo;
+  IF v_current_org IS DISTINCT FROM v_scope_org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
 
   SELECT true, i.order_id INTO v_found, v_order_id
     FROM public.partner_order_idempotency i
@@ -641,8 +645,8 @@ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('p
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()')) IS DISTINCT FROM '851aacc3e631832493a34bcb6106b53a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_journal_write_guard()'; END IF; END $post$;
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '1fc92e569658f35f8509e92d66549516' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM 'f5aa40591cfc0f436f579f20ce2f563a' THEN RAISE EXCEPTION 'C2DJ_POST:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM '853da435b5dd76ffc5d067f72b8856bd' THEN RAISE EXCEPTION 'C2DJ_POST:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $post$;
-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM 'c19107af28f3ecbbd537cec3c54d0e5f' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $post$;
+DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM '74cfb688546817e6236d5195d069e29e' THEN RAISE EXCEPTION 'C2DJ_POST:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $post$;
+DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM '4d7a7a49b27ab78fd33a6cdac75833c5' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $post$;
 DO $metadata$ BEGIN
 IF (SELECT relacl::text FROM pg_class WHERE oid='platform_private.partner_order_attempt_journal'::regclass)
  IS DISTINCT FROM '{postgres=arwdDxtm/postgres,service_role=r/postgres}'
