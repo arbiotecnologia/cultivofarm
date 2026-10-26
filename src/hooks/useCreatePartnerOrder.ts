@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useStorageAccessScope } from "./useStorageAccessScope";
 import type { CatalogItemTipo } from "./usePartnerCatalog";
-import { isAccountingPending } from "@/lib/orderAccountingState";
+import { orderAccountingState } from "@/lib/orderAccountingState";
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
 
@@ -59,6 +59,26 @@ const mapUnidadeMedida = (u: UnidadePedido): string => {
   }
 };
 
+export type CreatedOrderAccountingState = "pending" | "validated" | "unknown" | "context_changed";
+
+/**
+ * Lê (sob RLS) o snapshot gravado pelo servidor do pedido recém-criado. Erro de leitura,
+ * linha ausente ou contrato desconhecido => "unknown" (nunca "validated").
+ */
+export async function readCreatedOrderAccountingState(orderId: string | undefined, current: () => boolean): Promise<CreatedOrderAccountingState> {
+  if (!orderId) return "unknown";
+  try {
+    const { data: row, error } = await (supabase as any)
+      .from("partner_orders").select("id, c2_external_origin_snapshot").eq("id", orderId).maybeSingle();
+    if (!current()) return "context_changed";
+    if (error || !row || row.id !== orderId) return "unknown";
+    const state = orderAccountingState(row);
+    return state === "unknown" ? "unknown" : state;
+  } catch {
+    return current() ? "unknown" : "context_changed";
+  }
+}
+
 export function useCreatePartnerOrder() {
   const qc = useQueryClient();
   const scope = useStorageAccessScope("partner-order-mutation");
@@ -102,18 +122,16 @@ export function useCreatePartnerOrder() {
     onSuccess: async (data, _variables, context) => {
       if (!context?.current()) return;
       qc.invalidateQueries({ queryKey: ["partner-orders"] });
-      // Estado contábil lido do snapshot gravado pelo servidor (sob RLS); sem coluna/linha => mensagem padrão.
-      let pending = false;
-      try {
-        const { data: row } = await (supabase as any)
-          .from("partner_orders").select("*").eq("id", data?.id).maybeSingle();
-        pending = isAccountingPending(row);
-      } catch { pending = false; }
-      if (!context?.current()) return;
-      if (pending) {
-        toast.warning("Pedido registrado. A contabilidade da empresa fornecedora ainda está pendente: aprovação, cobrança, nota fiscal e entrega ficam bloqueadas até a validação.");
+      // O pedido já foi aceito pelo servidor: nunca reenviar nem tratar como falha.
+      const state = await readCreatedOrderAccountingState(data?.id, context.current);
+      if (!context?.current() || state === "context_changed") return;
+      const numero = data?.numero ? ` ${data.numero}` : "";
+      if (state === "pending") {
+        toast.warning(`Pedido${numero} registrado. A contabilidade da empresa fornecedora ainda está pendente: aprovação, cobrança, nota fiscal e entrega ficam bloqueadas até a validação.`);
+      } else if (state === "validated") {
+        toast.success(`Pedido${numero} enviado para análise comercial!`);
       } else {
-        toast.success("Pedido enviado para análise comercial!");
+        toast.info(`Pedido${numero} registrado. Não foi possível confirmar agora a situação contábil; consulte o pedido antes de prosseguir. Não envie de novo.`);
       }
     },
     onError: (err: any, _variables, context) => {
