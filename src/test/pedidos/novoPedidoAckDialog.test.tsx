@@ -128,6 +128,7 @@ function mount() {
 }
 
 // Diálogo React do ACK explícito: NovoPedido/hooks/journal reais, transporte sintético.
+type Args = Record<string, unknown>;
 const K1='44444444-4444-4444-8444-444444444444', ID1='55555555-5555-4555-8555-555555555555', K2='66666666-6666-4666-8666-666666666666';
 const CT='C2_ORDER_JOURNAL_V1';
 let srv:{key:string;gen:number;order:string;numero:string};
