@@ -1,0 +1,107 @@
+-- C2_COMMERCIAL_OWNER_ORDERS_V1 — leitura administrativa somente leitura da carteira
+-- do commercial owner. INATIVO: aplicar somente com autorização explícita do proprietário.
+-- Transação única: qualquer falha aborta tudo (sem DDL parcial em autocommit).
+
+BEGIN;
+
+CREATE OR REPLACE FUNCTION platform_private.c2_commercial_owner_orders_core(
+  p_status text DEFAULT NULL,
+  p_partner_id uuid DEFAULT NULL,
+  p_start timestamptz DEFAULT NULL,
+  p_end timestamptz DEFAULT NULL
+) RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, platform_private
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_org uuid;
+  v_orders jsonb;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'auth_required' USING ERRCODE = '42501';
+  END IF;
+
+  -- Organização canônica do ator derivada no servidor (perfil ativo + org ativa).
+  -- Nunca vem de parâmetro; perfil/org inativos => sem escopo.
+  SELECT p.organization_id INTO v_org
+    FROM public.profiles p
+    JOIN public.organizations o ON o.id = p.organization_id
+   WHERE p.user_id = v_uid
+     AND p.ativo = true
+     AND o.ativo = true
+     AND o.status = 'ativa'
+   LIMIT 1;
+
+  IF v_org IS NULL THEN
+    RAISE EXCEPTION 'actor_scope_unavailable' USING ERRCODE = '42501';
+  END IF;
+
+  -- Somente administração interna da empresa dona da carteira.
+  IF NOT (platform_private.has_role(v_uid, 'administrador'::public.app_role)
+       OR platform_private.has_role(v_uid, 'gestor_comercial'::public.app_role)) THEN
+    RAISE EXCEPTION 'actor_not_allowed' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'id', q.id,
+           'numero', q.numero,
+           'status', q.status,
+           'total', q.total,
+           'created_at', q.created_at,
+           'requested_delivery_date', q.requested_delivery_date,
+           'estimated_delivery_date', q.estimated_delivery_date,
+           'partner_id', q.partner_id,
+           'partner_razao_social', q.razao_social,
+           'c2_external_origin_snapshot', q.c2_external_origin_snapshot
+         ) ORDER BY q.created_at DESC, q.id), '[]'::jsonb)
+    INTO v_orders
+    FROM (
+      SELECT o.id, o.numero, o.status::text AS status, o.total, o.created_at,
+             o.requested_delivery_date, o.estimated_delivery_date,
+             o.partner_id, o.c2_external_origin_snapshot,
+             pa.razao_social
+        FROM public.partner_orders o
+        JOIN public.partner_accounts pa ON pa.id = o.partner_id
+       WHERE pa.commercial_owner_organization_id = v_org
+         AND pa.ativo IS TRUE
+         AND pa.deleted_at IS NULL
+         AND (p_status IS NULL OR o.status::text = p_status)
+         AND (p_partner_id IS NULL OR o.partner_id = p_partner_id)
+         AND (p_start IS NULL OR o.created_at >= p_start)
+         AND (p_end IS NULL OR o.created_at <= p_end)
+       ORDER BY o.created_at DESC, o.id
+       LIMIT 200
+    ) q;
+
+  RETURN jsonb_build_object(
+    'contract', 'C2_COMMERCIAL_OWNER_ORDERS_V1',
+    'organization_id', v_org,
+    'orders', v_orders
+  );
+END;
+$$;
+
+-- ACL no padrão canônico dos leitores comerciais (ex.: b2b_commercial_own_orders):
+-- authenticated + service_role executam; a autorização é validada dentro do core.
+REVOKE ALL ON FUNCTION platform_private.c2_commercial_owner_orders_core(text, uuid, timestamptz, timestamptz) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION platform_private.c2_commercial_owner_orders_core(text, uuid, timestamptz, timestamptz) TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.c2_commercial_owner_orders_projection(
+  p_status text DEFAULT NULL,
+  p_partner_id uuid DEFAULT NULL,
+  p_start timestamptz DEFAULT NULL,
+  p_end timestamptz DEFAULT NULL
+) RETURNS jsonb
+LANGUAGE sql
+SECURITY INVOKER
+SET search_path = public, platform_private
+AS $$
+  SELECT platform_private.c2_commercial_owner_orders_core(p_status, p_partner_id, p_start, p_end);
+$$;
+
+REVOKE ALL ON FUNCTION public.c2_commercial_owner_orders_projection(text, uuid, timestamptz, timestamptz) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.c2_commercial_owner_orders_projection(text, uuid, timestamptz, timestamptz) TO authenticated, service_role;
+
+COMMIT;

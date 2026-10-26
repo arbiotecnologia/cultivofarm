@@ -1,0 +1,29 @@
+-- ROLLBACK guardado — remove SOMENTE as funções deste pacote, e apenas se os corpos
+-- instalados forem byte-exatos ao candidato (md5 de expected.json). Não toca policies,
+-- dados nem outras funções. Se o md5 divergir, aborta sem dropar nada.
+
+BEGIN;
+
+DO $$
+DECLARE
+  v_core_md5 text;
+  v_wrapper_md5 text;
+BEGIN
+  SELECT md5(p.prosrc) INTO v_core_md5
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'platform_private' AND p.proname = 'c2_commercial_owner_orders_core';
+  SELECT md5(p.prosrc) INTO v_wrapper_md5
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND p.proname = 'c2_commercial_owner_orders_projection';
+
+  IF v_core_md5 IS DISTINCT FROM '__CORE_MD5__'
+     OR v_wrapper_md5 IS DISTINCT FROM '__WRAPPER_MD5__' THEN
+    RAISE EXCEPTION 'rollback_guard_failed: corpos divergem do candidato; abortando sem dropar';
+  END IF;
+END;
+$$;
+
+DROP FUNCTION public.c2_commercial_owner_orders_projection(text, uuid, timestamptz, timestamptz);
+DROP FUNCTION platform_private.c2_commercial_owner_orders_core(text, uuid, timestamptz, timestamptz);
+
+COMMIT;
