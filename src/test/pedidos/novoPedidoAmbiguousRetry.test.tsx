@@ -119,9 +119,9 @@ function mount() {
 type Args = Record<string, unknown>;
 const creates = () => state.rpc.mock.calls.filter(([n]) => n === "create_partner_order_secure").map(([, a]) => a as Args);
 
-async function fillAndSubmit() {
-  await screen.findByText("Produto local");
-  if (!screen.queryByText("1 L")) {
+async function fillAndSubmit(add = true) {
+  await screen.findAllByText("Produto local");
+  if (add) {
     fireEvent.click(screen.getByRole("button", { name: "Adicionar ao pedido" }));
     fireEvent.click(await screen.findByRole("button", { name: "Adicionar ao carrinho" }));
   }
@@ -132,7 +132,7 @@ async function fillAndSubmit() {
   fireEvent.click(submit);
 }
 async function waitCart() {
-  await screen.findByText("Produto local");
+  await screen.findAllByText("Produto local");
   await waitFor(() => expect(screen.getAllByRole("button", { name: "Continuar para condição de pagamento" })[0]).toBeEnabled());
 }
 function lostResponse() {
@@ -154,7 +154,7 @@ it("resposta perdida + remontagem: reenvio idêntico reutiliza a MESMA chave", a
   state.createImpl = null;
   mount();
   await waitCart();
-  await fillAndSubmit();
+  await fillAndSubmit(false);
   await waitFor(() => expect(creates()).toHaveLength(2));
   expect(creates()[1].p_idempotency_key).toBe(creates()[0].p_idempotency_key);
 });
