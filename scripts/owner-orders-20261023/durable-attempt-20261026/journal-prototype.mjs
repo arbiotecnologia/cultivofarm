@@ -5,7 +5,19 @@ export const journalScope = async (actor, org, partner) => {
  const hash = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([actor,org,partner])));
  return Array.from(new Uint8Array(hash),x=>x.toString(16).padStart(2,'0')).join('');
 };
-const valid = r => r && r.schema===1 && /^[0-9a-f-]{36}$/.test(r.key) && Number.isSafeInteger(r.generation) && r.generation>0 && ['uncertain','committed','closed'].includes(r.state);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const valid = r => r && typeof r==='object' && !Array.isArray(r) && r.schema===1 &&
+ typeof r.key==='string' && UUID.test(r.key) && Number.isSafeInteger(r.generation) &&
+ r.generation>0 && ['uncertain','committed','closed'].includes(r.state);
+export function parseCanonical(value) {
+ if (!value || typeof value!=='object' || Array.isArray(value) || value.contract!=='C2_ORDER_JOURNAL_V1' ||
+     typeof value.key!=='string' || !UUID.test(value.key) || !Number.isSafeInteger(value.generation) || value.generation<1 ||
+     !['reserved','uncertain','closed','committed'].includes(value.state)) throw Error('contract_invalid');
+ if(value.state==='committed' && (typeof value.order_id!=='string' || !UUID.test(value.order_id) ||
+     typeof value.numero!=='string' || !value.numero.trim())) throw Error('contract_invalid');
+ return {contract:value.contract,key:value.key,generation:value.generation,state:value.state,
+  ...(value.state==='committed'?{order_id:value.order_id,numero:value.numero.trim()}: {})};
+}
 async function open() {
  return new Promise((resolve,reject)=>{
   let req;
@@ -38,6 +50,11 @@ export async function adopt(scope,reservation,current) {
    if(!current()) {failure='context_changed';t.abort();return;}
    if(prev!==undefined && !valid(prev)){failure='storage_corrupt';t.abort();return;}
    if(prev && (prev.generation>reservation.generation || (prev.generation===reservation.generation && prev.key!==reservation.key))) {failure='stale_generation';t.abort();return;}
+   // Same generation is monotonic: terminal observations cannot regress or conflict.
+   // A new generation requires a different server-issued key and a terminal predecessor.
+   if(prev && prev.generation===reservation.generation && prev.state!=='uncertain' && prev.state!==reservation.state) {failure='terminal_state_conflict';t.abort();return;}
+   if(prev && reservation.generation>prev.generation &&
+      (prev.state==='uncertain' || prev.key===reservation.key)) {failure='generation_transition_unconfirmed';t.abort();return;}
    // Persist only opaque key, schema/version and state. No payload, price, token, actor IDs.
    store.put({schema:1,key:reservation.key,generation:reservation.generation,state:reservation.state},scope);
   };
@@ -47,8 +64,10 @@ export async function adopt(scope,reservation,current) {
 }
 export async function beforeDispatch(scope,reservation,current,authorizeServer) {
  if(!current()) throw Error('context_changed');
- const canonical=await authorizeServer(); // Controlled in tests; requires inactive server contract.
+ if(!valid(reservation) || reservation.state!=='uncertain') throw Error('dispatch_blocked');
+ const canonical=parseCanonical(await authorizeServer()); // Fresh authenticated RPC, not storage authority.
  if(!current() || canonical.key!==reservation.key || canonical.generation!==reservation.generation) throw Error('context_or_generation_changed');
+ if(!['reserved','uncertain'].includes(canonical.state)) throw Error('dispatch_blocked');
  const local=await read(scope);
  if(!current() || local.key!==reservation.key || local.generation!==reservation.generation || local.state!=='uncertain') throw Error('dispatch_blocked');
  return local.key;

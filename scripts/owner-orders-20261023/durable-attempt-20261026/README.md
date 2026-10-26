@@ -1,5 +1,29 @@
 # Continuidade durável — candidato corrigido, INATIVO
 
+## Complemento independente 19:24 — monotonicidade e despacho
+
+O arquivo `typecheck-source/scripts/durable-journal-check.audit.mjs` citado pelo proprietário
+não existe neste checkout; os mesmos cenários foram reproduzidos diretamente no módulo exato.
+`node scripts/owner-orders-20261023/durable-attempt-20261026/test-journal.audit.mjs`:
+antes **2 PASS / 11 FAIL** (Node22.23.4 + fake-indexeddb, não Node24); depois **16 PASS / 0 FAIL**.
+Saídas: `results-journal-before.txt` e `results-journal-after.txt`.
+
+- Mesma geração: uncertain pode tornar-se terminal; committed/closed nunca regridem
+  nem trocam entre si. Conflito aborta a transação e conserva o registro anterior.
+- Nova geração exige chave diferente e predecessor local terminal; resposta antiga
+  não apaga geração nova. Falta de confirmação local permanece bloqueada até recovery
+  autenticada explícita; não existe liberação por TTL ou storage vazio.
+- UUID estrito, contrato completo e metadados committed obrigatórios num parser único.
+  `beforeDispatch` exige resposta canônica fresca, escopo atual antes/depois da espera,
+  chave/geração correspondentes e estado reserved/uncertain. Committed, closed, unknown,
+  in_progress ou formato incompleto nunca autorizam despacho.
+- `dispatchJournal` reutiliza essa única verificação, sem fabricar estado uncertain.
+  O parser valida formato, não autentica por si: o chamador continua obrigado a usar
+  transporte canônico autenticado e fences. Protótipo permanece fora do runtime/feature OFF.
+- Browser atualizado: **17 PASS** com IndexedDB real, incluindo resposta terminal antiga
+  entre páginas e canonical closed sobre journal uncertain. Transporte controlado,
+  não JWT/RLS real. As **44 provas PostgreSQL de transição/locks** permanecem intactas.
+
 Revisão de partida: `065f8633e6ec84ae2ca1de61bb154612f95055e8`.
 Nenhuma aplicação SQL hosted, publicação, alteração de pedidos ou sessões produtivas.
 Contabilidade A DRAFT e envios externos OFF preservados. As 36 falhas antigas seguem abertas.

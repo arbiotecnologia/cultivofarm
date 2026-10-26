@@ -1,0 +1,34 @@
+FAIL committed never regresses to uncertain Expected values to be strictly equal:
++ actual - expected
+
++ 'uncertain'
+- 'committed'
+
+FAIL committed never switches to another terminal Expected values to be strictly equal:
++ actual - expected
+
++ 'closed'
+- 'committed'
+
+FAIL closed never regresses to uncertain Expected values to be strictly equal:
++ actual - expected
+
++ 'uncertain'
+- 'closed'
+
+FAIL closed never switches to another terminal Expected values to be strictly equal:
++ actual - expected
+
++ 'committed'
+- 'closed'
+
+FAIL canonical closed never dispatches Missing expected rejection.
+FAIL canonical committed never dispatches Missing expected rejection.
+FAIL canonical unknown never dispatches Missing expected rejection.
+FAIL canonical in_progress never dispatches Missing expected rejection.
+FAIL 36 hyphens rejected UUID Missing expected rejection.
+FAIL canonical missing contract rejected Missing expected rejection.
+FAIL committed incomplete metadata rejected Missing expected rejection.
+PASS authorized full uncertain schema allows same key
+PASS revoked after RPC blocks dispatch
+TOTAL 2 PASS 11 FAIL

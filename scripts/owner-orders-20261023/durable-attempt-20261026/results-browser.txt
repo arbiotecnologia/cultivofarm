@@ -6,6 +6,8 @@ PASS close/reopen survives crash before fetch
 PASS old response cannot overwrite new generation
 PASS revalidation detects foreign generation before dispatch
 PASS commit-before-ack local marker survives tab closure
+PASS two tabs stale uncertain cannot regress committed
+PASS canonical closed never dispatches despite uncertain local
 PASS A/B scopes differ without persisting identity
 PASS revoked context never adopts or dispatches
 PASS feature OFF never consumes RPC
@@ -14,4 +16,4 @@ PASS late recovery after revocation never adopts or clears cart
 PASS storage unavailable fails closed
 PASS corruption never silently repairs/reserves
 PASS independent browser context missing journal remains blocked
-TOTAL 15 PASS real IndexedDB; controlled transport, no hosted JWT/RLS
+TOTAL 17 PASS real IndexedDB; controlled transport, no hosted JWT/RLS

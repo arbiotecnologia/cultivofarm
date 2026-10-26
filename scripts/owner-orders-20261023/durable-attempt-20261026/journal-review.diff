@@ -1,0 +1,114 @@
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/journal-prototype.mjs b/scripts/owner-orders-20261023/durable-attempt-20261026/journal-prototype.mjs
+index 08341211..694e90cb 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/journal-prototype.mjs
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/journal-prototype.mjs
+@@ -5,7 +5,19 @@ export const journalScope = async (actor, org, partner) => {
+  const hash = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([actor,org,partner])));
+  return Array.from(new Uint8Array(hash),x=>x.toString(16).padStart(2,'0')).join('');
+ };
+-const valid = r => r && r.schema===1 && /^[0-9a-f-]{36}$/.test(r.key) && Number.isSafeInteger(r.generation) && r.generation>0 && ['uncertain','committed','closed'].includes(r.state);
++const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
++const valid = r => r && typeof r==='object' && !Array.isArray(r) && r.schema===1 &&
++ typeof r.key==='string' && UUID.test(r.key) && Number.isSafeInteger(r.generation) &&
++ r.generation>0 && ['uncertain','committed','closed'].includes(r.state);
++export function parseCanonical(value) {
++ if (!value || typeof value!=='object' || Array.isArray(value) || value.contract!=='C2_ORDER_JOURNAL_V1' ||
++     typeof value.key!=='string' || !UUID.test(value.key) || !Number.isSafeInteger(value.generation) || value.generation<1 ||
++     !['reserved','uncertain','closed','committed'].includes(value.state)) throw Error('contract_invalid');
++ if(value.state==='committed' && (typeof value.order_id!=='string' || !UUID.test(value.order_id) ||
++     typeof value.numero!=='string' || !value.numero.trim())) throw Error('contract_invalid');
++ return {contract:value.contract,key:value.key,generation:value.generation,state:value.state,
++  ...(value.state==='committed'?{order_id:value.order_id,numero:value.numero.trim()}: {})};
++}
+ async function open() {
+  return new Promise((resolve,reject)=>{
+   let req;
+@@ -38,6 +50,11 @@ export async function adopt(scope,reservation,current) {
+    if(!current()) {failure='context_changed';t.abort();return;}
+    if(prev!==undefined && !valid(prev)){failure='storage_corrupt';t.abort();return;}
+    if(prev && (prev.generation>reservation.generation || (prev.generation===reservation.generation && prev.key!==reservation.key))) {failure='stale_generation';t.abort();return;}
++   // Same generation is monotonic: terminal observations cannot regress or conflict.
++   // A new generation requires a different server-issued key and a terminal predecessor.
++   if(prev && prev.generation===reservation.generation && prev.state!=='uncertain' && prev.state!==reservation.state) {failure='terminal_state_conflict';t.abort();return;}
++   if(prev && reservation.generation>prev.generation &&
++      (prev.state==='uncertain' || prev.key===reservation.key)) {failure='generation_transition_unconfirmed';t.abort();return;}
+    // Persist only opaque key, schema/version and state. No payload, price, token, actor IDs.
+    store.put({schema:1,key:reservation.key,generation:reservation.generation,state:reservation.state},scope);
+   };
+@@ -47,8 +64,10 @@ export async function adopt(scope,reservation,current) {
+ }
+ export async function beforeDispatch(scope,reservation,current,authorizeServer) {
+  if(!current()) throw Error('context_changed');
+- const canonical=await authorizeServer(); // Controlled in tests; requires inactive server contract.
++ if(!valid(reservation) || reservation.state!=='uncertain') throw Error('dispatch_blocked');
++ const canonical=parseCanonical(await authorizeServer()); // Fresh authenticated RPC, not storage authority.
+  if(!current() || canonical.key!==reservation.key || canonical.generation!==reservation.generation) throw Error('context_or_generation_changed');
++ if(!['reserved','uncertain'].includes(canonical.state)) throw Error('dispatch_blocked');
+  const local=await read(scope);
+  if(!current() || local.key!==reservation.key || local.generation!==reservation.generation || local.state!=='uncertain') throw Error('dispatch_blocked');
+  return local.key;
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs b/scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs
+index 6e46f416..5fd0b76b 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs
+@@ -1,19 +1,14 @@
+ // INACTIVE UI adapter: no runtime imports, no tokens, no client-generated keys.
+-import { adopt, read } from './journal-prototype.mjs';
++import { adopt, beforeDispatch, parseCanonical } from './journal-prototype.mjs';
+ export const ORDER_JOURNAL_ENABLED = false;
+-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+-export function parseJournal(value) {
+- if (!value || value.contract !== 'C2_ORDER_JOURNAL_V1' || !uuid.test(value.key) ||
+-     !Number.isSafeInteger(value.generation) || value.generation < 1 ||
+-     !['reserved','uncertain','closed','committed'].includes(value.state)) throw Error('contract_invalid');
+- if (value.state === 'committed' && (!uuid.test(value.order_id) || typeof value.numero !== 'string' || !value.numero.trim())) throw Error('contract_invalid');
+- return value;
+-}
++export const parseJournal = parseCanonical;
+ export async function recoverJournal({ enabled = ORDER_JOURNAL_ENABLED, scope, current, rpc, expected, acknowledge, advance = false }) {
+  if (!enabled || !current()) throw Error('recovery_disabled_or_context');
+  // The authenticated RPC response is the capability. Missing RPC/error never falls back.
+  const result = parseJournal(await rpc({ expected, acknowledge, advance }));
+  if (!current()) throw Error('context_changed');
++ // Explicit advance must first persist the confirmed predecessor terminal state.
++ // A response alone cannot silently jump an unresolved local generation.
+  await adopt(scope, { schema: 1, key: result.key, generation: result.generation,
+   state: result.state === 'reserved' ? 'uncertain' : result.state }, current);
+  if (!current()) throw Error('context_changed');
+@@ -21,12 +16,8 @@ export async function recoverJournal({ enabled = ORDER_JOURNAL_ENABLED, scope, c
+ }
+ export async function dispatchJournal({ enabled = ORDER_JOURNAL_ENABLED, scope, current, recover, create, expected }) {
+  if (!enabled || !current()) throw Error('recovery_disabled_or_context');
+- const canonical = parseJournal(await recover());
+- if (!current() || canonical.key !== expected.key || canonical.generation !== expected.generation ||
+-     !['reserved','uncertain'].includes(canonical.state)) throw Error('dispatch_blocked');
+- const local = await read(scope);
+- if (!current() || local.key !== canonical.key || local.generation !== canonical.generation || local.state !== 'uncertain') throw Error('dispatch_blocked');
+- const result = await create(canonical.key);
++ const key = await beforeDispatch(scope,expected,current,recover);
++ const result = await create(key);
+  if (!current()) throw Error('context_changed');
+  return result; // caller still compares full current cart before cleanup/navigation.
+ }
+\ No newline at end of file
+diff --git a/scripts/owner-orders-20261023/durable-attempt-20261026/test-browser.py b/scripts/owner-orders-20261023/durable-attempt-20261026/test-browser.py
+index 683ef5be..eab12744 100644
+--- a/scripts/owner-orders-20261023/durable-attempt-20261026/test-browser.py
++++ b/scripts/owner-orders-20261023/durable-attempt-20261026/test-browser.py
+@@ -24,12 +24,14 @@ async def main():
+   ok('two pages same origin share reservation transactionally',await a.evaluate('(async()=> (await j.read(scope)).key===res.key)()') and await b.evaluate('(async()=> (await j.read(scope)).key===res.key)()'))
+   await a.close();a=await page()
+   ok('close/reopen survives crash before fetch',await a.evaluate('(async()=> (await j.read(scope)).key===res.key)()'))
+-  await b.evaluate("async()=>{window.old={...res};res={...res,key:'00000000-0000-4000-8000-000000000002',generation:2};await j.adopt(scope,res,()=>current)}")
++  await b.evaluate("async()=>{await j.adopt(scope,{...res,state:'closed'},()=>current);window.old={...res};res={...res,key:'00000000-0000-4000-8000-000000000002',generation:2};await j.adopt(scope,res,()=>current)}")
+   ok('old response cannot overwrite new generation',await a.evaluate("async()=>{try{await j.adopt(scope,res,()=>current);return false}catch(e){return e.message==='stale_generation'}}"))
+-  ok('revalidation detects foreign generation before dispatch',await a.evaluate("async()=>{try{await j.beforeDispatch(scope,res,()=>current,async()=>res);return false}catch(e){return e.message==='dispatch_blocked'}}"))
++  ok('revalidation detects foreign generation before dispatch',await a.evaluate("async()=>{try{await j.beforeDispatch(scope,res,()=>current,async()=>({...res,contract:'C2_ORDER_JOURNAL_V1'}));return false}catch(e){return e.message==='dispatch_blocked'}}"))
+   await b.evaluate("async()=>{res={...res,state:'committed'};await j.adopt(scope,res,()=>current)}")
+   await b.close();b=await page()
+   ok('commit-before-ack local marker survives tab closure',await b.evaluate('(async()=> (await j.read(scope)).state===\'committed\')()'))
++  ok('two tabs stale uncertain cannot regress committed',await a.evaluate("async()=>{const current=await j.read(scope);try{await j.adopt(scope,{...current,state:'uncertain'},()=>true)}catch{}return (await j.read(scope)).state==='committed'}"))
++  ok('canonical closed never dispatches despite uncertain local',await a.evaluate("async()=>{const s='closed-dispatch';await j.adopt(s,res,()=>true);try{await j.beforeDispatch(s,res,()=>true,async()=>({...res,contract:'C2_ORDER_JOURNAL_V1',state:'closed'}));return false}catch(e){return e.message==='dispatch_blocked'}}"))
+   ok('A/B scopes differ without persisting identity',await b.evaluate("(async()=>scope!==await j.journalScope('actor-b','org-b','partner-a'))()"))
+   ok('revoked context never adopts or dispatches',await b.evaluate("async()=>{current=false;try{await j.adopt(scope,res,()=>current);return false}catch(e){return e.message==='context_or_contract_invalid'}}"))
+   await b.evaluate("async()=>{window.controller=await import('/scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs');window.calls=0;}")
