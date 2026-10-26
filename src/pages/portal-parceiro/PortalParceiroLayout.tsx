@@ -3,7 +3,7 @@ import { ownerCatalogRoute } from "@/lib/catalogo/catalogAccess";
 import { ownFinanceRoute } from "@/lib/comercial/financeAccess";
 import { OwnerFinance } from "@/components/comercial/OwnerFinance";
 import { OwnerCatalog } from "@/components/catalogo/OwnerCatalog";
-import { ownerOrderRoute } from "@/lib/comercial/ownerOrderAccess";
+import { ownerOrderRoute, ownerOrdersRoute } from "@/lib/comercial/ownerOrderAccess";
 import { CatalogFilterMemoryContext, createCatalogFilterMemory } from "@/lib/catalogo/catalogFilterPreferences";
 import { Outlet, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -73,7 +73,7 @@ export default function PortalParceiroLayout() {
   const isTecnico = !externalManager && role === "parceiro_b2b_tecnico";
   const commercialOwner = ownPartner?.mode === "commercial_owner";
   const menuGroups = (isTecnico ? PARCEIRO_TECNICO_GROUPS : PARCEIRO_GESTOR_GROUPS)
-    .map((group) => ({ ...group, items: group.items.filter((item) => (!commercialOwner || (partnerReady && !partnerError && (ownerCatalogRoute(item.route, ownPartner?.capabilities) || (entitlements.status === "ready" && ownFinanceRoute(item.route, ownPartner?.financeRead === true, entitlements.features))))) && isPathEntitled(item.route, entitlements)) }))
+    .map((group) => ({ ...group, items: group.items.filter((item) => (!commercialOwner || (partnerReady && !partnerError && (ownerCatalogRoute(item.route, ownPartner?.capabilities) || ownerOrdersRoute(item.route) || (entitlements.status === "ready" && ownFinanceRoute(item.route, ownPartner?.financeRead === true, entitlements.features))))) && isPathEntitled(item.route, entitlements)) }))
     .filter((group) => group.items.length > 0);
   const papelVisual = isStaff ? "staff" : isTecnico ? "tecnico" : "gestor";
 
@@ -223,6 +223,18 @@ export default function PortalParceiroLayout() {
               ? <Outlet key={ownPartner.id} context={{ partner: ownPartner }} />
               : <OwnerCatalog key={JSON.stringify([preferenceIdentity, ownPartner.id])} partnerId={ownPartner.id} filterPreferences={filterPreferences} />
             : <Outlet context={{ partner: ownPartner }} />
+        ) : commercialOwner && ownerOrdersRoute(location.pathname) ? (
+          // Acompanhamento somente leitura pós-envio: canal canônico fail-closed,
+          // sem ações legadas (mensagens/andamento/edição) e sem declarar validação.
+          <section className="space-y-4" aria-label="Acompanhamento de pedidos">
+            <h1 className="text-2xl font-semibold">Meus pedidos</h1>
+            <CommercialOwnOrders partnerId={ownPartner.id} />
+            <p className="text-sm text-muted-foreground">
+              Pedidos enviados seguem para análise comercial da Cultivo Farm. Aprovação, cobrança,
+              nota fiscal e entrega dependem de validações internas e podem permanecer bloqueadas —
+              este acompanhamento não garante nenhuma dessas etapas.
+            </p>
+          </section>
         ) : commercialOwner ? (
           <section className="space-y-4" aria-label="Cliente comercial">
             <h1 className="text-2xl font-semibold">{ownPartner.razao_social}</h1>

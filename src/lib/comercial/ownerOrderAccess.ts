@@ -12,3 +12,12 @@ export function readOwnerOrderCapability(raw: unknown): boolean {
 export function ownerOrderRoute(path: string, capability: boolean, features: ReadonlySet<string>) {
   return path === "/portal-parceiro/catalogo" && capability === true && features.has("pedidos_b2b");
 }
+
+/**
+ * Acompanhamento SOMENTE LEITURA dos pedidos próprios do cliente comercial.
+ * O conteúdo vem exclusivamente do canal canônico `get_my_commercial_orders_projection`
+ * (fail-closed no hook); a rota nunca habilita ações legadas nem escritas.
+ */
+export function ownerOrdersRoute(path: string) {
+  return path === "/portal-parceiro/pedidos";
+}
