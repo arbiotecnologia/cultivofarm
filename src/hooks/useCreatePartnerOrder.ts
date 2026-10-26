@@ -5,7 +5,7 @@ import { useStorageAccessScope } from "./useStorageAccessScope";
 import type { CatalogItemTipo } from "./usePartnerCatalog";
 import { orderAccountingState } from "@/lib/orderAccountingState";
 import { useAuth } from "./useAuth";
-import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptSending, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection } from "@/lib/authz/pendingOrderAttempt";
+import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection } from "@/lib/authz/pendingOrderAttempt";
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
 
@@ -93,11 +93,18 @@ export function useCreatePartnerOrder() {
   const mutation = useMutation({
     onMutate: () => ({ current: scope.capture(), identity: scope.scope }),
     mutationFn: async (input: CreateOrderInput) => {
+      // A reserva do envio (contagem em voo) é feita de forma SÍNCRONA pela
+      // página antes de mutate(); aqui só liberamos/registramos o desfecho,
+      // dentro do mutationFn para sobreviver à desmontagem da tela.
+      const slot = input.attempt_slot ?? null;
+      const notSent = (e: Error) => { if (slot) markOrderAttemptRejected(slot, input.idempotency_key); return e; };
       const current = scope.capture();
-      if (!current()) throw new Error("Contexto indisponível.");
-      if (!input.items.length) throw new Error("Carrinho vazio");
-      if (!input.expected_cart_hash) throw new Error("cart_hash_required");
+      if (!current()) throw notSent(new Error("Contexto indisponível."));
+      if (!input.items.length) throw notSent(new Error("Carrinho vazio"));
+      if (!input.expected_cart_hash) throw notSent(new Error("cart_hash_required"));
       if (!input.idempotency_key) throw new Error("idempotency_key_required");
+      // O slot precisa corresponder ao ator/empresa/papéis/parceiro atuais.
+      if (slot && slot !== slotFor(input.partner_id)) throw notSent(new Error("Contexto alterado."));
 
       const payload = input.items.map((i) => ({
         item_id: i.item_id,
@@ -107,12 +114,6 @@ export function useCreatePartnerOrder() {
         volume_ml: i.unidade_pedido === "volume_comercial" ? i.volume_ml ?? null : null,
       }));
 
-      // A partir daqui o resultado é incerto até resposta conclusiva. O registro
-      // ocorre aqui (não em callbacks) para sobreviver a desmontagem da tela.
-      const slot = input.attempt_slot ?? null;
-      // O slot precisa corresponder ao ator/empresa/papéis/parceiro atuais.
-      if (slot && slot !== slotFor(input.partner_id)) throw new Error("Contexto alterado.");
-      const sending = slot ? markOrderAttemptSending(slot, input.idempotency_key) : null;
       let response: { data: unknown; error: { message?: string; code?: string } | null };
       try {
         response = await supabase.rpc(
@@ -135,10 +136,10 @@ export function useCreatePartnerOrder() {
       }
       const { data, error } = response;
       const created = data as { id: string; numero: string; total: number } | null;
-      if (slot && sending) {
+      if (slot) {
         if (!error && created?.id) markOrderAttemptCommitted(slot, input.idempotency_key, { numero: created.numero ?? null });
         else if (isConclusiveRejection(error))
-          markOrderAttemptRejected(slot, input.idempotency_key, sending.wasAmbiguous);
+          markOrderAttemptRejected(slot, input.idempotency_key);
         else markOrderAttemptUnresolved(slot, input.idempotency_key);
       }
       if (!current()) throw new Error("Contexto alterado.");
