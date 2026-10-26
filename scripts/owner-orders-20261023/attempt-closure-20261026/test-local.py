@@ -39,6 +39,10 @@ def h(text):
 pre, cand, post = (h((D / f).read_text()) for f in ('preflight.sql', 'candidate.sql.review', 'postflight.sql'))
 rb, rbfull = (h((D / f).read_text()) for f in ('rollback.sql.review', 'rollback-full-if-empty.sql.review'))
 print('HARNESS_POI_INDEXES', q("SELECT string_agg(c.relname||':'||i.indisunique||':'||(SELECT array_agg(a.attname ORDER BY k.ord) FROM unnest(i.indkey) WITH ORDINALITY k(attnum,ord) JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=k.attnum)::text, ' ') FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid WHERE i.indrelid='public.partner_order_idempotency'::regclass"), flush=True)
+if not q("SELECT count(*) FROM pg_index WHERE indrelid='public.partner_order_idempotency'::regclass")=='0': raise SystemExit('unexpected harness indexes')
+# Réplica reduzida não traz índices; recria os DOIS índices LIVE capturados (pkey id; único partner_id+key) — fidelidade, reportado.
+q("ALTER TABLE public.partner_order_idempotency ADD CONSTRAINT partner_order_idempotency_pkey PRIMARY KEY (id); CREATE UNIQUE INDEX ux_partner_order_idempotency_key ON public.partner_order_idempotency USING btree (partner_id, idempotency_key);")
+print('HARNESS_FIDELITY_FIX LIVE indexes recreated on reduced replica', flush=True)
 q(pre); ok('preflight READ ONLY passes on captured LIVE state')
 ok('preflight left no objects', q("SELECT to_regclass('platform_private.partner_order_idempotency_closures') IS NULL") == 't')
 # drift: preflight must fail
