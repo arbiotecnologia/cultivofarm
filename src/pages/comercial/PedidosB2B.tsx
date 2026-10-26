@@ -48,6 +48,7 @@ import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection"
 import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntry";
 import { CommercialOwnerOrdersSection } from "@/components/comercial/CommercialOwnerOrdersSection";
 import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
+import { usePedidosB2BStatusFilter } from "@/hooks/usePedidosB2BStatusFilter";
 
 
 
@@ -64,6 +65,7 @@ const STATUS_OPTIONS = [
   { value: "solicitado", label: "Solicitado" },
   { value: "cancelado", label: "Cancelado" },
 ];
+const STATUS_VALUES = STATUS_OPTIONS.map((s) => s.value);
 
 export default function PedidosB2B() {
   const { role, roles = [] } = useAuth();
