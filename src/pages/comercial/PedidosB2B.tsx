@@ -142,9 +142,9 @@ export default function PedidosB2B() {
       );
       setCreditNotes("");
       setStatusFilter("em_analise_comercial");
-      setDetail((current) => current && current.id === detail.id
-        ? { ...current, status: result?.status ?? "em_analise_comercial", ready_for_production: false }
-        : current);
+      setDetailState((current) => current && current.order.id === detail.id && current.scope === actorScope
+        ? { ...current, order: { ...current.order, status: result?.status ?? "em_analise_comercial", ready_for_production: false } }
+        : null);
     } catch {
       /* já tratado */
     }
