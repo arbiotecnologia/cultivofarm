@@ -220,6 +220,22 @@ CREATE FUNCTION public.recover_partner_order_attempt_v1(p_partner uuid,p_expecte
 RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
  SELECT platform_private.c2_recover_order_attempt_core(p_partner,p_expected_key,p_expected_generation,p_advance,p_ack_order);
 $function$;
+
+CREATE FUNCTION platform_private.c2_order_journal_capability(p_partner uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
+DECLARE org uuid;
+BEGIN
+ org:=platform_private.c2_attempt_scope_lock(auth.uid(),p_partner);
+ RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','enabled',true,'actor_id',auth.uid(),'organization_id',org,'partner_id',p_partner);
+END $function$;
+CREATE FUNCTION public.partner_order_journal_capability_v1(p_partner uuid) RETURNS jsonb
+LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
+ SELECT platform_private.c2_order_journal_capability(p_partner);
+$function$;
+REVOKE ALL ON FUNCTION platform_private.c2_order_journal_capability(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION platform_private.c2_order_journal_capability(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.partner_order_journal_capability_v1(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.partner_order_journal_capability_v1(uuid) TO authenticated;
 REVOKE ALL ON FUNCTION platform_private.c2_attempt_scope_lock(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.c2_attempt_dispatch_guard(uuid,uuid,text) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION platform_private.c2_attempt_journal_write_guard() FROM PUBLIC,anon,authenticated,service_role;
@@ -648,6 +664,8 @@ DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('p
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()')) IS DISTINCT FROM '851aacc3e631832493a34bcb6106b53a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_journal_write_guard()'; END IF; END $post$;
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '1a166cfa7c4b16fcc10e7724b4a6492a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM 'f5aa40591cfc0f436f579f20ce2f563a' THEN RAISE EXCEPTION 'C2DJ_POST:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
+DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)')) IS DISTINCT FROM 'f6d227ad7beaee697df0319911f847eb' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_order_journal_capability(uuid)'; END IF; END $post$;
+DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)')) IS DISTINCT FROM '6ca96c9dbdc55adfc21bcc9d3aafebdb' THEN RAISE EXCEPTION 'C2DJ_POST:public.partner_order_journal_capability_v1(uuid)'; END IF; END $post$;
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM '74cfb688546817e6236d5195d069e29e' THEN RAISE EXCEPTION 'C2DJ_POST:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $post$;
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM '4d7a7a49b27ab78fd33a6cdac75833c5' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $post$;
 DO $metadata$ BEGIN
@@ -666,6 +684,8 @@ DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('pl
 DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_attempt_journal_write_guard()'; END IF; END $acl$;
 DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
 DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $acl$;
+DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_journal_capability(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=true AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:platform_private.c2_order_journal_capability(uuid)'; END IF; END $acl$;
+DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.partner_order_journal_capability_v1(uuid)') AND pg_get_userbyid(proowner)='postgres' AND prosecdef=false AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND proconfig=ARRAY['search_path=""']::text[]) THEN RAISE EXCEPTION 'C2DJ_METADATA:public.partner_order_journal_capability_v1(uuid)'; END IF; END $acl$;
 DO $closure$ BEGIN
 IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_closure_guard()'::regprocedure)
  IS DISTINCT FROM '140ceb10660fb226fda78fb94277d17e' THEN RAISE EXCEPTION 'C2DJ_CLOSURE_DRIFT'; END IF;
