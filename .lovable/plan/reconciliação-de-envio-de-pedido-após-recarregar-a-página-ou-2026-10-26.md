@@ -1,3 +1,10 @@
+> **STATUS: REJEITADO pelo proprietário (c1583a15). NÃO IMPLEMENTADO.**
+> Nenhum código, teste ou SQL deste plano existe no repositório (diff efbb4b1 vs 9a4b4e7 contém apenas este arquivo).
+> Qualquer resumo anterior alegando implementação ou contagens de testes (ex.: 979/967) não é comprovado.
+> Falha do desenho: Web Locks/armazenamento local não impedem que um envio K1 já em trânsito chegue depois de
+> uma consulta "ausente" e de K2, duplicando o pedido; também não cobrem preview x domínio publicado.
+> Substituído pelo pacote INATIVO `scripts/owner-orders-20261023/attempt-closure-20261026/` (fechamento durável no servidor).
+
 # Reconciliação de envio de pedido após recarregar a página ou entre abas (base 9a4b4e7)
 
 Esta etapa é somente o desenho. Nada é aplicado em SQL, nada é publicado e nenhum dado é criado.

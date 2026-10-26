@@ -1,0 +1,19 @@
+{
+ "candidate_prosrc_md5": {
+  "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "006d20ee80e4ab94a7d266d7ede57c67",
+  "platform_private.c2_close_partner_order_attempt_core(uuid,text)": "ba556b900ec5cd8060c25d79028a5727",
+  "public.close_partner_order_attempt_v1(uuid,text)": "3f48dbe69577bb77428a6abe4a30671f",
+  "platform_private.c2_attempt_closure_immutable()": "3375615fd81e3671cc581297c75e9600"
+ },
+ "live_pins": {
+  "captured_at": "2026-10-26 (READ ONLY, ref swzpzcwiasxmjutrmvkm)",
+  "create_prosrc_md5": "7a63423519d7d9a54ced52d6d9e9e057",
+  "create_functiondef_md5": "a29167995a98da7b9f0ee6620dd43550",
+  "create_acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "scope": "54c4327d63f48e39f598129ff9dd8f09 {postgres=X/postgres}",
+  "has_role_prosrc_md5": "3c656bbf54edd698555d09d2a3a9a6ce",
+  "get_user_partner_id_prosrc_md5": "0991069604167f7ee4497c2f36171756",
+  "poi_cols": "97bd8e7bf8648bf6d291c8a4f429aff6",
+  "poi_policies": "fef85d223daaa0abf4cf53c35e608226"
+ }
+}

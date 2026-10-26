@@ -812,3 +812,8 @@
 - [ ] Venda comercial para carteira: pacote inativo `scripts/commercial-order-entry-20261024/` pronto para revisão; aguarda captura READ ONLY do leitor de catálogo LIVE, revisão independente e instalação pelo proprietário.
 - [ ] Pedido interno A: aguarda validação contábil real do emissor A (DRAFT).
 - [ ] Compra própria externa: writer contido (c2_owner_order_create_allowed=false) até release independente.
+
+## 26/10 17:56 — fechamento durável de tentativa (INATIVO)
+- [x] Plano c1583a15 (Web Locks) rejeitado: marcado como não implementado; nenhum código dele existia.
+- [x] Pacote attempt-closure-20261026: candidate/preflight/postflight/rollback contenção e total-se-vazio; 51 PASS sintéticos.
+- [ ] Revisão independente + aplicação pelo proprietário; prova real A/B/abas; plugar contrato no frontend (desativado).

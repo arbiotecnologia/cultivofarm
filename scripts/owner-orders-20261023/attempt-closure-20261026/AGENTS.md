@@ -1,0 +1,3 @@
+- Abandoning an idempotency key requires a durable server closure written under the create's b2b_idem lock and checked by the canonical create; absence, timeout or client locks never release a key — prevents late-arrival duplicates.
+- Closures are immutable and keyed by partner+key, independent of the closer's current authorization; rollback is containment that keeps the create guard, and full removal requires zero closures — prevents reopening closed keys.
+- The closure RPC reuses the create's actor scope/role/partner guards before the lock and reveals nothing on denial; frontend consumption stays disabled until installation is reviewed — prevents probing and dependence on missing RPCs.
