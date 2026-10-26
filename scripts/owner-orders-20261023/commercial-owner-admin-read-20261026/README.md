@@ -47,10 +47,19 @@ Leitura **somente leitura**, escopada e fail-closed:
    externo sem papel interno → `actor_not_allowed`; superadmin sem papel interno é negado
    aqui por construção (canal do fornecedor é a lista administrativa); perfil revogado
    (`ativo=false`) e org inativa → `actor_scope_unavailable`.
-3. **Asserts transacionais**: preflight e postflight deixaram de ser SELECTs informativos —
-   DO blocks abortam em qualquer divergência (ausência do alvo, dependências, policies com
-   hashes qual/with_check pinados; postflight valida schema/assinatura/owner/prosecdef/
-   `search_path`/ACL incluindo ausência de PUBLIC/anon e md5 dos corpos).
+ 3. **Asserts transacionais** (v3, revisão SQL 5db): preflight e postflight abortam em
+   qualquer divergência. O **candidate incorpora os pinos de dependências e policies na
+   MESMA transação do DDL** (has_role corpo+ACL, unicidade de `profiles.user_id`, 5
+   policies de `partner_orders`) — não mais só o assert de ausência. O postflight usa
+   os **hashes reais** dos corpos (core `7a17fba499d92f00913fc25e4384c3a8`, wrapper
+   `f0e65bc2546eea58ad5f5510a8a4cc12`; sem placeholders), confirmados na prova. A
+   verificação de unicidade foi corrigida: exige coluna real `user_id` por
+   `pg_attribute.attname` (não a posição física `indkey='1'`), índice
+   `indisvalid`/`indisready`, **não parcial** (`indpred IS NULL`) e chave de exatamente
+   uma coluna — índice parcial/inválido/composto/expressão é rejeitado (testado).
+   Prova descartável executa o ciclo COMPLETO pre→apply→post→rollback (34/34),
+   incluindo negativos: policy ausente aborta preflight E candidate sem deixar funções;
+   corpo adulterado falha o postflight e o rollback guardado aborta sem dropar.
 4. **Data de entrega**: a correção do rascunho (turno anterior) é **preventiva**, não
    comprovada como causa — a UI preenchida precedeu o resumo e nenhum remount foi capturado
    em produção. Permanece até novo teste real; não declarar como causa comprovada.
