@@ -1,0 +1,20 @@
+Integrated review base: c7a7ac9a86e52dd59d93ee6879fc8b4b57cc2180
+AGENTS.md
+roadmap.md
+scripts/owner-orders-20261023/durable-attempt-20261026/AGENTS.md
+scripts/owner-orders-20261023/durable-attempt-20261026/README.md
+scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py
+scripts/owner-orders-20261023/durable-attempt-20261026/candidate.sql.review
+scripts/owner-orders-20261023/durable-attempt-20261026/expected.json
+scripts/owner-orders-20261023/durable-attempt-20261026/journal-prototype.mjs
+scripts/owner-orders-20261023/durable-attempt-20261026/postflight.sql
+scripts/owner-orders-20261023/durable-attempt-20261026/recovery-controller.mjs
+scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review
+scripts/owner-orders-20261023/durable-attempt-20261026/test-install.sql
+scripts/owner-orders-20261023/durable-attempt-20261026/test-local.py
+scripts/owner-orders-20261023/durable-attempt-20261026/test-predecessor.audit.mjs
+scripts/owner-orders-20261023/durable-attempt-20261026/test-react-browser.py
+src/lib/authz/orderJournal.ts
+src/test/pedidos/orderJournal.integration.test.tsx
+
+Additional evidence: results-predecessor-*.txt / test-predecessor.audit.mjs / predecessor-integrated.diff
