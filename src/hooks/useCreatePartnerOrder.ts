@@ -112,8 +112,18 @@ export function useCreatePartnerOrder() {
       const journalSlot = slotFor(input.partner_id);
       if (!journalSlot) throw notSent(new Error('Contexto indisponível.'));
       const dispatchCurrent=()=>current() && (input.current_payload?.() ?? true);
-      const durable = await prepareDurableOrder(journalSlot,input.partner_id,dispatchCurrent,orderAttemptFingerprint(input),input.journal_expected);
-      if (!dispatchCurrent()) throw new Error('Contexto ou carrinho alterado.');
+      // Pre-dispatch settlement: releases EXACTLY this call's own local reservation
+      // (one inflight count of this key) once; concurrent/terminal/uncertain state is kept.
+      let ownReleased = false;
+      const releaseOwn = () => { if (!ownReleased) { ownReleased = true; if (slot) markOrderAttemptRejected(slot, input.idempotency_key); } };
+      let durable: Awaited<ReturnType<typeof prepareDurableOrder>>;
+      try {
+        durable = await prepareDurableOrder(journalSlot,input.partner_id,dispatchCurrent,orderAttemptFingerprint(input),input.journal_expected);
+        if (!dispatchCurrent()) throw new Error('Contexto ou carrinho alterado.');
+      } catch (e) { releaseOwn(); throw e; }
+      // Durable mode: the local legacy key is never dispatched; the server journal
+      // owns the attempt, so the local reservation is released (no hang after success).
+      if (durable) releaseOwn();
       // Capability confirmed: all writers use server key; never fall back after storage/RPC error.
       const dispatchKey = durable?.key ?? input.idempotency_key;
 
