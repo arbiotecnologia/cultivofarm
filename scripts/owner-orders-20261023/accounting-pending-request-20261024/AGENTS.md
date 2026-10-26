@@ -3,3 +3,4 @@
 - Promotion is the only pending→V1 transition: internal owner of the same org, CAS updated_at, private txid ticket, current VALIDATED settings, audit log — prevents self-promotion and cross-tenant writes.
 - Tests use disposable PostgreSQL, synthetic Auth and identified MG fixtures only; never certify hosted JWT/RLS or accounting — distinguishes local evidence.
 - Promotion uses a public INVOKER wrapper over a private DEFINER core that resolves authority/organization before locking only same-organization rows and re-validates under lock — prevents foreign actors from blocking or probing another tenant's orders.
+- All credit-exposure writers use the single advisory key hashtextextended('b2b_credit:'||partner,0) and re-validate authority after waiting; overlay.diff is generated from final assembled bodies — prevents unserialized approval decisions and stale audit diffs.

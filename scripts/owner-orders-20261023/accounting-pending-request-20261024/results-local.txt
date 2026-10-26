@@ -38,6 +38,18 @@ PASS non-B2B item rejected
 PASS B (synthetic validated MG fixture) creates V1 origin with issuer identity
 PASS A admin cannot approve B order
 PASS validated B fixture: approval generates exactly one title link + 3 installments, no NF: 1/3/0
+PASS approve, create and credit trigger share one credit advisory key expression
+PASS production-observed divergence reproduced for old expression (int4 vs int8 keys differ)
+PASS create for same partner waits on approve credit lock (status before em_analise_comercial)
+PASS other company A create not blocked by B credit lock (0.25s)
+PASS both complete after serialization; no deadlock
+PASS approved order exactly one title link, new create no title
+PASS approve waits on create credit lock (same key) before exposure decision
+PASS create-first then approve both commit, no deadlock
+PASS approve blocked by canonical create key; lock timeout aborts atomically with no effects
+PASS approve waiting on credit lock
+PASS revoked during wait: approve denied after lock (forbidden), no effects
+PASS control: restored authority approves same order once
 PASS foreign owner B cannot promote A request (no oracle)
 PASS buyer cannot promote own request
 PASS owner A promotion denied while A still DRAFT
@@ -71,4 +83,4 @@ PASS history kept: pending and promoted orders remain
 PASS after rollback pending request is frozen (b5 assert rejects pending contract)
 PASS after rollback external create closed again
 PASS restore-live refuses to run on non-candidate state (drift) — no partial DDL
-TOTAL 70 PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification
+TOTAL 82 PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification

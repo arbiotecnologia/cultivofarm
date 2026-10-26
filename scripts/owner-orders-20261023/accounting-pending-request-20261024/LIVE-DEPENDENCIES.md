@@ -33,3 +33,12 @@ SELECT has_schema_privilege('authenticated','platform_private','USAGE') AS authe
 COMMIT;
 ```
 Se `false`, o pacote NÃO deve conceder USAGE por conta própria; trazer o resultado para revisão (a promoção ficaria indisponível, não insegura).
+
+## Lock de crédito — dependência não capturada (revisão 8cad/38)
+`public.approve_b2b_credit` também decide crédito e não consta da captura. Consulta READ ONLY:
+```sql
+SELECT p.oid::regprocedure AS sig, md5(pg_get_functiondef(p.oid)) AS md5, pg_get_userbyid(p.proowner) AS owner, p.proacl::text AS acl,
+       pg_get_functiondef(p.oid) AS definition
+FROM pg_proc p WHERE p.proname IN ('approve_b2b_credit') OR pg_get_functiondef(p.oid) ~ 'b2b_credit:' ORDER BY 1;
+```
+Se algum corpo usar `hashtext('b2b_credit:'…)` ou decidir exposição sem a chave canônica, precisa entrar no mesmo domínio antes da liberação.
