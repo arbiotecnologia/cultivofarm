@@ -515,7 +515,7 @@ export default function NovoPedido() {
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
     if (!prepared.ok) {
-      if (prepared.reason === "closing") { toast.error("Aguarde a verificação do envio anterior terminar."); return; }
+      if ("reason" in prepared && prepared.reason === "closing") { toast.error("Aguarde a verificação do envio anterior terminar."); return; }
       toast.error("O envio anterior ainda não foi confirmado. Reenvie o mesmo carrinho para confirmar (não duplica) ou consulte Meus Pedidos.");
       return;
     }
