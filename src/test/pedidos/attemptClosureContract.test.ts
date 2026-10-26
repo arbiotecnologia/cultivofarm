@@ -6,20 +6,26 @@ const walk = (d: string): string[] => readdirSync(d).flatMap(n => { const p = jo
 import { ATTEMPT_CLOSURE_RPC_ENABLED, parseAttemptClosure } from "@/lib/authz/attemptClosureContract";
 
 const C = "C2_ORDER_ATTEMPT_CLOSURE_V1";
-it("permanece desativado e sem consumidores na aplicação", () => {
-  expect(ATTEMPT_CLOSURE_RPC_ENABLED).toBe(false);
+it("consumido somente pelo hook de verificação por clique; create nunca chama close", () => {
+  expect(ATTEMPT_CLOSURE_RPC_ENABLED).toBe(true);
   const users = walk("src").filter(p => /\.(ts|tsx)$/.test(p) && readFileSync(p, "utf8").includes("attemptClosureContract"));
-  expect(users).toEqual([]);
-  expect(readFileSync("src/hooks/useCreatePartnerOrder.ts", "utf8")).not.toContain("close_partner_order_attempt_v1");
+  expect(users).toEqual(["src/hooks/useCloseOrderAttempt.ts"]);
+  const rpcUsers = walk("src").filter(p => /\.(ts|tsx)$/.test(p) && p !== "src/integrations/supabase/types.ts" && readFileSync(p, "utf8").includes("close_partner_order_attempt_v1"));
+  expect(rpcUsers).toEqual(["src/hooks/useCloseOrderAttempt.ts"]);
 });
 it("somente closed libera abandono; committed traz o pedido", () => {
   expect(parseAttemptClosure({ contract: C, state: "closed" })).toEqual({ state: "closed" });
-  expect(parseAttemptClosure({ contract: C, state: "committed", order_id: "o1", numero: "PB-1" }))
-    .toEqual({ state: "committed", orderId: "o1", numero: "PB-1" });
+  const id = "405ff73f-1667-43a3-a41c-56d9500dfd8b";
+  expect(parseAttemptClosure({ contract: C, state: "committed", order_id: id, numero: "PB-1" }))
+    .toEqual({ state: "committed", orderId: id, numero: "PB-1" });
 });
 it.each([
-  [{ contract: C, state: "in_progress" }], [{ contract: C, state: "absent" }], [{ state: "closed" }],
+  [{ contract: C, state: "absent" }], [{ contract: C, state: "committed", order_id: "o1", numero: "PB-1" }],
+  [{ contract: C, state: "committed", order_id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: " " }], [{ state: "closed" }],
   [{ contract: "OTHER", state: "closed" }], [null], [[]], ["closed"],
 ])("ausência/timeout/formato desconhecido => unknown (%j)", data => {
   expect(parseAttemptClosure(data).state).toBe("unknown");
+});
+it("in_progress é distinto, mas não conclusivo", () => {
+  expect(parseAttemptClosure({ contract: C, state: "in_progress" })).toEqual({ state: "in_progress" });
 });

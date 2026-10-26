@@ -817,4 +817,7 @@
 - [x] Plano c1583a15 (Web Locks) rejeitado: marcado como não implementado; nenhum código dele existia.
 - [x] Pacote attempt-closure-20261026: candidate/preflight/postflight/rollback contenção e total-se-vazio; 51 PASS sintéticos.
 - [x] Revisão 457951ca: barreira trigger no caminho de escrita (create antigo em voo), revalidação pós-lock em close/create, negativas SQLSTATE exatas, timeouts em candidate/rollbacks; 89 PASS sintéticos.
-- [ ] Revisão independente + aplicação pelo proprietário; prova real A/B/abas; plugar contrato no frontend (desativado).
+- [x] Backend 5cdaf5d aplicado pelo auditor (b2b_order_attempt_closure_guarded_20261026).
+- [x] Interface: verificar/encerrar por clique em NovoPedido (não publicada), testes de componente/hook.
+- [ ] Homologação real A/B (roteiro HOMOLOGACAO-UI.md) e revisão antes de publicar.
+- [ ] Recarregar/entre abas/origens: pendente de contrato durável fim a fim.

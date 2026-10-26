@@ -7,10 +7,13 @@
 // ao mesmo ator. Nunca preço, cart_hash, tokens ou ID do pedido. Não autoriza
 // nada: o servidor continua decidindo preço, escopo e idempotência.
 //
-// Chave: ator (usuário+empresa+papéis, SEM época — renovação natural não pode
-// esquecer uma tentativa incerta) + parceiro. Troca de identidade/saída limpa
-// tudo via clearAllPauseStates (useAuth). Remoção de papel torna a entrada
-// inalcançável (fail-closed) sem liberá-la para outro ator.
+// Chave: ator (usuário+empresa, SEM papéis e SEM época) + parceiro. Renovação,
+// troca de papéis, saída/entrada ou tempo NÃO descartam uma tentativa incerta:
+// o mesmo ator que voltar na mesma aba continua bloqueado; outro ator nunca a
+// alcança. Só resposta conclusiva do servidor libera (pedido confirmado,
+// rejeição com SQLSTATE de reversão, ou fechamento durável `closed`).
+// LIMITE (documentado): memória da aba. Recarregar/fechar a aba ou outra aba/
+// origem não herdam a tentativa — pendente até contrato durável fim a fim.
 
 export interface OrderAttempt {
   key: string;
@@ -25,6 +28,8 @@ export interface OrderAttempt {
   uncertain: boolean;
   /** Pedido confirmado pelo servidor (apenas o número, para aviso). */
   order: { numero: string | null } | null;
+  /** Verificação/encerramento no servidor em andamento: bloqueia envios. */
+  closing?: boolean;
 }
 
 function put(slot: string, next: Omit<OrderAttempt, "ambiguous" | "inflight">) {
@@ -38,7 +43,8 @@ const emit = () => listeners.forEach(l => l());
 
 export function orderAttemptSlot(actor: { userId?: string | null; organizationId?: string | null; roles: readonly string[] }, partnerId: string | null | undefined): string | null {
   if (!actor.userId || !actor.organizationId || !partnerId || actor.roles.length === 0) return null;
-  return JSON.stringify([actor.userId, actor.organizationId, [...actor.roles].sort(), partnerId]);
+  // Papéis exigidos para haver slot, mas fora da chave: mudar papéis não escapa do bloqueio.
+  return JSON.stringify([actor.userId, actor.organizationId, partnerId]);
 }
 
 // cyrb53: resumo determinístico não reversível em claro; colisão apenas
@@ -70,11 +76,12 @@ export function readOrderAttempt(slot: string | null): OrderAttempt | null {
   return slot ? store.get(slot) ?? null : null;
 }
 
-export type PrepareResult = { ok: true; key: string } | { ok: false; reason: "ambiguous_changed" | "inflight_changed" };
+export type PrepareResult = { ok: true; key: string } | { ok: false; reason: "ambiguous_changed" | "inflight_changed" | "closing" };
 
 /** Reutiliza a chave para payload idêntico; nunca gera chave nova cegamente após incerteza. */
 export function prepareOrderAttempt(slot: string, fingerprint: string, newKey: () => string): PrepareResult {
   const current = store.get(slot);
+  if (current?.closing) return { ok: false, reason: "closing" };
   if (current && current.fingerprint === fingerprint) return { ok: true, key: current.key };
   if (current && !current.order) {
     if (current.inflight) return { ok: false, reason: "inflight_changed" };
@@ -92,7 +99,7 @@ export function prepareOrderAttempt(slot: string, fingerprint: string, newKey: (
  */
 export function markOrderAttemptSending(slot: string, key: string): { wasAmbiguous: boolean } {
   const current = store.get(slot);
-  if (!current || current.key !== key) return { wasAmbiguous: true };
+  if (!current || current.key !== key || current.closing) return { wasAmbiguous: true };
   const wasAmbiguous = current.ambiguous;
   put(slot, { ...current, inflightCount: current.inflightCount + 1 });
   return { wasAmbiguous };
@@ -136,6 +143,31 @@ export function settleOrderAttempt(slot: string | null, key?: string) {
   emit();
 }
 
+/**
+ * Início SÍNCRONO de verificação/encerramento: só para tentativa incerta, sem
+ * envio em voo, sem pedido confirmado e sem outra verificação em curso.
+ */
+export function beginOrderAttemptClose(slot: string, key: string): boolean {
+  const c = store.get(slot);
+  if (!c || c.key !== key || c.inflightCount > 0 || c.order || !c.uncertain || c.closing) return false;
+  put(slot, { ...c, closing: true });
+  return true;
+}
+
+/**
+ * Desfecho da verificação. `closed` (validado, mesmo escopo) remove a tentativa e
+ * libera nova chave; `committed` registra o número; qualquer outro mantém incerto.
+ */
+export function finishOrderAttemptClose(slot: string, key: string, outcome:
+  { state: "closed" } | { state: "committed"; numero: string } | { state: "unresolved" }) {
+  const c = store.get(slot);
+  if (!c || c.key !== key) return;
+  if (outcome.state === "closed" && c.inflightCount === 0 && !c.order) { store.delete(slot); emit(); return; }
+  if (outcome.state === "committed") { put(slot, { ...c, closing: false, order: { numero: outcome.numero } }); return; }
+  put(slot, { ...c, closing: false });
+}
+
+/** Uso exclusivo de testes: a aplicação nunca descarta tentativas em logout/papéis/TTL. */
 export function clearAllOrderAttempts() {
   if (store.size === 0) return;
   store.clear();

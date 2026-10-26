@@ -13,7 +13,6 @@
 // * Não reter aqui dados que autorizem acesso (tokens, URLs assinadas,
 //   fingerprints). Apenas estado de formulário/navegação da página.
 
-import { clearAllOrderAttempts } from "./pendingOrderAttempt";
 
 const MAX_ENTRIES = 8;
 const store = new Map<string, unknown>();
@@ -52,10 +51,13 @@ export function clearPauseState(key: string): void {
   store.delete(key);
 }
 
-/** Troca de identidade/saída: descarta TODA retenção (mesma sessão de aba). */
+/**
+ * Troca de identidade/saída: descarta TODA retenção de UI (mesma sessão de aba).
+ * Tentativas de pedido incertas NÃO são descartadas aqui: ficam presas ao ator e
+ * só o servidor as resolve (ver pendingOrderAttempt).
+ */
 export function clearAllPauseStates(): void {
   store.clear();
-  clearAllOrderAttempts();
 }
 
 // retrigger: verificacao de build pos-restauracao (sem efeito funcional)

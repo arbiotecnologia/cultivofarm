@@ -55,6 +55,7 @@ import { DOSES_POR_LITRO, resolverCustoHa } from "@/lib/catalogo/pricing";
 import { round2 } from "@/lib/catalogo/formatUnidades";
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useCloseOrderAttempt } from "@/hooks/useCloseOrderAttempt";
 import { markOrderAttemptSending, orderAttemptFingerprint, prepareOrderAttempt, readOrderAttempt, settleOrderAttempt, subscribeOrderAttempts } from "@/lib/authz/pendingOrderAttempt";
 
 const nfmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
@@ -217,6 +218,9 @@ export default function NovoPedido() {
   const pageScope = useStorageAccessScope("partner-order-page");
   const attemptSlot = !isSimulationMode ? createOrder.slotFor(partner?.id) : null;
   const attempt = useSyncExternalStore(subscribeOrderAttempts, () => readOrderAttempt(attemptSlot));
+  const closeAttempt = useCloseOrderAttempt();
+  // Aviso do último resultado de verificação, preso ao slot+chave que o produziu.
+  const [closeNote, setCloseNote] = useState<{ slot: string | null; key: string | null; text: string } | null>(null);
 
 
   // Lista de produtores vinculados ao usuário B2B (técnico ou gestor)
@@ -511,6 +515,7 @@ export default function NovoPedido() {
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
     if (!prepared.ok) {
+      if ("reason" in prepared && prepared.reason === "closing") { toast.error("Aguarde a verificação do envio anterior terminar."); return; }
       toast.error("O envio anterior ainda não foi confirmado. Reenvie o mesmo carrinho para confirmar (não duplica) ou consulte Meus Pedidos.");
       return;
     }
@@ -1073,18 +1078,47 @@ export default function NovoPedido() {
             <Alert role="status" data-attempt="committed">
               <AlertDescription className="space-y-2">
                 <span className="block">Pedido{attempt.order.numero ? ` ${attempt.order.numero}` : ""} já foi registrado por um envio anterior. Reenviar o mesmo carrinho não cria outro pedido.</span>
-                <Button size="sm" variant="outline" onClick={() => settleOrderAttempt(attemptSlot, attempt.key)}>Iniciar um novo pedido</Button>
+                <span className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => navigate(afterCreatePath ?? "/portal-parceiro/pedidos")}>Ver meus pedidos</Button>
+                  <Button size="sm" variant="outline" onClick={() => settleOrderAttempt(attemptSlot, attempt.key)}>Iniciar um novo pedido</Button>
+                </span>
               </AlertDescription>
             </Alert>
           ) : attempt.ambiguous ? (
             <Alert role="alert" data-attempt="ambiguous">
-              <AlertDescription>
-                {attempt.inflight
+              <AlertDescription className="space-y-2">
+                <span className="block">{attempt.inflight
                   ? "Envio anterior ainda em andamento. Aguarde a resposta antes de enviar novamente."
-                  : "Não foi possível confirmar o envio anterior. Reenvie exatamente o mesmo carrinho para confirmar (não duplica) ou consulte Meus Pedidos. Alterações ficam bloqueadas até a confirmação."}
+                  : "Não foi possível confirmar o envio anterior. Reenvie exatamente o mesmo carrinho para confirmar (não duplica) ou consulte Meus Pedidos. Alterações ficam bloqueadas até a confirmação."}</span>
+                {!attempt.inflight && (
+                  <>
+                    <span className="block text-xs">
+                      Você também pode pedir ao servidor para verificar o envio anterior. Se ele virou pedido, mostramos o número.
+                      Se não chegou, aquela tentativa é encerrada de vez (nenhum pedido é cancelado) e o carrinho atual pode ser enviado.
+                    </span>
+                    <Button size="sm" variant="outline"
+                      disabled={!!attempt.closing || closeAttempt.pending || createOrder.isPending}
+                      onClick={async () => {
+                        const slot = attemptSlot, key = attempt.key;
+                        const r = await closeAttempt.close(partner?.id);
+                        const text = r.kind === "closed" ? "Envio anterior encerrado sem pedido. Seu carrinho foi mantido; você pode enviá-lo agora."
+                          : r.kind === "committed" ? `O envio anterior virou o pedido ${r.numero}.`
+                          : r.kind === "in_progress" ? "O envio anterior ainda está sendo processado. Verifique de novo em instantes; o bloqueio continua."
+                          : r.kind === "context_changed" ? "Seu acesso mudou durante a verificação. Nada foi liberado; verifique novamente."
+                          : r.kind === "not_eligible" ? "Não há envio anterior para verificar agora."
+                          : "Não foi possível verificar agora. Nada foi liberado; tente novamente.";
+                        setCloseNote({ slot, key, text });
+                      }}>
+                      {attempt.closing || closeAttempt.pending ? "Verificando…" : "Verificar e encerrar envio anterior"}
+                    </Button>
+                  </>
+                )}
               </AlertDescription>
             </Alert>
           ) : null)}
+          {!isSimulationMode && closeNote && closeNote.slot === attemptSlot && (!attempt || attempt.key === closeNote.key || attempt.order) && (
+            <p role="status" data-attempt-note className="text-xs text-muted-foreground">{closeNote.text}</p>
+          )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
