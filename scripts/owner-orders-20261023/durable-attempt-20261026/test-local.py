@@ -91,6 +91,39 @@ for forged_ack in [None,old1['id']]:
  ok('missing/forged ACK never advances imported committed',rr['order_id']==old2['id'] and rr['generation']==1)
 r=recover(advance=True,key=legacy_r['key'],generation=1,ack=old2['id']);ok('explicit exact legacy ACK reserves next generation',r['state']=='reserved' and r['generation']==2)
 rr=recover();ok('crash before fetch recovers SAME uncertain key, no absence inference',rr['state']=='uncertain' and rr['key']==r['key'])
+# BEFORE control: previous scope-taking write trigger creates actual idem->scope cycle.
+write_sig='platform_private.c2_attempt_journal_write_guard()'
+safe_write=pg.sql(f"SELECT pg_get_functiondef('{write_sig}'::regprocedure)")
+unsafe_write="""CREATE OR REPLACE FUNCTION platform_private.c2_attempt_journal_write_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $$
+BEGIN
+ IF current_setting('c2dj.control',true)='on' THEN PERFORM pg_advisory_xact_lock(777124); END IF;
+ PERFORM platform_private.c2_attempt_dispatch_guard(auth.uid(),NEW.partner_id,NEW.idempotency_key);
+ RETURN NEW; END $$;"""
+old_source=(C/'candidate.sql.review').read_text();at=old_source.index('CREATE OR REPLACE FUNCTION public.create_partner_order_secure(')
+old_def=old_source[at:old_source.index('$function$;',at)+len('$function$;')]
+pg.sql(old_def.replace('public.create_partner_order_secure(','public.test_old_create(',1))
+pg.sql('REVOKE ALL ON FUNCTION public.test_old_create(uuid,text,jsonb,date,uuid,date,integer,text,text) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.test_old_create(uuid,text,jsonb,date,uuid,date,integer,text,text) TO authenticated;')
+pg.sql(unsafe_write)
+holder=holding('SELECT pg_advisory_xact_lock(777124)','unsafe-stall')
+old=start(create(P,r['key'],hA).replace('public.create_partner_order_secure','public.test_old_create'),'unsafe-old',G,"SELECT set_config('c2dj.control','on',true); ")
+ok('BEFORE old body holds idem and waits before scope',waiting('unsafe-old'))
+rec=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'unsafe-recover',G)
+ok('BEFORE new recover holds scope and waits on idem',waiting('unsafe-recover'))
+release(holder);oo,ee=finish(old);ro,re=finish(rec)
+ok('BEFORE real Postgres lock inversion reproduced 40P01', '40P01: deadlock detected' in ee+re)
+pg.sql(safe_write)
+# AFTER current barrier never takes scope: registered old body and recover complete.
+if pg.sql(f"SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='{r['key']}'")=='0':
+ old=start(create(P,r['key'],hA).replace('public.create_partner_order_secure','public.test_old_create'),'safe-old',G)
+ rec=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'safe-recover',G)
+ oo,ee=finish(old);ro,re=finish(rec)
+ ok('AFTER old registered body/recover complete without cycle',not ee and not re and '40P01' not in ee+re)
+else:
+ ok('AFTER safe barrier restored exact and control committed exactly one',pg.sql(f"SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='{r['key']}'")=='1')
+# Control may have committed r; acknowledge explicitly then use a fresh uncertain key.
+rr=recover()
+if rr['state']=='committed':r=recover(advance=True,key=rr['key'],generation=rr['generation'],ack=rr['order_id'])
 nr=recover(advance=True,key=r['key'],generation=2)
 ok('explicit CAS advance closes old key before new generation',nr['generation']==3 and nr['key']!=r['key'] and pg.sql(f"SELECT count(*) FROM platform_private.partner_order_idempotency_closures WHERE idempotency_key='{r['key']}'")=='1')
 b=count(); e=error(G,create(P,r['key'],hA))
