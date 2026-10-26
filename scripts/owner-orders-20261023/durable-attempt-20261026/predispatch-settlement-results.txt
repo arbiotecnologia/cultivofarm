@@ -1,6 +1,11 @@
-ANTES (HEAD 72a0dafe):
- ✓ src/test/pedidos/preDispatchSettlement.test.tsx (5 tests) 104ms
-      Tests  5 passed (5)
+ANTES (72a0dafe):
+   × capability network error: zero creates, reserva própria liberada, sem chave nova 24ms
+   × current_payload alterado no preflight libera a reserva própria 3ms
+   × storage negado após capability ativa: sem fallback e reserva liberada 4ms
+   × mesma chave: um preflight falha, outro create pendente vence; tentativa não é apagada 61ms
+   × transição legacy→durable no preflight: sucesso não deixa reserva local pendurada 12ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  5 failed (5)
 DEPOIS:
    × useCreatePartnerOrder — estado contábil após criar > pedido pendente → aviso de pendência, nunca sucesso validado 1073ms
    × useCreatePartnerOrder — estado contábil após criar > falha de leitura → estado desconhecido explícito, sem sucesso e sem reenvio 1058ms
@@ -10,3 +15,4 @@ DEPOIS:
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
  Test Files  1 failed | 14 passed (15)
       Tests  5 failed | 132 passed (137)
+Nota: 5 falhas partnerOrdersAdminScope já ocorrem em 72a0dafe (fixture sem branch capability); não regressão.
