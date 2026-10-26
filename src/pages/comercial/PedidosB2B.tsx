@@ -48,6 +48,7 @@ import { PaymentTermsSection } from "@/components/comercial/PaymentTermsSection"
 import { CommercialOrderEntry } from "@/components/comercial/CommercialOrderEntry";
 import { CommercialOwnerOrdersSection } from "@/components/comercial/CommercialOwnerOrdersSection";
 import { useInternalOrderEntry } from "@/hooks/useInternalOrderEntry";
+import { usePedidosB2BStatusFilter } from "@/hooks/usePedidosB2BStatusFilter";
 
 
 
@@ -64,13 +65,14 @@ const STATUS_OPTIONS = [
   { value: "solicitado", label: "Solicitado" },
   { value: "cancelado", label: "Cancelado" },
 ];
+const STATUS_VALUES = STATUS_OPTIONS.map((s) => s.value);
 
 export default function PedidosB2B() {
   const { role, roles = [] } = useAuth();
   const internalEntry = useInternalOrderEntry();
   const canApproveCredit =
     role === "administrador" || role === "gestor" || role === "financeiro";
-  const [statusFilter, setStatusFilter] = useState<string>("aguardando_aprovacao_credito");
+  const [statusFilter, setStatusFilter] = usePedidosB2BStatusFilter(STATUS_VALUES, "aguardando_aprovacao_credito");
   const { data: orders = [], isLoading, actorScope, actorReady } = usePartnerOrdersAdmin({
     status: statusFilter === "all" ? undefined : statusFilter,
   });
