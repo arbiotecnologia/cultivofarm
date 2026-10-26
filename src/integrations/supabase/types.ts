@@ -21324,6 +21324,10 @@ export type Database = {
         Args: { _name: string }
         Returns: boolean
       }
+      close_partner_order_attempt_v1: {
+        Args: { p_idempotency_key: string; p_partner_id: string }
+        Returns: Json
+      }
       convert_partner_simulation_to_order_secure: {
         Args: {
           p_confirm_price_change?: boolean
