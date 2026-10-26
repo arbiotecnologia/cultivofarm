@@ -1,0 +1,14 @@
+Skipping host requirements validation logic because `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` env variable is set.
+PASS BEFORE: separate memory tabs produce different opaque keys
+PASS empty storage blocks, never generates key
+PASS two pages same origin share reservation transactionally
+PASS close/reopen survives crash before fetch
+PASS old response cannot overwrite new generation
+PASS revalidation detects foreign generation before dispatch
+PASS commit-before-ack local marker survives tab closure
+PASS A/B scopes differ without persisting identity
+PASS revoked context never adopts or dispatches
+PASS storage unavailable fails closed
+PASS corruption never silently repairs/reserves
+PASS independent browser context missing journal remains blocked
+TOTAL 12 PASS real IndexedDB; controlled transport, no hosted JWT/RLS
