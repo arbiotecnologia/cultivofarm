@@ -211,10 +211,29 @@ CREATE FUNCTION public.recover_partner_order_attempt_v1(p_partner uuid,p_expecte
 RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
  SELECT platform_private.c2_recover_order_attempt_core(p_partner,p_expected_key,p_expected_generation,p_advance,p_ack_order);
 $function$;
+
+CREATE FUNCTION platform_private.c2_order_journal_capability(p_partner uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
+DECLARE org uuid;
+BEGIN
+ org:=platform_private.c2_attempt_scope_lock(auth.uid(),p_partner);
+ RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','enabled',true,'actor_id',auth.uid(),'organization_id',org,'partner_id',p_partner);
+END $function$;
+CREATE FUNCTION public.partner_order_journal_capability_v1(p_partner uuid) RETURNS jsonb
+LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
+ SELECT platform_private.c2_order_journal_capability(p_partner);
+$function$;
 """
 private = ['c2_attempt_scope_lock(uuid,uuid)','c2_attempt_dispatch_guard(uuid,uuid,text)','c2_attempt_journal_write_guard()']
 core='platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'
 wrap='public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'
+capcore='platform_private.c2_order_journal_capability(uuid)'
+capwrap='public.partner_order_journal_capability_v1(uuid)'
+private+=['c2_order_journal_capability(uuid)']
+for s in [capcore,capwrap]:
+ ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\nGRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
+# Capability core is separately authorized, just like recovery core.
+private.remove('c2_order_journal_capability(uuid)')
 for s in ['platform_private.'+x for x in private]+[core,wrap]:
  ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\n'
 for s in [core,wrap]: ddl+=f'GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
@@ -243,10 +262,10 @@ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='c2_attempt_journal_guard' A
  THEN RAISE EXCEPTION 'C2DJ_TRIGGER'; END IF;
 END $metadata$;
 """
-for s in ['platform_private.'+x for x in private]+[core,wrap]:
- allowed="{postgres=X/postgres,authenticated=X/postgres}" if s in [core,wrap] else "{postgres=X/postgres}"
- sec='false' if s==wrap else 'true'
- config="ARRAY['search_path=\"\"']::text[]" if s==wrap else "ARRAY['search_path=\"\"','lock_timeout=5s']::text[]"
+for s in ['platform_private.'+x for x in private]+[core,wrap,capcore,capwrap]:
+ allowed="{postgres=X/postgres,authenticated=X/postgres}" if s in [core,wrap,capcore,capwrap] else "{postgres=X/postgres}"
+ sec='false' if s in [wrap,capwrap] else 'true'
+ config="ARRAY['search_path=\"\"']::text[]" if s in [wrap,capwrap] else "ARRAY['search_path=\"\"','lock_timeout=5s']::text[]"
  post+=f"DO $acl$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('{s}') AND pg_get_userbyid(proowner)='postgres' AND prosecdef={sec} AND proacl::text='{allowed}' AND proconfig={config}) THEN RAISE EXCEPTION 'C2DJ_METADATA:{s}'; END IF; END $acl$;\n"
 post+="""DO $closure$ BEGIN
 IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_closure_guard()'::regprocedure)
@@ -293,7 +312,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $f
 BEGIN RAISE EXCEPTION 'C2DJ_WRITER_CONTAINED' USING ERRCODE='42501'; END $function$;
 """
 rb=header+'-- DENY ONLY, never downgrade to memory-only writer.\nBEGIN;\n'+timeouts+boundary+post+deny
-for s in [core,wrap]: rb+=f'REVOKE EXECUTE ON FUNCTION {s} FROM authenticated;\n'
+for s in [core,wrap,capcore,capwrap]: rb+=f'REVOKE EXECUTE ON FUNCTION {s} FROM authenticated;\n'
 deny_md5=hashlib.md5(deny.split('AS $function$')[1].split('$function$;')[0].encode()).hexdigest()
 rb+=f"DO $rb$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_journal_write_guard()'::regprocedure) IS DISTINCT FROM '{deny_md5}' OR has_function_privilege('authenticated','{wrap}','EXECUTE') OR has_function_privilege('authenticated','{core}','EXECUTE') THEN RAISE EXCEPTION 'C2DJ_CONTAINMENT_POST'; END IF; END $rb$;\nCOMMIT;\n"
 (D/'rollback.sql.review').write_text(rb)
