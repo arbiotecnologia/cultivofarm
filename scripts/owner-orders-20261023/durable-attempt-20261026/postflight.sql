@@ -35,4 +35,12 @@ IF EXISTS(SELECT 1 FROM platform_private.partner_order_attempt_journal j
  WHERE i.created_by=j.actor_id AND i.partner_id=j.partner_id AND i.idempotency_key=j.idempotency_key AND i.order_id=j.imported_order_id))
  THEN RAISE EXCEPTION 'C2DJ_IMPORT_DRIFT'; END IF;
 END $imports$;
+DO $canonical_metadata$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure
+ AND pg_get_userbyid(proowner)='postgres' AND prosecdef AND proconfig=ARRAY['search_path=public']::text[]
+ AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')
+ OR NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_close_partner_order_attempt_core(uuid,text)'::regprocedure
+ AND pg_get_userbyid(proowner)='postgres' AND prosecdef AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]
+ AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'C2DJ_CANONICAL_METADATA_DRIFT'; END IF;
+END $canonical_metadata$;
 ROLLBACK;
