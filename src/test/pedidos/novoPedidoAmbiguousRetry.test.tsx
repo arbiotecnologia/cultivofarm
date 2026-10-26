@@ -71,7 +71,7 @@ beforeEach(() => {
     throw new Error(`Unexpected table read: ${table}`);
   });
   state.rpc.mockImplementation((name: string, args?: Record<string, unknown>) => {
-    const context = { contract: "C2_MULTIPROFILE_V1", actor_id: state.actor, tenant_id: state.tenant,
+    const context = { contract: "C2_MULTIPROFILE_V1", actor_id: state.actorOverride ?? state.actor, tenant_id: state.tenant,
       organization_id: state.tenant, commercial_owner_organization_id: state.tenant, mode: "commercial_owner",
       partner_id: state.partner, external_roles: ["parceiro_b2b"], manager: true, technician: false, role: "parceiro_b2b", papel: "gestor" };
     if (name === "get_my_commercial_partner_context") return response(context);
