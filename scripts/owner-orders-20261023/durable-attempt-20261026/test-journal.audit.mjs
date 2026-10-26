@@ -35,6 +35,6 @@ await test('authorized full uncertain schema allows same key',async()=>{
 });
 await test('revoked after RPC blocks dispatch',async()=>{
  await j.adopt('revoked',uncertain,()=>true);let ready=true;
- await assert.rejects(j.beforeDispatch('revoked',uncertain,()=>ready,async()=>{ready=false;return canonical('uncertain)}));
+ await assert.rejects(j.beforeDispatch('revoked',uncertain,()=>ready,async()=>{ready=false;return canonical('uncertain')}));
 });
 console.log('TOTAL',passes,'PASS',failures,'FAIL');process.exitCode=failures?1:0;
