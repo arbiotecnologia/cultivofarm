@@ -219,7 +219,9 @@ ok('no hidden credit decision or status hop out of aguardando_aprovacao_credito 
 # PROBE approve_b2b_credit on pending
 before=snapshot();e=pg.sql(f"\\set VERBOSITY verbose\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); SELECT public.approve_b2b_credit('{rc['id']}','x'); COMMIT;",ok=False);print('PROBE_RPC',e[-300:],snapshot()==before)
 for col,v in [('credit_approved_by',f"'{ADMIN}'"),('credit_approval_notes',"'x'"),('financial_approval_status',"'approved'")]:
-    ob0=order(rc['id']);o=pg.sql(f"\\set ON_ERROR_STOP 0\nBEGIN; SELECT set_config('arbio.b2b_credit_approval','on',true); SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET {col}={v} WHERE id='{rc['id']}'; COMMIT;");ob1=order(rc['id']);print('PROBE',col,sorted(k for k in ob0 if ob0[k]!=ob1[k]),o[-200:])
+    ob0=order(rc['id']);o=pg.sql(f"\\set ON_ERROR_STOP 0\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('arbio.b2b_credit_approval','on',true); SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET {col}={v} WHERE id='{rc['id']}'; COMMIT;");ob1=order(rc['id']);print('PROBE',col,sorted(k for k in ob0 if ob0[k]!=ob1[k]),o[-200:])
+for col,v in [('credit_approved_by',f"'{ADMIN}'"),('credit_approval_notes',"'x'"),('financial_approval_status',"'approved'")]:
+    ob0=order(rc['id']);o=pg.sql(f"\\set ON_ERROR_STOP 0\nBEGIN; SELECT set_config('arbio.b2b_credit_approval','on',true); SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); UPDATE public.partner_orders SET {col}={v} WHERE id='{rc['id']}'; ROLLBACK;");print('PROBE_OWNERROLE',col,o[-160:])
 raise SystemExit('PROBE_END')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{P}'; SET session_replication_role=origin;")
 # --- no existence oracle for foreign / missing orders before authorization ---
