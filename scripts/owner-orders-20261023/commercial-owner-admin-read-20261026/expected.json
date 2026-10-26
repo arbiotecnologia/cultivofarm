@@ -4,7 +4,7 @@
   "captured_in": "disposable PostgreSQL 17.9 (synthetic Auth via GUC; not hosted, not JWT/RLS proof)",
   "functions": {
     "platform_private.c2_commercial_owner_orders_core(text,uuid,timestamptz,timestamptz)": {
-      "body_md5": "9d9fdb93f3a9bb098a1941145014c1cf",
+      "body_md5": "7a17fba499d92f00913fc25e4384c3a8",
       "owner": "postgres",
       "security": "definer",
       "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
