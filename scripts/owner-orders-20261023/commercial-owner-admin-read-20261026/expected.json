@@ -1,0 +1,34 @@
+{
+  "contract": "C2_COMMERCIAL_OWNER_ORDERS_V1",
+  "status": "INACTIVE_REVIEW_ONLY",
+  "captured_in": "disposable PostgreSQL 17.9 (synthetic Auth via GUC; not hosted, not JWT/RLS proof)",
+  "functions": {
+    "platform_private.c2_commercial_owner_orders_core(text,uuid,timestamptz,timestamptz)": {
+      "body_md5": "7a566ca08dd1a383fbeb400608be1b30",
+      "owner": "postgres",
+      "security": "definer",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    "public.c2_commercial_owner_orders_projection(text,uuid,timestamptz,timestamptz)": {
+      "body_md5": "f0e65bc2546eea58ad5f5510a8a4cc12",
+      "owner": "postgres",
+      "security": "invoker",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    }
+  },
+  "untouched": {
+    "public.partner_orders_policies": [
+      "Financeiro read partner_orders",
+      "b2b_phase1_tenant_guard",
+      "partner_orders_insert",
+      "partner_orders_select",
+      "partner_orders_update"
+    ]
+  },
+  "synthetic_proof": {
+    "script": "proof-disposable-pg.sh",
+    "checks": 14,
+    "fails": 0,
+    "notes": "Admin A lista a carteira da própria org; admin B (org estrangeira) recebe lista vazia; externo sem papel interno recebe 42501 actor_not_allowed; org inativa 42501 actor_scope_unavailable; anônimo 42501 auth_required; parceiros inativos/deletados excluídos; rollback guardado por md5 aborta em divergência e remove as 2 funções quando íntegro."
+  }
+}

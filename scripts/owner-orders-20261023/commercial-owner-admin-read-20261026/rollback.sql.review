@@ -16,8 +16,8 @@ BEGIN
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname = 'c2_commercial_owner_orders_projection';
 
-  IF v_core_md5 IS DISTINCT FROM '__CORE_MD5__'
-     OR v_wrapper_md5 IS DISTINCT FROM '__WRAPPER_MD5__' THEN
+  IF v_core_md5 IS DISTINCT FROM '7a566ca08dd1a383fbeb400608be1b30'
+     OR v_wrapper_md5 IS DISTINCT FROM 'f0e65bc2546eea58ad5f5510a8a4cc12' THEN
     RAISE EXCEPTION 'rollback_guard_failed: corpos divergem do candidato; abortando sem dropar';
   END IF;
 END;
