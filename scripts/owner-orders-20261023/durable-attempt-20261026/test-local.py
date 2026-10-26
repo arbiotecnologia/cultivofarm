@@ -1,6 +1,6 @@
 """Disposable PostgreSQL, captured chain and synthetic Auth only. Never hosted."""
 from pathlib import Path
-import json, subprocess, time
+import json, subprocess, time, re, hashlib
 D=Path(__file__).resolve().parent
 C=D.parent/'attempt-closure-20261026'
 src=(C/'test-local.py').read_text()
@@ -25,27 +25,48 @@ def recover(u=G,advance=False,key=None,generation=None,ack=None):
  sql=f"SELECT public.recover_partner_order_attempt_v1('{P}',{qkey},{qgen},{str(advance).lower()},{qack})"
  return json.loads(val(u,sql))
 before=count()
-old1=json.loads(val(G,create(P,'journal-before-1',hA)))
-old2=json.loads(val(G,create(P,'journal-before-2',hA)))
+old1=json.loads(val(G,create(P,'10000000-0000-4000-8000-000000000001',hA)))
+old2=json.loads(val(G,create(P,'10000000-0000-4000-8000-000000000002',hA)))
 ok('BEFORE: lost client memory / independent keys reproduces two orders',old1['id']!=old2['id'] and int(count())==int(before)+2)
 candidate=(D/'candidate.sql.review').read_text()
 err=pg.sql('\\set VERBOSITY verbose\n'+candidate,ok=False)
-ok('production candidate always blocks missing reconciliation before DDL',first(err)=='ERROR:  42501: C2DJ_ACTIVATION_BLOCKED:legacy_keys_and_live_capture_pending' and pg.sql("SELECT to_regclass('platform_private.partner_order_attempt_journal') IS NULL")=='t')
-pg.sql((D/'test-install.sql').read_text())
-pg.sql((D/'postflight.sql').read_text())
-r=recover();ok('reserve is durable before ANY create',r['state']=='reserved' and r['generation']==1)
+ok('production candidate denies reduced fixture metadata before DDL',first(err)=='ERROR:  P0001: C2DJ_POI_STRUCTURE_DRIFT' and pg.sql("SELECT to_regclass('platform_private.partner_order_attempt_journal') IS NULL")=='t')
+# Explicit fixture-only adaptations: reduced schema lacks updated_at trigger/ACL;
+# audited production IDs become two synthetic orders. Canonical seven bodies unchanged.
+structure_expr="(SELECT md5(jsonb_build_object('owner',pg_get_userbyid(c.relowner),'acl',c.relacl::text,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'triggers',(SELECT jsonb_agg(pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text ORDER BY t.tgname) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal),'indexes',(SELECT jsonb_agg(pg_get_indexdef(i.indexrelid) ORDER BY pg_get_indexdef(i.indexrelid)) FROM pg_index i WHERE i.indrelid=c.oid),'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY p.policyname) FROM pg_policies p WHERE p.schemaname='public' AND p.tablename='partner_order_idempotency'))::text) FROM pg_class c WHERE c.oid='public.partner_order_idempotency'::regclass)"
+fixture_structure=pg.sql('SELECT '+structure_expr)
+pg.sql("CREATE OR REPLACE FUNCTION public.update_updated_at_column() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;")
+fixture_updated=pg.sql("SELECT md5(prosrc) FROM pg_proc WHERE oid='public.update_updated_at_column()'::regprocedure")
+legacy_fixture=f"""DO $legacy$ BEGIN IF (SELECT count(*) FROM public.partner_order_idempotency)<>2
+ OR (SELECT order_id FROM public.partner_order_idempotency ORDER BY created_at DESC,id DESC LIMIT 1) IS DISTINCT FROM '{old2['id']}'::uuid
+ THEN RAISE EXCEPTION 'C2DJ_LEGACY_CAPTURE_DRIFT'; END IF; END $legacy$;"""
+def adapt(sql):
+ sql=sql.replace('3c5afe617195db177fe831c877473258',fixture_structure).replace('a27bb088c067b7b77a9f0707b0048e40',fixture_updated)
+ return re.sub(r'-- LEGACY_CAPTURE_BEGIN:.*?-- LEGACY_CAPTURE_END',legacy_fixture,sql,flags=re.S)
+candidate=adapt(candidate);post=(D/'postflight.sql').read_text()
+print('FIXTURE_METADATA_SUBSTITUTIONS',json.dumps({'poi':fixture_structure,'updated':fixture_updated,'legacy':'two synthetic orders; no production rows'}),flush=True)
+# Inject failing POST into full transaction, including import, prove atomic rollback.
+inj=candidate.replace('DO $imports$',"DO $fault$ BEGIN RAISE EXCEPTION 'C2DJ_POST_FAULT'; END $fault$;\nDO $imports$",1)
+err=pg.sql('\\set VERBOSITY verbose\n'+inj,ok=False)
+ok('POST fault rolls back journal/import/barrier/create atomically',first(err)=='ERROR:  P0001: C2DJ_POST_FAULT' and pg.sql("SELECT to_regclass('platform_private.partner_order_attempt_journal') IS NULL")=='t' and pg.sql(f"SELECT md5(prosrc) FROM pg_proc WHERE oid='{env['sig'] if 'sig' in env else 'public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'}'::regprocedure")=='71d1f32e00c5c9857eae51999dc40ef0')
+pg.sql(candidate);pg.sql(post)
+legacy_r=recover();ok('legacy latest committed imported immutable WITHOUT assumed ACK',legacy_r['state']=='committed' and legacy_r['order_id']==old2['id'] and legacy_r['generation']==1)
+for forged_ack in [None,old1['id']]:
+ rr=recover(advance=True,key=legacy_r['key'],generation=1,ack=forged_ack)
+ ok('missing/forged ACK never advances imported committed',rr['order_id']==old2['id'] and rr['generation']==1)
+r=recover(advance=True,key=legacy_r['key'],generation=1,ack=old2['id']);ok('explicit exact legacy ACK reserves next generation',r['state']=='reserved' and r['generation']==2)
 rr=recover();ok('crash before fetch recovers SAME uncertain key, no absence inference',rr['state']=='uncertain' and rr['key']==r['key'])
 nr=recover(advance=True,key=r['key'],generation=1)
-ok('explicit CAS advance closes old key before new generation',nr['generation']==2 and nr['key']!=r['key'] and pg.sql(f"SELECT count(*) FROM platform_private.partner_order_idempotency_closures WHERE idempotency_key='{r['key']}'")=='1')
+ok('explicit CAS advance closes old key before new generation',nr['generation']==3 and nr['key']!=r['key'] and pg.sql(f"SELECT count(*) FROM platform_private.partner_order_idempotency_closures WHERE idempotency_key='{r['key']}'")=='1')
 b=count(); e=error(G,create(P,r['key'],hA))
 ok('late old generation refused atomically',first(e)=='ERROR:  42501: C2DJ_REGISTERED_ATTEMPT_REQUIRED' and count()==b)
 commit=json.loads(val(G,create(P,nr['key'],hA)))
 rr=recover();ok('crash after commit before ack recovers committed same order',rr['state']=='committed' and rr['order_id']==commit['id'])
-rr=recover(advance=True,key=nr['key'],generation=2)
+rr=recover(advance=True,key=nr['key'],generation=3)
 ok('committed without explicit order acknowledgement never creates new generation',rr['state']=='committed' and rr['key']==nr['key'])
-new=recover(advance=True,key=nr['key'],generation=2,ack=commit['id'])
-ok('explicit acknowledged committed advances once',new['generation']==3)
-b=count();e=error(G,f"SELECT public.recover_partner_order_attempt_v1('{P}','{nr['key']}',2,true,'{commit['id']}')")
+new=recover(advance=True,key=nr['key'],generation=3,ack=commit['id'])
+ok('explicit acknowledged committed advances once',new['generation']==4)
+b=count();e=error(G,f"SELECT public.recover_partner_order_attempt_v1('{P}','{nr['key']}',3,true,'{commit['id']}')")
 ok('old response / old generation CAS cannot advance current slot',first(e)=='ERROR:  40001: C2DJ_CAS_CONFLICT' and recover()['key']==new['key'] and count()==b)
 b=count();e=error(env['ADMIN_B'],f"SELECT public.recover_partner_order_attempt_v1('{P}')")
 print('B_ERROR',first(e),flush=True)
