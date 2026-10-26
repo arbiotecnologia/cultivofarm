@@ -34,6 +34,7 @@
 ## 24/10 01:38 — correção crítica da composição transacional
 - [x] Removidos somente delimitadores externos embutidos dos cinco comandos receipt-lock-order-review; uma transação por arquivo, pre/post READ ONLY, sem mudar corpos/guards/baselines.
 - [x] Candidate/rollback/containment completos com falha deliberada no POST preservam hashes/owners/ACLs; todos checkpoints têm mesmo txid. Suíte2/2PASS, concorrência183checks96.50s/crédito123checks54.05s.
+- [x] Revisão 07739e5c: lista admin de pedidos com escopo canônico, estado desconhecido pós-create, promoção core privado+wrapper INVOKER sem lock estrangeiro, UI de liberação explícita; 70/70 descartável + 13 Vitest.
 - [ ] Implantação independente continua bloqueada pela revisão e contabilidade real pendente; writerfalse, sem hosted/publicação nesta correção.
 
 ## 24/10 01:10 — barreiras intermediárias e negativas estritas

@@ -32,7 +32,7 @@ cand=(D/'candidate.sql.review').read_text()
 if not E['candidate']:
     cand=cand[:cand.index('DO $c2ap_post$')]+'COMMIT;\n'
     pg.sql(cand)
-    sigs=list(E['b5_hashes'])+['platform_private.c2_external_origin_contract_valid(jsonb)','platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)','platform_private.c2_accounting_pending_guard()','public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)']
+    sigs=list(E['b5_hashes'])+['platform_private.c2_external_origin_contract_valid(jsonb)','platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)','platform_private.c2_accounting_pending_guard()','platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz)','public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)']
     E['candidate']={k:md5(k) for k in sigs}
     E['b5_to_candidate']={E['b5_hashes'][k]:E['candidate'][k] for k in E['b5_hashes']}
     (D/'expected.json').write_text(json.dumps(E,indent=1)+'\n');subprocess.run([sys.executable,str(D/'assemble.py')],check=True)
@@ -109,6 +109,15 @@ denied(ADMIN_B,f"SELECT public.c2_promote_accounting_pending_order_v1('{r1['id']
 denied(G,f"SELECT public.c2_promote_accounting_pending_order_v1('{r1['id']}','{upd}')",'C2AP_ORDER_DENIED');ok('buyer cannot promote own request')
 denied(ADMIN,f"SELECT public.c2_promote_accounting_pending_order_v1('{r1['id']}','{upd}')",'C2_ACCOUNTING_PENDING');ok('owner A promotion denied while A still DRAFT')
 pg.sql(f"SET session_replication_role=replica; UPDATE public.company_fiscal_settings SET configuration_status='VALIDATED',accounting_validated_at=now(),legal_name='FIXTURE SINTETICA MG A - SEM VALIDADE JURIDICA',fiscal_environment='HOMOLOGATION' WHERE id='{SETTINGS}'; SET session_replication_role=origin;")
+# Two connections: A holds the row lock on its own pending order; B's promotion must be denied immediately
+# (foreign row never locked/waited on), while another A promotion attempt would wait (lock_timeout proves it).
+hold=pg.popen(None);hold.stdin.write(f"BEGIN; SELECT id FROM public.partner_orders WHERE id='{r1['id']}' FOR UPDATE; SELECT pg_sleep(6); COMMIT;\n");hold.stdin.flush();time.sleep(1.5)
+t0=time.time();eb=pg.sql(f"BEGIN; SET LOCAL lock_timeout='3s'; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN_B)}',true); SELECT public.c2_promote_accounting_pending_order_v1('{r1['id']}','{upd}'); COMMIT;",ok=False);dt=time.time()-t0
+ok(f'B promotion on A-locked order denied without waiting ({dt:.2f}s, no lock_timeout)','C2AP_ORDER_DENIED' in eb and 'lock timeout' not in eb and dt<2.0)
+ea=pg.sql(f"BEGIN; SET LOCAL lock_timeout='1s'; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN)}',true); SELECT public.c2_promote_accounting_pending_order_v1('{r1['id']}','{upd}'); COMMIT;",ok=False)
+ok('control: owner A promotion does wait on its own locked row (lock timeout), proving the lock is real','lock timeout' in ea)
+hold.stdin.close();hold.wait(15)
+ok('wrapper is SECURITY INVOKER and core SECURITY DEFINER',pg.sql("SELECT (SELECT prosecdef FROM pg_proc WHERE oid='public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)'::regprocedure)::text||(SELECT prosecdef FROM pg_proc WHERE oid='platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz)'::regprocedure)::text")=='falsetrue')
 denied(ADMIN,f"SELECT public.c2_promote_accounting_pending_order_v1('{r1['id']}','2000-01-01T00:00:00Z')",'C2AP_STALE');ok('stale expected updated_at rejected (CAS)')
 pr=json.loads(val(ADMIN,f"SELECT public.c2_promote_accounting_pending_order_v1('{r1['id']}','{upd}');"));sn2=order(r1['id'])['c2_external_origin_snapshot']
 ok('promotion after fixture validation seals V1 from current settings, original actor kept',sn2['contract']=='C2_EXTERNAL_ORDER_ORIGIN_V1' and sn2['promoted_from_contract']=='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' and sn2['actor_user_id']==G and sn2['accounting_promoted_by']==ADMIN)

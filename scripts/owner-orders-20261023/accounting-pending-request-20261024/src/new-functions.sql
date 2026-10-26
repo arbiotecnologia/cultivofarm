@@ -56,22 +56,30 @@ ALTER FUNCTION platform_private.c2_accounting_pending_guard() OWNER TO postgres;
 REVOKE ALL ON FUNCTION platform_private.c2_accounting_pending_guard() FROM PUBLIC,anon,authenticated;
 CREATE TRIGGER zz_c2_accounting_pending BEFORE INSERT OR UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION platform_private.c2_accounting_pending_guard();
 
-CREATE FUNCTION public.c2_promote_accounting_pending_order_v1(p_order_id uuid, p_expected_updated_at timestamptz)
+-- Private authorized DEFINER core (review 07739e5c): authority/organization is resolved BEFORE any row lock and
+-- the row lock is restricted to the actor's own organization, so a foreign actor never waits on (or locks) another
+-- tenant's order. Authority is re-validated under the lock. Missing and foreign orders give the same denial.
+CREATE FUNCTION platform_private.c2_promote_accounting_pending_order_core(p_order_id uuid, p_expected_updated_at timestamptz)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $function$
 DECLARE uid uuid:=auth.uid(); o public.partner_orders; cs public.company_fiscal_settings; n integer; org uuid; v1 jsonb;
 BEGIN
  IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;
- SELECT * INTO o FROM public.partner_orders WHERE id=p_order_id FOR UPDATE;
- -- Same denial for missing and foreign orders: no existence oracle.
- IF NOT FOUND OR NOT platform_private.b2b_internal_commercial_actor()
-    OR public.h15_actor_organization()::text IS DISTINCT FROM o.c2_external_origin_snapshot->>'organization_id'
+ IF NOT platform_private.b2b_internal_commercial_actor() THEN RAISE EXCEPTION 'C2AP_ORDER_DENIED' USING ERRCODE='42501'; END IF;
+ org:=public.h15_actor_organization();
+ IF org IS NULL OR p_order_id IS NULL THEN RAISE EXCEPTION 'C2AP_ORDER_DENIED' USING ERRCODE='42501'; END IF;
+ -- Rows of other organizations do not satisfy the predicate and are skipped without being locked or waited on.
+ SELECT * INTO o FROM public.partner_orders WHERE id=p_order_id AND c2_external_origin_snapshot->>'organization_id'=org::text FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'C2AP_ORDER_DENIED' USING ERRCODE='42501'; END IF;
+ -- Re-validate authority under the lock (revocation / organization change during the wait).
+ IF NOT platform_private.b2b_internal_commercial_actor()
+    OR public.h15_actor_organization() IS DISTINCT FROM org
+    OR o.c2_external_origin_snapshot->>'organization_id' IS DISTINCT FROM org::text
     OR NOT platform_private.c2p1_settings_allowed(o.partner_id,true) THEN
   RAISE EXCEPTION 'C2AP_ORDER_DENIED' USING ERRCODE='42501';
  END IF;
  IF o.c2_external_origin_snapshot->>'contract' IS DISTINCT FROM 'C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1' THEN RAISE EXCEPTION 'C2AP_NOT_PENDING' USING ERRCODE='22023'; END IF;
  IF p_expected_updated_at IS NULL OR o.updated_at IS DISTINCT FROM p_expected_updated_at THEN RAISE EXCEPTION 'C2AP_STALE' USING ERRCODE='40001'; END IF;
  IF o.status::text NOT IN ('em_analise_comercial','aguardando_cotacao','aguardando_aprovacao_credito') THEN RAISE EXCEPTION 'C2AP_STATUS_DENIED' USING ERRCODE='42501'; END IF;
- org:=(o.c2_external_origin_snapshot->>'organization_id')::uuid;
  SELECT count(*) INTO n FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active;
  IF n=1 THEN SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active FOR SHARE; END IF;
  IF n<>1 OR cs.configuration_status IS DISTINCT FROM 'VALIDATED' OR cs.accounting_validated_at IS NULL OR nullif(btrim(cs.legal_name),'') IS NULL OR nullif(btrim(cs.cnpj),'') IS NULL THEN
@@ -84,6 +92,16 @@ BEGIN
  VALUES(gen_random_uuid(),p_order_id,o.partner_id,uid,'c2_accounting_pending_promoted',jsonb_build_object('origin',o.c2_external_origin_snapshot),jsonb_build_object('origin',v1),now());
  RETURN jsonb_build_object('order_id',p_order_id,'contract','C2_EXTERNAL_ORDER_ORIGIN_V1');
 END $function$;
+ALTER FUNCTION platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz) OWNER TO postgres;
+REVOKE ALL ON FUNCTION platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz) FROM PUBLIC,anon;
+-- The core authorizes itself (auth.uid + internal actor + organization); authenticated may call it only via the wrapper.
+GRANT EXECUTE ON FUNCTION platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz) TO authenticated,service_role;
+
+-- Public INVOKER wrapper: no privilege of its own.
+CREATE FUNCTION public.c2_promote_accounting_pending_order_v1(p_order_id uuid, p_expected_updated_at timestamptz)
+RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path TO '' AS $function$
+ SELECT platform_private.c2_promote_accounting_pending_order_core(p_order_id, p_expected_updated_at)
+$function$;
 ALTER FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timestamptz) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timestamptz) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timestamptz) TO authenticated,service_role;

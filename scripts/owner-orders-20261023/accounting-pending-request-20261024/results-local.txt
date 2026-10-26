@@ -41,6 +41,9 @@ PASS validated B fixture: approval generates exactly one title link + 3 installm
 PASS foreign owner B cannot promote A request (no oracle)
 PASS buyer cannot promote own request
 PASS owner A promotion denied while A still DRAFT
+PASS B promotion on A-locked order denied without waiting (0.03s, no lock_timeout)
+PASS control: owner A promotion does wait on its own locked row (lock timeout), proving the lock is real
+PASS wrapper is SECURITY INVOKER and core SECURITY DEFINER
 PASS stale expected updated_at rejected (CAS)
 PASS promotion after fixture validation seals V1 from current settings, original actor kept
 PASS promotion audited with previous and new origin
@@ -68,4 +71,4 @@ PASS history kept: pending and promoted orders remain
 PASS after rollback pending request is frozen (b5 assert rejects pending contract)
 PASS after rollback external create closed again
 PASS restore-live refuses to run on non-candidate state (drift) — no partial DDL
-TOTAL 67 PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification
+TOTAL 70 PASS; synthetic Auth, disposable PostgreSQL, no hosted JWT/RLS/accounting certification
