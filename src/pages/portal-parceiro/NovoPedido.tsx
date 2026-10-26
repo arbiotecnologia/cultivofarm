@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useOutletContext, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +54,8 @@ import {
 import { DOSES_POR_LITRO, resolverCustoHa } from "@/lib/catalogo/pricing";
 import { round2 } from "@/lib/catalogo/formatUnidades";
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { orderAttemptFingerprint, prepareOrderAttempt, readOrderAttempt, settleOrderAttempt, subscribeOrderAttempts } from "@/lib/authz/pendingOrderAttempt";
 
 const nfmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
@@ -136,6 +138,8 @@ export default function NovoPedido() {
   }, [catalog]);
 
   const [cart, setCart] = useState<Record<string, CartItem>>({});
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
   const [obs, setObs] = useState("");
   
   const [requestedDate, setRequestedDate] = useState<string>("");
@@ -209,8 +213,11 @@ export default function NovoPedido() {
   const [cashSimulation, setCashSimulation] = useState<SimulateResult | null>(null);
   const simulateSelectedPlan = useSimulateB2BPaymentPlan();
   const simulateCashReference = useSimulateB2BPaymentPlan();
-  /** Chave de idempotência do checkout corrente (server-side dedupe). */
-  const checkoutKeyRef = useRef<string | null>(null);
+  // Tentativa de envio: chave/estado vivem fora do componente (memória volátil
+  // por ator+empresa+papéis+parceiro) para sobreviver a remontagem do boundary.
+  const pageScope = useStorageAccessScope("partner-order-page");
+  const attemptSlot = !isSimulationMode ? createOrder.slotFor(partner?.id) : null;
+  const attempt = useSyncExternalStore(subscribeOrderAttempts, () => readOrderAttempt(attemptSlot));
 
 
   // Lista de produtores vinculados ao usuário B2B (técnico ou gestor)
@@ -476,36 +483,51 @@ export default function NovoPedido() {
       toast.error("Aguarde a validação de preços pelo servidor antes de enviar o pedido.");
       return;
     }
-    // Chave de idempotência do checkout: mantida entre reenvios/cliques repetidos
-    // e descartada apenas quando o pedido é efetivamente criado.
-    if (!checkoutKeyRef.current) {
-      checkoutKeyRef.current =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    if (!attemptSlot) {
+      toast.error("Contexto de acesso indisponível. Aguarde a confirmação e tente novamente.");
+      return;
     }
+    const items = cartList.map(({ key, ...rest }) => rest);
+    const input = {
+      partner_id: partner.id,
+      observacoes: obs || undefined,
+      requested_delivery_date: requestedDate || null,
+      items,
+      payment_plan_id: selectedPlanId,
+      first_due_date: simulation?.schedule?.[0]?.due_date ?? null,
+      installment_count: selectedPlan?.installment_count ?? null,
+      expected_cart_hash: simulation.cart_hash,
+    };
+    const fingerprint = orderAttemptFingerprint(input);
+    // Mesmo payload => mesma chave (servidor deduplica). Payload alterado após
+    // resultado incerto NÃO gera chave nova: exige confirmar o envio anterior.
+    const prepared = prepareOrderAttempt(attemptSlot, fingerprint, () =>
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    if (!prepared.ok) {
+      toast.error("O envio anterior ainda não foi confirmado. Reenvie o mesmo carrinho para confirmar (não duplica) ou consulte Meus Pedidos.");
+      return;
+    }
+    const fence = pageScope.capture();
+    const slot = attemptSlot;
     createOrder.mutate(
-      {
-        partner_id: partner.id,
-        observacoes: obs || undefined,
-        requested_delivery_date: requestedDate || null,
-        items: cartList.map(({ key, ...rest }) => rest),
-        payment_plan_id: selectedPlanId,
-        first_due_date: simulation?.schedule?.[0]?.due_date ?? null,
-        installment_count: selectedPlan?.installment_count ?? null,
-        expected_cart_hash: simulation.cart_hash,
-        idempotency_key: checkoutKeyRef.current,
-      },
+      { ...input, idempotency_key: prepared.key, attempt_slot: slot },
       {
         onSuccess: () => {
-          checkoutKeyRef.current = null;
+          // Callback por chamada também é cercado: resposta tardia de outro
+          // ator/empresa/época não limpa carrinho nem navega.
+          if (!fence()) return;
+          settleOrderAttempt(slot, prepared.key);
+          setConfirmOpen(false);
+          // Carrinho editado depois do envio é preservado.
+          if (orderAttemptFingerprint({ ...input, items: Object.values(cartRef.current) }) !== fingerprint) return;
           setCart({});
           setObs("");
           setRequestedDate("");
           setSelectedPlanId(null);
           setSimulation(null);
           setCashSimulation(null);
-          setConfirmOpen(false);
           navigate(afterCreatePath ?? "/portal-parceiro/pedidos");
         },
       },
