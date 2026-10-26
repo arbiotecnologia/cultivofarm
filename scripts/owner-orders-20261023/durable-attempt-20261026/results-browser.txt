@@ -8,7 +8,10 @@ PASS revalidation detects foreign generation before dispatch
 PASS commit-before-ack local marker survives tab closure
 PASS A/B scopes differ without persisting identity
 PASS revoked context never adopts or dispatches
+PASS feature OFF never consumes RPC
+PASS committed incomplete schema is inconclusive
+PASS late recovery after revocation never adopts or clears cart
 PASS storage unavailable fails closed
 PASS corruption never silently repairs/reserves
 PASS independent browser context missing journal remains blocked
-TOTAL 12 PASS real IndexedDB; controlled transport, no hosted JWT/RLS
+TOTAL 15 PASS real IndexedDB; controlled transport, no hosted JWT/RLS
