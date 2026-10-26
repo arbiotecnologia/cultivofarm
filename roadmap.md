@@ -1,10 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## 26/10 19:01 — recuperação durável após fechar aba / mesma origem
-- [ ] Revisão065f8633 autorizada19:12: corrigir barreira pré-lock, importação legada atômica, ACK/CAS, rollout/timeout/revogação/POST/contenção em PostgreSQL descartável; capturas adicionais só leitura, sem aplicar/publicar.
+- [x] Revisão065f8633: barreira sem lockescopo, fronteira bounded+import última committed semACK, pins LIVE READ ONLY, ACK/CAS/40P01 antes/depois/rollout/revogação/tenant/POST/contenção; 44 PostgreSQL +15 browser +31 componentes PASS, sintéticos/controlados; sem aplicar/publicar.
 - [x] Registrar relato independente: 001b3cad publicado, backend 5cd aplicado; A closed/PB001033 único/committed, B 403/42501 target_outside_portfolio. Não repetir operações produtivas.
 - [x] Preparar contrato servidor INATIVO + protótipo IndexedDB fora de runtime: 20 PASS PostgreSQL descartável/Auth sintética, 12 PASS Chromium/IndexedDB real/transporte controlado e 31 PASS regressões publicadas. Saídas e comandos no pacote durable-attempt-20261026.
-- [ ] Ativação NO-GO: captura LIVE integral fresca, reconciliação de chaves legadas 001b e prova de rollout/lock inversion pendentes; hard gate incondicional antes de DDL. Migração memory→journal e interface integrada NÃO implementadas.
+- [ ] Revisão/implantação independente do candidato com pins+importação atômica; integração React de recovery após instalação e provas JWT/abas reais pendentes. Feature OFF, sem hardgate impossível; versões antigas não recarregadas e chaves desconhecidas negadas pela candidata.
 - [ ] Revisão independente, matriz completa/real A/B e eventual instalação/publicação pelo auditor; contabilidade A DRAFT e 36 falhas antigas permanecem abertas.
 
 ## 24/10 15:26 — compra B2B com pendência contábil honesta (pacote INATIVO)
