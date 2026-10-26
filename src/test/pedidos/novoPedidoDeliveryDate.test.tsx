@@ -66,7 +66,7 @@ beforeEach(() => {
     if (table === "partner_orders") return { select: () => ({ eq: () => ({ maybeSingle: () => response({
       id: "d4539dd9-b090-4433-9ed3-6f8f5d3e767b",
       c2_external_origin_snapshot: { contract: "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1", accounting_validated: false },
-    }) } }) }) };
+    }) }) }) };
     throw new Error(`Unexpected table read: ${table}`);
   });
   state.rpc.mockImplementation((name: string, args?: Record<string, unknown>) => {
