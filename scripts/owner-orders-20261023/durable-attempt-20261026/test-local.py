@@ -45,11 +45,46 @@ def adapt(sql):
  return re.sub(r'-- LEGACY_CAPTURE_BEGIN:.*?-- LEGACY_CAPTURE_END',legacy_fixture,sql,flags=re.S)
 candidate=adapt(candidate);post=(D/'postflight.sql').read_text()
 print('FIXTURE_METADATA_SUBSTITUTIONS',json.dumps({'poi':fixture_structure,'updated':fixture_updated,'legacy':'two synthetic orders; no production rows'}),flush=True)
+def start(sql,name,u=None,extra=''):
+ p=subprocess.Popen(pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ p.stdin.write(f"\\set VERBOSITY verbose\nSET application_name='{name}'; BEGIN; "+(f"SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(u)}',true); " if u else '')+extra+sql+'; COMMIT;\n');p.stdin.close();return p
+def finish(p):
+ o=p.stdout.read();e=p.stderr.read();p.wait(timeout=60);return o,e
+def holding(sql,name):
+ p=subprocess.Popen(pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+ p.stdin.write(f"SET application_name='{name}'; BEGIN; {sql}; SELECT 'HOLDING';\n");p.stdin.flush()
+ while 'HOLDING' not in p.stdout.readline():
+  if p.poll() is not None:raise AssertionError('holder failed')
+ return p
+def release(p):
+ p.stdin.write('COMMIT;\n');p.stdin.close();return finish(p)
+def waiting(name):
+ for _ in range(150):
+  if pg.sql(f"SELECT count(*) FROM pg_stat_activity WHERE application_name='{name}' AND wait_event_type='Lock'")=='1':return True
+  time.sleep(.03)
+ return False
+# Full candidate waits bounded on an actual table holder; never kills a session.
+holder=holding('LOCK TABLE public.partner_order_idempotency IN ACCESS SHARE MODE','install-holder')
+t=time.monotonic();err=pg.sql('\\set VERBOSITY verbose\n'+candidate,ok=False)
+ok('install table boundary times out bounded, no DDL/import; holder survives',first(err)=='ERROR:  55P03: canceling statement due to lock timeout' and 4.5<time.monotonic()-t<8 and pg.sql("SELECT to_regclass('platform_private.partner_order_attempt_journal') IS NULL")=='t')
+release(holder)
 # Inject failing POST into full transaction, including import, prove atomic rollback.
 inj=candidate.replace('DO $imports$',"DO $fault$ BEGIN RAISE EXCEPTION 'C2DJ_POST_FAULT'; END $fault$;\nDO $imports$",1)
 err=pg.sql('\\set VERBOSITY verbose\n'+inj,ok=False)
 ok('POST fault rolls back journal/import/barrier/create atomically',first(err)=='ERROR:  P0001: C2DJ_POST_FAULT' and pg.sql("SELECT to_regclass('platform_private.partner_order_attempt_journal') IS NULL")=='t' and pg.sql(f"SELECT md5(prosrc) FROM pg_proc WHERE oid='{env['sig'] if 'sig' in env else 'public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'}'::regprocedure")=='71d1f32e00c5c9857eae51999dc40ef0')
+# Old canonical body really starts BEFORE replacement and pauses BEFORE idem.
+assert_sig='platform_private.assert_b2b_partner_scope(uuid,uuid)'
+assert_def=pg.sql(f"SELECT pg_get_functiondef('{assert_sig}'::regprocedure)")
+assert_md5=pg.sql(f"SELECT md5(prosrc) FROM pg_proc WHERE oid='{assert_sig}'::regprocedure")
+stall_def=assert_def.replace('\nBEGIN',"\nBEGIN\n IF current_setting('c2dj.test_stall',true)='on' THEN PERFORM pg_advisory_xact_lock(777123); END IF;",1)
+pg.sql(stall_def)
+holder=holding('SELECT pg_advisory_xact_lock(777123)','rollout-stall')
+old=start(create(P,'10000000-0000-4000-8000-000000000099',hA),'old-live-inflight',G,"SELECT set_config('c2dj.test_stall','on',true); ")
+ok('LIVE old create is in flight BEFORE idem at real advisory wait',waiting('old-live-inflight'))
 pg.sql(candidate);pg.sql(post)
+release(holder);o,e=finish(old)
+ok('atomic rollout old in-flight create fails write barrier exactly, no duplicate',first(e)=='ERROR:  42501: C2DJ_REGISTERED_ATTEMPT_REQUIRED' and count()==str(int(before)+2) and 'c2_attempt_journal_write_guard' in e)
+pg.sql(assert_def);ok('test-only pause helper restored byte-exact',pg.sql(f"SELECT md5(prosrc) FROM pg_proc WHERE oid='{assert_sig}'::regprocedure")==assert_md5)
 legacy_r=recover();ok('legacy latest committed imported immutable WITHOUT assumed ACK',legacy_r['state']=='committed' and legacy_r['order_id']==old2['id'] and legacy_r['generation']==1)
 for forged_ack in [None,old1['id']]:
  rr=recover(advance=True,key=legacy_r['key'],generation=1,ack=forged_ack)
@@ -93,12 +128,35 @@ ok('concurrent canonical create exactly one order',not ea and not ec and int(cou
 snap=pg.sql('SELECT count(*) FROM platform_private.partner_order_attempt_journal')
 e=pg.sql("\\set VERBOSITY verbose\nDELETE FROM platform_private.partner_order_attempt_journal",ok=False)
 ok('journal immutable including owner',first(e)=='ERROR:  42501: C2_ATTEMPT_CLOSURE_IMMUTABLE' and pg.sql('SELECT count(*) FROM platform_private.partner_order_attempt_journal')==snap)
+# Revocation and tenant changes WHILE recover waits on idem, not only before call.
+scope_org=pg.sql(f"SELECT organization_id FROM public.profiles WHERE user_id='{G}'")
+idem_lock=f"SELECT pg_advisory_xact_lock(hashtextextended('b2b_idem:'||'{P}'||':'||'{new['key']}',0))"
+holder=holding(idem_lock,'revoke-holder');w=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'recover-revoked-wait',G)
+ok('recover waits after initial authorization',waiting('recover-revoked-wait'))
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{env['ADMIN']}',revoke_reason='synthetic' WHERE user_id='{G}'; SET session_replication_role=origin;")
+release(holder);o,e=finish(w)
+ok('revocation during wait denies exact, no committed reveal or journal mutation',first(e)=='ERROR:  42501: forbidden_partner' and 'committed' not in o and pg.sql('SELECT count(*) FROM platform_private.partner_order_attempt_journal')==snap)
+pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
+holder=holding(idem_lock,'tenant-holder');w=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'recover-tenant-wait',G)
+ok('tenant test waits after initial authorization',waiting('recover-tenant-wait'))
+pg.sql(f"SET session_replication_role=replica; UPDATE public.profiles SET organization_id='{env['B']}' WHERE user_id='{G}'; SET session_replication_role=origin;")
+release(holder);o,e=finish(w)
+ok('tenant changed during idem wait fails closed',first(e) in ['ERROR:  42501: forbidden_partner','ERROR:  42501: C2DJ_SCOPE_CHANGED'] and 'committed' not in o and pg.sql('SELECT count(*) FROM platform_private.partner_order_attempt_journal')==snap)
+pg.sql(f"SET session_replication_role=replica; UPDATE public.profiles SET organization_id='{scope_org}' WHERE user_id='{G}'; SET session_replication_role=origin;")
+holder=holding(idem_lock,'timeout-holder');t=time.monotonic();e=error(G,f"SELECT public.recover_partner_order_attempt_v1('{P}')")
+ok('timeout on idem is bounded unknown/error and never advances',first(e)=='ERROR:  55P03: canceling statement due to lock timeout' and 4.5<time.monotonic()-t<8 and pg.sql('SELECT count(*) FROM platform_private.partner_order_attempt_journal')==snap)
+release(holder)
 # Revoke only inside disposable fixture, never production.
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=now(),revoked_by='{env['ADMIN']}',revoke_reason='synthetic' WHERE user_id='{G}'; SET session_replication_role=origin;")
 b=count();e=error(G,f"SELECT public.recover_partner_order_attempt_v1('{P}')")
 ok('revoked authorization cannot recover or advance',first(e)=='ERROR:  42501: forbidden_partner' and count()==b)
 pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_users SET revoked_at=NULL,revoked_by=NULL,revoke_reason=NULL WHERE user_id='{G}'; SET session_replication_role=origin;")
 known_id=recover()['order_id']
+# Rollback under authorized transaction is bounded and leaves candidate intact.
+holder=holding('LOCK TABLE public.partner_order_idempotency IN ACCESS SHARE MODE','containment-holder')
+t=time.monotonic();e=pg.sql('\\set VERBOSITY verbose\n'+(D/'rollback.sql.review').read_text(),ok=False)
+ok('containment in flight times out atomically without killing session',first(e)=='ERROR:  55P03: canceling statement due to lock timeout' and 4.5<time.monotonic()-t<8)
+release(holder);pg.sql(post)
 pg.sql((D/'rollback.sql.review').read_text())
 ok('containment retains immutable generations and closures',pg.sql('SELECT count(*) FROM platform_private.partner_order_attempt_journal')==snap)
 replay=json.loads(val(G,create(P,new['key'],hA)))
