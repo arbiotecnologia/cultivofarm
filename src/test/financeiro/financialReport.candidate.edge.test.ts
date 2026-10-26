@@ -82,11 +82,15 @@ async function failureResponse(response: Response, status: number) {
   expect(JSON.stringify(body)).not.toContain("signed-file-fixture");
 }
 
-const live = readFileSync("supabase/functions/generate-financial-report/index.ts", "utf8");
+// Candidate was promoted to the deployed source (345a8840); the delta is now proven
+// against the pre-promotion signed-URL baseline, and deployed source must equal candidate.
+const live = readFileSync("scripts/financial-report-locator/edge/repo-baseline.index.ts", "utf8");
+const deployed = readFileSync("supabase/functions/generate-financial-report/index.ts", "utf8");
 const candidate = readFileSync("scripts/financial-report-locator/edge/candidate.index.ts", "utf8");
 describe("generate-financial-report CANDIDATE — no signature, private locator", () => {
   it("source delta vs repo baseline is only the signing block and the response", () => {
     expect(candidate).not.toMatch(/createSignedUrl|signedUrl|getPublicUrl/);
+    expect(deployed).toBe(candidate);
     const signStart = live.indexOf("    // Keep the signed URL private in memory");
     const signEnd = live.indexOf("    const { data: exportId");
     expect(signStart).toBeGreaterThan(0); expect(signEnd).toBeGreaterThan(signStart);
