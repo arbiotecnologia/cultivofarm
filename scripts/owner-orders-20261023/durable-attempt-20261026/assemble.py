@@ -65,6 +65,9 @@ END $legacy$;
 -- LEGACY_CAPTURE_END
 """
 pre+=legacy
+fresh=json.loads((D/'live-capture-1912.json').read_text())
+for s,m in fresh['functiondef_md5'].items():
+ pre+=f"DO $fresh$ BEGIN IF (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure('{s}')) IS DISTINCT FROM '{m}' THEN RAISE EXCEPTION 'C2DJ_FUNCTIONDEF_DRIFT:{s}'; END IF; END $fresh$;\n"
 pre+="""DO $closure_rows$ BEGIN
 IF (SELECT count(*) FROM platform_private.partner_order_idempotency_closures)<>1
  OR NOT EXISTS(SELECT 1 FROM platform_private.partner_order_idempotency_closures
