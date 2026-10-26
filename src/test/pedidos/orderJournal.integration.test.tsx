@@ -112,4 +112,33 @@ it('explicit committed ACK passes exact UUID/key/generation and next server key'
 it('forged ACK cannot advance',async()=>{
  terminal='committed';await expect(recoverOrderJournal(slot,P,()=>true,{...j('committed'),order_id:P})).rejects.toThrow();expect(generation).toBe(1);
 });
+it('two mounted create hooks same tick share key, never client-generated keys',async()=>{
+ const one=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()}),two=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
+ await act(async()=>{await Promise.allSettled([one.result.current.mutateAsync(input),two.result.current.mutateAsync(input)]);});
+ expect(creates.length).toBeGreaterThan(0);expect(new Set(creates)).toEqual(new Set([K]));expect(generation).toBe(1);
+});
+it.each(['actor','organization'] as const)('foreign capability %s cannot disclose or create',async(kind)=>{
+ state.rpc.mockResolvedValue({data:{contract,enabled:true,actor_id:kind==='actor'?P:A,organization_id:kind==='organization'?P:O,partner_id:P},error:null});
+ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
+ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow('journal_capability_invalid');});expect(creates).toEqual([]);
+});
+it('create commit followed by missing ACK blocks success without resending',async()=>{
+ const original=state.rpc.getMockImplementation();let recoveries=0;
+ state.rpc.mockImplementation((name:string,args:Record<string,unknown>)=>{
+  if(name==='recover_partner_order_attempt_v1' && ++recoveries===2)return ok({contract,state:'unknown'});
+  return original?.(name,args);
+ });
+ const h=renderHook(()=>useCreatePartnerOrder(),{wrapper:setup()});
+ await act(async()=>{await expect(h.result.current.mutateAsync(input)).rejects.toThrow();});expect(creates).toEqual([K]);expect(terminal).toBe('committed');
+});
+it('persisted durable evidence blocks missing capability after memory loss',async()=>{
+ await persistJournal(JSON.stringify([P,O,P]),j('closed'),()=>true);
+ state.rpc.mockResolvedValue({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
+ await expect(journalCapability(JSON.stringify([P,O,P]),P,()=>true)).rejects.toThrow('journal_downgrade_blocked');
+});
+it('close double-click is synchronously single-flight before capability await',async()=>{
+ const h=renderHook(()=>useCloseOrderAttempt());
+ await act(async()=>{await Promise.all([h.result.current.close(P),h.result.current.close(P)]);});
+ expect(state.rpc.mock.calls.filter(([n])=>n==='close_partner_order_attempt_v1')).toHaveLength(1);
+});
 it.each([null,{}, {contract,key:'-'.repeat(36),generation:1,state:'uncertain'}, {...j('committed'),order_id:undefined}])('strict schema rejects malformed receipt %#',(d)=>expect(()=>parseOrderJournal(d)).toThrow());
