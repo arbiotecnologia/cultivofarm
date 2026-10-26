@@ -13,7 +13,7 @@
     "platform_private.c2_attempt_scope_lock(uuid,uuid)": "8e6d6191d2821ec6e8d0ba07f4d8190c",
     "platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)": "9e217430e43e594e51645ec6184abfa0",
     "platform_private.c2_attempt_journal_write_guard()": "851aacc3e631832493a34bcb6106b53a",
-    "platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)": "1fc92e569658f35f8509e92d66549516",
+    "platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)": "1a166cfa7c4b16fcc10e7724b4a6492a",
     "public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)": "f5aa40591cfc0f436f579f20ce2f563a",
     "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "74cfb688546817e6236d5195d069e29e",
     "platform_private.c2_close_partner_order_attempt_core(uuid,text)": "4d7a7a49b27ab78fd33a6cdac75833c5"
