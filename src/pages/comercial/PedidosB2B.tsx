@@ -70,7 +70,7 @@ export default function PedidosB2B() {
   const internalEntry = useInternalOrderEntry();
   const canApproveCredit =
     role === "administrador" || role === "gestor" || role === "financeiro";
-  const [statusFilter, setStatusFilter] = useState<string>("aguardando_aprovacao_credito");
+  const [statusFilter, setStatusFilter] = usePedidosB2BStatusFilter(STATUS_VALUES, "aguardando_aprovacao_credito");
   const { data: orders = [], isLoading, actorScope, actorReady } = usePartnerOrdersAdmin({
     status: statusFilter === "all" ? undefined : statusFilter,
   });
