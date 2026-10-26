@@ -5,7 +5,7 @@ import { useStorageAccessScope } from "./useStorageAccessScope";
 import type { CatalogItemTipo } from "./usePartnerCatalog";
 import { orderAccountingState } from "@/lib/orderAccountingState";
 import { useAuth } from "./useAuth";
-import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptSending, markOrderAttemptUnresolved, orderAttemptSlot } from "@/lib/authz/pendingOrderAttempt";
+import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptSending, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection } from "@/lib/authz/pendingOrderAttempt";
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
 
@@ -110,6 +110,8 @@ export function useCreatePartnerOrder() {
       // A partir daqui o resultado é incerto até resposta conclusiva. O registro
       // ocorre aqui (não em callbacks) para sobreviver a desmontagem da tela.
       const slot = input.attempt_slot ?? null;
+      // O slot precisa corresponder ao ator/empresa/papéis/parceiro atuais.
+      if (slot && slot !== slotFor(input.partner_id)) throw new Error("Contexto alterado.");
       const sending = slot ? markOrderAttemptSending(slot, input.idempotency_key) : null;
       let response: { data: unknown; error: { message?: string; code?: string } | null };
       try {
@@ -134,8 +136,8 @@ export function useCreatePartnerOrder() {
       const { data, error } = response;
       const created = data as { id: string; numero: string; total: number } | null;
       if (slot && sending) {
-        if (!error && created?.id) markOrderAttemptCommitted(slot, input.idempotency_key, { id: created.id, numero: created.numero ?? null });
-        else if (error?.code && !String(error.message ?? "").includes("idempotency_conflict"))
+        if (!error && created?.id) markOrderAttemptCommitted(slot, input.idempotency_key, { numero: created.numero ?? null });
+        else if (isConclusiveRejection(error))
           markOrderAttemptRejected(slot, input.idempotency_key, sending.wasAmbiguous);
         else markOrderAttemptUnresolved(slot, input.idempotency_key);
       }
