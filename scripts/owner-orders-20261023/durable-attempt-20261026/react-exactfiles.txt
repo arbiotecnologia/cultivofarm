@@ -1,14 +1,30 @@
-Base da integração: 907b869036039db51ac63026c1dc4bae6b18716e
+Base antes da integração React: c7a7ac9a86e52dd59d93ee6879fc8b4b57cc2180
+AGENTS.md
 roadmap.md
+scripts/owner-orders-20261023/durable-attempt-20261026/AGENTS.md
 scripts/owner-orders-20261023/durable-attempt-20261026/README.md
+scripts/owner-orders-20261023/durable-attempt-20261026/SHA256SUMS
 scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py
+scripts/owner-orders-20261023/durable-attempt-20261026/candidate.sql.review
+scripts/owner-orders-20261023/durable-attempt-20261026/expected.json
+scripts/owner-orders-20261023/durable-attempt-20261026/postflight.sql
+scripts/owner-orders-20261023/durable-attempt-20261026/react-exactfiles.txt
+scripts/owner-orders-20261023/durable-attempt-20261026/react-rollout.diff
 scripts/owner-orders-20261023/durable-attempt-20261026/results-react-browser.txt
 scripts/owner-orders-20261023/durable-attempt-20261026/results-react-vitest.txt
 scripts/owner-orders-20261023/durable-attempt-20261026/rollback.sql.review
+scripts/owner-orders-20261023/durable-attempt-20261026/test-install.sql
 scripts/owner-orders-20261023/durable-attempt-20261026/test-react-browser.py
 src/hooks/useCloseOrderAttempt.ts
 src/hooks/useCreatePartnerOrder.ts
 src/hooks/useOrderJournal.ts
 src/lib/authz/orderJournal.ts
 src/pages/portal-parceiro/NovoPedido.tsx
+src/test/catalogo/partnerOutletNovoPedido.test.tsx
+src/test/pedidos/concurrentAttemptHook.test.tsx
+src/test/pedidos/createPartnerOrderOwnChannel.integration.test.tsx
+src/test/pedidos/createPartnerOrderOwnChannelInvalidation.test.tsx
+src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx
+src/test/pedidos/novoPedidoAttemptClosure.test.tsx
+src/test/pedidos/novoPedidoDeliveryDate.test.tsx
 src/test/pedidos/orderJournal.integration.test.tsx
