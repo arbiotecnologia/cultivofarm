@@ -10,15 +10,29 @@ import { isAccountingPending } from "@/lib/orderAccountingState";
 
 /**
  * Lista somente leitura dos pedidos externos da carteira da própria empresa.
- * Renderiza apenas quando o canal canônico devolve linhas; contrato ausente,
- * ator sem papel ou lista vazia => seção quieta (fail-closed, sem promessa).
+ * Sempre montada: pedidos já visíveis na lista administrativa são deduplicados
+ * por ID (excludeIds). Contrato ausente ou ator sem papel => seção quieta;
+ * erro de transporte/indisponibilidade => aviso explícito (nunca confundido
+ * com "carteira vazia"); lista vazia de verdade => quieta.
  */
-export function CommercialOwnerOrdersSection({ statusFilter }: { statusFilter: string }) {
+export function CommercialOwnerOrdersSection({ statusFilter, excludeIds = [] }: { statusFilter: string; excludeIds?: string[] }) {
   const result = useCommercialOwnerOrders({ status: statusFilter === "all" ? null : statusFilter });
   const state = result.data;
-  if (!result.ready || result.isLoading || result.isError || !state || state.state !== "allowed" || state.orders.length === 0) {
-    return null;
+  if (!result.ready || result.isLoading) return null;
+  if (result.isError || (state && state.state === "blocked" && state.reason === "unavailable")) {
+    return (
+      <Card>
+        <CardContent className="py-4">
+          <p role="status" className="text-sm text-muted-foreground">
+            Acompanhamento da carteira da empresa indisponível no momento. A lista acima não foi afetada.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
+  if (!state || state.state !== "allowed") return null;
+  const visible = state.orders.filter((o) => !excludeIds.includes(o.id));
+  if (visible.length === 0) return null;
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -42,7 +56,7 @@ export function CommercialOwnerOrdersSection({ statusFilter }: { statusFilter: s
             </TableRow>
           </TableHeader>
           <TableBody>
-            {state.orders.map((o) => (
+            {visible.map((o) => (
               <TableRow key={o.id}>
                 <TableCell className="font-mono">{o.numero}</TableCell>
                 <TableCell>{o.partner_razao_social}</TableCell>

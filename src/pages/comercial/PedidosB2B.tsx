@@ -357,9 +357,10 @@ export default function PedidosB2B() {
       </Card>
 
       {/* Canal administrativo da empresa dona da carteira: somente leitura, via RPC
-          canônica escopada. Quieto quando o contrato não está instalado, o ator não
+          canônica escopada. Sempre montado — pedidos já visíveis na lista administrativa
+          são deduplicados por ID; quieto quando o contrato não está instalado, o ator não
           é admin/gestor_comercial interno ou a carteira não tem pedidos no filtro. */}
-      {!isLoading && orders.length === 0 && <CommercialOwnerOrdersSection statusFilter={statusFilter} />}
+      <CommercialOwnerOrdersSection statusFilter={statusFilter} excludeIds={orderIds} />
 
       <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
