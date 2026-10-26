@@ -82,7 +82,7 @@ async function failureResponse(response: Response, status: number) {
   expect(JSON.stringify(body)).not.toContain("signed-file-fixture");
 }
 describe("generate-financial-report — handler real isolado", () => {
-  for (const failure of ["auth", "noUser", "org", "noOrg", "rpc", "upload", "noUploadData", "noUploadPath", "wrongUploadPath", "sign", "noUrl", "audit", "noId"] as const) {
+  for (const failure of ["auth", "noUser", "org", "noOrg", "rpc", "upload", "noUploadData", "noUploadPath", "wrongUploadPath", "audit", "noId"] as const) {
     it(`nega sucesso em ${failure} e interrompe efeitos`, async () => {
       const s = setup(failure); await failureResponse(await s.invoke(valid), ["auth", "noUser"].includes(failure) ? 401 : ["org", "noOrg"].includes(failure) ? 403 : 500);
       expect(s.remove).not.toHaveBeenCalled();
@@ -91,11 +91,11 @@ describe("generate-financial-report — handler real isolado", () => {
         expect(s.createSignedUrl).not.toHaveBeenCalled();
         expect(s.rpc.mock.calls.some(([name]) => name === "register_financial_report_export")).toBe(false);
       }
-      if (["sign", "noUrl"].includes(failure)) expect(s.rpc.mock.calls.some(([name]) => name === "register_financial_report_export")).toBe(false);
+      expect(s.createSignedUrl).not.toHaveBeenCalled();
       expect(s.log).not.toHaveBeenCalled();
     });
   }
-  for (const stage of ["auth", "h15_actor_organization", "get_report_monthly_financial", "upload", "sign", "register_financial_report_export"]) {
+  for (const stage of ["auth", "h15_actor_organization", "get_report_monthly_financial", "upload", "register_financial_report_export"]) {
     it(`sanitiza exceção em ${stage}`, async () => {
       const s = setup(undefined, undefined, stage); await failureResponse(await s.invoke(valid), 500); expect(s.remove).not.toHaveBeenCalled();
     });
@@ -176,21 +176,25 @@ describe("generate-financial-report — handler real isolado", () => {
     const denied = await s.invoke(valid, "POST", "https://foreign.invalid"); await failureResponse(denied, 403);
     expect(denied.headers.get("Access-Control-Allow-Origin")).toBeNull(); expect(s.createClient).not.toHaveBeenCalled();
   });
-  it.each(["PDF", "XLSX", "CSV"])("sucesso %s somente após upload/assinatura/audit e usa caller", async (format) => {
+  it.each(["PDF", "XLSX", "CSV"])("sucesso %s somente após upload/audit, sem URL assinada, e usa caller", async (format) => {
     const s = setup(); const response = await s.invoke({ ...valid, format }); expect(response.status).toBe(200);
-    expect((await response.json()).url).toBe("signed-file-fixture");
-    expect(s.effects).toEqual(["auth", "h15_actor_organization", "get_report_monthly_financial", "upload", "sign", "register_financial_report_export"]);
+    const body = await response.json();
+    expect(Object.keys(body).sort()).toEqual(["bucket", "export_id", "path", "row_count"]);
+    expect(body).toMatchObject({ bucket: "financial-reports", export_id: auditId });
+    expect(JSON.stringify(body)).not.toContain("signed-file-fixture"); expect(s.createSignedUrl).not.toHaveBeenCalled();
+    expect(s.effects).toEqual(["auth", "h15_actor_organization", "get_report_monthly_financial", "upload", "register_financial_report_export"]);
     expect(s.createClient).toHaveBeenCalledWith("https://swzpzcwiasxmjutrmvkm.supabase.co", "mock-public-key", { global: { headers: { Authorization: "Bearer mock-caller" } } });
     expect(s.rpc).toHaveBeenNthCalledWith(2, "get_report_monthly_financial", valid.filters);
     expect(s.rpc.mock.calls[2][1]).toMatchObject({ p_status: "SUCCESS", p_filters: valid.filters });
     expect(s.env).not.toHaveBeenCalledWith("SUPABASE_SERVICE_ROLE_KEY"); expect(s.remove).not.toHaveBeenCalled();
   });
-  it("não devolve URL enquanto auditoria está pendente", async () => {
+  it("não devolve localizador enquanto auditoria está pendente", async () => {
     const pending = deferred(), s = setup(undefined, pending); let returned = false;
     const response = s.invoke(valid).then((r) => { returned = true; return r; });
     await vi.waitFor(() => expect(s.effects).toContain("register_financial_report_export"));
-    expect(returned).toBe(false); expect(s.effects.indexOf("sign")).toBeLessThan(s.effects.indexOf("register_financial_report_export"));
-    pending.resolve({ data: auditId, error: null }); expect((await (await response).json()).url).toBe("signed-file-fixture");
+    expect(returned).toBe(false); expect(s.effects).not.toContain("sign");
+    pending.resolve({ data: auditId, error: null }); const body = await (await response).json();
+    expect(body.export_id).toBe(auditId); expect(body).not.toHaveProperty("url"); expect(s.createSignedUrl).not.toHaveBeenCalled();
   });
   const parseCSV = (s: ReturnType<typeof setup>): string[][] => JSON.parse(execFileSync(process.env.PYTHON ?? "python3", ["-c", "import csv,io,json,sys; print(json.dumps(list(csv.reader(io.StringIO(sys.stdin.buffer.read().decode('utf-8'),newline='')))))"], { input: s.upload.mock.calls[0][1], encoding: "utf8" }));
   it("CSV roundtrip preserva aspas, vírgulas, quebras reais, objetos/arrays e união de colunas", async () => {
