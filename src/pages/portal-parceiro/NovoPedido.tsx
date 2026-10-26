@@ -1060,6 +1060,22 @@ export default function NovoPedido() {
               <p className="text-xs text-muted-foreground">Condição comercial B2B aplicada conforme plano selecionado.</p>
             )}
           </div>
+          {!isSimulationMode && attempt && (attempt.order ? (
+            <Alert role="status" data-attempt="committed">
+              <AlertDescription className="space-y-2">
+                <span className="block">Pedido{attempt.order.numero ? ` ${attempt.order.numero}` : ""} já foi registrado por um envio anterior. Reenviar o mesmo carrinho não cria outro pedido.</span>
+                <Button size="sm" variant="outline" onClick={() => settleOrderAttempt(attemptSlot, attempt.key)}>Iniciar um novo pedido</Button>
+              </AlertDescription>
+            </Alert>
+          ) : attempt.ambiguous ? (
+            <Alert role="alert" data-attempt="ambiguous">
+              <AlertDescription>
+                {attempt.inflight
+                  ? "Envio anterior ainda em andamento. Aguarde a resposta antes de enviar novamente."
+                  : "Não foi possível confirmar o envio anterior. Reenvie exatamente o mesmo carrinho para confirmar (não duplica) ou consulte Meus Pedidos. Alterações ficam bloqueadas até a confirmação."}
+              </AlertDescription>
+            </Alert>
+          ) : null)}
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
@@ -1087,7 +1103,7 @@ export default function NovoPedido() {
             ) : (
               <Button
                 onClick={() => handleSubmit()}
-                disabled={createOrder.isPending || !selectedPlanId || simulateSelectedPlan.isPending || !simulation}
+                disabled={createOrder.isPending || !!attempt?.inflight || !selectedPlanId || simulateSelectedPlan.isPending || !simulation}
               >
                 {createOrder.isPending
                   ? "Enviando..."
