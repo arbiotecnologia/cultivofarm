@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +48,7 @@ type TipoFiltro =
   | "simulacao_nao_convertida";
 
 export default function SolicitacoesB2B() {
-  const { data: pedidos = [], isLoading: loadingPed } = usePartnerOrdersAdmin();
+  const { data: pedidos = [], isLoading: loadingPed, actorScope } = usePartnerOrdersAdmin();
   const { data: sims = [], isLoading: loadingSim } = useComercialSimulacoesAll();
 
   const [statusPed, setStatusPed] = useState("all");
@@ -61,6 +61,8 @@ export default function SolicitacoesB2B() {
   const [search, setSearch] = useState("");
   const [openPedido, setOpenPedido] = useState<string | null>(null);
   const [openSim, setOpenSim] = useState<string | null>(null);
+  // Troca de ator/tenant/revogação fecha qualquer detalhe aberto.
+  useEffect(() => { setOpenPedido(null); setOpenSim(null); }, [actorScope]);
 
   // Clientes lookup for order rows
   const clienteIds = useMemo(
