@@ -8,12 +8,12 @@ DECLARE
   r_core record; r_wrap record;
 BEGIN
   SELECT p.prosecdef, r.rolname AS owner, p.proacl::text AS acl, md5(p.prosrc) AS md5,
-         p.proconfig::text AS config, pg_get_function_identity_arguments(p.oid) AS args
+         p.proconfig AS config, pg_get_function_identity_arguments(p.oid) AS args
     INTO r_core
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace JOIN pg_roles r ON r.oid = p.proowner
    WHERE n.nspname = 'platform_private' AND p.proname = 'c2_commercial_owner_orders_core';
   SELECT p.prosecdef, r.rolname AS owner, p.proacl::text AS acl, md5(p.prosrc) AS md5,
-         p.proconfig::text AS config, pg_get_function_identity_arguments(p.oid) AS args
+         p.proconfig AS config, pg_get_function_identity_arguments(p.oid) AS args
     INTO r_wrap
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace JOIN pg_roles r ON r.oid = p.proowner
    WHERE n.nspname = 'public' AND p.proname = 'c2_commercial_owner_orders_projection';
@@ -27,7 +27,7 @@ BEGIN
   END IF;
   IF r_core.owner IS DISTINCT FROM 'postgres' OR r_wrap.owner IS DISTINCT FROM 'postgres'
      OR r_core.prosecdef IS DISTINCT FROM true OR r_wrap.prosecdef IS DISTINCT FROM false
-     OR r_core.config IS DISTINCT FROM '{search_path=""}' OR r_wrap.config IS DISTINCT FROM '{search_path=""}'
+     OR r_core.config IS DISTINCT FROM ARRAY['search_path=""']::text[] OR r_wrap.config IS DISTINCT FROM ARRAY['search_path=""']::text[]
      OR r_core.acl IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'
      OR r_wrap.acl IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}'
      OR r_core.acl LIKE '%anon%' OR r_wrap.acl LIKE '%anon%' THEN
