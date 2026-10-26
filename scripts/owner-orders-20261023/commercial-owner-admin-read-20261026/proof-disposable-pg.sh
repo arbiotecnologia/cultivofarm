@@ -83,7 +83,7 @@ QU() { PGOPTIONS="-c test.uid=$1" psql -h "$DIR/socket" -p 55444 -U postgres -d 
 HAS_ROLE_PIN=$(Q "SELECT md5(p.prosrc) || '|' || coalesce(p.proacl::text, 'NULL') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname='has_role';")
 STUB_HR_MD5="${HAS_ROLE_PIN%%|*}"
 STUB_HR_ACL="${HAS_ROLE_PIN#*|}"
-STUB_TUPLES=$(Q "SELECT string_agg(format('         (%L, %s, %L, %L)', polname, polpermissive, qm, cm), E',\n' ORDER BY polname) FROM (SELECT pol.polname, pol.polpermissive, md5(coalesce(pg_get_expr(pol.polqual, pol.polrelid), '')) AS qm, md5(coalesce(pg_get_expr(pol.polwithcheck, pol.polrelid), '')) AS cm FROM pg_policy pol JOIN pg_class c ON c.oid=pol.polrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='partner_orders') p;")
+STUB_TUPLES=$(Q "SELECT string_agg(format('         (%L, %s, %L, %L)', polname, CASE WHEN polpermissive THEN 'true' ELSE 'false' END, qm, cm), E',\n' ORDER BY polname) FROM (SELECT pol.polname, pol.polpermissive, md5(coalesce(pg_get_expr(pol.polqual, pol.polrelid), '')) AS qm, md5(coalesce(pg_get_expr(pol.polwithcheck, pol.polrelid), '')) AS cm FROM pg_policy pol JOIN pg_class c ON c.oid=pol.polrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='partner_orders') p;")
 export STUB_HR_MD5 STUB_HR_ACL STUB_TUPLES
 PKG="$PKG" python3 - <<'PY'
 import os, pathlib, re
@@ -109,8 +109,8 @@ check() { # descricao esperado atual
 }
 ERR() { local out; out=$(PGOPTIONS="-c test.uid=$1" psql -h "$DIR/socket" -p 55444 -U postgres -d postgres -tAc "$2" 2>&1 || true); if printf '%s' "$out" | grep -q "$3"; then echo "$3"; else echo "sem-erro"; fi; }
 RUN_FILE() { # arquivo padrao_esperado (vazio = deve passar)
-  local out; out=$(psql -h "$DIR/socket" -p 55444 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$1" 2>&1)
-  if [ -z "$2" ]; then [ $? -eq 0 ] && echo "ok" || echo "falhou:$out";
+  local out st; out=$(psql -h "$DIR/socket" -p 55444 -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$1" 2>&1); st=$?
+  if [ -z "$2" ]; then [ "$st" -eq 0 ] && echo "ok" || echo "falhou:$out";
   else printf '%s' "$out" | grep -q "$2" && echo "$2" || echo "sem-$2"; fi
 }
 
