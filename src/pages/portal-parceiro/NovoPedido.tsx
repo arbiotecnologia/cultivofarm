@@ -56,6 +56,7 @@ import { round2 } from "@/lib/catalogo/formatUnidades";
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useCloseOrderAttempt } from "@/hooks/useCloseOrderAttempt";
+import { useOrderJournal } from '@/hooks/useOrderJournal';
 import { markOrderAttemptSending, orderAttemptFingerprint, prepareOrderAttempt, readOrderAttempt, settleOrderAttempt, subscribeOrderAttempts } from "@/lib/authz/pendingOrderAttempt";
 
 const nfmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
@@ -219,6 +220,12 @@ export default function NovoPedido() {
   const attemptSlot = !isSimulationMode ? createOrder.slotFor(partner?.id) : null;
   const attempt = useSyncExternalStore(subscribeOrderAttempts, () => readOrderAttempt(attemptSlot));
   const closeAttempt = useCloseOrderAttempt();
+  const durableAttempt=useOrderJournal(isSimulationMode?undefined:partner?.id);
+  useEffect(()=>{
+    // Terminal server receipt is shown on the same catalogue, including empty carts.
+    // Do not clear user edits or authorize a next generation.
+    if(durableAttempt.mode==='durable' && ['committed','closed'].includes(durableAttempt.journal?.state??'')) setConfirmOpen(false);
+  },[durableAttempt.mode,durableAttempt.journal?.state]);
   // Aviso do último resultado de verificação, preso ao slot+chave que o produziu.
   const [closeNote, setCloseNote] = useState<{ slot: string | null; key: string | null; text: string } | null>(null);
 
@@ -496,6 +503,10 @@ export default function NovoPedido() {
       toast.error("Contexto de acesso indisponível. Aguarde a confirmação e tente novamente.");
       return;
     }
+    if(durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' ||
+      !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) {
+      toast.error('Verifique o envio anterior antes de continuar.');return;
+    }
     const items = cartList.map(({ key, ...rest }) => rest);
     const input = {
       partner_id: partner.id,
@@ -510,7 +521,9 @@ export default function NovoPedido() {
     const fingerprint = orderAttemptFingerprint(input);
     // Mesmo payload => mesma chave (servidor deduplica). Payload alterado após
     // resultado incerto NÃO gera chave nova: exige confirmar o envio anterior.
-    const prepared = prepareOrderAttempt(attemptSlot, fingerprint, () =>
+    const prepared = durableAttempt.mode==='durable' && durableAttempt.journal
+      ? {ok:true as const,key:durableAttempt.journal.key}
+      : prepareOrderAttempt(attemptSlot, fingerprint, () =>
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -523,15 +536,17 @@ export default function NovoPedido() {
     const slot = attemptSlot;
     // Reserva síncrona antes de qualquer await: dois cliques no mesmo tick ou
     // remontagens contam envios em voo e nenhum desfecho apaga o outro.
-    markOrderAttemptSending(slot, prepared.key);
+    if(durableAttempt.mode==='legacy')markOrderAttemptSending(slot, prepared.key);
     createOrder.mutate(
-      { ...input, idempotency_key: prepared.key, attempt_slot: slot },
+      { ...input, idempotency_key: prepared.key, attempt_slot: slot,
+        journal_expected:durableAttempt.mode==='durable'?durableAttempt.journal??undefined:undefined,
+        current_payload:()=>fence() && orderAttemptFingerprint(liveInputRef.current)===fingerprint },
       {
         onSuccess: () => {
           // Callback por chamada também é cercado: resposta tardia de outro
           // ator/empresa/época não limpa carrinho nem navega.
           if (!fence()) return;
-          settleOrderAttempt(slot, prepared.key);
+          if(durableAttempt.mode==='legacy')settleOrderAttempt(slot, prepared.key);
           // Payload COMPLETO atual (itens, obs, data, plano, parcelas, vencimento):
           // qualquer edição após o envio é preservada — sem fechar/limpar/navegar.
           if (orderAttemptFingerprint(liveInputRef.current) !== fingerprint) return;
@@ -631,6 +646,26 @@ export default function NovoPedido() {
           Escolha o volume comercial desejado, informe a área (ha) se aplicável e confirme a quantidade.
         </p>
       </div>
+
+          {!isSimulationMode && durableAttempt.mode!=='legacy' && <Alert role="status" data-journal={durableAttempt.mode}>
+            <AlertDescription className="space-y-2">
+              {durableAttempt.journal?.state==='committed' ? <>
+                <span className="block">Pedido {durableAttempt.journal.numero} já registrado. Consulte-o antes de iniciar outro pedido.</span>
+                <Button size="sm" variant="outline" onClick={()=>navigate(afterCreatePath??'/portal-parceiro/pedidos')}>Ver meus pedidos</Button>
+                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>{
+                  const j=durableAttempt.journal;
+                  if(j?.state==='committed' && window.confirm(`Confirmo que consultei o pedido ${j.numero} e desejo iniciar um novo pedido.`)) void durableAttempt.recover(j);
+                }}>Confirmar pedido existente e iniciar novo</Button>
+              </> : durableAttempt.journal?.state==='closed' ? <>
+                <span className="block">Envio anterior encerrado sem pedido. Seu carrinho foi mantido.</span>
+                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover(durableAttempt.journal??undefined)}>Iniciar nova tentativa</Button>
+              </> : <>
+                <span className="block">{durableAttempt.mode==='checking'?'Verificando continuidade do pedido…':durableAttempt.mode==='blocked'?'Não foi possível confirmar o envio anterior. Nada foi liberado.':'Tentativa identificada pelo servidor. O mesmo envio não cria outro pedido.'}</span>
+                <Button size="sm" variant="outline" disabled={durableAttempt.pending} onClick={()=>void durableAttempt.recover()}>Verificar envio anterior</Button>
+                {durableAttempt.mode==='durable' && <Button size="sm" variant="outline" disabled={closeAttempt.pending} onClick={()=>void closeAttempt.close(partner?.id)}>Verificar e encerrar envio anterior</Button>}
+              </>}
+            </AlertDescription>
+          </Alert>}
 
       <div className="grid lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
@@ -1074,7 +1109,7 @@ export default function NovoPedido() {
               <p className="text-xs text-muted-foreground">Condição comercial B2B aplicada conforme plano selecionado.</p>
             )}
           </div>
-          {!isSimulationMode && attempt && (attempt.order ? (
+          {!isSimulationMode && durableAttempt.mode==='legacy' && attempt && (attempt.order ? (
             <Alert role="status" data-attempt="committed">
               <AlertDescription className="space-y-2">
                 <span className="block">Pedido{attempt.order.numero ? ` ${attempt.order.numero}` : ""} já foi registrado por um envio anterior. Reenviar o mesmo carrinho não cria outro pedido.</span>
@@ -1146,7 +1181,8 @@ export default function NovoPedido() {
             ) : (
               <Button
                 onClick={() => handleSubmit()}
-                disabled={createOrder.isPending || !!attempt?.inflight || !selectedPlanId || simulateSelectedPlan.isPending || !simulation}
+                disabled={createOrder.isPending || !!attempt?.inflight || durableAttempt.pending ||
+                  (durableAttempt.mode!=='legacy' && (durableAttempt.mode!=='durable' || !durableAttempt.journal || !['reserved','uncertain'].includes(durableAttempt.journal.state))) || !selectedPlanId || simulateSelectedPlan.isPending || !simulation}
               >
                 {createOrder.isPending
                   ? "Enviando..."

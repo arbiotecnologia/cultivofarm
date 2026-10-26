@@ -4,6 +4,7 @@ import { useAuth } from "./useAuth";
 import { useStorageAccessScope } from "./useStorageAccessScope";
 import { ATTEMPT_CLOSURE_RPC_ENABLED, parseAttemptClosure } from "@/lib/authz/attemptClosureContract";
 import { beginOrderAttemptClose, finishOrderAttemptClose, orderAttemptSlot, readOrderAttempt } from "@/lib/authz/pendingOrderAttempt";
+import { closeDurableOrder, journalCapability } from '@/lib/authz/orderJournal';
 
 export type CloseAttemptResult =
   | { kind: "closed" }
@@ -26,10 +27,29 @@ export function useCloseOrderAttempt() {
   const actor = useRef({ userId: user?.id, organizationId: profile?.organization_id, roles });
   actor.current = { userId: user?.id, organizationId: profile?.organization_id, roles };
   const [pending, setPending] = useState(false);
+  const closing=useRef(false);
 
   const close = async (partnerId: string | null | undefined): Promise<CloseAttemptResult> => {
+    if(closing.current)return {kind:'not_eligible'};
+    closing.current=true;
+    try {return await performClose(partnerId);} finally {closing.current=false;}
+  };
+  const performClose = async (partnerId: string | null | undefined): Promise<CloseAttemptResult> => {
     if (!ATTEMPT_CLOSURE_RPC_ENABLED || !scope.ready || !partnerId) return { kind: "not_eligible" };
     const slot = orderAttemptSlot(actor.current, partnerId);
+    const durableFence=scope.capture();
+    if (!slot) return {kind:'not_eligible'};
+    try {
+      if (await journalCapability(slot,partnerId,durableFence)) {
+        setPending(true);
+        const result=await closeDurableOrder(slot,partnerId,durableFence,
+          key=>(supabase.rpc as any)('close_partner_order_attempt_v1',{p_partner_id:partnerId,p_idempotency_key:key}));
+        if (!durableFence()) return {kind:'context_changed'};
+        if (result.state==='committed' && result.order_id && result.numero) return {kind:'committed',orderId:result.order_id,numero:result.numero};
+        return {kind:result.state==='closed'?'closed':'unknown'};
+      }
+    } catch { return {kind:durableFence()?'unknown':'context_changed'}; }
+    finally {setPending(false);}
     const attempt = slot ? readOrderAttempt(slot) : null;
     if (!slot || !attempt || !beginOrderAttemptClose(slot, attempt.key)) return { kind: "not_eligible" };
     const key = attempt.key;

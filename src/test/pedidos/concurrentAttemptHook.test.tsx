@@ -8,7 +8,9 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "A" }, profile
   roles: ["parceiro_b2b"], loading: false, authzReady: true, authzEpoch: 0, checkAuthzAccess: () => true }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
-  rpc: () => new Promise(r => state.pending.push(r)),
+  rpc: (name:string) => name==='partner_order_journal_capability_v1'
+    ? Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}})
+    : new Promise(r => state.pending.push(r)),
   from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }) }) }),
 } }));
 import { useCreatePartnerOrder } from "@/hooks/useCreatePartnerOrder";

@@ -26,6 +26,7 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.f
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     rpc: (name: string) => {
+      if(name==='partner_order_journal_capability_v1') return Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}});
       if (name === "get_my_commercial_orders_projection") {
         state.reads += 1;
         return Promise.resolve({ data: { partner_id: PARTNER, orders: state.serverOrders }, error: null });

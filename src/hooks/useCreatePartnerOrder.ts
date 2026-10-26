@@ -5,7 +5,8 @@ import { useStorageAccessScope } from "./useStorageAccessScope";
 import type { CatalogItemTipo } from "./usePartnerCatalog";
 import { orderAccountingState } from "@/lib/orderAccountingState";
 import { useAuth } from "./useAuth";
-import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection } from "@/lib/authz/pendingOrderAttempt";
+import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection, orderAttemptFingerprint } from "@/lib/authz/pendingOrderAttempt";
+import { prepareDurableOrder, recoverOrderJournal, type Journal } from '@/lib/authz/orderJournal';
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
 
@@ -51,6 +52,9 @@ export interface CreateOrderInput {
   idempotency_key: string;
   /** Slot volátil da tentativa (ator+empresa+papéis+parceiro), obtido de slotFor. */
   attempt_slot?: string | null;
+  /** Volatile per-click expectation, never persisted or sent as authority. */
+  journal_expected?: Journal;
+  current_payload?: () => boolean;
 }
 
 
@@ -105,6 +109,13 @@ export function useCreatePartnerOrder() {
       if (!input.idempotency_key) throw new Error("idempotency_key_required");
       // O slot precisa corresponder ao ator/empresa/papéis/parceiro atuais.
       if (slot && slot !== slotFor(input.partner_id)) throw notSent(new Error("Contexto alterado."));
+      const journalSlot = slotFor(input.partner_id);
+      if (!journalSlot) throw notSent(new Error('Contexto indisponível.'));
+      const dispatchCurrent=()=>current() && (input.current_payload?.() ?? true);
+      const durable = await prepareDurableOrder(journalSlot,input.partner_id,dispatchCurrent,orderAttemptFingerprint(input),input.journal_expected);
+      if (!dispatchCurrent()) throw new Error('Contexto ou carrinho alterado.');
+      // Capability confirmed: all writers use server key; never fall back after storage/RPC error.
+      const dispatchKey = durable?.key ?? input.idempotency_key;
 
       const payload = input.items.map((i) => ({
         item_id: i.item_id,
@@ -127,7 +138,7 @@ export function useCreatePartnerOrder() {
           p_first_due_date: input.first_due_date ?? null,
           p_installment_count: input.installment_count ?? null,
           p_expected_cart_hash: input.expected_cart_hash,
-          p_idempotency_key: input.idempotency_key,
+          p_idempotency_key: dispatchKey,
         },
       ) as typeof response;
       } catch (e) {
@@ -136,7 +147,7 @@ export function useCreatePartnerOrder() {
       }
       const { data, error } = response;
       const created = data as { id: string; numero: string; total: number } | null;
-      if (slot) {
+      if (slot && !durable) {
         if (!error && created?.id) markOrderAttemptCommitted(slot, input.idempotency_key, { numero: created.numero ?? null });
         else if (isConclusiveRejection(error))
           markOrderAttemptRejected(slot, input.idempotency_key);
@@ -144,6 +155,12 @@ export function useCreatePartnerOrder() {
       }
       if (!current()) throw new Error("Contexto alterado.");
       if (error) throw error;
+      if (durable) {
+        // A lost acknowledgment remains blocked; never retry create automatically.
+        const acknowledged=await recoverOrderJournal(journalSlot,input.partner_id,current);
+        if(acknowledged.state!=='committed' || acknowledged.order_id!==created?.id || acknowledged.key!==dispatchKey || acknowledged.generation!==durable.generation) throw new Error('journal_commit_ack_unconfirmed');
+        if (!current()) throw new Error('Contexto alterado.');
+      }
       return created as { id: string; numero: string; total: number };
     },
 

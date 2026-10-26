@@ -18,7 +18,9 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
 vi.mock("sonner", () => ({ toast: notices }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
-    rpc: vi.fn(() => new Promise((resolve) => state.pending.push(resolve))),
+    rpc: vi.fn((name:string) => name==='partner_order_journal_capability_v1'
+      ? Promise.resolve({data:null,error:{code:'PGRST202',message:'Could not find public.partner_order_journal_capability_v1'}})
+      : new Promise((resolve) => state.pending.push(resolve))),
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: { message: "stub" } }) }) }) }),
   },
 }));
