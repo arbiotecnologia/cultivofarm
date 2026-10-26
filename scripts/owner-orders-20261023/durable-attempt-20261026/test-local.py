@@ -8,6 +8,8 @@ setup=src[:src.index("PREV_REV = '457951ca'")]
 env={'__file__':str(C/'test-local.py'),'__name__':'harness'}
 exec(compile(setup,str(C/'test-local.py'),'exec'),env)
 pg,ok,val,create,jwt=[env[k] for k in ('pg','ok','val','create','jwt')]
+base_val=val
+val=lambda u,s:base_val(u,s.rstrip(';')+';')
 G,GB,GT,T,P,Q,hA=[env[k] for k in ('G','GB','GT','T','P','Q','hA')]
 pg.sql(env['cand']);pg.sql(env['post'])
 base=len(env['G0']['checks'])
