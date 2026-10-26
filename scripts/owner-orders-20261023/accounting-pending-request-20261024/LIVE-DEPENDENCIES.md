@@ -24,3 +24,12 @@ COMMIT;
 ```
 Se alguma assinatura não existir, a consulta falha no `::regprocedure`; nesse caso remova-a e informe qual faltou.
 Motivo: o harness usa esses corpos a partir de capturas anteriores (23–24/10); `b2b_commercial_context` e `entitlements_for_user` decidem o writer revisado, e os destinatários decidem o isolamento de notificações.
+
+## Revisão 07739e5c — wrapper INVOKER/core privado
+O wrapper `public.c2_promote_accounting_pending_order_v1` (INVOKER) chama `platform_private.c2_promote_accounting_pending_order_core`. Confirmar em READ ONLY antes da instalação:
+```sql
+BEGIN READ ONLY;
+SELECT has_schema_privilege('authenticated','platform_private','USAGE') AS authenticated_usage_platform_private;
+COMMIT;
+```
+Se `false`, o pacote NÃO deve conceder USAGE por conta própria; trazer o resultado para revisão (a promoção ficaria indisponível, não insegura).

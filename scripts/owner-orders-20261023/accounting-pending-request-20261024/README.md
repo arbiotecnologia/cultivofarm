@@ -1,33 +1,40 @@
-# Pedido B2B com pendência contábil honesta — pacote INATIVO (24/10/2026)
+# Pedido B2B com pendência contábil honesta — pacote INATIVO (revisão 07739e5c, 26/10/2026)
 
-**Objetivo:** liberar somente o fluxo canônico `simulate → create_partner_order_secure` do gestor B2B externo enquanto a contabilidade do fornecedor (A) não está validada, sem VALIDATED falso nem snapshot fiscal inventado. Aprovação, crédito, selagem econômica, cobrança, produção, NF e entrega continuam negadas no servidor até a validação real.
+Somente revisão. Nunca aplicar em produção sem revisão independente e liberação pelo auditor. Nenhum SQL hospedado foi executado e nada foi publicado.
 
-## Dependência de b5 (resposta direta)
-Sim. A compra externa **depende** do b5 (`final-integrated-manual-20261024`, não instalado): sem ele o trigger LIVE de origem interna nega todo insert externo (`B2B_INTERNAL_ACTOR_DENIED`) e o writer LIVE é `SELECT false`. Além disso, o b5 tinha um gate contábil de **instalação** que impede instalá-lo com A DRAFT. Este pacote compõe o b5 **byte-exato** (sem esse gate) + overlay na mesma transação; o gate passa a ser por pedido.
+## O que o pacote faz
+- Compõe o b5 (`final-integrated-manual-20261024`) byte-exato, sem o gate contábil de instalação, mais um overlay, numa única transação (PRE → DDL → POST).
+- Base: LIVE após 30dc8243 (`c2_order_actor_scope` `54c4327d…`); entrada comercial/catálogo 30dc8243 são fixados por hash e não são alterados.
+- Emissor não validado: o create externo grava `C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1` (`accounting_validated=false`, `issuer_state` real, sem CNPJ/razão/atestado). Aprovação, crédito, selagem, cobrança, produção, NF e entrega ficam negadas (`C2_ACCOUNTING_PENDING`) até a promoção.
+- Promoção (única transição pendente → V1): `public.c2_promote_accounting_pending_order_v1` agora é wrapper SECURITY INVOKER sobre o core privado `platform_private.c2_promote_accounting_pending_order_core` (SECURITY DEFINER). O core resolve ator comercial interno e organização ANTES de qualquer lock, trava apenas linha da própria organização (`WHERE id=… AND snapshot.organization_id=org FOR UPDATE`), revalida autoridade sob lock, exige CAS `updated_at`, status permitido, emissor VALIDATED atual, ticket txid e grava auditoria. Pedido inexistente e alheio recebem a mesma negação.
+- Writer `c2_owner_order_create_allowed`: corpo v4 revisado substitui o LIVE `SELECT false`.
 
-## Mudanças (diff em `overlay.diff`)
-1. `b2b_internal_order_snapshot_guard` (b5 → `9cad2aaa…`): no create externo, emissor VALIDATED → snapshot V1 inalterado; caso contrário (0 configs ou não validada) → `C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1` com `issuer_state` real (`NOT_CONFIGURED`/`DRAFT`/…), `accounting_validated=false` e **sem** CNPJ/razão/issuer. >1 config ativa segue negada. Snapshot imutável salvo promoção com ticket; UPDATE também valida o NOVO snapshot.
-2. `c2_external_origin_assert` (`999e5e9f…`): aceita exatamente os dois contratos via `c2_external_origin_contract_valid` (pendente proíbe chaves de emissor).
-3. `approve_partner_order` (`3b0ba480…`) e `generate_b2b_receivable_secure` (`cbe44993…`): `42501 C2_ACCOUNTING_PENDING` antes de qualquer escrita.
-4. Trigger novo `zz_c2_accounting_pending` (`e9e00d85…`): enquanto pendente só `em_analise_comercial`/`aguardando_cotacao`/`reprovado`/`cancelado`; nega pronto p/ produção, recebível, selagem e decisão de crédito.
-5. `public.c2_promote_accounting_pending_order_v1(order, expected_updated_at)` (`22bef080…`): única transição pendente→V1; ator comercial interno da mesma org + `c2p1_settings_allowed`, CAS, emissor VALIDATED atual, ticket txid, audit em `partner_order_audit_logs`, ator original preservado; mesma negação para pedido inexistente/alheio.
-6. Writer `c2_owner_order_create_allowed`: corpo v4 revisado (`5f0a08d1…`) no lugar do LIVE `SELECT false` (`a0417d…`).
-Sem tabela, portal, rota ou writer novos; NovoPedido/RPCs canônicos inalterados.
+## Hashes do candidato (MD5 `pg_get_functiondef`)
+- `platform_private.c2_external_origin_assert(jsonb,uuid,uuid)` → `999e5e9fd9887595e252523fb2142726`
+- `platform_private.b2b_internal_order_snapshot_guard()` → `9cad2aaa995277b913f8b40816fea504`
+- `public.approve_partner_order(uuid,text,date)` → `3b0ba480d035f5cc9b3ad02567b0f08f`
+- `public.generate_b2b_receivable_secure(uuid)` → `c49cc7ccedbcb28cba9b816b7e47c521`
+- `platform_private.c2_owner_order_create_allowed(uuid,uuid)` → `5f0a08d1d4f8d8c5a7ae58e24c71071e`
+- `platform_private.c2_external_origin_contract_valid(jsonb)` → `369fd07cd9c659b87941b9a3bf972868`
+- `platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)` → `05938c5e9abf096d560e57aad10af69f`
+- `platform_private.c2_accounting_pending_guard()` → `49ba72a6d607f729dc40179ac9d5d30e`
+- `platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz)` → `68aa322da9dd403beb776cfb333b1e27`
+- `public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)` → `3df7e1a806fb080283ad1ebad20d212c`
+
+Pins b5/LIVE, restauração e rollback: `expected.json`. Manifesto: `SHA256SUMS`.
 
 ## Arquivos
-`preflight.sql` (b5 READ ONLY verbatim, exige writer LIVE false), `candidate.sql.review` (uma transação: b5 PRE→DDL→POST, overlay, POST próprio), `postflight.sql` (b5 POST com 5 hashes substituídos e +1 trigger, mais POST próprio), `rollback.sql.review` (restaura os 4 corpos b5 byte-exatos e writer false, remove overlay; pedidos ficam como histórico e os pendentes ficam congelados), `expected.json`, `assemble.py` (falha fechada se âncora ≠ 1), `overlay.diff`, `LIVE-DEPENDENCIES.md`.
+`preflight.sql` (READ ONLY), `candidate.sql.review`, `postflight.sql` (READ ONLY; inclui ACL do wrapper/core e INVOKER/DEFINER), `rollback.sql.review` (contenção parcial: volta aos corpos b5 + writer false, mantém histórico; pedidos pendentes ficam congelados — não é retorno à baseline), `restore-live.sql.review` (retorno completo ao LIVE pré-implantação; aborta se houver qualquer linha com snapshot externo), `assemble.py`, `src/`, `test-local.py`, `results-local.txt`, `LIVE-DEPENDENCIES.md`.
 
-## Testes (`python3 test-local.py`) — 41 PASS, PostgreSQL descartável, Auth sintética
-A DRAFT: gestor A cria pedido pendente honesto; cliente derivado no servidor; 0 título/parcela/vínculo/NF; replay idempotente e conflito; notificações só para usuários de A; aprovação/cobrança/saltos diretos (aprovado/produção/entregue/faturado) e autopromoção negados sem efeitos. Adversariais: A→parceiro B, B→parceiro A, técnico, plano só de B, item não B2B, revogação. B (fixture MG sintética VALIDATED, `HOMOLOGATION`): V1 com emissor; aprovação gera 1 vínculo + 3 parcelas, 0 NF; admin A não aprova B. Promoção: B e comprador negados, DRAFT negado, CAS, sucesso após fixture validada com auditoria, segunda promoção negada, sem efeitos financeiros. Atomicidade candidate/rollback com falha injetada; rollback restaura hashes e congela pendentes; create fechado de novo.
+## Testes locais — 70/70 PASS (`results-local.txt`)
+PostgreSQL descartável e Auth sintética; NÃO é JWT/RLS hospedado nem validação contábil. Inclui: PRE/POST, falha POST atômica, 30dc8243 preservado, A DRAFT pendente sem títulos/parcelas/vínculos/NF, idempotência/conflito/concorrência, notificações só para A, negações A/B/técnico/plano/item/revogação, B com fixture MG sintética VALIDATED (HOMOLOGATION), promoção (B, comprador e DRAFT negados; CAS; sucesso com fixture; auditoria; segunda negada), **duas conexões: A segura o lock do próprio pedido, a promoção de B é negada em ~0,03 s sem esperar e a de A espera (lock_timeout)**, wrapper INVOKER/core DEFINER, rollback e restore.
+
+## Frontend (fora do pacote SQL, no código do app)
+- `usePartnerOrdersAdmin` usa `useScopedPortalQuery` (chave com escopo de ator e de requisição; respostas tardias descartadas); realtime só com escopo pronto, canal único por escopo e invalidação apenas das chaves daquele ator.
+- `PedidosB2B`/`SolicitacoesB2B` fecham detalhe e diálogos ao trocar ator/tenant/papéis/época ou revogar.
+- `useCreatePartnerOrder`: após criar, estado `pending`/`validated`/`unknown`; erro de leitura ou contrato desconhecido vira aviso explícito (sem sucesso validado e sem reenvio).
+- Botão "Liberar após regularização contábil" no detalhe do pedido pendente, com confirmação contextual; chama somente o wrapper com o `updated_at` atual. Não valida cadastro fiscal: o servidor recusa enquanto não estiver validado. Sem o pacote instalado, a chamada mostra "ainda não disponível no servidor".
+- Testes: `src/test/pedidos/partnerOrdersAdminScope.test.tsx` (transporte sintético).
 
 ## Limites
-Não é JWT/RLS hospedado nem contabilidade. Validação de A no teste é **fixture**; A real segue DRAFT. Classificação fiscal MG (NCM/CFOP/CST/benefício/regime/destinação) e NF-e/SEFAZ não são tocadas nem homologadas. Frontend ainda não mostra o estado "aguardando validação contábil" nem a promoção (próxima fase após revisão). Ver `LIVE-DEPENDENCIES.md`.
-
-## Revisão 91226a1f — rebase sobre a base LIVE atual (24/10 15:40)
-- Causa do `origin_dependency_drift:platform_private.c2_order_actor_scope`: b5 fixava o corpo anterior a 30dc8243 (`6802c693…`). Agora todos os pins (PRE, candidate, POST, rollback) usam o LIVE `54c4327d…` e há pins exatos de 30dc8243 (target_reason `07d7c900…`, capability `e2619c71…`, catálogo `b5684d35…`, ACLs/privilégios). Nenhum desses objetos é alterado.
-- Prova de comportamento (não só hash): o harness instala 30dc8243 como revisado, confere as dependências capturadas 15:40 (todas coincidem) e, após o candidate, o ramo interno continua: capability A `issuer_not_validated`, A→parceiro B `C2_INTERNAL_TARGET_DENIED:target_outside_portfolio`, criação interna A DRAFT `B2B_INTERNAL_ISSUER_NOT_VALIDATED` (atores internos não usam o caminho pendente).
-- Assinatura ausente confirmada: `public.fn_resolve_b2b_cart(uuid,jsonb,date)` não existe no LIVE (nem no harness).
-- Trava pendente agora em INSERT e UPDATE: criação só em `em_analise_comercial`, `aguardando_cotacao` ou `aguardando_aprovacao_credito`, sem aprovação/crédito/produção/título. Em `aguardando_aprovacao_credito` o pedido só permanece ou sai para cancelado/reprovado; aprovação → `C2_ACCOUNTING_PENDING`; decisão de crédito e saltos de status não têm efeito (a trava LIVE de crédito mantém o status; só `updated_at` pode mudar). Promoção explícita aceita também esse status, mantendo-o.
-- Sem oráculo de existência: em `generate_b2b_receivable_secure` as negações `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED` e `C2_ACCOUNTING_PENDING` passaram para depois da autorização de escopo/papel; aprovar/cobrar pedido pendente de A como admin B dá o mesmo erro que pedido inexistente.
-- Rollback: `rollback.sql.review` é CONTENÇÃO PARCIAL (volta aos corpos b5 + writer false, mantém coluna/histórico; pedidos pendentes ficam congelados). NÃO é retorno à baseline. `restore-live.sql.review` é a restauração completa ao LIVE pré-implantação (corpos LIVE exatos, incluindo a correção manual AR `fba70619…`, remove gatilhos/funções e a coluna), mas só roda se nenhuma linha tiver `c2_external_origin_snapshot`; havendo histórico aborta antes de qualquer DDL (`C2AP_FULL_RESTORE_BLOCKED_HISTORY`). Limitação explícita: com pedidos pendentes não há retorno completo sem destruir histórico.
-- Local (PostgreSQL descartável, Auth sintética, NÃO JWT/RLS hospedado): 67/67 em `results-local.txt` — PRE/POST, falha POST atômica, restore completo + reinstalação, restore bloqueado por histórico, crédito insuficiente, sem oráculo, concorrência com a mesma chave (1 pedido), revogação (inclusive replay), A/B.
+A real continua DRAFT; nenhuma atestação foi simulada em produção. Classificação fiscal MG e NF-e/SEFAZ não tocadas. Em produção, falta comprovar `USAGE` de `authenticated` no schema `platform_private` (ver `LIVE-DEPENDENCIES.md`) e testar com JWT/RLS reais A/B.
