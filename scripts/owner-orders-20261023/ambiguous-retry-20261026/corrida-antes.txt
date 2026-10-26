@@ -1,2 +1,9 @@
- ✓ src/test/pedidos/concurrentAttempt.audit.test.ts (4 tests) 7ms
-      Tests  4 passed (4)
+   × rejeição do 1º com 2º em voo não apaga; sucesso do 2º é registrado; retry reutiliza a chave 10ms
+     → expected undefined to be true // Object.is equality
+   × ordem inversa: sucesso do 1º e rejeição tardia do 2º preservam a confirmação 3ms
+     → expected undefined to be 'PB-1' // Object.is equality
+   × incerto + rejeição posterior continua incerto; payload alterado bloqueado 3ms
+     → expected undefined to be true // Object.is equality
+   ✓ rejeição única sem outros envios descarta (nova chave permitida) 0ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  3 failed | 1 passed (4)
