@@ -1,94 +1,111 @@
-# Continuidade de tentativa — INATIVO / NO-GO
+# Continuidade durável — candidato corrigido, INATIVO
 
-Base de trabalho: `001b3cadf7830e90602eae87ce1042504f06d63d`.
-O proprietário informou publicação 001b3cad, implantação 5cd e homologação real A/B:
-close→closed, PB001033 único, replay→committed e B 403/42501 target_outside_portfolio.
-São relatos externos; nenhuma operação produtiva foi repetida pelo agente.
+Revisão de partida: `065f8633e6ec84ae2ca1de61bb154612f95055e8`.
+Nenhuma aplicação SQL hosted, publicação, alteração de pedidos ou sessões produtivas.
+Contabilidade A DRAFT e envios externos OFF preservados. As 36 falhas antigas seguem abertas.
 
-## Decisão de segurança
+## Correções efetivamente executadas
 
-Não integrar journal frontend-only ao pedido publicado. A perda **total** do armazenamento
-é indistinguível do primeiro uso. Um cliente antigo também ignora qualquer journal novo.
-IndexedDB, Web Locks, BroadcastChannel e `navigator.storage.persist()` não resolvem isso.
-O backend instalado fecha uma **chave conhecida**, mas não descobre uma chave perdida nem
-serializa duas chaves distintas do mesmo ator/empresa/parceiro.
+- Captura **READ ONLY** no ref canônico `swzpzcwiasxmjutrmvkm`: sete funções com corpo,
+  definição/owner/ACL/config/security, estrutura completa da tabela de idempotência
+  (RLS, policies, índices, triggers), trigger updated_at e cinco chaves auditadas.
+  Registro: `live-capture-1912.json`; identidade da última tentativa confirmada PB001033.
+- PRE com pins frescos e todos os pares chave/pedido. Não usa `active_rpc_count=0`.
+- Candidato numa transação: `lock_timeout=5s`, `statement_timeout=60s`,
+  `ACCESS EXCLUSIVE` na tabela de idempotência e `SHARE` nos pedidos **antes** de PRE/DDL/import.
+  Sem kill/drain presumido/reload. Contenção usa a mesma fronteira; se bloquear, aborta inteiro.
+- Importação imutável da **última** tentativa por ator/empresa histórica/parceiro.
+  Empresa vem do snapshot de origem, não do perfil atual. Os cinco pedidos permanecem
+  intactos; somente a última chave vira geração 1, vinculada ao pedido existente.
+  Não presume ACK: recovery retorna `committed`, número e UUID; novo pedido exige avanço
+  explicitamente confirmado com chave/geração/UUID exatos. Demais chaves antigas não são reservas.
+- Barreira de escrita **nunca toma lock de escopo**. Chave não registrada nega antes
+  de qualquer advisory adicional; chave registrada usa só `b2b_idem`, reentrante para corpo antigo.
+  Novo create/recover/close ordenam escopo→idem; não existe aresta antiga idem→escopo no trigger.
+- Guard de create foi movido para depois das validações canônicas, imediatamente antes
+  do lock idem. Testes com corpo antigo preservam os primeiros erros de entrada inválida.
+  Create e close revalidam empresa após espera; recovery revalida papel/tenant antes de revelar.
+- Não há mais hard gate impossível: foi substituído por **asserts de dados/metadados
+  dentro da fronteira atômica**, importação e POST. Não remover pins se LIVE mudar: recapturar/revisar.
+- Rollback é contenção deny-only, não restauração do writer memory-only. Mantém journals,
+  tombstones, pedidos e replay já confirmado, revoga as duas entradas de recovery e nega
+  escrita de corpo antigo já autorizado. Falha/timeout da contenção não autoriza downgrade.
 
-Esta etapa entrega um **contrato servidor candidato**, não recuperação funcional publicada.
-Runtime, monitor, rotas, dependências, cliente Supabase e pacote 5cd ficaram intactos.
+## Contrato e ACK
 
-## Contrato candidato C2_ORDER_JOURNAL_V1
+`recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)` é wrapper INVOKER
+sobre core privado DEFINER, com autorização canônica e `search_path` fixo.
+Storage não autoriza e não gera chaves; primeira reserva também é servidor-owned.
+Se não houver journal, mas houver histórico do ator/parceiro em outra empresa, falha
+`C2DJ_LEGACY_RECONCILIATION_REQUIRED`, não inventa primeira chave após troca de tenant.
 
-- `recover_partner_order_attempt_v1`: wrapper INVOKER/core privado DEFINER, autoridade
-  canônica antes/depois da espera. Slot derivado de `auth.uid()` + empresa atual + parceiro.
-- Histórico privado imutável por geração: somente ator/empresa/parceiro, chave opaca,
-  predecessor e data técnica. Nenhum payload, observação, preço, cart_hash ou token.
-- Preparar sem chave local retorna a geração existente; só o servidor gera chave inicial.
-  Crash antes de fetch permanece `uncertain`; crash após commit recupera `committed`.
-- Ordem normal: lock de continuidade do escopo → lock `b2b_idem` → locks canônicos existentes.
-  Create e close usam a mesma ordem. Escopo não inclui papéis/época/TTL.
-- `p_advance=true` deve vir somente de clique explícito com chave+geração esperadas.
-  Usa o close atômico existente. `closed` permite próxima geração; `committed` devolve
-  pedido e só avança com acknowledgment explícito do UUID confirmado. CAS antigo falha.
-- Erro/timeout/unknown nunca libera. A implementação candidata de recuperação propaga
-  timeout como erro inconclusivo; frontend futuro deve mantê-lo bloqueado.
-- Barreira na escrita de idempotência nega chave arbitrária/versão antiga e reverte
-  toda criação. A contenção troca essa barreira por negação de novas escritas e revoga
-  RPCs novas; preserva replay de pedido já existente e todos os históricos/tombstones.
+Recovery normal sempre reutiliza geração; ausência do pedido continua `uncertain`.
+Só avanço explicitamente solicitado usa close atômico. `closed` cria nova geração;
+`committed` só avança com `p_ack_order` igual ao UUID confirmado. ACK ausente/UUID de outro
+pedido não avança; replay do avanço antigo falha `40001/C2DJ_CAS_CONFLICT`.
+ACK não prova que um humano leu a tela: cliente malicioso autorizado pode confirmar o UUID
+que recebeu. É uma intenção explícita autorizada, nunca uma atribuição de autorização à chave.
+Não usar o UUID como secret/token nem prometer uma garantia de interação humana server-side.
 
-## Arquivos e comandos executados
+## Provas reais locais e comandos
 
 1. `python3 scripts/owner-orders-20261023/durable-attempt-20261026/assemble.py`
-   Gera PRE, candidato, POST, contenção e hashes; não acessa banco.
+   Geração offline, sete funções, corpos/pins/POST/containment em `expected.json`.
 2. `python3 scripts/owner-orders-20261023/durable-attempt-20261026/test-local.py`
-   **20 PASS** do pacote, além do setup capturado; PostgreSQL descartável/Auth sintética.
-   Saída integral em `results-postgres.txt`. Reproduz duas chaves/duas criações antes;
-   depois recuperação da mesma geração, fechamento, commit perdido, CAS, A/B/técnico,
-   revogação, concorrência por processos independentes, imutabilidade e contenção.
+   **44 PASS** do pacote; `results-postgres.txt` contém setup e resultados integrais.
+   PostgreSQL descartável, Auth sintética, schema reduzido e cadeia canônica capturada.
+   Substituições **apenas em memória na cópia de teste**, anunciadas na saída:
+   estrutura POI reduzida, updated_at reduzido, dois pedidos fictícios e zero closures
+   em lugar dos IDs/contagens produtivos. Sete corpos/definition hashes não substituídos.
+   - Antes: duas chaves independentes criam dois pedidos; inversão real gera **40P01**.
+   - Depois: mesma janela forçada, corpo antigo segura idem/recover segura escopo,
+     ambos terminam sem deadlock. Corpo LIVE antigo iniciado antes do replace e pausado
+     antes do lock chega após instalação: trigger nega **42501/C2DJ_REGISTERED_ATTEMPT_REQUIRED**.
+   - POST fault reverte importação/DDL/corpos; timeout da fronteira **55P03** em ~5s,
+     sessão holder permanece viva e é liberada por COMMIT, nunca kill.
+   - Import committed sem ACK, ACK forjado, replay CAS, crash antes/despois commit,
+     duas conexões prepare/create, técnico/B, revogação e tenant durante espera,
+     timeout inconclusivo, imutabilidade e contenção de chamada antiga em voo.
 3. `python3 scripts/owner-orders-20261023/durable-attempt-20261026/test-browser.py`
-   **12 PASS**, Chromium/IndexedDB reais e transporte controlado, saída `results-browser.txt`.
-   Duas páginas mesma origem, fechar/reabrir, geração antiga, perda/corrupção/indisponibilidade,
-   troca A/B e contexto revogado. Não testa UI integrada nem JWT hosted.
+   **15 PASS**, `results-browser.txt`: Chromium/IndexedDB reais, transporte controlado.
+   Duas páginas mesma origem, reabrir aba, generation CAS, storage indisponível/corrupto,
+   outro contexto, feature OFF sem RPC, schema committed incompleto e resultado tardio
+   após revogação sem apagar carrinho editado.
 4. `bun run test -- src/test/pedidos/attemptClosureContract.test.ts src/test/pedidos/concurrentAttemptHook.test.tsx src/test/pedidos/novoPedidoAttemptClosure.test.tsx`
-   **31/31 PASS**, resultado `results-vitest.txt`: compatibilidade do runtime publicado,
-   duplo clique, SQLSTATE conclusivo/unknown e fechamento com fences. Não são testes
-   de integração do journal candidato na tela, pois essa integração foi deliberadamente evitada.
+   **31 PASS** do fluxo canônico atual, `results-vitest.txt`.
 
-`journal-prototype.mjs` é somente protótipo inativo de testes. Guarda chave, versão e estado
-com índice SHA-256 do escopo, sem identidades em claro. Não guarda o digest fraco cyrb53 do
-payload: não é hash criptográfico nem impede adivinhação de valores de baixa entropia.
-Transações locais só adotam reserva emitida pelo contrato candidato; não inventam chaves.
+As pausas/hooks PostgreSQL e a cópia `test_old_create` só existem no banco descartável.
+Não houve dados fictícios em produção. Testes SQL sintéticos e transporte de browser
+controlado **não são JWT/RLS hosted**, nem homologação A/B produtiva.
 
-## Gates bloqueantes antes de uma implantação
+## Interface e limites de entrega
 
-1. **Captura LIVE fresca não realizada nesta etapa.** Pins vêm do pacote revisado 5cd;
-   PRE verifica corpos e metadados de fechamento, mas não certifica todos os triggers,
-   ACL/RLS/índices/dependências comerciais atuais. Auditor deve capturar ref exato
-   `swzpzcwiasxmjutrmvkm`, catálogo completo e `created_by` antes de substituir gate.
-2. **Reconciliação de tentativas legadas desconhecidas.** Não há autoridade para dizer
-   quais chaves 001b ainda estão em trânsito. Candidate tem hard gate incondicional
-   `42501/C2DJ_ACTIVATION_BLOCKED:legacy_keys_and_live_capture_pending` **antes do DDL**.
-   Não é contornável por GUC/claim; não remover sem novo pacote revisado.
-   Migração memory→journal e recuperação de tentativas 001b permanecem não implementadas.
-3. **Rollout/locks in-flight.** Corpo antigo já segurando `b2b_idem` pode encontrar a nova
-   barreira que tenta lock de escopo; recuperação nova pode segurar escopo e esperar idem.
-   Inversão transicional exige quiescência comprovada ou composição/barreira alternativa
-   reproduzida em PostgreSQL. Não alegar que CREATE OR REPLACE drena chamadas.
-   Rollout concorrente de corpo antigo e contenção em voo não foram provados neste pacote.
-4. **Matriz completa pendente:** timeout servidor com espera real, falha POST injetada,
-   revogação/tenant durante espera, crash do processo inteiro, quota/eviction completa,
-   equivalência do callback para carrinho editado e UI integrada de duas abas após
-   instalação. Testes publicados continuam passando, mas não substituem esses cenários.
-5. **Rollback:** não voltar para 001b com writer novo ativo. Usar contenção deny-only
-   revisada no servidor antes de downgrade; nunca excluir journal/fechamentos ou restaurar
-   create permissivo. `test-install.sql` omite somente hard gate e é **DESCARTÁVEL APENAS**.
-6. Nova revisão independente, teste JWT/RLS real A/B e autorização específica do auditor
-   precedem qualquer implantação ou publicação. Nenhum token exposto/permissão nova concedida.
+`recovery-controller.mjs` e `journal-prototype.mjs` ficam fora do runtime.
+Feature `ORDER_JOURNAL_ENABLED=false`; adapter exige contrato autenticado válido como
+capacidade, persistência local antes de despacho e fences pré/pós-await. Erro/unknown nunca
+libera. Resultado committed é devolvido para exibição, não limpa carrinho/navega automaticamente.
+UI React completa de NovoPedido com recovery de sessão **não foi integrada**: próxima promoção
+depende de backend revisado/instalado e homologação ponta a ponta. Os 31 testes de componente
+atuais provam fechamento publicado, não integração React deste journal.
 
-## Limites
+IndexedDB é apenas cache mínimo de chave/versão/estado e índice hash do escopo; sem JWT,
+preços, observação ou payload. Mesma origem/perfil/contexto somente: preview e domínio
+publicado não compartilham storage. Backend candidato reencontra a reserva perdida,
+mas recuperação cross-origin ainda não foi homologada. Falha local preserva bloqueio.
+Abas antigas não são alteradas/recarregadas: chaves desconhecidas serão negadas no servidor.
 
-IndexedDB só compartilha **mesma origem e mesmo perfil/contexto do navegador**.
-Preview e `app.cultivofarm.com.br` não compartilham armazenamento. O contrato candidato
-server-side poderia reencontrar o slot autenticado, mas essa garantia entre origens
-**não foi homologada**. Estado de carrinho não é recuperado pelo journal mínimo.
-Contabilidade A continua DRAFT; nenhuma cobrança/NF/entrega foi criada. As 36 falhas antigas
-das suítes monitor seguem abertas. Este pacote está deliberadamente **NO-GO**.
+## Checklist do auditor antes de implantar
+
+- Revisar `candidate.sql.review`, PRE/POST, `expected.json`, `SHA256SUMS` e `review.diff`.
+- Executar PRE exato somente leitura no ref canônico; candidato exige os mesmos pins
+  outra vez **sob locks**. PRE passar antes não garante candidate passar sob tráfego.
+- Se novas chaves/pedidos/closures/ACLs aparecerem, NÃO remover assert: recapturar e
+  reconciliar a última tentativa de cada escopo. As cinco linhas são o recorte auditado desta versão.
+- Aplicação independente, POST real e testes JWT A/B com storage/abas precedem feature ON.
+- Não fazer downgrade após timeout/falha de containment. Somente containment PASS + writer
+  fechado permite voltar frontend; nunca excluir histórico ou reaplicar create permissivo.
+
+Não há captura adicional indispensável para os alvos modificados desta versão: metadados
+necessários foram obtidos em READ ONLY. Aprovação independente e UI integrada continuam
+pendentes; **inativo não significa bloqueado por plano**, e candidato não equivale a autorização
+de implantação. Não certificar outros triggers comerciais/fiscais fora da cadeia capturada.

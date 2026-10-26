@@ -1,0 +1,26 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "mode": "READ ONLY",
+  "date": "2026-10-26 19:12+ UTC",
+  "source": "Supabase read_query; exact canonical ref supplied by tool binding and project context",
+  "functiondef_md5": {
+    "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "34d63edfd2ca1354e5e466dc066887b5",
+    "platform_private.c2_close_partner_order_attempt_core(uuid,text)": "500ba0b03d527bfc7ab4e88414d45cdf",
+    "public.close_partner_order_attempt_v1(uuid,text)": "bf440eaea3677ba845781958fe7f39c5",
+    "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": "e15d9fccd42c67caf51b15122a61270d",
+    "platform_private.c2_order_actor_scope(uuid,uuid)": "54c4327d63f48e39f598129ff9dd8f09",
+    "platform_private.c2_attempt_closure_guard()": "123db8ade3b5723e900f00a64f7380ec",
+    "platform_private.c2_attempt_closure_immutable()": "8a97d87af0bed061919f25295f4ffb37"
+  },
+  "poi_structure_md5": "3c5afe617195db177fe831c877473258",
+  "update_updated_at_column_prosrc_md5": "a27bb088c067b7b77a9f0707b0048e40",
+  "actor": "beb25695-3957-48b0-aff8-6316520ea189",
+  "partner": "7e52de9a-4bed-4d1e-8200-3255a805465c",
+  "organization": "007bb519-cba0-4704-be2c-cb93ad010048",
+  "legacy_total": 5,
+  "latest_order": "255057ba-8025-4fa5-a32f-ca3402d6c591",
+  "latest_key": "20d3da20-8e67-4890-bdf2-8d2bbba4f4ed",
+  "old_closure": "7eda3f91-52a8-457c-9abd-6980920b9c0c",
+  "latest_origin": "C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1 / DRAFT / accounting_validated=false",
+  "activity_zero": "Owner observation only; never used as drain proof"
+}

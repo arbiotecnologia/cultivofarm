@@ -1,9 +1,13 @@
--- DISPOSABLE ONLY / synthetic Auth. Never hosted.
+-- DISPOSABLE ONLY: production pins require explicit fixture substitution. Never hosted.
 BEGIN;
 SET LOCAL lock_timeout='5s';
 SET LOCAL statement_timeout='60s';
+LOCK TABLE public.partner_order_idempotency IN ACCESS EXCLUSIVE MODE;
+LOCK TABLE public.partner_orders IN SHARE MODE;
 DO $pre$ BEGIN
 IF current_database() IS NULL THEN RAISE EXCEPTION 'C2DJ_DATABASE_UNKNOWN'; END IF;
+IF current_setting('request.jwt.claims',true) IS NOT NULL AND current_setting('request.jwt.claims',true) <> ''
+ THEN RAISE EXCEPTION 'C2DJ_MIGRATION_CONTEXT_REQUIRED'; END IF;
 IF to_regclass('platform_private.partner_order_attempt_journal') IS NOT NULL THEN
  RAISE EXCEPTION 'C2DJ_TARGET_PRESENT'; END IF;
 END $pre$;
@@ -52,11 +56,47 @@ IF (SELECT md5(pg_get_functiondef(oid))||' '||proacl::text FROM pg_proc
  IS DISTINCT FROM '54c4327d63f48e39f598129ff9dd8f09 {postgres=X/postgres}'
  THEN RAISE EXCEPTION 'C2DJ_SCOPE_DRIFT'; END IF;
 END $scope$;
+DO $structure$ BEGIN IF (SELECT md5(jsonb_build_object('owner',pg_get_userbyid(c.relowner),'acl',c.relacl::text,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'triggers',(SELECT jsonb_agg(pg_get_triggerdef(t.oid)||'|'||t.tgenabled::text ORDER BY t.tgname) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal),'indexes',(SELECT jsonb_agg(pg_get_indexdef(i.indexrelid) ORDER BY pg_get_indexdef(i.indexrelid)) FROM pg_index i WHERE i.indrelid=c.oid),'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY p.policyname) FROM pg_policies p WHERE p.schemaname='public' AND p.tablename='partner_order_idempotency'))::text) FROM pg_class c WHERE c.oid='public.partner_order_idempotency'::regclass) IS DISTINCT FROM '3c5afe617195db177fe831c877473258' THEN RAISE EXCEPTION 'C2DJ_POI_STRUCTURE_DRIFT'; END IF; END $structure$;
+DO $updated$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='public.update_updated_at_column()'::regprocedure) IS DISTINCT FROM 'a27bb088c067b7b77a9f0707b0048e40' THEN RAISE EXCEPTION 'C2DJ_UPDATED_DRIFT'; END IF; END $updated$;
+-- LEGACY_CAPTURE_BEGIN: exact audited rows, not absence/drain inference.
+DO $legacy$ BEGIN
+IF (SELECT count(*) FROM public.partner_order_idempotency) <> 5
+ OR EXISTS(SELECT 1 FROM public.partner_order_idempotency i JOIN public.partner_orders o ON o.id=i.order_id
+ WHERE i.created_by IS DISTINCT FROM 'beb25695-3957-48b0-aff8-6316520ea189'::uuid
+ OR i.partner_id IS DISTINCT FROM '7e52de9a-4bed-4d1e-8200-3255a805465c'::uuid
+ OR o.created_by IS DISTINCT FROM i.created_by OR o.partner_id IS DISTINCT FROM i.partner_id
+ OR o.c2_external_origin_snapshot->>'organization_id' IS DISTINCT FROM '007bb519-cba0-4704-be2c-cb93ad010048'
+ OR (i.idempotency_key,i.order_id) NOT IN (
+ ('d200eb8a-2451-41f5-9161-11b82d20fac8','d4539dd9-b090-4433-9ed3-6f8f5d3e767b'::uuid),
+ ('0dc12922-a037-46db-a5de-ecb91148ba7a','405ff73f-1667-43a3-a41c-56d9500dfd8b'::uuid),
+ ('5cea2654-be52-4e2e-b52a-c3e1075ea381','6c23167c-e453-4724-82eb-8eb17e840539'::uuid),
+ ('c76f3a8d-e1e0-4e89-b2a4-903803224b87','467959ea-d1ab-447b-81f6-7fbd3b774c22'::uuid),
+ ('20d3da20-8e67-4890-bdf2-8d2bbba4f4ed','255057ba-8025-4fa5-a32f-ca3402d6c591'::uuid)))
+ OR (SELECT count(*) FROM public.partner_order_idempotency i JOIN public.partner_orders o ON o.id=i.order_id)<>5
+ OR (SELECT idempotency_key FROM public.partner_order_idempotency ORDER BY created_at DESC,id DESC LIMIT 1)
+ IS DISTINCT FROM '20d3da20-8e67-4890-bdf2-8d2bbba4f4ed'
+ THEN RAISE EXCEPTION 'C2DJ_LEGACY_CAPTURE_DRIFT'; END IF;
+END $legacy$;
+-- LEGACY_CAPTURE_END
+DO $fresh$ BEGIN IF (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM '34d63edfd2ca1354e5e466dc066887b5' THEN RAISE EXCEPTION 'C2DJ_FUNCTIONDEF_DRIFT:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $fresh$;
+DO $fresh$ BEGIN IF (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM '500ba0b03d527bfc7ab4e88414d45cdf' THEN RAISE EXCEPTION 'C2DJ_FUNCTIONDEF_DRIFT:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $fresh$;
+DO $fresh$ BEGIN IF (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure('public.close_partner_order_attempt_v1(uuid,text)')) IS DISTINCT FROM 'bf440eaea3677ba845781958fe7f39c5' THEN RAISE EXCEPTION 'C2DJ_FUNCTIONDEF_DRIFT:public.close_partner_order_attempt_v1(uuid,text)'; END IF; END $fresh$;
+DO $fresh$ BEGIN IF (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_partner_order_attempt_authz(uuid,uuid)')) IS DISTINCT FROM 'e15d9fccd42c67caf51b15122a61270d' THEN RAISE EXCEPTION 'C2DJ_FUNCTIONDEF_DRIFT:platform_private.c2_partner_order_attempt_authz(uuid,uuid)'; END IF; END $fresh$;
+DO $fresh$ BEGIN IF (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_order_actor_scope(uuid,uuid)')) IS DISTINCT FROM '54c4327d63f48e39f598129ff9dd8f09' THEN RAISE EXCEPTION 'C2DJ_FUNCTIONDEF_DRIFT:platform_private.c2_order_actor_scope(uuid,uuid)'; END IF; END $fresh$;
+DO $fresh$ BEGIN IF (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_closure_guard()')) IS DISTINCT FROM '123db8ade3b5723e900f00a64f7380ec' THEN RAISE EXCEPTION 'C2DJ_FUNCTIONDEF_DRIFT:platform_private.c2_attempt_closure_guard()'; END IF; END $fresh$;
+DO $fresh$ BEGIN IF (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_closure_immutable()')) IS DISTINCT FROM '8a97d87af0bed061919f25295f4ffb37' THEN RAISE EXCEPTION 'C2DJ_FUNCTIONDEF_DRIFT:platform_private.c2_attempt_closure_immutable()'; END IF; END $fresh$;
+DO $closure_rows$ BEGIN
+IF (SELECT count(*) FROM platform_private.partner_order_idempotency_closures)<>1
+ OR NOT EXISTS(SELECT 1 FROM platform_private.partner_order_idempotency_closures
+ WHERE partner_id='7e52de9a-4bed-4d1e-8200-3255a805465c' AND idempotency_key='7eda3f91-52a8-457c-9abd-6980920b9c0c'
+ AND closed_by='beb25695-3957-48b0-aff8-6316520ea189' AND closed_org='007bb519-cba0-4704-be2c-cb93ad010048')
+ THEN RAISE EXCEPTION 'C2DJ_CLOSURE_ROWS_DRIFT'; END IF;
+END $closure_rows$;
 
 CREATE TABLE platform_private.partner_order_attempt_journal (
  actor_id uuid NOT NULL, organization_id uuid NOT NULL, partner_id uuid NOT NULL REFERENCES public.partner_accounts(id),
  generation bigint NOT NULL CHECK(generation>0), idempotency_key text NOT NULL UNIQUE,
- predecessor_key text, created_at timestamptz NOT NULL DEFAULT now(),
+ predecessor_key text, imported_order_id uuid, created_at timestamptz NOT NULL DEFAULT now(),
  PRIMARY KEY(actor_id,organization_id,partner_id,generation),
  CHECK(length(idempotency_key)=36)
 );
@@ -67,6 +107,15 @@ CREATE TRIGGER c2dj_no_change BEFORE UPDATE OR DELETE ON platform_private.partne
  FOR EACH ROW EXECUTE FUNCTION platform_private.c2_attempt_closure_immutable();
 CREATE TRIGGER c2dj_no_truncate BEFORE TRUNCATE ON platform_private.partner_order_attempt_journal
  FOR EACH STATEMENT EXECUTE FUNCTION platform_private.c2_attempt_closure_immutable();
+
+-- ACCESS EXCLUSIVE on idempotency is held across assertions, import and barriers.
+-- Derive historical organization from immutable origin, NEVER current profile.
+INSERT INTO platform_private.partner_order_attempt_journal(actor_id,organization_id,partner_id,generation,idempotency_key,imported_order_id)
+ SELECT DISTINCT ON (i.created_by,(coalesce(o.c2_external_origin_snapshot,o.internal_origin_snapshot)->>'organization_id')::uuid,i.partner_id)
+ i.created_by,(coalesce(o.c2_external_origin_snapshot,o.internal_origin_snapshot)->>'organization_id')::uuid,
+ i.partner_id,1,i.idempotency_key,i.order_id
+ FROM public.partner_order_idempotency i JOIN public.partner_orders o ON o.id=i.order_id
+ ORDER BY i.created_by,(coalesce(o.c2_external_origin_snapshot,o.internal_origin_snapshot)->>'organization_id')::uuid,i.partner_id,i.created_at DESC,i.id DESC;
 
 CREATE FUNCTION platform_private.c2_attempt_scope_lock(p_uid uuid,p_partner uuid) RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
@@ -101,8 +150,17 @@ BEGIN
  IF TG_OP='UPDATE' AND (NEW.partner_id,NEW.idempotency_key,NEW.created_by)
   IS DISTINCT FROM (OLD.partner_id,OLD.idempotency_key,OLD.created_by) THEN
   RAISE EXCEPTION 'C2DJ_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;
- PERFORM platform_private.c2_attempt_dispatch_guard(auth.uid(),NEW.partner_id,btrim(NEW.idempotency_key));
+ -- Fail BEFORE any scope lock; this trigger NEVER acquires scope (old body may hold idem).
+ IF NOT EXISTS(SELECT 1 FROM platform_private.partner_order_attempt_journal j
+  WHERE j.actor_id=auth.uid() AND j.partner_id=NEW.partner_id AND j.idempotency_key=btrim(NEW.idempotency_key)) THEN
+  RAISE EXCEPTION 'C2DJ_REGISTERED_ATTEMPT_REQUIRED' USING ERRCODE='42501'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:'||NEW.partner_id::text||':'||btrim(NEW.idempotency_key),0));
+ PERFORM platform_private.c2_partner_order_attempt_authz(auth.uid(),NEW.partner_id);
  IF NEW.created_by IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'C2DJ_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.partner_order_attempt_journal j JOIN public.profiles p
+  ON p.user_id=j.actor_id AND p.organization_id=j.organization_id AND p.ativo
+  WHERE j.actor_id=auth.uid() AND j.partner_id=NEW.partner_id AND j.idempotency_key=btrim(NEW.idempotency_key)) THEN
+  RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
  RETURN NEW;
 END $function$;
 CREATE TRIGGER c2_attempt_journal_guard BEFORE INSERT OR UPDATE OF partner_id,idempotency_key,created_by
@@ -112,7 +170,7 @@ CREATE FUNCTION platform_private.c2_recover_order_attempt_core(p_partner uuid,p_
  p_expected_generation bigint DEFAULT NULL,p_advance boolean DEFAULT false,p_ack_order uuid DEFAULT NULL)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
 DECLARE uid uuid:=auth.uid(); org uuid; j platform_private.partner_order_attempt_journal;
- result jsonb; nextgen bigint; nextkey text;
+  result jsonb; nextgen bigint; nextkey text; fresh uuid;
 BEGIN
  org := platform_private.c2_attempt_scope_lock(uid,p_partner);
  SELECT * INTO j FROM platform_private.partner_order_attempt_journal
@@ -123,6 +181,8 @@ BEGIN
    RAISE EXCEPTION 'C2DJ_CAS_CONFLICT' USING ERRCODE='40001'; END IF;
   -- Explicit click only; existing atomic close is the ONLY way to abandon uncertain K.
   result := platform_private.c2_close_partner_order_attempt_core(p_partner,j.idempotency_key);
+  SELECT organization_id INTO fresh FROM public.profiles WHERE user_id=uid AND ativo;
+  IF fresh IS DISTINCT FROM org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
   IF result->>'state'='in_progress' THEN RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','unknown'); END IF;
   IF result->>'state'='committed' AND p_ack_order IS DISTINCT FROM (result->>'order_id')::uuid THEN
    RETURN result || jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','key',j.idempotency_key,'generation',j.generation); END IF;
@@ -132,6 +192,8 @@ BEGIN
   -- Recovery is read-only with respect to closure; never auto-close an absent order.
   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:'||p_partner::text||':'||j.idempotency_key,0));
   PERFORM platform_private.c2_partner_order_attempt_authz(uid,p_partner);
+  SELECT organization_id INTO fresh FROM public.profiles WHERE user_id=uid AND ativo;
+  IF fresh IS DISTINCT FROM org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
   SELECT jsonb_build_object('state','committed','order_id',i.order_id,'numero',o.numero) INTO result
    FROM public.partner_order_idempotency i JOIN public.partner_orders o ON o.id=i.order_id
    WHERE i.partner_id=p_partner AND i.idempotency_key=j.idempotency_key AND i.created_by=uid;
@@ -145,6 +207,9 @@ BEGIN
   RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501';
  END IF;
  nextgen := coalesce(j.generation,0)+1; nextkey := gen_random_uuid()::text;
+ IF j.idempotency_key IS NULL AND EXISTS(SELECT 1 FROM public.partner_order_idempotency i
+ WHERE i.created_by=uid AND i.partner_id=p_partner) THEN
+  RAISE EXCEPTION 'C2DJ_LEGACY_RECONCILIATION_REQUIRED' USING ERRCODE='42501'; END IF;
  INSERT INTO platform_private.partner_order_attempt_journal(actor_id,organization_id,partner_id,generation,idempotency_key,predecessor_key)
  VALUES(uid,org,p_partner,nextgen,nextkey,j.idempotency_key);
  RETURN jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','state','reserved','key',nextkey,'generation',nextgen);
@@ -185,7 +250,6 @@ DECLARE
   v_items_canon text; v_req_fp text;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
-  PERFORM platform_private.c2_attempt_dispatch_guard(v_uid,p_partner_id,p_idempotency_key);
   PERFORM platform_private.c2_order_actor_scope(v_uid, p_partner_id); -- c2_ord_scope
   PERFORM platform_private.c2_owner_order_guard(v_uid, p_partner_id, p_payment_plan_id); -- c2_ord_guard
   IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN RAISE EXCEPTION 'empty_cart'; END IF;
@@ -253,11 +317,13 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'partner_not_found'; END IF;
 
   -- idempotencia (lock deterministico #1: parceiro+chave)
+  PERFORM platform_private.c2_attempt_dispatch_guard(v_uid,p_partner_id,v_idem);
   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:' || p_partner_id::text || ':' || v_idem, 0));
   -- c2_attempt_closure_v2: a espera no lock pode atravessar revogações; revalida a
   -- autorização canônica APÓS o lock e antes de revelar replay ou criar (ponto de
   -- linearização = esta instrução; revogação confirmada depois dela não é observada).
   PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);
+  IF NOT EXISTS(SELECT 1 FROM platform_private.partner_order_attempt_journal j JOIN public.profiles p ON p.user_id=j.actor_id AND p.organization_id=j.organization_id AND p.ativo WHERE j.actor_id=v_uid AND j.partner_id=p_partner_id AND j.idempotency_key=v_idem) THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
   -- Fechamento durável sob ESTE MESMO lock: recusa envio tardio antes de qualquer efeito.
   -- (Corpos antigos em voo são cobertos pelo trigger c2_attempt_closure_guard.)
   IF EXISTS (SELECT 1 FROM platform_private.partner_order_idempotency_closures c
@@ -537,11 +603,12 @@ AS $function$
 DECLARE
   v_uid uuid := auth.uid();
   v_idem text;
+  v_scope_org uuid; v_current_org uuid;
   v_found boolean; v_order_id uuid; v_numero text;
 BEGIN
   -- Autorização canônica ANTES do lock e de revelar qualquer estado.
   PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);
-  PERFORM platform_private.c2_attempt_scope_lock(v_uid,p_partner_id);
+  v_scope_org := platform_private.c2_attempt_scope_lock(v_uid,p_partner_id);
   v_idem := NULLIF(btrim(COALESCE(p_idempotency_key,'')),'');
   IF v_idem IS NULL THEN RAISE EXCEPTION 'idempotency_key_required'; END IF;
   IF length(v_idem) > 120 THEN RAISE EXCEPTION 'invalid_idempotency_key'; END IF;
@@ -557,6 +624,8 @@ BEGIN
   -- Revalida APÓS a espera: revogação/perfil/parceiro inativo confirmados durante a espera
   -- abortam sem revelar committed e sem gravar closed.
   PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);
+  SELECT organization_id INTO v_current_org FROM public.profiles WHERE user_id=v_uid AND ativo;
+  IF v_current_org IS DISTINCT FROM v_scope_org THEN RAISE EXCEPTION 'C2DJ_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
 
   SELECT true, i.order_id INTO v_found, v_order_id
     FROM public.partner_order_idempotency i
@@ -576,11 +645,11 @@ END;
 $function$;
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_scope_lock(uuid,uuid)')) IS DISTINCT FROM '8e6d6191d2821ec6e8d0ba07f4d8190c' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_scope_lock(uuid,uuid)'; END IF; END $post$;
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)')) IS DISTINCT FROM '9e217430e43e594e51645ec6184abfa0' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)'; END IF; END $post$;
-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()')) IS DISTINCT FROM '6cce9e233aa526dc4e5d49fa3e32c563' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_journal_write_guard()'; END IF; END $post$;
-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM 'fc87c86c2258daed3f1882fa3dad702a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
+DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_journal_write_guard()')) IS DISTINCT FROM '851aacc3e631832493a34bcb6106b53a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_attempt_journal_write_guard()'; END IF; END $post$;
+DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM '1a166cfa7c4b16fcc10e7724b4a6492a' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
 DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)')) IS DISTINCT FROM 'f5aa40591cfc0f436f579f20ce2f563a' THEN RAISE EXCEPTION 'C2DJ_POST:public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'; END IF; END $post$;
-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM 'dfbd71f8f352b275ddab9619aff33c78' THEN RAISE EXCEPTION 'C2DJ_POST:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $post$;
-DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM 'c19107af28f3ecbbd537cec3c54d0e5f' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $post$;
+DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)')) IS DISTINCT FROM '74cfb688546817e6236d5195d069e29e' THEN RAISE EXCEPTION 'C2DJ_POST:public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'; END IF; END $post$;
+DO $post$ BEGIN IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)')) IS DISTINCT FROM '4d7a7a49b27ab78fd33a6cdac75833c5' THEN RAISE EXCEPTION 'C2DJ_POST:platform_private.c2_close_partner_order_attempt_core(uuid,text)'; END IF; END $post$;
 DO $metadata$ BEGIN
 IF (SELECT relacl::text FROM pg_class WHERE oid='platform_private.partner_order_attempt_journal'::regclass)
  IS DISTINCT FROM '{postgres=arwdDxtm/postgres,service_role=r/postgres}'
@@ -601,4 +670,30 @@ DO $closure$ BEGIN
 IF (SELECT md5(prosrc) FROM pg_proc WHERE oid='platform_private.c2_attempt_closure_guard()'::regprocedure)
  IS DISTINCT FROM '140ceb10660fb226fda78fb94277d17e' THEN RAISE EXCEPTION 'C2DJ_CLOSURE_DRIFT'; END IF;
 END $closure$;
+DO $imports$ BEGIN
+IF EXISTS(SELECT 1 FROM platform_private.partner_order_attempt_journal j
+ WHERE j.imported_order_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.partner_order_idempotency i
+ WHERE i.created_by=j.actor_id AND i.partner_id=j.partner_id AND i.idempotency_key=j.idempotency_key AND i.order_id=j.imported_order_id))
+ THEN RAISE EXCEPTION 'C2DJ_IMPORT_DRIFT'; END IF;
+END $imports$;
+DO $journal_structure$ BEGIN
+IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='platform_private.partner_order_attempt_journal'::regclass AND NOT tgisinternal)<>2
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='platform_private.partner_order_attempt_journal'::regclass
+ AND tgname='c2dj_no_change' AND tgenabled='O' AND tgtype=27 AND tgfoid='platform_private.c2_attempt_closure_immutable()'::regprocedure)
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='platform_private.partner_order_attempt_journal'::regclass
+ AND tgname='c2dj_no_truncate' AND tgenabled='O' AND tgtype=34 AND tgfoid='platform_private.c2_attempt_closure_immutable()'::regprocedure)
+ OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='platform_private.partner_order_attempt_journal'::regclass
+ AND contype='p' AND pg_get_constraintdef(oid)='PRIMARY KEY (actor_id, organization_id, partner_id, generation)')
+ OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='platform_private.partner_order_attempt_journal'::regclass
+ AND contype='u' AND pg_get_constraintdef(oid)='UNIQUE (idempotency_key)')
+ THEN RAISE EXCEPTION 'C2DJ_JOURNAL_STRUCTURE_DRIFT'; END IF;
+END $journal_structure$;
+DO $canonical_metadata$ BEGIN
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure
+ AND pg_get_userbyid(proowner)='postgres' AND prosecdef AND proconfig=ARRAY['search_path=public']::text[]
+ AND proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}')
+ OR NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='platform_private.c2_close_partner_order_attempt_core(uuid,text)'::regprocedure
+ AND pg_get_userbyid(proowner)='postgres' AND prosecdef AND proconfig=ARRAY['search_path=""','lock_timeout=5s']::text[]
+ AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}') THEN RAISE EXCEPTION 'C2DJ_CANONICAL_METADATA_DRIFT'; END IF;
+END $canonical_metadata$;
 COMMIT;
