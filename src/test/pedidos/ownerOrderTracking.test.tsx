@@ -81,7 +81,7 @@ it("commercialOwner em /pedidos vê acompanhamento somente leitura do pedido pr�
   mount();
   await screen.findByRole("region", { name: "Acompanhamento de pedidos" });
   await screen.findByText("PB-001029");
-  expect(screen.getByText("em analise comercial")).toBeTruthy();
+  expect(screen.getAllByText("em analise comercial").length).toBeGreaterThan(0);
   // Fallback antigo ("Cliente comercial") e MeusPedidos legado não montam.
   expect(screen.queryByRole("region", { name: "Cliente comercial" })).toBeNull();
   expect(screen.queryByText(/Simulações, arquivos e alterações de pedidos estão indisponíveis/)).toBeNull();
