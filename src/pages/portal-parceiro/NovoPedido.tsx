@@ -55,7 +55,7 @@ import { DOSES_POR_LITRO, resolverCustoHa } from "@/lib/catalogo/pricing";
 import { round2 } from "@/lib/catalogo/formatUnidades";
 import { useCatalogoVolumes } from "@/hooks/useCatalogoVolumes";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-import { orderAttemptFingerprint, prepareOrderAttempt, readOrderAttempt, settleOrderAttempt, subscribeOrderAttempts } from "@/lib/authz/pendingOrderAttempt";
+import { markOrderAttemptSending, orderAttemptFingerprint, prepareOrderAttempt, readOrderAttempt, settleOrderAttempt, subscribeOrderAttempts } from "@/lib/authz/pendingOrderAttempt";
 
 const nfmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 
@@ -516,6 +516,9 @@ export default function NovoPedido() {
     }
     const fence = pageScope.capture();
     const slot = attemptSlot;
+    // Reserva síncrona antes de qualquer await: dois cliques no mesmo tick ou
+    // remontagens contam envios em voo e nenhum desfecho apaga o outro.
+    markOrderAttemptSending(slot, prepared.key);
     createOrder.mutate(
       { ...input, idempotency_key: prepared.key, attempt_slot: slot },
       {

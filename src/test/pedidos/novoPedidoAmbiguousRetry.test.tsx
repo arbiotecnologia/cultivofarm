@@ -277,3 +277,22 @@ it("SQLSTATE conclusivo conhecido descarta; impressão inclui vencimento e não 
   expect(fp).not.toContain("segredo");
   expect(orderAttemptFingerprint({ ...base, first_due_date: "2026-11-06" })).not.toBe(fp);
 });
+
+
+it("dois cliques no mesmo tick: a reserva síncrona bloqueia o segundo envio (1 RPC)", async () => {
+  const pending: Array<(v: unknown) => void> = [];
+  state.createImpl = () => { const p = new Promise(r => pending.push(r)); return Object.assign(p, { abortSignal: () => p }); };
+  mount();
+  await screen.findAllByText("Produto local");
+  fireEvent.click(screen.getByRole("button", { name: "Adicionar ao pedido" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Adicionar ao carrinho" }));
+  fireEvent.click((await screen.findAllByRole("button", { name: "Continuar para condição de pagamento" }))[0]);
+  fireEvent.click(await screen.findByRole("button", { name: /À vista/ }));
+  const submit = await screen.findByRole("button", { name: "Enviar pedido para análise" });
+  await waitFor(() => expect(submit).toBeEnabled());
+  fireEvent.click(submit); fireEvent.click(submit);
+  await waitFor(() => expect(creates()).toHaveLength(1));
+  await new Promise(r => setTimeout(r, 50));
+  expect(creates()).toHaveLength(1);
+  await act(async () => { pending[0]({ data: null, error: { code: "", message: "Failed to fetch" } }); });
+});

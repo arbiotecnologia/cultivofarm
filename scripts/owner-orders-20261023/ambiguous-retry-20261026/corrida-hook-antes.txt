@@ -1,0 +1,10 @@
+   × rejeição 1º / sucesso 2º 90ms
+     → expected null not to be null
+   × sucesso 1º / rejeição 2º 63ms
+     → expected undefined to be 'PB-1' // Object.is equality
+   × rejeição 1º / perdida 2º 59ms
+     → expected null not to be null
+   × perdida 1º / rejeição 2º 56ms
+     → expected undefined to be true // Object.is equality
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+      Tests  4 failed (4)
