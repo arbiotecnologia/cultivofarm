@@ -18,8 +18,22 @@ depois de uma consulta "ausente" e de um K2 novo, criando duplicata. Ausência n
   3. Se existe registro de idempotência, responde `committed` com o id e o número do pedido.
   4. Se não existe, grava o fechamento e responde `closed`.
   5. Se o lock não é obtido no prazo, responde `in_progress`, sem gravar nada (desconhecido).
-- `create_partner_order_secure`: o único acréscimo, logo após o replay de idempotência e sob o mesmo lock, é
-  `IF EXISTS(fechamento) THEN RAISE 'idempotency_key_closed'`. O resto do corpo é byte-exato ao LIVE.
+- `create_partner_order_secure`: o único acréscimo fica logo APÓS o lock `b2b_idem` e antes do replay:
+  revalidação da autorização (`c2_partner_order_attempt_authz`) e `IF EXISTS(fechamento) THEN RAISE
+  'idempotency_key_closed'`. O resto do corpo é byte-exato ao LIVE.
+- Barreira durável no caminho de ESCRITA (revisão 457951ca, cenário 1): trigger `c2_attempt_closure_guard`
+  BEFORE INSERT/UPDATE OF chave em `public.partner_order_idempotency`, SECURITY DEFINER, obtém o MESMO lock
+  `b2b_idem` (reentrante) e recusa chave fechada. `CREATE OR REPLACE` NÃO drena execuções em voo; um create com
+  o corpo antigo que ainda não chegou ao lock é recusado na sua gravação final de idempotência, e a transação
+  inteira (pedido, itens, termos, notificações, auditoria) é revertida. Não depende de drain.
+- Revalidação após a espera (cenário 2): o fechamento e o create chamam a mesma autorização canônica antes
+  E depois do lock. Revogação, perfil inativo ou parceiro inativo confirmados durante a espera abortam sem
+  revelar `committed`/replay e sem gravar `closed`; a chave não fica atribuída a ninguém.
+- Limite de linearização: em READ COMMITTED cada instrução lê snapshot novo; o ponto de linearização da
+  autorização é a revalidação pós-lock. Uma revogação confirmada DEPOIS dessa instrução e antes do COMMIT não é
+  observada por aquela chamada (vale também para o create LIVE). Sob REPEATABLE READ/SERIALIZABLE do chamador o
+  snapshot seria o do início; PostgREST usa READ COMMITTED.
+- Limite da barreira: escritores com `session_replication_role=replica` (só superusuário) não disparam triggers.
 - A identidade da tentativa no servidor é `(partner_id, key)`, estável e independente da autorização atual.
   Revogar o vínculo, desativar o perfil, sair da conta ou trocar de papéis não reabre uma chave fechada.
 
@@ -36,28 +50,35 @@ depois de uma consulta "ausente" e de um K2 novo, criando duplicata. Ausência n
 - `rollback-full-if-empty.sql.review`: restaura o create LIVE e remove os objetos SOMENTE se não houver nenhum
   fechamento (LOCK ACCESS EXCLUSIVE). Caso contrário aborta com `C2AC_FULL_ROLLBACK_REFUSED`.
 - MD5 (prosrc) do candidato, também em `expected.json`:
-  - create `006d20ee80e4ab94a7d266d7ede57c67`;
-  - core `ba556b900ec5cd8060c25d79028a5727`;
-  - wrapper `3f48dbe69577bb77428a6abe4a30671f`;
-  - função de imutabilidade `3375615fd81e3671cc581297c75e9600`.
+  - `public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)` `71d1f32e00c5c9857eae51999dc40ef0`;
+  - `platform_private.c2_close_partner_order_attempt_core(uuid,text)` `dcb22362321fa041353242674db58057`;
+  - `public.close_partner_order_attempt_v1(uuid,text)` `3f48dbe69577bb77428a6abe4a30671f`;
+  - `platform_private.c2_attempt_closure_immutable()` `3375615fd81e3671cc581297c75e9600`;
+  - `platform_private.c2_partner_order_attempt_authz(uuid,uuid)` `0c5ded5e797ded21cc08e28c2958175d`;
+  - `platform_private.c2_attempt_closure_guard()` `140ceb10660fb226fda78fb94277d17e`;
+- Candidate e ambos os rollbacks usam `SET LOCAL lock_timeout='5s'` e `statement_timeout='60s'`: sob contenção
+  falham com `55P03` em tempo limitado e de forma atômica, nunca esperam indefinidamente.
 
 ## Prova automática (sintética)
-Comando: `python3 test-local.py`. Saída em `results-local.txt`: **51 PASS deste pacote**, mais 24 do harness base.
-- O harness parte da cadeia capturada `accounting-pending-request-20261024`, com o create idêntico ao LIVE
-  (prosrc e ACL), e reproduz exatamente os pins de `has_role`, `get_user_partner_id`, colunas e policies.
-- Correção de fidelidade, reportada na saída: a réplica reduzida não tem índices, então os dois índices LIVE
-  capturados (pkey e único `partner_id`+chave) são recriados antes do preflight.
-- Cenários de concorrência, com conexões reais e um "holder" segurando o lock:
-  - ordem A: create enfileirado antes do fechamento → `committed`, um pedido, nenhum fechamento;
-  - ordem B: fechamento enfileirado antes do K1 tardio → `closed` e `idempotency_key_closed`, sem pedido;
-    em seguida K2 cria uma vez e K1 continua recusado;
-  - timeout: o lock é mantido além de 5 s → `in_progress`, sem gravação.
-- Negativas com mensagens exatas: B, técnico isolado e produtor recebem `forbidden_partner` ou
-  `forbidden_financial_terms`; vínculo revogado, `forbidden_partner`; perfil inativo, `inactive_scope`;
-  parceiro inativo, `partner_not_found`; chave vazia ou longa é rejeitada; anon não tem EXECUTE; não há acesso
-  direto à tabela; o owner não consegue UPDATE, DELETE nem TRUNCATE.
-- Pacote: preflight falha com divergência; falha injetada no PRE ou no POST não deixa nada aplicado; rollback
-  total só com zero fechamentos; rollback por contenção mantém as chaves fechadas recusadas e o create/replay normal.
+Comando: `python3 test-local.py`. Saída em `results-local.txt`: **89 PASS deste pacote**, mais 24 do harness base.
+- Rollout com create antigo em voo (cenário 1): instrumentação SOMENTE do harness pausa o create LIVE dentro de
+  `assert_b2b_partner_scope` (antes do lock `b2b_idem`, apenas na sessão com `c2ac.test_stall=on`; md5 restaurado
+  e verificado depois). Com a execução em voo: aplica-se o candidato, fecha-se K (`closed`) e libera-se a execução.
+  - ANTES, pacote 457951ca (sha256 fixado): REPRODUZIDO — o corpo antigo ignorou o fechamento e criou pedido.
+  - DEPOIS: `ERROR: P0001: idempotency_key_closed` vindo de `c2_attempt_closure_guard`; nenhum pedido nem
+    linha de idempotência; fechamento mantido. O candidato foi aplicado sem bloquear (0,1 s).
+- Revogação durante a espera (cenário 2), com chamada já autorizada parada no lock: fechamento de chave nova,
+  fechamento de chave confirmada, perfil inativo, parceiro inativo, create novo e replay → `42501`
+  (`forbidden_partner`/`inactive_scope`/`partner_not_found`), sem revelar e sem gravar; as chaves não ficaram
+  atribuídas e foram fechadas depois por ator autorizado.
+- Negativas agora exigem a linha exata `ERROR:  <SQLSTATE>: <mensagem>` e estado idêntico (pedidos, itens, termos,
+  idempotência, fechamentos, notificações, auditoria). Técnico isolado e produtor são negados primeiro pelo guard
+  canônico de escopo (`42501 forbidden_financial_terms` / `42501 forbidden_partner`), como no create LIVE.
+- Timeouts: candidate com create autorizado segurando a tabela → `55P03` em 5,0 s, nada instalado; rollback total
+  com fechamento autorizado em voo → `55P03` em 5,0 s, nada alterado; rollback de contenção conclui com chamada
+  autorizada em voo, que termina `closed` e continua honrada.
+- Mantidos: corridas nas duas ordens, `in_progress` em 5 s, imutabilidade, ACL, rollback total só com zero
+  fechamentos, barreira contra INSERT direto do owner (chave normalizada por btrim).
 
 ## Limites e pendências
 - Auth sintética via `request.jwt.claims`; não há prova de JWT nem de RLS hospedados.

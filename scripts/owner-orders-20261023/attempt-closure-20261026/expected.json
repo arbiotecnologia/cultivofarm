@@ -1,9 +1,11 @@
 {
  "candidate_prosrc_md5": {
-  "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "006d20ee80e4ab94a7d266d7ede57c67",
-  "platform_private.c2_close_partner_order_attempt_core(uuid,text)": "ba556b900ec5cd8060c25d79028a5727",
+  "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "71d1f32e00c5c9857eae51999dc40ef0",
+  "platform_private.c2_close_partner_order_attempt_core(uuid,text)": "dcb22362321fa041353242674db58057",
   "public.close_partner_order_attempt_v1(uuid,text)": "3f48dbe69577bb77428a6abe4a30671f",
-  "platform_private.c2_attempt_closure_immutable()": "3375615fd81e3671cc581297c75e9600"
+  "platform_private.c2_attempt_closure_immutable()": "3375615fd81e3671cc581297c75e9600",
+  "platform_private.c2_partner_order_attempt_authz(uuid,uuid)": "0c5ded5e797ded21cc08e28c2958175d",
+  "platform_private.c2_attempt_closure_guard()": "140ceb10660fb226fda78fb94277d17e"
  },
  "live_pins": {
   "captured_at": "2026-10-26 (READ ONLY, ref swzpzcwiasxmjutrmvkm)",

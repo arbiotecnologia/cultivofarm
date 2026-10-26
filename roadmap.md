@@ -816,4 +816,5 @@
 ## 26/10 17:56 — fechamento durável de tentativa (INATIVO)
 - [x] Plano c1583a15 (Web Locks) rejeitado: marcado como não implementado; nenhum código dele existia.
 - [x] Pacote attempt-closure-20261026: candidate/preflight/postflight/rollback contenção e total-se-vazio; 51 PASS sintéticos.
+- [x] Revisão 457951ca: barreira trigger no caminho de escrita (create antigo em voo), revalidação pós-lock em close/create, negativas SQLSTATE exatas, timeouts em candidate/rollbacks; 89 PASS sintéticos.
 - [ ] Revisão independente + aplicação pelo proprietário; prova real A/B/abas; plugar contrato no frontend (desativado).

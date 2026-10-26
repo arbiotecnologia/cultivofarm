@@ -2,23 +2,42 @@
 PASS harness create equals LIVE prosrc md5 7a634235 and LIVE ACL
 PASS harness c2_order_actor_scope equals LIVE functiondef/ACL
 HARNESS_PIN_SUBSTITUTIONS {}
+HARNESS_POI_INDEXES 
 HARNESS_FIDELITY_FIX LIVE indexes recreated on reduced replica
+PASS previous reviewed package 457951ca loaded by exact sha256 (control "antes")
 PASS preflight READ ONLY passes on captured LIVE state
 PASS preflight left no objects
 PASS preflight fails closed on create drift
 PASS injected POST failure aborts
-PASS after aborted candidate: no table, create still LIVE
+PASS after aborted candidate: no table/trigger, create still LIVE
 PASS candidate PRE drift aborts before any DDL
-PASS candidate applies in one transaction
+PASS candidate under contention fails with lock_timeout 55P03 in bounded time (5.0s)
+PASS timed-out candidate installed nothing (atomic)
+PASS authorized create holding the table committed normally
+PASS harness-only stall instrumentation installed (create body still LIVE)
+PASS ANTES (457951ca): LIVE create in flight, paused BEFORE b2b_idem (waiting on stall lock)
+PASS ANTES (457951ca): in-flight create does not hold b2b_idem yet
+PASS ANTES (457951ca): candidate applied while old create is in flight (0.0s, not blocked)
+PASS ANTES (457951ca): close K answered closed (old create not yet at lock)
+PASS ANTES (457951ca): REPRODUCED — old body ignored tombstone and created order for CLOSED key
+ROLLOUT_PREV_OLD_CREATE_OUTPUT {"id": "2d988cf3-2239-4fc3-89b6-60eb3cc64fc5", "total": 180.00, "numero": "PB-000002", "status": "em_analise_comercial", "subtotal": 180.00, "cart_hash": "3d477
+PASS harness reset to LIVE after control (create LIVE md5, no objects)
+PASS DEPOIS (barreira): LIVE create in flight, paused BEFORE b2b_idem (waiting on stall lock)
+PASS DEPOIS (barreira): in-flight create does not hold b2b_idem yet
+PASS DEPOIS (barreira): candidate applied while old create is in flight (0.1s, not blocked)
+PASS DEPOIS (barreira): close K answered closed (old create not yet at lock)
+PASS DEPOIS: old in-flight body refused by write-barrier trigger [ERROR:  P0001: idempotency_key_closed]
+PASS DEPOIS: no order, no idempotency row, closure kept (no duplicate after rollout)
+PASS DEPOIS: barrier error came from c2_attempt_closure_guard (old body has no closure check)
+PASS stall instrumentation removed, assert_b2b_partner_scope md5 restored
 PASS postflight READ ONLY passes
 PASS core proconfig exact
 PASS candidate hashes match expected.json
-PASS full rollback (no closed keys) restores LIVE create and drops objects
-PASS preflight→candidate→postflight again after full rollback
+PASS full rollback refused while closed keys exist (exact error, nothing changed)
 PASS close unused key => closed
 PASS close is idempotent
-PASS late create of closed key refused (idempotency_key_closed), no order
-PASS close after commit => committed with order id/numero
+PASS late create of closed key refused, no order [ERROR:  P0001: idempotency_key_closed]
+PASS close after commit => committed with order id/numero, nothing written
 PASS replay of committed key still returns same order
 PASS cumulative manager/technician of same partner sees committed
 PASS race A: create queued on b2b_idem lock
@@ -27,29 +46,50 @@ PASS race A: create committed and close answered committed
 PASS race A: exactly one order for key and no closure
 PASS race B: close queued first
 PASS race B: late create queued after close
-PASS race B: close answered closed, late K1 refused, no order
+PASS race B: close closed, late K1 refused exactly [ERROR:  P0001: idempotency_key_closed], no order
 PASS after closing K1, K2 creates once
-PASS K1 arriving even later is still refused
-PASS lock held past lock_timeout => in_progress (unknown), ~5s
-PASS in_progress wrote no closure
-PASS B partner manager cannot probe/close A key (no state revealed) [ERROR:  42501: forbidden_partner]
+PASS K1 arriving even later is still refused [ERROR:  P0001: idempotency_key_closed]
+PASS lock held past lock_timeout => in_progress (unknown) (5.0s)
+PASS in_progress wrote nothing
+PASS close-unused-revoked: authorized call passed pre-lock checks and is waiting on b2b_idem
+PASS close-unused-revoked: revalidated after lock, denied without reveal/write [ERROR:  42501: forbidden_partner]
+PASS close-committed-revoked: authorized call passed pre-lock checks and is waiting on b2b_idem
+PASS close-committed-revoked: revalidated after lock, denied without reveal/write [ERROR:  42501: forbidden_partner]
+PASS close-profile-inactive: authorized call passed pre-lock checks and is waiting on b2b_idem
+PASS close-profile-inactive: revalidated after lock, denied without reveal/write [ERROR:  42501: inactive_scope]
+PASS close-partner-inactive: authorized call passed pre-lock checks and is waiting on b2b_idem
+PASS close-partner-inactive: revalidated after lock, denied without reveal/write [ERROR:  42501: partner_not_found]
+PASS create-new-revoked: authorized call passed pre-lock checks and is waiting on b2b_idem
+PASS create-new-revoked: revalidated after lock, denied without reveal/write [ERROR:  42501: forbidden_partner]
+PASS create-replay-revoked: authorized call passed pre-lock checks and is waiting on b2b_idem
+PASS create-replay-revoked: revalidated after lock, denied without reveal/write [ERROR:  42501: forbidden_partner]
+PASS keys denied during wait were NOT attributed/closed (can still be closed by authorized actor)
+PASS B partner manager cannot probe/close A key [ERROR:  42501: forbidden_partner]
 PASS A manager cannot close for B partner [ERROR:  42501: forbidden_partner]
-PASS isolated technician cannot close [ERROR:  42501: forbidden_financial_terms]
-PASS producer cannot close [ERROR:  42501: forbidden_partner]
+PASS isolated technician cannot close (canonical scope guard fires first) [ERROR:  42501: forbidden_financial_terms]
+PASS producer cannot close (canonical scope guard fires first) [ERROR:  42501: forbidden_partner]
 PASS blank key rejected [ERROR:  P0001: idempotency_key_required]
 PASS oversized key rejected [ERROR:  P0001: invalid_idempotency_key]
-PASS anon has no EXECUTE on wrapper/core
-PASS authenticated cannot read/write closures directly
+PASS anon has no EXECUTE on wrapper/core/authz/guard
+PASS authenticated cannot read closures directly [ERROR:  42501: permission denied for table partner_order_idempotency_closures]
+PASS authenticated cannot insert closures directly [ERROR:  42501: permission denied for table partner_order_idempotency_closures]
+PASS authenticated cannot call authz helper directly [ERROR:  42501: permission denied for function c2_partner_order_attempt_authz]
 PASS revoked partner link cannot close/probe [ERROR:  42501: forbidden_partner]
-PASS revocation did NOT reopen closed key (protection independent of actor auth)
+PASS revocation did NOT reopen closed key [ERROR:  P0001: idempotency_key_closed]
 PASS inactive profile cannot close/probe [ERROR:  42501: inactive_scope]
 PASS inactive partner cannot close/probe [ERROR:  42501: partner_not_found]
 PASS restored actor closes again normally
+PASS write barrier refuses direct owner INSERT of closed key (btrim-normalized) [ERROR:  P0001: idempotency_key_closed]
 PASS owner blocked: UPDATE
 PASS owner blocked: DELETE
 PASS owner blocked: TRUNCATE
-PASS full rollback refused while closed keys exist
-PASS containment rollback: no new closures possible
-PASS containment rollback: closed keys still refused by create
+PASS full rollback under contention: bounded lock_timeout 55P03 (5.0s), not indefinite
+PASS timed-out full rollback changed nothing (objects/create/closures intact)
+PASS authorized close in flight waiting on b2b_idem during containment rollback
+PASS containment rollback completes in bounded time while call in flight (0.0s)
+PASS in-flight authorized close finished closed and its closure is honored after containment
+PASS containment rollback: no new closures possible [ERROR:  42501: permission denied for function close_partner_order_attempt_v1]
+PASS containment rollback: closed keys still refused by create [ERROR:  P0001: idempotency_key_closed]
+PASS containment rollback: write barrier trigger still enabled
 PASS containment rollback: normal create/replay unaffected
-TOTAL 51 PASS deste pacote (+24 do harness base); Auth sintética, PostgreSQL descartável, sem JWT/RLS hospedado
+TOTAL 89 PASS deste pacote (+24 do harness base); Auth sintética, PostgreSQL descartável, sem JWT/RLS hospedado

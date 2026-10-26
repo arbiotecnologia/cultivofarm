@@ -1,6 +1,8 @@
 -- INATIVO / REVISAO INDEPENDENTE. Nao aplicar sem autorizacao. Gerado por assemble.py.
 -- Transacao unica: asserts LIVE antes do DDL; asserts POST antes do COMMIT.
 BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
 
 DO $c2ac_cand_pre$
 DECLARE r record;
@@ -8,7 +10,9 @@ BEGIN
   -- alvo ausente
   IF to_regclass('platform_private.partner_order_idempotency_closures') IS NOT NULL
      OR to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)') IS NOT NULL OR to_regprocedure('public.close_partner_order_attempt_v1(uuid,text)') IS NOT NULL
-     OR to_regprocedure('platform_private.c2_attempt_closure_immutable()') IS NOT NULL THEN
+     OR to_regprocedure('platform_private.c2_attempt_closure_immutable()') IS NOT NULL OR to_regprocedure('platform_private.c2_partner_order_attempt_authz(uuid,uuid)') IS NOT NULL
+     OR to_regprocedure('platform_private.c2_attempt_closure_guard()') IS NOT NULL
+     OR EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_idempotency'::regclass AND tgname='c2_attempt_closure_guard') THEN
     RAISE EXCEPTION 'C2AC_TARGET_PRESENT';
   END IF;
   -- create canônico LIVE byte-exato (corpo/owner/secdef/search_path/ACL)
@@ -70,28 +74,23 @@ CREATE TRIGGER c2_attempt_closure_no_update_delete BEFORE UPDATE OR DELETE ON pl
 CREATE TRIGGER c2_attempt_closure_no_truncate BEFORE TRUNCATE ON platform_private.partner_order_idempotency_closures
   FOR EACH STATEMENT EXECUTE FUNCTION platform_private.c2_attempt_closure_immutable();
 
-CREATE FUNCTION platform_private.c2_close_partner_order_attempt_core(p_partner_id uuid, p_idempotency_key text)
- RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' SET lock_timeout = '5s'
+CREATE FUNCTION platform_private.c2_partner_order_attempt_authz(p_uid uuid, p_partner_id uuid)
+ RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = ''
 AS $function$
 DECLARE
-  v_uid uuid := auth.uid();
-  v_idem text;
   v_is_internal boolean; v_is_partner boolean; v_is_partner_tech boolean; v_user_partner uuid;
-  v_found boolean; v_order_id uuid; v_numero text;
 BEGIN
-  -- Mesma autorização/ordem do create canônico ANTES do lock e de revelar qualquer estado.
-  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
-  PERFORM platform_private.c2_order_actor_scope(v_uid, p_partner_id);
-  v_idem := NULLIF(btrim(COALESCE(p_idempotency_key,'')),'');
-  IF v_idem IS NULL THEN RAISE EXCEPTION 'idempotency_key_required'; END IF;
-  IF length(v_idem) > 120 THEN RAISE EXCEPTION 'invalid_idempotency_key'; END IF;
-  v_is_internal := public.has_role(v_uid,'administrador'::public.app_role)
-                OR public.has_role(v_uid,'financeiro'::public.app_role)
-                OR public.has_role(v_uid,'gestor_comercial'::public.app_role);
-  v_is_partner      := public.has_role(v_uid,'parceiro_b2b'::public.app_role);
-  v_is_partner_tech := public.has_role(v_uid,'parceiro_b2b_tecnico'::public.app_role);
+  -- Espelha a autorização do create canônico (mesma ordem/mensagens). Chamado antes E
+  -- depois do lock b2b_idem; cada chamada lê um snapshot novo (READ COMMITTED).
+  IF p_uid IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
+  PERFORM platform_private.c2_order_actor_scope(p_uid, p_partner_id);
+  v_is_internal := public.has_role(p_uid,'administrador'::public.app_role)
+                OR public.has_role(p_uid,'financeiro'::public.app_role)
+                OR public.has_role(p_uid,'gestor_comercial'::public.app_role);
+  v_is_partner      := public.has_role(p_uid,'parceiro_b2b'::public.app_role);
+  v_is_partner_tech := public.has_role(p_uid,'parceiro_b2b_tecnico'::public.app_role);
   v_user_partner    := public.get_user_partner_id();
-  IF public.has_role(v_uid,'cliente_produtor'::public.app_role) AND NOT (v_is_internal OR v_is_partner) THEN
+  IF public.has_role(p_uid,'cliente_produtor'::public.app_role) AND NOT (v_is_internal OR v_is_partner) THEN
     RAISE EXCEPTION 'PRODUCER_DIRECT_NOT_ENABLED';
   END IF;
   IF v_is_partner_tech AND NOT (v_is_internal OR v_is_partner) THEN
@@ -104,6 +103,43 @@ BEGIN
   END IF;
   PERFORM 1 FROM public.partner_accounts WHERE id = p_partner_id AND ativo = true;
   IF NOT FOUND THEN RAISE EXCEPTION 'partner_not_found'; END IF;
+END;
+$function$;
+REVOKE ALL ON FUNCTION platform_private.c2_partner_order_attempt_authz(uuid,uuid) FROM PUBLIC, anon, authenticated, service_role;
+
+CREATE FUNCTION platform_private.c2_attempt_closure_guard() RETURNS trigger
+ LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $function$
+DECLARE v_key text := btrim(NEW.idempotency_key);
+BEGIN
+  -- Barreira durável no caminho de ESCRITA: cobre corpos antigos de create ainda em voo
+  -- durante o rollout (CREATE OR REPLACE não drena execuções já iniciadas). Mesmo lock
+  -- b2b_idem (reentrante para quem já o detém) + recusa se a chave foi fechada.
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:' || NEW.partner_id::text || ':' || v_key, 0));
+  IF EXISTS (SELECT 1 FROM platform_private.partner_order_idempotency_closures c
+              WHERE c.partner_id = NEW.partner_id AND c.idempotency_key = v_key) THEN
+    RAISE EXCEPTION 'idempotency_key_closed';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+REVOKE ALL ON FUNCTION platform_private.c2_attempt_closure_guard() FROM PUBLIC, anon, authenticated, service_role;
+CREATE TRIGGER c2_attempt_closure_guard BEFORE INSERT OR UPDATE OF partner_id, idempotency_key ON public.partner_order_idempotency
+  FOR EACH ROW EXECUTE FUNCTION platform_private.c2_attempt_closure_guard();
+
+CREATE FUNCTION platform_private.c2_close_partner_order_attempt_core(p_partner_id uuid, p_idempotency_key text)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' SET lock_timeout = '5s'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_idem text;
+  v_found boolean; v_order_id uuid; v_numero text;
+BEGIN
+  -- Autorização canônica ANTES do lock e de revelar qualquer estado.
+  PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);
+  v_idem := NULLIF(btrim(COALESCE(p_idempotency_key,'')),'');
+  IF v_idem IS NULL THEN RAISE EXCEPTION 'idempotency_key_required'; END IF;
+  IF length(v_idem) > 120 THEN RAISE EXCEPTION 'invalid_idempotency_key'; END IF;
 
   -- MESMO lock do create. Espera limitada (lock_timeout da função): estouro => in_progress,
   -- nunca conclusivo e sem nenhuma escrita.
@@ -112,6 +148,10 @@ BEGIN
   EXCEPTION WHEN lock_not_available THEN
     RETURN jsonb_build_object('contract','C2_ORDER_ATTEMPT_CLOSURE_V1','state','in_progress');
   END;
+
+  -- Revalida APÓS a espera: revogação/perfil/parceiro inativo confirmados durante a espera
+  -- abortam sem revelar committed e sem gravar closed.
+  PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);
 
   SELECT true, i.order_id INTO v_found, v_order_id
     FROM public.partner_order_idempotency i
@@ -231,6 +271,16 @@ BEGIN
 
   -- idempotencia (lock deterministico #1: parceiro+chave)
   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_idem:' || p_partner_id::text || ':' || v_idem, 0));
+  -- c2_attempt_closure_v2: a espera no lock pode atravessar revogações; revalida a
+  -- autorização canônica APÓS o lock e antes de revelar replay ou criar (ponto de
+  -- linearização = esta instrução; revogação confirmada depois dela não é observada).
+  PERFORM platform_private.c2_partner_order_attempt_authz(v_uid, p_partner_id);
+  -- Fechamento durável sob ESTE MESMO lock: recusa envio tardio antes de qualquer efeito.
+  -- (Corpos antigos em voo são cobertos pelo trigger c2_attempt_closure_guard.)
+  IF EXISTS (SELECT 1 FROM platform_private.partner_order_idempotency_closures c
+              WHERE c.partner_id = p_partner_id AND c.idempotency_key = v_idem) THEN
+    RAISE EXCEPTION 'idempotency_key_closed';
+  END IF;
   SELECT * INTO v_prev_idem FROM public.partner_order_idempotency
    WHERE partner_id = p_partner_id AND idempotency_key = v_idem;
   IF FOUND THEN
@@ -246,15 +296,6 @@ BEGIN
       RAISE EXCEPTION 'idempotency_conflict';
     END IF;
     RETURN v_prev_idem.result_snapshot;
-  END IF;
-
-  -- c2_attempt_closure_v1: fechamento durável registrado sob ESTE MESMO lock
-  -- (b2b_idem). Se o fechamento ganhou a corrida, um envio tardio desta chave é
-  -- recusado antes de qualquer criação; se a criação ganhou, o fechamento vê o
-  -- registro acima e responde committed.
-  IF EXISTS (SELECT 1 FROM platform_private.partner_order_idempotency_closures c
-              WHERE c.partner_id = p_partner_id AND c.idempotency_key = v_idem) THEN
-    RAISE EXCEPTION 'idempotency_key_closed';
   END IF;
 
   SELECT * INTO v_plan FROM public.commercial_payment_plans WHERE id = p_payment_plan_id;
@@ -512,10 +553,10 @@ DO $c2ac_cand_post$
 DECLARE r record;
 BEGIN
   SELECT md5(prosrc) m, pg_get_userbyid(proowner) o, prosecdef s, proconfig c, proacl::text a INTO r FROM pg_proc WHERE oid=to_regprocedure('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)');
-  IF r.m IS DISTINCT FROM '006d20ee80e4ab94a7d266d7ede57c67' OR r.o<>'postgres' OR NOT r.s OR r.c IS DISTINCT FROM ARRAY['search_path=public']::text[] OR r.a IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN
+  IF r.m IS DISTINCT FROM '71d1f32e00c5c9857eae51999dc40ef0' OR r.o<>'postgres' OR NOT r.s OR r.c IS DISTINCT FROM ARRAY['search_path=public']::text[] OR r.a IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' THEN
     RAISE EXCEPTION 'C2AC_POST:create'; END IF;
   SELECT md5(prosrc) m, pg_get_userbyid(proowner) o, prosecdef s, proconfig c, proacl::text a INTO r FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)');
-  IF r.m IS DISTINCT FROM 'ba556b900ec5cd8060c25d79028a5727' OR r.o<>'postgres' OR NOT r.s
+  IF r.m IS DISTINCT FROM 'dcb22362321fa041353242674db58057' OR r.o<>'postgres' OR NOT r.s
      OR r.c IS DISTINCT FROM ARRAY['search_path=""','lock_timeout=5s']::text[]
      OR r.a IS DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres}' THEN RAISE EXCEPTION 'C2AC_POST:core'; END IF;
   SELECT md5(prosrc) m, pg_get_userbyid(proowner) o, prosecdef s, proconfig c, proacl::text a INTO r FROM pg_proc WHERE oid=to_regprocedure('public.close_partner_order_attempt_v1(uuid,text)');
@@ -531,5 +572,14 @@ BEGIN
     RAISE EXCEPTION 'C2AC_POST:closures_acl_rls'; END IF;
   IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='platform_private.partner_order_idempotency_closures'::regclass AND NOT tgisinternal
         AND tgfoid=to_regprocedure('platform_private.c2_attempt_closure_immutable()')) <> 2 THEN RAISE EXCEPTION 'C2AC_POST:immutability_triggers'; END IF;
+  SELECT md5(prosrc) m, pg_get_userbyid(proowner) o, prosecdef s, proconfig c, proacl::text a INTO r FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_partner_order_attempt_authz(uuid,uuid)');
+  IF r.m IS DISTINCT FROM '0c5ded5e797ded21cc08e28c2958175d' OR r.o<>'postgres' OR r.s OR r.c IS DISTINCT FROM ARRAY['search_path=""']::text[]
+     OR r.a IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'C2AC_POST:authz'; END IF;
+  SELECT md5(prosrc) m, pg_get_userbyid(proowner) o, prosecdef s, proconfig c, proacl::text a INTO r FROM pg_proc WHERE oid=to_regprocedure('platform_private.c2_attempt_closure_guard()');
+  IF r.m IS DISTINCT FROM '140ceb10660fb226fda78fb94277d17e' OR r.o<>'postgres' OR NOT r.s OR r.c IS DISTINCT FROM ARRAY['search_path=""']::text[]
+     OR r.a IS DISTINCT FROM '{postgres=X/postgres}' THEN RAISE EXCEPTION 'C2AC_POST:guard_fn'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_idempotency'::regclass AND tgname='c2_attempt_closure_guard'
+        AND tgfoid=to_regprocedure('platform_private.c2_attempt_closure_guard()') AND tgenabled='O' AND NOT tgisinternal
+        AND tgtype = (1|2|4|16)::int2) THEN RAISE EXCEPTION 'C2AC_POST:write_barrier_trigger'; END IF;
 END $c2ac_cand_post$;
 COMMIT;

@@ -8,7 +8,9 @@ BEGIN
   -- alvo ausente
   IF to_regclass('platform_private.partner_order_idempotency_closures') IS NOT NULL
      OR to_regprocedure('platform_private.c2_close_partner_order_attempt_core(uuid,text)') IS NOT NULL OR to_regprocedure('public.close_partner_order_attempt_v1(uuid,text)') IS NOT NULL
-     OR to_regprocedure('platform_private.c2_attempt_closure_immutable()') IS NOT NULL THEN
+     OR to_regprocedure('platform_private.c2_attempt_closure_immutable()') IS NOT NULL OR to_regprocedure('platform_private.c2_partner_order_attempt_authz(uuid,uuid)') IS NOT NULL
+     OR to_regprocedure('platform_private.c2_attempt_closure_guard()') IS NOT NULL
+     OR EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_order_idempotency'::regclass AND tgname='c2_attempt_closure_guard') THEN
     RAISE EXCEPTION 'C2AC_TARGET_PRESENT';
   END IF;
   -- create canônico LIVE byte-exato (corpo/owner/secdef/search_path/ACL)
