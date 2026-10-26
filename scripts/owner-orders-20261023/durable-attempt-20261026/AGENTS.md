@@ -3,3 +3,4 @@
 - Candidate activation pins audited legacy rows, imports their latest unacknowledged commit under bounded idempotency-table and order-table locks; the write barrier never takes scope and rejects unregistered keys first — prevents old-body lock inversion without pretending CREATE OR REPLACE drains calls.
 - Rollback is deny-only on canonical idempotency writes and disables continuity RPCs while preserving all journals, closures and history — prevents downgrade to memory-only duplication.
 - Local PostgreSQL uses the captured create/closure chain with synthetic Auth; browser tests use real IndexedDB with controlled transport, never hosted JWT/RLS certification — prevents false real-session claims.
+- Local journal transitions are monotonic within each generation, terminal conflicts abort, and dispatch requires a fresh strictly parsed canonical nonterminal reply plus matching local CAS — prevents stale terminal regression and malformed/closed dispatch.
