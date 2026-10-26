@@ -85,11 +85,6 @@ STUB_HR_MD5="${HAS_ROLE_PIN%%|*}"
 STUB_HR_ACL="${HAS_ROLE_PIN#*|}"
 STUB_TUPLES=$(Q "SELECT string_agg(format('         (%L, %s, %L, %L)', polname, polpermissive, qm, cm), E',\n' ORDER BY polname) FROM (SELECT pol.polname, pol.polpermissive, md5(coalesce(pg_get_expr(pol.polqual, pol.polrelid), '')) AS qm, md5(coalesce(pg_get_expr(pol.polwithcheck, pol.polrelid), '')) AS cm FROM pg_policy pol JOIN pg_class c ON c.oid=pol.polrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='partner_orders') p;")
 export STUB_HR_MD5 STUB_HR_ACL STUB_TUPLES
-python3 - <<'PY'
-import os, pathlib, re
-pkg = pathlib.Path(os.environ["PKG"]) if os.environ.get("PKG") else pathlib.Path(__file__).parent
-pkg = pathlib.Path("PLACEHOLDER_PKG")
-PY
 PKG="$PKG" python3 - <<'PY'
 import os, pathlib, re
 pkg = pathlib.Path(os.environ["PKG"])
