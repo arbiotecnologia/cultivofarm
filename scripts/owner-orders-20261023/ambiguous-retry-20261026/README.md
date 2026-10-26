@@ -34,3 +34,13 @@ Revogação de papel torna a tentativa inalcançável, sem liberá-la a outro at
 Limite do `cart_hash`: não é retido; o reenvio usa o hash da simulação atual. Se preço ou vencimento mudarem
 (nova simulação/dia), o reenvio idêntico pode ser impossível ou recusado; a tentativa permanece incerta (rejeição
 após incerteza não descarta), mantendo o envio alterado bloqueado em vez de duplicar.
+
+## Revisão 01367ee — corrida entre envios da mesma chave
+Antes: rejeição do 1º envio apagava a entrada com o 2º em voo; o sucesso do 2º se perdia e o retry gerava chave nova
+(`corrida-antes.txt`: 3/4 falham; `corrida-hook-antes.txt`: 4/4 falham, hook real).
+Correção: `inflightCount` + `uncertain`. A reserva é SÍNCRONA na página (`markOrderAttemptSending` antes de `mutate`,
+sem depender de `isPending`); o `mutationFn` só registra o desfecho e libera a reserva se não chegar a enviar.
+Rejeição conclusiva só descarta com zero envios em voo, sem incerteza e sem confirmação; o descarte pela tela exige
+pedido confirmado e zero envios em voo. Com a reserva, o 2º clique no mesmo tick fica bloqueado na tela (1 RPC).
+Testes: `concurrentAttempt.audit.test.ts` (4), `concurrentAttemptHook.test.tsx` (4, ambas as ordens) e
+`novoPedidoAmbiguousRetry.test.tsx` (16) — `reproducao-depois.txt`.
