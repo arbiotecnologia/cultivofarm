@@ -31,11 +31,12 @@ Não instalar backend isoladamente: clientes001b sem reservas seriam contidos; i
   por isso **barreira servidor jamais pode ser removida por downgrade**. Não restaurar writer permissivo.
 
 Provas desta etapa: 94/94 Vitest em9arquivos (29 novas integrações,65 regressões),44 PostgreSQL descartável,
-16 auditorias independentes do módulo original e11 Chromium/HTTP/IndexedDB com NovoPedido e hooks reais.
+16 auditorias independentes do módulo original e14 Chromium/HTTP/IndexedDB com NovoPedido e hooks reais.
 Auth fornecida pelo harness é sintética; transporte HTTP é controlado/interceptado, não JWT/RLS hosted.
 O arquivo externo dos40testes referido pelo proprietário não foi disponibilizado neste checkout;
 não declarar que executamos aquela suíte específica. Os44 testes de transição/locks permanecem PASS.
 Harness/nova evidência em `test-react-browser.py`, `results-react-browser.txt`, `results-react-vitest.txt`;
+browser tem avisos de refs do instrumentador Vite, sem pageerror na execução final; screenshots foram examinados.
 diff/exactfiles/manifests em `react-rollout.diff`, `react-exactfiles.txt`, `SHA256SUMS`.
 Tipos/build são conferidos pela compilação automática, sem executar build/typecheck manual.
 
