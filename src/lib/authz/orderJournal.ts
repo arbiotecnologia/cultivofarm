@@ -48,7 +48,7 @@ async function db(): Promise<IDBDatabase> {
  });
 }
 /** Store only opaque key/generation/state and SHA256 scope, never server receipts or payload. */
-export async function persistJournal(slot: string, j: Journal, current: () => boolean, predecessor?: Journal) {
+export async function persistJournal(slot: string, j: Journal, current: () => boolean, predecessor?: Journal, digest?: string) {
  currentOrThrow(current);
  const hash = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(slot));
  currentOrThrow(current);
@@ -60,14 +60,16 @@ export async function persistJournal(slot: string, j: Journal, current: () => bo
   let problem='journal_storage_unavailable';
   q.onsuccess=()=>{
    if (!current()) {problem='journal_context_changed';tx.abort();return;}
-   const old=q.result as {schema?: number; key?: string; generation?: number; state?: string} | undefined;
+   const old=q.result as {schema?: number; key?: string; generation?: number; state?: string; digest?: string} | undefined;
    const state=j.state==='reserved'?'uncertain':j.state;
    if (old && (old.schema!==1 || !UUID.test(old.key ?? '') || !Number.isSafeInteger(old.generation) || Number(old.generation)<1 || !['uncertain','closed','committed'].includes(old.state ?? ''))) {problem='journal_storage_corrupt';tx.abort();return;}
    if (old && (Number(old.generation)>j.generation || (old.generation===j.generation &&
     (old.key!==j.key || (old.state!=='uncertain' && old.state!==state))))) {problem='journal_stale_response';tx.abort();return;}
    if (old && Number(old.generation)<j.generation && old.state==='uncertain' &&
     !(predecessor && predecessor.key===old.key && predecessor.generation===old.generation && ['closed','committed'].includes(predecessor.state))) {problem='journal_predecessor_unconfirmed';tx.abort();return;}
-   store.put({schema:1,key:j.key,generation:j.generation,state},key);
+   if(digest && old?.generation===j.generation && old.digest && old.digest!==digest) {problem='journal_payload_changed';tx.abort();return;}
+   store.put({schema:1,key:j.key,generation:j.generation,state,
+    ...(digest ? {digest} : old?.generation===j.generation && old.digest ? {digest:old.digest}:{})},key);
   };
   tx.oncomplete=()=>current()?resolve():reject(Error('journal_context_changed'));
   tx.onerror=tx.onabort=()=>reject(Error(problem));
@@ -81,10 +83,11 @@ export async function recoverOrderJournal(slot: string, partner: string, current
  const j=parseOrderJournal(r.data);
  await persistJournal(slot,j,current,advance); return j;
 }
-export async function prepareDurableOrder(slot: string, partner: string, current: () => boolean) {
+export async function prepareDurableOrder(slot: string, partner: string, current: () => boolean, digest: string) {
  if (!await journalCapability(slot,partner,current)) return null;
  const j=await recoverOrderJournal(slot,partner,current);
  if (!['reserved','uncertain'].includes(j.state)) throw Error('journal_previous_order_requires_confirmation');
+ await persistJournal(slot,j,current,undefined,digest);
  return j;
 }
 export async function closeDurableOrder(slot: string, partner: string, current: () => boolean) {

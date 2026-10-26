@@ -5,7 +5,7 @@ import { useStorageAccessScope } from "./useStorageAccessScope";
 import type { CatalogItemTipo } from "./usePartnerCatalog";
 import { orderAccountingState } from "@/lib/orderAccountingState";
 import { useAuth } from "./useAuth";
-import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection } from "@/lib/authz/pendingOrderAttempt";
+import { markOrderAttemptCommitted, markOrderAttemptRejected, markOrderAttemptUnresolved, orderAttemptSlot, isConclusiveRejection, orderAttemptFingerprint } from "@/lib/authz/pendingOrderAttempt";
 import { prepareDurableOrder, recoverOrderJournal } from '@/lib/authz/orderJournal';
 
 export type UnidadePedido = "hectare" | "dose_100ml" | "litro" | "volume_comercial";
@@ -108,7 +108,7 @@ export function useCreatePartnerOrder() {
       if (slot && slot !== slotFor(input.partner_id)) throw notSent(new Error("Contexto alterado."));
       const journalSlot = slotFor(input.partner_id);
       if (!journalSlot) throw notSent(new Error('Contexto indisponível.'));
-      const durable = await prepareDurableOrder(journalSlot,input.partner_id,current);
+      const durable = await prepareDurableOrder(journalSlot,input.partner_id,current,orderAttemptFingerprint(input));
       if (!current()) throw new Error('Contexto alterado.');
       // Capability confirmed: all writers use server key; never fall back after storage/RPC error.
       const dispatchKey = durable?.key ?? input.idempotency_key;
@@ -143,7 +143,7 @@ export function useCreatePartnerOrder() {
       }
       const { data, error } = response;
       const created = data as { id: string; numero: string; total: number } | null;
-      if (slot) {
+      if (slot && !durable) {
         if (!error && created?.id) markOrderAttemptCommitted(slot, input.idempotency_key, { numero: created.numero ?? null });
         else if (isConclusiveRejection(error))
           markOrderAttemptRejected(slot, input.idempotency_key);
