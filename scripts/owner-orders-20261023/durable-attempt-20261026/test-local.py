@@ -119,11 +119,19 @@ if pg.sql(f"SELECT count(*) FROM public.partner_order_idempotency WHERE idempote
  rec=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'safe-recover',G)
  oo,ee=finish(old);ro,re=finish(rec)
  ok('AFTER old registered body/recover complete without cycle',not ee and not re and '40P01' not in ee+re)
-else:
- ok('AFTER safe barrier restored exact and control committed exactly one',pg.sql(f"SELECT count(*) FROM public.partner_order_idempotency WHERE idempotency_key='{r['key']}'")=='1')
 # Control may have committed r; acknowledge explicitly then use a fresh uncertain key.
 rr=recover()
 if rr['state']=='committed':r=recover(advance=True,key=rr['key'],generation=rr['generation'],ack=rr['order_id'])
+# Exact same forced old idem/new scope overlap AFTER, with pause before safe trigger.
+forced=safe_write.replace('\nBEGIN',"\nBEGIN\n IF current_setting('c2dj.control',true)='on' THEN PERFORM pg_advisory_xact_lock(777124); END IF;",1)
+pg.sql(forced);holder=holding('SELECT pg_advisory_xact_lock(777124)','safe-stall')
+old=start(create(P,r['key'],hA).replace('public.create_partner_order_secure','public.test_old_create'),'safe-old-overlap',G,"SELECT set_config('c2dj.control','on',true); ")
+ok('AFTER old registered body holds idem at forced overlap',waiting('safe-old-overlap'))
+rec=start(f"SELECT public.recover_partner_order_attempt_v1('{P}')",'safe-recover-overlap',G)
+ok('AFTER recover holds scope and waits idem in same window',waiting('safe-recover-overlap'))
+release(holder);oo,ee=finish(old);ro,re=finish(rec)
+ok('AFTER forced overlap completes old create and recover with no deadlock',not ee and not re and 'committed' in ro)
+pg.sql(safe_write);rr=recover();r=recover(advance=True,key=rr['key'],generation=rr['generation'],ack=rr['order_id'])
 nr=recover(advance=True,key=r['key'],generation=r['generation'])
 ok('explicit CAS advance closes old key before new generation',nr['generation']==r['generation']+1 and nr['key']!=r['key'] and pg.sql(f"SELECT count(*) FROM platform_private.partner_order_idempotency_closures WHERE idempotency_key='{r['key']}'")=='1')
 b=count(); e=error(G,create(P,r['key'],hA))
