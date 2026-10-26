@@ -42,6 +42,7 @@ legacy_fixture=f"""DO $legacy$ BEGIN IF (SELECT count(*) FROM public.partner_ord
  THEN RAISE EXCEPTION 'C2DJ_LEGACY_CAPTURE_DRIFT'; END IF; END $legacy$;"""
 def adapt(sql):
  sql=sql.replace('3c5afe617195db177fe831c877473258',fixture_structure).replace('a27bb088c067b7b77a9f0707b0048e40',fixture_updated)
+ sql=re.sub(r'DO \$closure_rows\$.*?END \$closure_rows\$;',"DO $closure_rows$ BEGIN IF (SELECT count(*) FROM platform_private.partner_order_idempotency_closures)<>0 THEN RAISE EXCEPTION 'C2DJ_CLOSURE_ROWS_DRIFT'; END IF; END $closure_rows$;",sql,flags=re.S)
  return re.sub(r'-- LEGACY_CAPTURE_BEGIN:.*?-- LEGACY_CAPTURE_END',legacy_fixture,sql,flags=re.S)
 candidate=adapt(candidate);post=(D/'postflight.sql').read_text()
 print('FIXTURE_METADATA_SUBSTITUTIONS',json.dumps({'poi':fixture_structure,'updated':fixture_updated,'legacy':'two synthetic orders; no production rows'}),flush=True)

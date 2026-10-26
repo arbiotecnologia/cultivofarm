@@ -124,12 +124,6 @@ BEGIN
   RAISE EXCEPTION 'C2DJ_REGISTERED_ATTEMPT_REQUIRED' USING ERRCODE='42501'; END IF;
 END $function$;
 
-CREATE FUNCTION public.partner_order_journal_capability_v1(p_partner uuid) RETURNS jsonb
-LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
- SELECT jsonb_build_object('contract','C2_ORDER_JOURNAL_V1','enabled',true,'organization_id',
- platform_private.c2_attempt_scope_lock(auth.uid(),p_partner));
-$function$;
-
 CREATE FUNCTION platform_private.c2_attempt_journal_write_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' SET lock_timeout='5s' AS $function$
 BEGIN
@@ -208,11 +202,6 @@ $function$;
 private = ['c2_attempt_scope_lock(uuid,uuid)','c2_attempt_dispatch_guard(uuid,uuid,text)','c2_attempt_journal_write_guard()']
 core='platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)'
 wrap='public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)'
-cap='public.partner_order_journal_capability_v1(uuid)'
-# capability uses authorized core, not a direct private scope-lock ACL.
-ddl=ddl.replace("platform_private.c2_attempt_scope_lock(auth.uid(),p_partner));", "(platform_private.c2_recover_order_attempt_core(p_partner)->>'organization_id'));" ) if False else ddl
-# Do not expose scope-lock just to make a capability: reuse recover contract on explicit recovery only.
-ddl=re.sub(r'CREATE FUNCTION public.partner_order_journal_capability_v1.*?\$function\$;\n', '', ddl, flags=re.S)
 for s in ['platform_private.'+x for x in private]+[core,wrap]:
  ddl+=f'REVOKE ALL ON FUNCTION {s} FROM PUBLIC,anon,authenticated,service_role;\n'
 for s in [core,wrap]: ddl+=f'GRANT EXECUTE ON FUNCTION {s} TO authenticated;\n'
