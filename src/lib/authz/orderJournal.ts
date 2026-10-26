@@ -30,12 +30,22 @@ async function rpc(name: string, args: Record<string, unknown>, current: () => b
 export async function journalCapability(slot: string, partner: string, current: () => boolean): Promise<boolean> {
  const r = await rpc('partner_order_journal_capability_v1',{p_partner:partner},current);
  if (r.error) {
-  if (!activated.has(slot) && r.error.code === 'PGRST202' && r.error.message?.includes('partner_order_journal_capability_v1')) return false;
+  if (!activated.has(slot) && r.error.code === 'PGRST202' && r.error.message?.includes('partner_order_journal_capability_v1')) {
+   // A previous durable installation cannot be ignored on reload/downgrade.
+   // Absence is only a compatibility signal from the server, never a key release.
+   if(typeof indexedDB!=='undefined') {
+    const d=await db();
+    try {const count=await new Promise<number>((resolve,reject)=>{const q=d.transaction('slots').objectStore('slots').count();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(Error('journal_storage_unavailable'));});
+     currentOrThrow(current);if(count>0)throw Error('journal_downgrade_blocked');
+    } finally {d.close();}
+   }
+   return false;
+  }
   throw Error('journal_capability_unavailable');
  }
  const d = r.data as Record<string, unknown> | null;
  const actor = JSON.parse(slot) as string[];
- if (!d || d.contract !== JOURNAL_REVISION || d.enabled !== true || d.actor_id !== actor[0] || d.organization_id !== actor[1] || d.partner_id !== partner) throw Error('journal_capability_invalid');
+ if (!Array.isArray(actor) || actor.length!==3 || actor[2]!==partner || !d || d.contract !== JOURNAL_REVISION || d.enabled !== true || d.actor_id !== actor[0] || d.organization_id !== actor[1] || d.partner_id !== partner) throw Error('journal_capability_invalid');
  activated.add(slot); return true;
 }
 async function db(): Promise<IDBDatabase> {

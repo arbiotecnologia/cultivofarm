@@ -27,8 +27,14 @@ export function useCloseOrderAttempt() {
   const actor = useRef({ userId: user?.id, organizationId: profile?.organization_id, roles });
   actor.current = { userId: user?.id, organizationId: profile?.organization_id, roles };
   const [pending, setPending] = useState(false);
+  const closing=useRef(false);
 
   const close = async (partnerId: string | null | undefined): Promise<CloseAttemptResult> => {
+    if(closing.current)return {kind:'not_eligible'};
+    closing.current=true;
+    try {return await performClose(partnerId);} finally {closing.current=false;}
+  };
+  const performClose = async (partnerId: string | null | undefined): Promise<CloseAttemptResult> => {
     if (!ATTEMPT_CLOSURE_RPC_ENABLED || !scope.ready || !partnerId) return { kind: "not_eligible" };
     const slot = orderAttemptSlot(actor.current, partnerId);
     const durableFence=scope.capture();

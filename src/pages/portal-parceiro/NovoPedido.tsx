@@ -221,6 +221,11 @@ export default function NovoPedido() {
   const attempt = useSyncExternalStore(subscribeOrderAttempts, () => readOrderAttempt(attemptSlot));
   const closeAttempt = useCloseOrderAttempt();
   const durableAttempt=useOrderJournal(isSimulationMode?undefined:partner?.id);
+  useEffect(()=>{
+    // Terminal server receipt is shown on the same catalogue, including empty carts.
+    // Do not clear user edits or authorize a next generation.
+    if(durableAttempt.mode==='durable' && ['committed','closed'].includes(durableAttempt.journal?.state??'')) setConfirmOpen(false);
+  },[durableAttempt.mode,durableAttempt.journal?.state]);
   // Aviso do último resultado de verificação, preso ao slot+chave que o produziu.
   const [closeNote, setCloseNote] = useState<{ slot: string | null; key: string | null; text: string } | null>(null);
 
