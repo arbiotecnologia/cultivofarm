@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -131,6 +131,7 @@ it("lista administrativa com linhas não duplica a seção da carteira", async (
     partner_accounts: { razao_social: "Parceiro teste4", nome_fantasia: null },
   }];
   mount();
-  await screen.findByText("PB-001029");
+  // Desktop + mobile renderizam a mesma linha; a seção da carteira não pode aparecer.
+  await waitFor(() => expect(screen.getAllByText("PB-001029").length).toBe(2));
   expect(screen.queryByText("Pedidos da carteira da empresa")).toBeNull();
 });
