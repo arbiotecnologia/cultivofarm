@@ -77,6 +77,7 @@ DROP TRIGGER zz_c2_accounting_pending ON public.partner_orders;
 DROP TRIGGER zz_c2_external_final_state ON public.partner_orders;
 """ + bodies + """
 DROP FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timestamptz);
+DROP FUNCTION platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz);
 DROP FUNCTION platform_private.c2_accounting_pending_guard();
 DROP FUNCTION platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid);
 DROP FUNCTION platform_private.c2_external_final_state_guard();
