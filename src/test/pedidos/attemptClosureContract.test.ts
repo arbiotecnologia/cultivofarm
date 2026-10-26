@@ -10,8 +10,8 @@ it("consumido somente pelo hook de verificação por clique; create nunca chama 
   expect(ATTEMPT_CLOSURE_RPC_ENABLED).toBe(true);
   const users = walk("src").filter(p => /\.(ts|tsx)$/.test(p) && readFileSync(p, "utf8").includes("attemptClosureContract"));
   expect(users).toEqual(["src/hooks/useCloseOrderAttempt.ts"]);
-  const rpcUsers = walk("src").filter(p => /\.(ts|tsx)$/.test(p) && readFileSync(p, "utf8").includes("close_partner_order_attempt_v1"));
-  console.log("RPCU", rpcUsers); expect(rpcUsers).toEqual(["src/hooks/useCloseOrderAttempt.ts"]);
+  const rpcUsers = walk("src").filter(p => /\.(ts|tsx)$/.test(p) && p !== "src/integrations/supabase/types.ts" && readFileSync(p, "utf8").includes("close_partner_order_attempt_v1"));
+  expect(rpcUsers).toEqual(["src/hooks/useCloseOrderAttempt.ts"]);
 });
 it("somente closed libera abandono; committed traz o pedido", () => {
   expect(parseAttemptClosure({ contract: C, state: "closed" })).toEqual({ state: "closed" });

@@ -257,9 +257,10 @@ it("revogação durante a verificação: closed tardio NÃO libera e carrinho ed
   state.revoked = false;
   expect(screen.queryByText(/encerrado sem pedido/)).toBeNull();
   expect(readOrderAttempt(JSON.stringify([state.actor, state.tenant, state.partner]))?.ambiguous).toBe(true);
-  // Carrinho editado preservado; reabrir e enviar continua bloqueado.
-  await waitCart();
-  await fillAndSubmit(false);
+  // Rascunho editado (quantidade 3) preservado pelo canal seguro; remontado continua bloqueado.
+  expect(state.lastDraft.items[0].quantity).toBe(3);
+  cleanup(); state.draft = state.lastDraft; state.closeImpl = null;
+  mount(); await waitCart(); await fillAndSubmit(false);
   await screen.findByText(/Não foi possível confirmar o envio anterior/);
   expect(creates()).toHaveLength(1);
 });
