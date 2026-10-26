@@ -1,6 +1,8 @@
-// Integração real de cache: leitor useMyCommercialOrders montado com cache quente
-// + useCreatePartnerOrder. Após sucesso canônico, a invalidação escopada dispara
-// nova RPC de leitura e a lista passa de 1 para 2 pedidos — sem reload, sem polling.
+// Integração com DEFAULTS DE PRODUÇÃO (App.tsx: staleTime 5min, refetchOnMount:false)
+// e fluxo real de navegação: o leitor (MeusPedidos) é DESMONTADO ao ir ao catálogo,
+// o create acontece sem leitor ativo, e a rota é REMONTADA após o sucesso.
+// Prova que a invalidação escopada + refetchOnMount:true do leitor produzem nova
+// RPC de leitura e a lista 1 -> 2 sem reload nem polling.
 // Transporte sintético; Auth simulada — não é prova JWT/RLS hosted.
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -47,60 +49,91 @@ const INPUT = {
   requested_delivery_date: "2026-11-05",
 };
 
-function Probe() {
+/** Defaults idênticos ao QueryClient de produção (src/App.tsx). */
+function prodClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { staleTime: 5 * 60 * 1000, gcTime: 10 * 60 * 1000, refetchOnWindowFocus: false, refetchOnMount: false, refetchOnReconnect: true, retry: 1 },
+      mutations: { retry: false },
+    },
+  });
+}
+const wrap = (qc: QueryClient) => ({ children }: { children: ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+
+function OrdersList() {
   const orders = useMyCommercialOrders(PARTNER);
+  return <ul>{(orders.data ?? []).map((o) => <li key={o.id}>{o.numero}</li>)}</ul>;
+}
+function CatalogPage() {
   const create = useCreatePartnerOrder();
-  return (
-    <div>
-      <ul>{(orders.data ?? []).map((o) => <li key={o.id}>{o.numero}</li>)}</ul>
-      <button onClick={() => create.mutate(INPUT)}>enviar</button>
-    </div>
-  );
+  return <button onClick={() => create.mutate(INPUT)}>enviar</button>;
 }
 
-describe("canal próprio integrado: lista 1 -> catálogo/sucesso -> lista 2 (sem reload)", () => {
+describe("canal próprio integrado com defaults de produção", () => {
   beforeEach(() => {
     state.auth = { user: { id: "A" }, profile: { user_id: "A", organization_id: "OA", ativo: true, senha_provisoria: false }, roles: ["parceiro_b2b"], loading: false };
     state.serverOrders = [{ id: "d4539dd9-b090-4433-9ed3-6f8f5d3e767b", numero: "PB-001029", status: "em_analise_comercial", created_at: "2026-10-26T15:00:00+00:00" }];
     state.pendingCreate = []; state.reads = 0; vi.clearAllMocks();
   });
 
-  it("leitor montado relê via nova RPC e mostra os 2 pedidos após sucesso canônico", async () => {
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-    render(<Probe />, { wrapper });
-    // Cache quente: lista inicial com 1 pedido (1 leitura).
+  it("fluxo real: lista 1 -> desmonta (catálogo) -> sucesso -> remonta e relê com lista 2", async () => {
+    const qc = prodClient();
+    // 1) MeusPedidos montado: lista com 1 pedido.
+    const view = render(<OrdersList />, { wrapper: wrap(qc) });
     await screen.findByText("PB-001029");
     expect(state.reads).toBe(1);
-    expect(screen.queryByText("PB-001030")).toBeNull();
 
-    // Sucesso canônico: servidor passa a ter PB-001030; resolve o create pendente.
-    state.serverOrders = [...state.serverOrders, { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", status: "em_analise_comercial", created_at: "2026-10-26T16:00:00+00:00" }];
+    // 2) Navega ao catálogo: leitor DESMONTADO (cache fica inativo).
+    view.unmount();
+
+    // 3) Create canônico sem leitor ativo; servidor passa a ter PB-001030.
+    const cat = render(<CatalogPage />, { wrapper: wrap(qc) });
     act(() => { screen.getByRole("button", { name: "enviar" }).click(); });
     await waitFor(() => expect(state.pendingCreate).toHaveLength(1));
+    state.serverOrders = [...state.serverOrders, { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", status: "em_analise_comercial", created_at: "2026-10-26T16:00:00+00:00" }];
     await act(async () => { state.pendingCreate[0]({ data: { id: "405ff73f-1667-43a3-a41c-56d9500dfd8b", numero: "PB-001030", total: 1 }, error: null }); });
+    // invalidateQueries com refetchType "active" NÃO relê enquanto o leitor está desmontado.
+    expect(state.reads).toBe(1);
+    cat.unmount();
 
-    // A invalidação escopada atinge a query ATIVA do leitor => refetch (nova RPC) e lista com 2.
+    // 4) Volta a MeusPedidos: refetchOnMount:true do leitor relê o cache stale => nova RPC e lista 2.
+    render(<OrdersList />, { wrapper: wrap(qc) });
     await screen.findByText("PB-001030");
-    await waitFor(() => expect(state.reads).toBeGreaterThanOrEqual(2));
+    await waitFor(() => expect(state.reads).toBe(2));
     expect(screen.getByText("PB-001029")).toBeTruthy();
     qc.clear();
   });
 
-  it("escopo muda (A->B) antes da resposta: leitor de A desmonta dados e nenhuma releitura de B é disparada pelo sucesso tardio", async () => {
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-    const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-    const view = render(<Probe />, { wrapper });
+  it("cache fresco (sem invalidação) NÃO relê ao remontar — refetchOnMount:true só age em stale", async () => {
+    const qc = prodClient();
+    const view = render(<OrdersList />, { wrapper: wrap(qc) });
     await screen.findByText("PB-001029");
+    expect(state.reads).toBe(1);
+    view.unmount();
+    // Sem create/invalidação: remontar dentro do staleTime não gera nova RPC.
+    render(<OrdersList />, { wrapper: wrap(qc) });
+    await screen.findByText("PB-001029");
+    expect(state.reads).toBe(1);
+    qc.clear();
+  });
+
+  it("escopo muda (A->B) antes da resposta: sucesso tardio não invalida; remontar como B não mostra dados de A", async () => {
+    const qc = prodClient();
+    const view = render(<OrdersList />, { wrapper: wrap(qc) });
+    await screen.findByText("PB-001029");
+    view.unmount();
+    const cat = render(<CatalogPage />, { wrapper: wrap(qc) });
     act(() => { screen.getByRole("button", { name: "enviar" }).click(); });
     await waitFor(() => expect(state.pendingCreate).toHaveLength(1));
-    // Troca de ator antes da resposta.
     state.auth = { ...state.auth, user: { id: "B" }, profile: { ...state.auth.profile, user_id: "B", organization_id: "OB" } };
-    view.rerender(<Probe />);
+    cat.rerender(<CatalogPage />);
     const readsBefore = state.reads;
     await act(async () => { state.pendingCreate[0]({ data: { id: "x", numero: "PB-X", total: 1 }, error: null }); });
-    // Sucesso tardio não invalida nada: nenhuma leitura extra originada pelo create.
-    expect(state.reads).toBe(readsBefore);
+    cat.unmount();
+    // Remonta como B: fence muda, query de B é nova; sucesso tardio de A não invalidou nada.
+    render(<OrdersList />, { wrapper: wrap(qc) });
+    await waitFor(() => expect(state.reads).toBe(readsBefore + 1)); // leitura inicial de B apenas
+    expect(screen.queryByText("PB-001029")).toBeNull();
     qc.clear();
   });
 });
