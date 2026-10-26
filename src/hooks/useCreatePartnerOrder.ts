@@ -84,7 +84,7 @@ export function useCreatePartnerOrder() {
   const scope = useStorageAccessScope("partner-order-mutation");
 
   return useMutation({
-    onMutate: () => ({ current: scope.capture() }),
+    onMutate: () => ({ current: scope.capture(), identity: scope.scope }),
     mutationFn: async (input: CreateOrderInput) => {
       const current = scope.capture();
       if (!current()) throw new Error("Contexto indisponível.");
@@ -122,6 +122,26 @@ export function useCreatePartnerOrder() {
     onSuccess: async (data, _variables, context) => {
       if (!context?.current()) return;
       qc.invalidateQueries({ queryKey: ["partner-orders"] });
+      // Canal próprio do parceiro (MeusPedidos usa a chave "commercial-own-orders",
+      // distinta de "partner-orders"): invalida SOMENTE a entrada cuja identidade
+      // (usuário, tenant, papéis, época) corresponde ao ator capturado no envio.
+      // Sem invalidateAll, sem polling e sem reload; se o escopo mudou antes da
+      // resposta, o fence acima já retornou e nada de outro ator é tocado.
+      let mine: unknown[] | null = null;
+      try { const parsed = JSON.parse(context?.identity ?? ""); if (Array.isArray(parsed)) mine = parsed; } catch { mine = null; }
+      if (mine) {
+        const [ready, userId, orgId, rolesKey, , epoch] = [mine[0], mine[1], mine[2], JSON.stringify(mine[3]), mine[4], mine[5]];
+        qc.invalidateQueries({
+          predicate: (q) => {
+            if (q.queryKey[0] !== "commercial-own-orders") return false;
+            try {
+              const k = JSON.parse(String(q.queryKey[1]));
+              return Array.isArray(k) && k[0] === ready && k[1] === userId && k[2] === orgId &&
+                JSON.stringify(k[3]) === rolesKey && k[5] === epoch;
+            } catch { return false; }
+          },
+        });
+      }
       // O pedido já foi aceito pelo servidor: nunca reenviar nem tratar como falha.
       const state = await readCreatedOrderAccountingState(data?.id, context.current);
       if (!context?.current() || state === "context_changed") return;
