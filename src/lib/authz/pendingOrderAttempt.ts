@@ -15,11 +15,21 @@
 export interface OrderAttempt {
   key: string;
   fingerprint: string;
-  /** Envio já saiu sem resposta conclusiva: o servidor PODE ter commitado. */
+  /** Derivado: algum envio está em voo ou terminou sem resposta conclusiva. */
   ambiguous: boolean;
+  /** Derivado: inflightCount > 0. */
   inflight: boolean;
-  /** Pedido confirmado pelo servidor mas ainda não entregue à tela. */
+  /** Envios desta chave ainda sem resposta (cliques no mesmo tick, remontagens). */
+  inflightCount: number;
+  /** Algum envio terminou sem resposta conclusiva: o servidor PODE ter commitado. */
+  uncertain: boolean;
+  /** Pedido confirmado pelo servidor (apenas o número, para aviso). */
   order: { numero: string | null } | null;
+}
+
+function put(slot: string, next: Omit<OrderAttempt, "ambiguous" | "inflight">) {
+  store.set(slot, { ...next, inflight: next.inflightCount > 0, ambiguous: next.inflightCount > 0 || next.uncertain });
+  emit();
 }
 
 const store = new Map<string, OrderAttempt>();
@@ -71,55 +81,57 @@ export function prepareOrderAttempt(slot: string, fingerprint: string, newKey: (
     if (current.ambiguous) return { ok: false, reason: "ambiguous_changed" };
   }
   const key = newKey();
-  store.set(slot, { key, fingerprint, ambiguous: false, inflight: false, order: null });
-  emit();
+  put(slot, { key, fingerprint, inflightCount: 0, uncertain: false, order: null });
   return { ok: true, key };
 }
 
-/** Marca o envio como saindo: a partir daqui o resultado é incerto até resposta. */
+/**
+ * Reserva SÍNCRONA do envio (antes de qualquer await): contabiliza cada envio
+ * em voo da mesma chave. Resultados fora de ordem nunca descartam a entrada
+ * enquanto houver outro envio pendente ou incerteza anterior.
+ */
 export function markOrderAttemptSending(slot: string, key: string): { wasAmbiguous: boolean } {
   const current = store.get(slot);
   if (!current || current.key !== key) return { wasAmbiguous: true };
   const wasAmbiguous = current.ambiguous;
-  store.set(slot, { ...current, inflight: true, ambiguous: true });
-  emit();
+  put(slot, { ...current, inflightCount: current.inflightCount + 1 });
   return { wasAmbiguous };
 }
+
+const release = (c: OrderAttempt) => Math.max(0, c.inflightCount - 1);
 
 /** Servidor confirmou o pedido para esta chave. */
 export function markOrderAttemptCommitted(slot: string, key: string, order: { numero: string | null }) {
   const current = store.get(slot);
   if (!current || current.key !== key) return;
-  store.set(slot, { ...current, inflight: false, ambiguous: false, order });
-  emit();
+  put(slot, { ...current, inflightCount: release(current), order });
 }
 
 /**
- * Resposta conclusiva de rejeição (erro com SQLSTATE: transação revertida).
- * Só descarta se a chave nunca esteve incerta antes deste envio; caso
- * contrário um envio anterior pode ter commitado e a incerteza permanece.
+ * Rejeição conclusiva (SQLSTATE de reversão). Só descarta quando NENHUM outro
+ * envio da chave está em voo, nenhum terminou incerto e nenhum confirmou.
+ * O 3º parâmetro é mantido por compatibilidade e não decide sozinho.
  */
-export function markOrderAttemptRejected(slot: string, key: string, wasAmbiguous: boolean) {
+export function markOrderAttemptRejected(slot: string, key: string, _wasAmbiguous?: boolean) {
   const current = store.get(slot);
   if (!current || current.key !== key) return;
-  if (wasAmbiguous) store.set(slot, { ...current, inflight: false });
-  else store.delete(slot);
-  emit();
+  const inflightCount = release(current);
+  if (inflightCount === 0 && !current.uncertain && !current.order) { store.delete(slot); emit(); return; }
+  put(slot, { ...current, inflightCount });
 }
 
 /** Sem resposta conclusiva (rede, contexto alterado, exceção): permanece incerto. */
 export function markOrderAttemptUnresolved(slot: string, key: string) {
   const current = store.get(slot);
   if (!current || current.key !== key) return;
-  store.set(slot, { ...current, inflight: false, ambiguous: true });
-  emit();
+  put(slot, { ...current, inflightCount: release(current), uncertain: true });
 }
 
 /** Descarte permitido apenas quando o resultado é conhecido (pedido confirmado). */
 export function settleOrderAttempt(slot: string | null, key?: string) {
   if (!slot) return;
   const current = store.get(slot);
-  if (!current || (key && current.key !== key) || (!current.order && current.ambiguous)) return;
+  if (!current || (key && current.key !== key) || current.inflightCount > 0 || !current.order) return;
   store.delete(slot);
   emit();
 }
