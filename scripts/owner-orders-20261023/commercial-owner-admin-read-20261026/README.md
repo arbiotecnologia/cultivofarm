@@ -54,10 +54,16 @@ Leitura **somente leitura**, escopada e fail-closed:
 4. **Data de entrega**: a correção do rascunho (turno anterior) é **preventiva**, não
    comprovada como causa — a UI preenchida precedeu o resumo e nenhum remount foi capturado
    em produção. Permanece até novo teste real; não declarar como causa comprovada.
-5. **Realtime sem polling**: `useCommercialOwnerOrders` assina `partner_orders` com canal
-   único por escopo de ator e invalida apenas as chaves desse ator (mesmo padrão de
-   `usePartnerOrdersAdmin`). Erro de transporte rende aviso explícito de indisponibilidade —
-   nunca confundido com carteira vazia.
+5. **Atualização MANUAL, sem realtime** (revisão 5db54f): a assinatura
+   `postgres_changes` em `partner_orders` foi **removida** — Postgres Changes respeita
+   RLS e a política restritiva nega SELECT da linha ao commercial owner, logo o canal
+   jamais entregaria eventos deste ator (e duplicava a assinatura do canal
+   administrativo). RLS **não** será ampliada por causa disso. A seção oferece botão
+   explícito **Atualizar** (refetch do canal escopado), visível também com lista vazia
+   ou erro de transporte, sem reload nem polling. **Atualização automática permanece
+   NÃO homologada e pendente** — não prometer realtime funcional sem prova real.
+   Erro de transporte rende aviso explícito de indisponibilidade — nunca confundido
+   com carteira vazia.
 
 ## Garantias
 
