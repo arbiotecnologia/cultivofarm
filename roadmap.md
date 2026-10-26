@@ -1,6 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 26/10 19:01 — recuperação durável após fechar aba / mesma origem
+- [ ] Revisão065f8633 autorizada19:12: corrigir barreira pré-lock, importação legada atômica, ACK/CAS, rollout/timeout/revogação/POST/contenção em PostgreSQL descartável; capturas adicionais só leitura, sem aplicar/publicar.
 - [x] Registrar relato independente: 001b3cad publicado, backend 5cd aplicado; A closed/PB001033 único/committed, B 403/42501 target_outside_portfolio. Não repetir operações produtivas.
 - [x] Preparar contrato servidor INATIVO + protótipo IndexedDB fora de runtime: 20 PASS PostgreSQL descartável/Auth sintética, 12 PASS Chromium/IndexedDB real/transporte controlado e 31 PASS regressões publicadas. Saídas e comandos no pacote durable-attempt-20261026.
 - [ ] Ativação NO-GO: captura LIVE integral fresca, reconciliação de chaves legadas 001b e prova de rollout/lock inversion pendentes; hard gate incondicional antes de DDL. Migração memory→journal e interface integrada NÃO implementadas.
