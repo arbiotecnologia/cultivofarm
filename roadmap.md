@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 26/10 19:01 — recuperação durável após fechar aba / mesma origem
+- [x] Registrar relato independente: 001b3cad publicado, backend 5cd aplicado; A closed/PB001033 único/committed, B 403/42501 target_outside_portfolio. Não repetir operações produtivas.
+- [ ] Preparar reserva transacional/journal mínimo com CAS e provas de navegador reais; perda total de storage e downgrade exigem autoridade durável fora do navegador. Não integrar contrato inexistente.
+- [ ] Revisão independente e eventual instalação/publicação pelo auditor; contabilidade A DRAFT e 36 falhas antigas permanecem abertas.
+
 ## 24/10 15:26 — compra B2B com pendência contábil honesta (pacote INATIVO)
 - [x] `scripts/owner-orders-20261023/accounting-pending-request-20261024/`: rebase sobre LIVE 30dc8243 (scope 54c4327d), trava INSERT/UPDATE, sem oráculo, rollback parcial + restore-live completo condicionado; 67 PASS descartável (Auth sintética). UI mostra contabilidade pendente.
 - [ ] Revisão independente/instalação pelo auditor do pacote acima; teste JWT/RLS real A/B; validação contábil real de A; tela de promoção ainda não existe.
