@@ -172,21 +172,21 @@ describe("usePromoteAccountingPendingOrder", () => {
     const c = client();
     const h = renderHook(() => usePromoteAccountingPendingOrder(), { wrapper: wrap(c) });
     let p!: Promise<unknown>;
-    act(() => { p = h.result.current.mutateAsync({ order_id: "o1", expected_updated_at: "2026-10-26T00:00:00Z" }); });
+    act(() => { p = h.result.current.mutateAsync({ order_id: "o1", expected_updated_at: "2026-10-26T00:00:00Z" }).catch((e: Error) => e); });
     await waitFor(() => expect(state.rpc).toHaveLength(1));
     expect(state.rpc[0]).toMatchObject({ name: "c2_promote_accounting_pending_order_v1", args: { p_order_id: "o1", p_expected_updated_at: "2026-10-26T00:00:00Z" } });
     await act(async () => { state.rpc[0].resolve({ data: { order_id: "o2", contract: "C2_EXTERNAL_ORDER_ORIGIN_V1" }, error: null }); });
-    await expect(p).rejects.toThrow("promotion_unconfirmed");
+    expect(String(await p)).toContain("promotion_unconfirmed");
   });
   it("troca de empresa durante o await descarta o resultado", async () => {
     const c = client();
     const h = renderHook(() => usePromoteAccountingPendingOrder(), { wrapper: wrap(c) });
     let p!: Promise<unknown>;
-    act(() => { p = h.result.current.mutateAsync({ order_id: "o1", expected_updated_at: "t" }); });
+    act(() => { p = h.result.current.mutateAsync({ order_id: "o1", expected_updated_at: "t" }).catch((e: Error) => e); });
     await waitFor(() => expect(state.rpc).toHaveLength(1));
     state.auth.profile.organization_id = "OB"; h.rerender();
     await act(async () => { state.rpc[0].resolve({ data: { order_id: "o1", contract: "C2_EXTERNAL_ORDER_ORIGIN_V1" }, error: null }); });
-    await expect(p).rejects.toThrow("context_changed");
+    expect(String(await p)).toContain("context_changed");
   });
   it("mapeia erros do servidor sem inventar motivo", () => {
     expect(promotionErrorReason({ message: "C2_ACCOUNTING_PENDING" })).toBe("accounting_pending");
