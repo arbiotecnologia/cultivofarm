@@ -102,6 +102,69 @@ denied(ADMIN,f"SELECT public.approve_partner_order('{rb['id']}',NULL,NULL)",'425
 actor(ADMIN_B,f"SELECT public.approve_partner_order('{rb['id']}',NULL,NULL);")
 nb=pg.sql(f"SELECT (SELECT count(*) FROM public.partner_order_financial_links l WHERE l.partner_order_id='{rb['id']}')||'/'||(SELECT count(*) FROM public.accounts_receivable_installments i JOIN public.partner_order_financial_links l ON l.receivable_id=i.receivable_id WHERE l.partner_order_id='{rb['id']}')||'/'||(SELECT count(*) FROM public.fiscal_invoices)")
 ok('validated B fixture: approval generates exactly one title link + 3 installments, no NF: '+nb,nb=='1/3/0')
+# ---- Single credit lock domain (review 8cad/38): two real connections, create vs approve ----
+import subprocess as _sp
+def _tx(u,sql,name,hold=False):
+    c=json.dumps({'sub':u,'role':'authenticated','iat':int(time.time())})
+    return (f"SET application_name='{name}';\nBEGIN; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{c}',true);\n{sql};\n"
+            +("SELECT 'CONCURRENT_HOLD'; SELECT pg_sleep(4);\n" if hold else '')+"COMMIT;\n")
+def _bg(u,sql,name,hold=False):
+    p=_sp.Popen(pg.psql(),stdin=_sp.PIPE,stdout=_sp.PIPE,stderr=_sp.PIPE,text=True);p.stdin.write(_tx(u,sql,name,hold));p.stdin.close()
+    if hold:
+        while True:
+            l=p.stdout.readline()
+            if 'CONCURRENT_HOLD' in l:break
+            if not l:raise AssertionError(p.stderr.read())
+    return p
+def _done(p):
+    out=p.stdout.read();err=p.stderr.read();p.wait(timeout=20);return p.returncode,out,err
+def _waits(name,want=True):
+    for _ in range(40):
+        if pg.sql(f"SELECT count(*) FROM pg_stat_activity WHERE application_name='{name}' AND wait_event_type='Lock' AND wait_event='advisory'")=='1':return True
+        time.sleep(.05)
+    return False
+apdef=pg.sql("SELECT pg_get_functiondef('public.approve_partner_order(uuid,text,date)'::regprocedure)")
+crdef=pg.sql("SELECT pg_get_functiondef('public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)'::regprocedure)")
+K="hashtextextended('b2b_credit:' || "
+ok('approve, create and credit trigger share one credit advisory key expression',K+"v_pid::text, 0)" in apdef and "hashtext('b2b_credit:" not in apdef and K+"p_partner_id::text, 0)" in crdef)
+ok('production-observed divergence reproduced for old expression (int4 vs int8 keys differ)',pg.sql(f"SELECT (hashtext('b2b_credit:'||'{Q}')::bigint<>hashtextextended('b2b_credit:'||'{Q}',0))::text")=='true')
+# (1) approve first (holds row + canonical credit lock) -> concurrent create for same partner waits on advisory
+oq=json.loads(val(GB,create(Q,'lk-target',hQ)+';'))['id']
+st0=pg.sql(f"SELECT status FROM public.partner_orders WHERE id='{oq}'")
+pa=_bg(ADMIN_B,f"SELECT public.approve_partner_order('{oq}',NULL,NULL)",'lk_approve',hold=True)
+pc=_bg(GB,create(Q,'lk-create-during-approve',hQ),'lk_create')
+ok(f'create for same partner waits on approve credit lock (status before {st0})',_waits('lk_create') and pc.poll() is None)
+# B isolation: A partner create is not blocked by B's held credit lock
+t0=time.time();ra=json.loads(val(G,create(P,'lk-a-free',hA)+';'));dt=time.time()-t0
+ok(f'other company A create not blocked by B credit lock ({dt:.2f}s)',dt<2.0 and ra['id'])
+ca=_done(pa);cc=_done(pc)
+ok('both complete after serialization; no deadlock',ca[0]==0 and cc[0]==0 and '40P01' not in ca[2]+cc[2])
+ok('approved order exactly one title link, new create no title',pg.sql(f"SELECT count(*) FROM public.partner_order_financial_links WHERE partner_order_id='{oq}'")=='1' and pg.sql("SELECT count(*) FROM public.partner_order_financial_links l JOIN public.partner_order_idempotency i ON i.order_id=l.partner_order_id WHERE i.idempotency_key='lk-create-during-approve'")=='0')
+# (2) create first (holds canonical credit lock) -> approve waits BEFORE evaluating exposure
+oq2=json.loads(val(GB,create(Q,'lk-target-2',hQ)+';'))['id']
+pc2=_bg(GB,create(Q,'lk-create-first',hQ),'lk_create2',hold=True)
+pa2=_bg(ADMIN_B,f"SELECT public.approve_partner_order('{oq2}',NULL,NULL)",'lk_approve2')
+ok('approve waits on create credit lock (same key) before exposure decision',_waits('lk_approve2') and pa2.poll() is None)
+r1_,r2_=_done(pc2),_done(pa2)
+ok('create-first then approve both commit, no deadlock',r1_[0]==0 and r2_[0]==0 and '40P01' not in r1_[2]+r2_[2])
+# (3) holding the OLD int4 key no longer blocks approve (domain moved) while holding the canonical key does
+oq3=json.loads(val(GB,create(Q,'lk-target-3',hQ)+';'))['id']
+h=_sp.Popen(pg.psql(),stdin=_sp.PIPE,stdout=_sp.PIPE,stderr=_sp.PIPE,text=True);h.stdin.write(f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:'||'{Q}',0)); SELECT 'CONCURRENT_HOLD'; SELECT pg_sleep(3); COMMIT;\n");h.stdin.close()
+while 'CONCURRENT_HOLD' not in h.stdout.readline():pass
+before=snapshot();e=pg.sql(f"BEGIN; SET LOCAL lock_timeout='800ms'; SET LOCAL ROLE authenticated; SELECT set_config('request.jwt.claims','{jwt(ADMIN_B)}',true); SELECT public.approve_partner_order('{oq3}',NULL,NULL); COMMIT;",ok=False)
+ok('approve blocked by canonical create key; lock timeout aborts atomically with no effects','lock timeout' in e and snapshot()==before)
+_done(h)
+# (4) revocation while waiting: authority re-validated after the lock
+h=_sp.Popen(pg.psql(),stdin=_sp.PIPE,stdout=_sp.PIPE,stderr=_sp.PIPE,text=True);h.stdin.write(f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:'||'{Q}',0)); SELECT 'CONCURRENT_HOLD'; SELECT pg_sleep(2); COMMIT;\n");h.stdin.close()
+while 'CONCURRENT_HOLD' not in h.stdout.readline():pass
+before=snapshot();pr_=_bg(ADMIN_B,f"SELECT public.approve_partner_order('{oq3}',NULL,NULL)",'lk_revoked')
+ok('approve waiting on credit lock',_waits('lk_revoked'))
+pg.sql(f"SET session_replication_role=replica; DELETE FROM public.user_roles WHERE user_id='{ADMIN_B}' AND role='administrador'; SET session_replication_role=origin;")
+_done(h);rc,out,err=_done(pr_)
+ok('revoked during wait: approve denied after lock (forbidden), no effects',rc!=0 and 'forbidden' in err and snapshot()==before and pg.sql(f"SELECT status FROM public.partner_orders WHERE id='{oq3}'")!='aprovado')
+pg.sql(f"SET session_replication_role=replica; INSERT INTO public.user_roles(user_id,role) VALUES('{ADMIN_B}','administrador'); SET session_replication_role=origin;")
+actor(ADMIN_B,f"SELECT public.approve_partner_order('{oq3}',NULL,NULL);")
+ok('control: restored authority approves same order once',pg.sql(f"SELECT count(*) FROM public.partner_order_financial_links WHERE partner_order_id='{oq3}'")=='1')
 c0=counts()
 # Promotion: explicit, audited, owner-only, CAS, only after real (here: fixture) validation
 upd=pg.sql(f"SELECT updated_at FROM public.partner_orders WHERE id='{r1['id']}'")
