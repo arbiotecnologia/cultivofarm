@@ -111,14 +111,6 @@ def instrument(on):
     pg.sql(stall_def if on else assert_def)
 STALL = "SELECT set_config('c2ac.test_stall','on',true);\n"
 
-def rollout(cand_sql, key, label):
-    """Create LIVE já em execução e pausado ANTES do lock b2b_idem; aplica candidato; fecha K; libera."""
-    before_orders = orders()
-    holder = bg(None, f"SELECT pg_advisory_xact_lock({STALL_KEY})", f'stall-{key}', hold=30)
-    old = bg(G, create(P, key, hA), f'old-{key}', extra='')
-    # a pausa é definida dentro da transação do create antigo
-    return holder, old, before_orders
-
 # ======================= 0) Preflight / atomicidade / timeouts ============================
 q(pre); ok('preflight READ ONLY passes on captured LIVE state')
 ok('preflight left no objects', q("SELECT to_regclass('platform_private.partner_order_idempotency_closures') IS NULL") == 't')
@@ -172,7 +164,6 @@ q(prev_rbfull)
 ok('harness reset to LIVE after control (create LIVE md5, no objects)', pmd5(CREATE) == PINS['create_prosrc_md5'] and q("SELECT to_regclass('platform_private.partner_order_idempotency_closures') IS NULL") == 't')
 q(pre)
 
-st_before = None
 o, e, rows, n0 = rollout_case(cand, 'k-rollout-new', 'DEPOIS (barreira)')
 ok(f"DEPOIS: old in-flight body refused by write-barrier trigger [{first_error(e)}]",
    first_error(e) == 'ERROR:  P0001: idempotency_key_closed' and '"numero"' not in o)
