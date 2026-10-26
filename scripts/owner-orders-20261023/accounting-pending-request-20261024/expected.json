@@ -6,7 +6,18 @@
   "public.generate_b2b_receivable_secure(uuid)": "31eeb54e4b69d97c311629a37e553faf",
   "platform_private.c2_owner_order_create_allowed(uuid,uuid)": "a0417d6727d78412849916a95b250bde"
  },
- "candidate": {},
+ "candidate": {
+  "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)": "999e5e9fd9887595e252523fb2142726",
+  "platform_private.b2b_internal_order_snapshot_guard()": "9cad2aaa995277b913f8b40816fea504",
+  "public.approve_partner_order(uuid,text,date)": "3b0ba480d035f5cc9b3ad02567b0f08f",
+  "public.generate_b2b_receivable_secure(uuid)": "c49cc7ccedbcb28cba9b816b7e47c521",
+  "platform_private.c2_owner_order_create_allowed(uuid,uuid)": "5f0a08d1d4f8d8c5a7ae58e24c71071e",
+  "platform_private.c2_external_origin_contract_valid(jsonb)": "369fd07cd9c659b87941b9a3bf972868",
+  "platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)": "05938c5e9abf096d560e57aad10af69f",
+  "platform_private.c2_accounting_pending_guard()": "49ba72a6d607f729dc40179ac9d5d30e",
+  "platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz)": "68aa322da9dd403beb776cfb333b1e27",
+  "public.c2_promote_accounting_pending_order_v1(uuid,timestamptz)": "3df7e1a806fb080283ad1ebad20d212c"
+ },
  "b5_to_candidate": {
   "c79689aa1070534ce43edde279ee5682": "999e5e9fd9887595e252523fb2142726",
   "da7a558c06878344c6e5ce70bb1c8e89": "9cad2aaa995277b913f8b40816fea504",
