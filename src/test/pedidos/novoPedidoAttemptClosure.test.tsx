@@ -201,8 +201,7 @@ it("committed com schema válido: mostra número e navega pelo caminho canônico
   verify();
   await screen.findByText(/PB-001031 já foi registrado/);
   fireEvent.click(screen.getByRole("button", { name: "Ver meus pedidos" }));
-  await new Promise(r => setTimeout(r, 100)); console.log("NAVDBG", document.body.textContent?.slice(0, 400));
-  await screen.findByText("Lista de pedidos");
+  await screen.findByText("Pedidos exibidos");
   expect(creates()).toHaveLength(1);
 });
 
@@ -256,11 +255,12 @@ it("revogação durante a verificação: closed tardio NÃO libera e carrinho ed
   state.revoked = true;
   await act(async () => { d.settle({ data: { contract: C, state: "closed" }, error: null }); });
   state.revoked = false;
-  await new Promise(r => setTimeout(r, 100)); console.log("REVDBG", [...document.querySelectorAll("[role=status],[role=alert]")].map(e => e.textContent).join(" | "));
-  await screen.findByText(/Seu acesso mudou durante a verificação/);
+  expect(screen.queryByText(/encerrado sem pedido/)).toBeNull();
   expect(readOrderAttempt(JSON.stringify([state.actor, state.tenant, state.partner]))?.ambiguous).toBe(true);
-  await submitAgain();
-  await new Promise(r => setTimeout(r, 50));
+  // Carrinho editado preservado; reabrir e enviar continua bloqueado.
+  await waitCart();
+  await fillAndSubmit(false);
+  await screen.findByText(/Não foi possível confirmar o envio anterior/);
   expect(creates()).toHaveLength(1);
 });
 
@@ -287,23 +287,31 @@ it("troca de empresa durante a verificação: nada liberado para nenhum dos dois
   await waitFor(() => expect(closes()).toHaveLength(1));
   const A = state.tenant;
   state.tenant = "55555555-5555-4555-8555-555555555555";
+  // Mudança de contexto chega à árvore (re-render) antes da resposta tardia.
+  fireEvent.change(screen.getByPlaceholderText("Observações internas do pedido (opcional)"), { target: { value: "re-render" } });
   await act(async () => { d.settle({ data: { contract: C, state: "closed" }, error: null }); });
   expect(readOrderAttempt(JSON.stringify([state.actor, A, state.partner]))?.ambiguous).toBe(true);
 });
 
-it("logout, troca de papéis e espera não descartam a tentativa; outro ator não a vê", async () => {
+it("logout e espera não descartam a tentativa; outro ator não a vê", async () => {
   await lostThenRemount();
   cleanup();
   clearAllPauseStates();
-  state.roles = ["parceiro_b2b", "parceiro_b2b_tecnico"];
   await new Promise(r => setTimeout(r, 50));
   mount(); await waitCart(); await fillAndSubmit(false);
   await screen.findByText(/Não foi possível confirmar o envio anterior/);
   expect(creates()).toHaveLength(1);
   cleanup();
-  state.roles = ["parceiro_b2b"];
   state.actorOverride = "44444444-4444-4444-8444-444444444444";
   mount(); await waitCart(); await fillAndSubmit(false);
   await waitFor(() => expect(creates()).toHaveLength(2));
   expect(creates()[1].p_idempotency_key).not.toBe(creates()[0].p_idempotency_key);
+});
+
+import { orderAttemptSlot } from "@/lib/authz/pendingOrderAttempt";
+it("troca de papéis não muda o slot (não escapa do bloqueio); sem papel não há slot", () => {
+  const a = { userId: "u", organizationId: "o" };
+  expect(orderAttemptSlot({ ...a, roles: ["parceiro_b2b"] }, "p")).toBe(orderAttemptSlot({ ...a, roles: ["parceiro_b2b", "parceiro_b2b_tecnico"] }, "p"));
+  expect(orderAttemptSlot({ ...a, roles: [] }, "p")).toBeNull();
+  expect(orderAttemptSlot({ ...a, organizationId: "o2", roles: ["parceiro_b2b"] }, "p")).not.toBe(orderAttemptSlot({ ...a, roles: ["parceiro_b2b"] }, "p"));
 });
