@@ -2,19 +2,19 @@
 
 - Migration: `fiscal_company_rtc_cas_http409_20261026`, aplicada pelo proprietário; NÃO reaplicar.
 - Destino informado: canônico `swzpzcwiasxmjutrmvkm`. Nenhuma operação hosted pelo agente.
-- Função: `public.rpc_fiscal_company_rtc_save(jsonb,text)`; prehash `bdcd800e957127cc9294fac26605ae94`. Pós-hash/corpo completo não fornecidos; não inferidos.
+- Função: `public.rpc_fiscal_company_rtc_save(jsonb,text)`; prehash `bdcd800e957127cc9294fac26605ae94`. Pós-hash informado pelo auditor às23:54: `ba28b1365b38dd8f1c8d489591259ecf`; corpo completo não recapturado pelo agente.
 - Preserva h15 staff/admin; bloqueia `cf_user_guards_v1.state FOR UPDATE`, revalida autorização, exige exatamente um cadastro na organização e bloqueia a linha fiscal.
 - Ausente: PT404 / FISCAL_COMPANY_NOT_INITIALIZED. Ambígua: PT409 / FISCAL_COMPANY_AMBIGUOUS. Revisão nula ou stale: PT409 / FISCAL_CONFLICT.
 - UPDATE filtrado por id/organização/updated_at; stamp `greatest(clock_timestamp(), anterior + 1 microsecond)` e erro se zero linhas. Não muda status/atestação contábil.
-- Provas reais relatadas pelo proprietário: A null/stale HTTP409; B sem cadastro HTTP404. Não são testes JWT executados pelo agente.
+- Provas reais relatadas pelo proprietário: A null/stale HTTP409; B sem cadastro HTTP404; corrida real 1×HTTP200/1×HTTP409, DRAFT preservado. Não são testes JWT executados pelo agente.
 
-## Serviço global — revisão, não implantação
+## Serviço global — implantação independente informada às23:54
 
-Achado informado: `rpc_fiscal_service_ibs_cbs_save` e `rpc_fiscal_service_profile_ibs_cbs_save` DEFINER permitem admin/financeiro em `service_fiscal_profiles` global sem organização, apesar da política UPDATE Superadmin. Hardening servidor/CAS aguardam canal global do auditor. Nenhum DDL preparado/aplicado neste recorte; não se presume proteção do endpoint pela interface.
+Achado anterior: os dois RPCs DEFINER permitiam admin/financeiro em `service_fiscal_profiles` global sem organização, apesar da política UPDATE Superadmin. O auditor informou aplicação de `fiscal_services_global_auth_cas_http409_20261026`; NÃO reaplicar. Hashes pós informados, respectivamente: `rpc_fiscal_service_ibs_cbs_save` = `b924520c75a3707f8fb927e3ab6db652`; `rpc_fiscal_service_profile_ibs_cbs_save` = `e9e78a0b2738aa39c088b34a3505e16b9`. A/B ambos HTTP403/FISCAL_FORBIDDEN relatados. Nenhum DDL ou prova JWT foi executado pelo agente; corpos/ACLs não recapturados aqui.
 
 Interface existente: FiscalServicos usava `getAccessLevel(role) === rw` para Novo/Editar/IBS; hook de serviços tinha `valid = () => true`. Correção local apenas restritiva: UI intersecta acesso existente com fence global Superadmin, hook IBS/CBS usa o mesmo fence de produtos em ambos os kinds de serviço e rejeita revogação/respostas antigas. Nenhuma rota/papel/ACL ampliada. Hook de cadastro direto e caches globais de serviços não foram reestruturados; revisão completa desse canal permanece pendente.
 
-`getAccessLevel(superadmin, /configuracoes/fiscal/servicos)` continua `none`: portanto esta página tenant fica somente consulta; nenhum editor/rota global novo foi habilitado. Hook permite autoridade global já existente, mas não abre navegação. Canal global de serviços depende de autorização e hardening do auditor.
+`getAccessLevel(superadmin, /configuracoes/fiscal/servicos)` continua `none`: portanto esta página tenant fica somente consulta; nenhum editor/rota global novo foi habilitado. Hook permite autoridade global já existente, mas não abre navegação. Canal global de interface continua sem autorização; hardening servidor já aplicado externamente conforme relato acima.
 
 ## Diff e testes locais
 
@@ -27,4 +27,12 @@ Interface existente: FiscalServicos usava `getAccessLevel(role) === rw` para Nov
 - Resultado: 130/130 em 7 arquivos; build automático 23:47:48 UTC OK. Sem typecheck/build manual; sem prova JWT/RLS servidor ou browser autenticado. Fixture inicial da página retornava objeto novo em cada render (loop), corrigida para identidade estável antes do resultado final.
 - Nenhum comando Git de commit executado; revisões são geridas pela plataforma.
 
-Relatório anterior `remaining-40001-review-20261026.md` permanece histórico: pendência RTC foi tratada independentemente conforme este relato, não PASS inferido para outros serviços ou triggers. Contagem de funções ainda com 40001 não recapturada; não deduzir contagem nova.
+Relatório anterior `remaining-40001-review-20261026.md` permanece histórico: RTC e dois serviços tratados independentemente conforme este relato. Auditor confirmou 44 funções ainda com40001 às23:54; não se deduz PASS nem troca global de erros de serialização verdadeiros. SMTP intacto.
+
+## Concorrência cliente — revisão0bbca9a, correção local
+
+- Reproduzidos 32/32 testes falhando antes da correção (configurações válidas, Auth/transporte simulados): oito cenários para empresa e cada kind produto/serviço/perfil de serviço.
+- Ledger por hook/scope: leitura mais recente vence; save invalida leituras anteriores, trava envio sincronamente e ignora reload durante save sem invalidar seu resultado. Revisão usada pelo próximo save vem do envelope canônico aceito, não de closure React antiga.
+- Exceções encerram loading/saving; finally libera apenas o próprio ticket. Troca/revogação não adota respostas nem libera save da nova scope. PT409 mantém configuração/revisão, sem refetch/save automático; rascunho do formulário não é alterado.
+- `rtcOperationConcurrency.test.tsx`: 32/32 depois; junto com13 testes RTC existentes:45/45. São hooks renderizados reais com transporte/Auth simulados, não prova JWT/RLS ou browser produtivo.
+- `rpc_fiscal_draft_save`: comparação `draft_version <> p_expected_version` com NULL permite bypass informado; revisão da cadeia pendente. Nenhum SQL alterado, nenhum teste servidor dessa cadeia alegado.

@@ -32,3 +32,10 @@ tenant_smtp_executor.tenant_smtp_lane_finish|3|DEFINER|uid=False|lock=True|cas=F
 5. **visitas_campo_guard** (trigger invoker) — 40001 em trigger: avaliar se é conflito de negócio ou serialização legítima.
 6. Funções da plataforma (planos/admins/perfil) usam lock+CAS; candidatas a PT409 em lote separado, com verificação de clientes (`usePlataformaSaaS` trata 40001).
 Fora do escopo: correção. Próximas fases separadas por função, com pin md5 LIVE.
+
+## Atualização independente — 26/10 23:54 UTC (sem nova captura/DDL pelo agente)
+
+- A contagem47 acima é histórica; auditor confirmou **44 funções com40001** restantes. Isso não certifica os corpos das funções externas nem permite substituir serialização verdadeira/handlers SMTP indiscriminadamente.
+- RTC empresa aplicado, pósMD5 `ba28b1365b38dd8f1c8d489591259ecf`: corrida real relatada1×200/1×409; DRAFT preservado.
+- Dois RPCs globais de serviço endurecidos em `fiscal_services_global_auth_cas_http409_20261026`, hashes e negações A/B no registro RTC; NÃO reaplicar. Produto/global cadastral e caches ainda exigem revisão própria.
+- **Prioridade auth/CAS pendente: `rpc_fiscal_draft_save`** usa `draft_version <> p_expected_version`; com parâmetroNULL a comparação não é TRUE, permitindo bypass do teste. Revisar cadeia completa, wrappers/callers, autorização pré/pós-lock, identidade/tenant, revisão obrigatória, atomicidade e tratamento de conflitos antes de qualquer proposta SQL. Achado informado, não explorado nem corrigido aqui.

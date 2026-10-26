@@ -1,15 +1,16 @@
 # F2-B — auditoria e preparação revisável
 
 ## 26/10 23:54 — concorrência RTC/IBS-CBS e conciliação independente
-- [ ] Corrigir e testar leituras fora de ordem, leitura antes/durante save, duplo save, exceção/revogação nos hooks empresa/item; sem SQL/publicação.
-- [ ] Conciliar hashes/implantação global e company, race real relatada e 44 funções 40001 restantes.
+- [x] Corrigir leituras fora de ordem, leitura antes/durante save, duplo save e exceção/revogação:32 regressões falharam antes/passaram depois;45/45 com RTC existentes, Auth/transporte simulados; sem SQL/publicação.
+- [x] Conciliar hashes/implantação global e company, race real relatada e44 funções40001 restantes; sem recaptura ou reaplicação.
 - [ ] Revisão da cadeia `rpc_fiscal_draft_save`: `draft_version <> p_expected_version` permite NULL bypass; depende de captura/revisão independente, sem alterar SQL neste recorte.
 
 ## 26/10 23:42 — RTC CAS aplicado e interface global de serviços
 - [x] Conciliação RTC registrada sem reaplicar SQL; hook real testa PT409/PT404, revisão preservada e ausência de retry.
 - [x] UI tenant serviços somente consulta; IBS/CBS usa fence global existente; revogação/contexto testados. Rota Superadmin segue negada, sem nova entrada global.
 - [x] 130/130 testes em7arquivos PASS (Auth/transporte simulados), build automático OK; relatório/diff em applied/fiscal_company_rtc_cas_http409_20261026.md.
-- [ ] Hardening servidor/CAS dos serviços e homologação JWT pelo auditor; canal global de edição de serviços não foi criado/autorizado. Cadastro direto e caches globais aguardam revisão completa.
+- [x] Hardening servidor/CAS dos dois serviços aplicado pelo auditor às23:54; A/B ambos403/FISCAL_FORBIDDEN relatados, sem operações do agente.
+- [ ] Canal global de edição de serviços não foi criado/autorizado. Cadastro direto e caches globais aguardam revisão completa.
 
 ## 26/10 19:01 — recuperação durável após fechar aba / mesma origem
 - [x] Revisão19:45: predecessor canônico completo em recovery/advance, CAS de geração local dentro IndexedDB; controller antes0/3 depois3/3,46PG,17browser NovoPedido/HTTP controlado; sem limpeza arbitrária/publicação/SQLhosted. Revisão integrada/JWT real continuam pendentes.
