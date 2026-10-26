@@ -9,7 +9,7 @@
  "candidate": {
   "platform_private.c2_external_origin_assert(jsonb,uuid,uuid)": "999e5e9fd9887595e252523fb2142726",
   "platform_private.b2b_internal_order_snapshot_guard()": "9cad2aaa995277b913f8b40816fea504",
-  "public.approve_partner_order(uuid,text,date)": "3b0ba480d035f5cc9b3ad02567b0f08f",
+  "public.approve_partner_order(uuid,text,date)": "664f63441c92a6716f0117362255ec9e",
   "public.generate_b2b_receivable_secure(uuid)": "c49cc7ccedbcb28cba9b816b7e47c521",
   "platform_private.c2_owner_order_create_allowed(uuid,uuid)": "5f0a08d1d4f8d8c5a7ae58e24c71071e",
   "platform_private.c2_external_origin_contract_valid(jsonb)": "369fd07cd9c659b87941b9a3bf972868",
@@ -21,7 +21,7 @@
  "b5_to_candidate": {
   "c79689aa1070534ce43edde279ee5682": "999e5e9fd9887595e252523fb2142726",
   "da7a558c06878344c6e5ce70bb1c8e89": "9cad2aaa995277b913f8b40816fea504",
-  "7cf8b7a2fae31088529df4c5656ebc40": "3b0ba480d035f5cc9b3ad02567b0f08f",
+  "7cf8b7a2fae31088529df4c5656ebc40": "664f63441c92a6716f0117362255ec9e",
   "31eeb54e4b69d97c311629a37e553faf": "c49cc7ccedbcb28cba9b816b7e47c521",
   "a0417d6727d78412849916a95b250bde": "5f0a08d1d4f8d8c5a7ae58e24c71071e"
  },

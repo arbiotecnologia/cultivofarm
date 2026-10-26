@@ -62,6 +62,20 @@ nf = "  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;\n"
 once(appr, nf, 'APPROVE')
 PENDING_CHECK = "IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id={id} AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;"
 appr_p = appr.replace(nf, nf + '  ' + PENDING_CHECK.format(id='p_order_id') + '\n')
+# 4b) Single credit lock domain (review 8cad/38): approve used hashtext(...) (int4) while create and the
+# canonical credit trigger use hashtextextended(...,0) (int8) -> different advisory keys, so approve evaluated
+# exposure without serializing against create. Use the canonical key and re-validate authority after a wait.
+LOCK_OLD = "  PERFORM pg_advisory_xact_lock(hashtext('b2b_credit:' || v_pid::text));\n"
+once(appr_p, LOCK_OLD, 'APPROVE_CREDIT_LOCK')
+LOCK_NEW = """  -- C2 single credit lock domain: same bigint key as create_partner_order_secure and tg_partner_orders_credit_guard.
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_pid::text, 0));
+  -- Re-validate authority after a possible wait (READ COMMITTED: each statement sees revocations committed meanwhile).
+  IF NOT (has_role(v_uid,'administrador') OR has_role(v_uid,'gestor_comercial')) THEN RAISE EXCEPTION 'forbidden'; END IF;
+  IF NOT (public.b2b_phase1_order_visible(p_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+"""
+appr_p = appr_p.replace(LOCK_OLD, LOCK_NEW, 1)
+assert "hashtext('b2b_credit:" not in appr_p
 gen = fn('CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order_id uuid)')
 d_old = " IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND internal_origin_snapshot IS NOT NULL) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;\n"
 once(gen, d_old, 'GENERATE')
@@ -113,4 +127,19 @@ rb_post = "DO $c2ap_rb_post$ BEGIN\n " + "\n ".join([proc(k, v, 'C2AP_ROLLBACK_P
     "\n" + live_writer + ";\nALTER FUNCTION platform_private.c2_owner_order_create_allowed(uuid,uuid) OWNER TO postgres;\n" +
     "DROP FUNCTION public.c2_promote_accounting_pending_order_v1(uuid,timestamptz);\nDROP FUNCTION platform_private.c2_promote_accounting_pending_order_core(uuid,timestamptz);\nDROP FUNCTION platform_private.c2_accounting_pending_guard();\nDROP FUNCTION platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid);\nDROP FUNCTION platform_private.c2_external_origin_contract_valid(jsonb);\n" + rb_post + "COMMIT;\n")
 exec(compile((D/'src/rebase_30dc.py').read_text(),'rebase_30dc.py','exec'))
+# Audit diff regenerated from the FINAL assembled bodies (never hand-edited).
+import difflib
+def _final(sig_start):
+    t=(D/'candidate.sql.review').read_text(); i=t.rindex(sig_start); k=t.index('$function$',i); j=t.index('$function$',k+10)+len('$function$'); return t[i:j]
+pairs=[('platform_private.c2_external_origin_assert',ast,'CREATE OR REPLACE FUNCTION platform_private.c2_external_origin_assert('),
+ ('platform_private.b2b_internal_order_snapshot_guard',guard,'CREATE OR REPLACE FUNCTION platform_private.b2b_internal_order_snapshot_guard()'),
+ ('public.approve_partner_order',appr,'CREATE OR REPLACE FUNCTION public.approve_partner_order(p_order_id uuid'),
+ ('public.generate_b2b_receivable_secure',gen,'CREATE OR REPLACE FUNCTION public.generate_b2b_receivable_secure(p_partner_order_id uuid)'),
+ ('platform_private.c2_owner_order_create_allowed',live_writer,'CREATE OR REPLACE FUNCTION platform_private.c2_owner_order_create_allowed')]
+out=[]
+for name,before,anchor in pairs:
+    after=_final(anchor)
+    out+=difflib.unified_diff((before.strip()+'\n').splitlines(True),(after.strip()+'\n').splitlines(True),f'b5/{name}',f'candidate/{name}')
+out+=difflib.unified_diff([],new_fns.splitlines(True),'/dev/null','candidate/src/new-functions.sql')
+(D/'overlay.diff').write_text(''.join(out))
 print('assembled')

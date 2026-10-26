@@ -170,7 +170,12 @@ BEGIN
   END IF;
 
   -- H4-001/H4-003: reavaliar credito na aprovacao, com lock por parceiro.
-  PERFORM pg_advisory_xact_lock(hashtext('b2b_credit:' || v_pid::text));
+  -- C2 single credit lock domain: same bigint key as create_partner_order_secure and tg_partner_orders_credit_guard.
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_pid::text, 0));
+  -- Re-validate authority after a possible wait (READ COMMITTED: each statement sees revocations committed meanwhile).
+  IF NOT (has_role(v_uid,'administrador') OR has_role(v_uid,'gestor_comercial')) THEN RAISE EXCEPTION 'forbidden'; END IF;
+  IF NOT (public.b2b_phase1_order_visible(p_order_id) OR EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id=p_order_id
+      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
   v_credit := public.fn_b2b_credit_exposure(v_pid, 0, NULL);
   v_reason := COALESCE(v_credit->>'reason_code','OK');
 
