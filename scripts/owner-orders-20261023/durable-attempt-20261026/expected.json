@@ -1,5 +1,6 @@
 {
-  "base_source": "reviewed 5cd; not fresh LIVE capture",
+  "base_source": "READ ONLY canonical swzpzcwiasxmjutrmvkm, 2026-10-26 19:12+; bodies corroborated against reviewed 5cd",
+  "poi_structure_md5": "3c5afe617195db177fe831c877473258",
   "base": {
     "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "71d1f32e00c5c9857eae51999dc40ef0",
     "platform_private.c2_close_partner_order_attempt_core(uuid,text)": "dcb22362321fa041353242674db58057",
@@ -11,10 +12,10 @@
   "candidate": {
     "platform_private.c2_attempt_scope_lock(uuid,uuid)": "8e6d6191d2821ec6e8d0ba07f4d8190c",
     "platform_private.c2_attempt_dispatch_guard(uuid,uuid,text)": "9e217430e43e594e51645ec6184abfa0",
-    "platform_private.c2_attempt_journal_write_guard()": "6cce9e233aa526dc4e5d49fa3e32c563",
-    "platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)": "fc87c86c2258daed3f1882fa3dad702a",
+    "platform_private.c2_attempt_journal_write_guard()": "851aacc3e631832493a34bcb6106b53a",
+    "platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)": "1fc92e569658f35f8509e92d66549516",
     "public.recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)": "f5aa40591cfc0f436f579f20ce2f563a",
-    "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "dfbd71f8f352b275ddab9619aff33c78",
+    "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)": "853da435b5dd76ffc5d067f72b8856bd",
     "platform_private.c2_close_partner_order_attempt_core(uuid,text)": "c19107af28f3ecbbd537cec3c54d0e5f"
   },
   "containment_guard": "ef33f47654aa0495ae48d1f9e11e5a59"
