@@ -13,7 +13,7 @@ V='11111111-1111-4111-8111-111111111111'   # visit A with plan (rascunho)
 VN='12121212-1212-4212-8212-121212121212'  # visit A without plan
 VF='13131313-1313-4313-8313-131313131313'  # visit A finalized
 AL='a1000000-0000-4000-8000-000000000001'; AL2='a1000000-0000-4000-8000-000000000002'; AL3='a1000000-0000-4000-8000-000000000003'
-ALT='a1000000-0000-4000-8000-0000000000f2'; ALB='a1000000-0000-4000-8000-0000000000bb'; ALN='a1000000-0000-4000-8000-0000000000a0'
+ALT='a1000000-0000-4000-8000-0000000000f2'; ALX='a1000000-0000-4000-8000-0000000000cc'; ALB='a1000000-0000-4000-8000-0000000000bb'; ALN='a1000000-0000-4000-8000-0000000000a0'
 PORT=55497
 PLAN='{"items":["Nutrição","Estande"],"frequency":"14","triggers":"Avaliar","next_date":"2026-11-05"}'
 def k(n): return f'{n:08x}-0000-4000-8000-000000000000'
@@ -84,7 +84,8 @@ INSERT INTO alertas_agronomicos(id,fazenda_id,talhao_id,tipo_alerta,nivel_risco,
  ('{AL3}','{FA}',null,'nematoide','baixo','monitoramento','2026-10-27 10:00:00+00','2026-11-01'),
  ('{ALT}','{FA}','{TA2}','praga','alto','monitoramento','2026-10-27 10:00:00+00','2026-11-01'),
  ('{ALB}','{FB}','{TB}','praga','alto','monitoramento','2026-10-27 10:00:00+00','2026-11-01'),
- ('{ALN}','{FA}','{TA}','daninha','medio','monitoramento','2026-10-27 10:00:00+00','2026-11-01');
+ ('{ALN}','{FA}','{TA}','daninha','medio','monitoramento','2026-10-27 10:00:00+00','2026-11-01'),
+ ('{ALX}','{FA}','{TA}','doenca','baixo','monitoramento','2026-10-27 10:00:00+00','2026-11-20');
 CREATE TABLE monitoramento_avisos(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),registro_consultor_id uuid,tipo text,data_referencia date,UNIQUE(registro_consultor_id,tipo,data_referencia));
 CREATE TABLE visitas_logs(id uuid DEFAULT gen_random_uuid(),registro_consultor_id uuid,usuario_id uuid,acao text,descricao text,metadata jsonb);
 CREATE FUNCTION technical_actor_ready(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT EXISTS(SELECT 1 FROM public.actors WHERE id=$1 AND id=auth.uid() AND ready)$$;
@@ -126,7 +127,11 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   err(link(version='1'),'PT409','stale visit version')
   err(link(version='NULL'),'PT409','null visit version')
   err(link(v=VF,a=AL2),'42501','finalized visit cannot gain origin')
-  r1=val(link()); r2=val(link(alert_at="'2026-10-27 10:00:00.123456+00'",version='2'))
+  err(link(),'22023','link with alert date != plan date rejected (no divergence)')
+  ok(f"SELECT registro_origem_id IS NULL FROM alertas_agronomicos WHERE id='{AL}';",'date mismatch link wrote nothing')
+  sql(f"SET test.actor='{G}'; SELECT public.rpc_reprogramar_monitoramento_v1('{AL}','2026-11-05',{at(AL)});")
+  alat0=val(f"SELECT updated_at FROM alertas_agronomicos WHERE id='{AL}';")
+  r1=val(link()); r2=val(link(alert_at=f"'{alat0}'::timestamptz",version='2'))
   if r1!=r2: raise AssertionError('replay differs'); 
   checks+=1; print('PASS link replay returns identical receipt')
   ok(f"SELECT registro_origem_id='{V}' AND tipo_alerta='praga' FROM alertas_agronomicos WHERE id='{AL}';",'link sets origin, keeps real alert type')
@@ -134,15 +139,17 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   ok(f"SELECT version=2 FROM registros_consultor WHERE id='{V}';",'link does not bump visit content version')
   err(link(alert_at="'2026-10-27 10:00:00.1+00'",version='2'),'PT409','same key changed payload')
   err(link(v=VN,key=k(2)),'PT409','already linked alert cannot be re-pointed')
+  err(link(a=ALX,key=k(4)),'PT409','second alert on same visit rejected')
+  ok(f"SELECT registro_origem_id IS NULL FROM alertas_agronomicos WHERE id='{ALX}';",'second alert untouched')
   sql(link(a=AL3,v=VN,key=k(3)))
   ok(f"SELECT registro_origem_id='{VN}' FROM alertas_agronomicos WHERE id='{AL3}';",'alert without talhão links by farm')
   lst=val(f"SET test.actor='{C}'; SELECT public.rpc_listar_alertas_vinculaveis_v1('{V}')::text;")
-  if ALT in lst or ALB in lst or AL not in lst or ALN not in lst or AL3 in lst: raise AssertionError('list scope '+lst)
+  if ALT in lst or ALB in lst or AL not in lst or AL3 in lst: raise AssertionError('list scope '+lst)
   checks+=1; print('PASS linkable list excludes other talhão/tenant/foreign-linked')
   err(f"SET test.actor='{X}'; SELECT public.rpc_listar_alertas_vinculaveis_v1('{V}');",'PT404','foreign list denied')
   # --- legacy v1 ---
   err(f"SET test.actor='{G}'; SELECT public.rpc_reprogramar_monitoramento_v1('{AL}','2026-11-20',{at(AL)});",'PT428','old v1 caller with origin fails safely')
-  ok(f"SELECT data_vencimento='2026-11-01' FROM alertas_agronomicos WHERE id='{AL}';",'v1 refusal wrote nothing')
+  ok(f"SELECT data_vencimento='2026-11-05' FROM alertas_agronomicos WHERE id='{AL}';",'v1 refusal wrote nothing')
   sql(f"SET test.actor='{G}'; SELECT public.rpc_reprogramar_monitoramento_v1('{ALN}','2026-11-09',{at(ALN)});")
   ok(f"SELECT data_vencimento='2026-11-09' FROM alertas_agronomicos WHERE id='{ALN}';",'v1 without origin unchanged')
   err(f"UPDATE registros_consultor SET data_proxima_visita='2026-11-20' WHERE id='{V}';",'PT409','guard still denies direct date write')
@@ -155,12 +162,31 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   err(resched(version='NULL'),'PT409','reschedule null visit version with origin')
   err(resched(d='2026-10-26'),'22023','past Sao Paulo date rejected')
   alat=val(f"SELECT updated_at FROM alertas_agronomicos WHERE id='{AL}';")
+  # --- notice/alert ambiguity blocks atomically, nothing fabricated ---
+  snap=f"SELECT md5(row(r.observacoes_tecnicas,r.data_proxima_visita,r.version,a.data_vencimento,a.updated_at,(SELECT string_agg(m.id::text||m.data_referencia,',' ORDER BY m.id) FROM monitoramento_avisos m WHERE m.registro_consultor_id=r.id))::text) FROM registros_consultor r, alertas_agronomicos a WHERE r.id='{V}' AND a.id='{AL}';"
+  s0=val(snap)
+  sql(f"INSERT INTO monitoramento_avisos(registro_consultor_id,tipo,data_referencia) VALUES('{V}','plano_monitoramento','2026-12-01');")
+  err(resched(),'PT409','two plan notices rejected')
+  sql(f"DELETE FROM monitoramento_avisos WHERE registro_consultor_id='{V}' AND data_referencia='2026-12-01';")
+  nid=val(f"SELECT id FROM monitoramento_avisos WHERE registro_consultor_id='{V}';")
+  sql(f"DELETE FROM monitoramento_avisos WHERE id='{nid}';")
+  err(resched(),'PT409','zero plan notices rejected')
+  ok(f"SELECT count(*)=0 FROM monitoramento_avisos WHERE registro_consultor_id='{V}';",'zero notices: none fabricated')
+  sql(f"INSERT INTO monitoramento_avisos VALUES('{nid}','{V}','plano_monitoramento','2026-11-05');")
+  sql(f"UPDATE monitoramento_avisos SET data_referencia='2026-11-06' WHERE id='{nid}';")
+  err(resched(),'PT409','notice date incoherent with plan rejected')
+  sql(f"UPDATE monitoramento_avisos SET data_referencia='2026-11-05' WHERE id='{nid}';")
+  sql(f"UPDATE alertas_agronomicos SET registro_origem_id='{V}' WHERE id='{ALX}';")  # legacy data: 2 alerts share visit
+  err(resched(),'PT409','two alerts sharing visit block synchronization')
+  ok(f"SELECT data_vencimento='2026-11-20' FROM alertas_agronomicos WHERE id='{ALX}';",'other alert not modified')
+  sql(f"UPDATE alertas_agronomicos SET registro_origem_id=NULL WHERE id='{ALX}';")
+  ok(snap.replace('SELECT md5','SELECT '+repr(s0)[0]+s0+repr(s0)[0]+'=md5',1),'ambiguity rejections fully atomic')
   res=val(resched())
   ok(f"SELECT version=3 AND data_proxima_visita='2026-11-20' AND md5(observacoes_tecnicas)='{expected}' AND observacoes_tecnicas LIKE 'Notas preservadas%Itens: Nutrição, Estande%' FROM registros_consultor WHERE id='{V}';",'plan text byte-preserved except date line')
   ok(f"SELECT data_referencia='2026-11-20' FROM monitoramento_avisos WHERE registro_consultor_id='{V}' AND tipo='plano_monitoramento';",'generic notice date reconciled')
   ok(f"SELECT data_vencimento='2026-11-20' FROM alertas_agronomicos WHERE id='{AL}';",'alert date reconciled')
   ok("SELECT count(*)=0 FROM platform_private.visit_plan_write_tickets;",'ticket removed in transaction')
-  if '"visita_atualizada": true' not in res: raise AssertionError(res)
+  if '"visita_atualizada": true' not in res or '"modo": "plano_visita_aviso_alerta"' not in res: raise AssertionError(res)
   checks+=1; print('PASS envelope visita_atualizada true')
   sql("UPDATE platform_private.test_clock SET today='2026-11-25';")
   res2=val(resched(alert_at=f"'{alat}'::timestamptz",version='2'))
@@ -169,6 +195,13 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   err(resched(d='2026-11-24',key=k(101)),'22023','new past reschedule after replay')
   sql("UPDATE platform_private.test_clock SET today='2026-10-27';")
   err(resched(d='2026-11-21'),'PT409','same reschedule key changed payload')
+  # --- plan writer after link: different date blocked, same date content edit allowed ---
+  p2=PLAN.replace('2026-11-05','2026-11-27')
+  err(f"SET test.actor='{C}'; SELECT public.rpc_salvar_plano_monitoramento_visita_v1('{V}',3,'{p2}'::jsonb,'{k(902)}');",'PT409','plan date change after link blocked')
+  ok(f"SELECT version=3 AND data_proxima_visita='2026-11-20' FROM registros_consultor WHERE id='{V}';",'blocked plan write no change')
+  p3=PLAN.replace('2026-11-05','2026-11-20').replace('Avaliar','Avaliar vigor')
+  sql(f"SET test.actor='{C}'; SELECT public.rpc_salvar_plano_monitoramento_visita_v1('{V}',3,'{p3}'::jsonb,'{k(903)}');")
+  ok(f"SELECT r.version=4 AND r.observacoes_tecnicas LIKE '%Gatilhos: Avaliar vigor%Próxima Avaliação: 2026-11-20%' AND a.data_vencimento=r.data_proxima_visita FROM registros_consultor r, alertas_agronomicos a WHERE r.id='{V}' AND a.id='{AL}';",'same-date plan edit keeps alert synchronized')
   # --- visit without plan / finalized / no origin ---
   sql(resched(a=AL3,d='2026-11-12',key=k(102)))
   ok(f"SELECT version=5 AND data_proxima_visita='2026-11-12' AND observacoes_tecnicas='Sem plano ### Conduta {{}}' FROM registros_consultor WHERE id='{VN}';",'visit without plan: date only, text intact')
@@ -177,19 +210,23 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   fin=val(f"SELECT md5(row(observacoes_tecnicas,data_proxima_visita,version)::text) FROM registros_consultor WHERE id='{VF}';")
   res=val(resched(a=AL2,d='2026-11-15',key=k(103)))
   ok(f"SELECT md5(row(observacoes_tecnicas,data_proxima_visita,version)::text)='{fin}' FROM registros_consultor WHERE id='{VF}';",'finalized visit untouched')
-  if '"visita_atualizada": false' not in res: raise AssertionError(res)
-  checks+=1; print('PASS finalized: alert-only envelope')
+  if '"visita_atualizada": false' not in res or '"modo": "somente_alerta"' not in res: raise AssertionError(res)
+  checks+=1; print('PASS finalized: explicit alert-only mode, visit not synchronized')
   sql(resched(a=ALN,d='2026-11-16',version='NULL',key=k(104)))
   err(resched(a=ALN,d='2026-11-17',version='3',key=k(105)),'PT409','no-origin alert rejects visit version')
   # --- atomic rollback ---
   sql("CREATE FUNCTION fail_log() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'injected' USING ERRCODE='P9999'; END$$; CREATE TRIGGER fail_log BEFORE INSERT ON visitas_logs FOR EACH ROW EXECUTE FUNCTION fail_log();")
   err(resched(d='2026-11-22',key=k(106)),'P9999','log failure')
-  ok(f"SELECT r.version=3 AND r.data_proxima_visita='2026-11-20' AND a.data_vencimento='2026-11-20' FROM registros_consultor r, alertas_agronomicos a WHERE r.id='{V}' AND a.id='{AL}';",'rollback visit+alert')
+  ok(f"SELECT r.version=4 AND r.data_proxima_visita='2026-11-20' AND a.data_vencimento='2026-11-20' FROM registros_consultor r, alertas_agronomicos a WHERE r.id='{V}' AND a.id='{AL}';",'rollback visit+alert')
   ok(f"SELECT count(*)=0 FROM platform_private.monitoring_alert_receipts WHERE request_id='{k(106)}';",'rollback receipt')
   sql('DROP TRIGGER fail_log ON visitas_logs;')
   # --- ACL ---
   err(f"SET ROLE anon; SELECT public.rpc_reprogramar_monitoramento_v2('{AL}','2026-11-20',now(),1,'{k(1)}');",'42501','anon cannot execute v2')
   err("SET ROLE authenticated; SELECT * FROM platform_private.monitoring_alert_receipts;",'42501','authenticated cannot read receipts')
+  err(f"SET ROLE anon; SELECT public.rpc_vincular_origem_alerta_v1('{AL}','{V}',now(),1,'{k(1)}');",'42501','anon cannot execute link')
+  err(f"SET ROLE anon; SELECT public.rpc_listar_alertas_vinculaveis_v1('{V}');",'42501','anon cannot execute list')
+  err(f"SET test.actor='{X}'; SELECT public.rpc_vincular_origem_alerta_v1('{ALB}','{V}',{at(ALB)},{ver(V)},'{k(5)}');",'PT404','B alert into A visit by B denied')
+  err(f"SET test.actor='{X}'; SELECT public.rpc_salvar_plano_monitoramento_visita_v1('{V}',{ver(V)},'{p3}'::jsonb,'{k(904)}');",'PT404','B cannot write A plan')
   # --- concurrency: same key twice while gate held ---
   g=spawn(); g.stdin.write('BEGIN; SELECT * FROM cf_user_guards_v1.state FOR UPDATE;\n'); g.stdin.flush(); time.sleep(.2)
   q=resched(d='2026-11-23',key=k(107)); p1=spawn(); p1.stdin.write(q+'\n'); p1.stdin.close(); p2=spawn(); p2.stdin.write(q+'\n'); p2.stdin.close()
@@ -199,7 +236,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   for p in (p1,p2):
    p.wait(timeout=10); outs.append((p.returncode,p.stdout.read(),p.stderr.read()))
   # Both read CAS before the wait: the second either replays the receipt or fails CAS; never a second write.
-  ok(f"SELECT version=4 FROM registros_consultor WHERE id='{V}';",'concurrent double submit one increment')
+  ok(f"SELECT version=5 FROM registros_consultor WHERE id='{V}';",'concurrent double submit one increment')
   ok(f"SELECT count(*)=1 FROM platform_private.monitoring_alert_receipts WHERE request_id='{k(107)}';",'concurrent one receipt')
   if not any(rc==0 for rc,_,_ in outs): raise AssertionError(outs)
   checks+=1; print('PASS concurrent: at least one confirmed, other replay or PT409')
@@ -212,7 +249,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   e=op.stderr.read()
   if op.returncode==0 or '42501' not in e: raise AssertionError('order1 '+e)
   checks+=1; print('PASS order1 revocation committed before gate release: operation 42501')
-  ok(f"SELECT version=4 FROM registros_consultor WHERE id='{V}';",'order1 no write')
+  ok(f"SELECT version=5 FROM registros_consultor WHERE id='{V}';",'order1 no write')
   sql(f"UPDATE actors SET ready=true WHERE id='{G}';")
   # --- ORDER 2: operation holds gate (paused on alert row), revocation queues on gate -> operation commits first ---
   row=spawn(); row.stdin.write(f"BEGIN; SELECT id FROM alertas_agronomicos WHERE id='{AL}' FOR UPDATE;\n"); row.stdin.flush(); time.sleep(.2)
@@ -222,7 +259,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   wait_lock("UPDATE actors SET ready=false",1)
   row.stdin.write('COMMIT;\n'); row.stdin.close(); row.wait(timeout=10); op.wait(timeout=10); rv.wait(timeout=10)
   if op.returncode: raise AssertionError('order2 '+op.stderr.read())
-  ok(f"SELECT version=5 AND data_proxima_visita='2026-11-24' FROM registros_consultor WHERE id='{V}';",'order2 operation serialized before revocation committed')
+  ok(f"SELECT version=6 AND data_proxima_visita='2026-11-24' FROM registros_consultor WHERE id='{V}';",'order2 operation serialized before revocation committed')
   ok(f"SELECT NOT ready FROM actors WHERE id='{G}';",'order2 revocation committed after operation')
   err(resched(d='2026-11-25',key=k(110)),'42501','order2 later request denied after revocation')
   sql(f"UPDATE actors SET ready=true WHERE id='{G}';")

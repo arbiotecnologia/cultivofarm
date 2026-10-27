@@ -32,6 +32,7 @@ export function useSalvarPlanoMonitoramento(registroId: string) {
         } as never).abortSignal(controller.signal);
         if (!current() || controller.signal.aborted) throw new Error(unavailable);
         if (error) {
+          if (error.code === "PT409" && /linked_alert_date_requires_reschedule/.test(error.message ?? "")) throw new MonitoringPlanSaveError("A data deste plano está vinculada a um alerta agronômico. Altere a data pela reprogramação do alerta; o plano editado foi mantido.", "rejected", error.code);
           if (error.code === "PT409") throw new MonitoringPlanSaveError(conflict, "rejected", error.code);
           if (["42501", "PT403", "PT404", "P0002"].includes(error.code)) throw new MonitoringPlanSaveError(unavailable, "rejected", error.code);
           if (error.code === "22023") throw new MonitoringPlanSaveError("Confira a data e os dados do plano. A edição foi mantida.", "rejected", error.code);

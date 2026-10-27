@@ -10,5 +10,12 @@ it("origem agronômica e reprogramação: PostgreSQL descartável/Auth sintétic
   expect(output).toContain("PASS order1 revocation committed before gate release: operation 42501");
   expect(output).toContain("PASS order2 operation serialized before revocation committed");
   expect(output).toMatch(/PASS gate wait bounded by lock_timeout 55P03/);
-  expect(output).toContain("TOTAL 55");
+  expect(output).toContain("PASS zero plan notices rejected PT409");
+  expect(output).toContain("PASS two plan notices rejected PT409");
+  expect(output).toContain("PASS two alerts sharing visit block synchronization PT409");
+  expect(output).toContain("PASS link with alert date != plan date rejected (no divergence) 22023");
+  expect(output).toContain("PASS plan date change after link blocked PT409");
+  expect(output).toContain("PASS ambiguity rejections fully atomic");
+  expect(output).toContain("PASS finalized: explicit alert-only mode, visit not synchronized");
+  expect(output).toContain("TOTAL 73");
 }, 120_000);

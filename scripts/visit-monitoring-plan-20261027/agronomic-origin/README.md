@@ -20,43 +20,53 @@ Base: `7c38bc48`. Nada foi aplicado em produção nem publicado. Nenhum dado A/B
 
 Triggers: `user_roles` e `profiles` têm `a00_cf_user_gate -> cf_user_guards_v1.acquire_gate` (revogação usa o MESMO gate); `registros_consultor.trg_visit_plan_preservation` ativo. Políticas de `alertas_agronomicos`: SELECT autenticado, insert/update escopados, `monitoring_tenant_boundary`. O executor deve repetir `preflight.sql` e abortar em qualquer divergência.
 
-## Decisões
+## Contrato de datas (revisão de 533d329)
 
-1. **Aviso ≠ alerta.** `monitoramento_avisos.registro_consultor_id` continua sendo o aviso genérico do plano. `alertas_agronomicos.registro_origem_id` só é preenchido por `rpc_vincular_origem_alerta_v1`, que vincula um alerta EXISTENTE (tipo real preservado) a uma visita em `rascunho/em_andamento` da mesma fazenda e talhão compatível (alerta sem talhão casa só pela fazenda). Nenhum tipo é inventado.
-2. **Criação com origem não foi aberta.** `rpc_criar_alerta_climatico_v1` (previsão climática) não tem contexto legítimo de visita; continua sem origem e inalterada. Criar alerta a partir da visita exigiria escolha explícita de tipo pelo técnico — fica como decisão de produto pendente, não implementada.
-3. **Reprogramação v2** (`rpc_reprogramar_monitoramento_v2`): gate → alerta → visita → aviso; CAS obrigatório do `updated_at` do alerta (microssegundos) e da `version` da visita de origem; recibo privado idempotente; data passada (São Paulo) validada só após replay. Visita aberta: troca APENAS a linha `Próxima Avaliação:` do bloco (demais bytes preservados), `data_proxima_visita`, `version+1`, data do aviso, via ticket existente `visit_plan_write_tickets` — o guard não foi retirado nem afrouxado. Visita sem plano: só a data. **Visita finalizada/somente leitura: visita intocada, apenas o alerta muda (`visita_atualizada:false`).** Revisor deve confirmar essa escolha.
-4. **Callers antigos:** v1 recebe um único `RAISE PT428` antes de qualquer escrita quando há origem (CREATE OR REPLACE mantém OID/owner/ACL); sem origem, comportamento idêntico. Cliente novo nunca recorre a v1 ou escrita direta para alerta com origem.
-5. **Espera limitada:** `SET lock_timeout='3s'` nas funções; sem espera global longa.
+- **Uma visita, no máximo um alerta aberto de origem.** A data desse alerta é a data do plano/visita/aviso. Segundo vínculo → `PT409 visit_already_has_origin_alert`. Dado legado com 2+ alertas na mesma visita → reprogramação `PT409 multiple_alerts_share_visit`, atômica; nenhum outro alerta é reclassificado ou alterado.
+- **Vínculo não cria divergência:** visita com `data_proxima_visita` exige alerta com a mesma data (`22023 origin_date_mismatch`); plano sem data → `PT409`.
+- **Reprogramação com plano exige exatamente 1 aviso `plano_monitoramento` coerente** (data = visita = linha do bloco). 0, 2 ou divergente → `PT409 plan_notice_incoherent`, sem fabricar aviso. Visita sem plano com aviso de plano → mesmo erro.
+- **Editor do plano (`save_visit_monitoring_plan_core`, patch fail-closed por needle único, mantém OID/ACL):** com alerta aberto vinculado, mudar data → `PT409 linked_alert_date_requires_reschedule`; editar itens/gatilhos na mesma data segue permitido. Fluxo único de data = reprogramação do alerta.
+- **Visita finalizada:** `modo:"somente_alerta"`, `visita_atualizada:false`; visita/plano/aviso NÃO são sincronizados, e a UI diz isso.
+- Envelope v2: 10 chaves com `modo` ∈ `plano_visita_aviso_alerta | visita_alerta | somente_alerta`.
+- Outros escritores auditados: `rpc_ativar_monitoramento_visita` não muda data; `rpc_atualizar_status_alerta_agronomico_v1` só status; v1 com origem → PT428; criação climática sem origem; autosave legado barrado pelo guard.
+- Criação de alerta com origem continua não aberta (exige escolha explícita de tipo).
+- Espera limitada: `SET lock_timeout='3s'` nas novas funções.
 
-## Ordem gate × revogação (prova determinística, duas conexões)
+## Ordem gate × revogação (somente PostgreSQL descartável)
 
-- **Ordem 1** — revogação pega o gate primeiro (trigger sintético idêntico a `acquire_gate`), operação espera no gate; revogação faz commit → operação relê e falha `42501`, sem escrita.
-- **Ordem 2** — operação pega o gate e espera na linha do alerta (terceira sessão); revogação fica na fila do gate; liberada a linha, a **operação confirma primeiro** e só depois a revogação conclui. Aqui a revogação NÃO venceu: a operação foi serializada antes dela, com autoridade válida naquele ponto. Pedidos posteriores falham `42501`.
-- Espera no gate acima do limite → `55P03` em ~3 s.
+Duas conexões, esperas confirmadas em `pg_stat_activity`:
+- **Ordem 1:** revogação segura o gate; operação aguarda o lock; revogação confirma → operação relê e falha `42501`, sem escrita.
+- **Ordem 2:** operação segura o gate e aguarda a linha do alerta; revogação na fila do gate; a **operação confirma primeiro** — a revogação NÃO venceu. Pedidos posteriores → `42501`.
+- Gate preso além do limite → `55P03` em ~3 s.
+
+Provas sintéticas (Auth/schema reduzidos), não homologação.
 
 ## Arquivos
 
 - `candidate.sql.review` — PRE (hashes, gate/guard, ausência) + DDL + POST ACL em uma transação.
 - `rollback-containment.sql.review` — só revoga EXECUTE dos novos pontos; mantém guard, recibos, logs e o patch PT428 (restaurar v1 antigo reabriria escrita bloqueada).
 - `preflight.sql` / `postflight.sql` — somente leitura.
-- `test-local.py` — PostgreSQL descartável, Auth sintética, 55 checks (`src/test/monitoramento/agronomicOriginPostgres.test.ts`).
+- `test-local.py` — PostgreSQL descartável, Auth sintética, 73 checks (sintéticos, NÃO homologação) (`src/test/monitoramento/agronomicOriginPostgres.test.ts`).
 
 ## Cliente (local, não publicado)
 
 - `useReprogramarMonitoramento`: alerta com origem → v2 com envelope integral de 9 campos; sem origem → v1 inalterado; PT428/v2 ausente → mensagem segura, sem fallback. `MonitoramentoAlertas` lê a versão da visita pelo `rpc_get_visita_workspace` ao abrir, mantém chave em resultado incerto e descarta em rejeição.
 - `useOrigemAlertaAgronomico` + `OrigemAlertaAgronomico` no cartão existente do plano: lista do servidor, confirmação com Cancelar, oculto em visita bloqueada; RPC ausente → "indisponível", sem caminho alternativo.
-- Testes: `origemAlertaAgronomico.test.tsx`; suíte monitoramento+autosave 156/156. Falhas preexistentes em `etapasVisita`, `pdfVisitaAuthenticated`, `visitaTecnicaSalvamento.static` não referenciam arquivos alterados.
+- Testes: monitoramento+autosave+preservação 167/167 em 11 arquivos.
+- `etapasVisita`, `pdfVisitaAuthenticated`, `visitaTecnicaSalvamento.static`: rodados também sobre `git archive 7c38bc48` — as mesmas 7 falhas (7 failed/28 passed) na base e no candidato; preexistentes.
 
 ## Ensaio real limitado (para o auditor, após instalação independente)
 
 1. Janela curta, gate livre: rodar `preflight.sql`; abortar se divergir.
 2. Aplicar `candidate.sql.review` (timeouts 5 s/20 s); rodar `postflight.sql`, registrar hashes novos.
 3. Sessão JWT A (gestor) e B (gestor outra empresa), visita fictícia A em `rascunho` com plano e um alerta fictício A existente da mesma fazenda/talhão:
-   - A vincula (200); B lista/vincula/reprograma A → 404; talhão diferente → 22023; CAS alterado em 1 µs → 409.
+   - Alerta com data diferente → 22023; reprogramar o alerta para a data do plano; A vincula (200); segundo alerta na mesma visita → 409; mudar data pelo editor do plano → 409; B lista/vincula/reprograma A → 404; talhão diferente → 22023; CAS alterado em 1 µs → 409.
    - A reprograma via v2: conferir texto do plano igual exceto a linha de data, `version+1`, aviso e alerta na mesma data, 1 log, 1 recibo; repetir mesma chave → resposta idêntica.
    - Aba antiga (v1) com alerta de origem → mensagem segura, nada escrito.
    - Visita finalizada: visita intocada.
-4. Revogação: NÃO segurar o gate de produção artificialmente. Validar só ordem 1 natural (revogar papel de A fictício e então tentar → 42501). A ordem 2 fica provada apenas no ensaio descartável.
+4. Revogação: não segurar o gate de produção. Revogar e depois tentar → 42501 só confirma negação pós-revogação; **NÃO comprova operação real aguardando lock**. As ordens de espera ficam provadas apenas no ensaio descartável.
 5. Qualquer falha: `rollback-containment.sql.review`.
+
+Fixtures atuais (relato do auditor; não recriar): visita A reparada v5; fixture B `126e3203-a381-4440-8e8b-a34d64241b38` v2, aviso `154f779f-5507-40d1-bd37-a760ea251749`. Antes do ensaio, conferir 1 aviso coerente em cada.
 
 Pendências: instalação/ensaio JWT real, decisão sobre visitas finalizadas e criação com origem, contabilidade real, SU-518022, reparo do plano A autorizado pelo auditor.
