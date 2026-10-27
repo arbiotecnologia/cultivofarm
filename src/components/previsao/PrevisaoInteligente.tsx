@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useCriarAlertaClimatico, type CriarAlertaClimaticoArgs } from "@/hooks/useCriarAlertaClimatico";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,6 @@ import {
 export function PrevisaoInteligente() {
   const [fazendaId, setFazendaId] = useState("");
   const [emAndamento, setEmAndamento] = useState<string | null>(null);
-  const queryClient = useQueryClient();
 
   const fazendasQuery = useQuery({
     queryKey: ["fazendas"],
@@ -66,15 +66,16 @@ export function PrevisaoInteligente() {
     enabled: !!fazendaId,
   });
 
-  const createAlert = useMutation({
-    mutationFn: async (params: { fazenda_id: string; talhao_id: string; tipo_alerta: string; nivel_risco: string; descricao: string }) => {
-      const { error } = await (supabase as any).from("alertas_agronomicos").insert(params as any);
-      if (error) throw error;
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["alertas_agronomicos"] }); toast.success("Alerta criado com sucesso"); },
-    onError: (e: any) => toast.error(e?.message || "Erro ao criar alerta"),
-    onSettled: () => setEmAndamento(null),
-  });
+  const createAlert = useCriarAlertaClimatico();
+  const gerarAlerta = (chave: string, args: CriarAlertaClimaticoArgs) => {
+    if (emAndamento || createAlert.isPending) return;
+    setEmAndamento(chave);
+    createAlert.mutate(args, {
+      onSuccess: (r) => toast.success(r.criado ? "Alerta criado com sucesso" : "Já existe um alerta ativo equivalente para este talhão"),
+      onError: (e) => toast.error(e.message),
+      onSettled: () => setEmAndamento(null),
+    });
+  };
 
   const buildHistorico = (tId: string) => {
     const tipos = (registrosQuery.data ?? [])
@@ -167,16 +168,12 @@ export function PrevisaoInteligente() {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={emAndamento !== null}
-                          onClick={() => {
-                            if (emAndamento) return;
-                            setEmAndamento(chave);
-                            createAlert.mutate({
-                              fazenda_id: fazendaId, talhao_id: s.talhao.id,
-                              tipo_alerta: s.risco.tipo, nivel_risco: s.risco.nivel,
-                              descricao: s.risco.descricao,
-                            });
-                          }}
+                          disabled={emAndamento !== null || createAlert.isPending}
+                          onClick={() => gerarAlerta(chave, {
+                            fazendaId, talhaoId: s.talhao.id,
+                            tipoAlerta: s.risco.tipo, nivelRisco: s.risco.nivel,
+                            descricao: s.risco.descricao,
+                          })}
                         >
                           <Plus className="h-3.5 w-3.5 mr-1" /> {emAndamento === chave ? "Gerando..." : "Gerar Alerta"}
                         </Button>
