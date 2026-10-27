@@ -73,3 +73,4 @@
 - Visit page autosave uses a fully hydrated observed content revision and real-draft baseline; plan refresh retires pending timers and never rebases dirty content, while server preservation follows the review package — prevents mount writes and stale plan loss.
 - Visit field writes follow scripts/visit-field-cas-20261027/AGENTS.md; installed canonical-write-only ACLs preserve SELECT/RLS and privileged service writers, and applied audit artifacts must never be replayed — prevents bypassing the field revocation gate.
 - Cockpit/application business-conflict deltas follow scripts/business-conflicts-cockpit-application-20261027/AGENTS.md; only exact pinned RAISEs change, with no automatic retry or legacy reopening — preserves genuine serialization and authorization.
+- Catalog-label business-conflict delta follows scripts/catalog-label-conflicts-20261027/AGENTS.md; only pinned label RAISEs move to PT409, shared replay helper stays 40001 — keeps scope minimal.

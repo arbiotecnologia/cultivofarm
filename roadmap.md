@@ -901,3 +901,5 @@
 - [ ] LACUNA específica: `PlanoMonitoramentoEditor` ainda lê/atualiza `alertas_agronomicos` diretamente (data_alerta/descricao); fora desta etapa por instrução.
 - [x] 2026-10-27 base 7c38bc48: pacote INATIVO scripts/visit-monitoring-plan-20261027/agronomic-origin (vínculo de origem a alerta existente, reprogramação v2 conciliando plano/data/aviso/alerta via ticket, v1 PT428 com origem, lock_timeout 3s); 87 checks PG sintéticos (rev. 6dd3: vínculo só com plano salvo coerente; origem sem plano rejeitada) (contrato 1 alerta/visita, 1 aviso coerente, bloqueio de data no plano) após revisão 533d329; cliente 167/167; 7 falhas de 3 arquivos idênticas na base 7c38. Sem SQL hosted/publicação.
 - [ ] Instalação independente + ensaio JWT A/B limitado (README do pacote); decisão revisor: visita finalizada só alerta, criação de alerta com origem não aberta.
+- [x] 2026-10-27 pacote INATIVO scripts/catalog-label-conflicts-20261027 (rótulos catálogo 40001→PT409; 52 checks PG sintéticos; frontend PT409). Sem SQL/publicação.
+- [ ] Aplicação/homologação real pelo auditor; replay helper 40001 residual; revogação durante espera nos rótulos (achado separado).
