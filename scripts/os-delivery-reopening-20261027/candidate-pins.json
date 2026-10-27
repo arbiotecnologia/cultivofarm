@@ -1,0 +1,17 @@
+[
+  {
+    "name": "public.rpc_cockpit_criar_entrega_v1",
+    "baseline": "a4d47ccf5d116141ed46e9de9ea7eeaa",
+    "candidate": "1fdc3bbfa971c44bd9f7ab14f1742e36"
+  },
+  {
+    "name": "public.fn_entrega_confirmar_engine_v1",
+    "baseline": "6eb78ceebe90196ac5b95bfc127dd63b",
+    "candidate": "79ed9c271ec7b851bb9d79a58962c05d"
+  },
+  {
+    "name": "public.rpc_entrega_cancelar_v1",
+    "baseline": "f830c6c718e2b44a1ded06a19a04557a",
+    "candidate": "42263783a72577c69038d618620c1dde"
+  }
+]
