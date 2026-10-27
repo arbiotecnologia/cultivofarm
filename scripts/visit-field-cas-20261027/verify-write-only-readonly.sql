@@ -15,7 +15,7 @@ SELECT role_name, privilege,
     IS NOT DISTINCT FROM (privilege='SELECT' OR role_name IN ('postgres','service_role')) AS ok
 FROM roles CROSS JOIN privileges ORDER BY role_name, privilege;
 
--- Matriz efetiva de coluna: grants de tabela OU de coluna, y compris héritage.
+-- Matriz efetiva de coluna: grants de tabela OU de coluna, incluindo herança.
 WITH roles(role_name) AS (VALUES ('anon'), ('authenticated'), ('postgres'), ('service_role')),
 privileges(privilege) AS (VALUES ('SELECT'), ('INSERT'), ('UPDATE'), ('REFERENCES'))
 SELECT role_name, a.attname AS column_name, privilege,
@@ -26,7 +26,7 @@ FROM pg_attribute a CROSS JOIN roles CROSS JOIN privileges
 WHERE a.attrelid='public.visitas_campo'::regclass AND a.attnum>0 AND NOT a.attisdropped
 ORDER BY role_name, a.attnum, privilege;
 
--- PUBLIC n'est pas un rôle: contrôler aussi les ACL explicites table/colonnes.
+-- PUBLIC não é um papel: conferir também ACLs explícitas de tabela/colunas.
 SELECT 'public_table_no_write' AS check_name, NOT EXISTS (
   SELECT 1 FROM pg_class c CROSS JOIN LATERAL
     aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) acl
