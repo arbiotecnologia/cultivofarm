@@ -1,4 +1,4 @@
-35 local checks PASS. Auth/schema/stock/advancement stubs: SYNTHETIC, NOT JWT/RLS.
+39 local checks PASS. Auth/schema/stock/advancement stubs: SYNTHETIC, NOT JWT/RLS.
 exact LIVE body public.fn_cockpit_norm_origem
 exact LIVE body public.fn_cockpit_assert_operador_origem
 exact LIVE body public.fn_entrega_assert_confirmador
@@ -28,9 +28,13 @@ postcondition fault rolls transaction back
 postcondition no persisted cancellation
 row waiter observes committed revocation
 revoked waiter no write
+advisory waiter observes committed revocation
+advisory revoked waiter no write
 gate revocation first denies waiter
 mutation commits first then revocation
 3s gate timeout
 timeout no write
+concurrent cancel serializes to replay
+concurrent cancel one event
 release barrier remains closed
 containment denies client execution

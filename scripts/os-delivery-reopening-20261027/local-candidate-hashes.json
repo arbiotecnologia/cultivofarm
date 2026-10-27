@@ -1,0 +1,1 @@
+[{"name" : "public.rpc_cockpit_criar_entrega_v1", "md5" : "c5c599d03dbfae0d806f77670939786e"}, {"name" : "public.rpc_entrega_cancelar_v1", "md5" : "b6811a55880ba5aeca6ba718b3f1563c"}, {"name" : "platform_private.delivery_recovery_scope_v1", "md5" : "700f164dc528197a68edae4e6903b107"}, {"name" : "public.fn_entrega_confirmar_engine_v1", "md5" : "f662b32a1295ff5bf0cddbb26fff91f6"}]
