@@ -39,3 +39,17 @@ As RPCs canônicas equivalentes estão contidas para `authenticated`: `rpc_entre
 `fn_generate_receivable_from_entrega(uuid,jsonb)` e `fn_mark_entrega_not_billable(uuid,text)` são SECURITY DEFINER, com EXECUTE para authenticated. O corpo ainda não foi revisado: falta conferir a categoria de receita global ativa, o método ativo sem fallback, o escopo A/B e a idempotência. **Não verificado.**
 
 Contabilidade real e SU-518022 permanecem pendentes.
+
+## Etapa 2 — Cobrança na entrega: leitura concluída (27/10/2026, somente leitura)
+
+Hashes LIVE: `fn_generate_receivable_from_entrega(uuid,jsonb)` md5 `670ea34d37c4c4fd6612031ad763a3a7`; `fn_mark_entrega_not_billable(uuid,text)` md5 `e4008b029ce8d58f70f3fc88571d03be`. Ambas SECURITY DEFINER, `search_path=public`, EXECUTE para authenticated.
+
+Achados (nenhum corrigido):
+1. **Sem escopo de empresa (crítico):** `is_financial_staff` só verifica papel global; a entrega é lida por `id` sem comparar `organization_id` do ator. Financeiro A pode faturar ou marcar sem cobrança uma entrega de B, e o replay devolve o `receivable_id` de B.
+2. **Categoria:** só exige existência; não exige `active=true` nem `type` de receita.
+3. **Método de pagamento:** opcional e sem checagem de ativo; aceita NULL.
+4. **Sem gate `cf_user_guards_v1`** nem revalidação após o advisory/row lock; `fn_mark_entrega_not_billable` não tem advisory e não checa `auth.uid()` nulo explicitamente.
+5. **Parcelas:** `due_date`/`installment_number` não validados (nulos, duplicados, ordem, datas antes da emissão).
+6. **Conflitos** saem como `check_violation`, não PT409.
+
+Próximo passo: pacote candidato inativo em `scripts/delivery-billing-scope-20261027/` com escopo tenant, categoria RECEITA ativa, método ativo obrigatório, gate → advisory → lock → revalidação, PT409, pré/pós e testes PostgreSQL descartáveis. Não aplicado.
