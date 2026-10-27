@@ -45,6 +45,8 @@ export function labelError(error: unknown) {
   // PT409: conflito negocial (CAS/confirmação) do candidato; 40001 segue aceito para baseline/replay residual.
   if (code === "PT409" || code === "40001") return LABEL_CONFLICT_MESSAGE;
   if (code === "23505") return "Já existe um rótulo com esta chave nesta família.";
+  // 55P03 (lock_timeout 3s) / PT503 (gate indisponível): transação abortada, nada gravado; sem retry automático.
+  if (code === "55P03" || code === "PT503") return LABEL_BUSY_MESSAGE;
   if (code === "22023") return "Dados inválidos: confira família, chave, nome de exibição e motivo.";
   return "Não foi possível confirmar a operação. Confira os dados antes de tentar novamente.";
 }
