@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { PlanoMonitoramentoEditor } from "@/components/visita/PlanoMonitoramentoEditor";
@@ -111,4 +111,51 @@ it.each(["version", "actor"])("confirmação da revisão não adota mudança de 
   expect(s.rpc).toHaveBeenCalledTimes(1); expect(s.success).not.toHaveBeenCalled();
   if (change === "version") expect(screen.getByRole("button", { name: "Salvar Alterações" })).toBeDisabled();
   else expect(screen.queryByRole("dialog")).toBeNull();
+});
+function deferredReview() {
+  let resolve: (value: unknown) => void = () => {};
+  const promise = new Promise(r => { resolve = r; });
+  return { promise, resolve };
+}
+const reviewedWorkspace = { isError: false, data: { version: 8, status: "rascunho", permissions: { can_edit: true } } };
+async function rejectAndReview() {
+  openAndEdit();
+  s.rpc.mockResolvedValueOnce({ data: null, error: { code: "PT409" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Reconsultar e revisar" })).not.toBeDisabled());
+  fireEvent.click(screen.getByRole("button", { name: "Reconsultar e revisar" }));
+}
+it("PT409 -> revisão pendente -> troca de ator -> resposta antiga: novo ator edita e salva sem trava presa", async () => {
+  const h = renderEditor(); const old = deferredReview(); s.refetch.mockReturnValueOnce(old.promise);
+  await rejectAndReview(); expect(s.refetch).toHaveBeenCalledTimes(1);
+  s.actor = "B"; h.rerender(<PlanoMonitoramentoEditor {...props} />);
+  await act(async () => { old.resolve(reviewedWorkspace); await old.promise; });
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  openAndEdit(); expect(screen.getByRole("button", { name: "Salvar Alterações" })).not.toBeDisabled();
+  s.rpc.mockImplementationOnce(async (_: string, a: Record<string, any>) => ({ error: null, data: { ok: true, registro_id: id, version: 9, aviso_id: "22222222-2222-4222-8222-222222222222", data_referencia: a.p_plano.next_date, plano: a.p_plano, request_id: a.p_request_id } }));
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
+  await waitFor(() => expect(s.success).toHaveBeenCalledTimes(1));
+  expect(props.onUpdate).toHaveBeenCalledTimes(1); expect(s.rpc).toHaveBeenCalledTimes(2);
+});
+it("finally antigo não libera ticket da revisão nova nem permite consulta duplicada", async () => {
+  const h = renderEditor(); const old = deferredReview(); const next = deferredReview();
+  s.refetch.mockReturnValueOnce(old.promise).mockReturnValueOnce(next.promise);
+  await rejectAndReview();
+  s.actor = "B"; h.rerender(<PlanoMonitoramentoEditor {...props} />);
+  await rejectAndReview(); expect(s.refetch).toHaveBeenCalledTimes(2);
+  await act(async () => { old.resolve(reviewedWorkspace); await old.promise; });
+  expect(screen.getByRole("button", { name: "Reconsultar e revisar" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Reconsultar e revisar" })); expect(s.refetch).toHaveBeenCalledTimes(2);
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  await act(async () => { next.resolve(reviewedWorkspace); await next.promise; });
+  expect(screen.getByRole("alertdialog")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar revisão" }));
+  expect(screen.getByRole("button", { name: "Salvar Alterações" })).not.toBeDisabled();
+});
+it("desmontagem retira geração da revisão pendente sem resposta tardia ou callback", async () => {
+  const h = renderEditor(); const old = deferredReview(); s.refetch.mockReturnValueOnce(old.promise);
+  await rejectAndReview(); h.unmount();
+  await act(async () => { old.resolve(reviewedWorkspace); await old.promise; });
+  expect(screen.queryByRole("alertdialog")).toBeNull(); expect(s.success).not.toHaveBeenCalled(); expect(props.onUpdate).not.toHaveBeenCalled();
+  renderEditor(); openAndEdit(); expect(screen.getByRole("button", { name: "Salvar Alterações" })).not.toBeDisabled();
 });
