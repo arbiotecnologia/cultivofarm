@@ -109,6 +109,18 @@ BEGIN
   IF v_alerta.status::text NOT IN ('ativo','monitoramento') THEN
     RAISE EXCEPTION 'monitoring_alert_not_active' USING ERRCODE='P0001';
   END IF;
+  -- Sync contract: at most one open alert per origin visit (its date is the visit/plan date).
+  IF EXISTS(SELECT 1 FROM public.alertas_agronomicos o WHERE o.registro_origem_id=p_registro_id
+      AND o.id<>p_alerta_id AND o.status::text<>'encerrado') THEN
+    RAISE EXCEPTION 'visit_already_has_origin_alert' USING ERRCODE='PT409';
+  END IF;
+  -- Date policy: linking never creates divergence; reprogram first so dates match.
+  IF v_reg.data_proxima_visita IS NOT NULL AND v_alerta.data_vencimento IS DISTINCT FROM v_reg.data_proxima_visita THEN
+    RAISE EXCEPTION 'origin_date_mismatch' USING ERRCODE='22023';
+  END IF;
+  IF position('[PLANO DE MONITORAMENTO]' in coalesce(v_reg.observacoes_tecnicas,''))>0 AND v_reg.data_proxima_visita IS NULL THEN
+    RAISE EXCEPTION 'plan_date_missing' USING ERRCODE='PT409';
+  END IF;
   -- Same farm and compatible plot; an alert without plot only matches by farm.
   IF v_reg.fazenda_id IS DISTINCT FROM v_alerta.fazenda_id
     OR (v_alerta.talhao_id IS NOT NULL AND v_reg.talhao_id IS DISTINCT FROM v_alerta.talhao_id)
@@ -141,7 +153,7 @@ DECLARE
   v_reg public.registros_consultor;
   v_receipt jsonb;
   v_obs text; v_block text; v_new_block text;
-  v_notice uuid; v_version integer; v_updated timestamptz; v_visit_updated boolean := false;
+  v_notice uuid; v_version integer; v_updated timestamptz; v_visit_updated boolean := false; v_mode text := 'somente_alerta';
   v_fp text := md5(jsonb_build_object('op','reschedule','alerta',p_alerta_id,'date',p_nova_data,
     'alert_at',p_expected_alert_updated_at,'version',p_expected_visit_version)::text);
 BEGIN
@@ -196,6 +208,11 @@ BEGIN
     RAISE EXCEPTION 'concurrent_update' USING ERRCODE='PT409';
   END IF;
   IF v_alerta.registro_origem_id IS NOT NULL AND v_reg.status::text IN ('rascunho','em_andamento') THEN
+    -- Shared date: any other open alert on the same visit makes synchronization ambiguous.
+    IF EXISTS(SELECT 1 FROM public.alertas_agronomicos o WHERE o.registro_origem_id=v_reg.id
+        AND o.id<>p_alerta_id AND o.status::text<>'encerrado') THEN
+      RAISE EXCEPTION 'multiple_alerts_share_visit' USING ERRCODE='PT409';
+    END IF;
     v_obs := coalesce(v_reg.observacoes_tecnicas,'');
     IF (length(v_obs)-length(replace(v_obs,'[PLANO DE MONITORAMENTO]','')))/length('[PLANO DE MONITORAMENTO]')>1
       OR (length(v_obs)-length(replace(v_obs,'[FIM DO PLANO]','')))/length('[FIM DO PLANO]')>1
@@ -211,13 +228,19 @@ BEGIN
       END IF;
       v_new_block := regexp_replace(v_block,'(^|\n)Próxima Avaliação: [^\n]*','\1Próxima Avaliação: '||p_nova_data::text);
       v_obs := overlay(v_obs placing v_new_block from position(v_block in v_obs) for length(v_block));
-      IF (SELECT count(*) FROM public.monitoramento_avisos WHERE registro_consultor_id=v_reg.id AND tipo='plano_monitoramento')>1 THEN
-        RAISE EXCEPTION 'ambiguous_plan_notice' USING ERRCODE='PT409';
+      -- Exactly one coherent generic notice; never fabricate one.
+      IF (SELECT count(*) FROM public.monitoramento_avisos WHERE registro_consultor_id=v_reg.id AND tipo='plano_monitoramento')<>1
+        OR v_block !~ ('(^|\n)Próxima Avaliação: '||coalesce(v_reg.data_proxima_visita::text,'<none>')||'(\n|$)') THEN
+        RAISE EXCEPTION 'plan_notice_incoherent' USING ERRCODE='PT409';
       END IF;
       SELECT id INTO v_notice FROM public.monitoramento_avisos
-       WHERE registro_consultor_id=v_reg.id AND tipo='plano_monitoramento' FOR UPDATE;
+       WHERE registro_consultor_id=v_reg.id AND tipo='plano_monitoramento'
+         AND data_referencia IS NOT DISTINCT FROM v_reg.data_proxima_visita FOR UPDATE;
+      IF v_notice IS NULL THEN RAISE EXCEPTION 'plan_notice_incoherent' USING ERRCODE='PT409'; END IF;
       INSERT INTO platform_private.visit_plan_write_tickets(transaction_id,registro_id,block,next_date)
         VALUES(txid_current(),v_reg.id,v_new_block,p_nova_data);
+    ELSIF EXISTS(SELECT 1 FROM public.monitoramento_avisos WHERE registro_consultor_id=v_reg.id AND tipo='plano_monitoramento') THEN
+      RAISE EXCEPTION 'plan_notice_incoherent' USING ERRCODE='PT409';
     END IF;
     UPDATE public.registros_consultor
        SET observacoes_tecnicas=CASE WHEN v_block IS NULL THEN observacoes_tecnicas ELSE v_obs END,
@@ -232,8 +255,10 @@ BEGIN
     END IF;
     DELETE FROM platform_private.visit_plan_write_tickets WHERE transaction_id=txid_current() AND registro_id=v_reg.id;
     v_visit_updated := true;
+    v_mode := CASE WHEN v_block IS NULL THEN 'visita_alerta' ELSE 'plano_visita_aviso_alerta' END;
   ELSIF v_alerta.registro_origem_id IS NOT NULL THEN
-    v_version := v_reg.version; -- finalized/read-only visit: history untouched, alert only.
+    -- Immutable visit: explicit alert-only mode; the visit/plan is NOT synchronized.
+    v_version := v_reg.version;
   END IF;
   UPDATE public.alertas_agronomicos
      SET data_vencimento=p_nova_data, nivel_risco='medio'::public.nivel_risco,
@@ -242,12 +267,12 @@ BEGIN
    RETURNING updated_at INTO v_updated;
   IF NOT FOUND THEN RAISE EXCEPTION 'concurrent_update' USING ERRCODE='PT409'; END IF;
   v_receipt := jsonb_build_object('success',true,'alerta_id',p_alerta_id,'data_anterior',v_alerta.data_vencimento,
-    'nova_data',p_nova_data,'registro_origem_id',v_alerta.registro_origem_id,'visita_atualizada',v_visit_updated,
+    'nova_data',p_nova_data,'registro_origem_id',v_alerta.registro_origem_id,'visita_atualizada',v_visit_updated,'modo',v_mode,
     'visit_version',v_version,'alerta_updated_at',v_updated,'request_id',p_request_id);
   IF v_alerta.registro_origem_id IS NOT NULL THEN
     INSERT INTO public.visitas_logs(registro_consultor_id,usuario_id,acao,descricao,metadata)
       VALUES(v_alerta.registro_origem_id,v_uid,'monitoramento_reprogramado','Monitoramento reprogramado pelo alerta de origem',
-        jsonb_build_object('request_id',p_request_id,'alerta_id',p_alerta_id,'fingerprint',v_fp,'visita_atualizada',v_visit_updated));
+        jsonb_build_object('request_id',p_request_id,'alerta_id',p_alerta_id,'fingerprint',v_fp,'modo',v_mode));
   END IF;
   INSERT INTO platform_private.monitoring_alert_receipts VALUES(v_uid,p_alerta_id,p_request_id,'reschedule',v_fp,v_receipt);
   RETURN v_receipt;
@@ -302,6 +327,24 @@ GRANT EXECUTE ON FUNCTION public.rpc_vincular_origem_alerta_v1(uuid,uuid,timesta
 GRANT EXECUTE ON FUNCTION public.rpc_reprogramar_monitoramento_v2(uuid,date,timestamptz,integer,uuid) TO authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.rpc_listar_alertas_vinculaveis_v1(uuid) TO authenticated,service_role;
 
+-- Plan writer: once an open alert is linked, the plan date is owned by the alert reschedule flow.
+-- Content edits with the same date stay allowed; a different date fails atomically (no silent divergence).
+DO $plan$
+DECLARE
+  d text := pg_get_functiondef('platform_private.save_visit_monitoring_plan_core(uuid,integer,jsonb,uuid)'::regprocedure);
+  needle text := '  IF (SELECT count(*) FROM public.monitoramento_avisos WHERE registro_consultor_id=p_registro_id AND tipo=''plano_monitoramento'')>1 THEN';
+BEGIN
+  IF (length(d)-length(replace(d,needle,'')))/length(needle)<>1 THEN
+    RAISE EXCEPTION 'plan_core_patch_mismatch' USING ERRCODE='55000';
+  END IF;
+  EXECUTE replace(d,needle,'  IF EXISTS(SELECT 1 FROM public.alertas_agronomicos o WHERE o.registro_origem_id=p_registro_id AND o.status::text<>''encerrado'')
+    AND v_date IS DISTINCT FROM v_reg.data_proxima_visita THEN
+    RAISE EXCEPTION ''linked_alert_date_requires_reschedule'' USING ERRCODE=''PT409'';
+  END IF;
+'||needle);
+END;
+$plan$;
+
 -- Old v1 callers: alerts WITH origin fail safely (PT428) before any write; no-origin path unchanged.
 -- CREATE OR REPLACE keeps OID/owner/ACL.
 DO $patch$
@@ -328,6 +371,8 @@ BEGIN
     OR has_function_privilege('anon','public.rpc_listar_alertas_vinculaveis_v1(uuid)','EXECUTE')
     OR has_function_privilege('anon','public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)','EXECUTE')
     OR position('monitoring_reschedule_requires_current_client' in pg_get_functiondef('public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)'::regprocedure))=0
+    OR position('linked_alert_date_requires_reschedule' in pg_get_functiondef('platform_private.save_visit_monitoring_plan_core(uuid,integer,jsonb,uuid)'::regprocedure))=0
+    OR position('visit_plan_write_tickets' in pg_get_functiondef('platform_private.save_visit_monitoring_plan_core(uuid,integer,jsonb,uuid)'::regprocedure))=0
     OR md5(pg_get_functiondef('platform_private.guard_visit_plan_preservation()'::regprocedure))<>'618797b75f8c6b962dc70c0841c84de1' THEN
     RAISE EXCEPTION 'agronomic_origin_postflight_failed' USING ERRCODE='55000';
   END IF;
