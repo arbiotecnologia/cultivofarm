@@ -28,27 +28,16 @@ export function PainelAlertas() {
   });
   const { data: alertas, isLoading } = alertasQuery;
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status, statusAtual }: { id: string; status: string; statusAtual: string }) => {
-      // Filtro por status atual evita sobrescrever mudança feita por outro usuário.
-      const { data, error } = await (supabase as any)
-        .from("alertas_agronomicos")
-        .update({ status: status as any, updated_at: new Date().toISOString() })
-        .eq("id", id)
-        .eq("status", statusAtual as any)
-        .select("id");
-      if (error) throw error;
-      if (!data?.length) throw new Error("Este alerta já foi atualizado por outro usuário. Recarregue a lista.");
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["alertas_agronomicos"] }); toast.success("Alerta atualizado"); },
-    onError: (e: any) => toast.error(e?.message || "Erro ao atualizar alerta"),
-    onSettled: () => setEmAndamento(null),
-  });
+  const updateStatus = useAtualizarStatusAlerta();
 
-  const alterarStatus = (id: string, statusAtual: string, status: string) => {
-    if (emAndamento) return;
-    setEmAndamento(id);
-    updateStatus.mutate({ id, status, statusAtual });
+  const alterarStatus = (alerta: { id: string; updated_at: string }, status: StatusAlerta) => {
+    if (emAndamento || updateStatus.isPending) return;
+    setEmAndamento(alerta.id);
+    updateStatus.mutate({ id: alerta.id, status, expectedUpdatedAt: alerta.updated_at }, {
+      onSuccess: () => toast.success("Alerta atualizado"),
+      onError: (e) => toast.error(e.message),
+      onSettled: () => setEmAndamento(null),
+    });
   };
 
   return (
