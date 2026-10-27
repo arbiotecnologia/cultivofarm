@@ -1,0 +1,32 @@
+31 PASS PostgreSQL17 local; Auth/SaaS/hash seams synthetic, no hosted JWT/RLS.
+LIVE definer purge bypass reproduced locally
+purge forgery now denied
+cross tenant envase denied
+anon envase denied
+produced volume exceeded rejected
+over volume no writes
+envase creates stock with real ledger/P1 guards
+one envase stock ledger
+ml to liters and units conserved
+envase replay exact no duplicate
+replay preserves ledger
+changed idempotency payload denied
+cross stock denied before replay
+NaN quantity denied
+full expedition real motor and ledger
+expedition replay
+expedition reversal restores real ledger balances
+reversal balance preserved
+cancel wrapper uses real motor
+cancel wrapper replay
+ledger direct update denied
+real append-only trigger blocks privileged local test
+latest CQ rejected denies envase
+CQ denial leaves no stock
+ledger failure rolls whole envase back
+fault atomic envase stock receipt rollback
+gate revocation committed first denies waiter
+revoked waiter zero writes
+mutation first commits before queued revocation
+3s timeout no mutation
+timeout no envase
