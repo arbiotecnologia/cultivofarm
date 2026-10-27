@@ -95,7 +95,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         p, send = session(); send(f"BEGIN; SELECT 1 FROM registros_consultor WHERE id='{V(2)}' FOR UPDATE;")
         time.sleep(0.3)
         q = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        q.stdin.write(rpc(A, V(2), 3)); q.stdin.close()
+        q.stdin.write('\\set VERBOSITY verbose\n'+rpc(A, V(2), 3)); q.stdin.close()
         wait_lock(1)
         send(f"UPDATE actors SET ready=false WHERE id='{A}'; COMMIT;"); p.stdin.close(); p.wait()
         q.wait()
@@ -141,7 +141,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         p, send = session(); send(f"BEGIN; SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; UPDATE actors SET ready=false WHERE id='{A}';")
         time.sleep(0.3)
         q = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        q.stdin.write(rpc(A, V(5), 3)); q.stdin.close(); wait_lock(1)
+        q.stdin.write('\\set VERBOSITY verbose\n'+rpc(A, V(5), 3)); q.stdin.close(); wait_lock(1)
         send('COMMIT;'); p.stdin.close(); p.wait(); q.wait()
         e = q.stderr.read()
         if q.returncode == 0 or '42501' not in e: raise AssertionError('C1 ' + e)
@@ -150,7 +150,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         # C2 revocation while operation waits on ROW lock (revocation does not take gate here: synthetic direct write).
         p, send = session(); send(f"BEGIN; SELECT 1 FROM registros_consultor WHERE id='{V(6)}' FOR UPDATE;"); time.sleep(0.3)
         q = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        q.stdin.write(rpc(A, V(6), 3)); q.stdin.close(); wait_lock(1)
+        q.stdin.write('\\set VERBOSITY verbose\n'+rpc(A, V(6), 3)); q.stdin.close(); wait_lock(1)
         sql(f"UPDATE actors SET ready=false WHERE id='{A}';")  # commits while op waits on row
         send('COMMIT;'); p.stdin.close(); p.wait(); q.wait(); e = q.stderr.read()
         if q.returncode == 0 or '42501' not in e: raise AssertionError('C2 ' + e)
@@ -159,7 +159,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         # C3 operation already holds gate and waits on row; gate-taking revocation queues BEHIND it -> operation commits first.
         p, send = session(); send(f"BEGIN; SELECT 1 FROM registros_consultor WHERE id='{V(7)}' FOR UPDATE;"); time.sleep(0.3)
         q = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        q.stdin.write(rpc(A, V(7), 3)); q.stdin.close(); wait_lock(1)
+        q.stdin.write('\\set VERBOSITY verbose\n'+rpc(A, V(7), 3)); q.stdin.close(); wait_lock(1)
         r_, rsend = session(); rsend(f"BEGIN; SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; UPDATE actors SET ready=false WHERE id='{A}'; COMMIT;")
         wait_lock(2)
         send('COMMIT;'); p.stdin.close(); p.wait(); q.wait(); r_.stdin.close(); r_.wait()
@@ -172,7 +172,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         qs = []
         for _ in range(2):
             q = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            q.stdin.write(rpc(A, V(9), 3)); q.stdin.close(); qs.append(q)
+            q.stdin.write('\\set VERBOSITY verbose\n'+rpc(A, V(9), 3)); q.stdin.close(); qs.append(q)
         wait_lock(2); send('COMMIT;'); p.stdin.close(); p.wait()
         for q in qs: q.wait()
         codes = sorted(q.returncode for q in qs); errs = ''.join(q.stderr.read() for q in qs)
