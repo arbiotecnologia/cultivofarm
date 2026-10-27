@@ -1,0 +1,15 @@
+CREATE OR REPLACE FUNCTION public.fn_estoque_pode_operar(_uid uuid, _acao text)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT CASE
+    WHEN _uid IS NULL THEN false
+    WHEN _acao IN ('ajuste','perda','descarte')
+      THEN public.has_role(_uid,'administrador'::app_role) OR public.has_role(_uid,'gestor'::app_role)
+        OR public.has_role(_uid,'producao'::app_role)
+    ELSE public.has_role(_uid,'administrador'::app_role) OR public.has_role(_uid,'gestor'::app_role)
+      OR public.has_role(_uid,'producao'::app_role) OR public.has_role(_uid,'administrativo'::app_role)
+  END;
+$function$;

@@ -1,0 +1,6 @@
+CREATE OR REPLACE FUNCTION public.stock_p1_movement_owned(p_stock uuid, p_lote uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SET search_path TO ''
+AS $function$ SELECT platform_private.stock_p1_movement_owned(p_stock,p_lote); $function$;

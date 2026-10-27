@@ -1,0 +1,6 @@
+CREATE OR REPLACE FUNCTION platform_private.stock_p1_movement_owned(p_stock uuid, p_lote uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ SELECT auth.uid() IS NOT NULL AND EXISTS (SELECT 1 FROM public.estoque_produto e WHERE e.id=p_stock AND e.lote_id=p_lote AND platform_private.stock_p1_lote_owned(e.lote_id)); $function$;

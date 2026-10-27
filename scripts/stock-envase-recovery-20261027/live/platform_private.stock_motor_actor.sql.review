@@ -1,0 +1,13 @@
+CREATE OR REPLACE FUNCTION platform_private.stock_motor_actor(p_acao text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ DECLARE v_org uuid; BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'ESTQ_NAO_AUTENTICADO' USING ERRCODE='42501'; END IF;
+ v_org:=public.h15_actor_organization();
+ IF v_org IS NULL THEN RAISE EXCEPTION 'ESTQ_IDENTIDADE_INATIVA' USING ERRCODE='42501'; END IF;
+ IF NOT coalesce(public.fn_estoque_pode_operar(auth.uid(),p_acao),false) THEN RAISE EXCEPTION 'ESTQ_SEM_PERMISSAO' USING ERRCODE='42501'; END IF;
+ IF NOT coalesce(public.saas_has_feature('estoque_embalagens'),false) THEN RAISE EXCEPTION 'ESTQ_FEATURE_REQUIRED' USING ERRCODE='42501'; END IF;
+ RETURN v_org;
+END $function$;

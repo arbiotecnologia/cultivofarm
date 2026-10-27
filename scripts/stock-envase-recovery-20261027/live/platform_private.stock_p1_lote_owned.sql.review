@@ -1,0 +1,12 @@
+CREATE OR REPLACE FUNCTION platform_private.stock_p1_lote_owned(p_lote uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+ SELECT auth.uid() IS NOT NULL AND EXISTS (
+   SELECT 1 FROM public.lotes l
+   WHERE l.id = p_lote AND l.organization_id IS NOT NULL
+     AND l.organization_id = public.h15_actor_organization()
+ );
+$function$;

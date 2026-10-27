@@ -1,0 +1,19 @@
+CREATE OR REPLACE FUNCTION platform_private.stock_motor_item(p_item uuid, p_acao text, p_payload jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ DECLARE v_org uuid; v_item public.estoque_produto%ROWTYPE; v_lote public.lotes%ROWTYPE;
+BEGIN
+ v_org:=platform_private.stock_motor_actor(p_acao);
+ IF p_payload IS NULL OR jsonb_typeof(p_payload)<>'object' OR (p_payload ? 'metadata' AND jsonb_typeof(p_payload->'metadata')<>'object') OR p_payload ?| ARRAY['organization_id','tenant_id','usuario_id','user_id','owner_id'] OR coalesce(p_payload->'metadata','{}'::jsonb) ?| ARRAY['stock_request_item','stock_request_actor','stock_request_fp'] THEN RAISE EXCEPTION 'ESTQ_PAYLOAD_INVALIDO' USING ERRCODE='22023'; END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_each(p_payload) e WHERE e.key IN ('motivo','observacao','origem','referencia_tipo','referencia_id','os_id','os_tipo','cliente_id','partner_id','partner_order_id','movimentacao_origem_id','classificacao','sentido','unidade') AND jsonb_typeof(e.value) NOT IN ('string','null')) OR (p_payload->>'sentido' IS NOT NULL AND p_payload->>'sentido' NOT IN ('entrada','saida')) THEN RAISE EXCEPTION 'ESTQ_PAYLOAD_INVALIDO' USING ERRCODE='22023'; END IF;
+ -- Scoped lookup never returns a foreign/orphan row, even under DEFINER.
+ SELECT e.* INTO v_item FROM public.estoque_produto e JOIN public.lotes l ON l.id=e.lote_id WHERE e.id=p_item AND l.organization_id=v_org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'ESTQ_TENANT_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ SELECT l.* INTO v_lote FROM public.lotes l WHERE l.id=v_item.lote_id AND l.organization_id=v_org;
+ IF v_lote.programacao_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.programacao_producao g WHERE g.id=v_lote.programacao_id AND g.organization_id=v_org) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ IF v_item.envase_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.envase e WHERE e.id=v_item.envase_id AND e.lote_id=v_item.lote_id AND e.organization_id=v_org) THEN RAISE EXCEPTION 'ESTQ_REFERENCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.stock_motor_refs(p_item,v_item.lote_id,v_org,jsonb_build_object('os_id',v_item.reservado_para_os_id,'os_tipo',v_item.reservado_para_os_tipo,'cliente_id',v_item.reservado_para_cliente_id,'partner_id',v_item.reservado_para_partner_id,'partner_order_id',v_item.reservado_para_partner_order_id));
+ PERFORM platform_private.stock_motor_refs(p_item,v_item.lote_id,v_org,p_payload);
+END $function$;
