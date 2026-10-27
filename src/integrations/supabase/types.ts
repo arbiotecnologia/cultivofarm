@@ -25321,6 +25321,10 @@ export type Database = {
         Args: { p_registro_id: string }
         Returns: Json
       }
+      rpc_listar_alertas_vinculaveis_v1: {
+        Args: { p_registro_id: string }
+        Returns: Json
+      }
       rpc_listar_atendimentos_tecnicos_v1: {
         Args: {
           p_aba?: string
@@ -25718,6 +25722,16 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_reprogramar_monitoramento_v2: {
+        Args: {
+          p_alerta_id: string
+          p_expected_alert_updated_at: string
+          p_expected_visit_version: number
+          p_nova_data: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       rpc_reprovar_visita: {
         Args: {
           p_expected_version: number
@@ -25961,6 +25975,16 @@ export type Database = {
       }
       rpc_vincular_etiqueta_embalagem: {
         Args: { p_embalagem_id: string; p_etiqueta_id: string }
+        Returns: Json
+      }
+      rpc_vincular_origem_alerta_v1: {
+        Args: {
+          p_alerta_id: string
+          p_expected_alert_updated_at: string
+          p_expected_visit_version: number
+          p_registro_id: string
+          p_request_id: string
+        }
         Returns: Json
       }
       saas_claim_payment_outbox_non_operational: {
