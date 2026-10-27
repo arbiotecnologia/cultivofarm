@@ -2,6 +2,21 @@ BEGIN;
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '20s';
 -- INACTIVE. Execute only after independent preflight and review.
+DO $pre$
+BEGIN
+  IF md5(pg_get_functiondef('public._visita_lock_and_check(uuid,integer,boolean)'::regprocedure))<>'e3bc4bd9d38f1fb4b659b9e1384c770a'
+    OR md5(pg_get_functiondef('public.can_manage_technical_visit(uuid,uuid)'::regprocedure))<>'d95c2c2b34af117d467d7d4b2b775002'
+    OR md5(pg_get_functiondef('platform_private.monitoring_refs_in_actor_tenant(uuid,uuid,uuid)'::regprocedure))<>'914283d3f4dee931679ef140ae84b498'
+    OR md5(pg_get_functiondef('public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)'::regprocedure))<>'b32bf163ed7ccb989f4f0b653827d825'
+    OR md5(pg_get_functiondef('public.rpc_ativar_monitoramento_visita(uuid,integer,text,date)'::regprocedure))<>'1c5df3e6774efef316f61434f4083700' THEN
+    RAISE EXCEPTION 'monitoring_dependency_drift' USING ERRCODE='55000';
+  END IF;
+  IF to_regprocedure('public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid)') IS NOT NULL
+    OR to_regclass('platform_private.visit_monitoring_plan_receipts') IS NOT NULL THEN
+    RAISE EXCEPTION 'monitoring_already_installed_review_required' USING ERRCODE='55000';
+  END IF;
+END;
+$pre$;
 CREATE TABLE platform_private.visit_monitoring_plan_receipts (
   actor_id uuid NOT NULL, registro_id uuid NOT NULL, request_id uuid NOT NULL,
   fingerprint text NOT NULL, result jsonb NOT NULL,
@@ -139,4 +154,13 @@ CREATE OR REPLACE FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(
 $function$;
 REVOKE ALL ON FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid) TO authenticated,service_role;
+DO $post$
+BEGIN
+  IF has_table_privilege('authenticated','platform_private.visit_monitoring_plan_receipts','INSERT')
+    OR has_table_privilege('authenticated','platform_private.visit_monitoring_plan_receipts','UPDATE')
+    OR has_function_privilege('anon','public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid)','EXECUTE') THEN
+    RAISE EXCEPTION 'monitoring_postflight_acl_failed' USING ERRCODE='55000';
+  END IF;
+END;
+$post$;
 COMMIT;

@@ -5,5 +5,6 @@ it("plano canônico PostgreSQL descartável/Auth sintética: atomicidade/CAS/ori
   expect(output).toContain("PASS rollback receipt");
   expect(output).toContain("PASS concurrent double submit one increment");
   expect(output).toContain("PASS revoke during gate wait PT404");
-  expect(output).toContain("TOTAL 19");
+  expect(output).toContain("PASS revoke during visit row wait 42501");
+  expect(output).toContain("TOTAL 23");
 }, 90_000);

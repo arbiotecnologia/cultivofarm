@@ -1,6 +1,6 @@
 """Disposable PostgreSQL, synthetic Auth/reduced schema; never hosted."""
 from pathlib import Path
-import tempfile, subprocess, os, shutil, time
+import tempfile, subprocess, os, shutil, time, re
 ROOT=Path(__file__).resolve().parent
 V='11111111-1111-4111-8111-111111111111'; B='44444444-4444-4444-8444-444444444444'; A='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'; U='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 PLAN='{"items":["Nutrição","Estande"],"frequency":"14","triggers":"Avaliar","next_date":"2026-11-01"}'
@@ -48,7 +48,11 @@ CREATE FUNCTION enforce_visit_immutability() RETURNS trigger LANGUAGE plpgsql AS
 CREATE TRIGGER trg_enforce_visit_immutability BEFORE UPDATE ON registros_consultor FOR EACH ROW EXECUTE FUNCTION enforce_visit_immutability();
 """)
   sql((ROOT/'_visita_lock_and_check.live.sql').read_text()+';')
-  sql((ROOT/'candidate.sql.review').read_text())
+  candidate=(ROOT/'candidate.sql.review').read_text()
+  # Reduced synthetic dependencies cannot satisfy LIVE hashes. Only the PRE
+  # hash block is removed here; candidate core, postflight ACL and transaction are real.
+  candidate=re.sub(r'DO \$pre\$.*?\$pre\$;', '', candidate, flags=re.S)
+  sql(candidate)
   for ver in ['NULL','0','-1','2']: error(call(ver=ver),'PT409','mandatory/stale version '+ver)
   error(call(visit=B),'PT404','foreign origin A to B'); error(call(actor=U),'PT404','foreign origin B to A')
   sql(call()); assert_sql(f"SELECT version=2 AND observacoes_tecnicas LIKE '%Nutrição, Estande%' AND observacoes_tecnicas LIKE 'Notas preservadas%' FROM registros_consultor WHERE id='{V}';",'plan preserves semantics, exact +1')
@@ -92,6 +96,27 @@ CREATE TRIGGER trg_enforce_visit_immutability BEFORE UPDATE ON registros_consult
   checks+=1; print('PASS revoke during gate wait PT404')
   assert_sql(f"SELECT version=3 FROM registros_consultor WHERE id='{V}';",'revocation no write')
   error(call(),'42501','revoked replay denied')
+  sql(f"UPDATE actors SET ready=true WHERE id='{A}';")
+  row=spawn(''); row.stdin.write(f"BEGIN; SELECT id FROM registros_consultor WHERE id='{V}' FOR UPDATE;\n"); row.stdin.flush(); time.sleep(.2)
+  p=spawn(''); p.stdin.write('\\set VERBOSITY verbose\n'+call(ver='3',key='99999999-9999-4999-8999-999999999999')+'\n'); p.stdin.close()
+  for _ in range(100):
+   if int(sql("SELECT count(*) FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE '%rpc_salvar_plano%';").stdout.strip())==1: break
+   time.sleep(.02)
+  else: raise AssertionError('row revocation session not waiting')
+  sql(f"UPDATE actors SET ready=false WHERE id='{A}';")
+  row.stdin.write('COMMIT;\n'); row.stdin.close(); row.wait(timeout=10); p.wait(timeout=10)
+  if p.returncode==0 or '42501' not in p.stderr.read(): raise AssertionError('row wait revocation accepted')
+  checks+=1; print('PASS revoke during visit row wait 42501')
+  assert_sql(f"SELECT version=3 FROM registros_consultor WHERE id='{V}';",'row wait revoke no mutation')
+  sql(f"UPDATE actors SET ready=true WHERE id='{A}';")
+  error(call(ver='2',key='aaaaaaaa-2222-4222-8222-222222222222'),'PT409','new key stale after concurrent save')
+  # Rollout POST failure must undo all candidate DDL in its single transaction.
+  sql('REVOKE ALL ON FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid) FROM authenticated;')
+  before=sql("SELECT md5(pg_get_functiondef('public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid)'::regprocedure));").stdout
+  r=sql("BEGIN; CREATE OR REPLACE FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid) RETURNS jsonb LANGUAGE sql AS $$SELECT '{}'::jsonb$$; DO $$BEGIN RAISE EXCEPTION 'POST injected'; END$$; COMMIT;",False)
+  if r.returncode==0: raise AssertionError('POST injection succeeded')
+  if sql("SELECT md5(pg_get_functiondef('public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid)'::regprocedure));").stdout!=before: raise AssertionError('POST rollback changed function')
+  checks+=1; print('PASS injected DDL POST rollback preserves function')
   print('TOTAL',checks)
  finally:
   if started: subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'stop','-m','immediate'],capture_output=True)
