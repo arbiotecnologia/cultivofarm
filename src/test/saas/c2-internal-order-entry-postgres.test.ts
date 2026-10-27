@@ -8,5 +8,5 @@ it("internal portfolio entry candidate: A/B isolation, accounting gate, hash/ide
     "internal B create on A partner denied, no effects", "technician denial unchanged", "accounting gate preserved: DRAFT create denied, no effects",
     "idempotent replay returns same order with no new writes", "preparation/create generated no title, installment or link",
     "internal+external multi-profile falls back to unchanged LIVE path, no bypass", "rollback restores exact LIVE scope and removes new functions",
-    "writer still false", "TOTAL 30 PASS; synthetic Auth, no hosted JWT/RLS certification"]) expect(stdout).toContain(line);
+    "writer still false", "TOTAL 54 PASS; synthetic Auth, no hosted JWT/RLS certification"]) expect(stdout).toContain(line);
 }, 300_000);
