@@ -124,4 +124,22 @@ it("bloqueio de edição e offline não oferecem finalização ativa", () => {
   rerender(<WizardRevisaoStep {...props} />);
   expect(screen.getByRole("button", { name: "Finalizar visita" })).toBeDisabled();
   expect(mocks.rpc).not.toHaveBeenCalled();
+});it.each([null, undefined, 0])("envio sem versão observada (%s) não chama RPC nem fabrica CAS", (version) => {
+  mocks.registro = { status: "finalizado", version: version as never, cultura_id: "crop-fake" };
+  render(<WizardRevisaoStep {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Enviar para aprovação" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar envio" }));
+  expect(mocks.rpc).not.toHaveBeenCalled();
+  expect(within(screen.getByRole("alertdialog")).getByRole("alert")).toHaveTextContent("Versão desatualizada");
+});
+it("PT409 do envio mantém diálogo, não navega nem refaz automaticamente", async () => {
+  mocks.registro.status = "finalizado";
+  mocks.rpc.mockResolvedValueOnce({ error: { code: "PT409", message: "version_conflict" } });
+  render(<WizardRevisaoStep {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Enviar para aprovação" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar envio" }));
+  await waitFor(() => expect(within(screen.getByRole("alertdialog")).getByRole("alert")).toHaveTextContent("Versão desatualizada"));
+  await new Promise((r) => setTimeout(r, 50));
+  expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  expect(mocks.navigate).not.toHaveBeenCalled();
 });
