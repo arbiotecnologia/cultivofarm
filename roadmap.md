@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 27/10 00:54 — origem vinculada no plano canônico (autorizado, SQL INATIVO)
+- [ ] Inspecionar contratos LIVE somente leitura, modelo genérico, locks/tenant/version/log e preparar SQL revisável sem aplicação.
+- [ ] Substituir writes diretos do editor por transação CAS com fences/abort/sem retry e regressões locais.
+- [ ] Revisão independente/implantação e homologação JWT A/B, origem e revogação dependem do auditor. Contabilidade e SU-518022 permanecem pendentes.
+
 ## 27/10 00:05 — clientes revisão fiscal e reprogramação
 - [x] 00:19 auditor confirmou aplicações fiscal224ab7944abd13190fe8ea1044216218 e monitoringb32bf163ed7ccb989f4f0b653827d825; não reaplicar; contagem atual42. Parser completo conciliado,14 regressões adicionais,61/61 em3arquivos PASS, build automático OK00:21:46 e diffcheck OK; caminhos criação/status documentados, sem fixture/SQL/publicação.
 - [x] Callers/hooks/componentes auditados; draft update revisão positiva, reprogramação RPC/timestamp canônico sem writes diretos; PT409/403/404 uniformes/fences/travas sem retry.
