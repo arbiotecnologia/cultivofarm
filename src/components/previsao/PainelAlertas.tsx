@@ -1,6 +1,6 @@
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { useAtualizarStatusAlerta, type StatusAlerta } from "@/hooks/useAtualizarStatusAlerta";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +16,10 @@ export function PainelAlertas() {
   const [statusFilter, setStatusFilter] = useState("ativo");
   const [emAndamento, setEmAndamento] = useState<string | null>(null);
 
-  const alertasQuery = useQuery({
-    queryKey: ["alertas_agronomicos", statusFilter],
-    queryFn: async () => {
-      let q = (supabase as any).from("alertas_agronomicos").select("*, fazendas(nome), talhoes(nome)").order("data_alerta", { ascending: false });
+  const alertasQuery = useScopedPortalQuery<any[]>({
+    queryKey: ["alertas_agronomicos", "painel", statusFilter],
+    queryFn: async (signal) => {
+      let q = (supabase as any).from("alertas_agronomicos").select("*, fazendas(nome), talhoes(nome)").order("data_alerta", { ascending: false }).abortSignal(signal);
       if (statusFilter !== "todos") q = q.eq("status", statusFilter as any);
       const { data, error } = await q;
       if (error) throw error;

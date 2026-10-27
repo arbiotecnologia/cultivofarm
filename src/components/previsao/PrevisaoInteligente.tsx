@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { useCriarAlertaClimatico, type CriarAlertaClimaticoArgs } from "@/hooks/useCriarAlertaClimatico";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,43 +23,43 @@ export function PrevisaoInteligente() {
   const [fazendaId, setFazendaId] = useState("");
   const [emAndamento, setEmAndamento] = useState<string | null>(null);
 
-  const fazendasQuery = useQuery({
-    queryKey: ["fazendas"],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).from("fazendas").select("id, nome").order("nome");
+  const fazendasQuery = useScopedPortalQuery<any[]>({
+    queryKey: ["previsao-fazendas"],
+    queryFn: async (signal) => {
+      const { data, error } = await (supabase as any).from("fazendas").select("id, nome").order("nome").abortSignal(signal);
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  const talhoesQuery = useQuery({
+  const talhoesQuery = useScopedPortalQuery<any[]>({
     queryKey: ["talhoes_prev", fazendaId],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any).from("talhoes").select("id, nome, culturas(nome)").eq("fazenda_id", fazendaId);
+    queryFn: async (signal) => {
+      const { data, error } = await (supabase as any).from("talhoes").select("id, nome, culturas(nome)").eq("fazenda_id", fazendaId).abortSignal(signal);
       if (error) throw error;
       return data ?? [];
     },
     enabled: !!fazendaId,
   });
 
-  const climaQuery = useQuery({
+  const climaQuery = useScopedPortalQuery<any[]>({
     queryKey: ["clima_prev", fazendaId],
-    queryFn: async () => {
+    queryFn: async (signal) => {
       const d = new Date(); d.setDate(d.getDate() - 7);
-      const { data, error } = await (supabase as any).from("clima_dados").select("*").eq("fazenda_id", fazendaId).gte("data_hora", d.toISOString()).order("data_hora", { ascending: false });
+      const { data, error } = await (supabase as any).from("clima_dados").select("*").eq("fazenda_id", fazendaId).gte("data_hora", d.toISOString()).order("data_hora", { ascending: false }).abortSignal(signal);
       if (error) throw error;
       return data ?? [];
     },
     enabled: !!fazendaId,
   });
 
-  const registrosQuery = useQuery({
+  const registrosQuery = useScopedPortalQuery<any[]>({
     queryKey: ["registros_prev", fazendaId],
-    queryFn: async () => {
+    queryFn: async (signal) => {
       const { data, error } = await (supabase as any)
         .from("registros_consultor")
         .select("talhao_id, categoria_problema, tipo_demanda")
-        .eq("fazenda_id", fazendaId);
+        .eq("fazenda_id", fazendaId).abortSignal(signal);
       if (error) throw error;
       return data ?? [];
     },
