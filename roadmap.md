@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 27/10 15:57 — dois conflitos Cockpit/aplicação (pacote INATIVO)
-- [ ] Capturar fontes LIVE e preparar delta exclusivo dos RAISE COCKPIT_LOTE_CONCORRENTE/application_version_conflict: 40001→PT409; PRE/POST/rollback condicionado sem alterar legacy_closed.
-- [ ] Testes PostgreSQL descartável com corpos exatos, conflitos/replay/A/B/atomicidade/serialização genuína; consumidores existentes sem retry cego e riscos de locks/revogação separados.
+- [x] Fontes LIVE capturadas read-only no ref canônico; delta exclusivo de dois RAISE 40001→PT409 em scripts/business-conflicts-cockpit-application-20261027, PRE/POST/rollback condicionado por hashes/OIDs/ACL/config/dependências; legacy_closed intacto.
+- [x] 36/36 checks PostgreSQL17.9 descartável (corpos exatos, Auth/schema sintéticos; conflito lote por injeção local),87/87Vitest em3arquivos; replay/A/B/atomicidade/40001 genuíno. Runtime frontend intacto, apenas4regressões novas; riscos de locks/revogação separados sem homologação real.
 - [ ] Implantação e homologação real pelo auditor após revisão; contabilidade real e SU-518022 permanecem pendentes. Sem SQL hosted/publicação/fixtures.
 
 ## 27/10 15:48 — reconciliação documental de campo (sem SQL/publicação)
