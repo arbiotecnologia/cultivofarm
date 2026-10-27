@@ -15,6 +15,7 @@ import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
 import { EncerramentoState } from "./EncerramentoCard";
 import { formatDateDisplay } from "@/lib/date-utils";
 import { parsePlanoMonitoramento } from "@/lib/planoMonitoramento";
+import { OrigemAlertaAgronomico } from "./OrigemAlertaAgronomico";
 
 interface PlanoMonitoramentoEditorProps {
   readOnly?: boolean;
@@ -225,6 +226,7 @@ export function PlanoMonitoramentoEditor({
             </div>
           </div>
           {aviso && <p className="text-xs text-muted-foreground">Aviso desta visita · {displayRegistro?.codigo_visita ?? registroId} · {aviso.id}</p>}
+          {authorized && <OrigemAlertaAgronomico registroId={registroId} locked={locked} visitVersion={workspace.data?.version} onUpdate={onUpdate} />}
           <Button 
             className="w-full h-8 text-xs mt-2 bg-emerald-600 hover:bg-emerald-700 text-white" 
             disabled={true}

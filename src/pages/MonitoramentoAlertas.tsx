@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-import { useReprogramarMonitoramento } from "@/hooks/useReprogramarMonitoramento";
+import { ReprogramacaoError, useReprogramarMonitoramento } from "@/hooks/useReprogramarMonitoramento";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,9 @@ export default function MonitoramentoAlertas() {
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [newDate, setNewDate] = useState("");
   const [isRescheduling, setIsRescheduling] = useState(false);
+  // Observed origin visit revision, read from the authorized workspace when the dialog opens.
+  const [origemVersion, setOrigemVersion] = useState<number | null>(null);
+  const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
 
   const hoje = hojeSaoPaulo();
 
@@ -91,7 +94,7 @@ export default function MonitoramentoAlertas() {
   const rescheduleMutation = useReprogramarMonitoramento();
 
   useEffect(() => {
-    setSelectedAlert(null); setNewDate(""); setIsRescheduling(false);
+    setSelectedAlert(null); setNewDate(""); setIsRescheduling(false); setOrigemVersion(null); attempt.current = null;
   }, [fence.scope]);
 
   const filteredAlertas = filtrarAlertas(alertas as any[], {
@@ -126,13 +129,27 @@ export default function MonitoramentoAlertas() {
     ? validarNovaData(newDate, hoje, selectedAlert.data_vencimento)
     : { ok: false as const };
 
-  const abrirReprogramacao = (alerta: any) => {
+  const abrirReprogramacao = async (alerta: any) => {
     if (!podeReprogramar(alerta?.status)) {
       toast.error("Este monitoramento não está mais em aberto.");
       return;
     }
-    if (!fence.capture()()) return;
+    const valid = fence.capture();
+    if (!valid()) return;
+    let version: number | null = null;
+    if (alerta?.registro_origem_id) {
+      // Canonical authorized read; the server re-checks this revision under lock.
+      const { data, error } = await supabase.rpc("rpc_get_visita_workspace" as never, { p_registro_id: alerta.registro_origem_id } as never);
+      if (!valid()) return;
+      const ws = data as { version?: unknown; permissions?: { can_view?: boolean } } | null;
+      if (error || !ws || ws.permissions?.can_view !== true || !Number.isSafeInteger(ws.version) || (ws.version as number) <= 0) {
+        toast.error("Não foi possível consultar a visita de origem. Nada foi alterado."); return;
+      }
+      version = ws.version as number;
+    }
     selectedScope.current = fence.scope;
+    attempt.current = null;
+    setOrigemVersion(version);
     setSelectedAlert(alerta);
     setNewDate(toDataCivil(alerta?.data_vencimento) || "");
     setIsRescheduling(true);
@@ -149,13 +166,21 @@ export default function MonitoramentoAlertas() {
     if (!validacao.ok) { toast.error(validacao.erro); return; }
     submitLock.current = true;
     try {
+      const origemId: string | null = selectedAlert.registro_origem_id ?? null;
+      const fingerprint = JSON.stringify([selectedAlert.id, newDate, selectedAlert.updated_at, origemVersion]);
+      if (attempt.current && attempt.current.fingerprint !== fingerprint) attempt.current = null;
+      attempt.current ??= { fingerprint, key: crypto.randomUUID() };
       await rescheduleMutation.mutateAsync({
         id: selectedAlert.id, date: newDate, expectedUpdatedAt: selectedAlert.updated_at,
+        ...(origemId ? { origemId, expectedVisitVersion: origemVersion, requestId: attempt.current.key } : {}),
       });
       if (!valid()) return;
+      attempt.current = null;
       toast.success("Monitoramento reprogramado com sucesso");
       setSelectedAlert(null); setNewDate(""); setIsRescheduling(false);
     } catch (err) {
+      // Definitive rejection retires the attempt key; an uncertain result keeps it for an identical retry.
+      if (!(err instanceof ReprogramacaoError && err.outcome === "uncertain")) attempt.current = null;
       if (valid()) toast.error(err instanceof Error ? err.message : "Não foi possível reprogramar o monitoramento.");
     } finally { submitLock.current = false; }
   };
@@ -386,6 +411,8 @@ export default function MonitoramentoAlertas() {
           if (!open) {
             setSelectedAlert(null);
             setNewDate("");
+            setOrigemVersion(null);
+            attempt.current = null;
           }
         }}
       >
@@ -417,6 +444,7 @@ export default function MonitoramentoAlertas() {
                 <p><strong>Fazenda:</strong> {textoOuTraco(selectedAlert.fazendas?.nome)}</p>
                 <p><strong>Talhão:</strong> {textoOuTraco(selectedAlert.talhoes?.nome)}</p>
                 <p><strong>Data atual:</strong> {selectedAlert.data_vencimento ? formatDateDisplay(selectedAlert.data_vencimento) : "—"}</p>
+                {selectedAlert.registro_origem_id && <p>A visita de origem e o plano de monitoramento serão atualizados juntos quando a visita ainda estiver aberta; visitas finalizadas não são alteradas.</p>}
               </div>
             )}
           </div>

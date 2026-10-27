@@ -1,0 +1,5 @@
+- Keep this package inactive; never apply SQL or publish automatically — independent review owns installation and the bounded rehearsal.
+- Origin links only attach an EXISTING alert of the same farm/compatible plot to an editable visit; never create, retype or infer agronomic alerts from generic plan notices — preserves single authority.
+- Reschedule writers lock gate -> alert -> visit -> notice with function-level lock_timeout, mandatory CAS (alert timestamp, visit version), receipts and post-wait re-authorization; plan text changes only via the existing ticket table — keeps guard_visit_plan_preservation intact.
+- Old v1 callers with origin fail with PT428 before writing; clients never fall back to v1 or direct writes for origin alerts.
+- Revocation claims must state the commit order proven: revocation queued behind an operation on the gate does not win.

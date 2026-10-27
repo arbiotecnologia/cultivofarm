@@ -18,6 +18,8 @@ import VisitaTecnica from "@/pages/VisitaTecnica";
 import { serializeConduta, parseConduta } from "@/lib/condutaSerializer";
 import { CONDUTA_DEFAULT } from "@/components/visita/CondutaCard";
 import { monitoringBlock } from "@/lib/visita/preserveMonitoringPlan";
+// Real page mounts four editor instances (plus origin panels); allow headroom under parallel load.
+vi.setConfig({ testTimeout: 20_000 });
 const id = "11111111-1111-4111-8111-111111111111";
 const block = "[PLANO DE MONITORAMENTO]\nItens: Nutrição, Estande\nFrequência: 14 dias\nGatilhos: Avaliar vigor\nPróxima Avaliação: 2026-11-05\n[FIM DO PLANO]";
 function record() { return { id, status: "rascunho", version: s.version, observacoes_tecnicas: s.observations, data_proxima_visita: "2026-11-05", objetivo_visita: "Vigor", data_vistoria: "2026-10-27", cliente_id: id, fazenda_id: id, talhao_id: id, cultura_id: id, necessidade_intervencao: "monitorar", proxima_acao_recomendada: "emitir_recomendacao" }; }
