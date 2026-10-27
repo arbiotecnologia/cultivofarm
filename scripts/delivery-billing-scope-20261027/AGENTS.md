@@ -1,0 +1,5 @@
+- Package is review-only: never apply candidate/rollback or publish from here; the auditor installs and homologates.
+- Billing/not-billable derive tenant from the actor profile and lock the delivery scoped to it; cross-tenant replay must never return ids — prevents tenant leaks.
+- Order is gate → reauth → advisory → reauth → row → reauth with lock_timeout 3s; business conflicts PT409 — keeps revocation observable.
+- Category must be active RECEITA and payment method active and required; no fallback.
+- Containment is deny-only (revoke EXECUTE); never restore unscoped bodies. Local tests are synthetic, not JWT/RLS proof.
