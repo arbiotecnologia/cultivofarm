@@ -903,3 +903,9 @@
 - [ ] Instalação independente + ensaio JWT A/B limitado (README do pacote); decisão revisor: visita finalizada só alerta, criação de alerta com origem não aberta.
 - [x] 2026-10-27 pacote INATIVO scripts/catalog-label-conflicts-20261027 (rótulos catálogo 40001→PT409; 52 checks PG sintéticos; frontend PT409). Sem SQL/publicação.
 - [ ] Aplicação/homologação real pelo auditor; replay helper 40001 residual; revogação durante espera nos rótulos (achado separado).
+
+## 27/10 16:55 — homologação real de rótulos + falha do seletor (sem SQL/publicação)
+- [x] Reconciliar evidências reais pós-implantação: Superadmin IAB list/create/update 200, stale 409 PT409, replay idempotente, adminB 403, active=false 200; 7 rótulos hash 38fc19 intactos, fixture 2aaf1f0c com 4 auditorias; espera <3s 200, segunda tentativa sem prova (timeout CDP, sem auditoria da chave 14).
+- [x] Investigar revogação canônica de Superadmin (read-only): NÃO existe fluxo — user_roles RLS exige role<>'superadmin', admin_edit_user_profile_v1 bloqueia, tenant_admin_set_user_active é tenant-scoped; homologação de revogação Superadmin permanece bloqueada sem novo acesso autorizado.
+- [x] Corrigir /selecionar-portal preso em "Validando seus acessos…" após troca para Superadmin (organization_id NULL → ready nunca true): redirect para /plataforma espelhando AuthRoute, sem contornar guards; testes 3/3 novos + 9/9 gestão.
+- [ ] Publicação do patch do seletor e verificação do deployment 08519845 pelo auditor; homologação de revogação Superadmin bloqueada (sem fluxo canônico); contabilidade real e SU-518022 adiados.
