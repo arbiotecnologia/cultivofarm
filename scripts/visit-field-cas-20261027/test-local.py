@@ -187,7 +187,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         err(f"UPDATE visitas_campo SET versao=versao+2 WHERE registro_consultor_id='{V(1)}';", 'PT409', 'guard: version jump PT409')
         err(f"UPDATE visitas_campo SET versao=versao WHERE registro_consultor_id='{V(1)}';", 'PT409', 'guard: same version PT409')
         err(f"UPDATE visitas_campo SET versao=versao-1 WHERE registro_consultor_id='{V(1)}';", 'PT409', 'guard: regression PT409')
-        err(f"UPDATE visitas_campo SET versao=NULL WHERE registro_consultor_id='{V(1)}';", '23502', 'guard/NOT NULL: null version rejected')
+        err(f"UPDATE visitas_campo SET versao=NULL WHERE registro_consultor_id='{V(1)}';", 'PT409', 'guard: null version rejected before NOT NULL')
         err(f"INSERT INTO visitas_campo(registro_consultor_id,cliente_id,created_by,versao) VALUES('{V(6)}','{CA}','{A}',5);", 'PT409', 'guard: insert with versao<>1 PT409')
         err(f"UPDATE visitas_campo SET cliente_id='{CB}', versao=versao+1 WHERE registro_consultor_id='{V(1)}';", '42501', 'guard: immutable cliente_id preserved')
         err(f"UPDATE visitas_campo SET client_uuid='{K2}', versao=versao+1 WHERE registro_consultor_id='{V(1)}';", '42501', 'guard: immutable client_uuid preserved')
