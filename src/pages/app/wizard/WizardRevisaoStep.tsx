@@ -25,7 +25,7 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   const [action, setAction] = useState<"finalizar" | "aprovar" | null>(null);
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const submissionLock = useRef(false);
+  const submissionLock = useRef<object | null>(null);
   // Fence ator/tenant/roles/época/visita/montagem: capturada por requisição e
   // revalidada após cada await. Autorização real permanece no servidor.
   const access = useStorageAccessScope(`wizard-revisao:${remoteRegistroId ?? ""}`);
@@ -126,7 +126,8 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
     const registroId = remoteRegistroId;
     const currentAction = action;
     const target = currentAction === "finalizar" ? "finalizado" : "enviado_aprovacao";
-    submissionLock.current = true;
+    const ticket = {};
+    submissionLock.current = ticket;
     setPending(true);
     setActionError(null);
     try {
@@ -161,9 +162,9 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
       toast.error(msg);
       await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", registroId] });
     } finally {
-      // finally pertence à tentativa: se escopo mudou, a nova montagem/escopo já tem lock próprio.
-      if (current()) {
-        submissionLock.current = false;
+      // finally pertence à tentativa: só libera o próprio ticket; nada mais é aplicado.
+      if (submissionLock.current === ticket) {
+        submissionLock.current = null;
         setPending(false);
       }
     }
