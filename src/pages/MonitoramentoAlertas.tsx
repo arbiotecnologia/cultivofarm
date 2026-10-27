@@ -1,6 +1,8 @@
 
-import { useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState, useRef } from "react";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useReprogramarMonitoramento } from "@/hooks/useReprogramarMonitoramento";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +47,9 @@ import {
 import { Label } from "@/components/ui/label";
 
 export default function MonitoramentoAlertas() {
-  const queryClient = useQueryClient();
+  const fence = useStorageAccessScope("monitoramento-page");
+  const submitLock = useRef(false);
+  const selectedScope = useRef("");
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FiltroAlerta>("all");
@@ -65,7 +69,7 @@ export default function MonitoramentoAlertas() {
     isError,
     isFetching,
     refetch,
-  } = useQuery({
+  } = useScopedPortalQuery<any[]>({
     queryKey: ["alertas-monitoramento-gestor"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -84,48 +88,11 @@ export default function MonitoramentoAlertas() {
     },
   });
 
-  const rescheduleMutation = useMutation({
-    mutationFn: async ({ id, date, registroId }: { id: string; date: string; registroId?: string }) => {
-      // Atualização condicionada ao status: se outro usuário concluiu o
-      // monitoramento nesse intervalo, nenhuma linha é afetada e abortamos.
-      const { data: updated, error: alertError } = await supabase
-        .from("alertas_agronomicos")
-        .update({
-          data_vencimento: date,
-          nivel_risco: "medio", // Reset risk when rescheduled
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", id)
-        .eq("status", "monitoramento")
-        .select("id");
+  const rescheduleMutation = useReprogramarMonitoramento();
 
-      if (alertError) throw alertError;
-      if (!updated || updated.length === 0) {
-        throw new Error(
-          "Este monitoramento já foi concluído ou alterado por outro usuário. Atualize a lista.",
-        );
-      }
-
-      if (registroId) {
-        const { error: regError } = await supabase
-          .from("registros_consultor")
-          .update({ data_proxima_visita: date })
-          .eq("id", registroId);
-        if (regError) throw regError;
-      }
-    },
-    onSuccess: () => {
-      toast.success("Monitoramento reprogramado com sucesso");
-      queryClient.invalidateQueries({ queryKey: ["alertas-monitoramento-gestor"] });
-      setSelectedAlert(null);
-      setNewDate("");
-      setIsRescheduling(false);
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || "Não foi possível reprogramar o monitoramento.");
-      queryClient.invalidateQueries({ queryKey: ["alertas-monitoramento-gestor"] });
-    }
-  });
+  useEffect(() => {
+    setSelectedAlert(null); setNewDate(""); setIsRescheduling(false);
+  }, [fence.scope]);
 
   const filteredAlertas = filtrarAlertas(alertas as any[], {
     busca: search,
@@ -164,30 +131,34 @@ export default function MonitoramentoAlertas() {
       toast.error("Este monitoramento não está mais em aberto.");
       return;
     }
+    if (!fence.capture()()) return;
+    selectedScope.current = fence.scope;
     setSelectedAlert(alerta);
     setNewDate(toDataCivil(alerta?.data_vencimento) || "");
     setIsRescheduling(true);
   };
 
-  const handleReschedule = () => {
-    if (rescheduleMutation.isPending) return;
-    if (!selectedAlert) return;
+  const handleReschedule = async () => {
+    if (submitLock.current || rescheduleMutation.isPending || !selectedAlert) return;
+    const valid = fence.capture();
+    if (!valid() || selectedScope.current !== fence.scope) return;
     if (!podeReprogramar(selectedAlert.status)) {
-      toast.error("Este monitoramento não está mais em aberto.");
-      return;
+      toast.error("Este monitoramento não está mais em aberto."); return;
     }
     const validacao = validarNovaData(newDate, hoje, selectedAlert.data_vencimento);
-    if (!validacao.ok) {
-      toast.error(validacao.erro);
-      return;
-    }
-    rescheduleMutation.mutate({
-      id: selectedAlert.id,
-      date: newDate,
-      registroId: selectedAlert.registro_origem_id
-    });
+    if (!validacao.ok) { toast.error(validacao.erro); return; }
+    submitLock.current = true;
+    try {
+      await rescheduleMutation.mutateAsync({
+        id: selectedAlert.id, date: newDate, expectedUpdatedAt: selectedAlert.updated_at,
+      });
+      if (!valid()) return;
+      toast.success("Monitoramento reprogramado com sucesso");
+      setSelectedAlert(null); setNewDate(""); setIsRescheduling(false);
+    } catch (err) {
+      if (valid()) toast.error(err instanceof Error ? err.message : "Não foi possível reprogramar o monitoramento.");
+    } finally { submitLock.current = false; }
   };
-
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -408,7 +379,7 @@ export default function MonitoramentoAlertas() {
       </Card>
 
       <Dialog
-        open={isRescheduling}
+        open={isRescheduling && fence.ready && selectedScope.current === fence.scope}
         onOpenChange={(open) => {
           if (rescheduleMutation.isPending) return;
           setIsRescheduling(open);

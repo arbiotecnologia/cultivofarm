@@ -14,7 +14,7 @@
  *   - Persistência inclui `fiscal_profile_snapshot` e `tax_snapshot` por
  *     item (sanitizados; o servidor rejeita chaves sensíveis).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ import { useFiscalServicosLite, type FiscalServicoLite } from "@/hooks/useFiscal
 import { useDebounce } from "@/hooks/useDebounce";
 import SinefOperationsPanel from "@/components/fiscal/documentos/sinief49/SinefOperationsPanel";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { canUseSinief49Operations } from "@/lib/fiscal/sinief49/permissions";
 import NatureOperationCombobox from "@/components/fiscal/NatureOperationCombobox";
 
@@ -74,7 +75,7 @@ export default function RascunhoWizard({
   invoiceId,
   initialValues,
   companyCnpj,
-  expectedVersion = 1,
+  expectedVersion,
   onSaved,
   disabled = false,
   defaultNature = null,
@@ -85,7 +86,9 @@ export default function RascunhoWizard({
     natureza_operacao: defaultNature || undefined,
   });
   const [currentInvoiceId, setCurrentInvoiceId] = useState<string | null>(invoiceId);
-  const [currentVersion, setCurrentVersion] = useState(expectedVersion);
+  const [currentVersion, setCurrentVersion] = useState(expectedVersion ?? (invoiceId ? null : 1));
+  const fence = useStorageAccessScope("fiscal-draft-wizard");
+  const saveLock = useRef(false);
   const { role } = useAuth();
   const canUseSinief = canUseSinief49Operations(role);
   const STEPS = canUseSinief && values.invoice_type === "NFE" ? SINIEF_STEPS : LEGACY_STEPS;
@@ -243,10 +246,13 @@ export default function RascunhoWizard({
   }
 
   async function handleSave() {
+    const valid = fence.capture();
+    if (readonly || saveLock.current || !valid()) return;
     if (!validateAll()) {
       toast({ title: "Verifique os campos", description: "Há dados inválidos no rascunho.", variant: "destructive" });
       return;
     }
+    saveLock.current = true;
     try {
       const res = await saveMut.mutateAsync({
         invoiceId: currentInvoiceId,
@@ -254,17 +260,19 @@ export default function RascunhoWizard({
         expectedVersion: currentVersion,
         companyCnpj,
       });
+      if (!valid()) return;
       setCurrentInvoiceId(res.id);
       setCurrentVersion(res.draft_version);
       toast({ title: "Rascunho salvo", description: `Versão ${res.draft_version}.` });
       onSaved?.(res.id, res.draft_version);
     } catch (err) {
+      if (!valid()) return;
       toast({
         title: "Não foi possível salvar",
         description: err instanceof Error ? err.message : "Falha inesperada.",
         variant: "destructive",
       });
-    }
+    } finally { saveLock.current = false; }
   }
 
   async function handleValidateHomologation() {
