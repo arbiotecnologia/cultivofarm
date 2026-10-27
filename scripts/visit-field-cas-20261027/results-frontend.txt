@@ -1,3 +1,4 @@
+92683a fix: wizardCampo.persistence 12/12 PASS (incl. finish CAS false -> no "Salvo"/no onDone; stale discard keeps conflict + new draft); 0 act warnings.
 fe6fc410 fixes — vitest (QueryClient real, fake-indexeddb real, useStorageAccessScope real; transport simulated)
 src/test/visita/wizardCampo.persistence.test.tsx: 11/11 PASS
   - hydration 403 blocks form/save, Reconsultar without reload, then CAS uses fresh version
