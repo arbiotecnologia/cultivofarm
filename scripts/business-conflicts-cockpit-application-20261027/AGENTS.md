@@ -1,0 +1,3 @@
+- Keep this package inactive and change only the two pinned business-conflict RAISE SQLSTATEs; genuine serialization and legacy_closed remain unchanged — avoids global error rewriting or reopening writers.
+- Install and revert only exact pinned target/dependency/catalog snapshots in one bounded transaction; rollback restores the known LIVE business 40001 codes without changing authority — prevents drift and security regression.
+- PostgreSQL tests use exact target bodies with reduced schemas and synthetic Auth; report local fault injection separately from real revocation overlap — prevents false homologation.
