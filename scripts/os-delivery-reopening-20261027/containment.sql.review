@@ -1,0 +1,10 @@
+-- INACTIVE deny-only containment. Preserve SELECT/RLS and existing OS release.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+SET LOCAL statement_timeout='15s';
+REVOKE EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb),
+ public.rpc_entrega_confirmar_v1(uuid,jsonb,jsonb),
+ public.rpc_cockpit_confirmar_entrega_v1(uuid,uuid,text,jsonb),
+ public.rpc_entrega_cancelar_v1(uuid,text)
+ FROM PUBLIC,anon,authenticated;
+COMMIT;
