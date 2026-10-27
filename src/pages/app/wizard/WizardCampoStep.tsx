@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
-import { useTenantSelection } from "@/hooks/useTenantCatalogVisibility";
+import { useTenantCatalogScope, useTenantSelection } from "@/hooks/useTenantCatalogVisibility";
+import { CAMPO_CONFLICT_MESSAGE, campoOwnedBy, isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,7 @@ import {
 
 const CULTURA_PAGE = 50;
 
-type SaveState = "idle" | "saving" | "saved" | "pending_sync" | "error";
+type SaveState = "idle" | "saving" | "saved" | "pending_sync" | "error" | "conflict";
 
 interface Props {
   /** ID local do registro (usado como chave da store offline) */
@@ -61,6 +62,7 @@ function StatusBadge({ state }: { state: SaveState }) {
     saved: { icon: <Check className="h-3.5 w-3.5" />, label: "Salvo", cls: "text-emerald-600" },
     pending_sync: { icon: <WifiOff className="h-3.5 w-3.5" />, label: "Pendente de sincronização", cls: "text-amber-600" },
     error: { icon: <AlertCircle className="h-3.5 w-3.5" />, label: "Erro ao salvar", cls: "text-destructive" },
+    conflict: { icon: <AlertCircle className="h-3.5 w-3.5" />, label: "Conflito — recarregue a visita", cls: "text-destructive" },
   };
   const m = map[state];
   return (
@@ -89,6 +91,22 @@ export default function WizardCampoStep({
   const queryClient = useQueryClient();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hydratedRef = useRef(false);
+  // Identity fence: actor + tenant + visit. A late response from a previous identity is never adopted.
+  const scope = useTenantCatalogScope();
+  const identity = scope ? `${scope.organizationId}|${scope.userId}|${localRegistroId}|${remoteRegistroId ?? ""}` : "unready";
+  const fence = useRef({ identity, generation: 0 });
+  if (fence.current.identity !== identity) fence.current = { identity, generation: fence.current.generation + 1 };
+  const generation = fence.current.generation;
+  const mounted = useRef(true);
+  const isCurrent = (gen: number) => mounted.current && fence.current.generation === gen;
+  useEffect(() => {
+    mounted.current = true;
+    // New identity: drop everything observed under the previous one (form, version, queue, timers).
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    hydratedRef.current = false; versionRef.current = 0; queueRef.current = Promise.resolve();
+    setForm(EMPTY); setSaveState("idle");
+    return () => { mounted.current = false; };
+  }, [generation]);
 
   // Talhões filtrados pelo cliente
   const { data: talhoes } = useQuery({
@@ -126,7 +144,8 @@ export default function WizardCampoStep({
   useEffect(() => {
     let alive = true;
     (async () => {
-      if (hydratedRef.current) return;
+      if (hydratedRef.current || !scope) return;
+      const gen = generation;
       try {
         if (remoteRegistroId) {
           const { data } = await supabase
@@ -134,7 +153,7 @@ export default function WizardCampoStep({
             .select("*")
             .eq("registro_consultor_id", remoteRegistroId)
             .maybeSingle();
-          if (!alive) return;
+          if (!alive || !isCurrent(gen)) return;
           if (data) {
             const d = data as any;
             setForm({
@@ -146,18 +165,19 @@ export default function WizardCampoStep({
               uniformidade: (d.uniformidade ?? "") as CampoForm["uniformidade"],
               observacoes_campo: d.observacoes_campo ?? "",
             });
-            versionRef.current = d.versao ?? 1;
+            if (!Number.isSafeInteger(d.versao) || d.versao < 1) throw new Error("invalid_response");
+            versionRef.current = d.versao;
             setSaveState("saved");
             hydratedRef.current = true;
             return;
           }
         }
         const pending = await getPendingCampoByRegistro(localRegistroId);
-        if (!alive) return;
-        if (pending) {
+        if (!alive || !isCurrent(gen)) return;
+        if (pending && campoOwnedBy(pending, scope)) {
           setForm({ ...EMPTY, ...(pending.payload as CampoForm) });
           versionRef.current = pending.versao;
-          setSaveState(pending.syncStatus === "synced" ? "saved" : "pending_sync");
+          setSaveState(pending.syncStatus === "synced" ? "saved" : pending.syncStatus === "conflict" ? "conflict" : "pending_sync");
         }
         hydratedRef.current = true;
       } catch (err) {
@@ -167,7 +187,8 @@ export default function WizardCampoStep({
     return () => {
       alive = false;
     };
-  }, [remoteRegistroId, localRegistroId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remoteRegistroId, localRegistroId, generation, !!scope]);
 
   const isEmpty = useMemo(
     () =>
@@ -187,8 +208,10 @@ export default function WizardCampoStep({
 
   const persist = (next: CampoForm, opts?: { force?: boolean }): Promise<boolean> => {
     // Queue complete snapshots; read the version only when this write begins.
+    const gen = generation;
+    const owner = scope;
     const run = async (): Promise<boolean> => {
-      if (locked || (!opts?.force && !Object.values(next).some(Boolean))) return false;
+      if (locked || !owner || !isCurrent(gen) || (!opts?.force && !Object.values(next).some(Boolean))) return false;
       setSaveState("saving");
       try {
         const versao = versionRef.current;
@@ -196,6 +219,7 @@ export default function WizardCampoStep({
           localRegistroId, clientUuid: clientUuid ?? undefined,
           remoteRegistroId: remoteRegistroId ?? undefined,
           payload: next, versao, updatedAt: new Date().toISOString(), syncStatus: "pending_sync",
+          ownerUserId: owner.userId, ownerOrganizationId: owner.organizationId,
         };
         await savePendingCampo(entry);
         if (!isOnline || !remoteRegistroId) {
@@ -207,8 +231,9 @@ export default function WizardCampoStep({
           p_payload: next, p_versao: versao,
         } as never);
         if (error) throw error;
-        const res = data as { versao?: number } | null;
-        versionRef.current = res?.versao ?? versao + 1;
+        // Late answer of a previous identity/visit: not adopted (no version, no UI, no cleanup).
+        if (!isCurrent(gen)) return false;
+        versionRef.current = parseCampoResult(data, versao, remoteRegistroId);
         await updatePendingCampo(localRegistroId, { syncStatus: "synced", versao: versionRef.current });
         const { removePendingCampo } = await import("@/lib/offlineDb");
         await removePendingCampo(localRegistroId);
@@ -216,9 +241,12 @@ export default function WizardCampoStep({
         await invalidateWizardProgress(queryClient, remoteRegistroId, "campo");
         return true;
       } catch (err) {
-        const message = err && typeof err === "object" && "message" in err ? String(err.message) : "Falha ao salvar campo";
-        await updatePendingCampo(localRegistroId, { syncStatus: "sync_error", lastSyncError: message }).catch(() => {});
-        setSaveState("error");
+        const conflict = isCampoConflict(err);
+        const message = conflict ? CAMPO_CONFLICT_MESSAGE
+          : err && typeof err === "object" && "message" in err ? String(err.message) : "Falha ao salvar campo";
+        if (!isCurrent(gen)) return false;
+        await updatePendingCampo(localRegistroId, { syncStatus: conflict ? "conflict" : "sync_error", lastSyncError: message }).catch(() => {});
+        setSaveState(conflict ? "conflict" : "error");
         toast.error(message);
         return false;
       }
