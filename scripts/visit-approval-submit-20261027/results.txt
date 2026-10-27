@@ -1,0 +1,40 @@
+PASS PRE baseline stale CAS raises 40001 (defect reproduced) 40001
+PASS PRE harness ready
+PASS PRE baseline approves despite revocation during row wait (defect reproduced)
+PASS POST block accepts candidate (config/ACL/body markers)
+PASS definer + search_path + lock_timeout 3s
+PASS anon cannot execute
+PASS responsible consultor positive v3->v4
+PASS exactly one log
+PASS admin tenant A positive
+PASS tenant B own positive
+PASS null CAS PT409 PT409
+PASS zero CAS PT409 PT409
+PASS old CAS PT409 PT409
+PASS future CAS PT409 PT409
+PASS already sent -> transicao_invalida PT409 PT409
+PASS rascunho not finalizado PT409 PT409
+PASS cross-tenant B->A denied 42501
+PASS cross-tenant A->B denied 42501
+PASS nonexistent same generic error 42501
+PASS gestor without creator/resp/client link keeps original restriction 42501
+PASS unauthenticated 42501
+PASS anon EXECUTE denied 42501
+PASS revoked client link denied 42501
+PASS inactive actor denied 42501
+PASS negatives atomic (row unchanged)
+PASS no log on negatives
+PASS C1 revocation committed first at gate -> operation denied after gate wait 42501
+PASS C2 revocation committed during row wait -> post-lock re-authorization denies 42501
+PASS C2 row unchanged
+PASS C3 operation holding gate commits before queued revocation (revocation did NOT win; documented)
+PASS C3 commit order: op then revocation
+PASS C3 after revocation subsequent call denied 42501
+PASS C4 double submit: one success, one PT409
+PASS C4 exactly one log
+PASS C5 gate wait bounded by lock_timeout 3s (3.0s) 55P03
+PASS C5 row unchanged
+PASS containment deny-only, no 40001 restored
+PASS containment keeps service_role
+CANDIDATE_POST_MD5 9c68ad1dba4dac533629530c5c4155b5
+TOTAL 38 SYNTHETIC checks (not hosted JWT/RLS)
