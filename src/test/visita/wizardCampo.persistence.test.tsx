@@ -26,6 +26,12 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
 vi.mock("@/hooks/useTenantCatalogVisibility", () => ({
   useTenantSelection: () => ({ isSuccess: true, isFetching: false, data: { rows: [], total: 0 } }),
 }));
+// Radix Select portals/poppers schedule async updates outside act; tests never interact with
+// selects, so a static stub keeps act warnings out without changing component behavior.
+vi.mock("@/components/ui/select", () => {
+  const Pass = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
+  return { Select: Pass, SelectTrigger: Pass, SelectValue: () => null, SelectContent: () => null, SelectItem: () => null };
+});
 import WizardCampoStep from "@/pages/app/wizard/WizardCampoStep";
 import { isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
 import { claimPendingCampo, finishPendingCampo, getPendingCampoByRegistro, savePendingCampo } from "@/lib/offlineDb";
