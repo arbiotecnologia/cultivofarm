@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 27/10 00:05 — clientes revisão fiscal e reprogramação
+- [x] Callers/hooks/componentes auditados; draft update revisão positiva, reprogramação RPC/timestamp canônico sem writes diretos; PT409/403/404 uniformes/fences/travas sem retry.
+- [x] 26 regressões novas de hooks reais com transporte/Auth simulados;153/153 totais em8arquivos, validação automática build OK00:09:37, git diff --check OK; caminhos/limites em applied/fiscal-draft-monitoring-client-review-20261027.md. Sem SQL/DDL/publicação.
+- [ ] Backend fiscal NULL/<=0 e CAS no UPDATE; reprogramação técnico/tenant/origem/pós-lock/timestamp: preparação/aplicação separada pelo auditor,44 funções40001 mantidas até confirmação.
+- [ ] Retorno JSON canônico de reprogramação ainda não fornecido pelo auditor; parser bloqueia ausência/ambiguidade de confirmação, sem homologação JWT/RLS real.
+
 ## 26/10 23:54 — concorrência RTC/IBS-CBS e conciliação independente
 - [x] Corrigir leituras fora de ordem, leitura antes/durante save, duplo save e exceção/revogação:32 regressões falharam antes/passaram depois;162/162 finais em8arquivos, Auth/transporte simulados; validação automática build OK23:58:27, sem SQL/publicação.
 - [x] Conciliar hashes/implantação global e company, race real relatada e44 funções40001 restantes; sem recaptura ou reaplicação.

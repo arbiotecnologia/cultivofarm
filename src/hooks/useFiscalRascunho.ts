@@ -19,6 +19,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { RascunhoFormValues } from "@/lib/fiscal/rascunhoWizardValidation";
 import { buildItemSnapshots } from "@/lib/fiscal/rascunhoSnapshots";
+import { useRef } from "react";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 // RPCs adicionadas na migration da Fase 3.16. Enquanto `types.ts` não é
 // regenerado (pós-aplicação da migration), usamos um proxy tipado local.
@@ -26,12 +28,12 @@ import { buildItemSnapshots } from "@/lib/fiscal/rascunhoSnapshots";
 const rpc = supabase.rpc.bind(supabase) as unknown as (
   fn: string,
   args: Record<string, unknown>,
-) => Promise<{ data: unknown; error: { message: string } | null }>;
+) => Promise<{ data: unknown; error: { message: string; code?: string } | null }>;
 
 export interface SaveDraftArgs {
   invoiceId: string | null;
   values: RascunhoFormValues;
-  expectedVersion: number;
+  expectedVersion: number | null;
   companyCnpj: string;
 }
 
@@ -43,8 +45,18 @@ export interface DraftSaveResult {
 
 export function useSaveFiscalRascunho() {
   const qc = useQueryClient();
+  const fence = useStorageAccessScope("fiscal-draft-save");
+  const pending = useRef<symbol | null>(null);
   return useMutation({
+    retry: false,
     mutationFn: async (args: SaveDraftArgs): Promise<DraftSaveResult> => {
+      const valid = fence.capture();
+      if (!valid()) throw new Error("Não foi possível acessar este rascunho. Verifique seu acesso.");
+      if (pending.current) throw new Error("O salvamento já está em andamento.");
+      if (args.invoiceId && (!Number.isSafeInteger(args.expectedVersion) || (args.expectedVersion ?? 0) <= 0)) throw new Error("O rascunho foi alterado ou está sem revisão válida. Recarregue antes de salvar; suas alterações foram mantidas.");
+      const ticket = Symbol("fiscal-draft-save");
+      pending.current = ticket;
+      try {
       const invoicePayload = {
         invoice_type: args.values.invoice_type,
         document_model: args.values.document_model,
@@ -92,11 +104,20 @@ export function useSaveFiscalRascunho() {
         p_items: itemsPayload,
         p_expected_version: args.expectedVersion,
       });
-      if (error) throw new Error(error.message);
-      return data as DraftSaveResult;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["fiscal", "documents"] });
+      if (!valid()) throw new Error("Não foi possível acessar este rascunho. Verifique seu acesso.");
+      if (error) {
+        if (["42501", "PT403", "PT404", "P0002", "403", "404"].includes(error.code ?? "")) throw new Error("Não foi possível acessar este rascunho. Verifique seu acesso.");
+        if (error.code === "PT409" || /conflict/i.test(error.message)) throw new Error("O rascunho foi alterado por outra pessoa. Recarregue antes de salvar; suas alterações foram mantidas.");
+        throw new Error("Não foi possível salvar o rascunho. Suas alterações foram mantidas.");
+      }
+      if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Resposta não confirmada ao salvar o rascunho.");
+      const result = data as Partial<DraftSaveResult>;
+      if (typeof result.id !== "string" || !result.id || (args.invoiceId && result.id !== args.invoiceId) || !Number.isSafeInteger(result.draft_version) || (result.draft_version ?? 0) <= 0 || (args.invoiceId && (result.draft_version ?? 0) <= (args.expectedVersion ?? 0)) || typeof result.total_amount !== "number" || !Number.isFinite(result.total_amount) || result.total_amount < 0) throw new Error("Resposta não confirmada ao salvar o rascunho.");
+      void qc.invalidateQueries({ queryKey: ["fiscal", "documents"] });
+      return result as DraftSaveResult;
+      } finally {
+        if (pending.current === ticket) pending.current = null;
+      }
     },
   });
 }
