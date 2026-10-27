@@ -66,6 +66,7 @@ describe("criar alerta climático — hook real, Auth/transporte simulados", () 
     const { h, invalidate } = setup();
     let resolve!: (v: unknown) => void; s.rpc.mockReturnValue(new Promise((r) => { resolve = r; }));
     let p!: Promise<unknown>; act(() => { p = h.result.current.mutateAsync(args); });
+    await act(async () => { await Promise.resolve(); }); expect(s.rpc).toHaveBeenCalledTimes(1);
     s.actor = "B"; h.rerender(); resolve({ data: [{ id: ID, criado: true }], error: null });
     await act(async () => { await expect(p).rejects.toThrow(); }); expect(invalidate).not.toHaveBeenCalled();
   });
