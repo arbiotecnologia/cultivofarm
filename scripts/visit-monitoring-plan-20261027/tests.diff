@@ -336,7 +336,7 @@ index eb9b458fb..9c6ba0fc5 100644
 +++ b/src/test/visita/parentFence.interaction.test.tsx
 @@ -3,14 +3,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
  import { beforeEach, afterEach, expect, it, vi } from "vitest";
- 
+
  const mocks = vi.hoisted(() => ({
 -  status: "reprovado", canEdit: false, version: 15, from: vi.fn(), rpc: vi.fn(), update: vi.fn(), insert: vi.fn(), remove: vi.fn(),
 +  status: "reprovado", canEdit: false, mobile: false, version: 15, from: vi.fn(), rpc: vi.fn(), update: vi.fn(), insert: vi.fn(), remove: vi.fn(),

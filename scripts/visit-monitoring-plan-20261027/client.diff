@@ -20,7 +20,7 @@ index f3b7bec02..44add6dcc 100644
  import { formatDateDisplay } from "@/lib/date-utils";
 -import { serializePlanoMonitoramento, parsePlanoMonitoramento, stripPlanoMonitoramento } from "@/lib/planoMonitoramento";
 +import { parsePlanoMonitoramento } from "@/lib/planoMonitoramento";
- 
+
  interface PlanoMonitoramentoEditorProps {
    readOnly?: boolean;
 @@ -30,29 +31,44 @@ interface PlanoMonitoramentoEditorProps {
@@ -52,14 +52,14 @@ index f3b7bec02..44add6dcc 100644
    const locked = readOnly || workspace.isError || !workspace.data?.permissions.can_edit ||
      !["rascunho", "em_andamento"].includes(workspace.data?.status ?? "");
    const writeLock = useRef(false);
-   
+
 -  const initialPlano = parsePlanoMonitoramento(observacoesAtuais);
 +  const authorized = save.ready && !workspace.isError && workspace.data?.permissions.can_view !== false;
 +  const displayRegistro = authorized ? workspace.data?.registro : null;
 +  const displayPlan = parsePlanoMonitoramento(displayRegistro?.observacoes_tecnicas);
 +  const displayDate = displayRegistro?.data_proxima_visita ?? displayPlan?.dataProximaVisita ?? "";
 +  const aviso = authorized ? workspace.data?.monitoramento?.find(a => a.tipo === "plano_monitoramento" && a.registro_consultor_id === registroId) : null;
-   
+
    const [state, setState] = useState<EncerramentoState>({
      resumoFinal: "",
      liberadoCliente: true,
@@ -79,7 +79,7 @@ index f3b7bec02..44add6dcc 100644
 @@ -70,6 +86,31 @@ export function PlanoMonitoramentoEditor({
      setState({ ...state, monitoramentoItens: next });
    };
- 
+
 +  const openEditor = () => {
 +    if (locked || !save.ready) return;
 +    // Capture fields and version from ONE observed envelope, never refetch during save.
@@ -109,7 +109,7 @@ index f3b7bec02..44add6dcc 100644
      if (locked || writeLock.current) return;
      if (!state.monitoramentoItens || state.monitoramentoItens.length === 0) {
 @@ -83,59 +124,59 @@ export function PlanoMonitoramentoEditor({
- 
+
      writeLock.current = true;
      setIsSaving(true);
 +    setSaveError(null);
@@ -188,7 +188,7 @@ index f3b7bec02..44add6dcc 100644
        setIsSaving(false);
      }
    };
- 
+
 +  const reconsultar = async () => {
 +    if (!rejected || writeLock.current || reviewLock.current || locked) return;
 +    const current = save.capture(); reviewLock.current = true; setIsReviewing(true);
@@ -240,8 +240,8 @@ index f3b7bec02..44add6dcc 100644
              </div>
            </div>
 +          {aviso && <p className="text-xs text-muted-foreground">Aviso desta visita · {displayRegistro?.codigo_visita ?? registroId} · {aviso.id}</p>}
-           <Button 
-             className="w-full h-8 text-xs mt-2 bg-emerald-600 hover:bg-emerald-700 text-white" 
+           <Button
+             className="w-full h-8 text-xs mt-2 bg-emerald-600 hover:bg-emerald-700 text-white"
              disabled={true}
 @@ -232,7 +274,7 @@ export function PlanoMonitoramentoEditor({
                    value={state.dataProximaVisita}
@@ -255,7 +255,7 @@ index f3b7bec02..44add6dcc 100644
 @@ -249,15 +291,32 @@ export function PlanoMonitoramentoEditor({
              </div>
            </fieldset>
- 
+
 +          {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
 +          {rejected && <Button variant="outline" disabled={locked || isSaving || isReviewing} onClick={reconsultar}>Reconsultar e revisar</Button>}
 +
