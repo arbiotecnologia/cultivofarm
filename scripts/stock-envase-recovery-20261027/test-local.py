@@ -70,7 +70,7 @@ GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   sql(source['platform_private.stock_p1_lote_owned']['definition'])
   sql(source['platform_private.stock_p1_movement_owned']['definition'])
   for n in load:sql(source[n]['definition'])
-  for n in ['public.fn_cockpit_norm_origem','public.fn_cockpit_assert_operador_origem']:
+  for n in ['public.fn_cockpit_norm_origem','public.fn_cockpit_assert_operador_origem','public.fn_cockpit_assert_b2b_liberado']:
    sql((H.parent/'os-delivery-reopening-20261027/live'/f'{n}.sql.review').read_text())
   # Exact selected trigger definitions; refresh views/OS transitions are excluded.
   enabled={'envase':{'tenant_organization_guard','trg_validate_envase_cq','trg_validate_envase_volume','trg_envase_material_imutavel'},'estoque_produto':{'a00_stock_p1_tenant_guard','trg_estoque_produto_guard','trg_log_estoque_insert','trg_log_estoque_update'},'estoque_movimentacoes':{'a00_stock_p1_movement_guard','trg_estoque_mov_append_only'}}
