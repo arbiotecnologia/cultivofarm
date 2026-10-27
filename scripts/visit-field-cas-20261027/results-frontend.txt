@@ -1,18 +1,16 @@
- ✓ src/test/security/h9dl6-scoped-visit-writes.static.test.ts (20 tests) 37ms
- ✓ src/test/visita/recomendacaoOfflineIntegration.test.tsx (6 tests) 223ms
- ✓ src/test/visita/wizardCampo.persistence.test.tsx (9 tests) 858ms
- ✓ src/test/visita/technicalCache.session.test.tsx (14 tests) 1370ms
-   ✓ remount stale do wizard aprovado6→rascunho8 libera edição sem reload e sem writes  337ms
- ✓ src/test/visita/wizardNavigation.optionalAttachments.test.tsx (6 tests) 1561ms
-   ✓ navega às etapas 7 e 8 com recomendação persistida e zero anexos sem mutação  432ms
-   ✓ wizard-campo-flag ausente mantém 4 Diagnóstico bloqueado  321ms
- ✓ src/test/visita/recomendacaoSyncWorkspace.integration.test.tsx (7 tests) 3257ms
-   ✓ Sincronizar atualiza o wizard aberto, workspace e flag após RPC/CAS, liberando etapa6 sem reload  835ms
-   ✓ CAS perdido preserva edição mais nova e não invalida consultas nem libera etapa6  439ms
-   ✓ conflito mantém pendência e consultas sem invalidação  388ms
-   ✓ actor durante RPC impede invalidação do cache anterior  477ms
-   ✓ tenant durante RPC impede invalidação do cache anterior  408ms
-   ✓ logout durante RPC impede invalidação do cache anterior  332ms
-   ✓ troca de ator durante refetch rejeita bytes tardios e não publica cache de A em B  376ms
- Test Files  6 passed (6)
-      Tests  62 passed (62)
+fe6fc410 fixes — vitest (QueryClient real, fake-indexeddb real, useStorageAccessScope real; transport simulated)
+src/test/visita/wizardCampo.persistence.test.tsx: 11/11 PASS
+  - hydration 403 blocks form/save, Reconsultar without reload, then CAS uses fresh version
+  - foreign/invalid remote row not hydrated
+  - PT409 -> conflict in IDB, no debounce requeue, explicit review then save on server version
+  - late RPC answer after authz epoch change: not adopted, queue entry not removed
+  - late answer during invalidations with roles change: no navigation
+  - tab 2 newer draft preserved when tab 1 cleanup runs
+  - baseline false success {} rejected (sync_error, no navigation)
+  - offline save with owner/versao 0/revision; foreign draft not hydrated
+  - IDB claim/finish CAS by revision+attemptId; conflict mark never hits replaced draft; exact owner
+  - envelope contract incl. {versao:1}, negative/NaN/Infinity/fractional expected
+src/test/visita + src/test/offline: 351 pass, 7 fail, 2 skipped. The 7 failures (etapasVisita x4,
+pdfVisitaAuthenticated x2, visitaTecnicaSalvamento.static x1) are the same set previously reproduced
+in `git archive 6ee91fb4`; none touches the campo step.
+Not directly unit-tested: useOfflineSync campo loop (exercised only through shared IDB CAS functions).

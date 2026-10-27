@@ -22,6 +22,13 @@ BEGIN
      OR (SELECT md5(string_agg(t.tgname::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)), E'\n' ORDER BY t.tgname))
            FROM pg_trigger t WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal) <> '13dadacab7b70ddbe22cd00d688200b0'
      OR EXISTS (SELECT 1 FROM public.visitas_campo WHERE versao IS NULL OR versao < 1)
+     OR md5(pg_get_functiondef('platform_private.current_user_organization_id()'::regprocedure)) <> '8da1a59de9d58041148b4544ebfbd0a2'
+     OR (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND (
+           (table_name='talhoes' AND column_name IN ('organization_id','ativo','fazenda_id'))
+        OR (table_name='fazendas' AND column_name IN ('organization_id','ativo','cliente_id'))
+        OR (table_name='clientes' AND column_name='organization_id')
+        OR (table_name='profiles' AND column_name IN ('user_id','ativo','organization_id'))
+        OR (table_name='catalog_tenant_visibility' AND column_name IN ('organization_id','entity_type','cultura_id','hidden')))) <> 14
   THEN
     RAISE EXCEPTION 'preflight_drift_abort' USING ERRCODE = '55000';
   END IF;
@@ -79,6 +86,7 @@ DECLARE
   v_result public.visitas_campo;
   v_talhao uuid; v_cultura uuid; v_area numeric; v_estande numeric;
   v_fase text; v_unif text; v_obs text; v_extras jsonb;
+  v_org uuid;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'unauthenticated' USING ERRCODE = '42501';
@@ -113,8 +121,8 @@ BEGIN
   v_obs  := NULLIF(p_payload->>'observacoes_campo','');
   v_extras := COALESCE(p_payload->'dados_extras', '{}'::jsonb);
   IF jsonb_typeof(v_extras) <> 'object'
-     OR (v_area IS NOT NULL AND (v_area = 'NaN'::numeric OR v_area < 0))
-     OR (v_estande IS NOT NULL AND (v_estande = 'NaN'::numeric OR v_estande < 0 OR v_estande <> trunc(v_estande) OR v_estande > 2147483647))
+     OR (v_area IS NOT NULL AND (v_area::text IN ('NaN','Infinity','-Infinity') OR v_area < 0))
+     OR (v_estande IS NOT NULL AND (v_estande::text IN ('NaN','Infinity','-Infinity') OR v_estande < 0 OR v_estande <> trunc(v_estande) OR v_estande > 2147483647))
      OR (v_unif IS NOT NULL AND v_unif NOT IN ('baixa','media','alta')) THEN
     RAISE EXCEPTION 'payload_invalido' USING ERRCODE = '22023';
   END IF;
@@ -162,18 +170,52 @@ BEGIN
   SELECT * INTO v_existing FROM public.visitas_campo
    WHERE registro_consultor_id = p_registro_consultor_id FOR UPDATE;
 
-  -- References. Talhão must belong to a fazenda of the visit's cliente; new choices must be active.
-  -- An already-saved (now inactive) talhão/cultura may be kept unchanged.
+  -- 5) Re-authorize again after the child wait (original scope + canonical tenant + status),
+  --    re-reading the parent; nothing observed before this wait is trusted.
+  SELECT r.* INTO v_reg FROM public.registros_consultor r WHERE r.id = p_registro_consultor_id;
+  IF v_reg.id IS NULL
+     OR NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_consultor_id), false)
+     OR NOT COALESCE((
+       public.has_role(v_uid, 'administrador'::app_role)
+       OR v_reg.created_by = v_uid
+       OR (v_reg.cliente_id IS NOT NULL
+           AND public.has_active_user_cliente_access(v_uid, v_reg.cliente_id, ARRAY['execute','manage']))
+     ), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+  IF NOT COALESCE(public.is_technical_visit_editable_status(v_reg.status::text), false) THEN
+    RAISE EXCEPTION 'visita_locked' USING ERRCODE = 'PT409';
+  END IF;
+  -- Actor tenant (active profile) resolved after every wait; the visit's cliente must belong to it.
+  SELECT p.organization_id INTO v_org FROM public.profiles p
+   WHERE p.user_id = v_uid AND p.ativo = true AND p.organization_id IS NOT NULL;
+  IF v_org IS NULL OR NOT EXISTS (
+       SELECT 1 FROM public.clientes c WHERE c.id = v_reg.cliente_id AND c.organization_id = v_org) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  -- References. Talhão: same tenant on talhão AND fazenda, fazenda of the visit's cliente.
+  -- New choices must be active; an already-saved reference may be kept unchanged while inactive,
+  -- but only if it still satisfies tenant/cliente (validity is never relaxed, only activity).
   IF v_talhao IS NOT NULL AND NOT EXISTS (
        SELECT 1 FROM public.talhoes t JOIN public.fazendas f ON f.id = t.fazenda_id
         WHERE t.id = v_talhao AND f.cliente_id = v_reg.cliente_id
-          AND (COALESCE(t.ativo, true) OR v_talhao IS NOT DISTINCT FROM v_existing.talhao_id)) THEN
+          AND t.organization_id = v_org AND f.organization_id = v_org
+          AND ((COALESCE(t.ativo, false) AND COALESCE(f.ativo, false))
+               OR v_talhao IS NOT DISTINCT FROM v_existing.talhao_id)) THEN
     RAISE EXCEPTION 'talhao_invalido' USING ERRCODE = '22023';
   END IF;
-  IF v_cultura IS NOT NULL AND NOT EXISTS (
+  -- Cultura: global catalogue; new choice must be active AND not hidden for the actor tenant
+  -- (public.catalog_tenant_visibility, same source as catalog_tenant_selection_core).
+  IF v_cultura IS NOT NULL AND v_cultura IS DISTINCT FROM v_existing.cultura_id AND NOT EXISTS (
        SELECT 1 FROM public.culturas c
-        WHERE c.id = v_cultura
-          AND (COALESCE(c.ativo, true) OR v_cultura IS NOT DISTINCT FROM v_existing.cultura_id)) THEN
+        WHERE c.id = v_cultura AND COALESCE(c.ativo, false)
+          AND NOT EXISTS (SELECT 1 FROM public.catalog_tenant_visibility v
+                           WHERE v.organization_id = v_org AND v.entity_type = 'cultura'
+                             AND v.cultura_id = c.id AND v.hidden)) THEN
+    RAISE EXCEPTION 'cultura_invalida' USING ERRCODE = '22023';
+  END IF;
+  IF v_cultura IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.culturas c WHERE c.id = v_cultura) THEN
     RAISE EXCEPTION 'cultura_invalida' USING ERRCODE = '22023';
   END IF;
 
@@ -242,6 +284,14 @@ BEGIN
      OR NOT (SELECT prosecdef AND pg_get_userbyid(proowner)='postgres' FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure) THEN
     RAISE EXCEPTION 'acl_owner_drift_abort' USING ERRCODE = '55000';
   END IF;
+  -- LIVE-PIN-BEGIN (hosted OIDs; synthetic harness strips this block, postflight re-checks it)
+  -- Other triggers on visitas_campo: exact OID/function/def/body/config/ACL/owner pin (not IS NOT NULL).
+  IF (SELECT string_agg(t.tgname||'='||t.oid||'/'||t.tgfoid||'/'||md5(pg_get_triggerdef(t.oid))||'/'||md5(pg_get_functiondef(t.tgfoid))||'/'||coalesce(array_to_string(p.proconfig,','),'')||'/'||coalesce(p.proacl::text,'')||'/'||pg_get_userbyid(p.proowner)||'/'||p.prosecdef, E'\n' ORDER BY t.tgname)
+        FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid
+       WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal AND t.tgname<>'trg_visitas_campo_guard') IS DISTINCT FROM 'technical_content_editable=102639/102637/80e6d0b57a8ab23adbe62cc975e390c3/eb4e8d56cde229056c4730f9742a8f4b/search_path=""/{postgres=X/postgres,service_role=X/postgres}/postgres/true'||E'\n'||'trg_visitas_campo_updated_at=46145/42147/90fa447151e1928356a638fbef382f7c/b1930ed5bca3be839f783c6202ab8147/search_path=public/{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}/postgres/false' THEN
+    RAISE EXCEPTION 'other_triggers_drift_abort' USING ERRCODE = '55000';
+  END IF;
+  -- LIVE-PIN-END
 END
 $post$;
 

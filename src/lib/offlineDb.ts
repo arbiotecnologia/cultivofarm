@@ -701,14 +701,104 @@ export interface PendingCampo {
   /** Ator/empresa de origem; entradas sem dono (legado) não são reenviadas por outra sessão. */
   ownerUserId?: string;
   ownerOrganizationId?: string;
+  /** Snapshot revision (new UUID on every local save). Cleanup/mark only touch the exact revision. */
+  revision?: string;
+  /** Claim of the in-flight dispatch; only the owner of this attempt can finish it. */
+  attemptId?: string | null;
 }
 
-export async function savePendingCampo(entry: PendingCampo): Promise<void> {
+function newCampoRevision(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+/**
+ * Saves a full snapshot with a NEW revision, atomically (single IDB transaction). An in-flight
+ * attempt of an older revision can then never clean up or mark this newer draft. Returns the revision.
+ */
+export async function savePendingCampo(entry: PendingCampo): Promise<string> {
   const db = await openDb();
+  const revision = newCampoRevision();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_CAMPO, "readwrite");
-    tx.objectStore(STORE_CAMPO).put({ ...entry, syncingAt: null });
-    tx.oncomplete = () => resolve();
+    tx.objectStore(STORE_CAMPO).put({ ...entry, revision, attemptId: null, syncingAt: null });
+    tx.oncomplete = () => resolve(revision);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export interface CampoClaim { localRegistroId: string; revision: string; attemptId: string }
+
+/**
+ * Atomic claim (single readwrite transaction): only the exact revision, same owner, not in
+ * conflict and not held by a fresh attempt. Returns the claimed snapshot or null.
+ */
+export async function claimPendingCampo(
+  localRegistroId: string, revision: string, owner: { userId: string; organizationId: string },
+): Promise<{ claim: CampoClaim; entry: PendingCampo } | null> {
+  const db = await openDb();
+  const attemptId = newCampoRevision();
+  return new Promise((resolve, reject) => {
+    let out: { claim: CampoClaim; entry: PendingCampo } | null = null;
+    const tx = db.transaction(STORE_CAMPO, "readwrite");
+    const store = tx.objectStore(STORE_CAMPO);
+    const req = store.get(localRegistroId);
+    req.onsuccess = () => {
+      const item = req.result as PendingCampo | undefined;
+      if (!item || !item.revision || item.revision !== revision) return;
+      if (item.ownerUserId !== owner.userId || item.ownerOrganizationId !== owner.organizationId) return;
+      if (item.syncStatus === "conflict" || item.syncStatus === "synced") return;
+      if (item.syncStatus === "syncing" && item.attemptId && !isStale(item.syncingAt)) return;
+      const next = { ...item, syncStatus: "syncing" as const, attemptId, syncingAt: Date.now() };
+      store.put(next);
+      out = { claim: { localRegistroId, revision, attemptId }, entry: next };
+    };
+    tx.oncomplete = () => resolve(out);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Finishes exactly the claimed attempt: removes (success) or marks (error/conflict) only when the
+ * stored revision AND attemptId still match. A newer draft (other tab/edit) is never touched.
+ */
+export async function finishPendingCampo(
+  claim: CampoClaim,
+  outcome: { remove: true } | { remove?: false; patch: Partial<PendingCampo> },
+): Promise<boolean> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const tx = db.transaction(STORE_CAMPO, "readwrite");
+    const store = tx.objectStore(STORE_CAMPO);
+    const req = store.get(claim.localRegistroId);
+    req.onsuccess = () => {
+      const item = req.result as PendingCampo | undefined;
+      if (!item || item.revision !== claim.revision || item.attemptId !== claim.attemptId) return;
+      if (outcome.remove) store.delete(claim.localRegistroId);
+      else store.put({ ...item, ...(outcome as { patch: Partial<PendingCampo> }).patch, revision: item.revision, attemptId: null, syncingAt: null });
+      done = true;
+    };
+    tx.oncomplete = () => resolve(done);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/** Explicit user discard after review: removes only the exact revision observed by the user. */
+export async function discardPendingCampo(localRegistroId: string, revision: string): Promise<boolean> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const tx = db.transaction(STORE_CAMPO, "readwrite");
+    const store = tx.objectStore(STORE_CAMPO);
+    const req = store.get(localRegistroId);
+    req.onsuccess = () => {
+      const item = req.result as PendingCampo | undefined;
+      if (item && item.revision === revision && !(item.syncStatus === "syncing" && !isStale(item.syncingAt))) {
+        store.delete(localRegistroId); done = true;
+      }
+    };
+    tx.oncomplete = () => resolve(done);
     tx.onerror = () => reject(tx.error);
   });
 }
@@ -722,34 +812,6 @@ export async function getPendingCampoByRegistro(
     const req = tx.objectStore(STORE_CAMPO).get(localRegistroId);
     req.onsuccess = () => resolve((req.result as PendingCampo) ?? null);
     req.onerror = () => reject(req.error);
-  });
-}
-
-export async function updatePendingCampo(
-  localRegistroId: string,
-  patch: Partial<PendingCampo>,
-): Promise<void> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CAMPO, "readwrite");
-    const store = tx.objectStore(STORE_CAMPO);
-    const getReq = store.get(localRegistroId);
-    getReq.onsuccess = () => {
-      const item = getReq.result as PendingCampo | undefined;
-      if (item) store.put({ ...item, ...patch });
-    };
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-export async function removePendingCampo(localRegistroId: string): Promise<void> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CAMPO, "readwrite");
-    tx.objectStore(STORE_CAMPO).delete(localRegistroId);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
   });
 }
 

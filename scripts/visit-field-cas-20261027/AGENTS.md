@@ -1,3 +1,4 @@
-- Field save: gate -> parent FOR UPDATE -> child, re-authorize without cache after each wait; original actor scope intersected with tenant check, never widened — prevents cross-tenant admin writes.
-- CAS 0 means "no row"; N->N+1 only; replay only same actor/key/content; PT409 never auto-retried client-side — prevents lost updates and blind replay.
-- Package is review-only; never auto-apply SQL or publish from here.
+- Package is INACTIVE: never auto-apply SQL or publish; auditor applies after preflight 100% true.
+- Field CAS: revalidate original predicate + can_manage + status after gate, parent and child locks; tenant of talhão/fazenda/cliente and hidden cultura checked server-side.
+- Client queue: every save gets a new revision; claim/cleanup only by revision+attemptId in one IDB transaction; PT409 never auto-requeued.
+- Permission is a strict subset of RLS participants; never describe it as identical to the original scope.

@@ -1,0 +1,249 @@
+diff --git a/scripts/visit-field-cas-20261027/candidate.sql.review b/scripts/visit-field-cas-20261027/candidate.sql.review
+index 54a4e3809..3aee94435 100644
+--- a/scripts/visit-field-cas-20261027/candidate.sql.review
++++ b/scripts/visit-field-cas-20261027/candidate.sql.review
+@@ -22,6 +22,13 @@ BEGIN
+      OR (SELECT md5(string_agg(t.tgname::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)), E'\n' ORDER BY t.tgname))
+            FROM pg_trigger t WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal) <> '13dadacab7b70ddbe22cd00d688200b0'
+      OR EXISTS (SELECT 1 FROM public.visitas_campo WHERE versao IS NULL OR versao < 1)
++     OR md5(pg_get_functiondef('platform_private.current_user_organization_id()'::regprocedure)) <> '8da1a59de9d58041148b4544ebfbd0a2'
++     OR (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND (
++           (table_name='talhoes' AND column_name IN ('organization_id','ativo','fazenda_id'))
++        OR (table_name='fazendas' AND column_name IN ('organization_id','ativo','cliente_id'))
++        OR (table_name='clientes' AND column_name='organization_id')
++        OR (table_name='profiles' AND column_name IN ('user_id','ativo','organization_id'))
++        OR (table_name='catalog_tenant_visibility' AND column_name IN ('organization_id','entity_type','cultura_id','hidden')))) <> 14
+   THEN
+     RAISE EXCEPTION 'preflight_drift_abort' USING ERRCODE = '55000';
+   END IF;
+@@ -79,6 +86,7 @@ DECLARE
+   v_result public.visitas_campo;
+   v_talhao uuid; v_cultura uuid; v_area numeric; v_estande numeric;
+   v_fase text; v_unif text; v_obs text; v_extras jsonb;
++  v_org uuid;
+ BEGIN
+   IF v_uid IS NULL THEN
+     RAISE EXCEPTION 'unauthenticated' USING ERRCODE = '42501';
+@@ -113,8 +121,8 @@ BEGIN
+   v_obs  := NULLIF(p_payload->>'observacoes_campo','');
+   v_extras := COALESCE(p_payload->'dados_extras', '{}'::jsonb);
+   IF jsonb_typeof(v_extras) <> 'object'
+-     OR (v_area IS NOT NULL AND (v_area = 'NaN'::numeric OR v_area < 0))
+-     OR (v_estande IS NOT NULL AND (v_estande = 'NaN'::numeric OR v_estande < 0 OR v_estande <> trunc(v_estande) OR v_estande > 2147483647))
++     OR (v_area IS NOT NULL AND (v_area::text IN ('NaN','Infinity','-Infinity') OR v_area < 0))
++     OR (v_estande IS NOT NULL AND (v_estande::text IN ('NaN','Infinity','-Infinity') OR v_estande < 0 OR v_estande <> trunc(v_estande) OR v_estande > 2147483647))
+      OR (v_unif IS NOT NULL AND v_unif NOT IN ('baixa','media','alta')) THEN
+     RAISE EXCEPTION 'payload_invalido' USING ERRCODE = '22023';
+   END IF;
+@@ -162,18 +170,52 @@ BEGIN
+   SELECT * INTO v_existing FROM public.visitas_campo
+    WHERE registro_consultor_id = p_registro_consultor_id FOR UPDATE;
+ 
+-  -- References. Talhão must belong to a fazenda of the visit's cliente; new choices must be active.
+-  -- An already-saved (now inactive) talhão/cultura may be kept unchanged.
++  -- 5) Re-authorize again after the child wait (original scope + canonical tenant + status),
++  --    re-reading the parent; nothing observed before this wait is trusted.
++  SELECT r.* INTO v_reg FROM public.registros_consultor r WHERE r.id = p_registro_consultor_id;
++  IF v_reg.id IS NULL
++     OR NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_consultor_id), false)
++     OR NOT COALESCE((
++       public.has_role(v_uid, 'administrador'::app_role)
++       OR v_reg.created_by = v_uid
++       OR (v_reg.cliente_id IS NOT NULL
++           AND public.has_active_user_cliente_access(v_uid, v_reg.cliente_id, ARRAY['execute','manage']))
++     ), false) THEN
++    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
++  END IF;
++  IF NOT COALESCE(public.is_technical_visit_editable_status(v_reg.status::text), false) THEN
++    RAISE EXCEPTION 'visita_locked' USING ERRCODE = 'PT409';
++  END IF;
++  -- Actor tenant (active profile) resolved after every wait; the visit's cliente must belong to it.
++  SELECT p.organization_id INTO v_org FROM public.profiles p
++   WHERE p.user_id = v_uid AND p.ativo = true AND p.organization_id IS NOT NULL;
++  IF v_org IS NULL OR NOT EXISTS (
++       SELECT 1 FROM public.clientes c WHERE c.id = v_reg.cliente_id AND c.organization_id = v_org) THEN
++    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
++  END IF;
++
++  -- References. Talhão: same tenant on talhão AND fazenda, fazenda of the visit's cliente.
++  -- New choices must be active; an already-saved reference may be kept unchanged while inactive,
++  -- but only if it still satisfies tenant/cliente (validity is never relaxed, only activity).
+   IF v_talhao IS NOT NULL AND NOT EXISTS (
+        SELECT 1 FROM public.talhoes t JOIN public.fazendas f ON f.id = t.fazenda_id
+         WHERE t.id = v_talhao AND f.cliente_id = v_reg.cliente_id
+-          AND (COALESCE(t.ativo, true) OR v_talhao IS NOT DISTINCT FROM v_existing.talhao_id)) THEN
++          AND t.organization_id = v_org AND f.organization_id = v_org
++          AND ((COALESCE(t.ativo, false) AND COALESCE(f.ativo, false))
++               OR v_talhao IS NOT DISTINCT FROM v_existing.talhao_id)) THEN
+     RAISE EXCEPTION 'talhao_invalido' USING ERRCODE = '22023';
+   END IF;
+-  IF v_cultura IS NOT NULL AND NOT EXISTS (
++  -- Cultura: global catalogue; new choice must be active AND not hidden for the actor tenant
++  -- (public.catalog_tenant_visibility, same source as catalog_tenant_selection_core).
++  IF v_cultura IS NOT NULL AND v_cultura IS DISTINCT FROM v_existing.cultura_id AND NOT EXISTS (
+        SELECT 1 FROM public.culturas c
+-        WHERE c.id = v_cultura
+-          AND (COALESCE(c.ativo, true) OR v_cultura IS NOT DISTINCT FROM v_existing.cultura_id)) THEN
++        WHERE c.id = v_cultura AND COALESCE(c.ativo, false)
++          AND NOT EXISTS (SELECT 1 FROM public.catalog_tenant_visibility v
++                           WHERE v.organization_id = v_org AND v.entity_type = 'cultura'
++                             AND v.cultura_id = c.id AND v.hidden)) THEN
++    RAISE EXCEPTION 'cultura_invalida' USING ERRCODE = '22023';
++  END IF;
++  IF v_cultura IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.culturas c WHERE c.id = v_cultura) THEN
+     RAISE EXCEPTION 'cultura_invalida' USING ERRCODE = '22023';
+   END IF;
+ 
+@@ -242,6 +284,14 @@ BEGIN
+      OR NOT (SELECT prosecdef AND pg_get_userbyid(proowner)='postgres' FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure) THEN
+     RAISE EXCEPTION 'acl_owner_drift_abort' USING ERRCODE = '55000';
+   END IF;
++  -- LIVE-PIN-BEGIN (hosted OIDs; synthetic harness strips this block, postflight re-checks it)
++  -- Other triggers on visitas_campo: exact OID/function/def/body/config/ACL/owner pin (not IS NOT NULL).
++  IF (SELECT string_agg(t.tgname||'='||t.oid||'/'||t.tgfoid||'/'||md5(pg_get_triggerdef(t.oid))||'/'||md5(pg_get_functiondef(t.tgfoid))||'/'||coalesce(array_to_string(p.proconfig,','),'')||'/'||coalesce(p.proacl::text,'')||'/'||pg_get_userbyid(p.proowner)||'/'||p.prosecdef, E'\n' ORDER BY t.tgname)
++        FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid
++       WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal AND t.tgname<>'trg_visitas_campo_guard') IS DISTINCT FROM 'technical_content_editable=102639/102637/80e6d0b57a8ab23adbe62cc975e390c3/eb4e8d56cde229056c4730f9742a8f4b/search_path=""/{postgres=X/postgres,service_role=X/postgres}/postgres/true'||E'\n'||'trg_visitas_campo_updated_at=46145/42147/90fa447151e1928356a638fbef382f7c/b1930ed5bca3be839f783c6202ab8147/search_path=public/{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}/postgres/false' THEN
++    RAISE EXCEPTION 'other_triggers_drift_abort' USING ERRCODE = '55000';
++  END IF;
++  -- LIVE-PIN-END
+ END
+ $post$;
+ 
+diff --git a/scripts/visit-field-cas-20261027/postflight.sql b/scripts/visit-field-cas-20261027/postflight.sql
+index 31b68bc6d..6bc4ef93a 100644
+--- a/scripts/visit-field-cas-20261027/postflight.sql
++++ b/scripts/visit-field-cas-20261027/postflight.sql
+@@ -1,7 +1,7 @@
+ -- READ-ONLY postflight after the auditor applies candidate.sql.review. Every row must be ok=true.
+ -- Expected hashes were computed on disposable PostgreSQL from the candidate text; if the hosted
+ -- md5 differs, compare pg_get_functiondef with candidate.sql.review before accepting (do not patch blindly).
+-SELECT 'rpc_hash_expected' k, md5(pg_get_functiondef('public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure))='2bedc69fc4eca86fbbeef8825437b919' ok
++SELECT 'rpc_hash_expected' k, md5(pg_get_functiondef('public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure))='b13df1fe728f47cb00887c32840db0c1' ok
+ UNION ALL SELECT 'guard_hash_expected', md5(pg_get_functiondef('public.visitas_campo_guard()'::regprocedure))='f69455b72d067d0d96fab74987b4cc4e'
+ UNION ALL SELECT 'rpc_definer_owner', (SELECT prosecdef AND pg_get_userbyid(proowner)='postgres' FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure)
+ UNION ALL SELECT 'rpc_config', (SELECT proconfig::text='{search_path=public,lock_timeout=3s}' FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure)
+@@ -9,10 +9,12 @@ UNION ALL SELECT 'rpc_acl_unchanged', (SELECT proacl::text='{postgres=X/postgres
+ UNION ALL SELECT 'rpc_body_gate_before_parent', (SELECT strpos(prosrc,'cf_user_guards_v1.state') > 0 AND strpos(prosrc,'cf_user_guards_v1.state') < strpos(prosrc,'FROM public.registros_consultor r') AND strpos(prosrc,'FROM public.registros_consultor r') < strpos(prosrc,'FROM public.visitas_campo') FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure)
+ UNION ALL SELECT 'rpc_no_cached_admin', (SELECT strpos(prosrc,'v_is_admin') = 0 AND strpos(prosrc,'< v_existing.versao') = 0 FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure)
+ UNION ALL SELECT 'guard_trigger_insert_update', (SELECT tgtype & 4 = 4 AND tgtype & 16 = 16 AND tgtype & 2 = 2 FROM pg_trigger WHERE tgrelid='public.visitas_campo'::regclass AND tgname='trg_visitas_campo_guard')
+-UNION ALL SELECT 'other_triggers_unchanged', (SELECT md5(string_agg(t.tgname::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)), E'\n' ORDER BY t.tgname)) FROM pg_trigger t WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal AND t.tgname<>'trg_visitas_campo_guard') IS NOT NULL
++UNION ALL SELECT 'other_triggers_exact_pin', (SELECT string_agg(t.tgname||'='||t.oid||'/'||t.tgfoid||'/'||md5(pg_get_triggerdef(t.oid))||'/'||md5(pg_get_functiondef(t.tgfoid))||'/'||coalesce(array_to_string(p.proconfig,','),'')||'/'||coalesce(p.proacl::text,'')||'/'||pg_get_userbyid(p.proowner)||'/'||p.prosecdef, E'\n' ORDER BY t.tgname)         FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid        WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal AND t.tgname<>'trg_visitas_campo_guard') IS NOT DISTINCT FROM ('technical_content_editable=102639/102637/80e6d0b57a8ab23adbe62cc975e390c3/eb4e8d56cde229056c4730f9742a8f4b/search_path=""/{postgres=X/postgres,service_role=X/postgres}/postgres/true'||E'\n'||'trg_visitas_campo_updated_at=46145/42147/90fa447151e1928356a638fbef382f7c/b1930ed5bca3be839f783c6202ab8147/search_path=public/{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}/postgres/false')
+ UNION ALL SELECT 'trigger_count_3', (SELECT count(*)=3 FROM pg_trigger WHERE tgrelid='public.visitas_campo'::regclass AND NOT tgisinternal)
+ UNION ALL SELECT 'policies_unchanged', (SELECT md5(string_agg(polname::text||':'||polcmd::text||':'||polpermissive::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''), E'\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='public.visitas_campo'::regclass)='644e3004ce3f33e709c35b98341b82bf'
+ UNION ALL SELECT 'deps_unchanged', md5(pg_get_functiondef('public.can_manage_technical_visit(uuid,uuid)'::regprocedure))='d95c2c2b34af117d467d7d4b2b775002'
+    AND md5(pg_get_functiondef('public.has_active_user_cliente_access(uuid,uuid,text[])'::regprocedure))='e099f51d128620e5a68cc3e9001dd976'
+    AND md5(pg_get_functiondef('public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure))='90f33a1e55d44fbbd8fa9ebc565ba052'
++UNION ALL SELECT 'other_triggers_fp_legacy', (SELECT md5(string_agg(t.tgname::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)), E'\n' ORDER BY t.tgname)) FROM pg_trigger t WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal AND t.tgname<>'trg_visitas_campo_guard')='429799ac94b7a216ca97bc62bc8c3621'
++UNION ALL SELECT 'oids_preserved', 'public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure::oid=42803 AND 'public.visitas_campo_guard()'::regprocedure::oid=42826
+ UNION ALL SELECT 'data_untouched_versions_valid', NOT EXISTS (SELECT 1 FROM public.visitas_campo WHERE versao IS NULL OR versao < 1);
+diff --git a/scripts/visit-field-cas-20261027/preflight.sql b/scripts/visit-field-cas-20261027/preflight.sql
+index 847eba742..55dd7ca84 100644
+--- a/scripts/visit-field-cas-20261027/preflight.sql
++++ b/scripts/visit-field-cas-20261027/preflight.sql
+@@ -20,4 +20,7 @@ UNION ALL SELECT 'visitas_campo_triggers_fp', (SELECT md5(string_agg(t.tgname::t
+ UNION ALL SELECT 'visitas_campo_policies_fp', (SELECT md5(string_agg(polname::text||':'||polcmd::text||':'||polpermissive::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''), E'\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='public.visitas_campo'::regclass)='644e3004ce3f33e709c35b98341b82bf'
+ UNION ALL SELECT 'data_versions_valid', NOT EXISTS (SELECT 1 FROM public.visitas_campo WHERE versao IS NULL OR versao < 1)
+ UNION ALL SELECT 'talhoes_fazendas_shape', (SELECT count(*)=2 FROM information_schema.columns WHERE table_schema='public' AND ((table_name='talhoes' AND column_name='fazenda_id') OR (table_name='fazendas' AND column_name='cliente_id')))
+-UNION ALL SELECT 'culturas_ativo', EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='culturas' AND column_name='ativo');
++UNION ALL SELECT 'culturas_ativo', EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='culturas' AND column_name='ativo')
++UNION ALL SELECT 'dep_actor_org_fn', md5(pg_get_functiondef('platform_private.current_user_organization_id()'::regprocedure))='8da1a59de9d58041148b4544ebfbd0a2'
++UNION ALL SELECT 'tenant_ref_columns_14', (SELECT count(*)=14 FROM information_schema.columns WHERE table_schema='public' AND ((table_name='talhoes' AND column_name IN ('organization_id','ativo','fazenda_id')) OR (table_name='fazendas' AND column_name IN ('organization_id','ativo','cliente_id')) OR (table_name='clientes' AND column_name='organization_id') OR (table_name='profiles' AND column_name IN ('user_id','ativo','organization_id')) OR (table_name='catalog_tenant_visibility' AND column_name IN ('organization_id','entity_type','cultura_id','hidden'))))
++UNION ALL SELECT 'other_triggers_fp', (SELECT md5(string_agg(t.tgname::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)), E'\n' ORDER BY t.tgname)) FROM pg_trigger t WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal AND t.tgname<>'trg_visitas_campo_guard')='429799ac94b7a216ca97bc62bc8c3621';
+diff --git a/scripts/visit-field-cas-20261027/test-local.py b/scripts/visit-field-cas-20261027/test-local.py
+index bbb225a02..a94589078 100644
+--- a/scripts/visit-field-cas-20261027/test-local.py
++++ b/scripts/visit-field-cas-20261027/test-local.py
+@@ -13,7 +13,9 @@ X = 'bbbbbbbb-0000-4000-8000-00000000000a'    # consultor tenant B
+ CA = 'cccccccc-0000-4000-8000-00000000000a'; CB = 'cccccccc-0000-4000-8000-00000000000b'
+ FA = 'dddddddd-0000-4000-8000-00000000000a'; FB = 'dddddddd-0000-4000-8000-00000000000b'
+ TA = 'eeeeeeee-0000-4000-8000-00000000000a'; TB = 'eeeeeeee-0000-4000-8000-00000000000b'; TI = 'eeeeeeee-0000-4000-8000-00000000000c'
+-CU = 'ffffffff-0000-4000-8000-00000000000a'; CI = 'ffffffff-0000-4000-8000-00000000000b'
++CU = 'ffffffff-0000-4000-8000-00000000000a'; CI = 'ffffffff-0000-4000-8000-00000000000b'; CH = 'ffffffff-0000-4000-8000-00000000000c'
++OA = '0a0a0a0a-0000-4000-8000-00000000000a'; OB = '0b0b0b0b-0000-4000-8000-00000000000b'
++TX = 'eeeeeeee-0000-4000-8000-00000000000d'; TF = 'eeeeeeee-0000-4000-8000-00000000000e'; FI = 'dddddddd-0000-4000-8000-00000000000c'
+ K1 = '99999999-0000-4000-8000-000000000001'; K2 = '99999999-0000-4000-8000-000000000002'
+ V = lambda n: f'11111111-0000-4000-8000-{n:012d}'
+ checks = 0
+@@ -74,12 +76,17 @@ CREATE TABLE actors(id uuid PRIMARY KEY, tenant text, ready boolean);
+ INSERT INTO actors VALUES('{A}','A',true),('{G}','A',true),('{ADM}','A',true),('{R}','A',true),('{X}','B',true);
+ CREATE TABLE user_roles(user_id uuid, role app_role);
+ INSERT INTO user_roles VALUES('{A}','consultor_tecnico'),('{G}','gestor'),('{ADM}','administrador'),('{R}','consultor_tecnico'),('{X}','consultor_tecnico');
+-CREATE TABLE clientes(id uuid PRIMARY KEY, tenant text); INSERT INTO clientes VALUES('{CA}','A'),('{CB}','B');
++CREATE TABLE clientes(id uuid PRIMARY KEY, tenant text, organization_id uuid); INSERT INTO clientes VALUES('{CA}','A','{OA}'),('{CB}','B','{OB}');
++CREATE TABLE profiles(user_id uuid PRIMARY KEY, ativo boolean, organization_id uuid);
++INSERT INTO profiles VALUES('{A}',true,'{OA}'),('{G}',true,'{OA}'),('{ADM}',true,'{OA}'),('{R}',true,'{OA}'),('{X}',true,'{OB}');
++CREATE TABLE catalog_tenant_visibility(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid, entity_type text, cultura_id uuid, hidden boolean);
+ CREATE TABLE client_links(user_id uuid, cliente_id uuid, active boolean);
+ INSERT INTO client_links VALUES('{A}','{CA}',true),('{X}','{CB}',true);
+-CREATE TABLE fazendas(id uuid PRIMARY KEY, cliente_id uuid); INSERT INTO fazendas VALUES('{FA}','{CA}'),('{FB}','{CB}');
+-CREATE TABLE talhoes(id uuid PRIMARY KEY, fazenda_id uuid, ativo boolean); INSERT INTO talhoes VALUES('{TA}','{FA}',true),('{TB}','{FB}',true),('{TI}','{FA}',false);
+-CREATE TABLE culturas(id uuid PRIMARY KEY, ativo boolean); INSERT INTO culturas VALUES('{CU}',true),('{CI}',false);
++CREATE TABLE fazendas(id uuid PRIMARY KEY, cliente_id uuid, organization_id uuid, ativo boolean);
++INSERT INTO fazendas VALUES('{FA}','{CA}','{OA}',true),('{FB}','{CB}','{OB}',true),('{FI}','{CA}','{OA}',false);
++CREATE TABLE talhoes(id uuid PRIMARY KEY, fazenda_id uuid, ativo boolean, organization_id uuid);
++INSERT INTO talhoes VALUES('{TA}','{FA}',true,'{OA}'),('{TB}','{FB}',true,'{OB}'),('{TI}','{FA}',false,'{OA}'),('{TX}','{FA}',true,'{OB}'),('{TF}','{FI}',true,'{OA}');
++CREATE TABLE culturas(id uuid PRIMARY KEY, ativo boolean); INSERT INTO culturas VALUES('{CU}',true),('{CI}',false),('{CH}',true);
+ CREATE TABLE registros_consultor(id uuid PRIMARY KEY, created_by uuid, consultor_responsavel uuid, cliente_id uuid,
+   status status_registro_consultor);
+ CREATE TABLE visitas_campo(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), registro_consultor_id uuid NOT NULL UNIQUE REFERENCES registros_consultor(id) ON DELETE CASCADE,
+@@ -104,6 +111,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
+ """)
+         def reset():
+             sql(f"TRUNCATE registros_consultor CASCADE; UPDATE actors SET ready=true; UPDATE client_links SET active=true; UPDATE talhoes SET ativo=(id<>'{TI}'); UPDATE culturas SET ativo=(id<>'{CI}');"
++                + f"UPDATE profiles SET ativo=true, organization_id=CASE WHEN user_id='{X}' THEN '{OB}'::uuid ELSE '{OA}'::uuid END;"
++                + f"DELETE FROM catalog_tenant_visibility; INSERT INTO catalog_tenant_visibility(organization_id,entity_type,cultura_id,hidden) VALUES('{OA}','cultura','{CH}',true);"
+                 + "INSERT INTO registros_consultor VALUES " + ",".join(f"('{V(i)}','{A}','{R}','{CA}','em_andamento')" for i in range(1, 30))
+                 + f",('{V(80)}','{A}','{R}','{CA}','finalizado'),('{V(90)}','{X}','{X}','{CB}','rascunho');")
+         # ---------- PRE: live baseline body + live trigger shape reproduce the defects.
+@@ -117,7 +126,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
+         sql(f"DELETE FROM user_roles WHERE user_id='{X}' AND role='administrador';")
+         # ---------- Candidate (DO $pre$ pins LIVE hashes -> stripped on synthetic schema; preflight covers hosted).
+         cand = (HERE / 'candidate.sql.review').read_text()
+-        sql(re.sub(r'DO \$pre\$.*?\$pre\$;', '', cand, flags=re.S))
++        sql(re.sub(r'  -- LIVE-PIN-BEGIN.*?-- LIVE-PIN-END', '', re.sub(r'DO \$pre\$.*?\$pre\$;', '', cand, flags=re.S), flags=re.S))
+         mark('candidate installs; in-migration DO $post$ ACL/owner assertion passed')
+         ok("SELECT proconfig::text='{search_path=public,lock_timeout=3s}' AND prosecdef FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure;", 'definer + search_path + lock_timeout 3s')
+         ok("SELECT NOT has_function_privilege('anon','public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)','EXECUTE');", 'anon cannot execute')
+@@ -183,6 +192,25 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
+         sql(f"UPDATE talhoes SET ativo=false WHERE id='{TA}'; UPDATE culturas SET ativo=false WHERE id='{CU}';")
+         ok(rpc(A, V(5), 1, pl(talhao_id=TA, cultura_id=CU, fase_fenologica='V6')) + row(V(5)).replace('SELECT versao', 'SELECT versao=2'), 'already-saved inactive refs may be kept unchanged')
+         sql("UPDATE talhoes SET ativo=true; UPDATE culturas SET ativo=true;")
++        # ---------- Review fe6fc410 item 4: tenant of talhão/fazenda, hidden cultura, non-finite area
++        s5 = snap(V(5))
++        err(rpc(A, V(5), 2, pl(talhao_id=TX)), '22023', 'talhão of fazenda of cliente but talhoes.organization_id other tenant rejected')
++        err(rpc(A, V(5), 2, pl(talhao_id=TF)), '22023', 'new talhão of inactive fazenda rejected')
++        err(rpc(A, V(5), 2, pl(cultura_id=CH)), '22023', 'cultura hidden for actor tenant rejected (catalog_tenant_visibility)')
++        for bad in ('Infinity', '-Infinity', 'NaN'):
++            err(rpc(A, V(5), 2, pl(area_avaliada_ha=bad)), '22023', f'area {bad} rejected')
++        err(rpc(A, V(5), 2, pl(estande_plantas_ha='Infinity')), '22023', 'estande Infinity rejected')
++        ok(f"SELECT coalesce(md5(row(v.*)::text),'none')='{s5}' FROM visitas_campo v WHERE registro_consultor_id='{V(5)}';", 'item-4 negatives atomic')
++        ok(rpc(X, V(90), 1, pl(cultura_id=CH)) + "RESET ROLE; SELECT true;", 'cultura hidden only for tenant A stays selectable for tenant B')
++        sql(f"DELETE FROM catalog_tenant_visibility;")
++        ok(rpc(A, V(13), 0, pl(cultura_id=CH)) + "RESET ROLE; SELECT true;", 'cultura saved while visible')
++        sql(f"INSERT INTO catalog_tenant_visibility(organization_id,entity_type,cultura_id,hidden) VALUES('{OA}','cultura','{CH}',true);")
++        ok(rpc(A, V(13), 1, pl(cultura_id=CH, fase_fenologica='V2')) + row(V(13)).replace('SELECT versao', 'SELECT versao=2'), 'already-saved now-hidden cultura may be kept unchanged')
++        sql(f"UPDATE profiles SET organization_id='{OB}' WHERE user_id='{A}';")
++        err(rpc(A, V(13), 2), '42501', 'actor profile tenant differs from visit cliente tenant denied')
++        sql(f"UPDATE profiles SET organization_id='{OA}', ativo=false WHERE user_id='{A}';")
++        err(rpc(A, V(13), 2), '42501', 'inactive profile denied')
++        sql(f"UPDATE profiles SET ativo=true WHERE user_id='{A}';")
+         # ---------- Guard direct writers
+         err(f"UPDATE visitas_campo SET versao=versao+2 WHERE registro_consultor_id='{V(1)}';", 'PT409', 'guard: version jump PT409')
+         err(f"UPDATE visitas_campo SET versao=versao WHERE registro_consultor_id='{V(1)}';", 'PT409', 'guard: same version PT409')
+@@ -233,6 +261,16 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
+         mark('C4 operation already past gate commits BEFORE queued revocation (NOT a revocation win)')
+         err(rpc(A, V(10), 1), '42501', 'C4 after revocation commit: next call denied')
+         sql("UPDATE client_links SET active=true;")
++        # C7 revocation committed during CHILD-row wait -> post-child re-authorization denies.
++        ok(rpc(A, V(14), 0) + "RESET ROLE; SELECT true;", 'C7 setup row v1')
++        p, send = session(); send(f"BEGIN; SELECT 1 FROM visitas_campo WHERE registro_consultor_id='{V(14)}' FOR UPDATE;"); time.sleep(0.3)
++        q = bg(rpc(A, V(14), 1)); wait_lock(1)
++        sql(f"UPDATE client_links SET active=false WHERE user_id='{A}';")
++        send('COMMIT;'); p.stdin.close(); p.wait(); q.wait(); e = q.stderr.read()
++        if q.returncode == 0 or '42501' not in e: raise AssertionError('C7 ' + e)
++        mark('C7 revocation committed during child-row wait -> re-authorization after child lock denies 42501')
++        ok(f"SELECT versao=1 FROM visitas_campo WHERE registro_consultor_id='{V(14)}';", 'C7 nothing written')
++        sql("UPDATE client_links SET active=true;")
+         # C5 bounded wait: foreign lock on parent > 3s -> lock_timeout 55P03, nothing written.
+         p, send = session(); send(f"BEGIN; SELECT 1 FROM registros_consultor WHERE id='{V(11)}' FOR UPDATE;"); time.sleep(0.3)
+         t0 = time.time(); r = sql(rpc(A, V(11), 0), False); dt = time.time() - t0
