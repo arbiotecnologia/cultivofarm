@@ -1,0 +1,15 @@
+BEGIN;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='20s';
+-- Deny-only. Retain preservation guard/tickets/history; never restore legacy loss.
+DO $pre$
+BEGIN
+  IF to_regclass('platform_private.visit_plan_write_tickets') IS NULL OR NOT EXISTS(
+    SELECT 1 FROM pg_trigger WHERE tgrelid='public.registros_consultor'::regclass AND tgname='trg_visit_plan_preservation' AND tgenabled='O') THEN
+    RAISE EXCEPTION 'preservation_containment_preflight_failed' USING ERRCODE='55000';
+  END IF;
+END;
+$pre$;
+REVOKE EXECUTE ON FUNCTION platform_private.save_visit_monitoring_plan_core(uuid,integer,jsonb,uuid) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid) FROM authenticated;
+COMMIT;

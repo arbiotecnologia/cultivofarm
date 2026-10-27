@@ -40,7 +40,7 @@ beforeEach(() => {
   mocks.auth.role = "consultor_tecnico"; mocks.auth.roles = ["consultor_tecnico"];
   mocks.rpc.mockImplementation(async (name: string) => ({ error: null, data: name === "rpc_listar_atendimentos_tecnicos_v1"
     ? { items: [{ id: "fake-visit", kind: "visita", status: "reprovado", can_edit: true, proxima_acao: "Revisar e reenviar" }] }
-    : { registro: { id: "fake-visit", observacoes_tecnicas: "", data_proxima_visita: "2026-10-15" }, status: mocks.status, version: mocks.version, permissions: { can_edit: mocks.canEdit, can_approve: false } } }));
+    : { registro: { id: "fake-visit", observacoes_tecnicas: "", data_proxima_visita: "2026-10-15" }, status: mocks.status, version: mocks.version, permissions: { can_view: true, can_edit: mocks.canEdit, can_approve: false } } }));
   mocks.from.mockImplementation((table: string) => {
     let writing = false;
     const visit = { id: "fake-visit", status: mocks.status, version: mocks.version, objetivo_visita: "Objetivo fictício", data_vistoria: "2026-10-09", cliente_id: "fake-client", fazenda_id: "fake-farm", talhao_id: "fake-field", cultura_id: "fake-crop", necessidade_intervencao: "monitorar", proxima_acao_recomendada: "encerrar_atendimento" };

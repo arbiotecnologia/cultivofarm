@@ -1,0 +1,81 @@
+BEGIN;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='20s';
+DO $pre$
+BEGIN
+  IF md5(pg_get_functiondef('platform_private.save_visit_monitoring_plan_core(uuid,integer,jsonb,uuid)'::regprocedure)) <> '303ca1887b97c855bc28ce112fda28d8'
+    OR md5(pg_get_functiondef('public.enforce_visit_immutability()'::regprocedure)) <> '8a6a92bb748f745526ed163ec52464aa'
+    OR to_regclass('platform_private.visit_plan_write_tickets') IS NOT NULL THEN
+    RAISE EXCEPTION 'preservation_dependency_drift' USING ERRCODE='55000';
+  END IF;
+END;
+$pre$;
+CREATE TABLE platform_private.visit_plan_write_tickets (
+  transaction_id bigint NOT NULL, registro_id uuid NOT NULL,
+  block text NOT NULL, next_date date NOT NULL,
+  PRIMARY KEY(transaction_id,registro_id)
+);
+REVOKE ALL ON platform_private.visit_plan_write_tickets FROM PUBLIC,anon,authenticated;
+GRANT ALL ON platform_private.visit_plan_write_tickets TO service_role;
+ALTER TABLE platform_private.visit_plan_write_tickets ENABLE ROW LEVEL SECURITY;
+CREATE FUNCTION platform_private.guard_visit_plan_preservation() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $function$
+DECLARE
+  old_block text;
+  new_block text;
+  authorized boolean;
+BEGIN
+  old_block := substring(coalesce(OLD.observacoes_tecnicas,'') from '\[PLANO DE MONITORAMENTO\].*?\[FIM DO PLANO\]');
+  new_block := substring(coalesce(NEW.observacoes_tecnicas,'') from '\[PLANO DE MONITORAMENTO\].*?\[FIM DO PLANO\]');
+  IF (coalesce(NEW.observacoes_tecnicas,'') LIKE '%[PLANO DE MONITORAMENTO]%' OR coalesce(NEW.observacoes_tecnicas,'') LIKE '%[FIM DO PLANO]%') AND
+    (new_block IS NULL OR length(coalesce(NEW.observacoes_tecnicas,''))-length(replace(coalesce(NEW.observacoes_tecnicas,''),'[PLANO DE MONITORAMENTO]',''))<>length('[PLANO DE MONITORAMENTO]') OR
+      length(coalesce(NEW.observacoes_tecnicas,''))-length(replace(coalesce(NEW.observacoes_tecnicas,''),'[FIM DO PLANO]',''))<>length('[FIM DO PLANO]')) THEN
+    RAISE EXCEPTION 'ambiguous_plan_text' USING ERRCODE='PT409';
+  END IF;
+  IF old_block IS NOT DISTINCT FROM new_block AND (old_block IS NULL OR OLD.data_proxima_visita IS NOT DISTINCT FROM NEW.data_proxima_visita) THEN
+    RETURN NEW;
+  END IF;
+  SELECT EXISTS(SELECT 1 FROM platform_private.visit_plan_write_tickets t
+    WHERE t.transaction_id=txid_current() AND t.registro_id=OLD.id
+      AND t.block IS NOT DISTINCT FROM new_block AND t.next_date IS NOT DISTINCT FROM NEW.data_proxima_visita)
+    INTO authorized;
+  IF NOT authorized THEN
+    RAISE EXCEPTION 'monitoring_plan_requires_canonical_save' USING ERRCODE='PT409';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+REVOKE ALL ON FUNCTION platform_private.guard_visit_plan_preservation() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER trg_visit_plan_preservation BEFORE UPDATE OF observacoes_tecnicas,data_proxima_visita ON public.registros_consultor
+FOR EACH ROW EXECUTE FUNCTION platform_private.guard_visit_plan_preservation();
+-- Rewrite exactly one installed statement; CREATE OR REPLACE retains OID/owner/ACL,
+-- including the auditor's containment. No grant or wrapper replacement here.
+DO $patch$
+DECLARE
+  definition text := pg_get_functiondef('platform_private.save_visit_monitoring_plan_core(uuid,integer,jsonb,uuid)'::regprocedure);
+  needle text := '  UPDATE public.registros_consultor SET observacoes_tecnicas=';
+  replacement text := '  INSERT INTO platform_private.visit_plan_write_tickets(transaction_id,registro_id,block,next_date)
+    VALUES(txid_current(),p_registro_id,v_block,v_date);
+  UPDATE public.registros_consultor SET observacoes_tecnicas=';
+BEGIN
+  IF (length(definition)-length(replace(definition,needle,'')))/length(needle)<>1 THEN
+    RAISE EXCEPTION 'preservation_patch_mismatch' USING ERRCODE='55000';
+  END IF;
+  IF (length(definition)-length(replace(definition,'  RETURN v_receipt;','')))/length('  RETURN v_receipt;')<>1 THEN
+    RAISE EXCEPTION 'preservation_return_mismatch' USING ERRCODE='55000';
+  END IF;
+  definition := replace(definition,needle,replacement);
+  definition := replace(definition,'  RETURN v_receipt;', '  DELETE FROM platform_private.visit_plan_write_tickets WHERE transaction_id=txid_current() AND registro_id=p_registro_id;
+  RETURN v_receipt;');
+  EXECUTE definition;
+END;
+$patch$;
+DO $post$
+BEGIN
+  IF has_table_privilege('authenticated','platform_private.visit_plan_write_tickets','INSERT') OR
+     has_function_privilege('authenticated','platform_private.guard_visit_plan_preservation()','EXECUTE') THEN
+    RAISE EXCEPTION 'preservation_acl_failed' USING ERRCODE='55000';
+  END IF;
+END;
+$post$;
+COMMIT;
