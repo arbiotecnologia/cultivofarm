@@ -909,3 +909,6 @@
 - [x] Investigar revogação canônica de Superadmin (read-only): NÃO existe fluxo — user_roles RLS exige role<>'superadmin', admin_edit_user_profile_v1 bloqueia, tenant_admin_set_user_active é tenant-scoped; homologação de revogação Superadmin permanece bloqueada sem novo acesso autorizado.
 - [x] Corrigir /selecionar-portal preso em "Validando seus acessos…" após troca para Superadmin (organization_id NULL → ready nunca true): redirect para /plataforma espelhando AuthRoute, sem contornar guards; testes 3/3 novos + 9/9 gestão.
 - [ ] Publicação do patch do seletor e verificação do deployment 08519845 pelo auditor; homologação de revogação Superadmin bloqueada (sem fluxo canônico); contabilidade real e SU-518022 adiados.
+
+- [x] Fluxo pedido B2B Etapa 2: pacote inativo cobrança na entrega (scripts/delivery-billing-scope-20261027) — aguarda revisão/implantação do auditor.
+- [ ] Etapas 3–9 do plano de correção do fluxo B2B (Etapa 5 aguarda autorização do proprietário).
