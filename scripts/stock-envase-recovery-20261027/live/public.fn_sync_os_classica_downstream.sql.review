@@ -1,0 +1,72 @@
+CREATE OR REPLACE FUNCTION public.fn_sync_os_classica_downstream()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_prog_id uuid;
+  v_lote_id uuid;
+BEGIN
+  IF (OLD.status IS NOT DISTINCT FROM NEW.status) THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT id INTO v_prog_id FROM public.programacao_producao
+   WHERE ordem_servico_id = NEW.id ORDER BY created_at DESC LIMIT 1;
+
+  IF v_prog_id IS NULL
+     AND NEW.status::text IN ('aprovada','programada','em_producao','em_cq','envase','pronto_entrega','entregue','finalizada')
+     AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN
+    INSERT INTO public.programacao_producao
+      (produto_id, microrganismo_id, volume_necessario, data_programada, status, ordem_servico_id)
+    VALUES
+      (NEW.produto_id, NEW.microrganismo_id, NEW.volume_total_ml,
+       COALESCE(NEW.data_programada, CURRENT_DATE), 'aguardando', NEW.id)
+    RETURNING id INTO v_prog_id;
+  END IF;
+
+  IF v_prog_id IS NOT NULL THEN
+    SELECT id INTO v_lote_id FROM public.lotes
+      WHERE programacao_id = v_prog_id ORDER BY created_at DESC LIMIT 1;
+  END IF;
+
+  CASE NEW.status::text
+    WHEN 'aprovada' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao SET status = 'aguardando' WHERE id = v_prog_id;
+      END IF;
+    WHEN 'programada' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao
+           SET status = 'aguardando',
+               data_programada = COALESCE(NEW.data_programada, data_programada, CURRENT_DATE)
+         WHERE id = v_prog_id;
+      END IF;
+    WHEN 'em_producao' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao SET status = 'em_producao' WHERE id = v_prog_id;
+      END IF;
+      IF v_lote_id IS NULL AND (NEW.produto_id IS NOT NULL OR NEW.microrganismo_id IS NOT NULL) THEN
+        INSERT INTO public.lotes (codigo_lote, produto_id, microrganismo_id, programacao_id, status, volume_produzido, data_producao)
+        VALUES (public.gerar_codigo_lote(), NEW.produto_id, NEW.microrganismo_id, v_prog_id,
+                'em_producao', NEW.volume_total_ml, CURRENT_DATE);
+      END IF;
+    WHEN 'em_cq' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao SET status = 'aguardando_cq' WHERE id = v_prog_id;
+      END IF;
+      IF v_lote_id IS NOT NULL THEN
+        UPDATE public.lotes SET status = 'aguardando_cq' WHERE id = v_lote_id;
+      END IF;
+    WHEN 'envase' THEN
+      IF v_prog_id IS NOT NULL THEN
+        UPDATE public.programacao_producao SET status = 'aprovado' WHERE id = v_prog_id;
+      END IF;
+    ELSE
+      NULL;
+  END CASE;
+
+  RETURN NEW;
+END;
+$function$;

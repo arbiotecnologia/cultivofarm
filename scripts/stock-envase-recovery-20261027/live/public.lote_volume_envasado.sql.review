@@ -1,0 +1,10 @@
+CREATE OR REPLACE FUNCTION public.lote_volume_envasado(_lote_id uuid)
+ RETURNS numeric
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT COALESCE(SUM(COALESCE(volume_por_unidade,0) * COALESCE(quantidade,0)), 0)::numeric
+  FROM public.envase
+  WHERE lote_id = _lote_id;
+$function$;

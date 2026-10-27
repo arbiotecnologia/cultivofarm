@@ -1,0 +1,38 @@
+CREATE OR REPLACE FUNCTION public._sync_planning_from_os()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_partner_order_id uuid;
+  v_planning_id uuid;
+  v_total int;
+  v_done int;
+  v_in_prod int;
+BEGIN
+  v_partner_order_id := COALESCE(NEW.partner_order_id, OLD.partner_order_id);
+  IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;
+
+  SELECT id INTO v_planning_id FROM public.production_planning WHERE partner_order_id = v_partner_order_id;
+  IF v_planning_id IS NULL THEN RETURN NEW; END IF;
+
+  SELECT COUNT(*),
+         COUNT(*) FILTER (WHERE status IN ('finalizada','entregue','pronto_entrega')),
+         COUNT(*) FILTER (WHERE status IN ('em_producao','em_cq','envase','programada'))
+    INTO v_total, v_done, v_in_prod
+  FROM public.ordens_servico WHERE partner_order_id = v_partner_order_id;
+
+  IF v_total = 0 THEN RETURN NEW; END IF;
+
+  IF v_done = v_total THEN
+    UPDATE public.production_planning SET status='produzido', updated_at=now()
+      WHERE id=v_planning_id AND status <> 'produzido';
+  ELSIF v_in_prod > 0 THEN
+    UPDATE public.production_planning SET status='em_producao', updated_at=now()
+      WHERE id=v_planning_id AND status NOT IN ('em_producao','produzido','entregue');
+  END IF;
+
+  RETURN NEW;
+END
+$function$;

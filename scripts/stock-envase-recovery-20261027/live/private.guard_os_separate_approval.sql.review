@@ -1,0 +1,35 @@
+CREATE OR REPLACE FUNCTION private.guard_os_separate_approval()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_origin text; v_org uuid;
+BEGIN
+ IF TG_OP='INSERT' THEN
+ -- Criação normal exclusivamente aberta, inclusive pelo serviço/DEFINER.
+ -- NULL e qualquer estado avançado não podem saltar a aprovação humana.
+ -- Sem whitelist service_role, flags GUC ou reparo de históricos.
+ IF NEW.status::text IS DISTINCT FROM 'aberta' THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+ END IF;
+ IF NEW.status::text IS DISTINCT FROM 'aprovada' THEN RETURN NEW; END IF;
+ v_origin:=CASE TG_TABLE_NAME WHEN 'ordens_servico' THEN 'manual' WHEN 'ordens_servico_onfarm' THEN 'onfarm' END;
+ IF TG_WHEN='BEFORE' THEN
+ -- Um único UPDATE não pode substituir a identidade/referências e aprovar o estado anterior.
+ IF (to_jsonb(NEW)-ARRAY['status','updated_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at']) THEN RAISE EXCEPTION 'OS_APPROVAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ v_org:=private.assert_os_approval_scope(OLD.id,v_origin);
+ RETURN NEW;
+ END IF;
+ IF OLD.status::text='aberta' THEN
+ v_org:=private.assert_os_approval_scope(NEW.id,v_origin);
+ INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,etapa_anterior,etapa_nova,acao,usuario_id,observacao)
+ SELECT NEW.id,v_origin,pp.id,'aberta','aprovada','aprovar_os',auth.uid(),jsonb_build_object(
+ 'organization_id',v_org,'before',jsonb_build_object('status',OLD.status,'volume',OLD.volume_total_ml,'data_os',to_jsonb(OLD)->'data_programada'),
+ 'after',jsonb_build_object('status',NEW.status,'volume',NEW.volume_total_ml,'data_os',to_jsonb(NEW)->'data_programada'),
+ 'programacao',jsonb_build_object('id',pp.id,'status',pp.status,'data',pp.data_programada,'volume',pp.volume_necessario),
+ 'actor',auth.uid(),'at',clock_timestamp(),'manufacturing_started',false,'commercial_completed',false)::text
+ FROM public.programacao_producao pp WHERE pp.ordem_servico_id=NEW.id OR pp.ordem_servico_onfarm_id=NEW.id;
+ END IF;
+ RETURN NEW;
+END $function$;

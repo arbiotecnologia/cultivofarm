@@ -1,0 +1,5 @@
+- Keep this package review-only; never install or grant client access during preparation — production release remains independent.
+- Preserve manual lot/CQ/binding/delete guards as immutable dependencies; never mint CQ tickets or force a lot/OS transition — avoids reopening contained production stages.
+- Reuse existing envase, stock motor and batch signatures with fresh post-wait scope; no GUC may grant authority — preserves tenant isolation.
+- Tests must load exact stock tenant/ledger/volume guards; explicitly name omitted triggers/Auth seams and do not claim full delivery integration — prevents false certification.
+- Containment is deny-only for changed entrypoints and never restores the envase purge escape — preserves history.

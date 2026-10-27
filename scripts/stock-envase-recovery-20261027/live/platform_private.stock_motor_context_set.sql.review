@@ -1,0 +1,15 @@
+CREATE OR REPLACE FUNCTION platform_private.stock_motor_context_set(p_ctx jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+BEGIN
+ DELETE FROM platform_private.stock_motor_context WHERE txid=txid_current();
+ IF p_ctx IS NOT NULL THEN
+  PERFORM platform_private.stock_motor_actor(p_ctx->>'acao');
+  IF p_ctx->>'usuario_id' IS DISTINCT FROM auth.uid()::text OR jsonb_typeof(p_ctx->'metadata') IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'ESTQ_PAYLOAD_INVALIDO' USING ERRCODE='22023'; END IF;
+  INSERT INTO platform_private.stock_motor_context(txid,actor,item,ctx) VALUES(txid_current(),auth.uid(),(p_ctx->'metadata'->>'stock_request_item')::uuid,p_ctx);
+ END IF;
+ PERFORM public.fn_estoque_ctx_force(p_ctx);
+END $function$;

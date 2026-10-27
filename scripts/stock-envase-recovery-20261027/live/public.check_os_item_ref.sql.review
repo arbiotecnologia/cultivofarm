@@ -1,0 +1,12 @@
+CREATE OR REPLACE FUNCTION public.check_os_item_ref()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NEW.produto_id IS NULL AND NEW.microrganismo_id IS NULL THEN
+    RAISE EXCEPTION 'Ordem de Serviço precisa de produto_id OU microrganismo_id';
+  END IF;
+  RETURN NEW;
+END;
+$function$;

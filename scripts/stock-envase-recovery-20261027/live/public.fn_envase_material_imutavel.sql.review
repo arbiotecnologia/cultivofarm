@@ -1,0 +1,28 @@
+CREATE OR REPLACE FUNCTION public.fn_envase_material_imutavel()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  -- Escape controlado apenas para manutenção/fixtures (nunca anon/authenticated).
+  IF COALESCE(current_setting('app.estoque_purge_fixture', true), '') = 'on'
+     AND current_user NOT IN ('anon','authenticated') THEN
+    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'ENVASE_IMUTAVEL: o envase % do lote % nao pode ser excluido. Registre um estorno/novo envase.', OLD.id, OLD.lote_id
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF NEW.lote_id IS DISTINCT FROM OLD.lote_id
+     OR NEW.quantidade IS DISTINCT FROM OLD.quantidade
+     OR NEW.volume_por_unidade IS DISTINCT FROM OLD.volume_por_unidade THEN
+    RAISE EXCEPTION 'ENVASE_IMUTAVEL: lote/quantidade/volume_por_unidade do envase % nao podem ser alterados apos o registro.', OLD.id
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;

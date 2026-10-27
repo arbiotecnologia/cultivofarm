@@ -1,0 +1,32 @@
+CREATE OR REPLACE FUNCTION public.fn_cockpit_ctx_programacao(p_programacao_id uuid)
+ RETURNS TABLE(programacao_id uuid, os_id uuid, origem text, produto_id uuid, microrganismo_id uuid, cliente_id uuid, partner_order_id uuid, volume_necessario numeric, status_os text)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE pp record;
+BEGIN
+  SELECT * INTO pp FROM public.programacao_producao WHERE id = p_programacao_id;
+  IF pp IS NULL THEN RAISE EXCEPTION 'COCKPIT_PROGRAMACAO_NAO_ENCONTRADA'; END IF;
+
+  IF pp.ordem_servico_onfarm_id IS NOT NULL THEN
+    RETURN QUERY
+      SELECT pp.id, os.id, 'onfarm'::text, coalesce(pp.produto_id, os.produto_id),
+             coalesce(pp.microrganismo_id, os.microrganismo_id), os.cliente_id,
+             NULL::uuid, coalesce(pp.volume_necessario, 0), os.status::text
+        FROM public.ordens_servico_onfarm os
+       WHERE os.id = pp.ordem_servico_onfarm_id;
+  ELSIF pp.ordem_servico_id IS NOT NULL THEN
+    RETURN QUERY
+      SELECT pp.id, os.id,
+             CASE WHEN os.partner_order_id IS NOT NULL THEN 'b2b' ELSE 'manual' END,
+             coalesce(pp.produto_id, os.produto_id),
+             coalesce(pp.microrganismo_id, os.microrganismo_id), os.cliente_id,
+             os.partner_order_id, coalesce(pp.volume_necessario, 0), os.status::text
+        FROM public.ordens_servico os
+       WHERE os.id = pp.ordem_servico_id;
+  ELSE
+    RAISE EXCEPTION 'COCKPIT_PROGRAMACAO_SEM_OS';
+  END IF;
+END;
+$function$;

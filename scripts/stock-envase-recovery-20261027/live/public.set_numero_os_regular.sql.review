@@ -1,0 +1,14 @@
+CREATE OR REPLACE FUNCTION public.set_numero_os_regular()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NEW.numero_os IS NULL OR NEW.numero_os = '' THEN
+    NEW.numero_os := 'OS-' || to_char(COALESCE(NEW.created_at, now()), 'YYYY')
+      || '-' || lpad(nextval('public.ordens_servico_seq')::text, 6, '0');
+  END IF;
+  RETURN NEW;
+END;
+$function$;

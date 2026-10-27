@@ -1,0 +1,95 @@
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_cancelar_reserva_v1(p_item_id uuid, p_os_id uuid, p_origem text, p_motivo text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_item public.estoque_produto%ROWTYPE;
+  v_main public.estoque_produto%ROWTYPE;
+  v_modo text;
+  v_motivo text := nullif(btrim(coalesce(p_motivo, '')), '');
+BEGIN
+  PERFORM public.fn_estoque_ctx_open(jsonb_build_object('acao','cancelamento_reserva','origem','rpc_cockpit_cancelar_reserva_v1','usuario_id',auth.uid()::text));
+  v_origem := public.fn_cockpit_assert_operador_origem(p_origem);
+
+  IF p_item_id IS NULL OR p_os_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_RESERVA_PARAMS_INVALIDOS'; END IF;
+  IF v_motivo IS NULL THEN RAISE EXCEPTION 'COCKPIT_RESERVA_MOTIVO_OBRIGATORIO'; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('cockpit_reserva:' || p_item_id::text));
+
+  SELECT * INTO v_item FROM public.estoque_produto WHERE id = p_item_id FOR UPDATE;
+  IF v_item.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_RESERVA_NAO_ENCONTRADA'; END IF;
+
+  IF v_item.status::text = 'estornado' OR v_item.quantidade_reservada IS NULL THEN
+    RETURN jsonb_build_object('success', true, 'replay', true,
+      'message', 'Reserva já cancelada anteriormente.');
+  END IF;
+  IF v_item.status::text = 'expedido' THEN RAISE EXCEPTION 'COCKPIT_RESERVA_JA_EXPEDIDA'; END IF;
+
+  -- coerência: a reserva precisa pertencer à MESMA OS/origem
+  IF v_item.reservado_para_os_id IS DISTINCT FROM p_os_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_RESERVA_OS';
+  END IF;
+  IF coalesce(v_item.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_RESERVA_ORIGEM';
+  END IF;
+
+  -- override (cancelar reserva feita por outro operador) exige gestor
+  IF v_item.reservado_por IS DISTINCT FROM v_uid AND NOT public.fn_cockpit_is_gestor() THEN
+    RAISE EXCEPTION 'COCKPIT_RESERVA_OVERRIDE_SEM_ALCADA';
+  END IF;
+
+  -- saldo principal compatível (mesmo lote, envase, item e validade)
+  SELECT * INTO v_main
+    FROM public.estoque_produto
+   WHERE lote_id = v_item.lote_id
+     AND envase_id IS NOT DISTINCT FROM v_item.envase_id
+     AND produto_id IS NOT DISTINCT FROM v_item.produto_id
+     AND microrganismo_id IS NOT DISTINCT FROM v_item.microrganismo_id
+     AND validade IS NOT DISTINCT FROM v_item.validade
+     AND quantidade_reservada IS NULL
+     AND status = 'disponivel'::public.status_estoque
+     AND id <> v_item.id
+   ORDER BY id LIMIT 1 FOR UPDATE;
+
+  IF v_main.id IS NOT NULL THEN
+    v_modo := 'estorno_para_saldo_principal';
+    UPDATE public.estoque_produto
+       SET quantidade = coalesce(v_main.quantidade,0) + coalesce(v_item.quantidade,0),
+           volume_total = coalesce(v_main.volume_total,0) + coalesce(v_item.volume_total,0),
+           updated_at = now()
+     WHERE id = v_main.id;
+
+    UPDATE public.estoque_produto
+       SET status = 'estornado'::public.status_estoque, quantidade = 0, volume_total = 0,
+           quantidade_reservada = 0, reservado_para_os_id = NULL, reservado_para_os_tipo = NULL,
+           reservado_para_cliente_id = NULL, reservado_para_partner_id = NULL,
+           reservado_para_partner_order_id = NULL,
+           observacao_reserva = v_motivo || format(' — saldo devolvido ao registro %s', v_main.id),
+           updated_at = now()
+     WHERE id = v_item.id;
+
+  ELSE
+    v_modo := 'liberacao_no_proprio_registro';
+    UPDATE public.estoque_produto
+       SET status = 'disponivel'::public.status_estoque, quantidade_reservada = NULL,
+           reservado_para_os_id = NULL, reservado_para_os_tipo = NULL,
+           reservado_para_cliente_id = NULL, reservado_para_partner_id = NULL,
+           reservado_para_partner_order_id = NULL,
+           observacao_reserva = v_motivo, updated_at = now()
+     WHERE id = v_item.id;
+
+  END IF;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, lote_id, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+  VALUES (p_os_id, v_origem, v_item.lote_id, 'estoque_reservado', 'estoque_disponivel',
+          'cancelar_reserva_v1', v_uid, format('Cancelamento transacional (%s). Motivo: %s', v_modo, v_motivo));
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'modo', v_modo,
+    'message', 'Reserva cancelada e saldo devolvido em transação única.');
+END;
+$function$;

@@ -1,0 +1,30 @@
+CREATE OR REPLACE FUNCTION public.trg_os_sync_partner_order_fn()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_partner_order_id uuid; v_total int; v_done int; v_in_prod int;
+ v_new_status public.partner_order_status; v_old_status public.partner_order_status; v_nonlab int;
+BEGIN
+ v_partner_order_id:=coalesce(NEW.partner_order_id,OLD.partner_order_id);
+ IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;
+ IF TG_OP='UPDATE' AND NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
+ SELECT count(*),count(*) FILTER(WHERE status IN ('pronto_entrega','entregue','finalizada')),
+ count(*) FILTER(WHERE status IN ('em_producao','em_cq','envase','programada')) INTO v_total,v_done,v_in_prod
+ FROM public.ordens_servico WHERE partner_order_id=v_partner_order_id;
+ SELECT count(*) INTO v_nonlab FROM public.partner_order_items i WHERE i.order_id=v_partner_order_id
+ AND NOT platform_private.lab_item_is_manufacturable(i.product_id,i.microrganismo_id);
+ SELECT status INTO v_old_status FROM public.partner_orders WHERE id=v_partner_order_id;
+ IF v_total>0 AND v_done=v_total AND v_nonlab=0 THEN v_new_status:='produzido';
+ ELSIF v_in_prod>0 THEN v_new_status:='em_producao';
+ ELSE v_new_status:=v_old_status; END IF;
+ -- Pedido misto nunca é declarado integralmente produzido apenas por conclusão das OS biológicas.
+ IF v_new_status IS DISTINCT FROM v_old_status THEN
+  UPDATE public.partner_orders SET status=v_new_status,updated_at=now() WHERE id=v_partner_order_id;
+  UPDATE public.production_planning SET status=v_new_status::text::public.production_planning_status,updated_at=now() WHERE partner_order_id=v_partner_order_id;
+  INSERT INTO public.production_timeline_events(partner_order_id,event_type,meta) VALUES(v_partner_order_id,
+  CASE WHEN v_new_status='produzido' THEN 'producao_finalizada' ELSE 'producao_iniciada' END,jsonb_build_object('from',v_old_status,'to',v_new_status));
+ END IF;
+ RETURN NEW;
+END $function$;

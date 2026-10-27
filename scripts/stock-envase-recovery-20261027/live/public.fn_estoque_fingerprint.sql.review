@@ -1,0 +1,12 @@
+CREATE OR REPLACE FUNCTION public.fn_estoque_fingerprint(p_acao text, p_item uuid, p_qtd numeric, p_payload jsonb)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'public', 'extensions'
+AS $function$
+  SELECT encode(extensions.digest(
+    'estmovv1|'||coalesce(p_acao,'')||'|'||coalesce(p_item::text,'')||'|'||
+    coalesce(trim_scale(p_qtd)::text,'')||'|'||
+    coalesce((SELECT jsonb_object_agg(k, v ORDER BY k) FROM jsonb_each(coalesce(p_payload,'{}'::jsonb)) e(k,v))::text,'{}'),
+    'sha256'),'hex');
+$function$;

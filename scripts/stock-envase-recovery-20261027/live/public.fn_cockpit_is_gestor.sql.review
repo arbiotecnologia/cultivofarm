@@ -1,0 +1,9 @@
+CREATE OR REPLACE FUNCTION public.fn_cockpit_is_gestor()
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  SELECT public.has_role(auth.uid(), 'administrador'::app_role)
+      OR public.has_role(auth.uid(), 'gestor'::app_role)
+$function$;

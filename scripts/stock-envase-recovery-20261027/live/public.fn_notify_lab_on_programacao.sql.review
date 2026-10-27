@@ -1,0 +1,15 @@
+CREATE OR REPLACE FUNCTION public.fn_notify_lab_on_programacao()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$ DECLARE org uuid; prod text; cli text; BEGIN
+ IF NEW.status::text<>'aguardando' THEN RETURN NEW; END IF;
+ org:=platform_private.notification_source_org('programacao_producao',NEW.id);
+ IF org IS NULL THEN RETURN NEW; END IF;
+ SELECT nome INTO prod FROM public.produtos WHERE id=NEW.produto_id;
+ SELECT c.nome INTO cli FROM public.ordens_servico o JOIN public.clientes c ON c.id=o.cliente_id AND c.organization_id=org WHERE o.id=NEW.ordem_servico_id;
+ INSERT INTO public.notificacoes_operacionais(usuario_id,tipo,titulo,mensagem,link,source_type,source_id)
+ SELECT DISTINCT ur.user_id,'nova_demanda_producao','Nova demanda de produção',coalesce(prod,'Bioinsumo')||coalesce(' · '||cli,'')||coalesce(' · '||round(NEW.volume_necessario/1000.0,1)::text||' L',''),'/pcp?coluna=aguardando','programacao_producao',NEW.id
+ FROM public.user_roles ur WHERE ur.role IN ('producao','administrador','gestor') AND platform_private.notification_user_ok(ur.user_id,org);
+ RETURN NEW; END $function$;
