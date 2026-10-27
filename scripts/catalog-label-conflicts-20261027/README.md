@@ -30,3 +30,11 @@ com outro pedido. Não alterado (helper compartilhado). O cliente trata 40001 e 
   duas conexões (espera de lock observada; 1 vence, 1 conflito), rollback de pós-condição por trigger injetado localmente, negação admin tenant A/B (42501), anon sem EXECUTE, rollback reinstalável — LIVE (40001) e candidato (PT409).
 - Frontend: sem retry automático após conflito (uma única chamada); revisão antiga enviada intacta; botão “Atualizar dados” manual; chaves de idempotência derivadas de `updated_at`.
 - NÃO há homologação real JWT/RLS. Aplicação/publicação ficam com o auditor.
+
+## Evidência independente do auditor (relato, não reproduzida pelo agente)
+- Réplica do `catalogLabelsPanelFlow` com PT409 falhava no código anterior (mensagem genérica); `labelError` aceitando 40001 OU PT409 fez passar original+PT409.
+- Sessões reais consultorA/adminB: 403/42501 nas duas RPCs. Baseline 7 rótulos hash `38fc19cca27fa97090f26b1c293d444e`, 32 auditorias intactas. Nada implantado.
+
+## Teste de tela PT409 (local, QueryClient real, transporte simulado)
+`catalogLabelsPanelFlow.test.tsx`: após PT409, exatamente 1 escrita; nenhuma releitura nem nova escrita automática em 300 ms; revisão enviada continua V1 e o leitor
+mantém o valor antigo até o clique em "Atualizar dados"; só a nova ação do usuário envia V2. 40001 continua aceito (helper residual).
