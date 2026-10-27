@@ -41,3 +41,10 @@ describe("mensagemAmigavelVisita", () => {
     expect(msg.toLowerCase()).not.toContain("existe");
   });
 });
+
+import { mensagemAmigavelVisita as _m } from "@/lib/visita/visitaErrorMessages";
+import { it as _it, expect as _e } from "vitest";
+_it("PT409 transicao_invalida do envio para aprovação tem mensagem amigável", () => {
+  _e(_m({ code: "PT409", message: "transicao_invalida" })).toContain("mudou de etapa");
+  _e(_m({ code: "PT409", message: "version_conflict" })).toContain("atualizada em outro dispositivo");
+});

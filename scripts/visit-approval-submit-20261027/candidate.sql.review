@@ -1,0 +1,131 @@
+-- INACTIVE review candidate. Never place in supabase/migrations automatically.
+-- Target ref: swzpzcwiasxmjutrmvkm only. Independent auditor applies via Supabase.
+-- Scope: public.rpc_enviar_visita_aprovacao(uuid,integer) ONLY.
+SET LOCAL lock_timeout = '5s';
+
+DO $pre$
+DECLARE v_oid oid := to_regprocedure('public.rpc_enviar_visita_aprovacao(uuid,integer)');
+BEGIN
+  IF current_database() <> 'postgres' THEN RAISE EXCEPTION 'preflight: unexpected database'; END IF;
+  IF v_oid IS NULL THEN RAISE EXCEPTION 'preflight: target missing'; END IF;
+  IF md5(pg_get_functiondef(v_oid)) <> 'd875e3ef00382bfcaa47fb23d0b9022c' THEN
+    RAISE EXCEPTION 'preflight: target hash drift %', md5(pg_get_functiondef(v_oid)); END IF;
+  IF (SELECT NOT prosecdef OR pg_get_userbyid(proowner) <> 'postgres'
+        OR proconfig::text <> '{search_path=public}'
+        OR proacl::text <> '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'
+      FROM pg_proc WHERE oid = v_oid) THEN
+    RAISE EXCEPTION 'preflight: owner/definer/config/ACL drift'; END IF;
+  IF md5(pg_get_functiondef('public.can_manage_technical_visit(uuid,uuid)'::regprocedure)) <> 'd95c2c2b34af117d467d7d4b2b775002'
+    OR md5(pg_get_functiondef('public.has_role(uuid,app_role)'::regprocedure)) <> '4d90e93d521a4819d9085f28d742030f'
+    OR md5(pg_get_functiondef('public.has_active_user_cliente_access(uuid,uuid,text[])'::regprocedure)) <> 'e099f51d128620e5a68cc3e9001dd976'
+    OR md5(pg_get_functiondef('public.technical_actor_ready(uuid)'::regprocedure)) <> 'b5d0994b6eb976b14122cd2a1ec798cf' THEN
+    RAISE EXCEPTION 'preflight: dependency hash drift'; END IF;
+  IF (SELECT count(*) FROM cf_user_guards_v1.state WHERE singleton) <> 1 THEN
+    RAISE EXCEPTION 'preflight: canonical gate missing'; END IF;
+  IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.registros_consultor'::regclass AND NOT tgisinternal) <> 10 THEN
+    RAISE EXCEPTION 'preflight: registros_consultor trigger set drift'; END IF;
+END $pre$;
+
+-- Same signature/OID (CREATE OR REPLACE), owner, SECURITY DEFINER, search_path; adds bounded lock_timeout.
+CREATE OR REPLACE FUNCTION public.rpc_enviar_visita_aprovacao(p_registro_id uuid, p_expected_version integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_reg public.registros_consultor;
+  v_new_version integer;
+  v_rows integer;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'unauthenticated' USING ERRCODE = '42501';
+  END IF;
+  IF p_registro_id IS NULL THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+  -- CAS is mandatory: NULL/non-positive never matches.
+  IF p_expected_version IS NULL OR p_expected_version <= 0 THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+  -- Fast denial (no lock taken for unauthorized callers).
+  IF NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_id), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  -- 1) Canonical gate BEFORE the visit row lock (same order as revocation writers).
+  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'gate_unavailable' USING ERRCODE = '55000';
+  END IF;
+  -- 2) Re-authorize after the gate wait (revocation committed first is observed here).
+  IF NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_id), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  -- 3) Visit row lock.
+  SELECT r.* INTO v_reg FROM public.registros_consultor r WHERE r.id = p_registro_id FOR UPDATE;
+
+  -- 4) Re-authorize + tenant + original actor restriction after the row wait; never cached.
+  IF v_reg.id IS NULL
+     OR NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_id), false)
+     OR NOT (
+       public.has_role(v_uid, 'administrador'::app_role)
+       OR v_reg.created_by = v_uid
+       OR v_reg.consultor_responsavel = v_uid
+       OR (v_reg.cliente_id IS NOT NULL
+           AND public.has_active_user_cliente_access(v_uid, v_reg.cliente_id, ARRAY['execute','manage']))
+     ) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  IF v_reg.status::text <> 'finalizado' THEN
+    RAISE EXCEPTION 'transicao_invalida' USING ERRCODE = 'PT409';
+  END IF;
+  IF v_reg.version IS NULL OR p_expected_version <> v_reg.version THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+
+  v_new_version := v_reg.version + 1;
+
+  UPDATE public.registros_consultor
+     SET status = 'enviado_aprovacao'::status_registro_consultor,
+         version = v_new_version,
+         updated_at = now()
+   WHERE id = p_registro_id
+     AND version = p_expected_version
+     AND status = 'finalizado'::status_registro_consultor
+     AND cliente_id IS NOT DISTINCT FROM v_reg.cliente_id;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+
+  INSERT INTO public.visitas_logs (registro_consultor_id, usuario_id, acao, descricao)
+    VALUES (p_registro_id, v_uid, 'enviado_aprovacao', 'Visita enviada para aprovação via rpc_enviar_visita_aprovacao');
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION 'log_write_failed' USING ERRCODE = 'P0001';
+  END IF;
+
+  RETURN jsonb_build_object('id', p_registro_id, 'status', 'enviado_aprovacao', 'version', v_new_version);
+END;
+$function$;
+
+-- ACL unchanged by CREATE OR REPLACE; re-asserted without widening.
+REVOKE ALL ON FUNCTION public.rpc_enviar_visita_aprovacao(uuid,integer) FROM PUBLIC, anon;
+
+DO $post$
+DECLARE v_oid oid := 'public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure;
+BEGIN
+  IF (SELECT NOT prosecdef OR pg_get_userbyid(proowner) <> 'postgres'
+        OR proconfig::text <> '{search_path=public,lock_timeout=3s}'
+        OR proacl::text <> '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'
+      FROM pg_proc WHERE oid = v_oid) THEN
+    RAISE EXCEPTION 'postflight: owner/config/ACL drift'; END IF;
+  IF position('40001' in pg_get_functiondef(v_oid)) > 0
+     OR position('cf_user_guards_v1.state' in pg_get_functiondef(v_oid)) = 0 THEN
+    RAISE EXCEPTION 'postflight: body drift'; END IF;
+END $post$;

@@ -26,6 +26,8 @@ const MENSAGENS: Record<string, string> = {
   visita_nao_editavel: "Esta visita já foi concluída e não pode mais ser alterada.",
   version_conflict:
     "Esta visita foi atualizada em outro dispositivo. Atualize a tela e tente novamente.",
+  transicao_invalida:
+    "Esta visita mudou de etapa. Atualize a tela para ver o estado atual.",
   cultura_obrigatoria: "Informe a cultura antes de finalizar a visita.",
   diagnostico_obrigatorio: "Registre pelo menos um diagnóstico antes de finalizar.",
   checkin_obrigatorio: "Faça o check-in antes de finalizar a visita.",
