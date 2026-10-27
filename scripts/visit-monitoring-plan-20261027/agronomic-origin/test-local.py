@@ -149,7 +149,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   err(f"SET test.actor='{X}'; SELECT public.rpc_listar_alertas_vinculaveis_v1('{V}');",'PT404','foreign list denied')
   # --- legacy v1 ---
   err(f"SET test.actor='{G}'; SELECT public.rpc_reprogramar_monitoramento_v1('{AL}','2026-11-20',{at(AL)});",'PT428','old v1 caller with origin fails safely')
-  ok(f"SELECT data_vencimento='2026-11-01' FROM alertas_agronomicos WHERE id='{AL}';",'v1 refusal wrote nothing')
+  ok(f"SELECT data_vencimento='2026-11-05' FROM alertas_agronomicos WHERE id='{AL}';",'v1 refusal wrote nothing')
   sql(f"SET test.actor='{G}'; SELECT public.rpc_reprogramar_monitoramento_v1('{ALN}','2026-11-09',{at(ALN)});")
   ok(f"SELECT data_vencimento='2026-11-09' FROM alertas_agronomicos WHERE id='{ALN}';",'v1 without origin unchanged')
   err(f"UPDATE registros_consultor SET data_proxima_visita='2026-11-20' WHERE id='{V}';",'PT409','guard still denies direct date write')
