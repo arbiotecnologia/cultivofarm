@@ -17,5 +17,8 @@ it("origem agronômica e reprogramação: PostgreSQL descartável/Auth sintétic
   expect(output).toContain("PASS plan date change after link blocked PT409");
   expect(output).toContain("PASS ambiguity rejections fully atomic");
   expect(output).toContain("PASS finalized: explicit alert-only mode, visit not synchronized");
-  expect(output).toContain("TOTAL 73");
+  for (const c of ["link visit without plan rejected PT409", "link malformed block (no end marker) rejected PT409", "link plan with null visit date rejected PT409",
+    "link plan with 0 notices rejected PT409", "link plan with 2 notices rejected PT409", "link notice date divergent rejected PT409",
+    "legacy origin without plan: reschedule rejected PT409", "rejected links left no receipts"]) expect(output).toContain("PASS " + c);
+  expect(output).toContain("TOTAL 87");
 }, 120_000);

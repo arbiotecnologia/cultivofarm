@@ -21,7 +21,8 @@ const unavailable = "Não foi possível acessar este monitoramento. Atualize a l
 const conflict = "Este monitoramento foi alterado. Atualize a lista antes de confirmar novamente; a data editada foi mantida.";
 export const MULTIPLOS_ALERTAS = "Mais de um alerta usa esta visita como origem; a data compartilhada não foi alterada. Revise os vínculos antes de reprogramar.";
 export const PLANO_INCOERENTE = "O plano e o aviso desta visita não estão coerentes; nada foi alterado. Revise a visita.";
-export type ModoReprogramacao = "plano_visita_aviso_alerta" | "visita_alerta" | "somente_alerta";
+export const SEM_PLANO = "A visita de origem não tem plano de monitoramento salvo; a reprogramação conjunta não é suportada. Salve/revise primeiro o plano. Nada foi alterado.";
+export type ModoReprogramacao = "plano_visita_aviso_alerta" | "somente_alerta";
 export const REPROGRAMACAO_ORIGEM_INDISPONIVEL = "A reprogramação de alertas com visita de origem ainda não está disponível. Nada foi alterado.";
 const isUuid = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 const isDate = (value: unknown): value is string => {
@@ -69,6 +70,7 @@ export function useReprogramarMonitoramento() {
           // Do not expose whether a foreign UUID exists.
           if (["42501", "PT403", "PT404", "P0002", "403", "404"].includes(code)) throw new ReprogramacaoError(unavailable, "rejected");
           if (code === "PT409" && /multiple_alerts_share_visit/.test(error.message)) throw new ReprogramacaoError(MULTIPLOS_ALERTAS, "rejected");
+          if (code === "PT409" && /origin_without_plan_unsupported/.test(error.message)) throw new ReprogramacaoError(SEM_PLANO, "rejected");
           if (code === "PT409" && /plan_notice_incoherent|ambiguous_plan/.test(error.message)) throw new ReprogramacaoError(PLANO_INCOERENTE, "rejected");
           if (code === "PT409" || /conflict|conflito/i.test(error.message)) throw new ReprogramacaoError(conflict, "rejected");
           // Never fall back to a direct write or to v1 for an origin alert.
@@ -86,7 +88,7 @@ export function useReprogramarMonitoramento() {
           const modo = result.modo;
           if (Object.keys(result).length !== 10 || result.registro_origem_id !== args.origemId ||
             typeof result.visita_atualizada !== "boolean" ||
-            !(modo === "somente_alerta" ? result.visita_atualizada === false : (modo === "plano_visita_aviso_alerta" || modo === "visita_alerta") && result.visita_atualizada === true) || result.request_id !== args.requestId ||
+            !(modo === "somente_alerta" ? result.visita_atualizada === false : modo === "plano_visita_aviso_alerta" && result.visita_atualizada === true) || result.request_id !== args.requestId ||
             !isTimestamp(result.alerta_updated_at) ||
             result.visit_version !== (result.visita_atualizada ? (args.expectedVisitVersion as number) + 1 : args.expectedVisitVersion)) throw unconfirmed();
         } else if (Object.keys(result).length !== 5 || !(result.registro_origem_id === null || isUuid(result.registro_origem_id))) {

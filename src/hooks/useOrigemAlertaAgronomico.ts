@@ -11,6 +11,7 @@ export interface AlertaVinculavel {
 export class OrigemAlertaError extends Error {
   constructor(message: string, public readonly outcome: "rejected" | "uncertain" | "unavailable") { super(message); }
 }
+export const PLANO_PRIMEIRO = "Salve/revise primeiro o plano de monitoramento existente desta visita (plano, data e aviso coerentes). Nada foi alterado.";
 export const ORIGEM_INDISPONIVEL = "O vínculo com alerta agronômico ainda não está disponível neste ambiente. Nada foi alterado.";
 const unavailable = "Não foi possível acessar esta visita ou alerta. Verifique seu acesso.";
 const conflict = "O alerta ou a visita foram alterados. Atualize antes de confirmar novamente.";
@@ -73,6 +74,7 @@ export function useVincularOrigemAlerta(registroId: string) {
           if (absent(code)) throw new OrigemAlertaError(ORIGEM_INDISPONIVEL, "unavailable");
           if (["42501", "PT403", "PT404", "P0002"].includes(code)) throw new OrigemAlertaError(unavailable, "rejected");
           if (code === "PT409" && /visit_already_has_origin_alert/.test(error.message)) throw new OrigemAlertaError("Esta visita já é origem de outro alerta aberto. Só um alerta pode sincronizar a data do plano.", "rejected");
+          if (code === "PT409" && /origin_requires_saved_plan/.test(error.message)) throw new OrigemAlertaError(PLANO_PRIMEIRO, "rejected");
           if (code === "PT409") throw new OrigemAlertaError(conflict, "rejected");
           if (code === "22023" && /origin_date_mismatch/.test(error.message)) throw new OrigemAlertaError("A data do alerta difere da próxima avaliação desta visita. Reprograme o alerta para a mesma data antes de vincular.", "rejected");
           if (code === "22023") throw new OrigemAlertaError("Este alerta não pertence à mesma fazenda e talhão da visita.", "rejected");

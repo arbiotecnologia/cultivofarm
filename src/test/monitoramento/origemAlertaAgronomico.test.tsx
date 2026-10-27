@@ -35,7 +35,7 @@ it("visita finalizada: envelope sem atualização mantém a mesma versão", asyn
   const h = renderHook(() => useReprogramarMonitoramento(), { wrapper: wrap() });
   await act(async () => { await h.result.current.mutateAsync(args); });
 });
-it.each([[{ visit_version: 3 }], [{ registro_origem_id: ALERTA }], [{ request_id: VISITA }], [{ extra: 1 }], [{ visita_atualizada: "sim" }], [{ modo: "somente_alerta" }], [{ visita_atualizada: false, visit_version: 3 }], [{ modo: undefined }]])("envelope v2 inválido %j não confirma", async o => {
+it.each([[{ visit_version: 3 }], [{ registro_origem_id: ALERTA }], [{ request_id: VISITA }], [{ extra: 1 }], [{ visita_atualizada: "sim" }], [{ modo: "somente_alerta" }], [{ visita_atualizada: false, visit_version: 3 }], [{ modo: undefined }], [{ modo: "visita_alerta" }]])("envelope v2 inválido %j não confirma", async o => {
   s.rpc.mockResolvedValue({ data: v2(o), error: null });
   const h = renderHook(() => useReprogramarMonitoramento(), { wrapper: wrap() });
   await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("não confirmada"); });
@@ -120,13 +120,13 @@ it("UI: incerteza mantém a mesma chave na nova confirmação", async () => {
   await act(async () => { fireEvent.click(await screen.findByRole("button", { name: "Confirmar vínculo" })); });
   expect(keys).toHaveLength(2); expect(keys[0]).toBe(keys[1]);
 });
-it.each([["multiple_alerts_share_visit", "Mais de um alerta"], ["plan_notice_incoherent", "não estão coerentes"]])("PT409 %s mostra bloqueio claro sem repetir", async (msg, text) => {
+it.each([["multiple_alerts_share_visit", "Mais de um alerta"], ["plan_notice_incoherent", "não estão coerentes"], ["origin_without_plan_unsupported", "não é suportada"]])("PT409 %s mostra bloqueio claro sem repetir", async (msg, text) => {
   s.rpc.mockResolvedValue({ data: null, error: { code: "PT409", message: msg } });
   const h = renderHook(() => useReprogramarMonitoramento(), { wrapper: wrap() });
   await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow(text); });
   expect(s.rpc).toHaveBeenCalledTimes(1);
 });
-it.each([["PT409", "visit_already_has_origin_alert", "já é origem"], ["22023", "origin_date_mismatch", "Reprograme o alerta"]])("vínculo %s/%s explica política", async (code, msg, text) => {
+it.each([["PT409", "visit_already_has_origin_alert", "já é origem"], ["22023", "origin_date_mismatch", "Reprograme o alerta"], ["PT409", "origin_requires_saved_plan", "Salve/revise primeiro o plano"]])("vínculo %s/%s explica política", async (code, msg, text) => {
   s.rpc.mockResolvedValue({ data: null, error: { code, message: msg } });
   const h = renderHook(() => useVincularOrigemAlerta(VISITA), { wrapper: wrap() });
   await act(async () => { await expect(h.result.current.mutateAsync({ alerta, registroId: VISITA, expectedVisitVersion: 3, requestId: KEY })).rejects.toThrow(text); });
