@@ -815,34 +815,6 @@ export async function getPendingCampoByRegistro(
   });
 }
 
-export async function updatePendingCampo(
-  localRegistroId: string,
-  patch: Partial<PendingCampo>,
-): Promise<void> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CAMPO, "readwrite");
-    const store = tx.objectStore(STORE_CAMPO);
-    const getReq = store.get(localRegistroId);
-    getReq.onsuccess = () => {
-      const item = getReq.result as PendingCampo | undefined;
-      if (item) store.put({ ...item, ...patch });
-    };
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-export async function removePendingCampo(localRegistroId: string): Promise<void> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CAMPO, "readwrite");
-    tx.objectStore(STORE_CAMPO).delete(localRegistroId);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
 export async function getPendingCampos(): Promise<PendingCampo[]> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
