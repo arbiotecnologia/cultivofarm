@@ -194,10 +194,10 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   sql(f"UPDATE monitoramento_avisos SET data_referencia='2026-11-06' WHERE id='{nid}';")
   err(resched(),'PT409','notice date incoherent with plan rejected')
   sql(f"UPDATE monitoramento_avisos SET data_referencia='2026-11-05' WHERE id='{nid}';")
-  sql(f"UPDATE alertas_agronomicos SET registro_origem_id='{V}' WHERE id='{ALX}';")  # legacy data: 2 alerts share visit
+  sql(f"ALTER TABLE alertas_agronomicos DISABLE TRIGGER trg_alert_origin_sync; UPDATE alertas_agronomicos SET registro_origem_id='{V}' WHERE id='{ALX}'; ALTER TABLE alertas_agronomicos ENABLE TRIGGER trg_alert_origin_sync;")  # legacy data: 2 alerts share visit
   err(resched(),'PT409','two alerts sharing visit block synchronization')
   ok(f"SELECT data_vencimento='2026-11-20' FROM alertas_agronomicos WHERE id='{ALX}';",'other alert not modified')
-  sql(f"UPDATE alertas_agronomicos SET registro_origem_id=NULL WHERE id='{ALX}';")
+  sql(f"ALTER TABLE alertas_agronomicos DISABLE TRIGGER trg_alert_origin_sync; UPDATE alertas_agronomicos SET registro_origem_id=NULL WHERE id='{ALX}'; ALTER TABLE alertas_agronomicos ENABLE TRIGGER trg_alert_origin_sync;")
   ok(snap.replace('SELECT md5','SELECT '+repr(s0)[0]+s0+repr(s0)[0]+'=md5',1),'ambiguity rejections fully atomic')
   res=val(resched())
   ok(f"SELECT version=3 AND data_proxima_visita='2026-11-20' AND md5(observacoes_tecnicas)='{expected}' AND observacoes_tecnicas LIKE 'Notas preservadas%Itens: Nutrição, Estande%' FROM registros_consultor WHERE id='{V}';",'plan text byte-preserved except date line')
@@ -221,11 +221,11 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   sql(f"SET test.actor='{C}'; SELECT public.rpc_salvar_plano_monitoramento_visita_v1('{V}',3,'{p3}'::jsonb,'{k(903)}');")
   ok(f"SELECT r.version=4 AND r.observacoes_tecnicas LIKE '%Gatilhos: Avaliar vigor%Próxima Avaliação: 2026-11-20%' AND a.data_vencimento=r.data_proxima_visita FROM registros_consultor r, alertas_agronomicos a WHERE r.id='{V}' AND a.id='{AL}';",'same-date plan edit keeps alert synchronized')
   # --- visit without plan / finalized / no origin ---
-  sql(f"UPDATE alertas_agronomicos SET registro_origem_id='{VN}' WHERE id='{AL3}';")  # legacy origin without plan
+  sql(f"ALTER TABLE alertas_agronomicos DISABLE TRIGGER trg_alert_origin_sync; UPDATE alertas_agronomicos SET registro_origem_id='{VN}' WHERE id='{AL3}'; ALTER TABLE alertas_agronomicos ENABLE TRIGGER trg_alert_origin_sync;")  # legacy origin without plan
   vn0=val(f"SELECT md5(row(r.*)::text)||(SELECT md5(row(a.*)::text) FROM alertas_agronomicos a WHERE a.id='{AL3}') FROM registros_consultor r WHERE r.id='{VN}';")
   err(resched(a=AL3,d='2026-11-12',key=k(102)),'PT409','legacy origin without plan: reschedule rejected')
   ok(f"SELECT md5(row(r.*)::text)||(SELECT md5(row(a.*)::text) FROM alertas_agronomicos a WHERE a.id='{AL3}')='{vn0}' FROM registros_consultor r WHERE r.id='{VN}';",'no-plan rejection atomic, no notice fabricated')
-  sql(f"UPDATE alertas_agronomicos SET registro_origem_id='{VF}' WHERE id='{AL2}';")
+  sql(f"ALTER TABLE alertas_agronomicos DISABLE TRIGGER trg_alert_origin_sync; UPDATE alertas_agronomicos SET registro_origem_id='{VF}' WHERE id='{AL2}'; ALTER TABLE alertas_agronomicos ENABLE TRIGGER trg_alert_origin_sync;")
   fin=val(f"SELECT md5(row(observacoes_tecnicas,data_proxima_visita,version)::text) FROM registros_consultor WHERE id='{VF}';")
   res=val(resched(a=AL2,d='2026-11-15',key=k(103)))
   ok(f"SELECT md5(row(observacoes_tecnicas,data_proxima_visita,version)::text)='{fin}' FROM registros_consultor WHERE id='{VF}';",'finalized visit untouched')
@@ -288,6 +288,29 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   g.stdin.write('COMMIT;\n'); g.stdin.close(); g.wait(timeout=10)
   if r.returncode==0 or '55P03' not in r.stderr or el>6: raise AssertionError(f'bounded {el} {r.stderr}')
   checks+=1; print(f'PASS gate wait bounded by lock_timeout 55P03 ({el:.1f}s)')
+  # --- direct-write closure (synthetic authenticated with table UPDATE/INSERT, as LIVE) ---
+  sql("GRANT INSERT,UPDATE ON alertas_agronomicos TO authenticated;")
+  au=lambda q: f"SET ROLE authenticated; SET test.actor='{G}'; {q}"
+  err(au(f"UPDATE alertas_agronomicos SET data_vencimento='2026-12-30' WHERE id='{AL}';"),'PT409','direct date change on linked alert denied')
+  err(au(f"UPDATE alertas_agronomicos SET registro_origem_id=NULL WHERE id='{AL}';"),'PT409','direct unlink denied')
+  err(au(f"BEGIN; UPDATE alertas_agronomicos SET registro_origem_id=NULL WHERE id='{AL}'; UPDATE alertas_agronomicos SET data_vencimento='2026-12-30' WHERE id='{AL}'; COMMIT;"),'PT409','unlink-then-date denied')
+  err(au(f"UPDATE alertas_agronomicos SET registro_origem_id='{VN}' WHERE id='{AL}';"),'PT409','direct relink denied')
+  err(au(f"UPDATE alertas_agronomicos SET registro_origem_id='{V}' WHERE id='{ALN}';"),'PT409','direct link of unlinked alert denied')
+  err(au(f"UPDATE alertas_agronomicos SET talhao_id='{TA2}' WHERE id='{AL}';"),'PT409','direct plot change on linked alert denied')
+  err(au(f"INSERT INTO alertas_agronomicos(id,fazenda_id,talhao_id,tipo_alerta,nivel_risco,status,updated_at,registro_origem_id) VALUES(gen_random_uuid(),'{FA}','{TA}','praga','alto','monitoramento',now(),'{V}');"),'PT409','direct INSERT with origin denied')
+  err(au(f"INSERT INTO platform_private.alert_origin_write_tickets VALUES(txid_current(),'{AL}');"),'42501','ticket forge denied')
+  err(f"SET ROLE service_role; UPDATE alertas_agronomicos SET data_vencimento='2026-12-30' WHERE id='{AL}';",'PT409','no role escape (service_role) for linked date')
+  ok(f"SELECT data_vencimento='2026-11-24' AND registro_origem_id='{V}' FROM alertas_agronomicos WHERE id='{AL}';",'linked alert unchanged after direct attempts')
+  sql(au(f"UPDATE alertas_agronomicos SET nivel_risco='alto' WHERE id='{AL}';"))
+  ok(f"SELECT nivel_risco='alto' FROM alertas_agronomicos WHERE id='{AL}';",'regression: risk update on linked alert allowed (edge function path)')
+  sql(au(f"UPDATE alertas_agronomicos SET data_vencimento='2026-12-02' WHERE id='{ALT}';"))
+  ok(f"SELECT data_vencimento='2026-12-02' FROM alertas_agronomicos WHERE id='{ALT}';",'regression: date change on unlinked alert allowed')
+  sql(au(f"INSERT INTO alertas_agronomicos(id,fazenda_id,talhao_id,tipo_alerta,nivel_risco,status,updated_at) VALUES(gen_random_uuid(),'{FA}','{TA}','praga','alto','monitoramento',now());"))
+  checks+=1; print('PASS regression: INSERT without origin allowed (climatic creation shape)')
+  sql(au(f"UPDATE alertas_agronomicos SET status='encerrado' WHERE id='{AL2}';"))
+  ok(f"SELECT status='encerrado' FROM alertas_agronomicos WHERE id='{AL2}';",'regression: closing linked alert allowed (status RPC shape)')
+  err(au(f"UPDATE alertas_agronomicos SET status='monitoramento' WHERE id='{AL2}';"),'PT409','reopening closed linked alert denied')
+  ok("SELECT count(*)=0 FROM platform_private.alert_origin_write_tickets;",'no alert tickets left after canonical writers')
   print('TOTAL',checks)
  finally:
   if started: subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'stop','-m','immediate'],capture_output=True)
