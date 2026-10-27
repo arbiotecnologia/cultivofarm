@@ -1,0 +1,31 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "inactive": true,
+  "targets": [
+    {
+      "oid": 120766,
+      "signature": "platform_update_catalog_label(uuid,timestamp with time zone,text,text,uuid)",
+      "md5": "75eaa1d0307e9033a6f3ba8e208ee488",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "config": [
+        "search_path=\"\""
+      ],
+      "security_definer": true,
+      "candidate_md5": "fdf3adc335996bc4ff90f7a57b8f4370"
+    },
+    {
+      "oid": 120767,
+      "signature": "platform_set_catalog_label_active(uuid,timestamp with time zone,boolean,text,uuid)",
+      "md5": "561d3175812dba477a538992d5d02a01",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "config": [
+        "search_path=\"\""
+      ],
+      "security_definer": true,
+      "candidate_md5": "55493f9699ec039057915656355e35ae"
+    }
+  ],
+  "residual_40001": "platform_private.catalog_entity_replay bc194d354de83bb0a362bddd0ceb66e6 catalog_entity_conflict (inalterado)"
+}
