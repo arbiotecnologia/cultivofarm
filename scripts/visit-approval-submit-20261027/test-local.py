@@ -107,6 +107,10 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         post = re.search(r'DO \$post\$.*?\$post\$;', cand, flags=re.S).group(0)
         cand_body = cand_body.replace(post, '')
         sql(cand_body)
+        # Synthetic schema: substitute LIVE fingerprints by synthetic ones (LIVE values checked by preflight/postflight on hosted).
+        fp = sql("SELECT coalesce(md5(string_agg(t.tgname||':'||md5(pg_get_triggerdef(t.oid))||':'||md5(pg_get_functiondef(t.tgfoid)),'|' ORDER BY t.tgname)),'') FROM pg_trigger t WHERE t.tgrelid='public.registros_consultor'::regclass AND NOT t.tgisinternal;").stdout.strip()
+        cm = sql("SELECT md5(pg_get_functiondef('public.can_manage_technical_visit(uuid,uuid)'::regprocedure));").stdout.strip()
+        post = post.replace("<> '312a766a023f2d86e06d5641a7593f93'", f"IS DISTINCT FROM nullif('{fp}','')").replace("d95c2c2b34af117d467d7d4b2b775002", cm)
         sql(post)
         checks += 1; print('PASS POST block accepts candidate (config/ACL/body markers)')
         ok("SELECT proconfig::text='{search_path=public,lock_timeout=3s}' AND prosecdef FROM pg_proc WHERE oid='public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure;", 'definer + search_path + lock_timeout 3s')
@@ -130,6 +134,17 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         err(rpc(G, V(4), 3), '42501', 'gestor without creator/resp/client link keeps original restriction')
         err(f"SET ROLE authenticated; RESET test.actor; SELECT public.rpc_enviar_visita_aprovacao('{V(4)}',3);", '42501', 'unauthenticated')
         err(f"SET ROLE anon; SET test.actor='{A}'; SELECT public.rpc_enviar_visita_aprovacao('{V(4)}',3);", '42501', 'anon EXECUTE denied')
+        # Three-valued logic: NULL created_by/consultor_responsavel + gestor without client link must be denied.
+        sql(f"INSERT INTO registros_consultor(id,created_by,consultor_responsavel,cliente_id,status,version) VALUES ('{V(95)}',NULL,NULL,'{CA}','finalizado',3),('{V(96)}',NULL,'{A}','{CA}','finalizado',3),('{V(97)}','{A}',NULL,'{CA}','finalizado',3);")
+        for n, label in ((95, 'null created+null responsavel'), (96, 'null created'), (97, 'null responsavel')):
+            err(rpc(G, V(n), 3), '42501', f'gestor no link, {label} denied (NULL never authorizes)')
+        ok(f"SELECT bool_and(status='finalizado' AND version=3) FROM registros_consultor WHERE id IN ('{V(95)}','{V(96)}','{V(97)}');", 'NULL-scope rows unchanged')
+        # Out-of-scope actor never locks/waits on the row (original predicate in SELECT FOR UPDATE).
+        p, send = session(); send(f"BEGIN; SELECT 1 FROM registros_consultor WHERE id='{V(95)}' FOR UPDATE;"); time.sleep(0.3)
+        t0 = time.time(); r = sql(rpc(G, V(95), 3), False); dt = time.time() - t0
+        send('ROLLBACK;'); p.stdin.close(); p.wait()
+        if r.returncode == 0 or '42501' not in r.stderr or dt > 1.5: raise AssertionError(f'no-lock {dt} {r.stderr}')
+        checks += 1; print(f'PASS out-of-scope gestor denied without waiting on row lock ({dt:.2f}s)')
         sql(f"UPDATE client_links SET active=false WHERE user_id='{A}';")
         err(rpc(A, V(4), 3), '42501', 'revoked client link denied')
         sql(f"UPDATE client_links SET active=true; UPDATE actors SET ready=false WHERE id='{A}';")

@@ -8,7 +8,7 @@ UNION ALL SELECT 'dep_has_role', md5(pg_get_functiondef('public.has_role(uuid,ap
 UNION ALL SELECT 'dep_client_access', md5(pg_get_functiondef('public.has_active_user_cliente_access(uuid,uuid,text[])'::regprocedure))='e099f51d128620e5a68cc3e9001dd976'
 UNION ALL SELECT 'dep_actor_ready', md5(pg_get_functiondef('public.technical_actor_ready(uuid)'::regprocedure))='b5d0994b6eb976b14122cd2a1ec798cf'
 UNION ALL SELECT 'gate_singleton', (SELECT count(*) FROM cf_user_guards_v1.state WHERE singleton)=1
-UNION ALL SELECT 'registros_triggers_10', (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.registros_consultor'::regclass AND NOT tgisinternal)=10
+UNION ALL SELECT 'registros_triggers_fingerprint_9', (SELECT md5(string_agg(t.tgname||':'||md5(pg_get_triggerdef(t.oid))||':'||md5(pg_get_functiondef(t.tgfoid)),'|' ORDER BY t.tgname)) FROM pg_trigger t WHERE t.tgrelid='public.registros_consultor'::regclass AND NOT t.tgisinternal)='312a766a023f2d86e06d5641a7593f93'
 UNION ALL SELECT 'trg_immutability', md5(pg_get_triggerdef((SELECT oid FROM pg_trigger WHERE tgrelid='public.registros_consultor'::regclass AND tgname='trg_enforce_visit_immutability')))='1fe074b9b0e279b22896b9d718ea8696'
 UNION ALL SELECT 'trg_validate_status', md5(pg_get_triggerdef((SELECT oid FROM pg_trigger WHERE tgrelid='public.registros_consultor'::regclass AND tgname='trg_validate_registro_status')))='e8f0928cae41e22416e0931060071b4a'
 UNION ALL SELECT 'trg_plan_preservation', md5(pg_get_triggerdef((SELECT oid FROM pg_trigger WHERE tgrelid='public.registros_consultor'::regclass AND tgname='trg_visit_plan_preservation')))='b5eb400daf41fe22f205b8885334fe0c'

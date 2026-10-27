@@ -15,7 +15,7 @@ Estado: **INATIVO**. Nenhum SQL hospedado executado; nada publicado. Aplicação
 - Não altera fiscal, flags, gatilhos, permissões, dependências; não habilita novo acesso (interseção de predicados preservada).
 
 ## Arquivos
-`preflight.sql` (pins hash/ACL/config/dependências/gatilhos, read-only) · `candidate.sql.review` (com DO $pre$/$post$ fail-closed) · `postflight.sql` · `rollback-containment.sql.review` (deny-only: revoga EXECUTE de authenticated; **não** restaura 40001) · `test-local.py` · `results.txt` · `delta.diff` · `SHA256SUMS`.
+`preflight.sql` (pins hash/ACL/config/dependências/gatilhos, read-only) · `candidate.sql.review` (com DO $pre$/$post$ fail-closed) · `postflight.sql` · `rollback-containment.sql.review` (deny-only: revoga EXECUTE de authenticated; **não** restaura 40001) · `test-local.py` · `results.txt` · `delta-sql.diff` (SQL, implantável independente) · `delta-frontend.diff` (versionável separado) · `SHA256SUMS`.
 
 ## Testes — SINTÉTICOS (PostgreSQL descartável, Auth sintética, helpers stub)
 38 checks: PRE reproduz 40001 e aprovação após revogação durante espera de linha; positivos (responsável, admin, tenant B); negativos (CAS nulo/0/antigo/futuro, já enviado, rascunho, cross-tenant A↔B, inexistente, gestor sem vínculo, sem auth, anon, vínculo revogado, ator inativo) atômicos e sem log; concorrência com conexões reais:
@@ -35,3 +35,9 @@ preflight → aplicar → postflight → A/B: próprio 200; cruzado 42501; CAS n
 `rpc_salvar_campo_visita`: admin global cacheado; SELECT por ID sem escopo antecipado; CAS por `<` sem lock. Registrado para lote próprio.
 
 Pendentes: contabilidade real; suporte SU-518022 adiado. Monitoramento bfcfdbcd não reaberto.
+
+## Revisão 6ee91fb4 (NO-GO) — correções
+1. Preflight/candidato/postflight: contagem fabricada (10) substituída pelo fingerprint real dos **9** gatilhos não internos (nome + def + corpo da função) `312a766a023f2d86e06d5641a7593f93`, lido LIVE read-only.
+2. Lógica de três valores: todo predicado de autorização usa `COALESCE(...,false) IS NOT TRUE`; `created_by`/`consultor_responsavel` NULL nunca autorizam. O predicado original (admin fresco/created_by/responsável/vínculo) voltou ao `SELECT ... FOR UPDATE`, então ator fora do escopo não trava a linha. Testes: gestor sem vínculo com created NULL, responsável NULL e ambos NULL → 42501; gestor fora do escopo negado sem esperar lock de linha. Total 43 checks SINTÉTICOS.
+3. Wizard: `useStorageAccessScope` (ator/tenant/roles/época/visita/montagem) capturado por requisição e revalidado após RPC e após invalidações, antes de toast/navigate; catch e finally pertencem à tentativa (ticket próprio). Leituras de registro/contagens com chave escopada e habilitadas só com sessão pronta. CAS exige `Number.isSafeInteger > 0`; sucesso exige envelope com id, status alvo e `version = esperado + 1` exatos (validado contra `rpc_finalizar_visita_v2` LIVE, que retorna o mesmo formato).
+Hash POST esperado do corpo: `b053b1432864f30409b2043cd345e96c` (banco descartável). Baseline LIVE continua `d875e3ef...`. Fixtures A `700add6c...`/B `c4c5c4db...` não foram tocadas.
