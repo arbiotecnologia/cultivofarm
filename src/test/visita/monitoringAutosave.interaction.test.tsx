@@ -60,6 +60,7 @@ it("abrir página real com plano e conduta não grava após hidratação nem ap�
 });
 it("edição real de conduta autosalva com CAS observado e mantém plano exato, descrição e conduta", async () => {
   mount(); await waitFor(() => expect(screen.getAllByPlaceholderText("Anotações gerais da visita")[0]).toHaveValue("Conduta original")); await settle();
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   fireEvent.change(screen.getAllByPlaceholderText("Anotações gerais da visita")[0], { target: { value: "Conduta editada" } });
   await elapse(); await waitFor(() => expect(s.writes).toHaveLength(1));
   expect(s.writes[0].version).toBe(2); expect(monitoringBlock(s.observations)).toBe(block);
@@ -76,7 +77,9 @@ it("salvar plano -> onUpdate/refetch não dispara autosave de hidratação", asy
 });
 it("autosave armado antes do plano não adota versão refetchada nem perde bloco após RPC", async () => {
   mount(); await waitFor(() => expect(screen.getAllByPlaceholderText("Anotações gerais da visita")[0]).toHaveValue("Conduta original")); await settle();
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   fireEvent.change(screen.getAllByPlaceholderText("Anotações gerais da visita")[0], { target: { value: "Edição ainda não enviada" } });
+  vi.useRealTimers();
   fireEvent.click(screen.getAllByRole("button", { name: "Editar Plano" })[0]);
   const input = screen.getByRole("dialog").querySelector('input[type="date"]'); if (!input) throw new Error("date input missing");
   fireEvent.change(input, { target: { value: "2026-11-07" } }); fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));

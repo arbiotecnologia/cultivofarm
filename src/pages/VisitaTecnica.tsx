@@ -422,12 +422,13 @@ export default function VisitaTecnica() {
 
     // Carregar diagnósticos da nova tabela ou converter legados
     const loadDiagnostics = async () => {
-      const { data: existingDiag } = await supabase
+      const { data: existingDiag, error } = await supabase
         .from("visita_diagnosticos")
         .select("*")
         .eq("registro_id", v.id)
         .order("created_at", { ascending: true });
       if (!current()) return;
+      if (error) { setContentConflict("Não foi possível carregar os diagnósticos. A visita não será salva automaticamente."); return; }
       const cleanDescription = stripPlanoRetorno(stripPlanoMonitoramento(parseConduta(parseNotes(v.observacoes_tecnicas ?? "").clean).clean));
       if (existingDiag && existingDiag.length > 0) {
         setDiagnosticos(existingDiag.map(d => ({
