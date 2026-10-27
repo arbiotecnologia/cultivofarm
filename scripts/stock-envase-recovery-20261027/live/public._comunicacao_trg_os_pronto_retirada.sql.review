@@ -1,0 +1,15 @@
+CREATE OR REPLACE FUNCTION public._comunicacao_trg_os_pronto_retirada()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_idem text;
+BEGIN
+  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status = 'pronto_entrega'::public.status_os THEN
+    v_idem := 'os_pronto_retirada:ordens_servico:' || NEW.id::text;
+    PERFORM public._comunicacao_publish_system_event(
+      'produto_pronto_retirada','ordens_servico', NEW.id, '{}'::jsonb, v_idem);
+  END IF;
+  RETURN NEW;
+END$function$;

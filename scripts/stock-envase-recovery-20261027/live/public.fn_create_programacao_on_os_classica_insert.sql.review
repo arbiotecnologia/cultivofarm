@@ -1,0 +1,24 @@
+CREATE OR REPLACE FUNCTION public.fn_create_programacao_on_os_classica_insert()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NEW.status::text NOT IN ('aberta','aprovada','programada') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.produto_id IS NULL AND NEW.microrganismo_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.programacao_producao WHERE ordem_servico_id = NEW.id) THEN
+    RETURN NEW;
+  END IF;
+  INSERT INTO public.programacao_producao
+    (produto_id, microrganismo_id, volume_necessario, data_programada, status, ordem_servico_id)
+  VALUES
+    (NEW.produto_id, NEW.microrganismo_id, NEW.volume_total_ml,
+     COALESCE(NEW.data_programada, CURRENT_DATE), 'aguardando', NEW.id);
+  RETURN NEW;
+END;
+$function$;

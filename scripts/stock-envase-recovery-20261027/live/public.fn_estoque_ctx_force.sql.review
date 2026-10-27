@@ -1,0 +1,9 @@
+CREATE OR REPLACE FUNCTION public.fn_estoque_ctx_force(p_ctx jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  PERFORM set_config('app.estoque_mov_ctx', COALESCE(p_ctx, '{}'::jsonb)::text, true);
+END; $function$;

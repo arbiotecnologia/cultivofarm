@@ -1,0 +1,18 @@
+CREATE OR REPLACE FUNCTION public.tg_protect_os_structural_fields()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NEW.origem IS DISTINCT FROM OLD.origem
+     OR NEW.partner_order_id IS DISTINCT FROM OLD.partner_order_id
+     OR NEW.partner_order_item_id IS DISTINCT FROM OLD.partner_order_item_id
+     OR NEW.produto_id IS DISTINCT FROM OLD.produto_id
+     OR NEW.numero_os IS DISTINCT FROM OLD.numero_os
+  THEN
+    RAISE EXCEPTION 'Campos estruturais da OS (origem, vínculo B2B, produto, número) não podem ser alterados.';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
