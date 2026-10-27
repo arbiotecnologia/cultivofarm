@@ -1,16 +1,16 @@
 # F2-B — auditoria e preparação revisável
 
 ## 27/10 01:03 — bloqueios independentes 35815468 (sem produção)
-- [ ] Separar display autorizado/draft, renovar revisão após sucesso e recuperar rejeição definitiva com consulta+confirmação explícitas, mantendo incerteza fechada.
-- [ ] Montar editor no fluxo existente rascunho/em_andamento e preservar finalizadas readonly; origem do aviso visível sem alegar alerta agronômico.
-- [ ] Data São Paulo após replay, testes regressivos, pacote/diffs/hashes e divergência de base fora de escopo antes de deploy.
+- [x] Display autorizado/draft separados, revisão renovada após sucesso; rejeição definitiva com consulta+confirmação explícitas, incerteza conserva chave.
+- [x] Editor no fluxo existente rascunho/em_andamento; finalizadas readonly e aviso ligado à visita visível, sem alegar alerta agronômico.
+- [x] Data São Paulo após replay; 26checksPG sintético, página/componente/hooks simulados e Chromium quatro estados. Pacote/diffs/hashes e base divergente documentados.
 - [ ] Instalação/revisão/JWT real dependem do auditor; contabilidade e SU-518022 preservadas.
 
 ## 27/10 00:54 — origem vinculada no plano canônico (autorizado, SQL INATIVO)
 - [x] Contratos LIVE capturados somente leitura no ref canônico; decisão: plano textual + aviso derivado por registro_consultor_id, sem alerta agronômico inventado; SQL candidato/PRE/POST/contenção em scripts/visit-monitoring-plan-20261027.
 - [x] Editor sem writes diretos/refetch no save; revisão e campos do mesmo envelope observado, abort/scope/duplo clique/parser JSONB/erro persistente. 131/131 testes em9arquivos;23checksPG/Auth sintética/schema reduzido; build automático OK01:01:27, diffcheckOK.
 - [ ] Revisão independente/implantação e homologação JWT A/B, origem e revogação dependem do auditor. Contabilidade e SU-518022 permanecem pendentes.
-- [ ] Contradição atual do caller: editor montado só em visita finalizada, mas conteúdo é imutável; nenhuma liberação desse status. Revisão do fluxo de ajuste autorizado e eventual promoção dependem do proprietário/auditor; RPC nova ainda não instalada.
+- [x] Contradição do caller corrigida localmente na revisão 01:03: editor também no ramo editável, finalizadas imutáveis; RPC nova ainda não instalada e promoção depende do auditor.
 
 ## 27/10 00:05 — clientes revisão fiscal e reprogramação
 - [x] 00:19 auditor confirmou aplicações fiscal224ab7944abd13190fe8ea1044216218 e monitoringb32bf163ed7ccb989f4f0b653827d825; não reaplicar; contagem atual42. Parser completo conciliado,14 regressões adicionais,61/61 em3arquivos PASS, build automático OK00:21:46 e diffcheck OK; caminhos criação/status documentados, sem fixture/SQL/publicação.
