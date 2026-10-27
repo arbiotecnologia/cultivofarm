@@ -67,6 +67,7 @@ GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   sql(schema)
   # Target bodies and dependencies captured LIVE. No mocked stock motor/ledger.
   load=['public.fn_estoque_ctx_read','public.fn_estoque_ctx_open','public.fn_estoque_ctx_force','public.fn_estoque_ctx_close','public.fn_estoque_pode_operar','public.fn_estoque_fingerprint','platform_private.stock_motor_actor','platform_private.stock_motor_item','platform_private.stock_motor_refs','platform_private.stock_motor_context_set','platform_private.stock_p1_lote_owned','public.stock_p1_movement_owned','platform_private.stock_p1_guard','platform_private.stock_p1_movement_guard','public.fn_estoque_produto_guard','public.log_estoque_movimentacao','public.fn_ledger_append_only','public.guard_tenant_organization_id','public.lote_volume_envasado','public.fn_validate_envase_volume','public.fn_validate_envase_cq','public.fn_envase_material_imutavel','public.fn_cockpit_ctx_programacao','public.fn_cockpit_is_gestor','public.rpc_estoque_operar_v1','public.rpc_estoque_reservar_v1','public.rpc_cockpit_registrar_envase_v1']
+  sql(source['platform_private.stock_p1_movement_owned']['definition'])
   for n in load:sql(source[n]['definition'])
   for n in ['public.fn_cockpit_norm_origem','public.fn_cockpit_assert_operador_origem']:
    sql((H.parent/'os-delivery-reopening-20261027/live'/f'{n}.sql.review').read_text())
