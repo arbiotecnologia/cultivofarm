@@ -776,7 +776,7 @@ export async function finishPendingCampo(
       const item = req.result as PendingCampo | undefined;
       if (!item || item.revision !== claim.revision || item.attemptId !== claim.attemptId) return;
       if (outcome.remove) store.delete(claim.localRegistroId);
-      else store.put({ ...item, ...outcome.patch, revision: item.revision, attemptId: null, syncingAt: null });
+      else store.put({ ...item, ...(outcome as { patch: Partial<PendingCampo> }).patch, revision: item.revision, attemptId: null, syncingAt: null });
       done = true;
     };
     tx.oncomplete = () => resolve(done);
