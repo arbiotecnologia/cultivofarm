@@ -914,3 +914,4 @@
 - [ ] Etapas 3–9 do plano de correção do fluxo B2B; Etapa 5 autorizada em27/10 21:57UTC somente como pacote inativo/testes locais, sem aplicar/publicar.
 - [x] Etapa 5: fontes LIVE e pacote INATIVO scripts/os-delivery-reopening-20261027; endurecimento de3corpos sem GRANT cliente, PRE/POST/contenção e39checksPG sintéticos+49Vitest existentes. OS aprovação/programação já liberadas e preservadas; runtime intacto.
 - [ ] Etapa 5 reabertura NO-GO: composição real estoque/ledger/cobrança, matriz B2B e todos writers de revogação pendentes; release.sql.review recusa liberação. Sem instalação/publicação; contabilidade real/SU-518022 pendentes.
+- [ ] Estoque/envase 27/10 22:13: preparar dependências da entrega em pacote inativo, fontes LIVE/ACL/guards, candidato/PRE/POST/contenção e testes descartáveis; sem aplicação/publicação/alteração de sessões ou dados reais.
