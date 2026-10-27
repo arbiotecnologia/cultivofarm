@@ -111,7 +111,7 @@ it("resposta tardia após troca de época durante a RPC não é adotada nem limp
   typeFase("V4"); advance();
   await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
   mocks.auth.authzEpoch = 1;
-  view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />));
+  await act(async () => { view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />)); await new Promise((r) => setTimeout(r, 0)); });
   await act(async () => { rpc.resolve({ data: env(1), error: null }); await new Promise((r) => setTimeout(r, 20)); });
   expect(done).not.toHaveBeenCalled();
   const stored = await getPendingCampoByRegistro(local);
@@ -127,7 +127,7 @@ it("resposta tardia durante invalidations com troca de roles não navega", async
   typeFase("V4"); advance();
   await waitFor(() => expect(spy).toHaveBeenCalled());
   mocks.auth.roles = ["consultor_tecnico", "gestor"];
-  view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />));
+  await act(async () => { view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />)); await new Promise((r) => setTimeout(r, 0)); });
   await act(async () => { inv.resolve(); await new Promise((r) => setTimeout(r, 20)); });
   expect(done).not.toHaveBeenCalled();
 });
