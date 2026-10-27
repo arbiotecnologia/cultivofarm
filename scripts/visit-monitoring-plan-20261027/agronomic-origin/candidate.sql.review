@@ -57,6 +57,7 @@ DECLARE
   v_reg public.registros_consultor;
   v_receipt jsonb;
   v_updated timestamptz;
+  v_obs text;
   v_fp text := md5(jsonb_build_object('op','link_origin','alerta',p_alerta_id,'visit',p_registro_id,
     'alert_at',p_expected_alert_updated_at,'version',p_expected_visit_version)::text);
 BEGIN
@@ -114,12 +115,23 @@ BEGIN
       AND o.id<>p_alerta_id AND o.status::text<>'encerrado') THEN
     RAISE EXCEPTION 'visit_already_has_origin_alert' USING ERRCODE='PT409';
   END IF;
-  -- Date policy: linking never creates divergence; reprogram first so dates match.
-  IF v_reg.data_proxima_visita IS NOT NULL AND v_alerta.data_vencimento IS DISTINCT FROM v_reg.data_proxima_visita THEN
-    RAISE EXCEPTION 'origin_date_mismatch' USING ERRCODE='22023';
+  -- Supported scope only: one canonical plan block, present date, exactly one coherent notice.
+  -- Checked BEFORE any alert write; nothing is created automatically.
+  v_obs := coalesce(v_reg.observacoes_tecnicas,'');
+  IF (length(v_obs)-length(replace(v_obs,'[PLANO DE MONITORAMENTO]','')))/length('[PLANO DE MONITORAMENTO]')<>1
+    OR (length(v_obs)-length(replace(v_obs,'[FIM DO PLANO]','')))/length('[FIM DO PLANO]')<>1
+    OR position('[FIM DO PLANO]' in v_obs)<position('[PLANO DE MONITORAMENTO]' in v_obs)
+    OR v_reg.data_proxima_visita IS NULL
+    OR (SELECT count(*) FROM regexp_matches(substring(v_obs from '\[PLANO DE MONITORAMENTO\].*?\[FIM DO PLANO\]'),'(^|\n)Próxima Avaliação: [^\n]*','g'))<>1
+    OR substring(v_obs from '\[PLANO DE MONITORAMENTO\].*?\[FIM DO PLANO\]') !~ ('(^|\n)Próxima Avaliação: '||v_reg.data_proxima_visita::text||'(\n|$)')
+    OR (SELECT count(*) FROM public.monitoramento_avisos WHERE registro_consultor_id=p_registro_id AND tipo='plano_monitoramento')<>1
+    OR NOT EXISTS(SELECT 1 FROM public.monitoramento_avisos WHERE registro_consultor_id=p_registro_id AND tipo='plano_monitoramento'
+      AND data_referencia=v_reg.data_proxima_visita) THEN
+    RAISE EXCEPTION 'origin_requires_saved_plan' USING ERRCODE='PT409';
   END IF;
-  IF position('[PLANO DE MONITORAMENTO]' in coalesce(v_reg.observacoes_tecnicas,''))>0 AND v_reg.data_proxima_visita IS NULL THEN
-    RAISE EXCEPTION 'plan_date_missing' USING ERRCODE='PT409';
+  -- Date policy: linking never creates divergence; reprogram the alert first.
+  IF v_alerta.data_vencimento IS DISTINCT FROM v_reg.data_proxima_visita THEN
+    RAISE EXCEPTION 'origin_date_mismatch' USING ERRCODE='22023';
   END IF;
   -- Same farm and compatible plot; an alert without plot only matches by farm.
   IF v_reg.fazenda_id IS DISTINCT FROM v_alerta.fazenda_id
@@ -239,11 +251,12 @@ BEGIN
       IF v_notice IS NULL THEN RAISE EXCEPTION 'plan_notice_incoherent' USING ERRCODE='PT409'; END IF;
       INSERT INTO platform_private.visit_plan_write_tickets(transaction_id,registro_id,block,next_date)
         VALUES(txid_current(),v_reg.id,v_new_block,p_nova_data);
-    ELSIF EXISTS(SELECT 1 FROM public.monitoramento_avisos WHERE registro_consultor_id=v_reg.id AND tipo='plano_monitoramento') THEN
-      RAISE EXCEPTION 'plan_notice_incoherent' USING ERRCODE='PT409';
+    ELSE
+      -- Legacy origin without plan: generic writers are not all protected; refuse instead of claiming sync.
+      RAISE EXCEPTION 'origin_without_plan_unsupported' USING ERRCODE='PT409';
     END IF;
     UPDATE public.registros_consultor
-       SET observacoes_tecnicas=CASE WHEN v_block IS NULL THEN observacoes_tecnicas ELSE v_obs END,
+       SET observacoes_tecnicas=v_obs,
            data_proxima_visita=p_nova_data, version=p_expected_visit_version+1, updated_at=clock_timestamp()
      WHERE id=v_reg.id AND version=p_expected_visit_version
        AND public.can_manage_technical_visit(v_uid,id)
@@ -255,7 +268,7 @@ BEGIN
     END IF;
     DELETE FROM platform_private.visit_plan_write_tickets WHERE transaction_id=txid_current() AND registro_id=v_reg.id;
     v_visit_updated := true;
-    v_mode := CASE WHEN v_block IS NULL THEN 'visita_alerta' ELSE 'plano_visita_aviso_alerta' END;
+    v_mode := 'plano_visita_aviso_alerta';
   ELSIF v_alerta.registro_origem_id IS NOT NULL THEN
     -- Immutable visit: explicit alert-only mode; the visit/plan is NOT synchronized.
     v_version := v_reg.version;
