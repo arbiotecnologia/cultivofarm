@@ -289,7 +289,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   if r.returncode==0 or '55P03' not in r.stderr or el>6: raise AssertionError(f'bounded {el} {r.stderr}')
   checks+=1; print(f'PASS gate wait bounded by lock_timeout 55P03 ({el:.1f}s)')
   # --- direct-write closure (synthetic authenticated with table UPDATE/INSERT, as LIVE) ---
-  sql("GRANT INSERT,UPDATE ON alertas_agronomicos TO authenticated,service_role;")
+  sql("GRANT INSERT,UPDATE ON alertas_agronomicos TO authenticated,service_role; GRANT SELECT ON alertas_agronomicos TO service_role; GRANT USAGE ON SCHEMA public TO service_role;")
   au=lambda q: f"SET ROLE authenticated; SET test.actor='{G}'; {q}"
   err(au(f"UPDATE alertas_agronomicos SET data_vencimento='2026-12-30' WHERE id='{AL}';"),'PT409','direct date change on linked alert denied')
   err(au(f"UPDATE alertas_agronomicos SET registro_origem_id=NULL WHERE id='{AL}';"),'PT409','direct unlink denied')
