@@ -3,14 +3,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  status: "reprovado", canEdit: false, version: 15, from: vi.fn(), rpc: vi.fn(), update: vi.fn(), insert: vi.fn(), remove: vi.fn(),
+  status: "reprovado", canEdit: false, mobile: false, version: 15, from: vi.fn(), rpc: vi.fn(), update: vi.fn(), insert: vi.fn(), remove: vi.fn(),
   success: vi.fn(), error: vi.fn(), mode: "ok",
   auth: { user: { id: "fake-actor" }, profile: { id: "fake-profile", user_id: "fake-actor", organization_id: "fake-org", ativo: true }, role: "consultor_tecnico", roles: ["consultor_tecnico"], loading: false },
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: mocks.from, rpc: mocks.rpc } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
 vi.mock("@/hooks/useSystemConfig", () => ({ useSystemConfig: () => ({ config: {} }) }));
-vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => mocks.mobile }));
 vi.mock("@/hooks/useObjetivosVisita", () => ({ useObjetivosVisita: () => ({ data: [] }) }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn(), useParams: () => ({ id: "fake-visit" }), useSearchParams: () => [new URLSearchParams(), vi.fn()], Link: ({ children }: { children: React.ReactNode }) => <span>{children}</span> }));
 vi.mock("sonner", () => ({ toast: { success: mocks.success, error: mocks.error, info: vi.fn(), warning: vi.fn() } }));
@@ -36,7 +36,7 @@ function mount(node: React.ReactNode) {
   return render(<QueryClientProvider client={client}>{node}</QueryClientProvider>);
 }
 beforeEach(() => {
-  vi.clearAllMocks(); mocks.status = "reprovado"; mocks.canEdit = false; mocks.version = 15; mocks.mode = "ok";
+  vi.clearAllMocks(); mocks.status = "reprovado"; mocks.canEdit = false; mocks.mobile = false; mocks.version = 15; mocks.mode = "ok";
   mocks.auth.role = "consultor_tecnico"; mocks.auth.roles = ["consultor_tecnico"];
   mocks.rpc.mockImplementation(async (name: string) => ({ error: null, data: name === "rpc_listar_atendimentos_tecnicos_v1"
     ? { items: [{ id: "fake-visit", kind: "visita", status: "reprovado", can_edit: true, proxima_acao: "Revisar e reenviar" }] }
@@ -103,4 +103,15 @@ it("lista reprovada não oferece reenvio nem permissões herdadas", async () => 
   mount(<List />);
   await waitFor(() => expect(screen.getByRole("status").textContent).toContain('"can_edit":false'));
   expect(screen.getByRole("status").textContent).not.toContain("Revisar e reenviar");
+});
+it.each([[false, "rascunho", true], [true, "rascunho", true], [false, "em_andamento", true], [true, "em_andamento", true], [true, "rascunho", false], [false, "em_andamento", false]])("página real mobile=%s status=%s canEdit=%s monta editor com permissão vigente", async (mobile, status, canEdit) => {
+  mocks.mobile = mobile; mocks.status = status; mocks.canEdit = canEdit;
+  mount(<VisitaTecnica />);
+  await waitFor(() => expect(screen.getAllByPlaceholderText("Ex: avaliar pressão de lagartas")[0]).toHaveValue("Objetivo fictício"));
+  // Desktop stack is mounted; mobile accordion mounts its actual editor on expansion.
+  const trigger = screen.getByRole("button", { name: /6 · Monitoramento/ });
+  fireEvent.click(trigger);
+  await waitFor(() => expect(screen.getAllByRole("button", { name: "Editar Plano" })).toHaveLength(2));
+  await waitFor(() => expect(screen.getAllByRole("button", { name: "Editar Plano" }).every(b => (b as HTMLButtonElement).disabled === !canEdit)).toBe(true));
+  expect(mocks.update).not.toHaveBeenCalled(); expect(mocks.insert).not.toHaveBeenCalled();
 });

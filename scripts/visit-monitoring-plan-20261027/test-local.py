@@ -28,6 +28,9 @@ def main():
   sql(f"""
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
 CREATE SCHEMA auth; CREATE SCHEMA platform_private; CREATE SCHEMA cf_user_guards_v1;
+CREATE TABLE platform_private.test_clock(today date);
+INSERT INTO platform_private.test_clock VALUES('2026-10-27');
+CREATE FUNCTION platform_private.test_today() RETURNS date LANGUAGE sql AS $$SELECT today FROM platform_private.test_clock$$;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT nullif(current_setting('test.actor',true),'')::uuid$$;
 CREATE TYPE public.app_role AS ENUM('gestor','administrador','consultor_tecnico');
 CREATE TABLE actors(id uuid PRIMARY KEY,ready boolean,role app_role);
@@ -52,11 +55,18 @@ CREATE TRIGGER trg_enforce_visit_immutability BEFORE UPDATE ON registros_consult
   # Reduced synthetic dependencies cannot satisfy LIVE hashes. Only the PRE
   # hash block is removed here; candidate core, postflight ACL and transaction are real.
   candidate=re.sub(r'DO \$pre\$.*?\$pre\$;', '', candidate, flags=re.S)
+  # Simulated date only, to prove time-dependent validation AFTER replay.
+  candidate=candidate.replace("(clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date", "platform_private.test_today()")
   sql(candidate)
   for ver in ['NULL','0','-1','2']: error(call(ver=ver),'PT409','mandatory/stale version '+ver)
   error(call(visit=B),'PT404','foreign origin A to B'); error(call(actor=U),'PT404','foreign origin B to A')
   sql(call()); assert_sql(f"SELECT version=2 AND observacoes_tecnicas LIKE '%Nutrição, Estande%' AND observacoes_tecnicas LIKE 'Notas preservadas%' FROM registros_consultor WHERE id='{V}';",'plan preserves semantics, exact +1')
   sql(call()); assert_sql('SELECT (SELECT count(*) FROM monitoramento_avisos)=1 AND (SELECT count(*) FROM visitas_logs)=1;','replay once')
+  sql("UPDATE platform_private.test_clock SET today='2026-11-02';")
+  sql(call()); assert_sql(f"SELECT version=2 FROM registros_consultor WHERE id='{V}';",'confirmed replay survives past date')
+  error(call(ver='2',key='dddddddd-dddd-4ddd-8ddd-dddddddddddd'),'22023','new past plan rejected after replay')
+  assert_sql('SELECT count(*)=1 FROM platform_private.visit_monitoring_plan_receipts;','past date no new receipt')
+  sql("UPDATE platform_private.test_clock SET today='2026-10-27';")
   error(call(plan=PLAN.replace('Avaliar','Alterado')),'PT409','same key changed payload')
   sql(call(actor=U,visit=B,key='55555555-5555-4555-8555-555555555555'))
   assert_sql(f"SELECT count(*)=1 FROM monitoramento_avisos WHERE registro_consultor_id='{B}';",'own B origin')

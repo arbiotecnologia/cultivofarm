@@ -1,9 +1,9 @@
 diff --git a/scripts/visit-monitoring-plan-20261027/candidate.sql.review b/scripts/visit-monitoring-plan-20261027/candidate.sql.review
 new file mode 100644
-index 000000000..afa440a5b
+index 000000000..b31b8c731
 --- /dev/null
 +++ b/scripts/visit-monitoring-plan-20261027/candidate.sql.review
-@@ -0,0 +1,166 @@
+@@ -0,0 +1,170 @@
 +BEGIN;
 +SET LOCAL lock_timeout = '5s';
 +SET LOCAL statement_timeout = '20s';
@@ -100,6 +100,10 @@ index 000000000..afa440a5b
 +      RAISE EXCEPTION 'request_conflict' USING ERRCODE='PT409';
 +    END IF;
 +    RETURN v_receipt->'result';
++  END IF;
++  -- Time-dependent rule AFTER authorized replay; a confirmed receipt never expires.
++  IF v_date < (clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date THEN
++    RAISE EXCEPTION 'past_date_not_allowed' USING ERRCODE='22023';
 +  END IF;
 +  IF v_reg.version IS DISTINCT FROM p_expected_version THEN
 +    RAISE EXCEPTION 'version_conflict' USING ERRCODE='PT409';

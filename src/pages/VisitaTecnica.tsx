@@ -1829,6 +1829,17 @@ export default function VisitaTecnica() {
                   <AccordionTrigger className="text-sm font-semibold">5 · Desfecho</AccordionTrigger>
                   <AccordionContent>{encerramentoBlock}</AccordionContent>
                 </AccordionItem>
+                {!isNew && id && necessidadeIntervencao === "monitorar" && (
+                  <AccordionItem value="monitoramento">
+                    <AccordionTrigger className="text-sm font-semibold">6 · Monitoramento</AccordionTrigger>
+                    <AccordionContent>
+                      <PlanoMonitoramentoEditor registroId={id} readOnly={isReadOnly}
+                        observacoesAtuais={visita?.observacoes_tecnicas ?? ""} dataProximaVisita={visita?.data_proxima_visita}
+                        clienteId={clienteId} fazendaId={fazendaId} talhaoId={talhaoId} consultorId={user?.id ?? ""}
+                        onUpdate={() => { void workspaceQuery.refetch(); void refetchVisita(); }} />
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
               </Accordion>
             </div>
             {/* DESKTOP — Stack vertical */}
@@ -1838,6 +1849,12 @@ export default function VisitaTecnica() {
               {diagnosticoBlock}
               {evidenciasBlock}
               {condutaBlock}
+              {!isNew && id && necessidadeIntervencao === "monitorar" && (
+                <PlanoMonitoramentoEditor registroId={id} readOnly={isReadOnly}
+                  observacoesAtuais={visita?.observacoes_tecnicas ?? ""} dataProximaVisita={visita?.data_proxima_visita}
+                  clienteId={clienteId} fazendaId={fazendaId} talhaoId={talhaoId} consultorId={user?.id ?? ""}
+                  onUpdate={() => { void workspaceQuery.refetch(); void refetchVisita(); }} />
+              )}
               {encerramentoBlock}
             </div>
             {/* Timeline lateral (desktop) */}

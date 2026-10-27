@@ -10,8 +10,8 @@ Autoridade do plano permanece no bloco textual de `registros_consultor.observaco
 
 ## Fluxo e arquivos
 
-- `src/pages/VisitaTecnica.tsx`: duas montagens responsivas do mesmo editor, preservadas.
-- `src/components/visita/PlanoMonitoramentoEditor.tsx`: removidos UPDATE direto/consulta `ilike`; snapshot de campos e versão do mesmo workspace ao abrir; sem refetch no save. Erro fica no diálogo; tentativa não confirmada conserva chave e payload, mudança de payload bloqueia reenvio até resolução humana. Troca de scope fecha/limpa formulário e aborta chamada.
+- `src/pages/VisitaTecnica.tsx`: montagens responsivas existentes preservadas; editor também no ramo rascunho/em_andamento com necessidade monitorar, can_edit e isReadOnly. Finalizadas somente leitura. Sucesso pede refresh explícito do workspace e visita, não rebaseia edição.
+- `src/components/visita/PlanoMonitoramentoEditor.tsx`: display exclusivamente do envelope autorizado (plano/data/origem do aviso); draft independente. Snapshot de campos e versão ao abrir; sem refetch no save. Sucesso retira revisão antiga, bloqueia reabertura com envelope anterior e segunda edição captura N+1. PT409/22023/negação confirmados preservam draft e exigem Reconsultar e revisar + confirmação antes de nova tentativa. Consulta mostra plano atual e edição, não envia mutação. Timeout/retorno incompleto não liberam chave; mesmo PT409 posterior a envio incerto não autoriza descarte. Troca de scope fecha/limpa formulário e aborta chamada.
 - `src/hooks/useSalvarPlanoMonitoramento.ts`: RPC `rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid)`; JSONB objeto com exatamente `ok,registro_id,version,aviso_id,data_referencia,plano,request_id`. Exige alvo/payload/chave/data e versão `observada+1`; array/retorno incompleto não são sucesso. Não há fallback direto nem retry automático.
 - `candidate.sql.review`: transação com guard de hashes LIVE e ausência prévia da instalação, wrapper INVOKER/core privado DEFINER; tabela privada de recibos inacessível a authenticated. Não usar `visitas_logs` para autorizar replay: a policy atual permite INSERT de clientes.
 - `preflight.sql` / `postflight.sql`: somente leitura, metadados/hash/ACL. A origem canônica do projeto deve ser comprovada pelo executor antes de abrir conexão: o nome `postgres` do banco sozinho não comprova ref.
@@ -27,9 +27,13 @@ Trigger LIVE `enforce_visit_immutability` já faz `OLD.version+1`; UPDATE explí
 
 Reprogramação LIVE usa gate → alerta → visita. Este candidato NÃO trava alertas e obtém o mesmo gate antes da visita; portanto não cria a inversão visita→alerta. Callers legados da ativação não travam alerta/gate depois da visita. Isso é análise dos corpos capturados, não certificação de toda cadeia de triggers hosted. Nenhuma alteração nos RPCs atuais criação/status/reprogramação/ativação.
 
-## Limitação de disponibilidade importante
+## Revisão independente de 35815468
 
-O caller atual monta o editor somente com `isFinalized`, mas conteúdo finalizado é imutável por guard e trigger. Não enfraquecemos isso nem abrimos novas telas/rotas. O novo RPC também só permite rascunho/em_andamento. A correção está preparada, mas disponibilidade editável real no fluxo exige revisão do ajuste canônico autorizado; não alegar que visita finalizada agora é editável. RPC nova ainda não instalada: erro permanece visível, sem fallback.
+Os seis bloqueios receberam correção local; nenhuma instalação/publicação. RPC nova ainda não instalada: erro permanece visível, sem fallback. Aviso mostrado é `workspace.monitoramento` do tipo plano_monitoramento e ligado à visita atual, nunca alerta agronômico. O contrato `alertas_agronomicos.registro_origem_id` continua não homologado e não é concluído pela existência de aviso.
+
+Data passada gera 22023 no core usando `(clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date` APÓS replay autorizado. Resultado confirmado continua replayável mesmo após passar a data. UI usa o mesmo fuso. Guard/lock/ACL/imutabilidade não foram relaxados.
+
+**Divergência de base:** HEAD inicial desta revisão `35815468ef9ce3d60ca92bee9dabc97159977245`, que já continha pacote anterior. Base publicada informada e88b588; pré-tarefa anterior 1d8d11c. Comparação exata e88b588→1d8d11c: somente `roadmap.md`, cinco linhas de planejamento de monitoramento, sem alteração runtime/SQL fora deste escopo. Não presumir commits iguais nem fazer checkout/reset. `base-divergence.diff` contém diferença exata; `changed-paths.txt` lista base publicada→HEAD inicial e edits locais para revisão antes de deploy. Nesta revisão não há alteração contábil, tributos, rotas, dependências, Auth ou outro fluxo.
 
 ## Evidências locais e limites
 
@@ -39,4 +43,12 @@ Comando: `bun run test -- src/test/monitoramento src/test/visita/parentFence.int
 
 `saveVisitMonitoringPlanClient.test.tsx` (23) e `visitMonitoringPlanEditor.test.tsx` (3): hooks/componente reais, Auth/workspace/transporte simulados; erro, parser, cancelamento, duplo clique, leitura nova sem rebase, revogação/troca/unmount, sem falso sucesso. Build automático observado **OK 2026-10-27T01:01:27Z**; `git diff --check` OK. Não rodamos build/typecheck manual (validação automática do ambiente); não atribuir log build à homologação real.
 
-**Pendente:** revisão/instalação independente com PRE completo, integração de triggers/RLS/ACL, JWT/browser real A/B e fluxo de ajuste editável. Sem migração/DDL/DML hosted, sem fixtures produtivas/publicação. Contabilidade A DRAFT/pendente, SU-518022 e demais pendências históricas preservadas; contagem 42 não modificada por candidato inativo.
+### Evidências adicionais desta revisão
+
+Testes reais de hooks/componente/página com Auth/workspace/transporte simulados: display readonly e origem, revogação, cancelamento, N/N+1/N+2, cache antigo bloqueado, PT409 explícito, timeout conserva chave, mudanças de versão/ator na confirmação, página desktop/mobile rascunho/em_andamento e can_edit false. PostgreSQL descartável: **26 checks** (23 anteriores + replay com data passada, nova data passada rejeitada, nenhum recibo novo), com relógio simulado somente no harness; corpo candidato usa relógio São Paulo real. PRE LIVE integral e demais triggers permanecem não homologados.
+
+Validação final desta revisão: `bun run test -- src/test/monitoramento src/test/visita/parentFence.interaction.test.tsx src/test/previsao/painelAlertasScope.test.tsx` → **144/144, 9 arquivos** (01:10:15 UTC). Build automático OK 01:10:05 UTC. Tipagem/build manuais não executados por regra do ambiente; não equivalem à homologação JWT/RLS. Nenhum SQL hosted foi executado.
+
+Chromium 1280×1800 e 390×1800: editor real montado via módulos do Vite, Auth/workspace substituídos exclusivamente no navegador; quatro estados readonly/editável, itens/data/origem visíveis, edição/cancelamento, sem overflow/pageerror ou mutação produtiva. Capturas sob `/tmp/browser/visit-plan-review/`. Não é prova de sessão/rota real A/B; montagem da página canônica é testada pelo Vitest.
+
+**Pendente:** revisão/instalação independente com PRE completo, integração de triggers/RLS/ACL e JWT/browser real A/B. Sem migração/DDL/DML hosted, sem fixtures produtivas/publicação. Contabilidade A DRAFT/pendente, SU-518022 e demais pendências históricas preservadas; contagem 42 não modificada por candidato inativo.
