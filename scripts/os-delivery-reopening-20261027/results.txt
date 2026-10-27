@@ -1,0 +1,36 @@
+35 local checks PASS. Auth/schema/stock/advancement stubs: SYNTHETIC, NOT JWT/RLS.
+exact LIVE body public.fn_cockpit_norm_origem
+exact LIVE body public.fn_cockpit_assert_operador_origem
+exact LIVE body public.fn_entrega_assert_confirmador
+exact LIVE body public.fn_estoque_ctx_open
+exact LIVE body public.rpc_cockpit_criar_entrega_v1
+exact LIVE body public.fn_entrega_confirmar_engine_v1
+exact LIVE body public.rpc_entrega_cancelar_v1
+exact LIVE body public.rpc_entrega_confirmar_v1
+baseline cross-tenant cancellation reproduced locally
+cross cancel denied
+cross confirm denied
+cross create denied
+anon denied
+own cancel no stock branch
+cancel replay
+cancel replay one event
+own confirm no stock branch
+confirm replay
+own create reduced schema
+create replay
+create one delivery
+finite quantity NaN rejected
+B2B remains contained
+missing physical receiver rejected
+invalid receiver no write
+postcondition fault rolls transaction back
+postcondition no persisted cancellation
+row waiter observes committed revocation
+revoked waiter no write
+gate revocation first denies waiter
+mutation commits first then revocation
+3s gate timeout
+timeout no write
+release barrier remains closed
+containment denies client execution
