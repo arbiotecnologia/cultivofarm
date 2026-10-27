@@ -145,9 +145,10 @@ describe("monitoramento — integração na página", () => {
     expect(src).not.toContain("parseISO");
   });
 
-  it("condiciona a reprogramação ao status (corrida entre usuários)", () => {
-    expect(src).toContain('.eq("status", "monitoramento")');
-    expect(src).toContain("já foi concluído ou alterado por outro usuário");
+  it("reprograma pelo contrato CAS sem writes diretos paralelos", () => {
+    expect(src).toContain("expectedUpdatedAt: selectedAlert.updated_at");
+    expect(src).toContain("useReprogramarMonitoramento");
+    expect(src).not.toMatch(/\.update\(/);
   });
 
   it("bloqueia duplo clique e data inválida no diálogo", () => {
