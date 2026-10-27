@@ -1,7 +1,7 @@
 # F2-B — auditoria e preparação revisável
 
 ## 27/10 00:05 — clientes revisão fiscal e reprogramação
-- [x] 00:19 auditor confirmou aplicações fiscal224ab7944abd13190fe8ea1044216218 e monitoringb32bf163ed7ccb989f4f0b653827d825; não reaplicar; contagem atual42. Parser completo/regressões e caminhos criação/status em conciliação local, sem fixture/SQL/publicação.
+- [x] 00:19 auditor confirmou aplicações fiscal224ab7944abd13190fe8ea1044216218 e monitoringb32bf163ed7ccb989f4f0b653827d825; não reaplicar; contagem atual42. Parser completo conciliado,14 regressões adicionais,61/61 em3arquivos PASS, build automático OK00:21:46 e diffcheck OK; caminhos criação/status documentados, sem fixture/SQL/publicação.
 - [x] Callers/hooks/componentes auditados; draft update revisão positiva, reprogramação RPC/timestamp canônico sem writes diretos; PT409/403/404 uniformes/fences/travas sem retry.
 - [x] 26 regressões novas de hooks reais com transporte/Auth simulados;153/153 totais em8arquivos, validação automática build OK00:09:37, git diff --check OK; caminhos/limites em applied/fiscal-draft-monitoring-client-review-20261027.md. Sem SQL/DDL/publicação.
 - [x] Backend fiscal NULL/<=0/CAS e monitoramento tenant/origem/pós-lock/timestamp aplicados pelo auditor; provas fiscais reais específicas relatadas, não repetidas pelo agente.

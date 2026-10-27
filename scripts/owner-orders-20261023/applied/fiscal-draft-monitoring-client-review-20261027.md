@@ -49,4 +49,5 @@
 ## Conciliação cliente e pendências independentes
 
 - 26 testes cliente anteriores PASS segundo revisão independente do proprietário; regressões novas executam hooks reais/QueryClient com Auth/transporte simulados, não novas provas JWT/RLS.
+- Nesta conciliação:14 casos adicionais (12 negativos de envelope/2 positivos completos), reprogramação26/26, fiscal14/14 e alertas21/21: **61/61 em3arquivos PASS** via `bun run test -- src/test/fiscal/draftSaveCasClient.test.tsx src/test/monitoramento/reprogramarCasClient.test.tsx src/test/monitoramento/alertas.test.ts`. Build automático OK00:21:46UTC, `git diff --check` OK; HEAD observado `758587804099efa44059df846396977ead8af94a`, sem commit manual. Nenhum typecheck/build manual ou browser autenticado executado.
 - Homologação de fixture/reprogramação A/B/revogação/origem/tenant pelo auditor permanece pendente aqui. Provas fiscais reais específicas acima são relatos externos, não execução do agente; nenhum PASS integral presumido.
