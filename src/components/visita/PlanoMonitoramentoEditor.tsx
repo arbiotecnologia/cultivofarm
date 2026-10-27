@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,11 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Gauge, Calendar, Save, Loader2, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useSalvarPlanoMonitoramento } from "@/hooks/useSalvarPlanoMonitoramento";
 import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
 import { EncerramentoState } from "./EncerramentoCard";
 import { formatDateDisplay } from "@/lib/date-utils";
-import { serializePlanoMonitoramento, parsePlanoMonitoramento, stripPlanoMonitoramento } from "@/lib/planoMonitoramento";
+import { parsePlanoMonitoramento } from "@/lib/planoMonitoramento";
 
 interface PlanoMonitoramentoEditorProps {
   readOnly?: boolean;
@@ -32,12 +32,16 @@ export function PlanoMonitoramentoEditor({
   registroId,
   observacoesAtuais,
   dataProximaVisita,
-  talhaoId,
   onUpdate
 }: PlanoMonitoramentoEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const workspace = useVisitaWorkspace(registroId);
+  const save = useSalvarPlanoMonitoramento(registroId);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const observed = useRef<number | null>(null);
+  const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
+  useEffect(() => { setIsOpen(false); setSaveError(null); observed.current = null; attempt.current = null; }, [save.scope]);
   const locked = readOnly || workspace.isError || !workspace.data?.permissions.can_edit ||
     !["rascunho", "em_andamento"].includes(workspace.data?.status ?? "");
   const writeLock = useRef(false);
@@ -83,53 +87,26 @@ export function PlanoMonitoramentoEditor({
 
     writeLock.current = true;
     setIsSaving(true);
+    setSaveError(null);
+    const current = save.capture();
     try {
-      const current = await workspace.refetch();
-      if (current.isError || !current.data?.permissions.can_edit ||
-          !["rascunho", "em_andamento"].includes(current.data.status ?? "")) throw new Error("Conteúdo somente para leitura.");
-      const cleanObs = stripPlanoMonitoramento(observacoesAtuais);
-      const newPlanoBlock = serializePlanoMonitoramento(state);
-      const finalObs = `${cleanObs}\n\n${newPlanoBlock}`.trim();
-
-      const { data: updated, error: updateError } = await supabase
-        .from("registros_consultor")
-        .update({
-          observacoes_tecnicas: finalObs,
-          data_proxima_visita: state.dataProximaVisita
-        })
-        .eq("id", registroId).eq("version", current.data.version).select("id").single();
-
-      if (updateError) throw updateError;
-      if (!updated) throw new Error("Não foi possível confirmar a atualização.");
-
-      // Atualizar alerta agronômico vinculado
-      const { data: alerta, error: alertReadError } = await supabase
-        .from("alertas_agronomicos")
-        .select("id")
-        .eq("talhao_id", talhaoId)
-        .eq("status", "ativo")
-        .ilike("tipo_alerta", "monitoramento")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (alertReadError) throw alertReadError;
-
-      if (alerta) {
-        const { error: alertError } = await supabase
-          .from("alertas_agronomicos")
-          .update({
-            data_alerta: state.dataProximaVisita,
-            descricao: `Área em monitoramento: ${state.monitoramentoItens.join(", ")}`
-          })
-          .eq("id", alerta.id);
-        if (alertError) throw alertError;
-      }
-
+      const plan = { items: state.monitoramentoItens, frequency: state.monitoramentoFrequencia,
+        triggers: state.monitoramentoGatilhos, next_date: state.dataProximaVisita };
+      const expectedVersion = observed.current;
+      if (expectedVersion === null) throw new Error("Revisão da visita indisponível. O plano foi mantido.");
+      const fingerprint = JSON.stringify([registroId, expectedVersion, plan]);
+      if (attempt.current && attempt.current.fingerprint !== fingerprint) throw new Error("Há um salvamento não confirmado. Preserve a edição enviada antes de tentar novamente.");
+      attempt.current ??= { fingerprint, key: crypto.randomUUID() };
+      await save.mutateAsync({ registroId, expectedVersion, plan, requestId: attempt.current.key });
+      if (!current()) return;
+      attempt.current = null;
       toast.success("Plano de monitoramento atualizado!");
       setIsOpen(false);
       onUpdate();
-    } catch {
-      toast.error("Não foi possível concluir a atualização do plano. Reconsulte a visita.");
+    } catch (error) {
+      if (!current()) return;
+      const message = error instanceof Error ? error.message : "Não foi possível confirmar o plano. A edição foi mantida.";
+      setSaveError(message); toast.error(message);
     } finally {
       writeLock.current = false;
       setIsSaving(false);
@@ -144,7 +121,7 @@ export function PlanoMonitoramentoEditor({
             <Gauge className="h-4 w-4 text-emerald-600" />
             <CardTitle className="text-sm font-semibold text-emerald-800">Monitoramento Ativo</CardTitle>
           </div>
-          <Button variant="outline" size="sm" disabled={locked} onClick={() => { if (!locked) setIsOpen(true); }} className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-100">
+          <Button variant="outline" size="sm" disabled={locked} onClick={() => { if (!locked) { if (observed.current === null) observed.current = workspace.data?.version ?? null; setIsOpen(true); } }} className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-100">
             Editar Plano
           </Button>
         </CardHeader>
@@ -248,6 +225,8 @@ export function PlanoMonitoramentoEditor({
               />
             </div>
           </fieldset>
+
+          {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={isSaving}>Cancelar</Button>
