@@ -762,7 +762,7 @@ export async function getPendingCampos(): Promise<PendingCampo[]> {
       resolve(
         (req.result || []).filter(
           (c: PendingCampo) =>
-            c.syncStatus !== "synced" && (!c.syncingAt || isStale(c.syncingAt)),
+            c.syncStatus !== "synced" && c.syncStatus !== "conflict" && (!c.syncingAt || isStale(c.syncingAt)),
         ),
       );
     req.onerror = () => reject(req.error);
