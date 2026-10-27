@@ -1,0 +1,2 @@
+- Keep preservation SQL inactive and preserve the installed core's owner/ACL/containment; private transaction tickets authorize only the exact target block/date, never roles, client claims or GUCs — blocks legacy loss without reopening the plan writer.
+- Do not repair historical missing blocks or mutate fixtures in production; read-only core pins and disposable synthetic tests are not hosted homologation — preserves evidence.
