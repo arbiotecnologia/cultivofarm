@@ -40,7 +40,7 @@ export default function SelecionarPortal() {
 
 function SelecionarPortalContent() {
   const navigate = useNavigate();
-  const { signOut, user, profile } = useAuth();
+  const { signOut, user, profile, roles } = useAuth();
   const [params] = useSearchParams();
   const manual = params.get("intent") === "switch";
   const { data, isLoading, isError, refetch, isFetching, ready, scope, exclusiveOperator, operatorHome, producerHome } = useAvailableContexts();
