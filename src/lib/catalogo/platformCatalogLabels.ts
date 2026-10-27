@@ -42,7 +42,8 @@ export const LABEL_CONFLICT_MESSAGE = "O rótulo mudou ou esta solicitação já
 export function labelError(error: unknown) {
   const code = typeof error === "object" && error !== null && "code" in error ? (error as { code?: unknown }).code : undefined;
   if (code === "42501") return "Sem permissão para gerenciar rótulos do catálogo global.";
-  if (code === "40001") return LABEL_CONFLICT_MESSAGE;
+  // PT409: conflito negocial (CAS/confirmação) do candidato; 40001 segue aceito para baseline/replay residual.
+  if (code === "PT409" || code === "40001") return LABEL_CONFLICT_MESSAGE;
   if (code === "23505") return "Já existe um rótulo com esta chave nesta família.";
   if (code === "22023") return "Dados inválidos: confira família, chave, nome de exibição e motivo.";
   return "Não foi possível confirmar a operação. Confira os dados antes de tentar novamente.";
