@@ -1,0 +1,74 @@
+PASS PRE baseline: tenant-B admin writes tenant-A visit (defect reproduced)
+PASS PRE baseline: future CAS 99 accepted (defect reproduced)
+PASS candidate installs; in-migration DO $post$ ACL/owner assertion passed
+PASS definer + search_path + lock_timeout 3s
+PASS anon cannot execute
+PASS guard trigger is BEFORE INSERT OR UPDATE
+HASH rpc 2bedc69fc4eca86fbbeef8825437b919
+HASH guard f69455b72d067d0d96fab74987b4cc4e
+PASS insert v0->1, cliente derived from visit
+PASS update CAS 1->2
+PASS update CAS 2->3 (N, N+1, N+2)
+PASS tenant-A admin positive (original scope)
+PASS tenant B own positive
+PASS envelope has id/registro/versao/client_uuid/replayed
+PASS insert for replay
+PASS lost-response replay same actor/key/content returns v1 replayed=true, no write
+PASS replay did not bump version
+PASS replay with different content PT409 PT409
+PASS replay with other client_uuid PT409 PT409
+PASS replay without client_uuid PT409 PT409
+PASS replay by other actor PT409 (no adoption) PT409
+PASS replay across tenant denied before any data 42501
+PASS NULL CAS PT409 PT409
+PASS negative CAS PT409 PT409
+PASS stale CAS PT409 PT409
+PASS future CAS PT409 PT409
+PASS zero CAS on existing row PT409 PT409
+PASS positive CAS without row PT409 (no invented insert) PT409
+PASS no row created
+PASS cross-tenant B->A denied 42501
+PASS cross-tenant A->B denied 42501
+PASS nonexistent visit same generic 42501 42501
+PASS tenant-B global admin denied on tenant A (critical defect closed) 42501
+PASS gestor without creator/link keeps original restriction (no widening) 42501
+PASS responsavel-only consultor without link not added (original scope) 42501
+PASS NULL created_by + gestor no link denied (NULL never authorizes) 42501
+PASS unauthenticated 42501
+PASS anon EXECUTE denied 42501
+PASS revoked client link denied 42501
+PASS inactive actor denied 42501
+PASS finalized visit visita_locked PT409 PT409
+PASS talhão of other cliente rejected 22023
+PASS new inactive talhão rejected 22023
+PASS new inactive cultura rejected 22023
+PASS malformed uuid rejected 22023
+PASS fractional estande rejected 22023
+PASS negative area rejected 22023
+PASS invalid uniformidade rejected 22023
+PASS non-object payload rejected 22023
+PASS all negatives atomic (row unchanged)
+PASS save with active refs
+PASS already-saved inactive refs may be kept unchanged
+PASS guard: version jump PT409 PT409
+PASS guard: same version PT409 PT409
+PASS guard: regression PT409 PT409
+PASS guard: null version rejected before NOT NULL PT409
+PASS guard: insert with versao<>1 PT409 PT409
+PASS guard: immutable cliente_id preserved 42501
+PASS guard: immutable client_uuid preserved 42501
+PASS C1 concurrent initial insert, different content: loser waits then PT409
+PASS C1 winner preserved
+PASS C1b concurrent updates same CAS: second PT409, no lost update
+PASS C1b winner preserved
+PASS C2 revocation committed first at gate -> operation denied after gate wait 42501
+PASS C2 nothing written
+PASS C3 revocation committed during parent-row wait -> re-authorization denies 42501
+PASS C4 operation already past gate commits BEFORE queued revocation (NOT a revocation win)
+PASS C4 after revocation commit: next call denied 42501
+PASS C5 lock_timeout bounded at ~3s (3.02s) 55P03
+PASS C6 cross-tenant actor denied without waiting on row (0.02s)
+PASS containment: authenticated EXECUTE revoked 42501
+PASS containment keeps strict guard
+TOTAL 70 synthetic checks PASS
+psql (PostgreSQL) 17.9
