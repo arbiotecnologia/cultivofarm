@@ -147,7 +147,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   ok(f"SELECT data_vencimento='2026-11-09' FROM alertas_agronomicos WHERE id='{ALN}';",'v1 without origin unchanged')
   err(f"UPDATE registros_consultor SET data_proxima_visita='2026-11-20' WHERE id='{V}';",'PT409','guard still denies direct date write')
   # --- v2 reschedule with plan ---
-  before=val(f"SELECT observacoes_tecnicas FROM registros_consultor WHERE id='{V}';")
+  expected=val(f"SELECT md5(replace(observacoes_tecnicas,'Próxima Avaliação: 2026-11-05','Próxima Avaliação: 2026-11-20')) FROM registros_consultor WHERE id='{V}';")
   err(resched(actor=C),'42501','consultant without gestor role cannot reschedule')
   err(resched(actor=X),'PT404','foreign gestor B cannot reschedule A')
   err(resched(alert_at="'2026-10-27 10:00:00.000001+00'"),'PT409','reschedule stale alert microsecond')
@@ -156,7 +156,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   err(resched(d='2026-10-26'),'22023','past Sao Paulo date rejected')
   alat=val(f"SELECT updated_at FROM alertas_agronomicos WHERE id='{AL}';")
   res=val(resched())
-  ok(f"SELECT version=3 AND data_proxima_visita='2026-11-20' AND observacoes_tecnicas=replace($q${before}$q$,'Próxima Avaliação: 2026-11-05','Próxima Avaliação: 2026-11-20') FROM registros_consultor WHERE id='{V}';",'plan text byte-preserved except date line')
+  ok(f"SELECT version=3 AND data_proxima_visita='2026-11-20' AND md5(observacoes_tecnicas)='{expected}' AND observacoes_tecnicas LIKE 'Notas preservadas%Itens: Nutrição, Estande%' FROM registros_consultor WHERE id='{V}';",'plan text byte-preserved except date line')
   ok(f"SELECT data_referencia='2026-11-20' FROM monitoramento_avisos WHERE registro_consultor_id='{V}' AND tipo='plano_monitoramento';",'generic notice date reconciled')
   ok(f"SELECT data_vencimento='2026-11-20' FROM alertas_agronomicos WHERE id='{AL}';",'alert date reconciled')
   ok("SELECT count(*)=0 FROM platform_private.visit_plan_write_tickets;",'ticket removed in transaction')
