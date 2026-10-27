@@ -15,7 +15,8 @@ export function parseConduta(observacoes: string | null | undefined): { conduta:
   if (codeStart < 0 || codeEnd < 0) return { conduta: null, clean: before };
   try {
     const json = block.slice(codeStart + 7, codeEnd).trim();
-    return { conduta: JSON.parse(json), clean: before };
+    const after = block.slice(codeEnd + 3).trim();
+    return { conduta: JSON.parse(json), clean: [before, after].filter(Boolean).join("\n\n") };
   } catch {
     return { conduta: null, clean: before };
   }

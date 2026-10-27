@@ -77,6 +77,7 @@ import { serializePlanoRetorno, parsePlanoRetorno, stripPlanoRetorno } from "@/l
 import { mensagemAmigavelVisita, codigoTecnicoVisita } from "@/lib/visita/visitaErrorMessages";
 import { resolveVisitaAcoes } from "@/lib/visita/acoesPersistencia";
 import { resolveEtapasAcionaveis, clampPercentualArea } from "@/lib/visita/etapasVisita";
+import { preserveMonitoringPlan } from "@/lib/visita/preserveMonitoringPlan";
 
 // ---------- Helpers ----------
 function translateError(msg: string): string {
@@ -269,6 +270,13 @@ export default function VisitaTecnica() {
   /** Trava de uma finalização por vez (inclui a checagem assíncrona). */
   const finalizandoRef = useRef(false);
   const persistLock = useRef(false);
+  const formScope = JSON.stringify([id, user?.id, profile?.organization_id]);
+  const formGeneration = useRef({ scope: formScope, epoch: 0 });
+  if (formGeneration.current.scope !== formScope) formGeneration.current = { scope: formScope, epoch: formGeneration.current.epoch + 1 };
+  const observedForm = useRef<{ scope: string; version: number; observations: string; fingerprint: string | null } | null>(null);
+  const autosaveTicket = useRef<symbol | null>(null);
+  const [hydrationComplete, setHydrationComplete] = useState(0);
+  const [contentConflict, setContentConflict] = useState<string | null>(null);
 
   // -------- Queries --------
   const { data: clientes = [] } = useQuery({
@@ -380,10 +388,25 @@ export default function VisitaTecnica() {
   // Hidrata o form a partir do registro carregado
   const hydratedIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!visita) return;
-    const v = visita as any;
-    if (hydratedIdRef.current === v.id) return;
-    hydratedIdRef.current = v.id;
+    const ws = workspaceQuery.data;
+    if (!visita || workspaceQuery.isError || !ws?.registro || !ws.permissions.can_view || ws.registro.id !== id ||
+      !Number.isSafeInteger(ws.version) || !ws.version || ws.version <= 0 || visita.version !== ws.version) return;
+    const v = { ...visita, ...ws.registro } as any;
+    const hydrationKey = JSON.stringify([formScope, ws.version]);
+    if (hydratedIdRef.current === hydrationKey) return;
+    if (observedForm.current?.scope === formScope && observedForm.current.fingerprint !== null &&
+      observedForm.current.fingerprint !== formFingerprintRef.current) {
+      autosaveTicket.current = null;
+      setContentConflict("A visita foi alterada. Sua edição foi mantida; reabra a visita para revisar antes de salvar.");
+      return;
+    }
+    hydratedIdRef.current = hydrationKey;
+    const epoch = formGeneration.current.epoch;
+    let active = true;
+    const current = () => active && formGeneration.current.scope === formScope && formGeneration.current.epoch === epoch;
+    autosaveTicket.current = null;
+    observedForm.current = { scope: formScope, version: ws.version, observations: v.observacoes_tecnicas ?? "", fingerprint: null };
+    setContentConflict(null);
     
     setTipoVisita(v.tipo_visita || "vistoria_inicial");
     setObjetivoVisita(v.objetivo_visita || "");
@@ -402,14 +425,15 @@ export default function VisitaTecnica() {
         .select("*")
         .eq("registro_id", v.id)
         .order("created_at", { ascending: true });
-
+      if (!current()) return;
+      const cleanDescription = stripPlanoRetorno(stripPlanoMonitoramento(parseConduta(parseNotes(v.observacoes_tecnicas ?? "").clean).clean));
       if (existingDiag && existingDiag.length > 0) {
         setDiagnosticos(existingDiag.map(d => ({
           id: d.id,
           problema: d.problema || "",
           severidade: d.severidade || "medio",
           incidencia: d.incidencia?.toString() || "",
-          descricao: d.descricao || "",
+          descricao: d.descricao || cleanDescription,
           categoria: d.categoria || "",
           localizacao: d.localizacao || "",
         })));
@@ -419,11 +443,14 @@ export default function VisitaTecnica() {
           problema: v.problema_principal || "",
           severidade: v.nivel_pressao || "medio",
           incidencia: v.percentual_area_afetada?.toString() || "",
-          descricao: "", 
+          descricao: cleanDescription,
           categoria: v.categoria_problema || "",
           localizacao: v.localizacao_na_area || "",
         }]);
+      } else {
+        setDiagnosticos([{ id: crypto.randomUUID(), problema: "", severidade: "medio", incidencia: "", descricao: cleanDescription, categoria: "", localizacao: "" }]);
       }
+      setHydrationComplete(value => value + 1);
     };
     loadDiagnostics();
 
@@ -446,8 +473,9 @@ export default function VisitaTecnica() {
     const { notes: parsedNotes, clean: noNotes } = parseNotes(obs);
     const { conduta: parsedConduta, clean: cleanObs } = parseConduta(noNotes);
     setNotes(parsedNotes);
-    if (parsedConduta) setConduta(parsedConduta);
-  }, [visita]);
+    setConduta(parsedConduta ?? CONDUTA_DEFAULT);
+    return () => { active = false; };
+  }, [visita, workspaceQuery.data, workspaceQuery.isError, formScope]);
 
   const { data: arquivos = [] } = useQuery({
     queryKey: ["visita-arquivos", id],
@@ -569,11 +597,11 @@ export default function VisitaTecnica() {
       // H9-G 2B: as notas rápidas vivem serializadas dentro de observacoes_tecnicas.
       // Elas PRECISAM entrar no payload, senão qualquer salvamento (inclusive o
       // que antecede a finalização) descarta silenciosamente as notas locais.
-      observacoes_tecnicas:
+      observacoes_tecnicas: preserveMonitoringPlan(observedForm.current?.observations ?? "",
         serializeNotes(
           serializeConduta(diagnosticos[0]?.descricao || "", condutaAtualizada),
           notes,
-        ) || null,
+        )) || null,
 
       urgencia: urgencia as any,
       necessidade_intervencao: necessidadeIntervencao as any,
@@ -589,17 +617,18 @@ export default function VisitaTecnica() {
 
   // -------- Persistência de conteúdo editável confirmada --------
   const saveMutation = useMutation({
-    mutationFn: async ({ payload, finalizar }: { payload: any; finalizar: boolean }) => {
+    retry: false,
+    mutationFn: async ({ payload, finalizar, expectedVersion, fingerprint, scope }: { payload: any; finalizar: boolean; expectedVersion?: number; fingerprint?: string; scope?: string }) => {
       if (!user) throw new Error("Sessão indisponível.");
-      let expectedVersion: number | null = null;
+      const epoch = formGeneration.current.epoch;
+      const current = () => formGeneration.current.scope === formScope && formGeneration.current.epoch === epoch;
       if (!isNew) {
-        const current = await workspaceQuery.refetch();
-        if (current.isError || !current.data?.permissions.can_edit ||
-            !["rascunho", "em_andamento"].includes(current.data.status ?? "")) {
+        if (!current() || scope !== formScope || contentConflict || workspaceQuery.isError || !workspaceQuery.data?.permissions.can_edit ||
+            !["rascunho", "em_andamento"].includes(workspaceQuery.data.status ?? "")) {
           throw new Error("Conteúdo da visita somente para leitura.");
         }
-        expectedVersion = current.data.version;
-        if (!expectedVersion) throw new Error("version_conflict");
+        if (!Number.isSafeInteger(expectedVersion) || !expectedVersion || expectedVersion <= 0 ||
+          expectedVersion !== observedForm.current?.version || expectedVersion !== workspaceQuery.data.version) throw new Error("version_conflict");
       }
       // Caminhos pós-finalização legados não possuem persistência atômica auditada.
       if (finalizar && ["gerar_os", "emitir_recomendacao", "programar_nova_visita"].includes(encerramento.proximoPasso)) {
@@ -639,7 +668,11 @@ export default function VisitaTecnica() {
           .select("id, version")
           .single();
         if (error) throw error;
-        if (!saved) throw new Error("version_conflict");
+        if (!saved || saved.id !== id || saved.version !== expectedVersion + 1) throw new Error("version_conflict");
+        if (!current()) throw new Error("Sessão da visita alterada.");
+        if (observedForm.current?.scope === formScope && observedForm.current.version === expectedVersion) {
+          observedForm.current = { scope: formScope, version: saved.version, observations: payloadPersistivel.observacoes_tecnicas ?? "", fingerprint: fingerprint ?? null };
+        }
       }
 
       // Salvar múltiplos diagnósticos
@@ -685,14 +718,17 @@ export default function VisitaTecnica() {
       }
 
       if (!currentRegistroId) throw new Error("Visita não encontrada.");
-      return { mode: isNew ? "insert" as const : "update" as const, id: currentRegistroId, finalizar };
+      return { mode: isNew ? "insert" as const : "update" as const, id: currentRegistroId, finalizar, current };
     },
     onSettled: () => { persistLock.current = false; },
     onError: (err: any) => {
+      autosaveTicket.current = null;
+      setContentConflict("Não foi possível confirmar o salvamento. Sua edição foi mantida; revise a visita antes de salvar novamente.");
       toast.error(translateError(err?.message || "Erro ao salvar"));
       if (!isNew) refetchVisita();
     },
     onSuccess: async (result) => {
+      if (!result.current()) return;
       // Nenhum efeito legado após fechamento do conteúdo: sem OS, writes filhas ou envios.
       await Promise.all([...["visita-tecnica", "visita-workspace", "visita-timeline", "visita-status-log"].map(
         key => queryClient.invalidateQueries({ queryKey: [key, result.id] })),
@@ -752,23 +788,42 @@ export default function VisitaTecnica() {
     }
   });
 
-  // -------- Autosave (debounced) --------
+  const formFingerprint = JSON.stringify([tipoVisita, objetivoVisita, dataVisita, safra, faseFenologica, clienteId, fazendaId, talhaoId, culturaId,
+    diagnosticos, historicoResumido, condicoesClimaticas, urgencia, necessidadeIntervencao, riscoProdutivo, conduta, encerramento, notes]);
+  const formFingerprintRef = useRef(formFingerprint);
+  formFingerprintRef.current = formFingerprint;
   useEffect(() => {
-    if (isNew || !visita || !workspaceQuery.data?.permissions.can_edit || saveMutation.isPending) return;
+    if (hydrationComplete && observedForm.current?.scope === formScope && observedForm.current.fingerprint === null) {
+      observedForm.current.fingerprint = formFingerprint;
+    }
+  }, [hydrationComplete, formScope, formFingerprint]);
+  const captureContentSave = () => ({ payload: buildPayload(), finalizar: false,
+    expectedVersion: observedForm.current?.version, fingerprint: formFingerprint, scope: formScope });
+  // -------- Autosave (debounced): only actual changes to a hydrated observed revision --------
+  useEffect(() => {
+    const observed = observedForm.current;
+    if (isNew || !visita || !workspaceQuery.data?.permissions.can_edit || saveMutation.isPending || contentConflict ||
+      observed?.scope !== formScope || observed.fingerprint === null || observed.fingerprint === formFingerprint ||
+      observed.version !== workspaceQuery.data.version) return;
     // Conteúdo fechado nunca entra no autosave.
     if ((visita as any).status && (visita as any).status !== "rascunho") return;
+    const ticket = Symbol("autosave"); autosaveTicket.current = ticket;
+    const submission = captureContentSave();
     const t = setTimeout(() => {
-      if (persistLock.current) return;
+      if (persistLock.current || autosaveTicket.current !== ticket || observedForm.current?.version !== submission.expectedVersion ||
+        formGeneration.current.scope !== submission.scope) return;
       persistLock.current = true;
-      saveMutation.mutate({ payload: buildPayload(), finalizar: false });
+      autosaveTicket.current = null;
+      saveMutation.mutate(submission);
     }, 3000);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); if (autosaveTicket.current === ticket) autosaveTicket.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     tipoVisita, objetivoVisita, dataVisita, safra, faseFenologica,
     problemaPrincipal, problemaSecundario, categoriaProblema, nivelPressao, percentualAfetado,
     localizacaoArea, historicoResumido, condicoesClimaticas, descricaoTecnica, urgencia,
-    necessidadeIntervencao, riscoProdutivo, conduta, encerramento, notes,
+    necessidadeIntervencao, riscoProdutivo, conduta, encerramento, notes, formFingerprint, formScope, hydrationComplete,
+    workspaceQuery.data?.version, workspaceQuery.data?.permissions.can_edit, saveMutation.isPending, contentConflict,
   ]);
 
   /**
@@ -782,9 +837,9 @@ export default function VisitaTecnica() {
    */
   const salvarCanonico = () => {
     if (saveMutation.isPending) return;
-    if (!acoesVisita.canPersist || persistLock.current) return;
+    if (!acoesVisita.canPersist || persistLock.current || contentConflict) return;
     persistLock.current = true;
-    saveMutation.mutate({ payload: buildPayload(), finalizar: false });
+    saveMutation.mutate(captureContentSave());
   };
 
   const handleSaveDraft = salvarCanonico;
@@ -902,7 +957,7 @@ export default function VisitaTecnica() {
     if (!acoesVisita.showFinalize || persistLock.current) return;
     persistLock.current = true;
     saveMutation.mutate({
-      payload: buildPayload(),
+      ...captureContentSave(),
       finalizar: true,
     });
   };
@@ -1556,6 +1611,7 @@ export default function VisitaTecnica() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-3 sm:px-6 pb-24 lg:pb-6">
+        {contentConflict && <p role="alert" className="text-sm text-destructive">{contentConflict}</p>}
         <div className="sticky top-0 z-30 -mx-3 sm:-mx-6 px-3 sm:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
         <PageHeader
           title={
