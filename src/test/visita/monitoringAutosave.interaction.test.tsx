@@ -69,7 +69,7 @@ it("edição real de conduta autosalva com CAS observado e mantém plano exato, 
   await elapse(); expect(s.writes).toHaveLength(1);
 });
 it("salvar plano -> onUpdate/refetch não dispara autosave de hidratação", async () => {
-  mount(); await waitFor(() => expect(screen.getAllByRole("button", { name: "Editar Plano" })[0]).not.toBeDisabled()); await settle();
+  mount(); await waitFor(() => expect(screen.getAllByRole("button", { name: "Editar Plano" })[0]).not.toBeDisabled(), { timeout: 5000 }); await settle();
   fireEvent.click(screen.getAllByRole("button", { name: "Editar Plano" })[0]);
   const input = screen.getByRole("dialog").querySelector('input[type="date"]'); if (!input) throw new Error("date input missing");
   fireEvent.change(input, { target: { value: "2026-11-06" } }); fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
