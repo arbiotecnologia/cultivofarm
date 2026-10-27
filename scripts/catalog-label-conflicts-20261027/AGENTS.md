@@ -4,3 +4,5 @@
 - Rollback for the gate candidate is deny-only containment, never the vulnerable LIVE body — prevents restoring revocation-during-wait.
 - Guards pin full-body md5 plus OID/ACL/owner/config, gate trigger and table fingerprints instead of repeating bodies — prevents drift.
 - PG tests use exact LIVE bodies with reduced schema and synthetic Auth; never report them as real JWT/RLS homologation.
+- Real Superadmin revocation has no canonical flow: user_roles RLS requires role<>'superadmin', admin_edit_user_profile_v1 forbids superadmin targets, tenant_admin_set_user_active is tenant-scoped — do not improvise direct SQL; the homologation stays blocked until an authorized flow exists.
+- SelecionarPortal redirects superadmin without portal roles to /plataforma because the context resolver requires a tenant and superadmin has organization_id NULL — prevents the infinite "Validando seus acessos…" state after actor switch.

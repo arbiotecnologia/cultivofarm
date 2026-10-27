@@ -11,7 +11,8 @@ import {
   registerLoginRedirect,
   type PortalContext,
 } from "@/hooks/useAvailableContexts";
-import { PORTAL_CONTEXT_HOME, automaticPortalContext } from "@/lib/portalContext";
+import { PORTAL_CONTEXT_HOME, automaticPortalContext, hasPortalRole } from "@/lib/portalContext";
+import { getHomeForRole } from "@/lib/permissions";
 import { setActivePortalContext } from "@/lib/activePortalContext";
 import { toast } from "sonner";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
@@ -39,7 +40,7 @@ export default function SelecionarPortal() {
 
 function SelecionarPortalContent() {
   const navigate = useNavigate();
-  const { signOut, user, profile } = useAuth();
+  const { signOut, user, profile, roles } = useAuth();
   const [params] = useSearchParams();
   const manual = params.get("intent") === "switch";
   const { data, isLoading, isError, refetch, isFetching, ready, scope, exclusiveOperator, operatorHome, producerHome } = useAvailableContexts();
@@ -127,7 +128,31 @@ function SelecionarPortalContent() {
     }
   }
 
+  // Superadmin de plataforma não tem organization_id nem papel de portal:
+  // o resolver de contextos (RPC) exige tenant e nunca resolveria aqui.
+  // Espelha o AuthRoute: home canônica /plataforma, com a autorização real
+  // revalidada pelo PlataformaGuard e pelo servidor (is_platform_superadmin).
+  const superadminSemPortal = roles.includes("superadmin") && !hasPortalRole(roles);
+  useEffect(() => {
+    if (superadminSemPortal) navigate(getHomeForRole("superadmin"), { replace: true });
+  }, [superadminSemPortal, navigate]);
+
   if (!user) return null;
+
+  if (superadminSemPortal) {
+    return (
+      <div
+        className="min-h-dvh flex items-center justify-center bg-background p-4"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden="true" />
+          <p className="text-sm">Abrindo o portal…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || !ready) {
     return (
