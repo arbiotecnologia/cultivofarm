@@ -39,3 +39,10 @@ Fora do escopo: correção. Próximas fases separadas por função, com pin md5 
 - RTC empresa aplicado, pósMD5 `ba28b1365b38dd8f1c8d489591259ecf`: corrida real relatada1×200/1×409; DRAFT preservado.
 - Dois RPCs globais de serviço endurecidos em `fiscal_services_global_auth_cas_http409_20261026`, hashes e negações A/B no registro RTC; NÃO reaplicar. Produto/global cadastral e caches ainda exigem revisão própria.
 - **Prioridade auth/CAS pendente: `rpc_fiscal_draft_save`** usa `draft_version <> p_expected_version`; com parâmetroNULL a comparação não é TRUE, permitindo bypass do teste. Revisar cadeia completa, wrappers/callers, autorização pré/pós-lock, identidade/tenant, revisão obrigatória, atomicidade e tratamento de conflitos antes de qualquer proposta SQL. Achado informado, não explorado nem corrigido aqui.
+
+## Atualização independente — 27/10 00:19 UTC
+
+- **Contagem atual:42 funções40001**, informada pelo proprietário após duas aplicações;44/47 acima são registros históricos, não contagem vigente.
+- `fiscal_draft_required_revision_http409_20261027`, pósMD5 `224ab7944abd13190fe8ea1044216218`: revisão obrigatória/CAS; NULL/zero/stale409 A, referênciaA porB403 e corrida versão1 um200/outro409 relatados. Rascunho fictícioA DRAFT R$1, sem emissão. AchadoNULL acima encerrado pelo auditor, não reaplicado aqui.
+- `monitoring_tenant_boundary_required_cas_20261027`, pósMD5 `b32bf163ed7ccb989f4f0b653827d825`: isolamento tenant/origem, helper privado/policy restritiva, autorização pós-lock/CAS obrigatório, PT404/PT409 e envelope canônico relatados. Nenhuma fixture/reprogramação real criada/executada pelo agente.
+- Demais funções e serialização verdadeira/SMTP permanecem fora do recorte; não inferir revisão integral ou novos hashes.

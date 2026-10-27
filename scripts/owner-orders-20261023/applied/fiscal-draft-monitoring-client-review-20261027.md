@@ -3,9 +3,9 @@
 ## Limites e instalação
 
 - Apenas código/testes/documentação locais. Nenhum SQL/DDL hosted, publicação, mudança contábil/tributária, papel ou fluxo novo. Cliente Supabase canônico preservado (`swzpzcwiasxmjutrmvkm`); tipos gerados não alterados.
-- Backend será preparado/aplicado separadamente pelo auditor. **44 funções com40001 permanecem registradas até aplicação confirmada**. Nenhum novo pós-hash/implantação inferido.
-- Fiscal previsto: update rejeita `p_expected_version IS NULL`/<=0, CAS também no UPDATE e conflito/PT409. Não muda criação/DRAFT, validações fiscais, snapshots ou atestação.
-- Reprogramação prevista: actor técnico ativo, escopo fazenda/cliente/talhão tenant, origem mesma fazenda, autorização pós-lock e timestamp obrigatório/PT409. Sem corpo/retorno atualizado fornecido: contrato JSON positivo permanece pendente de conciliação com auditor; não assumir homologação por UI.
+- Aplicações confirmadas pelo proprietário27/10 00:19UTC; **contagem atual42 funções40001**. NÃO reaplicar. Hashes abaixo são informados pelo auditor, não recapturados pelo agente.
+- `fiscal_draft_required_revision_http409_20261027`, pósMD5 `224ab7944abd13190fe8ea1044216218`: update rejeita revisãoNULL/<=0/stale comPT409 e CAS no UPDATE. A NULL/zero/stale409, B referênciaA403 e corrida versão1→um200/outro409 reais relatados. Rascunho fictícioA `0e3e8145-7a35-40ee-82db-86fa3a9c6651` DRAFT R$1 sem emitir; nenhuma edição pelo agente.
+- `monitoring_tenant_boundary_required_cas_20261027`, pósMD5 `b32bf163ed7ccb989f4f0b653827d825`: helper privado `monitoring_refs_in_actor_tenant(fazenda,talhao,origem)` e policy RESTRICTIVE ALL authenticated; fazenda/cliente/talhão tenant, origem mesma fazenda. RPC gate cfstate/technical_actor_ready/roles admin-gestor, recheck/FOR UPDATE/CAS obrigatório, PT404 alheio-ausente ePT409stale. Nenhuma mudança contábil/tributária.
 
 ## Callers encontrados e desvios
 
@@ -24,7 +24,7 @@
 - `retry:false` explícito em ambas mutações, inclusive contra defaults de QueryClient com retry3 nos testes. PT409 mapeado para conflito; verdadeiro40001 não é convertido genericamente para PT409 nem reenviado; SMTP intocado.
 - 42501/PT403/PT404/P0002/403/404 mapeados para mensagem uniforme por fluxo, sem UUID/metadata/erro bruto. Isso é tratamento de cliente, não prova da autorização servidor.
 - Fiscal rejeita resposta nula/malformada/ID divergente/versão não avançada/total inválido antes de sucesso e invalidação. Não modifica values nem expectedVersion em falha.
-- Reprogramação rejeita retorno nulo/erro/falso/ID divergente/sem ID correspondente; formato positivo completo depende do corpo fornecido pelo auditor. Não aceita apenas flag success/ok isolada. Invalida apenas consulta de monitoramento do ator capturado após resposta aceita e fence válida.
+- Reprogramação exige envelope exato de5campos: `{success:true,alerta_id:uuid,data_anterior:date|null,nova_data:date,registro_origem_id:uuid|null}`. `success===true`, `alerta_id===args.id` e `nova_data===args.date`; valida UUID/datas civis e nullable obrigatórios. Apenasid/alerta_id nunca confirma. Campos extras/malformados bloqueiam. Invalida apenas consulta de monitoramento do ator capturado após resposta aceita e fence válida.
 - Travas locais impedem envio paralelo do mesmo hook; finally só libera ticket próprio. Não é idempotência durável nem teste de atomicidade SQL. Exceção/revogação não gera toast de sucesso nem invalidação. Nenhum retry automático em falha ou formato desconhecido.
 
 ## Testes existentes e regressões
@@ -38,8 +38,16 @@
 - Resultado: **153/153 em8arquivos**. Validação automática `build OK`00:09:37UTC; git diff --check sem erros. Teste SINIEF exibe aviso React preexistente de nesting `<p>/<div>`, sem falha; não corrigido fora do recorte. HEAD observado `c5eaf3847d3e7353cd2983a65a469f4719b8ee44`, sem commit manual.
 - Não foram executadas sessões JWT reais, SQL descartável/hosted, reprogramação real ou rascunho fiscal produtivo. Positivos simulados validam somente contrato/controle cliente, jamais autenticação positiva.
 
-## Pendências independentes
+## Caminhos exatos para fixture canônica de alertas_agronomicos
 
-1. Auditor: preparação/aplicação/pins/retornos de ambos backends; autorização pré/pós-lock, tenant/origem e CAS/atomicidade reais não certificados aqui.
-2. Confirmar envelope JSON positivo de reprogramação para conciliar parser sem falso sucesso; formato desconhecido permanece bloqueado.
-3. Homologação JWT/RLS A/B/revogação e corrida real, preservando dados produtivos/contabilidade DRAFT; ausência de credenciais/sessões não implica PASS.
+- `/previsao-agronomica` em `src/App.tsx:582` → `src/pages/PrevisaoAgronomica.tsx:31` aba **Previsão Inteligente** → `src/components/previsao/PrevisaoInteligente.tsx:69–72` mutação `createAlert`, INSERT canônico em `alertas_agronomicos`. Botão **Gerar Alerta** linhas167–182 envia fazenda_id/talhao_id/tipo_alerta/nivel_risco/descricao; não envia status/data_vencimento/origem, depende dos defaults servidor. Só aparece com dados climáticos existentes suficientes e risco alto/crítico; não fabricar clima/risco para conseguir fixture.
+- Mesma página, aba **Alertas** (`PrevisaoAgronomica.tsx:29`) → `src/components/previsao/PainelAlertas.tsx:31–39` `updateStatus`, UPDATE id+status anterior, selectid confirma linha; botão **Colocar em monitoramento** linha110 (`ativo`→`monitoramento`). Não fornece data_vencimento/origem e não é a RPC de reprogramação. Este writer foi apenas identificado, não modificado/certificado integralmente.
+- `/monitoramento-alertas` (`src/App.tsx:584`) → `src/pages/MonitoramentoAlertas.tsx:73–87` lê `alertas_agronomicos.status=monitoramento`; linhas151–153 chamam `src/hooks/useReprogramarMonitoramento.ts` com id/data/updated_at observado. Não cria alertas nem altera status.
+- `src/components/visita/PlanoMonitoramentoEditor.tsx:106–126` apenas procura alerta existente e altera data_alerta/descrição; não cria e não coloca statusmonitoramento. Não confundir tipo_alerta comstatus; componente não é o percurso de criação pedido.
+- Referências fornecidas pelo proprietário: A farm `ff35e2a0-8cdc-4913-b732-61875ebd1831`, plot `a3144e03-dae2-4a05-9f07-f6943f3947f3`; B farm `46bea8e9-79fc-440b-bdb5-76f40ba4550f`, plot `806d9789-a87e-4e25-8d59-aa9eea24dabe`. Nenhuma fixture criada, vínculo/tenant não consultado pelo agente. **Não é monitoramento_avisos**.
+
+## Conciliação cliente e pendências independentes
+
+- 26 testes cliente anteriores PASS segundo revisão independente do proprietário; regressões novas executam hooks reais/QueryClient com Auth/transporte simulados, não novas provas JWT/RLS.
+- Nesta conciliação:14 casos adicionais (12 negativos de envelope/2 positivos completos), reprogramação26/26, fiscal14/14 e alertas21/21: **61/61 em3arquivos PASS** via `bun run test -- src/test/fiscal/draftSaveCasClient.test.tsx src/test/monitoramento/reprogramarCasClient.test.tsx src/test/monitoramento/alertas.test.ts`. Build automático OK00:21:46UTC, `git diff --check` OK; HEAD observado `758587804099efa44059df846396977ead8af94a`, sem commit manual. Nenhum typecheck/build manual ou browser autenticado executado.
+- Homologação de fixture/reprogramação A/B/revogação/origem/tenant pelo auditor permanece pendente aqui. Provas fiscais reais específicas acima são relatos externos, não execução do agente; nenhum PASS integral presumido.
