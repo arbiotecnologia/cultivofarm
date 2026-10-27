@@ -1,6 +1,6 @@
 -- READ-ONLY postflight. Every row must be ok=true. Body hash computed on disposable PG 
--- (expected 9c68ad1dba4dac533629530c5c4155b5); auditor confirms LIVE formatting matches.
-SELECT 'body_hash' k, md5(pg_get_functiondef('public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure))='9c68ad1dba4dac533629530c5c4155b5' ok
+-- (expected b053b1432864f30409b2043cd345e96c); auditor confirms LIVE formatting matches.
+SELECT 'body_hash' k, md5(pg_get_functiondef('public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure))='b053b1432864f30409b2043cd345e96c' ok
 UNION ALL SELECT 'definer_owner', prosecdef AND pg_get_userbyid(proowner)='postgres' FROM pg_proc WHERE oid='public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure
 UNION ALL SELECT 'config', proconfig::text='{search_path=public,lock_timeout=3s}' FROM pg_proc WHERE oid='public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure
 UNION ALL SELECT 'acl_unchanged', proacl::text='{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' FROM pg_proc WHERE oid='public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure
