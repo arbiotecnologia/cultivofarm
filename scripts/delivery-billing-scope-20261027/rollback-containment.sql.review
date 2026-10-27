@@ -1,0 +1,12 @@
+-- DENY-ONLY containment (inactive). Never restores the unscoped bodies.
+-- Effect: financial UI cannot bill/mark deliveries until a fixed body is reinstalled.
+-- service_role/postgres callers (fn_entrega_confirmar_engine_v1) keep working.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+REVOKE EXECUTE ON FUNCTION public.fn_generate_receivable_from_entrega(uuid,jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.fn_mark_entrega_not_billable(uuid,text) FROM PUBLIC, anon, authenticated;
+DO $$BEGIN
+ IF has_function_privilege('authenticated','public.fn_generate_receivable_from_entrega(uuid,jsonb)','EXECUTE')
+ OR has_function_privilege('authenticated','public.fn_mark_entrega_not_billable(uuid,text)','EXECUTE') THEN
+  RAISE EXCEPTION 'containment_failed'; END IF; END$$;
+COMMIT;
