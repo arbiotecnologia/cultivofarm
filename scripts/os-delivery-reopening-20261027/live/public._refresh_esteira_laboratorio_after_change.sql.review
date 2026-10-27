@@ -1,0 +1,12 @@
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
+CREATE OR REPLACE FUNCTION public._refresh_esteira_laboratorio_after_change()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  PERFORM public.refresh_esteira_laboratorio();
+  RETURN NULL;
+END;
+$function$;

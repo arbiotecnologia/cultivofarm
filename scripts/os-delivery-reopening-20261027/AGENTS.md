@@ -1,0 +1,4 @@
+- This directory is a review-only delivery recovery package; never install its SQL or reopen stock helpers automatically — dependencies remain independently contained.
+- Preserve already-installed OS approval/programming bodies and ACLs; manual OS creation is not a recovered contract — prevents scope expansion.
+- Candidate delivery hardening keeps client EXECUTE closed; release requires full stock/ledger, billing composition and real tenant/revocation proof — local synthetic tests cannot authorize deployment.
+- Rollback is deny-only for delivery wrappers, never restoration of vulnerable bodies or removal of tenant guards — preserves containment.

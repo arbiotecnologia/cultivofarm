@@ -1,0 +1,8 @@
+-- INACTIVE RELEASE BARRIER, not a deployable migration.
+-- Do not replace this refusal with a GRANT until stock/ledger composition,
+-- real tenant/epoch revocation and frontend recovery are independently accepted.
+BEGIN;
+DO $$ BEGIN
+ RAISE EXCEPTION 'STAGE5_RELEASE_BLOCKED_STOCK_LEDGER_BILLING_AND_REAL_AUTH_PROOF_PENDING' USING ERRCODE='42501';
+END $$;
+ROLLBACK;

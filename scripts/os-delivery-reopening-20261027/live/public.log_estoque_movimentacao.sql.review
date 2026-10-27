@@ -1,0 +1,129 @@
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
+CREATE OR REPLACE FUNCTION public.log_estoque_movimentacao()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_ctx jsonb := public.fn_estoque_ctx_read();
+  v_acao text;
+  v_dir text;
+  v_usuario uuid;
+  v_old_status text;
+  v_new_status text;
+  v_qtd numeric;
+  v_mudou boolean;
+  v_key text := v_ctx->>'idempotency_key';
+  v_meta jsonb := COALESCE(v_ctx->'metadata', '{}'::jsonb);
+  v_seq int;
+BEGIN
+  -- Uma operação do motor pode tocar mais de uma linha (reserva parcial).
+  -- O lançamento principal fica com a chave da operação; os complementares
+  -- recebem chave derivada determinística e são marcados como desdobramento.
+  IF v_key IS NOT NULL THEN
+    SELECT count(*) INTO v_seq
+      FROM public.estoque_movimentacoes
+     WHERE idempotency_key = v_key OR left(idempotency_key,length(v_key)+1) = v_key || '#';
+    IF v_seq > 0 THEN
+      v_meta := v_meta || jsonb_build_object('desdobramento', true, 'operacao_key', v_key);
+      v_key := v_key || '#' || v_seq::text;
+    END IF;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO public.estoque_movimentacoes
+      (estoque_produto_id, acao, quantidade, status_novo, lote_id, usuario_id,
+       saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,
+       volume_anterior, volume_posterior, unidade, direcao,
+       origem, referencia_tipo, referencia_id, motivo, idempotency_key, request_fingerprint,
+       movimentacao_origem_id, os_id, os_tipo, cliente_id, metadata)
+    VALUES (
+      NEW.id,
+      COALESCE(v_ctx->>'acao', 'entrada'),
+      NULLIF(NEW.quantidade, 0), NEW.status::text, NEW.lote_id,
+      COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid),
+      0, COALESCE(NEW.quantidade, 0),
+      0, COALESCE(NEW.quantidade_reservada, 0),
+      0, COALESCE(NEW.volume_total, 0),
+      COALESCE(v_ctx->>'unidade', 'un'), 'entrada',
+      COALESCE(v_ctx->>'origem', 'trigger'),
+      v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid,
+      v_ctx->>'motivo', v_key, v_ctx->>'request_fingerprint',
+      (v_ctx->>'movimentacao_origem_id')::uuid,
+      NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,
+      v_meta
+    );
+    RETURN NEW;
+  END IF;
+
+  v_mudou := (OLD.status IS DISTINCT FROM NEW.status)
+          OR (COALESCE(OLD.quantidade,0) IS DISTINCT FROM COALESCE(NEW.quantidade,0))
+          OR (COALESCE(OLD.quantidade_reservada,0) IS DISTINCT FROM COALESCE(NEW.quantidade_reservada,0))
+          OR (COALESCE(OLD.volume_total,0) IS DISTINCT FROM COALESCE(NEW.volume_total,0));
+  IF NOT v_mudou THEN RETURN NEW; END IF;
+
+  v_old_status := OLD.status::text;
+  v_new_status := NEW.status::text;
+
+  v_acao := COALESCE(v_ctx->>'acao', CASE
+    WHEN v_new_status = 'reservado'  AND v_old_status = 'expedido'  THEN 'estorno_expedicao'
+    WHEN v_new_status = 'reservado'  AND v_old_status <> 'reservado' THEN 'reserva'
+    WHEN v_new_status = 'expedido'   AND v_old_status <> 'expedido'  THEN 'expedicao'
+    WHEN v_new_status = 'estornado'                                  THEN 'estorno_expedicao'
+    WHEN v_old_status = 'reservado'  AND v_new_status = 'disponivel' THEN 'cancelamento_reserva'
+    WHEN v_old_status = v_new_status THEN 'ajuste'
+    ELSE 'edicao'
+  END);
+
+  v_dir := COALESCE(v_ctx->>'direcao', CASE
+    WHEN COALESCE(NEW.quantidade,0) > COALESCE(OLD.quantidade,0) THEN 'entrada'
+    WHEN COALESCE(NEW.quantidade,0) < COALESCE(OLD.quantidade,0) THEN 'saida'
+    WHEN v_acao IN ('expedicao','descarte','perda','consumo','entrega') THEN 'saida'
+    WHEN v_acao IN ('estorno_expedicao','devolucao') THEN 'entrada'
+    ELSE 'neutro'
+  END);
+
+  v_usuario := COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid,
+    CASE WHEN v_new_status = 'expedido' THEN NEW.expedido_por ELSE NEW.reservado_por END);
+
+  v_qtd := NULLIF(ABS(COALESCE(NEW.quantidade,0) - COALESCE(OLD.quantidade,0)), 0);
+  IF v_qtd IS NULL THEN
+    v_qtd := NULLIF(ABS(COALESCE(NEW.quantidade_reservada,0) - COALESCE(OLD.quantidade_reservada,0)), 0);
+  END IF;
+  IF v_qtd IS NULL THEN
+    v_qtd := NULLIF(COALESCE(NEW.quantidade_reservada, NEW.quantidade, 0), 0);
+  END IF;
+
+  INSERT INTO public.estoque_movimentacoes
+    (estoque_produto_id, acao, quantidade, status_anterior, status_novo,
+     os_id, os_tipo, cliente_id, lote_id, usuario_id, observacao,
+     saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,
+     volume_anterior, volume_posterior, unidade, direcao,
+     origem, referencia_tipo, referencia_id, motivo,
+     idempotency_key, request_fingerprint, movimentacao_origem_id, metadata)
+  VALUES (
+    NEW.id, v_acao, v_qtd, v_old_status, v_new_status,
+    NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,
+    NEW.lote_id, v_usuario, COALESCE(v_ctx->>'observacao', NEW.observacao_reserva),
+    COALESCE(OLD.quantidade,0), COALESCE(NEW.quantidade,0),
+    COALESCE(OLD.quantidade_reservada,0), COALESCE(NEW.quantidade_reservada,0),
+    COALESCE(OLD.volume_total,0), COALESCE(NEW.volume_total,0),
+    COALESCE(v_ctx->>'unidade','un'), v_dir,
+    COALESCE(v_ctx->>'origem','trigger'),
+    v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid, v_ctx->>'motivo',
+    v_key, v_ctx->>'request_fingerprint',
+    (v_ctx->>'movimentacao_origem_id')::uuid,
+    v_meta
+  );
+
+  IF v_acao = 'reserva' THEN
+    INSERT INTO public.notificacoes_operacionais (usuario_id, tipo, titulo, mensagem, link)
+    SELECT ur.user_id, 'nova_reserva', 'Nova reserva de estoque',
+           'Item reservado aguardando expedição.', '/estoque'
+      FROM public.user_roles ur JOIN public.profiles pr ON pr.user_id=ur.user_id AND pr.ativo IS TRUE JOIN public.lotes l ON l.id=NEW.lote_id AND l.organization_id=pr.organization_id JOIN public.organizations o ON o.id=pr.organization_id AND o.ativo IS TRUE WHERE ur.role = 'administrativo'::app_role AND l.organization_id IS NOT NULL;
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;

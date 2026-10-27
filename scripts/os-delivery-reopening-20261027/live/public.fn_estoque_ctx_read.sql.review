@@ -1,0 +1,14 @@
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
+CREATE OR REPLACE FUNCTION public.fn_estoque_ctx_read()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v text;
+BEGIN
+  v := NULLIF(current_setting('app.estoque_mov_ctx', true), '');
+  IF v IS NULL THEN RETURN NULL; END IF;
+  RETURN v::jsonb;
+EXCEPTION WHEN OTHERS THEN RETURN NULL;
+END; $function$;

@@ -1,0 +1,12 @@
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
+CREATE OR REPLACE FUNCTION public.fn_ledger_append_only()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  RAISE EXCEPTION 'estoque_movimentacoes e append-only: % nao permitido', TG_OP
+    USING ERRCODE = '42501';
+END;
+$function$;

@@ -1,0 +1,44 @@
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
+CREATE OR REPLACE FUNCTION public.fn_h6c_entrega_ar_b2b_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_po public.partner_orders%ROWTYPE;
+  v_settings record;
+BEGIN
+  IF NEW.receivable_id IS NULL
+     OR NEW.partner_order_id IS NULL
+     OR NEW.receivable_id IS NOT DISTINCT FROM OLD.receivable_id THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT * INTO v_po FROM public.partner_orders WHERE id = NEW.partner_order_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN NEW; END IF;
+
+  -- 1) o recebível passa a pertencer ao parceiro (entra em saldo_em_aberto)
+  UPDATE public.accounts_receivable
+     SET partner_id = v_po.partner_id
+   WHERE id = NEW.receivable_id AND partner_id IS DISTINCT FROM v_po.partner_id;
+
+  -- 2) vínculo financeiro canônico (idempotente: unique em partner_order_id)
+  SELECT * INTO v_settings FROM public.partner_financial_settings WHERE partner_id = v_po.partner_id;
+  INSERT INTO public.partner_order_financial_links(
+    partner_order_id, partner_id, receivable_id, financial_status, billing_trigger, created_by)
+  VALUES (v_po.id, v_po.partner_id, NEW.receivable_id, 'gerado',
+          COALESCE(v_settings.billing_trigger, 'entrega'), NEW.billing_generated_by)
+  ON CONFLICT (partner_order_id) DO NOTHING;
+
+  -- 3) pedido deixa de ser "comprometido não faturado"
+  UPDATE public.partner_orders
+     SET financial_status = 'gerado',
+         receivable_generated = true,
+         receivable_generated_at = COALESCE(receivable_generated_at, now()),
+         receivable_generated_by = COALESCE(receivable_generated_by, NEW.billing_generated_by)
+   WHERE id = v_po.id AND COALESCE(receivable_generated,false) = false;
+
+  RETURN NEW;
+END
+$function$;

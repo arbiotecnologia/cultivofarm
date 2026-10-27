@@ -1,0 +1,11 @@
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
+CREATE OR REPLACE FUNCTION public.rpc_entrega_confirmar_v1(p_entrega_id uuid, p_recebedor jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  RETURN public.fn_entrega_confirmar_engine_v1(p_entrega_id, NULL, NULL, p_recebedor, p_opcoes);
+END;
+$function$;

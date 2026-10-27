@@ -1,0 +1,43 @@
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
+CREATE OR REPLACE FUNCTION public.fn_sync_entrega_financial_status()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  -- bloqueia troca de receivable_id já vinculado
+  IF TG_OP = 'UPDATE'
+     AND OLD.receivable_id IS NOT NULL
+     AND NEW.receivable_id IS DISTINCT FROM OLD.receivable_id THEN
+    RAISE EXCEPTION 'Esta entrega já possui faturamento gerado e não pode ser alterada.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  -- vinculou receivable agora => BILLED
+  IF (TG_OP = 'INSERT' AND NEW.receivable_id IS NOT NULL)
+     OR (TG_OP = 'UPDATE' AND OLD.receivable_id IS NULL AND NEW.receivable_id IS NOT NULL) THEN
+    NEW.financial_status := 'BILLED';
+    NEW.billing_generated_at := COALESCE(NEW.billing_generated_at, now());
+    NEW.billing_generated_by := COALESCE(NEW.billing_generated_by, auth.uid());
+  END IF;
+
+  -- entrega cancelada
+  IF NEW.status::text = 'cancelada' THEN
+    NEW.financial_status := 'CANCELED';
+  END IF;
+
+  -- valida NOT_BILLABLE
+  IF NEW.financial_status = 'NOT_BILLABLE'
+     AND (NEW.not_billable_reason IS NULL OR length(trim(NEW.not_billable_reason)) = 0) THEN
+    RAISE EXCEPTION 'Informe o motivo para marcar a entrega como sem cobrança.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  -- default quando não definido
+  IF NEW.financial_status IS NULL THEN
+    NEW.financial_status := 'PENDING_BILLING';
+  END IF;
+
+  RETURN NEW;
+END $function$;

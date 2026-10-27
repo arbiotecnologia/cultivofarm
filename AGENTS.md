@@ -74,3 +74,4 @@
 - Visit field writes follow scripts/visit-field-cas-20261027/AGENTS.md; installed canonical-write-only ACLs preserve SELECT/RLS and privileged service writers, and applied audit artifacts must never be replayed — prevents bypassing the field revocation gate.
 - Cockpit/application business-conflict deltas follow scripts/business-conflicts-cockpit-application-20261027/AGENTS.md; only exact pinned RAISEs change, with no automatic retry or legacy reopening — preserves genuine serialization and authorization.
 - Catalog-label business-conflict delta follows scripts/catalog-label-conflicts-20261027/AGENTS.md; only pinned label RAISEs move to PT409, shared replay helper stays 40001 — keeps scope minimal.
+- Delivery recovery follows scripts/os-delivery-reopening-20261027/AGENTS.md; hardening never implies release of stock/ledger dependencies or client EXECUTE — prevents unsafe transitive reopening.

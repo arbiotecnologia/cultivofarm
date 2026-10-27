@@ -1,0 +1,15 @@
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
+CREATE OR REPLACE FUNCTION public.fn_cockpit_norm_origem(p_origem text)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE v text := lower(btrim(coalesce(p_origem, '')));
+BEGIN
+  IF v IN ('manual', 'os', 'ordem_servico') THEN RETURN 'manual'; END IF;
+  IF v IN ('onfarm', 'on_farm', 'ordem_servico_onfarm') THEN RETURN 'onfarm'; END IF;
+  IF v = 'b2b' THEN RETURN 'b2b'; END IF;
+  RAISE EXCEPTION 'COCKPIT_ORIGEM_INVALIDA';
+END;
+$function$;

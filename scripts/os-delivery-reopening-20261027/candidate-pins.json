@@ -1,0 +1,20 @@
+[
+  {
+    "name": "public.rpc_cockpit_criar_entrega_v1",
+    "baseline": "a4d47ccf5d116141ed46e9de9ea7eeaa",
+    "candidate_source_sha256": "4f7c4d8e1afa2542f6412b36aef8888205f79ffa5844492b985dd23b9671e68d",
+    "note": "pg_get_functiondef hash must come from local-candidate-hashes.json, not source text"
+  },
+  {
+    "name": "public.fn_entrega_confirmar_engine_v1",
+    "baseline": "6eb78ceebe90196ac5b95bfc127dd63b",
+    "candidate_source_sha256": "e314cafcf1d2d434aceaaff508da6f2007e32d5f8242f044a4f6ece5ff902911",
+    "note": "pg_get_functiondef hash must come from local-candidate-hashes.json, not source text"
+  },
+  {
+    "name": "public.rpc_entrega_cancelar_v1",
+    "baseline": "f830c6c718e2b44a1ded06a19a04557a",
+    "candidate_source_sha256": "4e1bd86c47cfc98b35b70bba333d9295303e6e9debff5948a8cc7820df8c6461",
+    "note": "pg_get_functiondef hash must come from local-candidate-hashes.json, not source text"
+  }
+]

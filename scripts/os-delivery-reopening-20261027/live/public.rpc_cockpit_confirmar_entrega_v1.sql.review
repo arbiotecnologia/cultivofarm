@@ -1,0 +1,15 @@
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_confirmar_entrega_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  IF p_os_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS'; END IF;
+  IF coalesce(btrim(p_recebedor->>'nome'), '') = '' THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_RECEBEDOR_OBRIGATORIO';
+  END IF;
+  RETURN public.fn_entrega_confirmar_engine_v1(p_entrega_id, p_os_id, p_origem, p_recebedor, '{}'::jsonb);
+END;
+$function$;
