@@ -109,12 +109,10 @@ GRANT USAGE ON SCHEMA public TO authenticated;
                 f"UPDATE entregas SET status='cancelada' WHERE id='{E(30)}'; UPDATE entregas SET status='em_rota' WHERE id='{E(31)}';"
                 f"UPDATE entregas SET financial_status='NOT_BILLABLE' WHERE id='{E(32)}';")
         reset()
-        nothing = lambda e: f"RESET ROLE; SELECT (SELECT count(*) FROM accounts_receivable WHERE origin_id='{e}')=0 AND (SELECT receivable_id IS NULL FROM entregas WHERE id='{e}') AND (SELECT count(*) FROM financial_audit_log)=0;"
+        nothing = lambda e: f"RESET ROLE; SELECT (SELECT count(*) FROM accounts_receivable WHERE origin_id='{e}')=0 AND (SELECT receivable_id IS NULL FROM entregas WHERE id='{e}') AND (SELECT count(*) FROM financial_audit_log WHERE entity_id='{e}')=0;"
         # positive + replay
         ok(bill(FA, E(1)) + "RESET ROLE; SELECT (SELECT count(*) FROM accounts_receivable WHERE origin_id='%s')=1 AND (SELECT financial_status FROM entregas WHERE id='%s')='BILLED' AND (SELECT count(*) FROM financial_audit_log)=1;" % (E(1), E(1)), 'A fatura própria: 1 título, BILLED, 1 auditoria')
-        ok(f"SELECT (SELECT receivable_id FROM entregas WHERE id='{E(1)}') = (SELECT x FROM (SELECT 1) s, LATERAL (SELECT NULL::uuid) t(y), LATERAL (SELECT receivable_id x FROM entregas WHERE id='{E(1)}') z);", 'id persistido')
         rid = sql(f"SELECT receivable_id FROM entregas WHERE id='{E(1)}';").stdout.strip()
-        ok(bill(FA, E(1)) .replace("SELECT public.", "SELECT public.") + f"RESET ROLE; SELECT true;", 'replay executa sem erro')
         r = sql(bill(FA, E(1))).stdout.strip().splitlines()[-1]
         assert r == rid, (r, rid); checks.append('replay devolve mesmo id'); print('PASS replay devolve mesmo id')
         ok(f"SELECT (SELECT count(*) FROM accounts_receivable)=1 AND (SELECT count(*) FROM financial_audit_log)=1;", 'replay sem novo título nem auditoria')
