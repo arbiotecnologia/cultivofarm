@@ -43,12 +43,20 @@ export function PlanoMonitoramentoEditor({
   const [rejected, setRejected] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
   const [review, setReview] = useState<{ version: number; text: string; current: () => boolean } | null>(null);
-  const reviewLock = useRef(false);
+  const reviewLock = useRef<symbol | null>(null);
+  const reviewGeneration = useRef<symbol | null>(null);
   const minimumVersion = useRef<number | null>(null);
   useEffect(() => {
+    const generation = Symbol("review-generation");
+    reviewGeneration.current = generation; reviewLock.current = null; setIsReviewing(false);
     setIsOpen(false); setSaveError(null); observed.current = null; attempt.current = null;
     setRejected(false); setReview(null); minimumVersion.current = null;
     setState(previous => ({ ...previous, monitoramentoItens: [], monitoramentoGatilhos: "", dataProximaVisita: "" }));
+    return () => {
+      if (reviewGeneration.current === generation) {
+        reviewGeneration.current = null; reviewLock.current = null;
+      }
+    };
   }, [save.scope]);
   const locked = readOnly || workspace.isError || !workspace.data?.permissions.can_edit ||
     !["rascunho", "em_andamento"].includes(workspace.data?.status ?? "");
@@ -160,7 +168,12 @@ export function PlanoMonitoramentoEditor({
 
   const reconsultar = async () => {
     if (!rejected || writeLock.current || reviewLock.current || locked) return;
-    const current = save.capture(); reviewLock.current = true; setIsReviewing(true);
+    const generation = reviewGeneration.current;
+    if (generation === null) return;
+    const ticket = Symbol("review-request");
+    const scopeCurrent = save.capture();
+    const current = () => reviewGeneration.current === generation && scopeCurrent();
+    reviewLock.current = ticket; setIsReviewing(true);
     try {
       const response = await workspace.refetch();
       if (!current()) return;
@@ -169,7 +182,12 @@ export function PlanoMonitoramentoEditor({
         !Number.isSafeInteger(ws.version) || !ws.version || ws.version <= 0) throw new Error("Não foi possível revisar a visita. O plano foi mantido.");
       setReview({ version: ws.version, text: ws.registro?.observacoes_tecnicas ?? "", current });
     } catch (error) { if (current()) setSaveError(error instanceof Error ? error.message : "Não foi possível revisar a visita."); }
-    finally { reviewLock.current = false; if (current()) setIsReviewing(false); }
+    finally {
+      if (reviewGeneration.current === generation && reviewLock.current === ticket) {
+        reviewLock.current = null;
+        if (current()) setIsReviewing(false);
+      }
+    }
   };
   const confirmarRevisao = () => {
     if (!review || !review.current() || locked || writeLock.current || !rejected || attempt.current?.uncertain ||
