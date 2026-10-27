@@ -160,9 +160,9 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   err(link_vn(16),'PT409','link plan with 2 notices rejected'); untouched('2 notices')
   sql(f"DELETE FROM monitoramento_avisos WHERE registro_consultor_id='{VN}'; UPDATE registros_consultor SET observacoes_tecnicas='Sem plano ### Conduta {{}}', data_proxima_visita=NULL WHERE id='{VN}';")
   sql("ALTER TABLE registros_consultor ENABLE TRIGGER trg_visit_plan_preservation;")
-  ok("SELECT count(*)=0 FROM platform_private.monitoring_alert_receipts WHERE request_id::text LIKE '0000001%';",'rejected links left no receipts')
+  ok("SELECT count(*)=0 FROM platform_private.monitoring_alert_receipts WHERE request_id IN ("+",".join(f"'{k(n)}'" for n in range(10,17))+");",'rejected links left no receipts')
   lst=val(f"SET test.actor='{C}'; SELECT public.rpc_listar_alertas_vinculaveis_v1('{V}')::text;")
-  if ALT in lst or ALB in lst or AL not in lst or AL3 in lst: raise AssertionError('list scope '+lst)
+  if ALT in lst or ALB in lst or AL not in lst or AL3 not in lst: raise AssertionError('list scope '+lst)
   checks+=1; print('PASS linkable list excludes other talhão/tenant/foreign-linked')
   err(f"SET test.actor='{X}'; SELECT public.rpc_listar_alertas_vinculaveis_v1('{V}');",'PT404','foreign list denied')
   # --- legacy v1 ---
