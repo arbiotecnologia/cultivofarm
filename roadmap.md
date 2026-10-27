@@ -850,3 +850,9 @@
 - [x] Backend 5cdaf5d aplicado pelo auditor (b2b_order_attempt_closure_guarded_20261026).
 - [x] Interface publicada 001b3cad e homologação real A/B relatadas pelo proprietário em26/10 19:01; PB001033 único/close closed/committed/B403, sem execução produtiva do agente.
 - [ ] Recuperação após fechar aba/entre abas: pacote INATIVO durable-attempt-20261026, NO-GO pelos gates19:01 acima; entre origens não homologado.
+
+## Alertas climáticos (2026-10-27)
+- [x] PrevisaoInteligente: INSERT direto substituído por `rpc_criar_alerta_climatico_v1` (hook `useCriarAlertaClimatico`), sem retry, trava de duplo envio, validação estrita `[{id,criado}]`.
+- [ ] Backend `rpc_criar_alerta_climatico_v1` com technical_actor_ready + monitoring_refs_in_actor_tenant/advisory lock — aplicação pelo auditor (bloqueio: externo).
+- [ ] Homologação real A/B da criação climática, origem vinculada (`rpc_ativar_monitoramento_visita`/`registro_origem_id`) e revogação em voo — não homologadas (bloqueio: sessões reais).
+- [ ] PlanoMonitoramentoEditor e PainelAlertas ainda fazem UPDATE direto em `alertas_agronomicos` — revisão futura, não alterado.
