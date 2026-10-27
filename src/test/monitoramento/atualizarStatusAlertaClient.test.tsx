@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useAtualizarStatusAlerta } from "@/hooks/useAtualizarStatusAlerta";
+import { timestampMicros, useAtualizarStatusAlerta } from "@/hooks/useAtualizarStatusAlerta";
 const s = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), ready: true, actor: "A" }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: s.rpc, from: s.from } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: s.actor }, profile: { user_id: s.actor, organization_id: s.actor, ativo: true, senha_provisoria: false }, roles: ["gestor"], loading: false, authzReady: s.ready, authzEpoch: 0, checkAuthzAccess: () => s.ready }) }));
@@ -11,7 +11,7 @@ const ID = "33333333-3333-4333-8333-333333333333";
 const STAMP = "2026-10-27T00:00:00.123456+00:00";
 const NEW = "2026-10-27T00:05:00.654321+00:00";
 const args = { id: ID, status: "monitoramento" as const, expectedUpdatedAt: STAMP };
-const row = (o: Record<string, unknown> = {}) => [{ id: ID, status: "monitoramento", updated_at: NEW, registro_origem_id: null, ...o }];
+const row = (o: Record<string, unknown> = {}) => ({ id: ID, status: "monitoramento", updated_at: NEW, registro_origem_id: null, fazenda_id: ID, descricao: "d", ...o });
 function setup() {
   const qc = new QueryClient({ defaultOptions: { mutations: { retry: 3 } } }); const invalidate = vi.spyOn(qc, "invalidateQueries");
   const h = renderHook(() => useAtualizarStatusAlerta(), { wrapper: ({ children }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider> });
@@ -48,7 +48,7 @@ describe("status de alerta agronômico — hook real, Auth/transporte simulados"
     expect(s.rpc).toHaveBeenCalledTimes(6);
   });
   for (const [name, data] of [
-    ["null", null], ["vazio", []], ["objeto sem array", row()[0]], ["duas linhas", [...row(), ...row()]],
+    ["null", null], ["vazio", []], ["array com uma linha", [row()]], ["array com duas linhas", [row(), row()]],
     ["id alheio", row({ id: "44444444-4444-4444-8444-444444444444" })], ["status diferente", row({ status: "ativo" })],
     ["updated_at ausente", row({ updated_at: undefined })], ["updated_at igual", row({ updated_at: STAMP })],
     ["updated_at anterior", row({ updated_at: "2026-10-26T00:00:00Z" })], ["updated_at inválido", row({ updated_at: "ontem" })],
@@ -83,9 +83,29 @@ describe("status de alerta agronômico — hook real, Auth/transporte simulados"
     resolve({ data: row(), error: null }); await act(async () => { await p1; });
     expect(s.rpc).toHaveBeenCalledTimes(1);
   });
+  it("+1 microssegundo no mesmo milissegundo é sucesso", async () => {
+    const { h } = setup(); s.rpc.mockResolvedValue({ data: row({ updated_at: "2026-10-27T00:00:00.123457+00:00" }), error: null });
+    await act(async () => { await expect(h.result.current.mutateAsync(args)).resolves.toMatchObject({ updated_at: "2026-10-27T00:00:00.123457+00:00" }); });
+  });
+  it("mesmo instante em offset diferente não é avanço; offset posterior real é", async () => {
+    const { h } = setup();
+    s.rpc.mockResolvedValueOnce({ data: row({ updated_at: "2026-10-26T21:00:00.123456-03:00" }), error: null });
+    await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("não confirmada"); });
+    s.rpc.mockResolvedValueOnce({ data: row({ updated_at: "2026-10-26T21:00:00.123457-03:00" }), error: null });
+    await act(async () => { await expect(h.result.current.mutateAsync(args)).resolves.toBeTruthy(); });
+    expect(s.rpc.mock.calls[1][1].p_updated_at_esperado).toBe(STAMP);
+  });
+  it("parser preciso: equivalências e inválidos", () => {
+    expect(timestampMicros("2026-10-27T00:00:00Z")).toBe(timestampMicros("2026-10-27 03:00:00+03"));
+    expect(timestampMicros("2026-10-27T00:00:00.5+00:00")! - timestampMicros("2026-10-27T00:00:00Z")!).toBe(500000n);
+    for (const v of ["2026-02-30T00:00:00Z", "2026-10-27T00:00:00.1234567Z", "2026-10-27T25:00:00Z", 1, null]) expect(timestampMicros(v)).toBeNull();
+  });
   it("PainelAlertas sem UPDATE direto e mesmas ações", () => {
     const src = readFileSync("src/components/previsao/PainelAlertas.tsx", "utf8");
     expect(src).not.toMatch(/\.update\(/); expect(src).toContain("useAtualizarStatusAlerta");
     expect(src).toContain('alterarStatus(a, "monitoramento")'); expect(src.match(/alterarStatus\(a, "encerrado"\)/g)).toHaveLength(2);
+    expect(src).toContain("useScopedPortalQuery"); expect(src).not.toMatch(/\buseQuery\(/);
+    const prev = readFileSync("src/components/previsao/PrevisaoInteligente.tsx", "utf8");
+    expect(prev.match(/useScopedPortalQuery<any\[\]>\(/g)).toHaveLength(4); expect(prev).not.toMatch(/\buseQuery\(/);
   });
 });
