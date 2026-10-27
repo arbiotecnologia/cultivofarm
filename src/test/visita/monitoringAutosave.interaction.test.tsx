@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-const s = vi.hoisted(() => ({ from: vi.fn(), rpc: vi.fn(), writes: [] as any[], version: 2, observations: "", diagnostics: [] as any[], queries: 0 }));
+const s = vi.hoisted(() => ({ from: vi.fn(), rpc: vi.fn(), writes: [] as any[], version: 2, observations: "", diagnostics: [] as any[], queries: 0, diagnosticRead: null as null | Promise<any>, heldWrite: null as null | Promise<void> }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: s.from, rpc: (...args: any[]) => { const promise = s.rpc(...args); return Object.assign(promise, { abortSignal: () => promise }); } } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" }, profile: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", user_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", organization_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", ativo: true }, role: "consultor_tecnico", roles: ["consultor_tecnico"], authzReady: true, loading: false }) }));
 vi.mock("@/hooks/useSystemConfig", () => ({ useSystemConfig: () => ({ config: {} }) }));
@@ -26,7 +26,7 @@ function mount() { qc = new QueryClient({ defaultOptions: { queries: { retry: fa
 async function settle() { await act(async () => { await new Promise(r => setTimeout(r, 0)); }); }
 async function elapse() { vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] }); await act(async () => { await vi.advanceTimersByTimeAsync(3200); }); vi.useRealTimers(); await settle(); }
 beforeEach(() => {
-  vi.clearAllMocks(); s.writes = []; s.version = 2; s.queries = 0; s.diagnostics = [];
+  vi.clearAllMocks(); s.writes = []; s.version = 2; s.queries = 0; s.diagnostics = []; s.diagnosticRead = null; s.heldWrite = null;
   s.observations = serializeConduta("Descrição preservada", { ...CONDUTA_DEFAULT, recomendacaoPreliminar: "Conduta original" }) + "\n\n" + block;
   s.rpc.mockImplementation(async (name: string, args: any) => {
     if (name === "rpc_salvar_plano_monitoramento_visita_v1") {
@@ -45,10 +45,11 @@ beforeEach(() => {
         s.version++; s.observations = payload.observacoes_tecnicas;
         return { data: { id, version: s.version }, error: null };
       }
-      if (table === "visita_diagnosticos") return { data: deleting || payload ? [] : s.diagnostics, error: null };
+      if (table === "visita_diagnosticos") return !deleting && !payload && s.diagnosticRead ? s.diagnosticRead : { data: deleting || payload ? [] : s.diagnostics, error: null };
       return { data: table === "registros_consultor" ? record() : [], error: null };
     };
-    const b: any = { select: () => b, eq: (k: string, v: any) => { filters[k] = v; return b; }, order: () => Promise.resolve(response()), single: () => Promise.resolve(response()), maybeSingle: () => Promise.resolve(response()), update: (p: any) => { payload = p; return b; }, insert: (p: any) => { payload = p; return b; }, delete: () => { deleting = true; return b; }, then: (resolve: any) => Promise.resolve(response()).then(resolve) }; return b;
+    const getResponse = () => table === "registros_consultor" && payload && s.heldWrite ? s.heldWrite.then(response) : Promise.resolve(response());
+    const b: any = { select: () => b, eq: (k: string, v: any) => { filters[k] = v; return b; }, order: getResponse, single: getResponse, maybeSingle: getResponse, update: (p: any) => { payload = p; return b; }, insert: (p: any) => { payload = p; return b; }, delete: () => { deleting = true; return b; }, then: (resolve: any) => getResponse().then(resolve) }; return b;
   });
 });
 afterEach(() => { cleanup(); qc?.clear(); vi.useRealTimers(); });
@@ -86,4 +87,34 @@ it("autosave armado antes do plano não adota versão refetchada nem perde bloco
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull()); await settle(); await elapse();
   expect(s.writes).toEqual([]); expect(s.version).toBe(3); expect(s.observations).toContain("2026-11-07");
   expect(screen.getAllByPlaceholderText("Anotações gerais da visita")[0]).toHaveValue("Edição ainda não enviada"); expect(screen.getByRole("alert")).toHaveTextContent("Sua edição foi mantida");
+});
+it("diagnósticos atrasados e novo envelope mesma revisão não armam autosave de hidratação", async () => {
+  let finish: (value: any) => void = () => {};
+  s.diagnosticRead = new Promise(r => { finish = r; });
+  mount(); await waitFor(() => expect(screen.getAllByPlaceholderText("Anotações gerais da visita")[0]).toHaveValue("Conduta original"));
+  await elapse(); expect(s.writes).toEqual([]);
+  await act(async () => { await qc.invalidateQueries({ queryKey: ["visita-workspace", id] }); });
+  await act(async () => { finish({ data: [{ id, problema: "Baixa vitalidade", descricao: "Descrição preservada", severidade: "medio" }], error: null }); });
+  await elapse(); expect(s.writes).toEqual([]); expect(s.version).toBe(2); expect(monitoringBlock(s.observations)).toBe(block);
+});
+it("falha de diagnósticos mantém erro visível e impede autosave parcial", async () => {
+  s.diagnosticRead = Promise.resolve({ data: null, error: { message: "network" } });
+  mount(); await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível carregar os diagnósticos"));
+  fireEvent.change(screen.getAllByPlaceholderText("Anotações gerais da visita")[0], { target: { value: "Não enviar" } });
+  await elapse(); expect(s.writes).toEqual([]); expect(s.version).toBe(2);
+});
+it("autosave já em voo perde CAS após RPC, sem adotar revisão nova nem apagar plano", async () => {
+  let finish: () => void = () => {};
+  s.heldWrite = new Promise<void>(r => { finish = r; });
+  mount(); await waitFor(() => expect(screen.getAllByPlaceholderText("Anotações gerais da visita")[0]).toHaveValue("Conduta original")); await settle();
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  fireEvent.change(screen.getAllByPlaceholderText("Anotações gerais da visita")[0], { target: { value: "Envio atrasado" } }); await elapse();
+  expect(s.writes).toEqual([]);
+  fireEvent.click(screen.getAllByRole("button", { name: "Editar Plano" })[0]);
+  const input = screen.getByRole("dialog").querySelector('input[type="date"]'); if (!input) throw new Error("date input missing");
+  fireEvent.change(input, { target: { value: "2026-11-08" } }); fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  await act(async () => { finish(); }); await settle();
+  expect(s.writes).toHaveLength(1); expect(s.writes[0].version).toBe(2); expect(s.version).toBe(3);
+  expect(s.observations).toContain("2026-11-08"); expect(screen.getByRole("alert")).toBeTruthy();
 });

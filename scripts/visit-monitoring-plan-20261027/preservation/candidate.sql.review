@@ -61,6 +61,9 @@ BEGIN
   IF (length(definition)-length(replace(definition,needle,'')))/length(needle)<>1 THEN
     RAISE EXCEPTION 'preservation_patch_mismatch' USING ERRCODE='55000';
   END IF;
+  IF (length(definition)-length(replace(definition,'  RETURN v_receipt;','')))/length('  RETURN v_receipt;')<>1 THEN
+    RAISE EXCEPTION 'preservation_return_mismatch' USING ERRCODE='55000';
+  END IF;
   definition := replace(definition,needle,replacement);
   definition := replace(definition,'  RETURN v_receipt;', '  DELETE FROM platform_private.visit_plan_write_tickets WHERE transaction_id=txid_current() AND registro_id=p_registro_id;
   RETURN v_receipt;');

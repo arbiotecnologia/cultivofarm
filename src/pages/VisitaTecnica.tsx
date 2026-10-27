@@ -280,6 +280,10 @@ export default function VisitaTecnica() {
   const hydrationReady = useRef(false);
   const [hydrationComplete, setHydrationComplete] = useState(0);
   const [contentConflict, setContentConflict] = useState<string | null>(null);
+  const refreshAfterPlan = () => {
+    autosaveTicket.current = null;
+    void workspaceQuery.refetch(); void refetchVisita();
+  };
 
   // -------- Queries --------
   const { data: clientes = [] } = useQuery({
@@ -1821,7 +1825,7 @@ export default function VisitaTecnica() {
                             fazendaId={fazendaId}
                             talhaoId={talhaoId}
                             consultorId={(visita as any)?.user_id || user?.id || ""}
-                            onUpdate={() => refetchVisita()}
+                            onUpdate={refreshAfterPlan}
                           />
                         </div>
                       )}
@@ -1848,7 +1852,7 @@ export default function VisitaTecnica() {
                       fazendaId={fazendaId}
                       talhaoId={talhaoId}
                       consultorId={(visita as any)?.user_id || user?.id || ""}
-                      onUpdate={() => refetchVisita()}
+                      onUpdate={refreshAfterPlan}
                     />
                   )}
                   {encerramentoBlock}
@@ -1900,7 +1904,7 @@ export default function VisitaTecnica() {
                       <PlanoMonitoramentoEditor registroId={id} readOnly={isReadOnly}
                         observacoesAtuais={visita?.observacoes_tecnicas ?? ""} dataProximaVisita={visita?.data_proxima_visita}
                         clienteId={clienteId} fazendaId={fazendaId} talhaoId={talhaoId} consultorId={user?.id ?? ""}
-                        onUpdate={() => { void workspaceQuery.refetch(); void refetchVisita(); }} />
+                        onUpdate={refreshAfterPlan} />
                     </AccordionContent>
                   </AccordionItem>
                 )}
@@ -1917,7 +1921,7 @@ export default function VisitaTecnica() {
                 <PlanoMonitoramentoEditor registroId={id} readOnly={isReadOnly}
                   observacoesAtuais={visita?.observacoes_tecnicas ?? ""} dataProximaVisita={visita?.data_proxima_visita}
                   clienteId={clienteId} fazendaId={fazendaId} talhaoId={talhaoId} consultorId={user?.id ?? ""}
-                  onUpdate={() => { void workspaceQuery.refetch(); void refetchVisita(); }} />
+                  onUpdate={refreshAfterPlan} />
               )}
               {encerramentoBlock}
             </div>
