@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 27/10 01:19 — perda real plano por autosave da página (sem produção)
+- [ ] Reproduzir montagem real e autosave atrasado pós-RPC; corrigir hidratação, observações e versão observada sem rebase.
+- [ ] Preparar contenção servidor revisável se necessária, registrar aplicação externa sem reaplicar e validar testes locais.
+- [ ] Homologação/reparação de dados e instalação ficam com auditor; nenhuma escrita produtiva/publicação, contabilidade e SU-518022 preservadas.
+
 ## 27/10 01:03 — bloqueios independentes 35815468 (sem produção)
 - [x] Display autorizado/draft separados, revisão renovada após sucesso; rejeição definitiva com consulta+confirmação explícitas, incerteza conserva chave.
 - [x] Editor no fluxo existente rascunho/em_andamento; finalizadas readonly e aviso ligado à visita visível, sem alegar alerta agronômico.
