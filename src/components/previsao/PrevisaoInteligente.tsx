@@ -22,7 +22,6 @@ import {
 export function PrevisaoInteligente() {
   const [fazendaId, setFazendaId] = useState("");
   const [emAndamento, setEmAndamento] = useState<string | null>(null);
-  const queryClient = useQueryClient();
 
   const fazendasQuery = useQuery({
     queryKey: ["fazendas"],
