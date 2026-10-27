@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useTechnicalQuerySession } from "@/hooks/useVisitaWorkspace";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 
 /** Agronomic alert as returned by the server list; type/risk are the alert's own values, never derived. */
@@ -24,16 +23,18 @@ const absent = (code?: string) => code === "PGRST202" || code === "42883";
 export function alertasVinculaveisKey(registroId: string, scope: string) { return ["alertas-vinculaveis", registroId, scope] as const; }
 
 export function useAlertasVinculaveis(registroId: string, enabled: boolean) {
-  const session = useTechnicalQuerySession("alertas-vinculaveis");
+  const session = useStorageAccessScope(`alertas-vinculaveis:${registroId}`);
   const result = useQuery({
     queryKey: alertasVinculaveisKey(registroId, session.scope),
     enabled: enabled && session.ready && uuid(registroId),
     retry: false,
     staleTime: 15_000,
     queryFn: async ({ signal }): Promise<AlertaVinculavel[]> => {
-      const assert = session.fence(); assert(signal);
+      const current = session.capture();
+      const assert = () => { if (!current() || signal.aborted) throw new OrigemAlertaError(unavailable, "rejected"); };
+      assert();
       const { data, error } = await rpc("rpc_listar_alertas_vinculaveis_v1", { p_registro_id: registroId });
-      assert(signal);
+      assert();
       if (error) throw new OrigemAlertaError(absent(error.code) ? ORIGEM_INDISPONIVEL : unavailable, absent(error.code) ? "unavailable" : "rejected");
       if (!Array.isArray(data)) throw new OrigemAlertaError(unavailable, "rejected");
       return data.filter((a): a is AlertaVinculavel => !!a && typeof a === "object" && uuid((a as AlertaVinculavel).id) &&
