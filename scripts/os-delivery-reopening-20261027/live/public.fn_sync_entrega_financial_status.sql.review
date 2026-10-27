@@ -1,4 +1,4 @@
--- LIVE read-only capture, historical; never apply blindly.
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
 CREATE OR REPLACE FUNCTION public.fn_sync_entrega_financial_status()
  RETURNS trigger
  LANGUAGE plpgsql

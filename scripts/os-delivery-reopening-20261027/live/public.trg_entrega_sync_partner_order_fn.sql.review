@@ -1,4 +1,4 @@
--- LIVE read-only capture, historical; never apply blindly.
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
 CREATE OR REPLACE FUNCTION public.trg_entrega_sync_partner_order_fn()
  RETURNS trigger
  LANGUAGE plpgsql

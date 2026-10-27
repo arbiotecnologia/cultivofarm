@@ -1,4 +1,4 @@
--- LIVE read-only capture, historical; never apply blindly.
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
 CREATE OR REPLACE FUNCTION public.rpc_entrega_confirmar_v1(p_entrega_id uuid, p_recebedor jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql

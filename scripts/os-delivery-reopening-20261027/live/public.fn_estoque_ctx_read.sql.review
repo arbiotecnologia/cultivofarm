@@ -1,4 +1,4 @@
--- LIVE read-only capture, historical; never apply blindly.
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
 CREATE OR REPLACE FUNCTION public.fn_estoque_ctx_read()
  RETURNS jsonb
  LANGUAGE plpgsql

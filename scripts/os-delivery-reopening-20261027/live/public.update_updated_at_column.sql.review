@@ -1,4 +1,4 @@
--- LIVE read-only capture, historical; never apply blindly.
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
  RETURNS trigger
  LANGUAGE plpgsql

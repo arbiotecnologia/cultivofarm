@@ -1,4 +1,4 @@
--- LIVE read-only capture, historical; never apply blindly.
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
 CREATE OR REPLACE FUNCTION public.rpc_aprovar_os_v1(p_os_id uuid, p_origem text)
  RETURNS jsonb
  LANGUAGE plpgsql

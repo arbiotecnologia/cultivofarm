@@ -1,4 +1,4 @@
--- LIVE read-only capture, historical; never apply blindly.
+-- LIVE canonical ref swzpzcwiasxmjutrmvkm; historical, not installable.
 CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_gate()
  RETURNS trigger
  LANGUAGE plpgsql
