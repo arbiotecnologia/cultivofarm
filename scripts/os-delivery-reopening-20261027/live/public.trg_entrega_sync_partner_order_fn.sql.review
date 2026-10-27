@@ -1,0 +1,31 @@
+-- LIVE read-only capture, historical; never apply blindly.
+CREATE OR REPLACE FUNCTION public.trg_entrega_sync_partner_order_fn()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_partner_order_id uuid;
+  v_total int; v_delivered int;
+BEGIN
+  SELECT os.partner_order_id INTO v_partner_order_id
+    FROM public.ordens_servico os WHERE os.id = COALESCE(NEW.ordem_servico_id, OLD.ordem_servico_id);
+  IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;
+
+  SELECT COUNT(*), COUNT(*) FILTER (WHERE e.status = 'entregue')
+    INTO v_total, v_delivered
+    FROM public.entregas e
+    JOIN public.ordens_servico os ON os.id = e.ordem_servico_id
+   WHERE os.partner_order_id = v_partner_order_id;
+
+  IF v_total > 0 AND v_delivered = v_total THEN
+    UPDATE public.partner_orders SET status = 'entregue', updated_at = now()
+      WHERE id = v_partner_order_id AND status <> 'entregue';
+    UPDATE public.production_planning SET status = 'entregue', updated_at = now()
+      WHERE partner_order_id = v_partner_order_id;
+    INSERT INTO public.production_timeline_events (partner_order_id, event_type, meta)
+    VALUES (v_partner_order_id, 'entrega_realizada', jsonb_build_object('total', v_total));
+  END IF;
+  RETURN NEW;
+END $function$;

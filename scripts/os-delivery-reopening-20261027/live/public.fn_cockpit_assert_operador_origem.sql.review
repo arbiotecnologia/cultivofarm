@@ -1,0 +1,34 @@
+-- LIVE read-only capture, historical; never apply blindly.
+CREATE OR REPLACE FUNCTION public.fn_cockpit_assert_operador_origem(p_origem text)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_origem text := public.fn_cockpit_norm_origem(p_origem);
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'COCKPIT_UNAUTHENTICATED'; END IF;
+
+  IF public.has_role(v_uid, 'administrador'::app_role)
+     OR public.has_role(v_uid, 'gestor'::app_role) THEN
+    RETURN v_origem;
+  END IF;
+
+  -- produção: fluxo industrial (manual/onfarm/b2b), sem privilégio de override
+  IF public.has_role(v_uid, 'producao'::app_role) THEN
+    RETURN v_origem;
+  END IF;
+
+  -- operador on-farm: alçada restrita à própria origem
+  IF public.has_role(v_uid, 'operador_onfarm'::app_role) THEN
+    IF v_origem <> 'onfarm' THEN
+      RAISE EXCEPTION 'COCKPIT_FORBIDDEN_ORIGEM';
+    END IF;
+    RETURN v_origem;
+  END IF;
+
+  RAISE EXCEPTION 'COCKPIT_FORBIDDEN';
+END;
+$function$;

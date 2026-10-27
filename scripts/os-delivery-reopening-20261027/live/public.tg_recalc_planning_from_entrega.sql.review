@@ -1,0 +1,26 @@
+-- LIVE read-only capture, historical; never apply blindly.
+CREATE OR REPLACE FUNCTION public.tg_recalc_planning_from_entrega()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_po uuid;
+BEGIN
+  IF NEW.ordem_servico_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT l.partner_order_id INTO v_po
+    FROM public.production_order_link l
+   WHERE l.ordem_servico_id = NEW.ordem_servico_id
+   LIMIT 1;
+
+  IF v_po IS NOT NULL THEN
+    PERFORM public.recalc_partner_order_production(v_po);
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;

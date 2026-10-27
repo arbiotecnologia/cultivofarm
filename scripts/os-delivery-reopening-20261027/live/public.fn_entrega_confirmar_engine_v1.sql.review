@@ -1,0 +1,172 @@
+-- LIVE read-only capture, historical; never apply blindly.
+CREATE OR REPLACE FUNCTION public.fn_entrega_confirmar_engine_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb DEFAULT '{}'::jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_os_id uuid;
+  v_ent record;
+  v_est public.estoque_produto%ROWTYPE;
+  v_pendentes int; v_total_entregue numeric; v_total_reservado numeric;
+  v_finalizada boolean := false; v_avanco jsonb;
+  v_recebedor_nome text;
+  v_entregue_em timestamptz;
+  v_faturamento text := nullif(btrim(coalesce(p_opcoes->>'faturamento','')), '');
+  v_motivo_nb text := nullif(btrim(coalesce(p_opcoes->>'motivo_nao_faturavel','')), '');
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'COCKPIT_UNAUTHENTICATED'; END IF;
+  IF p_entrega_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS'; END IF;
+
+  PERFORM public.fn_estoque_ctx_open(jsonb_build_object(
+    'acao','entrega','origem','fn_entrega_confirmar_engine_v1','usuario_id', v_uid::text));
+
+  PERFORM pg_advisory_xact_lock(hashtext('cockpit_entrega:' || p_entrega_id::text));
+
+  SELECT e.id, e.status::text AS status, e.estoque_produto_id,
+         coalesce(e.quantidade_entregue, 0) AS qtd, e.partner_order_id,
+         e.ordem_servico_id, e.ordem_servico_onfarm_id
+    INTO v_ent
+    FROM public.entregas e
+   WHERE e.id = p_entrega_id
+   FOR UPDATE;
+
+  IF v_ent.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_NAO_ENCONTRADA'; END IF;
+
+  -- Origem: explícita quando informada; derivada do vínculo caso contrário.
+  IF nullif(btrim(coalesce(p_origem,'')), '') IS NOT NULL THEN
+    v_origem := public.fn_cockpit_norm_origem(p_origem);
+  ELSIF v_ent.ordem_servico_onfarm_id IS NOT NULL THEN
+    v_origem := 'onfarm';
+  ELSIF v_ent.partner_order_id IS NOT NULL THEN
+    v_origem := 'b2b';
+  ELSE
+    v_origem := 'manual';
+  END IF;
+
+  v_origem := public.fn_entrega_assert_confirmador(v_origem);
+
+  v_os_id := CASE WHEN v_origem = 'onfarm' THEN v_ent.ordem_servico_onfarm_id
+                  ELSE v_ent.ordem_servico_id END;
+
+  IF p_os_id IS NOT NULL AND v_os_id IS DISTINCT FROM p_os_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_OS';
+  END IF;
+
+  IF v_ent.status = 'cancelada' THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_CANCELADA'; END IF;
+  IF v_ent.status = 'entregue' THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'finalizada', false,
+      'entrega_id', p_entrega_id,
+      'message', 'Entrega já confirmada anteriormente.');
+  END IF;
+
+  IF v_origem = 'b2b' AND v_ent.partner_order_id IS NOT NULL THEN
+    PERFORM public.fn_cockpit_assert_b2b_liberado(v_ent.partner_order_id);
+  END IF;
+
+  IF v_ent.estoque_produto_id IS NOT NULL THEN
+    SELECT * INTO v_est FROM public.estoque_produto WHERE id = v_ent.estoque_produto_id FOR UPDATE;
+    IF v_est.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO'; END IF;
+    IF v_est.status::text <> 'expedido' THEN
+      IF v_os_id IS NOT NULL THEN
+        IF v_est.reservado_para_os_id IS DISTINCT FROM v_os_id THEN
+          RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE';
+        END IF;
+        IF coalesce(v_est.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN
+          RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM';
+        END IF;
+      END IF;
+      IF v_ent.qtd > coalesce(v_est.quantidade, 0) THEN
+        RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA';
+      END IF;
+    END IF;
+  END IF;
+
+  -- Recebedor físico é OBRIGATÓRIO e distinto de confirmado_por.
+  v_recebedor_nome := nullif(btrim(coalesce(p_recebedor->>'nome','')), '');
+  IF v_recebedor_nome IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_RECEBEDOR_OBRIGATORIO';
+  END IF;
+
+  v_entregue_em := coalesce(nullif(btrim(coalesce(p_opcoes->>'entregue_em','')), '')::timestamptz, now());
+
+  UPDATE public.entregas
+     SET status = 'entregue'::public.status_entrega,
+         entregue_em = v_entregue_em,
+         recebido_por_nome = v_recebedor_nome,
+         recebido_por_cargo = coalesce(nullif(btrim(coalesce(p_recebedor->>'cargo','')), ''), recebido_por_cargo),
+         recebido_por_documento = coalesce(nullif(btrim(coalesce(p_recebedor->>'documento','')), ''), recebido_por_documento),
+         observacoes_confirmacao = coalesce(nullif(btrim(coalesce(p_recebedor->>'observacoes','')), ''), observacoes_confirmacao),
+         confirmado_por = v_uid,
+         financial_status = CASE WHEN v_faturamento = 'bill_later' THEN 'PENDING_BILLING'
+                                 ELSE financial_status END
+   WHERE id = p_entrega_id;
+
+  IF v_est.id IS NOT NULL THEN
+    UPDATE public.estoque_produto
+       SET status = 'expedido'::public.status_estoque, expedido_por = v_uid,
+           expedido_em = now(), updated_at = now()
+     WHERE id = v_est.id AND status <> 'expedido'::public.status_estoque;
+
+    IF FOUND THEN
+      INSERT INTO public.estoque_movimentacoes
+        (estoque_produto_id, acao, quantidade, status_anterior, status_novo, os_id, os_tipo, usuario_id, lote_id, observacao)
+      VALUES (v_est.id, 'expedicao', v_ent.qtd, 'reservado', 'expedido',
+              v_os_id, v_origem, v_uid, v_est.lote_id, 'Baixa por confirmação de entrega');
+    END IF;
+  END IF;
+
+  IF v_os_id IS NOT NULL THEN
+    v_avanco := public._rpc_avancar_esteira_laboratorio_internal(v_os_id, v_origem, 'enviar_entrega', NULL);
+
+    INSERT INTO public.laboratorio_esteira_eventos
+      (os_id, origem_os, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+    VALUES (v_os_id, v_origem, 'em_entrega', 'entregue', 'confirmar_entrega_v1', v_uid,
+            format('Confirmação transacional da entrega %s (recebedor: %s)', p_entrega_id, v_recebedor_nome));
+
+    IF v_origem = 'onfarm' THEN
+      SELECT count(*) FILTER (WHERE status::text NOT IN ('entregue','cancelada')),
+             coalesce(sum(quantidade_entregue) FILTER (WHERE status::text = 'entregue'), 0)
+        INTO v_pendentes, v_total_entregue
+        FROM public.entregas WHERE ordem_servico_onfarm_id = v_os_id;
+    ELSE
+      SELECT count(*) FILTER (WHERE status::text NOT IN ('entregue','cancelada')),
+             coalesce(sum(quantidade_entregue) FILTER (WHERE status::text = 'entregue'), 0)
+        INTO v_pendentes, v_total_entregue
+        FROM public.entregas WHERE ordem_servico_id = v_os_id;
+    END IF;
+
+    SELECT coalesce(sum(quantidade_reservada), 0) INTO v_total_reservado
+      FROM public.estoque_produto
+     WHERE reservado_para_os_id = v_os_id
+       AND coalesce(reservado_para_os_tipo, v_origem) = v_origem
+       AND status <> 'estornado'::public.status_estoque;
+
+    IF v_pendentes = 0 AND v_total_reservado > 0 AND v_total_entregue >= v_total_reservado THEN
+      v_avanco := public._rpc_avancar_esteira_laboratorio_internal(v_os_id, v_origem, 'finalizar_os', NULL);
+      IF coalesce((v_avanco->>'success')::boolean, false) THEN
+        v_finalizada := true;
+        INSERT INTO public.laboratorio_esteira_eventos
+          (os_id, origem_os, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+        VALUES (v_os_id, v_origem, 'entregue', 'finalizada', 'finalizacao_automatica_por_entrega', v_uid,
+                'Cobertura completa: OS finalizada na mesma transação da confirmação de entrega.');
+      END IF;
+    END IF;
+  END IF;
+
+  IF v_faturamento = 'not_billable' THEN
+    IF v_motivo_nb IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_MOTIVO_NAO_FATURAVEL_OBRIGATORIO'; END IF;
+    PERFORM public.fn_mark_entrega_not_billable(p_entrega_id, v_motivo_nb);
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'finalizada', v_finalizada,
+    'entrega_id', p_entrega_id, 'os_id', v_os_id, 'origem', v_origem,
+    'parcial', (coalesce(v_pendentes, 0) > 0 OR coalesce(v_total_entregue, 0) < coalesce(v_total_reservado, 0)),
+    'total_entregue', coalesce(v_total_entregue, 0), 'total_reservado', coalesce(v_total_reservado, 0),
+    'message', CASE WHEN v_finalizada THEN 'Entrega confirmada — OS finalizada.'
+                    ELSE 'Entrega confirmada.' END);
+END;
+$function$;

@@ -1,0 +1,21 @@
+-- LIVE read-only capture, historical; never apply blindly.
+CREATE OR REPLACE FUNCTION public.fn_entrega_marcar_cancelamento()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  IF NEW.status::text = 'cancelada'
+     AND (TG_OP = 'INSERT' OR OLD.status::text IS DISTINCT FROM 'cancelada') THEN
+    IF auth.uid() IS NOT NULL
+       AND current_setting('app.entrega_cancelamento_id', true) IS DISTINCT FROM NEW.id::text THEN
+      RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_EXIGE_RPC'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    NEW.cancelada_em := COALESCE(NEW.cancelada_em, now());
+    NEW.cancelada_por := COALESCE(NEW.cancelada_por, auth.uid());
+  END IF;
+  RETURN NEW;
+END;
+$function$;

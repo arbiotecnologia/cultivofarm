@@ -1,0 +1,111 @@
+-- LIVE read-only capture, historical; never apply blindly.
+CREATE OR REPLACE FUNCTION public.rpc_entrega_cancelar_v1(p_entrega_id uuid, p_motivo text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_motivo text := nullif(btrim(coalesce(p_motivo, '')), '');
+  v_entrega public.entregas%ROWTYPE;
+  v_item public.estoque_produto%ROWTYPE;
+  v_mov public.estoque_movimentacoes%ROWTYPE;
+  v_origem text;
+  v_estorno jsonb;
+  v_reserva jsonb;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'ENTREGA_NAO_AUTENTICADO' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF NOT (
+    public.has_role(v_uid, 'administrador'::public.app_role)
+    OR public.has_role(v_uid, 'gestor'::public.app_role)
+    OR public.has_role(v_uid, 'administrativo'::public.app_role)
+  ) THEN
+    RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_SEM_PERMISSAO' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF p_entrega_id IS NULL OR v_motivo IS NULL THEN
+    RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_PARAMETROS_INVALIDOS' USING ERRCODE = 'check_violation';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('entrega_cancelar:' || p_entrega_id::text));
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = p_entrega_id FOR UPDATE;
+
+  IF v_entrega.id IS NULL THEN
+    RAISE EXCEPTION 'ENTREGA_NAO_ENCONTRADA' USING ERRCODE = 'no_data_found';
+  END IF;
+  IF v_entrega.status::text = 'cancelada' THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'entrega_id', v_entrega.id, 'message', 'Entrega ja estava cancelada.');
+  END IF;
+  IF v_entrega.status::text = 'entregue' THEN
+    RAISE EXCEPTION 'ENTREGA_CONFIRMADA_EXIGE_DEVOLUCAO' USING ERRCODE = 'check_violation';
+  END IF;
+  IF v_entrega.status::text NOT IN ('separado', 'em_rota') THEN
+    RAISE EXCEPTION 'ENTREGA_STATUS_NAO_CANCELAVEL' USING ERRCODE = 'check_violation';
+  END IF;
+
+  v_origem := CASE WHEN v_entrega.ordem_servico_onfarm_id IS NOT NULL THEN 'onfarm' ELSE 'manual' END;
+
+  IF v_entrega.estoque_produto_id IS NOT NULL THEN
+    SELECT * INTO v_item FROM public.estoque_produto WHERE id = v_entrega.estoque_produto_id FOR UPDATE;
+    IF v_item.id IS NULL THEN
+      RAISE EXCEPTION 'ENTREGA_ESTOQUE_NAO_ENCONTRADO' USING ERRCODE = 'no_data_found';
+    END IF;
+
+    SELECT m.* INTO v_mov
+      FROM public.estoque_movimentacoes m
+     WHERE m.estoque_produto_id = v_item.id
+       AND m.referencia_tipo = 'entrega'
+       AND m.referencia_id = v_entrega.id
+       AND m.acao IN ('expedicao', 'entrega')
+       AND NOT EXISTS (SELECT 1 FROM public.estoque_movimentacoes r WHERE r.movimentacao_origem_id = m.id)
+     ORDER BY m.created_at DESC, m.id DESC
+     LIMIT 1
+     FOR UPDATE;
+
+    IF v_mov.id IS NOT NULL THEN
+      v_estorno := public.rpc_estoque_operar_v1(
+        'estorno_expedicao', v_item.id, NULL,
+        'entrega-cancel-estorno:' || v_entrega.id::text,
+        jsonb_build_object(
+          'origem', 'rpc_entrega_cancelar_v1', 'referencia_tipo', 'entrega',
+          'referencia_id', v_entrega.id, 'movimentacao_origem_id', v_mov.id, 'motivo', v_motivo
+        )
+      );
+      SELECT * INTO v_item FROM public.estoque_produto WHERE id = v_entrega.estoque_produto_id FOR UPDATE;
+    END IF;
+
+    IF v_item.status::text = 'reservado' THEN
+      v_reserva := public.rpc_cockpit_cancelar_reserva_v1(
+        v_item.id,
+        COALESCE(v_entrega.ordem_servico_onfarm_id, v_entrega.ordem_servico_id),
+        v_origem,
+        'Cancelamento da entrega ' || v_entrega.id::text || ': ' || v_motivo
+      );
+    ELSIF v_item.status::text NOT IN ('disponivel', 'estornado') THEN
+      RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_ESTOQUE_INCONSISTENTE: status %', v_item.status USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  PERFORM set_config('app.entrega_cancelamento_id', v_entrega.id::text, true);
+  UPDATE public.entregas
+     SET status = 'cancelada'::public.status_entrega, motivo_cancelamento = v_motivo
+   WHERE id = v_entrega.id;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, lote_id, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+  VALUES (
+    COALESCE(v_entrega.ordem_servico_onfarm_id, v_entrega.ordem_servico_id),
+    v_origem, v_entrega.lote_id, 'entrega_criada', 'entrega_cancelada',
+    'cancelar_entrega_v1', v_uid, 'Cancelamento atomico. Motivo: ' || v_motivo
+  );
+
+  RETURN jsonb_build_object(
+    'success', true, 'replay', false, 'entrega_id', v_entrega.id,
+    'estoque_estornado', v_estorno IS NOT NULL,
+    'reserva_liberada', v_reserva IS NOT NULL,
+    'message', 'Entrega cancelada e estoque recomposto.'
+  );
+END;
+$function$;

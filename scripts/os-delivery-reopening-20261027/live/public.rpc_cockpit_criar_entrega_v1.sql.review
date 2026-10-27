@@ -1,0 +1,151 @@
+-- LIVE read-only capture, historical; never apply blindly.
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_estoque_produto_id uuid, p_quantidade numeric, p_dados jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_est public.estoque_produto%ROWTYPE;
+  v_existente record;
+  v_id uuid;
+  v_cliente_os uuid;
+BEGIN
+  v_origem := public.fn_cockpit_assert_operador_origem(p_origem);
+
+  IF p_os_id IS NULL OR p_estoque_produto_id IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS';
+  END IF;
+  IF coalesce(p_quantidade, 0) <= 0 THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_INVALIDA';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('cockpit_criar_entrega:' || p_os_id::text || ':' || p_estoque_produto_id::text));
+
+  SELECT * INTO v_est
+  FROM public.estoque_produto
+  WHERE id = p_estoque_produto_id
+  FOR UPDATE;
+
+  IF v_est.id IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO';
+  END IF;
+
+  IF v_origem = 'onfarm' THEN
+    SELECT cliente_id INTO v_cliente_os
+    FROM public.ordens_servico_onfarm
+    WHERE id = p_os_id;
+  ELSE
+    SELECT cliente_id INTO v_cliente_os
+    FROM public.ordens_servico
+    WHERE id = p_os_id;
+  END IF;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_OS_NAO_ENCONTRADA';
+  END IF;
+
+  IF v_est.status::text NOT IN ('reservado', 'expedido') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_STATUS_ESTOQUE_INVALIDO';
+  END IF;
+  IF v_est.reservado_para_os_id IS DISTINCT FROM p_os_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE';
+  END IF;
+  IF coalesce(v_est.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM';
+  END IF;
+  IF p_quantidade > coalesce(v_est.quantidade, 0) THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA';
+  END IF;
+  IF v_est.reservado_para_cliente_id IS NOT NULL
+     AND v_est.reservado_para_cliente_id IS DISTINCT FROM v_cliente_os THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_CLIENTE';
+  END IF;
+  IF nullif(p_dados->>'cliente_id','') IS NOT NULL
+     AND nullif(p_dados->>'cliente_id','')::uuid IS DISTINCT FROM v_cliente_os THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_CLIENTE';
+  END IF;
+
+  SELECT e.id, e.status::text AS status INTO v_existente
+  FROM public.entregas e
+  WHERE e.estoque_produto_id = p_estoque_produto_id
+    AND e.status::text <> 'cancelada'
+    AND (
+      (v_origem = 'onfarm' AND e.ordem_servico_onfarm_id = p_os_id)
+      OR (v_origem <> 'onfarm' AND e.ordem_servico_id = p_os_id)
+    )
+  ORDER BY e.created_at DESC
+  LIMIT 1;
+
+  IF v_existente.id IS NOT NULL THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'entrega_id', v_existente.id, 'status', v_existente.status, 'message', 'Entrega ja registrada para este item da OS.');
+  END IF;
+
+
+  IF coalesce(nullif(p_dados->>'tipo_entrega',''), 'motorista') NOT IN ('motorista','retirada') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_MODALIDADE_INVALIDA';
+  END IF;
+  IF coalesce(nullif(p_dados->>'endereco_origem',''), 'cadastro') NOT IN ('cadastro','personalizado') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA';
+  END IF;
+  IF v_est.volume_total IS NULL OR v_est.volume_total <= 0 OR v_est.volume_total::text IN ('NaN','Infinity','-Infinity')
+     OR v_est.quantidade IS NULL OR v_est.quantidade <= 0 THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO';
+  END IF;
+
+  INSERT INTO public.entregas (
+    ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,
+    lote_id, produto_id, quantidade_entregue, status, cliente_id,
+    data_saida, motorista, veiculo
+  ) VALUES (
+    CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,
+    CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,
+    p_estoque_produto_id,
+    v_est.lote_id,
+    v_est.produto_id,
+    p_quantidade,
+    'separado'::public.status_entrega,
+    v_cliente_os,
+    nullif(p_dados->>'data_saida','')::date,
+    nullif(p_dados->>'motorista',''),
+    nullif(p_dados->>'veiculo','')
+  ) RETURNING id INTO v_id;
+
+
+  -- Only newly created delivery: preserve replay semantics and never overwrite existing history.
+  UPDATE public.entregas SET
+    volume_entregue_ml = round((v_est.volume_total / v_est.quantidade) * p_quantidade * 1000, 6),
+    tipo_entrega = coalesce(nullif(p_dados->>'tipo_entrega',''), 'motorista'),
+    endereco_origem = coalesce(nullif(p_dados->>'endereco_origem',''), 'cadastro'),
+    grupo_entrega_id = nullif(p_dados->>'grupo_entrega_id','')::uuid,
+    hora_saida_prevista = nullif(p_dados->>'hora_saida_prevista','')::time,
+    data_chegada_prevista = nullif(p_dados->>'data_chegada_prevista','')::date,
+    hora_chegada_prevista = nullif(p_dados->>'hora_chegada_prevista','')::time,
+    motorista_telefone = nullif(p_dados->>'motorista_telefone',''),
+    motorista_documento = nullif(p_dados->>'motorista_documento',''),
+    veiculo_placa = nullif(p_dados->>'veiculo_placa',''),
+    veiculo_tipo = nullif(p_dados->>'veiculo_tipo',''),
+    destinatario_nome = nullif(p_dados->>'destinatario_nome',''),
+    destinatario_telefone = nullif(p_dados->>'destinatario_telefone',''),
+    destinatario_whatsapp = nullif(p_dados->>'destinatario_whatsapp',''),
+    endereco_logradouro = nullif(p_dados->>'endereco_logradouro',''),
+    endereco_numero = nullif(p_dados->>'endereco_numero',''),
+    endereco_complemento = nullif(p_dados->>'endereco_complemento',''),
+    endereco_bairro = nullif(p_dados->>'endereco_bairro',''),
+    endereco_cidade = nullif(p_dados->>'endereco_cidade',''),
+    endereco_uf = nullif(p_dados->>'endereco_uf',''),
+    endereco_cep = nullif(p_dados->>'endereco_cep',''),
+    endereco_referencia = nullif(p_dados->>'endereco_referencia','')
+  WHERE id = v_id;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, etapa_nova, acao, usuario_id, observacao)
+  VALUES
+    (p_os_id, v_origem, 'entrega_criada', 'criar_entrega_v1', v_uid,
+     format('Entrega %s criada (motor transacional).', v_id));
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'entrega_id', v_id, 'status', 'separado', 'message', 'Entrega registrada. Confirme a entrega para concluir a OS.');
+END;
+$function$;

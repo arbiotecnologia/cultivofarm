@@ -1,0 +1,45 @@
+-- LIVE read-only capture, historical; never apply blindly.
+CREATE OR REPLACE FUNCTION public.validate_estoque_entrada()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  -- Reservas parciais (têm quantidade_reservada preenchida) seguem normalmente
+  IF NEW.quantidade_reservada IS NOT NULL THEN
+    RETURN NEW;
+  END IF;
+
+  -- Exigir envase para o lote
+  IF NOT EXISTS (SELECT 1 FROM public.envase WHERE lote_id = NEW.lote_id) THEN
+    RAISE EXCEPTION 'Não é possível criar entrada no estoque: o lote ainda não possui registro de envase.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  -- Bloquear duplicidade por envase_id (não mais por lote)
+  IF NEW.envase_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.estoque_produto
+    WHERE envase_id = NEW.envase_id
+      AND quantidade_reservada IS NULL
+      AND id <> COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)
+  ) THEN
+    RAISE EXCEPTION 'Já existe entrada de estoque para este envase.'
+      USING ERRCODE = 'unique_violation';
+  END IF;
+
+  -- Compat: se a entrada vier sem envase_id, manter a regra antiga de 1 por lote
+  IF NEW.envase_id IS NULL AND EXISTS (
+    SELECT 1 FROM public.estoque_produto
+    WHERE lote_id = NEW.lote_id
+      AND envase_id IS NULL
+      AND quantidade_reservada IS NULL
+      AND id <> COALESCE(NEW.id, '00000000-0000-0000-0000-000000000000'::uuid)
+  ) THEN
+    RAISE EXCEPTION 'Já existe uma entrada de estoque agregada para este lote.'
+      USING ERRCODE = 'unique_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$function$;

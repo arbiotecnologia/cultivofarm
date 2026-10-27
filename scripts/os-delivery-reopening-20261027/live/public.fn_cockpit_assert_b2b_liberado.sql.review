@@ -1,0 +1,38 @@
+-- LIVE read-only capture, historical; never apply blindly.
+CREATE OR REPLACE FUNCTION public.fn_cockpit_assert_b2b_liberado(p_partner_order_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE r record;
+BEGIN
+  IF p_partner_order_id IS NULL THEN RETURN; END IF;
+
+  SELECT status::text AS status,
+         coalesce(financial_status, '')          AS fin,
+         coalesce(financial_approval_status, '') AS fin_apr,
+         coalesce(payment_condition_status, '')  AS pay,
+         partner_id
+    INTO r
+    FROM public.partner_orders
+   WHERE id = p_partner_order_id;
+
+  IF r IS NULL THEN RAISE EXCEPTION 'COCKPIT_B2B_PEDIDO_NAO_ENCONTRADO'; END IF;
+  IF r.partner_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_B2B_PARCEIRO_INVALIDO'; END IF;
+
+  IF r.status IN ('rascunho','pendente','solicitado','em_analise_comercial',
+                  'aguardando_cotacao','aguardando_aprovacao_credito',
+                  'aguardando_ajuste_comercial','aguardando_itens') THEN
+    RAISE EXCEPTION 'COCKPIT_B2B_APROVACAO_PENDENTE';
+  END IF;
+  IF r.status IN ('reprovado','reprovado_sem_itens','cancelado') THEN
+    RAISE EXCEPTION 'COCKPIT_B2B_PEDIDO_BLOQUEADO';
+  END IF;
+  IF r.fin_apr IN ('pendente','rejeitado','bloqueado')
+     OR r.fin IN ('bloqueado','inadimplente')
+     OR r.pay IN ('pendente','rejeitado') THEN
+    RAISE EXCEPTION 'COCKPIT_B2B_FINANCEIRO_BLOQUEADO';
+  END IF;
+END;
+$function$;
