@@ -1,0 +1,39 @@
+diff --git a/src/lib/visita/campoContract.ts b/src/lib/visita/campoContract.ts
+new file mode 100644
+index 000000000..f9966b012
+--- /dev/null
++++ b/src/lib/visita/campoContract.ts
+@@ -0,0 +1,33 @@
++import type { PendingCampo } from "@/lib/offlineDb";
++
++export interface CampoOwner { userId: string; organizationId: string }
++
++/** Unowned legacy entries and other actors/tenants are never adopted or replayed. */
++export function campoOwnedBy(entry: Pick<PendingCampo, "ownerUserId" | "ownerOrganizationId">, actor: CampoOwner | null): boolean {
++  return !!actor && !!actor.userId && !!actor.organizationId &&
++    entry.ownerUserId === actor.userId && entry.ownerOrganizationId === actor.organizationId;
++}
++
++/**
++ * Accepts only the server envelope that matches the CAS sent: expected 0 -> versao 1
++ * (insert or idempotent replay), expected N -> N+1. Never invents a version.
++ */
++export function parseCampoResult(data: unknown, expected: number, registroId: string): number {
++  const res = data as { versao?: unknown; registro_consultor_id?: unknown } | null;
++  const v = res?.versao;
++  if (typeof v !== "number" || !Number.isSafeInteger(v)) throw new Error("invalid_response");
++  if (res?.registro_consultor_id != null && res.registro_consultor_id !== registroId) throw new Error("invalid_response");
++  if (v !== (expected === 0 ? 1 : expected + 1)) throw new Error("invalid_response");
++  return v;
++}
++
++/** Business conflicts (PT409): never retried automatically; the draft stays local. */
++export function isCampoConflict(err: unknown): boolean {
++  const e = err as { code?: unknown; message?: unknown } | null;
++  if (e?.code === "PT409") return true;
++  const m = typeof e?.message === "string" ? e.message : "";
++  return /version_conflict|visita_locked|versao_deve_incrementar|versao_inicial_invalida/.test(m);
++}
++
++export const CAMPO_CONFLICT_MESSAGE =
++  "Os dados de campo foram alterados em outro lugar ou a visita não está mais editável. Seu rascunho foi mantido; recarregue a visita para revisar.";

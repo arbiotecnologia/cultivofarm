@@ -1,0 +1,3 @@
+- Field save: gate -> parent FOR UPDATE -> child, re-authorize without cache after each wait; original actor scope intersected with tenant check, never widened — prevents cross-tenant admin writes.
+- CAS 0 means "no row"; N->N+1 only; replay only same actor/key/content; PT409 never auto-retried client-side — prevents lost updates and blind replay.
+- Package is review-only; never auto-apply SQL or publish from here.
