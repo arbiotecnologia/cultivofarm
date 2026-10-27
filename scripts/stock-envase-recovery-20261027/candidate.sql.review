@@ -735,6 +735,7 @@ BEGIN
  RETURN result||jsonb_build_object('success',true);
  END IF;
  IF item.reservado_para_os_id IS DISTINCT FROM p_os_id OR item.reservado_para_os_tipo IS DISTINCT FROM origin THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_RESERVA_OS'; END IF;
+ IF EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE idempotency_key=k) THEN RAISE EXCEPTION 'COCKPIT_RESERVA_NEW_GENERATION_REVIEW_REQUIRED' USING ERRCODE='PT409'; END IF;
  result:=public.rpc_estoque_operar_v1('cancelamento_reserva',p_item_id,item.quantidade_reservada,k,payload);
  IF result->>'ok' IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'ESTQ_SEM_TRILHA'; END IF;
  RETURN result||jsonb_build_object('success',true,'message','Reserva cancelada pelo motor canônico.');
