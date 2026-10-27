@@ -2,6 +2,14 @@ BEGIN;
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '20s';
 -- INACTIVE. Execute only after independent preflight and review.
+CREATE TABLE platform_private.visit_monitoring_plan_receipts (
+  actor_id uuid NOT NULL, registro_id uuid NOT NULL, request_id uuid NOT NULL,
+  fingerprint text NOT NULL, result jsonb NOT NULL,
+  PRIMARY KEY(actor_id,registro_id,request_id)
+);
+REVOKE ALL ON platform_private.visit_monitoring_plan_receipts FROM PUBLIC,anon,authenticated;
+GRANT ALL ON platform_private.visit_monitoring_plan_receipts TO service_role;
+ALTER TABLE platform_private.visit_monitoring_plan_receipts ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION platform_private.save_visit_monitoring_plan_core(
   p_registro_id uuid, p_expected_version integer, p_plano jsonb, p_request_id uuid
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $function$
@@ -62,9 +70,10 @@ BEGIN
     NOT coalesce(platform_private.monitoring_refs_in_actor_tenant(v_reg.fazenda_id,v_reg.talhao_id,v_reg.id),false) THEN
     RAISE EXCEPTION 'monitoring_unavailable' USING ERRCODE='PT404';
   END IF;
-  SELECT metadata INTO v_receipt FROM public.visitas_logs
-    WHERE registro_consultor_id=p_registro_id AND usuario_id=v_uid
-      AND acao='plano_monitoramento_salvo' AND metadata->>'request_id'=p_request_id::text;
+  -- visitas_logs accepts authenticated INSERT: never trust it as a receipt authority.
+  SELECT jsonb_build_object('fingerprint',fingerprint,'result',result) INTO v_receipt
+    FROM platform_private.visit_monitoring_plan_receipts
+    WHERE registro_id=p_registro_id AND actor_id=v_uid AND request_id=p_request_id;
   IF FOUND THEN
     IF v_receipt->>'fingerprint' IS DISTINCT FROM v_fingerprint THEN
       RAISE EXCEPTION 'request_conflict' USING ERRCODE='PT409';
@@ -116,6 +125,8 @@ BEGIN
   INSERT INTO public.visitas_logs(registro_consultor_id,usuario_id,acao,descricao,metadata)
     VALUES(p_registro_id,v_uid,'plano_monitoramento_salvo','Plano de monitoramento atualizado',
       jsonb_build_object('request_id',p_request_id,'fingerprint',v_fingerprint,'version',v_version,'result',v_receipt));
+  INSERT INTO platform_private.visit_monitoring_plan_receipts(actor_id,registro_id,request_id,fingerprint,result)
+    VALUES(v_uid,p_registro_id,p_request_id,v_fingerprint,v_receipt);
   RETURN v_receipt;
 END;
 $function$;
