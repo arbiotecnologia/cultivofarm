@@ -46,9 +46,9 @@ beforeEach(() => {
   mocks.lookup.mockResolvedValue({ data: null, error: null });
   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); });
+afterEach(async () => { await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); cleanup(); vi.useRealTimers(); });
 const fase = () => screen.getByLabelText("Fase fenológica") as HTMLInputElement;
-const typeFase = (v: string) => fireEvent.change(fase(), { target: { value: v } });
+const typeFase = (v: string) => { act(() => { fireEvent.change(fase(), { target: { value: v } }); }); };
 const advance = () => fireEvent.click(screen.getByRole("button", { name: "Salvar e avançar" }));
 const deferred = <T,>() => { let resolve!: (v: T) => void; const p = new Promise<T>((r) => { resolve = r; }); return { p, resolve }; };
 
@@ -138,6 +138,29 @@ it("aba 2 grava rascunho novo enquanto aba 1 envia: cleanup da aba 1 preserva o 
   const stored = await getPendingCampoByRegistro(local);
   expect(stored?.payload).toMatchObject({ fase_fenologica: "TAB2" });
   expect(stored?.syncStatus).toBe("pending_sync");
+  // Finish CAS false: never "Salvo", never advances; revisable notice instead.
+  expect(done).not.toHaveBeenCalled();
+  expect(screen.queryByText("Salvo")).toBeNull();
+  expect(await screen.findByText(/Há um rascunho mais novo desta etapa/)).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Reconsultar dados atuais" })).toBeTruthy();
+});
+
+it("descarte obsoleto (nova revisão de outra aba) não esconde conflito nem apaga o novo rascunho", async () => {
+  mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "PT409", message: "version_conflict" } });
+  render(ui(<WizardCampoStep {...props()} onDone={vi.fn()} />));
+  await screen.findByLabelText("Fase fenológica");
+  typeFase("MEU"); advance();
+  await screen.findByText("Conflito — revise antes de salvar");
+  mocks.lookup.mockResolvedValueOnce({ data: { id: ROW_ID, registro_consultor_id: REMOTE, versao: 3, fase_fenologica: "S" }, error: null });
+  fireEvent.click(screen.getByRole("button", { name: "Reconsultar dados atuais" }));
+  const discard = await screen.findByRole("button", { name: "Descartar rascunho e usar dados atuais" });
+  await savePendingCampo({ localRegistroId: local, clientUuid: CU, remoteRegistroId: REMOTE, payload: { fase_fenologica: "TAB2" },
+    versao: 0, updatedAt: new Date().toISOString(), syncStatus: "pending_sync", ownerUserId: "user-a", ownerOrganizationId: "org-a" });
+  fireEvent.click(discard);
+  expect(await screen.findByText(/Há um rascunho mais novo desta etapa/)).toBeTruthy();
+  expect(screen.getByText("Conflito — revise antes de salvar")).toBeTruthy();
+  expect(fase().value).toBe("MEU");
+  expect((await getPendingCampoByRegistro(local))?.payload).toMatchObject({ fase_fenologica: "TAB2" });
 });
 
 it("falso sucesso do baseline ({}) não confirma, não navega e mantém pendência", async () => {
