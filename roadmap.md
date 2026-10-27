@@ -1,12 +1,18 @@
 # F2-B — auditoria e preparação revisável
 
+## 27/10 15:48 — reconciliação documental de campo (sem SQL/publicação)
+- [x] Registrar implantação pelo auditor de visit_field_canonical_write_only_20261027 no ref swzpzcwiasxmjutrmvkm; artefato do SQL efetivo informado já aplicado, sem migration duplicada.
+- [x] Conciliar README/AGENTS e preparar verificação somente leitura de ACL efetiva por tabela/coluna, SELECT/RPC/guard/policies; script não executado nesta etapa.
+- [x] Registrar provas JWT reais A/B e espera no gate do consultor A às15:46:41UTC (pids1107845/1109520), restauração canônica e fixtures arquivadas; relatos do auditor, sem reprodução pelo agente.
+- [ ] Revisão/publicação independente do frontend; cobertura de espera para outros perfis não homologada. Contabilidade real e SU-518022 continuam pendentes.
+
 ## 27/10 13:38 — rpc_enviar_visita_aprovacao (auditoria 40001, SQL INATIVO)
 - [x] Pacote scripts/visit-approval-submit-20261027: gate antes da linha, reautorização após esperas, PT409, CAS obrigatório, ROW_COUNT=1/1 log, lock_timeout3s; preflight/postflight/contenção deny-only; 38 PG sintéticos; wizard sem CAS fabricado e com fence tardia.
-- [x] Pacote scripts/visit-field-cas-20261027 (rpc_salvar_campo_visita + guard): gate→pai→filho, reautorização sem cache, CAS 0/N→N+1, replay mesmo ator/chave/conteúdo, refs talhão/cultura, guard +1 estrito; 70 PG sintéticos; cliente com cerca de identidade e PT409 sem replay. Pendente: aplicação/homologação pelo auditor e fechamento de escrita direta na tabela.
+- [x] Pacote scripts/visit-field-cas-20261027 (rpc_salvar_campo_visita + guard): backend e fechamento de escrita direta já aplicados pelo auditor; provas reais específicas conciliadas na seção15:48. Histórico sintético preservado; frontend ainda depende de revisão/publicação independente.
 - [x] SQL instalado pelo auditor (OID42716, MD5 90f33a1e); provas reais A/B relatadas; registro installed.sql.review.
 - [x] Frontend wizard: hide-error-cache, 5 contagens verificadas, fences por escopo; 36/36 com QueryClient real.
 - [ ] Revisão independente/publicação do frontend pelo auditor.
-- [ ] Achado separado NÃO corrigido: rpc_salvar_campo_visita (admin cacheado, SELECT por ID sem escopo, CAS '<' sem lock).
+- [x] Achado rpc_salvar_campo_visita tratado no lote isolado e instalado pelo auditor como visit_field_cas_gate_20261027; não reaplicar candidato histórico.
 - [ ] Contabilidade real e SU-518022 adiados.
 
 ## 27/10 12:55 — contenção adicional de escrita agronômica (SQL INATIVO)

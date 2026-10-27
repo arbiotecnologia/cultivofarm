@@ -1,6 +1,9 @@
 # rpc_salvar_campo_visita + visitas_campo_guard
 
-## Estado (revisão 92683a)
+## Estado (reconciliação documental — 27/10/2026, relato às 15:48 UTC)
+- Auditor aplicou também `visit_field_canonical_write_only_20261027` no Supabase canônico `swzpzcwiasxmjutrmvkm`: revogadas escritas diretas de PUBLIC/anon/authenticated; ACL final postgres/service_role `arwdDxtm`, anon/authenticated apenas SELECT. RLS, policies e RPCs preservados. Nenhum SQL executado pelo agente nesta reconciliação; nenhum frontend publicado.
+- `applied-write-only.sql.review` registra **somente o SQL efetivo informado**, já aplicado; não contém uma reconstrução dos preflight pins/postassert da transação original e **não deve ser executado**. Auditor relata transação com `lock_timeout=3s`, preflight ACL/RPC/guard/policies e postassert. Não foi criada migration duplicada.
+- `verify-write-only-readonly.sql` é uma verificação preparada, **não executada nesta etapa**: tabela/colunas (privilégios efetivos e ACL explícita PUBLIC), SELECT, EXECUTE da RPC, configuração, guard e policies. Executar futuramente apenas após conferir o destino canônico externamente; ausência/divergência de destino bloqueia a execução. Todos os checks devem ser true; catálogos não substituem testes JWT/RLS.
 - Backend **aplicado pelo auditor** em produção como migration `visit_field_cas_gate_20261027`; postflight 15/15; dados originais preservados. **Não reaplicar** `candidate.sql.review` (permanece como registro histórico).
 - Sessões reais A/B relatadas pelo auditor (não reproduzidas aqui): negação cruzada 403, criação 200, replay idempotente 200, concorrência com expected 1 → exatamente um 200 v2 e um 409 por tenant.
 - Frontend ainda não publicado. Correção desta etapa: `finishPendingCampo(..., {remove:true})` ou `discardPendingCampo` retornando `false` (outra aba gravou revisão nova) **nunca** anuncia "Salvo" nem chama `onDone`; a revisão nova fica na fila e aparece aviso revisável com "Reconsultar dados atuais" sem recarregar. `useOfflineSync` não conta como sincronizado e registra `superseded_local_revision`. A revisão nova mantém o CAS antigo e, ao sincronizar, receberá PT409 → conflito preservado (sem replay cego).
@@ -28,13 +31,20 @@
 - Mudança de código: `visita_locked` 42501→PT409 e `stale_version` 40001→`version_conflict` PT409 (conflito negocial).
 
 ## Limites reais
-- Escrita direta na tabela por policies `visitas_campo_insert/update` (authenticated) continua existindo; o guard estrito limita versão, mas não impõe gate/tenant canônico. Fechar exige pacote separado (policies RESTRICTIVE), não feito aqui.
+- Escrita direta de authenticated foi fechada pela ACL na migration adicional instalada pelo auditor; as policies continuam intactas, mas não concedem privilégio de tabela por si só. Dono postgres e service_role continuam intencionalmente privilegiados; não afirmar bloqueio global desses escritores.
 - C4: operação que já passou o gate confirma antes de uma revogação enfileirada atrás dela; isso **não** é revogação vencedora.
 - Hash do RPC no `postflight.sql` (`b13df1fe…`) foi calculado em PG descartável; se divergir no hospedado, comparar corpo antes de aceitar.
 - `other_triggers_exact_pin` (postflight e `DO $post$` na transação) fixa OID do gatilho, OID da função, md5 do `triggerdef`, md5 do corpo, `proconfig`, ACL, owner e `prosecdef` dos 2 gatilhos não alterados (valor LIVE confirmado read-only = true); também `other_triggers_fp_legacy` `429799ac…` e OIDs 42803/42826 preservados.
 - Preflight LIVE read-only executado nesta etapa: 23/23 `true`.
 - Pendências locais antigas sem `revision` (anteriores a este pacote) ficam retidas, sem reenvio automático (fail-closed).
 - Testes são sintéticos (PG descartável, Auth por GUC do harness, helpers stub). Não substituem JWT/RLS real.
+
+## Evidência REAL adicional — relato do auditor, não reproduzido pelo agente
+- A/B: GET próprio 200; POST/PATCH/DELETE diretos 403 `permission denied for table`; RPC própria 200 como consultor A/admin B; RPC cruzada A/B 403.
+- Inventário informado: nenhum writer direto de campo em `src` ou Edge Functions inventariadas; interface usa `rpc_salvar_campo_visita`. Nenhum endpoint/fluxo de exclusão foi introduzido.
+- Revogação durante espera comprovada **para consultor A**, perfil identificado pelo prefixo `6b8afdf7`: desativação temporária pela RPC canônica `tenant_admin_set_user_active` sob contexto restrito do admin A, na transação MCP. JWT da sessão real aguardou gate: `pg_stat_activity` mostrou pid `1107845` bloqueado por `1109520` às **15:46:41 UTC**. Após commit, RPC recebeu 403 sem escrita.
+- Perfil restaurado canonicamente; hashes de perfil (exceto updated_at), papéis e vínculos idênticos; mesma sessão voltou a salvar 200. Isso não homologa espera de revogação para todos os perfis.
+- Fixtures `f0e9e7c3-4c75-4914-b21d-0bfdfc0df8ef` (A) e `9861abc1-144e-404d-b6f4-fd2970446d62` (B) arquivadas canonicamente pelo auditor; não recriar nem alterar.
 
 ## Cliente — correções fe6fc410 (versionado separado do SQL)
 - `WizardCampoStep` usa `useStorageAccessScope` (ator/empresa/roles/época/monitor) capturado por tentativa e revalidado após **cada** await (IDB, claim, RPC, cleanup, invalidations) e antes de `onDone`; `finally` antigo não altera UI de outro contexto.
@@ -57,4 +67,4 @@
 - `results-frontend.txt`: vitest.
 - Rodar: `python3 test-local.py` (requer initdb/pg_ctl/psql locais).
 
-Pendentes: aplicação/homologação real pelo auditor, fechamento de escrita direta, contabilidade real e SU-518022.
+Pendentes: revisão/publicação independente do frontend, cobertura de espera de revogação para outros perfis, contabilidade real e SU-518022. Aplicação backend e fechamento de escrita direta não são mais pendências; provas reais estão limitadas aos casos relatados acima.
