@@ -613,9 +613,16 @@ export function useOfflineSync() {
             continue;
           }
           parseCampoResult(data, snap.versao, remoteRegistroId, snap.clientUuid ?? null);
-          await finishPendingCampo(claim, { remove: true });
+          const cleaned = await finishPendingCampo(claim, { remove: true });
           claim = null;
           if (!recommendationCurrent()) break;
+          if (!cleaned) {
+            // Newer local revision written during the RPC: keep it queued, not counted as synced.
+            await log("campo", cp.localRegistroId, "erro", { mensagem_erro: "superseded_local_revision" });
+            failedCount++;
+            setProgress((p) => ({ ...p, failed: p.failed + 1 }));
+            continue;
+          }
           await log("campo", cp.localRegistroId, "sucesso", { item_remoto_id: remoteRegistroId });
           if (!recommendationCurrent()) break;
           syncedCount++;

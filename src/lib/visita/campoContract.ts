@@ -62,3 +62,6 @@ export function isCampoConflict(err: unknown): boolean {
 
 export const CAMPO_CONFLICT_MESSAGE =
   "Os dados de campo foram alterados em outro lugar ou a visita não está mais editável. Seu rascunho foi mantido; reconsulte para revisar.";
+
+export const CAMPO_SUPERSEDED_MESSAGE =
+  "Há um rascunho mais novo desta etapa (outra aba ou edição) que ainda não foi salvo. Nada foi descartado; reconsulte para revisar antes de salvar.";
