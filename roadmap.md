@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 27/10 15:57 — dois conflitos Cockpit/aplicação (pacote INATIVO)
+- [ ] Capturar fontes LIVE e preparar delta exclusivo dos RAISE COCKPIT_LOTE_CONCORRENTE/application_version_conflict: 40001→PT409; PRE/POST/rollback condicionado sem alterar legacy_closed.
+- [ ] Testes PostgreSQL descartável com corpos exatos, conflitos/replay/A/B/atomicidade/serialização genuína; consumidores existentes sem retry cego e riscos de locks/revogação separados.
+- [ ] Implantação e homologação real pelo auditor após revisão; contabilidade real e SU-518022 permanecem pendentes. Sem SQL hosted/publicação/fixtures.
+
 ## 27/10 15:48 — reconciliação documental de campo (sem SQL/publicação)
 - [x] Registrar implantação pelo auditor de visit_field_canonical_write_only_20261027 no ref swzpzcwiasxmjutrmvkm; artefato do SQL efetivo informado já aplicado, sem migration duplicada.
 - [x] Conciliar README/AGENTS e preparar verificação somente leitura de ACL efetiva por tabela/coluna, SELECT/RPC/guard/policies; script não executado nesta etapa.
