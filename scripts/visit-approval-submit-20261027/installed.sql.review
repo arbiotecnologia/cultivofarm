@@ -1,0 +1,100 @@
+-- RECORD ONLY. Captured LIVE read-only on ref swzpzcwiasxmjutrmvkm, 2026-10-27 ~13:55 UTC.
+-- Installed independently by the auditor: migration visit_approval_submit_cas_gate_20261027.
+-- OID 42716; md5(pg_get_functiondef)=90f33a1e55d44fbbd8fa9ebc565ba052; md5(prosrc)=bfec4ebd4e4681e782a428b70bed0c64
+-- ACL {postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}; proconfig {search_path=public,lock_timeout=3s}
+-- Trigger fingerprint (name:triggerdef:md5(functiondef), newline-joined)=94c2571b241a974606d64c14449e2843
+-- DO NOT re-apply. candidate.sql.review is historical and was NOT the installed body (b053... never deployed).
+CREATE OR REPLACE FUNCTION public.rpc_enviar_visita_aprovacao(p_registro_id uuid, p_expected_version integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_reg public.registros_consultor;
+  v_new_version integer;
+  v_rows integer;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'unauthenticated' USING ERRCODE = '42501';
+  END IF;
+  IF p_registro_id IS NULL THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+  -- CAS is mandatory: NULL/non-positive never matches.
+  IF p_expected_version IS NULL OR p_expected_version <= 0 THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+  -- Fast denial (no lock taken for unauthorized callers).
+  IF NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_id), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  -- 1) Canonical gate BEFORE the visit row lock (same order as revocation writers).
+  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'gate_unavailable' USING ERRCODE = '55000';
+  END IF;
+  -- 2) Re-authorize after the gate wait (revocation committed first is observed here).
+  IF NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_id), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  -- 3) Visit row lock.
+  SELECT r.* INTO v_reg FROM public.registros_consultor r
+   WHERE r.id = p_registro_id
+     AND COALESCE(public.can_manage_technical_visit(v_uid,p_registro_id),false)
+     AND (public.has_role(v_uid, 'administrador'::app_role)
+       OR r.created_by = v_uid
+       OR r.consultor_responsavel = v_uid
+       OR (r.cliente_id IS NOT NULL
+           AND public.has_active_user_cliente_access(v_uid, r.cliente_id, ARRAY['execute','manage'])))
+   FOR UPDATE;
+
+  -- 4) Re-authorize + tenant + original actor restriction after the row wait; never cached.
+  IF v_reg.id IS NULL
+     OR NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_id), false)
+     OR NOT COALESCE((
+       public.has_role(v_uid, 'administrador'::app_role)
+       OR v_reg.created_by = v_uid
+       OR v_reg.consultor_responsavel = v_uid
+       OR (v_reg.cliente_id IS NOT NULL
+           AND public.has_active_user_cliente_access(v_uid, v_reg.cliente_id, ARRAY['execute','manage']))
+     ), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  IF v_reg.status::text <> 'finalizado' THEN
+    RAISE EXCEPTION 'transicao_invalida' USING ERRCODE = 'PT409';
+  END IF;
+  IF v_reg.version IS NULL OR p_expected_version <> v_reg.version THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+
+  v_new_version := v_reg.version + 1;
+
+  UPDATE public.registros_consultor
+     SET status = 'enviado_aprovacao'::status_registro_consultor,
+         version = v_new_version,
+         updated_at = now()
+   WHERE id = p_registro_id
+     AND version = p_expected_version
+     AND status = 'finalizado'::status_registro_consultor
+     AND cliente_id IS NOT DISTINCT FROM v_reg.cliente_id;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+
+  INSERT INTO public.visitas_logs (registro_consultor_id, usuario_id, acao, descricao)
+    VALUES (p_registro_id, v_uid, 'enviado_aprovacao', 'Visita enviada para aprovação via rpc_enviar_visita_aprovacao');
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION 'log_write_failed' USING ERRCODE = 'P0001';
+  END IF;
+
+  RETURN jsonb_build_object('id', p_registro_id, 'status', 'enviado_aprovacao', 'version', v_new_version);
+END;
+$function$;
