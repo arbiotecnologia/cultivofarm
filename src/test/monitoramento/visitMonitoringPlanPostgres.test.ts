@@ -8,5 +8,5 @@ it("plano canônico PostgreSQL descartável/Auth sintética: atomicidade/CAS/ori
   expect(output).toContain("PASS revoke during visit row wait 42501");
   expect(output).toContain("PASS confirmed replay survives past date");
   expect(output).toContain("PASS new past plan rejected after replay 22023");
-  expect(output).toContain("TOTAL 26");
+  expect(output).toContain("TOTAL 30");
 }, 90_000);

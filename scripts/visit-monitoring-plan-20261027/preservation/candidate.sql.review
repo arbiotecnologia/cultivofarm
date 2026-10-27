@@ -27,6 +27,11 @@ DECLARE
 BEGIN
   old_block := substring(coalesce(OLD.observacoes_tecnicas,'') from '\[PLANO DE MONITORAMENTO\].*?\[FIM DO PLANO\]');
   new_block := substring(coalesce(NEW.observacoes_tecnicas,'') from '\[PLANO DE MONITORAMENTO\].*?\[FIM DO PLANO\]');
+  IF (coalesce(NEW.observacoes_tecnicas,'') LIKE '%[PLANO DE MONITORAMENTO]%' OR coalesce(NEW.observacoes_tecnicas,'') LIKE '%[FIM DO PLANO]%') AND
+    (new_block IS NULL OR length(coalesce(NEW.observacoes_tecnicas,''))-length(replace(coalesce(NEW.observacoes_tecnicas,''),'[PLANO DE MONITORAMENTO]',''))<>length('[PLANO DE MONITORAMENTO]') OR
+      length(coalesce(NEW.observacoes_tecnicas,''))-length(replace(coalesce(NEW.observacoes_tecnicas,''),'[FIM DO PLANO]',''))<>length('[FIM DO PLANO]')) THEN
+    RAISE EXCEPTION 'ambiguous_plan_text' USING ERRCODE='PT409';
+  END IF;
   IF old_block IS NOT DISTINCT FROM new_block AND (old_block IS NULL OR OLD.data_proxima_visita IS NOT DISTINCT FROM NEW.data_proxima_visita) THEN
     RETURN NEW;
   END IF;
