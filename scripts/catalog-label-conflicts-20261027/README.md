@@ -62,3 +62,25 @@ active `0dce420a2309a03fb63ac1acbe100295`; config `["search_path=\"\"","lock_tim
 - NÃO reaplicar `candidate-gate.sql.review`, `candidate.sql.review` (PT409 isolado) nem `rollback-conditioned.sql.review` (restauraria corpo LIVE antigo vulnerável).
   Único rollback válido: `revocation-gate/rollback-containment.sql.review` (deny-only), cuja guarda de config precisa ser revista caso o auditor tenha divergido do candidato.
 - Contabilidade real e SU-518022 seguem adiados.
+
+## HOMOLOGAÇÃO REAL PÓS-IMPLANTAÇÃO 2026-10-27 ~16:50 UTC (relato do auditor; agente não executou)
+- Superadmin `cultivo@cultivofarm.com.br` no domínio publicado IAB (não preview): list 200, create 200 (fixture `2aaf1f0c-baa1-4b2a-9d1f-3e4243a3d3f8`),
+  update 200, stale 409 PT409, replay 200 idempotente (mesma auditoria), adminB 403, `active=false` 200 (encerrou a fixture).
+- Dados: 7 rótulos originais hash `38fc19cca27fa97090f26b1c293d444e` intactos; fixture com 4 auditorias.
+- Espera controlada: primeira <3s concluiu 200; segunda perdeu a resposta por timeout CDP do navegador e o banco ficou sem auditoria da chave 14 —
+  NÃO é prova de 55P03 nem de homologação de espera.
+- Revogação real de Superadmin PENDENTE e BLOQUEADA: investigação read-only (agente, 2026-10-27) confirmou que NÃO existe fluxo canônico de
+  revogar/restaurar Superadmin. `is_platform_superadmin` deriva de `user_roles.role='superadmin'`; as policies de `user_roles` exigem
+  `role<>'superadmin'` + admin do tenant; `admin_edit_user_profile_v1` bloqueia superadmin (`user_edit_superadmin_forbidden`) e nunca remove a role;
+  `tenant_admin_set_user_active` exige `is_tenant_admin_for_user` (superadmin sem org é inalcançável) e bloqueia autodesativação.
+  Sem novo acesso autorizado, essa homologação não pode ser executada; não improvisar via SQL direto.
+
+## Falha nova observada no app publicado (patch frontend local, SEM publicação)
+- Sintoma: aba já aberta em `/selecionar-portal` após troca consultorA→Superadmin fica em "Validando seus acessos…" por minutos, sem reload,
+  enquanto a RPC de contextos responde 200.
+- Causa raiz (confirmada read-only): o perfil superadmin tem `organization_id` NULL; `useAvailableContexts.ready` exige tenant, então a query
+  nunca é habilitada e a RPC nunca é chamada pela tela. A RPC retornaria 200 com `available_contexts` vazio (branch `org IS NULL`).
+- Patch: `SelecionarPortal` redireciona ator com `superadmin` e SEM papel de portal para a home canônica `/plataforma` (espelha `AuthRoute`;
+  `PlataformaGuard` e o servidor revalidam a autorização — nenhum guard contornado). Multipapel com papel de portal não é desviado.
+- Testes: `src/test/multiportal.superadmin.test.tsx` 3/3 + `multiportal.gestao.test.tsx` 9/9 (local, transporte simulado).
+- Publicação do frontend `8a771ba` (deployment `08519845-9408-4e2c-a664-f68379326828`) e deste patch seguem com o auditor.
