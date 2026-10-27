@@ -1,4 +1,4 @@
-- Keep this package inactive; never apply SQL or publish automatically — independent review owns installation.
+- SQL is installed by the auditor (installed.sql.review is the LIVE record); never re-apply candidate or baseline — candidate is historical.
 - Approval submit takes the canonical gate before the visit row and re-authorizes (tenant + original actor predicate) after each wait; never cache admin — revocation committed before the wait is observed.
 - Business conflicts are PT409, CAS is mandatory, update is scoped with ROW_COUNT=1 and exactly one log; containment is deny-only and never restores 40001.
 - Disposable PostgreSQL uses synthetic Auth and stub helpers; hosted JWT/RLS remains unverified — prevents false homologation.

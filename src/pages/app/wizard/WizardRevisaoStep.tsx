@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,12 +31,21 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   const access = useStorageAccessScope(`wizard-revisao:${remoteRegistroId ?? ""}`);
   const readsEnabled = !!remoteRegistroId && access.ready;
 
-  const { data: registro, isLoading } = useQuery({
+  // Troca de contexto: reset seguro da UI; tentativa antiga perde o ticket e não toca a nova UI.
+  useEffect(() => {
+    submissionLock.current = null;
+    setPending(false);
+    setAction(null);
+    setActionError(null);
+  }, [access.scope]);
+
+  const registroQuery = useQuery({
     queryKey: ["wizard-revisao-registro", remoteRegistroId, access.scope],
     enabled: readsEnabled,
     ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
-      if (!remoteRegistroId) return null;
+      const fenced = access.capture();
+      if (!remoteRegistroId || !fenced()) throw new Error("fenced_scope");
       const { data, error } = await supabase
         .from("registros_consultor")
         .select(`
@@ -48,17 +57,20 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
         `)
         .eq("id", remoteRegistroId)
         .maybeSingle();
+      if (!fenced()) throw new Error("fenced_scope");
       if (error) throw error;
+      if (!data || data.id !== remoteRegistroId) throw new Error("registro_nao_encontrado");
       return data;
     },
   });
 
-  const { data: counts } = useQuery({
+  const countsQuery = useQuery({
     queryKey: ["wizard-revisao-counts", remoteRegistroId, access.scope],
     enabled: readsEnabled,
     ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
-      if (!remoteRegistroId) return null;
+      const fenced = access.capture();
+      if (!remoteRegistroId || !fenced()) throw new Error("fenced_scope");
       const [checkin, campo, diag, rec, anexos] = await Promise.all([
         supabase.from("visitas_checkin").select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId),
         supabase.from("visitas_campo" as never).select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId),
@@ -66,15 +78,33 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
         supabase.from("registros_consultor_recomendacoes").select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId),
         supabase.from("registros_consultor_arquivos").select("id", { count: "exact", head: true }).eq("registro_consultor_id", remoteRegistroId).neq("categoria_arquivo", "checkin"),
       ]);
+      if (!fenced()) throw new Error("fenced_scope");
+      const all = [checkin, campo, diag, rec, anexos];
+      // Todas as 5 contagens precisam ser confirmadas; erro ou contagem ausente nunca vira 0.
+      for (const r of all) {
+        if (r.error) throw r.error;
+        if (typeof r.count !== "number" || !Number.isSafeInteger(r.count) || r.count < 0) throw new Error("contagem_indisponivel");
+      }
       return {
-        checkin: checkin.count ?? 0,
-        campo: campo.count ?? 0,
-        diagnosticos: diag.count ?? 0,
-        recomendacoes: rec.count ?? 0,
-        anexos: anexos.count ?? 0,
+        checkin: checkin.count as number,
+        campo: campo.count as number,
+        diagnosticos: diag.count as number,
+        recomendacoes: rec.count as number,
+        anexos: anexos.count as number,
       };
     },
   });
+  // Hide-error-cache: dado só é apresentado com sessão pronta, sem erro, já buscado nesta chave
+  // e com id correspondente; cache anterior + erro (ex. 403) nunca mantém dados/ações.
+  const dataTrusted = (q: { isError: boolean; isSuccess: boolean; isFetchedAfterMount: boolean; isRefetchError?: boolean }) =>
+    q.isSuccess && !q.isError && q.isFetchedAfterMount;
+  const readsTrusted = !!remoteRegistroId && access.ready
+    && dataTrusted(registroQuery) && dataTrusted(countsQuery)
+    && registroQuery.data?.id === remoteRegistroId;
+  const readsFailed = !access.ready || registroQuery.isError || countsQuery.isError;
+  const registro = readsTrusted ? registroQuery.data : undefined;
+  const counts = readsTrusted ? countsQuery.data : undefined;
+  const isLoading = !readsTrusted && !readsFailed;
 
   const status = (registro?.status ?? "rascunho") as RegistroStatus;
   const canFinalize = useMemo(() => canTransition(status, "finalizado"), [status]);
@@ -107,7 +137,7 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   };
 
   const handleConfirm = async () => {
-    if (submissionLock.current || !action || !remoteRegistroId) return;
+    if (submissionLock.current || !action || !remoteRegistroId || !registro || registro.id !== remoteRegistroId) return;
     if (!isOnline || !actionAllowed) {
       setActionError(!isOnline ? "Sem conexão. Esta ação exige internet." : "Esta ação não está disponível no estado atual da visita.");
       return;
@@ -163,9 +193,10 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
       await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", registroId] });
     } finally {
       // finally pertence à tentativa: só libera o próprio ticket; nada mais é aplicado.
+      // Só libera o próprio ticket; UI só muda se o contexto ainda é o mesmo.
       if (submissionLock.current === ticket) {
         submissionLock.current = null;
-        setPending(false);
+        if (current()) setPending(false);
       }
     }
   };
@@ -178,7 +209,22 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
     );
   }
 
-  if (isLoading || !registro) {
+  if (readsFailed) {
+    return (
+      <Card className="p-6 space-y-3 text-center" role="alert">
+        <p className="text-sm text-muted-foreground">
+          {access.ready ? "Não foi possível confirmar os dados atuais desta visita." : "Sessão alterada ou em verificação. Aguarde antes de continuar."}
+        </p>
+        {access.ready && (
+          <Button variant="outline" size="sm" onClick={() => { void registroQuery.refetch(); void countsQuery.refetch(); }}>
+            Consultar novamente
+          </Button>
+        )}
+      </Card>
+    );
+  }
+
+  if (isLoading || !registro || !counts) {
     return (
       <Card className="p-6 flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

@@ -2,7 +2,9 @@
 
 ## 27/10 13:38 — rpc_enviar_visita_aprovacao (auditoria 40001, SQL INATIVO)
 - [x] Pacote scripts/visit-approval-submit-20261027: gate antes da linha, reautorização após esperas, PT409, CAS obrigatório, ROW_COUNT=1/1 log, lock_timeout3s; preflight/postflight/contenção deny-only; 38 PG sintéticos; wizard sem CAS fabricado e com fence tardia.
-- [ ] Aplicação/homologação JWT A/B pelo auditor.
+- [x] SQL instalado pelo auditor (OID42716, MD5 90f33a1e); provas reais A/B relatadas; registro installed.sql.review.
+- [x] Frontend wizard: hide-error-cache, 5 contagens verificadas, fences por escopo; 36/36 com QueryClient real.
+- [ ] Revisão independente/publicação do frontend pelo auditor.
 - [ ] Achado separado NÃO corrigido: rpc_salvar_campo_visita (admin cacheado, SELECT por ID sem escopo, CAS '<' sem lock).
 - [ ] Contabilidade real e SU-518022 adiados.
 
