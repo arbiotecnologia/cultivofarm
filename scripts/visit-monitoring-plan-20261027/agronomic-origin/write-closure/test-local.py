@@ -90,6 +90,9 @@ extra=r'''
    row.stdin.write('COMMIT;\n'); row.stdin.close(); row.wait(timeout=5)
    if r.returncode==0 or '55P03' not in r.stderr or not 2.5<elapsed<5: raise AssertionError(str(elapsed)+r.stderr)
    checks+=1; print('PASS legacy row/advisory timeout',round(elapsed,2))
+  # Hash the exact LIVE v1 body (earlier semantic tests replace only its clock for deterministic dates).
+  sql((CLOSURE/'rpc_reprogramar_monitoramento_v1.baseline.sql').read_text())
+  sql("ALTER FUNCTION public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz) SET lock_timeout='3s';")
   for name in ('rpc_criar_alerta_climatico_v1','rpc_atualizar_status_alerta_agronomico_v1','rpc_reprogramar_monitoramento_v1'):
    print('EXPECTED_FUNCTION',val(f"SELECT oid::regprocedure::text||E'\\t'||md5(pg_get_functiondef(oid)) FROM pg_proc WHERE proname='{name}';"))
   sql((CLOSURE/'rollback-containment.sql.review').read_text())
