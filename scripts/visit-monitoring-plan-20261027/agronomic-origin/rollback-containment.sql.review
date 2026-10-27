@@ -1,4 +1,5 @@
 -- INACTIVE. Deny-only containment: closes new entry points, keeps receipts, logs, guard and data.
+-- Keeps the plan-writer date lock and the v1 PT428 patch: removing either reopens silent divergence.
 -- Does NOT restore the pre-patch v1 (that would reopen the guarded legacy write path).
 BEGIN;
 SET LOCAL lock_timeout='5s';
