@@ -1,0 +1,1083 @@
+diff --git a/src/hooks/useOfflineSync.ts b/src/hooks/useOfflineSync.ts
+index 1261681f8..ded7c6b5c 100644
+--- a/src/hooks/useOfflineSync.ts
++++ b/src/hooks/useOfflineSync.ts
+@@ -19,8 +19,9 @@ import {
+   getSyncedVisitMapping,
+   cleanupOldSyncedVisitMappings,
+   getPendingCampos,
+-  updatePendingCampo,
+-  removePendingCampo,
++  claimPendingCampo,
++  finishPendingCampo,
++  type CampoClaim,
+   getAllPendingDiagnosticos,
+   updatePendingDiagnostico,
+   removePendingDiagnostico,
+@@ -42,7 +43,7 @@ import { toast } from "sonner";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { recomendacaoOwnedBy } from "@/lib/visita/recomendacaoContract";
+-import { campoOwnedBy, isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
++import { campoOwnedBy, isCampoConflict, isValidCampoExpected, parseCampoResult } from "@/lib/visita/campoContract";
+ import { syncRecomendacao } from "@/lib/visita/syncRecomendacao";
+ import { useQueryClient } from "@tanstack/react-query";
+ import { useTechnicalQuerySession, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
+@@ -563,64 +564,68 @@ export function useOfflineSync() {
+ 
+ 
+       // === CAMPO (Etapa 3 do wizard) ===
++      // Fence (actor/tenant/roles/epoch/monitor via useStorageAccessScope + workspace) re-checked
++      // after EVERY await. Claim/cleanup are CAS on revision+attemptId in one IDB transaction, so
++      // a late answer never removes or marks a newer draft written by another tab/edit.
+       const pendingCampos = await getPendingCampos();
+       for (const cp of pendingCampos) {
+-        // Same actor+tenant only; legacy unowned entries are never replayed by another session.
+         if (!recommendationCurrent()) break;
+-        if (!campoOwnedBy(cp, actor)) continue;
++        if (!campoOwnedBy(cp, actor) || !cp.revision) continue; // legacy/unowned/no revision: retained
++        let claim: CampoClaim | null = null;
+         try {
+-          // Precisamos do remoteId — resolve pelo mapping local→remoto
+           let remoteRegistroId = cp.remoteRegistroId || null;
+           if (!remoteRegistroId) {
+             const mapping = await getSyncedVisitMapping(cp.localRegistroId);
++            if (!recommendationCurrent()) break;
+             remoteRegistroId = mapping?.remoteId || null;
+           }
+-          if (!remoteRegistroId) {
+-            // ainda aguardando registro pai — mantém na fila
+-            continue;
+-          }
++          if (!remoteRegistroId) continue; // aguardando registro pai
++          if (!isValidCampoExpected(cp.versao)) continue; // never invents a CAS
+ 
++          const claimed = await claimPendingCampo(cp.localRegistroId, cp.revision, actor);
++          if (!recommendationCurrent()) break;
++          if (!claimed) continue; // superseded/held/conflict: untouched
++          claim = claimed.claim;
++          const snap = claimed.entry;
+           setProgress((p) => ({ ...p, current: "Etapa 3 · Campo" }));
+-          await updatePendingCampo(cp.localRegistroId, { syncStatus: "syncing", syncingAt: Date.now() });
+           await log("campo", cp.localRegistroId, "tentativa", { item_remoto_id: remoteRegistroId });
++          if (!recommendationCurrent()) break;
+ 
+           const { data, error } = await supabase.rpc(
+             "rpc_salvar_campo_visita" as never,
+             {
+               p_registro_consultor_id: remoteRegistroId,
+-              p_client_uuid: cp.clientUuid ?? null,
+-              p_payload: cp.payload,
+-              p_versao: cp.versao,
++              p_client_uuid: snap.clientUuid ?? null,
++              p_payload: snap.payload,
++              p_versao: snap.versao,
+             } as never,
+           );
+-
+-          // Late answer after logout/actor switch: never adopted nor used to clean the queue.
++          // Late answer after logout/actor/epoch switch: never adopted nor used to clean the queue.
+           if (!recommendationCurrent()) break;
+           if (error) {
+-            await updatePendingCampo(cp.localRegistroId, {
+-              // PT409 is a business conflict: kept locally, never blindly replayed.
+-              syncStatus: isCampoConflict(error) ? "conflict" : "sync_error",
+-              syncingAt: null,
+-              lastSyncError: error.message,
+-            });
++            // PT409 is a business conflict: kept locally, never blindly replayed.
++            await finishPendingCampo(claim, { patch: { syncStatus: isCampoConflict(error) ? "conflict" : "sync_error", lastSyncError: error.message } });
++            claim = null;
++            if (!recommendationCurrent()) break;
+             await log("campo", cp.localRegistroId, "erro", { mensagem_erro: error.message });
+             failedCount++;
+             setProgress((p) => ({ ...p, failed: p.failed + 1 }));
+             continue;
+           }
+-
+-          parseCampoResult(data, cp.versao, remoteRegistroId);
++          parseCampoResult(data, snap.versao, remoteRegistroId, snap.clientUuid ?? null);
++          await finishPendingCampo(claim, { remove: true });
++          claim = null;
++          if (!recommendationCurrent()) break;
+           await log("campo", cp.localRegistroId, "sucesso", { item_remoto_id: remoteRegistroId });
+-          await removePendingCampo(cp.localRegistroId);
++          if (!recommendationCurrent()) break;
+           syncedCount++;
+           setProgress((p) => ({ ...p, completed: p.completed + 1 }));
+         } catch (err: any) {
+           console.error("Sync campo error:", err);
+-          await updatePendingCampo(cp.localRegistroId, {
+-            syncStatus: "sync_error",
+-            syncingAt: null,
+-            lastSyncError: err?.message || "erro desconhecido",
+-          }).catch(() => {});
++          if (claim && recommendationCurrent()) {
++            await finishPendingCampo(claim, { patch: { syncStatus: "sync_error", lastSyncError: err?.message || "erro desconhecido" } }).catch(() => false);
++          }
++          if (!recommendationCurrent()) break;
+           await log("campo", cp.localRegistroId, "erro", { mensagem_erro: err?.message || "erro desconhecido" });
+           failedCount++;
+           setProgress((p) => ({ ...p, failed: p.failed + 1 }));
+diff --git a/src/lib/offlineDb.ts b/src/lib/offlineDb.ts
+index 57ca57cc0..c73c0b075 100644
+--- a/src/lib/offlineDb.ts
++++ b/src/lib/offlineDb.ts
+@@ -701,58 +701,120 @@ export interface PendingCampo {
+   /** Ator/empresa de origem; entradas sem dono (legado) não são reenviadas por outra sessão. */
+   ownerUserId?: string;
+   ownerOrganizationId?: string;
++  /** Snapshot revision (new UUID on every local save). Cleanup/mark only touch the exact revision. */
++  revision?: string;
++  /** Claim of the in-flight dispatch; only the owner of this attempt can finish it. */
++  attemptId?: string | null;
+ }
+ 
+-export async function savePendingCampo(entry: PendingCampo): Promise<void> {
++function newCampoRevision(): string {
++  return typeof crypto !== "undefined" && "randomUUID" in crypto
++    ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
++}
++
++/**
++ * Saves a full snapshot with a NEW revision, atomically (single IDB transaction). An in-flight
++ * attempt of an older revision can then never clean up or mark this newer draft. Returns the revision.
++ */
++export async function savePendingCampo(entry: PendingCampo): Promise<string> {
+   const db = await openDb();
++  const revision = newCampoRevision();
+   return new Promise((resolve, reject) => {
+     const tx = db.transaction(STORE_CAMPO, "readwrite");
+-    tx.objectStore(STORE_CAMPO).put({ ...entry, syncingAt: null });
+-    tx.oncomplete = () => resolve();
++    tx.objectStore(STORE_CAMPO).put({ ...entry, revision, attemptId: null, syncingAt: null });
++    tx.oncomplete = () => resolve(revision);
+     tx.onerror = () => reject(tx.error);
+   });
+ }
+ 
+-export async function getPendingCampoByRegistro(
+-  localRegistroId: string,
+-): Promise<PendingCampo | null> {
++export interface CampoClaim { localRegistroId: string; revision: string; attemptId: string }
++
++/**
++ * Atomic claim (single readwrite transaction): only the exact revision, same owner, not in
++ * conflict and not held by a fresh attempt. Returns the claimed snapshot or null.
++ */
++export async function claimPendingCampo(
++  localRegistroId: string, revision: string, owner: { userId: string; organizationId: string },
++): Promise<{ claim: CampoClaim; entry: PendingCampo } | null> {
+   const db = await openDb();
++  const attemptId = newCampoRevision();
+   return new Promise((resolve, reject) => {
+-    const tx = db.transaction(STORE_CAMPO, "readonly");
+-    const req = tx.objectStore(STORE_CAMPO).get(localRegistroId);
+-    req.onsuccess = () => resolve((req.result as PendingCampo) ?? null);
+-    req.onerror = () => reject(req.error);
++    let out: { claim: CampoClaim; entry: PendingCampo } | null = null;
++    const tx = db.transaction(STORE_CAMPO, "readwrite");
++    const store = tx.objectStore(STORE_CAMPO);
++    const req = store.get(localRegistroId);
++    req.onsuccess = () => {
++      const item = req.result as PendingCampo | undefined;
++      if (!item || !item.revision || item.revision !== revision) return;
++      if (item.ownerUserId !== owner.userId || item.ownerOrganizationId !== owner.organizationId) return;
++      if (item.syncStatus === "conflict" || item.syncStatus === "synced") return;
++      if (item.syncStatus === "syncing" && item.attemptId && !isStale(item.syncingAt)) return;
++      const next = { ...item, syncStatus: "syncing" as const, attemptId, syncingAt: Date.now() };
++      store.put(next);
++      out = { claim: { localRegistroId, revision, attemptId }, entry: next };
++    };
++    tx.oncomplete = () => resolve(out);
++    tx.onerror = () => reject(tx.error);
+   });
+ }
+ 
+-export async function updatePendingCampo(
+-  localRegistroId: string,
+-  patch: Partial<PendingCampo>,
+-): Promise<void> {
++/**
++ * Finishes exactly the claimed attempt: removes (success) or marks (error/conflict) only when the
++ * stored revision AND attemptId still match. A newer draft (other tab/edit) is never touched.
++ */
++export async function finishPendingCampo(
++  claim: CampoClaim,
++  outcome: { remove: true } | { remove?: false; patch: Partial<PendingCampo> },
++): Promise<boolean> {
+   const db = await openDb();
+   return new Promise((resolve, reject) => {
++    let done = false;
+     const tx = db.transaction(STORE_CAMPO, "readwrite");
+     const store = tx.objectStore(STORE_CAMPO);
+-    const getReq = store.get(localRegistroId);
+-    getReq.onsuccess = () => {
+-      const item = getReq.result as PendingCampo | undefined;
+-      if (item) store.put({ ...item, ...patch });
++    const req = store.get(claim.localRegistroId);
++    req.onsuccess = () => {
++      const item = req.result as PendingCampo | undefined;
++      if (!item || item.revision !== claim.revision || item.attemptId !== claim.attemptId) return;
++      if (outcome.remove) store.delete(claim.localRegistroId);
++      else store.put({ ...item, ...(outcome as { patch: Partial<PendingCampo> }).patch, revision: item.revision, attemptId: null, syncingAt: null });
++      done = true;
+     };
+-    tx.oncomplete = () => resolve();
++    tx.oncomplete = () => resolve(done);
+     tx.onerror = () => reject(tx.error);
+   });
+ }
+ 
+-export async function removePendingCampo(localRegistroId: string): Promise<void> {
++/** Explicit user discard after review: removes only the exact revision observed by the user. */
++export async function discardPendingCampo(localRegistroId: string, revision: string): Promise<boolean> {
+   const db = await openDb();
+   return new Promise((resolve, reject) => {
++    let done = false;
+     const tx = db.transaction(STORE_CAMPO, "readwrite");
+-    tx.objectStore(STORE_CAMPO).delete(localRegistroId);
+-    tx.oncomplete = () => resolve();
++    const store = tx.objectStore(STORE_CAMPO);
++    const req = store.get(localRegistroId);
++    req.onsuccess = () => {
++      const item = req.result as PendingCampo | undefined;
++      if (item && item.revision === revision && !(item.syncStatus === "syncing" && !isStale(item.syncingAt))) {
++        store.delete(localRegistroId); done = true;
++      }
++    };
++    tx.oncomplete = () => resolve(done);
+     tx.onerror = () => reject(tx.error);
+   });
+ }
+ 
++export async function getPendingCampoByRegistro(
++  localRegistroId: string,
++): Promise<PendingCampo | null> {
++  const db = await openDb();
++  return new Promise((resolve, reject) => {
++    const tx = db.transaction(STORE_CAMPO, "readonly");
++    const req = tx.objectStore(STORE_CAMPO).get(localRegistroId);
++    req.onsuccess = () => resolve((req.result as PendingCampo) ?? null);
++    req.onerror = () => reject(req.error);
++  });
++}
++
+ export async function getPendingCampos(): Promise<PendingCampo[]> {
+   const db = await openDb();
+   return new Promise((resolve, reject) => {
+diff --git a/src/lib/visita/campoContract.ts b/src/lib/visita/campoContract.ts
+index f9966b012..b81d4fcfd 100644
+--- a/src/lib/visita/campoContract.ts
++++ b/src/lib/visita/campoContract.ts
+@@ -8,17 +8,48 @@ export function campoOwnedBy(entry: Pick<PendingCampo, "ownerUserId" | "ownerOrg
+     entry.ownerUserId === actor.userId && entry.ownerOrganizationId === actor.organizationId;
+ }
+ 
++const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
++
++/** Expected CAS sent to the server: 0 (no row yet) or the observed positive version. */
++export function isValidCampoExpected(expected: unknown): expected is number {
++  return typeof expected === "number" && Number.isSafeInteger(expected) && expected >= 0;
++}
++
++export interface CampoEnvelope { id: string; versao: number; replayed: boolean }
++
+ /**
+- * Accepts only the server envelope that matches the CAS sent: expected 0 -> versao 1
+- * (insert or idempotent replay), expected N -> N+1. Never invents a version.
++ * Accepts only the full server envelope matching the request identity and the CAS sent:
++ * id (uuid), registro_consultor_id === parent, client_uuid === sent key (insert/replay) or the
++ * same key/legacy NULL (update), replayed only on expected 0, versao exactly expected 0 -> 1 or
++ * N -> N+1. Never invents a version; anything else is invalid_response.
+  */
+-export function parseCampoResult(data: unknown, expected: number, registroId: string): number {
+-  const res = data as { versao?: unknown; registro_consultor_id?: unknown } | null;
+-  const v = res?.versao;
++export function parseCampoResult(data: unknown, expected: number, registroId: string, clientUuid: string | null): CampoEnvelope {
++  if (!isValidCampoExpected(expected)) throw new Error("invalid_response");
++  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("invalid_response");
++  const res = data as Record<string, unknown>;
++  const v = res.versao;
+   if (typeof v !== "number" || !Number.isSafeInteger(v)) throw new Error("invalid_response");
+-  if (res?.registro_consultor_id != null && res.registro_consultor_id !== registroId) throw new Error("invalid_response");
++  if (typeof res.id !== "string" || !UUID.test(res.id)) throw new Error("invalid_response");
++  if (res.registro_consultor_id !== registroId) throw new Error("invalid_response");
++  if (typeof res.replayed !== "boolean") throw new Error("invalid_response");
++  if (res.replayed && expected !== 0) throw new Error("invalid_response");
++  const cu = res.client_uuid;
++  if (expected === 0) {
++    if (clientUuid == null || cu !== clientUuid) throw new Error("invalid_response");
++  } else if (!(cu === null || (clientUuid != null && cu === clientUuid))) {
++    throw new Error("invalid_response");
++  }
+   if (v !== (expected === 0 ? 1 : expected + 1)) throw new Error("invalid_response");
+-  return v;
++  return { id: res.id, versao: v, replayed: res.replayed };
++}
++
++/** Validates a hydrated server row: identity of this visit and a positive safe version. */
++export function parseCampoRow(data: unknown, registroId: string): { id: string; versao: number } & Record<string, unknown> {
++  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("invalid_response");
++  const d = data as Record<string, unknown>;
++  if (typeof d.id !== "string" || d.registro_consultor_id !== registroId) throw new Error("invalid_response");
++  if (typeof d.versao !== "number" || !Number.isSafeInteger(d.versao) || d.versao < 1) throw new Error("invalid_response");
++  return d as { id: string; versao: number } & Record<string, unknown>;
+ }
+ 
+ /** Business conflicts (PT409): never retried automatically; the draft stays local. */
+@@ -30,4 +61,4 @@ export function isCampoConflict(err: unknown): boolean {
+ }
+ 
+ export const CAMPO_CONFLICT_MESSAGE =
+-  "Os dados de campo foram alterados em outro lugar ou a visita não está mais editável. Seu rascunho foi mantido; recarregue a visita para revisar.";
++  "Os dados de campo foram alterados em outro lugar ou a visita não está mais editável. Seu rascunho foi mantido; reconsulte para revisar.";
+diff --git a/src/pages/app/wizard/WizardCampoStep.tsx b/src/pages/app/wizard/WizardCampoStep.tsx
+index 37f9ac5b1..aeba159e0 100644
+--- a/src/pages/app/wizard/WizardCampoStep.tsx
++++ b/src/pages/app/wizard/WizardCampoStep.tsx
+@@ -2,8 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useOnlineStatus } from "@/hooks/useOfflineSync";
+-import { useTenantCatalogScope, useTenantSelection } from "@/hooks/useTenantCatalogVisibility";
+-import { CAMPO_CONFLICT_MESSAGE, campoOwnedBy, isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
++import { useTenantSelection } from "@/hooks/useTenantCatalogVisibility";
++import { useAuth } from "@/hooks/useAuth";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
++import {
++  CAMPO_CONFLICT_MESSAGE, campoOwnedBy, isCampoConflict, isValidCampoExpected, parseCampoResult, parseCampoRow,
++} from "@/lib/visita/campoContract";
+ import { Button } from "@/components/ui/button";
+ import { Card } from "@/components/ui/card";
+ import { Input } from "@/components/ui/input";
+@@ -16,7 +20,10 @@ import { invalidateWizardProgress } from "@/lib/visita/invalidateWizardProgress"
+ import {
+   savePendingCampo,
+   getPendingCampoByRegistro,
+-  updatePendingCampo,
++  claimPendingCampo,
++  finishPendingCampo,
++  discardPendingCampo,
++  type CampoClaim,
+   type PendingCampo,
+ } from "@/lib/offlineDb";
+ 
+@@ -62,7 +69,7 @@ function StatusBadge({ state }: { state: SaveState }) {
+     saved: { icon: <Check className="h-3.5 w-3.5" />, label: "Salvo", cls: "text-emerald-600" },
+     pending_sync: { icon: <WifiOff className="h-3.5 w-3.5" />, label: "Pendente de sincronização", cls: "text-amber-600" },
+     error: { icon: <AlertCircle className="h-3.5 w-3.5" />, label: "Erro ao salvar", cls: "text-destructive" },
+-    conflict: { icon: <AlertCircle className="h-3.5 w-3.5" />, label: "Conflito — recarregue a visita", cls: "text-destructive" },
++    conflict: { icon: <AlertCircle className="h-3.5 w-3.5" />, label: "Conflito — revise antes de salvar", cls: "text-destructive" },
+   };
+   const m = map[state];
+   return (
+@@ -84,45 +91,84 @@ export default function WizardCampoStep({
+   const isOnline = useOnlineStatus();
+   const [form, setForm] = useState<CampoForm>(EMPTY);
+   const [saveState, setSaveState] = useState<SaveState>("idle");
+-  const versionRef = useRef(0);
++  const [hydration, setHydration] = useState<"loading" | "ready" | "error">("loading");
++  const [inConflict, setInConflict] = useState(false);
++  const [review, setReview] = useState<{ serverVersion: number; serverForm: CampoForm } | null>(null);
++  const [reviewing, setReviewing] = useState(false);
++  // Observed server version (CAS) and exact local snapshot revision; null = not trusted -> no save.
++  const observed = useRef<{ version: number | null; revision: string | null }>({ version: null, revision: null });
++  const hydrationRef = useRef<"loading" | "ready" | "error">("loading");
++  const conflictRef = useRef(false);
+   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+   const advanceLock = useRef(false);
+   const [advancing, setAdvancing] = useState(false);
+   const queryClient = useQueryClient();
+   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+-  const hydratedRef = useRef(false);
+-  // Identity fence: actor + tenant + visit. A late response from a previous identity is never adopted.
+-  const scope = useTenantCatalogScope();
+-  const identity = scope ? `${scope.organizationId}|${scope.userId}|${localRegistroId}|${remoteRegistroId ?? ""}` : "unready";
+-  const fence = useRef({ identity, generation: 0 });
+-  if (fence.current.identity !== identity) fence.current = { identity, generation: fence.current.generation + 1 };
++  // Canonical session fence (actor/tenant/roles/authz epoch/monitor), captured per attempt and
++  // re-checked after every await. Server authorization remains mandatory.
++  const { user, profile } = useAuth();
++  const access = useStorageAccessScope(`wizard-campo:${localRegistroId}:${remoteRegistroId ?? ""}`);
++  const owner = access.ready && user?.id && profile?.organization_id
++    ? { userId: user.id, organizationId: profile.organization_id as string } : null;
++  const fence = useRef({ scope: access.scope, generation: 0 });
++  if (fence.current.scope !== access.scope) fence.current = { scope: access.scope, generation: fence.current.generation + 1 };
+   const generation = fence.current.generation;
+   const mounted = useRef(true);
+   const isCurrent = (gen: number) => mounted.current && fence.current.generation === gen;
++  const hydratedGen = useRef<number | null>(null);
++  const markHydration = (h: "loading" | "ready" | "error") => { hydrationRef.current = h; setHydration(h); };
++  const markConflict = (c: boolean) => { conflictRef.current = c; setInConflict(c); };
+   useEffect(() => {
+     mounted.current = true;
+-    // New identity: drop everything observed under the previous one (form, version, queue, timers).
++    // New context: drop everything observed under the previous one (form, CAS, queue, timers).
+     if (debounceRef.current) clearTimeout(debounceRef.current);
+-    hydratedRef.current = false; versionRef.current = 0; queueRef.current = Promise.resolve();
+-    setForm(EMPTY); setSaveState("idle");
++    observed.current = { version: null, revision: null }; queueRef.current = Promise.resolve();
++    hydratedGen.current = null; advanceLock.current = false;
++    hydrationRef.current = "loading"; conflictRef.current = false;
++    setForm(EMPTY); setSaveState("idle"); setHydration("loading"); setInConflict(false); setReview(null);
++    setReviewing(false); setAdvancing(false);
+     return () => { mounted.current = false; };
+   }, [generation]);
+ 
+   // Talhões filtrados pelo cliente
+   const { data: talhoes } = useQuery({
+-    queryKey: ["wizard-campo-talhoes", clienteId],
+-    enabled: !!clienteId,
++    queryKey: ["wizard-campo-talhoes", clienteId, access.scope],
++    enabled: !!clienteId && access.ready,
+     queryFn: async () => {
++      const fenced = access.capture();
+       const { data, error } = await supabase
+         .from("talhoes")
+         .select("id, nome, fazenda_id, fazendas!inner(cliente_id)")
+         .eq("fazendas.cliente_id", clienteId ?? "")
+         .order("nome");
++      if (!fenced()) throw new Error("fenced_scope");
+       if (error) throw error;
+       return data ?? [];
+     },
+   });
+ 
++  // Fresh server lookup of this visit's campo row, keyed by the session scope (no cross-scope cache).
++  const remoteQuery = useQuery({
++    queryKey: ["wizard-campo-remote", remoteRegistroId, access.scope],
++    enabled: !!remoteRegistroId && access.ready,
++    retry: false, staleTime: 0, gcTime: 0, refetchOnWindowFocus: false, refetchOnReconnect: false,
++    queryFn: async () => {
++      const fenced = access.capture();
++      if (!remoteRegistroId || !fenced()) throw new Error("fenced_scope");
++      const { data, error } = await supabase
++        .from("visitas_campo" as never)
++        .select("*")
++        .eq("registro_consultor_id", remoteRegistroId)
++        .maybeSingle();
++      if (!fenced()) throw new Error("fenced_scope");
++      if (error) throw error;
++      return { row: data == null ? null : parseCampoRow(data, remoteRegistroId) };
++    },
++  });
++  const remoteTrusted = !!remoteRegistroId && access.ready && remoteQuery.isSuccess && !remoteQuery.isError
++    && remoteQuery.isFetchedAfterMount;
++  const remoteFailed = !!remoteRegistroId && (remoteQuery.isError || (!access.ready && hydration !== "loading"));
++
+   // Nova seleção de cultura: seletor do servidor (ativas e não ocultas na empresa). A cultura já
+   // gravada no formulário vem via include e aparece marcada, sem poder ser escolhida de novo.
+   // Paginado e pesquisável no servidor (sem baixar o catálogo todo).
+@@ -140,55 +186,61 @@ export default function WizardCampoStep({
+   const culturas = culturaSel.isSuccess && !culturaSel.isFetching ? culturaSel.data.rows : undefined;
+   const culturaPronta = culturas !== undefined;
+ 
+-  // Hidrata: primeiro tenta remoto, depois rascunho local
++  const rowToForm = (d: Record<string, unknown> | null): CampoForm => d ? {
++    talhao_id: (d.talhao_id as string) ?? "",
++    cultura_id: (d.cultura_id as string) ?? "",
++    area_avaliada_ha: d.area_avaliada_ha != null ? String(d.area_avaliada_ha) : "",
++    fase_fenologica: (d.fase_fenologica as string) ?? "",
++    estande_plantas_ha: d.estande_plantas_ha != null ? String(d.estande_plantas_ha) : "",
++    uniformidade: ((d.uniformidade as string) ?? "") as CampoForm["uniformidade"],
++    observacoes_campo: (d.observacoes_campo as string) ?? "",
++  } : EMPTY;
++
++  // Hidratação: só com sessão pronta e (se houver registro remoto) leitura fresca validada.
++  // Erro de leitura (ex. 403) NUNCA cai para rascunho/versão 0: bloqueia e oferece reconsulta.
+   useEffect(() => {
+-    let alive = true;
++    if (hydratedGen.current === generation || !owner) return;
++    if (remoteRegistroId && !remoteTrusted) return;
++    const gen = generation;
++    const live = access.capture();
++    hydratedGen.current = gen;
++    const ok = () => live() && isCurrent(gen);
++    const row = remoteRegistroId ? (remoteQuery.data?.row ?? null) : null;
++    const serverVersion = row ? row.versao : 0;
+     (async () => {
+-      if (hydratedRef.current || !scope) return;
+-      const gen = generation;
+       try {
+-        if (remoteRegistroId) {
+-          const { data } = await supabase
+-            .from("visitas_campo" as any)
+-            .select("*")
+-            .eq("registro_consultor_id", remoteRegistroId)
+-            .maybeSingle();
+-          if (!alive || !isCurrent(gen)) return;
+-          if (data) {
+-            const d = data as any;
+-            setForm({
+-              talhao_id: d.talhao_id ?? "",
+-              cultura_id: d.cultura_id ?? "",
+-              area_avaliada_ha: d.area_avaliada_ha != null ? String(d.area_avaliada_ha) : "",
+-              fase_fenologica: d.fase_fenologica ?? "",
+-              estande_plantas_ha: d.estande_plantas_ha != null ? String(d.estande_plantas_ha) : "",
+-              uniformidade: (d.uniformidade ?? "") as CampoForm["uniformidade"],
+-              observacoes_campo: d.observacoes_campo ?? "",
+-            });
+-            if (!Number.isSafeInteger(d.versao) || d.versao < 1) throw new Error("invalid_response");
+-            versionRef.current = d.versao;
+-            setSaveState("saved");
+-            hydratedRef.current = true;
+-            return;
+-          }
+-        }
+         const pending = await getPendingCampoByRegistro(localRegistroId);
+-        if (!alive || !isCurrent(gen)) return;
+-        if (pending && campoOwnedBy(pending, scope)) {
+-          setForm({ ...EMPTY, ...(pending.payload as CampoForm) });
+-          versionRef.current = pending.versao;
+-          setSaveState(pending.syncStatus === "synced" ? "saved" : pending.syncStatus === "conflict" ? "conflict" : "pending_sync");
++        if (!ok()) return;
++        const ownedPending = pending && pending.revision && campoOwnedBy(pending, owner) ? pending : null;
++        observed.current = { version: serverVersion, revision: ownedPending?.revision ?? null };
++        if (ownedPending) {
++          setForm({ ...EMPTY, ...(ownedPending.payload as CampoForm) });
++          if (ownedPending.versao !== serverVersion || ownedPending.syncStatus === "conflict") {
++            markConflict(true); setSaveState("conflict");
++          } else {
++            setSaveState("pending_sync");
++          }
++        } else {
++          setForm(rowToForm(row));
++          setSaveState(row ? "saved" : "idle");
+         }
+-        hydratedRef.current = true;
++        markHydration("ready");
+       } catch (err) {
++        if (!ok()) return;
+         console.error("hydrate campo error", err);
++        observed.current = { version: null, revision: null };
++        markHydration("error");
+       }
+     })();
+-    return () => {
+-      alive = false;
+-    };
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [remoteRegistroId, localRegistroId, generation, !!scope]);
++  }, [generation, remoteTrusted, remoteQuery.dataUpdatedAt, !!owner, remoteRegistroId, localRegistroId]);
++
++  // Read failure (or fenced session) after hydration: hide data/actions until a fresh lookup.
++  useEffect(() => {
++    if (remoteFailed && hydrationRef.current !== "loading") {
++      if (debounceRef.current) clearTimeout(debounceRef.current);
++    }
++  }, [remoteFailed]);
+ 
+   const isEmpty = useMemo(
+     () =>
+@@ -206,46 +258,63 @@ export default function WizardCampoStep({
+     if (debounceRef.current) clearTimeout(debounceRef.current);
+   }, []);
+ 
++  const canWrite = () => hydrationRef.current === "ready" && !conflictRef.current
++    && (!remoteRegistroId || (remoteQuery.isSuccess && !remoteQuery.isError));
++
+   const persist = (next: CampoForm, opts?: { force?: boolean }): Promise<boolean> => {
+-    // Queue complete snapshots; read the version only when this write begins.
++    // Capture the session fence per attempt; the CAS is read only when this write begins.
+     const gen = generation;
+-    const owner = scope;
++    const live = access.capture();
++    const ownerSnap = owner;
++    const ok = () => live() && isCurrent(gen);
+     const run = async (): Promise<boolean> => {
+-      if (locked || !owner || !isCurrent(gen) || (!opts?.force && !Object.values(next).some(Boolean))) return false;
++      if (locked || !ownerSnap || !ok() || !canWrite() || (!opts?.force && !Object.values(next).some(Boolean))) return false;
++      const versao = observed.current.version;
++      if (!isValidCampoExpected(versao)) return false;
+       setSaveState("saving");
++      let claim: CampoClaim | null = null;
+       try {
+-        const versao = versionRef.current;
+         const entry: PendingCampo = {
+           localRegistroId, clientUuid: clientUuid ?? undefined,
+           remoteRegistroId: remoteRegistroId ?? undefined,
+           payload: next, versao, updatedAt: new Date().toISOString(), syncStatus: "pending_sync",
+-          ownerUserId: owner.userId, ownerOrganizationId: owner.organizationId,
++          ownerUserId: ownerSnap.userId, ownerOrganizationId: ownerSnap.organizationId,
+         };
+-        await savePendingCampo(entry);
++        const revision = await savePendingCampo(entry);
++        if (!ok()) return false;
++        observed.current.revision = revision;
+         if (!isOnline || !remoteRegistroId) {
+           setSaveState("pending_sync");
+           return true;
+         }
++        const claimed = await claimPendingCampo(localRegistroId, revision, ownerSnap);
++        if (!ok()) return false;
++        if (!claimed) { setSaveState("pending_sync"); return false; } // superseded or held elsewhere
++        claim = claimed.claim;
+         const { data, error } = await supabase.rpc("rpc_salvar_campo_visita" as never, {
+           p_registro_consultor_id: remoteRegistroId, p_client_uuid: clientUuid,
+           p_payload: next, p_versao: versao,
+         } as never);
++        // Late answer of a previous identity/epoch/visit: not adopted (no version, no UI, no cleanup).
++        if (!ok()) return false;
+         if (error) throw error;
+-        // Late answer of a previous identity/visit: not adopted (no version, no UI, no cleanup).
+-        if (!isCurrent(gen)) return false;
+-        versionRef.current = parseCampoResult(data, versao, remoteRegistroId);
+-        await updatePendingCampo(localRegistroId, { syncStatus: "synced", versao: versionRef.current });
+-        const { removePendingCampo } = await import("@/lib/offlineDb");
+-        await removePendingCampo(localRegistroId);
+-        setSaveState("saved");
++        const env = parseCampoResult(data, versao, remoteRegistroId, clientUuid);
++        observed.current.version = env.versao;
++        await finishPendingCampo(claim, { remove: true }); // only this exact revision+attempt
++        claim = null;
++        if (!ok()) return false;
+         await invalidateWizardProgress(queryClient, remoteRegistroId, "campo");
++        if (!ok()) return false;
++        setSaveState("saved");
+         return true;
+       } catch (err) {
++        if (!ok()) return false;
+         const conflict = isCampoConflict(err);
+         const message = conflict ? CAMPO_CONFLICT_MESSAGE
+           : err && typeof err === "object" && "message" in err ? String(err.message) : "Falha ao salvar campo";
+-        if (!isCurrent(gen)) return false;
+-        await updatePendingCampo(localRegistroId, { syncStatus: conflict ? "conflict" : "sync_error", lastSyncError: message }).catch(() => {});
++        if (claim) await finishPendingCampo(claim, { patch: { syncStatus: conflict ? "conflict" : "sync_error", lastSyncError: message } }).catch(() => false);
++        if (!ok()) return false;
++        if (conflict) markConflict(true);
+         setSaveState(conflict ? "conflict" : "error");
+         toast.error(message);
+         return false;
+@@ -257,30 +326,93 @@ export default function WizardCampoStep({
+   };
+ 
+   const patch = (p: Partial<CampoForm>) => {
+-    if (advanceLock.current) return;
++    if (advanceLock.current || hydrationRef.current !== "ready") return;
+     const next = { ...form, ...p };
+     setForm(next);
+-    setSaveState("saving");
+     if (debounceRef.current) clearTimeout(debounceRef.current);
++    // After PT409 the draft stays in the form; no automatic requeue until an explicit review.
++    if (conflictRef.current) return;
++    setSaveState("saving");
+     debounceRef.current = setTimeout(() => persist(next), 1500);
+   };
+ 
+   const handleAdvance = async () => {
+-    if (advanceLock.current || locked) return;
++    if (advanceLock.current || locked || conflictRef.current) return;
+     if (isEmpty) {
+       toast.error("Preencha ao menos um campo antes de avançar");
+       return;
+     }
+     if (debounceRef.current) clearTimeout(debounceRef.current);
++    const gen = generation;
++    const live = access.capture();
+     advanceLock.current = true;
+     setAdvancing(true);
+     try {
+-      if (await persist(form, { force: true })) onDone();
++      const saved = await persist(form, { force: true });
++      if (saved && live() && isCurrent(gen)) onDone();
++    } finally {
++      if (isCurrent(gen)) { advanceLock.current = false; setAdvancing(false); }
++    }
++  };
++
++  // Explicit recovery after PT409/read failure: fresh canonical lookup without reloading the tab.
++  const reconsultar = async () => {
++    if (!remoteRegistroId || reviewing) return;
++    const gen = generation;
++    const live = access.capture();
++    setReviewing(true);
++    try {
++      const res = await remoteQuery.refetch();
++      if (!live() || !isCurrent(gen)) return;
++      if (!res.isSuccess || res.isError || !res.data) return;
++      const row = res.data.row;
++      if (hydrationRef.current === "ready" && conflictRef.current) {
++        setReview({ serverVersion: row ? row.versao : 0, serverForm: rowToForm(row) });
++      }
+     } finally {
+-      advanceLock.current = false;
+-      setAdvancing(false);
++      if (isCurrent(gen)) setReviewing(false);
+     }
+   };
++  const confirmarSobreVersaoAtual = () => {
++    if (!review || hydrationRef.current !== "ready") return;
++    observed.current.version = review.serverVersion;
++    setReview(null); markConflict(false);
++    void persist(form, { force: true });
++  };
++  const usarDadosDoServidor = async () => {
++    if (!review) return;
++    const gen = generation; const live = access.capture();
++    const rev = observed.current.revision;
++    if (rev) await discardPendingCampo(localRegistroId, rev).catch(() => false);
++    if (!live() || !isCurrent(gen)) return;
++    observed.current = { version: review.serverVersion, revision: null };
++    setForm(review.serverForm); setReview(null); markConflict(false); setSaveState("saved");
++  };
++
++  if ((remoteRegistroId && remoteFailed) || hydration === "error" || (hydration === "ready" && !access.ready)) {
++    return (
++      <Card className="p-6 space-y-3" role="alert">
++        <div className="flex items-center gap-2 text-destructive">
++          <AlertCircle className="h-4 w-4" />
++          <span className="text-sm">
++            {access.ready ? "Não foi possível confirmar os dados de campo atuais desta visita." : "Sessão alterada ou em verificação. Aguarde antes de continuar."}
++          </span>
++        </div>
++        {access.ready && remoteRegistroId && (
++          <Button type="button" variant="outline" onClick={() => void reconsultar()} disabled={reviewing}>
++            {reviewing ? "Reconsultando…" : "Reconsultar"}
++          </Button>
++        )}
++      </Card>
++    );
++  }
++  if (hydration !== "ready") {
++    return (
++      <Card className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
++        <Loader2 className="h-4 w-4 animate-spin" /> Carregando dados de campo…
++      </Card>
++    );
++  }
+ 
+   if (locked) {
+     return (
+@@ -307,6 +439,26 @@ export default function WizardCampoStep({
+         <StatusBadge state={saveState} />
+       </div>
+ 
++      {inConflict && (
++        <div role="alert" className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs">
++          <p>{CAMPO_CONFLICT_MESSAGE}</p>
++          {!review && remoteRegistroId && (
++            <Button type="button" size="sm" variant="outline" onClick={() => void reconsultar()} disabled={reviewing}>
++              {reviewing ? "Reconsultando…" : "Reconsultar dados atuais"}
++            </Button>
++          )}
++          {review && (
++            <div className="space-y-2">
++              <p>Versão atual no servidor: {review.serverVersion}. Fase: {review.serverForm.fase_fenologica || "—"}; observações: {review.serverForm.observacoes_campo || "—"}.</p>
++              <div className="flex flex-wrap gap-2">
++                <Button type="button" size="sm" onClick={confirmarSobreVersaoAtual}>Salvar meu rascunho sobre a versão {review.serverVersion}</Button>
++                <Button type="button" size="sm" variant="outline" onClick={() => void usarDadosDoServidor()}>Descartar rascunho e usar dados atuais</Button>
++              </div>
++            </div>
++          )}
++        </div>
++      )}
++
+       {!remoteRegistroId && (
+         <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
+           <WifiOff className="h-3.5 w-3.5 mt-0.5" />
+@@ -431,7 +583,7 @@ export default function WizardCampoStep({
+         className="w-full"
+         size="lg"
+         onClick={handleAdvance}
+-        disabled={advancing}
++        disabled={advancing || inConflict}
+       >
+         Salvar e avançar
+         <ChevronRight className="h-4 w-4 ml-1" />
+diff --git a/src/test/visita/wizardCampo.persistence.test.tsx b/src/test/visita/wizardCampo.persistence.test.tsx
+index 051a5c9c8..2ad331fe1 100644
+--- a/src/test/visita/wizardCampo.persistence.test.tsx
++++ b/src/test/visita/wizardCampo.persistence.test.tsx
+@@ -1,135 +1,201 @@
++import "fake-indexeddb/auto";
+ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+ import { afterEach, beforeEach, expect, it, vi } from "vitest";
+ import type { ReactElement } from "react";
+ 
++// Real QueryClient + real IndexedDB (fake-indexeddb) + real useStorageAccessScope.
++// Only the transport (supabase) and the auth snapshot are simulated.
+ const mocks = vi.hoisted(() => ({
+-  rpc: vi.fn(), save: vi.fn(), update: vi.fn(), remove: vi.fn(), pending: vi.fn(), online: true,
+-  remoteRow: null as unknown,
+-  scope: { userId: "user-a", organizationId: "org-a" } as { userId: string; organizationId: string } | null,
++  rpc: vi.fn(), lookup: vi.fn(), online: true,
++  auth: {
++    user: { id: "user-a" } as { id: string } | null,
++    profile: { user_id: "user-a", organization_id: "org-a", ativo: true } as Record<string, unknown> | null,
++    roles: ["consultor_tecnico"], loading: false, authzReady: true, authzEpoch: 0,
++  },
+ }));
+ const chain = () => {
+   const c: Record<string, unknown> = {};
+   c.select = () => c; c.eq = () => c; c.order = async () => ({ data: [], error: null });
+-  c.maybeSingle = async () => ({ data: mocks.remoteRow });
++  c.maybeSingle = () => mocks.lookup();
+   return c;
+ };
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc, from: () => chain() } }));
+ vi.mock("@/hooks/useOfflineSync", () => ({ useOnlineStatus: () => mocks.online }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
+ vi.mock("@/hooks/useTenantCatalogVisibility", () => ({
+-  useTenantCatalogScope: () => mocks.scope,
+   useTenantSelection: () => ({ isSuccess: true, isFetching: false, data: { rows: [], total: 0 } }),
+ }));
+-vi.mock("@/lib/offlineDb", () => ({
+-  savePendingCampo: mocks.save, updatePendingCampo: mocks.update, removePendingCampo: mocks.remove,
+-  getPendingCampoByRegistro: mocks.pending,
+-}));
+ import WizardCampoStep from "@/pages/app/wizard/WizardCampoStep";
+-import { campoOwnedBy, isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
++import { isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
++import { claimPendingCampo, finishPendingCampo, getPendingCampoByRegistro, savePendingCampo } from "@/lib/offlineDb";
+ 
+-const props = { localRegistroId: "local-fake", remoteRegistroId: "remote-fake", clienteId: null, clientUuid: "client-fake", locked: false };
++const REMOTE = "11111111-1111-4111-8111-111111111111";
++const CU = "22222222-2222-4222-8222-222222222222";
++const ROW_ID = "33333333-3333-4333-8333-333333333333";
++const env = (versao: number, extra: Record<string, unknown> = {}) =>
++  ({ id: ROW_ID, registro_consultor_id: REMOTE, versao, client_uuid: CU, replayed: false, ...extra });
++let n = 0; let local = "";
+ let qc: QueryClient;
+ const ui = (el: ReactElement) => <QueryClientProvider client={qc}>{el}</QueryClientProvider>;
++const props = () => ({ localRegistroId: local, remoteRegistroId: REMOTE, clienteId: null, clientUuid: CU, locked: false });
+ beforeEach(() => {
+-  vi.clearAllMocks(); mocks.online = true; mocks.remoteRow = null;
+-  mocks.scope = { userId: "user-a", organizationId: "org-a" };
++  vi.clearAllMocks(); mocks.online = true; n += 1; local = `local-${n}`;
++  mocks.auth.user = { id: "user-a" }; mocks.auth.profile = { user_id: "user-a", organization_id: "org-a", ativo: true };
++  mocks.auth.roles = ["consultor_tecnico"]; mocks.auth.authzEpoch = 0; mocks.auth.authzReady = true;
++  mocks.lookup.mockResolvedValue({ data: null, error: null });
+   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+-  vi.spyOn(qc, "invalidateQueries");
+-  mocks.save.mockResolvedValue(undefined); mocks.update.mockResolvedValue(undefined);
+-  mocks.remove.mockResolvedValue(undefined); mocks.pending.mockResolvedValue(null);
+ });
+ afterEach(() => { cleanup(); vi.useRealTimers(); });
+-const typeFase = (v: string) => fireEvent.change(screen.getByLabelText("Fase fenológica"), { target: { value: v } });
++const fase = () => screen.getByLabelText("Fase fenológica") as HTMLInputElement;
++const typeFase = (v: string) => fireEvent.change(fase(), { target: { value: v } });
+ const advance = () => fireEvent.click(screen.getByRole("button", { name: "Salvar e avançar" }));
++const deferred = <T,>() => { let resolve!: (v: T) => void; const p = new Promise<T>((r) => { resolve = r; }); return { p, resolve }; };
++
++it("erro 403 na hidratação bloqueia formulário e save (sem cair para rascunho/versão 0); reconsulta sem recarregar", async () => {
++  mocks.lookup.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "permission denied" } });
++  const done = vi.fn(); render(ui(<WizardCampoStep {...props()} onDone={done} />));
++  expect(await screen.findByText("Não foi possível confirmar os dados de campo atuais desta visita.")).toBeTruthy();
++  expect(screen.queryByLabelText("Fase fenológica")).toBeNull();
++  expect(screen.queryByRole("button", { name: "Salvar e avançar" })).toBeNull();
++  expect(mocks.rpc).not.toHaveBeenCalled();
++  mocks.lookup.mockResolvedValueOnce({ data: { id: ROW_ID, registro_consultor_id: REMOTE, versao: 4, fase_fenologica: "R1" }, error: null });
++  fireEvent.click(screen.getByRole("button", { name: "Reconsultar" }));
++  await waitFor(() => expect(fase().value).toBe("R1"));
++  mocks.rpc.mockResolvedValueOnce({ data: env(5), error: null });
++  typeFase("R2"); advance();
++  await waitFor(() => expect(done).toHaveBeenCalledTimes(1));
++  expect(mocks.rpc.mock.calls[0][1]).toMatchObject({ p_versao: 4 });
++});
++
++it("linha remota de outra visita ou versão inválida não hidrata o formulário", async () => {
++  mocks.lookup.mockResolvedValue({ data: { id: ROW_ID, registro_consultor_id: "outra", versao: 2, fase_fenologica: "X" }, error: null });
++  render(ui(<WizardCampoStep {...props()} onDone={vi.fn()} />));
++  expect(await screen.findByText("Não foi possível confirmar os dados de campo atuais desta visita.")).toBeTruthy();
++  expect(screen.queryByLabelText("Fase fenológica")).toBeNull();
++});
+ 
+-it("PT409 vira conflito local: sem avanço, sem remoção e sem nova tentativa automática", async () => {
+-  mocks.rpc.mockResolvedValue({ data: null, error: { code: "PT409", message: "version_conflict" } });
+-  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
++it("PT409 marca conflito, não reenfileira no debounce e só salva após revisão explícita sobre a versão atual", async () => {
++  mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "PT409", message: "version_conflict" } });
++  const done = vi.fn(); render(ui(<WizardCampoStep {...props()} onDone={done} />));
++  await screen.findByLabelText("Fase fenológica");
+   typeFase("V4"); advance();
+-  await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("local-fake", expect.objectContaining({ syncStatus: "conflict" })));
+-  expect(await screen.findByText("Conflito — recarregue a visita")).toBeTruthy();
+-  expect(done).not.toHaveBeenCalled(); expect(mocks.remove).not.toHaveBeenCalled();
++  expect(await screen.findByText("Conflito — revise antes de salvar")).toBeTruthy();
++  expect((await getPendingCampoByRegistro(local))?.syncStatus).toBe("conflict");
++  vi.useFakeTimers();
++  typeFase("V5");
++  await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
++  vi.useRealTimers();
+   expect(mocks.rpc).toHaveBeenCalledTimes(1);
++  expect(fase().value).toBe("V5"); expect(done).not.toHaveBeenCalled();
++  mocks.lookup.mockResolvedValueOnce({ data: { id: ROW_ID, registro_consultor_id: REMOTE, versao: 7, fase_fenologica: "S" }, error: null });
++  fireEvent.click(screen.getByRole("button", { name: "Reconsultar dados atuais" }));
++  const confirm = await screen.findByRole("button", { name: "Salvar meu rascunho sobre a versão 7" });
++  mocks.rpc.mockResolvedValueOnce({ data: env(8), error: null });
++  fireEvent.click(confirm);
++  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(2));
++  expect(mocks.rpc.mock.calls[1][1]).toMatchObject({ p_versao: 7, p_payload: { fase_fenologica: "V5" } });
++  await waitFor(() => expect(screen.getByText("Salvo")).toBeTruthy());
+ });
+-it("falha genérica fica sync_error e preserva pendência", async () => {
+-  mocks.rpc.mockResolvedValue({ data: null, error: { code: "08006", message: "network" } });
+-  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
++
++it("resposta tardia após troca de época durante a RPC não é adotada nem limpa a fila", async () => {
++  const rpc = deferred<unknown>(); mocks.rpc.mockReturnValueOnce(rpc.p);
++  const done = vi.fn(); const view = render(ui(<WizardCampoStep {...props()} onDone={done} />));
++  await screen.findByLabelText("Fase fenológica");
+   typeFase("V4"); advance();
+-  await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("local-fake", expect.objectContaining({ syncStatus: "sync_error" })));
+-  expect(done).not.toHaveBeenCalled(); expect(mocks.remove).not.toHaveBeenCalled();
++  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
++  mocks.auth.authzEpoch = 1;
++  view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />));
++  await act(async () => { rpc.resolve({ data: env(1), error: null }); await new Promise((r) => setTimeout(r, 20)); });
++  expect(done).not.toHaveBeenCalled();
++  const stored = await getPendingCampoByRegistro(local);
++  expect(stored?.payload).toMatchObject({ fase_fenologica: "V4" }); // not removed by the late answer
+ });
+-it("offline autorizado salva localmente com dono e avança sem RPC", async () => {
+-  mocks.online = false; const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
++
++it("resposta tardia durante invalidations com troca de roles não navega", async () => {
++  mocks.rpc.mockResolvedValueOnce({ data: env(1), error: null });
++  const inv = deferred<void>();
++  const spy = vi.spyOn(qc, "invalidateQueries").mockImplementation(() => inv.p);
++  const done = vi.fn(); const view = render(ui(<WizardCampoStep {...props()} onDone={done} />));
++  await screen.findByLabelText("Fase fenológica");
+   typeFase("V4"); advance();
+-  await waitFor(() => expect(done).toHaveBeenCalledTimes(1));
+-  expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ ownerUserId: "user-a", ownerOrganizationId: "org-a", versao: 0 }));
+-  expect(mocks.rpc).not.toHaveBeenCalled();
++  await waitFor(() => expect(spy).toHaveBeenCalled());
++  mocks.auth.roles = ["consultor_tecnico", "gestor"];
++  view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />));
++  await act(async () => { inv.resolve(); await new Promise((r) => setTimeout(r, 20)); });
++  expect(done).not.toHaveBeenCalled();
+ });
+-it("contrato inicial: CAS 0 sem linha, depois usa a versão retornada (N, N+1)", async () => {
+-  vi.useFakeTimers();
+-  let finish: ((value: unknown) => void) | undefined;
+-  mocks.rpc.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }))
+-    .mockResolvedValueOnce({ data: { versao: 2, registro_consultor_id: "remote-fake" }, error: null });
+-  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
+-  await act(async () => { await Promise.resolve(); });
+-  typeFase("V4");
+-  await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
+-  expect(mocks.rpc).toHaveBeenCalledTimes(1);
+-  expect(mocks.rpc.mock.calls[0][1]).toMatchObject({ p_versao: 0 });
+-  typeFase("V5"); advance(); advance();
+-  expect(mocks.rpc).toHaveBeenCalledTimes(1);
+-  await act(async () => { finish?.({ data: { versao: 1, registro_consultor_id: "remote-fake" }, error: null }); await vi.advanceTimersByTimeAsync(0); });
+-  expect(mocks.rpc).toHaveBeenCalledTimes(2);
+-  expect(mocks.rpc.mock.calls[1][1]).toMatchObject({ p_versao: 1, p_payload: { fase_fenologica: "V5" } });
+-  expect(done).toHaveBeenCalledTimes(1);
+-  expect(qc.invalidateQueries).toHaveBeenCalledWith({ queryKey: ["wizard-campo-flag", "remote-fake"] });
++
++it("aba 2 grava rascunho novo enquanto aba 1 envia: cleanup da aba 1 preserva o rascunho novo", async () => {
++  const rpc = deferred<unknown>(); mocks.rpc.mockReturnValueOnce(rpc.p);
++  const done = vi.fn(); render(ui(<WizardCampoStep {...props()} onDone={done} />));
++  await screen.findByLabelText("Fase fenológica");
++  typeFase("TAB1"); advance();
++  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
++  await savePendingCampo({ localRegistroId: local, clientUuid: CU, remoteRegistroId: REMOTE, payload: { fase_fenologica: "TAB2" },
++    versao: 1, updatedAt: new Date().toISOString(), syncStatus: "pending_sync", ownerUserId: "user-a", ownerOrganizationId: "org-a" });
++  await act(async () => { rpc.resolve({ data: env(1), error: null }); await new Promise((r) => setTimeout(r, 20)); });
++  const stored = await getPendingCampoByRegistro(local);
++  expect(stored?.payload).toMatchObject({ fase_fenologica: "TAB2" });
++  expect(stored?.syncStatus).toBe("pending_sync");
+ });
+-it("resposta sem versão válida não inventa versão nem limpa pendência", async () => {
+-  mocks.rpc.mockResolvedValue({ data: {}, error: null });
+-  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
++
++it("falso sucesso do baseline ({}) não confirma, não navega e mantém pendência", async () => {
++  mocks.rpc.mockResolvedValueOnce({ data: {}, error: null });
++  const done = vi.fn(); render(ui(<WizardCampoStep {...props()} onDone={done} />));
++  await screen.findByLabelText("Fase fenológica");
+   typeFase("V4"); advance();
+-  await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("local-fake", expect.objectContaining({ syncStatus: "sync_error" })));
+-  expect(mocks.remove).not.toHaveBeenCalled(); expect(done).not.toHaveBeenCalled();
++  await waitFor(() => expect(screen.getByText("Erro ao salvar")).toBeTruthy());
++  expect(done).not.toHaveBeenCalled();
++  expect((await getPendingCampoByRegistro(local))?.syncStatus).toBe("sync_error");
+ });
+-it("resposta tardia de outro ator não é adotada e o novo ator começa limpo", async () => {
+-  let finish: ((value: unknown) => void) | undefined;
+-  mocks.rpc.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+-  const done = vi.fn(); const view = render(ui(<WizardCampoStep {...props} onDone={done} />));
++
++it("offline autorizado salva localmente com dono e versão 0 e avança sem RPC", async () => {
++  mocks.online = false; const done = vi.fn();
++  render(ui(<WizardCampoStep {...props()} remoteRegistroId={null} onDone={done} />));
++  await screen.findByLabelText("Fase fenológica");
+   typeFase("V4"); advance();
+-  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
+-  mocks.scope = { userId: "user-b", organizationId: "org-a" };
+-  view.rerender(ui(<WizardCampoStep {...props} onDone={done} />));
+-  await act(async () => { finish?.({ data: { versao: 1, registro_consultor_id: "remote-fake" }, error: null }); await Promise.resolve(); });
+-  expect(mocks.remove).not.toHaveBeenCalled(); expect(done).not.toHaveBeenCalled();
+-  expect((screen.getByLabelText("Fase fenológica") as HTMLInputElement).value).toBe("");
+-  mocks.rpc.mockResolvedValueOnce({ data: { versao: 1, registro_consultor_id: "remote-fake" }, error: null });
+-  typeFase("B1"); advance();
+   await waitFor(() => expect(done).toHaveBeenCalledTimes(1));
+-  expect(mocks.rpc.mock.calls[1][1]).toMatchObject({ p_versao: 0 });
+-  expect(mocks.save).toHaveBeenLastCalledWith(expect.objectContaining({ ownerUserId: "user-b" }));
++  const stored = await getPendingCampoByRegistro(local);
++  expect(stored).toMatchObject({ ownerUserId: "user-a", ownerOrganizationId: "org-a", versao: 0 });
++  expect(typeof stored?.revision).toBe("string");
++  expect(mocks.rpc).not.toHaveBeenCalled();
+ });
+-it("rascunho local de outro ator ou legado sem dono não é hidratado", async () => {
+-  mocks.pending.mockResolvedValue({ localRegistroId: "local-fake", payload: { fase_fenologica: "ALHEIO" }, versao: 3, syncStatus: "pending_sync", ownerUserId: "user-x", ownerOrganizationId: "org-a" });
+-  render(ui(<WizardCampoStep {...props} remoteRegistroId={null} onDone={vi.fn()} />));
+-  await waitFor(() => expect(mocks.pending).toHaveBeenCalled());
+-  await act(async () => { await Promise.resolve(); });
+-  expect((screen.getByLabelText("Fase fenológica") as HTMLInputElement).value).toBe("");
++
++it("rascunho local de outro ator não é hidratado", async () => {
++  await savePendingCampo({ localRegistroId: local, payload: { fase_fenologica: "ALHEIO" }, versao: 0, updatedAt: "x",
++    syncStatus: "pending_sync", ownerUserId: "user-x", ownerOrganizationId: "org-a" });
++  render(ui(<WizardCampoStep {...props()} remoteRegistroId={null} onDone={vi.fn()} />));
++  await screen.findByLabelText("Fase fenológica");
++  expect(fase().value).toBe("");
+ });
+-it("falha no armazenamento local não avança", async () => {
+-  mocks.save.mockRejectedValue(new Error("storage unavailable"));
+-  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
+-  typeFase("V4"); advance();
+-  await waitFor(() => expect(mocks.update).toHaveBeenCalled());
+-  expect(done).not.toHaveBeenCalled(); expect(mocks.rpc).not.toHaveBeenCalled();
++
++it("fila IndexedDB: claim/finish por revisão+tentativa; conflito não atinge rascunho substituído; dono exato", async () => {
++  const base = { localRegistroId: "q-1", payload: { a: 1 }, versao: 0, updatedAt: "x", syncStatus: "pending_sync" as const,
++    ownerUserId: "u", ownerOrganizationId: "o" };
++  const r1 = await savePendingCampo(base);
++  expect(await claimPendingCampo("q-1", r1, { userId: "u2", organizationId: "o" })).toBeNull();
++  const c1 = await claimPendingCampo("q-1", r1, { userId: "u", organizationId: "o" });
++  expect(c1).not.toBeNull();
++  expect(await claimPendingCampo("q-1", r1, { userId: "u", organizationId: "o" })).toBeNull(); // held
++  await savePendingCampo({ ...base, payload: { a: 2 } }); // replaced draft
++  expect(await finishPendingCampo(c1!.claim, { patch: { syncStatus: "conflict" } })).toBe(false);
++  expect(await finishPendingCampo(c1!.claim, { remove: true })).toBe(false);
++  const kept = await getPendingCampoByRegistro("q-1");
++  expect(kept?.payload).toEqual({ a: 2 }); expect(kept?.syncStatus).toBe("pending_sync");
+ });
+-it("contrato: versão exata, dono exato, PT409 detectado", () => {
+-  expect(parseCampoResult({ versao: 1 }, 0, "r")).toBe(1);
+-  expect(parseCampoResult({ versao: 4, registro_consultor_id: "r" }, 3, "r")).toBe(4);
+-  for (const [d, e] of [[{ versao: 5 }, 3], [{ versao: 1 }, 1], [{}, 0], [{ versao: "2" }, 1], [{ versao: 2, registro_consultor_id: "x" }, 1]] as const)
+-    expect(() => parseCampoResult(d, e, "r")).toThrow("invalid_response");
+-  expect(campoOwnedBy({ ownerUserId: "u", ownerOrganizationId: "o" }, { userId: "u", organizationId: "o" })).toBe(true);
+-  expect(campoOwnedBy({}, { userId: "u", organizationId: "o" })).toBe(false);
+-  expect(campoOwnedBy({ ownerUserId: "u", ownerOrganizationId: "p" }, { userId: "u", organizationId: "o" })).toBe(false);
++
++it("contrato do envelope: identidade completa, CAS seguro >= 0, sem falso sucesso", () => {
++  expect(parseCampoResult(env(1), 0, REMOTE, CU)).toEqual({ id: ROW_ID, versao: 1, replayed: false });
++  expect(parseCampoResult(env(1, { replayed: true }), 0, REMOTE, CU).replayed).toBe(true);
++  expect(parseCampoResult(env(4, { client_uuid: null }), 3, REMOTE, CU).versao).toBe(4);
++  const bad: Array<[unknown, number]> = [
++    [{}, 0], [{ versao: 1 }, 0], [{ versao: 1, registro_consultor_id: REMOTE }, 0],
++    [env(1, { id: "x" }), 0], [env(1, { registro_consultor_id: "x" }), 0], [env(1, { client_uuid: "x" }), 0],
++    [env(1, { client_uuid: null }), 0], [env(4, { replayed: true }), 3], [env(4, { replayed: undefined }), 3],
++    [env(5), 3], [env(1), 1], [env(0), -1], [env(1), Number.NaN], [env(1), 0.5], [env(1), Infinity], [null, 0], [[], 0],
++  ];
++  for (const [d, e] of bad) expect(() => parseCampoResult(d, e, REMOTE, CU)).toThrow("invalid_response");
+   expect(isCampoConflict({ code: "PT409" })).toBe(true);
+   expect(isCampoConflict({ code: "42501", message: "sem_permissao" })).toBe(false);
+ });
