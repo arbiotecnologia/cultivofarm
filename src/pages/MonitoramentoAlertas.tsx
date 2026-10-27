@@ -444,7 +444,7 @@ export default function MonitoramentoAlertas() {
                 <p><strong>Fazenda:</strong> {textoOuTraco(selectedAlert.fazendas?.nome)}</p>
                 <p><strong>Talhão:</strong> {textoOuTraco(selectedAlert.talhoes?.nome)}</p>
                 <p><strong>Data atual:</strong> {selectedAlert.data_vencimento ? formatDateDisplay(selectedAlert.data_vencimento) : "—"}</p>
-                {selectedAlert.registro_origem_id && <p>A visita de origem e o plano de monitoramento serão atualizados juntos quando a visita ainda estiver aberta; visitas finalizadas não são alteradas.</p>}
+                {selectedAlert.registro_origem_id && <p>Visita aberta: plano, aviso e alerta recebem a mesma data juntos. Visita finalizada: somente o alerta muda; a visita e o plano não são sincronizados.</p>}
               </div>
             )}
           </div>

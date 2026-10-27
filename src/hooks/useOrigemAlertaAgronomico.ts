@@ -72,7 +72,9 @@ export function useVincularOrigemAlerta(registroId: string) {
           const code = error.code ?? "";
           if (absent(code)) throw new OrigemAlertaError(ORIGEM_INDISPONIVEL, "unavailable");
           if (["42501", "PT403", "PT404", "P0002"].includes(code)) throw new OrigemAlertaError(unavailable, "rejected");
+          if (code === "PT409" && /visit_already_has_origin_alert/.test(error.message)) throw new OrigemAlertaError("Esta visita já é origem de outro alerta aberto. Só um alerta pode sincronizar a data do plano.", "rejected");
           if (code === "PT409") throw new OrigemAlertaError(conflict, "rejected");
+          if (code === "22023" && /origin_date_mismatch/.test(error.message)) throw new OrigemAlertaError("A data do alerta difere da próxima avaliação desta visita. Reprograme o alerta para a mesma data antes de vincular.", "rejected");
           if (code === "22023") throw new OrigemAlertaError("Este alerta não pertence à mesma fazenda e talhão da visita.", "rejected");
           if (code === "P0001") throw new OrigemAlertaError("Este alerta não está mais aberto.", "rejected");
           throw new OrigemAlertaError("Não foi possível confirmar o vínculo. Tente novamente com a mesma tentativa.", "uncertain");

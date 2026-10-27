@@ -20,7 +20,7 @@ const wrap = () => { const qc = new QueryClient({ defaultOptions: { queries: { r
 beforeEach(() => { s.rpc.mockReset(); s.ready = true; s.actor = "A"; s.epoch = 0; });
 
 const v2 = (o: Record<string, unknown> = {}) => ({ success: true, alerta_id: ALERTA, data_anterior: "2026-11-01", nova_data: "2026-11-20",
-  registro_origem_id: VISITA, visita_atualizada: true, visit_version: 4, alerta_updated_at: "2026-10-27T10:00:01.000001+00:00", request_id: KEY, ...o });
+  registro_origem_id: VISITA, visita_atualizada: true, modo: "plano_visita_aviso_alerta", visit_version: 4, alerta_updated_at: "2026-10-27T10:00:01.000001+00:00", request_id: KEY, ...o });
 const args = { id: ALERTA, date: "2026-11-20", expectedUpdatedAt: AT, origemId: VISITA, expectedVisitVersion: 3, requestId: KEY };
 
 it("alerta com origem usa somente v2 com CAS de alerta (microssegundos) e versão da visita", async () => {
@@ -31,11 +31,11 @@ it("alerta com origem usa somente v2 com CAS de alerta (microssegundos) e versã
     p_expected_alert_updated_at: AT, p_expected_visit_version: 3, p_request_id: KEY });
 });
 it("visita finalizada: envelope sem atualização mantém a mesma versão", async () => {
-  s.rpc.mockResolvedValue({ data: v2({ visita_atualizada: false, visit_version: 3 }), error: null });
+  s.rpc.mockResolvedValue({ data: v2({ visita_atualizada: false, modo: "somente_alerta", visit_version: 3 }), error: null });
   const h = renderHook(() => useReprogramarMonitoramento(), { wrapper: wrap() });
   await act(async () => { await h.result.current.mutateAsync(args); });
 });
-it.each([[{ visit_version: 3 }], [{ registro_origem_id: ALERTA }], [{ request_id: VISITA }], [{ extra: 1 }], [{ visita_atualizada: "sim" }]])("envelope v2 inválido %j não confirma", async o => {
+it.each([[{ visit_version: 3 }], [{ registro_origem_id: ALERTA }], [{ request_id: VISITA }], [{ extra: 1 }], [{ visita_atualizada: "sim" }], [{ modo: "somente_alerta" }], [{ visita_atualizada: false, visit_version: 3 }], [{ modo: undefined }]])("envelope v2 inválido %j não confirma", async o => {
   s.rpc.mockResolvedValue({ data: v2(o), error: null });
   const h = renderHook(() => useReprogramarMonitoramento(), { wrapper: wrap() });
   await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("não confirmada"); });
@@ -119,4 +119,15 @@ it("UI: incerteza mantém a mesma chave na nova confirmação", async () => {
   await act(async () => { fireEvent.click(await screen.findByRole("button", { name: "Confirmar vínculo" })); });
   await act(async () => { fireEvent.click(await screen.findByRole("button", { name: "Confirmar vínculo" })); });
   expect(keys).toHaveLength(2); expect(keys[0]).toBe(keys[1]);
+});
+it.each([["multiple_alerts_share_visit", "Mais de um alerta"], ["plan_notice_incoherent", "não estão coerentes"]])("PT409 %s mostra bloqueio claro sem repetir", async (msg, text) => {
+  s.rpc.mockResolvedValue({ data: null, error: { code: "PT409", message: msg } });
+  const h = renderHook(() => useReprogramarMonitoramento(), { wrapper: wrap() });
+  await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow(text); });
+  expect(s.rpc).toHaveBeenCalledTimes(1);
+});
+it.each([["PT409", "visit_already_has_origin_alert", "já é origem"], ["22023", "origin_date_mismatch", "Reprograme o alerta"]])("vínculo %s/%s explica política", async (code, msg, text) => {
+  s.rpc.mockResolvedValue({ data: null, error: { code, message: msg } });
+  const h = renderHook(() => useVincularOrigemAlerta(VISITA), { wrapper: wrap() });
+  await act(async () => { await expect(h.result.current.mutateAsync({ alerta, registroId: VISITA, expectedVisitVersion: 3, requestId: KEY })).rejects.toThrow(text); });
 });

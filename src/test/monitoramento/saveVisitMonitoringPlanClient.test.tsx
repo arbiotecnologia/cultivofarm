@@ -42,4 +42,7 @@ it.each(["revogação", "troca", "unmount"])("latência/%s aborta e rejeita resu
   if (mode === "unmount") h.unmount(); else { s.epoch++; if (mode === "troca") s.actor = "B"; else s.ready = false; h.rerender(); }
   expect(s.signal?.aborted).toBe(true);
   await act(async () => { finish({ data: result(), error: null }); await expect(first).rejects.toThrow("acessar esta visita"); });
+});it("data vinculada a alerta: rejeição definitiva clara, sem repetir", async () => {
+  const h = setup(); s.rpc.mockResolvedValue({ data: null, error: { code: "PT409", message: "linked_alert_date_requires_reschedule" } });
+  await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("reprogramação do alerta"); }); expect(s.rpc).toHaveBeenCalledTimes(1);
 });
