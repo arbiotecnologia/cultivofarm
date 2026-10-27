@@ -12,6 +12,20 @@ describe("preparação e finalização canônicas", () => {
     fake.rpc.mockImplementation((_name, args) => ({ abortSignal: () => Promise.resolve({ data: { success: true, id: args.p_aplicacao_id, phase: args.p_payload._phase === "prepare" ? "prepared" : "finalized" }, error: null }) }));
   });
   afterEach(() => vi.useRealTimers());
+  it.each(["40001", "PT409"])("conflito %s preserva tentativa e não repete automaticamente", async (code) => {
+    const items = pending(); const payload = { observacoes: "rascunho preservado" };
+    const attempt = applicationAttempt(payload, null, items, [], client);
+    const error = { code, message: "application_version_conflict" };
+    fake.rpc.mockImplementation((_name, args) => ({ abortSignal: () => Promise.resolve(args.p_payload._phase === "prepare"
+      ? { data: { success: true, id: attempt.id, phase: "prepared" }, error: null }
+      : { data: null, error }) }));
+    await expect(salvarAplicacao(attempt, payload, null, items, [], () => true)).rejects.toBe(error);
+    expect(fake.rpc).toHaveBeenCalledTimes(2);
+    expect(fake.upload).toHaveBeenCalledTimes(1);
+    expect(fake.remove).not.toHaveBeenCalled();
+    expect(attempt.payload).toEqual(payload);
+    expect(applicationAttempt(payload, null, items, [], client, attempt)).toBe(attempt);
+  });
   it("prepara, sobe e finaliza nessa ordem sem remover objetos", async () => {
     const items = pending(); const a = applicationAttempt({}, null, items, [], client);
     await salvarAplicacao(a, a.payload, null, items, [], () => true);

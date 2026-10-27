@@ -1,0 +1,33 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "base_commit": "e2b04a8149e49dd9fcf26d4120b0a46a7d6512ef",
+  "targets": [
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "md5": "3c7fa9255984f2c7498c6e32af738611",
+      "oid": "41896",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)",
+      "prosrc_md5": "02252965415d64750d788349fa6e5749",
+      "security_definer": true,
+      "candidate_md5": "ee9e7a45f7e81e2ba6e2a4e55ca10f78"
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "f8bc9d5f000abef7f13e6ca340988734",
+      "oid": "100776",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])",
+      "prosrc_md5": "6964d09d4703a0f4e4a84d9a789d9131",
+      "security_definer": true,
+      "candidate_md5": "0c102f7735a44ccba6ce1364b1f30c32"
+    }
+  ],
+  "inactive": true
+}

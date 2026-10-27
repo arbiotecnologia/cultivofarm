@@ -32,6 +32,18 @@ describe("conversão L -> mL", () => {
 });
 
 describe("GerarLoteDialog — cercas de sessão e resposta", () => {
+  it.each(["40001", "PT409"])("conflito %s não repete RPC nem confirma lote e mantém formulário", async (code) => {
+    f.rpc.mockResolvedValue({ data: null, error: { code, message: "COCKPIT_LOTE_CONCORRENTE" } });
+    const onCreated = vi.fn(); const onOpenChange = vi.fn();
+    render(<GerarLoteDialog open target={target} onOpenChange={onOpenChange} onCreated={onCreated} />);
+    fireEvent.change(screen.getByLabelText("Tanque"), { target: { value: "TQ-rascunho" } });
+    submit();
+    await waitFor(() => expect(f.error).toHaveBeenCalledTimes(1));
+    expect(f.rpc).toHaveBeenCalledTimes(1);
+    expect(onCreated).not.toHaveBeenCalled(); expect(onOpenChange).not.toHaveBeenCalled();
+    expect(f.success).not.toHaveBeenCalled(); expect(f.invalidate).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Tanque")).toHaveValue("TQ-rascunho");
+  });
   it("envia mL e somente campos permitidos; confirma uma vez", async () => {
     const onCreated = vi.fn(); const onOpenChange = vi.fn();
     render(<GerarLoteDialog open target={target} onOpenChange={onOpenChange} onCreated={onCreated} />);

@@ -1,0 +1,20 @@
+--- LIVE
++++ candidato
+@@ -120,7 +120,7 @@
+   EXCEPTION WHEN unique_violation THEN
+    GET STACKED DIAGNOSTICS v_constraint=CONSTRAINT_NAME;
+    -- Concorrente fora deste RPC: falha fechada, sem replay presumido.
+-   IF v_constraint IS DISTINCT FROM 'lotes_codigo_lote_key' THEN RAISE EXCEPTION 'COCKPIT_LOTE_CONCORRENTE' USING ERRCODE='40001'; END IF;
++   IF v_constraint IS DISTINCT FROM 'lotes_codigo_lote_key' THEN RAISE EXCEPTION 'COCKPIT_LOTE_CONCORRENTE' USING ERRCODE='PT409'; END IF;
+    IF v_try>=3 THEN RAISE EXCEPTION 'COCKPIT_LOTE_CODIGO_CONFLITO'; END IF;
+   END;
+  END LOOP;
+@@ -276,7 +276,7 @@
+  OR public.can_user_access_aplicacao(p_rectify_id) IS DISTINCT FROM true
+  OR original.ordem_servico_id IS DISTINCT FROM osid OR original.ordem_servico_onfarm_id IS DISTINCT FROM onid
+  THEN RAISE EXCEPTION 'application_rectification_denied' USING ERRCODE='42501'; END IF;
+- IF (r.application_id IS NULL OR r.committed_at IS NULL) AND original.is_latest IS DISTINCT FROM true THEN RAISE EXCEPTION 'application_version_conflict' USING ERRCODE='40001'; END IF;
++ IF (r.application_id IS NULL OR r.committed_at IS NULL) AND original.is_latest IS DISTINCT FROM true THEN RAISE EXCEPTION 'application_version_conflict' USING ERRCODE='PT409'; END IF;
+  IF char_length(btrim(coalesce(canonical->>'motivo_retificacao',''))) NOT BETWEEN 5 AND 1000 THEN RAISE EXCEPTION 'application_reason_invalid' USING ERRCODE='22023'; END IF;
+  root:=coalesce(original.parent_id,original.id); ver:=original.versao+1;
+  END IF;
