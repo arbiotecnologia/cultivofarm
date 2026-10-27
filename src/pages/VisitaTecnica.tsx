@@ -275,6 +275,8 @@ export default function VisitaTecnica() {
   if (formGeneration.current.scope !== formScope) formGeneration.current = { scope: formScope, epoch: formGeneration.current.epoch + 1 };
   const observedForm = useRef<{ scope: string; version: number; observations: string; fingerprint: string | null } | null>(null);
   const autosaveTicket = useRef<symbol | null>(null);
+  const hydrationTicket = useRef<symbol | null>(null);
+  const hydrationReady = useRef(false);
   const [hydrationComplete, setHydrationComplete] = useState(0);
   const [contentConflict, setContentConflict] = useState<string | null>(null);
 
@@ -402,8 +404,8 @@ export default function VisitaTecnica() {
     }
     hydratedIdRef.current = hydrationKey;
     const epoch = formGeneration.current.epoch;
-    let active = true;
-    const current = () => active && formGeneration.current.scope === formScope && formGeneration.current.epoch === epoch;
+    const ticket = Symbol("hydrate"); hydrationTicket.current = ticket; hydrationReady.current = false;
+    const current = () => hydrationTicket.current === ticket && formGeneration.current.scope === formScope && formGeneration.current.epoch === epoch;
     autosaveTicket.current = null;
     observedForm.current = { scope: formScope, version: ws.version, observations: v.observacoes_tecnicas ?? "", fingerprint: null };
     setContentConflict(null);
@@ -450,7 +452,7 @@ export default function VisitaTecnica() {
       } else {
         setDiagnosticos([{ id: crypto.randomUUID(), problema: "", severidade: "medio", incidencia: "", descricao: cleanDescription, categoria: "", localizacao: "" }]);
       }
-      setHydrationComplete(value => value + 1);
+      hydrationReady.current = true; setHydrationComplete(value => value + 1);
     };
     loadDiagnostics();
 
@@ -474,8 +476,8 @@ export default function VisitaTecnica() {
     const { conduta: parsedConduta, clean: cleanObs } = parseConduta(noNotes);
     setNotes(parsedNotes);
     setConduta(parsedConduta ?? CONDUTA_DEFAULT);
-    return () => { active = false; };
   }, [visita, workspaceQuery.data, workspaceQuery.isError, formScope]);
+  useEffect(() => () => { hydrationTicket.current = null; hydrationReady.current = false; autosaveTicket.current = null; }, [formScope]);
 
   const { data: arquivos = [] } = useQuery({
     queryKey: ["visita-arquivos", id],
@@ -793,7 +795,7 @@ export default function VisitaTecnica() {
   const formFingerprintRef = useRef(formFingerprint);
   formFingerprintRef.current = formFingerprint;
   useEffect(() => {
-    if (hydrationComplete && observedForm.current?.scope === formScope && observedForm.current.fingerprint === null) {
+    if (hydrationReady.current && hydrationComplete && observedForm.current?.scope === formScope && observedForm.current.fingerprint === null) {
       observedForm.current.fingerprint = formFingerprint;
     }
   }, [hydrationComplete, formScope, formFingerprint]);
@@ -803,7 +805,7 @@ export default function VisitaTecnica() {
   useEffect(() => {
     const observed = observedForm.current;
     if (isNew || !visita || !workspaceQuery.data?.permissions.can_edit || saveMutation.isPending || contentConflict ||
-      observed?.scope !== formScope || observed.fingerprint === null || observed.fingerprint === formFingerprint ||
+      !hydrationReady.current || observed?.scope !== formScope || observed.fingerprint === null || observed.fingerprint === formFingerprint ||
       observed.version !== workspaceQuery.data.version) return;
     // Conteúdo fechado nunca entra no autosave.
     if ((visita as any).status && (visita as any).status !== "rascunho") return;
