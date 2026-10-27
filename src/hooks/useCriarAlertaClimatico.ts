@@ -25,6 +25,7 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
 /** Canonical climatic alert creation. The RPC authorizes; this hook only fences and validates. */
 export function useCriarAlertaClimatico() {
   const fence = useStorageAccessScope("alerta-climatico-criar");
+  const actor = useStorageAccessScope("portal-query-actor");
   const qc = useQueryClient();
   const pending = useRef<symbol | null>(null);
   return useMutation<CriarAlertaClimaticoResult, Error, CriarAlertaClimaticoArgs>({
@@ -52,7 +53,7 @@ export function useCriarAlertaClimatico() {
         if (!row || typeof row !== "object" || Object.keys(row).length !== 2 || !isUuid(row.id) || typeof row.criado !== "boolean") {
           throw new Error(ALERTA_UNCONFIRMED);
         }
-        void qc.invalidateQueries({ queryKey: ["alertas_agronomicos"] });
+        void qc.invalidateQueries({ predicate: (q) => q.queryKey[0] === "alertas_agronomicos" && q.queryKey.at(-2) === actor.scope });
         return { id: row.id, criado: row.criado };
       } finally {
         if (pending.current === ticket) pending.current = null;

@@ -12,8 +12,26 @@ export const STATUS_CONFLICT = "Este alerta foi alterado por outra pessoa. Atual
 export const STATUS_UNCONFIRMED = "Resposta não confirmada. Atualize a lista antes de tentar novamente.";
 export const STATUS_IN_FLIGHT = "A atualização do alerta já está em andamento.";
 const isUuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-const TS = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}(?::?\d{2})?)$/;
-const isTs = (v: unknown): v is string => typeof v === "string" && TS.test(v) && Number.isFinite(Date.parse(v));
+const TS = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}(?::?\d{2})?)$/;
+/** Exact UTC microseconds (BigInt); null if not a valid timestamptz. Never used to rewrite the sent value. */
+export function timestampMicros(v: unknown): bigint | null {
+  if (typeof v !== "string") return null;
+  const m = TS.exec(v); if (!m) return null;
+  const [y, mo, d, h, mi, se] = m.slice(1, 7).map(Number);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59 || se > 59) return null;
+  const ms = Date.UTC(y, mo - 1, d, h, mi, se);
+  const check = new Date(ms);
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d) return null;
+  let offsetMin = 0;
+  if (m[8] !== "Z") {
+    const sign = m[8][0] === "-" ? -1 : 1; const digits = m[8].slice(1).replace(":", "");
+    const oh = Number(digits.slice(0, 2)); const om = digits.length > 2 ? Number(digits.slice(2, 4)) : 0;
+    if (oh > 15 || om > 59) return null;
+    offsetMin = sign * (oh * 60 + om);
+  }
+  return (BigInt(ms) - BigInt(offsetMin) * 60_000n) * 1000n + BigInt((m[7] ?? "").padEnd(6, "0"));
+}
+const isTs = (v: unknown): v is string => timestampMicros(v) !== null;
 
 const rpc = supabase.rpc.bind(supabase) as unknown as (
   fn: "rpc_atualizar_status_alerta_agronomico_v1",
@@ -23,6 +41,7 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
 /** Canonical status change with server CAS. Server authorizes; client fences and validates only. */
 export function useAtualizarStatusAlerta() {
   const fence = useStorageAccessScope("alerta-agronomico-status");
+  const actor = useStorageAccessScope("portal-query-actor");
   const qc = useQueryClient();
   const pending = useRef<symbol | null>(null);
   return useMutation<AtualizarStatusAlertaResult, Error, AtualizarStatusAlertaArgs>({
@@ -45,11 +64,12 @@ export function useAtualizarStatusAlerta() {
           if (error.code === "PT409") throw new Error(STATUS_CONFLICT);
           throw new Error("Não foi possível atualizar o alerta.");
         }
-        const row = Array.isArray(data) && data.length === 1 && data[0] && typeof data[0] === "object" ? data[0] as Record<string, unknown> : null;
-        if (!row || row.id !== args.id || row.status !== args.status || !isTs(row.updated_at) ||
-          Date.parse(row.updated_at) <= Date.parse(args.expectedUpdatedAt)) throw new Error(STATUS_UNCONFIRMED);
-        void qc.invalidateQueries({ queryKey: ["alertas_agronomicos"] });
-        return { id: row.id as string, status: args.status, updated_at: row.updated_at };
+        // RETURNS alertas_agronomicos (composite): PostgREST replies with ONE object; arrays are rejected.
+        const row = data && typeof data === "object" && !Array.isArray(data) ? data as Record<string, unknown> : null;
+        const before = timestampMicros(args.expectedUpdatedAt); const after = row ? timestampMicros(row.updated_at) : null;
+        if (!row || row.id !== args.id || row.status !== args.status || before === null || after === null || after <= before) throw new Error(STATUS_UNCONFIRMED);
+        void qc.invalidateQueries({ predicate: (q) => q.queryKey[0] === "alertas_agronomicos" && q.queryKey.at(-2) === actor.scope });
+        return { id: args.id, status: args.status, updated_at: row.updated_at as string };
       } finally {
         if (pending.current === ticket) pending.current = null;
       }
