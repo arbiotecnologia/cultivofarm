@@ -18,6 +18,5 @@ UNION ALL SELECT 'gate singleton', (SELECT count(*)=1 FROM cf_user_guards_v1.sta
 UNION ALL SELECT 'entregas.organization_id', EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='entregas' AND column_name='organization_id')
 UNION ALL SELECT 'ar.organization_id', EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts_receivable' AND column_name='organization_id')
 UNION ALL SELECT 'categories type/active', (SELECT count(*)=2 FROM information_schema.columns WHERE table_schema='public' AND table_name='financial_categories' AND column_name IN ('type','active'))
-UNION ALL SELECT 'payment_methods.active', EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='payment_methods' AND column_name='active')
-UNION ALL SELECT 'ref', current_setting('cluster_name',true) IS NOT DISTINCT FROM current_setting('cluster_name',true); -- confirm ref swzpzcwiasxmjutrmvkm in the tool before running
+UNION ALL SELECT 'payment_methods.active', EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='payment_methods' AND column_name='active');
 ROLLBACK;
