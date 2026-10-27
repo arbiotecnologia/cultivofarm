@@ -1,0 +1,12 @@
+-- INACTIVE deny-only containment, no vulnerable body restoration.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+SET LOCAL statement_timeout='15s';
+REVOKE EXECUTE ON FUNCTION public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text),
+ public.rpc_cockpit_cancelar_reserva_v1(uuid,uuid,text,text),
+ public.rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb),
+ public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)
+ FROM PUBLIC,anon,authenticated;
+-- Motor/batch are already available LIVE: their containment interrupts stock operations.
+-- No table grants, RLS, guards, history or service ownership are removed.
+COMMIT;
