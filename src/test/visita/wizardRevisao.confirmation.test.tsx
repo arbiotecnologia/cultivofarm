@@ -143,3 +143,15 @@ it("PT409 do envio mantém diálogo, não navega nem refaz automaticamente", asy
   expect(mocks.rpc).toHaveBeenCalledTimes(1);
   expect(mocks.navigate).not.toHaveBeenCalled();
 });
+it("resposta tardia após trocar de visita não navega nem aplica resultado", async () => {
+  mocks.registro.status = "finalizado";
+  let finish: ((v: unknown) => void) | undefined;
+  mocks.rpc.mockImplementation(() => new Promise((r) => { finish = r; }));
+  const { rerender } = render(<WizardRevisaoStep {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Enviar para aprovação" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar envio" }));
+  rerender(<WizardRevisaoStep remoteRegistroId="visit-other" locked={false} />);
+  await act(async () => { finish?.({ error: null }); });
+  expect(mocks.navigate).not.toHaveBeenCalled();
+  expect(mocks.invalidate).not.toHaveBeenCalled();
+});
