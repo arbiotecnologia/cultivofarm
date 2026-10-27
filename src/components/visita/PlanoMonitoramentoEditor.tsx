@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Gauge, Calendar, Save, Loader2, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useSalvarPlanoMonitoramento } from "@/hooks/useSalvarPlanoMonitoramento";
+import { MonitoringPlanSaveError, useSalvarPlanoMonitoramento } from "@/hooks/useSalvarPlanoMonitoramento";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
 import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
 import { EncerramentoState } from "./EncerramentoCard";
 import { formatDateDisplay } from "@/lib/date-utils";
@@ -30,8 +31,6 @@ interface PlanoMonitoramentoEditorProps {
 export function PlanoMonitoramentoEditor({
   readOnly = true,
   registroId,
-  observacoesAtuais,
-  dataProximaVisita,
   onUpdate
 }: PlanoMonitoramentoEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,26 +39,36 @@ export function PlanoMonitoramentoEditor({
   const save = useSalvarPlanoMonitoramento(registroId);
   const [saveError, setSaveError] = useState<string | null>(null);
   const observed = useRef<number | null>(null);
-  const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
+  const attempt = useRef<{ fingerprint: string; key: string; uncertain: boolean } | null>(null);
+  const [rejected, setRejected] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
+  const [review, setReview] = useState<{ version: number; current: () => boolean } | null>(null);
+  const reviewLock = useRef(false);
+  const minimumVersion = useRef<number | null>(null);
   useEffect(() => {
     setIsOpen(false); setSaveError(null); observed.current = null; attempt.current = null;
+    setRejected(false); setReview(null); minimumVersion.current = null;
     setState(previous => ({ ...previous, monitoramentoItens: [], monitoramentoGatilhos: "", dataProximaVisita: "" }));
   }, [save.scope]);
   const locked = readOnly || workspace.isError || !workspace.data?.permissions.can_edit ||
     !["rascunho", "em_andamento"].includes(workspace.data?.status ?? "");
   const writeLock = useRef(false);
   
-  const initialPlano = parsePlanoMonitoramento(observacoesAtuais);
+  const authorized = save.ready && !workspace.isError && workspace.data?.permissions.can_view !== false;
+  const displayRegistro = authorized ? workspace.data?.registro : null;
+  const displayPlan = parsePlanoMonitoramento(displayRegistro?.observacoes_tecnicas);
+  const displayDate = displayRegistro?.data_proxima_visita ?? displayPlan?.dataProximaVisita ?? "";
+  const aviso = authorized ? workspace.data?.monitoramento?.find(a => a.tipo === "plano_monitoramento" && a.registro_consultor_id === registroId) : null;
   
   const [state, setState] = useState<EncerramentoState>({
     resumoFinal: "",
     liberadoCliente: true,
     exigirAprovacao: false,
     proximoPasso: "monitorar_area",
-    dataProximaVisita: dataProximaVisita || initialPlano?.dataProximaVisita || "",
-    monitoramentoItens: initialPlano?.monitoramentoItens || [],
-    monitoramentoFrequencia: initialPlano?.monitoramentoFrequencia || "14",
-    monitoramentoGatilhos: initialPlano?.monitoramentoGatilhos || "",
+    dataProximaVisita: "",
+    monitoramentoItens: [],
+    monitoramentoFrequencia: "14",
+    monitoramentoGatilhos: "",
     osItens: [],
     osDataAplicacao: "",
     osObservacoes: "",
@@ -85,6 +94,7 @@ export function PlanoMonitoramentoEditor({
       const text = registro?.observacoes_tecnicas;
       const version = workspace.data?.version;
       if (!Number.isSafeInteger(version) || !version || version <= 0 ||
+        (minimumVersion.current !== null && version < minimumVersion.current) ||
         !(text === null || typeof text === "string")) {
         toast.error("Revisão do plano indisponível. Atualize a visita antes de editar.");
         return;
@@ -123,21 +133,48 @@ export function PlanoMonitoramentoEditor({
       if (expectedVersion === null) throw new Error("Revisão da visita indisponível. O plano foi mantido.");
       const fingerprint = JSON.stringify([registroId, expectedVersion, plan]);
       if (attempt.current && attempt.current.fingerprint !== fingerprint) throw new Error("Há um salvamento não confirmado. Preserve a edição enviada antes de tentar novamente.");
-      attempt.current ??= { fingerprint, key: crypto.randomUUID() };
+      attempt.current ??= { fingerprint, key: crypto.randomUUID(), uncertain: false };
       await save.mutateAsync({ registroId, expectedVersion, plan, requestId: attempt.current.key });
       if (!current()) return;
       attempt.current = null;
+      observed.current = null; minimumVersion.current = expectedVersion + 1;
+      setRejected(false); setReview(null);
       toast.success("Plano de monitoramento atualizado!");
       setIsOpen(false);
       onUpdate();
     } catch (error) {
       if (!current()) return;
       const message = error instanceof Error ? error.message : "Não foi possível confirmar o plano. A edição foi mantida.";
+      if (error instanceof MonitoringPlanSaveError && error.outcome === "rejected" && !attempt.current?.uncertain) {
+        setRejected(true);
+      } else {
+        if (attempt.current) attempt.current.uncertain = true;
+        setRejected(false);
+      }
       setSaveError(message); toast.error(message);
     } finally {
       writeLock.current = false;
       setIsSaving(false);
     }
+  };
+
+  const reconsultar = async () => {
+    if (!rejected || writeLock.current || reviewLock.current || locked) return;
+    const current = save.capture(); reviewLock.current = true; setIsReviewing(true);
+    try {
+      const response = await workspace.refetch();
+      if (!current()) return;
+      const ws = response.data;
+      if (response.isError || !ws?.permissions.can_edit || !["rascunho", "em_andamento"].includes(ws.status ?? "") ||
+        !Number.isSafeInteger(ws.version) || !ws.version || ws.version <= 0) throw new Error("Não foi possível revisar a visita. O plano foi mantido.");
+      setReview({ version: ws.version, current });
+    } catch (error) { if (current()) setSaveError(error instanceof Error ? error.message : "Não foi possível revisar a visita."); }
+    finally { reviewLock.current = false; if (current()) setIsReviewing(false); }
+  };
+  const confirmarRevisao = () => {
+    if (!review || !review.current() || locked || writeLock.current || !rejected || attempt.current?.uncertain ||
+      workspace.data?.version !== review.version) { setReview(null); return; }
+    observed.current = review.version; attempt.current = null; setRejected(false); setSaveError(null); setReview(null);
   };
 
   return (
@@ -154,7 +191,7 @@ export function PlanoMonitoramentoEditor({
         </CardHeader>
         <CardContent className="py-2 px-4 space-y-2">
           <div className="flex flex-wrap gap-1">
-            {state.monitoramentoItens?.map(item => (
+            {displayPlan?.monitoramentoItens?.map(item => (
               <span key={item} className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-medium border border-emerald-200">
                 {item}
               </span>
@@ -163,12 +200,13 @@ export function PlanoMonitoramentoEditor({
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              <span>Próxima: {state.dataProximaVisita ? formatDateDisplay(state.dataProximaVisita + "T12:00:00") : "Não definida"}</span>
+              <span>Próxima: {displayDate ? formatDateDisplay(displayDate + "T12:00:00") : "Não definida"}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="font-medium text-emerald-700">{state.monitoramentoFrequencia} dias</span>
+              <span className="font-medium text-emerald-700">{displayPlan?.monitoramentoFrequencia ?? "14"} dias</span>
             </div>
           </div>
+          {aviso && <p className="text-xs text-muted-foreground">Aviso desta visita · {displayRegistro?.codigo_visita ?? registroId} · {aviso.id}</p>}
           <Button 
             className="w-full h-8 text-xs mt-2 bg-emerald-600 hover:bg-emerald-700 text-white" 
             disabled={true}
@@ -236,7 +274,7 @@ export function PlanoMonitoramentoEditor({
                   value={state.dataProximaVisita}
                   onChange={(e) => setState({ ...state, dataProximaVisita: e.target.value })}
                   className="h-9 text-xs border-emerald-200"
-                  min={new Date().toISOString().split("T")[0]}
+                  min={new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())}
                 />
               </div>
             </div>
@@ -254,16 +292,29 @@ export function PlanoMonitoramentoEditor({
           </fieldset>
 
           {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
+          {rejected && <Button variant="outline" disabled={locked || isSaving || isReviewing} onClick={reconsultar}>Reconsultar e revisar</Button>}
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={isSaving}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={isSaving || locked} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={handleSave} disabled={isSaving || locked || rejected || isReviewing} className="bg-emerald-600 hover:bg-emerald-700">
               {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               Salvar Alterações
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={review !== null} onOpenChange={open => { if (!open) setReview(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revisar plano antes de salvar?</AlertDialogTitle>
+            <AlertDialogDescription>Visita {displayRegistro?.codigo_visita ?? registroId}, revisão {review?.version}. Seu plano editado será preservado. Confirmar permite uma nova tentativa; não salva automaticamente.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setReview(null)}>Cancelar revisão</Button>
+            <Button onClick={confirmarRevisao}>Confirmar revisão</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
