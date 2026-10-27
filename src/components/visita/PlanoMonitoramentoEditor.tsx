@@ -41,7 +41,10 @@ export function PlanoMonitoramentoEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const observed = useRef<number | null>(null);
   const attempt = useRef<{ fingerprint: string; key: string } | null>(null);
-  useEffect(() => { setIsOpen(false); setSaveError(null); observed.current = null; attempt.current = null; }, [save.scope]);
+  useEffect(() => {
+    setIsOpen(false); setSaveError(null); observed.current = null; attempt.current = null;
+    setState(previous => ({ ...previous, monitoramentoItens: [], monitoramentoGatilhos: "", dataProximaVisita: "" }));
+  }, [save.scope]);
   const locked = readOnly || workspace.isError || !workspace.data?.permissions.can_edit ||
     !["rascunho", "em_andamento"].includes(workspace.data?.status ?? "");
   const writeLock = useRef(false);
@@ -72,6 +75,30 @@ export function PlanoMonitoramentoEditor({
       ? current.filter(i => i !== item) 
       : [...current, item];
     setState({ ...state, monitoramentoItens: next });
+  };
+
+  const openEditor = () => {
+    if (locked || !save.ready) return;
+    // Capture fields and version from ONE observed envelope, never refetch during save.
+    if (observed.current === null) {
+      const registro = workspace.data?.registro;
+      const text = registro?.observacoes_tecnicas;
+      const version = workspace.data?.version;
+      if (!Number.isSafeInteger(version) || !version || version <= 0 ||
+        !(text === null || typeof text === "string")) {
+        toast.error("Revisão do plano indisponível. Atualize a visita antes de editar.");
+        return;
+      }
+      const plan = parsePlanoMonitoramento(text);
+      observed.current = version;
+      setState(previous => ({ ...previous,
+        monitoramentoItens: plan?.monitoramentoItens ?? [],
+        monitoramentoFrequencia: plan?.monitoramentoFrequencia ?? "14",
+        monitoramentoGatilhos: plan?.monitoramentoGatilhos ?? "",
+        dataProximaVisita: registro?.data_proxima_visita ?? plan?.dataProximaVisita ?? "",
+      }));
+    }
+    setIsOpen(true);
   };
 
   const handleSave = async () => {
@@ -121,7 +148,7 @@ export function PlanoMonitoramentoEditor({
             <Gauge className="h-4 w-4 text-emerald-600" />
             <CardTitle className="text-sm font-semibold text-emerald-800">Monitoramento Ativo</CardTitle>
           </div>
-          <Button variant="outline" size="sm" disabled={locked} onClick={() => { if (!locked) { if (observed.current === null) observed.current = workspace.data?.version ?? null; setIsOpen(true); } }} className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-100">
+          <Button variant="outline" size="sm" disabled={locked || !save.ready} onClick={openEditor} className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-100">
             Editar Plano
           </Button>
         </CardHeader>
