@@ -95,6 +95,17 @@ extra=r'''
   sql("ALTER FUNCTION public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz) SET lock_timeout='3s';")
   for name in ('rpc_criar_alerta_climatico_v1','rpc_atualizar_status_alerta_agronomico_v1','rpc_reprogramar_monitoramento_v1'):
    print('EXPECTED_FUNCTION',val(f"SELECT oid::regprocedure::text||E'\\t'||md5(pg_get_functiondef(oid)) FROM pg_proc WHERE proname='{name}';"))
+  err((CLOSURE/'preflight.sql').read_text(),'55000','PRE rejects non-LIVE synthetic baseline')
+  # Exercise complete POST logic: substitute only fingerprints of reduced synthetic dependencies.
+  post=(CLOSURE/'postflight.sql').read_text()
+  fingerprint=val("SELECT md5(string_agg(polname||':'||polcmd::text||':'||polpermissive::text||':'||polroles::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),E'\\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='alertas_agronomicos'::regclass AND polname NOT LIKE 'monitoring_authenticated_%_closed';")
+  post=post.replace('826292c397fd1dea1f07a23e37b56a04',fingerprint)
+  for sig,h in [('platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)','c0da2db32df6d5161c5c1d4dee84b495'),('platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)','3c31ce9dbf3ee2e23d82b43b07a70a5c'),('platform_private.guard_alert_origin_sync()','c7e11bafbdf60e08495c68dfc9f9b12f'),('platform_private.guard_visit_plan_preservation()','618797b75f8c6b962dc70c0841c84de1')]:
+   post=post.replace(h,val(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure));"))
+  sql(post); checks+=1; print('PASS POST full assertions with explicitly synthetic dependency fingerprints')
+  sql('ALTER POLICY monitoring_authenticated_update_closed ON alertas_agronomicos USING(true);')
+  err(post,'55000','POST rejects widened restrictive policy')
+  sql('ALTER POLICY monitoring_authenticated_update_closed ON alertas_agronomicos USING(false);')
   sql((CLOSURE/'rollback-containment.sql.review').read_text())
   err(au(status()),'42501','containment closes user RPC')
   err(au(f"UPDATE alertas_agronomicos SET nivel_risco='baixo' WHERE id='{AL}';"),'42501','containment does not restore direct write')
