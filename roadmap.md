@@ -911,4 +911,5 @@
 - [ ] Publicação do patch do seletor e verificação do deployment 08519845 pelo auditor; homologação de revogação Superadmin bloqueada (sem fluxo canônico); contabilidade real e SU-518022 adiados.
 
 - [x] Fluxo pedido B2B Etapa 2: pacote inativo cobrança na entrega (scripts/delivery-billing-scope-20261027) — aguarda revisão/implantação do auditor.
-- [ ] Etapas 3–9 do plano de correção do fluxo B2B (Etapa 5 aguarda autorização do proprietário).
+- [ ] Etapas 3–9 do plano de correção do fluxo B2B; Etapa 5 autorizada em27/10 21:57UTC somente como pacote inativo/testes locais, sem aplicar/publicar.
+- [ ] Etapa 5: fontes LIVE, dependências OS/entrega, candidatos, pré/pós/contenção e testes descartáveis; reabertura efetiva fica com auditor após revisão.
