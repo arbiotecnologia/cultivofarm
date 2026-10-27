@@ -25771,6 +25771,15 @@ export type Database = {
         }
         Returns: Json
       }
+      rpc_salvar_plano_monitoramento_visita_v1: {
+        Args: {
+          p_expected_version: number
+          p_plano: Json
+          p_registro_id: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       rpc_service_apply_provider_settings: {
         Args: { p_actor: string; p_payload: Json }
         Returns: Json
