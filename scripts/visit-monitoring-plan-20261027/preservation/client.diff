@@ -54,7 +54,7 @@ index 73ca55f4a..a004753eb 100644
  import { resolveVisitaAcoes } from "@/lib/visita/acoesPersistencia";
  import { resolveEtapasAcionaveis, clampPercentualArea } from "@/lib/visita/etapasVisita";
 +import { preserveMonitoringPlan } from "@/lib/visita/preserveMonitoringPlan";
- 
+
  // ---------- Helpers ----------
  function translateError(msg: string): string {
 @@ -117,6 +118,7 @@ export default function VisitaTecnica() {
@@ -82,12 +82,12 @@ index 73ca55f4a..a004753eb 100644
 +    autosaveTicket.current = null;
 +    void workspaceQuery.refetch(); void refetchVisita();
 +  };
- 
+
    // -------- Queries --------
    const { data: clientes = [] } = useQuery({
 @@ -325,18 +340,20 @@ export default function VisitaTecnica() {
    );
- 
+
    const { data: visita, refetch: refetchVisita } = useQuery({
 -    queryKey: ["visita-tecnica", id],
 -    queryFn: async () => {
@@ -136,11 +136,11 @@ index 73ca55f4a..a004753eb 100644
 +    autosaveTicket.current = null;
 +    observedForm.current = { scope: formScope, version: ws.version, observations: v.observacoes_tecnicas ?? "", fingerprint: null };
 +    setContentConflict(null);
-     
+
      setTipoVisita(v.tipo_visita || "vistoria_inicial");
      setObjetivoVisita(v.objetivo_visita || "");
 @@ -397,19 +429,21 @@ export default function VisitaTecnica() {
- 
+
      // Carregar diagnósticos da nova tabela ou converter legados
      const loadDiagnostics = async () => {
 -      const { data: existingDiag } = await supabase
@@ -168,7 +168,7 @@ index 73ca55f4a..a004753eb 100644
            problema: v.problema_principal || "",
            severidade: v.nivel_pressao || "medio",
            incidencia: v.percentual_area_afetada?.toString() || "",
--          descricao: "", 
+-          descricao: "",
 +          descricao: cleanDescription,
            categoria: v.categoria_problema || "",
            localizacao: v.localizacao_na_area || "",
@@ -180,7 +180,7 @@ index 73ca55f4a..a004753eb 100644
      };
 -    loadDiagnostics();
 +    void loadDiagnostics().catch(() => { if (current()) setContentConflict("Não foi possível carregar os diagnósticos. A visita não será salva automaticamente."); });
- 
+
      setUrgencia(v.urgencia || "media");
      setNecessidadeIntervencao(v.necessidade_intervencao || "monitorar");
 @@ -446,8 +483,9 @@ export default function VisitaTecnica() {
@@ -192,7 +192,7 @@ index 73ca55f4a..a004753eb 100644
 +    setConduta(parsedConduta ?? CONDUTA_DEFAULT);
 +  }, [visita, workspaceQuery.data, workspaceQuery.isError, formScope]);
 +  useEffect(() => () => { hydrationTicket.current = null; hydrationReady.current = false; autosaveTicket.current = null; hydratedIdRef.current = null; observedForm.current = null; }, [formScope]);
- 
+
    const { data: arquivos = [] } = useQuery({
      queryKey: ["visita-arquivos", id],
 @@ -569,11 +607,11 @@ export default function VisitaTecnica() {
@@ -206,11 +206,11 @@ index 73ca55f4a..a004753eb 100644
            notes,
 -        ) || null,
 +        )) || null,
- 
+
        urgencia: urgencia as any,
        necessidade_intervencao: necessidadeIntervencao as any,
 @@ -589,17 +627,18 @@ export default function VisitaTecnica() {
- 
+
    // -------- Persistência de conteúdo editável confirmada --------
    const saveMutation = useMutation({
 -    mutationFn: async ({ payload, finalizar }: { payload: any; finalizar: boolean }) => {
@@ -246,11 +246,11 @@ index 73ca55f4a..a004753eb 100644
 +          observedForm.current = { scope: formScope, version: saved.version, observations: payloadPersistivel.observacoes_tecnicas ?? "", fingerprint: fingerprint ?? null };
 +        }
        }
- 
+
        // Salvar múltiplos diagnósticos
 @@ -685,19 +728,24 @@ export default function VisitaTecnica() {
        }
- 
+
        if (!currentRegistroId) throw new Error("Visita não encontrada.");
 -      return { mode: isNew ? "insert" as const : "update" as const, id: currentRegistroId, finalizar };
 +      return { mode: isNew ? "insert" as const : "update" as const, id: currentRegistroId, finalizar, current };
@@ -278,7 +278,7 @@ index 73ca55f4a..a004753eb 100644
 @@ -752,23 +800,42 @@ export default function VisitaTecnica() {
      }
    });
- 
+
 -  // -------- Autosave (debounced) --------
 +  const formFingerprint = JSON.stringify([tipoVisita, objetivoVisita, dataVisita, safra, faseFenologica, clienteId, fazendaId, talhaoId, culturaId,
 +    diagnosticos, historicoResumido, condicoesClimaticas, urgencia, necessidadeIntervencao, riscoProdutivo, conduta, encerramento, notes]);
@@ -322,7 +322,7 @@ index 73ca55f4a..a004753eb 100644
 +    necessidadeIntervencao, riscoProdutivo, conduta, encerramento, notes, formFingerprint, formScope, hydrationComplete,
 +    workspaceQuery.data?.version, workspaceQuery.data?.permissions.can_edit, saveMutation.isPending, contentConflict,
    ]);
- 
+
    /**
 @@ -782,9 +849,9 @@ export default function VisitaTecnica() {
     */
@@ -334,7 +334,7 @@ index 73ca55f4a..a004753eb 100644
 -    saveMutation.mutate({ payload: buildPayload(), finalizar: false });
 +    saveMutation.mutate(captureContentSave());
    };
- 
+
    const handleSaveDraft = salvarCanonico;
 @@ -902,7 +969,7 @@ export default function VisitaTecnica() {
      if (!acoesVisita.showFinalize || persistLock.current) return;
