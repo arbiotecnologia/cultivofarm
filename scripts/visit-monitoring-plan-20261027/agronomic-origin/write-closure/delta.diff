@@ -1,0 +1,673 @@
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/AGENTS.md b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/AGENTS.md
+new file mode 100644
+index 000000000..4b821464e
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/AGENTS.md
+@@ -0,0 +1,4 @@
++- Keep this additive package inactive and never reinstall the predecessor — independent review owns hosted application.
++- Deny authenticated INSERT/UPDATE/DELETE with separate restrictive false policies; preserve SELECT, tenant policies, canonical postgres definer RPCs and the service-role risk job — closes user bypass without inventing deletion.
++- Bound the three legacy RPC waits using function-level lock_timeout only; preserve bodies, OIDs, owners and ACLs — limits global gate occupancy without changing authorization.
++- Disposable PostgreSQL uses synthetic Auth and reduced schema; real overlapping revocation remains unverified — prevents false homologation.
+\ No newline at end of file
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/README.md b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/README.md
+new file mode 100644
+index 000000000..40ab15433
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/README.md
+@@ -0,0 +1,65 @@
++# Delta adicional de escrita — INATIVO
++
++Continuação da publicação `a5fc8575` e da migration `monitoring_origin_canonical_sync_20261027`, instaladas pelo auditor. **Não reaplicar o pacote pai. Não executar este candidato nem publicar automaticamente.** HEAD observado nesta tarefa: `1237877b0e77c6cdb89ef2900866b99908941197`, diferente do release informado. Nenhuma mudança de runtime/Edge/fiscal/pedidos/Storage, fixtures ou dados hosted.
++
++## Delta estritamente adicional
++
++3 políticas **RESTRICTIVE**, somente `authenticated`, comandos separados:
++- INSERT `WITH CHECK(false)`;
++- UPDATE `USING(false) WITH CHECK(false)`;
++- DELETE `USING(false)`.
++
++Mantém todas as políticas anteriores, SELECT e `monitoring_tenant_boundary`. Não revoga ACL no candidato: `has_table_privilege(...,'UPDATE')` continuará true, mas RLS negará linhas. UPDATE/DELETE normalmente retornam **0 rows**, não necessariamente HTTP409/403; nunca interpretar resposta HTTP vazia como mutação bem-sucedida. INSERT sem origem → 42501; com origem a trigger anterior pode rejeitar antes em PT409. Desvincular para depois alterar data não encontra linha autorizada.
++
++Os 5 escritores PG encontrados continuam `SECURITY DEFINER`, owner `postgres`; a tabela é owner postgres, RLS ON/FORCE OFF. Assim os fluxos canônicos conservam acesso sem depender das políticas authenticated. Nenhuma RPC de exclusão encontrada; não há fluxo novo de DELETE.
++
++### Três RPCs antigos: gate e autoridade após espera
++
++Captura **LIVE somente leitura** no ref validado `swzpzcwiasxmjutrmvkm`, 27/10 ~12:57–12:59 UTC. O CLI de query recusou backend externo; captura feita pelo leitor Supabase após confirmação `managed_by_lovable:false` e ref exato. Não houve SQL de escrita hosted.
++
++| RPC | PRE MD5 LIVE | POST MD5 esperado após apenas lock_timeout |
++|---|---|---|
++| criação climática | b675f863360f50d58cd5358451284eff | be3fa0742fddc5f3d212e7ed53048910 |
++| status | f2769829ce82c765326079a498eed0f7 | 8e6d0982d4eb9b599c703d3f715dd806 |
++| reprogramação v1 | 849f31fc39e98a115cb9b317801d698e | 1bf4ebfecb645e4a0d131510122ac407 |
++
++- Criação: verifica ator/papel/refs antes e depois do gate; aguarda advisory lock de fazenda/talhão/tipo; verifica ator/papel/refs novamente antes de inserir/deduplicar.
++- Status: gate → revalida ator/papel → alerta escopado FOR UPDATE → revalida ator/papel → CAS exato → UPDATE com refs novamente. A última cláusula protege refs pós-espera; revogação de roles/perfil é serializada pelo gate comum.
++- v1: gate → revalida ator/papel → alerta escopado FOR UPDATE → revalida ator/refs; origem continua PT428 antes de qualquer escrita; CAS obrigatório e UPDATE com refs. O papel foi validado após gate; o gate permanece detido até commit e a revogação canônica usa o mesmo lock.
++- LIVE os três não tinham `lock_timeout`: necessário limite **3s por espera de lock**, exclusivamente via ALTER FUNCTION SET, mantendo corpo/OID/owner/ACL/search_path. Não é teto de duração total; múltiplas esperas podem somar. Statement timeout 15s limita somente instalação do delta. Nenhum lock deliberado longo em produção.
++
++`candidate.sql.review` compara metadata pré/pós, exigindo corpo/OID/ACL/owner/SECURITY DEFINER inalterados e somente proconfig + lock_timeout=3s. PRE e POST exigem hashes exatos (os POST dos três foram calculados localmente sobre as definições LIVE exatas, não aplicados hosted).
++
++### Cliente e serviço
++
++Inventário: `useCriarAlertaClimatico`, `useAtualizarStatusAlerta`, `useReprogramarMonitoramento` já usam RPCs; `useOrigemAlertaAgronomico` usa o vínculo canônico. Nenhum React INSERT/UPDATE/DELETE direto encontrado.
++
++`supabase/functions/check-monitoramentos-vencidos/index.ts:84–88` usa UPDATE direto de **nivel_risco** após `rpc_check_monitoramento_and_notify`; `_shared/auth-guard.ts:26–31,49–50,60–75` fornece serviceClient com service_role tanto para cron como chamador admin autorizado. Policies TO authenticated não afetam o service_role BYPASSRLS, confirmado LIVE. Teste preserva esse UPDATE e o guard ainda nega alteração de data vinculada pelo service_role. Edge fonte/deployment intocados.
++
++**Limite real:** isso fecha bypass de escrita direta **authenticated**, não toda escrita privilegiada. O serviço de risco continua fora do gate global; este pacote não homologa a segurança integral dessa Edge, suas permissões de chamada ou revogação de seu administrador durante espera. Postgres/service_role não são confinados pelas políticas authenticated. Não alegar gate universal.
++
++## PRE / POST / contenção
++
++Executor verifica externamente ref/URL canônicos antes de SQL. PRE de catálogo sem mutações exige RLS/owner, fingerprint de todas as políticas anteriores, hashes/ACL/owners/search_path dos 5 writers, guards, triggers de revogação e service_role BYPASSRLS+UPDATE. Qualquer writer PG adicional encontrado pelo inventário textual → NO-GO (SQL dinâmico exige revisão complementar, não é provado por regex). Nova política preexistente muda fingerprint e falha: este delta é **one-shot fail-closed**, não restaura nem altera política em reaplicação.
++
++POST exige exatamente as 3 negações, fingerprint anterior intacto, hashes novos dos 3 antigos e hashes intactos dos cores/guards. Contenção mantém políticas, guards/tickets/histórico e timeouts; revoga DML authenticated/anon e EXECUTE authenticated/PUBLIC/anon de entradas **e cores** de mutação. Não restaura vulnerabilidade; conserva SELECT e risco service_role. Não é reversão funcional: fluxo usuário fica indisponível até forward-fix revisado.
++
++## Evidências discriminadas
++
++- PostgreSQL descartável/Auth sintética/schema reduzido: **141/141 checks**, dos quais **87 herdados** antes do delta e **54 adicionais**. `python3 scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/test-local.py` (initdb/pg_ctl/psql/setpriv; socket local /tmp, sem rede).
++- Novos checks: escape PRE de risco reproduzido; direct INSERT/UPDATE/DELETE A/B/anon negados; unlink+date e snapshot intacto; SELECT próprio e cruzado; criação/status/v1 A/B positivos e v2 sincronizado; negativos B→A e ACL anon; job service_role preservado; 3 RPCs aguardando gate com revogação primeiro → 42501; 6 timeouts gate/row/advisory ~3.02–3.04s; PRE rejeita baseline sintética; POST completo exercitado com fingerprints sintéticos explicitamente substituídos e política adulterada rejeitada; contenção positiva.
++- PRE LIVE completo **não foi executado por ausência de suporte DO no leitor**; as leituras de catálogo forneceram os valores. Harness retira PRE/POST ao montar delta reduzido, depois exercita POST com dependências sintéticas: não é instalação homologada de triggers/RLS completos.
++- Vitest clientes reais/transporte/Auth simulados: **101/101 em 4 arquivos** (criarAlertaClimaticoClient, atualizarStatusAlertaClient, reprogramarCasClient, origemAlertaAgronomico). Avisos act do ambiente, sem falhas. Não houve comparação nem alteração de `alertas.test.ts`; falha de texto legado relatada continua fora deste delta.
++- Não houve typecheck/build manual (runtime não mudou); verificar última entrada do build automático antes de concluir. Resultados reproduzíveis em `results.txt`, hashes em `SHA256SUMS`, delta em `delta.diff`.
++
++## Ensaio real bounded ainda pendente (auditor)
++
++1. Confirmar ref externo, executar PRE, rever SHA/diff; aplicar **apenas** este delta em janela livre com timeout de instalação 3s/15s. POST e hashes novos precisam passar.
++2. Fixtures existentes A reparada v5 e B `126e3203-a381-4440-8e8b-a34d64241b38` v2, aviso `154f779f-5507-40d1-bd37-a760ea251749`: não recriar. Conferir estado/revisões atuais, não assumir versões antigas.
++3. JWT A/B: direct PATCH status/risco/date/unlink e DELETE com RETURNING → 0 linhas e leitura invariável; INSERT → rejeição; B→A invisível; anon sem leitura/mutação/RPC. Não testar exclusão real de dado produtivo: BEGIN/ROLLBACK de sessão de teste ou fixture exata autorizada, com readback.
++4. Nas mesmas fixtures, RPCs criação/status/v1 sem origem positivos, v2 com origem+CAS e replay positivo; negativos cruzados. Capturar readback plano/data/aviso/log/recibo; sem atribuição direta no banco nem fallback.
++5. Serviço: validar job pelo contrato existente sem ativar entregas externas; readback somente risco, datas/origem inalteradas. Não chamar endpoint notificante real automaticamente.
++6. Revogação real já relatada: gestor B revogado por RPC 200, chamadas posteriores403, original restaurado. Janelas tentadas **não se sobrepuseram**: isso NÃO homologa operação real aguardando lock. Se houver ensaio aprovado: sessão em BEGIN com lock **só da fixture**, observador confirma wait em pg_stat_activity, release imediato (<1s) e watchdog independente ≤2s; nunca manter global gate bloqueado deliberadamente. Se não capturar sobreposição, registrar INCONCLUSIVO. Dois ordenamentos completos e timeout ficam somente sintéticos; operação que detém gate confirma antes da revogação enfileirada, não revogação vencedora.
++7. Falha → contenção deny-only, não rollback do predecessor.
++
++Relatos do auditor (não reproduzidos pelo agente): A/B vínculo/reprogramação/replay negativos cruzados passaram; plano/data/aviso sincronizados; PATCH B data/unlink409 e B→A0rows. Sem publicação/SQL hosted nesta tarefa. **Contabilidade real e SU-518022 adiados; homologação real do delta e durante espera continuam pendentes.**
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/candidate.sql.review b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/candidate.sql.review
+new file mode 100644
+index 000000000..ba9d8017e
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/candidate.sql.review
+@@ -0,0 +1,114 @@
++-- ADDITIVE CANDIDATE ONLY. Never reinstall monitoring_origin_canonical_sync_20261027.
++BEGIN;
++SET LOCAL lock_timeout='3s';
++SET LOCAL statement_timeout='15s';
++-- Read-only assertions. Executor FIRST verifies external ref swzpzcwiasxmjutrmvkm outside SQL.
++DO $pre$
++DECLARE r record;
++BEGIN
++ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.alertas_agronomicos'::regclass AND relrowsecurity AND NOT relforcerowsecurity AND relowner='postgres'::regrole) THEN
++  RAISE EXCEPTION 'write_closure_table_baseline_mismatch' USING ERRCODE='55000';
++ END IF;
++ IF (SELECT md5(string_agg(polname||':'||polcmd::text||':'||polpermissive::text||':'||polroles::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),E'\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='public.alertas_agronomicos'::regclass)<>'826292c397fd1dea1f07a23e37b56a04' THEN
++  RAISE EXCEPTION 'write_closure_policy_baseline_mismatch' USING ERRCODE='55000';
++ END IF;
++ FOR r IN SELECT * FROM (VALUES
++ ('public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)','b675f863360f50d58cd5358451284eff'),
++ ('public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)','f2769829ce82c765326079a498eed0f7'),
++ ('public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)','849f31fc39e98a115cb9b317801d698e'),
++ ('platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)','c0da2db32df6d5161c5c1d4dee84b495'),
++ ('platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)','3c31ce9dbf3ee2e23d82b43b07a70a5c')
++ ) v(signature,hash) LOOP
++  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(r.signature) AND prosecdef AND proowner='postgres'::regrole AND md5(pg_get_functiondef(oid))=r.hash
++   AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND 'search_path=""'=ANY(proconfig))
++   OR has_function_privilege('anon',r.signature,'EXECUTE') THEN
++   RAISE EXCEPTION 'write_closure_function_baseline_mismatch: %',r.signature USING ERRCODE='55000';
++  END IF;
++ END LOOP;
++ IF md5(pg_get_functiondef('platform_private.guard_alert_origin_sync()'::regprocedure))<>'c7e11bafbdf60e08495c68dfc9f9b12f'
++ OR md5(pg_get_functiondef('platform_private.guard_visit_plan_preservation()'::regprocedure))<>'618797b75f8c6b962dc70c0841c84de1'
++ OR md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure))<>'b0dd9a14d5fd799a40df0975baf4c5a6'
++ OR NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role' AND rolbypassrls)
++ OR NOT has_table_privilege('service_role','public.alertas_agronomicos','UPDATE') THEN
++  RAISE EXCEPTION 'write_closure_dependency_mismatch' USING ERRCODE='55000';
++ END IF;
++ IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.alertas_agronomicos'::regclass AND NOT tgisinternal)<>1
++ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.alertas_agronomicos'::regclass AND tgname='trg_alert_origin_sync' AND tgenabled='O' AND tgfoid='platform_private.guard_alert_origin_sync()'::regprocedure)
++ OR (SELECT count(*) FROM pg_trigger WHERE tgrelid IN ('public.profiles'::regclass,'public.user_roles'::regclass) AND tgname='a00_cf_user_gate' AND tgenabled='O' AND tgfoid='cf_user_guards_v1.acquire_gate()'::regprocedure)<>2 THEN
++  RAISE EXCEPTION 'write_closure_trigger_mismatch' USING ERRCODE='55000';
++ END IF;
++ -- Unexpected writers require a new review; no delete RPC is authorized here.
++ IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private')
++ AND p.prosrc ~* '(insert[[:space:]]+into|update|delete[[:space:]]+from)[[:space:]]+(public\.)?alertas_agronomicos'
++ AND p.oid NOT IN ('public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)'::regprocedure,
++ 'public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)'::regprocedure,
++ 'public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)'::regprocedure,
++ 'platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)'::regprocedure,
++ 'platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)'::regprocedure)) THEN
++  RAISE EXCEPTION 'write_closure_unreviewed_writer' USING ERRCODE='55000';
++ END IF;
++END;
++$pre$;
++
++CREATE TEMP TABLE monitoring_closure_baseline ON COMMIT DROP AS
++SELECT oid,prosrc,proacl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid IN (
++ 'public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)'::regprocedure,
++ 'public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)'::regprocedure,
++ 'public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)'::regprocedure);
++CREATE POLICY monitoring_authenticated_insert_closed ON public.alertas_agronomicos AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK(false);
++CREATE POLICY monitoring_authenticated_update_closed ON public.alertas_agronomicos AS RESTRICTIVE FOR UPDATE TO authenticated USING(false) WITH CHECK(false);
++CREATE POLICY monitoring_authenticated_delete_closed ON public.alertas_agronomicos AS RESTRICTIVE FOR DELETE TO authenticated USING(false);
++-- Necessary: LIVE legacy functions have no bounded wait; gate/advisory/row waits can otherwise be unbounded.
++ALTER FUNCTION public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text) SET lock_timeout='3s';
++ALTER FUNCTION public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz) SET lock_timeout='3s';
++ALTER FUNCTION public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz) SET lock_timeout='3s';
++DO $metadata$
++BEGIN
++ IF (SELECT count(*) FROM monitoring_closure_baseline)<>3 OR EXISTS(
++ SELECT 1 FROM monitoring_closure_baseline b LEFT JOIN pg_proc p ON p.oid=b.oid WHERE p.oid IS NULL
++ OR ROW(p.prosrc,p.proacl,p.proowner,p.prosecdef) IS DISTINCT FROM ROW(b.prosrc,b.proacl,b.proowner,b.prosecdef)
++ OR p.proconfig IS DISTINCT FROM array_append(b.proconfig,'lock_timeout=3s')) THEN
++ RAISE EXCEPTION 'write_closure_metadata_changed' USING ERRCODE='55000'; END IF;
++END;
++$metadata$;
++-- Read-only; failure means NO-GO. Tenant/SELECT fingerprint excludes ONLY the 3 new policies.
++DO $post$
++DECLARE r record;
++BEGIN
++ IF (SELECT count(*) FROM pg_policy WHERE polrelid='public.alertas_agronomicos'::regclass AND NOT polpermissive
++ AND polroles=ARRAY['authenticated'::regrole::oid] AND (
++ (polname='monitoring_authenticated_insert_closed' AND polcmd='a' AND polqual IS NULL AND pg_get_expr(polwithcheck,polrelid)='false') OR
++ (polname='monitoring_authenticated_update_closed' AND polcmd='w' AND pg_get_expr(polqual,polrelid)='false' AND pg_get_expr(polwithcheck,polrelid)='false') OR
++ (polname='monitoring_authenticated_delete_closed' AND polcmd='d' AND pg_get_expr(polqual,polrelid)='false' AND polwithcheck IS NULL)))<>3 THEN
++  RAISE EXCEPTION 'write_closure_post_policy_failed' USING ERRCODE='55000';
++ END IF;
++ IF (SELECT md5(string_agg(polname||':'||polcmd::text||':'||polpermissive::text||':'||polroles::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),E'\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='public.alertas_agronomicos'::regclass AND polname NOT IN ('monitoring_authenticated_insert_closed','monitoring_authenticated_update_closed','monitoring_authenticated_delete_closed'))<>'826292c397fd1dea1f07a23e37b56a04' THEN
++  RAISE EXCEPTION 'write_closure_select_tenant_changed' USING ERRCODE='55000';
++ END IF;
++ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.alertas_agronomicos'::regclass AND relrowsecurity AND NOT relforcerowsecurity AND relowner='postgres'::regrole)
++ OR NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role' AND rolbypassrls)
++ OR NOT has_table_privilege('service_role','public.alertas_agronomicos','UPDATE') THEN
++  RAISE EXCEPTION 'write_closure_post_dependency_failed' USING ERRCODE='55000';
++ END IF;
++ FOR r IN SELECT * FROM (VALUES
++ ('public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)','be3fa0742fddc5f3d212e7ed53048910'),
++ ('public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)','8e6d0982d4eb9b599c703d3f715dd806'),
++ ('public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)','1bf4ebfecb645e4a0d131510122ac407'),
++ ('platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)','c0da2db32df6d5161c5c1d4dee84b495'),
++ ('platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)','3c31ce9dbf3ee2e23d82b43b07a70a5c')
++ ) v(signature,hash) LOOP
++  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(r.signature) AND prosecdef AND proowner='postgres'::regrole
++   AND md5(pg_get_functiondef(oid))=r.hash AND 'search_path=""'=ANY(proconfig)
++   AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}')
++   OR has_function_privilege('anon',r.signature,'EXECUTE') THEN
++   RAISE EXCEPTION 'write_closure_post_function_failed: %',r.signature USING ERRCODE='55000';
++  END IF;
++ END LOOP;
++ IF md5(pg_get_functiondef('platform_private.guard_alert_origin_sync()'::regprocedure))<>'c7e11bafbdf60e08495c68dfc9f9b12f'
++ OR md5(pg_get_functiondef('platform_private.guard_visit_plan_preservation()'::regprocedure))<>'618797b75f8c6b962dc70c0841c84de1' THEN
++  RAISE EXCEPTION 'write_closure_post_guard_failed' USING ERRCODE='55000';
++ END IF;
++END;
++$post$;
++
++COMMIT;
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/postflight.sql b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/postflight.sql
+new file mode 100644
+index 000000000..314840134
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/postflight.sql
+@@ -0,0 +1,39 @@
++-- Read-only; failure means NO-GO. Tenant/SELECT fingerprint excludes ONLY the 3 new policies.
++DO $post$
++DECLARE r record;
++BEGIN
++ IF (SELECT count(*) FROM pg_policy WHERE polrelid='public.alertas_agronomicos'::regclass AND NOT polpermissive
++ AND polroles=ARRAY['authenticated'::regrole::oid] AND (
++ (polname='monitoring_authenticated_insert_closed' AND polcmd='a' AND polqual IS NULL AND pg_get_expr(polwithcheck,polrelid)='false') OR
++ (polname='monitoring_authenticated_update_closed' AND polcmd='w' AND pg_get_expr(polqual,polrelid)='false' AND pg_get_expr(polwithcheck,polrelid)='false') OR
++ (polname='monitoring_authenticated_delete_closed' AND polcmd='d' AND pg_get_expr(polqual,polrelid)='false' AND polwithcheck IS NULL)))<>3 THEN
++  RAISE EXCEPTION 'write_closure_post_policy_failed' USING ERRCODE='55000';
++ END IF;
++ IF (SELECT md5(string_agg(polname||':'||polcmd::text||':'||polpermissive::text||':'||polroles::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),E'\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='public.alertas_agronomicos'::regclass AND polname NOT IN ('monitoring_authenticated_insert_closed','monitoring_authenticated_update_closed','monitoring_authenticated_delete_closed'))<>'826292c397fd1dea1f07a23e37b56a04' THEN
++  RAISE EXCEPTION 'write_closure_select_tenant_changed' USING ERRCODE='55000';
++ END IF;
++ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.alertas_agronomicos'::regclass AND relrowsecurity AND NOT relforcerowsecurity AND relowner='postgres'::regrole)
++ OR NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role' AND rolbypassrls)
++ OR NOT has_table_privilege('service_role','public.alertas_agronomicos','UPDATE') THEN
++  RAISE EXCEPTION 'write_closure_post_dependency_failed' USING ERRCODE='55000';
++ END IF;
++ FOR r IN SELECT * FROM (VALUES
++ ('public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)','be3fa0742fddc5f3d212e7ed53048910'),
++ ('public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)','8e6d0982d4eb9b599c703d3f715dd806'),
++ ('public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)','1bf4ebfecb645e4a0d131510122ac407'),
++ ('platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)','c0da2db32df6d5161c5c1d4dee84b495'),
++ ('platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)','3c31ce9dbf3ee2e23d82b43b07a70a5c')
++ ) v(signature,hash) LOOP
++  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(r.signature) AND prosecdef AND proowner='postgres'::regrole
++   AND md5(pg_get_functiondef(oid))=r.hash AND 'search_path=""'=ANY(proconfig)
++   AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}')
++   OR has_function_privilege('anon',r.signature,'EXECUTE') THEN
++   RAISE EXCEPTION 'write_closure_post_function_failed: %',r.signature USING ERRCODE='55000';
++  END IF;
++ END LOOP;
++ IF md5(pg_get_functiondef('platform_private.guard_alert_origin_sync()'::regprocedure))<>'c7e11bafbdf60e08495c68dfc9f9b12f'
++ OR md5(pg_get_functiondef('platform_private.guard_visit_plan_preservation()'::regprocedure))<>'618797b75f8c6b962dc70c0841c84de1' THEN
++  RAISE EXCEPTION 'write_closure_post_guard_failed' USING ERRCODE='55000';
++ END IF;
++END;
++$post$;
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/preflight.sql b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/preflight.sql
+new file mode 100644
+index 000000000..3a3d022ac
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/preflight.sql
+@@ -0,0 +1,47 @@
++-- Read-only assertions. Executor FIRST verifies external ref swzpzcwiasxmjutrmvkm outside SQL.
++DO $pre$
++DECLARE r record;
++BEGIN
++ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.alertas_agronomicos'::regclass AND relrowsecurity AND NOT relforcerowsecurity AND relowner='postgres'::regrole) THEN
++  RAISE EXCEPTION 'write_closure_table_baseline_mismatch' USING ERRCODE='55000';
++ END IF;
++ IF (SELECT md5(string_agg(polname||':'||polcmd::text||':'||polpermissive::text||':'||polroles::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),E'\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='public.alertas_agronomicos'::regclass)<>'826292c397fd1dea1f07a23e37b56a04' THEN
++  RAISE EXCEPTION 'write_closure_policy_baseline_mismatch' USING ERRCODE='55000';
++ END IF;
++ FOR r IN SELECT * FROM (VALUES
++ ('public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)','b675f863360f50d58cd5358451284eff'),
++ ('public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)','f2769829ce82c765326079a498eed0f7'),
++ ('public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)','849f31fc39e98a115cb9b317801d698e'),
++ ('platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)','c0da2db32df6d5161c5c1d4dee84b495'),
++ ('platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)','3c31ce9dbf3ee2e23d82b43b07a70a5c')
++ ) v(signature,hash) LOOP
++  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(r.signature) AND prosecdef AND proowner='postgres'::regrole AND md5(pg_get_functiondef(oid))=r.hash
++   AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND 'search_path=""'=ANY(proconfig))
++   OR has_function_privilege('anon',r.signature,'EXECUTE') THEN
++   RAISE EXCEPTION 'write_closure_function_baseline_mismatch: %',r.signature USING ERRCODE='55000';
++  END IF;
++ END LOOP;
++ IF md5(pg_get_functiondef('platform_private.guard_alert_origin_sync()'::regprocedure))<>'c7e11bafbdf60e08495c68dfc9f9b12f'
++ OR md5(pg_get_functiondef('platform_private.guard_visit_plan_preservation()'::regprocedure))<>'618797b75f8c6b962dc70c0841c84de1'
++ OR md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure))<>'b0dd9a14d5fd799a40df0975baf4c5a6'
++ OR NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role' AND rolbypassrls)
++ OR NOT has_table_privilege('service_role','public.alertas_agronomicos','UPDATE') THEN
++  RAISE EXCEPTION 'write_closure_dependency_mismatch' USING ERRCODE='55000';
++ END IF;
++ IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.alertas_agronomicos'::regclass AND NOT tgisinternal)<>1
++ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.alertas_agronomicos'::regclass AND tgname='trg_alert_origin_sync' AND tgenabled='O' AND tgfoid='platform_private.guard_alert_origin_sync()'::regprocedure)
++ OR (SELECT count(*) FROM pg_trigger WHERE tgrelid IN ('public.profiles'::regclass,'public.user_roles'::regclass) AND tgname='a00_cf_user_gate' AND tgenabled='O' AND tgfoid='cf_user_guards_v1.acquire_gate()'::regprocedure)<>2 THEN
++  RAISE EXCEPTION 'write_closure_trigger_mismatch' USING ERRCODE='55000';
++ END IF;
++ -- Unexpected writers require a new review; no delete RPC is authorized here.
++ IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private')
++ AND p.prosrc ~* '(insert[[:space:]]+into|update|delete[[:space:]]+from)[[:space:]]+(public\.)?alertas_agronomicos'
++ AND p.oid NOT IN ('public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)'::regprocedure,
++ 'public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)'::regprocedure,
++ 'public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)'::regprocedure,
++ 'platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)'::regprocedure,
++ 'platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)'::regprocedure)) THEN
++  RAISE EXCEPTION 'write_closure_unreviewed_writer' USING ERRCODE='55000';
++ END IF;
++END;
++$pre$;
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rollback-containment.sql.review b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rollback-containment.sql.review
+new file mode 100644
+index 000000000..346132fd7
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rollback-containment.sql.review
+@@ -0,0 +1,23 @@
++-- Containment only: DO NOT drop policies, restore direct writes, remove guards or reset timeouts.
++BEGIN;
++SET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='15s';
++DO $contain$ BEGIN
++ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.alertas_agronomicos'::regclass AND relrowsecurity)
++ THEN RAISE EXCEPTION 'containment_requires_rls' USING ERRCODE='55000'; END IF;
++END; $contain$;
++-- Stronger deny, including grants inherited through another role. SELECT/service_role are unchanged.
++REVOKE INSERT,UPDATE,DELETE ON public.alertas_agronomicos FROM authenticated,anon;
++REVOKE EXECUTE ON FUNCTION public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text) FROM authenticated,anon,PUBLIC;
++REVOKE EXECUTE ON FUNCTION public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz) FROM authenticated,anon,PUBLIC;
++REVOKE EXECUTE ON FUNCTION public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz) FROM authenticated,anon,PUBLIC;
++REVOKE EXECUTE ON FUNCTION public.rpc_reprogramar_monitoramento_v2(uuid,date,timestamptz,integer,uuid) FROM authenticated,anon,PUBLIC;
++REVOKE EXECUTE ON FUNCTION public.rpc_vincular_origem_alerta_v1(uuid,uuid,timestamptz,integer,uuid) FROM authenticated,anon,PUBLIC;
++REVOKE EXECUTE ON FUNCTION platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid) FROM authenticated,anon,PUBLIC;
++REVOKE EXECUTE ON FUNCTION platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid) FROM authenticated,anon,PUBLIC;
++DO $verify$ BEGIN
++ IF has_table_privilege('authenticated','public.alertas_agronomicos','INSERT,UPDATE,DELETE')
++ OR has_table_privilege('anon','public.alertas_agronomicos','INSERT,UPDATE,DELETE')
++ OR NOT has_table_privilege('service_role','public.alertas_agronomicos','UPDATE')
++ THEN RAISE EXCEPTION 'containment_privilege_failed' USING ERRCODE='55000'; END IF;
++END; $verify$;
++COMMIT;
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rpc_atualizar_status_alerta_agronomico_v1.baseline.sql b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rpc_atualizar_status_alerta_agronomico_v1.baseline.sql
+new file mode 100644
+index 000000000..8f544040b
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rpc_atualizar_status_alerta_agronomico_v1.baseline.sql
+@@ -0,0 +1,47 @@
++CREATE OR REPLACE FUNCTION public.rpc_atualizar_status_alerta_agronomico_v1(p_alerta_id uuid, p_novo_status status_alerta, p_updated_at_esperado timestamp with time zone)
++ RETURNS alertas_agronomicos
++ LANGUAGE plpgsql
++ SECURITY DEFINER
++ SET search_path TO ''
++AS $function$
++declare
++  v_alerta public.alertas_agronomicos;
++begin
++  if not public.technical_actor_ready(auth.uid()) then raise exception 'FORBIDDEN' using errcode='42501'; end if;
++  if not (
++    public.has_role(auth.uid(), 'administrador'::public.app_role)
++    or public.has_role(auth.uid(), 'gestor'::public.app_role)
++  ) then raise exception 'FORBIDDEN' using errcode='42501'; end if;
++  if p_alerta_id is null or p_novo_status is null or p_updated_at_esperado is null then
++    raise exception 'INVALID_INPUT';
++  end if;
++
++  perform 1 from cf_user_guards_v1.state where singleton for update;
++  if not found then raise exception 'monitoring_gate_unavailable' using errcode='55000'; end if;
++  if not public.technical_actor_ready(auth.uid()) or not (
++    public.has_role(auth.uid(),'administrador'::public.app_role)
++    or public.has_role(auth.uid(),'gestor'::public.app_role)
++  ) then raise exception 'FORBIDDEN' using errcode='42501'; end if;
++  select * into v_alerta
++  from public.alertas_agronomicos a
++  where a.id = p_alerta_id and platform_private.monitoring_refs_in_actor_tenant(a.fazenda_id,a.talhao_id,a.registro_origem_id)
++  for update;
++  if not found then raise exception 'monitoring_alert_not_found' using errcode='PT404'; end if;
++  if not public.technical_actor_ready(auth.uid()) or not (
++    public.has_role(auth.uid(),'administrador'::public.app_role)
++    or public.has_role(auth.uid(),'gestor'::public.app_role)
++  ) then raise exception 'FORBIDDEN' using errcode='42501'; end if;
++  if v_alerta.updated_at IS DISTINCT FROM p_updated_at_esperado then raise exception 'CONCURRENT_UPDATE' using errcode='PT409'; end if;
++  if v_alerta.status = 'encerrado'::public.status_alerta and p_novo_status <> v_alerta.status then
++    raise exception 'CLOSED_ALERT';
++  end if;
++
++  update public.alertas_agronomicos a
++  set status = p_novo_status, updated_at = greatest(clock_timestamp(),v_alerta.updated_at+interval '1 microsecond')
++  where a.id = p_alerta_id and a.updated_at=p_updated_at_esperado and platform_private.monitoring_refs_in_actor_tenant(a.fazenda_id,a.talhao_id,a.registro_origem_id)
++  returning * into v_alerta;
++  if not found then raise exception 'CONCURRENT_UPDATE' using errcode='PT409'; end if;
++  return v_alerta;
++end;
++$function$
++;
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rpc_criar_alerta_climatico_v1.baseline.sql b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rpc_criar_alerta_climatico_v1.baseline.sql
+new file mode 100644
+index 000000000..d80912203
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rpc_criar_alerta_climatico_v1.baseline.sql
+@@ -0,0 +1,72 @@
++CREATE OR REPLACE FUNCTION public.rpc_criar_alerta_climatico_v1(p_fazenda_id uuid, p_talhao_id uuid, p_tipo_alerta tipo_alerta, p_nivel_risco nivel_risco, p_descricao text)
++ RETURNS TABLE(id uuid, criado boolean)
++ LANGUAGE plpgsql
++ SECURITY DEFINER
++ SET search_path TO ''
++AS $function$
++declare
++  v_id uuid;
++begin
++  if not public.technical_actor_ready(auth.uid()) then raise exception 'FORBIDDEN' using errcode='42501'; end if;
++  if not (
++    public.has_role(auth.uid(), 'administrador'::public.app_role)
++    or public.has_role(auth.uid(), 'gestor'::public.app_role)
++  ) then raise exception 'FORBIDDEN' using errcode='42501'; end if;
++  if p_tipo_alerta is null or p_nivel_risco is null or p_fazenda_id is null or p_talhao_id is null or nullif(btrim(p_descricao), '') is null then
++    raise exception 'INVALID_INPUT';
++  end if;
++  if length(p_descricao) > 2000 then raise exception 'DESCRIPTION_TOO_LONG'; end if;
++  if not public.technical_actor_ready(auth.uid()) or not (
++    public.has_role(auth.uid(), 'administrador'::public.app_role)
++    or public.has_role(auth.uid(), 'gestor'::public.app_role)
++  ) then raise exception 'FORBIDDEN' using errcode='42501'; end if;
++  if not platform_private.monitoring_refs_in_actor_tenant(p_fazenda_id,p_talhao_id,null) then
++    raise exception 'monitoring_reference_not_found' using errcode='PT404';
++  end if;
++  perform 1 from cf_user_guards_v1.state where singleton for update;
++  if not found then raise exception 'monitoring_gate_unavailable' using errcode='55000'; end if;
++  if not public.technical_actor_ready(auth.uid()) or not (
++    public.has_role(auth.uid(), 'administrador'::public.app_role)
++    or public.has_role(auth.uid(), 'gestor'::public.app_role)
++  ) then raise exception 'FORBIDDEN' using errcode='42501'; end if;
++  if not platform_private.monitoring_refs_in_actor_tenant(p_fazenda_id,p_talhao_id,null) then
++    raise exception 'monitoring_reference_not_found' using errcode='PT404';
++  end if;
++
++  perform pg_advisory_xact_lock(hashtextextended(
++    p_fazenda_id::text || ':' || p_talhao_id::text || ':' || p_tipo_alerta::text, 0
++  ));
++
++  if not public.technical_actor_ready(auth.uid()) or not (
++    public.has_role(auth.uid(), 'administrador'::public.app_role)
++    or public.has_role(auth.uid(), 'gestor'::public.app_role)
++  ) then raise exception 'FORBIDDEN' using errcode='42501'; end if;
++  if not platform_private.monitoring_refs_in_actor_tenant(p_fazenda_id,p_talhao_id,null) then
++    raise exception 'monitoring_reference_not_found' using errcode='PT404';
++  end if;
++
++  select a.id into v_id
++  from public.alertas_agronomicos a
++  where a.fazenda_id = p_fazenda_id
++    and a.talhao_id = p_talhao_id
++    and a.tipo_alerta = p_tipo_alerta
++    and platform_private.monitoring_refs_in_actor_tenant(a.fazenda_id,a.talhao_id,a.registro_origem_id)
++    and a.status <> 'encerrado'::public.status_alerta
++  order by a.created_at desc
++  limit 1;
++
++  if v_id is not null then
++    return query select v_id, false;
++    return;
++  end if;
++
++  insert into public.alertas_agronomicos (
++    fazenda_id, talhao_id, tipo_alerta, nivel_risco, descricao
++  ) values (
++    p_fazenda_id, p_talhao_id, p_tipo_alerta, p_nivel_risco, btrim(p_descricao)
++  ) returning alertas_agronomicos.id into v_id;
++
++  return query select v_id, true;
++end;
++$function$
++;
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rpc_reprogramar_monitoramento_v1.baseline.sql b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rpc_reprogramar_monitoramento_v1.baseline.sql
+new file mode 100644
+index 000000000..c2c89ad57
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/rpc_reprogramar_monitoramento_v1.baseline.sql
+@@ -0,0 +1,82 @@
++CREATE OR REPLACE FUNCTION public.rpc_reprogramar_monitoramento_v1(p_alerta_id uuid, p_nova_data date, p_expected_updated_at timestamp with time zone DEFAULT NULL::timestamp with time zone)
++ RETURNS jsonb
++ LANGUAGE plpgsql
++ SECURITY DEFINER
++ SET search_path TO ''
++AS $function$
++DECLARE
++  v_uid uuid := auth.uid();
++  v_alerta public.alertas_agronomicos%ROWTYPE;
++  v_hoje date := (now() AT TIME ZONE 'America/Sao_Paulo')::date;
++BEGIN
++  IF v_uid IS NULL OR NOT public.technical_actor_ready(v_uid) THEN
++    RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';
++  END IF;
++  IF NOT (
++    public.has_role(v_uid, 'administrador'::public.app_role)
++    OR public.has_role(v_uid, 'gestor'::public.app_role)
++  ) THEN
++    RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501';
++  END IF;
++  IF p_alerta_id IS NULL OR p_nova_data IS NULL THEN
++    RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
++  END IF;
++  IF p_nova_data < v_hoje THEN
++    RAISE EXCEPTION 'past_date_not_allowed' USING ERRCODE = '22023';
++  END IF;
++  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
++  IF NOT FOUND THEN RAISE EXCEPTION 'monitoring_gate_unavailable' USING ERRCODE='55000'; END IF;
++  IF NOT public.technical_actor_ready(v_uid) OR NOT (public.has_role(v_uid,'administrador'::public.app_role) OR public.has_role(v_uid,'gestor'::public.app_role)) THEN
++    RAISE EXCEPTION 'permission_denied' USING ERRCODE='42501';
++  END IF;
++  SELECT * INTO v_alerta
++    FROM public.alertas_agronomicos
++   WHERE id = p_alerta_id AND platform_private.monitoring_refs_in_actor_tenant(fazenda_id,talhao_id,registro_origem_id)
++   FOR UPDATE;
++  IF NOT FOUND THEN
++    RAISE EXCEPTION 'monitoring_alert_not_found' USING ERRCODE = 'PT404';
++  END IF;
++  IF NOT public.technical_actor_ready(v_uid) OR NOT platform_private.monitoring_refs_in_actor_tenant(v_alerta.fazenda_id,v_alerta.talhao_id,v_alerta.registro_origem_id) THEN
++    RAISE EXCEPTION 'monitoring_alert_not_found' USING ERRCODE='PT404';
++  END IF;
++  IF v_alerta.registro_origem_id IS NOT NULL THEN
++    PERFORM 1 FROM public.registros_consultor WHERE id=v_alerta.registro_origem_id
++      AND public.can_manage_technical_visit(v_uid,id) FOR UPDATE;
++    IF NOT FOUND THEN RAISE EXCEPTION 'monitoring_alert_not_found' USING ERRCODE='PT404'; END IF;
++  END IF;
++  IF v_alerta.registro_origem_id IS NOT NULL THEN
++    RAISE EXCEPTION 'monitoring_reschedule_requires_current_client' USING ERRCODE='PT428';
++  END IF;
++  IF v_alerta.status IS DISTINCT FROM 'monitoramento'::public.status_alerta THEN
++    RAISE EXCEPTION 'monitoring_alert_not_active' USING ERRCODE = 'P0001';
++  END IF;
++  IF p_expected_updated_at IS NULL OR v_alerta.updated_at IS DISTINCT FROM p_expected_updated_at THEN
++    RAISE EXCEPTION 'concurrent_update' USING ERRCODE = 'PT409';
++  END IF;
++  UPDATE public.alertas_agronomicos
++     SET data_vencimento = p_nova_data,
++         nivel_risco = 'medio'::public.nivel_risco,
++         updated_at = greatest(clock_timestamp(),v_alerta.updated_at+interval '1 microsecond')
++   WHERE id = p_alerta_id AND updated_at=p_expected_updated_at
++     AND platform_private.monitoring_refs_in_actor_tenant(fazenda_id,talhao_id,registro_origem_id);
++  IF NOT FOUND THEN RAISE EXCEPTION 'concurrent_update' USING ERRCODE='PT409'; END IF;
++  IF v_alerta.registro_origem_id IS NOT NULL THEN
++    UPDATE public.registros_consultor
++       SET data_proxima_visita = p_nova_data,
++           version = version + 1,
++           updated_at = now()
++     WHERE id = v_alerta.registro_origem_id AND public.can_manage_technical_visit(v_uid,id);
++    IF NOT FOUND THEN
++      RAISE EXCEPTION 'source_record_not_found' USING ERRCODE = 'P0002';
++    END IF;
++  END IF;
++  RETURN jsonb_build_object(
++    'success', true,
++    'alerta_id', p_alerta_id,
++    'data_anterior', v_alerta.data_vencimento,
++    'nova_data', p_nova_data,
++    'registro_origem_id', v_alerta.registro_origem_id
++  );
++END;
++$function$
++;
+diff --git a/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/test-local.py b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/test-local.py
+new file mode 100644
+index 000000000..c57ebca44
+--- /dev/null
++++ b/scripts/visit-monitoring-plan-20261027/agronomic-origin/write-closure/test-local.py
+@@ -0,0 +1,119 @@
++"""Synthetic Auth + disposable PostgreSQL only; reuses the installed-predecessor harness.
++No network/hosted connections. Candidate PRE hashes are audited LIVE, not spoofed here.
++"""
++from pathlib import Path
++import re
++HERE=Path(__file__).resolve().parent
++parent=HERE.parent
++source=(parent/'test-local.py').read_text()
++source=source.replace('HERE=Path(__file__).resolve().parent; ROOT=HERE.parent',f'HERE=Path({str(parent)!r}); ROOT=HERE.parent')
++source=source.replace('PORT=55497','PORT=55498')
++start=source.index('  # --- direct-write closure')
++end=source.index("  print('TOTAL',checks)",start)
++extra=r'''
++  # NEW delta; predecessor semantics above run unchanged (as postgres).
++  sql("ALTER TABLE alertas_agronomicos ALTER COLUMN id SET DEFAULT gen_random_uuid(); ALTER TABLE alertas_agronomicos ALTER COLUMN status SET DEFAULT 'ativo'; ALTER TABLE alertas_agronomicos ALTER COLUMN updated_at SET DEFAULT now();")
++  for name in ('rpc_criar_alerta_climatico_v1','rpc_atualizar_status_alerta_agronomico_v1'):
++   sql((CLOSURE/(name+'.baseline.sql')).read_text())
++  sql("CREATE OR REPLACE FUNCTION public.test_scope(f uuid,t uuid,o uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT platform_private.monitoring_refs_in_actor_tenant(f,t,o) $$;")
++  sql("ALTER ROLE service_role BYPASSRLS; GRANT USAGE ON SCHEMA public TO service_role; GRANT SELECT,INSERT,UPDATE,DELETE ON alertas_agronomicos TO authenticated,anon,service_role; ALTER TABLE alertas_agronomicos ENABLE ROW LEVEL SECURITY;")
++  sql("CREATE POLICY test_read ON alertas_agronomicos FOR SELECT TO authenticated USING(public.test_scope(fazenda_id,talhao_id,registro_origem_id)); CREATE POLICY test_write ON alertas_agronomicos FOR ALL TO authenticated USING(true) WITH CHECK(true); CREATE POLICY test_tenant ON alertas_agronomicos AS RESTRICTIVE FOR ALL TO authenticated USING(public.test_scope(fazenda_id,talhao_id,registro_origem_id)) WITH CHECK(public.test_scope(fazenda_id,talhao_id,registro_origem_id));")
++  for sig in ('rpc_criar_alerta_climatico_v1(uuid,uuid,tipo_alerta,nivel_risco,text)','rpc_atualizar_status_alerta_agronomico_v1(uuid,status_alerta,timestamptz)'):
++   sql(f'REVOKE ALL ON FUNCTION public.{sig} FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION public.{sig} TO authenticated,service_role;')
++  # Reproduce the escape before closure, proving negatives below can fail.
++  au=lambda q,actor=G:f"SET ROLE authenticated; SET test.actor='{actor}'; {q}"
++  sql(au(f"UPDATE alertas_agronomicos SET nivel_risco='critico' WHERE id='{AL}';"))
++  ok(f"SELECT nivel_risco='critico' FROM alertas_agronomicos WHERE id='{AL}';",'PRE direct risk really writes')
++  delta=(CLOSURE/'candidate.sql.review').read_text()
++  delta=re.sub(r'DO \$pre\$.*?\$pre\$;','',delta,flags=re.S)
++  delta=re.sub(r'DO \$post\$.*?\$post\$;','',delta,flags=re.S)
++  sql(delta)
++  ok("SELECT count(*)=3 FROM pg_policy WHERE polrelid='alertas_agronomicos'::regclass AND NOT polpermissive AND polroles=ARRAY['authenticated'::regrole::oid] AND polname LIKE 'monitoring_authenticated_%_closed';",'three command-specific restrictive policies installed')
++  snap=val(f"SELECT md5(row(a.*)::text) FROM alertas_agronomicos a WHERE id='{AL}';")
++  for actor in (G,X):
++   own=AL if actor==G else ALB
++   for field,value in [('nivel_risco',"'baixo'"),('status',"'encerrado'"),('data_vencimento',"'2026-12-30'"),('registro_origem_id','NULL')]:
++    ok(au(f"WITH w AS (UPDATE alertas_agronomicos SET {field}={value} WHERE id='{own}' RETURNING id) SELECT count(*)=0 FROM w;",actor),f'direct {field} actor {actor}: zero rows')
++   ok(au(f"WITH w AS (DELETE FROM alertas_agronomicos WHERE id='{own}' RETURNING id) SELECT count(*)=0 FROM w;",actor),'direct DELETE own zero rows')
++   farm,plot=(FA,TA) if actor==G else (FB,TB)
++   err(au(f"INSERT INTO alertas_agronomicos(fazenda_id,talhao_id,tipo_alerta,nivel_risco) VALUES('{farm}','{plot}','praga','baixo');",actor),'42501','direct INSERT without origin denied')
++   err(au(f"INSERT INTO alertas_agronomicos(fazenda_id,talhao_id,tipo_alerta,nivel_risco,registro_origem_id) VALUES('{farm}','{plot}','praga','baixo','{V}');",actor),'PT409','direct INSERT origin remains trigger denied')
++  ok(au(f"WITH w AS (UPDATE alertas_agronomicos SET registro_origem_id=NULL WHERE id='{AL}' RETURNING id) , w2 AS (UPDATE alertas_agronomicos SET data_vencimento='2026-12-30' WHERE id='{AL}' RETURNING id) SELECT (SELECT count(*)=0 FROM w) AND (SELECT count(*)=0 FROM w2);"),'unlink then date zero rows')
++  ok(f"SELECT md5(row(a.*)::text)='{snap}' FROM alertas_agronomicos a WHERE id='{AL}';",'all direct negatives atomic')
++  ok(au(f"SELECT count(*)=1 FROM alertas_agronomicos WHERE id='{AL}';"),'SELECT own unchanged')
++  ok(au(f"SELECT count(*)=0 FROM alertas_agronomicos WHERE id='{ALB}';"),'SELECT A to B zero rows')
++  ok(au(f"SELECT count(*)=0 FROM alertas_agronomicos WHERE id='{AL}';",X),'SELECT B to A zero rows')
++  for q in (f"UPDATE alertas_agronomicos SET status='encerrado' WHERE id='{AL}';",f"DELETE FROM alertas_agronomicos WHERE id='{AL}';"):
++   ok('SET ROLE anon; WITH w AS ('+q.rstrip(';')+' RETURNING id) SELECT count(*)=0 FROM w;','anon mutation zero rows')
++  err(f"SET ROLE anon; INSERT INTO alertas_agronomicos(fazenda_id,talhao_id,tipo_alerta,nivel_risco) VALUES('{FA}','{TA}','praga','baixo');",'42501','anon INSERT denied')
++  ok('SET ROLE anon; SELECT count(*)=0 FROM alertas_agronomicos;','anon SELECT remains denied')
++  create=lambda farm=FA,plot=TA:f"SELECT * FROM public.rpc_criar_alerta_climatico_v1('{farm}','{plot}','estresse_hidrico','baixo','Teste sintético');"
++  status=lambda a=AL:f"SELECT (public.rpc_atualizar_status_alerta_agronomico_v1('{a}','monitoramento',{at(a)})).id;"
++  old=lambda a=ALN:f"SELECT public.rpc_reprogramar_monitoramento_v1('{a}','2026-11-26',{at(a)});"
++  sql(au(create())); sql(au(create(FB,TB),X))
++  ok("SELECT count(*)=2 FROM alertas_agronomicos WHERE tipo_alerta='estresse_hidrico';",'creation RPC postgres owner A/B positive')
++  sql(au(status())); sql(au(status(ALB),X))
++  ok(f"SELECT status='monitoramento' FROM alertas_agronomicos WHERE id='{ALB}';",'status RPC B own positive')
++  sql(au(old())); sql(au(old(ALB),X))
++  ok(f"SELECT data_vencimento='2026-11-26' FROM alertas_agronomicos WHERE id='{ALN}';",'v1 without origin positive')
++  sql(au(resched(d='2026-11-27',key=k(120))))
++  ok(f"SELECT a.data_vencimento=r.data_proxima_visita AND r.version=7 FROM alertas_agronomicos a JOIN registros_consultor r ON r.id=a.registro_origem_id WHERE a.id='{AL}';",'v2 sync still positive with restrictive policies')
++  for q in (create(),status(),old(),resched(actor=X,d='2026-11-28',key=k(121))):
++   observed=val(f"SELECT updated_at FROM alertas_agronomicos WHERE id='{AL}';")
++   observed_n=val(f"SELECT updated_at FROM alertas_agronomicos WHERE id='{ALN}';")
++   q=q.replace(at(AL),f"'{observed}'::timestamptz").replace(at(ALN),f"'{observed_n}'::timestamptz")
++   err(au(q,X),'PT404','cross B to A RPC denied')
++  for q in (create(),status(),old()):
++   err('SET ROLE anon; '+q,'42501','anon legacy RPC ACL denied')
++  sql(f"SET ROLE service_role; UPDATE alertas_agronomicos SET nivel_risco='alto' WHERE id='{AL}';")
++  ok(f"SELECT nivel_risco='alto' FROM alertas_agronomicos WHERE id='{AL}';",'service_role job risk UPDATE preserved')
++  err(f"SET ROLE service_role; UPDATE alertas_agronomicos SET data_vencimento='2026-12-30' WHERE id='{AL}';",'PT409','service_role cannot bypass linked date guard')
++  # Legacy RPC waits: deterministic lock observation, synthetic revocation-first, bounded gate and row/advisory waits.
++  for name,q in [('creation',create()),('status',status()),('v1',old())]:
++   rv=spawn(); rv.stdin.write(f"BEGIN; UPDATE actors SET ready=false WHERE id='{G}';\n"); rv.stdin.flush(); time.sleep(.15)
++   op=spawn(); op.stdin.write('\\set VERBOSITY verbose\n'+au(q)+'\n'); op.stdin.close()
++   pattern={'creation':'rpc_criar_alerta_climatico_v1','status':'rpc_atualizar_status_alerta_agronomico_v1','v1':'rpc_reprogramar_monitoramento_v1'}[name]
++   wait_lock(pattern)
++   rv.stdin.write('COMMIT;\n'); rv.stdin.close(); rv.wait(timeout=5); op.wait(timeout=5)
++   error=op.stderr.read()
++   if op.returncode==0 or '42501' not in error: raise AssertionError(name+error)
++   checks+=1; print('PASS',name,'synthetic revocation-first actual gate wait denies')
++   sql(f"UPDATE actors SET ready=true WHERE id='{G}';")
++   g=spawn(); g.stdin.write('BEGIN; SELECT * FROM cf_user_guards_v1.state FOR UPDATE;\n'); g.stdin.flush(); time.sleep(.15)
++   t=time.monotonic(); r=sql(au(q),False); elapsed=time.monotonic()-t
++   g.stdin.write('COMMIT;\n'); g.stdin.close(); g.wait(timeout=5)
++   if r.returncode==0 or '55P03' not in r.stderr or not 2.5<elapsed<5: raise AssertionError(name+str(elapsed)+r.stderr)
++   checks+=1; print('PASS',name,'gate timeout',round(elapsed,2))
++  for q,lock in [(status(),f"SELECT id FROM alertas_agronomicos WHERE id='{AL}' FOR UPDATE"),(old(),f"SELECT id FROM alertas_agronomicos WHERE id='{ALN}' FOR UPDATE"),(create(),f"SELECT pg_advisory_xact_lock(hashtextextended('{FA}:{TA}:estresse_hidrico',0))")]:
++   row=spawn(); row.stdin.write('BEGIN; '+lock+';\n'); row.stdin.flush(); time.sleep(.15)
++   t=time.monotonic(); r=sql(au(q),False); elapsed=time.monotonic()-t
++   row.stdin.write('COMMIT;\n'); row.stdin.close(); row.wait(timeout=5)
++   if r.returncode==0 or '55P03' not in r.stderr or not 2.5<elapsed<5: raise AssertionError(str(elapsed)+r.stderr)
++   checks+=1; print('PASS legacy row/advisory timeout',round(elapsed,2))
++  # Hash the exact LIVE v1 body (earlier semantic tests replace only its clock for deterministic dates).
++  sql((CLOSURE/'rpc_reprogramar_monitoramento_v1.baseline.sql').read_text())
++  sql("ALTER FUNCTION public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz) SET lock_timeout='3s';")
++  for name in ('rpc_criar_alerta_climatico_v1','rpc_atualizar_status_alerta_agronomico_v1','rpc_reprogramar_monitoramento_v1'):
++   print('EXPECTED_FUNCTION',val(f"SELECT oid::regprocedure::text||E'\\t'||md5(pg_get_functiondef(oid)) FROM pg_proc WHERE proname='{name}';"))
++  err((CLOSURE/'preflight.sql').read_text(),'55000','PRE rejects non-LIVE synthetic baseline')
++  # Exercise complete POST logic: substitute only fingerprints of reduced synthetic dependencies.
++  post=(CLOSURE/'postflight.sql').read_text()
++  fingerprint=val("SELECT md5(string_agg(polname||':'||polcmd::text||':'||polpermissive::text||':'||polroles::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),E'\\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='alertas_agronomicos'::regclass AND polname NOT LIKE 'monitoring_authenticated_%_closed';")
++  post=post.replace('826292c397fd1dea1f07a23e37b56a04',fingerprint)
++  for sig,h in [('platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)','c0da2db32df6d5161c5c1d4dee84b495'),('platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)','3c31ce9dbf3ee2e23d82b43b07a70a5c'),('platform_private.guard_alert_origin_sync()','c7e11bafbdf60e08495c68dfc9f9b12f'),('platform_private.guard_visit_plan_preservation()','618797b75f8c6b962dc70c0841c84de1')]:
++   post=post.replace(h,val(f"SELECT md5(pg_get_functiondef('{sig}'::regprocedure));"))
++  sql(post); checks+=1; print('PASS POST full assertions with explicitly synthetic dependency fingerprints')
++  sql('ALTER POLICY monitoring_authenticated_update_closed ON alertas_agronomicos USING(true);')
++  err(post,'55000','POST rejects widened restrictive policy')
++  sql('ALTER POLICY monitoring_authenticated_update_closed ON alertas_agronomicos USING(false);')
++  sql((CLOSURE/'rollback-containment.sql.review').read_text())
++  err(au(status()),'42501','containment closes user RPC')
++  err(au(f"UPDATE alertas_agronomicos SET nivel_risco='baixo' WHERE id='{AL}';"),'42501','containment does not restore direct write')
++  ok(au(f"SELECT count(*)=1 FROM alertas_agronomicos WHERE id='{AL}';"),'containment preserves SELECT')
++  sql(f"SET ROLE service_role; UPDATE alertas_agronomicos SET nivel_risco='alto' WHERE id='{AL}';")
++  checks+=1; print('PASS containment preserves service_role job')
++'''
++source=source[:start]+extra+source[end:]
++namespace={'__name__':'closure_harness','CLOSURE':HERE}
++exec(compile(source,str(HERE/'test-local.py'),'exec'),namespace)
++namespace['main']()

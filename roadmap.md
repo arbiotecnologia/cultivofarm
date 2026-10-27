@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 27/10 12:55 — contenção adicional de escrita agronômica (SQL INATIVO)
+- [x] Delta inativo em agronomic-origin/write-closure: 3 políticas RESTRICTIVE específicas, SELECT/tenant/5 writers postgres preservados; serviço risco service_role separado. Captura LIVE read-only ref canônico; timeout3s apenas nos3RPCs antigos, corpos/OIDs/ACL intactos.
+- [x] PRE/POST/contenção deny-only e hashes/diff;141/141PG sintéticos (87herdados+54novos),101/101clientes simulados, revisão independente sem defeito encontrado e build automático OK. Nenhuma aplicação/publicação/fixture nova.
+- [ ] Aplicação independente e homologação real deste delta; revogação real durante espera não comprovada (janelas não sobrepostas). Contabilidade real e SU-518022 adiados.
+
 ## 27/10 01:19 — perda real plano por autosave da página (sem produção)
 - [x] Página/Conduta/editor/workspace/efeitos reais com Auth/transporte simulados: sete cenários de montagem/hidratação/refetch, edição, timer e envio atrasados. CAS observado sem rebase e bloco exato preservado.
 - [x] Proteção servidor candidata INATIVA com ticket privado txid/alvo/bloco/data e contenção deny-only; aplicação externa registrada sem reaplicar.156/156testes;30checksPG sintéticos; build automático OK.

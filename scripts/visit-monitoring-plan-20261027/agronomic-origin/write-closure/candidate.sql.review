@@ -1,0 +1,114 @@
+-- ADDITIVE CANDIDATE ONLY. Never reinstall monitoring_origin_canonical_sync_20261027.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+SET LOCAL statement_timeout='15s';
+-- Read-only assertions. Executor FIRST verifies external ref swzpzcwiasxmjutrmvkm outside SQL.
+DO $pre$
+DECLARE r record;
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.alertas_agronomicos'::regclass AND relrowsecurity AND NOT relforcerowsecurity AND relowner='postgres'::regrole) THEN
+  RAISE EXCEPTION 'write_closure_table_baseline_mismatch' USING ERRCODE='55000';
+ END IF;
+ IF (SELECT md5(string_agg(polname||':'||polcmd::text||':'||polpermissive::text||':'||polroles::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),E'\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='public.alertas_agronomicos'::regclass)<>'826292c397fd1dea1f07a23e37b56a04' THEN
+  RAISE EXCEPTION 'write_closure_policy_baseline_mismatch' USING ERRCODE='55000';
+ END IF;
+ FOR r IN SELECT * FROM (VALUES
+ ('public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)','b675f863360f50d58cd5358451284eff'),
+ ('public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)','f2769829ce82c765326079a498eed0f7'),
+ ('public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)','849f31fc39e98a115cb9b317801d698e'),
+ ('platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)','c0da2db32df6d5161c5c1d4dee84b495'),
+ ('platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)','3c31ce9dbf3ee2e23d82b43b07a70a5c')
+ ) v(signature,hash) LOOP
+  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(r.signature) AND prosecdef AND proowner='postgres'::regrole AND md5(pg_get_functiondef(oid))=r.hash
+   AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND 'search_path=""'=ANY(proconfig))
+   OR has_function_privilege('anon',r.signature,'EXECUTE') THEN
+   RAISE EXCEPTION 'write_closure_function_baseline_mismatch: %',r.signature USING ERRCODE='55000';
+  END IF;
+ END LOOP;
+ IF md5(pg_get_functiondef('platform_private.guard_alert_origin_sync()'::regprocedure))<>'c7e11bafbdf60e08495c68dfc9f9b12f'
+ OR md5(pg_get_functiondef('platform_private.guard_visit_plan_preservation()'::regprocedure))<>'618797b75f8c6b962dc70c0841c84de1'
+ OR md5(pg_get_functiondef('cf_user_guards_v1.acquire_gate()'::regprocedure))<>'b0dd9a14d5fd799a40df0975baf4c5a6'
+ OR NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role' AND rolbypassrls)
+ OR NOT has_table_privilege('service_role','public.alertas_agronomicos','UPDATE') THEN
+  RAISE EXCEPTION 'write_closure_dependency_mismatch' USING ERRCODE='55000';
+ END IF;
+ IF (SELECT count(*) FROM pg_trigger WHERE tgrelid='public.alertas_agronomicos'::regclass AND NOT tgisinternal)<>1
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.alertas_agronomicos'::regclass AND tgname='trg_alert_origin_sync' AND tgenabled='O' AND tgfoid='platform_private.guard_alert_origin_sync()'::regprocedure)
+ OR (SELECT count(*) FROM pg_trigger WHERE tgrelid IN ('public.profiles'::regclass,'public.user_roles'::regclass) AND tgname='a00_cf_user_gate' AND tgenabled='O' AND tgfoid='cf_user_guards_v1.acquire_gate()'::regprocedure)<>2 THEN
+  RAISE EXCEPTION 'write_closure_trigger_mismatch' USING ERRCODE='55000';
+ END IF;
+ -- Unexpected writers require a new review; no delete RPC is authorized here.
+ IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private')
+ AND p.prosrc ~* '(insert[[:space:]]+into|update|delete[[:space:]]+from)[[:space:]]+(public\.)?alertas_agronomicos'
+ AND p.oid NOT IN ('public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)'::regprocedure,
+ 'public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)'::regprocedure,
+ 'public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)'::regprocedure,
+ 'platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)'::regprocedure,
+ 'platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)'::regprocedure)) THEN
+  RAISE EXCEPTION 'write_closure_unreviewed_writer' USING ERRCODE='55000';
+ END IF;
+END;
+$pre$;
+
+CREATE TEMP TABLE monitoring_closure_baseline ON COMMIT DROP AS
+SELECT oid,prosrc,proacl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid IN (
+ 'public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)'::regprocedure,
+ 'public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)'::regprocedure,
+ 'public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)'::regprocedure);
+CREATE POLICY monitoring_authenticated_insert_closed ON public.alertas_agronomicos AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK(false);
+CREATE POLICY monitoring_authenticated_update_closed ON public.alertas_agronomicos AS RESTRICTIVE FOR UPDATE TO authenticated USING(false) WITH CHECK(false);
+CREATE POLICY monitoring_authenticated_delete_closed ON public.alertas_agronomicos AS RESTRICTIVE FOR DELETE TO authenticated USING(false);
+-- Necessary: LIVE legacy functions have no bounded wait; gate/advisory/row waits can otherwise be unbounded.
+ALTER FUNCTION public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text) SET lock_timeout='3s';
+ALTER FUNCTION public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz) SET lock_timeout='3s';
+ALTER FUNCTION public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz) SET lock_timeout='3s';
+DO $metadata$
+BEGIN
+ IF (SELECT count(*) FROM monitoring_closure_baseline)<>3 OR EXISTS(
+ SELECT 1 FROM monitoring_closure_baseline b LEFT JOIN pg_proc p ON p.oid=b.oid WHERE p.oid IS NULL
+ OR ROW(p.prosrc,p.proacl,p.proowner,p.prosecdef) IS DISTINCT FROM ROW(b.prosrc,b.proacl,b.proowner,b.prosecdef)
+ OR p.proconfig IS DISTINCT FROM array_append(b.proconfig,'lock_timeout=3s')) THEN
+ RAISE EXCEPTION 'write_closure_metadata_changed' USING ERRCODE='55000'; END IF;
+END;
+$metadata$;
+-- Read-only; failure means NO-GO. Tenant/SELECT fingerprint excludes ONLY the 3 new policies.
+DO $post$
+DECLARE r record;
+BEGIN
+ IF (SELECT count(*) FROM pg_policy WHERE polrelid='public.alertas_agronomicos'::regclass AND NOT polpermissive
+ AND polroles=ARRAY['authenticated'::regrole::oid] AND (
+ (polname='monitoring_authenticated_insert_closed' AND polcmd='a' AND polqual IS NULL AND pg_get_expr(polwithcheck,polrelid)='false') OR
+ (polname='monitoring_authenticated_update_closed' AND polcmd='w' AND pg_get_expr(polqual,polrelid)='false' AND pg_get_expr(polwithcheck,polrelid)='false') OR
+ (polname='monitoring_authenticated_delete_closed' AND polcmd='d' AND pg_get_expr(polqual,polrelid)='false' AND polwithcheck IS NULL)))<>3 THEN
+  RAISE EXCEPTION 'write_closure_post_policy_failed' USING ERRCODE='55000';
+ END IF;
+ IF (SELECT md5(string_agg(polname||':'||polcmd::text||':'||polpermissive::text||':'||polroles::text||':'||coalesce(pg_get_expr(polqual,polrelid),'')||':'||coalesce(pg_get_expr(polwithcheck,polrelid),''),E'\n' ORDER BY polname)) FROM pg_policy WHERE polrelid='public.alertas_agronomicos'::regclass AND polname NOT IN ('monitoring_authenticated_insert_closed','monitoring_authenticated_update_closed','monitoring_authenticated_delete_closed'))<>'826292c397fd1dea1f07a23e37b56a04' THEN
+  RAISE EXCEPTION 'write_closure_select_tenant_changed' USING ERRCODE='55000';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.alertas_agronomicos'::regclass AND relrowsecurity AND NOT relforcerowsecurity AND relowner='postgres'::regrole)
+ OR NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role' AND rolbypassrls)
+ OR NOT has_table_privilege('service_role','public.alertas_agronomicos','UPDATE') THEN
+  RAISE EXCEPTION 'write_closure_post_dependency_failed' USING ERRCODE='55000';
+ END IF;
+ FOR r IN SELECT * FROM (VALUES
+ ('public.rpc_criar_alerta_climatico_v1(uuid,uuid,public.tipo_alerta,public.nivel_risco,text)','be3fa0742fddc5f3d212e7ed53048910'),
+ ('public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)','8e6d0982d4eb9b599c703d3f715dd806'),
+ ('public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)','1bf4ebfecb645e4a0d131510122ac407'),
+ ('platform_private.link_alert_origin_core(uuid,uuid,timestamptz,integer,uuid)','c0da2db32df6d5161c5c1d4dee84b495'),
+ ('platform_private.reschedule_monitoring_core(uuid,date,timestamptz,integer,uuid)','3c31ce9dbf3ee2e23d82b43b07a70a5c')
+ ) v(signature,hash) LOOP
+  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(r.signature) AND prosecdef AND proowner='postgres'::regrole
+   AND md5(pg_get_functiondef(oid))=r.hash AND 'search_path=""'=ANY(proconfig)
+   AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}')
+   OR has_function_privilege('anon',r.signature,'EXECUTE') THEN
+   RAISE EXCEPTION 'write_closure_post_function_failed: %',r.signature USING ERRCODE='55000';
+  END IF;
+ END LOOP;
+ IF md5(pg_get_functiondef('platform_private.guard_alert_origin_sync()'::regprocedure))<>'c7e11bafbdf60e08495c68dfc9f9b12f'
+ OR md5(pg_get_functiondef('platform_private.guard_visit_plan_preservation()'::regprocedure))<>'618797b75f8c6b962dc70c0841c84de1' THEN
+  RAISE EXCEPTION 'write_closure_post_guard_failed' USING ERRCODE='55000';
+ END IF;
+END;
+$post$;
+
+COMMIT;
