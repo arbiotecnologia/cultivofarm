@@ -39,6 +39,7 @@ export const labelActiveReceiptSchema = z.object({ ...baseReceipt, ativo: z.bool
 
 /** Conflito CAS/replay: a UI oferece atualização controlada dos dados (refetch), sem recarregar a página. */
 export const LABEL_CONFLICT_MESSAGE = "O rótulo mudou ou esta solicitação já foi usada. Atualize os dados para conferir antes de tentar novamente.";
+export const LABEL_BUSY_MESSAGE = "Operação ocupada no momento; nada foi gravado. Atualize os dados e tente novamente.";
 export function labelError(error: unknown) {
   const code = typeof error === "object" && error !== null && "code" in error ? (error as { code?: unknown }).code : undefined;
   if (code === "42501") return "Sem permissão para gerenciar rótulos do catálogo global.";
