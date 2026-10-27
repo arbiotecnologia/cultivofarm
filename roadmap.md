@@ -1,5 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
+## 27/10 12:55 — contenção adicional de escrita agronômica (SQL INATIVO)
+- [ ] Preparar delta RESTRICTIVE INSERT/UPDATE/DELETE authenticated, preservando SELECT/tenant/RPCs postgres e serviço vencidos; auditar gate/pós-espera dos três RPCs antigos e ensaiar timeout limitado.
+- [ ] Entregar PRE/POST/contenção, hashes, diff e testes discriminados; sem aplicar/publicar ou recriar fixtures. Revogação durante espera real não comprovada; SU-518022 adiado.
+
 ## 27/10 01:19 — perda real plano por autosave da página (sem produção)
 - [x] Página/Conduta/editor/workspace/efeitos reais com Auth/transporte simulados: sete cenários de montagem/hidratação/refetch, edição, timer e envio atrasados. CAS observado sem rebase e bloco exato preservado.
 - [x] Proteção servidor candidata INATIVA com ticket privado txid/alvo/bloco/data e contenção deny-only; aplicação externa registrada sem reaplicar.156/156testes;30checksPG sintéticos; build automático OK.
