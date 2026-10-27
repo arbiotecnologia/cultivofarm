@@ -1,0 +1,10 @@
+-- ARTEFATO DE AUDITORIA JÁ APLICADO — NÃO EXECUTAR / NÃO REAPLICAR.
+-- Migration informada: visit_field_canonical_write_only_20261027.
+-- Destino informado pelo auditor: swzpzcwiasxmjutrmvkm (produção).
+-- Reconciliação documental de 2026-10-27, relato às 15:48 UTC.
+-- Apenas o SQL efetivo fornecido pelo auditor, não a transação completa.
+-- Transação original relatada: lock_timeout=3s, preflight pin
+-- ACL/RPC/guard/policies e postassert. Textos/pinos integrais não fornecidos;
+-- não reconstruídos aqui. Não registrar este arquivo em supabase/migrations.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER, MAINTAIN
+ON TABLE public.visitas_campo FROM PUBLIC, anon, authenticated;
