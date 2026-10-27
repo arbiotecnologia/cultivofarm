@@ -1,0 +1,234 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "tables": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "table": "aplicacoes",
+      "policies": "33983f376a1ac429a59d088b6ded6b9f",
+      "triggers": "8fdd68c9a488305dc3793385b00a16cc",
+      "force_rls": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "table": "lotes",
+      "policies": "2b7a58baaecb2e5f1c87e06753985a8c",
+      "triggers": "6523b1fe6a50ce8744d5492483b4fdda",
+      "force_rls": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "table": "ordens_servico",
+      "policies": "f79091c38487a5e275d10df323b09b19",
+      "triggers": "ad4d57595953927f5847151f818d20d7",
+      "force_rls": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "rls": true,
+      "table": "programacao_producao",
+      "policies": "4abd326ade0cfcac8c26e5feecb504fd",
+      "triggers": "dd728d4fc05c53b9858b6811683f639d",
+      "force_rls": false
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres}",
+      "rls": true,
+      "table": "platform_private.application_save_preparations",
+      "policies": "d41d8cd98f00b204e9800998ecf8427e",
+      "triggers": "d41d8cd98f00b204e9800998ecf8427e",
+      "force_rls": false
+    }
+  ],
+  "dependencies": [
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "c5af5b55de6d79da9b73a33948746ae2",
+      "oid": "37054",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "platform_private.has_role(uuid,app_role)",
+      "security_definer": true
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "701ba8da92fc3df9ea0e5270ab5e74b2",
+      "oid": "41656",
+      "owner": "postgres",
+      "config": [
+        "search_path=public, pg_temp"
+      ],
+      "signature": "fn_cockpit_norm_origem(text)",
+      "security_definer": false
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "194703302cf0400c10d6d0dda2468d5d",
+      "oid": "41783",
+      "owner": "postgres",
+      "config": [
+        "search_path=public, pg_temp"
+      ],
+      "signature": "gerar_codigo_lote(integer)",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "503f30a55dbd7e29b41c489391ce41cd",
+      "oid": "42292",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "private.h7n_esteira_laboratorio()",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "04067ba43cea3eed845a1fd3735061e0",
+      "oid": "42535",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "signature": "can_user_access_aplicacao(uuid)",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "md5": "b8f4c49dd9b13d4aeecef0e6c76c105a",
+      "oid": "42543",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "signature": "can_user_manage_aplicacao(uuid)",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "b83a0bc8906b5e9f68ac6b7c9338d703",
+      "oid": "53618",
+      "owner": "postgres",
+      "config": [
+        "search_path=public, pg_temp"
+      ],
+      "signature": "can_user_create_aplicacao_for_cliente(uuid)",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "64e10608403238a41a9baf92857ca881",
+      "oid": "67184",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "platform_private.h15_actor_organization()",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "md5": "501dd958e117d2df8a4d38f6bcbeed04",
+      "oid": "83826",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "_saas_user_has_feature(uuid,text)",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "4d90e93d521a4819d9085f28d742030f",
+      "oid": "95587",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "has_role(uuid,app_role)",
+      "security_definer": false
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "oid": "95588",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "h15_actor_organization()",
+      "security_definer": false
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "94164fa3b90088b0a1f16ac465a635d4",
+      "oid": "100551",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "storage1_path_strict(text)",
+      "security_definer": false
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "b5d0994b6eb976b14122cd2a1ec798cf",
+      "oid": "102523",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "technical_actor_ready(uuid)",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "4eab765e76ca79f16a7dd481887496d9",
+      "oid": "117670",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "platform_private.guard_manual_lot_write_v1()",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "7c168ffa9393207fb3388c9546c19d05",
+      "oid": "118390",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "platform_private.guard_manual_program_binding_v1()",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "md5": "0d490a2910e7fb63dd50fd4c86e1cf0f",
+      "oid": "118494",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "platform_private.guard_manual_lot_delete_v1()",
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "md5": "048249c0c2106c3761e26eacb8d0de84",
+      "oid": "95577",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "signature": "platform_private.platform_actor_access_ready(uuid)",
+      "security_definer": true
+    }
+  ]
+}

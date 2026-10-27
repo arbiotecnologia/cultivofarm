@@ -1,0 +1,62 @@
+[
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "b83a0bc8906b5e9f68ac6b7c9338d703",
+    "oid": "53618",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "signature": "can_user_create_aplicacao_for_cliente(uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.can_user_create_aplicacao_for_cliente(_cliente_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\n                                                                                                                              SELECT auth.uid() IS NOT NULL AND _cliente_id IS NOT NULL AND public.can_user_access_cliente(_cliente_id) AND (\r\n                                                                                                                                  public.has_role(auth.uid(), 'administrador'::public.app_role)\r\n                                                                                                                                      OR public.has_role(auth.uid(), 'gestor'::public.app_role)\r\n                                                                                                                                          OR public.has_role(auth.uid(), 'administrativo'::public.app_role)\r\n                                                                                                                                              OR public.has_role(auth.uid(), 'tecnico_agronomo'::public.app_role)\r\n                                                                                                                                                  OR public.has_role(auth.uid(), 'consultor_tecnico'::public.app_role)\r\n                                                                                                                                                      OR public.has_role(auth.uid(), 'aplicador'::public.app_role)\r\n                                                                                                                                                          OR public.has_role(auth.uid(), 'operador_onfarm'::public.app_role)\r\n                                                                                                                                                              OR public.has_role(auth.uid(), 'cliente_produtor'::public.app_role)\r\n                                                                                                                                                                );\r\n                                                                                                                                                                $function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "64e10608403238a41a9baf92857ca881",
+    "oid": "67184",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "platform_private.h15_actor_organization()",
+    "definition": "CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);\n$function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "048249c0c2106c3761e26eacb8d0de84",
+    "oid": "95577",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "platform_private.platform_actor_access_ready(uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)\n AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));\n$function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "55edafec08bcc84a00f1526c14334a2c",
+    "oid": "95588",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "h15_actor_organization()",
+    "definition": "CREATE OR REPLACE FUNCTION public.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.h15_actor_organization(); $function$\n",
+    "security_definer": false
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "b5d0994b6eb976b14122cd2a1ec798cf",
+    "oid": "102523",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "technical_actor_ready(uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.technical_actor_ready(p_user uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT CASE WHEN p_user IS NULL OR p_user IS DISTINCT FROM auth.uid()\n   OR COALESCE((auth.jwt()->>'iat') ~ '^[0-9]{1,10}$',false) IS FALSE THEN false\n ELSE CASE WHEN (auth.jwt()->>'iat')::bigint <= 0 THEN false\n ELSE platform_private.h15_actor_organization() IS NOT NULL\n AND platform_private.platform_actor_access_ready(p_user) END END;\n$function$\n",
+    "security_definer": true
+  }
+]

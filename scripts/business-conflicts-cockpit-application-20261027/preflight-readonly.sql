@@ -1,0 +1,357 @@
+-- INATIVO / REVIEW ONLY. Não aplicar pelo agente. Ref swzpzcwiasxmjutrmvkm.
+BEGIN READ ONLY;
+DO $guard$ BEGIN
+IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)') AND oid=41896 AND md5(pg_get_functiondef(oid))='3c7fa9255984f2c7498c6e32af738611' AND pg_get_functiondef(oid)='CREATE OR REPLACE FUNCTION public.rpc_cockpit_gerar_lote_v1(p_programacao_id uuid, p_os_id uuid, p_origem text, p_lote jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''''
+AS $function$
+DECLARE
+ v_uid uuid:=auth.uid(); v_org uuid; v_origin text; v_os record;
+ v_pp public.programacao_producao%ROWTYPE; v_lot public.lotes%ROWTYPE;
+ v_key text; v_count integer; v_id uuid; v_codigo text; v_volume numeric;
+ v_tanque text; v_resp text; v_obs text; v_try integer:=0; v_constraint text;
+BEGIN
+ PERFORM pg_catalog.set_config(''lock_timeout'',''3s'',true);
+ -- Cadeia viva (Auth/JWT iat, perfil ativo, empresa ativa, readiness, SaaS, papel) ANTES de qualquer leitura.
+ -- Não reutiliza fn_cockpit_assert_operador_origem: ele só testa papel global.
+ v_org:=platform_private.h15_actor_organization();
+ IF v_uid IS NULL OR v_org IS NULL OR public.technical_actor_ready(v_uid) IS NOT TRUE
+ OR public._saas_user_has_feature(v_uid,''ordens_producao'') IS NOT TRUE
+ OR public._saas_user_has_feature(v_uid,''lotes_qualidade'') IS NOT TRUE
+ OR (public.has_role(v_uid,''administrador'') OR public.has_role(v_uid,''gestor'') OR public.has_role(v_uid,''producao'')) IS NOT TRUE THEN
+ RAISE EXCEPTION ''COCKPIT_LOTE_SCOPE_DENIED'' USING ERRCODE=''42501''; END IF;
+ BEGIN v_origin:=public.fn_cockpit_norm_origem(p_origem); EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION ''COCKPIT_LOTE_SCOPE_DENIED'' USING ERRCODE=''42501''; END;
+ IF v_origin<>''manual'' THEN RETURN jsonb_build_object(''success'',false,''message'',''Somente OS manual neste recorte.''); END IF;
+ IF p_programacao_id IS NULL OR p_os_id IS NULL THEN RAISE EXCEPTION ''COCKPIT_LOTE_PARAMS_INVALIDOS''; END IF;
+ IF p_lote IS NULL OR jsonb_typeof(p_lote)<>''object'' THEN RAISE EXCEPTION ''COCKPIT_LOTE_PAYLOAD_INVALIDO''; END IF;
+ -- Lista fechada: código, produto, microrganismo, tenant, custo e data nunca vêm do navegador.
+ FOR v_key IN SELECT pg_catalog.jsonb_object_keys(p_lote) LOOP
+  IF v_key=''codigo_lote'' THEN RAISE EXCEPTION ''COCKPIT_LOTE_CODIGO_NAO_ACEITO''; END IF;
+  IF v_key NOT IN (''volume_produzido'',''responsavel_producao'',''tanque'',''observacoes_tecnicas'') THEN RAISE EXCEPTION ''COCKPIT_LOTE_PAYLOAD_INVALIDO''; END IF;
+ END LOOP;
+ -- Volume em mL (mesma unidade de programacao_producao.volume_necessario e ordens_servico.volume_total_ml).
+ IF pg_catalog.jsonb_typeof(p_lote->''volume_produzido'') IS DISTINCT FROM ''number'' THEN RAISE EXCEPTION ''COCKPIT_LOTE_VOLUME_INVALIDO''; END IF;
+ v_volume:=(p_lote->>''volume_produzido'')::numeric;
+ IF NOT (v_volume>0 AND v_volume<=100000000 AND v_volume=pg_catalog.round(v_volume,3) AND v_volume::text NOT IN (''NaN'',''Infinity'',''-Infinity'')) THEN RAISE EXCEPTION ''COCKPIT_LOTE_VOLUME_INVALIDO''; END IF;
+ FOREACH v_key IN ARRAY ARRAY[''responsavel_producao'',''tanque'',''observacoes_tecnicas''] LOOP
+  IF pg_catalog.jsonb_typeof(p_lote->v_key) NOT IN (''string'',''null'') THEN RAISE EXCEPTION ''COCKPIT_LOTE_PAYLOAD_INVALIDO''; END IF;
+ END LOOP;
+ v_resp:=nullif(pg_catalog.btrim(p_lote->>''responsavel_producao''),'''');
+ v_tanque:=nullif(pg_catalog.btrim(p_lote->>''tanque''),'''');
+ v_obs:=nullif(pg_catalog.btrim(p_lote->>''observacoes_tecnicas''),'''');
+ IF pg_catalog.length(v_resp)>200 OR pg_catalog.length(v_tanque)>60 OR pg_catalog.length(v_obs)>2000 THEN RAISE EXCEPTION ''COCKPIT_LOTE_PAYLOAD_INVALIDO''; END IF;
+ IF NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os=''manual'') THEN RAISE EXCEPTION ''COCKPIT_LOTE_SCOPE_DENIED'' USING ERRCODE=''42501''; END IF;
+ IF current_setting(''transaction_isolation'')<>''read committed'' THEN RAISE EXCEPTION ''COCKPIT_LOTE_ISOLATION_DENIED'' USING ERRCODE=''42501''; END IF;
+ -- Mesmo conjunto de cercas revisado em rpc_programar_os_v1 (convites/onfarm/catálogo SaaS global).
+ LOCK TABLE public.platform_org_admin_invites,public.ordens_servico_onfarm IN SHARE MODE;
+ LOCK TABLE public.saas_plan_versions,public.saas_plan_version_features,public.saas_features,public.saas_modules IN SHARE MODE;
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(''cockpit_lote:''||p_programacao_id::text));
+ SELECT o.organization_id,o.id,o.cliente_id,o.fazenda_id,o.talhao_id,o.produto_id,o.microrganismo_id,o.status::text status,o.partner_order_id,o.partner_order_item_id,o.origem
+ INTO v_os FROM public.ordens_servico o WHERE o.id=p_os_id FOR UPDATE;
+ IF v_os.id IS NULL OR v_os.organization_id IS DISTINCT FROM v_org THEN RAISE EXCEPTION ''COCKPIT_LOTE_SCOPE_DENIED'' USING ERRCODE=''42501''; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=v_uid ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.user_roles WHERE user_id=v_uid ORDER BY role::text FOR SHARE;
+ PERFORM 1 FROM public.organizations WHERE id=v_org FOR UPDATE;
+ PERFORM 1 FROM public.organization_subscriptions WHERE organization_id=v_org ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.organization_feature_overrides WHERE organization_id=v_org ORDER BY id FOR SHARE;
+ PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id FOR SHARE;
+ PERFORM 1 FROM public.fazendas WHERE id=v_os.fazenda_id FOR SHARE;
+ PERFORM 1 FROM public.talhoes WHERE id=v_os.talhao_id FOR SHARE;
+ PERFORM 1 FROM public.produtos WHERE id=v_os.produto_id FOR SHARE;
+ PERFORM 1 FROM public.microrganismos WHERE id=v_os.microrganismo_id FOR SHARE;
+ PERFORM 1 FROM public.programacao_producao WHERE id=p_programacao_id OR ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id ORDER BY id FOR UPDATE;
+ PERFORM 1 FROM public.lotes WHERE programacao_id=p_programacao_id ORDER BY id FOR UPDATE;
+ -- Revalidação após locks: revogação/troca de tenant/assinatura concorrente vence a requisição.
+ IF public.technical_actor_ready(v_uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM v_org
+ OR public._saas_user_has_feature(v_uid,''ordens_producao'') IS NOT TRUE OR public._saas_user_has_feature(v_uid,''lotes_qualidade'') IS NOT TRUE
+ OR (public.has_role(v_uid,''administrador'') OR public.has_role(v_uid,''gestor'') OR public.has_role(v_uid,''producao'')) IS NOT TRUE
+ OR NOT EXISTS(SELECT 1 FROM private.h7n_esteira_laboratorio() s WHERE s.os_id=p_os_id AND s.origem_os=''manual'') THEN
+ RAISE EXCEPTION ''COCKPIT_LOTE_SCOPE_DENIED'' USING ERRCODE=''42501''; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=v_os.cliente_id AND c.organization_id=v_org)
+ OR EXISTS(SELECT 1 FROM public.ordens_servico_onfarm WHERE id=p_os_id) THEN
+ RAISE EXCEPTION ''COCKPIT_LOTE_SCOPE_DENIED'' USING ERRCODE=''42501''; END IF;
+ IF v_os.origem=''b2b'' OR v_os.partner_order_id IS NOT NULL OR v_os.partner_order_item_id IS NOT NULL
+ OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id) THEN
+ RETURN jsonb_build_object(''success'',false,''message'',''Lote B2B indisponível até validação dos efeitos associados.''); END IF;
+ SELECT count(*) INTO v_count FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id;
+ IF v_count<>1 THEN RETURN jsonb_build_object(''success'',false,''message'',''Programação existente não comprovada; revisão necessária.''); END IF;
+ SELECT * INTO v_pp FROM public.programacao_producao WHERE id=p_programacao_id;
+ -- IDs divergentes, programação de outra OS ou de outro tenant: mesma negação, sem revelar existência.
+ IF NOT ((v_pp.id IS NOT NULL AND v_pp.organization_id=v_org AND v_pp.ordem_servico_id=p_os_id AND v_pp.ordem_servico_onfarm_id IS NULL
+ AND v_pp.produto_id IS NOT DISTINCT FROM v_os.produto_id AND v_pp.microrganismo_id IS NOT DISTINCT FROM v_os.microrganismo_id) IS TRUE) THEN
+ RAISE EXCEPTION ''COCKPIT_LOTE_SCOPE_DENIED'' USING ERRCODE=''42501''; END IF;
+ IF ((v_pp.produto_id IS NOT NULL)::int+(v_pp.microrganismo_id IS NOT NULL)::int)<>1 THEN RAISE EXCEPTION ''COCKPIT_LOTE_ITEM_CANONICO_AUSENTE''; END IF;
+ IF platform_private.lab_item_is_manufacturable(v_pp.produto_id,v_pp.microrganismo_id) IS NOT TRUE THEN
+ RETURN jsonb_build_object(''success'',false,''message'',''Item não elegível ao laboratório biológico.''); END IF;
+ IF v_pp.responsavel_id IS NOT NULL OR nullif(pg_catalog.btrim(v_pp.responsavel),'''') IS NOT NULL THEN
+ RETURN jsonb_build_object(''success'',false,''message'',''Responsável não nulo indisponível neste recorte.''); END IF;
+ IF EXISTS(SELECT 1 FROM public.entregas WHERE ordem_servico_id=p_os_id) OR EXISTS(SELECT 1 FROM public.aplicacoes WHERE ordem_servico_id=p_os_id) THEN
+ RETURN jsonb_build_object(''success'',false,''message'',''OS com entrega/aplicação já vinculada indisponível neste recorte.''); END IF;
+ SELECT count(*) INTO v_count FROM public.lotes WHERE programacao_id=p_programacao_id;
+ IF v_count>1 THEN RETURN jsonb_build_object(''success'',false,''message'',''Mais de um lote para a programação; revisão necessária.''); END IF;
+ IF v_count=1 THEN
+  SELECT * INTO v_lot FROM public.lotes WHERE programacao_id=p_programacao_id;
+  -- Replay só é aceito quando o pedido e o lote/evento existentes coincidem; nenhum dado é alterado.
+  IF v_os.status=''programada'' AND v_pp.status::text=''aguardando'' AND v_lot.organization_id=v_org AND v_lot.status::text=''em_producao''
+  AND v_lot.produto_id IS NOT DISTINCT FROM v_pp.produto_id AND v_lot.microrganismo_id IS NOT DISTINCT FROM v_pp.microrganismo_id
+  AND v_lot.volume_produzido=v_volume AND v_lot.tanque IS NOT DISTINCT FROM v_tanque AND v_lot.responsavel_producao IS NOT DISTINCT FROM v_resp
+  AND v_lot.observacoes_tecnicas IS NOT DISTINCT FROM v_obs AND NOT EXISTS(SELECT 1 FROM public.controle_qualidade WHERE lote_id=v_lot.id)
+  AND NOT EXISTS(SELECT 1 FROM public.envase WHERE lote_id=v_lot.id)
+  AND NOT EXISTS(SELECT 1 FROM public.estoque_produto WHERE lote_id=v_lot.id)
+  AND (SELECT count(*) FROM public.laboratorio_esteira_eventos WHERE lote_id=v_lot.id)=1
+  AND EXISTS(SELECT 1 FROM public.laboratorio_esteira_eventos WHERE lote_id=v_lot.id AND acao=''gerar_lote''
+    AND os_id=p_os_id AND origem_os=''manual'' AND programacao_id=p_programacao_id AND usuario_id=v_uid AND etapa_nova=''lote_gerado'') THEN
+   RETURN jsonb_build_object(''success'',true,''replay'',true,''lote_id'',v_lot.id,''codigo_lote'',v_lot.codigo_lote,''message'',pg_catalog.format(''Lote %s já registrado com os mesmos dados.'',v_lot.codigo_lote));
+  END IF;
+  RETURN jsonb_build_object(''success'',false,''message'',''Já existe lote com dados diferentes para esta programação; nada foi alterado.'');
+ END IF;
+ -- Primeira geração: OS programada e programação aguardando; esta ação não avança OS/programação nem cria CQ/envase.
+ IF v_os.status IS DISTINCT FROM ''programada'' OR v_pp.status::text IS DISTINCT FROM ''aguardando'' OR v_pp.data_programada IS NULL
+ OR v_pp.volume_necessario IS NULL OR v_pp.volume_necessario<=0 OR v_pp.volume_necessario::text IN (''NaN'',''Infinity'',''-Infinity'')
+ OR v_pp.volume_necessario IS DISTINCT FROM (SELECT volume_total_ml FROM public.ordens_servico WHERE id=p_os_id) THEN
+ RETURN jsonb_build_object(''success'',false,''message'',''A OS deve estar programada e a programação aguardando; esta ação não programa nem avança etapas.''); END IF;
+ LOOP
+  v_try:=v_try+1; v_id:=pg_catalog.gen_random_uuid(); v_codigo:=public.gerar_codigo_lote(EXTRACT(YEAR FROM now())::int);
+  BEGIN
+   INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),''manual_lot_insert_v1'',v_id);
+   INSERT INTO public.lotes(id,programacao_id,codigo_lote,produto_id,microrganismo_id,volume_produzido,data_producao,responsavel_producao,tanque,observacoes_tecnicas,organization_id)
+   VALUES(v_id,p_programacao_id,v_codigo,v_pp.produto_id,v_pp.microrganismo_id,v_volume,CURRENT_DATE,v_resp,v_tanque,v_obs,v_org) RETURNING id INTO v_id;
+   DELETE FROM platform_private.authz_tickets WHERE txid=pg_catalog.txid_current() AND scope=''manual_lot_insert_v1'' AND target=v_id;
+   EXIT;
+  EXCEPTION WHEN unique_violation THEN
+   GET STACKED DIAGNOSTICS v_constraint=CONSTRAINT_NAME;
+   -- Concorrente fora deste RPC: falha fechada, sem replay presumido.
+   IF v_constraint IS DISTINCT FROM ''lotes_codigo_lote_key'' THEN RAISE EXCEPTION ''COCKPIT_LOTE_CONCORRENTE'' USING ERRCODE=''40001''; END IF;
+   IF v_try>=3 THEN RAISE EXCEPTION ''COCKPIT_LOTE_CODIGO_CONFLITO''; END IF;
+  END;
+ END LOOP;
+ SELECT * INTO v_lot FROM public.lotes WHERE id=v_id;
+ SELECT * INTO v_pp FROM public.programacao_producao WHERE id=p_programacao_id;
+ IF (SELECT count(*) FROM public.lotes WHERE programacao_id=p_programacao_id)<>1 OR v_lot.organization_id IS DISTINCT FROM v_org
+ OR v_lot.volume_produzido IS DISTINCT FROM v_volume OR v_lot.status::text IS DISTINCT FROM ''em_producao''
+ OR v_pp.status::text IS DISTINCT FROM ''aguardando'' OR v_pp.organization_id IS DISTINCT FROM v_org
+ OR (SELECT status::text FROM public.ordens_servico WHERE id=p_os_id) IS DISTINCT FROM ''programada''
+ OR EXISTS(SELECT 1 FROM public.controle_qualidade WHERE lote_id=v_id)
+ OR public.technical_actor_ready(v_uid) IS NOT TRUE OR platform_private.h15_actor_organization() IS DISTINCT FROM v_org
+ OR public._saas_user_has_feature(v_uid,''ordens_producao'') IS NOT TRUE OR public._saas_user_has_feature(v_uid,''lotes_qualidade'') IS NOT TRUE
+ OR (public.has_role(v_uid,''administrador'') OR public.has_role(v_uid,''gestor'') OR public.has_role(v_uid,''producao'')) IS NOT TRUE THEN
+ RAISE EXCEPTION ''COCKPIT_LOTE_POSTCONDITION_FAILED''; END IF;
+ INSERT INTO public.laboratorio_esteira_eventos(os_id,origem_os,programacao_id,lote_id,etapa_nova,acao,usuario_id,observacao)
+ VALUES(p_os_id,''manual'',p_programacao_id,v_id,''lote_gerado'',''gerar_lote'',v_uid,pg_catalog.format(''Lote %s gerado (codigo canonico do servidor).'',v_codigo));
+ RETURN jsonb_build_object(''success'',true,''replay'',false,''lote_id'',v_id,''codigo_lote'',v_codigo,''message'',pg_catalog.format(''Lote %s gerado com sucesso.'',v_codigo));
+END $function$
+' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres}' AND pg_get_userbyid(proowner)='postgres' AND prosecdef AND to_jsonb(proconfig)='["search_path=\"\""]'::jsonb) THEN RAISE EXCEPTION 'TARGET_DRIFT: %','rpc_cockpit_gerar_lote_v1(uuid,uuid,text,jsonb)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])') AND oid=100776 AND md5(pg_get_functiondef(oid))='f8bc9d5f000abef7f13e6ca340988734' AND pg_get_functiondef(oid)='CREATE OR REPLACE FUNCTION public.rpc_salvar_aplicacao_v1(p_aplicacao_id uuid, p_payload jsonb, p_rectify_id uuid DEFAULT NULL::uuid, p_evidencias jsonb DEFAULT ''[]''::jsonb, p_evidencias_manter uuid[] DEFAULT ''{}''::uuid[])
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''''
+AS $function$
+DECLARE
+ u uuid:=auth.uid(); org uuid; client uuid; product uuid; os_org uuid;
+ osid uuid; onid uuid; lot uuid; responsible uuid; phase text; canonical jsonb; os_status text;
+ r platform_private.application_save_preparations%ROWTYPE;
+ original public.aplicacoes%ROWTYPE; a public.aplicacoes%ROWTYPE;
+ ev jsonb; e public.aplicacao_evidencias%ROWTYPE; obj storage.objects%ROWTYPE;
+ kept uuid; k text; n numeric; lo numeric; hi numeric; root uuid; ver integer:=1;
+ expected text; ev_id uuid; moment date; start_at timestamptz; end_at timestamptz;
+ manifest jsonb; count_files integer; own_role boolean; name_responsible text;
+BEGIN
+ -- Never parse/replay a receipt before proving current actor readiness.
+ IF u IS NULL THEN RAISE EXCEPTION ''application_auth_required'' USING ERRCODE=''42501''; END IF;
+ PERFORM 1 FROM public.profiles WHERE user_id=u FOR SHARE;
+ org:=public.h15_actor_organization();
+ IF org IS NULL THEN RAISE EXCEPTION ''application_actor_denied'' USING ERRCODE=''42501''; END IF;
+ PERFORM 1 FROM public.organizations WHERE id=org FOR SHARE;
+ PERFORM 1 FROM public.user_roles WHERE user_id=u ORDER BY role FOR SHARE;
+ PERFORM 1 FROM public.platform_org_admin_invites WHERE user_id=u FOR SHARE;
+ IF p_aplicacao_id IS NULL OR jsonb_typeof(p_payload) IS DISTINCT FROM ''object''
+ OR jsonb_typeof(p_evidencias) IS DISTINCT FROM ''array'' OR p_evidencias_manter IS NULL
+ OR octet_length(p_payload::text)>32768 OR octet_length(p_evidencias::text)>32768 THEN
+ RAISE EXCEPTION ''application_payload_invalid'' USING ERRCODE=''22023''; END IF;
+ phase:=p_payload->>''_phase'';
+ IF phase IS NULL OR phase NOT IN (''prepare'',''finalize'') THEN RAISE EXCEPTION ''application_phase_required'' USING ERRCODE=''22023''; END IF;
+ canonical:=p_payload-''_phase'';
+ IF EXISTS(SELECT 1 FROM jsonb_object_keys(canonical) key WHERE key NOT IN (
+ ''ordem_servico_id'',''ordem_servico_onfarm_id'',''data_aplicacao'',''hora_inicio'',''hora_fim'',''responsavel_id'',''responsavel'',
+ ''modo_aplicacao'',''produto_usado_id'',''lote_usado_id'',''dose_aplicada'',''dose_unidade'',''volume_calda_l_ha'',
+ ''volume_total_aplicado_ml'',''area_aplicada_ha'',''equipamento'',''equipamento_modelo'',''bico_tipo'',''pressao_bar'',
+ ''temperatura_c'',''umidade_pct'',''vento_kmh'',''condicoes_climaticas'',''latitude'',''longitude'',''resultado_inicial'',
+ ''observacoes'',''created_by'',''motivo_retificacao'')) THEN RAISE EXCEPTION ''application_unknown_field'' USING ERRCODE=''22023''; END IF;
+ IF canonical->>''created_by'' IS DISTINCT FROM u::text OR canonical->>''dose_unidade'' IS DISTINCT FROM ''mL/ha''
+ THEN RAISE EXCEPTION ''application_author_or_unit_invalid'' USING ERRCODE=''42501''; END IF;
+ osid:=nullif(canonical->>''ordem_servico_id'','''')::uuid;
+ onid:=nullif(canonical->>''ordem_servico_onfarm_id'','''')::uuid;
+ IF num_nonnulls(osid,onid)<>1 THEN RAISE EXCEPTION ''application_origin_invalid'' USING ERRCODE=''22023''; END IF;
+ -- Lock every persisted authority before receipt lookup. Locks prevent UPDATE/DELETE races;
+ -- they do not invent membership, roles or a tenant for NULL legacy rows.
+ IF osid IS NOT NULL THEN
+ SELECT cliente_id,produto_id,organization_id,status::text INTO client,product,os_org,os_status FROM public.ordens_servico WHERE id=osid FOR SHARE;
+ ELSE
+ SELECT cliente_id,produto_id,status::text INTO client,product,os_status FROM public.ordens_servico_onfarm WHERE id=onid FOR SHARE;
+ SELECT organization_id INTO os_org FROM public.clientes WHERE id=client;
+ END IF;
+ IF client IS NULL OR os_org IS DISTINCT FROM org OR product IS NULL THEN RAISE EXCEPTION ''application_origin_denied'' USING ERRCODE=''42501''; END IF;
+ -- Same lifecycle as the canonical desktop form. Replay is reauthorized too.
+ IF os_status IS NULL OR NOT (os_status IN (''entregue'',''pronto_entrega'',''envase'')
+ OR (p_rectify_id IS NOT NULL AND os_status=''finalizada'')) THEN RAISE EXCEPTION ''application_os_status_denied'' USING ERRCODE=''42501''; END IF;
+ PERFORM 1 FROM public.clientes WHERE id=client AND organization_id=org FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION ''application_client_denied'' USING ERRCODE=''42501''; END IF;
+ PERFORM 1 FROM public.user_clientes WHERE user_id=u AND cliente_id=client ORDER BY id FOR SHARE;
+ IF public.can_user_create_aplicacao_for_cliente(client) IS DISTINCT FROM true THEN RAISE EXCEPTION ''application_create_denied'' USING ERRCODE=''42501''; END IF;
+ IF (public.has_role(u,''cliente_produtor'') OR public.has_role(u,''consultor_tecnico'') OR public.has_role(u,''tecnico_agronomo''))
+ AND NOT (public.has_role(u,''administrador'') OR public.has_role(u,''gestor'') OR public.has_role(u,''administrativo''))
+ AND NOT client=ANY(public.get_cliente_ids_for_user(u)) THEN RAISE EXCEPTION ''application_membership_denied'' USING ERRCODE=''42501''; END IF;
+ PERFORM 1 FROM public.produtos WHERE id=product AND ativo IS TRUE FOR SHARE;
+ IF NOT FOUND OR nullif(canonical->>''produto_usado_id'','''')::uuid IS DISTINCT FROM product THEN RAISE EXCEPTION ''application_product_denied'' USING ERRCODE=''42501''; END IF;
+ lot:=nullif(canonical->>''lote_usado_id'','''')::uuid;
+ IF lot IS NOT NULL THEN
+ PERFORM 1 FROM public.lotes WHERE id=lot AND produto_id=product AND organization_id=org AND status=''aprovado'' FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION ''application_lot_denied'' USING ERRCODE=''42501''; END IF; END IF;
+ responsible:=nullif(canonical->>''responsavel_id'','''')::uuid;
+ SELECT nome INTO name_responsible FROM public.profiles WHERE user_id=responsible AND organization_id=org
+ AND ativo IS TRUE AND senha_provisoria IS FALSE FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION ''application_responsible_denied'' USING ERRCODE=''42501''; END IF;
+ PERFORM 1 FROM public.user_roles WHERE user_id=responsible ORDER BY role FOR SHARE;
+ IF NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=responsible AND role::text IN
+ (''administrador'',''gestor'',''administrativo'',''consultor_tecnico'',''tecnico_agronomo'',''aplicador'',''operador_onfarm'',''cliente_produtor''))
+ OR platform_private.platform_actor_access_ready(responsible) IS DISTINCT FROM true THEN RAISE EXCEPTION ''application_responsible_denied'' USING ERRCODE=''42501''; END IF;
+ own_role:=public.has_role(u,''administrador'') OR public.has_role(u,''gestor'') OR public.has_role(u,''administrativo'') OR public.has_role(u,''consultor_tecnico'');
+ IF NOT own_role AND responsible IS DISTINCT FROM u THEN RAISE EXCEPTION ''application_responsible_denied'' USING ERRCODE=''42501''; END IF;
+ -- Preserve Storage1''s applicator restriction; do not make RPC metadata a bypass.
+ IF public.has_role(u,''aplicador'') AND NOT own_role AND responsible IS DISTINCT FROM u
+ AND NOT client=ANY(public.get_cliente_ids_for_user(u)) THEN RAISE EXCEPTION ''application_applicator_denied'' USING ERRCODE=''42501''; END IF;
+ FOR k,lo,hi IN SELECT * FROM (VALUES
+ (''dose_aplicada'',0::numeric,NULL::numeric),(''area_aplicada_ha'',0::numeric,NULL::numeric),
+ (''volume_calda_l_ha'',0::numeric,NULL::numeric),(''volume_total_aplicado_ml'',0::numeric,NULL::numeric),
+ (''pressao_bar'',0::numeric,NULL::numeric),(''temperatura_c'',-50::numeric,70::numeric),(''umidade_pct'',0::numeric,100::numeric),
+ (''vento_kmh'',0::numeric,250::numeric),(''latitude'',-90::numeric,90::numeric),(''longitude'',-180::numeric,180::numeric)) bounds LOOP
+ IF canonical->>k IS NULL THEN
+ IF k IN (''dose_aplicada'',''area_aplicada_ha'',''volume_total_aplicado_ml'') THEN RAISE EXCEPTION ''application_numeric_required'' USING ERRCODE=''22023''; END IF;
+ ELSE
+ IF jsonb_typeof(canonical->k) IS DISTINCT FROM ''number'' THEN RAISE EXCEPTION ''application_numeric_invalid'' USING ERRCODE=''22023''; END IF;
+ n:=(canonical->>k)::numeric;
+ IF n::text IN (''NaN'',''Infinity'',''-Infinity'') OR n<lo OR (hi IS NOT NULL AND n>hi)
+ OR (k IN (''dose_aplicada'',''area_aplicada_ha'',''volume_total_aplicado_ml'') AND n<=0) THEN RAISE EXCEPTION ''application_numeric_bounds'' USING ERRCODE=''22023''; END IF;
+ END IF;
+ END LOOP;
+ IF (canonical->>''volume_total_aplicado_ml'')::numeric IS DISTINCT FROM (canonical->>''dose_aplicada'')::numeric*(canonical->>''area_aplicada_ha'')::numeric
+ THEN RAISE EXCEPTION ''application_total_invalid'' USING ERRCODE=''22023''; END IF;
+ moment:=(canonical->>''data_aplicacao'')::date;
+ start_at:=nullif(canonical->>''hora_inicio'','''')::timestamptz; end_at:=nullif(canonical->>''hora_fim'','''')::timestamptz;
+ IF moment IS NULL OR NOT isfinite(moment) OR (start_at IS NOT NULL AND NOT isfinite(start_at))
+ OR (end_at IS NOT NULL AND (NOT isfinite(end_at) OR start_at IS NULL OR end_at<=start_at)) THEN RAISE EXCEPTION ''application_time_invalid'' USING ERRCODE=''22023''; END IF;
+ IF p_rectify_id IS NULL AND cardinality(p_evidencias_manter)>0 THEN RAISE EXCEPTION ''application_inheritance_denied'' USING ERRCODE=''42501''; END IF;
+ count_files:=jsonb_array_length(p_evidencias)+cardinality(p_evidencias_manter);
+ IF count_files>20 OR cardinality(p_evidencias_manter)<>(SELECT count(DISTINCT x) FROM unnest(p_evidencias_manter)x)
+ THEN RAISE EXCEPTION ''application_evidence_limit'' USING ERRCODE=''22023''; END IF;
+ manifest:=''[]''::jsonb;
+ FOR ev IN SELECT value FROM jsonb_array_elements(p_evidencias) LOOP
+ IF jsonb_typeof(ev) IS DISTINCT FROM ''object'' OR EXISTS(SELECT 1 FROM jsonb_object_keys(ev) key WHERE key NOT IN (''tipo'',''storage_path'',''legenda'',''mime'',''tamanho_bytes''))
+ THEN RAISE EXCEPTION ''application_evidence_invalid'' USING ERRCODE=''22023''; END IF;
+ expected:=CASE ev->>''mime'' WHEN ''image/jpeg'' THEN ''jpg'' WHEN ''image/png'' THEN ''png'' WHEN ''image/webp'' THEN ''webp''
+ WHEN ''image/heic'' THEN ''heic'' WHEN ''image/heif'' THEN ''heif'' WHEN ''application/pdf'' THEN ''pdf''
+ WHEN ''video/mp4'' THEN ''mp4'' WHEN ''video/webm'' THEN ''webm'' WHEN ''video/quicktime'' THEN ''mov''
+ WHEN ''audio/mpeg'' THEN ''mp3'' WHEN ''audio/mp4'' THEN ''m4a'' WHEN ''audio/wav'' THEN ''wav'' WHEN ''audio/ogg'' THEN ''ogg'' WHEN ''audio/webm'' THEN ''webm'' END;
+ IF expected IS NULL OR public.storage1_path_strict(ev->>''storage_path'') IS DISTINCT FROM true
+ OR split_part(ev->>''storage_path'',''/'',1) IS DISTINCT FROM client::text
+ OR split_part(ev->>''storage_path'',''/'',2) IS DISTINCT FROM p_aplicacao_id::text
+ OR split_part(ev->>''storage_path'',''/'',3) !~ (''^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.''||expected||''$'')
+ OR jsonb_typeof(ev->''tamanho_bytes'') IS DISTINCT FROM ''number'' OR (ev->>''tamanho_bytes'')::numeric NOT BETWEEN 1 AND 10485760
+ OR (ev->>''tamanho_bytes'')::numeric<>trunc((ev->>''tamanho_bytes'')::numeric)
+ OR coalesce(char_length(ev->>''legenda''),0)>1000
+ OR ev->>''tipo'' IS DISTINCT FROM (CASE WHEN ev->>''mime'' LIKE ''image/%'' THEN ''foto'' WHEN ev->>''mime'' LIKE ''video/%'' THEN ''video'' WHEN ev->>''mime'' LIKE ''audio/%'' THEN ''audio'' ELSE ''documento'' END)
+ THEN RAISE EXCEPTION ''application_evidence_invalid'' USING ERRCODE=''22023''; END IF;
+ manifest:=manifest||jsonb_build_array(ev);
+ END LOOP;
+ IF jsonb_array_length(manifest)<>(SELECT count(DISTINCT value->>''storage_path'') FROM jsonb_array_elements(manifest)) THEN RAISE EXCEPTION ''application_evidence_duplicate'' USING ERRCODE=''22023''; END IF;
+ -- One writer per application; then one writer per original version. No global cache.
+ PERFORM pg_advisory_xact_lock(hashtextextended(''application-save:''||p_aplicacao_id::text,0));
+ SELECT * INTO r FROM platform_private.application_save_preparations WHERE application_id=p_aplicacao_id FOR UPDATE;
+ IF FOUND AND (r.actor_id IS DISTINCT FROM u OR r.organization_id IS DISTINCT FROM org OR r.payload IS DISTINCT FROM canonical
+ OR r.rectify_id IS DISTINCT FROM p_rectify_id OR r.manifest IS DISTINCT FROM manifest OR r.keep_ids IS DISTINCT FROM p_evidencias_manter)
+ THEN RAISE EXCEPTION ''application_receipt_mismatch'' USING ERRCODE=''42501''; END IF;
+ IF p_rectify_id IS NOT NULL THEN
+ SELECT * INTO original FROM public.aplicacoes WHERE id=p_rectify_id FOR UPDATE;
+ IF NOT FOUND OR original.organization_id IS DISTINCT FROM org OR public.can_user_manage_aplicacao(p_rectify_id) IS DISTINCT FROM true
+ OR public.can_user_access_aplicacao(p_rectify_id) IS DISTINCT FROM true
+ OR original.ordem_servico_id IS DISTINCT FROM osid OR original.ordem_servico_onfarm_id IS DISTINCT FROM onid
+ THEN RAISE EXCEPTION ''application_rectification_denied'' USING ERRCODE=''42501''; END IF;
+ IF (r.application_id IS NULL OR r.committed_at IS NULL) AND original.is_latest IS DISTINCT FROM true THEN RAISE EXCEPTION ''application_version_conflict'' USING ERRCODE=''40001''; END IF;
+ IF char_length(btrim(coalesce(canonical->>''motivo_retificacao'',''''))) NOT BETWEEN 5 AND 1000 THEN RAISE EXCEPTION ''application_reason_invalid'' USING ERRCODE=''22023''; END IF;
+ root:=coalesce(original.parent_id,original.id); ver:=original.versao+1;
+ END IF;
+ -- Validate inherited objects through their immutable origin, never rewritten paths.
+ FOREACH kept IN ARRAY p_evidencias_manter LOOP
+ SELECT ae.* INTO e FROM public.aplicacao_evidencias ae JOIN public.aplicacao_evidencias_vinculos v ON v.evidencia_id=ae.id
+ WHERE v.aplicacao_id=p_rectify_id AND ae.id=kept FOR SHARE OF ae,v;
+ IF NOT FOUND OR e.aplicacao_id IS DISTINCT FROM e.versao_origem_id
+ OR public.can_user_access_aplicacao(e.versao_origem_id) IS DISTINCT FROM true
+ OR split_part(e.storage_path,''/'',1) IS DISTINCT FROM client::text OR split_part(e.storage_path,''/'',2) IS DISTINCT FROM e.versao_origem_id::text
+ OR public.storage1_path_strict(e.storage_path) IS DISTINCT FROM true THEN RAISE EXCEPTION ''application_inheritance_denied'' USING ERRCODE=''42501''; END IF;
+ SELECT * INTO obj FROM storage.objects WHERE bucket_id=''aplicacao-evidencias'' AND name=e.storage_path FOR SHARE;
+ IF NOT FOUND OR obj.metadata->>''mimetype'' IS DISTINCT FROM e.mime OR nullif(obj.metadata->>''size'','''')::bigint IS DISTINCT FROM e.tamanho_bytes
+ THEN RAISE EXCEPTION ''application_inherited_object_invalid'' USING ERRCODE=''42501''; END IF;
+ END LOOP;
+ IF public.h15_actor_organization() IS DISTINCT FROM org OR public.can_user_create_aplicacao_for_cliente(client) IS DISTINCT FROM true
+ THEN RAISE EXCEPTION ''application_actor_denied'' USING ERRCODE=''42501''; END IF;
+ IF r.committed_at IS NOT NULL THEN
+ SELECT * INTO a FROM public.aplicacoes WHERE id=p_aplicacao_id AND organization_id=org AND created_by=u;
+ IF NOT FOUND OR public.can_user_access_aplicacao(p_aplicacao_id) IS DISTINCT FROM true THEN RAISE EXCEPTION ''application_replay_denied'' USING ERRCODE=''42501''; END IF;
+ RETURN jsonb_build_object(''success'',true,''created'',false,''id'',a.id,''versao'',a.versao,''phase'',''finalized''); END IF;
+ IF r.application_id IS NOT NULL AND r.expires_at<=clock_timestamp() THEN RAISE EXCEPTION ''application_preparation_expired'' USING ERRCODE=''42501''; END IF;
+ IF phase=''prepare'' THEN
+ IF r.application_id IS NULL THEN
+ IF EXISTS(SELECT 1 FROM public.aplicacoes WHERE id=p_aplicacao_id) THEN RAISE EXCEPTION ''application_identity_conflict'' USING ERRCODE=''42501''; END IF;
+ INSERT INTO platform_private.application_save_preparations(application_id,actor_id,organization_id,client_id,payload,rectify_id,manifest,keep_ids,expires_at)
+ VALUES(p_aplicacao_id,u,org,client,canonical,p_rectify_id,manifest,p_evidencias_manter,clock_timestamp()+interval ''15 minutes''); END IF;
+ RETURN jsonb_build_object(''success'',true,''id'',p_aplicacao_id,''phase'',''prepared''); END IF;
+ IF r.application_id IS NULL THEN RAISE EXCEPTION ''application_preparation_required'' USING ERRCODE=''42501''; END IF;
+ FOR ev IN SELECT value FROM jsonb_array_elements(manifest) LOOP
+ SELECT * INTO obj FROM storage.objects WHERE bucket_id=''aplicacao-evidencias'' AND name=ev->>''storage_path'' FOR SHARE;
+ IF NOT FOUND OR coalesce(obj.owner_id,obj.owner::text) IS DISTINCT FROM u::text
+ OR obj.metadata->>''mimetype'' IS DISTINCT FROM ev->>''mime'' OR nullif(obj.metadata->>''size'','''')::bigint IS DISTINCT FROM (ev->>''tamanho_bytes'')::bigint
+ OR obj.version IS NULL THEN RAISE EXCEPTION ''application_object_denied'' USING ERRCODE=''42501''; END IF;
+ END LOOP;
+ -- Metadata and latest-version switch are a single transaction. No OS/communications effects.
+ IF p_rectify_id IS NOT NULL THEN UPDATE public.aplicacoes SET is_latest=false WHERE id=p_rectify_id; END IF;
+ INSERT INTO public.aplicacoes(id,organization_id,ordem_servico_id,ordem_servico_onfarm_id,data_aplicacao,hora_inicio,hora_fim,responsavel_id,responsavel,modo_aplicacao,produto_usado_id,lote_usado_id,dose_aplicada,volume_calda_l_ha,volume_total_aplicado_ml,area_aplicada_ha,equipamento,equipamento_modelo,bico_tipo,pressao_bar,temperatura_c,umidade_pct,vento_kmh,condicoes_climaticas,latitude,longitude,resultado_inicial,observacoes,created_by,parent_id,versao,motivo_retificacao,is_latest)
+ VALUES(p_aplicacao_id,org,osid,onid,moment,start_at,end_at,responsible,name_responsible,nullif(btrim(canonical->>''modo_aplicacao''),''''),product,lot,(canonical->>''dose_aplicada'')::numeric,(canonical->>''volume_calda_l_ha'')::numeric,(canonical->>''volume_total_aplicado_ml'')::numeric,(canonical->>''area_aplicada_ha'')::numeric,nullif(btrim(canonical->>''equipamento''),''''),nullif(btrim(canonical->>''equipamento_modelo''),''''),nullif(btrim(canonical->>''bico_tipo''),''''),(canonical->>''pressao_bar'')::numeric,(canonical->>''temperatura_c'')::numeric,(canonical->>''umidade_pct'')::numeric,(canonical->>''vento_kmh'')::numeric,nullif(btrim(canonical->>''condicoes_climaticas''),''''),(canonical->>''latitude'')::numeric,(canonical->>''longitude'')::numeric,nullif(canonical->>''resultado_inicial'',''''),nullif(btrim(canonical->>''observacoes''),''''),u,root,ver,CASE WHEN p_rectify_id IS NULL THEN NULL ELSE btrim(canonical->>''motivo_retificacao'') END,true);
+ FOR ev IN SELECT value FROM jsonb_array_elements(manifest) LOOP
+ INSERT INTO public.aplicacao_evidencias(aplicacao_id,tipo,storage_path,legenda,mime,tamanho_bytes,created_by,versao_origem_id)
+ VALUES(p_aplicacao_id,ev->>''tipo'',ev->>''storage_path'',nullif(btrim(ev->>''legenda''),''''),ev->>''mime'',(ev->>''tamanho_bytes'')::bigint,u,p_aplicacao_id) RETURNING id INTO ev_id;
+ INSERT INTO public.aplicacao_evidencias_vinculos(aplicacao_id,evidencia_id) VALUES(p_aplicacao_id,ev_id);
+ END LOOP;
+ FOREACH kept IN ARRAY p_evidencias_manter LOOP INSERT INTO public.aplicacao_evidencias_vinculos(aplicacao_id,evidencia_id) VALUES(p_aplicacao_id,kept); END LOOP;
+ UPDATE platform_private.application_save_preparations SET committed_at=clock_timestamp() WHERE application_id=p_aplicacao_id;
+ RETURN jsonb_build_object(''success'',true,''created'',true,''id'',p_aplicacao_id,''versao'',ver,''phase'',''finalized'');
+END;
+$function$
+' AND proacl::text='{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND pg_get_userbyid(proowner)='postgres' AND prosecdef AND to_jsonb(proconfig)='["search_path=\"\""]'::jsonb) THEN RAISE EXCEPTION 'TARGET_DRIFT: %','rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.has_role(uuid,app_role)') AND oid=37054 AND md5(pg_get_functiondef(oid))='c5af5b55de6d79da9b73a33948746ae2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.has_role(uuid,app_role)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.fn_cockpit_norm_origem(text)') AND oid=41656 AND md5(pg_get_functiondef(oid))='701ba8da92fc3df9ea0e5270ab5e74b2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=public, pg_temp"]'::jsonb AND prosecdef=false) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','fn_cockpit_norm_origem(text)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.gerar_codigo_lote(integer)') AND oid=41783 AND md5(pg_get_functiondef(oid))='194703302cf0400c10d6d0dda2468d5d' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=public, pg_temp"]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','gerar_codigo_lote(integer)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('private.h7n_esteira_laboratorio()') AND oid=42292 AND md5(pg_get_functiondef(oid))='503f30a55dbd7e29b41c489391ce41cd' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','private.h7n_esteira_laboratorio()'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.can_user_access_aplicacao(uuid)') AND oid=42535 AND md5(pg_get_functiondef(oid))='04067ba43cea3eed845a1fd3735061e0' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=public"]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','can_user_access_aplicacao(uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.can_user_manage_aplicacao(uuid)') AND oid=42543 AND md5(pg_get_functiondef(oid))='b8f4c49dd9b13d4aeecef0e6c76c105a' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=public"]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','can_user_manage_aplicacao(uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.can_user_create_aplicacao_for_cliente(uuid)') AND oid=53618 AND md5(pg_get_functiondef(oid))='b83a0bc8906b5e9f68ac6b7c9338d703' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=public, pg_temp"]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','can_user_create_aplicacao_for_cliente(uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.h15_actor_organization()') AND oid=67184 AND md5(pg_get_functiondef(oid))='64e10608403238a41a9baf92857ca881' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.h15_actor_organization()'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public._saas_user_has_feature(uuid,text)') AND oid=83826 AND md5(pg_get_functiondef(oid))='501dd958e117d2df8a4d38f6bcbeed04' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','_saas_user_has_feature(uuid,text)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.has_role(uuid,app_role)') AND oid=95587 AND md5(pg_get_functiondef(oid))='4d90e93d521a4819d9085f28d742030f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=false) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','has_role(uuid,app_role)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.h15_actor_organization()') AND oid=95588 AND md5(pg_get_functiondef(oid))='55edafec08bcc84a00f1526c14334a2c' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=false) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','h15_actor_organization()'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.storage1_path_strict(text)') AND oid=100551 AND md5(pg_get_functiondef(oid))='94164fa3b90088b0a1f16ac465a635d4' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=false) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','storage1_path_strict(text)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.technical_actor_ready(uuid)') AND oid=102523 AND md5(pg_get_functiondef(oid))='b5d0994b6eb976b14122cd2a1ec798cf' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','technical_actor_ready(uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_lot_write_v1()') AND oid=117670 AND md5(pg_get_functiondef(oid))='4eab765e76ca79f16a7dd481887496d9' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.guard_manual_lot_write_v1()'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_program_binding_v1()') AND oid=118390 AND md5(pg_get_functiondef(oid))='7c168ffa9393207fb3388c9546c19d05' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.guard_manual_program_binding_v1()'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.guard_manual_lot_delete_v1()') AND oid=118494 AND md5(pg_get_functiondef(oid))='0d490a2910e7fb63dd50fd4c86e1cf0f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.guard_manual_lot_delete_v1()'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.platform_actor_access_ready(uuid)') AND oid=95577 AND md5(pg_get_functiondef(oid))='048249c0c2106c3761e26eacb8d0de84' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.platform_actor_access_ready(uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('public.aplicacoes') AND c.relacl::text IS NOT DISTINCT FROM '{postgres=arwdDxtm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}' AND c.relrowsecurity=true AND c.relforcerowsecurity=false AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)='8fdd68c9a488305dc3793385b00a16cc' AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)='33983f376a1ac429a59d088b6ded6b9f') THEN RAISE EXCEPTION 'TABLE_DRIFT: %','public.aplicacoes'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('public.lotes') AND c.relacl::text IS NOT DISTINCT FROM '{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}' AND c.relrowsecurity=true AND c.relforcerowsecurity=false AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)='6523b1fe6a50ce8744d5492483b4fdda' AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)='2b7a58baaecb2e5f1c87e06753985a8c') THEN RAISE EXCEPTION 'TABLE_DRIFT: %','public.lotes'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('public.ordens_servico') AND c.relacl::text IS NOT DISTINCT FROM '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND c.relrowsecurity=true AND c.relforcerowsecurity=false AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)='ad4d57595953927f5847151f818d20d7' AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)='f79091c38487a5e275d10df323b09b19') THEN RAISE EXCEPTION 'TABLE_DRIFT: %','public.ordens_servico'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('public.programacao_producao') AND c.relacl::text IS NOT DISTINCT FROM '{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND c.relrowsecurity=true AND c.relforcerowsecurity=false AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)='dd728d4fc05c53b9858b6811683f639d' AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)='4abd326ade0cfcac8c26e5feecb504fd') THEN RAISE EXCEPTION 'TABLE_DRIFT: %','public.programacao_producao'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('platform_private.application_save_preparations') AND c.relacl::text IS NOT DISTINCT FROM '{postgres=arwdDxtm/postgres}' AND c.relrowsecurity=true AND c.relforcerowsecurity=false AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)='d41d8cd98f00b204e9800998ecf8427e' AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)='d41d8cd98f00b204e9800998ecf8427e') THEN RAISE EXCEPTION 'TABLE_DRIFT: %','platform_private.application_save_preparations'; END IF;
+END $guard$;
+ROLLBACK;
