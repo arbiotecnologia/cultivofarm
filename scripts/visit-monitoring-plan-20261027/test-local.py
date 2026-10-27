@@ -37,13 +37,13 @@ CREATE TABLE registros_consultor(id uuid PRIMARY KEY,actor_id uuid,cliente_id uu
 INSERT INTO registros_consultor VALUES('{V}','{A}','{A}','{A}','{A}','rascunho',1,'Notas preservadas',null,now()),('{B}','{U}','{U}','{U}','{U}','rascunho',1,'Notas B',null,now());
 CREATE TABLE monitoramento_avisos(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),registro_consultor_id uuid,tipo text,data_referencia date, UNIQUE(registro_consultor_id,tipo,data_referencia));
 CREATE TABLE visitas_logs(id uuid DEFAULT gen_random_uuid(),registro_consultor_id uuid,usuario_id uuid,acao text,descricao text,metadata jsonb);
-CREATE FUNCTION technical_actor_ready(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT EXISTS(SELECT 1 FROM actors WHERE id=$1 AND id=auth.uid() AND ready AND role='consultor_tecnico')$$;
-CREATE FUNCTION can_manage_technical_visit(uuid,uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT technical_actor_ready($1) AND EXISTS(SELECT 1 FROM registros_consultor WHERE id=$2 AND actor_id=$1)$$;
-CREATE FUNCTION can_view_technical_visit(uuid,uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT can_manage_technical_visit($1,$2)$$;
-CREATE FUNCTION has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT EXISTS(SELECT 1 FROM actors WHERE id=$1 AND role=$2)$$;
+CREATE FUNCTION technical_actor_ready(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT EXISTS(SELECT 1 FROM public.actors WHERE id=$1 AND id=auth.uid() AND ready AND role='consultor_tecnico')$$;
+CREATE FUNCTION can_manage_technical_visit(uuid,uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT public.technical_actor_ready($1) AND EXISTS(SELECT 1 FROM public.registros_consultor WHERE id=$2 AND actor_id=$1)$$;
+CREATE FUNCTION can_view_technical_visit(uuid,uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT public.can_manage_technical_visit($1,$2)$$;
+CREATE FUNCTION has_role(uuid,app_role) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT EXISTS(SELECT 1 FROM public.actors WHERE id=$1 AND role=$2)$$;
 CREATE FUNCTION has_active_user_cliente_access(uuid,uuid,text[]) RETURNS boolean LANGUAGE sql AS $$SELECT false$$;
 CREATE FUNCTION is_visit_org_manager(uuid,uuid) RETURNS boolean LANGUAGE sql AS $$SELECT false$$;
-CREATE FUNCTION platform_private.monitoring_refs_in_actor_tenant(uuid,uuid,uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT technical_actor_ready(auth.uid()) AND EXISTS(SELECT 1 FROM registros_consultor WHERE id=$3 AND fazenda_id=$1 AND talhao_id=$2 AND actor_id=auth.uid())$$;
+CREATE FUNCTION platform_private.monitoring_refs_in_actor_tenant(uuid,uuid,uuid) RETURNS boolean LANGUAGE sql STABLE AS $$SELECT public.technical_actor_ready(auth.uid()) AND EXISTS(SELECT 1 FROM public.registros_consultor WHERE id=$3 AND fazenda_id=$1 AND talhao_id=$2 AND actor_id=auth.uid())$$;
 CREATE FUNCTION enforce_visit_immutability() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF OLD.status NOT IN ('rascunho','em_andamento') THEN RAISE EXCEPTION 'locked'; END IF; NEW.version:=coalesce(OLD.version,1)+1; RETURN NEW; END$$;
 CREATE TRIGGER trg_enforce_visit_immutability BEFORE UPDATE ON registros_consultor FOR EACH ROW EXECUTE FUNCTION enforce_visit_immutability();
 """)
