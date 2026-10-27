@@ -100,3 +100,15 @@ it("timeout incerto mantém chave; PT409 posterior não permite nova tentativa/r
   expect(s.rpc.mock.calls[0][1].p_request_id).toBe(s.rpc.mock.calls[1][1].p_request_id);
   expect(screen.queryByRole("button", { name: "Reconsultar e revisar" })).toBeNull();
 });
+it.each(["version", "actor"])("confirmação da revisão não adota mudança de %s durante diálogo", async change => {
+  const h = renderEditor(); openAndEdit(); s.rpc.mockResolvedValue({ data: null, error: { code: "PT409" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+  s.refetch.mockResolvedValue({ isError: false, data: { version: 8, status: "rascunho", permissions: { can_edit: true } } });
+  fireEvent.click(screen.getByRole("button", { name: "Reconsultar e revisar" })); await waitFor(() => expect(screen.getByRole("alertdialog")).toBeTruthy());
+  if (change === "version") s.version = 9; else s.actor = "B";
+  h.rerender(<PlanoMonitoramentoEditor {...props} />);
+  const confirm = screen.queryByRole("button", { name: "Confirmar revisão" }); if (confirm) fireEvent.click(confirm);
+  expect(s.rpc).toHaveBeenCalledTimes(1); expect(s.success).not.toHaveBeenCalled();
+  if (change === "version") expect(screen.getByRole("button", { name: "Salvar Alterações" })).toBeDisabled();
+  else expect(screen.queryByRole("dialog")).toBeNull();
+});
