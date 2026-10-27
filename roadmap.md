@@ -1,9 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## 27/10 00:54 — origem vinculada no plano canônico (autorizado, SQL INATIVO)
-- [ ] Inspecionar contratos LIVE somente leitura, modelo genérico, locks/tenant/version/log e preparar SQL revisável sem aplicação.
-- [ ] Substituir writes diretos do editor por transação CAS com fences/abort/sem retry e regressões locais.
+- [x] Contratos LIVE capturados somente leitura no ref canônico; decisão: plano textual + aviso derivado por registro_consultor_id, sem alerta agronômico inventado; SQL candidato/PRE/POST/contenção em scripts/visit-monitoring-plan-20261027.
+- [x] Editor sem writes diretos/refetch no save; revisão e campos do mesmo envelope observado, abort/scope/duplo clique/parser JSONB/erro persistente. 131/131 testes em9arquivos;23checksPG/Auth sintética/schema reduzido; build automático OK01:01:27, diffcheckOK.
 - [ ] Revisão independente/implantação e homologação JWT A/B, origem e revogação dependem do auditor. Contabilidade e SU-518022 permanecem pendentes.
+- [ ] Contradição atual do caller: editor montado só em visita finalizada, mas conteúdo é imutável; nenhuma liberação desse status. Revisão do fluxo de ajuste autorizado e eventual promoção dependem do proprietário/auditor; RPC nova ainda não instalada.
 
 ## 27/10 00:05 — clientes revisão fiscal e reprogramação
 - [x] 00:19 auditor confirmou aplicações fiscal224ab7944abd13190fe8ea1044216218 e monitoringb32bf163ed7ccb989f4f0b653827d825; não reaplicar; contagem atual42. Parser completo conciliado,14 regressões adicionais,61/61 em3arquivos PASS, build automático OK00:21:46 e diffcheck OK; caminhos criação/status documentados, sem fixture/SQL/publicação.
