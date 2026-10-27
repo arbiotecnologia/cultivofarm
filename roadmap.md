@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 27/10 00:05 — clientes revisão fiscal e reprogramação
+- [ ] Auditar callers/hooks/componentes de draft_save e reprogramar; preparar CAS obrigatório/PT409, erros uniformes, preservação de rascunho e fences sem retry.
+- [ ] Adicionar/rodar regressões de hooks reais com transporte/Auth simulados e documentar caminhos/limites; sem SQL/DDL/publicação.
+- [ ] Backend fiscal NULL/<=0 e CAS no UPDATE; reprogramação técnico/tenant/origem/pós-lock/timestamp: preparação/aplicação separada pelo auditor,44 funções40001 mantidas até confirmação.
+
 ## 26/10 23:54 — concorrência RTC/IBS-CBS e conciliação independente
 - [x] Corrigir leituras fora de ordem, leitura antes/durante save, duplo save e exceção/revogação:32 regressões falharam antes/passaram depois;162/162 finais em8arquivos, Auth/transporte simulados; validação automática build OK23:58:27, sem SQL/publicação.
 - [x] Conciliar hashes/implantação global e company, race real relatada e44 funções40001 restantes; sem recaptura ou reaplicação.
