@@ -44,6 +44,48 @@ REVOKE ALL ON platform_private.monitoring_alert_receipts FROM PUBLIC,anon,authen
 GRANT ALL ON platform_private.monitoring_alert_receipts TO service_role;
 ALTER TABLE platform_private.monitoring_alert_receipts ENABLE ROW LEVEL SECURITY;
 
+-- Direct-write closure for origin/date of agronomic alerts. Tenant policies stay untouched;
+-- this trigger only denies sync-relevant mutations that lack a canonical-core ticket
+-- bound to txid_current()+alert. No GUC, claim or role escape (service_role included).
+CREATE TABLE platform_private.alert_origin_write_tickets (
+  transaction_id bigint NOT NULL, alerta_id uuid NOT NULL,
+  PRIMARY KEY(transaction_id,alerta_id)
+);
+REVOKE ALL ON platform_private.alert_origin_write_tickets FROM PUBLIC,anon,authenticated;
+GRANT ALL ON platform_private.alert_origin_write_tickets TO service_role;
+ALTER TABLE platform_private.alert_origin_write_tickets ENABLE ROW LEVEL SECURITY;
+
+CREATE FUNCTION platform_private.guard_alert_origin_sync() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,platform_private AS $g$
+DECLARE v_ticket boolean;
+BEGIN
+  v_ticket := EXISTS(SELECT 1 FROM platform_private.alert_origin_write_tickets
+                      WHERE transaction_id=txid_current() AND alerta_id=NEW.id);
+  IF TG_OP='INSERT' THEN
+    IF NEW.registro_origem_id IS NOT NULL AND NOT v_ticket THEN
+      RAISE EXCEPTION 'alert_origin_requires_canonical_link' USING ERRCODE='PT409';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF v_ticket THEN RETURN NEW; END IF;
+  -- Link/unlink/relink (including unlink-then-change-date) only via the link core.
+  IF NEW.registro_origem_id IS DISTINCT FROM OLD.registro_origem_id OR NEW.id IS DISTINCT FROM OLD.id THEN
+    RAISE EXCEPTION 'alert_origin_requires_canonical_link' USING ERRCODE='PT409';
+  END IF;
+  IF OLD.registro_origem_id IS NOT NULL AND (
+       NEW.data_vencimento IS DISTINCT FROM OLD.data_vencimento
+    OR NEW.fazenda_id IS DISTINCT FROM OLD.fazenda_id
+    OR NEW.talhao_id IS DISTINCT FROM OLD.talhao_id
+    OR (OLD.status='encerrado' AND NEW.status IS DISTINCT FROM 'encerrado')) THEN
+    RAISE EXCEPTION 'linked_alert_requires_canonical_reschedule' USING ERRCODE='PT409';
+  END IF;
+  RETURN NEW;
+END;
+$g$;
+REVOKE ALL ON FUNCTION platform_private.guard_alert_origin_sync() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER trg_alert_origin_sync BEFORE INSERT OR UPDATE ON public.alertas_agronomicos
+  FOR EACH ROW EXECUTE FUNCTION platform_private.guard_alert_origin_sync();
+
 -- Lock order for every writer here: global gate -> alert row -> visit row -> generic notice.
 -- The plan writer uses gate -> visit -> notice; the gate serializes both, so no inversion.
 -- lock_timeout bounds each wait; no long global wait is created.
