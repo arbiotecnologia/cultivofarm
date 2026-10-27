@@ -190,6 +190,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         sql((HERE / 'rollback-containment.sql.review').read_text())
         ok("SELECT NOT has_function_privilege('authenticated','public.rpc_enviar_visita_aprovacao(uuid,integer)','EXECUTE') AND position('40001' in pg_get_functiondef('public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure))=0;", 'containment deny-only, no 40001 restored')
         ok("SELECT has_function_privilege('service_role','public.rpc_enviar_visita_aprovacao(uuid,integer)','EXECUTE');", 'containment keeps service_role')
+        print('CANDIDATE_POST_MD5', sql("SELECT md5(pg_get_functiondef('public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure));").stdout.strip())
         print('TOTAL', checks, 'SYNTHETIC checks (not hosted JWT/RLS)')
     finally:
         if started: subprocess.run(prefix + ['pg_ctl', '-D', str(tmp / 'data'), 'stop', '-m', 'fast'], capture_output=True)
