@@ -1,0 +1,3 @@
+-- INACTIVE. Deny-only containment: never restores the 40001/cached-admin baseline.
+-- Removes end-user EXECUTE; candidate body stays; service_role keeps EXECUTE.
+REVOKE EXECUTE ON FUNCTION public.rpc_enviar_visita_aprovacao(uuid,integer) FROM PUBLIC, anon, authenticated;
