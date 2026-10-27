@@ -42,7 +42,7 @@ export function PlanoMonitoramentoEditor({
   const attempt = useRef<{ fingerprint: string; key: string; uncertain: boolean } | null>(null);
   const [rejected, setRejected] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
-  const [review, setReview] = useState<{ version: number; current: () => boolean } | null>(null);
+  const [review, setReview] = useState<{ version: number; text: string; current: () => boolean } | null>(null);
   const reviewLock = useRef(false);
   const minimumVersion = useRef<number | null>(null);
   useEffect(() => {
@@ -167,7 +167,7 @@ export function PlanoMonitoramentoEditor({
       const ws = response.data;
       if (response.isError || !ws?.permissions.can_edit || !["rascunho", "em_andamento"].includes(ws.status ?? "") ||
         !Number.isSafeInteger(ws.version) || !ws.version || ws.version <= 0) throw new Error("Não foi possível revisar a visita. O plano foi mantido.");
-      setReview({ version: ws.version, current });
+      setReview({ version: ws.version, text: ws.registro?.observacoes_tecnicas ?? "", current });
     } catch (error) { if (current()) setSaveError(error instanceof Error ? error.message : "Não foi possível revisar a visita."); }
     finally { reviewLock.current = false; if (current()) setIsReviewing(false); }
   };
@@ -308,6 +308,8 @@ export function PlanoMonitoramentoEditor({
           <AlertDialogHeader>
             <AlertDialogTitle>Revisar plano antes de salvar?</AlertDialogTitle>
             <AlertDialogDescription>Visita {displayRegistro?.codigo_visita ?? registroId}, revisão {review?.version}. Seu plano editado será preservado. Confirmar permite uma nova tentativa; não salva automaticamente.</AlertDialogDescription>
+            <p className="text-sm whitespace-pre-wrap max-h-48 overflow-y-auto">Plano registrado: {parsePlanoMonitoramento(review?.text)?.monitoramentoItens?.join(", ") || "Não definido"}. Próxima avaliação: {parsePlanoMonitoramento(review?.text)?.dataProximaVisita || "Não definida"}.</p>
+            <p className="text-sm">Sua edição: {state.monitoramentoItens?.join(", ")} · {state.dataProximaVisita}</p>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <Button variant="outline" onClick={() => setReview(null)}>Cancelar revisão</Button>

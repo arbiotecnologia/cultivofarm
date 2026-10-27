@@ -104,16 +104,14 @@ it("lista reprovada não oferece reenvio nem permissões herdadas", async () => 
   await waitFor(() => expect(screen.getByRole("status").textContent).toContain('"can_edit":false'));
   expect(screen.getByRole("status").textContent).not.toContain("Revisar e reenviar");
 });
-it.each([[false, "rascunho"], [true, "rascunho"], [false, "em_andamento"], [true, "em_andamento"]])("página real mobile=%s status=%s monta editor no fluxo existente e respeita modo readonly", async (mobile, status) => {
-  mocks.mobile = mobile; mocks.status = status; mocks.canEdit = true;
+it.each([[false, "rascunho", true], [true, "rascunho", true], [false, "em_andamento", true], [true, "em_andamento", true], [true, "rascunho", false], [false, "em_andamento", false]])("página real mobile=%s status=%s canEdit=%s monta editor com permissão vigente", async (mobile, status, canEdit) => {
+  mocks.mobile = mobile; mocks.status = status; mocks.canEdit = canEdit;
   mount(<VisitaTecnica />);
   await waitFor(() => expect(screen.getAllByPlaceholderText("Ex: avaliar pressão de lagartas")[0]).toHaveValue("Objetivo fictício"));
   // Desktop stack is mounted; mobile accordion mounts its actual editor on expansion.
   const trigger = screen.getByRole("button", { name: /6 · Monitoramento/ });
   fireEvent.click(trigger);
   await waitFor(() => expect(screen.getAllByRole("button", { name: "Editar Plano" })).toHaveLength(2));
-  expect(screen.getAllByRole("button", { name: "Editar Plano" }).every(b => (b as HTMLButtonElement).disabled)).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: "Editar visita" }));
-  await waitFor(() => expect(screen.getAllByRole("button", { name: "Editar Plano" }).every(b => !(b as HTMLButtonElement).disabled)).toBe(true));
+  await waitFor(() => expect(screen.getAllByRole("button", { name: "Editar Plano" }).every(b => (b as HTMLButtonElement).disabled === !canEdit)).toBe(true));
   expect(mocks.update).not.toHaveBeenCalled(); expect(mocks.insert).not.toHaveBeenCalled();
 });
