@@ -874,3 +874,5 @@
 - [ ] LACUNA: nenhum INSERT frontend grava `alertas_agronomicos.registro_origem_id`. `rpc_ativar_monitoramento_visita` grava `monitoramento_avisos` e NÃO é fluxo/evidência de alerta com origem. Fluxo canônico de criação com origem vinculada inexistente no frontend (bloqueio: definição do proprietário).
 - [ ] Origem vinculada e revogação em voo não homologadas em sessões reais (bloqueio: sessões reais).
 - [ ] LACUNA específica: `PlanoMonitoramentoEditor` ainda lê/atualiza `alertas_agronomicos` diretamente (data_alerta/descricao); fora desta etapa por instrução.
+- [x] 2026-10-27 base 7c38bc48: pacote INATIVO scripts/visit-monitoring-plan-20261027/agronomic-origin (vínculo de origem a alerta existente, reprogramação v2 conciliando plano/data/aviso/alerta via ticket, v1 PT428 com origem, lock_timeout 3s); 55 checks PostgreSQL descartável incl. duas ordens gate×revogação; cliente local 156/156. Sem SQL hosted/publicação.
+- [ ] Instalação independente + ensaio JWT A/B limitado (README do pacote); decisão revisor: visita finalizada só alerta, criação de alerta com origem não aberta.
