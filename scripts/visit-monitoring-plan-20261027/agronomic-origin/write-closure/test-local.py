@@ -58,7 +58,7 @@ extra=r'''
   ok(f"SELECT data_vencimento='2026-11-26' FROM alertas_agronomicos WHERE id='{ALN}';",'v1 without origin positive')
   sql(au(resched(d='2026-11-27',key=k(120))))
   ok(f"SELECT a.data_vencimento=r.data_proxima_visita AND r.version=7 FROM alertas_agronomicos a JOIN registros_consultor r ON r.id=a.registro_origem_id WHERE a.id='{AL}';",'v2 sync still positive with restrictive policies')
-  for q in (create(),status(),old(),resched(d='2026-11-28',key=k(121))):
+  for q in (create(),status(),old(),resched(actor=X,d='2026-11-28',key=k(121))):
    observed=val(f"SELECT updated_at FROM alertas_agronomicos WHERE id='{AL}';")
    observed_n=val(f"SELECT updated_at FROM alertas_agronomicos WHERE id='{ALN}';")
    q=q.replace(at(AL),f"'{observed}'::timestamptz").replace(at(ALN),f"'{observed_n}'::timestamptz")
