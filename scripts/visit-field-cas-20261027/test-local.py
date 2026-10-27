@@ -114,7 +114,6 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         sql(f"INSERT INTO user_roles VALUES('{X}','administrador');")  # tenant-B global admin role
         ok(rpc(X, V(1), 0) + f"RESET ROLE; SELECT count(*)=1 FROM visitas_campo WHERE registro_consultor_id='{V(1)}';", 'PRE baseline: tenant-B admin writes tenant-A visit (defect reproduced)')
         ok(rpc(A, V(1), 99) + f"RESET ROLE; SELECT versao=2 FROM visitas_campo WHERE registro_consultor_id='{V(1)}';", 'PRE baseline: future CAS 99 accepted (defect reproduced)')
-        ok(rpc(A, V(1), None if False else 'NULL') + "RESET ROLE; SELECT true;", 'PRE baseline: NULL CAS on update not rejected? (see next)') if False else None
         sql(f"DELETE FROM user_roles WHERE user_id='{X}' AND role='administrador';")
         # ---------- Candidate (DO $pre$ pins LIVE hashes -> stripped on synthetic schema; preflight covers hosted).
         cand = (HERE / 'candidate.sql.review').read_text()
