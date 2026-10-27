@@ -43,7 +43,7 @@ ALTER TABLE public.catalog_family_labels ENABLE ROW LEVEL SECURITY;ALTER TABLE p
 REVOKE ALL ON public.catalog_family_labels,public.catalog_platform_admin_audit FROM PUBLIC,anon,authenticated;
 """
 def install(sig,candidate):
-  src=r['definition']
+  r=F[sig];src=r['definition']
   if candidate:
     for m in ['catalog_label_conflict','catalog_label_confirmation_failed']:src=src.replace(f"ERRCODE = '40001', MESSAGE = '{m}'",f"ERRCODE = 'PT409', MESSAGE = '{m}'")
   run(src+';');s='public.'+sig
