@@ -1,4 +1,5 @@
 - Keep this package inactive; the four pinned catalog-label 40001 RAISEs become PT409; shared `catalog_entity_replay` stays 40001 — avoids widening scope into the shared idempotency helper.
+- DEPLOYED 2026-10-27 as `catalog_labels_revocation_gate_pt409_20261027`: never re-run candidate/candidate-gate or legacy rollback-conditioned; only deny-only containment is a valid rollback — prevents reinstalling the vulnerable body.
 - The revocation-gate candidate supersedes the PT409-only candidate: gate `cf_user_guards_v1.state` → fresh actor → advisory → fresh actor → replay → row → fresh actor, lock_timeout 3s — revocation writers cooperate via their statement gate triggers.
 - Rollback for the gate candidate is deny-only containment, never the vulnerable LIVE body — prevents restoring revocation-during-wait.
 - Guards pin full-body md5 plus OID/ACL/owner/config, gate trigger and table fingerprints instead of repeating bodies — prevents drift.
