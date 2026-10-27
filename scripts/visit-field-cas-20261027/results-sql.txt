@@ -4,7 +4,7 @@ PASS candidate installs; in-migration DO $post$ ACL/owner assertion passed
 PASS definer + search_path + lock_timeout 3s
 PASS anon cannot execute
 PASS guard trigger is BEFORE INSERT OR UPDATE
-HASH rpc 2bedc69fc4eca86fbbeef8825437b919
+HASH rpc b13df1fe728f47cb00887c32840db0c1
 HASH guard f69455b72d067d0d96fab74987b4cc4e
 PASS insert v0->1, cliente derived from visit
 PASS update CAS 1->2
@@ -50,6 +50,19 @@ PASS non-object payload rejected 22023
 PASS all negatives atomic (row unchanged)
 PASS save with active refs
 PASS already-saved inactive refs may be kept unchanged
+PASS talhão of fazenda of cliente but talhoes.organization_id other tenant rejected 22023
+PASS new talhão of inactive fazenda rejected 22023
+PASS cultura hidden for actor tenant rejected (catalog_tenant_visibility) 22023
+PASS area Infinity rejected 22023
+PASS area -Infinity rejected 22023
+PASS area NaN rejected 22023
+PASS estande Infinity rejected 22023
+PASS item-4 negatives atomic
+PASS cultura hidden only for tenant A stays selectable for tenant B
+PASS cultura saved while visible
+PASS already-saved now-hidden cultura may be kept unchanged
+PASS actor profile tenant differs from visit cliente tenant denied 42501
+PASS inactive profile denied 42501
 PASS guard: version jump PT409 PT409
 PASS guard: same version PT409 PT409
 PASS guard: regression PT409 PT409
@@ -66,9 +79,11 @@ PASS C2 nothing written
 PASS C3 revocation committed during parent-row wait -> re-authorization denies 42501
 PASS C4 operation already past gate commits BEFORE queued revocation (NOT a revocation win)
 PASS C4 after revocation commit: next call denied 42501
-PASS C5 lock_timeout bounded at ~3s (3.02s) 55P03
+PASS C7 setup row v1
+PASS C7 revocation committed during child-row wait -> re-authorization after child lock denies 42501
+PASS C7 nothing written
+PASS C5 lock_timeout bounded at ~3s (3.03s) 55P03
 PASS C6 cross-tenant actor denied without waiting on row (0.02s)
 PASS containment: authenticated EXECUTE revoked 42501
 PASS containment keeps strict guard
-TOTAL 70 synthetic checks PASS
-psql (PostgreSQL) 17.9
+TOTAL 86 synthetic checks PASS
