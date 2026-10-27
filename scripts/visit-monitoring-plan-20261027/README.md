@@ -1,5 +1,9 @@
 # Plano canônico de monitoramento — candidato INATIVO
 
+## Atualização 27/10 01:19 — não reaplicar pacote inicial
+
+Auditor informou instalação externa visit_monitoring_plan_atomic_cas_20261027/publicação449b1f, seguida de perda real por autosave na página. Core está contido na captura readonly atual. Correção/proteção NOVA ainda inativa em `preservation/README.md` e `preservation/candidate.sql.review`. Evidências antigas abaixo são históricas; não representam estado atual de instalação nem homologação da correção de autosave.
+
 Base publicada informada: `e88b588eabb14ef81a9f94f1f7e65e7204eead3a`. HEAD encontrado antes da mudança: `1d8d11cff3aad38d43d5648e03eeecb0a0ce709d`; não foi feito checkout/reset nem presumida identidade entre bases.
 
 ## Decisão de modelo
