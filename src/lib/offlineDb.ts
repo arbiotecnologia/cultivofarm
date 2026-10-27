@@ -694,10 +694,13 @@ export interface PendingCampo {
   /** Versão local — para controle otimista contra o servidor. */
   versao: number;
   updatedAt: string;
-  /** Estado de sincronização com o backend. */
-  syncStatus: "local_draft" | "pending_sync" | "syncing" | "synced" | "sync_error";
+  /** Estado de sincronização com o backend. `conflict` (PT409) nunca é reenviado automaticamente. */
+  syncStatus: "local_draft" | "pending_sync" | "syncing" | "synced" | "sync_error" | "conflict";
   lastSyncError?: string | null;
   syncingAt?: number | null;
+  /** Ator/empresa de origem; entradas sem dono (legado) não são reenviadas por outra sessão. */
+  ownerUserId?: string;
+  ownerOrganizationId?: string;
 }
 
 export async function savePendingCampo(entry: PendingCampo): Promise<void> {
