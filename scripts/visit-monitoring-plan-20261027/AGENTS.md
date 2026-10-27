@@ -1,0 +1,4 @@
+- Keep this package inactive; capture canonical production read-only and never apply SQL or publish automatically — independent review owns installation.
+- Generic plans retain monitoramento_avisos linked by registro_consultor_id; never manufacture agronomic enum mappings or attach unrelated climatic alerts — preserves meaning and a single authority.
+- Plan writes lock the existing user gate, then visit, then its generic notice; require observed CAS, post-wait authorization and canonical log receipts — prevents lost edits and inverted alert locks.
+- Local PostgreSQL uses synthetic Auth and reduced schema; full hosted trigger/RLS integration and real sessions remain unverified — prevents false homologation.

@@ -1,0 +1,166 @@
+BEGIN;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '20s';
+-- INACTIVE. Execute only after independent preflight and review.
+DO $pre$
+BEGIN
+  IF md5(pg_get_functiondef('public._visita_lock_and_check(uuid,integer,boolean)'::regprocedure))<>'e3bc4bd9d38f1fb4b659b9e1384c770a'
+    OR md5(pg_get_functiondef('public.can_manage_technical_visit(uuid,uuid)'::regprocedure))<>'d95c2c2b34af117d467d7d4b2b775002'
+    OR md5(pg_get_functiondef('platform_private.monitoring_refs_in_actor_tenant(uuid,uuid,uuid)'::regprocedure))<>'914283d3f4dee931679ef140ae84b498'
+    OR md5(pg_get_functiondef('public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz)'::regprocedure))<>'b32bf163ed7ccb989f4f0b653827d825'
+    OR md5(pg_get_functiondef('public.rpc_ativar_monitoramento_visita(uuid,integer,text,date)'::regprocedure))<>'1c5df3e6774efef316f61434f4083700' THEN
+    RAISE EXCEPTION 'monitoring_dependency_drift' USING ERRCODE='55000';
+  END IF;
+  IF to_regprocedure('public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid)') IS NOT NULL
+    OR to_regclass('platform_private.visit_monitoring_plan_receipts') IS NOT NULL THEN
+    RAISE EXCEPTION 'monitoring_already_installed_review_required' USING ERRCODE='55000';
+  END IF;
+END;
+$pre$;
+CREATE TABLE platform_private.visit_monitoring_plan_receipts (
+  actor_id uuid NOT NULL, registro_id uuid NOT NULL, request_id uuid NOT NULL,
+  fingerprint text NOT NULL, result jsonb NOT NULL,
+  PRIMARY KEY(actor_id,registro_id,request_id)
+);
+REVOKE ALL ON platform_private.visit_monitoring_plan_receipts FROM PUBLIC,anon,authenticated;
+GRANT ALL ON platform_private.visit_monitoring_plan_receipts TO service_role;
+ALTER TABLE platform_private.visit_monitoring_plan_receipts ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE FUNCTION platform_private.save_visit_monitoring_plan_core(
+  p_registro_id uuid, p_expected_version integer, p_plano jsonb, p_request_id uuid
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_reg public.registros_consultor;
+  v_id uuid;
+  v_version integer;
+  v_date date;
+  v_obs text;
+  v_block text;
+  v_receipt jsonb;
+  v_fingerprint text := md5(jsonb_build_object('visit',p_registro_id,'version',p_expected_version,'plan',p_plano)::text);
+BEGIN
+  IF NOT coalesce(public.technical_actor_ready(v_uid),false) THEN
+    RAISE EXCEPTION 'monitoring_unavailable' USING ERRCODE='42501';
+  END IF;
+  IF NOT coalesce(public.can_manage_technical_visit(v_uid,p_registro_id),false) THEN
+    RAISE EXCEPTION 'monitoring_unavailable' USING ERRCODE='PT404';
+  END IF;
+  IF p_expected_version IS NULL OR p_expected_version<=0 THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE='PT409';
+  END IF;
+  IF p_request_id IS NULL OR jsonb_typeof(p_plano) IS DISTINCT FROM 'object' THEN
+    RAISE EXCEPTION 'invalid_plan' USING ERRCODE='22023';
+  END IF;
+  IF (SELECT count(*) FROM jsonb_object_keys(p_plano))<>4
+    OR NOT p_plano ?& ARRAY['items','frequency','triggers','next_date']
+    OR jsonb_typeof(p_plano->'items') IS DISTINCT FROM 'array'
+    OR jsonb_typeof(p_plano->'triggers') IS DISTINCT FROM 'string'
+    OR jsonb_typeof(p_plano->'frequency') IS DISTINCT FROM 'string'
+    OR jsonb_typeof(p_plano->'next_date') IS DISTINCT FROM 'string' THEN
+    RAISE EXCEPTION 'invalid_plan' USING ERRCODE='22023';
+  END IF;
+  IF jsonb_array_length(p_plano->'items') NOT BETWEEN 1 AND 6
+    OR EXISTS(SELECT 1 FROM jsonb_array_elements(p_plano->'items') x
+      WHERE jsonb_typeof(x)<>'string' OR x#>>'{}' NOT IN ('Pragas','Doenças','Plantas Daninhas','Nutrição','Clima','Estande'))
+    OR (SELECT count(DISTINCT x) FROM jsonb_array_elements(p_plano->'items') x)<>jsonb_array_length(p_plano->'items')
+    OR p_plano->>'frequency' NOT IN ('7','14','30')
+    OR length(p_plano->>'triggers')>2000
+    OR p_plano->>'triggers' ~ '[\r\n]'
+    OR position('[PLANO DE MONITORAMENTO]' in p_plano->>'triggers')>0
+    OR position('[FIM DO PLANO]' in p_plano->>'triggers')>0
+    OR p_plano->>'next_date' !~ '^\d{4}-\d{2}-\d{2}$' THEN
+    RAISE EXCEPTION 'invalid_plan' USING ERRCODE='22023';
+  END IF;
+  v_date := (p_plano->>'next_date')::date;
+  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'monitoring_gate_unavailable' USING ERRCODE='55000'; END IF;
+  IF NOT coalesce(public.technical_actor_ready(v_uid),false) OR
+    NOT coalesce(public.can_manage_technical_visit(v_uid,p_registro_id),false) THEN
+    RAISE EXCEPTION 'monitoring_unavailable' USING ERRCODE='PT404';
+  END IF;
+  -- NULL here does not authorize CAS: replay is checked first, explicit mandatory CAS below.
+  v_reg := public._visita_lock_and_check(p_registro_id,NULL,false);
+  IF NOT coalesce(public.technical_actor_ready(v_uid),false) OR
+    NOT coalesce(public.can_manage_technical_visit(v_uid,p_registro_id),false) OR
+    NOT coalesce(platform_private.monitoring_refs_in_actor_tenant(v_reg.fazenda_id,v_reg.talhao_id,v_reg.id),false) THEN
+    RAISE EXCEPTION 'monitoring_unavailable' USING ERRCODE='PT404';
+  END IF;
+  -- visitas_logs accepts authenticated INSERT: never trust it as a receipt authority.
+  SELECT jsonb_build_object('fingerprint',fingerprint,'result',result) INTO v_receipt
+    FROM platform_private.visit_monitoring_plan_receipts
+    WHERE registro_id=p_registro_id AND actor_id=v_uid AND request_id=p_request_id;
+  IF FOUND THEN
+    IF v_receipt->>'fingerprint' IS DISTINCT FROM v_fingerprint THEN
+      RAISE EXCEPTION 'request_conflict' USING ERRCODE='PT409';
+    END IF;
+    RETURN v_receipt->'result';
+  END IF;
+  IF v_reg.version IS DISTINCT FROM p_expected_version THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE='PT409';
+  END IF;
+  IF v_reg.status::text NOT IN ('rascunho','em_andamento') THEN
+    RAISE EXCEPTION 'technical_record_content_locked' USING ERRCODE='42501';
+  END IF;
+  IF (SELECT count(*) FROM public.monitoramento_avisos WHERE registro_consultor_id=p_registro_id AND tipo='plano_monitoramento')>1 THEN
+    RAISE EXCEPTION 'ambiguous_plan_notice' USING ERRCODE='PT409';
+  END IF;
+  SELECT id INTO v_id FROM public.monitoramento_avisos
+    WHERE registro_consultor_id=p_registro_id AND tipo='plano_monitoramento' FOR UPDATE;
+  IF NOT coalesce(public.can_manage_technical_visit(v_uid,p_registro_id),false) OR
+    NOT coalesce(platform_private.monitoring_refs_in_actor_tenant(v_reg.fazenda_id,v_reg.talhao_id,v_reg.id),false) THEN
+    RAISE EXCEPTION 'monitoring_unavailable' USING ERRCODE='PT404';
+  END IF;
+  -- Replace only a complete single legacy block; malformed/ambiguous text needs human review.
+  v_obs := coalesce(v_reg.observacoes_tecnicas,'');
+  IF (length(v_obs)-length(replace(v_obs,'[PLANO DE MONITORAMENTO]','')))/length('[PLANO DE MONITORAMENTO]') > 1
+    OR (length(v_obs)-length(replace(v_obs,'[FIM DO PLANO]','')))/length('[FIM DO PLANO]') > 1
+    OR (position('[PLANO DE MONITORAMENTO]' in v_obs)>0)<>(position('[FIM DO PLANO]' in v_obs)>0)
+    OR (position('[FIM DO PLANO]' in v_obs)>0 AND position('[FIM DO PLANO]' in v_obs)<position('[PLANO DE MONITORAMENTO]' in v_obs)) THEN
+    RAISE EXCEPTION 'ambiguous_plan_text' USING ERRCODE='PT409';
+  END IF;
+  v_obs := regexp_replace(v_obs,'\[PLANO DE MONITORAMENTO\].*?\[FIM DO PLANO\]','','ns');
+  v_block := '[PLANO DE MONITORAMENTO]'||chr(10)||'Itens: '||
+    (SELECT string_agg(x,', ' ORDER BY ord) FROM jsonb_array_elements_text(p_plano->'items') WITH ORDINALITY a(x,ord))||chr(10)||
+    'Frequência: '||(p_plano->>'frequency')||' dias'||chr(10)||'Gatilhos: '||(p_plano->>'triggers')||chr(10)||
+    'Próxima Avaliação: '||v_date::text||chr(10)||'[FIM DO PLANO]';
+  UPDATE public.registros_consultor SET observacoes_tecnicas=btrim(v_obs||chr(10)||chr(10)||v_block),
+    data_proxima_visita=v_date, version=p_expected_version+1, updated_at=clock_timestamp()
+    WHERE id=p_registro_id AND version=p_expected_version
+      AND public.can_manage_technical_visit(v_uid,id) RETURNING version INTO v_version;
+  IF NOT FOUND OR v_version<>p_expected_version+1 THEN RAISE EXCEPTION 'version_conflict' USING ERRCODE='PT409'; END IF;
+  IF v_id IS NULL THEN
+    INSERT INTO public.monitoramento_avisos(registro_consultor_id,tipo,data_referencia)
+      VALUES(p_registro_id,'plano_monitoramento',v_date) RETURNING id INTO v_id;
+  ELSE
+    UPDATE public.monitoramento_avisos SET data_referencia=v_date WHERE id=v_id AND registro_consultor_id=p_registro_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'notice_conflict' USING ERRCODE='PT409'; END IF;
+  END IF;
+  v_receipt := jsonb_build_object('ok',true,'registro_id',p_registro_id,'version',v_version,
+    'aviso_id',v_id,'data_referencia',v_date,'plano',p_plano,'request_id',p_request_id);
+  INSERT INTO public.visitas_logs(registro_consultor_id,usuario_id,acao,descricao,metadata)
+    VALUES(p_registro_id,v_uid,'plano_monitoramento_salvo','Plano de monitoramento atualizado',
+      jsonb_build_object('request_id',p_request_id,'fingerprint',v_fingerprint,'version',v_version,'result',v_receipt));
+  INSERT INTO platform_private.visit_monitoring_plan_receipts(actor_id,registro_id,request_id,fingerprint,result)
+    VALUES(v_uid,p_registro_id,p_request_id,v_fingerprint,v_receipt);
+  RETURN v_receipt;
+END;
+$function$;
+REVOKE ALL ON FUNCTION platform_private.save_visit_monitoring_plan_core(uuid,integer,jsonb,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION platform_private.save_visit_monitoring_plan_core(uuid,integer,jsonb,uuid) TO authenticated,service_role;
+CREATE OR REPLACE FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(
+  p_registro_id uuid,p_expected_version integer,p_plano jsonb,p_request_id uuid
+) RETURNS jsonb LANGUAGE sql SECURITY INVOKER SET search_path='' AS $function$
+  SELECT platform_private.save_visit_monitoring_plan_core(p_registro_id,p_expected_version,p_plano,p_request_id);
+$function$;
+REVOKE ALL ON FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid) TO authenticated,service_role;
+DO $post$
+BEGIN
+  IF has_table_privilege('authenticated','platform_private.visit_monitoring_plan_receipts','INSERT')
+    OR has_table_privilege('authenticated','platform_private.visit_monitoring_plan_receipts','UPDATE')
+    OR has_function_privilege('anon','public.rpc_salvar_plano_monitoramento_visita_v1(uuid,integer,jsonb,uuid)','EXECUTE') THEN
+    RAISE EXCEPTION 'monitoring_postflight_acl_failed' USING ERRCODE='55000';
+  END IF;
+END;
+$post$;
+COMMIT;

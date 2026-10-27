@@ -1,0 +1,13 @@
+BEGIN;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='20s';
+-- Containment only: no direct-write fallback, no data/table removal or receipt loss.
+CREATE OR REPLACE FUNCTION public.rpc_salvar_plano_monitoramento_visita_v1(
+ p_registro_id uuid,p_expected_version integer,p_plano jsonb,p_request_id uuid
+) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $function$
+BEGIN
+ RAISE EXCEPTION 'monitoring_plan_temporarily_unavailable' USING ERRCODE='55000';
+END;
+$function$;
+REVOKE ALL ON FUNCTION platform_private.save_visit_monitoring_plan_core(uuid,integer,jsonb,uuid) FROM authenticated;
+COMMIT;
