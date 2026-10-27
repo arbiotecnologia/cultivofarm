@@ -87,7 +87,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
                 f"('{V(90)}','{X}','{X}','{CB}','finalizado',3),('{V(91)}','{A}','{A}','{CA}','rascunho',3);")
         # ---- PRE: reproduce the live baseline defects so negatives can fail.
         sql((HERE / 'baseline.sql').read_text())
-        sql("GRANT EXECUTE ON FUNCTION public.rpc_enviar_visita_aprovacao(uuid,integer) TO authenticated;")
+        sql("REVOKE ALL ON FUNCTION public.rpc_enviar_visita_aprovacao(uuid,integer) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.rpc_enviar_visita_aprovacao(uuid,integer) TO service_role; GRANT EXECUTE ON FUNCTION public.rpc_enviar_visita_aprovacao(uuid,integer) TO authenticated;")
         reset()
         err(rpc(A, V(1), 2), '40001', 'PRE baseline stale CAS raises 40001 (defect reproduced)')
         ok(f"SELECT public.has_role('{A}','consultor_tecnico');", 'PRE harness ready')
