@@ -32,10 +32,15 @@ describe("draft_save — hook real, Auth/transporte simulados, sem JWT positivo"
   it("403/404 uniformes não revelam existência nem reportam sucesso", async () => {
     const { h, args, invalidate } = setup(); const errors: string[] = [];
     for (const code of ["42501", "PT403", "PT404", "P0002"]) {
-      s.rpc.mockResolvedValueOnce({ data: null, error: { code, message: "foreign UUID exists" } });
+      s.rpc.mockResolvedValueOnce({ data: null, error: { code, message: "foreign UUID conflict" } });
       await act(async () => { try { await h.result.current.mutateAsync(args); } catch (e) { errors.push((e as Error).message); } });
     }
     expect(new Set(errors).size).toBe(1); expect(errors).toHaveLength(4); expect(errors[0]).not.toContain("UUID"); expect(invalidate).not.toHaveBeenCalled();
+  });
+  it("40001 verdadeiro não vira sucesso/retry e preserva revisão", async () => {
+    const { h, args, invalidate } = setup(); s.rpc.mockResolvedValue({ data: null, error: { code: "40001", message: "serialization failure" } });
+    await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("Suas alterações foram mantidas"); });
+    expect(s.rpc).toHaveBeenCalledTimes(1); expect(args.expectedVersion).toBe(2); expect(invalidate).not.toHaveBeenCalled();
   });
   for (const data of [null, {}, { id: "foreign", draft_version: 3, total_amount: 0 }, { id: "draft-A", draft_version: 2, total_amount: 0 }]) it(`resposta inválida ${JSON.stringify(data)} não é sucesso`, async () => {
     const { h, args, invalidate } = setup(); s.rpc.mockResolvedValue({ data, error: null });

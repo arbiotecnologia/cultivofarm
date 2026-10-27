@@ -106,8 +106,8 @@ export function useSaveFiscalRascunho() {
       });
       if (!valid()) throw new Error("Não foi possível acessar este rascunho. Verifique seu acesso.");
       if (error) {
-        if (error.code === "PT409" || /conflict/i.test(error.message)) throw new Error("O rascunho foi alterado por outra pessoa. Recarregue antes de salvar; suas alterações foram mantidas.");
         if (["42501", "PT403", "PT404", "P0002", "403", "404"].includes(error.code ?? "")) throw new Error("Não foi possível acessar este rascunho. Verifique seu acesso.");
+        if (error.code === "PT409" || /conflict/i.test(error.message)) throw new Error("O rascunho foi alterado por outra pessoa. Recarregue antes de salvar; suas alterações foram mantidas.");
         throw new Error("Não foi possível salvar o rascunho. Suas alterações foram mantidas.");
       }
       if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Resposta não confirmada ao salvar o rascunho.");

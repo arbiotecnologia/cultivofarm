@@ -37,9 +37,9 @@ export function useReprogramarMonitoramento() {
         });
         if (!valid()) throw new Error(unavailable);
         if (error) {
-          if (error.code === "PT409" || /conflict|conflito/i.test(error.message)) throw new Error(conflict);
           // Do not expose whether a foreign UUID exists.
           if (["42501", "PT403", "PT404", "P0002", "403", "404"].includes(error.code ?? "")) throw new Error(unavailable);
+          if (error.code === "PT409" || /conflict|conflito/i.test(error.message)) throw new Error(conflict);
           throw new Error("Não foi possível reprogramar o monitoramento. A data editada foi mantida.");
         }
         // No null/error-shaped response is a confirmed update. JSON contract awaits audit.
