@@ -1,0 +1,443 @@
+# base ca91a14d6 -> HEAD (frontend only; SQL in delta-sql.diff)
+diff --git a/src/hooks/useOfflineSync.ts b/src/hooks/useOfflineSync.ts
+index dbea7fe3c..1261681f8 100644
+--- a/src/hooks/useOfflineSync.ts
++++ b/src/hooks/useOfflineSync.ts
+@@ -42,6 +42,7 @@ import { toast } from "sonner";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { recomendacaoOwnedBy } from "@/lib/visita/recomendacaoContract";
++import { campoOwnedBy, isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
+ import { syncRecomendacao } from "@/lib/visita/syncRecomendacao";
+ import { useQueryClient } from "@tanstack/react-query";
+ import { useTechnicalQuerySession, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
+@@ -564,6 +565,9 @@ export function useOfflineSync() {
+       // === CAMPO (Etapa 3 do wizard) ===
+       const pendingCampos = await getPendingCampos();
+       for (const cp of pendingCampos) {
++        // Same actor+tenant only; legacy unowned entries are never replayed by another session.
++        if (!recommendationCurrent()) break;
++        if (!campoOwnedBy(cp, actor)) continue;
+         try {
+           // Precisamos do remoteId — resolve pelo mapping local→remoto
+           let remoteRegistroId = cp.remoteRegistroId || null;
+@@ -590,9 +594,12 @@ export function useOfflineSync() {
+             } as never,
+           );
+ 
++          // Late answer after logout/actor switch: never adopted nor used to clean the queue.
++          if (!recommendationCurrent()) break;
+           if (error) {
+             await updatePendingCampo(cp.localRegistroId, {
+-              syncStatus: "sync_error",
++              // PT409 is a business conflict: kept locally, never blindly replayed.
++              syncStatus: isCampoConflict(error) ? "conflict" : "sync_error",
+               syncingAt: null,
+               lastSyncError: error.message,
+             });
+@@ -602,7 +609,7 @@ export function useOfflineSync() {
+             continue;
+           }
+ 
+-          const res = data as any;
++          parseCampoResult(data, cp.versao, remoteRegistroId);
+           await log("campo", cp.localRegistroId, "sucesso", { item_remoto_id: remoteRegistroId });
+           await removePendingCampo(cp.localRegistroId);
+           syncedCount++;
+diff --git a/src/lib/offlineDb.ts b/src/lib/offlineDb.ts
+index 7e9d00325..57ca57cc0 100644
+--- a/src/lib/offlineDb.ts
++++ b/src/lib/offlineDb.ts
+@@ -694,10 +694,13 @@ export interface PendingCampo {
+   /** Versão local — para controle otimista contra o servidor. */
+   versao: number;
+   updatedAt: string;
+-  /** Estado de sincronização com o backend. */
+-  syncStatus: "local_draft" | "pending_sync" | "syncing" | "synced" | "sync_error";
++  /** Estado de sincronização com o backend. `conflict` (PT409) nunca é reenviado automaticamente. */
++  syncStatus: "local_draft" | "pending_sync" | "syncing" | "synced" | "sync_error" | "conflict";
+   lastSyncError?: string | null;
+   syncingAt?: number | null;
++  /** Ator/empresa de origem; entradas sem dono (legado) não são reenviadas por outra sessão. */
++  ownerUserId?: string;
++  ownerOrganizationId?: string;
+ }
+ 
+ export async function savePendingCampo(entry: PendingCampo): Promise<void> {
+@@ -759,7 +762,7 @@ export async function getPendingCampos(): Promise<PendingCampo[]> {
+       resolve(
+         (req.result || []).filter(
+           (c: PendingCampo) =>
+-            c.syncStatus !== "synced" && (!c.syncingAt || isStale(c.syncingAt)),
++            c.syncStatus !== "synced" && c.syncStatus !== "conflict" && (!c.syncingAt || isStale(c.syncingAt)),
+         ),
+       );
+     req.onerror = () => reject(req.error);
+diff --git a/src/lib/visita/campoContract.ts b/src/lib/visita/campoContract.ts
+new file mode 100644
+index 000000000..f9966b012
+--- /dev/null
++++ b/src/lib/visita/campoContract.ts
+@@ -0,0 +1,33 @@
++import type { PendingCampo } from "@/lib/offlineDb";
++
++export interface CampoOwner { userId: string; organizationId: string }
++
++/** Unowned legacy entries and other actors/tenants are never adopted or replayed. */
++export function campoOwnedBy(entry: Pick<PendingCampo, "ownerUserId" | "ownerOrganizationId">, actor: CampoOwner | null): boolean {
++  return !!actor && !!actor.userId && !!actor.organizationId &&
++    entry.ownerUserId === actor.userId && entry.ownerOrganizationId === actor.organizationId;
++}
++
++/**
++ * Accepts only the server envelope that matches the CAS sent: expected 0 -> versao 1
++ * (insert or idempotent replay), expected N -> N+1. Never invents a version.
++ */
++export function parseCampoResult(data: unknown, expected: number, registroId: string): number {
++  const res = data as { versao?: unknown; registro_consultor_id?: unknown } | null;
++  const v = res?.versao;
++  if (typeof v !== "number" || !Number.isSafeInteger(v)) throw new Error("invalid_response");
++  if (res?.registro_consultor_id != null && res.registro_consultor_id !== registroId) throw new Error("invalid_response");
++  if (v !== (expected === 0 ? 1 : expected + 1)) throw new Error("invalid_response");
++  return v;
++}
++
++/** Business conflicts (PT409): never retried automatically; the draft stays local. */
++export function isCampoConflict(err: unknown): boolean {
++  const e = err as { code?: unknown; message?: unknown } | null;
++  if (e?.code === "PT409") return true;
++  const m = typeof e?.message === "string" ? e.message : "";
++  return /version_conflict|visita_locked|versao_deve_incrementar|versao_inicial_invalida/.test(m);
++}
++
++export const CAMPO_CONFLICT_MESSAGE =
++  "Os dados de campo foram alterados em outro lugar ou a visita não está mais editável. Seu rascunho foi mantido; recarregue a visita para revisar.";
+diff --git a/src/pages/app/wizard/WizardCampoStep.tsx b/src/pages/app/wizard/WizardCampoStep.tsx
+index d8b27c3ee..37f9ac5b1 100644
+--- a/src/pages/app/wizard/WizardCampoStep.tsx
++++ b/src/pages/app/wizard/WizardCampoStep.tsx
+@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
+ import { useQuery, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useOnlineStatus } from "@/hooks/useOfflineSync";
+-import { useTenantSelection } from "@/hooks/useTenantCatalogVisibility";
++import { useTenantCatalogScope, useTenantSelection } from "@/hooks/useTenantCatalogVisibility";
++import { CAMPO_CONFLICT_MESSAGE, campoOwnedBy, isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
+ import { Button } from "@/components/ui/button";
+ import { Card } from "@/components/ui/card";
+ import { Input } from "@/components/ui/input";
+@@ -21,7 +22,7 @@ import {
+ 
+ const CULTURA_PAGE = 50;
+ 
+-type SaveState = "idle" | "saving" | "saved" | "pending_sync" | "error";
++type SaveState = "idle" | "saving" | "saved" | "pending_sync" | "error" | "conflict";
+ 
+ interface Props {
+   /** ID local do registro (usado como chave da store offline) */
+@@ -61,6 +62,7 @@ function StatusBadge({ state }: { state: SaveState }) {
+     saved: { icon: <Check className="h-3.5 w-3.5" />, label: "Salvo", cls: "text-emerald-600" },
+     pending_sync: { icon: <WifiOff className="h-3.5 w-3.5" />, label: "Pendente de sincronização", cls: "text-amber-600" },
+     error: { icon: <AlertCircle className="h-3.5 w-3.5" />, label: "Erro ao salvar", cls: "text-destructive" },
++    conflict: { icon: <AlertCircle className="h-3.5 w-3.5" />, label: "Conflito — recarregue a visita", cls: "text-destructive" },
+   };
+   const m = map[state];
+   return (
+@@ -89,6 +91,22 @@ export default function WizardCampoStep({
+   const queryClient = useQueryClient();
+   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+   const hydratedRef = useRef(false);
++  // Identity fence: actor + tenant + visit. A late response from a previous identity is never adopted.
++  const scope = useTenantCatalogScope();
++  const identity = scope ? `${scope.organizationId}|${scope.userId}|${localRegistroId}|${remoteRegistroId ?? ""}` : "unready";
++  const fence = useRef({ identity, generation: 0 });
++  if (fence.current.identity !== identity) fence.current = { identity, generation: fence.current.generation + 1 };
++  const generation = fence.current.generation;
++  const mounted = useRef(true);
++  const isCurrent = (gen: number) => mounted.current && fence.current.generation === gen;
++  useEffect(() => {
++    mounted.current = true;
++    // New identity: drop everything observed under the previous one (form, version, queue, timers).
++    if (debounceRef.current) clearTimeout(debounceRef.current);
++    hydratedRef.current = false; versionRef.current = 0; queueRef.current = Promise.resolve();
++    setForm(EMPTY); setSaveState("idle");
++    return () => { mounted.current = false; };
++  }, [generation]);
+ 
+   // Talhões filtrados pelo cliente
+   const { data: talhoes } = useQuery({
+@@ -126,7 +144,8 @@ export default function WizardCampoStep({
+   useEffect(() => {
+     let alive = true;
+     (async () => {
+-      if (hydratedRef.current) return;
++      if (hydratedRef.current || !scope) return;
++      const gen = generation;
+       try {
+         if (remoteRegistroId) {
+           const { data } = await supabase
+@@ -134,7 +153,7 @@ export default function WizardCampoStep({
+             .select("*")
+             .eq("registro_consultor_id", remoteRegistroId)
+             .maybeSingle();
+-          if (!alive) return;
++          if (!alive || !isCurrent(gen)) return;
+           if (data) {
+             const d = data as any;
+             setForm({
+@@ -146,18 +165,19 @@ export default function WizardCampoStep({
+               uniformidade: (d.uniformidade ?? "") as CampoForm["uniformidade"],
+               observacoes_campo: d.observacoes_campo ?? "",
+             });
+-            versionRef.current = d.versao ?? 1;
++            if (!Number.isSafeInteger(d.versao) || d.versao < 1) throw new Error("invalid_response");
++            versionRef.current = d.versao;
+             setSaveState("saved");
+             hydratedRef.current = true;
+             return;
+           }
+         }
+         const pending = await getPendingCampoByRegistro(localRegistroId);
+-        if (!alive) return;
+-        if (pending) {
++        if (!alive || !isCurrent(gen)) return;
++        if (pending && campoOwnedBy(pending, scope)) {
+           setForm({ ...EMPTY, ...(pending.payload as CampoForm) });
+           versionRef.current = pending.versao;
+-          setSaveState(pending.syncStatus === "synced" ? "saved" : "pending_sync");
++          setSaveState(pending.syncStatus === "synced" ? "saved" : pending.syncStatus === "conflict" ? "conflict" : "pending_sync");
+         }
+         hydratedRef.current = true;
+       } catch (err) {
+@@ -167,7 +187,8 @@ export default function WizardCampoStep({
+     return () => {
+       alive = false;
+     };
+-  }, [remoteRegistroId, localRegistroId]);
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [remoteRegistroId, localRegistroId, generation, !!scope]);
+ 
+   const isEmpty = useMemo(
+     () =>
+@@ -187,8 +208,10 @@ export default function WizardCampoStep({
+ 
+   const persist = (next: CampoForm, opts?: { force?: boolean }): Promise<boolean> => {
+     // Queue complete snapshots; read the version only when this write begins.
++    const gen = generation;
++    const owner = scope;
+     const run = async (): Promise<boolean> => {
+-      if (locked || (!opts?.force && !Object.values(next).some(Boolean))) return false;
++      if (locked || !owner || !isCurrent(gen) || (!opts?.force && !Object.values(next).some(Boolean))) return false;
+       setSaveState("saving");
+       try {
+         const versao = versionRef.current;
+@@ -196,6 +219,7 @@ export default function WizardCampoStep({
+           localRegistroId, clientUuid: clientUuid ?? undefined,
+           remoteRegistroId: remoteRegistroId ?? undefined,
+           payload: next, versao, updatedAt: new Date().toISOString(), syncStatus: "pending_sync",
++          ownerUserId: owner.userId, ownerOrganizationId: owner.organizationId,
+         };
+         await savePendingCampo(entry);
+         if (!isOnline || !remoteRegistroId) {
+@@ -207,8 +231,9 @@ export default function WizardCampoStep({
+           p_payload: next, p_versao: versao,
+         } as never);
+         if (error) throw error;
+-        const res = data as { versao?: number } | null;
+-        versionRef.current = res?.versao ?? versao + 1;
++        // Late answer of a previous identity/visit: not adopted (no version, no UI, no cleanup).
++        if (!isCurrent(gen)) return false;
++        versionRef.current = parseCampoResult(data, versao, remoteRegistroId);
+         await updatePendingCampo(localRegistroId, { syncStatus: "synced", versao: versionRef.current });
+         const { removePendingCampo } = await import("@/lib/offlineDb");
+         await removePendingCampo(localRegistroId);
+@@ -216,9 +241,12 @@ export default function WizardCampoStep({
+         await invalidateWizardProgress(queryClient, remoteRegistroId, "campo");
+         return true;
+       } catch (err) {
+-        const message = err && typeof err === "object" && "message" in err ? String(err.message) : "Falha ao salvar campo";
+-        await updatePendingCampo(localRegistroId, { syncStatus: "sync_error", lastSyncError: message }).catch(() => {});
+-        setSaveState("error");
++        const conflict = isCampoConflict(err);
++        const message = conflict ? CAMPO_CONFLICT_MESSAGE
++          : err && typeof err === "object" && "message" in err ? String(err.message) : "Falha ao salvar campo";
++        if (!isCurrent(gen)) return false;
++        await updatePendingCampo(localRegistroId, { syncStatus: conflict ? "conflict" : "sync_error", lastSyncError: message }).catch(() => {});
++        setSaveState(conflict ? "conflict" : "error");
+         toast.error(message);
+         return false;
+       }
+diff --git a/src/test/visita/wizardCampo.persistence.test.tsx b/src/test/visita/wizardCampo.persistence.test.tsx
+index f96701acf..051a5c9c8 100644
+--- a/src/test/visita/wizardCampo.persistence.test.tsx
++++ b/src/test/visita/wizardCampo.persistence.test.tsx
+@@ -1,68 +1,135 @@
+ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+ import { afterEach, beforeEach, expect, it, vi } from "vitest";
++import type { ReactElement } from "react";
+ 
+ const mocks = vi.hoisted(() => ({
+-  rpc: vi.fn(), save: vi.fn(), update: vi.fn(), remove: vi.fn(), invalidate: vi.fn(), online: true,
++  rpc: vi.fn(), save: vi.fn(), update: vi.fn(), remove: vi.fn(), pending: vi.fn(), online: true,
++  remoteRow: null as unknown,
++  scope: { userId: "user-a", organizationId: "org-a" } as { userId: string; organizationId: string } | null,
+ }));
+-vi.mock("@/integrations/supabase/client", () => ({ supabase: {
+-  rpc: mocks.rpc,
+-  from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }),
+-} }));
+-vi.mock("@tanstack/react-query", () => ({ useQuery: () => ({ data: [] }), useQueryClient: () => ({ invalidateQueries: mocks.invalidate }) }));
++const chain = () => {
++  const c: Record<string, unknown> = {};
++  c.select = () => c; c.eq = () => c; c.order = async () => ({ data: [], error: null });
++  c.maybeSingle = async () => ({ data: mocks.remoteRow });
++  return c;
++};
++vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc, from: () => chain() } }));
+ vi.mock("@/hooks/useOfflineSync", () => ({ useOnlineStatus: () => mocks.online }));
++vi.mock("@/hooks/useTenantCatalogVisibility", () => ({
++  useTenantCatalogScope: () => mocks.scope,
++  useTenantSelection: () => ({ isSuccess: true, isFetching: false, data: { rows: [], total: 0 } }),
++}));
+ vi.mock("@/lib/offlineDb", () => ({
+   savePendingCampo: mocks.save, updatePendingCampo: mocks.update, removePendingCampo: mocks.remove,
+-  getPendingCampoByRegistro: async () => null,
++  getPendingCampoByRegistro: mocks.pending,
+ }));
+ import WizardCampoStep from "@/pages/app/wizard/WizardCampoStep";
++import { campoOwnedBy, isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
++
+ const props = { localRegistroId: "local-fake", remoteRegistroId: "remote-fake", clienteId: null, clientUuid: "client-fake", locked: false };
++let qc: QueryClient;
++const ui = (el: ReactElement) => <QueryClientProvider client={qc}>{el}</QueryClientProvider>;
+ beforeEach(() => {
+-  vi.clearAllMocks(); mocks.online = true;
++  vi.clearAllMocks(); mocks.online = true; mocks.remoteRow = null;
++  mocks.scope = { userId: "user-a", organizationId: "org-a" };
++  qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
++  vi.spyOn(qc, "invalidateQueries");
+   mocks.save.mockResolvedValue(undefined); mocks.update.mockResolvedValue(undefined);
+-  mocks.remove.mockResolvedValue(undefined); mocks.invalidate.mockResolvedValue(undefined);
++  mocks.remove.mockResolvedValue(undefined); mocks.pending.mockResolvedValue(null);
+ });
+ afterEach(() => { cleanup(); vi.useRealTimers(); });
+-it("falha online preserva pendência e não avança", async () => {
+-  mocks.rpc.mockResolvedValue({ error: { message: "version_conflict" } });
+-  const done = vi.fn(); render(<WizardCampoStep {...props} onDone={done} />);
+-  fireEvent.change(screen.getByLabelText("Fase fenológica"), { target: { value: "V4" } });
+-  fireEvent.click(screen.getByRole("button", { name: "Salvar e avançar" }));
++const typeFase = (v: string) => fireEvent.change(screen.getByLabelText("Fase fenológica"), { target: { value: v } });
++const advance = () => fireEvent.click(screen.getByRole("button", { name: "Salvar e avançar" }));
++
++it("PT409 vira conflito local: sem avanço, sem remoção e sem nova tentativa automática", async () => {
++  mocks.rpc.mockResolvedValue({ data: null, error: { code: "PT409", message: "version_conflict" } });
++  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
++  typeFase("V4"); advance();
++  await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("local-fake", expect.objectContaining({ syncStatus: "conflict" })));
++  expect(await screen.findByText("Conflito — recarregue a visita")).toBeTruthy();
++  expect(done).not.toHaveBeenCalled(); expect(mocks.remove).not.toHaveBeenCalled();
++  expect(mocks.rpc).toHaveBeenCalledTimes(1);
++});
++it("falha genérica fica sync_error e preserva pendência", async () => {
++  mocks.rpc.mockResolvedValue({ data: null, error: { code: "08006", message: "network" } });
++  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
++  typeFase("V4"); advance();
+   await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("local-fake", expect.objectContaining({ syncStatus: "sync_error" })));
+   expect(done).not.toHaveBeenCalled(); expect(mocks.remove).not.toHaveBeenCalled();
+ });
+-it("offline autorizado salva localmente e avança sem RPC", async () => {
+-  mocks.online = false; const done = vi.fn(); render(<WizardCampoStep {...props} onDone={done} />);
+-  fireEvent.change(screen.getByLabelText("Fase fenológica"), { target: { value: "V4" } });
+-  fireEvent.click(screen.getByRole("button", { name: "Salvar e avançar" }));
++it("offline autorizado salva localmente com dono e avança sem RPC", async () => {
++  mocks.online = false; const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
++  typeFase("V4"); advance();
+   await waitFor(() => expect(done).toHaveBeenCalledTimes(1));
+-  expect(mocks.save).toHaveBeenCalled(); expect(mocks.rpc).not.toHaveBeenCalled();
++  expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ ownerUserId: "user-a", ownerOrganizationId: "org-a", versao: 0 }));
++  expect(mocks.rpc).not.toHaveBeenCalled();
+ });
+-it("autosave e salvar ficam serializados e segundo write usa versão retornada", async () => {
++it("contrato inicial: CAS 0 sem linha, depois usa a versão retornada (N, N+1)", async () => {
+   vi.useFakeTimers();
+   let finish: ((value: unknown) => void) | undefined;
+   mocks.rpc.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }))
+-    .mockResolvedValueOnce({ data: { versao: 2 }, error: null });
+-  const done = vi.fn(); render(<WizardCampoStep {...props} onDone={done} />);
++    .mockResolvedValueOnce({ data: { versao: 2, registro_consultor_id: "remote-fake" }, error: null });
++  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
+   await act(async () => { await Promise.resolve(); });
+-  fireEvent.change(screen.getByLabelText("Fase fenológica"), { target: { value: "V4" } });
++  typeFase("V4");
+   await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
+   expect(mocks.rpc).toHaveBeenCalledTimes(1);
+-  fireEvent.change(screen.getByLabelText("Fase fenológica"), { target: { value: "V5" } });
+-  fireEvent.click(screen.getByRole("button", { name: "Salvar e avançar" }));
+-  fireEvent.click(screen.getByRole("button", { name: "Salvar e avançar" }));
++  expect(mocks.rpc.mock.calls[0][1]).toMatchObject({ p_versao: 0 });
++  typeFase("V5"); advance(); advance();
+   expect(mocks.rpc).toHaveBeenCalledTimes(1);
+-  await act(async () => { finish?.({ data: { versao: 1 }, error: null }); await vi.advanceTimersByTimeAsync(0); });
++  await act(async () => { finish?.({ data: { versao: 1, registro_consultor_id: "remote-fake" }, error: null }); await vi.advanceTimersByTimeAsync(0); });
+   expect(mocks.rpc).toHaveBeenCalledTimes(2);
+   expect(mocks.rpc.mock.calls[1][1]).toMatchObject({ p_versao: 1, p_payload: { fase_fenologica: "V5" } });
+   expect(done).toHaveBeenCalledTimes(1);
+-  expect(mocks.invalidate).toHaveBeenCalledWith({ queryKey: ["wizard-campo-flag", "remote-fake"] });
+-  expect(mocks.invalidate).toHaveBeenCalledWith({ queryKey: ["visita-workspace", "remote-fake"] });
++  expect(qc.invalidateQueries).toHaveBeenCalledWith({ queryKey: ["wizard-campo-flag", "remote-fake"] });
++});
++it("resposta sem versão válida não inventa versão nem limpa pendência", async () => {
++  mocks.rpc.mockResolvedValue({ data: {}, error: null });
++  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
++  typeFase("V4"); advance();
++  await waitFor(() => expect(mocks.update).toHaveBeenCalledWith("local-fake", expect.objectContaining({ syncStatus: "sync_error" })));
++  expect(mocks.remove).not.toHaveBeenCalled(); expect(done).not.toHaveBeenCalled();
++});
++it("resposta tardia de outro ator não é adotada e o novo ator começa limpo", async () => {
++  let finish: ((value: unknown) => void) | undefined;
++  mocks.rpc.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
++  const done = vi.fn(); const view = render(ui(<WizardCampoStep {...props} onDone={done} />));
++  typeFase("V4"); advance();
++  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
++  mocks.scope = { userId: "user-b", organizationId: "org-a" };
++  view.rerender(ui(<WizardCampoStep {...props} onDone={done} />));
++  await act(async () => { finish?.({ data: { versao: 1, registro_consultor_id: "remote-fake" }, error: null }); await Promise.resolve(); });
++  expect(mocks.remove).not.toHaveBeenCalled(); expect(done).not.toHaveBeenCalled();
++  expect((screen.getByLabelText("Fase fenológica") as HTMLInputElement).value).toBe("");
++  mocks.rpc.mockResolvedValueOnce({ data: { versao: 1, registro_consultor_id: "remote-fake" }, error: null });
++  typeFase("B1"); advance();
++  await waitFor(() => expect(done).toHaveBeenCalledTimes(1));
++  expect(mocks.rpc.mock.calls[1][1]).toMatchObject({ p_versao: 0 });
++  expect(mocks.save).toHaveBeenLastCalledWith(expect.objectContaining({ ownerUserId: "user-b" }));
++});
++it("rascunho local de outro ator ou legado sem dono não é hidratado", async () => {
++  mocks.pending.mockResolvedValue({ localRegistroId: "local-fake", payload: { fase_fenologica: "ALHEIO" }, versao: 3, syncStatus: "pending_sync", ownerUserId: "user-x", ownerOrganizationId: "org-a" });
++  render(ui(<WizardCampoStep {...props} remoteRegistroId={null} onDone={vi.fn()} />));
++  await waitFor(() => expect(mocks.pending).toHaveBeenCalled());
++  await act(async () => { await Promise.resolve(); });
++  expect((screen.getByLabelText("Fase fenológica") as HTMLInputElement).value).toBe("");
+ });
+ it("falha no armazenamento local não avança", async () => {
+   mocks.save.mockRejectedValue(new Error("storage unavailable"));
+-  const done = vi.fn(); render(<WizardCampoStep {...props} onDone={done} />);
+-  fireEvent.change(screen.getByLabelText("Fase fenológica"), { target: { value: "V4" } });
+-  fireEvent.click(screen.getByRole("button", { name: "Salvar e avançar" }));
++  const done = vi.fn(); render(ui(<WizardCampoStep {...props} onDone={done} />));
++  typeFase("V4"); advance();
+   await waitFor(() => expect(mocks.update).toHaveBeenCalled());
+   expect(done).not.toHaveBeenCalled(); expect(mocks.rpc).not.toHaveBeenCalled();
+-});
+\ No newline at end of file
++});
++it("contrato: versão exata, dono exato, PT409 detectado", () => {
++  expect(parseCampoResult({ versao: 1 }, 0, "r")).toBe(1);
++  expect(parseCampoResult({ versao: 4, registro_consultor_id: "r" }, 3, "r")).toBe(4);
++  for (const [d, e] of [[{ versao: 5 }, 3], [{ versao: 1 }, 1], [{}, 0], [{ versao: "2" }, 1], [{ versao: 2, registro_consultor_id: "x" }, 1]] as const)
++    expect(() => parseCampoResult(d, e, "r")).toThrow("invalid_response");
++  expect(campoOwnedBy({ ownerUserId: "u", ownerOrganizationId: "o" }, { userId: "u", organizationId: "o" })).toBe(true);
++  expect(campoOwnedBy({}, { userId: "u", organizationId: "o" })).toBe(false);
++  expect(campoOwnedBy({ ownerUserId: "u", ownerOrganizationId: "p" }, { userId: "u", organizationId: "o" })).toBe(false);
++  expect(isCampoConflict({ code: "PT409" })).toBe(true);
++  expect(isCampoConflict({ code: "42501", message: "sem_permissao" })).toBe(false);
++});

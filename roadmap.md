@@ -2,6 +2,7 @@
 
 ## 27/10 13:38 — rpc_enviar_visita_aprovacao (auditoria 40001, SQL INATIVO)
 - [x] Pacote scripts/visit-approval-submit-20261027: gate antes da linha, reautorização após esperas, PT409, CAS obrigatório, ROW_COUNT=1/1 log, lock_timeout3s; preflight/postflight/contenção deny-only; 38 PG sintéticos; wizard sem CAS fabricado e com fence tardia.
+- [x] Pacote scripts/visit-field-cas-20261027 (rpc_salvar_campo_visita + guard): gate→pai→filho, reautorização sem cache, CAS 0/N→N+1, replay mesmo ator/chave/conteúdo, refs talhão/cultura, guard +1 estrito; 70 PG sintéticos; cliente com cerca de identidade e PT409 sem replay. Pendente: aplicação/homologação pelo auditor e fechamento de escrita direta na tabela.
 - [x] SQL instalado pelo auditor (OID42716, MD5 90f33a1e); provas reais A/B relatadas; registro installed.sql.review.
 - [x] Frontend wizard: hide-error-cache, 5 contagens verificadas, fences por escopo; 36/36 com QueryClient real.
 - [ ] Revisão independente/publicação do frontend pelo auditor.

@@ -1,0 +1,17 @@
+-- CONTAINMENT (deny-only). Review only. Does NOT restore the vulnerable baseline body
+-- (cached global admin, unlocked '<' CAS). It only stops the RPC for app users while
+-- keeping the strict guard and every SELECT/tenant policy untouched.
+-- Effect: wizard "Campo" saves fail closed (client keeps local draft as sync_error/conflict).
+BEGIN;
+REVOKE EXECUTE ON FUNCTION public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer) FROM authenticated, anon, PUBLIC;
+-- service_role and postgres keep EXECUTE (no app path uses them for this RPC).
+DO $c$
+BEGIN
+  IF has_function_privilege('authenticated','public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)','EXECUTE')
+     OR has_function_privilege('anon','public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)','EXECUTE') THEN
+    RAISE EXCEPTION 'containment_failed' USING ERRCODE = '55000';
+  END IF;
+END
+$c$;
+COMMIT;
+-- Re-enable only after a reviewed fix: GRANT EXECUTE ... TO authenticated (separate, audited step).

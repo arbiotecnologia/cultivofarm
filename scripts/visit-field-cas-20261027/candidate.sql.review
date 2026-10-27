@@ -1,0 +1,248 @@
+-- CANDIDATE (INACTIVE). Review only; do NOT auto-apply. Target ref swzpzcwiasxmjutrmvkm.
+-- Proposed migration name: visit_field_cas_gate_20261027
+-- Run preflight.sql first: every row must be ok=true, otherwise ABORT (fail-closed).
+-- Changes exactly two objects:
+--   public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)  (baseline md5 dc1ff655ba3bf156d38817fbf0c073dd)
+--   public.visitas_campo_guard()                              (baseline md5 55177f9db09a4d749c200a1801888249)
+-- and re-creates trg_visitas_campo_guard as BEFORE INSERT OR UPDATE (was BEFORE UPDATE).
+-- Owner/ACL of the RPC are preserved (CREATE OR REPLACE keeps both); asserted again below.
+BEGIN;
+
+-- Fail-closed in-transaction re-check of the baseline (concurrent drift aborts the migration).
+DO $pre$
+BEGIN
+  IF md5(pg_get_functiondef('public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure)) <> 'dc1ff655ba3bf156d38817fbf0c073dd'
+     OR md5(pg_get_functiondef('public.visitas_campo_guard()'::regprocedure)) <> '55177f9db09a4d749c200a1801888249'
+     OR md5(pg_get_functiondef('public.rpc_enviar_visita_aprovacao(uuid,integer)'::regprocedure)) <> '90f33a1e55d44fbbd8fa9ebc565ba052'
+     OR md5(pg_get_functiondef('public.can_manage_technical_visit(uuid,uuid)'::regprocedure)) <> 'd95c2c2b34af117d467d7d4b2b775002'
+     OR md5(pg_get_functiondef('public.has_role(uuid,app_role)'::regprocedure)) <> '4d90e93d521a4819d9085f28d742030f'
+     OR md5(pg_get_functiondef('public.has_active_user_cliente_access(uuid,uuid,text[])'::regprocedure)) <> 'e099f51d128620e5a68cc3e9001dd976'
+     OR md5(pg_get_functiondef('public.is_technical_visit_editable_status(text)'::regprocedure)) <> 'c326c1a060bf6cd91fedcbca2aa99f15'
+     OR (SELECT count(*) FROM cf_user_guards_v1.state WHERE singleton) <> 1
+     OR (SELECT md5(string_agg(t.tgname::text||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)), E'\n' ORDER BY t.tgname))
+           FROM pg_trigger t WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal) <> '13dadacab7b70ddbe22cd00d688200b0'
+     OR EXISTS (SELECT 1 FROM public.visitas_campo WHERE versao IS NULL OR versao < 1)
+  THEN
+    RAISE EXCEPTION 'preflight_drift_abort' USING ERRCODE = '55000';
+  END IF;
+END
+$pre$;
+
+CREATE OR REPLACE FUNCTION public.visitas_campo_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    -- Initial contract: a new row always starts at version 1.
+    IF NEW.versao IS DISTINCT FROM 1 THEN
+      RAISE EXCEPTION 'versao_inicial_invalida' USING ERRCODE = 'PT409';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.registro_consultor_id IS DISTINCT FROM OLD.registro_consultor_id THEN
+    RAISE EXCEPTION 'campo_imutavel_registro_consultor_id' USING ERRCODE = '42501';
+  END IF;
+  IF NEW.cliente_id IS DISTINCT FROM OLD.cliente_id THEN
+    RAISE EXCEPTION 'campo_imutavel_cliente_id' USING ERRCODE = '42501';
+  END IF;
+  IF NEW.created_by IS DISTINCT FROM OLD.created_by THEN
+    RAISE EXCEPTION 'campo_imutavel_created_by' USING ERRCODE = '42501';
+  END IF;
+  IF OLD.client_uuid IS NOT NULL AND NEW.client_uuid IS DISTINCT FROM OLD.client_uuid THEN
+    RAISE EXCEPTION 'campo_imutavel_client_uuid' USING ERRCODE = '42501';
+  END IF;
+  -- Strict +1: no NULL, no jump, no repeat, no regression (applies to every writer).
+  IF OLD.versao IS NULL OR NEW.versao IS NULL OR NEW.versao <> OLD.versao + 1 THEN
+    RAISE EXCEPTION 'versao_deve_incrementar' USING ERRCODE = 'PT409';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS trg_visitas_campo_guard ON public.visitas_campo;
+CREATE TRIGGER trg_visitas_campo_guard BEFORE INSERT OR UPDATE ON public.visitas_campo
+  FOR EACH ROW EXECUTE FUNCTION public.visitas_campo_guard();
+
+CREATE OR REPLACE FUNCTION public.rpc_salvar_campo_visita(p_registro_consultor_id uuid, p_client_uuid uuid, p_payload jsonb, p_versao integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_reg public.registros_consultor;
+  v_existing public.visitas_campo;
+  v_result public.visitas_campo;
+  v_talhao uuid; v_cultura uuid; v_area numeric; v_estande numeric;
+  v_fase text; v_unif text; v_obs text; v_extras jsonb;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'unauthenticated' USING ERRCODE = '42501';
+  END IF;
+  IF p_registro_consultor_id IS NULL THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+  -- CAS mandatory. 0 = "no row yet" (initial insert contract); NULL/negative never matches.
+  IF p_versao IS NULL OR p_versao < 0 THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+
+  -- Fast denial; same message for inexistent and foreign visits (no existence oracle).
+  IF NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_consultor_id), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  -- Payload shape (after authorization, before any lock).
+  IF p_payload IS NULL OR jsonb_typeof(p_payload) <> 'object' THEN
+    RAISE EXCEPTION 'payload_invalido' USING ERRCODE = '22023';
+  END IF;
+  BEGIN
+    v_talhao  := NULLIF(p_payload->>'talhao_id','')::uuid;
+    v_cultura := NULLIF(p_payload->>'cultura_id','')::uuid;
+    v_area    := NULLIF(p_payload->>'area_avaliada_ha','')::numeric;
+    v_estande := NULLIF(p_payload->>'estande_plantas_ha','')::numeric;
+  EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range THEN
+    RAISE EXCEPTION 'payload_invalido' USING ERRCODE = '22023';
+  END;
+  v_fase := NULLIF(p_payload->>'fase_fenologica','');
+  v_unif := NULLIF(p_payload->>'uniformidade','');
+  v_obs  := NULLIF(p_payload->>'observacoes_campo','');
+  v_extras := COALESCE(p_payload->'dados_extras', '{}'::jsonb);
+  IF jsonb_typeof(v_extras) <> 'object'
+     OR (v_area IS NOT NULL AND (v_area = 'NaN'::numeric OR v_area < 0))
+     OR (v_estande IS NOT NULL AND (v_estande = 'NaN'::numeric OR v_estande < 0 OR v_estande <> trunc(v_estande) OR v_estande > 2147483647))
+     OR (v_unif IS NOT NULL AND v_unif NOT IN ('baixa','media','alta')) THEN
+    RAISE EXCEPTION 'payload_invalido' USING ERRCODE = '22023';
+  END IF;
+
+  -- 1) Canonical revocation gate BEFORE the parent row lock (same order as revocation writers).
+  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'gate_unavailable' USING ERRCODE = '55000';
+  END IF;
+  IF NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_consultor_id), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  -- 2) Parent lock, restricted to the ORIGINAL actor scope (admin/created_by/client execute|manage)
+  --    intersected with the canonical tenant check. No role is added.
+  SELECT r.* INTO v_reg FROM public.registros_consultor r
+   WHERE r.id = p_registro_consultor_id
+     AND COALESCE(public.can_manage_technical_visit(v_uid, p_registro_consultor_id), false)
+     AND COALESCE((public.has_role(v_uid, 'administrador'::app_role)
+       OR r.created_by = v_uid
+       OR (r.cliente_id IS NOT NULL
+           AND public.has_active_user_cliente_access(v_uid, r.cliente_id, ARRAY['execute','manage']))), false)
+   FOR UPDATE;
+
+  -- 3) Re-authorize after the row wait; never cached.
+  IF v_reg.id IS NULL
+     OR NOT COALESCE(public.can_manage_technical_visit(v_uid, p_registro_consultor_id), false)
+     OR NOT COALESCE((
+       public.has_role(v_uid, 'administrador'::app_role)
+       OR v_reg.created_by = v_uid
+       OR (v_reg.cliente_id IS NOT NULL
+           AND public.has_active_user_cliente_access(v_uid, v_reg.cliente_id, ARRAY['execute','manage']))
+     ), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+
+  IF NOT COALESCE(public.is_technical_visit_editable_status(v_reg.status::text), false) THEN
+    RAISE EXCEPTION 'visita_locked' USING ERRCODE = 'PT409';
+  END IF;
+  IF v_reg.cliente_id IS NULL THEN
+    RAISE EXCEPTION 'registro_sem_cliente' USING ERRCODE = 'P0002';
+  END IF;
+
+  -- 4) Child lock.
+  SELECT * INTO v_existing FROM public.visitas_campo
+   WHERE registro_consultor_id = p_registro_consultor_id FOR UPDATE;
+
+  -- References. Talhão must belong to a fazenda of the visit's cliente; new choices must be active.
+  -- An already-saved (now inactive) talhão/cultura may be kept unchanged.
+  IF v_talhao IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM public.talhoes t JOIN public.fazendas f ON f.id = t.fazenda_id
+        WHERE t.id = v_talhao AND f.cliente_id = v_reg.cliente_id
+          AND (COALESCE(t.ativo, true) OR v_talhao IS NOT DISTINCT FROM v_existing.talhao_id)) THEN
+    RAISE EXCEPTION 'talhao_invalido' USING ERRCODE = '22023';
+  END IF;
+  IF v_cultura IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM public.culturas c
+        WHERE c.id = v_cultura
+          AND (COALESCE(c.ativo, true) OR v_cultura IS NOT DISTINCT FROM v_existing.cultura_id)) THEN
+    RAISE EXCEPTION 'cultura_invalida' USING ERRCODE = '22023';
+  END IF;
+
+  IF v_existing.id IS NULL THEN
+    IF p_versao <> 0 THEN
+      RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+    END IF;
+    INSERT INTO public.visitas_campo (
+      registro_consultor_id, cliente_id, talhao_id, cultura_id,
+      area_avaliada_ha, fase_fenologica, estande_plantas_ha, uniformidade,
+      observacoes_campo, dados_extras, client_uuid, versao, created_by
+    ) VALUES (
+      p_registro_consultor_id, v_reg.cliente_id, v_talhao, v_cultura,
+      v_area, v_fase, v_estande::integer, v_unif,
+      v_obs, v_extras, p_client_uuid, 1, v_uid
+    ) RETURNING * INTO v_result;
+    RETURN jsonb_build_object('id', v_result.id, 'registro_consultor_id', v_result.registro_consultor_id,
+      'versao', v_result.versao, 'client_uuid', v_result.client_uuid, 'replayed', false);
+  END IF;
+
+  IF p_versao = 0 THEN
+    -- Idempotent replay of a lost initial-insert response: only same actor, same client_uuid,
+    -- still version 1 and identical content. Authorization above already proved scope on this
+    -- very visit, so nothing crosses tenants. Anything else is a business conflict.
+    IF p_client_uuid IS NOT NULL AND v_existing.versao = 1
+       AND v_existing.client_uuid = p_client_uuid AND v_existing.created_by = v_uid
+       AND v_existing.talhao_id IS NOT DISTINCT FROM v_talhao
+       AND v_existing.cultura_id IS NOT DISTINCT FROM v_cultura
+       AND v_existing.area_avaliada_ha IS NOT DISTINCT FROM v_area
+       AND v_existing.fase_fenologica IS NOT DISTINCT FROM v_fase
+       AND v_existing.estande_plantas_ha IS NOT DISTINCT FROM v_estande::integer
+       AND v_existing.uniformidade IS NOT DISTINCT FROM v_unif
+       AND v_existing.observacoes_campo IS NOT DISTINCT FROM v_obs
+       AND v_existing.dados_extras = v_extras THEN
+      RETURN jsonb_build_object('id', v_existing.id, 'registro_consultor_id', v_existing.registro_consultor_id,
+        'versao', v_existing.versao, 'client_uuid', v_existing.client_uuid, 'replayed', true);
+    END IF;
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+
+  IF v_existing.versao IS NULL OR p_versao <> v_existing.versao THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+
+  UPDATE public.visitas_campo SET
+    talhao_id = v_talhao, cultura_id = v_cultura, area_avaliada_ha = v_area,
+    fase_fenologica = v_fase, estande_plantas_ha = v_estande::integer, uniformidade = v_unif,
+    observacoes_campo = v_obs, dados_extras = v_extras,
+    versao = v_existing.versao + 1, updated_at = now()
+  WHERE id = v_existing.id AND versao = p_versao
+  RETURNING * INTO v_result;
+  IF v_result.id IS NULL THEN
+    RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409';
+  END IF;
+
+  RETURN jsonb_build_object('id', v_result.id, 'registro_consultor_id', v_result.registro_consultor_id,
+    'versao', v_result.versao, 'client_uuid', v_result.client_uuid, 'replayed', false);
+END;
+$function$;
+
+-- ACL/owner/definer must be unchanged (CREATE OR REPLACE preserves them); fail-closed assert.
+DO $post$
+BEGIN
+  IF (SELECT proacl::text FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure)
+       <> '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}'
+     OR NOT (SELECT prosecdef AND pg_get_userbyid(proowner)='postgres' FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure) THEN
+    RAISE EXCEPTION 'acl_owner_drift_abort' USING ERRCODE = '55000';
+  END IF;
+END
+$post$;
+
+COMMIT;

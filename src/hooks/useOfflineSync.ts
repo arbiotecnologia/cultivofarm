@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { recomendacaoOwnedBy } from "@/lib/visita/recomendacaoContract";
+import { campoOwnedBy, isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
 import { syncRecomendacao } from "@/lib/visita/syncRecomendacao";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTechnicalQuerySession, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
@@ -564,6 +565,9 @@ export function useOfflineSync() {
       // === CAMPO (Etapa 3 do wizard) ===
       const pendingCampos = await getPendingCampos();
       for (const cp of pendingCampos) {
+        // Same actor+tenant only; legacy unowned entries are never replayed by another session.
+        if (!recommendationCurrent()) break;
+        if (!campoOwnedBy(cp, actor)) continue;
         try {
           // Precisamos do remoteId — resolve pelo mapping local→remoto
           let remoteRegistroId = cp.remoteRegistroId || null;
@@ -590,9 +594,12 @@ export function useOfflineSync() {
             } as never,
           );
 
+          // Late answer after logout/actor switch: never adopted nor used to clean the queue.
+          if (!recommendationCurrent()) break;
           if (error) {
             await updatePendingCampo(cp.localRegistroId, {
-              syncStatus: "sync_error",
+              // PT409 is a business conflict: kept locally, never blindly replayed.
+              syncStatus: isCampoConflict(error) ? "conflict" : "sync_error",
               syncingAt: null,
               lastSyncError: error.message,
             });
@@ -602,7 +609,7 @@ export function useOfflineSync() {
             continue;
           }
 
-          const res = data as any;
+          parseCampoResult(data, cp.versao, remoteRegistroId);
           await log("campo", cp.localRegistroId, "sucesso", { item_remoto_id: remoteRegistroId });
           await removePendingCampo(cp.localRegistroId);
           syncedCount++;

@@ -694,10 +694,13 @@ export interface PendingCampo {
   /** Versão local — para controle otimista contra o servidor. */
   versao: number;
   updatedAt: string;
-  /** Estado de sincronização com o backend. */
-  syncStatus: "local_draft" | "pending_sync" | "syncing" | "synced" | "sync_error";
+  /** Estado de sincronização com o backend. `conflict` (PT409) nunca é reenviado automaticamente. */
+  syncStatus: "local_draft" | "pending_sync" | "syncing" | "synced" | "sync_error" | "conflict";
   lastSyncError?: string | null;
   syncingAt?: number | null;
+  /** Ator/empresa de origem; entradas sem dono (legado) não são reenviadas por outra sessão. */
+  ownerUserId?: string;
+  ownerOrganizationId?: string;
 }
 
 export async function savePendingCampo(entry: PendingCampo): Promise<void> {
@@ -759,7 +762,7 @@ export async function getPendingCampos(): Promise<PendingCampo[]> {
       resolve(
         (req.result || []).filter(
           (c: PendingCampo) =>
-            c.syncStatus !== "synced" && (!c.syncingAt || isStale(c.syncingAt)),
+            c.syncStatus !== "synced" && c.syncStatus !== "conflict" && (!c.syncingAt || isStale(c.syncingAt)),
         ),
       );
     req.onerror = () => reject(req.error);
