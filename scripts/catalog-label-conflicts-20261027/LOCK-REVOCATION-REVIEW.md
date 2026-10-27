@@ -30,3 +30,6 @@ require_actor fresco → CAS/UPDATE/auditoria. `SET lock_timeout TO '3s'` na fun
   (UI mostra "ocupado", sem retry automático); (4) writer com bypass de triggers (superusuário com `session_replication_role=replica`, ALTER TABLE DISABLE TRIGGER)
   não coopera — fora do modelo; (5) expiração de JWT só é verificada contra `statement_timestamp`; (6) `catalog_entity_replay` segue 40001.
 - Testes usam Auth sintética e schema reduzido; nenhuma homologação real de JWT/RLS ou de espera em produção foi feita pelo agente.
+
+## Status
+Implantado pelo auditor em 2026-10-27 (`catalog_labels_revocation_gate_pt409_20261027`). Revogação real de Superadmin durante espera ainda NÃO homologada (pendente login IAB14).
