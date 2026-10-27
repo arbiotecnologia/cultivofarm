@@ -38,3 +38,14 @@ com outro pedido. Não alterado (helper compartilhado). O cliente trata 40001 e 
 ## Teste de tela PT409 (local, QueryClient real, transporte simulado)
 `catalogLabelsPanelFlow.test.tsx`: após PT409, exatamente 1 escrita; nenhuma releitura nem nova escrita automática em 300 ms; revisão enviada continua V1 e o leitor
 mantém o valor antigo até o clique em "Atualizar dados"; só a nova ação do usuário envia V2. 40001 continua aceito (helper residual).
+
+## Candidato adicional: gate de revogação (`revocation-gate/`, INATIVO) — bloqueia conclusão do lote até revisão
+Substitui o PT409 isolado (preflight aceita LIVE exato ou PT409 exato). Corpos: PT409 + gate `cf_user_guards_v1.state` → autoridade fresca →
+advisory → autoridade fresca → replay → linha → autoridade fresca, e `lock_timeout=3s`. md5: update `afb8fbcdc8df3a8829e1e82ebecaece1`,
+active `0dce420a2309a03fb63ac1acbe100295`; config `["search_path=\"\"","lock_timeout=3s"]`; OID/ACL/owner/assinatura inalterados.
+- `assemble-gate.py`, `live-gate-deps.json` (corpos LIVE de has_role/is_platform_superadmin/access_ready/acquire_gate/acquire_invitation_gate),
+  `preflight-gate-readonly.sql`, `candidate-gate.sql.review`, `postflight-gate-readonly.sql`, `rollback-containment.sql.review` (deny-only: REVOKE EXECUTE de
+  authenticated; não restaura corpo vulnerável), `test-gate.py`/`results-gate-local.json` (65 checks, Auth sintética).
+- Pins extras: fingerprints dos triggers de gate em user_roles/profiles/convites e ACL+singleton do estado do gate.
+- Frontend: `labelError` mapeia 55P03/PT503 para "ocupado, nada gravado", sem retry automático (teste adicionado).
+- Detalhes, semântica de ordenação e riscos residuais: `LOCK-REVOCATION-REVIEW.md`. Nada aplicado/publicado.

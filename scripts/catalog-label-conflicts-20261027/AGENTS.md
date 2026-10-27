@@ -1,3 +1,5 @@
-- Keep this package inactive; change only the four pinned catalog-label 40001 RAISEs (stale CAS and post-condition) to PT409; shared `catalog_entity_replay` stays 40001 — avoids widening scope into the shared idempotency helper.
-- Guards pin full-body md5 plus OID/ACL/owner/config and table trigger/policy fingerprints instead of repeating bodies; rollback only from exact candidate to exact LIVE — prevents drift.
+- Keep this package inactive; the four pinned catalog-label 40001 RAISEs become PT409; shared `catalog_entity_replay` stays 40001 — avoids widening scope into the shared idempotency helper.
+- The revocation-gate candidate supersedes the PT409-only candidate: gate `cf_user_guards_v1.state` → fresh actor → advisory → fresh actor → replay → row → fresh actor, lock_timeout 3s — revocation writers cooperate via their statement gate triggers.
+- Rollback for the gate candidate is deny-only containment, never the vulnerable LIVE body — prevents restoring revocation-during-wait.
+- Guards pin full-body md5 plus OID/ACL/owner/config, gate trigger and table fingerprints instead of repeating bodies — prevents drift.
 - PG tests use exact LIVE bodies with reduced schema and synthetic Auth; never report them as real JWT/RLS homologation.

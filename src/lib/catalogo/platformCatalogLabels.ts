@@ -39,12 +39,15 @@ export const labelActiveReceiptSchema = z.object({ ...baseReceipt, ativo: z.bool
 
 /** Conflito CAS/replay: a UI oferece atualização controlada dos dados (refetch), sem recarregar a página. */
 export const LABEL_CONFLICT_MESSAGE = "O rótulo mudou ou esta solicitação já foi usada. Atualize os dados para conferir antes de tentar novamente.";
+export const LABEL_BUSY_MESSAGE = "Operação ocupada no momento; nada foi gravado. Atualize os dados e tente novamente.";
 export function labelError(error: unknown) {
   const code = typeof error === "object" && error !== null && "code" in error ? (error as { code?: unknown }).code : undefined;
   if (code === "42501") return "Sem permissão para gerenciar rótulos do catálogo global.";
   // PT409: conflito negocial (CAS/confirmação) do candidato; 40001 segue aceito para baseline/replay residual.
   if (code === "PT409" || code === "40001") return LABEL_CONFLICT_MESSAGE;
   if (code === "23505") return "Já existe um rótulo com esta chave nesta família.";
+  // 55P03 (lock_timeout 3s) / PT503 (gate indisponível): transação abortada, nada gravado; sem retry automático.
+  if (code === "55P03" || code === "PT503") return LABEL_BUSY_MESSAGE;
   if (code === "22023") return "Dados inválidos: confira família, chave, nome de exibição e motivo.";
   return "Não foi possível confirmar a operação. Confira os dados antes de tentar novamente.";
 }

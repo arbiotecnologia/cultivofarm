@@ -1,0 +1,43 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "inactive": true,
+  "targets": [
+    {
+      "oid": 120766,
+      "signature": "platform_update_catalog_label(uuid,timestamp with time zone,text,text,uuid)",
+      "md5": "75eaa1d0307e9033a6f3ba8e208ee488",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "config": [
+        "search_path=\"\""
+      ],
+      "security_definer": true,
+      "pt409_md5": "fdf3adc335996bc4ff90f7a57b8f4370",
+      "gate_md5": "afb8fbcdc8df3a8829e1e82ebecaece1"
+    },
+    {
+      "oid": 120767,
+      "signature": "platform_set_catalog_label_active(uuid,timestamp with time zone,boolean,text,uuid)",
+      "md5": "561d3175812dba477a538992d5d02a01",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "config": [
+        "search_path=\"\""
+      ],
+      "security_definer": true,
+      "pt409_md5": "55493f9699ec039057915656355e35ae",
+      "gate_md5": "0dce420a2309a03fb63ac1acbe100295"
+    }
+  ],
+  "config_after": [
+    "search_path=\"\"",
+    "lock_timeout=3s"
+  ],
+  "containment_acl": "{postgres=X/postgres,service_role=X/postgres}",
+  "gate_writer_triggers": {
+    "public.user_roles": "c424f35051b12c446683cbc14ace29b4",
+    "public.profiles": "880559efb52a06f9c949ce11bcacb0cf",
+    "public.platform_org_admin_invites": "69cd8ad5b4c74f14d5fb9c9de0955269"
+  },
+  "gate_state_fp": "5ce50bbddf1812266f32f016f6abaaa9"
+}
