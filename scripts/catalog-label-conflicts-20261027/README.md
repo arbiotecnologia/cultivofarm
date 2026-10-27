@@ -59,6 +59,6 @@ active `0dce420a2309a03fb63ac1acbe100295`; config `["search_path=\"\"","lock_tim
 - Testes: auditor executou 19 testes frontend (passaram) e revisou os 65 checks PG sintéticos — não são JWT/RLS real.
 - Homologação real: negativa consultorA e adminB nas duas RPCs → 403/42501 `catalog_metadata_forbidden`. PENDENTE: positiva e revogação real de Superadmin (login separado IAB14).
 - Frontend `8a771ba` em publicação pelo auditor (deployment `08519845-9408-4e2c-a664-f68379326828`), ainda em verificação.
-- N�ÃO reaplicar `candidate-gate.sql.review`, `candidate.sql.review` (PT409 isolado) nem `rollback-conditioned.sql.review` (restauraria corpo LIVE antigo vulnerável). 
+- NÃO reaplicar `candidate-gate.sql.review`, `candidate.sql.review` (PT409 isolado) nem `rollback-conditioned.sql.review` (restauraria corpo LIVE antigo vulnerável).
   Único rollback válido: `revocation-gate/rollback-containment.sql.review` (deny-only), cuja guarda de config precisa ser revista caso o auditor tenha divergido do candidato.
 - Contabilidade real e SU-518022 seguem adiados.
