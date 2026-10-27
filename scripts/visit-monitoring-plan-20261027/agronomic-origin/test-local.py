@@ -112,7 +112,9 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
   sql(f"SET test.actor='{C}'; SELECT public.rpc_salvar_plano_monitoramento_visita_v1('{V}',1,'{PLAN}'::jsonb,'{k(900)}');")
   sql(f"SET test.actor='{C}'; SELECT public.rpc_salvar_plano_monitoramento_visita_v1('{VF}',1,'{PLAN}'::jsonb,'{k(901)}'); UPDATE registros_consultor SET status='finalizado' WHERE id='{VF}';")
   ok(f"SELECT version=2 AND observacoes_tecnicas LIKE 'Notas preservadas%Próxima Avaliação: 2026-11-05%' FROM registros_consultor WHERE id='{V}';",'fixture: canonical plan saved')
-  cand=strip((HERE/'candidate.sql.review').read_text()); sql(cand)
+  # Synthetic guard text differs from LIVE; POST compares to its own installed md5 here only.
+  gmd5=val("SELECT md5(pg_get_functiondef('platform_private.guard_visit_plan_preservation()'::regprocedure));")
+  cand=strip((HERE/'candidate.sql.review').read_text()).replace("<>'618797b75f8c6b962dc70c0841c84de1' THEN\n    RAISE EXCEPTION 'agronomic_origin_postflight_failed'",f"<>'{gmd5}' THEN\n    RAISE EXCEPTION 'agronomic_origin_postflight_failed'"); sql(cand)
   # --- origin link ---
   err(link(actor=X),'PT404','foreign actor B cannot link A alert to A visit')
   err(link(a=ALB),'PT404','foreign alert B into visit A')
