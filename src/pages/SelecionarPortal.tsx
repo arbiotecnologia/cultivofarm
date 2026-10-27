@@ -11,7 +11,8 @@ import {
   registerLoginRedirect,
   type PortalContext,
 } from "@/hooks/useAvailableContexts";
-import { PORTAL_CONTEXT_HOME, automaticPortalContext } from "@/lib/portalContext";
+import { PORTAL_CONTEXT_HOME, automaticPortalContext, hasPortalRole } from "@/lib/portalContext";
+import { getHomeForRole } from "@/lib/permissions";
 import { setActivePortalContext } from "@/lib/activePortalContext";
 import { toast } from "sonner";
 import { AuthzEpochBoundary } from "@/components/authz/AuthzEpochBoundary";
