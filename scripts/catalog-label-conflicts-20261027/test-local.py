@@ -64,7 +64,8 @@ def suite(cand):
   deny(f'{tag} active no-op 22023',act(SA)+setact(v0,'true',4),'22023','catalog_label_no_change')
   # sucesso + replay idempotente
   run(act(SA)+upd(v0,'Fungicida X',5));v1=ver()
-  check(f'{tag} replay idempotente retorna recibo',f"(SELECT (r->>'idempotent')::boolean FROM (SELECT public.platform_update_catalog_label('{LID}','{v0}','Fungicida X',{REASON},{key(5)}) r) x) FROM (SELECT set_config('test.sub','{SA}',false),set_config('test.iat',(extract(epoch from now())::bigint-5)::text,false)) s")
+  out=val(act(SA)+f"SELECT (public.platform_update_catalog_label('{LID}','{v0}','Fungicida X',{REASON},{key(5)})->>'idempotent');")
+  assert out=='true',out;R.append(f'{tag} replay idempotente retorna recibo')
   check(f'{tag} replay sem nova auditoria',f"{audits()}=1 AND (SELECT updated_at::text='{v1}' FROM public.catalog_family_labels)")
   deny(f'{tag} replay chave reutilizada outro pedido -> 40001 residual helper',act(SA)+upd(v1,'Outro',5),'40001','catalog_entity_conflict')
   # duas conexões
