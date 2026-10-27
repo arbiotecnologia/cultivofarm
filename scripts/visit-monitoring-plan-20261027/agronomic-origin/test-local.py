@@ -106,6 +106,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 """)
   sql((ROOT/'_visita_lock_and_check.live.sql').read_text()+';')
   sql((ROOT/'rpc_reprogramar_monitoramento_v1.live.sql').read_text().replace("(now() AT TIME ZONE 'America/Sao_Paulo')::date","platform_private.test_today()")+';')
+  # Mirror LIVE v1 ACL {postgres,authenticated,service_role}.
+  sql('REVOKE ALL ON FUNCTION public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz) FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.rpc_reprogramar_monitoramento_v1(uuid,date,timestamptz) TO authenticated,service_role;')
   strip=lambda s: re.sub(r'DO \$pre\$.*?\$pre\$;','',s,flags=re.S).replace("(clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date","platform_private.test_today()")
   sql(strip((ROOT/'candidate.sql.review').read_text()))
   sql(strip((ROOT/'preservation/candidate.sql.review').read_text()))
