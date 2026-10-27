@@ -121,10 +121,10 @@ index 481728642..4793a1d1d 100644
              disabled={true}
 diff --git a/src/hooks/useOrigemAlertaAgronomico.ts b/src/hooks/useOrigemAlertaAgronomico.ts
 new file mode 100644
-index 000000000..3155d02ee
+index 000000000..2d4d4093b
 --- /dev/null
 +++ b/src/hooks/useOrigemAlertaAgronomico.ts
-@@ -0,0 +1,96 @@
+@@ -0,0 +1,98 @@
 +import { useEffect, useRef } from "react";
 +import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 +import { supabase } from "@/integrations/supabase/client";
@@ -138,6 +138,7 @@ index 000000000..3155d02ee
 +export class OrigemAlertaError extends Error {
 +  constructor(message: string, public readonly outcome: "rejected" | "uncertain" | "unavailable") { super(message); }
 +}
++export const PLANO_PRIMEIRO = "Salve/revise primeiro o plano de monitoramento existente desta visita (plano, data e aviso coerentes). Nada foi alterado.";
 +export const ORIGEM_INDISPONIVEL = "O vínculo com alerta agronômico ainda não está disponível neste ambiente. Nada foi alterado.";
 +const unavailable = "Não foi possível acessar esta visita ou alerta. Verifique seu acesso.";
 +const conflict = "O alerta ou a visita foram alterados. Atualize antes de confirmar novamente.";
@@ -200,6 +201,7 @@ index 000000000..3155d02ee
 +          if (absent(code)) throw new OrigemAlertaError(ORIGEM_INDISPONIVEL, "unavailable");
 +          if (["42501", "PT403", "PT404", "P0002"].includes(code)) throw new OrigemAlertaError(unavailable, "rejected");
 +          if (code === "PT409" && /visit_already_has_origin_alert/.test(error.message)) throw new OrigemAlertaError("Esta visita já é origem de outro alerta aberto. Só um alerta pode sincronizar a data do plano.", "rejected");
++          if (code === "PT409" && /origin_requires_saved_plan/.test(error.message)) throw new OrigemAlertaError(PLANO_PRIMEIRO, "rejected");
 +          if (code === "PT409") throw new OrigemAlertaError(conflict, "rejected");
 +          if (code === "22023" && /origin_date_mismatch/.test(error.message)) throw new OrigemAlertaError("A data do alerta difere da próxima avaliação desta visita. Reprograme o alerta para a mesma data antes de vincular.", "rejected");
 +          if (code === "22023") throw new OrigemAlertaError("Este alerta não pertence à mesma fazenda e talhão da visita.", "rejected");
@@ -222,10 +224,10 @@ index 000000000..3155d02ee
 +  return { ...mutation, capture: fence.capture, ready: fence.ready, scope: fence.scope };
 +}
 diff --git a/src/hooks/useReprogramarMonitoramento.ts b/src/hooks/useReprogramarMonitoramento.ts
-index 43d59cc2e..ebae8fdf4 100644
+index 43d59cc2e..536c002dc 100644
 --- a/src/hooks/useReprogramarMonitoramento.ts
 +++ b/src/hooks/useReprogramarMonitoramento.ts
-@@ -7,20 +7,33 @@ export interface ReprogramarMonitoramentoArgs {
+@@ -7,20 +7,34 @@ export interface ReprogramarMonitoramentoArgs {
    id: string;
    date: string;
    expectedUpdatedAt: string;
@@ -243,7 +245,8 @@ index 43d59cc2e..ebae8fdf4 100644
  const conflict = "Este monitoramento foi alterado. Atualize a lista antes de confirmar novamente; a data editada foi mantida.";
 +export const MULTIPLOS_ALERTAS = "Mais de um alerta usa esta visita como origem; a data compartilhada não foi alterada. Revise os vínculos antes de reprogramar.";
 +export const PLANO_INCOERENTE = "O plano e o aviso desta visita não estão coerentes; nada foi alterado. Revise a visita.";
-+export type ModoReprogramacao = "plano_visita_aviso_alerta" | "visita_alerta" | "somente_alerta";
++export const SEM_PLANO = "A visita de origem não tem plano de monitoramento salvo; a reprogramação conjunta não é suportada. Salve/revise primeiro o plano. Nada foi alterado.";
++export type ModoReprogramacao = "plano_visita_aviso_alerta" | "somente_alerta";
 +export const REPROGRAMACAO_ORIGEM_INDISPONIVEL = "A reprogramação de alertas com visita de origem ainda não está disponível. Nada foi alterado.";
  const isUuid = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
  const isDate = (value: unknown): value is string => {
@@ -263,7 +266,7 @@ index 43d59cc2e..ebae8fdf4 100644
  
  export function useReprogramarMonitoramento() {
    const fence = useStorageAccessScope("monitoramento-reprogramar");
-@@ -34,33 +47,58 @@ export function useReprogramarMonitoramento() {
+@@ -34,33 +48,59 @@ export function useReprogramarMonitoramento() {
        if (!valid()) throw new Error(unavailable);
        if (pending.current) throw new Error("A reprogramação já está em andamento.");
        // Preserve the exact server timestamp, including microseconds; never manufacture one.
@@ -296,6 +299,7 @@ index 43d59cc2e..ebae8fdf4 100644
 -          throw new Error("Não foi possível reprogramar o monitoramento. A data editada foi mantida.");
 +          if (["42501", "PT403", "PT404", "P0002", "403", "404"].includes(code)) throw new ReprogramacaoError(unavailable, "rejected");
 +          if (code === "PT409" && /multiple_alerts_share_visit/.test(error.message)) throw new ReprogramacaoError(MULTIPLOS_ALERTAS, "rejected");
++          if (code === "PT409" && /origin_without_plan_unsupported/.test(error.message)) throw new ReprogramacaoError(SEM_PLANO, "rejected");
 +          if (code === "PT409" && /plan_notice_incoherent|ambiguous_plan/.test(error.message)) throw new ReprogramacaoError(PLANO_INCOERENTE, "rejected");
 +          if (code === "PT409" || /conflict|conflito/i.test(error.message)) throw new ReprogramacaoError(conflict, "rejected");
 +          // Never fall back to a direct write or to v1 for an origin alert.
@@ -317,7 +321,7 @@ index 43d59cc2e..ebae8fdf4 100644
 +          const modo = result.modo;
 +          if (Object.keys(result).length !== 10 || result.registro_origem_id !== args.origemId ||
 +            typeof result.visita_atualizada !== "boolean" ||
-+            !(modo === "somente_alerta" ? result.visita_atualizada === false : (modo === "plano_visita_aviso_alerta" || modo === "visita_alerta") && result.visita_atualizada === true) || result.request_id !== args.requestId ||
++            !(modo === "somente_alerta" ? result.visita_atualizada === false : modo === "plano_visita_aviso_alerta" && result.visita_atualizada === true) || result.request_id !== args.requestId ||
 +            !isTimestamp(result.alerta_updated_at) ||
 +            result.visit_version !== (result.visita_atualizada ? (args.expectedVisitVersion as number) + 1 : args.expectedVisitVersion)) throw unconfirmed();
 +        } else if (Object.keys(result).length !== 5 || !(result.registro_origem_id === null || isUuid(result.registro_origem_id))) {
@@ -450,10 +454,10 @@ index f8bfc3c9a..38d7fa1e4 100644
            </div>
 diff --git a/src/test/monitoramento/agronomicOriginPostgres.test.ts b/src/test/monitoramento/agronomicOriginPostgres.test.ts
 new file mode 100644
-index 000000000..02a735e87
+index 000000000..7a918db59
 --- /dev/null
 +++ b/src/test/monitoramento/agronomicOriginPostgres.test.ts
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,24 @@
 +import { execFileSync } from "node:child_process";
 +import { expect, it } from "vitest";
 +it("origem agronômica e reprogramação: PostgreSQL descartável/Auth sintética, duas ordens de revogação", () => {
@@ -473,11 +477,14 @@ index 000000000..02a735e87
 +  expect(output).toContain("PASS plan date change after link blocked PT409");
 +  expect(output).toContain("PASS ambiguity rejections fully atomic");
 +  expect(output).toContain("PASS finalized: explicit alert-only mode, visit not synchronized");
-+  expect(output).toContain("TOTAL 73");
++  for (const c of ["link visit without plan rejected PT409", "link malformed block (no end marker) rejected PT409", "link plan with null visit date rejected PT409",
++    "link plan with 0 notices rejected PT409", "link plan with 2 notices rejected PT409", "link notice date divergent rejected PT409",
++    "legacy origin without plan: reschedule rejected PT409", "rejected links left no receipts"]) expect(output).toContain("PASS " + c);
++  expect(output).toContain("TOTAL 87");
 +}, 120_000);
 diff --git a/src/test/monitoramento/origemAlertaAgronomico.test.tsx b/src/test/monitoramento/origemAlertaAgronomico.test.tsx
 new file mode 100644
-index 000000000..f587b17cf
+index 000000000..d759c2c48
 --- /dev/null
 +++ b/src/test/monitoramento/origemAlertaAgronomico.test.tsx
 @@ -0,0 +1,133 @@
@@ -518,7 +525,7 @@ index 000000000..f587b17cf
 +  const h = renderHook(() => useReprogramarMonitoramento(), { wrapper: wrap() });
 +  await act(async () => { await h.result.current.mutateAsync(args); });
 +});
-+it.each([[{ visit_version: 3 }], [{ registro_origem_id: ALERTA }], [{ request_id: VISITA }], [{ extra: 1 }], [{ visita_atualizada: "sim" }], [{ modo: "somente_alerta" }], [{ visita_atualizada: false, visit_version: 3 }], [{ modo: undefined }]])("envelope v2 inválido %j não confirma", async o => {
++it.each([[{ visit_version: 3 }], [{ registro_origem_id: ALERTA }], [{ request_id: VISITA }], [{ extra: 1 }], [{ visita_atualizada: "sim" }], [{ modo: "somente_alerta" }], [{ visita_atualizada: false, visit_version: 3 }], [{ modo: undefined }], [{ modo: "visita_alerta" }]])("envelope v2 inválido %j não confirma", async o => {
 +  s.rpc.mockResolvedValue({ data: v2(o), error: null });
 +  const h = renderHook(() => useReprogramarMonitoramento(), { wrapper: wrap() });
 +  await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("não confirmada"); });
@@ -603,13 +610,13 @@ index 000000000..f587b17cf
 +  await act(async () => { fireEvent.click(await screen.findByRole("button", { name: "Confirmar vínculo" })); });
 +  expect(keys).toHaveLength(2); expect(keys[0]).toBe(keys[1]);
 +});
-+it.each([["multiple_alerts_share_visit", "Mais de um alerta"], ["plan_notice_incoherent", "não estão coerentes"]])("PT409 %s mostra bloqueio claro sem repetir", async (msg, text) => {
++it.each([["multiple_alerts_share_visit", "Mais de um alerta"], ["plan_notice_incoherent", "não estão coerentes"], ["origin_without_plan_unsupported", "não é suportada"]])("PT409 %s mostra bloqueio claro sem repetir", async (msg, text) => {
 +  s.rpc.mockResolvedValue({ data: null, error: { code: "PT409", message: msg } });
 +  const h = renderHook(() => useReprogramarMonitoramento(), { wrapper: wrap() });
 +  await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow(text); });
 +  expect(s.rpc).toHaveBeenCalledTimes(1);
 +});
-+it.each([["PT409", "visit_already_has_origin_alert", "já é origem"], ["22023", "origin_date_mismatch", "Reprograme o alerta"]])("vínculo %s/%s explica política", async (code, msg, text) => {
++it.each([["PT409", "visit_already_has_origin_alert", "já é origem"], ["22023", "origin_date_mismatch", "Reprograme o alerta"], ["PT409", "origin_requires_saved_plan", "Salve/revise primeiro o plano"]])("vínculo %s/%s explica política", async (code, msg, text) => {
 +  s.rpc.mockResolvedValue({ data: null, error: { code, message: msg } });
 +  const h = renderHook(() => useVincularOrigemAlerta(VISITA), { wrapper: wrap() });
 +  await act(async () => { await expect(h.result.current.mutateAsync({ alerta, registroId: VISITA, expectedVisitVersion: 3, requestId: KEY })).rejects.toThrow(text); });

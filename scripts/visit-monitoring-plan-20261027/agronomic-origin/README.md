@@ -23,11 +23,12 @@ Triggers: `user_roles` e `profiles` têm `a00_cf_user_gate -> cf_user_guards_v1.
 ## Contrato de datas (revisão de 533d329)
 
 - **Uma visita, no máximo um alerta aberto de origem.** A data desse alerta é a data do plano/visita/aviso. Segundo vínculo → `PT409 visit_already_has_origin_alert`. Dado legado com 2+ alertas na mesma visita → reprogramação `PT409 multiple_alerts_share_visit`, atômica; nenhum outro alerta é reclassificado ou alterado.
-- **Vínculo não cria divergência:** visita com `data_proxima_visita` exige alerta com a mesma data (`22023 origin_date_mismatch`); plano sem data → `PT409`.
-- **Reprogramação com plano exige exatamente 1 aviso `plano_monitoramento` coerente** (data = visita = linha do bloco). 0, 2 ou divergente → `PT409 plan_notice_incoherent`, sem fabricar aviso. Visita sem plano com aviso de plano → mesmo erro.
+- **Escopo suportado de NOVOS vínculos (revisão 6dd3):** visita editável com exatamente um bloco canônico, `data_proxima_visita` presente e igual à linha `Próxima Avaliação:`, e exatamente 1 aviso de plano com a mesma data. Tudo isso é verificado ANTES de alterar o alerta; senão `PT409 origin_requires_saved_plan` ("salve/revise primeiro o plano de monitoramento existente"). Nada é criado automaticamente. Depois disso, alerta com data diferente → `22023 origin_date_mismatch`.
+- **Fora do escopo, sem promessa de sincronização:** visita sem plano. O guard de preservação não protege a data quando não há bloco, por isso a origem legada sem plano tem a reprogramação recusada (`PT409 origin_without_plan_unsupported`), sem gravar nada.
+- **Reprogramação com plano exige exatamente 1 aviso `plano_monitoramento` coerente** (data = visita = linha do bloco). 0, 2 ou divergente → `PT409 plan_notice_incoherent`, sem fabricar aviso. 
 - **Editor do plano (`save_visit_monitoring_plan_core`, patch fail-closed por needle único, mantém OID/ACL):** com alerta aberto vinculado, mudar data → `PT409 linked_alert_date_requires_reschedule`; editar itens/gatilhos na mesma data segue permitido. Fluxo único de data = reprogramação do alerta.
 - **Visita finalizada:** `modo:"somente_alerta"`, `visita_atualizada:false`; visita/plano/aviso NÃO são sincronizados, e a UI diz isso.
-- Envelope v2: 10 chaves com `modo` ∈ `plano_visita_aviso_alerta | visita_alerta | somente_alerta`.
+- Envelope v2: 10 chaves com `modo` ∈ `plano_visita_aviso_alerta | somente_alerta` (o modo `visita_alerta` foi removido).
 - Outros escritores auditados: `rpc_ativar_monitoramento_visita` não muda data; `rpc_atualizar_status_alerta_agronomico_v1` só status; v1 com origem → PT428; criação climática sem origem; autosave legado barrado pelo guard.
 - Criação de alerta com origem continua não aberta (exige escolha explícita de tipo).
 - Espera limitada: `SET lock_timeout='3s'` nas novas funções.
@@ -46,13 +47,14 @@ Provas sintéticas (Auth/schema reduzidos), não homologação.
 - `candidate.sql.review` — PRE (hashes, gate/guard, ausência) + DDL + POST ACL em uma transação.
 - `rollback-containment.sql.review` — só revoga EXECUTE dos novos pontos; mantém guard, recibos, logs e o patch PT428 (restaurar v1 antigo reabriria escrita bloqueada).
 - `preflight.sql` / `postflight.sql` — somente leitura.
-- `test-local.py` — PostgreSQL descartável, Auth sintética, 73 checks (sintéticos, NÃO homologação) (`src/test/monitoramento/agronomicOriginPostgres.test.ts`).
+- `test-local.py` — PostgreSQL descartável, Auth sintética, 87 checks (sintéticos, NÃO homologação) (`src/test/monitoramento/agronomicOriginPostgres.test.ts`).
 
 ## Cliente (local, não publicado)
 
 - `useReprogramarMonitoramento`: alerta com origem → v2 com envelope integral de 9 campos; sem origem → v1 inalterado; PT428/v2 ausente → mensagem segura, sem fallback. `MonitoramentoAlertas` lê a versão da visita pelo `rpc_get_visita_workspace` ao abrir, mantém chave em resultado incerto e descarta em rejeição.
 - `useOrigemAlertaAgronomico` + `OrigemAlertaAgronomico` no cartão existente do plano: lista do servidor, confirmação com Cancelar, oculto em visita bloqueada; RPC ausente → "indisponível", sem caminho alternativo.
-- Testes: monitoramento+autosave+preservação 167/167 em 11 arquivos.
+- Testes: monitoramento+autosave+preservação (ver resultado da revisão 6dd3 abaixo).
+- `alertas.test.ts` com texto antigo ausente também falha em 7c38 (relato do revisor independente); não é falha de segurança.
 - `etapasVisita`, `pdfVisitaAuthenticated`, `visitaTecnicaSalvamento.static`: rodados também sobre `git archive 7c38bc48` — as mesmas 7 falhas (7 failed/28 passed) na base e no candidato; preexistentes.
 
 ## Ensaio real limitado (para o auditor, após instalação independente)
