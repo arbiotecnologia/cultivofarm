@@ -3,8 +3,14 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(), navigate: vi.fn(), invalidate: vi.fn(), online: true,
-  registro: { status: "rascunho", version: 3, cultura_id: "crop-fake" },
+  registro: { status: "rascunho", version: 3, cultura_id: "crop-fake" } as Record<string, unknown>,
+  auth: null as unknown as Record<string, unknown>,
 }));
+const authFor = (user: string, org: string, roles = ["consultor_tecnico"]) => ({
+  user: { id: user }, profile: { user_id: user, organization_id: org, ativo: true }, roles, loading: false, authzReady: true, authzEpoch: 0,
+});
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
+const envelope = (name: string, version = 4, id = "visit-fake") => ({ data: { id, status: name === "rpc_finalizar_visita_v2" ? "finalizado" : "enviado_aprovacao", version }, error: null });
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } }));
 vi.mock("@tanstack/react-query", async (importOriginal) => ({
   ...await importOriginal<typeof import("@tanstack/react-query")>(),
@@ -19,7 +25,8 @@ beforeEach(() => {
   vi.clearAllMocks(); mocks.online = true;
   mocks.registro = { status: "rascunho", version: 3, cultura_id: "crop-fake" };
   mocks.invalidate.mockResolvedValue(undefined);
-  mocks.rpc.mockResolvedValue({ error: null });
+  mocks.auth = authFor("actor-a", "org-a");
+  mocks.rpc.mockImplementation(async (name: string) => envelope(name));
 });
 afterEach(cleanup);
 it.each(["rascunho", "finalizado"])("abrir/cancelar %s não chama RPC", (status) => {
@@ -49,7 +56,7 @@ it.each([
   expect(screen.getByRole("button", { name: "Cancelar" })).toBeDisabled();
   fireEvent.keyDown(screen.getByRole("alertdialog"), { key: "Escape" });
   expect(screen.getByRole("alertdialog")).toBeTruthy();
-  await act(async () => { finish?.({ error: null }); });
+  await act(async () => { finish?.(envelope(rpc)); });
   await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/app/atendimentos"));
   expect(screen.queryByRole("alertdialog")).toBeNull();
 });
@@ -154,4 +161,67 @@ it("resposta tardia após trocar de visita não navega nem aplica resultado", as
   await act(async () => { finish?.({ error: null }); });
   expect(mocks.navigate).not.toHaveBeenCalled();
   expect(mocks.invalidate).not.toHaveBeenCalled();
+});
+
+it.each([
+  ["NaN", Number.NaN], ["Infinity", Number.POSITIVE_INFINITY], ["fracionário", 3.5], ["negativo", -1], ["string", "3"], ["unsafe", Number.MAX_SAFE_INTEGER + 1],
+])("CAS %s não despacha", (_label, version) => {
+  mocks.registro = { status: "finalizado", version, cultura_id: "crop-fake" };
+  render(<WizardRevisaoStep {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Enviar para aprovação" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar envio" }));
+  expect(mocks.rpc).not.toHaveBeenCalled();
+});
+it.each([
+  ["sem envelope", { data: null, error: null }],
+  ["id errado", envelope("rpc_enviar_visita_aprovacao", 4, "visit-other")],
+  ["status errado", { data: { id: "visit-fake", status: "finalizado", version: 4 }, error: null }],
+  ["versão errada", envelope("rpc_enviar_visita_aprovacao", 5)],
+])("resultado %s não confirma sucesso nem navega", async (_l, result) => {
+  mocks.registro.status = "finalizado";
+  mocks.rpc.mockResolvedValueOnce(result);
+  render(<WizardRevisaoStep {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Enviar para aprovação" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar envio" }));
+  await waitFor(() => expect(within(screen.getByRole("alertdialog")).getByRole("alert")).toHaveTextContent("Não foi possível confirmar"));
+  expect(mocks.navigate).not.toHaveBeenCalled();
+  expect(mocks.invalidate).not.toHaveBeenCalledWith({ queryKey: ["atendimentos-tecnicos"] });
+});
+it.each([["ator", () => authFor("actor-b", "org-a")], ["tenant", () => authFor("actor-a", "org-b")], ["roles", () => authFor("actor-a", "org-a", ["gestor"])]])(
+  "troca de %s com RPC pendente descarta resultado e libera nova tentativa", async (_l, next) => {
+  mocks.registro.status = "finalizado";
+  let finish: ((v: unknown) => void) | undefined;
+  mocks.rpc.mockImplementationOnce(() => new Promise((r) => { finish = r; }));
+  const { rerender } = render(<WizardRevisaoStep {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Enviar para aprovação" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar envio" }));
+  mocks.auth = next();
+  rerender(<WizardRevisaoStep {...props} />);
+  await act(async () => { finish?.(envelope("rpc_enviar_visita_aprovacao")); });
+  expect(mocks.navigate).not.toHaveBeenCalled();
+  expect(mocks.invalidate).not.toHaveBeenCalled();
+  await waitFor(() => expect(screen.getByRole("button", { name: "Confirmar envio" })).not.toBeDisabled());
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar envio" }));
+  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(2));
+});
+it("troca de ator durante invalidação não navega nem mostra sucesso", async () => {
+  mocks.registro.status = "finalizado";
+  let release: (() => void) | undefined;
+  mocks.invalidate.mockImplementation(() => new Promise<void>((r) => { release = r; }));
+  const { rerender } = render(<WizardRevisaoStep {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Enviar para aprovação" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar envio" }));
+  await waitFor(() => expect(mocks.invalidate).toHaveBeenCalled());
+  mocks.auth = authFor("actor-b", "org-b");
+  rerender(<WizardRevisaoStep {...props} />);
+  await act(async () => { release?.(); });
+  expect(mocks.navigate).not.toHaveBeenCalled();
+});
+it("sessão não pronta não despacha", () => {
+  mocks.registro.status = "finalizado";
+  mocks.auth = { ...authFor("actor-a", "org-a"), authzReady: false };
+  render(<WizardRevisaoStep {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Enviar para aprovação" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirmar envio" }));
+  expect(mocks.rpc).not.toHaveBeenCalled();
 });
