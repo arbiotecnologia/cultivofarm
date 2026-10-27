@@ -1,0 +1,31 @@
+Base publicada -> HEAD inicial 35815468
+AGENTS.md
+roadmap.md
+scripts/visit-monitoring-plan-20261027/AGENTS.md
+scripts/visit-monitoring-plan-20261027/README.md
+scripts/visit-monitoring-plan-20261027/SHA256SUMS
+scripts/visit-monitoring-plan-20261027/_visita_lock_and_check.live.sql
+scripts/visit-monitoring-plan-20261027/_visita_log_status.live.sql
+scripts/visit-monitoring-plan-20261027/can_manage_technical_visit.live.sql
+scripts/visit-monitoring-plan-20261027/candidate.sql.review
+scripts/visit-monitoring-plan-20261027/client.diff
+scripts/visit-monitoring-plan-20261027/monitoring_refs_in_actor_tenant.live.sql
+scripts/visit-monitoring-plan-20261027/postflight.sql
+scripts/visit-monitoring-plan-20261027/preflight.sql
+scripts/visit-monitoring-plan-20261027/rollback-containment.sql.review
+scripts/visit-monitoring-plan-20261027/rpc_ativar_monitoramento_visita.live.sql
+scripts/visit-monitoring-plan-20261027/rpc_atualizar_status_alerta_agronomico_v1.live.sql
+scripts/visit-monitoring-plan-20261027/rpc_criar_alerta_climatico_v1.live.sql
+scripts/visit-monitoring-plan-20261027/rpc_reprogramar_monitoramento_v1.live.sql
+scripts/visit-monitoring-plan-20261027/sql.diff
+scripts/visit-monitoring-plan-20261027/technical_actor_ready.live.sql
+scripts/visit-monitoring-plan-20261027/test-local.py
+scripts/visit-monitoring-plan-20261027/tests.diff
+src/components/visita/PlanoMonitoramentoEditor.tsx
+src/hooks/useSalvarPlanoMonitoramento.ts
+src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx
+src/test/monitoramento/visitMonitoringPlanEditor.test.tsx
+src/test/monitoramento/visitMonitoringPlanPostgres.test.ts
+src/test/visita/parentFence.interaction.test.tsx
+
+Revisão local

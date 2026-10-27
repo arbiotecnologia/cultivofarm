@@ -1,131 +1,9 @@
-diff --git a/src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx b/src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx
-new file mode 100644
-index 000000000..1178821c2
---- /dev/null
-+++ b/src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx
-@@ -0,0 +1,45 @@
-+import { act, renderHook } from "@testing-library/react";
-+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-+import { beforeEach, expect, it, vi } from "vitest";
-+import { useSalvarPlanoMonitoramento } from "@/hooks/useSalvarPlanoMonitoramento";
-+const s = vi.hoisted(() => ({ rpc: vi.fn(), ready: true, actor: "A", epoch: 0, signal: null as AbortSignal | null }));
-+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...args: unknown[]) => ({ abortSignal: (signal: AbortSignal) => { s.signal = signal; return s.rpc(...args); } }) } }));
-+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: s.actor }, profile: { user_id: s.actor, organization_id: s.actor, ativo: true }, roles: ["consultor_tecnico"], loading: false, authzReady: s.ready, authzEpoch: s.epoch, checkAuthzAccess: () => s.ready }) }));
-+const id = "11111111-1111-4111-8111-111111111111";
-+const args = { registroId: id, expectedVersion: 8, requestId: "22222222-2222-4222-8222-222222222222", plan: { items: ["Nutrição", "Estande"], frequency: "14", triggers: "Avaliar crescimento", next_date: "2026-11-01" } };
-+const result = () => ({ ok: true, registro_id: id, version: 9, request_id: args.requestId, aviso_id: "33333333-3333-4333-8333-333333333333", data_referencia: args.plan.next_date, plano: args.plan });
-+beforeEach(() => { s.rpc.mockReset(); s.actor = "A"; s.ready = true; s.epoch = 0; s.signal = null; });
-+function setup() {
-+  const qc = new QueryClient({ defaultOptions: { mutations: { retry: 3 } } });
-+  return renderHook(() => useSalvarPlanoMonitoramento(id), { wrapper: ({ children }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider> });
-+}
-+it("contrato objeto JSONB real mantém Nutrição/Estande e CAS observado sem outra leitura", async () => {
-+  const h = setup(); s.rpc.mockResolvedValue({ data: result(), error: null });
-+  await act(async () => { expect(await h.result.current.mutateAsync(args)).toEqual(result()); });
-+  expect(s.rpc).toHaveBeenCalledExactlyOnceWith("rpc_salvar_plano_monitoramento_visita_v1", { p_registro_id: id, p_expected_version: 8, p_plano: args.plan, p_request_id: args.requestId });
-+});
-+it.each([null, 0, -1, 1.5])("versão %s negada sem dispatch", async version => {
-+  const h = setup(); await act(async () => { await expect(h.result.current.mutateAsync({ ...args, expectedVersion: version as number })).rejects.toThrow("alterada"); }); expect(s.rpc).not.toHaveBeenCalled();
-+});
-+it.each([null, [], [result()], { ...result(), ok: false }, { ...result(), registro_id: args.requestId }, { ...result(), version: 8 }, { ...result(), request_id: id }, { ...result(), data_referencia: "2026-11-02" }, { ...result(), plano: { ...args.plan, items: ["Pragas"] } }])("retorno inválido %j não confirma", async data => {
-+  const h = setup(); s.rpc.mockResolvedValue({ data, error: null }); await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("não confirmada"); }); expect(s.rpc).toHaveBeenCalledTimes(1);
-+});
-+it.each(["PT409", "42501", "PT404", "40001", "PGRST202"])("erro %s preserva edição e não repete", async code => {
-+  const h = setup(); const before = structuredClone(args); s.rpc.mockResolvedValue({ data: null, error: { code } });
-+  await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow(); }); expect(args).toEqual(before); expect(s.rpc).toHaveBeenCalledTimes(1);
-+});
-+it("duplo envio bloqueia síncrono; exceção libera somente operação própria", async () => {
-+  const h = setup(); let fail: (v: Error) => void = () => {}; s.rpc.mockImplementation(() => new Promise((_, r) => { fail = r; }));
-+  let first: Promise<unknown> = Promise.resolve(); act(() => { first = h.result.current.mutateAsync(args); });
-+  await act(async () => { await Promise.resolve(); });
-+  await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("em andamento"); fail(new Error("network")); await expect(first).rejects.toThrow("network"); });
-+  expect(s.rpc).toHaveBeenCalledTimes(1); s.rpc.mockResolvedValue({ data: result(), error: null });
-+  await act(async () => { expect(await h.result.current.mutateAsync(args)).toEqual(result()); });
-+});
-+it.each(["revogação", "troca", "unmount"])("latência/%s aborta e rejeita resultado tardio", async mode => {
-+  const h = setup(); let finish: (v: unknown) => void = () => {}; s.rpc.mockImplementation(() => new Promise(r => { finish = r; }));
-+  let first: Promise<unknown> = Promise.resolve(); act(() => { first = h.result.current.mutateAsync(args); }); await act(async () => { await Promise.resolve(); });
-+  if (mode === "unmount") h.unmount(); else { s.epoch++; if (mode === "troca") s.actor = "B"; else s.ready = false; h.rerender(); }
-+  expect(s.signal?.aborted).toBe(true);
-+  await act(async () => { finish({ data: result(), error: null }); await expect(first).rejects.toThrow("acessar esta visita"); });
-+});
-\ No newline at end of file
-diff --git a/src/test/monitoramento/visitMonitoringPlanEditor.test.tsx b/src/test/monitoramento/visitMonitoringPlanEditor.test.tsx
-new file mode 100644
-index 000000000..1836413ac
---- /dev/null
-+++ b/src/test/monitoramento/visitMonitoringPlanEditor.test.tsx
-@@ -0,0 +1,46 @@
-+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-+import { afterEach, beforeEach, expect, it, vi } from "vitest";
-+import { PlanoMonitoramentoEditor } from "@/components/visita/PlanoMonitoramentoEditor";
-+const s = vi.hoisted(() => ({ rpc: vi.fn(), refetch: vi.fn(), ready: true, actor: "A", version: 8, success: vi.fn(), error: vi.fn() }));
-+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...args: unknown[]) => ({ abortSignal: () => s.rpc(...args) }) } }));
-+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: s.actor }, profile: { user_id: s.actor, organization_id: s.actor, ativo: true }, roles: ["consultor_tecnico"], loading: false, authzReady: s.ready }) }));
-+vi.mock("@/hooks/useVisitaWorkspace", () => ({ useVisitaWorkspace: () => ({ data: { registro: { observacoes_tecnicas: "Notas", data_proxima_visita: "2026-11-01" }, version: s.version, status: "rascunho", permissions: { can_edit: true } }, refetch: s.refetch, isError: false }) }));
-+vi.mock("sonner", () => ({ toast: { success: s.success, error: s.error } }));
-+const id = "11111111-1111-4111-8111-111111111111";
-+const props = { registroId: id, observacoesAtuais: "Texto obsoleto", clienteId: id, fazendaId: id, talhaoId: id, consultorId: id, onUpdate: vi.fn(), readOnly: false };
-+function renderEditor() {
-+  const qc = new QueryClient(); const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
-+  return render(<PlanoMonitoramentoEditor {...props} />, { wrapper });
-+}
-+beforeEach(() => { vi.clearAllMocks(); s.ready = true; s.actor = "A"; s.version = 8; });
-+afterEach(cleanup);
-+function openAndEdit() {
-+  fireEvent.click(screen.getByRole("button", { name: "Editar Plano" }));
-+  fireEvent.click(screen.getByRole("button", { name: "Nutrição" }));
-+  fireEvent.click(screen.getByRole("button", { name: "Estande" }));
-+}
-+it("componente real usa versão capturada; leitura nova não rebaseia; erro persiste sem limpar", async () => {
-+  const h = renderEditor(); openAndEdit(); s.version = 9; h.rerender(<PlanoMonitoramentoEditor {...props} />);
-+  s.rpc.mockResolvedValue({ data: null, error: { code: "PT409" } });
-+  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
-+  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Seu plano foi mantido"));
-+  expect(s.rpc.mock.calls[0][1].p_expected_version).toBe(8);
-+  expect(s.rpc.mock.calls[0][1].p_plano.items).toEqual(["Nutrição", "Estande"]);
-+  expect(s.refetch).not.toHaveBeenCalled(); expect(s.success).not.toHaveBeenCalled(); expect(props.onUpdate).not.toHaveBeenCalled();
-+  expect(screen.getByRole("dialog")).toBeTruthy();
-+});
-+it("sucesso contrato canônico fecha e notifica apenas uma vez; cancelamento não envia", async () => {
-+  renderEditor(); openAndEdit(); fireEvent.click(screen.getByRole("button", { name: "Cancelar" })); expect(s.rpc).not.toHaveBeenCalled();
-+  fireEvent.click(screen.getByRole("button", { name: "Editar Plano" }));
-+  s.rpc.mockImplementation(async (_: string, a: Record<string, any>) => ({ error: null, data: { ok: true, registro_id: id, version: 9, aviso_id: "22222222-2222-4222-8222-222222222222", data_referencia: a.p_plano.next_date, plano: a.p_plano, request_id: a.p_request_id } }));
-+  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
-+  await waitFor(() => expect(s.success).toHaveBeenCalledTimes(1)); expect(s.rpc).toHaveBeenCalledTimes(1); expect(props.onUpdate).toHaveBeenCalledTimes(1); expect(screen.queryByRole("dialog")).toBeNull();
-+});
-+it("troca de ator durante envio fecha edição sem falso sucesso/callback", async () => {
-+  const h = renderEditor(); openAndEdit(); let finish: (v: unknown) => void = () => {};
-+  s.rpc.mockImplementation(() => new Promise(r => { finish = r; })); fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
-+  await waitFor(() => expect(s.rpc).toHaveBeenCalledTimes(1)); s.actor = "B"; h.rerender(<PlanoMonitoramentoEditor {...props} />);
-+  finish({ data: null, error: null }); await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-+  expect(s.success).not.toHaveBeenCalled(); expect(props.onUpdate).not.toHaveBeenCalled();
-+});
-\ No newline at end of file
-diff --git a/src/test/monitoramento/visitMonitoringPlanPostgres.test.ts b/src/test/monitoramento/visitMonitoringPlanPostgres.test.ts
-new file mode 100644
-index 000000000..c5986904e
---- /dev/null
-+++ b/src/test/monitoramento/visitMonitoringPlanPostgres.test.ts
-@@ -0,0 +1,10 @@
-+import { execFileSync } from "node:child_process";
-+import { expect, it } from "vitest";
-+it("plano canônico PostgreSQL descartável/Auth sintética: atomicidade/CAS/origem/espera", () => {
-+  const output = execFileSync("python3", ["scripts/visit-monitoring-plan-20261027/test-local.py"], { encoding: "utf8" });
-+  expect(output).toContain("PASS rollback receipt");
-+  expect(output).toContain("PASS concurrent double submit one increment");
-+  expect(output).toContain("PASS revoke during gate wait PT404");
-+  expect(output).toContain("PASS revoke during visit row wait 42501");
-+  expect(output).toContain("TOTAL 23");
-+}, 90_000);
-\ No newline at end of file
 diff --git a/scripts/visit-monitoring-plan-20261027/test-local.py b/scripts/visit-monitoring-plan-20261027/test-local.py
 new file mode 100644
-index 000000000..1f705759f
+index 000000000..85b227cb6
 --- /dev/null
 +++ b/scripts/visit-monitoring-plan-20261027/test-local.py
-@@ -0,0 +1,124 @@
+@@ -0,0 +1,134 @@
 +"""Disposable PostgreSQL, synthetic Auth/reduced schema; never hosted."""
 +from pathlib import Path
 +import tempfile, subprocess, os, shutil, time, re
@@ -156,6 +34,9 @@ index 000000000..1f705759f
 +  sql(f"""
 +CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
 +CREATE SCHEMA auth; CREATE SCHEMA platform_private; CREATE SCHEMA cf_user_guards_v1;
++CREATE TABLE platform_private.test_clock(today date);
++INSERT INTO platform_private.test_clock VALUES('2026-10-27');
++CREATE FUNCTION platform_private.test_today() RETURNS date LANGUAGE sql AS $$SELECT today FROM platform_private.test_clock$$;
 +CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT nullif(current_setting('test.actor',true),'')::uuid$$;
 +CREATE TYPE public.app_role AS ENUM('gestor','administrador','consultor_tecnico');
 +CREATE TABLE actors(id uuid PRIMARY KEY,ready boolean,role app_role);
@@ -180,11 +61,18 @@ index 000000000..1f705759f
 +  # Reduced synthetic dependencies cannot satisfy LIVE hashes. Only the PRE
 +  # hash block is removed here; candidate core, postflight ACL and transaction are real.
 +  candidate=re.sub(r'DO \$pre\$.*?\$pre\$;', '', candidate, flags=re.S)
++  # Simulated date only, to prove time-dependent validation AFTER replay.
++  candidate=candidate.replace("(clock_timestamp() AT TIME ZONE 'America/Sao_Paulo')::date", "platform_private.test_today()")
 +  sql(candidate)
 +  for ver in ['NULL','0','-1','2']: error(call(ver=ver),'PT409','mandatory/stale version '+ver)
 +  error(call(visit=B),'PT404','foreign origin A to B'); error(call(actor=U),'PT404','foreign origin B to A')
 +  sql(call()); assert_sql(f"SELECT version=2 AND observacoes_tecnicas LIKE '%Nutrição, Estande%' AND observacoes_tecnicas LIKE 'Notas preservadas%' FROM registros_consultor WHERE id='{V}';",'plan preserves semantics, exact +1')
 +  sql(call()); assert_sql('SELECT (SELECT count(*) FROM monitoramento_avisos)=1 AND (SELECT count(*) FROM visitas_logs)=1;','replay once')
++  sql("UPDATE platform_private.test_clock SET today='2026-11-02';")
++  sql(call()); assert_sql(f"SELECT version=2 FROM registros_consultor WHERE id='{V}';",'confirmed replay survives past date')
++  error(call(ver='2',key='dddddddd-dddd-4ddd-8ddd-dddddddddddd'),'22023','new past plan rejected after replay')
++  assert_sql('SELECT count(*)=1 FROM platform_private.visit_monitoring_plan_receipts;','past date no new receipt')
++  sql("UPDATE platform_private.test_clock SET today='2026-10-27';")
 +  error(call(plan=PLAN.replace('Avaliar','Alterado')),'PT409','same key changed payload')
 +  sql(call(actor=U,visit=B,key='55555555-5555-4555-8555-555555555555'))
 +  assert_sql(f"SELECT count(*)=1 FROM monitoramento_avisos WHERE registro_consultor_id='{B}';",'own B origin')
@@ -250,3 +138,245 @@ index 000000000..1f705759f
 +  if started: subprocess.run(prefix+['pg_ctl','-D',str(tmp/'data'),'stop','-m','immediate'],capture_output=True)
 +  shutil.rmtree(tmp)
 +if __name__=='__main__': main()
+diff --git a/src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx b/src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx
+new file mode 100644
+index 000000000..1178821c2
+--- /dev/null
++++ b/src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx
+@@ -0,0 +1,45 @@
++import { act, renderHook } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { beforeEach, expect, it, vi } from "vitest";
++import { useSalvarPlanoMonitoramento } from "@/hooks/useSalvarPlanoMonitoramento";
++const s = vi.hoisted(() => ({ rpc: vi.fn(), ready: true, actor: "A", epoch: 0, signal: null as AbortSignal | null }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...args: unknown[]) => ({ abortSignal: (signal: AbortSignal) => { s.signal = signal; return s.rpc(...args); } }) } }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: s.actor }, profile: { user_id: s.actor, organization_id: s.actor, ativo: true }, roles: ["consultor_tecnico"], loading: false, authzReady: s.ready, authzEpoch: s.epoch, checkAuthzAccess: () => s.ready }) }));
++const id = "11111111-1111-4111-8111-111111111111";
++const args = { registroId: id, expectedVersion: 8, requestId: "22222222-2222-4222-8222-222222222222", plan: { items: ["Nutrição", "Estande"], frequency: "14", triggers: "Avaliar crescimento", next_date: "2026-11-01" } };
++const result = () => ({ ok: true, registro_id: id, version: 9, request_id: args.requestId, aviso_id: "33333333-3333-4333-8333-333333333333", data_referencia: args.plan.next_date, plano: args.plan });
++beforeEach(() => { s.rpc.mockReset(); s.actor = "A"; s.ready = true; s.epoch = 0; s.signal = null; });
++function setup() {
++  const qc = new QueryClient({ defaultOptions: { mutations: { retry: 3 } } });
++  return renderHook(() => useSalvarPlanoMonitoramento(id), { wrapper: ({ children }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider> });
++}
++it("contrato objeto JSONB real mantém Nutrição/Estande e CAS observado sem outra leitura", async () => {
++  const h = setup(); s.rpc.mockResolvedValue({ data: result(), error: null });
++  await act(async () => { expect(await h.result.current.mutateAsync(args)).toEqual(result()); });
++  expect(s.rpc).toHaveBeenCalledExactlyOnceWith("rpc_salvar_plano_monitoramento_visita_v1", { p_registro_id: id, p_expected_version: 8, p_plano: args.plan, p_request_id: args.requestId });
++});
++it.each([null, 0, -1, 1.5])("versão %s negada sem dispatch", async version => {
++  const h = setup(); await act(async () => { await expect(h.result.current.mutateAsync({ ...args, expectedVersion: version as number })).rejects.toThrow("alterada"); }); expect(s.rpc).not.toHaveBeenCalled();
++});
++it.each([null, [], [result()], { ...result(), ok: false }, { ...result(), registro_id: args.requestId }, { ...result(), version: 8 }, { ...result(), request_id: id }, { ...result(), data_referencia: "2026-11-02" }, { ...result(), plano: { ...args.plan, items: ["Pragas"] } }])("retorno inválido %j não confirma", async data => {
++  const h = setup(); s.rpc.mockResolvedValue({ data, error: null }); await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("não confirmada"); }); expect(s.rpc).toHaveBeenCalledTimes(1);
++});
++it.each(["PT409", "42501", "PT404", "40001", "PGRST202"])("erro %s preserva edição e não repete", async code => {
++  const h = setup(); const before = structuredClone(args); s.rpc.mockResolvedValue({ data: null, error: { code } });
++  await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow(); }); expect(args).toEqual(before); expect(s.rpc).toHaveBeenCalledTimes(1);
++});
++it("duplo envio bloqueia síncrono; exceção libera somente operação própria", async () => {
++  const h = setup(); let fail: (v: Error) => void = () => {}; s.rpc.mockImplementation(() => new Promise((_, r) => { fail = r; }));
++  let first: Promise<unknown> = Promise.resolve(); act(() => { first = h.result.current.mutateAsync(args); });
++  await act(async () => { await Promise.resolve(); });
++  await act(async () => { await expect(h.result.current.mutateAsync(args)).rejects.toThrow("em andamento"); fail(new Error("network")); await expect(first).rejects.toThrow("network"); });
++  expect(s.rpc).toHaveBeenCalledTimes(1); s.rpc.mockResolvedValue({ data: result(), error: null });
++  await act(async () => { expect(await h.result.current.mutateAsync(args)).toEqual(result()); });
++});
++it.each(["revogação", "troca", "unmount"])("latência/%s aborta e rejeita resultado tardio", async mode => {
++  const h = setup(); let finish: (v: unknown) => void = () => {}; s.rpc.mockImplementation(() => new Promise(r => { finish = r; }));
++  let first: Promise<unknown> = Promise.resolve(); act(() => { first = h.result.current.mutateAsync(args); }); await act(async () => { await Promise.resolve(); });
++  if (mode === "unmount") h.unmount(); else { s.epoch++; if (mode === "troca") s.actor = "B"; else s.ready = false; h.rerender(); }
++  expect(s.signal?.aborted).toBe(true);
++  await act(async () => { finish({ data: result(), error: null }); await expect(first).rejects.toThrow("acessar esta visita"); });
++});
+\ No newline at end of file
+diff --git a/src/test/monitoramento/visitMonitoringPlanEditor.test.tsx b/src/test/monitoramento/visitMonitoringPlanEditor.test.tsx
+new file mode 100644
+index 000000000..efd2a1ea2
+--- /dev/null
++++ b/src/test/monitoramento/visitMonitoringPlanEditor.test.tsx
+@@ -0,0 +1,114 @@
++import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
++import { afterEach, beforeEach, expect, it, vi } from "vitest";
++import { PlanoMonitoramentoEditor } from "@/components/visita/PlanoMonitoramentoEditor";
++const s = vi.hoisted(() => ({ rpc: vi.fn(), refetch: vi.fn(), ready: true, actor: "A", version: 8, status: "rascunho", text: "Notas", success: vi.fn(), error: vi.fn() }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...args: unknown[]) => ({ abortSignal: () => s.rpc(...args) }) } }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: s.actor }, profile: { user_id: s.actor, organization_id: s.actor, ativo: true }, roles: ["consultor_tecnico"], loading: false, authzReady: s.ready }) }));
++vi.mock("@/hooks/useVisitaWorkspace", () => ({ useVisitaWorkspace: () => ({ data: { registro: { observacoes_tecnicas: s.text, data_proxima_visita: "2026-11-01", codigo_visita: "VT-TESTE" }, version: s.version, status: s.status, permissions: { can_edit: true, can_view: true }, monitoramento: [{ registro_consultor_id: "11111111-1111-4111-8111-111111111111", id: "33333333-3333-4333-8333-333333333333", tipo: "plano_monitoramento" }] }, refetch: s.refetch, isError: false }) }));
++vi.mock("sonner", () => ({ toast: { success: s.success, error: s.error } }));
++const id = "11111111-1111-4111-8111-111111111111";
++const props = { registroId: id, observacoesAtuais: "Texto obsoleto", clienteId: id, fazendaId: id, talhaoId: id, consultorId: id, onUpdate: vi.fn(), readOnly: false };
++function renderEditor() {
++  const qc = new QueryClient(); const wrapper = ({ children }: { children: React.ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
++  return render(<PlanoMonitoramentoEditor {...props} />, { wrapper });
++}
++beforeEach(() => { vi.clearAllMocks(); s.ready = true; s.actor = "A"; s.version = 8; s.status = "rascunho"; s.text = "Notas"; });
++afterEach(cleanup);
++function openAndEdit() {
++  fireEvent.click(screen.getByRole("button", { name: "Editar Plano" }));
++  fireEvent.click(screen.getByRole("button", { name: "Nutrição" }));
++  fireEvent.click(screen.getByRole("button", { name: "Estande" }));
++}
++it("componente real usa versão capturada; leitura nova não rebaseia; erro persiste sem limpar", async () => {
++  const h = renderEditor(); openAndEdit(); s.version = 9; h.rerender(<PlanoMonitoramentoEditor {...props} />);
++  s.rpc.mockResolvedValue({ data: null, error: { code: "PT409" } });
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
++  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Seu plano foi mantido"));
++  expect(s.rpc.mock.calls[0][1].p_expected_version).toBe(8);
++  expect(s.rpc.mock.calls[0][1].p_plano.items).toEqual(["Nutrição", "Estande"]);
++  expect(s.refetch).not.toHaveBeenCalled(); expect(s.success).not.toHaveBeenCalled(); expect(props.onUpdate).not.toHaveBeenCalled();
++  expect(screen.getByRole("dialog")).toBeTruthy();
++});
++it("sucesso contrato canônico fecha e notifica apenas uma vez; cancelamento não envia", async () => {
++  renderEditor(); openAndEdit(); fireEvent.click(screen.getByRole("button", { name: "Cancelar" })); expect(s.rpc).not.toHaveBeenCalled();
++  fireEvent.click(screen.getByRole("button", { name: "Editar Plano" }));
++  s.rpc.mockImplementation(async (_: string, a: Record<string, any>) => ({ error: null, data: { ok: true, registro_id: id, version: 9, aviso_id: "22222222-2222-4222-8222-222222222222", data_referencia: a.p_plano.next_date, plano: a.p_plano, request_id: a.p_request_id } }));
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
++  await waitFor(() => expect(s.success).toHaveBeenCalledTimes(1)); expect(s.rpc).toHaveBeenCalledTimes(1); expect(props.onUpdate).toHaveBeenCalledTimes(1); expect(screen.queryByRole("dialog")).toBeNull();
++});
++it("troca de ator durante envio fecha edição sem falso sucesso/callback", async () => {
++  const h = renderEditor(); openAndEdit(); let finish: (v: unknown) => void = () => {};
++  s.rpc.mockImplementation(() => new Promise(r => { finish = r; })); fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" }));
++  await waitFor(() => expect(s.rpc).toHaveBeenCalledTimes(1)); s.actor = "B"; h.rerender(<PlanoMonitoramentoEditor {...props} />);
++  finish({ data: null, error: null }); await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
++  expect(s.success).not.toHaveBeenCalled(); expect(props.onUpdate).not.toHaveBeenCalled();
++});
++const planText = "[PLANO DE MONITORAMENTO]\nItens: Nutrição, Estande\nFrequência: 14 dias\nGatilhos: Avaliar\nPróxima Avaliação: 2026-11-01\n[FIM DO PLANO]";
++it("montagem readonly preserva display do envelope e origem; revogação oculta", () => {
++  s.status = "finalizado"; s.text = planText;
++  const h = renderEditor();
++  expect(screen.getByText("Nutrição")).toBeTruthy(); expect(screen.getByText("Estande")).toBeTruthy();
++  expect(screen.getByText(/Aviso desta visita/)).toHaveTextContent("VT-TESTE");
++  expect(screen.getByRole("button", { name: "Editar Plano" })).toBeDisabled();
++  expect(screen.getByText(/Próxima:/)).not.toHaveTextContent("Não definida");
++  s.ready = false; h.rerender(<PlanoMonitoramentoEditor {...props} />);
++  expect(screen.queryByText("Nutrição")).toBeNull(); expect(screen.queryByText(/Aviso desta visita/)).toBeNull();
++});
++it("display não adota draft durante edição nem perde plano por cancelamento", () => {
++  s.text = planText; renderEditor();
++  fireEvent.click(screen.getByRole("button", { name: "Editar Plano" }));
++  fireEvent.click(screen.getByRole("button", { name: "Pragas" }));
++  fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
++  expect(screen.queryByText("Pragas")).toBeNull(); expect(screen.getByText("Nutrição")).toBeTruthy();
++  expect(s.rpc).not.toHaveBeenCalled();
++});
++it("dois saves consecutivos usam N,N+1 e retornam N+1,N+2 após refresh observado", async () => {
++  const h = renderEditor(); openAndEdit();
++  s.rpc.mockImplementation(async (_: string, a: Record<string, any>) => ({ error: null, data: { ok: true, registro_id: id, version: a.p_expected_version + 1, aviso_id: "22222222-2222-4222-8222-222222222222", data_referencia: a.p_plano.next_date, plano: a.p_plano, request_id: a.p_request_id } }));
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); await waitFor(() => expect(s.success).toHaveBeenCalledTimes(1));
++  // No stale cache reopen before the new observed envelope.
++  fireEvent.click(screen.getByRole("button", { name: "Editar Plano" })); expect(screen.queryByRole("dialog")).toBeNull();
++  s.version = 9; s.text = planText; h.rerender(<PlanoMonitoramentoEditor {...props} />);
++  fireEvent.click(screen.getByRole("button", { name: "Editar Plano" }));
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); await waitFor(() => expect(s.success).toHaveBeenCalledTimes(2));
++  expect(s.rpc.mock.calls.map(c => c[1].p_expected_version)).toEqual([8, 9]);
++  expect(s.rpc.mock.calls[0][1].p_request_id).not.toBe(s.rpc.mock.calls[1][1].p_request_id);
++});
++it("PT409 definitivo: consulta explícita, cancelar preserva, confirmar nova revisão não salva sozinho", async () => {
++  const h = renderEditor(); openAndEdit(); s.rpc.mockResolvedValueOnce({ data: null, error: { code: "PT409" } });
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
++  expect(screen.getByRole("button", { name: "Salvar Alterações" })).toBeDisabled();
++  s.version = 9; h.rerender(<PlanoMonitoramentoEditor {...props} />);
++  s.refetch.mockResolvedValue({ isError: false, data: { version: 9, status: "rascunho", permissions: { can_edit: true } } });
++  fireEvent.click(screen.getByRole("button", { name: "Reconsultar e revisar" })); await waitFor(() => expect(screen.getByRole("alertdialog")).toBeTruthy());
++  fireEvent.click(screen.getByRole("button", { name: "Cancelar revisão" })); expect(s.rpc).toHaveBeenCalledTimes(1);
++  fireEvent.click(screen.getByRole("button", { name: "Reconsultar e revisar" })); await waitFor(() => expect(screen.getByRole("alertdialog")).toBeTruthy());
++  fireEvent.click(screen.getByRole("button", { name: "Confirmar revisão" })); expect(s.rpc).toHaveBeenCalledTimes(1);
++  s.rpc.mockImplementationOnce(async (_: string, a: Record<string, any>) => ({ error: null, data: { ok: true, registro_id: id, version: 10, aviso_id: "22222222-2222-4222-8222-222222222222", data_referencia: a.p_plano.next_date, plano: a.p_plano, request_id: a.p_request_id } }));
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); await waitFor(() => expect(s.success).toHaveBeenCalledTimes(1));
++  expect(s.rpc.mock.calls[1][1].p_expected_version).toBe(9);
++  expect(s.rpc.mock.calls[1][1].p_plano.items).toEqual(["Nutrição", "Estande"]);
++  expect(s.rpc.mock.calls[0][1].p_request_id).not.toBe(s.rpc.mock.calls[1][1].p_request_id);
++});
++it("timeout incerto mantém chave; PT409 posterior não permite nova tentativa/rebase", async () => {
++  renderEditor(); openAndEdit(); s.rpc.mockRejectedValueOnce(new Error("timeout"));
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
++  expect(screen.queryByRole("button", { name: "Reconsultar e revisar" })).toBeNull();
++  s.rpc.mockResolvedValueOnce({ data: null, error: { code: "PT409" } });
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); await waitFor(() => expect(s.rpc).toHaveBeenCalledTimes(2));
++  expect(s.rpc.mock.calls[0][1].p_request_id).toBe(s.rpc.mock.calls[1][1].p_request_id);
++  expect(screen.queryByRole("button", { name: "Reconsultar e revisar" })).toBeNull();
++});
++it.each(["version", "actor"])("confirmação da revisão não adota mudança de %s durante diálogo", async change => {
++  const h = renderEditor(); openAndEdit(); s.rpc.mockResolvedValue({ data: null, error: { code: "PT409" } });
++  fireEvent.click(screen.getByRole("button", { name: "Salvar Alterações" })); await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
++  s.refetch.mockResolvedValue({ isError: false, data: { version: 8, status: "rascunho", permissions: { can_edit: true } } });
++  fireEvent.click(screen.getByRole("button", { name: "Reconsultar e revisar" })); await waitFor(() => expect(screen.getByRole("alertdialog")).toBeTruthy());
++  if (change === "version") s.version = 9; else s.actor = "B";
++  h.rerender(<PlanoMonitoramentoEditor {...props} />);
++  const confirm = screen.queryByRole("button", { name: "Confirmar revisão" }); if (confirm) fireEvent.click(confirm);
++  expect(s.rpc).toHaveBeenCalledTimes(1); expect(s.success).not.toHaveBeenCalled();
++  if (change === "version") expect(screen.getByRole("button", { name: "Salvar Alterações" })).toBeDisabled();
++  else expect(screen.queryByRole("dialog")).toBeNull();
++});
+\ No newline at end of file
+diff --git a/src/test/monitoramento/visitMonitoringPlanPostgres.test.ts b/src/test/monitoramento/visitMonitoringPlanPostgres.test.ts
+new file mode 100644
+index 000000000..a63b5af93
+--- /dev/null
++++ b/src/test/monitoramento/visitMonitoringPlanPostgres.test.ts
+@@ -0,0 +1,12 @@
++import { execFileSync } from "node:child_process";
++import { expect, it } from "vitest";
++it("plano canônico PostgreSQL descartável/Auth sintética: atomicidade/CAS/origem/espera", () => {
++  const output = execFileSync("python3", ["scripts/visit-monitoring-plan-20261027/test-local.py"], { encoding: "utf8" });
++  expect(output).toContain("PASS rollback receipt");
++  expect(output).toContain("PASS concurrent double submit one increment");
++  expect(output).toContain("PASS revoke during gate wait PT404");
++  expect(output).toContain("PASS revoke during visit row wait 42501");
++  expect(output).toContain("PASS confirmed replay survives past date");
++  expect(output).toContain("PASS new past plan rejected after replay 22023");
++  expect(output).toContain("TOTAL 26");
++}, 90_000);
+\ No newline at end of file
+diff --git a/src/test/visita/parentFence.interaction.test.tsx b/src/test/visita/parentFence.interaction.test.tsx
+index eb9b458fb..9c6ba0fc5 100644
+--- a/src/test/visita/parentFence.interaction.test.tsx
++++ b/src/test/visita/parentFence.interaction.test.tsx
+@@ -3,14 +3,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+ import { beforeEach, afterEach, expect, it, vi } from "vitest";
+ 
+ const mocks = vi.hoisted(() => ({
+-  status: "reprovado", canEdit: false, version: 15, from: vi.fn(), rpc: vi.fn(), update: vi.fn(), insert: vi.fn(), remove: vi.fn(),
++  status: "reprovado", canEdit: false, mobile: false, version: 15, from: vi.fn(), rpc: vi.fn(), update: vi.fn(), insert: vi.fn(), remove: vi.fn(),
+   success: vi.fn(), error: vi.fn(), mode: "ok",
+   auth: { user: { id: "fake-actor" }, profile: { id: "fake-profile", user_id: "fake-actor", organization_id: "fake-org", ativo: true }, role: "consultor_tecnico", roles: ["consultor_tecnico"], loading: false },
+ }));
+ vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: mocks.from, rpc: mocks.rpc } }));
+ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
+ vi.mock("@/hooks/useSystemConfig", () => ({ useSystemConfig: () => ({ config: {} }) }));
+-vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
++vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => mocks.mobile }));
+ vi.mock("@/hooks/useObjetivosVisita", () => ({ useObjetivosVisita: () => ({ data: [] }) }));
+ vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn(), useParams: () => ({ id: "fake-visit" }), useSearchParams: () => [new URLSearchParams(), vi.fn()], Link: ({ children }: { children: React.ReactNode }) => <span>{children}</span> }));
+ vi.mock("sonner", () => ({ toast: { success: mocks.success, error: mocks.error, info: vi.fn(), warning: vi.fn() } }));
+@@ -36,11 +36,11 @@ function mount(node: React.ReactNode) {
+   return render(<QueryClientProvider client={client}>{node}</QueryClientProvider>);
+ }
+ beforeEach(() => {
+-  vi.clearAllMocks(); mocks.status = "reprovado"; mocks.canEdit = false; mocks.version = 15; mocks.mode = "ok";
++  vi.clearAllMocks(); mocks.status = "reprovado"; mocks.canEdit = false; mocks.mobile = false; mocks.version = 15; mocks.mode = "ok";
+   mocks.auth.role = "consultor_tecnico"; mocks.auth.roles = ["consultor_tecnico"];
+   mocks.rpc.mockImplementation(async (name: string) => ({ error: null, data: name === "rpc_listar_atendimentos_tecnicos_v1"
+     ? { items: [{ id: "fake-visit", kind: "visita", status: "reprovado", can_edit: true, proxima_acao: "Revisar e reenviar" }] }
+-    : { registro: { id: "fake-visit" }, status: mocks.status, version: mocks.version, permissions: { can_edit: mocks.canEdit, can_approve: false } } }));
++    : { registro: { id: "fake-visit", observacoes_tecnicas: "", data_proxima_visita: "2026-10-15" }, status: mocks.status, version: mocks.version, permissions: { can_edit: mocks.canEdit, can_approve: false } } }));
+   mocks.from.mockImplementation((table: string) => {
+     let writing = false;
+     const visit = { id: "fake-visit", status: mocks.status, version: mocks.version, objetivo_visita: "Objetivo fictício", data_vistoria: "2026-10-09", cliente_id: "fake-client", fazenda_id: "fake-farm", talhao_id: "fake-field", cultura_id: "fake-crop", necessidade_intervencao: "monitorar", proxima_acao_recomendada: "encerrar_atendimento" };
+@@ -104,3 +104,14 @@ it("lista reprovada não oferece reenvio nem permissões herdadas", async () =>
+   await waitFor(() => expect(screen.getByRole("status").textContent).toContain('"can_edit":false'));
+   expect(screen.getByRole("status").textContent).not.toContain("Revisar e reenviar");
+ });
++it.each([[false, "rascunho", true], [true, "rascunho", true], [false, "em_andamento", true], [true, "em_andamento", true], [true, "rascunho", false], [false, "em_andamento", false]])("página real mobile=%s status=%s canEdit=%s monta editor com permissão vigente", async (mobile, status, canEdit) => {
++  mocks.mobile = mobile; mocks.status = status; mocks.canEdit = canEdit;
++  mount(<VisitaTecnica />);
++  await waitFor(() => expect(screen.getAllByPlaceholderText("Ex: avaliar pressão de lagartas")[0]).toHaveValue("Objetivo fictício"));
++  // Desktop stack is mounted; mobile accordion mounts its actual editor on expansion.
++  const trigger = screen.getByRole("button", { name: /6 · Monitoramento/ });
++  fireEvent.click(trigger);
++  await waitFor(() => expect(screen.getAllByRole("button", { name: "Editar Plano" })).toHaveLength(2));
++  await waitFor(() => expect(screen.getAllByRole("button", { name: "Editar Plano" }).every(b => (b as HTMLButtonElement).disabled === !canEdit)).toBe(true));
++  expect(mocks.update).not.toHaveBeenCalled(); expect(mocks.insert).not.toHaveBeenCalled();
++});
