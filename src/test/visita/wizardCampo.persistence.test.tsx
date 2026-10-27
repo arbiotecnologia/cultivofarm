@@ -114,7 +114,8 @@ it("resposta tardia após troca de época durante a RPC não é adotada nem limp
   await act(async () => { view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />)); await new Promise((r) => setTimeout(r, 0)); });
   await act(async () => { rpc.resolve({ data: env(1), error: null }); await new Promise((r) => setTimeout(r, 20)); });
   expect(done).not.toHaveBeenCalled();
-  const stored = await getPendingCampoByRegistro(local);
+  let stored: Awaited<ReturnType<typeof getPendingCampoByRegistro>> = null;
+  await act(async () => { stored = await getPendingCampoByRegistro(local); });
   expect(stored?.payload).toMatchObject({ fase_fenologica: "V4" }); // not removed by the late answer
   await screen.findByLabelText("Fase fenológica"); // new scope re-hydrates inside act
 });
