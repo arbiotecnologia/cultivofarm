@@ -38,7 +38,7 @@ extra=r'''
    farm,plot=(FA,TA) if actor==G else (FB,TB)
    err(au(f"INSERT INTO alertas_agronomicos(fazenda_id,talhao_id,tipo_alerta,nivel_risco) VALUES('{farm}','{plot}','praga','baixo');",actor),'42501','direct INSERT without origin denied')
    err(au(f"INSERT INTO alertas_agronomicos(fazenda_id,talhao_id,tipo_alerta,nivel_risco,registro_origem_id) VALUES('{farm}','{plot}','praga','baixo','{V}');",actor),'PT409','direct INSERT origin remains trigger denied')
-  ok(au(f"BEGIN; WITH w AS (UPDATE alertas_agronomicos SET registro_origem_id=NULL WHERE id='{AL}' RETURNING id) SELECT count(*)=0 FROM w; WITH w AS (UPDATE alertas_agronomicos SET data_vencimento='2026-12-30' WHERE id='{AL}' RETURNING id) SELECT count(*)=0 FROM w; COMMIT;"),'unlink then date zero rows')
+  ok(au(f"WITH w AS (UPDATE alertas_agronomicos SET registro_origem_id=NULL WHERE id='{AL}' RETURNING id) , w2 AS (UPDATE alertas_agronomicos SET data_vencimento='2026-12-30' WHERE id='{AL}' RETURNING id) SELECT (SELECT count(*)=0 FROM w) AND (SELECT count(*)=0 FROM w2);"),'unlink then date zero rows')
   ok(f"SELECT md5(row(a.*)::text)='{snap}' FROM alertas_agronomicos a WHERE id='{AL}';",'all direct negatives atomic')
   ok(au(f"SELECT count(*)=1 FROM alertas_agronomicos WHERE id='{AL}';"),'SELECT own unchanged')
   ok(au(f"SELECT count(*)=0 FROM alertas_agronomicos WHERE id='{ALB}';"),'SELECT A to B zero rows')
