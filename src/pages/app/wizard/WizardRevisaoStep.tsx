@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { TECHNICAL_STALE_REVALIDATION } from "@/hooks/useVisitaWorkspace";
 import { useOnlineStatus } from "@/hooks/useOfflineSync";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
@@ -25,13 +26,14 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const submissionLock = useRef(false);
-  // Fence: resposta tardia só se aplica à mesma visita/montagem que despachou.
-  const generation = useRef(0);
-  useEffect(() => { generation.current += 1; return () => { generation.current += 1; }; }, [remoteRegistroId]);
+  // Fence ator/tenant/roles/época/visita/montagem: capturada por requisição e
+  // revalidada após cada await. Autorização real permanece no servidor.
+  const access = useStorageAccessScope(`wizard-revisao:${remoteRegistroId ?? ""}`);
+  const readsEnabled = !!remoteRegistroId && access.ready;
 
   const { data: registro, isLoading } = useQuery({
-    queryKey: ["wizard-revisao-registro", remoteRegistroId],
-    enabled: !!remoteRegistroId,
+    queryKey: ["wizard-revisao-registro", remoteRegistroId, access.scope],
+    enabled: readsEnabled,
     ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       if (!remoteRegistroId) return null;
@@ -52,8 +54,8 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
   });
 
   const { data: counts } = useQuery({
-    queryKey: ["wizard-revisao-counts", remoteRegistroId],
-    enabled: !!remoteRegistroId,
+    queryKey: ["wizard-revisao-counts", remoteRegistroId, access.scope],
+    enabled: readsEnabled,
     ...TECHNICAL_STALE_REVALIDATION,
     queryFn: async () => {
       if (!remoteRegistroId) return null;
@@ -110,44 +112,60 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
       setActionError(!isOnline ? "Sem conexão. Esta ação exige internet." : "Esta ação não está disponível no estado atual da visita.");
       return;
     }
-    // CAS obrigatório: nunca fabricar versão (servidor rejeita nula/antiga com PT409).
-    const expectedVersion = typeof registro?.version === "number" && registro.version > 0 ? registro.version : null;
-    if (expectedVersion === null) {
+    // CAS obrigatório: inteiro seguro positivo observado; nunca fabricar versão.
+    const expectedVersion = registro?.version;
+    if (typeof expectedVersion !== "number" || !Number.isSafeInteger(expectedVersion) || expectedVersion <= 0) {
       setActionError("Versão desatualizada. Recarregue a visita e tente novamente.");
       return;
     }
+    const current = access.capture();
+    if (!current()) {
+      setActionError("Sessão alterada. Atualize a tela antes de continuar.");
+      return;
+    }
+    const registroId = remoteRegistroId;
+    const currentAction = action;
+    const target = currentAction === "finalizar" ? "finalizado" : "enviado_aprovacao";
     submissionLock.current = true;
-    const myGeneration = generation.current;
-    const stale = () => myGeneration !== generation.current;
     setPending(true);
     setActionError(null);
     try {
-      const { error } = await supabase.rpc(
-        (action === "finalizar" ? "rpc_finalizar_visita_v2" : "rpc_enviar_visita_aprovacao") as never,
-        { p_registro_id: remoteRegistroId, p_expected_version: expectedVersion } as never,
+      const { data, error } = await supabase.rpc(
+        (currentAction === "finalizar" ? "rpc_finalizar_visita_v2" : "rpc_enviar_visita_aprovacao") as never,
+        { p_registro_id: registroId, p_expected_version: expectedVersion } as never,
       );
+      if (!current()) return;
       if (error) throw error;
-      if (stale()) return;
-      toast.success(action === "finalizar" ? "Visita finalizada." : "Visita enviada para aprovação.");
-      setAction(null);
+      const out = data as { id?: unknown; status?: unknown; version?: unknown } | null;
+      if (!out || out.id !== registroId || out.status !== target || out.version !== expectedVersion + 1) {
+        throw new Error("resultado_nao_confirmado");
+      }
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] }),
-        queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", remoteRegistroId] }),
-        queryClient.invalidateQueries({ queryKey: ["visita-workspace", remoteRegistroId] }),
+        queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", registroId] }),
+        queryClient.invalidateQueries({ queryKey: ["mobile-wizard-registro", registroId] }),
+        queryClient.invalidateQueries({ queryKey: ["visita-workspace", registroId] }),
         queryClient.invalidateQueries({ queryKey: ["atendimentos-tecnicos"] }),
         queryClient.invalidateQueries({ queryKey: ["atendimentos-tecnicos-resumo"] }),
       ]);
+      if (!current()) return;
+      toast.success(currentAction === "finalizar" ? "Visita finalizada." : "Visita enviada para aprovação.");
+      setAction(null);
       navigate("/app/atendimentos");
     } catch (err: unknown) {
-      if (stale()) return;
+      if (!current()) return;
       const message = err && typeof err === "object" && "message" in err && typeof err.message === "string" ? err.message : undefined;
-      const msg = translateRpcError(message, message || "Não foi possível concluir a operação. Tente novamente.");
+      const msg = message === "resultado_nao_confirmado"
+        ? "Não foi possível confirmar a operação. Atualize a visita antes de tentar novamente."
+        : translateRpcError(message, message || "Não foi possível concluir a operação. Tente novamente.");
       setActionError(msg);
       toast.error(msg);
-      await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", remoteRegistroId] });
+      await queryClient.invalidateQueries({ queryKey: ["wizard-revisao-registro", registroId] });
     } finally {
-      submissionLock.current = false;
-      setPending(false);
+      // finally pertence à tentativa: se escopo mudou, a nova montagem/escopo já tem lock próprio.
+      if (current()) {
+        submissionLock.current = false;
+        setPending(false);
+      }
     }
   };
 
