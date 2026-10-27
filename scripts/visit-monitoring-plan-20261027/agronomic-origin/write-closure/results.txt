@@ -1,0 +1,167 @@
+PASS fixture: canonical plan saved
+PASS foreign actor B cannot link A alert to A visit PT404
+PASS foreign alert B into visit A PT404
+PASS incompatible talhão rejected 22023
+PASS alert CAS differs by one microsecond PT409
+PASS null alert CAS PT409
+PASS stale visit version PT409
+PASS null visit version PT409
+PASS finalized visit cannot gain origin 42501
+PASS link with alert date != plan date rejected (no divergence) 22023
+PASS date mismatch link wrote nothing
+PASS link replay returns identical receipt
+PASS link sets origin, keeps real alert type
+PASS link log once
+PASS link does not bump visit content version
+PASS same key changed payload PT409
+PASS already linked alert cannot be re-pointed PT409
+PASS second alert on same visit rejected PT409
+PASS second alert untouched
+PASS link visit without plan rejected PT409
+PASS no plan: alert untouched
+PASS link visit with date but no plan rejected PT409
+PASS date no plan: alert untouched
+PASS link malformed block (no end marker) rejected PT409
+PASS malformed: alert untouched
+PASS link plan with null visit date rejected PT409
+PASS null date: alert untouched
+PASS link plan with 0 notices rejected PT409
+PASS 0 notices: alert untouched
+PASS link notice date divergent rejected PT409
+PASS divergent notice: alert untouched
+PASS link plan with 2 notices rejected PT409
+PASS 2 notices: alert untouched
+PASS rejected links left no receipts
+PASS linkable list excludes other talhão/tenant/foreign-linked
+PASS foreign list denied PT404
+PASS old v1 caller with origin fails safely PT428
+PASS v1 refusal wrote nothing
+PASS v1 without origin unchanged
+PASS guard still denies direct date write PT409
+PASS consultant without gestor role cannot reschedule 42501
+PASS foreign gestor B cannot reschedule A PT404
+PASS reschedule stale alert microsecond PT409
+PASS reschedule stale visit version PT409
+PASS reschedule null visit version with origin PT409
+PASS past Sao Paulo date rejected 22023
+PASS two plan notices rejected PT409
+PASS zero plan notices rejected PT409
+PASS zero notices: none fabricated
+PASS notice date incoherent with plan rejected PT409
+PASS two alerts sharing visit block synchronization PT409
+PASS other alert not modified
+PASS ambiguity rejections fully atomic
+PASS plan text byte-preserved except date line
+PASS generic notice date reconciled
+PASS alert date reconciled
+PASS ticket removed in transaction
+PASS envelope visita_atualizada true
+PASS confirmed replay survives past date
+PASS new past reschedule after replay 22023
+PASS same reschedule key changed payload PT409
+PASS plan date change after link blocked PT409
+PASS blocked plan write no change
+PASS same-date plan edit keeps alert synchronized
+PASS legacy origin without plan: reschedule rejected PT409
+PASS no-plan rejection atomic, no notice fabricated
+PASS finalized visit untouched
+PASS finalized: explicit alert-only mode, visit not synchronized
+PASS no-origin alert rejects visit version PT409
+PASS log failure P9999
+PASS rollback visit+alert
+PASS rollback receipt
+PASS anon cannot execute v2 42501
+PASS authenticated cannot read receipts 42501
+PASS anon cannot execute link 42501
+PASS anon cannot execute list 42501
+PASS B alert into A visit by B denied PT404
+PASS B cannot write A plan PT404
+PASS concurrent double submit one increment
+PASS concurrent one receipt
+PASS concurrent: at least one confirmed, other replay or PT409
+PASS order1 revocation committed before gate release: operation 42501
+PASS order1 no write
+PASS order2 operation serialized before revocation committed
+PASS order2 revocation committed after operation
+PASS order2 later request denied after revocation 42501
+PASS gate wait bounded by lock_timeout 55P03 (3.0s)
+PASS PRE direct risk really writes
+PASS three command-specific restrictive policies installed
+PASS direct nivel_risco actor 90000000-0000-4000-8000-000000000009: zero rows
+PASS direct status actor 90000000-0000-4000-8000-000000000009: zero rows
+PASS direct data_vencimento actor 90000000-0000-4000-8000-000000000009: zero rows
+PASS direct registro_origem_id actor 90000000-0000-4000-8000-000000000009: zero rows
+PASS direct DELETE own zero rows
+PASS direct INSERT without origin denied 42501
+PASS direct INSERT origin remains trigger denied PT409
+PASS direct nivel_risco actor e0000000-0000-4000-8000-00000000000e: zero rows
+PASS direct status actor e0000000-0000-4000-8000-00000000000e: zero rows
+PASS direct data_vencimento actor e0000000-0000-4000-8000-00000000000e: zero rows
+PASS direct registro_origem_id actor e0000000-0000-4000-8000-00000000000e: zero rows
+PASS direct DELETE own zero rows
+PASS direct INSERT without origin denied 42501
+PASS direct INSERT origin remains trigger denied PT409
+PASS unlink then date zero rows
+PASS all direct negatives atomic
+PASS SELECT own unchanged
+PASS SELECT A to B zero rows
+PASS SELECT B to A zero rows
+PASS anon mutation zero rows
+PASS anon mutation zero rows
+PASS anon INSERT denied 42501
+PASS anon SELECT remains denied
+PASS creation RPC postgres owner A/B positive
+PASS status RPC B own positive
+PASS v1 without origin positive
+PASS v2 sync still positive with restrictive policies
+PASS cross B to A RPC denied PT404
+PASS cross B to A RPC denied PT404
+PASS cross B to A RPC denied PT404
+PASS cross B to A RPC denied PT404
+PASS anon legacy RPC ACL denied 42501
+PASS anon legacy RPC ACL denied 42501
+PASS anon legacy RPC ACL denied 42501
+PASS service_role job risk UPDATE preserved
+PASS service_role cannot bypass linked date guard PT409
+PASS creation synthetic revocation-first actual gate wait denies
+PASS creation gate timeout 3.02
+PASS status synthetic revocation-first actual gate wait denies
+PASS status gate timeout 3.02
+PASS v1 synthetic revocation-first actual gate wait denies
+PASS v1 gate timeout 3.02
+PASS legacy row/advisory timeout 3.02
+PASS legacy row/advisory timeout 3.02
+PASS legacy row/advisory timeout 3.02
+EXPECTED_FUNCTION rpc_criar_alerta_climatico_v1(uuid,uuid,tipo_alerta,nivel_risco,text)	be3fa0742fddc5f3d212e7ed53048910
+EXPECTED_FUNCTION rpc_atualizar_status_alerta_agronomico_v1(uuid,status_alerta,timestamp with time zone)	8e6d0982d4eb9b599c703d3f715dd806
+EXPECTED_FUNCTION rpc_reprogramar_monitoramento_v1(uuid,date,timestamp with time zone)	1bf4ebfecb645e4a0d131510122ac407
+PASS PRE rejects non-LIVE synthetic baseline 55000
+PASS POST full assertions with explicitly synthetic dependency fingerprints
+PASS POST rejects widened restrictive policy 55000
+PASS containment closes user RPC 42501
+PASS containment does not restore direct write 42501
+PASS containment preserves SELECT
+PASS containment preserves service_role job
+TOTAL 141
+
+VITEST CLIENTES
+$ vitest run src/test/monitoramento/criarAlertaClimaticoClient.test.tsx src/test/monitoramento/atualizarStatusAlertaClient.test.tsx src/test/monitoramento/reprogramarCasClient.test.tsx src/test/monitoramento/origemAlertaAgronomico.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/monitoramento/criarAlertaClimaticoClient.test.tsx (18 tests) 65ms
+ ✓ src/test/monitoramento/atualizarStatusAlertaClient.test.tsx (23 tests) 80ms
+ ✓ src/test/monitoramento/reprogramarCasClient.test.tsx (26 tests) 90ms
+stderr | src/test/monitoramento/origemAlertaAgronomico.test.tsx > UI: incerteza mantém a mesma chave na nova confirmação
+Warning: The current testing environment is not configured to support act(...)
+
+stderr | src/test/monitoramento/origemAlertaAgronomico.test.tsx > UI: incerteza mantém a mesma chave na nova confirmação
+Warning: The current testing environment is not configured to support act(...)
+
+ ✓ src/test/monitoramento/origemAlertaAgronomico.test.tsx (34 tests) 302ms
+
+ Test Files  4 passed (4)
+      Tests  101 passed (101)
+   Start at  13:02:13
+   Duration  3.22s (transform 409ms, setup 570ms, collect 2.22s, tests 536ms, environment 3.75s, prepare 1.54s)
+
