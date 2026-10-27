@@ -16,7 +16,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
+import { useTechnicalQuerySession, useVisitaWorkspace } from "@/hooks/useVisitaWorkspace";
 import { AcompanhamentoVisita } from "@/components/visita/AcompanhamentoVisita";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,6 +118,7 @@ export default function VisitaTecnica() {
   const isMobile = useIsMobile();
   const { id } = useParams<{ id: string }>();
   const workspaceQuery = useVisitaWorkspace(id ?? null);
+  const visitSession = useTechnicalQuerySession("visita-tecnica");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, profile, role } = useAuth();
@@ -335,18 +336,20 @@ export default function VisitaTecnica() {
   );
 
   const { data: visita, refetch: refetchVisita } = useQuery({
-    queryKey: ["visita-tecnica", id],
-    queryFn: async () => {
+    queryKey: ["visita-tecnica", id, visitSession.scope],
+    queryFn: async ({ signal }) => {
       if (isNew) return null;
+      const assertCurrent = visitSession.fence(); assertCurrent(signal);
       const { data, error } = await supabase
         .from("registros_consultor")
         .select(`*, clientes:cliente_id(nome, email), fazendas:fazenda_id(nome), talhoes:talhao_id(nome, tipo_manejo_agua), culturas:cultura_id(nome)`)
         .eq("id", id)
         .single();
+      assertCurrent(signal);
       if (error) throw error;
       return data;
     },
-    enabled: !isNew,
+    enabled: !isNew && visitSession.ready,
     refetchOnWindowFocus: false,
     staleTime: 0,
     refetchOnMount: "always",
@@ -455,7 +458,7 @@ export default function VisitaTecnica() {
       }
       hydrationReady.current = true; setHydrationComplete(value => value + 1);
     };
-    loadDiagnostics();
+    void loadDiagnostics().catch(() => { if (current()) setContentConflict("Não foi possível carregar os diagnósticos. A visita não será salva automaticamente."); });
 
     setUrgencia(v.urgencia || "media");
     setNecessidadeIntervencao(v.necessidade_intervencao || "monitorar");
@@ -478,7 +481,7 @@ export default function VisitaTecnica() {
     setNotes(parsedNotes);
     setConduta(parsedConduta ?? CONDUTA_DEFAULT);
   }, [visita, workspaceQuery.data, workspaceQuery.isError, formScope]);
-  useEffect(() => () => { hydrationTicket.current = null; hydrationReady.current = false; autosaveTicket.current = null; }, [formScope]);
+  useEffect(() => () => { hydrationTicket.current = null; hydrationReady.current = false; autosaveTicket.current = null; hydratedIdRef.current = null; observedForm.current = null; }, [formScope]);
 
   const { data: arquivos = [] } = useQuery({
     queryKey: ["visita-arquivos", id],
@@ -724,7 +727,8 @@ export default function VisitaTecnica() {
       return { mode: isNew ? "insert" as const : "update" as const, id: currentRegistroId, finalizar, current };
     },
     onSettled: () => { persistLock.current = false; },
-    onError: (err: any) => {
+    onError: (err: any, variables) => {
+      if (variables.scope !== formGeneration.current.scope) return;
       autosaveTicket.current = null;
       setContentConflict("Não foi possível confirmar o salvamento. Sua edição foi mantida; revise a visita antes de salvar novamente.");
       toast.error(translateError(err?.message || "Erro ao salvar"));
@@ -737,6 +741,7 @@ export default function VisitaTecnica() {
         key => queryClient.invalidateQueries({ queryKey: [key, result.id] })),
         ...["atendimentos-tecnicos", "atendimentos-tecnicos-resumo", "visitas"].map(
           key => queryClient.invalidateQueries({ queryKey: [key] }))]);
+      if (!result.current()) return;
       if (result.mode === "insert") {
         toast.success(result.finalizar ? "Visita criada e finalizada" : "Rascunho criado");
         if (!result.finalizar) {
