@@ -70,6 +70,8 @@ GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   sql(source['platform_private.stock_p1_lote_owned']['definition'])
   sql(source['platform_private.stock_p1_movement_owned']['definition'])
   for n in load:sql(source[n]['definition'])
+  for n in ['public.rpc_estoque_operar_v1','public.rpc_estoque_reservar_v1','public.rpc_cockpit_registrar_envase_v1','public.fn_envase_material_imutavel','platform_private.stock_p1_guard','platform_private.stock_p1_movement_guard']:
+   ok(f"SELECT md5(pg_get_functiondef(p.oid))='{source[n]['hash']}' FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace WHERE s.nspname||'.'||p.proname='{n}'",'exact LIVE '+n)
   for n in ['public.fn_cockpit_norm_origem','public.fn_cockpit_assert_operador_origem','public.fn_cockpit_assert_b2b_liberado']:
    sql((H.parent/'os-delivery-reopening-20261027/live'/f'{n}.sql.review').read_text())
   # Exact selected trigger definitions; refresh views/OS transitions are excluded.
@@ -100,6 +102,7 @@ GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   ok('SELECT quantidade=2 AND volume_total=2 AND quantidade_reservada=2 FROM estoque_produto','ml to liters and units conserved')
   ok(actor()+f"SELECT (rpc_cockpit_registrar_envase_v1('{L}','{O}','manual','{P}','[{{\"tipo_embalagem\":\"frasco_1L\",\"quantidade\":2}}]',current_date+30,'local','envase-001',false,NULL)->>'replay')::boolean",'envase replay exact no duplicate')
   ok('SELECT (SELECT count(*) FROM estoque_movimentacoes)=1 AND (SELECT count(*) FROM envase)=1','replay preserves ledger')
+  ok(f"SELECT status='envase' FROM ordens_servico WHERE id='{O}'",'manual OS transition not forged')
   err(actor()+envase('envase-001',1),'P0001','changed idempotency payload denied')
   stock=sql('SELECT id FROM estoque_produto LIMIT 1').stdout.strip()
   motor=lambda action,key,qty=1:f"SELECT rpc_estoque_operar_v1('{action}','{stock}',{qty},'{key}','{{}}');"
@@ -124,6 +127,23 @@ GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   err(actor()+envase('fault-001'),'P0001','ledger failure rolls whole envase back')
   ok('SELECT (SELECT count(*) FROM envase)=0 AND (SELECT count(*) FROM estoque_produto)=0 AND (SELECT count(*) FROM cockpit_operacao_idempotencia)=0','fault atomic envase stock receipt rollback')
   sql('DROP TRIGGER zz_fail ON estoque_movimentacoes;')
+  reset();sql(f"UPDATE lotes SET volume_produzido='NaN'::numeric;")
+  err(actor()+envase('nan-produced'),'P0001','nonfinite produced volume denied')
+  reset();err(actor()+envase('missing-qty').replace('"quantidade":2','"other":2'),'P0001','missing line quantity denied')
+  reset()
+  # Two concurrent actual envase bodies; gate serializes, receipt absorbs replay.
+  p,send=session();send(actor()+'BEGIN;'+envase('concurrent-envase'));time.sleep(.3)
+  w,sw=session();sw(actor()+envase('concurrent-envase'));waitlock();send('COMMIT;');p.stdin.close();p.wait(4);w.stdin.close();w.wait(4)
+  assert '"replay": true' in w.stdout.read();checks.append('two connections one envase one replay');print('PASS',checks[-1])
+  ok('SELECT (SELECT count(*) FROM envase)=1 AND (SELECT count(*) FROM estoque_movimentacoes)=1','concurrent envase single ledger')
+  reset();p,send=session();send(f"BEGIN;SELECT 1 FROM lotes WHERE id='{L}' FOR UPDATE;");time.sleep(.1)
+  w,sw=session();sw(actor()+envase('row-revoke'));waitlock();sql(f"UPDATE profiles SET ativo=false WHERE user_id='{U}';");send('COMMIT;');p.stdin.close();p.wait(4);w.stdin.close();w.wait(4)
+  assert 'ESTQ_IDENTIDADE_INATIVA' in w.stderr.read();checks.append('row waiter rechecks committed local revocation');print('PASS',checks[-1])
+  ok('SELECT count(*)=0 FROM estoque_produto','revoked row waiter no stock')
+  # Forged stock metadata cannot trick a reviewed motor. The real motor clears it.
+  reset();sql(actor()+envase('context-envase'));stock=sql('SELECT id FROM estoque_produto LIMIT 1').stdout.strip()
+  ok(actor()+f"SET app.estoque_mov_ctx='{{\"origem\":\"forged\",\"idempotency_key\":\"forged-key\"}}';SELECT (rpc_estoque_operar_v1('expedicao','{stock}',2,'real-context-key','{{}}')->>'ok')::boolean;",'motor replaces forged GUC with private context')
+  ok("SELECT count(*)=1 FROM estoque_movimentacoes WHERE idempotency_key='real-context-key' AND origem<>'forged'",'ledger uses real operation key not forged GUC')
   # Revocation while waiting on the gate (two connections, local synthetic Auth).
   reset();p,send=session();send('BEGIN;SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;');time.sleep(.1)
   w,sw=session();sw(actor()+envase('revoke-001'));waitlock();send(f"UPDATE profiles SET ativo=false WHERE user_id='{U}';COMMIT;");p.stdin.close();p.wait(4);w.stdin.close();w.wait(4)
