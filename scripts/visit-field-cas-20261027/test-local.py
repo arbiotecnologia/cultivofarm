@@ -201,7 +201,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
             err(rpc(A, V(5), 2, pl(area_avaliada_ha=bad)), '22023', f'area {bad} rejected')
         err(rpc(A, V(5), 2, pl(estande_plantas_ha='Infinity')), '22023', 'estande Infinity rejected')
         ok(f"SELECT coalesce(md5(row(v.*)::text),'none')='{s5}' FROM visitas_campo v WHERE registro_consultor_id='{V(5)}';", 'item-4 negatives atomic')
-        ok(rpc(X, V(90), 0, pl(cultura_id=CH)) + "RESET ROLE; SELECT true;", 'cultura hidden only for tenant A stays selectable for tenant B')
+        ok(rpc(X, V(90), 1, pl(cultura_id=CH)) + "RESET ROLE; SELECT true;", 'cultura hidden only for tenant A stays selectable for tenant B')
         sql(f"DELETE FROM catalog_tenant_visibility;")
         ok(rpc(A, V(13), 0, pl(cultura_id=CH)) + "RESET ROLE; SELECT true;", 'cultura saved while visible')
         sql(f"INSERT INTO catalog_tenant_visibility(organization_id,entity_type,cultura_id,hidden) VALUES('{OA}','cultura','{CH}',true);")
