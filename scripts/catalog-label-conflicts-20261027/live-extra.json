@@ -1,0 +1,7 @@
+{"captured_readonly":"2026-10-27T16:20Z","functions":[
+{"oid":72697,"signature":"is_platform_superadmin(uuid)","md5":"3dfe79d976821244d9b7a7f893d765f2","owner":"postgres","acl":"{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}","config":["search_path=\"\""],"security_definer":true},
+{"oid":95577,"signature":"platform_private.platform_actor_access_ready(uuid)","md5":"048249c0c2106c3761e26eacb8d0de84","owner":"postgres","acl":"{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}","config":["search_path=\"\""],"security_definer":true},
+{"oid":95587,"signature":"has_role(uuid,app_role)","md5":"4d90e93d521a4819d9085f28d742030f","owner":"postgres","acl":"{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}","config":["search_path=\"\""],"security_definer":false}],
+"tables":[
+{"table":"catalog_family_labels","acl":"{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}","rls":true,"force_rls":false,"triggers":"823ff06433408ba7b58baf821c78a748","policies":"d41d8cd98f00b204e9800998ecf8427e"},
+{"table":"catalog_platform_admin_audit","acl":"{postgres=arwdDxtm/postgres,anon=rm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}","rls":true,"force_rls":false,"triggers":"c8e1adffb387b859829eea86c93a9647","policies":"bab92dd27893fc82262e6872e0f77530"}]}

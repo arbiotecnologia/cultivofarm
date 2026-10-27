@@ -1,0 +1,38 @@
+--- LIVE
++++ candidato
+@@ -22,7 +22,7 @@
+   SELECT * INTO v_op FROM public.catalog_family_labels WHERE id = p_id FOR UPDATE;
+   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'catalog_label_unavailable'; END IF;
+   IF v_op.updated_at IS DISTINCT FROM p_expected_updated_at THEN
+-    RAISE EXCEPTION USING ERRCODE = '40001', MESSAGE = 'catalog_label_conflict'; END IF;
++    RAISE EXCEPTION USING ERRCODE = 'PT409', MESSAGE = 'catalog_label_conflict'; END IF;
+   IF v_op.rotulo_exibicao IS NOT DISTINCT FROM v_exib THEN
+     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'catalog_label_no_change'; END IF;
+ 
+@@ -32,7 +32,7 @@
+   IF NOT FOUND OR v_np.updated_at IS NULL OR v_np.updated_at <= v_op.updated_at
+      OR v_np.rotulo IS DISTINCT FROM v_op.rotulo OR v_np.familia IS DISTINCT FROM v_op.familia
+      OR v_np.ativo IS DISTINCT FROM v_op.ativo THEN
+-    RAISE EXCEPTION USING ERRCODE = '40001', MESSAGE = 'catalog_label_confirmation_failed'; END IF;
++    RAISE EXCEPTION USING ERRCODE = 'PT409', MESSAGE = 'catalog_label_confirmation_failed'; END IF;
+ 
+   v_receipt := pg_catalog.jsonb_build_object('id', p_id, 'familia', v_np.familia, 'rotulo', v_np.rotulo,
+     'rotulo_exibicao', v_exib, 'updated_at', v_np.updated_at, 'idempotency_key', p_idempotency_key,
+@@ -66,7 +66,7 @@
+   SELECT * INTO v_op FROM public.catalog_family_labels WHERE id = p_id FOR UPDATE;
+   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'catalog_label_unavailable'; END IF;
+   IF v_op.updated_at IS DISTINCT FROM p_expected_updated_at THEN
+-    RAISE EXCEPTION USING ERRCODE = '40001', MESSAGE = 'catalog_label_conflict'; END IF;
++    RAISE EXCEPTION USING ERRCODE = 'PT409', MESSAGE = 'catalog_label_conflict'; END IF;
+   IF v_op.ativo IS NOT DISTINCT FROM p_ativo THEN
+     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'catalog_label_no_change'; END IF;
+ 
+@@ -78,7 +78,7 @@
+   IF NOT FOUND OR v_np.updated_at IS NULL OR v_np.updated_at <= v_op.updated_at
+      OR v_np.rotulo IS DISTINCT FROM v_op.rotulo OR v_np.familia IS DISTINCT FROM v_op.familia
+      OR v_np.rotulo_exibicao IS DISTINCT FROM v_op.rotulo_exibicao THEN
+-    RAISE EXCEPTION USING ERRCODE = '40001', MESSAGE = 'catalog_label_confirmation_failed'; END IF;
++    RAISE EXCEPTION USING ERRCODE = 'PT409', MESSAGE = 'catalog_label_confirmation_failed'; END IF;
+ 
+   v_receipt := pg_catalog.jsonb_build_object('id', p_id, 'familia', v_np.familia, 'rotulo', v_np.rotulo,
+     'ativo', p_ativo, 'updated_at', v_np.updated_at, 'idempotency_key', p_idempotency_key,

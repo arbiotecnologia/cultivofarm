@@ -1,0 +1,122 @@
+-- INATIVO / REVIEW ONLY. Não aplicar pelo agente. Ref swzpzcwiasxmjutrmvkm.
+-- Só reverte candidato exato -> baseline LIVE exata; restaura os 40001 negociais conhecidos, sem DML nem mudança de autoridade.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+DO $guard$ BEGIN
+IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.platform_update_catalog_label(uuid,timestamp with time zone,text,text,uuid)') AND oid=120766 AND md5(pg_get_functiondef(oid))='fdf3adc335996bc4ff90f7a57b8f4370' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'TARGET_DRIFT: %','platform_update_catalog_label(uuid,timestamp with time zone,text,text,uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.platform_set_catalog_label_active(uuid,timestamp with time zone,boolean,text,uuid)') AND oid=120767 AND md5(pg_get_functiondef(oid))='55493f9699ec039057915656355e35ae' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'TARGET_DRIFT: %','platform_set_catalog_label_active(uuid,timestamp with time zone,boolean,text,uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.catalog_metadata_require_actor()') AND oid=103634 AND md5(pg_get_functiondef(oid))='a8cdc918cd6506c2a04acf3a91af3e2b' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.catalog_metadata_require_actor()'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.catalog_entity_replay(uuid,text,jsonb,text,uuid)') AND oid=109272 AND md5(pg_get_functiondef(oid))='bc194d354de83bb0a362bddd0ceb66e6' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.catalog_entity_replay(uuid,text,jsonb,text,uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.catalog_entity_audit(uuid,text,text,uuid,jsonb,jsonb,jsonb,jsonb)') AND oid=109273 AND md5(pg_get_functiondef(oid))='7cc756c36ac07b90ab95ae005c3c3a79' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.catalog_entity_audit(uuid,text,text,uuid,jsonb,jsonb,jsonb,jsonb)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.is_platform_superadmin(uuid)') AND oid=72697 AND md5(pg_get_functiondef(oid))='3dfe79d976821244d9b7a7f893d765f2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','is_platform_superadmin(uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.platform_actor_access_ready(uuid)') AND oid=95577 AND md5(pg_get_functiondef(oid))='048249c0c2106c3761e26eacb8d0de84' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.platform_actor_access_ready(uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.has_role(uuid,app_role)') AND oid=95587 AND md5(pg_get_functiondef(oid))='4d90e93d521a4819d9085f28d742030f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=false) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','has_role(uuid,app_role)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('public.catalog_family_labels') AND c.relacl::text IS NOT DISTINCT FROM '{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND c.relrowsecurity=true AND c.relforcerowsecurity=false AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)='823ff06433408ba7b58baf821c78a748' AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)='d41d8cd98f00b204e9800998ecf8427e') THEN RAISE EXCEPTION 'TABLE_DRIFT: %','catalog_family_labels'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('public.catalog_platform_admin_audit') AND c.relacl::text IS NOT DISTINCT FROM '{postgres=arwdDxtm/postgres,anon=rm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}' AND c.relrowsecurity=true AND c.relforcerowsecurity=false AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)='c8e1adffb387b859829eea86c93a9647' AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)='bab92dd27893fc82262e6872e0f77530') THEN RAISE EXCEPTION 'TABLE_DRIFT: %','catalog_platform_admin_audit'; END IF;
+END $guard$;
+CREATE OR REPLACE FUNCTION public.platform_update_catalog_label(p_id uuid, p_expected_updated_at timestamp with time zone, p_rotulo_exibicao text, p_reason text, p_idempotency_key uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_actor uuid; v_req jsonb; v_replay jsonb; v_receipt jsonb; v_audit uuid := gen_random_uuid();
+  v_op public.catalog_family_labels%ROWTYPE; v_np public.catalog_family_labels%ROWTYPE;
+  v_exib text := pg_catalog.btrim(COALESCE(p_rotulo_exibicao, ''));
+BEGIN
+  v_actor := platform_private.catalog_metadata_require_actor();
+  IF p_id IS NULL OR p_expected_updated_at IS NULL OR NOT pg_catalog.isfinite(p_expected_updated_at)
+     OR pg_catalog.char_length(v_exib) < 2 OR pg_catalog.char_length(v_exib) > 80
+     OR p_idempotency_key IS NULL THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'catalog_label_invalid';
+  END IF;
+  v_req := pg_catalog.jsonb_build_object('id', p_id, 'expected_updated_at', p_expected_updated_at,
+    'rotulo_exibicao', v_exib, 'reason', pg_catalog.btrim(COALESCE(p_reason, '')));
+  v_replay := platform_private.catalog_entity_replay(v_actor, 'update_catalog_label', v_req, p_reason, p_idempotency_key);
+  IF v_replay IS NOT NULL THEN RETURN v_replay; END IF;
+
+  SELECT * INTO v_op FROM public.catalog_family_labels WHERE id = p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'catalog_label_unavailable'; END IF;
+  IF v_op.updated_at IS DISTINCT FROM p_expected_updated_at THEN
+    RAISE EXCEPTION USING ERRCODE = '40001', MESSAGE = 'catalog_label_conflict'; END IF;
+  IF v_op.rotulo_exibicao IS NOT DISTINCT FROM v_exib THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'catalog_label_no_change'; END IF;
+
+  UPDATE public.catalog_family_labels SET rotulo_exibicao = v_exib
+   WHERE id = p_id AND updated_at = p_expected_updated_at
+  RETURNING * INTO v_np;
+  IF NOT FOUND OR v_np.updated_at IS NULL OR v_np.updated_at <= v_op.updated_at
+     OR v_np.rotulo IS DISTINCT FROM v_op.rotulo OR v_np.familia IS DISTINCT FROM v_op.familia
+     OR v_np.ativo IS DISTINCT FROM v_op.ativo THEN
+    RAISE EXCEPTION USING ERRCODE = '40001', MESSAGE = 'catalog_label_confirmation_failed'; END IF;
+
+  v_receipt := pg_catalog.jsonb_build_object('id', p_id, 'familia', v_np.familia, 'rotulo', v_np.rotulo,
+    'rotulo_exibicao', v_exib, 'updated_at', v_np.updated_at, 'idempotency_key', p_idempotency_key,
+    'audit_id', v_audit, 'idempotent', false);
+  PERFORM platform_private.catalog_entity_audit(v_actor, 'update_catalog_label', p_reason, p_idempotency_key,
+    v_req, v_receipt,
+    pg_catalog.jsonb_build_object('id', p_id, 'rotulo_exibicao', v_op.rotulo_exibicao, 'updated_at', v_op.updated_at),
+    pg_catalog.jsonb_build_object('id', p_id, 'rotulo_exibicao', v_exib, 'updated_at', v_np.updated_at));
+  RETURN v_receipt;
+END $function$;
+CREATE OR REPLACE FUNCTION public.platform_set_catalog_label_active(p_id uuid, p_expected_updated_at timestamp with time zone, p_ativo boolean, p_reason text, p_idempotency_key uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE v_actor uuid; v_req jsonb; v_replay jsonb; v_receipt jsonb; v_audit uuid := gen_random_uuid();
+  v_op public.catalog_family_labels%ROWTYPE; v_np public.catalog_family_labels%ROWTYPE;
+BEGIN
+  v_actor := platform_private.catalog_metadata_require_actor();
+  IF p_id IS NULL OR p_expected_updated_at IS NULL OR NOT pg_catalog.isfinite(p_expected_updated_at)
+     OR p_ativo IS NULL OR p_idempotency_key IS NULL THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'catalog_label_invalid';
+  END IF;
+  v_req := pg_catalog.jsonb_build_object('id', p_id, 'expected_updated_at', p_expected_updated_at,
+    'ativo', p_ativo, 'reason', pg_catalog.btrim(COALESCE(p_reason, '')));
+  v_replay := platform_private.catalog_entity_replay(v_actor, 'set_catalog_label_active', v_req, p_reason, p_idempotency_key);
+  IF v_replay IS NOT NULL THEN RETURN v_replay; END IF;
+
+  -- FOR UPDATE serializa com catalog_family_label_check (FOR KEY SHARE): ver comentário lá.
+  SELECT * INTO v_op FROM public.catalog_family_labels WHERE id = p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'catalog_label_unavailable'; END IF;
+  IF v_op.updated_at IS DISTINCT FROM p_expected_updated_at THEN
+    RAISE EXCEPTION USING ERRCODE = '40001', MESSAGE = 'catalog_label_conflict'; END IF;
+  IF v_op.ativo IS NOT DISTINCT FROM p_ativo THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'catalog_label_no_change'; END IF;
+
+  -- Inativação NÃO altera atribuições existentes em produtos; o trigger de
+  -- validação só barra NOVAS atribuições de rótulo inativo.
+  UPDATE public.catalog_family_labels SET ativo = p_ativo
+   WHERE id = p_id AND updated_at = p_expected_updated_at
+  RETURNING * INTO v_np;
+  IF NOT FOUND OR v_np.updated_at IS NULL OR v_np.updated_at <= v_op.updated_at
+     OR v_np.rotulo IS DISTINCT FROM v_op.rotulo OR v_np.familia IS DISTINCT FROM v_op.familia
+     OR v_np.rotulo_exibicao IS DISTINCT FROM v_op.rotulo_exibicao THEN
+    RAISE EXCEPTION USING ERRCODE = '40001', MESSAGE = 'catalog_label_confirmation_failed'; END IF;
+
+  v_receipt := pg_catalog.jsonb_build_object('id', p_id, 'familia', v_np.familia, 'rotulo', v_np.rotulo,
+    'ativo', p_ativo, 'updated_at', v_np.updated_at, 'idempotency_key', p_idempotency_key,
+    'audit_id', v_audit, 'idempotent', false);
+  PERFORM platform_private.catalog_entity_audit(v_actor, 'set_catalog_label_active', p_reason, p_idempotency_key,
+    v_req, v_receipt,
+    pg_catalog.jsonb_build_object('id', p_id, 'ativo', v_op.ativo, 'updated_at', v_op.updated_at),
+    pg_catalog.jsonb_build_object('id', p_id, 'ativo', p_ativo, 'updated_at', v_np.updated_at));
+  RETURN v_receipt;
+END $function$;
+DO $guard$ BEGIN
+IF (SELECT project_ref FROM public.fiscal_environment_marker LIMIT 1) IS DISTINCT FROM 'swzpzcwiasxmjutrmvkm' THEN RAISE EXCEPTION 'WRONG_PROJECT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.platform_update_catalog_label(uuid,timestamp with time zone,text,text,uuid)') AND oid=120766 AND md5(pg_get_functiondef(oid))='75eaa1d0307e9033a6f3ba8e208ee488' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'TARGET_DRIFT: %','platform_update_catalog_label(uuid,timestamp with time zone,text,text,uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.platform_set_catalog_label_active(uuid,timestamp with time zone,boolean,text,uuid)') AND oid=120767 AND md5(pg_get_functiondef(oid))='561d3175812dba477a538992d5d02a01' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'TARGET_DRIFT: %','platform_set_catalog_label_active(uuid,timestamp with time zone,boolean,text,uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.catalog_metadata_require_actor()') AND oid=103634 AND md5(pg_get_functiondef(oid))='a8cdc918cd6506c2a04acf3a91af3e2b' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.catalog_metadata_require_actor()'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.catalog_entity_replay(uuid,text,jsonb,text,uuid)') AND oid=109272 AND md5(pg_get_functiondef(oid))='bc194d354de83bb0a362bddd0ceb66e6' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.catalog_entity_replay(uuid,text,jsonb,text,uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.catalog_entity_audit(uuid,text,text,uuid,jsonb,jsonb,jsonb,jsonb)') AND oid=109273 AND md5(pg_get_functiondef(oid))='7cc756c36ac07b90ab95ae005c3c3a79' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.catalog_entity_audit(uuid,text,text,uuid,jsonb,jsonb,jsonb,jsonb)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.is_platform_superadmin(uuid)') AND oid=72697 AND md5(pg_get_functiondef(oid))='3dfe79d976821244d9b7a7f893d765f2' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','is_platform_superadmin(uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('platform_private.platform_actor_access_ready(uuid)') AND oid=95577 AND md5(pg_get_functiondef(oid))='048249c0c2106c3761e26eacb8d0de84' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=true) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','platform_private.platform_actor_access_ready(uuid)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('public.has_role(uuid,app_role)') AND oid=95587 AND md5(pg_get_functiondef(oid))='4d90e93d521a4819d9085f28d742030f' AND pg_get_userbyid(proowner)='postgres' AND proacl::text IS NOT DISTINCT FROM '{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}' AND to_jsonb(proconfig) IS NOT DISTINCT FROM '["search_path=\"\""]'::jsonb AND prosecdef=false) THEN RAISE EXCEPTION 'DEPENDENCY_DRIFT: %','has_role(uuid,app_role)'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('public.catalog_family_labels') AND c.relacl::text IS NOT DISTINCT FROM '{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}' AND c.relrowsecurity=true AND c.relforcerowsecurity=false AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)='823ff06433408ba7b58baf821c78a748' AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)='d41d8cd98f00b204e9800998ecf8427e') THEN RAISE EXCEPTION 'TABLE_DRIFT: %','catalog_family_labels'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.oid=to_regclass('public.catalog_platform_admin_audit') AND c.relacl::text IS NOT DISTINCT FROM '{postgres=arwdDxtm/postgres,anon=rm/postgres,authenticated=rm/postgres,service_role=arwdDxtm/postgres}' AND c.relrowsecurity=true AND c.relforcerowsecurity=false AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid)),E'\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)='c8e1adffb387b859829eea86c93a9647' AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)='bab92dd27893fc82262e6872e0f77530') THEN RAISE EXCEPTION 'TABLE_DRIFT: %','catalog_platform_admin_audit'; END IF;
+END $guard$;
+COMMIT;
