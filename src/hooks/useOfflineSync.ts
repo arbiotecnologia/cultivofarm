@@ -19,8 +19,9 @@ import {
   getSyncedVisitMapping,
   cleanupOldSyncedVisitMappings,
   getPendingCampos,
-  updatePendingCampo,
-  removePendingCampo,
+  claimPendingCampo,
+  finishPendingCampo,
+  type CampoClaim,
   getAllPendingDiagnosticos,
   updatePendingDiagnostico,
   removePendingDiagnostico,
@@ -42,7 +43,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { recomendacaoOwnedBy } from "@/lib/visita/recomendacaoContract";
-import { campoOwnedBy, isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
+import { campoOwnedBy, isCampoConflict, isValidCampoExpected, parseCampoResult } from "@/lib/visita/campoContract";
 import { syncRecomendacao } from "@/lib/visita/syncRecomendacao";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTechnicalQuerySession, visitaWorkspaceKey } from "@/hooks/useVisitaWorkspace";
@@ -563,64 +564,68 @@ export function useOfflineSync() {
 
 
       // === CAMPO (Etapa 3 do wizard) ===
+      // Fence (actor/tenant/roles/epoch/monitor via useStorageAccessScope + workspace) re-checked
+      // after EVERY await. Claim/cleanup are CAS on revision+attemptId in one IDB transaction, so
+      // a late answer never removes or marks a newer draft written by another tab/edit.
       const pendingCampos = await getPendingCampos();
       for (const cp of pendingCampos) {
-        // Same actor+tenant only; legacy unowned entries are never replayed by another session.
         if (!recommendationCurrent()) break;
-        if (!campoOwnedBy(cp, actor)) continue;
+        if (!campoOwnedBy(cp, actor) || !cp.revision) continue; // legacy/unowned/no revision: retained
+        let claim: CampoClaim | null = null;
         try {
-          // Precisamos do remoteId — resolve pelo mapping local→remoto
           let remoteRegistroId = cp.remoteRegistroId || null;
           if (!remoteRegistroId) {
             const mapping = await getSyncedVisitMapping(cp.localRegistroId);
+            if (!recommendationCurrent()) break;
             remoteRegistroId = mapping?.remoteId || null;
           }
-          if (!remoteRegistroId) {
-            // ainda aguardando registro pai — mantém na fila
-            continue;
-          }
+          if (!remoteRegistroId) continue; // aguardando registro pai
+          if (!isValidCampoExpected(cp.versao)) continue; // never invents a CAS
 
+          const claimed = await claimPendingCampo(cp.localRegistroId, cp.revision, actor);
+          if (!recommendationCurrent()) break;
+          if (!claimed) continue; // superseded/held/conflict: untouched
+          claim = claimed.claim;
+          const snap = claimed.entry;
           setProgress((p) => ({ ...p, current: "Etapa 3 · Campo" }));
-          await updatePendingCampo(cp.localRegistroId, { syncStatus: "syncing", syncingAt: Date.now() });
           await log("campo", cp.localRegistroId, "tentativa", { item_remoto_id: remoteRegistroId });
+          if (!recommendationCurrent()) break;
 
           const { data, error } = await supabase.rpc(
             "rpc_salvar_campo_visita" as never,
             {
               p_registro_consultor_id: remoteRegistroId,
-              p_client_uuid: cp.clientUuid ?? null,
-              p_payload: cp.payload,
-              p_versao: cp.versao,
+              p_client_uuid: snap.clientUuid ?? null,
+              p_payload: snap.payload,
+              p_versao: snap.versao,
             } as never,
           );
-
-          // Late answer after logout/actor switch: never adopted nor used to clean the queue.
+          // Late answer after logout/actor/epoch switch: never adopted nor used to clean the queue.
           if (!recommendationCurrent()) break;
           if (error) {
-            await updatePendingCampo(cp.localRegistroId, {
-              // PT409 is a business conflict: kept locally, never blindly replayed.
-              syncStatus: isCampoConflict(error) ? "conflict" : "sync_error",
-              syncingAt: null,
-              lastSyncError: error.message,
-            });
+            // PT409 is a business conflict: kept locally, never blindly replayed.
+            await finishPendingCampo(claim, { patch: { syncStatus: isCampoConflict(error) ? "conflict" : "sync_error", lastSyncError: error.message } });
+            claim = null;
+            if (!recommendationCurrent()) break;
             await log("campo", cp.localRegistroId, "erro", { mensagem_erro: error.message });
             failedCount++;
             setProgress((p) => ({ ...p, failed: p.failed + 1 }));
             continue;
           }
-
-          parseCampoResult(data, cp.versao, remoteRegistroId);
+          parseCampoResult(data, snap.versao, remoteRegistroId, snap.clientUuid ?? null);
+          await finishPendingCampo(claim, { remove: true });
+          claim = null;
+          if (!recommendationCurrent()) break;
           await log("campo", cp.localRegistroId, "sucesso", { item_remoto_id: remoteRegistroId });
-          await removePendingCampo(cp.localRegistroId);
+          if (!recommendationCurrent()) break;
           syncedCount++;
           setProgress((p) => ({ ...p, completed: p.completed + 1 }));
         } catch (err: any) {
           console.error("Sync campo error:", err);
-          await updatePendingCampo(cp.localRegistroId, {
-            syncStatus: "sync_error",
-            syncingAt: null,
-            lastSyncError: err?.message || "erro desconhecido",
-          }).catch(() => {});
+          if (claim && recommendationCurrent()) {
+            await finishPendingCampo(claim, { patch: { syncStatus: "sync_error", lastSyncError: err?.message || "erro desconhecido" } }).catch(() => false);
+          }
+          if (!recommendationCurrent()) break;
           await log("campo", cp.localRegistroId, "erro", { mensagem_erro: err?.message || "erro desconhecido" });
           failedCount++;
           setProgress((p) => ({ ...p, failed: p.failed + 1 }));
