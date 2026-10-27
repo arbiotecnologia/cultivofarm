@@ -2,3 +2,4 @@
 - Field CAS: revalidate original predicate + can_manage + status after gate, parent and child locks; tenant of talhão/fazenda/cliente and hidden cultura checked server-side.
 - Client queue: every save gets a new revision; claim/cleanup only by revision+attemptId in one IDB transaction; PT409 never auto-requeued.
 - Permission is a strict subset of RLS participants; never describe it as identical to the original scope.
+- Backend applied by the auditor (visit_field_cas_gate_20261027): never re-apply; a false CAS finish/discard must never show saved or advance.

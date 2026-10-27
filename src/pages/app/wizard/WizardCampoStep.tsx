@@ -6,7 +6,7 @@ import { useTenantSelection } from "@/hooks/useTenantCatalogVisibility";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import {
-  CAMPO_CONFLICT_MESSAGE, campoOwnedBy, isCampoConflict, isValidCampoExpected, parseCampoResult, parseCampoRow,
+  CAMPO_CONFLICT_MESSAGE, CAMPO_SUPERSEDED_MESSAGE, campoOwnedBy, isCampoConflict, isValidCampoExpected, parseCampoResult, parseCampoRow,
 } from "@/lib/visita/campoContract";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -95,6 +95,7 @@ export default function WizardCampoStep({
   const [inConflict, setInConflict] = useState(false);
   const [review, setReview] = useState<{ serverVersion: number; serverForm: CampoForm } | null>(null);
   const [reviewing, setReviewing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   // Observed server version (CAS) and exact local snapshot revision; null = not trusted -> no save.
   const observed = useRef<{ version: number | null; revision: string | null }>({ version: null, revision: null });
   const hydrationRef = useRef<"loading" | "ready" | "error">("loading");
@@ -126,7 +127,7 @@ export default function WizardCampoStep({
     hydratedGen.current = null; advanceLock.current = false;
     hydrationRef.current = "loading"; conflictRef.current = false;
     setForm(EMPTY); setSaveState("idle"); setHydration("loading"); setInConflict(false); setReview(null);
-    setReviewing(false); setAdvancing(false);
+    setReviewing(false); setAdvancing(false); setNotice(null);
     return () => { mounted.current = false; };
   }, [generation]);
 
@@ -300,9 +301,16 @@ export default function WizardCampoStep({
         if (error) throw error;
         const env = parseCampoResult(data, versao, remoteRegistroId, clientUuid);
         observed.current.version = env.versao;
-        await finishPendingCampo(claim, { remove: true }); // only this exact revision+attempt
+        const cleaned = await finishPendingCampo(claim, { remove: true }); // only this exact revision+attempt
         claim = null;
         if (!ok()) return false;
+        if (!cleaned) {
+          // Another tab/edit wrote a newer local revision during the RPC: the server accepted an
+          // older snapshot. The newer draft stays queued; never announce "saved" nor advance.
+          markConflict(true); setNotice(CAMPO_SUPERSEDED_MESSAGE); setSaveState("conflict");
+          await invalidateWizardProgress(queryClient, remoteRegistroId, "campo");
+          return false;
+        }
         await invalidateWizardProgress(queryClient, remoteRegistroId, "campo");
         if (!ok()) return false;
         setSaveState("saved");
@@ -376,17 +384,22 @@ export default function WizardCampoStep({
   const confirmarSobreVersaoAtual = () => {
     if (!review || hydrationRef.current !== "ready") return;
     observed.current.version = review.serverVersion;
-    setReview(null); markConflict(false);
+    setReview(null); markConflict(false); setNotice(null);
     void persist(form, { force: true });
   };
   const usarDadosDoServidor = async () => {
     if (!review) return;
     const gen = generation; const live = access.capture();
     const rev = observed.current.revision;
-    if (rev) await discardPendingCampo(localRegistroId, rev).catch(() => false);
+    const discarded = rev ? await discardPendingCampo(localRegistroId, rev).catch(() => false) : true;
     if (!live() || !isCurrent(gen)) return;
+    if (!discarded) {
+      // Stale discard (a newer revision exists or is being sent): keep conflict and draft visible.
+      setReview(null); setNotice(CAMPO_SUPERSEDED_MESSAGE); setSaveState("conflict");
+      return;
+    }
     observed.current = { version: review.serverVersion, revision: null };
-    setForm(review.serverForm); setReview(null); markConflict(false); setSaveState("saved");
+    setForm(review.serverForm); setReview(null); markConflict(false); setNotice(null); setSaveState("saved");
   };
 
   if ((remoteRegistroId && remoteFailed) || hydration === "error" || (hydration === "ready" && !access.ready)) {
@@ -441,7 +454,7 @@ export default function WizardCampoStep({
 
       {inConflict && (
         <div role="alert" className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs">
-          <p>{CAMPO_CONFLICT_MESSAGE}</p>
+          <p>{notice ?? CAMPO_CONFLICT_MESSAGE}</p>
           {!review && remoteRegistroId && (
             <Button type="button" size="sm" variant="outline" onClick={() => void reconsultar()} disabled={reviewing}>
               {reviewing ? "Reconsultando…" : "Reconsultar dados atuais"}

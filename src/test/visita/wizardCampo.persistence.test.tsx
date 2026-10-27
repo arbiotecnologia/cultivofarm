@@ -26,6 +26,12 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
 vi.mock("@/hooks/useTenantCatalogVisibility", () => ({
   useTenantSelection: () => ({ isSuccess: true, isFetching: false, data: { rows: [], total: 0 } }),
 }));
+// Radix Select portals/poppers schedule async updates outside act; tests never interact with
+// selects, so a static stub keeps act warnings out without changing component behavior.
+vi.mock("@/components/ui/select", () => {
+  const Pass = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
+  return { Select: Pass, SelectTrigger: Pass, SelectValue: () => null, SelectContent: () => null, SelectItem: () => null };
+});
 import WizardCampoStep from "@/pages/app/wizard/WizardCampoStep";
 import { isCampoConflict, parseCampoResult } from "@/lib/visita/campoContract";
 import { claimPendingCampo, finishPendingCampo, getPendingCampoByRegistro, savePendingCampo } from "@/lib/offlineDb";
@@ -46,9 +52,9 @@ beforeEach(() => {
   mocks.lookup.mockResolvedValue({ data: null, error: null });
   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); });
+afterEach(async () => { await act(async () => { await new Promise((r) => setTimeout(r, 0)); }); cleanup(); vi.useRealTimers(); });
 const fase = () => screen.getByLabelText("Fase fenológica") as HTMLInputElement;
-const typeFase = (v: string) => fireEvent.change(fase(), { target: { value: v } });
+const typeFase = (v: string) => { act(() => { fireEvent.change(fase(), { target: { value: v } }); }); };
 const advance = () => fireEvent.click(screen.getByRole("button", { name: "Salvar e avançar" }));
 const deferred = <T,>() => { let resolve!: (v: T) => void; const p = new Promise<T>((r) => { resolve = r; }); return { p, resolve }; };
 
@@ -105,11 +111,13 @@ it("resposta tardia após troca de época durante a RPC não é adotada nem limp
   typeFase("V4"); advance();
   await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
   mocks.auth.authzEpoch = 1;
-  view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />));
+  await act(async () => { view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />)); await new Promise((r) => setTimeout(r, 0)); });
   await act(async () => { rpc.resolve({ data: env(1), error: null }); await new Promise((r) => setTimeout(r, 20)); });
   expect(done).not.toHaveBeenCalled();
-  const stored = await getPendingCampoByRegistro(local);
+  let stored: Awaited<ReturnType<typeof getPendingCampoByRegistro>> = null;
+  await act(async () => { stored = await getPendingCampoByRegistro(local); });
   expect(stored?.payload).toMatchObject({ fase_fenologica: "V4" }); // not removed by the late answer
+  await screen.findByLabelText("Fase fenológica"); // new scope re-hydrates inside act
 });
 
 it("resposta tardia durante invalidations com troca de roles não navega", async () => {
@@ -121,7 +129,7 @@ it("resposta tardia durante invalidations com troca de roles não navega", async
   typeFase("V4"); advance();
   await waitFor(() => expect(spy).toHaveBeenCalled());
   mocks.auth.roles = ["consultor_tecnico", "gestor"];
-  view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />));
+  await act(async () => { view.rerender(ui(<WizardCampoStep {...props()} onDone={done} />)); await new Promise((r) => setTimeout(r, 0)); });
   await act(async () => { inv.resolve(); await new Promise((r) => setTimeout(r, 20)); });
   expect(done).not.toHaveBeenCalled();
 });
@@ -138,6 +146,29 @@ it("aba 2 grava rascunho novo enquanto aba 1 envia: cleanup da aba 1 preserva o 
   const stored = await getPendingCampoByRegistro(local);
   expect(stored?.payload).toMatchObject({ fase_fenologica: "TAB2" });
   expect(stored?.syncStatus).toBe("pending_sync");
+  // Finish CAS false: never "Salvo", never advances; revisable notice instead.
+  expect(done).not.toHaveBeenCalled();
+  expect(screen.queryByText("Salvo")).toBeNull();
+  expect(await screen.findByText(/Há um rascunho mais novo desta etapa/)).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Reconsultar dados atuais" })).toBeTruthy();
+});
+
+it("descarte obsoleto (nova revisão de outra aba) não esconde conflito nem apaga o novo rascunho", async () => {
+  mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "PT409", message: "version_conflict" } });
+  render(ui(<WizardCampoStep {...props()} onDone={vi.fn()} />));
+  await screen.findByLabelText("Fase fenológica");
+  typeFase("MEU"); advance();
+  await screen.findByText("Conflito — revise antes de salvar");
+  mocks.lookup.mockResolvedValueOnce({ data: { id: ROW_ID, registro_consultor_id: REMOTE, versao: 3, fase_fenologica: "S" }, error: null });
+  fireEvent.click(screen.getByRole("button", { name: "Reconsultar dados atuais" }));
+  const discard = await screen.findByRole("button", { name: "Descartar rascunho e usar dados atuais" });
+  await savePendingCampo({ localRegistroId: local, clientUuid: CU, remoteRegistroId: REMOTE, payload: { fase_fenologica: "TAB2" },
+    versao: 0, updatedAt: new Date().toISOString(), syncStatus: "pending_sync", ownerUserId: "user-a", ownerOrganizationId: "org-a" });
+  fireEvent.click(discard);
+  expect(await screen.findByText(/Há um rascunho mais novo desta etapa/)).toBeTruthy();
+  expect(screen.getByText("Conflito — revise antes de salvar")).toBeTruthy();
+  expect(fase().value).toBe("MEU");
+  expect((await getPendingCampoByRegistro(local))?.payload).toMatchObject({ fase_fenologica: "TAB2" });
 });
 
 it("falso sucesso do baseline ({}) não confirma, não navega e mantém pendência", async () => {

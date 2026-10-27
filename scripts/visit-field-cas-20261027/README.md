@@ -1,6 +1,9 @@
-# rpc_salvar_campo_visita + visitas_campo_guard — candidato revisável (INATIVO)
+# rpc_salvar_campo_visita + visitas_campo_guard
 
-Nada foi aplicado no banco hospedado nem publicado. O auditor faz revisão independente, aplicação e homologação real.
+## Estado (revisão 92683a)
+- Backend **aplicado pelo auditor** em produção como migration `visit_field_cas_gate_20261027`; postflight 15/15; dados originais preservados. **Não reaplicar** `candidate.sql.review` (permanece como registro histórico).
+- Sessões reais A/B relatadas pelo auditor (não reproduzidas aqui): negação cruzada 403, criação 200, replay idempotente 200, concorrência com expected 1 → exatamente um 200 v2 e um 409 por tenant.
+- Frontend ainda não publicado. Correção desta etapa: `finishPendingCampo(..., {remove:true})` ou `discardPendingCampo` retornando `false` (outra aba gravou revisão nova) **nunca** anuncia "Salvo" nem chama `onDone`; a revisão nova fica na fila e aparece aviso revisável com "Reconsultar dados atuais" sem recarregar. `useOfflineSync` não conta como sincronizado e registra `superseded_local_revision`. A revisão nova mantém o CAS antigo e, ao sincronizar, receberá PT409 → conflito preservado (sem replay cego).
 
 ## Baseline LIVE (reconfirmado read-only, 2026-10-27 ~14:50 UTC, ref swzpzcwiasxmjutrmvkm)
 - `rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)` OID 42803, md5 `dc1ff655ba3bf156d38817fbf0c073dd`, SECURITY DEFINER postgres, `search_path=public`, ACL `{postgres=X,service_role=X,authenticated=X}`.
