@@ -30,4 +30,6 @@ Antes da instalação independente, comparar triggers/ACL e pós-hashes com capt
 
 `test-local.py`: 30checks em PostgreSQL descartável, Auth/schema/relógio sintéticos; proteção contra apagar bloco e data, ticket forjado negado, core legítimo futuro/replay/rollback/concorrência preservados. PRE hosted é removido somente no harness para esquema reduzido. Não reaplicar SQL inicial em produção.
 
+Suíte final: **156/156, 11 arquivos** em 01:28:53 UTC; build automático OK. Primeira execução paralela teve timeout de 1s aguardando montagem do editor; execução isolada passou, espera ajustada para 5s e suíte integral repetida passou. Não omitir isso como prova JWT/browser real. Tipagem/build manuais não executados por regra do ambiente.
+
 Pendentes: instalação independente da proteção, nova homologação browser/JWT A/B com writer contido, investigação/restauração autorizada do plano A pelo auditor. Contabilidade A DRAFT e SU-518022 intactos.

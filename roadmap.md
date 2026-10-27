@@ -1,8 +1,8 @@
 # F2-B — auditoria e preparação revisável
 
 ## 27/10 01:19 — perda real plano por autosave da página (sem produção)
-- [ ] Reproduzir montagem real e autosave atrasado pós-RPC; corrigir hidratação, observações e versão observada sem rebase.
-- [ ] Preparar contenção servidor revisável se necessária, registrar aplicação externa sem reaplicar e validar testes locais.
+- [x] Página/Conduta/editor/workspace/efeitos reais com Auth/transporte simulados: sete cenários de montagem/hidratação/refetch, edição, timer e envio atrasados. CAS observado sem rebase e bloco exato preservado.
+- [x] Proteção servidor candidata INATIVA com ticket privado txid/alvo/bloco/data e contenção deny-only; aplicação externa registrada sem reaplicar.156/156testes;30checksPG sintéticos; build automático OK.
 - [ ] Homologação/reparação de dados e instalação ficam com auditor; nenhuma escrita produtiva/publicação, contabilidade e SU-518022 preservadas.
 
 ## 27/10 01:03 — bloqueios independentes 35815468 (sem produção)
