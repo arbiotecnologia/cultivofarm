@@ -13,7 +13,9 @@ X = 'bbbbbbbb-0000-4000-8000-00000000000a'    # consultor tenant B
 CA = 'cccccccc-0000-4000-8000-00000000000a'; CB = 'cccccccc-0000-4000-8000-00000000000b'
 FA = 'dddddddd-0000-4000-8000-00000000000a'; FB = 'dddddddd-0000-4000-8000-00000000000b'
 TA = 'eeeeeeee-0000-4000-8000-00000000000a'; TB = 'eeeeeeee-0000-4000-8000-00000000000b'; TI = 'eeeeeeee-0000-4000-8000-00000000000c'
-CU = 'ffffffff-0000-4000-8000-00000000000a'; CI = 'ffffffff-0000-4000-8000-00000000000b'
+CU = 'ffffffff-0000-4000-8000-00000000000a'; CI = 'ffffffff-0000-4000-8000-00000000000b'; CH = 'ffffffff-0000-4000-8000-00000000000c'
+OA = '0a0a0a0a-0000-4000-8000-00000000000a'; OB = '0b0b0b0b-0000-4000-8000-00000000000b'
+TX = 'eeeeeeee-0000-4000-8000-00000000000d'; TF = 'eeeeeeee-0000-4000-8000-00000000000e'; FI = 'dddddddd-0000-4000-8000-00000000000c'
 K1 = '99999999-0000-4000-8000-000000000001'; K2 = '99999999-0000-4000-8000-000000000002'
 V = lambda n: f'11111111-0000-4000-8000-{n:012d}'
 checks = 0
@@ -74,12 +76,17 @@ CREATE TABLE actors(id uuid PRIMARY KEY, tenant text, ready boolean);
 INSERT INTO actors VALUES('{A}','A',true),('{G}','A',true),('{ADM}','A',true),('{R}','A',true),('{X}','B',true);
 CREATE TABLE user_roles(user_id uuid, role app_role);
 INSERT INTO user_roles VALUES('{A}','consultor_tecnico'),('{G}','gestor'),('{ADM}','administrador'),('{R}','consultor_tecnico'),('{X}','consultor_tecnico');
-CREATE TABLE clientes(id uuid PRIMARY KEY, tenant text); INSERT INTO clientes VALUES('{CA}','A'),('{CB}','B');
+CREATE TABLE clientes(id uuid PRIMARY KEY, tenant text, organization_id uuid); INSERT INTO clientes VALUES('{CA}','A','{OA}'),('{CB}','B','{OB}');
+CREATE TABLE profiles(user_id uuid PRIMARY KEY, ativo boolean, organization_id uuid);
+INSERT INTO profiles VALUES('{A}',true,'{OA}'),('{G}',true,'{OA}'),('{ADM}',true,'{OA}'),('{R}',true,'{OA}'),('{X}',true,'{OB}');
+CREATE TABLE catalog_tenant_visibility(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid, entity_type text, cultura_id uuid, hidden boolean);
 CREATE TABLE client_links(user_id uuid, cliente_id uuid, active boolean);
 INSERT INTO client_links VALUES('{A}','{CA}',true),('{X}','{CB}',true);
-CREATE TABLE fazendas(id uuid PRIMARY KEY, cliente_id uuid); INSERT INTO fazendas VALUES('{FA}','{CA}'),('{FB}','{CB}');
-CREATE TABLE talhoes(id uuid PRIMARY KEY, fazenda_id uuid, ativo boolean); INSERT INTO talhoes VALUES('{TA}','{FA}',true),('{TB}','{FB}',true),('{TI}','{FA}',false);
-CREATE TABLE culturas(id uuid PRIMARY KEY, ativo boolean); INSERT INTO culturas VALUES('{CU}',true),('{CI}',false);
+CREATE TABLE fazendas(id uuid PRIMARY KEY, cliente_id uuid, organization_id uuid, ativo boolean);
+INSERT INTO fazendas VALUES('{FA}','{CA}','{OA}',true),('{FB}','{CB}','{OB}',true),('{FI}','{CA}','{OA}',false);
+CREATE TABLE talhoes(id uuid PRIMARY KEY, fazenda_id uuid, ativo boolean, organization_id uuid);
+INSERT INTO talhoes VALUES('{TA}','{FA}',true,'{OA}'),('{TB}','{FB}',true,'{OB}'),('{TI}','{FA}',false,'{OA}'),('{TX}','{FA}',true,'{OB}'),('{TF}','{FI}',true,'{OA}');
+CREATE TABLE culturas(id uuid PRIMARY KEY, ativo boolean); INSERT INTO culturas VALUES('{CU}',true),('{CI}',false),('{CH}',true);
 CREATE TABLE registros_consultor(id uuid PRIMARY KEY, created_by uuid, consultor_responsavel uuid, cliente_id uuid,
   status status_registro_consultor);
 CREATE TABLE visitas_campo(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), registro_consultor_id uuid NOT NULL UNIQUE REFERENCES registros_consultor(id) ON DELETE CASCADE,
@@ -104,6 +111,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
 """)
         def reset():
             sql(f"TRUNCATE registros_consultor CASCADE; UPDATE actors SET ready=true; UPDATE client_links SET active=true; UPDATE talhoes SET ativo=(id<>'{TI}'); UPDATE culturas SET ativo=(id<>'{CI}');"
+                + f"UPDATE profiles SET ativo=true, organization_id=CASE WHEN user_id='{X}' THEN '{OB}'::uuid ELSE '{OA}'::uuid END;"
+                + f"DELETE FROM catalog_tenant_visibility; INSERT INTO catalog_tenant_visibility(organization_id,entity_type,cultura_id,hidden) VALUES('{OA}','cultura','{CH}',true);"
                 + "INSERT INTO registros_consultor VALUES " + ",".join(f"('{V(i)}','{A}','{R}','{CA}','em_andamento')" for i in range(1, 30))
                 + f",('{V(80)}','{A}','{R}','{CA}','finalizado'),('{V(90)}','{X}','{X}','{CB}','rascunho');")
         # ---------- PRE: live baseline body + live trigger shape reproduce the defects.
@@ -183,6 +192,25 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         sql(f"UPDATE talhoes SET ativo=false WHERE id='{TA}'; UPDATE culturas SET ativo=false WHERE id='{CU}';")
         ok(rpc(A, V(5), 1, pl(talhao_id=TA, cultura_id=CU, fase_fenologica='V6')) + row(V(5)).replace('SELECT versao', 'SELECT versao=2'), 'already-saved inactive refs may be kept unchanged')
         sql("UPDATE talhoes SET ativo=true; UPDATE culturas SET ativo=true;")
+        # ---------- Review fe6fc410 item 4: tenant of talhão/fazenda, hidden cultura, non-finite area
+        s5 = snap(V(5))
+        err(rpc(A, V(5), 2, pl(talhao_id=TX)), '22023', 'talhão of fazenda of cliente but talhoes.organization_id other tenant rejected')
+        err(rpc(A, V(5), 2, pl(talhao_id=TF)), '22023', 'new talhão of inactive fazenda rejected')
+        err(rpc(A, V(5), 2, pl(cultura_id=CH)), '22023', 'cultura hidden for actor tenant rejected (catalog_tenant_visibility)')
+        for bad in ('Infinity', '-Infinity', 'NaN'):
+            err(rpc(A, V(5), 2, pl(area_avaliada_ha=bad)), '22023', f'area {bad} rejected')
+        err(rpc(A, V(5), 2, pl(estande_plantas_ha='Infinity')), '22023', 'estande Infinity rejected')
+        ok(f"SELECT coalesce(md5(row(v.*)::text),'none')='{s5}' FROM visitas_campo v WHERE registro_consultor_id='{V(5)}';", 'item-4 negatives atomic')
+        ok(rpc(X, V(90), 0, pl(cultura_id=CH)) + "RESET ROLE; SELECT true;", 'cultura hidden only for tenant A stays selectable for tenant B')
+        sql(f"DELETE FROM catalog_tenant_visibility;")
+        ok(rpc(A, V(13), 0, pl(cultura_id=CH)) + "RESET ROLE; SELECT true;", 'cultura saved while visible')
+        sql(f"INSERT INTO catalog_tenant_visibility(organization_id,entity_type,cultura_id,hidden) VALUES('{OA}','cultura','{CH}',true);")
+        ok(rpc(A, V(13), 1, pl(cultura_id=CH, fase_fenologica='V2')) + row(V(13)).replace('SELECT versao', 'SELECT versao=2'), 'already-saved now-hidden cultura may be kept unchanged')
+        sql(f"UPDATE profiles SET organization_id='{OB}' WHERE user_id='{A}';")
+        err(rpc(A, V(13), 2), '42501', 'actor profile tenant differs from visit cliente tenant denied')
+        sql(f"UPDATE profiles SET organization_id='{OA}', ativo=false WHERE user_id='{A}';")
+        err(rpc(A, V(13), 2), '42501', 'inactive profile denied')
+        sql(f"UPDATE profiles SET ativo=true WHERE user_id='{A}';")
         # ---------- Guard direct writers
         err(f"UPDATE visitas_campo SET versao=versao+2 WHERE registro_consultor_id='{V(1)}';", 'PT409', 'guard: version jump PT409')
         err(f"UPDATE visitas_campo SET versao=versao WHERE registro_consultor_id='{V(1)}';", 'PT409', 'guard: same version PT409')
@@ -232,6 +260,16 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         if q.returncode != 0: raise AssertionError('C4 ' + q.stderr.read())
         mark('C4 operation already past gate commits BEFORE queued revocation (NOT a revocation win)')
         err(rpc(A, V(10), 1), '42501', 'C4 after revocation commit: next call denied')
+        sql("UPDATE client_links SET active=true;")
+        # C7 revocation committed during CHILD-row wait -> post-child re-authorization denies.
+        ok(rpc(A, V(14), 0) + "RESET ROLE; SELECT true;", 'C7 setup row v1')
+        p, send = session(); send(f"BEGIN; SELECT 1 FROM visitas_campo WHERE registro_consultor_id='{V(14)}' FOR UPDATE;"); time.sleep(0.3)
+        q = bg(rpc(A, V(14), 1)); wait_lock(1)
+        sql(f"UPDATE client_links SET active=false WHERE user_id='{A}';")
+        send('COMMIT;'); p.stdin.close(); p.wait(); q.wait(); e = q.stderr.read()
+        if q.returncode == 0 or '42501' not in e: raise AssertionError('C7 ' + e)
+        mark('C7 revocation committed during child-row wait -> re-authorization after child lock denies 42501')
+        ok(f"SELECT versao=1 FROM visitas_campo WHERE registro_consultor_id='{V(14)}';", 'C7 nothing written')
         sql("UPDATE client_links SET active=true;")
         # C5 bounded wait: foreign lock on parent > 3s -> lock_timeout 55P03, nothing written.
         p, send = session(); send(f"BEGIN; SELECT 1 FROM registros_consultor WHERE id='{V(11)}' FOR UPDATE;"); time.sleep(0.3)
