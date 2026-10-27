@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 27/10 13:38 — rpc_enviar_visita_aprovacao (auditoria 40001, SQL INATIVO)
+- [x] Pacote scripts/visit-approval-submit-20261027: gate antes da linha, reautorização após esperas, PT409, CAS obrigatório, ROW_COUNT=1/1 log, lock_timeout3s; preflight/postflight/contenção deny-only; 38 PG sintéticos; wizard sem CAS fabricado e com fence tardia.
+- [ ] Aplicação/homologação JWT A/B pelo auditor.
+- [ ] Achado separado NÃO corrigido: rpc_salvar_campo_visita (admin cacheado, SELECT por ID sem escopo, CAS '<' sem lock).
+- [ ] Contabilidade real e SU-518022 adiados.
+
 ## 27/10 12:55 — contenção adicional de escrita agronômica (SQL INATIVO)
 - [x] Delta inativo em agronomic-origin/write-closure: 3 políticas RESTRICTIVE específicas, SELECT/tenant/5 writers postgres preservados; serviço risco service_role separado. Captura LIVE read-only ref canônico; timeout3s apenas nos3RPCs antigos, corpos/OIDs/ACL intactos.
 - [x] PRE/POST/contenção deny-only e hashes/diff;141/141PG sintéticos (87herdados+54novos),101/101clientes simulados, revisão independente sem defeito encontrado e build automático OK. Nenhuma aplicação/publicação/fixture nova.
