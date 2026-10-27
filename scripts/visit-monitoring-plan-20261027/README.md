@@ -47,6 +47,8 @@ Comando: `bun run test -- src/test/monitoramento src/test/visita/parentFence.int
 
 Testes reais de hooks/componente/página com Auth/workspace/transporte simulados: display readonly e origem, revogação, cancelamento, N/N+1/N+2, cache antigo bloqueado, PT409 explícito, timeout conserva chave, mudanças de versão/ator na confirmação, página desktop/mobile rascunho/em_andamento e can_edit false. PostgreSQL descartável: **26 checks** (23 anteriores + replay com data passada, nova data passada rejeitada, nenhum recibo novo), com relógio simulado somente no harness; corpo candidato usa relógio São Paulo real. PRE LIVE integral e demais triggers permanecem não homologados.
 
+Validação final desta revisão: `bun run test -- src/test/monitoramento src/test/visita/parentFence.interaction.test.tsx src/test/previsao/painelAlertasScope.test.tsx` → **144/144, 9 arquivos** (01:10:15 UTC). Build automático OK 01:10:05 UTC. Tipagem/build manuais não executados por regra do ambiente; não equivalem à homologação JWT/RLS. Nenhum SQL hosted foi executado.
+
 Chromium 1280×1800 e 390×1800: editor real montado via módulos do Vite, Auth/workspace substituídos exclusivamente no navegador; quatro estados readonly/editável, itens/data/origem visíveis, edição/cancelamento, sem overflow/pageerror ou mutação produtiva. Capturas sob `/tmp/browser/visit-plan-review/`. Não é prova de sessão/rota real A/B; montagem da página canônica é testada pelo Vitest.
 
 **Pendente:** revisão/instalação independente com PRE completo, integração de triggers/RLS/ACL e JWT/browser real A/B. Sem migração/DDL/DML hosted, sem fixtures produtivas/publicação. Contabilidade A DRAFT/pendente, SU-518022 e demais pendências históricas preservadas; contagem 42 não modificada por candidato inativo.
