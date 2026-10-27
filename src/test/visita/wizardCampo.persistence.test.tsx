@@ -116,6 +116,7 @@ it("resposta tardia após troca de época durante a RPC não é adotada nem limp
   expect(done).not.toHaveBeenCalled();
   const stored = await getPendingCampoByRegistro(local);
   expect(stored?.payload).toMatchObject({ fase_fenologica: "V4" }); // not removed by the late answer
+  await screen.findByLabelText("Fase fenológica"); // new scope re-hydrates inside act
 });
 
 it("resposta tardia durante invalidations com troca de roles não navega", async () => {
