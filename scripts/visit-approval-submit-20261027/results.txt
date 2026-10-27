@@ -20,6 +20,11 @@ PASS nonexistent same generic error 42501
 PASS gestor without creator/resp/client link keeps original restriction 42501
 PASS unauthenticated 42501
 PASS anon EXECUTE denied 42501
+PASS gestor no link, null created+null responsavel denied (NULL never authorizes) 42501
+PASS gestor no link, null created denied (NULL never authorizes) 42501
+PASS gestor no link, null responsavel denied (NULL never authorizes) 42501
+PASS NULL-scope rows unchanged
+PASS out-of-scope gestor denied without waiting on row lock (0.04s)
 PASS revoked client link denied 42501
 PASS inactive actor denied 42501
 PASS negatives atomic (row unchanged)
@@ -36,5 +41,5 @@ PASS C5 gate wait bounded by lock_timeout 3s (3.0s) 55P03
 PASS C5 row unchanged
 PASS containment deny-only, no 40001 restored
 PASS containment keeps service_role
-CANDIDATE_POST_MD5 9c68ad1dba4dac533629530c5c4155b5
-TOTAL 38 SYNTHETIC checks (not hosted JWT/RLS)
+CANDIDATE_POST_MD5 b053b1432864f30409b2043cd345e96c
+TOTAL 43 SYNTHETIC checks (not hosted JWT/RLS)
