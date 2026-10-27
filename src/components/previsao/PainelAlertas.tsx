@@ -1,6 +1,7 @@
 import { formatDateDisplay } from "@/lib/date-utils";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { useAtualizarStatusAlerta, type StatusAlerta } from "@/hooks/useAtualizarStatusAlerta";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ import { toast } from "sonner";
 export function PainelAlertas() {
   const [statusFilter, setStatusFilter] = useState("ativo");
   const [emAndamento, setEmAndamento] = useState<string | null>(null);
-  const queryClient = useQueryClient();
 
   const alertasQuery = useQuery({
     queryKey: ["alertas_agronomicos", statusFilter],
@@ -28,27 +28,16 @@ export function PainelAlertas() {
   });
   const { data: alertas, isLoading } = alertasQuery;
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status, statusAtual }: { id: string; status: string; statusAtual: string }) => {
-      // Filtro por status atual evita sobrescrever mudança feita por outro usuário.
-      const { data, error } = await (supabase as any)
-        .from("alertas_agronomicos")
-        .update({ status: status as any, updated_at: new Date().toISOString() })
-        .eq("id", id)
-        .eq("status", statusAtual as any)
-        .select("id");
-      if (error) throw error;
-      if (!data?.length) throw new Error("Este alerta já foi atualizado por outro usuário. Recarregue a lista.");
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["alertas_agronomicos"] }); toast.success("Alerta atualizado"); },
-    onError: (e: any) => toast.error(e?.message || "Erro ao atualizar alerta"),
-    onSettled: () => setEmAndamento(null),
-  });
+  const updateStatus = useAtualizarStatusAlerta();
 
-  const alterarStatus = (id: string, statusAtual: string, status: string) => {
-    if (emAndamento) return;
-    setEmAndamento(id);
-    updateStatus.mutate({ id, status, statusAtual });
+  const alterarStatus = (alerta: { id: string; updated_at: string }, status: StatusAlerta) => {
+    if (emAndamento || updateStatus.isPending) return;
+    setEmAndamento(alerta.id);
+    updateStatus.mutate({ id: alerta.id, status, expectedUpdatedAt: alerta.updated_at }, {
+      onSuccess: () => toast.success("Alerta atualizado"),
+      onError: (e) => toast.error(e.message),
+      onSettled: () => setEmAndamento(null),
+    });
   };
 
   return (
@@ -107,16 +96,16 @@ export function PainelAlertas() {
                       <div className="flex gap-1">
                         {a.status === "ativo" && (
                           <>
-                            <Button size="sm" variant="ghost" title="Monitorar" aria-label="Colocar em monitoramento" disabled={emAndamento !== null} onClick={() => alterarStatus(a.id, a.status, "monitoramento")}>
+                            <Button size="sm" variant="ghost" title="Monitorar" aria-label="Colocar em monitoramento" disabled={emAndamento !== null || updateStatus.isPending} onClick={() => alterarStatus(a, "monitoramento")}>
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
-                            <Button size="sm" variant="ghost" title="Encerrar" aria-label="Encerrar alerta" disabled={emAndamento !== null} onClick={() => alterarStatus(a.id, a.status, "encerrado")}>
+                            <Button size="sm" variant="ghost" title="Encerrar" aria-label="Encerrar alerta" disabled={emAndamento !== null || updateStatus.isPending} onClick={() => alterarStatus(a, "encerrado")}>
                               <CheckCircle className="h-3.5 w-3.5" />
                             </Button>
                           </>
                         )}
                         {a.status === "monitoramento" && (
-                          <Button size="sm" variant="ghost" title="Encerrar" aria-label="Encerrar alerta" disabled={emAndamento !== null} onClick={() => alterarStatus(a.id, a.status, "encerrado")}>
+                          <Button size="sm" variant="ghost" title="Encerrar" aria-label="Encerrar alerta" disabled={emAndamento !== null || updateStatus.isPending} onClick={() => alterarStatus(a, "encerrado")}>
                             <CheckCircle className="h-3.5 w-3.5" />
                           </Button>
                         )}

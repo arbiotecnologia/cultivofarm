@@ -852,7 +852,8 @@
 - [ ] Recuperação após fechar aba/entre abas: pacote INATIVO durable-attempt-20261026, NO-GO pelos gates19:01 acima; entre origens não homologado.
 
 ## Alertas climáticos (2026-10-27)
-- [x] PrevisaoInteligente: INSERT direto substituído por `rpc_criar_alerta_climatico_v1` (hook `useCriarAlertaClimatico`), sem retry, trava de duplo envio, validação estrita `[{id,criado}]`.
-- [ ] Backend `rpc_criar_alerta_climatico_v1` com technical_actor_ready + monitoring_refs_in_actor_tenant/advisory lock — aplicação pelo auditor (bloqueio: externo).
-- [ ] Homologação real A/B da criação climática, origem vinculada (`rpc_ativar_monitoramento_visita`/`registro_origem_id`) e revogação em voo — não homologadas (bloqueio: sessões reais).
-- [ ] PlanoMonitoramentoEditor e PainelAlertas ainda fazem UPDATE direto em `alertas_agronomicos` — revisão futura, não alterado.
+- [x] PrevisaoInteligente: INSERT direto substituído por `rpc_criar_alerta_climatico_v1` (hook `useCriarAlertaClimatico`). Backend `climate_alert_creation_tenant_guard_20261027` (hash b675f863360f50d58cd5358451284eff) aplicado pelo auditor; não reaplicar.
+- [x] PainelAlertas: UPDATE direto substituído por `rpc_atualizar_status_alerta_agronomico_v1` (hook `useAtualizarStatusAlerta`), timestamp exato, validação id/status/updated_at mais novo. Backend `agronomic_alert_status_tenant_guard_20261027` (hash f2769829ce82c765326079a498eed0f7) aplicado pelo auditor; não reaplicar.
+- [ ] LACUNA: nenhum INSERT frontend grava `alertas_agronomicos.registro_origem_id`. `rpc_ativar_monitoramento_visita` grava `monitoramento_avisos` e NÃO é fluxo/evidência de alerta com origem. Fluxo canônico de criação com origem vinculada inexistente no frontend (bloqueio: definição do proprietário).
+- [ ] Origem vinculada e revogação em voo não homologadas em sessões reais (bloqueio: sessões reais).
+- [ ] LACUNA específica: `PlanoMonitoramentoEditor` ainda lê/atualiza `alertas_agronomicos` diretamente (data_alerta/descricao); fora desta etapa por instrução.
