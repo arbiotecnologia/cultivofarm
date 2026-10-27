@@ -107,13 +107,19 @@ export default function WizardRevisaoStep({ remoteRegistroId, locked }: Props) {
       setActionError(!isOnline ? "Sem conexão. Esta ação exige internet." : "Esta ação não está disponível no estado atual da visita.");
       return;
     }
+    // CAS obrigatório: nunca fabricar versão (servidor rejeita nula/antiga com PT409).
+    const expectedVersion = typeof registro?.version === "number" && registro.version > 0 ? registro.version : null;
+    if (expectedVersion === null) {
+      setActionError("Versão desatualizada. Recarregue a visita e tente novamente.");
+      return;
+    }
     submissionLock.current = true;
     setPending(true);
     setActionError(null);
     try {
       const { error } = await supabase.rpc(
         (action === "finalizar" ? "rpc_finalizar_visita_v2" : "rpc_enviar_visita_aprovacao") as never,
-        { p_registro_id: remoteRegistroId, p_expected_version: registro?.version ?? 1 } as never,
+        { p_registro_id: remoteRegistroId, p_expected_version: expectedVersion } as never,
       );
       if (error) throw error;
       toast.success(action === "finalizar" ? "Visita finalizada." : "Visita enviada para aprovação.");
