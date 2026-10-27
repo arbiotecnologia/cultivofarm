@@ -1,0 +1,4 @@
+- Keep this additive package inactive and never reinstall the predecessor — independent review owns hosted application.
+- Deny authenticated INSERT/UPDATE/DELETE with separate restrictive false policies; preserve SELECT, tenant policies, canonical postgres definer RPCs and the service-role risk job — closes user bypass without inventing deletion.
+- Bound the three legacy RPC waits using function-level lock_timeout only; preserve bodies, OIDs, owners and ACLs — limits global gate occupancy without changing authorization.
+- Disposable PostgreSQL uses synthetic Auth and reduced schema; real overlapping revocation remains unverified — prevents false homologation.
