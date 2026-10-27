@@ -284,12 +284,14 @@ BEGIN
      OR NOT (SELECT prosecdef AND pg_get_userbyid(proowner)='postgres' FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure) THEN
     RAISE EXCEPTION 'acl_owner_drift_abort' USING ERRCODE = '55000';
   END IF;
+  -- LIVE-PIN-BEGIN (hosted OIDs; synthetic harness strips this block, postflight re-checks it)
   -- Other triggers on visitas_campo: exact OID/function/def/body/config/ACL/owner pin (not IS NOT NULL).
   IF (SELECT string_agg(t.tgname||'='||t.oid||'/'||t.tgfoid||'/'||md5(pg_get_triggerdef(t.oid))||'/'||md5(pg_get_functiondef(t.tgfoid))||'/'||coalesce(array_to_string(p.proconfig,','),'')||'/'||coalesce(p.proacl::text,'')||'/'||pg_get_userbyid(p.proowner)||'/'||p.prosecdef, E'\n' ORDER BY t.tgname)
         FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid
        WHERE t.tgrelid='public.visitas_campo'::regclass AND NOT t.tgisinternal AND t.tgname<>'trg_visitas_campo_guard') IS DISTINCT FROM 'technical_content_editable=102639/102637/80e6d0b57a8ab23adbe62cc975e390c3/eb4e8d56cde229056c4730f9742a8f4b/search_path=""/{postgres=X/postgres,service_role=X/postgres}/postgres/true'||E'\n'||'trg_visitas_campo_updated_at=46145/42147/90fa447151e1928356a638fbef382f7c/b1930ed5bca3be839f783c6202ab8147/search_path=public/{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}/postgres/false' THEN
     RAISE EXCEPTION 'other_triggers_drift_abort' USING ERRCODE = '55000';
   END IF;
+  -- LIVE-PIN-END
 END
 $post$;
 

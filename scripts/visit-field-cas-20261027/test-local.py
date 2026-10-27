@@ -126,7 +126,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO authenticated;
         sql(f"DELETE FROM user_roles WHERE user_id='{X}' AND role='administrador';")
         # ---------- Candidate (DO $pre$ pins LIVE hashes -> stripped on synthetic schema; preflight covers hosted).
         cand = (HERE / 'candidate.sql.review').read_text()
-        sql(re.sub(r'DO \$pre\$.*?\$pre\$;', '', cand, flags=re.S))
+        sql(re.sub(r'  -- LIVE-PIN-BEGIN.*?-- LIVE-PIN-END', '', re.sub(r'DO \$pre\$.*?\$pre\$;', '', cand, flags=re.S), flags=re.S))
         mark('candidate installs; in-migration DO $post$ ACL/owner assertion passed')
         ok("SELECT proconfig::text='{search_path=public,lock_timeout=3s}' AND prosecdef FROM pg_proc WHERE oid='public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)'::regprocedure;", 'definer + search_path + lock_timeout 3s')
         ok("SELECT NOT has_function_privilege('anon','public.rpc_salvar_campo_visita(uuid,uuid,jsonb,integer)','EXECUTE');", 'anon cannot execute')
