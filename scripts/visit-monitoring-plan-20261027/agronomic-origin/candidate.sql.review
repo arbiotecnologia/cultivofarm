@@ -28,7 +28,10 @@ BEGIN
   IF to_regclass('platform_private.monitoring_alert_receipts') IS NOT NULL
     OR to_regprocedure('public.rpc_reprogramar_monitoramento_v2(uuid,date,timestamptz,integer,uuid)') IS NOT NULL
     OR to_regprocedure('public.rpc_vincular_origem_alerta_v1(uuid,uuid,timestamptz,integer,uuid)') IS NOT NULL
-    OR to_regprocedure('public.rpc_listar_alertas_vinculaveis_v1(uuid)') IS NOT NULL THEN
+    OR to_regprocedure('public.rpc_listar_alertas_vinculaveis_v1(uuid)') IS NOT NULL
+    OR to_regclass('platform_private.alert_origin_write_tickets') IS NOT NULL
+    OR EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.alertas_agronomicos'::regclass AND NOT tgisinternal)
+    OR md5(pg_get_functiondef('public.rpc_atualizar_status_alerta_agronomico_v1(uuid,public.status_alerta,timestamptz)'::regprocedure))<>'f2769829ce82c765326079a498eed0f7' THEN
     RAISE EXCEPTION 'agronomic_origin_already_installed_review_required' USING ERRCODE='55000';
   END IF;
 END;
@@ -43,6 +46,48 @@ CREATE TABLE platform_private.monitoring_alert_receipts (
 REVOKE ALL ON platform_private.monitoring_alert_receipts FROM PUBLIC,anon,authenticated;
 GRANT ALL ON platform_private.monitoring_alert_receipts TO service_role;
 ALTER TABLE platform_private.monitoring_alert_receipts ENABLE ROW LEVEL SECURITY;
+
+-- Direct-write closure for origin/date of agronomic alerts. Tenant policies stay untouched;
+-- this trigger only denies sync-relevant mutations that lack a canonical-core ticket
+-- bound to txid_current()+alert. No GUC, claim or role escape (service_role included).
+CREATE TABLE platform_private.alert_origin_write_tickets (
+  transaction_id bigint NOT NULL, alerta_id uuid NOT NULL,
+  PRIMARY KEY(transaction_id,alerta_id)
+);
+REVOKE ALL ON platform_private.alert_origin_write_tickets FROM PUBLIC,anon,authenticated;
+GRANT ALL ON platform_private.alert_origin_write_tickets TO service_role;
+ALTER TABLE platform_private.alert_origin_write_tickets ENABLE ROW LEVEL SECURITY;
+
+CREATE FUNCTION platform_private.guard_alert_origin_sync() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public,platform_private AS $g$
+DECLARE v_ticket boolean;
+BEGIN
+  v_ticket := EXISTS(SELECT 1 FROM platform_private.alert_origin_write_tickets
+                      WHERE transaction_id=txid_current() AND alerta_id=NEW.id);
+  IF TG_OP='INSERT' THEN
+    IF NEW.registro_origem_id IS NOT NULL AND NOT v_ticket THEN
+      RAISE EXCEPTION 'alert_origin_requires_canonical_link' USING ERRCODE='PT409';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF v_ticket THEN RETURN NEW; END IF;
+  -- Link/unlink/relink (including unlink-then-change-date) only via the link core.
+  IF NEW.registro_origem_id IS DISTINCT FROM OLD.registro_origem_id OR NEW.id IS DISTINCT FROM OLD.id THEN
+    RAISE EXCEPTION 'alert_origin_requires_canonical_link' USING ERRCODE='PT409';
+  END IF;
+  IF OLD.registro_origem_id IS NOT NULL AND (
+       NEW.data_vencimento IS DISTINCT FROM OLD.data_vencimento
+    OR NEW.fazenda_id IS DISTINCT FROM OLD.fazenda_id
+    OR NEW.talhao_id IS DISTINCT FROM OLD.talhao_id
+    OR (OLD.status='encerrado' AND NEW.status IS DISTINCT FROM 'encerrado')) THEN
+    RAISE EXCEPTION 'linked_alert_requires_canonical_reschedule' USING ERRCODE='PT409';
+  END IF;
+  RETURN NEW;
+END;
+$g$;
+REVOKE ALL ON FUNCTION platform_private.guard_alert_origin_sync() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER trg_alert_origin_sync BEFORE INSERT OR UPDATE ON public.alertas_agronomicos
+  FOR EACH ROW EXECUTE FUNCTION platform_private.guard_alert_origin_sync();
 
 -- Lock order for every writer here: global gate -> alert row -> visit row -> generic notice.
 -- The plan writer uses gate -> visit -> notice; the gate serializes both, so no inversion.
@@ -139,12 +184,14 @@ BEGIN
     OR NOT coalesce(platform_private.monitoring_refs_in_actor_tenant(v_alerta.fazenda_id,v_alerta.talhao_id,v_reg.id),false) THEN
     RAISE EXCEPTION 'origin_reference_mismatch' USING ERRCODE='22023';
   END IF;
+  INSERT INTO platform_private.alert_origin_write_tickets VALUES(txid_current(),p_alerta_id);
   UPDATE public.alertas_agronomicos
      SET registro_origem_id=p_registro_id,
          updated_at=greatest(clock_timestamp(),v_alerta.updated_at+interval '1 microsecond')
    WHERE id=p_alerta_id AND updated_at=p_expected_alert_updated_at AND registro_origem_id IS NULL
    RETURNING updated_at INTO v_updated;
   IF NOT FOUND THEN RAISE EXCEPTION 'concurrent_update' USING ERRCODE='PT409'; END IF;
+  DELETE FROM platform_private.alert_origin_write_tickets WHERE transaction_id=txid_current() AND alerta_id=p_alerta_id;
   v_receipt := jsonb_build_object('ok',true,'alerta_id',p_alerta_id,'registro_origem_id',p_registro_id,
     'tipo_alerta',v_alerta.tipo_alerta,'alerta_updated_at',v_updated,'visit_version',v_reg.version,'request_id',p_request_id);
   INSERT INTO public.visitas_logs(registro_consultor_id,usuario_id,acao,descricao,metadata)
@@ -273,12 +320,16 @@ BEGIN
     -- Immutable visit: explicit alert-only mode; the visit/plan is NOT synchronized.
     v_version := v_reg.version;
   END IF;
+  IF v_alerta.registro_origem_id IS NOT NULL THEN
+    INSERT INTO platform_private.alert_origin_write_tickets VALUES(txid_current(),p_alerta_id);
+  END IF;
   UPDATE public.alertas_agronomicos
      SET data_vencimento=p_nova_data, nivel_risco='medio'::public.nivel_risco,
          updated_at=greatest(clock_timestamp(),v_alerta.updated_at+interval '1 microsecond')
    WHERE id=p_alerta_id AND updated_at=p_expected_alert_updated_at
    RETURNING updated_at INTO v_updated;
   IF NOT FOUND THEN RAISE EXCEPTION 'concurrent_update' USING ERRCODE='PT409'; END IF;
+  DELETE FROM platform_private.alert_origin_write_tickets WHERE transaction_id=txid_current() AND alerta_id=p_alerta_id;
   v_receipt := jsonb_build_object('success',true,'alerta_id',p_alerta_id,'data_anterior',v_alerta.data_vencimento,
     'nova_data',p_nova_data,'registro_origem_id',v_alerta.registro_origem_id,'visita_atualizada',v_visit_updated,'modo',v_mode,
     'visit_version',v_version,'alerta_updated_at',v_updated,'request_id',p_request_id);
@@ -379,6 +430,10 @@ DO $post$
 BEGIN
   IF has_table_privilege('authenticated','platform_private.monitoring_alert_receipts','SELECT')
     OR has_table_privilege('authenticated','platform_private.monitoring_alert_receipts','INSERT')
+    OR has_table_privilege('authenticated','platform_private.alert_origin_write_tickets','INSERT')
+    OR has_table_privilege('authenticated','platform_private.alert_origin_write_tickets','SELECT')
+    OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.alertas_agronomicos'::regclass AND tgname='trg_alert_origin_sync' AND tgenabled='O')
+    OR has_function_privilege('authenticated','platform_private.guard_alert_origin_sync()','EXECUTE')
     OR has_function_privilege('anon','public.rpc_reprogramar_monitoramento_v2(uuid,date,timestamptz,integer,uuid)','EXECUTE')
     OR has_function_privilege('anon','public.rpc_vincular_origem_alerta_v1(uuid,uuid,timestamptz,integer,uuid)','EXECUTE')
     OR has_function_privilege('anon','public.rpc_listar_alertas_vinculaveis_v1(uuid)','EXECUTE')

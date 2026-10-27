@@ -72,3 +72,13 @@ Provas sintéticas (Auth/schema reduzidos), não homologação.
 Fixtures atuais (relato do auditor; não recriar): visita A reparada v5; fixture B `126e3203-a381-4440-8e8b-a34d64241b38` v2, aviso `154f779f-5507-40d1-bd37-a760ea251749`. Antes do ensaio, conferir 1 aviso coerente em cada.
 
 Pendências: instalação/ensaio JWT real, decisão sobre visitas finalizadas e criação com origem, contabilidade real, SU-518022, reparo do plano A autorizado pelo auditor.
+
+## Fechamento de escrita direta em `alertas_agronomicos` (achado LIVE 27/10)
+
+Inventário read-only LIVE: `authenticated` tem UPDATE/INSERT; políticas "Scoped agronomic alert update/insert" permitem admin/gestor (e consultor/técnico na fazenda); nenhuma trigger existia. Escritores reais encontrados: `rpc_atualizar_status_alerta_agronomico_v1` (só `status`, hash `f2769829ce82c765326079a498eed0f7`), `rpc_criar_alerta_climatico_v1` (INSERT sem origem), `rpc_reprogramar_monitoramento_v1` (data, apenas sem origem após o patch PT428), Edge `check-monitoramentos-vencidos` (só `nivel_risco`, service_role) e os novos cores deste pacote. Nenhum cliente React escreve direto.
+
+Fechamento: trigger `trg_alert_origin_sync` (BEFORE INSERT/UPDATE) + ticket privado `platform_private.alert_origin_write_tickets` (txid + alerta), emitido apenas por `link_alert_origin_core` e `reschedule_monitoring_core` e removido na mesma transação. Sem ticket é negado (PT409): INSERT com origem; qualquer mudança de `registro_origem_id` (vincular, desvincular, revincular — inclusive desvincular e depois mudar data); e, em alerta vinculado, mudança de `data_vencimento`, `fazenda_id`, `talhao_id` ou reabertura de `encerrado`. Sem escape por GUC, claim ou papel (service_role incluso). Políticas de tenant permanecem intactas. Rollback de contenção mantém a trigger.
+
+Permanece permitido (testado): risco/status/encerramento de alerta vinculado, data de alerta não vinculado, INSERT sem origem.
+
+Limites reais: DELETE direto por administrador continua permitido pela política existente (remove o alerta; não cria divergência de data, mas some o vínculo); campos não sincronizados (tipo, descrição, risco) não passam pelo gate. A ordem de revogação só vale para escritas sincronizadas que agora obrigatoriamente passam pelos cores com gate; escritas permitidas acima não usam o gate. Resultado: 103 checks em PostgreSQL descartável/Auth sintética — não é prova JWT/RLS hosted; o ensaio bounded real está descrito em `postflight.sql`.
