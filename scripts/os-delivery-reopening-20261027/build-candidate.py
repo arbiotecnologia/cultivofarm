@@ -74,7 +74,7 @@ for n in names:
  if 'cancelar' in n:
   b=b.replace('  PERFORM set_config(',scope+'\n  PERFORM set_config(',1)
  out.append(b)
- pins.append({'name':n,'baseline':fs[n]['md5'],'candidate':hashlib.md5(b[:-2].encode()).hexdigest()})
+ pins.append({'name':n,'baseline':fs[n]['md5'],'candidate_source_sha256':hashlib.sha256(b.encode()).hexdigest(),'note':'pg_get_functiondef hash must come from local-candidate-hashes.json, not source text'})
 body=helper+'\n'.join(out)
 (H/'candidate-hardening.sql.review').write_text('-- INACTIVE HARDENING ONLY. NO CLIENT GRANTS. NOT A RELEASE MIGRATION.\n'+body)
 (H/'candidate-pins.json').write_text(json.dumps(pins,indent=2)+'\n')
