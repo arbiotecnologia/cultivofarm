@@ -179,7 +179,7 @@ def main():
     rows.append(dict(id=f'SALDO-{len(rows)+1:03}',cenario='JWT browser hosted dados pagamento fiscal real',status='NOT RUN',esperado='fora de escopo',observado='proibido',modo='GATE',severidade='P0',nivel='REAL_NAO_EXECUTADO'))
     OUT.mkdir(parents=True,exist_ok=True)
     with (OUT/'matriz.csv').open('w') as f:
-        w=csv.DictWriter(f,fieldnames=rows[0].keys());w.writeheader();w.writerows(rows)
+        w=csv.DictWriter(f,fieldnames=rows[0].keys(),lineterminator='\n');w.writeheader();w.writerows(rows)
     meta=dict(ref=LIVE['ref'],capture_sha256=hashlib.sha256(CAP.read_bytes()).hexdigest(),results=rows,counts={s:sum(r['status']==s for r in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']},installed_body_hashes={s:fun(s)['md5'] for s in used},excluded_triggers={t['name']:[x['name'] for x in t['triggers'] or [] if x['name'] not in included_names()] for t in LIVE['tables']},limits='Auth/h15/roles synthetic; exact columns/checks/unique indexes subset; FK/RLS/tenant/SaaS/risk/order/fiscal triggers excluded; ledger means receivable_payments only; experiment not SQL candidate nor production correction',runtime_changes=False)
     (OUT/'execucao.json').write_text(json.dumps(meta,indent=2)+'\n');print(json.dumps(meta['counts']))
 def included_names():return {'trg_ar_gen_installments','trg_h6_ar_snapshot','trg_audit_ar','trg_h6_ari_snapshot','trg_h6_rp_append_only','trg_recalc_ar_inst','trg_audit_rp','trg_assign_receipt_metadata','trg_sync_receipt_aliases'}
