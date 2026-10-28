@@ -30,4 +30,15 @@ describe('Saldo financeiro — geração versus ajustes dos pagamentos', () => {
     expect(saldoParcela({ original_amount: 10300, received_amount: 10300 })).toBe(0);
     expect(saldoParcela({ original_amount: 10300, received_amount: 0 })).toBe(10300);
   });
+  it('segunda baixa e estorno parcial preservam apenas o encargo não estornado', () => {
+    expect(saldoParcela({ original_amount: 10300, received_amount: 4000,
+      interest_amount: 100, penalty_amount: 200, discount_amount: 50 })).toBe(6550);
+    expect(calcularSaldoRecebivel({ original_amount: 10300, received_amount: 1000,
+      interest_amount: 0, penalty_amount: 0, discount_amount: 0 })).toBe(9300);
+  });
+  it('snapshot contratado conserva centavos sem recalcular taxa no leitor', () => {
+    const installments = [2225.96, 2225.96, 2225.95];
+    expect(installments.reduce((cents, amount) => cents + Math.round(amount * 100), 0)).toBe(667787);
+    expect(saldoParcela({ original_amount: 2225.95, received_amount: 2225.95 })).toBe(0);
+  });
 });

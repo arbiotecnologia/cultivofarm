@@ -154,6 +154,14 @@ def writers_scenarios(mode,offset):
     if mode.startswith('EXPERIMENTO'):
         rs=concurrent_calls(x,10600,[f'over-one-{offset}',f'over-two-{offset}'])
         record('proposta nega 10600 em duas sessoes',2,sum('excede o saldo' in r.stderr for r in rs),mode,'P0')
+    diagnostic=(H/'receivable-history-diagnostic.sql.readonly').read_text().rstrip().removesuffix(';')
+    count=int(pg.sql(f"SELECT count(*) FROM accounts_receivable WHERE organization_id='{A}' AND origin_type='B2B_ORDER'"))
+    observed=ask('SELECT row_to_json(d) FROM ('+diagnostic+') d;')
+    result=json.loads(observed)
+    record('diagnostico historico retorna apenas contagem tenant ator',count,result['titles_reviewed'],mode)
+    record('diagnostico suprime grupo estrangeiro pequeno','',pg.sql(scope(B)+diagnostic).splitlines()[-1] if pg.sql(scope(B)+diagnostic).splitlines()[-1] not in ['true','false'] else '',mode)
+    no_staff=pg.sql(scope(A,False)+'SELECT count(*) FROM ('+diagnostic+') d;').splitlines()[-1]
+    record('diagnostico sem autoridade staff nao retorna grupos','0',no_staff,mode)
 
 def main():
     pg.start();schema()
