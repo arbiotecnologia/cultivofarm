@@ -46,8 +46,8 @@
       "id": "SALDO-005",
       "cenario": "ACK perdido replay mesmo UUID sem novo efeito",
       "status": "PASS",
-      "esperado": "('3607a154-f4f9-4300-b982-826525da0539', True)",
-      "observado": "('3607a154-f4f9-4300-b982-826525da0539', True)",
+      "esperado": "('22e99f9e-0af3-4c3a-9fd7-d010a179bf07', True)",
+      "observado": "('22e99f9e-0af3-4c3a-9fd7-d010a179bf07', True)",
       "modo": "BASELINE",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -106,8 +106,8 @@
       "id": "SALDO-011",
       "cenario": "recibo replay sem duplicar",
       "status": "PASS",
-      "esperado": "('afbe93e9-c3b4-4a13-9885-065c35d5b2c4', True)",
-      "observado": "('afbe93e9-c3b4-4a13-9885-065c35d5b2c4', True)",
+      "esperado": "('f4b76a9c-bdc4-4c56-9c7e-3cc435e71e21', True)",
+      "observado": "('f4b76a9c-bdc4-4c56-9c7e-3cc435e71e21', True)",
       "modo": "BASELINE",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -156,8 +156,8 @@
       "id": "SALDO-016",
       "cenario": "estorno replay sem duplicar",
       "status": "PASS",
-      "esperado": "('1e3429d4-fb3f-41a9-93f4-43bb936dcc0c', True)",
-      "observado": "('1e3429d4-fb3f-41a9-93f4-43bb936dcc0c', True)",
+      "esperado": "('6fb539dc-a4b3-4fac-a307-3d0812d7a1a2', True)",
+      "observado": "('6fb539dc-a4b3-4fac-a307-3d0812d7a1a2', True)",
       "modo": "BASELINE",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -235,9 +235,9 @@
     {
       "id": "SALDO-024",
       "cenario": "valor financiado fixture 1m conservado na geracao",
-      "status": "PASS",
-      "esperado": "6000",
-      "observado": "6000.00",
+      "status": "FAIL",
+      "esperado": "6108.00",
+      "observado": "6216.00",
       "modo": "BASELINE",
       "severidade": "P0",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -246,8 +246,8 @@
       "id": "SALDO-025",
       "cenario": "rateio centavos soma 1m",
       "status": "PASS",
-      "esperado": "6000",
-      "observado": "6000.00",
+      "esperado": "6108.00",
+      "observado": "6108.00",
       "modo": "BASELINE",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -496,8 +496,8 @@
       "id": "SALDO-050",
       "cenario": "ACK perdido replay mesmo UUID sem novo efeito",
       "status": "PASS",
-      "esperado": "('76592f1e-5c46-4744-bab6-c07f6787580b', True)",
-      "observado": "('76592f1e-5c46-4744-bab6-c07f6787580b', True)",
+      "esperado": "('47378f2f-6ce9-4c2e-bc20-00be8bed9f32', True)",
+      "observado": "('47378f2f-6ce9-4c2e-bc20-00be8bed9f32', True)",
       "modo": "EXPERIMENTO_NAO_INSTALAVEL",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -556,8 +556,8 @@
       "id": "SALDO-056",
       "cenario": "recibo replay sem duplicar",
       "status": "PASS",
-      "esperado": "('b88f26fd-4d03-4aee-b140-f49817c87374', True)",
-      "observado": "('b88f26fd-4d03-4aee-b140-f49817c87374', True)",
+      "esperado": "('2182fd51-b1d5-40b9-b088-00773d19317e', True)",
+      "observado": "('2182fd51-b1d5-40b9-b088-00773d19317e', True)",
       "modo": "EXPERIMENTO_NAO_INSTALAVEL",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -606,8 +606,8 @@
       "id": "SALDO-061",
       "cenario": "estorno replay sem duplicar",
       "status": "PASS",
-      "esperado": "('49d53399-4ecf-4bf6-860c-3bf8c9ae58d5', True)",
-      "observado": "('49d53399-4ecf-4bf6-860c-3bf8c9ae58d5', True)",
+      "esperado": "('f641be80-8f48-4508-8b6d-a7beb8face17', True)",
+      "observado": "('f641be80-8f48-4508-8b6d-a7beb8face17', True)",
       "modo": "EXPERIMENTO_NAO_INSTALAVEL",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -686,8 +686,8 @@
       "id": "SALDO-069",
       "cenario": "valor financiado fixture 1m conservado na geracao",
       "status": "PASS",
-      "esperado": "6000",
-      "observado": "6000.00",
+      "esperado": "6108.00",
+      "observado": "6108.00",
       "modo": "EXPERIMENTO_NAO_INSTALAVEL",
       "severidade": "P0",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -696,8 +696,8 @@
       "id": "SALDO-070",
       "cenario": "rateio centavos soma 1m",
       "status": "PASS",
-      "esperado": "6000",
-      "observado": "6000.00",
+      "esperado": "6108.00",
+      "observado": "6108.00",
       "modo": "EXPERIMENTO_NAO_INSTALAVEL",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -994,8 +994,8 @@
     }
   ],
   "counts": {
-    "PASS": 79,
-    "FAIL": 11,
+    "PASS": 78,
+    "FAIL": 12,
     "BLOCKED": 8,
     "NOT RUN": 1
   },
