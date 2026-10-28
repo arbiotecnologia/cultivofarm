@@ -12,7 +12,8 @@ sys.path.insert(0,str(ROOT/'scripts/contracts-c2-20261022/integral'))
 import pg
 CAP=H/'receivable-semantics-live-20261028.json'; LIVE=json.loads(CAP.read_text())
 assert LIVE['ref']=='swzpzcwiasxmjutrmvkm' and pg.root.is_relative_to(Path('/tmp'))
-OUT=ROOT/'docs/auditorias/evidencias-saldo-canonico-20261028'
+WRITERS_PHASE='--writers-phase' in sys.argv
+OUT=ROOT/'docs/auditorias'/('evidencias-escritores-saldo-20261028' if WRITERS_PHASE else 'evidencias-saldo-canonico-20261028')
 A='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'; B='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 U='11111111-1111-4111-8111-111111111111'; PM='22222222-2222-4222-8222-222222222222'
 C='33333333-3333-4333-8333-333333333333'; K='44444444-4444-4444-8444-444444444444'
@@ -93,6 +94,62 @@ def payment(inst,amount,key,interest=0,penalty=0,discount=0,org=A):
     payload=dict(amount_received=str(amount),idempotency_key=key,payment_method_id=PM,payment_date='2026-10-28',interest_amount=str(interest),penalty_amount=str(penalty),discount_amount=str(discount))
     call=f"SELECT rpc_register_receivable_payment('{inst}',{q(json.dumps(payload))}::jsonb);"
     return ask(call,org),call
+
+def writers_scenarios(mode,offset):
+    """Exact assignment loop, not full writer authorization; never deployable."""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    import subprocess
+    fresh=json.loads((H/'receivable-writers-live-20261028.json').read_text())
+    f=next(x for x in fresh['functions'] if x['signature']=='generate_b2b_receivable_secure_impl(uuid)')
+    assert f['md5']==fun('generate_b2b_receivable_secure_impl(uuid)')['md5']
+    start=f['body'].index('  FOR v_sch IN');end=f['body'].index('  END LOOP;',start)+len('  END LOOP;')
+    loop=f['body'][start:end]
+    def replay_loop(t,n,proposal=False):
+        body=loop
+        if proposal:
+            anchor='interest_amount=COALESCE(v_sch.interest_amount,0)'
+            assert body.count(anchor)==1
+            # Hypothesis: operational interest derives only from immutable events.
+            body=body.replace(anchor,"interest_amount=(SELECT COALESCE(sum(rp.interest_amount),0) FROM public.receivable_payments rp WHERE rp.installment_id=accounts_receivable_installments.id)")
+        return ask(f"DO $fragment$ DECLARE p_partner_order_id uuid:='{uid(n)}'; v_receivable_id uuid:='{t}'; v_org uuid:='{A}'; v_terms record; v_sch record; v_ari_id uuid; v_installments_json jsonb:='[]'; BEGIN SELECT '{uid(n+10000)}'::uuid AS id INTO v_terms; {body} END $fragment$;")
+    n=offset+70;t,x=title(n)
+    replay_loop(t,n,mode.startswith('EXPERIMENTO'))
+    record('loop completo de atribuicoes B2B conserva total (nao autoriza writer)',D('10300'),balance(x),mode,'P0')
+    payment(x,3000,f'loop-partial-{offset}',100,200,50)
+    replay_loop(t,n,mode.startswith('EXPERIMENTO'))
+    record('loop repetido nao apaga nem duplica encargo do evento',D('7550'),balance(x),mode,'P0')
+    record('juros operacionais permanecem soma dos eventos',D('100'),D(pg.sql(f"SELECT interest_amount FROM accounts_receivable_installments WHERE id='{x}'")),mode,'P0')
+    record('snapshot cronograma preserva remuneracao inicial',D('300'),D(pg.sql(f"SELECT interest_amount FROM partner_order_payment_schedule WHERE partner_order_id='{uid(n)}'")),mode)
+    before=state();err=pg.sql(scope()+f"UPDATE partner_order_payment_schedule SET amount=10301 WHERE partner_order_id='{uid(n)}'; DO $fragment$ DECLARE p_partner_order_id uuid:='{uid(n)}'; v_receivable_id uuid:='{t}'; v_org uuid:='{A}'; v_terms record; v_sch record; v_ari_id uuid; v_installments_json jsonb:='[]'; BEGIN SELECT '{uid(n+10000)}'::uuid AS id INTO v_terms; {loop} END $fragment$;",ok=False)
+    record('snapshot parcela nega divergencia de original','Parcela imutavel','Parcela imutavel' if 'Parcela imutavel' in err else err,mode)
+    # Roll back the separate fixture edit; this is not a production remediation.
+    pg.sql(f"UPDATE partner_order_payment_schedule SET amount=10300 WHERE partner_order_id='{uid(n)}';")
+    def concurrent_calls(x,amount,keys):
+        barrier=Barrier(2)
+        def send(key):
+            payload=dict(amount_received=str(amount),idempotency_key=key,payment_method_id=PM,payment_date='2026-10-28')
+            barrier.wait()
+            return subprocess.run(pg.psql(),input=scope()+f"SELECT rpc_register_receivable_payment('{x}',{q(json.dumps(payload))}::jsonb);",text=True,capture_output=True)
+        with ThreadPoolExecutor(max_workers=2) as pool:return list(pool.map(send,keys))
+    t,x=title(offset+71)
+    rs=concurrent_calls(x,3000,[f'same-key-{offset}']*2)
+    ids=[r.stdout.strip().splitlines()[-1] for r in rs if r.returncode==0]
+    record('duas sessoes mesma chave retorno unico',(2,1),(len(ids),len(set(ids))),mode)
+    record('duas sessoes mesma chave ledger unico',D('3000'),D(pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{x}'")),mode)
+    record('duas sessoes mesma chave saldo correto',D('7300'),balance(x),mode)
+    t,x=title(offset+72)
+    rs=concurrent_calls(x,6000,[f'key-one-{offset}',f'key-two-{offset}'])
+    record('duas baixas excedentes uma aceita outra nega',(1,1),(sum(r.returncode==0 for r in rs),sum('excede o saldo' in r.stderr for r in rs)),mode)
+    record('baixas concorrentes distintas nao sobrebaixam',D('4300'),balance(x),mode)
+    record('ledger concorrente corresponde a valor aceito',D('6000'),D(pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{x}'")),mode)
+    t,x=title(offset+73)
+    pay,_=payment(x,1000,f'reversal-race-{offset}')
+    def reverse(_):
+        return subprocess.run(pg.psql(),input=scope()+f"SELECT fn_reverse_payment('{pay}','receivable','LOCAL');",text=True,capture_output=True)
+    with ThreadPoolExecutor(max_workers=2) as pool:rs=list(pool.map(reverse,range(2)))
+    record('estorno simultaneo uma compensacao no ledger',D('0'),D(pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{x}'")),mode,'P0')
+    record('estorno simultaneo conserva total financiado',D('10300'),balance(x),mode,'P0')
 
 def main():
     pg.start();schema()
@@ -177,6 +234,7 @@ def main():
         result=subprocess.run(pg.psql(),input=scope()+f"SELECT rpc_cancel_financial_installment('{foreign}','receivable','motivo local');",text=True,capture_output=True)
         denied=result.returncode!=0 and ('denied' in result.stderr.lower() or 'permiss' in result.stderr.lower())
         record('cancelamento deve negar parcela de outro tenant e ser atomico',(True,True),(denied,state()==before),mode,'P0')
+        if WRITERS_PHASE: writers_scenarios(mode,offset)
     for label,severity in [
         ('geracao B2B integral: gates fiscais/preco/tenant/snapshot e escritor alternativo','P0'),
         ('mudanca segura de contrato unico com todos consumidores BI','P0'),
