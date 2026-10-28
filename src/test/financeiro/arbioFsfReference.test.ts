@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { preview } from '@/pages/comercial/CommercialPaymentPlansPage';
-import { assignmentApplies, type MatrixPresentation } from '@/lib/comercial/validation';
+import { assignmentApplies } from '@/lib/comercial/validation';
 import { activePaymentMethodValid, canConfigurePartnerSettings } from '@/lib/financeiro/partnerSettings';
 import type { PaymentPlanPayload } from '@/hooks/useCommercialPaymentPlansAdmin';
 import type { PlanAssignment } from '@/hooks/useCommercialConditions';
