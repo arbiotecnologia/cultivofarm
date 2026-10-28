@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## Fase A2 — 28/10/2026: isolamento das duas funções financeiras de entrega
+- [ ] Reconfirmar LIVE somente leitura no ref swzpzcwiasxmjutrmvkm, hashes, ACL, guardas e consumidores; comparar candidato anterior.
+- [ ] Preparar proposta INATIVA fail-closed, PRE/POST e contenção reversível sem restaurar BOLA; testar somente PostgreSQL descartável/Auth simulada.
+- [ ] Entregar relatório discriminando evidência LIVE, testes simulados, riscos de integração e condições para revisão/prova JWT A/B independente.
+- [ ] Prova real/implantação dependem do auditor após revisão; nenhum SQL mutante, GRANT, publicação, dados/sessões ou liberação stock/envase/delivery nesta fase. Contabilidade real e SU-518022 adiados.
+
 ## 27/10 15:57 — dois conflitos Cockpit/aplicação (pacote INATIVO)
 - [x] Fontes LIVE capturadas read-only no ref canônico; delta exclusivo de dois RAISE 40001→PT409 em scripts/business-conflicts-cockpit-application-20261027, PRE/POST/rollback condicionado por hashes/OIDs/ACL/config/dependências; legacy_closed intacto.
 - [x] 36/36 checks PostgreSQL17.9 descartável (corpos exatos, Auth/schema sintéticos; conflito lote por injeção local),87/87Vitest em3arquivos; replay/A/B/atomicidade/40001 genuíno. Runtime frontend intacto, apenas4regressões novas; riscos de locks/revogação separados sem homologação real.
