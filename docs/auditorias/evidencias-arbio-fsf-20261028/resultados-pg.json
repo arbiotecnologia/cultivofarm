@@ -19,20 +19,20 @@
   },
   {
     "id": "ARFSF-003",
-    "cenario": "cash Decimal vs installed interest",
+    "cenario": "cash Decimal vs installed interest (cálculo; quitação não comprovada)",
     "status": "PASS",
     "expectativa": "60000.00",
     "observado": "60000.00",
-    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "nivel": "PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT",
     "severidade": "P1"
   },
   {
     "id": "ARFSF-004",
-    "cenario": "30d_zero_reference_only Decimal vs installed interest",
+    "cenario": "30d_zero_reference_only Decimal vs installed interest (0% hipotético; taxa exata NULL)",
     "status": "PASS",
     "expectativa": "65000.00",
     "observado": "65000.00",
-    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "nivel": "PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT",
     "severidade": "P1"
   },
   {
@@ -41,7 +41,7 @@
     "status": "PASS",
     "expectativa": "72115.75",
     "observado": "72115.75",
-    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "nivel": "PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT",
     "severidade": "P1"
   },
   {
@@ -50,7 +50,7 @@
     "status": "PASS",
     "expectativa": "79590.60",
     "observado": "79590.60",
-    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "nivel": "PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT",
     "severidade": "P1"
   },
   {
@@ -59,7 +59,7 @@
     "status": "PASS",
     "expectativa": "90092.99",
     "observado": "90092.99",
-    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "nivel": "PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT",
     "severidade": "P1"
   },
   {
@@ -68,7 +68,7 @@
     "status": "PASS",
     "expectativa": "93732.75",
     "observado": "93732.75",
-    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "nivel": "PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT",
     "severidade": "P1"
   },
   {
@@ -77,7 +77,7 @@
     "status": "PASS",
     "expectativa": "97472.23",
     "observado": "97472.23",
-    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "nivel": "PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT",
     "severidade": "P1"
   },
   {
@@ -86,7 +86,7 @@
     "status": "PASS",
     "expectativa": "107675.46",
     "observado": "107675.46",
-    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "nivel": "PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT",
     "severidade": "P1"
   },
   {

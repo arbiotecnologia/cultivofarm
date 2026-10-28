@@ -1,14 +1,14 @@
 id,cenario,status,expectativa,observado,nivel,severidade
 ARFSF-001,pin fn_b2b_apply_interest,PASS,806e5d8789b08cd6790a10feaf95f26d,806e5d8789b08cd6790a10feaf95f26d,LOCAL_HASH_CONSISTENCY,P1
 ARFSF-002,pin simulate_b2b_payment_plan_secure,PASS,37d4f45e388ed7b38f6f397b672629ee,37d4f45e388ed7b38f6f397b672629ee,LOCAL_HASH_CONSISTENCY,P1
-ARFSF-003,cash Decimal vs installed interest,PASS,60000.00,60000.00,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
-ARFSF-004,30d_zero_reference_only Decimal vs installed interest,PASS,65000.00,65000.00,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
-ARFSF-005,60d Decimal vs installed interest,PASS,72115.75,72115.75,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
-ARFSF-006,90d Decimal vs installed interest,PASS,79590.60,79590.60,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
-ARFSF-007,harvest6_2 Decimal vs installed interest,PASS,90092.99,90092.99,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
-ARFSF-008,harvest8_2 Decimal vs installed interest,PASS,93732.75,93732.75,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
-ARFSF-009,harvest8_2.5 Decimal vs installed interest,PASS,97472.23,97472.23,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
-ARFSF-010,harvest8_3 Decimal vs installed interest,PASS,107675.46,107675.46,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-003,cash Decimal vs installed interest (cálculo; quitação não comprovada),PASS,60000.00,60000.00,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-004,30d_zero_reference_only Decimal vs installed interest (0% hipotético; taxa exata NULL),PASS,65000.00,65000.00,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-005,60d Decimal vs installed interest,PASS,72115.75,72115.75,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-006,90d Decimal vs installed interest,PASS,79590.60,79590.60,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-007,harvest6_2 Decimal vs installed interest,PASS,90092.99,90092.99,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-008,harvest8_2 Decimal vs installed interest,PASS,93732.75,93732.75,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-009,harvest8_2.5 Decimal vs installed interest,PASS,97472.23,97472.23,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-010,harvest8_3 Decimal vs installed interest,PASS,107675.46,107675.46,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
 ARFSF-011,40% simulação não comprova quitação,BLOCKED,Concessão somente após quitação comprovada,Retorna60000 como simulação sem pagamento; não cria pedido nem constitui concessão,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P0
 ARFSF-012,vencimento retroativo simulação,PASS,invalid_due_date,invalid_due_date,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
 ARFSF-013,limite 100000,PASS,OK,OK,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
@@ -33,3 +33,4 @@ ARFSF-031,cross-tenant A/B e dois parceiros owner,BLOCKED,Contrato instalado e v
 ARFSF-032,snapshots históricos/taxa pós-faturar,BLOCKED,Contrato instalado e validação,Bateria anterior tem FAIL/P0; cadeia integral imutável não exercitada,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
 ARFSF-033,preços hectare históricos,BLOCKED,Contrato instalado e validação,"Não importar como preços vigentes, resolver dose/custo/ficha exige evidência",PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
 ARFSF-034,JWT/browser/pagamento/fiscal real,NOT RUN,Gate futuro autorizado,Proibidos nesta rodada,REAL,P1
+ARFSF-035,Vitest referencia e regressões existentes,PASS,121 testes/9arquivos,"121/121;14novos;Auth/transporte sintéticos, sem mutação financeira real",QUERYCLIENT_CONSUMERS_SYNTHETIC,P1
