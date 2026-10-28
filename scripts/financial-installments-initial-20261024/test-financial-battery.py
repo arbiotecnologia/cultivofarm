@@ -47,6 +47,10 @@ CREATE TABLE partner_orders(id uuid,payment_terms_id uuid,c2_external_origin_sna
 CREATE TABLE partner_order_payment_schedule(partner_order_id uuid,payment_terms_id uuid,installment_number int,due_date date,amount numeric(14,2),interest_amount numeric(14,2)); GRANT ALL ON partner_order_payment_schedule TO postgres;
 CREATE TABLE accounts_receivable(id uuid,organization_id uuid,created_by uuid,origin_type text,origin_id uuid,total_amount numeric(14,2),installment_count int,first_due_date date); GRANT ALL ON accounts_receivable TO postgres;
 CREATE TABLE accounts_receivable_installments(receivable_id uuid,installment_number int,due_date date,original_amount numeric(14,2),net_amount numeric(14,2),status text,organization_id uuid,interest_amount numeric(14,2) DEFAULT 0); GRANT ALL ON accounts_receivable_installments TO postgres;
+ALTER TABLE accounts_receivable ADD customer_id uuid, ADD description text, ADD category_id uuid, ADD cost_center_id uuid, ADD issue_date date, ADD notes text, ADD fiscal_invoice_required boolean, ADD fiscal_invoice_status text, ADD payment_method_id uuid;
+CREATE TABLE financial_categories(id uuid,active boolean,type text); GRANT ALL ON financial_categories TO postgres;
+CREATE TABLE financial_cost_centers(id uuid,active boolean); GRANT ALL ON financial_cost_centers TO postgres;
+CREATE TABLE financial_audit_log(entity_type text,entity_id uuid,action text,old_data jsonb,new_data jsonb,performed_by uuid); GRANT ALL ON financial_audit_log TO postgres;
 """
 
 def main():
@@ -56,6 +60,7 @@ def main():
         pg.sql(body)
         signature = {'fn_b2b_apply_interest':'numeric,text,numeric,numeric',
                      'fn_generate_receivable_installments':'',
+                     'rpc_create_financial_title':'text,jsonb',
                      'simulate_b2b_payment_plan_secure':'uuid,uuid,jsonb,date'}[name]
         observed = pg.sql(f"SELECT md5(pg_get_functiondef('public.{name}({signature})'::regprocedure))")
         assert observed == LIVE['hashes'][name], (name, observed)
@@ -99,7 +104,7 @@ def main():
             pg.sql(f"INSERT INTO partner_orders VALUES('{uid(200)}','{uid(201)}','{{}}');")
             for i,x in enumerate(result['schedule']):
                 pg.sql(f"INSERT INTO partner_order_payment_schedule VALUES('{uid(200)}','{uid(201)}',{i+1},'{x['due_date']}',{x['amount']},{x['interest_amount']});")
-            pg.sql(f"INSERT INTO accounts_receivable VALUES('{uid(202)}','{uid(2)}','{uid(100)}','B2B_ORDER','{uid(200)}',{final},{count},'{expected_dates[0]}');")
+            pg.sql(f"INSERT INTO accounts_receivable(id,organization_id,created_by,origin_type,origin_id,total_amount,installment_count,first_due_date) VALUES('{uid(202)}','{uid(2)}','{uid(100)}','B2B_ORDER','{uid(200)}',{final},{count},'{expected_dates[0]}');")
             actual_total=D(pg.sql(f"SELECT sum(original_amount+interest_amount) FROM accounts_receivable_installments WHERE receivable_id='{uid(202)}'"))
             record('gerador B2B + saldo original/juros','PASS' if actual_total==final else 'FAIL',str(final),str(actual_total),'P0')
     # Negative transport/domain cases against captured RPC, with stub authority explicit.
@@ -113,6 +118,35 @@ def main():
     # Unsupported inputs to helper must not masquerade as server-wide validation.
     negative=pg.sql("SELECT fn_b2b_apply_interest(10000,'simple',-1,3)")
     record('helper puro nao valida taxa negativa','PASS','9700.00 (validacao pertence ao chamador)',negative)
+    pg.sql(f"INSERT INTO financial_categories VALUES('{uid(300)}',true,'RECEITA');")
+    manual_session=session+f"SELECT set_config('test.org','{uid(2)}',false);"
+    def manual(amounts, dates):
+        payload=dict(customer_id=uid(301),description='LOCAL',category_id=uid(300),total_amount='10000.00',
+                     installment_count=len(amounts),first_due_date=str(today),issue_date=str(today),
+                     installments=[dict(installment_number=i+1,amount=x,due_date=dates[i]) for i,x in enumerate(amounts)])
+        return manual_session+f"SELECT rpc_create_financial_title('receivable',{literal(json.dumps(payload))}::jsonb);"
+    for label, amounts, dates in [
+        ('manual 30% +3x sem juros',['3000','2333.33','2333.33','2333.34'],[str(today+timedelta(days=i*30)) for i in range(4)]),
+        ('manual 50% +2x sem juros',['5000','2500','2500'],[str(today+timedelta(days=i*30)) for i in range(3)]),
+        ('manual desigual datas personalizadas',['1000','3500','5500'],[str(today+timedelta(days=i)) for i in [12,47,111]]),
+    ]:
+        result=json.loads(pg.sql(manual(amounts,dates)).splitlines()[-1]); tid=result['title_id']
+        observed=pg.sql(f"SELECT jsonb_agg(jsonb_build_object('amount',original_amount,'date',due_date) ORDER BY installment_number) FROM accounts_receivable_installments WHERE receivable_id='{tid}'")
+        parsed=json.loads(observed,parse_float=D)
+        assert [D(str(x['amount'])) for x in parsed]==list(map(D,amounts)) and [x['date'] for x in parsed]==dates
+        assert pg.sql(f"SELECT count(*) FROM financial_audit_log WHERE entity_id='{tid}'")=='2'
+        record(label,'PASS','10000.00; valores/datas exatos; dois eventos auditoria',observed,scope='MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS')
+    for label,amounts,token in [('manual parcela zero',['0','5000','5000'],'FIN_TITLE_INVALID_INSTALLMENT'),
+                                ('manual soma excessiva',['11000','1'],'FIN_TITLE_INVALID_SUM'),
+                                ('manual fracao centavo',['3333.333','3333.333','3333.334'],'FIN_TITLE_INVALID_INSTALLMENT')]:
+        before=pg.sql('SELECT count(*) FROM accounts_receivable')
+        err=pg.sql(manual(amounts,[str(today)]*len(amounts)),ok=False);assert token in err
+        assert pg.sql('SELECT count(*) FROM accounts_receivable')==before
+        record(label,'PASS',token+' sem titulo',token,scope='MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS')
+    for label,dates in [('manual vencimento repetido',[str(today)]*2),('manual vencimento retroativo',[str(today-timedelta(days=1)),str(today)])]:
+        # Isolate missing RPC validation from unknown installed downstream guards.
+        output=pg.sql('BEGIN;'+manual(['5000','5000'],dates)+'ROLLBACK;')
+        record(label,'FAIL','Rejeicao no corpo RPC; triggers integrais ainda BLOCKED','Corpo RPC aceitou em transacao local revertida','P1',scope='MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS')
     for label,reason in [
         ('entrada 30% +3x','Sem parametro entrada na RPC B2B; 3000 +2333.33 +2333.33 +2333.34 somente referencia sem juros'),
         ('entrada 50% +2x','Sem parametro entrada; 5000 +2500 +2500 referencia sem juros, base incidencia nao contratada'),
