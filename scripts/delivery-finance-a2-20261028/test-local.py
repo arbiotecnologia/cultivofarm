@@ -19,7 +19,7 @@ checks = []
 def main():
     tmp = Path(tempfile.mkdtemp(prefix='billing-', dir='/tmp')); tmp.chmod(0o777)
     prefix = ['setpriv', '--reuid=1000', '--regid=1000', '--clear-groups'] if os.getuid() == 0 else []
-    base = [str(Path(subprocess.check_output(['which','initdb'],text=True).strip()).resolve().parent/'psql'), '-X', '-h', str(tmp), '-p', PORT, '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At']
+    base = ['bun',str(HERE/'pg-local-driver.cjs'),str(tmp),PORT]
     def sql(q, must=True):
         r = subprocess.run(base, input=q, text=True, capture_output=True)
         if must and r.returncode: raise RuntimeError(r.stderr)
@@ -40,7 +40,7 @@ def main():
         return as_(u) + f"SELECT public.fn_generate_receivable_from_entrega('{e}','{json.dumps(p)}'::jsonb);"
     def mark(u, e): return as_(u) + f"SELECT public.fn_mark_entrega_not_billable('{e}','motivo teste');"
     def session():
-        p = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        p = subprocess.Popen(base + ['session'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         def send(q): p.stdin.write(q + '\n'); p.stdin.flush()
         return p, send
     def wait_lock(n=1, timeout=10):
@@ -97,7 +97,7 @@ CREATE TABLE accounts_receivable(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), 
   installment_count int, payment_method_id uuid, fiscal_invoice_required boolean, fiscal_invoice_status text, notes text, created_by uuid,
   status text DEFAULT 'OPEN');
 CREATE UNIQUE INDEX ar_origin_active ON accounts_receivable(origin_type, origin_id) WHERE status <> 'CANCELED';
-CREATE FUNCTION ar_org() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN NEW.organization_id := (SELECT organization_id FROM entregas WHERE id=NEW.origin_id); RETURN NEW; END$$;
+CREATE FUNCTION ar_org() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.organization_id IS NULL THEN NEW.organization_id := (SELECT organization_id FROM entregas WHERE id=NEW.origin_id); END IF; RETURN NEW; END$$;
 CREATE TRIGGER ar_org BEFORE INSERT ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION ar_org();
 CREATE TABLE accounts_receivable_installments(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), receivable_id uuid, installment_number int,
   due_date date, original_amount numeric, net_amount numeric, status text, organization_id uuid, interest_amount numeric, created_at timestamptz DEFAULT now());
@@ -180,17 +180,17 @@ GRANT USAGE ON SCHEMA public TO authenticated;
         time.sleep(0.3)
         p2, s2 = session(); s2(bill(FA, E(8)))
         wait_lock(1)
-        s1("COMMIT;"); p1.stdin.close(); p1.wait(10); p2.stdin.close(); o2 = p2.communicate(timeout=10)[0]
+        s1("COMMIT;"); p1.stdin.close(); p1.wait(10); p2.stdin.close(); p2.stdin=None; o2 = p2.communicate(timeout=10)[0]
         ok(f"SELECT (SELECT count(*) FROM accounts_receivable WHERE origin_id='{E(8)}')=1 AND (SELECT count(*) FROM financial_audit_log)=1;", 'duas chamadas simultâneas: 1 título, 1 auditoria')
         assert sql(f"SELECT receivable_id FROM entregas WHERE id='{E(8)}';").stdout.strip() in o2; checks.append('segunda chamada recebe mesmo id'); print('PASS segunda chamada recebe mesmo id')
         # revocation committed while caller waits on gate -> denied, no write
         reset()
         pr, sr = session(); sr(f"BEGIN; SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; DELETE FROM user_roles WHERE user_id='{FA}';")
         time.sleep(0.3)
-        pc = subprocess.Popen(base, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        pc = subprocess.Popen(base + ['session'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         pc.stdin.write('\\set VERBOSITY verbose\n' + bill(FA, E(9)) + '\n'); pc.stdin.flush()
         wait_lock(1)
-        sr("COMMIT;"); pr.stdin.close(); pr.wait(10); pc.stdin.close(); _, e9 = pc.communicate(timeout=10)
+        sr("COMMIT;"); pr.stdin.close(); pr.wait(10); pc.stdin.close(); pc.stdin=None; _, e9 = pc.communicate(timeout=10)
         assert '42501' in e9, e9; checks.append('revogação commitada durante espera no gate → 42501'); print('PASS revogação durante espera → 42501')
         ok(nothing(E(9)), 'revogação: nenhuma escrita')
         # reverse ordering: billing holds gate, revocation waits, billing commits first -> billed, then revoked
