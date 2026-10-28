@@ -104,10 +104,11 @@ def main():
             record('gerador B2B + saldo original/juros','PASS' if actual_total==final else 'FAIL',str(final),str(actual_total),'P0')
     # Negative transport/domain cases against captured RPC, with stub authority explicit.
     base=uid(10)
+    session=f"SELECT set_config('test.uid','{uid(100)}',false); SELECT set_config('test.role','parceiro_b2b',false); SELECT set_config('test.partner','{uid(1)}',false); SELECT set_config('test.cart',{literal(cart)},false);"
     for label,patch,token in [('taxa negativa','monthly_interest_percent=-1','invalid_interest_rate'),('desconto acima 40 gestor','discount_percent=41','discount_exceeds_limit')]:
-        err=pg.sql(f"BEGIN; UPDATE commercial_payment_plans SET {patch} WHERE id='{base}'; SELECT simulate_b2b_payment_plan_secure('{uid(1)}','{base}','[]'::jsonb); COMMIT;",ok=False)
+        err=pg.sql(session+f"BEGIN; UPDATE commercial_payment_plans SET {patch} WHERE id='{base}'; SELECT simulate_b2b_payment_plan_secure('{uid(1)}','{base}','[]'::jsonb); COMMIT;",ok=False)
         assert token in err; record(label,'PASS',token,token)
-    err=pg.sql(f"SELECT simulate_b2b_payment_plan_secure('{uid(1)}','{base}','[]'::jsonb,current_date-1);",ok=False)
+    err=pg.sql(session+f"SELECT simulate_b2b_payment_plan_secure('{uid(1)}','{base}','[]'::jsonb,current_date-1);",ok=False)
     assert 'invalid_due_date' in err; record('vencimento retroativo RPC','PASS','invalid_due_date','invalid_due_date')
     # Unsupported inputs to helper must not masquerade as server-wide validation.
     negative=pg.sql("SELECT fn_b2b_apply_interest(10000,'simple',-1,3)")
