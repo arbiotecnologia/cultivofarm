@@ -434,7 +434,7 @@ export function useEsteiraLaboratorio() {
     osId: string,
     origem: string,
     overrideOrigem: boolean = false,
-    options: { current?: () => boolean; deferEffects?: boolean } = {},
+    options: { current?: () => boolean; deferEffects?: boolean; onReserved?: (id: string) => void } = {},
   ) => {
     const current = options.current ?? (() => true);
     if (!current()) return false;
@@ -508,7 +508,7 @@ export function useEsteiraLaboratorio() {
       });
 
       if (!current()) return false;
-      if (options.deferEffects) return { reservadoId: reservedId as string };
+      if (options.deferEffects) { options.onReserved?.(reservedId as string); return true; }
       const titular = reservaData?.titular_nome || reservaData?.cliente_nome;
       toast.success(titular ? `Estoque reservado para ${titular}` : "Estoque reservado com sucesso");
       invalidateAll();

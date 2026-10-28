@@ -557,19 +557,20 @@ export default function Entregas() {
           if (!itemOsId) {
             if (!osRef) throw new Error("OS de destino não localizada.");
             dispatch();
+            let reservadoId = "";
             const ok = await hookReservarEstoque(
               item,
               { cliente_id: osRef.cliente_id, quantidade_reservada: quantidade },
               osRef.id,
               osRef.type,
               true, // override: usuário já confirmou origem no diálogo de entrega
-              { current, deferEffects: true },
+              { current, deferEffects: true, onReserved: (id) => { reservadoId = id; } },
             );
             check();
             if (!ok) throw new Error(`Falha ao reservar o lote ${item.lotes?.codigo_lote || ""}.`);
-            if (typeof ok !== "object" || !ok.reservadoId) throw new Error("Reserva sem identificador confirmado.");
+            if (!reservadoId) throw new Error("Reserva sem identificador confirmado.");
             // The canonical reserve RPC returns the newly split row when partial.
-            item = { ...item, id: ok.reservadoId };
+            item = { ...item, id: reservadoId };
             itemOsId = osRef.id;
             itemOsTipo = osRef.type;
             itemClienteId = osRef.cliente_id;
