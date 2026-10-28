@@ -21,6 +21,7 @@ def uid(n):return f'00000000-0000-4000-8000-{n:012d}'
 def money(x):return D(x).quantize(D('.01'),rounding=ROUND_HALF_UP)
 def fun(sig):return next(x for x in LIVE['functions'] if x['signature']==sig)
 rows=[]; used=[]
+mode_hashes={}
 def record(label,expected,actual,mode='BASELINE',severity='P1'):
     status='PASS' if expected==actual else 'FAIL'
     rows.append(dict(id=f'SALDO-{len(rows)+1:03}',cenario=label,status=status,esperado=str(expected),observado=str(actual),modo=mode,severidade=severity,nivel='PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS'))
@@ -97,9 +98,14 @@ def main():
     pg.start();schema()
     for mode in ['BASELINE','EXPERIMENTO_NAO_INSTALAVEL']:
         if mode.startswith('EXPERIMENTO'):
+            # Fresh schemas prevent aggregate BI from inheriting baseline fixtures.
+            pg.sql('DROP SCHEMA public,auth,platform_private,extensions CASCADE; CREATE SCHEMA public;')
+            schema()
+        if mode.startswith('EXPERIMENTO'):
             s=fun('fn_generate_receivable_installments()')['body'];anchor="SELECT NEW.id,s.installment_number,s.due_date,s.amount,s.amount,'OPEN',NEW.organization_id,s.interest_amount"
             assert s.count(anchor)==1
             pg.sql(s.replace(anchor,"SELECT NEW.id,s.installment_number,s.due_date,s.amount,s.amount,'OPEN',NEW.organization_id,0::numeric")+';')
+        mode_hashes[mode]={sig:pg.sql(f"SELECT md5(pg_get_functiondef('public.{sig}'::regprocedure));") for sig in set(used)}
         offset=0 if mode=='BASELINE' else 100000
         t,i=title(offset+1)
         record('saldo inicial financiado 10300, nao 10600',D('10300'),balance(i),mode,'P0')
@@ -112,6 +118,10 @@ def main():
         pay,call=payment(i,3000,'partial-lost-ack',100,200,50)
         record('parcial, mora monetaria, multa e desconto',D('7550'),balance(i),mode)
         record('juros sao soma eventos apos primeira baixa',D('100'),D(pg.sql(f"SELECT interest_amount FROM accounts_receivable_installments WHERE id='{i}'")),mode)
+        aging_expression=D(pg.sql(f"SELECT original_amount-received_amount-discount_amount FROM accounts_receivable_installments WHERE id='{i}'"))
+        record('saldo operacional e aging exigivel apos parcial',D('7550'),aging_expression,mode,'P1')
+        payment(i,1000,'second-partial')
+        record('segunda baixa acumula sem perder financiamento',D('6550'),balance(i),mode)
         before=state(); replay=ask(call)
         record('ACK perdido replay mesmo UUID sem novo efeito',(pay,True),(replay,state()==before),mode)
         deny('chave mesma payload divergente',call.replace('3000','3001'),'FIN_IDEMPOTENCY_CONFLICT',mode)
@@ -124,13 +134,13 @@ def main():
         record('recibo replay sem duplicar',(rid,True),(replay['receipt_id'],state()==before),mode)
         deny('recibo cross-tenant',f"SELECT issue_financial_receipt('{pay}','LOCAL');",'não encontrado',mode,org=B)
         ask(f"SELECT cancel_financial_receipt('{rid}','motivo local');")
-        record('cancelar recibo nao estorna baixa',D('7550'),balance(i),mode)
+        record('cancelar recibo nao estorna baixa',D('6550'),balance(i),mode)
         deny('recibo cancelado segunda intencao',f"SELECT cancel_financial_receipt('{rid}','motivo local');",'já cancelado',mode)
         reversal=ask(f"SELECT fn_reverse_payment('{pay}','receivable','motivo local');")
-        record('estorno preserva total financiado',D('10300'),balance(i),mode)
+        record('estorno parcial preserva pagamento remanescente',D('9300'),balance(i),mode)
         before=state();again=ask(f"SELECT fn_reverse_payment('{pay}','receivable','motivo local');")
         record('estorno replay sem duplicar',(reversal,True),(again,state()==before),mode)
-        record('ledger de eventos liquidos zero',D('0'),D(pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{i}'")),mode)
+        record('ledger de eventos liquidos remanescentes',D('1000'),D(pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{i}'")),mode)
         deny('snapshot original imutavel',f"UPDATE accounts_receivable_installments SET original_amount=1 WHERE id='{i}';",'Parcela imutavel',mode)
         deny('snapshot titulo imutavel',f"UPDATE accounts_receivable SET total_amount=1 WHERE id='{t}';",'Snapshot financeiro imutavel',mode)
         deny('evento UPDATE imutavel',f"UPDATE receivable_payments SET amount_received=1 WHERE id='{pay}';",'imutavel',mode)
@@ -141,7 +151,7 @@ def main():
             record(f'valor financiado fixture {months}m conservado na geracao',D(total),actual,mode,'P0')
             originals=D(pg.sql(f"SELECT sum(original_amount) FROM accounts_receivable_installments WHERE receivable_id='{t}'"))
             record(f'rateio centavos soma {months}m',D(total),originals,mode)
-            outstanding=balance(x);expected=D(pg.sql(f"SELECT original_amount FROM accounts_receivable_installments WHERE id='{x}'"))
+            expected=money(D(total)/max(1,months))
             payment(x,expected,f'settlement-{offset}-{months}')
             record(f'quitacao parcela {months}m saldo zero',D(0),balance(x),mode)
         t,x=title(offset+30,'1.00','0',3,external=False)
@@ -163,8 +173,10 @@ def main():
         record('aging e caixa projetado concordam incluindo ajustes',additive,aging,mode,'P1')
         t,foreign=title(offset+40,org=B)
         before=state()
-        ask(f"SELECT rpc_cancel_financial_installment('{foreign}','receivable','motivo local');")
-        record('cancelamento deve negar parcela de outro tenant',True,state()==before,mode,'P0')
+        import subprocess
+        result=subprocess.run(pg.psql(),input=scope()+f"SELECT rpc_cancel_financial_installment('{foreign}','receivable','motivo local');",text=True,capture_output=True)
+        denied=result.returncode!=0 and ('denied' in result.stderr.lower() or 'permiss' in result.stderr.lower())
+        record('cancelamento deve negar parcela de outro tenant e ser atomico',(True,True),(denied,state()==before),mode,'P0')
     for label,severity in [
         ('geracao B2B integral: gates fiscais/preco/tenant/snapshot e escritor alternativo','P0'),
         ('mudanca segura de contrato unico com todos consumidores BI','P0'),
@@ -180,7 +192,7 @@ def main():
     OUT.mkdir(parents=True,exist_ok=True)
     with (OUT/'matriz.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=rows[0].keys(),lineterminator='\n');w.writeheader();w.writerows(rows)
-    meta=dict(ref=LIVE['ref'],capture_sha256=hashlib.sha256(CAP.read_bytes()).hexdigest(),results=rows,counts={s:sum(r['status']==s for r in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']},installed_body_hashes={s:fun(s)['md5'] for s in used},excluded_triggers={t['name']:[x['name'] for x in t['triggers'] or [] if x['name'] not in included_names()] for t in LIVE['tables']},limits='Auth/h15/roles synthetic; exact columns/checks/unique indexes subset; FK/RLS/tenant/SaaS/risk/order/fiscal triggers excluded; ledger means receivable_payments only; experiment not SQL candidate nor production correction',runtime_changes=False)
+    meta=dict(ref=LIVE['ref'],capture_sha256=hashlib.sha256(CAP.read_bytes()).hexdigest(),results=rows,counts={s:sum(r['status']==s for r in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']},captured_body_hashes={s:fun(s)['md5'] for s in set(used)},effective_local_body_hashes_by_mode=mode_hashes,independent_modes=True,has_failures=any(r['status']=='FAIL' for r in rows),operational_go=False,excluded_triggers={t['name']:[x['name'] for x in t['triggers'] or [] if x['name'] not in included_names()] for t in LIVE['tables']},limits='Auth/h15/roles synthetic; exact columns/checks/unique indexes subset; FK/RLS/tenant/SaaS/risk/order/fiscal triggers excluded; ledger means receivable_payments only; experiment not SQL candidate nor production correction',runtime_changes=False)
     (OUT/'execucao.json').write_text(json.dumps(meta,indent=2)+'\n');print(json.dumps(meta['counts']))
 def included_names():return {'trg_ar_gen_installments','trg_h6_ar_snapshot','trg_audit_ar','trg_h6_ari_snapshot','trg_h6_rp_append_only','trg_recalc_ar_inst','trg_audit_rp','trg_assign_receipt_metadata','trg_sync_receipt_aliases'}
 if __name__=='__main__':main()
