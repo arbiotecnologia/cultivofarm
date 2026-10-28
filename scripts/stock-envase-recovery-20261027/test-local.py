@@ -189,7 +189,9 @@ GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   sql(actor()+multi.replace('item-n-envase','batch-two-setup'))
   ids=sql('SELECT id FROM estoque_produto ORDER BY id').stdout.strip().splitlines()
   assert len(ids)==2
-  for item in ids:sql(actor()+f"SELECT rpc_cockpit_cancelar_reserva_v1('{item}','{O}','manual','prepare batch two');")
+  for item in ids:
+   status=sql(f"SELECT status::text FROM estoque_produto WHERE id='{item}'").stdout.strip()
+   if status=='reservado':sql(actor()+f"SELECT rpc_cockpit_cancelar_reserva_v1('{item}','{O}','manual','prepare batch two');")
   baseline=sql('SELECT count(*) FROM estoque_movimentacoes').stdout.strip()
   sql("CREATE FUNCTION fail_batch_n() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.acao='reserva' AND EXISTS(SELECT 1 FROM estoque_movimentacoes WHERE acao='reserva') THEN RAISE EXCEPTION 'batch item N'; END IF; RETURN NEW; END$$; CREATE TRIGGER zz_batch_n BEFORE INSERT ON estoque_movimentacoes FOR EACH ROW EXECUTE FUNCTION fail_batch_n();")
   batch2=f"SELECT rpc_estoque_reservar_v1('{O}','manual','[{{\"item_id\":\"{ids[1]}\",\"quantidade\":1}},{{\"item_id\":\"{ids[0]}\",\"quantidade\":1}}]','batch-two-failure','{{\"cliente_id\":\"{C}\"}}');"
