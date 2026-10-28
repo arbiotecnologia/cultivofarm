@@ -1,0 +1,26 @@
+EVIDENCIA OFFLINE. Sem sessão/JWT hosted. Logs completos temporários omitidos.
+ ✓ src/test/fiscal/xmlEngineCertificateStorage.test.ts (20 tests) 11ms
+ ✓ src/test/b2bTecnicoCampo.permissions.test.ts (12 tests) 12ms
+ ✓ src/test/fiscal/transportPersistenceSafety.test.ts (9 tests) 14ms
+ ✓ src/test/multiportal.featureGuards.test.tsx (31 tests) 267ms
+ ✓ src/test/pedidos/createPartnerOrderOwnChannel.integration.test.tsx (3 tests) 319ms
+ ✓ src/test/multiportal.superadmin.test.tsx (3 tests) 71ms
+ ✓ src/test/comunicacao/notification-mobile-read.test.tsx (4 tests) 292ms
+ ✓ src/test/cq/hardening.test.tsx (10 tests) 221ms
+ ✓ src/test/comunicacao/notification-push-contained.test.tsx (13 tests) 113ms
+ ✓ src/test/pedidos/partnerOrdersAdminScope.test.tsx (13 tests) 1132ms
+ ✓ src/test/lotes/gerar-lote-fences.test.tsx (47 tests) 1862ms
+ ✓ src/test/catalogo/c1bCatalog.test.tsx (16 tests) 1353ms
+ ✓ src/test/estoque/stock-motor-hardening.test.ts (5 tests) 8ms
+ ✓ src/test/estoque/stock-batch-hardening.test.ts (5 tests) 9ms
+ ✓ src/test/saas/b2b-fase1-credit-scope.test.ts (6 tests) 9ms
+ ✓ src/test/financeiro/DocumentosPanel.storage.test.tsx (49 tests) 1877ms
+ ✓ src/test/security/d51-5-p0a-financial-storage.test.ts (4 tests) 6ms
+ ✓ src/test/motorCondicoesComerciaisB2B.test.ts (4 tests) 6ms
+ ✓ src/test/catalogo/safePartnerOrderDraft.test.ts (11 tests) 8ms
+ ✓ src/test/catalogo/partnerOutletNovoPedido.test.tsx (7 tests) 1472ms
+ ✓ src/test/pedidos/novoPedidoAmbiguousRetry.test.tsx (16 tests) 12023ms
+ Test Files  21 passed (21)
+      Tests  288 passed (288)
+   Start at  01:47:40
+   Duration  20.62s (transform 3.47s, setup 8.64s, collect 25.80s, tests 21.08s, environment 56.95s, prepare 8.00s)

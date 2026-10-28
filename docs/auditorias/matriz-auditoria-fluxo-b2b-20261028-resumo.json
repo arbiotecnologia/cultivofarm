@@ -1,0 +1,43 @@
+{
+  "rows": 9189,
+  "statuses": {
+    "PASS": 5,
+    "FAIL": 4,
+    "BLOCKED": 6120,
+    "NOT RUN": 3060
+  },
+  "real_PASS": 0,
+  "profiles": [
+    "superadmin",
+    "administrador_empresa",
+    "gestor",
+    "gestor_comercial",
+    "financeiro",
+    "producao_operador",
+    "CQ_tarefa_papel_validado",
+    "logistica_tecnico_tarefa_papel_validado",
+    "parceiro_b2b_gestor",
+    "parceiro_b2b_tecnico_sem_compra",
+    "cliente_produtor",
+    "cumulativo",
+    "inativo",
+    "transferido",
+    "revogado",
+    "multi_vinculo",
+    "anon"
+  ],
+  "steps": 18,
+  "axes": {
+    "status_valido_invalido": "Campos obrigatórios/enum; transição válida só com autoridade; inválida sem efeitos.",
+    "IDOR_query_payload_UUID_arquivo": "A→B/B→A/C sem vínculo/anon negados sem revelar ID, valor ou bytes; UUID inválido negado antes do envio.",
+    "atomicidade_item_N_audit": "Falha item N reverte todos efeitos e recibos da transação; grupo multichamada não presume atomicidade.",
+    "locks_wait_revogacao": "Gate→advisory→linha conforme contrato; reautorizar após cada wait; revogação primeiro nega, mutação primeiro registra commit; sem deadlock.",
+    "replay_double_ACK_timeout": "Uma tentativa/mesma intenção; ACK perdido exige reconciliação; PT409/403/55P03 sem retry/rebase automático.",
+    "offline_reconexao": "Sem novo envio automático/novo snapshot; tentativas incertas preservadas e reconciliadas.",
+    "plano_feature_portal_JWT": "Plano/feature/vínculo/tenant e JWT vigente no servidor; portal não concede papel; cumulativo não amplia dados do fornecedor.",
+    "snapshot_saldo_notificacao_BI": "Preço/condição históricos imutáveis, saldos finitos não negativos, audit trail coerente, externo OFF e BI conciliado.",
+    "UX_desktop_mobile_A11y": "Desktop1280/mobile390; foco/teclado/leitor, sem sobreposição; 403/404/PT409/55P03, contexto alterado e draft preservado.",
+    "security_SQL_Storage_secrets": "RLS/ACL coluna/DEFINER/search_path/auth.uid/tenant, parâmetros sem SQL concatenado, URLs antigas/CDN/bytes e nenhum secret exposto."
+  },
+  "note": "Cobertura planejada não é execução. PASS somente cinco grupos offline; combinações reais nunca inferidas."
+}

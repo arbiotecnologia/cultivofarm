@@ -54,11 +54,14 @@ Resultados e comandos resumidos sem tokens em `evidencias-fluxo-b2b-20261028/`. 
 | Cobertura ampla,21 arquivos | 288/288 | jsdom/mocks/estáticos: catálogo/carrinho/pedido/crédito/Storage/CQ/estoque/fiscal/portais |
 | Segurança/BI/portal inicial | 95 PASS/2 FAIL em97; topologia apontada pelo subauditor também falso positivo | Fixtures produtor desatualizadas; nenhum guard relaxado |
 | Segurança/BI/portal corrigidos | 121/121 em9 arquivos (inclui21 publicação) antes do novo negativo produtor | Reexecução final combinada registrada em evidências |
+| Contratos/segurança/BI final,13 arquivos | **171/171** | Inclui21 publicação e novo negativo produtor; substitui contagens parciais sobrepostas |
+| OS/aprovação/programação/CQ/envase/CAS fiscal/features,8 arquivos | **159/159** | Contratos/consultas e mocks, não produção real |
 | Estoque/envase | 64/64 | PostgreSQL descartável: motor/reserva/ledger capturados, Auth/schema/hash sintéticos; triggers transição/financeiro omitidos |
 | Entrega composto | 48/48 | PostgreSQL descartável com motor/billing/avanço stubs; rollback DDL, item/ACK/locks, não integração real |
 | A2 | 76/76 | PostgreSQL/Auth sintéticos, duas funções propostas; não instalada/JWT |
 
 Não somar execuções sobrepostas como testes únicos. Warnings Router Future Flags e mocks DOM/act de pedido observados: não ocultados, não são prova de falha hosted. Build/typecheck são automáticos do harness; não executados manualmente. Não rodados testes hosted/e2e/fixtures nem scripts `*-postgres` sem inspeção do destino.
+Os três grupos finais disjuntos (21+13+8 arquivos) somam **618/618 em42 arquivos**. PostgreSQL separado: **188 checks** (64+48+76). Estes totais não cobrem toda a aplicação nem9.180 combinações reais; outros testes permanecem NOT RUN.
 
 ## Critérios P0/P1/P2 e métricas pós-implantação
 
