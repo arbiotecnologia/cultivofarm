@@ -19,7 +19,7 @@ function mount() {
  return { ...h, qc, invalidate, element };
 }
 beforeEach(() => { vi.clearAllMocks(); t.auth = { user: { id }, profile: { user_id: id, organization_id: id, ativo: true }, roles: ['gestor'], loading: false, authzReady: true, authzEpoch: 0 }; t.rpc.mockResolvedValue({ data: { success: true, entrega_id: id, replay: false }, error: null }); });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe('Confirmação existente com transporte simulado — não libera RPC fechada', () => {
  it.each([null, { ok: false }, { success: true }, { success: true, entrega_id: 'other', replay: false }])('ACK inválido preserva dialog/draft: %j', async data => {
    t.rpc.mockResolvedValue({ data, error: null }); const h = mount();
@@ -41,5 +41,16 @@ describe('Confirmação existente com transporte simulado — não libera RPC fe
    h.rerender(h.element(change === 'entrega' ? '22222222-2222-4222-8222-222222222222' : id));
    await act(async () => { done({ data: { success: true, entrega_id: id, replay: false }, error: null }); });
    expect(t.close).not.toHaveBeenCalled(); expect(t.confirmed).not.toHaveBeenCalled(); expect(h.invalidate).not.toHaveBeenCalled(); h.qc.clear();
+ });
+
+ it('timeout confirma incerteza e ACK tardio não fecha/invalida', async () => {
+   let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); vi.useFakeTimers();
+   fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
+   await act(async () => { await vi.advanceTimersByTimeAsync(30001); });
+   expect(t.toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Não foi possível confirmar' }));
+   fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
+   await act(async () => { await Promise.resolve(); }); expect(t.rpc).toHaveBeenCalledTimes(1);
+   await act(async () => { done({ data: { success: true, entrega_id: id, replay: false }, error: null }); });
+   expect(t.close).not.toHaveBeenCalled(); expect(h.invalidate).not.toHaveBeenCalled(); h.qc.clear();
  });
 });

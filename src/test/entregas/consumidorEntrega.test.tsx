@@ -94,4 +94,14 @@ describe('Página Entregas real / hook real / QueryClient real; Auth e transport
    await act(async () => { await expect(t.submit(p)).rejects.toThrow('Falha ao reservar'); });
    expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.rpc.mock.calls[0][0]).toBe('reservar_estoque_item'); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
  });
+
+ it('reserva parcial usa UUID da linha split retornada sem tratar como erro', async () => {
+   const p = payload(); Object.assign(p.itens[0].item, { reservado_para_os_id: null, status: 'disponivel' });
+   t.from.mockImplementation(table => { const c = chain(table); if (table === 'ordens_servico') c.then = (yes: any) => Promise.resolve({ data: [{ id: ids[0], cliente_id: ids[3] }], error: null }).then(yes); return c; });
+   t.rpc.mockResolvedValueOnce({ data: ids[2], error: null }).mockResolvedValueOnce({ data: ack, error: null }); const h = mount();
+   await waitFor(() => expect(h.qc.getQueryCache().findAll({ queryKey: ['todas-os-disponiveis'] })[0]?.state.status).toBe('success'));
+   await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+   await act(async () => { await t.submit(p); });
+   expect(t.rpc.mock.calls[1][1].p_estoque_produto_id).toBe(ids[2]); expect(t.success).toHaveBeenCalledTimes(1); h.qc.clear();
+ });
 });

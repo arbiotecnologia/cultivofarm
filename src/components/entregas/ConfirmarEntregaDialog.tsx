@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
@@ -153,7 +153,9 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
   const confirmar = useMutation({
     retry: false,
     mutationFn: async () => {
-      const current = scope.capture();
+      const captured = scope.capture();
+      let expired = false;
+      const current = () => captured() && !expired;
       const check = () => { if (!current()) throw new Error("Contexto de entrega alterado. Consulte a entrega antes de novo envio."); };
       check();
       if (dispatchLock.current || uncertain.current.has(scope.scope)) throw new Error("Confirmação em andamento ou resultado pendente de consulta.");
@@ -165,8 +167,9 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
       const id = entrega.id;
       const submittedMode = mode as ConfirmMode;
       let dispatched = false;
-      try {
-
+      let settled = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const pendingWork = (async () => {
       // 1) Upload dos arquivos pendentes
       for (const pf of pending) {
         check();
@@ -220,10 +223,15 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
       const res = data as any;
       if (!res || typeof res !== "object" || Array.isArray(res) || res.success !== true || res.ok === false || res.entrega_id !== id || typeof res.replay !== "boolean") throw new Error("Resposta não confirmou a entrega. Consulte o estado antes de novo envio.");
       return { current, id, submittedMode };
+      })().finally(() => { settled = true; if (expired) dispatchLock.current = false; });
+      try {
+        return await Promise.race([pendingWork, new Promise<never>((_, reject) => {
+          timer = setTimeout(() => { expired = true; reject(new Error("Tempo de resposta excedido. Resultado incerto; consulte a entrega sem reenviar.")); }, 30000);
+        })]);
       } catch (error) {
         if (dispatched) uncertain.current.add(scope.scope);
         throw error;
-      } finally { dispatchLock.current = false; }
+      } finally { if (timer) clearTimeout(timer); if (settled) dispatchLock.current = false; }
 
     },
     onSuccess: ({ current, id, submittedMode }) => {
