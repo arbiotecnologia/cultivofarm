@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## Etapa 6 — consumidor financeiro seguro, 28/10/2026
+- [x] Diálogo existente com estados seguros/releitura, sem generate/mark/fiscal enquanto A2/valor/autoridade indisponíveis; draft/conflicts/fences, sem sucesso fabricado.
+- [x] QueryClient real/Auth-transporte simulados 14 testes +5 contratos offline +42 regressões =61/61; OS/entrega writers/grants intactos.
+- [x] Relatório docs/auditorias/etapa6-consumidor-financeiro-20261028.md e plano original atualizados; sem SQL/publicação/fixtures/sessões.
+- [ ] Dispatch financeiro/retentativa fiscal e homologação real aguardam contrato servidor e revisão independente; A2, envase, B2B/onfarm/JWT e fiscal/contabilidade reais continuam bloqueadores; SU-518022 adiado.
+
 ## Reconciliação das nove etapas — 28/10/2026 (somente documentação/offline)
 - [x] Retomar o plano original por etapas, cruzar diagrama e A2; distinguir LIVE capturado, implantação externa relatada e candidato inativo.
 - [x] Mapear RPCs/escritores, bloqueadores P0, dependências e próximo pacote independente de consumidores/criação OS-entrega, sem alterar runtime.
