@@ -11,7 +11,7 @@ describe("Auditoria planejada — não promove mocks a JWT real", () => {
   it("os9.180 cenários reais ainda são bloqueados/não executados, zero PASS real", () => {
     expect(summary.real_PASS).toBe(0);
     expect(summary.statuses.BLOCKED + summary.statuses["NOT RUN"]).toBe(9180);
-    expect(summary.statuses.FAIL).toBe(4); expect(summary.statuses.PASS).toBe(5);
-    expect(summary.rows).toBe(9189);
+    expect(summary.statuses.FAIL).toBe(4); expect(summary.statuses.PASS).toBe(6);
+    expect(summary.rows).toBe(9190);
   });
 });
