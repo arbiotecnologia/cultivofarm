@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## Etapa 6 — consumidor financeiro seguro, 28/10/2026
+- [ ] Ajustar diálogo existente com estados seguros, releitura autorizada e bloqueio de dispatch sem contrato A2 instalado; preservar rascunho/conflitos e cercas de contexto.
+- [ ] Testar QueryClient real/Auth-transporte simulados; mapear contratos OS/entrega sem trocar writers ou grants.
+- [ ] Atualizar relatório/plano com resultados e limites; backend A2, envase, B2B/onfarm/JWT e fiscal reais permanecem bloqueadores.
+
 ## Reconciliação das nove etapas — 28/10/2026 (somente documentação/offline)
 - [x] Retomar o plano original por etapas, cruzar diagrama e A2; distinguir LIVE capturado, implantação externa relatada e candidato inativo.
 - [x] Mapear RPCs/escritores, bloqueadores P0, dependências e próximo pacote independente de consumidores/criação OS-entrega, sem alterar runtime.
