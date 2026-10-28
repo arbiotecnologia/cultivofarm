@@ -77,7 +77,7 @@ CREATE FUNCTION public.rpc_cockpit_cancelar_reserva_v1(i uuid,o uuid,t text,m te
 GRANT USAGE ON SCHEMA auth,public TO anon,authenticated;"""
   sql(schema)
   fs=json.loads((H.parent/'os-delivery-reopening-20261027/live/definitions.json').read_text())['functions']
-  for n in ['public.fn_cockpit_norm_origem','public.fn_cockpit_assert_operador_origem','public.fn_entrega_assert_confirmador','public.fn_estoque_ctx_open','public.rpc_cockpit_criar_entrega_v1','public.fn_entrega_confirmar_engine_v1','public.rpc_entrega_cancelar_v1','public.rpc_entrega_confirmar_v1']:
+  for n in ['public.fn_cockpit_norm_origem','public.fn_cockpit_assert_operador_origem','public.fn_entrega_assert_confirmador','public.fn_estoque_ctx_open','public.rpc_cockpit_criar_entrega_v1','public.fn_entrega_confirmar_engine_v1','public.rpc_entrega_cancelar_v1','public.rpc_entrega_confirmar_v1','public.rpc_cockpit_confirmar_entrega_v1']:
    sql(fs[n]['definition'])
    ok(f"SELECT md5(pg_get_functiondef(oid))='{fs[n]['md5']}' FROM pg_proc WHERE proname='{n.split('.')[-1]}'",'exact LIVE body '+n)
   E2='00000000-0000-4000-8000-000000000009';S2='00000000-0000-4000-8000-00000000000a'
