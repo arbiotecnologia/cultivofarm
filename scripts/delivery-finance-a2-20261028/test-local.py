@@ -244,6 +244,7 @@ GRANT USAGE ON SCHEMA public TO authenticated;
         sql(bill(FA,E(1)))
         err(f"DELETE FROM accounts_receivable_installments;",'23514','guard LIVE de hard-delete impede apagar parcelas')
 
+        (HERE/'proposed-pg-metadata.json').write_text(sql("SELECT jsonb_agg(jsonb_build_object('name',proname,'hash',md5(pg_get_functiondef(oid)),'source_hash',md5(prosrc),'config',proconfig)) FROM pg_proc WHERE proname IN ('fn_generate_receivable_from_entrega','fn_mark_entrega_not_billable');").stdout.strip()+'\n')
         # lock_timeout configured
         ok("SELECT bool_and(array_to_string(proconfig,',')='search_path=pg_catalog, public, pg_temp,lock_timeout=3s') FROM pg_proc WHERE proname IN ('fn_generate_receivable_from_entrega','fn_mark_entrega_not_billable');", 'lock_timeout=3s configurado')
         reset()
