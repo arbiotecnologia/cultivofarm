@@ -74,9 +74,11 @@ export type RespostaCriarEntrega = { entrega_id: string; replay: boolean; messag
  * A entrega só é considerada gravada quando o servidor devolve
  * `success === true` e um `entrega_id`. Resposta incompleta é falha.
  */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function validarRespostaCriarEntrega(data: any): RespostaCriarEntrega {
   const entregaId = typeof data?.entrega_id === "string" ? data.entrega_id.trim() : "";
-  if (data?.success !== true || !entregaId) {
+  if (!data || typeof data !== "object" || Array.isArray(data) || data.success !== true || data.ok === false || !UUID.test(entregaId) || (data.replay !== undefined && typeof data.replay !== "boolean")) {
     throw new Error(
       "Não foi possível confirmar o registro da entrega. Atualize a lista e tente novamente.",
     );
@@ -86,4 +88,16 @@ export function validarRespostaCriarEntrega(data: any): RespostaCriarEntrega {
     replay: data?.replay === true,
     message: typeof data?.message === "string" ? data.message : undefined,
   };
+}
+
+/** Strict ACK for the canonical stock engine; it never proves group atomicity. */
+export function validarRespostaEstoqueEntrega(data: any, acao: "expedicao" | "estorno_expedicao", itemId: string) {
+  if (!data || typeof data !== "object" || Array.isArray(data) || data.ok !== true || typeof data.replay !== "boolean" || data.acao !== acao || data.estoque_produto_id !== itemId || !UUID.test(String(data.movimentacao_id ?? ""))) {
+    throw new Error("Movimentação de estoque não confirmada. Consulte a entrega antes de nova ação.");
+  }
+  for (const campo of ["saldo_anterior", "saldo_posterior", "reservado_anterior", "reservado_posterior"]) {
+    if (!(campo in data) || (data[campo] !== null && (typeof data[campo] !== "number" || !Number.isFinite(data[campo]) || data[campo] < 0))) throw new Error("Saldos da movimentação não confirmados.");
+  }
+  if (!("status_anterior" in data) || !("status_novo" in data) || (data.status_anterior !== null && typeof data.status_anterior !== "string") || (data.status_novo !== null && typeof data.status_novo !== "string")) throw new Error("Status da movimentação não confirmado.");
+  return data;
 }

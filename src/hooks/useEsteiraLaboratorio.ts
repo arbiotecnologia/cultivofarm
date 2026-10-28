@@ -434,7 +434,10 @@ export function useEsteiraLaboratorio() {
     osId: string,
     origem: string,
     overrideOrigem: boolean = false,
+    options: { current?: () => boolean; deferEffects?: boolean; onReserved?: (id: string) => void } = {},
   ) => {
+    const current = options.current ?? (() => true);
+    if (!current()) return false;
     const qtyToReserve = Number(reservaData.quantidade_reservada);
     if (!qtyToReserve || qtyToReserve <= 0) {
       toast.error("Informe uma quantidade válida.");
@@ -475,8 +478,9 @@ export function useEsteiraLaboratorio() {
     }
 
     try {
+      if (!current()) return false;
       const isB2B = origem === "b2b";
-      const { error } = await (supabase as any).rpc("reservar_estoque_item", {
+      const { data: reservedId, error } = await (supabase as any).rpc("reservar_estoque_item", {
         p_item_id: item.id,
         p_qty: qtyToReserve,
         p_os_id: osId,
@@ -487,12 +491,12 @@ export function useEsteiraLaboratorio() {
         p_observacao: reservaData.observacao ?? null,
       });
 
+      if (!current()) return false;
       if (error) {
-        toast.error(error.message || "Erro ao reservar estoque");
-        invalidateAll();
+        if (!options.deferEffects) { toast.error(error.message || "Erro ao reservar estoque"); invalidateAll(); }
         return false;
       }
-
+      if (options.deferEffects && (typeof reservedId !== "string" || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(reservedId))) throw new Error("Reserva não confirmada; resultado pendente de reconciliação.");
       await registrarAuditoria({
         origem,
         osId,
@@ -503,6 +507,8 @@ export function useEsteiraLaboratorio() {
           : `Reserva realizada para OS ${osId}`,
       });
 
+      if (!current()) return false;
+      if (options.deferEffects) { options.onReserved?.(reservedId as string); return true; }
       const titular = reservaData?.titular_nome || reservaData?.cliente_nome;
       toast.success(titular ? `Estoque reservado para ${titular}` : "Estoque reservado com sucesso");
       invalidateAll();
@@ -639,7 +645,9 @@ export function useEsteiraLaboratorio() {
    * idempotente por OS + item de estoque e deixa a entrega em "separado".
    * A OS só chega a "entregue" na confirmação.
    */
-  const criarEntrega = async (entregaData: any, osId: string, origem: string) => {
+  const criarEntrega = async (entregaData: any, osId: string, origem: string, options: { current?: () => boolean; deferEffects?: boolean } = {}) => {
+    const current = options.current ?? (() => true);
+    if (!current()) throw new Error("Contexto de entrega indisponível.");
     if (!entregaData?.estoque_produto_id) {
       toast.error("Não é possível criar entrega sem estoque disponível.");
       return false;
@@ -655,9 +663,11 @@ export function useEsteiraLaboratorio() {
         p_dados: montarDadosEntrega(entregaData),
       });
 
+      if (!current()) throw new Error("Contexto alterado; resposta da entrega descartada.");
       if (error) throw new Error(traduzErroCockpit(error.message));
 
       const resultado = validarRespostaCriarEntrega(data);
+      if (options.deferEffects) return { id: resultado.entrega_id };
 
       if (resultado.replay) {
         toast.info(resultado.message || "Entrega já registrada para este item.");

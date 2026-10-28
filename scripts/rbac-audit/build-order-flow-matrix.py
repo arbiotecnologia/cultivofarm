@@ -48,19 +48,20 @@ for ident,scenario,test,count,level in [
  ('OFF-BROAD','21 arquivos catálogo/pedido/crédito/CQ/estoque/fiscal/Storage/portais', 'docs/auditorias/evidencias-fluxo-b2b-20261028/broad-vitest.txt',288,'Vitest jsdom/mocks/estáticos'),
  ('OFF-STOCK','item N batch/envase/ledger/replay/concorrência', 'scripts/stock-envase-recovery-20261027/results.txt',64,'PostgreSQL descartável motor capturado; Auth/schema sintéticos; triggers omitidos'),
  ('OFF-DELIVERY','locks/ACK negativo/rollback/containment', 'scripts/delivery-stock-release-20261027/results.txt',48,'PostgreSQL descartável motor/billing/avanço stubs'),
+ ('OFF-CONSUMER-DELIVERY','página Entregas/hook/diálogo reais: dupla ação, ACK negativo/parcial, escopo, timeout, cancelamento/item N', 'docs/auditorias/evidencias-consumidor-entrega-20261028/vitest.txt',332,'Vitest QueryClient real; Auth/transporte simulados; 32 regressões novas, não JWT'),
  ('OFF-A2','tenant/replay/categoria/método/parcelas/timeout', 'scripts/delivery-finance-a2-20261028/results.txt',76,'PostgreSQL descartável/Auth sintético; não JWT'),
 ]:
  rows.append(dict(id=ident,passo='evidencia_offline',rota='não executada hosted',perfil='simulado',tenant='simulado',cenario=scenario,precondicao='execução local sem credenciais hosted',expectativa='asserções do teste específico, sem liberar fluxo',contrato='ver relatório/artefatos',teste_automatizado=test,evidencia=f'{count} PASS no escopo específico',status='PASS',nivel=level,severidade='P1'))
 for ident,step,scenario,evidence in [
  ('GAP-01','recebivel_entrega','A2 não instalada; corpos LIVE com risco BOLA documentado','SELECT 01:45 UTC hashes generate/mark anteriores; não explorado JWT A/B'),
- ('GAP-02','expedicao_item_N','grupo UI usa chamadas distintas e falha expedição pode virar warning/sucesso','src/pages/Entregas.tsx:547–593; evidência estática, sem operação real'),
+ ('GAP-02','expedicao_item_N','grupo UI continua multichamada; patch local recusa ACK negativo, sem atomicidade/reconciliação servidor','src/pages/Entregas.tsx; 32 regressões novas página/diálogo PASS sintético; atomicidade e JWT real BLOCKED'),
  ('GAP-03','envase','transição canônica completa não demonstrada','ENVASE_TRANSITION_REVIEW_PENDING; suites omitem triggers transição/financeiro'),
  ('GAP-04','OS_manual','cadastro manual sem RPC equivalente instalada; migração DML não concluída','src/pages/OrdensServico.tsx handleCreate; teste contrato offline'),
 ]:
  rows.append(dict(id=ident,passo=step,rota='ver inventário',perfil='não certificado',tenant='A/B/C pendentes',cenario=scenario,precondicao='estado atual auditado',expectativa='Critério P0 de liberação não atendido; não significa exploit JWT reproduzido',contrato='ver relatório',teste_automatizado='auditoria estática/SELECT; teste real BLOCKED',evidencia=evidence,status='FAIL',nivel='GATE_RELEASE_NAO_ATENDIDO',severidade='P0'))
 path=OUT/'matriz-auditoria-fluxo-b2b-20261028.csv'
 with path.open('w',newline='') as f:
- writer=csv.DictWriter(f,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
+ writer=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator="\n");writer.writeheader();writer.writerows(rows)
 counts={s:sum(r['status']==s for r in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']}
-(OUT/'matriz-auditoria-fluxo-b2b-20261028-resumo.json').write_text(json.dumps({'rows':len(rows),'statuses':counts,'real_PASS':0,'profiles':profiles,'steps':len(steps),'axes':axes,'note':'Cobertura planejada não é execução. PASS somente cinco grupos offline; combinações reais nunca inferidas.'},indent=2,ensure_ascii=False)+'\n')
+(OUT/'matriz-auditoria-fluxo-b2b-20261028-resumo.json').write_text(json.dumps({'rows':len(rows),'statuses':counts,'real_PASS':0,'profiles':profiles,'steps':len(steps),'axes':axes,'note':'Cobertura planejada não é execução. PASS somente seis grupos offline (execuções sobrepostas não somadas); combinações reais nunca inferidas.'},indent=2,ensure_ascii=False)+'\n')
 print(len(rows),counts)

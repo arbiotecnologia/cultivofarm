@@ -1,5 +1,12 @@
 # F2-B — auditoria e preparação revisável
 
+## Consumidor REAL de entrega — correção incremental 28/10/2026
+- [x] Reproduzir dupla ação e ACK negativo na página Entregas e dependências reais, sem confundir publicação de planejamento.
+- [x] Corrigir trava/fences/ACK/parcial/cancelamento sem ativação; testes QueryClient/Auth simulados e revisão independente.
+- [x] Atualizar matriz/plano original/evidências com PASS local e gates BLOCKED/NOT RUN, sem operações LIVE.
+
+- [ ] Publicação/homologação e reconciliação servidor bloqueadas por contratos grupo/CAS/retorno/A2/envase/B2B e autorização real específica; 332/332 locais não liberam operação.
+
 ## Auditoria final planejada e testes atuais — 28/10/2026
 - [x] Matriz9.180 cenários perfil/tenant/contrato +evidências offline/gates, JWT real0; CSV/resumo e relatório final.
 - [x] Duplo dispatch/ok:false reproduzidos em planejamento, corrigidos com21 regressões QueryClient; canon-only/ACK/fences/retry OFF sem ativação. Fixtures produtor e detector Auth corrigidos sem alterar guards.

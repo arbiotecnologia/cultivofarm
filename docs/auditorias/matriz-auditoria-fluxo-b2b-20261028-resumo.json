@@ -1,7 +1,7 @@
 {
-  "rows": 9189,
+  "rows": 9190,
   "statuses": {
-    "PASS": 5,
+    "PASS": 6,
     "FAIL": 4,
     "BLOCKED": 6120,
     "NOT RUN": 3060
@@ -39,5 +39,5 @@
     "UX_desktop_mobile_A11y": "Desktop1280/mobile390; foco/teclado/leitor, sem sobreposição; 403/404/PT409/55P03, contexto alterado e draft preservado.",
     "security_SQL_Storage_secrets": "RLS/ACL coluna/DEFINER/search_path/auth.uid/tenant, parâmetros sem SQL concatenado, URLs antigas/CDN/bytes e nenhum secret exposto."
   },
-  "note": "Cobertura planejada não é execução. PASS somente cinco grupos offline; combinações reais nunca inferidas."
+  "note": "Cobertura planejada não é execução. PASS somente seis grupos offline (execuções sobrepostas não somadas); combinações reais nunca inferidas."
 }

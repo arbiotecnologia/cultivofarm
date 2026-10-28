@@ -49,6 +49,13 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - [x] Próximo pacote offline produzido sem repetir financeiro: **55/55 Vitest**, QueryClient real/transportes simulados em publicação existente. Duplo dispatch e `ok:false` são lacunas caracterizadas, não aceite; nenhum writer OS/entrega alterado.
 - [ ] Publicação coordenada somente após contratos instalados e revisão independente; não fechar DML enquanto telas dependem dele. Writers OS/entrega intactos; consumidor financeiro local read-only não libera operação.
 
+### Correção incremental do consumidor REAL — 28/10 02:12 UTC
+- [x] Página Entregas + hook/diálogo existentes: baseline seis falhas, correções locais de single-flight, ACK positivo/UUID, reserva split, fences e invalidação scoped; retry OFF. Sem mexer em useProductionPlanning.
+- [x] Item N/expedição/estorno negativos não anunciam sucesso nem fazem compensação fictícia; consulta explícita preserva draft, incerteza fica em quarentena por escopo/mount. Timeout 30s mantém trava até work resolver, sem prometer cancelamento remoto.
+- [x] Revisão independente encontrou reserva split e timeout do diálogo; corrigidos com regressões. Vitest **332/332 em23 arquivos**, incluindo32 testes novos e2 integridade matriz; sintético, não somado aos620 históricos/188PG históricos.
+- [ ] BLOCKED: publicação/instalação, atomicidade grupo/retorno/CAS/reconciliação durável, A2/envase/autoridade B2B/onfarm; nenhuma reabertura de wrapper/ACL.
+- [ ] NOT RUN: JWT/Storage/browser autenticado/A/B/C, múltiplas abas/remount/produção; estado visual real sem sessão não certifica fluxo. Relatório `docs/auditorias/consumidor-real-entrega-20261028.md`.
+
 ## Etapa 7 — Fechar escrita direta em OS, entregas e notas fiscais
 - [ ] Só após consumidores migrados/publicados e RPCs compatíveis: fechamento por comando, SELECT/tenant/jobs privilegiados preservados.
 - [ ] Inventariar/migrar antes `useFiscalDocuments`, `useFiscalReconciliation`, `NotasFiscais` e writers adjacentes da esteira; sem inferir fechamento global por um wrapper.
