@@ -95,5 +95,9 @@ export function validarRespostaEstoqueEntrega(data: any, acao: "expedicao" | "es
   if (!data || typeof data !== "object" || Array.isArray(data) || data.ok !== true || typeof data.replay !== "boolean" || data.acao !== acao || data.estoque_produto_id !== itemId || !UUID.test(String(data.movimentacao_id ?? ""))) {
     throw new Error("Movimentação de estoque não confirmada. Consulte a entrega antes de nova ação.");
   }
+  for (const campo of ["saldo_anterior", "saldo_posterior", "reservado_anterior", "reservado_posterior"]) {
+    if (!(campo in data) || (data[campo] !== null && (typeof data[campo] !== "number" || !Number.isFinite(data[campo]) || data[campo] < 0))) throw new Error("Saldos da movimentação não confirmados.");
+  }
+  if (!("status_anterior" in data) || !("status_novo" in data) || (data.status_anterior !== null && typeof data.status_anterior !== "string") || (data.status_novo !== null && typeof data.status_novo !== "string")) throw new Error("Status da movimentação não confirmado.");
   return data;
 }

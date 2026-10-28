@@ -89,7 +89,7 @@ export default function Entregas() {
   // Per-mount containment, not a server receipt or cross-tab idempotency.
   const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {
     const captured = deliveryScope.capture();
-    const key = `${deliveryScope.scope}:${target}`;
+    const key = deliveryScope.scope;
     if (!captured()) throw new Error("Contexto de entrega indisponível.");
     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");
     if (unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");
@@ -100,9 +100,14 @@ export default function Entregas() {
     const current = () => captured() && !expired;
     const check = () => { if (!current()) throw new Error("Contexto alterado ou resposta incerta. Nenhuma nova etapa foi enviada."); };
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let settled = false;
+    const pending = work(check, () => { check(); dispatched = true; }, current).finally(() => {
+      settled = true;
+      if (expired && operation.current === ticket) operation.current = null;
+    });
     try {
       const value = await Promise.race([
-        work(check, () => { check(); dispatched = true; }, current),
+        pending,
         new Promise<never>((_, reject) => { timer = setTimeout(() => { expired = true; reject(new Error("Tempo de resposta excedido. Resultado incerto; consulte as entregas, sem reenviar.")); }, 30000); }),
       ]);
       check();
@@ -116,7 +121,7 @@ export default function Entregas() {
       throw error;
     } finally {
       if (timer) clearTimeout(timer);
-      if (operation.current === ticket) operation.current = null;
+      if (settled && operation.current === ticket) operation.current = null;
     }
   };
   const canCancel = role === "administrador" || role === "gestor" || role === "administrativo";
@@ -737,6 +742,7 @@ export default function Entregas() {
 
           check();
           if (movimentoError) throw movimentoError;
+          if (!movExpedicao?.id) throw new Error("Ausência de expedição não comprova estoque conciliado; cancelamento exige revisão.");
           if (movExpedicao?.id) {
             dispatch();
             const result = await operarEstoque(

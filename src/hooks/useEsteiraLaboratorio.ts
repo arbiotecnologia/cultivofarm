@@ -480,7 +480,7 @@ export function useEsteiraLaboratorio() {
     try {
       if (!current()) return false;
       const isB2B = origem === "b2b";
-      const { error } = await (supabase as any).rpc("reservar_estoque_item", {
+      const { data: reservedId, error } = await (supabase as any).rpc("reservar_estoque_item", {
         p_item_id: item.id,
         p_qty: qtyToReserve,
         p_os_id: osId,
@@ -496,6 +496,7 @@ export function useEsteiraLaboratorio() {
         if (!options.deferEffects) { toast.error(error.message || "Erro ao reservar estoque"); invalidateAll(); }
         return false;
       }
+      if (options.deferEffects && (typeof reservedId !== "string" || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(reservedId) || reservedId !== item.id)) throw new Error("Reserva não confirmou o item original; resultado pendente de reconciliação.");
       await registrarAuditoria({
         origem,
         osId,
