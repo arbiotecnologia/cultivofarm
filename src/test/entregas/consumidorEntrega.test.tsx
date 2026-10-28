@@ -1,5 +1,5 @@
 import React, { type PropsWithChildren } from 'react';
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -25,10 +25,57 @@ function payload(n = 1) { return { grupoId: ids[4], osId: ids[0], osTipo: 'padra
 function chain(table: string) { let selected = ''; let updating = false; const c: any = { select: (s: string) => { selected = s; return c; }, update: (v: any) => { updating = true; t.updates.push(v); return c; }, insert: () => c, eq: () => c, neq: () => c, in: () => c, order: () => c, limit: () => c, abortSignal: () => c, single: () => c, maybeSingle: () => c, then: (yes: any, no: any) => Promise.resolve({ data: updating ? [{ id: ids[3], status: 'cancelada' }] : table === 'entregas' ? selected === 'quantidade_entregue' ? [{ quantidade_entregue: 1 }] : selected.startsWith('status,') || selected.startsWith('id, status') ? t.rows[0] : t.rows : table === 'estoque_movimentacoes' ? { id: ids[2] } : [], error: null }).then(yes, no) }; return c; }
 function mount() { const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: 3 } } }); const invalid = vi.spyOn(qc, 'invalidateQueries'); const wrapper = ({ children }: PropsWithChildren) => <QueryClientProvider client={qc}><MemoryRouter>{children}</MemoryRouter></QueryClientProvider>; const h = render(<Entregas />, { wrapper }); return { ...h, qc, invalid }; }
 beforeEach(() => { vi.clearAllMocks(); t.updates = []; t.rows = []; t.auth = { user: { id: ids[2] }, profile: { user_id: ids[2], organization_id: ids[4], ativo: true }, role: 'gestor', roles: ['gestor'], loading: false, authzReady: true, authzEpoch: 0 }; t.from.mockImplementation(chain); t.rpc.mockResolvedValue({ data: ack, error: null }); t.motor.mockResolvedValue({ ok: true, replay: false, acao: 'expedicao', estoque_produto_id: ids[1], movimentacao_id: ids[2], saldo_posterior: 0, reservado_posterior: 0 }); });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe('Página Entregas real / hook real / QueryClient real; Auth e transporte simulados', () => {
  it('dupla submissão despacha uma criação', async () => { let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); let a: any, b: any; act(() => { a = t.submit(payload()).catch((e: any) => e); b = t.submit(payload()).catch((e: any) => e); }); await waitFor(() => expect(t.rpc).toHaveBeenCalledTimes(1)); await act(async () => { done({ data: ack, error: null }); await Promise.all([a,b]); }); expect(await b).toBeInstanceOf(Error); h.qc.clear(); });
  it('motor ok:false não anuncia grupo concluído nem compensa ficticiamente', async () => { t.motor.mockResolvedValue({ ok: false }); const h = mount(); await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); }); expect(t.success).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear(); });
  it('falha item N conserva efeitos conhecidos sem rollback direto', async () => { t.rpc.mockResolvedValueOnce({ data: ack, error: null }).mockResolvedValueOnce({ data: null, error: { code: 'PT409', message: 'conflito' } }); const h = mount(); await act(async () => { await expect(t.submit(payload(2))).rejects.toThrow(); }); expect(t.rpc).toHaveBeenCalledTimes(2); expect(t.updates).toEqual([]); expect(t.success).not.toHaveBeenCalled(); h.qc.clear(); });
  it.each(['tenant','ator','epoch'])('ACK tardio após %s não expede/invalida/sucesso', async change => { let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); let a: any; act(() => { a = t.submit(payload()).catch((e: any) => e); }); await waitFor(() => expect(t.rpc).toHaveBeenCalledTimes(1)); if (change === 'tenant') t.auth.profile.organization_id = ids[0]; if (change === 'ator') t.auth.user.id = ids[0]; if (change === 'epoch') t.auth.authzEpoch++; h.rerender(<Entregas />); await act(async () => { done({ data: ack, error: null }); await a; }); expect(await a).toBeInstanceOf(Error); expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.success).not.toHaveBeenCalled(); h.qc.clear(); });
+
+ it.each([null, { success: true }, { success: true, ok: false, entrega_id: ids[3] }, { success: true, entrega_id: 'invalid' }, { success: true, entrega_id: ids[3], replay: 'true' }])('ACK criação inválido não expede/invalida: %j', async data => {
+   t.rpc.mockResolvedValue({ data, error: null }); const h = mount();
+   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
+   expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
+ });
+ it.each(['PT409','42501','55P03'])('erro %s não repete nem apaga efeitos', async code => {
+   t.rpc.mockResolvedValue({ data: null, error: { code, message: code } }); const h = mount();
+   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
+   expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.updates).toEqual([]); expect(h.invalid).not.toHaveBeenCalled(); h.qc.clear();
+ });
+ it('ACK perdido bloqueia reenvio explícito e não faz compensação', async () => {
+   t.rpc.mockRejectedValue(new TypeError('Failed to fetch')); const h = mount();
+   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); await expect(t.submit(payload())).rejects.toThrow(); });
+   expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.updates).toEqual([]); expect(h.invalid).not.toHaveBeenCalled(); h.qc.clear();
+ });
+ it('resultado positivo invalida só caches do ator capturado', async () => {
+   const h = mount(); h.qc.setQueryData(['entregas','other-actor','other-request'], [{ id: 'foreign' }]);
+   await act(async () => { await t.submit(payload()); });
+   expect(t.success).toHaveBeenCalledTimes(1); expect(h.invalid).toHaveBeenCalledTimes(2);
+   for (const [filters] of h.invalid.mock.calls) expect(filters?.predicate?.({ queryKey: ['entregas','other-actor','other-request'] } as any)).toBe(false);
+   h.qc.clear();
+ });
+ it('parcial válido não expede reserva completa prematuramente', async () => {
+   const h = mount(); const p = payload(); p.itens[0].item.quantidade_reservada = 5;
+   await act(async () => { await t.submit(p); });
+   expect(t.motor).not.toHaveBeenCalled(); expect(t.success).toHaveBeenCalledTimes(1); h.qc.clear();
+ });
+ it('timeout abandona etapas posteriores mesmo com ACK tardio', async () => {
+   let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); let request: any;
+   vi.useFakeTimers(); act(() => { request = t.submit(payload()).catch((e: any) => e); });
+   await act(async () => { await vi.advanceTimersByTimeAsync(30001); });
+   expect(await request).toBeInstanceOf(Error);
+   await act(async () => { done({ data: ack, error: null }); await Promise.resolve(); });
+   expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear();
+ });
+ it('cancelamento com estorno negativo mantém draft e não anuncia sucesso', async () => {
+   t.rows = [{ id: ids[3], status: 'em_rota', estoque_produto_id: ids[1], clientes: { nome: 'Cliente' } }];
+   t.motor.mockResolvedValue({ ok: false }); const h = mount();
+   await waitFor(() => expect(screen.getAllByRole('button', { name: 'Cancelar' }).length).toBeGreaterThan(0));
+   fireEvent.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
+   const button = screen.getByRole('button', { name: 'Confirmar cancelamento' });
+   await act(async () => { fireEvent.click(button); fireEvent.click(button); });
+   await waitFor(() => expect(t.motor).toHaveBeenCalledTimes(1));
+   expect(t.updates).toHaveLength(1); expect(t.success).not.toHaveBeenCalled();
+   expect(screen.getByRole('button', { name: 'Confirmar cancelamento' })).toBeInTheDocument(); h.qc.clear();
+ });
 });
