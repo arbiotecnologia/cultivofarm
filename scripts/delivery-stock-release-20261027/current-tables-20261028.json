@@ -1,0 +1,114 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "tables": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "oid": "38196",
+      "rls": true,
+      "name": "cockpit_operacao_idempotencia",
+      "force_rls": false,
+      "fingerprint": "d41d8cd98f00b204e9800998ecf8427e",
+      "policy_hash": "d85b07b5c36be641df32c43076aa2298"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "oid": "36863",
+      "rls": true,
+      "name": "entregas",
+      "force_rls": false,
+      "fingerprint": "ffa4e3c4ae9f96f82319ddadf949f4f2",
+      "policy_hash": "af139002b580d3fa19095ac9efcd2da6"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+      "oid": "36881",
+      "rls": true,
+      "name": "envase",
+      "force_rls": false,
+      "fingerprint": "71afd2429865a98b929d3e91bd0f197c",
+      "policy_hash": "5add24a3c27a0736d53d0b32f6438114"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+      "oid": "38558",
+      "rls": true,
+      "name": "estoque_movimentacoes",
+      "force_rls": false,
+      "fingerprint": "5654bc9745dfccd1fef817504133da3a",
+      "policy_hash": "9f426fdc52b4230049f162d8bcdc24cf"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+      "oid": "36890",
+      "rls": true,
+      "name": "estoque_produto",
+      "force_rls": false,
+      "fingerprint": "90b2685cf295fb0481d6c9b98b14c3b1",
+      "policy_hash": "b5b0c78d45b4681e3175cfcaf33200eb"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}",
+      "oid": "36909",
+      "rls": true,
+      "name": "lotes",
+      "force_rls": false,
+      "fingerprint": "d32ca4d1ebb4328a9355acb4f4a3e2cf",
+      "policy_hash": "2b7a58baaecb2e5f1c87e06753985a8c"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "oid": "36934",
+      "rls": true,
+      "name": "ordens_servico",
+      "force_rls": false,
+      "fingerprint": "8cde0daa7d729eba90cfc19d86b69f58",
+      "policy_hash": "f79091c38487a5e275d10df323b09b19"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "oid": "36948",
+      "rls": true,
+      "name": "ordens_servico_onfarm",
+      "force_rls": false,
+      "fingerprint": "27240a9ac22534114e4f8633a54136bb",
+      "policy_hash": "4aebf36fced55b7a2f40d98ea914839f"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "oid": "40089",
+      "rls": true,
+      "name": "partner_order_items",
+      "force_rls": false,
+      "fingerprint": "9022a805d444c392145b21fd4af3f1fb",
+      "policy_hash": "b0c1996d1b3f2c2525b07bb28f6638c6"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "oid": "36973",
+      "rls": true,
+      "name": "partner_orders",
+      "force_rls": false,
+      "fingerprint": "75dac7ef2618a84fea876a4cf8e6002a",
+      "policy_hash": "66e51b4123e3fe3c929b59e2a881c328"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "oid": "40316",
+      "rls": true,
+      "name": "production_planning",
+      "force_rls": false,
+      "fingerprint": "28bc0d85c63ead0d6c12ad9c8bd921f1",
+      "policy_hash": "a19354a135fae924e3c3ba8358aaa376"
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "oid": "37012",
+      "rls": true,
+      "name": "programacao_producao",
+      "force_rls": false,
+      "fingerprint": "2180c51f0d5ad49e5660ff2c742066d5",
+      "policy_hash": "4abd326ade0cfcac8c26e5feecb504fd"
+    }
+  ],
+  "captured_at": "2026-10-28T01:36:24.813537+00:00"
+}
