@@ -1,0 +1,446 @@
+[
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "ecad56badcb2120f7048fad7519f76f4",
+    "oid": "41622",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.enforce_cliente_id_for_produtor()",
+    "definition": "CREATE OR REPLACE FUNCTION public.enforce_cliente_id_for_produtor()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user uuid;\n  v_role app_role;\n  v_count int;\nBEGIN\n  -- Lógica específica para a tabela user_roles\n  IF TG_TABLE_NAME = 'user_roles' THEN\n    -- Aqui o record NEW possui o campo 'role'\n    IF NEW.role = 'cliente_produtor' THEN\n      SELECT count(*) INTO v_count\n        FROM public.user_clientes WHERE user_id = NEW.user_id;\n      IF v_count = 0 THEN\n        RAISE EXCEPTION 'Para a função \"Produtor (Portal)\" é obrigatório vincular o usuário a pelo menos um cliente.'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n    RETURN NEW;\n  END IF;\n\n  -- Lógica específica para a tabela user_clientes (que não possui campo 'role')\n  IF TG_TABLE_NAME = 'user_clientes' THEN\n    v_user := COALESCE(NEW.user_id, OLD.user_id);\n    \n    -- Verifica se o usuário tem a role de produtor\n    SELECT role INTO v_role FROM public.user_roles\n      WHERE user_id = v_user AND role = 'cliente_produtor' LIMIT 1;\n      \n    IF v_role IS NOT NULL THEN\n      -- Conta quantos vínculos restariam após a operação\n      IF TG_OP = 'DELETE' THEN\n        SELECT count(*) INTO v_count FROM public.user_clientes\n          WHERE user_id = v_user AND id <> OLD.id;\n      ELSE\n        SELECT count(*) INTO v_count FROM public.user_clientes\n          WHERE user_id = v_user;\n      END IF;\n\n      IF v_count = 0 THEN\n        RAISE EXCEPTION 'Este usuário é Produtor e precisa permanecer vinculado a pelo menos um cliente.'\n          USING ERRCODE = 'check_violation';\n      END IF;\n    END IF;\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n\n  RETURN COALESCE(NEW, OLD);\nEND;$function$\n",
+    "identity": "public.enforce_cliente_id_for_produtor()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "46f777c2020ff9a059a80ae6dab4bd12",
+    "oid": "41686",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.fn_financial_audit()",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_financial_audit()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_old jsonb; v_new jsonb;\nBEGIN\n  IF TG_OP = 'INSERT' THEN v_new := to_jsonb(NEW);\n  ELSIF TG_OP = 'UPDATE' THEN v_old := to_jsonb(OLD); v_new := to_jsonb(NEW);\n  ELSIF TG_OP = 'DELETE' THEN v_old := to_jsonb(OLD);\n  END IF;\n\n  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)\n  VALUES (TG_TABLE_NAME, COALESCE((NEW).id, (OLD).id), TG_OP, v_old, v_new, auth.uid());\n\n  RETURN COALESCE(NEW, OLD);\nEND $function$\n",
+    "identity": "public.fn_financial_audit()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "c3f26bc5217a5d86227c7e74f762b3ad",
+    "oid": "41736",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.fn_h6_guard_ar_installment_snapshot()",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_h6_guard_ar_installment_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.receivable_id IS DISTINCT FROM OLD.receivable_id\n     OR NEW.installment_number IS DISTINCT FROM OLD.installment_number\n     OR NEW.original_amount IS DISTINCT FROM OLD.original_amount\n     OR NEW.due_date IS DISTINCT FROM OLD.due_date\n     OR NEW.net_amount IS DISTINCT FROM OLD.net_amount\n     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN\n    RAISE EXCEPTION 'Parcela imutavel: titulo, numero, valor original, vencimento, valor liquido e data de criacao nao podem ser alterados.'\n      USING ERRCODE='check_violation';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+    "identity": "public.fn_h6_guard_ar_installment_snapshot()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "d9cc5c95f837de9d77cec2159e24bbf9",
+    "oid": "41737",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.fn_h6_guard_title_snapshot()",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_h6_guard_title_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.total_amount IS DISTINCT FROM OLD.total_amount\n     OR NEW.installment_count IS DISTINCT FROM OLD.installment_count\n     OR NEW.origin_type IS DISTINCT FROM OLD.origin_type\n     OR NEW.origin_id IS DISTINCT FROM OLD.origin_id\n     OR NEW.issue_date IS DISTINCT FROM OLD.issue_date\n     OR NEW.first_due_date IS DISTINCT FROM OLD.first_due_date\n     OR NEW.created_by IS DISTINCT FROM OLD.created_by\n     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN\n    RAISE EXCEPTION 'Snapshot financeiro imutavel: valor, parcelas, origem e datas de emissao nao podem ser alterados.'\n      USING ERRCODE='check_violation';\n  END IF;\n\n  IF TG_TABLE_NAME = 'accounts_receivable'\n     AND (to_jsonb(NEW)->>'payment_method_id') IS DISTINCT FROM (to_jsonb(OLD)->>'payment_method_id') THEN\n    RAISE EXCEPTION 'Condicao/metodo do titulo e imutavel apos a criacao: use o metodo na baixa (receivable_payments).'\n      USING ERRCODE='check_violation';\n  END IF;\n\n  RETURN NEW;\nEND $function$\n",
+    "identity": "public.fn_h6_guard_title_snapshot()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "5c07dd23a0c9355c3fe11811004b0381",
+    "oid": "41744",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.fn_h6d_block_hard_delete()",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_h6d_block_hard_delete()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF public.fn_h6d_hard_delete_allowed() THEN\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'Registro financeiro (%) nao pode ser excluido: cancele pelo fluxo formal (rpc_cancel_accounts_receivable / rpc_cancel_accounts_payable).', TG_TABLE_NAME\n    USING ERRCODE='check_violation';\nEND $function$\n",
+    "identity": "public.fn_h6d_block_hard_delete()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "2d38119a0bb885471ba0112c300a4144",
+    "oid": "42131",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.tg_recalc_risk_on_ar_change()",
+    "definition": "CREATE OR REPLACE FUNCTION public.tg_recalc_risk_on_ar_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE v_partner uuid;\nBEGIN\n  SELECT ar.partner_id INTO v_partner\n  FROM public.accounts_receivable ar\n  WHERE ar.id = COALESCE(NEW.receivable_id, OLD.receivable_id)\n    AND ar.origin_type = 'B2B_ORDER';\n  IF v_partner IS NOT NULL THEN\n    PERFORM public.recalc_partner_risk_score(v_partner);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+    "identity": "public.tg_recalc_risk_on_ar_change()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "1c2ad8d0ef38ea66866f8b85d3acb109",
+    "oid": "61233",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "public.guard_profile_sensitive_fields()",
+    "definition": "CREATE OR REPLACE FUNCTION public.guard_profile_sensitive_fields()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ BEGIN IF current_user IN ('postgres','service_role','supabase_auth_admin') THEN RETURN NEW; END IF; IF public.has_role(auth.uid(),'administrador'::public.app_role) THEN RETURN NEW; END IF; IF TG_OP='INSERT' THEN IF NEW.ativo IS DISTINCT FROM true OR NEW.cliente_id IS NOT NULL OR NEW.organization_id IS NOT NULL OR NEW.data_admissao IS NOT NULL OR NEW.observacoes_internas IS NOT NULL THEN RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING ERRCODE='42501'; END IF; ELSE IF OLD.ativo IS NOT TRUE OR ROW(NEW.id,NEW.user_id,NEW.email,NEW.ativo,NEW.cliente_id,NEW.organization_id,NEW.created_at,NEW.data_admissao,NEW.observacoes_internas) IS DISTINCT FROM ROW(OLD.id,OLD.user_id,OLD.email,OLD.ativo,OLD.cliente_id,OLD.organization_id,OLD.created_at,OLD.data_admissao,OLD.observacoes_internas) THEN RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING ERRCODE='42501'; END IF; END IF; RETURN NEW; END; $function$\n",
+    "identity": "public.guard_profile_sensitive_fields()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "e636fcf74c5e1c7c8037d5a17f525c27",
+    "oid": "42136",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.tg_sync_b2b_financial_status()",
+    "definition": "CREATE OR REPLACE FUNCTION public.tg_sync_b2b_financial_status()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_link record;\n  v_new text;\nBEGIN\n  SELECT * INTO v_link FROM public.partner_order_financial_links WHERE receivable_id = NEW.id;\n  IF NOT FOUND THEN RETURN NEW; END IF;\n\n  v_new := CASE NEW.status\n    WHEN 'PAID' THEN 'recebido'\n    WHEN 'PARTIAL' THEN 'parcial'\n    WHEN 'OVERDUE' THEN 'vencido'\n    WHEN 'CANCELED' THEN 'cancelado'\n    ELSE 'gerado'\n  END;\n\n  UPDATE public.partner_orders SET financial_status = v_new WHERE id = v_link.partner_order_id;\n  UPDATE public.partner_order_financial_links SET financial_status = v_new WHERE id = v_link.id;\n\n  INSERT INTO public.partner_order_audit_logs(order_id, partner_id, acao, dados_novos)\n  VALUES (v_link.partner_order_id, v_link.partner_id, 'financeiro_status_alterado',\n    jsonb_build_object('ar_status', NEW.status, 'novo', v_new));\n\n  RETURN NEW;\nEND $function$\n",
+    "identity": "public.tg_sync_b2b_financial_status()"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "4d90e93d521a4819d9085f28d742030f",
+    "oid": "95587",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "public.has_role(_user_id uuid, _role app_role)",
+    "definition": "CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role app_role)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.has_role(_user_id,_role); $function$\n",
+    "identity": "public.has_role(uuid, app_role)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "md5": "c5af5b55de6d79da9b73a33948746ae2",
+    "oid": "37054",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "platform_private.has_role(_user_id uuid, _role app_role)",
+    "definition": "CREATE OR REPLACE FUNCTION platform_private.has_role(_user_id uuid, _role app_role)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT EXISTS(SELECT 1 FROM public.user_roles r JOIN public.profiles p ON p.user_id=r.user_id WHERE r.user_id=_user_id AND r.role=_role AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id));\n$function$\n",
+    "identity": "platform_private.has_role(uuid, app_role)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "6eb78ceebe90196ac5b95bfc127dd63b",
+    "oid": "41671",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "signature": "public.fn_entrega_confirmar_engine_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb DEFAULT '{}'::jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_entrega_confirmar_engine_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb DEFAULT '{}'::jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_origem text;\n  v_os_id uuid;\n  v_ent record;\n  v_est public.estoque_produto%ROWTYPE;\n  v_pendentes int; v_total_entregue numeric; v_total_reservado numeric;\n  v_finalizada boolean := false; v_avanco jsonb;\n  v_recebedor_nome text;\n  v_entregue_em timestamptz;\n  v_faturamento text := nullif(btrim(coalesce(p_opcoes->>'faturamento','')), '');\n  v_motivo_nb text := nullif(btrim(coalesce(p_opcoes->>'motivo_nao_faturavel','')), '');\nBEGIN\n  IF v_uid IS NULL THEN RAISE EXCEPTION 'COCKPIT_UNAUTHENTICATED'; END IF;\n  IF p_entrega_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS'; END IF;\n\n  PERFORM public.fn_estoque_ctx_open(jsonb_build_object(\n    'acao','entrega','origem','fn_entrega_confirmar_engine_v1','usuario_id', v_uid::text));\n\n  PERFORM pg_advisory_xact_lock(hashtext('cockpit_entrega:' || p_entrega_id::text));\n\n  SELECT e.id, e.status::text AS status, e.estoque_produto_id,\n         coalesce(e.quantidade_entregue, 0) AS qtd, e.partner_order_id,\n         e.ordem_servico_id, e.ordem_servico_onfarm_id\n    INTO v_ent\n    FROM public.entregas e\n   WHERE e.id = p_entrega_id\n   FOR UPDATE;\n\n  IF v_ent.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_NAO_ENCONTRADA'; END IF;\n\n  -- Origem: explícita quando informada; derivada do vínculo caso contrário.\n  IF nullif(btrim(coalesce(p_origem,'')), '') IS NOT NULL THEN\n    v_origem := public.fn_cockpit_norm_origem(p_origem);\n  ELSIF v_ent.ordem_servico_onfarm_id IS NOT NULL THEN\n    v_origem := 'onfarm';\n  ELSIF v_ent.partner_order_id IS NOT NULL THEN\n    v_origem := 'b2b';\n  ELSE\n    v_origem := 'manual';\n  END IF;\n\n  v_origem := public.fn_entrega_assert_confirmador(v_origem);\n\n  v_os_id := CASE WHEN v_origem = 'onfarm' THEN v_ent.ordem_servico_onfarm_id\n                  ELSE v_ent.ordem_servico_id END;\n\n  IF p_os_id IS NOT NULL AND v_os_id IS DISTINCT FROM p_os_id THEN\n    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_OS';\n  END IF;\n\n  IF v_ent.status = 'cancelada' THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_CANCELADA'; END IF;\n  IF v_ent.status = 'entregue' THEN\n    RETURN jsonb_build_object('success', true, 'replay', true, 'finalizada', false,\n      'entrega_id', p_entrega_id,\n      'message', 'Entrega já confirmada anteriormente.');\n  END IF;\n\n  IF v_origem = 'b2b' AND v_ent.partner_order_id IS NOT NULL THEN\n    PERFORM public.fn_cockpit_assert_b2b_liberado(v_ent.partner_order_id);\n  END IF;\n\n  IF v_ent.estoque_produto_id IS NOT NULL THEN\n    SELECT * INTO v_est FROM public.estoque_produto WHERE id = v_ent.estoque_produto_id FOR UPDATE;\n    IF v_est.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO'; END IF;\n    IF v_est.status::text <> 'expedido' THEN\n      IF v_os_id IS NOT NULL THEN\n        IF v_est.reservado_para_os_id IS DISTINCT FROM v_os_id THEN\n          RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE';\n        END IF;\n        IF coalesce(v_est.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN\n          RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM';\n        END IF;\n      END IF;\n      IF v_ent.qtd > coalesce(v_est.quantidade, 0) THEN\n        RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA';\n      END IF;\n    END IF;\n  END IF;\n\n  -- Recebedor físico é OBRIGATÓRIO e distinto de confirmado_por.\n  v_recebedor_nome := nullif(btrim(coalesce(p_recebedor->>'nome','')), '');\n  IF v_recebedor_nome IS NULL THEN\n    RAISE EXCEPTION 'COCKPIT_ENTREGA_RECEBEDOR_OBRIGATORIO';\n  END IF;\n\n  v_entregue_em := coalesce(nullif(btrim(coalesce(p_opcoes->>'entregue_em','')), '')::timestamptz, now());\n\n  UPDATE public.entregas\n     SET status = 'entregue'::public.status_entrega,\n         entregue_em = v_entregue_em,\n         recebido_por_nome = v_recebedor_nome,\n         recebido_por_cargo = coalesce(nullif(btrim(coalesce(p_recebedor->>'cargo','')), ''), recebido_por_cargo),\n         recebido_por_documento = coalesce(nullif(btrim(coalesce(p_recebedor->>'documento','')), ''), recebido_por_documento),\n         observacoes_confirmacao = coalesce(nullif(btrim(coalesce(p_recebedor->>'observacoes','')), ''), observacoes_confirmacao),\n         confirmado_por = v_uid,\n         financial_status = CASE WHEN v_faturamento = 'bill_later' THEN 'PENDING_BILLING'\n                                 ELSE financial_status END\n   WHERE id = p_entrega_id;\n\n  IF v_est.id IS NOT NULL THEN\n    UPDATE public.estoque_produto\n       SET status = 'expedido'::public.status_estoque, expedido_por = v_uid,\n           expedido_em = now(), updated_at = now()\n     WHERE id = v_est.id AND status <> 'expedido'::public.status_estoque;\n\n    IF FOUND THEN\n      INSERT INTO public.estoque_movimentacoes\n        (estoque_produto_id, acao, quantidade, status_anterior, status_novo, os_id, os_tipo, usuario_id, lote_id, observacao)\n      VALUES (v_est.id, 'expedicao', v_ent.qtd, 'reservado', 'expedido',\n              v_os_id, v_origem, v_uid, v_est.lote_id, 'Baixa por confirmação de entrega');\n    END IF;\n  END IF;\n\n  IF v_os_id IS NOT NULL THEN\n    v_avanco := public._rpc_avancar_esteira_laboratorio_internal(v_os_id, v_origem, 'enviar_entrega', NULL);\n\n    INSERT INTO public.laboratorio_esteira_eventos\n      (os_id, origem_os, etapa_anterior, etapa_nova, acao, usuario_id, observacao)\n    VALUES (v_os_id, v_origem, 'em_entrega', 'entregue', 'confirmar_entrega_v1', v_uid,\n            format('Confirmação transacional da entrega %s (recebedor: %s)', p_entrega_id, v_recebedor_nome));\n\n    IF v_origem = 'onfarm' THEN\n      SELECT count(*) FILTER (WHERE status::text NOT IN ('entregue','cancelada')),\n             coalesce(sum(quantidade_entregue) FILTER (WHERE status::text = 'entregue'), 0)\n        INTO v_pendentes, v_total_entregue\n        FROM public.entregas WHERE ordem_servico_onfarm_id = v_os_id;\n    ELSE\n      SELECT count(*) FILTER (WHERE status::text NOT IN ('entregue','cancelada')),\n             coalesce(sum(quantidade_entregue) FILTER (WHERE status::text = 'entregue'), 0)\n        INTO v_pendentes, v_total_entregue\n        FROM public.entregas WHERE ordem_servico_id = v_os_id;\n    END IF;\n\n    SELECT coalesce(sum(quantidade_reservada), 0) INTO v_total_reservado\n      FROM public.estoque_produto\n     WHERE reservado_para_os_id = v_os_id\n       AND coalesce(reservado_para_os_tipo, v_origem) = v_origem\n       AND status <> 'estornado'::public.status_estoque;\n\n    IF v_pendentes = 0 AND v_total_reservado > 0 AND v_total_entregue >= v_total_reservado THEN\n      v_avanco := public._rpc_avancar_esteira_laboratorio_internal(v_os_id, v_origem, 'finalizar_os', NULL);\n      IF coalesce((v_avanco->>'success')::boolean, false) THEN\n        v_finalizada := true;\n        INSERT INTO public.laboratorio_esteira_eventos\n          (os_id, origem_os, etapa_anterior, etapa_nova, acao, usuario_id, observacao)\n        VALUES (v_os_id, v_origem, 'entregue', 'finalizada', 'finalizacao_automatica_por_entrega', v_uid,\n                'Cobertura completa: OS finalizada na mesma transação da confirmação de entrega.');\n      END IF;\n    END IF;\n  END IF;\n\n  IF v_faturamento = 'not_billable' THEN\n    IF v_motivo_nb IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_MOTIVO_NAO_FATURAVEL_OBRIGATORIO'; END IF;\n    PERFORM public.fn_mark_entrega_not_billable(p_entrega_id, v_motivo_nb);\n  END IF;\n\n  RETURN jsonb_build_object('success', true, 'replay', false, 'finalizada', v_finalizada,\n    'entrega_id', p_entrega_id, 'os_id', v_os_id, 'origem', v_origem,\n    'parcial', (coalesce(v_pendentes, 0) > 0 OR coalesce(v_total_entregue, 0) < coalesce(v_total_reservado, 0)),\n    'total_entregue', coalesce(v_total_entregue, 0), 'total_reservado', coalesce(v_total_reservado, 0),\n    'message', CASE WHEN v_finalizada THEN 'Entrega confirmada — OS finalizada.'\n                    ELSE 'Entrega confirmada.' END);\nEND;\n$function$\n",
+    "identity": "public.fn_entrega_confirmar_engine_v1(uuid, uuid, text, jsonb DEFAULT '{}'::jsonb, jsonb DEFAULT '{}'::jsonb)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "5ac43dc18eee407723c0d78cd97f0db4",
+    "oid": "41675",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.fn_entrega_valor_faturavel_v1(p_entrega_id uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_entrega_valor_faturavel_v1(p_entrega_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_e public.entregas%ROWTYPE;\n  v_po public.partner_orders%ROWTYPE;\n  v_t public.partner_order_payment_terms%ROWTYPE;\n  v_fin text;\n  v_ap text;\n  v_total_snapshot numeric;\n  v_origem text;\n  v_base numeric;\n  v_aceito numeric;\n  v_valor numeric;\n  v_conf int;\n  v_itens jsonb;\n  v_ident jsonb;\nBEGIN\n  SELECT * INTO v_e FROM public.entregas WHERE id = p_entrega_id;\n  IF NOT FOUND THEN\n    RETURN jsonb_build_object('origem','indisponivel','motivo','entrega_nao_encontrada');\n  END IF;\n\n  SELECT count(*)::int INTO v_conf\n    FROM public.entrega_conferencia_itens WHERE entrega_id = p_entrega_id;\n\n  -- ------------------- caminho B2B (snapshot canônico) -------------------\n  IF v_e.partner_order_id IS NOT NULL THEN\n    SELECT * INTO v_po FROM public.partner_orders WHERE id = v_e.partner_order_id;\n    IF NOT FOUND THEN\n      RETURN jsonb_build_object('origem','indisponivel','motivo','pedido_b2b_nao_encontrado');\n    END IF;\n\n    v_fin := COALESCE(v_po.financial_approval_status, 'not_required');\n    v_ident := jsonb_build_object(\n      'partner_order_id', v_po.id,\n      'payment_terms_id', v_po.payment_terms_id,\n      'financial_approval_status', v_fin,\n      'order_status', v_po.status);\n\n    IF v_po.payment_terms_id IS NOT NULL THEN\n      -- identidade imutável da condição econômica\n      SELECT * INTO v_t FROM public.partner_order_payment_terms\n       WHERE id = v_po.payment_terms_id;\n      IF NOT FOUND OR v_t.partner_order_id IS DISTINCT FROM v_po.id THEN\n        RETURN jsonb_build_object('origem','bloqueado','motivo','termo_canonico_invalido')\n               || v_ident;\n      END IF;\n\n      v_ap := COALESCE(v_t.approval_status, 'pending');\n      v_ident := v_ident || jsonb_build_object('approval_status', v_ap);\n\n      IF v_ap = 'approved' THEN\n        NULL; -- liberado\n      ELSIF v_ap = 'not_required'\n            AND v_fin = 'not_required'\n            AND COALESCE(v_po.requires_financial_approval, false) = false THEN\n        NULL; -- liberado: nenhuma aprovação exigida em nenhum nível\n      ELSE\n        -- pending / rejected / adjustment_requested / incoerência => fail-closed.\n        -- Proibido fallback silencioso para outro termo ou para o pedido.\n        RETURN jsonb_build_object('origem','bloqueado','motivo','condicao_b2b_nao_liberada')\n               || v_ident;\n      END IF;\n\n      v_total_snapshot := v_t.final_amount;\n      v_origem := 'B2B_PAYMENT_TERMS_SNAPSHOT';\n    ELSE\n      -- legado: sem condição vinculada ao pedido.\n      IF EXISTS (SELECT 1 FROM public.partner_order_payment_terms t\n                  WHERE t.partner_order_id = v_po.id) THEN\n        -- existe termo, mas não é o canônico do pedido => nunca usar \"o mais novo\"\n        RETURN jsonb_build_object('origem','bloqueado','motivo','termo_nao_vinculado_ao_pedido')\n               || v_ident;\n      END IF;\n      IF v_fin IN ('pending','rejected') THEN\n        RETURN jsonb_build_object('origem','bloqueado','motivo','aprovacao_financeira_'||v_fin)\n               || v_ident;\n      END IF;\n      IF COALESCE(v_po.status,'') IN ('cancelado','reprovado','reprovado_sem_itens',\n                                      'rascunho','pendente','solicitado','em_analise_comercial',\n                                      'aguardando_aprovacao_credito','aguardando_ajuste_comercial',\n                                      'aguardando_itens','aguardando_cotacao') THEN\n        RETURN jsonb_build_object('origem','bloqueado','motivo','pedido_nao_faturavel')\n               || v_ident;\n      END IF;\n      v_total_snapshot := COALESCE(v_po.final_amount_with_interest, v_po.total);\n      v_origem := 'B2B_ORDER_SNAPSHOT_LEGACY';\n    END IF;\n\n    IF v_total_snapshot IS NULL OR v_total_snapshot <= 0 THEN\n      RETURN jsonb_build_object('origem','indisponivel','motivo','snapshot_b2b_ausente')\n             || v_ident;\n    END IF;\n\n    -- base econômica do pedido = soma dos subtotais snapshot dos itens\n    SELECT COALESCE(sum(COALESCE(i.subtotal,\n             COALESCE(i.preco_unitario_final_snapshot, i.preco_unitario, 0) * COALESCE(i.quantidade,0))), 0)\n      INTO v_base\n      FROM public.partner_order_items i WHERE i.order_id = v_po.id;\n\n    IF v_conf = 0 OR v_base <= 0 THEN\n      RETURN jsonb_build_object('origem', v_origem, 'valor', round(v_total_snapshot,2),\n        'metodo', jsonb_build_object('tipo','integral','total_snapshot', round(v_total_snapshot,2),\n                                     'base_itens', round(COALESCE(v_base,0),2)))\n             || v_ident;\n    END IF;\n\n    -- participação econômica aceita POR PRODUTO (volume conferido aceito / volume conferido)\n    WITH conf AS (\n      SELECT ee.produto_id AS produto_id, ci.status AS status,\n             COALESCE(ee.volume,0) * COALESCE(ci.quantidade,1) AS vol\n        FROM public.entrega_conferencia_itens ci\n        JOIN public.estoque_embalagens ee ON ee.id = ci.embalagem_id\n       WHERE ci.entrega_id = p_entrega_id\n    ), ratio AS (\n      SELECT produto_id,\n             CASE WHEN SUM(vol) > 0\n                  THEN LEAST(1, round(COALESCE(SUM(vol) FILTER (WHERE status='aceito'), 0) / SUM(vol), 6))\n                  ELSE 0 END AS r\n        FROM conf GROUP BY produto_id\n    ), itens AS (\n      SELECT i.product_id AS product_id,\n             COALESCE(i.subtotal,\n               COALESCE(i.preco_unitario_final_snapshot, i.preco_unitario, 0) * COALESCE(i.quantidade,0)) AS sub,\n             COALESCE(r.r, 0) AS r\n        FROM public.partner_order_items i\n        LEFT JOIN ratio r ON r.produto_id = i.product_id\n       WHERE i.order_id = v_po.id\n    )\n    SELECT COALESCE(sum(sub * r),0),\n           COALESCE(jsonb_agg(jsonb_build_object('produto_id', product_id,\n                     'subtotal_snapshot', round(sub,2), 'ratio_aceito', r,\n                     'base_aceita_item', round(sub * r, 2))\n                    ORDER BY product_id), '[]'::jsonb)\n      INTO v_aceito, v_itens\n      FROM itens;\n\n    IF abs(v_aceito - v_base) <= 0.01 THEN\n      v_valor := round(v_total_snapshot, 2);\n    ELSE\n      -- alocação do ajuste histórico do pedido (juros/desconto de nível pedido)\n      -- proporcional à participação econômica aceita dos itens.\n      v_valor := round(v_total_snapshot * (v_aceito / v_base), 2);\n    END IF;\n\n    RETURN jsonb_build_object('origem', v_origem, 'valor', v_valor,\n      'metodo', jsonb_build_object('tipo','participacao_economica_aceita_x_snapshot',\n        'total_snapshot', round(v_total_snapshot,2),\n        'base_itens', round(v_base,2), 'base_aceita', round(v_aceito,2),\n        'fator', round(v_aceito / NULLIF(v_base,0), 6), 'itens', v_itens))\n           || v_ident;\n  END IF;\n\n  -- ---------------- caminho OS / base de faturamento histórica -------------\n  IF v_e.os_faturamento_base_id IS NOT NULL THEN\n    SELECT b.valor_total_faturavel INTO v_total_snapshot\n      FROM public.os_faturamento_base b WHERE b.id = v_e.os_faturamento_base_id;\n    IF v_total_snapshot IS NOT NULL AND v_total_snapshot > 0 THEN\n      RETURN jsonb_build_object('origem','OS_FATURAMENTO_BASE_SNAPSHOT',\n        'valor', round(v_total_snapshot,2),\n        'metodo', jsonb_build_object('tipo','os_base','os_faturamento_base_id', v_e.os_faturamento_base_id));\n    END IF;\n  END IF;\n\n  RETURN jsonb_build_object('origem','indisponivel','motivo','sem_fonte_historica_confiavel');\nEND\n$function$\n",
+    "identity": "public.fn_entrega_valor_faturavel_v1(uuid)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "md5": "e4008b029ce8d58f70f3fc88571d03be",
+    "oid": "41748",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.fn_mark_entrega_not_billable(_entrega_id uuid, _reason text)",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_mark_entrega_not_billable(_entrega_id uuid, _reason text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_entrega public.entregas%ROWTYPE;\nBEGIN\n  IF NOT public.is_financial_staff(v_uid) THEN\n    RAISE EXCEPTION 'Sem permissão para marcar entrega como sem cobrança.' USING ERRCODE='insufficient_privilege';\n  END IF;\n  IF _reason IS NULL OR length(trim(_reason)) = 0 THEN\n    RAISE EXCEPTION 'Motivo é obrigatório.' USING ERRCODE='check_violation';\n  END IF;\n\n  SELECT * INTO v_entrega FROM public.entregas WHERE id = _entrega_id FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada.'; END IF;\n  IF v_entrega.receivable_id IS NOT NULL THEN\n    RAISE EXCEPTION 'Entrega já foi faturada.' USING ERRCODE='check_violation';\n  END IF;\n\n  UPDATE public.entregas\n    SET financial_status = 'NOT_BILLABLE',\n        not_billable_reason = _reason\n    WHERE id = _entrega_id;\n\n  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)\n  VALUES ('entregas', _entrega_id, 'MARK_NOT_BILLABLE',\n    jsonb_build_object('financial_status', v_entrega.financial_status),\n    jsonb_build_object('financial_status', 'NOT_BILLABLE', 'reason', _reason),\n    v_uid);\nEND $function$\n",
+    "identity": "public.fn_mark_entrega_not_billable(uuid, text)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+    "oid": "42634",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "signature": "public.is_financial_staff(_uid uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.is_financial_staff(_uid uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nBEGIN\n  IF NOT public.fn_authz_uid_scope_ok(_uid) THEN\n    RETURN false;\n  END IF;\n  RETURN has_role(_uid, 'administrador'::app_role)\n      OR has_role(_uid, 'gestor'::app_role)\n      OR has_role(_uid, 'financeiro'::app_role);\nEND;\n$function$\n",
+    "identity": "public.is_financial_staff(uuid)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "43be4da16aae664a48fa4c73315b4420",
+    "oid": "67200",
+    "owner": "postgres",
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "public.h15_profile_organization_guard()",
+    "definition": "CREATE OR REPLACE FUNCTION public.h15_profile_organization_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nBEGIN\n IF current_setting('role',true) IN ('authenticated','anon') THEN\n IF TG_OP='INSERT' THEN\n IF NEW.organization_id IS NOT NULL THEN RAISE EXCEPTION 'H15_ORGANIZATION_PROVISIONING_REQUIRED' USING ERRCODE='42501'; END IF;\n ELSIF NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n RAISE EXCEPTION 'H15_ORGANIZATION_PROVISIONING_REQUIRED' USING ERRCODE='42501';\n END IF;\n END IF;\n RETURN NEW;\nEND $function$\n",
+    "identity": "public.h15_profile_organization_guard()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "f632f15c9f46cb9889082fc533a27ea1",
+    "oid": "41732",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.fn_generate_receivable_installments()",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  i int;\n  v_context platform_private.financial_initial_installments;\n  v_inst jsonb;\n  v_qtd int := NEW.installment_count;\n  v_base numeric(14,2) := ROUND(NEW.total_amount / v_qtd, 2);\n  v_acc numeric(14,2) := 0;\n  v_amt numeric(14,2);\nBEGIN\n  IF NEW.organization_id IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n  DELETE FROM platform_private.financial_initial_installments\n    WHERE transaction_id=txid_current() AND title_id=NEW.id AND kind='receivable'\n    RETURNING * INTO v_context;\n  IF FOUND THEN\n    IF v_context.actor_id IS DISTINCT FROM auth.uid() OR v_context.organization_id IS DISTINCT FROM NEW.organization_id\n       OR NEW.created_by IS DISTINCT FROM v_context.actor_id OR NEW.origin_type <> 'MANUAL'\n       OR platform_private.h15_actor_organization() IS DISTINCT FROM NEW.organization_id\n       OR NOT public.is_financial_staff(auth.uid()) THEN\n      RAISE EXCEPTION 'FIN_INITIAL_CONTEXT_DENIED' USING ERRCODE='42501';\n    END IF;\n    IF jsonb_array_length(v_context.installments) <> NEW.installment_count\n       OR (SELECT sum((x->>'amount')::numeric) FROM jsonb_array_elements(v_context.installments) x) IS DISTINCT FROM NEW.total_amount THEN\n      RAISE EXCEPTION 'FIN_TITLE_INVALID_SUM' USING ERRCODE='23514';\n    END IF;\n    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_context.installments) LOOP\n      INSERT INTO public.accounts_receivable_installments(organization_id,receivable_id,installment_number,due_date,original_amount,net_amount,status)\n        VALUES(NEW.organization_id,NEW.id,(v_inst->>'installment_number')::int,(v_inst->>'due_date')::date,\n          (v_inst->>'amount')::numeric,(v_inst->>'amount')::numeric,'OPEN');\n    END LOOP;\n    RETURN NEW;\n  END IF;\n  IF NEW.origin_type='B2B_ORDER' AND EXISTS(SELECT 1 FROM public.partner_orders o WHERE o.id=NEW.origin_id AND o.c2_external_origin_snapshot IS NOT NULL) THEN\n    INSERT INTO public.accounts_receivable_installments(receivable_id,installment_number,due_date,original_amount,net_amount,status,organization_id,interest_amount)\n    SELECT NEW.id,s.installment_number,s.due_date,s.amount,s.amount,'OPEN',NEW.organization_id,s.interest_amount\n    FROM public.partner_order_payment_schedule s JOIN public.partner_orders o ON o.id=s.partner_order_id AND o.payment_terms_id=s.payment_terms_id\n    WHERE o.id=NEW.origin_id ORDER BY s.installment_number;\n    IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id=NEW.id)<>v_qtd THEN RAISE EXCEPTION 'B2B_INSTALLMENT_CARDINALITY_INVALID' USING ERRCODE='23514'; END IF;\n    RETURN NEW;\n  END IF;\n  FOR i IN 1..v_qtd LOOP\n    IF i < v_qtd THEN\n      v_amt := v_base;\n      v_acc := v_acc + v_amt;\n    ELSE\n      v_amt := NEW.total_amount - v_acc;\n    END IF;\n    INSERT INTO public.accounts_receivable_installments\n      (receivable_id, installment_number, due_date, original_amount, net_amount, status, organization_id)\n    VALUES\n      (NEW.id, i, (NEW.first_due_date + ((i-1) || ' months')::interval)::date, v_amt, v_amt, 'OPEN', NEW.organization_id);\n  END LOOP;\n  RETURN NEW;\nEND\n$function$\n",
+    "identity": "public.fn_generate_receivable_installments()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "b0dd9a14d5fd799a40df0975baf4c5a6",
+    "oid": "71452",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "cf_user_guards_v1.acquire_gate()",
+    "definition": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.acquire_gate()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass,'auth.users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF current_setting('role',true) IN ('anon','authenticated') AND auth.uid() IS NULL THEN RAISE EXCEPTION 'user_edit_forbidden' USING ERRCODE='42501'; END IF;\r\n UPDATE cf_user_guards_v1.state SET revision=revision+1 WHERE singleton;\r\n IF NOT FOUND THEN RAISE EXCEPTION 'user_guard_unavailable' USING ERRCODE='PT503'; END IF;\r\n RETURN NULL;\r\nEND $function$\n",
+    "identity": "cf_user_guards_v1.acquire_gate()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "ec8e7077521cdee212be924bfb400e8a",
+    "oid": "71453",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "cf_user_guards_v1.require_admin()",
+    "definition": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.require_admin()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n IF TG_LEVEL<>'STATEMENT' OR TG_RELID NOT IN ('public.profiles'::regclass,'public.user_roles'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF NOT EXISTS(SELECT 1 FROM public.profiles p JOIN public.user_roles r USING(user_id) WHERE p.ativo IS TRUE AND r.role='administrador') THEN RAISE EXCEPTION 'user_last_active_admin' USING ERRCODE='PT409'; END IF;\r\n RETURN NULL;\r\nEND $function$\n",
+    "identity": "cf_user_guards_v1.require_admin()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "ce295ff5799d306ad81578047cd9bff5",
+    "oid": "71454",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "cf_user_guards_v1.advance_stamp()",
+    "definition": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.advance_stamp()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\r\nBEGIN NEW.updated_at:=greatest(clock_timestamp(),OLD.updated_at+interval '1 microsecond'); RETURN NEW; END $function$\n",
+    "identity": "cf_user_guards_v1.advance_stamp()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "e5911c3801be399f9de57e038b390e79",
+    "oid": "71455",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "cf_user_guards_v1.touch_related_profiles()",
+    "definition": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.touch_related_profiles()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nDECLARE old_id uuid; new_id uuid; item uuid;\r\nBEGIN\r\n IF TG_LEVEL<>'ROW' OR TG_RELID NOT IN ('public.user_roles'::regclass,'public.user_clientes'::regclass,'public.partner_users'::regclass) THEN RAISE EXCEPTION 'invalid_user_guard_context' USING ERRCODE='42501'; END IF;\r\n IF TG_OP<>'INSERT' THEN old_id:=OLD.user_id; END IF;\r\n IF TG_OP<>'DELETE' THEN new_id:=NEW.user_id; END IF;\r\n FOR item IN SELECT DISTINCT x FROM unnest(ARRAY[old_id,new_id]) x WHERE x IS NOT NULL ORDER BY x LOOP UPDATE public.profiles SET updated_at=updated_at WHERE user_id=item; END LOOP;\r\n RETURN NULL;\r\nEND $function$\n",
+    "identity": "cf_user_guards_v1.touch_related_profiles()"
+  },
+  {
+    "acl": "{postgres=X/postgres}",
+    "md5": "a919901eb1e045461a5bc6e4da178624",
+    "oid": "71456",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "cf_user_guards_v1.block_truncate()",
+    "definition": "CREATE OR REPLACE FUNCTION cf_user_guards_v1.block_truncate()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\r\nBEGIN RAISE EXCEPTION 'user_bulk_truncate_forbidden' USING ERRCODE='PT409'; END $function$\n",
+    "identity": "cf_user_guards_v1.block_truncate()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "cd39f9fe93514420976263d13856c17c",
+    "oid": "41920",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "signature": "public.rpc_entrega_confirmar_v1(p_entrega_id uuid, p_recebedor jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)",
+    "definition": "CREATE OR REPLACE FUNCTION public.rpc_entrega_confirmar_v1(p_entrega_id uuid, p_recebedor jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nBEGIN\n  RETURN public.fn_entrega_confirmar_engine_v1(p_entrega_id, NULL, NULL, p_recebedor, p_opcoes);\nEND;\n$function$\n",
+    "identity": "public.rpc_entrega_confirmar_v1(uuid, jsonb, jsonb DEFAULT '{}'::jsonb)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "4a59f48e25096848a79be6de9d959cef",
+    "oid": "72698",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "public.guard_superadmin_role_assignment()",
+    "definition": "CREATE OR REPLACE FUNCTION public.guard_superadmin_role_assignment()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_touches boolean := false;\nBEGIN\n  IF TG_OP IN ('INSERT','UPDATE') AND NEW.role = 'superadmin'::public.app_role THEN\n    v_touches := true;\n  END IF;\n  IF TG_OP IN ('UPDATE','DELETE') AND OLD.role = 'superadmin'::public.app_role THEN\n    v_touches := true;\n  END IF;\n\n  IF v_touches AND current_user NOT IN ('service_role','postgres','supabase_admin') THEN\n    RAISE EXCEPTION 'superadmin_role_reserved'\n      USING ERRCODE = '42501',\n            HINT = 'O papel de plataforma so pode ser atribuido ou removido pelo mecanismo interno.';\n  END IF;\n\n  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+    "identity": "public.guard_superadmin_role_assignment()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "13ed48832f81cbb35434688ca35fda4b",
+    "oid": "83854",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "public._saas_trg_require_feature()",
+    "definition": "CREATE OR REPLACE FUNCTION public._saas_trg_require_feature()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_key text := TG_ARGV[0];\nBEGIN\n  IF v_uid IS NULL THEN\n    RETURN COALESCE(NEW, OLD);\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n    FROM public.profiles p\n    JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n    WHERE p.user_id = v_uid AND p.ativo IS TRUE AND p.organization_id IS NOT NULL\n  ) THEN\n    RAISE EXCEPTION 'saas_context_unavailable: usuário ativo e empresa são obrigatórios'\n      USING ERRCODE = '42501';\n  END IF;\n  IF NOT public._saas_user_has_feature(v_uid, v_key) THEN\n    RAISE EXCEPTION 'saas_feature_not_entitled: funcionalidade não contratada ou assinatura indisponível'\n      USING ERRCODE = '42501';\n  END IF;\n  RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n",
+    "identity": "public._saas_trg_require_feature()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "md5": "00a9a4d4a075d756d312d69778493b39",
+    "oid": "42563",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "signature": "public.fn_authz_uid_scope_ok(_uid uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_authz_uid_scope_ok(_uid uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\n  SELECT auth.uid() IS NULL\n      OR (_uid IS NOT NULL AND _uid = auth.uid())\n      OR public.has_role(auth.uid(), 'administrador'::app_role);\n$function$\n",
+    "identity": "public.fn_authz_uid_scope_ok(uuid)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "fe0d6a0f670787f87081fe0650102d22",
+    "oid": "41673",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.fn_entrega_guard_faturamento_v1(p_entrega_id uuid, p_total numeric)",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_entrega_guard_faturamento_v1(p_entrega_id uuid, p_total numeric)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_r public.entrega_reconciliacoes%ROWTYPE;\n  v_conf int;\n  v_canon jsonb;\n  v_max numeric;\n  v_canon_valor numeric;\nBEGIN\n  SELECT count(*)::int INTO v_conf\n    FROM public.entrega_conferencia_itens WHERE entrega_id = p_entrega_id;\n\n  v_canon := public.fn_entrega_valor_faturavel_v1(p_entrega_id);\n\n  -- H6C-001: condição comercial pendente/rejeitada/não vinculada bloqueia o\n  -- faturamento em qualquer modo, inclusive o manual.\n  IF (v_canon->>'origem') = 'bloqueado' THEN\n    RAISE EXCEPTION 'condicao_b2b_bloqueada: %', COALESCE(v_canon->>'motivo','indefinido')\n      USING ERRCODE='check_violation';\n  END IF;\n\n  v_canon_valor := NULLIF(v_canon->>'valor','')::numeric;\n\n  IF v_conf = 0 THEN\n    -- H6c-003: entrega integral também é comparada ao canônico, quando existir.\n    IF v_canon_valor IS NOT NULL AND p_total IS NOT NULL\n       AND abs(p_total - v_canon_valor) > 0.01 THEN\n      RAISE EXCEPTION 'valor_divergente_do_canonico: informado=%, canonico=%',\n        round(p_total,2), round(v_canon_valor,2) USING ERRCODE='check_violation';\n    END IF;\n    IF v_canon_valor IS NULL THEN\n      -- sem fonte histórica confiável: fluxo legado/manual, o guard não arbitra preço.\n      RETURN jsonb_build_object('modo','legado','ratio_aceito',1,'canonico',v_canon);\n    END IF;\n    RETURN jsonb_build_object('modo','integral_canonico','ratio_aceito',1,\n                              'valor_faturavel_max', round(v_canon_valor,2),\n                              'canonico', v_canon);\n  END IF;\n\n  SELECT * INTO v_r FROM public.entrega_reconciliacoes\n   WHERE entrega_id = p_entrega_id AND status = 'reconciliada';\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'entrega_nao_reconciliada: conclua a conferencia e a reconciliacao antes de faturar'\n      USING ERRCODE='check_violation';\n  END IF;\n  IF NOT v_r.faturavel THEN\n    RAISE EXCEPTION 'entrega_nao_faturavel: todos os itens foram recusados'\n      USING ERRCODE='check_violation';\n  END IF;\n\n  v_max := COALESCE(v_r.valor_faturavel_max, v_canon_valor);\n  IF v_max IS NOT NULL AND p_total > v_max + 0.01 THEN\n    RAISE EXCEPTION 'valor_acima_do_aceito' USING ERRCODE='check_violation';\n  END IF;\n\n  RETURN jsonb_build_object('modo', 'reconciliado', 'reconciliacao_id', v_r.id,\n                            'ratio_aceito', v_r.ratio_aceito,\n                            'valor_faturavel_max', v_max, 'canonico', v_canon);\nEND\n$function$\n",
+    "identity": "public.fn_entrega_guard_faturamento_v1(uuid, numeric)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "1c2241052d227831f625b909eb606bda",
+    "oid": "84007",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "public.organizations_guard_status()",
+    "definition": "CREATE OR REPLACE FUNCTION public.organizations_guard_status()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE via_api boolean := session_user = 'authenticator';\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.id <> OLD.id THEN\n    RAISE EXCEPTION 'org_invalid: id imutável' USING errcode='42501'; END IF;\n  IF NOT via_api THEN RETURN NEW; END IF;\n  IF TG_OP = 'INSERT' THEN\n    IF NOT platform_private.has_ticket('org_create', '00000000-0000-0000-0000-000000000000'::uuid) THEN\n      RAISE EXCEPTION 'org_forbidden: criação apenas via plataforma' USING errcode='42501'; END IF;\n    RETURN NEW;\n  END IF;\n  IF (NEW.status, NEW.razao_social, NEW.nome_fantasia, NEW.cnpj, NEW.cnpj_normalizado, NEW.email_corporativo,\n      NEW.fuso_horario, NEW.onboarding_dados, NEW.onboarding_concluido_em, NEW.ativada_em, NEW.nome)\n     IS DISTINCT FROM\n     (OLD.status, OLD.razao_social, OLD.nome_fantasia, OLD.cnpj, OLD.cnpj_normalizado, OLD.email_corporativo,\n      OLD.fuso_horario, OLD.onboarding_dados, OLD.onboarding_concluido_em, OLD.ativada_em, OLD.nome)\n     AND NOT platform_private.has_ticket('org_write', NEW.id) THEN\n    RAISE EXCEPTION 'org_forbidden: alteração apenas via fluxo do servidor' USING errcode='42501';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+    "identity": "public.organizations_guard_status()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+    "md5": "670ea34d37c4c4fd6612031ad763a3a7",
+    "oid": "41730",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.fn_generate_receivable_from_entrega(_entrega_id uuid, _payload jsonb)",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_generate_receivable_from_entrega(_entrega_id uuid, _payload jsonb)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_entrega public.entregas%ROWTYPE;\n  v_receivable_id uuid;\n  v_total numeric(14,2);\n  v_canon jsonb;\n  v_canon_valor numeric;\n  v_canon_origem text;\n  v_manual boolean;\n  v_manual_reason text;\n  v_count integer;\n  v_category uuid; v_cost_center uuid; v_payment_method uuid;\n  v_first_due date; v_issue date;\n  v_fiscal_required boolean; v_fiscal_status text;\n  v_installments jsonb; v_sum numeric(14,2) := 0; v_inst jsonb;\n  v_desc text; v_notes text; v_guard jsonb;\nBEGIN\n  IF v_uid IS NULL THEN\n    RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';\n  END IF;\n  IF NOT public.is_financial_staff(v_uid) THEN\n    RAISE EXCEPTION 'Sem permissão para faturar entregas.' USING ERRCODE='insufficient_privilege';\n  END IF;\n\n  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_faturar:' || _entrega_id::text, 0));\n\n  SELECT * INTO v_entrega FROM public.entregas WHERE id = _entrega_id FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada.'; END IF;\n\n  -- H6-003.5 replay estavel\n  IF v_entrega.receivable_id IS NOT NULL THEN\n    RETURN v_entrega.receivable_id;\n  END IF;\n\n  IF v_entrega.status = 'cancelada' THEN\n    RAISE EXCEPTION 'Entrega cancelada não pode ser faturada.' USING ERRCODE='check_violation';\n  END IF;\n  IF v_entrega.status <> 'entregue' THEN\n    RAISE EXCEPTION 'Entrega precisa estar com status \"entregue\" para faturar.' USING ERRCODE='check_violation';\n  END IF;\n  IF v_entrega.cliente_id IS NULL THEN\n    RAISE EXCEPTION 'Entrega sem cliente vinculado.' USING ERRCODE='check_violation';\n  END IF;\n  IF v_entrega.financial_status = 'NOT_BILLABLE' THEN\n    RAISE EXCEPTION 'Entrega marcada como não faturável.' USING ERRCODE='check_violation';\n  END IF;\n\n  v_total           := COALESCE((_payload->>'total_amount')::numeric, 0);\n  v_count           := COALESCE((_payload->>'installment_count')::integer, 1);\n  v_category        := NULLIF(_payload->>'category_id','')::uuid;\n  v_cost_center     := NULLIF(_payload->>'cost_center_id','')::uuid;\n  v_payment_method  := NULLIF(_payload->>'payment_method_id','')::uuid;\n  v_first_due       := COALESCE((_payload->>'first_due_date')::date, CURRENT_DATE);\n  v_issue           := COALESCE((_payload->>'issue_date')::date, CURRENT_DATE);\n  v_fiscal_required := COALESCE((_payload->>'fiscal_invoice_required')::boolean, false);\n  v_fiscal_status   := CASE WHEN v_fiscal_required THEN 'PENDING' ELSE 'NOT_REQUIRED' END;\n  v_installments    := _payload->'installments';\n  v_desc            := COALESCE(NULLIF(_payload->>'description',''), 'Entrega ' || substr(_entrega_id::text,1,8));\n  v_notes           := NULLIF(_payload->>'notes','');\n  v_manual          := COALESCE((_payload->>'manual_financial_adjustment')::boolean, false);\n  v_manual_reason   := NULLIF(trim(_payload->>'manual_adjustment_reason'), '');\n\n  IF v_category IS NULL THEN\n    RAISE EXCEPTION 'Categoria financeira é obrigatória.' USING ERRCODE='check_violation';\n  END IF;\n  IF NOT EXISTS (SELECT 1 FROM public.financial_categories WHERE id = v_category) THEN\n    RAISE EXCEPTION 'Categoria financeira não encontrada.' USING ERRCODE='check_violation';\n  END IF;\n  IF v_count < 1 OR v_count > 36 THEN\n    RAISE EXCEPTION 'Número de parcelas deve estar entre 1 e 36.' USING ERRCODE='check_violation';\n  END IF;\n\n  -- ------- H6-003: valor canonico server-side é a autoridade do total -------\n  v_canon := public.fn_entrega_valor_faturavel_v1(_entrega_id);\n  v_canon_origem := v_canon->>'origem';\n\n  -- reconciliacao parcial: usa exatamente o valor_faturavel_max persistido\n  SELECT r.valor_faturavel_max INTO v_canon_valor\n    FROM public.entrega_reconciliacoes r\n   WHERE r.entrega_id = _entrega_id AND r.status = 'reconciliada'\n   LIMIT 1;\n  IF v_canon_valor IS NULL THEN\n    v_canon_valor := (v_canon->>'valor')::numeric;\n  ELSE\n    v_canon_origem := 'RECONCILIACAO:' || COALESCE(v_canon_origem,'-');\n  END IF;\n\n  IF v_canon_valor IS NOT NULL THEN\n    IF abs(v_total - v_canon_valor) > 0.01 THEN\n      RAISE EXCEPTION 'valor_divergente_do_canonico: informado %, canônico % (origem %).',\n        v_total, v_canon_valor, v_canon_origem USING ERRCODE='check_violation';\n    END IF;\n    v_total := round(v_canon_valor, 2);\n  ELSE\n    -- sem fonte historica confiavel: exige ajuste financeiro manual justificado\n    IF NOT v_manual OR v_manual_reason IS NULL OR length(v_manual_reason) < 10 THEN\n      RAISE EXCEPTION 'valor_canonico_indisponivel: informe manual_financial_adjustment com motivo (mín. 10 caracteres).'\n        USING ERRCODE='check_violation';\n    END IF;\n  END IF;\n\n  IF v_total <= 0 THEN\n    RAISE EXCEPTION 'Valor total inválido.' USING ERRCODE='check_violation';\n  END IF;\n\n  -- GATE: reconciliação obrigatória quando há conferência por item\n  v_guard := public.fn_entrega_guard_faturamento_v1(_entrega_id, v_total);\n\n  IF v_installments IS NOT NULL AND jsonb_array_length(v_installments) > 0 THEN\n    IF jsonb_array_length(v_installments) <> v_count THEN\n      RAISE EXCEPTION 'Quantidade de parcelas (%) diverge de installment_count (%).',\n        jsonb_array_length(v_installments), v_count USING ERRCODE='check_violation';\n    END IF;\n    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP\n      v_sum := v_sum + COALESCE((v_inst->>'amount')::numeric, 0);\n    END LOOP;\n    IF abs(v_sum - v_total) > 0.01 THEN\n      RAISE EXCEPTION 'Soma das parcelas (%) difere do total (%).', v_sum, v_total USING ERRCODE='check_violation';\n    END IF;\n  END IF;\n\n  BEGIN\n    INSERT INTO public.accounts_receivable (\n      origin_type, origin_id, customer_id, description, category_id, cost_center_id,\n      total_amount, issue_date, first_due_date, installment_count,\n      payment_method_id, fiscal_invoice_required, fiscal_invoice_status,\n      notes, created_by\n    ) VALUES (\n      'DELIVERY', _entrega_id, v_entrega.cliente_id, v_desc, v_category, v_cost_center,\n      v_total, v_issue, v_first_due, v_count,\n      v_payment_method, v_fiscal_required, v_fiscal_status,\n      v_notes, v_uid\n    ) RETURNING id INTO v_receivable_id;\n  EXCEPTION WHEN unique_violation THEN\n    SELECT id INTO v_receivable_id FROM public.accounts_receivable\n     WHERE origin_type = 'DELIVERY' AND origin_id = _entrega_id AND status <> 'CANCELED';\n    IF v_receivable_id IS NOT NULL THEN RETURN v_receivable_id; END IF;\n    RAISE EXCEPTION 'Entrega já possui conta a receber ativa.' USING ERRCODE='check_violation';\n  END;\n\n  IF v_installments IS NOT NULL AND jsonb_array_length(v_installments) > 0 THEN\n    DELETE FROM public.accounts_receivable_installments WHERE receivable_id = v_receivable_id;\n    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP\n      INSERT INTO public.accounts_receivable_installments (\n        receivable_id, installment_number, due_date, original_amount, net_amount, status\n      ) VALUES (\n        v_receivable_id,\n        (v_inst->>'installment_number')::integer,\n        (v_inst->>'due_date')::date,\n        (v_inst->>'amount')::numeric,\n        (v_inst->>'amount')::numeric,\n        'OPEN'\n      );\n    END LOOP;\n  END IF;\n\n  UPDATE public.entregas\n     SET receivable_id = v_receivable_id,\n         financial_status = 'BILLED',\n         billing_generated_at = now(),\n         billing_generated_by = v_uid\n   WHERE id = _entrega_id;\n\n  INSERT INTO public.financial_audit_log (\n    entity_type, entity_id, action, old_data, new_data, performed_by\n  ) VALUES (\n    'entregas', _entrega_id, 'DELIVERY_BILLED',\n    jsonb_build_object('receivable_id', v_entrega.receivable_id,\n                       'financial_status', v_entrega.financial_status),\n    jsonb_build_object('receivable_id', v_receivable_id, 'total_amount', v_total,\n      'installment_count', v_count, 'fiscal_invoice_required', v_fiscal_required,\n      'payment_method_id', v_payment_method, 'origem', 'entrega',\n      'valor_canonico', v_canon_valor, 'valor_canonico_origem', v_canon_origem,\n      'manual_financial_adjustment', v_manual, 'manual_adjustment_reason', v_manual_reason,\n      'reconciliacao', v_guard),\n    v_uid\n  );\n\n  RETURN v_receivable_id;\nEND;\n$function$\n",
+    "identity": "public.fn_generate_receivable_from_entrega(uuid, jsonb)"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "bb9ea2f95f8f151ebd4b97c2a2e747b7",
+    "oid": "84540",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "public.guard_profile_senha_ticket()",
+    "definition": "CREATE OR REPLACE FUNCTION public.guard_profile_senha_ticket()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF session_user = 'authenticator'\n     AND OLD.senha_provisoria IS TRUE AND NEW.senha_provisoria IS DISTINCT FROM TRUE\n     AND NOT platform_private.has_ticket('pwd_conclude', NEW.user_id) THEN\n    RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING errcode='42501';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+    "identity": "public.guard_profile_senha_ticket()"
+  },
+  {
+    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "e38505f726490b064e61d9aa4e3be5a7",
+    "oid": "83979",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "public.guard_profile_senha_provisoria()",
+    "definition": "CREATE OR REPLACE FUNCTION public.guard_profile_senha_provisoria()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF current_user IN ('postgres','service_role','supabase_auth_admin') THEN RETURN NEW; END IF;\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.senha_provisoria IS TRUE THEN\n      RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING ERRCODE='42501';\n    END IF;\n    RETURN NEW;\n  END IF;\n  IF NEW.senha_provisoria IS DISTINCT FROM OLD.senha_provisoria THEN\n    RAISE EXCEPTION 'profile_sensitive_fields_forbidden' USING ERRCODE='42501';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+    "identity": "public.guard_profile_senha_provisoria()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "bd6d513d936f5c5fb0490b5d1d2f9f1d",
+    "oid": "90519",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "public.guard_profile_tenant_fields()",
+    "definition": "CREATE OR REPLACE FUNCTION public.guard_profile_tenant_fields()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n\n  IF NEW.user_id IS DISTINCT FROM OLD.user_id\n     OR NEW.organization_id IS DISTINCT FROM OLD.organization_id\n     OR NEW.email IS DISTINCT FROM OLD.email\n     OR NEW.senha_provisoria IS DISTINCT FROM OLD.senha_provisoria\n     OR NEW.cliente_id IS DISTINCT FROM OLD.cliente_id THEN\n    RAISE EXCEPTION 'profile_protected_fields' USING ERRCODE = '42501';\n  END IF;\n\n  IF auth.uid() = OLD.user_id AND NEW.ativo IS DISTINCT FROM OLD.ativo THEN\n    RAISE EXCEPTION 'profile_protected_fields' USING ERRCODE = '42501';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+    "identity": "public.guard_profile_tenant_fields()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "d01a740c1e3e02407131d2b9228bf658",
+    "oid": "90690",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "public.guard_tenant_organization_id()",
+    "definition": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+    "identity": "public.guard_tenant_organization_id()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "f470a25ba7e65b366c62ad3ac8aa3112",
+    "oid": "90880",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "signature": "public.d51_5_validate_financial_tenant_links()",
+    "definition": "CREATE OR REPLACE FUNCTION public.d51_5_validate_financial_tenant_links()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nDECLARE\n  v_new jsonb := to_jsonb(NEW);\n  v_org uuid;\n  v_parent_id uuid;\nBEGIN\n  BEGIN\n    v_org := NULLIF(v_new->>'organization_id', '')::uuid;\n  EXCEPTION WHEN invalid_text_representation THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_INVALID' USING ERRCODE = '23514';\n  END;\n\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '23514';\n  END IF;\n\n  IF TG_TABLE_NAME = 'accounts_receivable' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_receivable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'receivable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable ar WHERE ar.id = v_parent_id AND ar.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'accounts_payable_installments' THEN\n    v_parent_id := NULLIF(v_new->>'payable_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable ap WHERE ap.id = v_parent_id AND ap.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'receivable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_receivable_installments ari WHERE ari.id = v_parent_id AND ari.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIVABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'payable_payments' THEN\n    v_parent_id := NULLIF(v_new->>'installment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.accounts_payable_installments api WHERE api.id = v_parent_id AND api.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_PAYABLE_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'financial_receipts' THEN\n    v_parent_id := NULLIF(v_new->>'customer_id', '')::uuid;\n    IF v_parent_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.clientes c WHERE c.id = v_parent_id AND c.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_CUSTOMER_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n    v_parent_id := NULLIF(v_new->>'payment_id', '')::uuid;\n    IF v_parent_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM public.receivable_payments rp WHERE rp.id = v_parent_id AND rp.organization_id = v_org\n    ) THEN\n      RAISE EXCEPTION 'FINANCIAL_RECEIPT_PAYMENT_TENANT_MISMATCH' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
+    "identity": "public.d51_5_validate_financial_tenant_links()"
+  },
+  {
+    "acl": "{postgres=X/postgres,service_role=X/postgres}",
+    "md5": "ff3688c33c7211b6c3fe60447a7728ac",
+    "oid": "90967",
+    "owner": "postgres",
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "public.h15_user_organization(p_user uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.h15_user_organization(p_user uuid)\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\n  SELECT p.organization_id\n  FROM public.profiles p\n  JOIN public.organizations o ON o.id = p.organization_id AND o.ativo IS TRUE\n  WHERE p.user_id = p_user AND p.ativo IS TRUE;\n$function$\n",
+    "identity": "public.h15_user_organization(uuid)"
+  },
+  {
+    "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "b1930ed5bca3be839f783c6202ab8147",
+    "oid": "42147",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "signature": "public.update_updated_at_column()",
+    "definition": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $function$\n",
+    "identity": "public.update_updated_at_column()"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "64e10608403238a41a9baf92857ca881",
+    "oid": "67184",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "platform_private.h15_actor_organization()",
+    "definition": "CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);\n$function$\n",
+    "identity": "platform_private.h15_actor_organization()"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "md5": "048249c0c2106c3761e26eacb8d0de84",
+    "oid": "95577",
+    "owner": "postgres",
+    "config": [
+      "search_path=\"\""
+    ],
+    "signature": "platform_private.platform_actor_access_ready(p_user uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION platform_private.platform_actor_access_ready(p_user uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT EXISTS(SELECT 1 FROM public.profiles p WHERE p.user_id=p_user AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE)\n AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=p_user AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL AND auth.uid()=p_user AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));\n$function$\n",
+    "identity": "platform_private.platform_actor_access_ready(uuid)"
+  }
+]

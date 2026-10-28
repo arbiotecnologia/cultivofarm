@@ -76,3 +76,4 @@
 - Catalog-label business-conflict delta follows scripts/catalog-label-conflicts-20261027/AGENTS.md; only pinned label RAISEs move to PT409, shared replay helper stays 40001 — keeps scope minimal.
 - Delivery recovery follows scripts/os-delivery-reopening-20261027/AGENTS.md; hardening never implies release of stock/ledger dependencies or client EXECUTE — prevents unsafe transitive reopening.
 - Stock/envase recovery follows scripts/stock-envase-recovery-20261027/AGENTS.md; immutable CQ/lot fences and canonical ledger proofs survive recovery — prevents status shortcuts and forged contexts.
+- Delivery-finance A2 follows scripts/delivery-finance-a2-20261028/AGENTS.md; proposed internal-only bodies preserve immutable installments and exact metadata pins, with deny-only rollback and no operational release — prevents BOLA and unreviewed transitive activation.

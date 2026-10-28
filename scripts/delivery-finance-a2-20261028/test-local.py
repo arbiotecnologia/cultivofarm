@@ -1,0 +1,272 @@
+"""SYNTHETIC ONLY: disposable PostgreSQL, synthetic Auth (auth.uid() from GUC test.actor),
+reduced schema and stub price/guard helpers. Three LIVE trigger function bodies loaded
+exactly, but local trigger bindings and Auth are simulated. Loads proposed-functions.sql.review verbatim. Never connects to hosted
+Supabase. Not JWT/RLS homologation."""
+from pathlib import Path
+import tempfile, subprocess, os, time, json
+HERE = Path(__file__).resolve().parent
+PORT = '55538'
+FA = 'aaaaaaaa-0000-4000-8000-00000000000a'  # financeiro A
+FB = 'bbbbbbbb-0000-4000-8000-00000000000a'  # financeiro B
+CA = 'aaaaaaaa-0000-4000-8000-00000000000c'  # consultor A (not financial)
+OA = '0a000000-0000-4000-8000-00000000000a'; OB = '0b000000-0000-4000-8000-00000000000b'
+CLA = 'c1000000-0000-4000-8000-00000000000a'
+REC = 'cafe0000-0000-4000-8000-000000000001'; DESP = 'cafe0000-0000-4000-8000-000000000002'; RECOFF = 'cafe0000-0000-4000-8000-000000000003'
+PM = 'feed0000-0000-4000-8000-000000000001'; PMOFF = 'feed0000-0000-4000-8000-000000000002'
+E = lambda n: f'e0000000-0000-4000-8000-{n:012d}'
+checks = []
+
+def main():
+    tmp = Path(tempfile.mkdtemp(prefix='billing-', dir='/tmp')); tmp.chmod(0o777)
+    prefix = ['setpriv', '--reuid=1000', '--regid=1000', '--clear-groups'] if os.getuid() == 0 else []
+    base = ['python3',str(HERE/'pg-local-driver.py'),str(tmp),PORT]
+    def sql(q, must=True):
+        r = subprocess.run(base, input=q, text=True, capture_output=True)
+        if must and r.returncode: raise RuntimeError(r.stderr)
+        return r
+    def ok(q, label):
+        out = sql(q).stdout.strip().splitlines()
+        if not out or out[-1] != 't': raise AssertionError(label + ' got ' + repr(out))
+        checks.append(label); print('PASS', label)
+    def err(q, code, label):
+        r = sql('\\set VERBOSITY verbose\n' + q, False)
+        if r.returncode == 0 or code not in r.stderr: raise AssertionError(label + ': ' + r.stderr + r.stdout)
+        checks.append(label); print('PASS', label, code)
+    def as_(u): return f"SET ROLE authenticated; SET test.actor='{u}';"
+    def bill(u, e, **kw):
+        p = {'total_amount': 100, 'category_id': REC, 'payment_method_id': PM, 'installment_count': 1,
+             'issue_date': '2026-10-27', 'first_due_date': '2026-11-27'}
+        p.update(kw); p = {k: v for k, v in p.items() if v is not ...}
+        return as_(u) + f"SELECT public.fn_generate_receivable_from_entrega('{e}','{json.dumps(p)}'::jsonb);"
+    def mark(u, e): return as_(u) + f"SELECT public.fn_mark_entrega_not_billable('{e}','motivo teste');"
+    def session():
+        p = subprocess.Popen(base + ['session'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        def send(q): p.stdin.write(q + '\n'); p.stdin.flush()
+        return p, send
+    def wait_lock(n=1, timeout=10):
+        t = time.time()
+        while time.time() - t < timeout:
+            if int(sql("SELECT count(*) FROM pg_stat_activity WHERE wait_event_type IN ('Lock','Advisory');").stdout.strip()) >= n: return
+            time.sleep(0.05)
+        raise AssertionError('waiting backend not observed')
+    started = False
+    try:
+        subprocess.run(prefix + ['initdb', '-D', str(tmp / 'd'), '-A', 'trust', '-U', 'postgres'], check=True, capture_output=True)
+        subprocess.run(prefix + ['pg_ctl', '-D', str(tmp / 'd'), '-l', str(tmp / 'log'), '-o', f'-k {tmp} -h "" -p {PORT}', 'start'], check=True, capture_output=True); started = True
+        sql(f"""
+CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+CREATE SCHEMA auth; CREATE SCHEMA cf_user_guards_v1;
+GRANT USAGE ON SCHEMA auth TO authenticated, anon;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT nullif(current_setting('test.actor',true),'')::uuid$$;
+CREATE TYPE app_role AS ENUM('administrador','gestor','financeiro','consultor_tecnico','parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor');
+CREATE TYPE status_entrega AS ENUM('separado','em_rota','entregue','cancelada');
+CREATE TABLE cf_user_guards_v1.state(singleton boolean PRIMARY KEY, revision bigint); INSERT INTO cf_user_guards_v1.state VALUES(true,1);
+CREATE TABLE organizations(id uuid PRIMARY KEY, ativo boolean); INSERT INTO organizations VALUES('{OA}',true),('{OB}',true);
+CREATE TABLE profiles(user_id uuid PRIMARY KEY, organization_id uuid, ativo boolean, senha_provisoria boolean DEFAULT false);
+INSERT INTO profiles(user_id,organization_id,ativo) VALUES('{FA}','{OA}',true),('{FB}','{OB}',true),('{CA}','{OA}',true);
+CREATE TABLE user_roles(user_id uuid, role app_role);
+INSERT INTO user_roles VALUES('{FA}','financeiro'),('{FB}','financeiro'),('{CA}','consultor_tecnico');
+CREATE FUNCTION has_role(u uuid, r app_role) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS
+ $$SELECT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=u AND role=r)$$;
+CREATE FUNCTION fn_authz_uid_scope_ok(_uid uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS
+ $$SELECT auth.uid() IS NULL OR (_uid IS NOT NULL AND _uid=auth.uid()) OR public.has_role(auth.uid(),'administrador')$$;
+CREATE FUNCTION is_financial_staff(_uid uuid) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public AS
+ $$BEGIN IF NOT public.fn_authz_uid_scope_ok(_uid) THEN RETURN false; END IF;
+   RETURN has_role(_uid,'administrador') OR has_role(_uid,'gestor') OR has_role(_uid,'financeiro'); END$$;
+CREATE FUNCTION h15_user_organization(p_user uuid) RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS
+ $$SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE
+   WHERE p.user_id=p_user AND p.ativo IS TRUE$$;
+CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$SELECT '{{"iat":1793145600}}'::jsonb$$;
+CREATE SCHEMA platform_private;
+CREATE TABLE platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz);
+CREATE TABLE partner_users(user_id uuid);
+CREATE TABLE clientes(id uuid PRIMARY KEY,organization_id uuid);
+INSERT INTO clientes VALUES('{CLA}','{OA}');
+CREATE TABLE financial_cost_centers(id uuid PRIMARY KEY,active boolean);
+CREATE TABLE platform_private.financial_initial_installments(transaction_id bigint,title_id uuid,kind text,actor_id uuid,organization_id uuid,installments jsonb);
+CREATE TABLE partner_orders(id uuid,c2_external_origin_snapshot jsonb,payment_terms_id uuid);
+CREATE TABLE partner_order_payment_schedule(partner_order_id uuid,payment_terms_id uuid,installment_number int,due_date date,amount numeric,interest_amount numeric);
+CREATE TABLE financial_categories(id uuid PRIMARY KEY, type text, active boolean);
+INSERT INTO financial_categories VALUES('{REC}','RECEITA',true),('{DESP}','DESPESA',true),('{RECOFF}','RECEITA',false);
+CREATE TABLE payment_methods(id uuid PRIMARY KEY, active boolean); INSERT INTO payment_methods VALUES('{PM}',true),('{PMOFF}',false);
+CREATE TABLE entregas(id uuid PRIMARY KEY, organization_id uuid, cliente_id uuid, status status_entrega, financial_status text,
+  partner_order_id uuid, ordem_servico_onfarm_id uuid, receivable_id uuid, not_billable_reason text, billing_generated_at timestamptz, billing_generated_by uuid, canon numeric);
+CREATE TABLE entrega_reconciliacoes(entrega_id uuid, status text, valor_faturavel_max numeric);
+CREATE TABLE accounts_receivable(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), organization_id uuid, origin_type text, origin_id uuid,
+  customer_id uuid, description text, category_id uuid, cost_center_id uuid, total_amount numeric, issue_date date, first_due_date date,
+  installment_count int, payment_method_id uuid, fiscal_invoice_required boolean, fiscal_invoice_status text, notes text, created_by uuid,
+  status text DEFAULT 'OPEN');
+CREATE UNIQUE INDEX ar_origin_active ON accounts_receivable(origin_type, origin_id) WHERE status <> 'CANCELED';
+CREATE FUNCTION ar_org() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.organization_id IS NULL THEN NEW.organization_id := (SELECT organization_id FROM entregas WHERE id=NEW.origin_id); END IF; RETURN NEW; END$$;
+CREATE TRIGGER ar_org BEFORE INSERT ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION ar_org();
+CREATE TABLE accounts_receivable_installments(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), receivable_id uuid, installment_number int,
+  due_date date, original_amount numeric, net_amount numeric, status text, organization_id uuid, interest_amount numeric, created_at timestamptz DEFAULT now());
+CREATE TABLE financial_audit_log(id bigserial, entity_type text, entity_id uuid, action text, old_data jsonb, new_data jsonb, performed_by uuid);
+CREATE FUNCTION fn_entrega_valor_faturavel_v1(p uuid) RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS
+ $$SELECT jsonb_build_object('origem','snapshot','valor',(SELECT canon FROM public.entregas WHERE id=p))$$;
+CREATE FUNCTION fn_entrega_guard_faturamento_v1(p uuid, t numeric) RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS
+ $$SELECT jsonb_build_object('modo','integral_canonico')$$;
+GRANT USAGE ON SCHEMA public TO authenticated;
+""")
+        captured=json.loads((HERE/'live-functions.json').read_text())
+        for name in ['fn_generate_receivable_installments','d51_5_validate_financial_tenant_links','fn_h6d_block_hard_delete']:
+            definition=next(x['definition'] for x in captured if x['signature'].startswith('public.'+name+'('))
+            sql(definition+';')
+        sql("CREATE FUNCTION fn_h6d_hard_delete_allowed() RETURNS boolean LANGUAGE sql AS $$SELECT false$$; CREATE TRIGGER no_delete BEFORE DELETE ON accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION fn_h6d_block_hard_delete(); CREATE TRIGGER initial_installments AFTER INSERT ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments(); CREATE TRIGGER tenant_links BEFORE INSERT OR UPDATE ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links(); CREATE TRIGGER tenant_links BEFORE INSERT OR UPDATE ON accounts_receivable_installments FOR EACH ROW EXECUTE FUNCTION d51_5_validate_financial_tenant_links();")
+        sql((HERE / 'proposed-functions.sql.review').read_text())
+        sql("REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC; GRANT EXECUTE ON FUNCTION fn_generate_receivable_from_entrega(uuid,jsonb), fn_mark_entrega_not_billable(uuid,text) TO authenticated;")
+        def reset():
+            rows = ",".join(f"('{E(i)}','{OA}','{CLA}','entregue','PENDING_BILLING',100)" for i in range(1, 40))
+            sql(f"TRUNCATE partner_users,platform_org_admin_invites,entregas, accounts_receivable, accounts_receivable_installments, financial_audit_log, entrega_reconciliacoes;"
+                f"DELETE FROM user_roles; INSERT INTO user_roles VALUES('{FA}','financeiro'),('{FB}','financeiro'),('{CA}','consultor_tecnico');"
+                f"UPDATE profiles SET ativo=true,senha_provisoria=false; INSERT INTO entregas(id,organization_id,cliente_id,status,financial_status,canon) VALUES {rows},"
+                f"('{E(90)}','{OB}','{CLA}','entregue','PENDING_BILLING',100),('{E(91)}',NULL,'{CLA}','entregue','PENDING_BILLING',100);"
+                f"UPDATE entregas SET status='cancelada' WHERE id='{E(30)}'; UPDATE entregas SET status='em_rota' WHERE id='{E(31)}';"
+                f"UPDATE entregas SET financial_status='NOT_BILLABLE' WHERE id='{E(32)}';")
+        reset()
+        nothing = lambda e: f"RESET ROLE; SELECT (SELECT count(*) FROM accounts_receivable WHERE origin_id='{e}')=0 AND (SELECT receivable_id IS NULL FROM entregas WHERE id='{e}') AND (SELECT count(*) FROM financial_audit_log WHERE entity_id='{e}')=0;"
+        # positive + replay
+        ok(bill(FA, E(1)) + "RESET ROLE; SELECT (SELECT count(*) FROM accounts_receivable WHERE origin_id='%s')=1 AND (SELECT financial_status FROM entregas WHERE id='%s')='BILLED' AND (SELECT count(*) FROM financial_audit_log)=1;" % (E(1), E(1)), 'A fatura própria: 1 título, BILLED, 1 auditoria')
+        rid = sql(f"SELECT receivable_id FROM entregas WHERE id='{E(1)}';").stdout.strip()
+        r = sql(bill(FA, E(1))).stdout.strip().splitlines()[-1]
+        assert r == rid, (r, rid); checks.append('replay devolve mesmo id'); print('PASS replay devolve mesmo id')
+        ok(f"SELECT (SELECT count(*) FROM accounts_receivable)=1 AND (SELECT count(*) FROM financial_audit_log)=1;", 'replay sem novo título nem auditoria')
+        # cross tenant: no leak
+        err(bill(FB, E(1)), '42501', 'B não reaproveita/obtém id de entrega faturada de A')
+        err(bill(FB, E(2)), '42501', 'B não fatura entrega de A'); ok(nothing(E(2)), 'B→A sem escrita')
+        err(mark(FB, E(2)), '42501', 'B não marca sem cobrança entrega de A')
+        err(bill(FA, E(91)), '42501', 'entrega sem empresa negada')
+        err(bill(CA, E(2)), '42501', 'consultor sem papel financeiro negado')
+        err("SET ROLE authenticated; RESET test.actor; SELECT public.fn_generate_receivable_from_entrega('%s','{}'::jsonb);" % E(2), '42501', 'sem sessão negado (faturar)')
+        err("SET ROLE authenticated; RESET test.actor; SELECT public.fn_mark_entrega_not_billable('%s','x');" % E(2), '42501', 'sem sessão negado (marcar)')
+        err("SET ROLE anon; SELECT public.fn_generate_receivable_from_entrega('%s','{}'::jsonb);" % E(2), '42501', 'anon sem EXECUTE')
+        sql(f"UPDATE profiles SET ativo=false WHERE user_id='{FA}';")
+        err(bill(FA, E(2)), '42501', 'perfil inativo negado'); sql(f"UPDATE profiles SET ativo=true WHERE user_id='{FA}';")
+        # category / method
+        err(bill(FA, E(3), category_id=DESP), '23514', 'categoria DESPESA recusada')
+        err(bill(FA, E(3), category_id=RECOFF), '23514', 'categoria RECEITA inativa recusada')
+        err(bill(FA, E(3), payment_method_id=...), '23514', 'sem forma de pagamento recusado')
+        err(bill(FA, E(3), payment_method_id=PMOFF), '23514', 'forma de pagamento inativa recusada')
+        ok(nothing(E(3)), 'recusas de categoria/forma sem escrita')
+        # installments
+        err(bill(FA, E(4), installment_count=2, installments=[{'installment_number': 1, 'due_date': '2026-11-27', 'amount': 50}, {'installment_number': 1, 'due_date': '2026-12-27', 'amount': 50}]), '23514', 'parcela repetida recusada')
+        err(bill(FA, E(4), installment_count=2, installments=[{'installment_number': 1, 'due_date': '2026-11-27', 'amount': 50}, {'installment_number': 3, 'due_date': '2026-12-27', 'amount': 50}]), '23514', 'número fora de 1..n recusado')
+        err(bill(FA, E(4), installment_count=1, installments=[{'installment_number': 1, 'amount': 100}]), '23514', 'vencimento nulo recusado')
+        err(bill(FA, E(4), installment_count=1, installments=[{'installment_number': 1, 'due_date': '2026-01-01', 'amount': 100}]), '23514', 'vencimento antes da emissão recusado')
+        err(bill(FA, E(4), installment_count=2, installments=[{'installment_number': 1, 'due_date': '2026-11-27', 'amount': 120}, {'installment_number': 2, 'due_date': '2026-12-27', 'amount': -20}]), '23514', 'parcela negativa recusada')
+        err(bill(FA, E(4), installment_count=1, installments={'x': 1}), '23514', 'parcelas não-array recusadas')
+        err(bill(FA, E(4), total_amount='NaN'), '23514', 'total NaN recusado')
+        err(bill(FA, E(4), first_due_date='2026-01-01'), '23514', 'primeiro vencimento antes da emissão recusado')
+        ok(nothing(E(4)), 'recusas de parcelas sem escrita')
+        ok(bill(FA, E(5), installment_count=2, installments=[{'installment_number': 2, 'due_date': '2026-12-27', 'amount': 50}, {'installment_number': 1, 'due_date': '2026-11-27', 'amount': 50}]) +
+           f"RESET ROLE; SELECT (SELECT count(*) FROM accounts_receivable_installments WHERE receivable_id=(SELECT receivable_id FROM entregas WHERE id='{E(5)}'))=2;", 'parcelas válidas fora de ordem aceitas')
+        # conflicts PT409
+        err(bill(FA, E(30)), 'PT409', 'entrega cancelada → PT409')
+        err(bill(FA, E(31)), 'PT409', 'entrega não entregue → PT409')
+        err(bill(FA, E(32)), 'PT409', 'entrega NOT_BILLABLE → PT409')
+        err(mark(FA, E(1)), 'PT409', 'marcar já faturada → PT409')
+        ok(mark(FA, E(6)) + f"RESET ROLE; SELECT (SELECT financial_status FROM entregas WHERE id='{E(6)}')='NOT_BILLABLE';", 'marcar própria sem cobrança')
+        err(bill(FA, E(6)), 'PT409', 'faturar após marcar → PT409')
+        # atomic rollback: audit failure leaves nothing
+        reset()
+        sql("CREATE FUNCTION boom() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'injected'; END$$; CREATE TRIGGER boom BEFORE INSERT ON financial_audit_log FOR EACH ROW EXECUTE FUNCTION boom();")
+        err(bill(FA, E(7), installment_count=1, installments=[{'installment_number': 1, 'due_date': '2026-11-27', 'amount': 100}]), 'injected', 'falha injetada na auditoria')
+        ok(nothing(E(7)) + "", 'rollback: nenhum título/parcela/estado')
+        ok("SELECT (SELECT count(*) FROM accounts_receivable_installments)=0;", 'rollback: nenhuma parcela')
+        sql("DROP TRIGGER boom ON financial_audit_log;")
+        # concurrency: double billing -> 1 title
+        reset()
+        p1, s1 = session(); s1("BEGIN; " + bill(FA, E(8)))
+        time.sleep(0.3)
+        p2, s2 = session(); s2(bill(FA, E(8)))
+        wait_lock(1)
+        s1("COMMIT;"); p1.stdin.close(); p1.wait(10); p2.stdin.close(); p2.stdin=None; o2 = p2.communicate(timeout=10)[0]
+        ok(f"SELECT (SELECT count(*) FROM accounts_receivable WHERE origin_id='{E(8)}')=1 AND (SELECT count(*) FROM financial_audit_log)=1;", 'duas chamadas simultâneas: 1 título, 1 auditoria')
+        assert sql(f"SELECT receivable_id FROM entregas WHERE id='{E(8)}';").stdout.strip() in o2; checks.append('segunda chamada recebe mesmo id'); print('PASS segunda chamada recebe mesmo id')
+        # revocation committed while caller waits on gate -> denied, no write
+        reset()
+        pr, sr = session(); sr(f"BEGIN; SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; DELETE FROM user_roles WHERE user_id='{FA}';")
+        time.sleep(0.3)
+        pc = subprocess.Popen(base + ['session'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        pc.stdin.write('\\set VERBOSITY verbose\n' + bill(FA, E(9)) + '\n'); pc.stdin.flush()
+        wait_lock(1)
+        sr("COMMIT;"); pr.stdin.close(); pr.wait(10); pc.stdin.close(); pc.stdin=None; _, e9 = pc.communicate(timeout=10)
+        assert '42501' in e9, e9; checks.append('revogação commitada durante espera no gate → 42501'); print('PASS revogação durante espera → 42501')
+        ok(nothing(E(9)), 'revogação: nenhuma escrita')
+        # reverse ordering: billing holds gate, revocation waits, billing commits first -> billed, then revoked
+        reset()
+        pb, sb = session(); sb("BEGIN; " + bill(FA, E(10)))
+        time.sleep(0.3)
+        pv, sv = session(); sv(f"BEGIN; SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; DELETE FROM user_roles WHERE user_id='{FA}'; COMMIT;")
+        wait_lock(1)
+        ok(f"SELECT (SELECT count(*) FROM user_roles WHERE user_id='{FA}')=1;", 'ordem inversa: revogação aguarda o faturamento')
+        sb("COMMIT;"); pb.stdin.close(); pb.wait(10); pv.stdin.close(); pv.wait(10)
+        ok(f"SELECT (SELECT count(*) FROM accounts_receivable WHERE origin_id='{E(10)}')=1 AND (SELECT count(*) FROM user_roles WHERE user_id='{FA}')=0;", 'ordem inversa: faturamento comprometido antes, revogação depois')
+        err(bill(FA, E(11)), '42501', 'após revogação, nova chamada negada')
+        reset()
+        # Explicit foreign/stale linked title rejection on replay and marking.
+        sql(f"INSERT INTO accounts_receivable(organization_id,origin_type,origin_id,customer_id,description,category_id,total_amount,issue_date,first_due_date,installment_count,payment_method_id,created_by) VALUES('{OB}','MANUAL','{E(90)}',NULL,'test','{REC}',100,'2026-10-27','2026-11-27',1,'{PM}','{FB}'); UPDATE entregas SET receivable_id=(SELECT id FROM accounts_receivable LIMIT 1) WHERE id='{E(2)}';")
+        err(bill(FA,E(2)), 'PT409','replay com recebível de B não retorna id')
+        err(mark(FA,E(2)), 'PT409','marcação com recebível de B não modifica estado')
+        reset()
+        sql(f"UPDATE entregas SET cliente_id=gen_random_uuid() WHERE id='{E(2)}';")
+        err(bill(FA,E(2)),'42501','cliente ausente/alheio negado antes de criar título')
+        sql(f"UPDATE entregas SET cliente_id='{CLA}',partner_order_id=gen_random_uuid() WHERE id='{E(2)}';")
+        err(bill(FA,E(2)),'42501','origem B2B não homologada contida')
+        err(mark(FA,E(2)),'42501','marcar origem B2B contida')
+        reset()
+        for role in ['parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor']:
+            sql(f"INSERT INTO user_roles VALUES('{FA}','{role}');")
+            err(bill(FA,E(2)),'42501','papel cumulativo externo contido: '+role)
+            err(mark(FA,E(2)),'42501','marcação cumulativa externa contida: '+role)
+            sql(f"DELETE FROM user_roles WHERE role='{role}';")
+        sql(f"INSERT INTO partner_users VALUES('{FA}');")
+        err(bill(FA,E(2)),'42501','vínculo parceiro impede writer fornecedor')
+        sql('TRUNCATE partner_users;')
+        sql(f"UPDATE profiles SET senha_provisoria=true WHERE user_id='{FA}';")
+        err(bill(FA,E(2)),'42501','primeiro acesso pendente negado')
+        sql(f"UPDATE profiles SET senha_provisoria=false WHERE user_id='{FA}'; INSERT INTO platform_org_admin_invites VALUES('{FA}','processing',NULL);")
+        err(bill(FA,E(2)),'42501','convite processando negado')
+        sql('TRUNCATE platform_org_admin_invites;')
+        err(bill(FA,E(3),total_amount='Infinity'),'23514','Infinity recusado')
+        err(bill(FA,E(3),total_amount='-Infinity'),'23514','-Infinity recusado')
+        err(bill(FA,E(3),installment_count=2,installments=[{'installment_number':1,'due_date':'2026-11-27','amount':60},{'installment_number':2,'due_date':'2026-12-27','amount':40}]),'PT409','agenda customizada divergente não reescreve parcelas')
+        ok(nothing(E(3)), 'agenda customizada rejeitada faz rollback integral')
+        sql(bill(FA,E(4)))
+        err(bill(FA,E(4),payment_method_id=PMOFF),'PT409','replay com método diferente é conflito')
+        ok(f"SELECT count(*)=1 FROM financial_audit_log WHERE entity_id='{E(4)}';",'replay divergente não cria auditoria')
+        sql(mark(FA,E(6)))
+        sql(mark(FA,E(6)))
+        ok(f"SELECT count(*)=1 FROM financial_audit_log WHERE entity_id='{E(6)}';",'mark replay idêntico neutro')
+        err(as_(FA)+f"SELECT fn_mark_entrega_not_billable('{E(6)}','nova intenção');",'PT409','mark motivo divergente preserva original')
+        reset()
+        # Live immutable-installment delete trigger proves historical candidate unsafe.
+        sql(bill(FA,E(1)))
+        err(f"DELETE FROM accounts_receivable_installments;",'23514','guard LIVE de hard-delete impede apagar parcelas')
+
+        (HERE/'proposed-pg-metadata.json').write_text(sql("SELECT jsonb_agg(jsonb_build_object('name',proname,'hash',md5(pg_get_functiondef(oid)),'source_hash',md5(prosrc),'config',proconfig)) FROM pg_proc WHERE proname IN ('fn_generate_receivable_from_entrega','fn_mark_entrega_not_billable');").stdout.strip()+'\n')
+        reset()
+        sql(bill(FA,E(1),installments=[]))
+        sql(bill(FA,E(1),installments=[])); checks.append('replay agenda vazia aceito'); print('PASS replay agenda vazia aceito')
+        err(bill(FA,E(1),installments={}), 'PT409','replay agenda objeto negado')
+        err(bill(FA,E(1),installments=[{'installment_number':1,'due_date':'2026-11-27','amount':100}]*2), 'PT409','replay agenda duplicada negado')
+        sql(f"UPDATE entregas SET canon=0.01 WHERE id='{E(2)}';")
+        err(bill(FA,E(2),total_amount=0.01,installment_count=2),'23514','parcela automática zero nega e rollback')
+        ok(nothing(E(2)), 'parcela zero não cria título')
+        err('BEGIN ISOLATION LEVEL REPEATABLE READ; '+bill(FA,E(3)),'25000','snapshot repetível não suportado negado')
+
+        # lock_timeout configured
+        ok("SELECT bool_and(array_to_string(proconfig,',')='search_path=pg_catalog, public, pg_temp,lock_timeout=3s') FROM pg_proc WHERE proname IN ('fn_generate_receivable_from_entrega','fn_mark_entrega_not_billable');", 'lock_timeout=3s configurado')
+        reset()
+        pg, sg = session(); sg("BEGIN; SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;")
+        time.sleep(0.3)
+        t0 = time.time(); err(bill(FA, E(12)), '55P03', 'gate preso >3s → 55P03 sem escrita'); dt = time.time() - t0
+        assert dt < 6, dt
+        sg("ROLLBACK;"); pg.stdin.close(); pg.wait(10)
+        ok(nothing(E(12)), 'timeout sem escrita')
+    finally:
+        if started: subprocess.run(prefix + ['pg_ctl', '-D', str(tmp / 'd'), 'stop', '-m', 'fast'], capture_output=True)
+    (HERE / 'results.txt').write_text(f'SYNTHETIC disposable PostgreSQL; {len(checks)} checks passed\n' + '\n'.join(checks) + '\n')
+    print(len(checks), 'checks passed')
+
+main()

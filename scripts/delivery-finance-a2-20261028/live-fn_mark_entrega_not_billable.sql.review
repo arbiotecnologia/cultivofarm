@@ -1,0 +1,36 @@
+-- LIVE read-only capture; historical vulnerable body. NEVER APPLY.
+CREATE OR REPLACE FUNCTION public.fn_mark_entrega_not_billable(_entrega_id uuid, _reason text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_entrega public.entregas%ROWTYPE;
+BEGIN
+  IF NOT public.is_financial_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão para marcar entrega como sem cobrança.' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF _reason IS NULL OR length(trim(_reason)) = 0 THEN
+    RAISE EXCEPTION 'Motivo é obrigatório.' USING ERRCODE='check_violation';
+  END IF;
+
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = _entrega_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada.'; END IF;
+  IF v_entrega.receivable_id IS NOT NULL THEN
+    RAISE EXCEPTION 'Entrega já foi faturada.' USING ERRCODE='check_violation';
+  END IF;
+
+  UPDATE public.entregas
+    SET financial_status = 'NOT_BILLABLE',
+        not_billable_reason = _reason
+    WHERE id = _entrega_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)
+  VALUES ('entregas', _entrega_id, 'MARK_NOT_BILLABLE',
+    jsonb_build_object('financial_status', v_entrega.financial_status),
+    jsonb_build_object('financial_status', 'NOT_BILLABLE', 'reason', _reason),
+    v_uid);
+END $function$
+;

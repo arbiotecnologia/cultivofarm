@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## Fase A2 — 28/10/2026: isolamento das duas funções financeiras de entrega
+- [x] Reconfirmar LIVE somente leitura no ref swzpzcwiasxmjutrmvkm, hashes, ACL, guardas e consumidores; comparar candidato anterior.
+- [x] Preparar proposta INATIVA fail-closed, PRE/POST e contenção reversível sem restaurar BOLA; 76 checks PostgreSQL17.9/Auth simulada, sem liberação.
+- [x] Relatório completo scripts/delivery-finance-a2-20261028/README.md com fontes LIVE, diffs, hashes, redução RBAC, parcelas imutáveis, riscos do engine e organização/convites; runtime intocado.
+- [ ] Prova real/implantação dependem do auditor após revisão; nenhum SQL mutante, GRANT, publicação, dados/sessões ou liberação stock/envase/delivery nesta fase. Contabilidade real e SU-518022 adiados.
+
 ## 27/10 15:57 — dois conflitos Cockpit/aplicação (pacote INATIVO)
 - [x] Fontes LIVE capturadas read-only no ref canônico; delta exclusivo de dois RAISE 40001→PT409 em scripts/business-conflicts-cockpit-application-20261027, PRE/POST/rollback condicionado por hashes/OIDs/ACL/config/dependências; legacy_closed intacto.
 - [x] 36/36 checks PostgreSQL17.9 descartável (corpos exatos, Auth/schema sintéticos; conflito lote por injeção local),87/87Vitest em3arquivos; replay/A/B/atomicidade/40001 genuíno. Runtime frontend intacto, apenas4regressões novas; riscos de locks/revogação separados sem homologação real.
