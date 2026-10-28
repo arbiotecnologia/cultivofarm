@@ -975,3 +975,9 @@
 - [ ] Etapa 5 reabertura NO-GO: composição real estoque/ledger/cobrança, matriz B2B e todos writers de revogação pendentes; release.sql.review recusa liberação. Sem instalação/publicação; contabilidade real/SU-518022 pendentes.
 - [x] Estoque/envase 27/10 22:13: pacote INATIVO scripts/stock-envase-recovery-20261027, fontes LIVE/pinos/PRE/POST/contenção,46PG locais com motor/logger/guardas reais e49Vitest; sem aplicação/publicação/runtime/sessões/dados reais.
 - [ ] Estoque/envase NO-GO: transição manual contida, gate SHARE da entrega vs EXCLUSIVE do motor incompatível, batch/split/merge e integração completa/JWT real pendentes; release recusado. Contabilidade/SU-518022 mantidos.
+
+## 28/10 20:24 — P0 contrato principal/juros (somente local)
+- [ ] Capturar somente metadados LIVE canônicos e rastrear geradores, baixa, ledger, triggers, BI e consumidores.
+- [ ] Reproduzir saldo duplicado em PG descartável com corpos reais e documentar limite de integração.
+- [ ] Preparar correção mínima inativa somente se cadeia suficiente; caso contrário NO-GO com elos exatos.
+- [ ] Revisão independente, regressões e atualização aditiva do plano/matriz/relatório, preservando históricos/entrega.
