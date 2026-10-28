@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +69,9 @@ interface Props {
 export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const scope = useStorageAccessScope(`confirm-delivery:${open}:${entrega?.id}`);
+  const dispatchLock = useRef(false);
+  const uncertain = useRef(new Set<string>());
   const nowLocal = () => {
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -101,7 +106,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
     }
   }, [open, entrega?.id]);
 
-  const { data: docsExistentes = [] } = useQuery({
+  const { data: docsExistentes = [] } = useScopedPortalQuery<any[]>({
     queryKey: ["entrega-docs", entrega?.id],
     enabled: !!entrega?.id && open,
     queryFn: async () => {
@@ -146,13 +151,26 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
   };
 
   const confirmar = useMutation({
+    retry: false,
     mutationFn: async () => {
+      const current = scope.capture();
+      const check = () => { if (!current()) throw new Error("Contexto de entrega alterado. Consulte a entrega antes de novo envio."); };
+      check();
+      if (dispatchLock.current || uncertain.current.has(scope.scope)) throw new Error("Confirmação em andamento ou resultado pendente de consulta.");
       if (!user || !entrega) throw new Error("Sessão inválida");
+      if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(entrega.id)) throw new Error("Entrega inválida");
       const err = validateBeforeSubmit();
       if (err) throw new Error(err);
+      dispatchLock.current = true;
+      const id = entrega.id;
+      const submittedMode = mode as ConfirmMode;
+      let dispatched = false;
+      try {
 
       // 1) Upload dos arquivos pendentes
       for (const pf of pending) {
+        check();
+        dispatched = true;
         const rawExt = pf.file.name.split(".").pop()?.toLowerCase();
         const ext = rawExt && /^[a-z0-9]{1,10}$/.test(rawExt) ? rawExt : "bin";
         const path = `entregas/${entrega.id}/comprovantes/${crypto.randomUUID()}.${ext}`;
@@ -160,6 +178,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
           .from("entrega-documentos")
           .upload(path, pf.file, { contentType: pf.file.type || undefined, upsert: false });
         if (upErr) throw new Error(`Falha ao enviar ${pf.file.name}: ${upErr.message}`);
+        check();
 
         const { error: insErr } = await supabase.from("entrega_documentos" as any).insert({
           entrega_id: entrega.id,
@@ -171,6 +190,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
           uploaded_by: user.id,
         });
         if (insErr) throw insErr;
+        check();
       }
 
       // 2) Confirmação transacional pelo motor único (estoque, esteira e finalização)
@@ -179,6 +199,8 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
           ? `${MOTIVOS_NAO_FATURAVEL.find((m) => m.value === motivoNB)?.label}: ${motivoNBTexto.trim()}`
           : null;
 
+      check();
+      dispatched = true;
       const { data, error: rpcErr } = await supabase.rpc("rpc_entrega_confirmar_v1" as any, {
         p_entrega_id: entrega.id,
         p_recebedor: {
@@ -193,24 +215,29 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
           motivo_nao_faturavel: reason,
         },
       });
+      check();
       if (rpcErr) throw new Error(traduzErroEntrega(rpcErr.message));
       const res = data as any;
-      if (res && res.success === false) throw new Error(traduzErroEntrega(res.message || "Falha ao confirmar"));
-      return res;
+      if (!res || typeof res !== "object" || Array.isArray(res) || res.success !== true || res.ok === false || res.entrega_id !== id || typeof res.replay !== "boolean") throw new Error("Resposta não confirmou a entrega. Consulte o estado antes de novo envio.");
+      return { current, id, submittedMode };
+      } catch (error) {
+        if (dispatched) uncertain.current.add(scope.scope);
+        throw error;
+      } finally { dispatchLock.current = false; }
 
     },
-    onSuccess: () => {
+    onSuccess: ({ current, id, submittedMode }) => {
+      if (!current()) return;
       toast({ title: "Entrega confirmada com sucesso" });
       qc.invalidateQueries({ queryKey: ["entregas"] });
       qc.invalidateQueries({ queryKey: ["entrega-docs", entrega?.id] });
       qc.invalidateQueries({ queryKey: ["entregas-nao-faturadas"] });
-      const m = mode as ConfirmMode;
-      const id = entrega?.id;
       onClose();
-      if (m && id) onConfirmed?.(m, id);
+      onConfirmed?.(submittedMode, id);
     },
-    onError: (e: any) =>
-      toast({ title: "Não foi possível confirmar", description: e.message, variant: "destructive" }),
+    onError: (e: any) => {
+      if (scope.ready) toast({ title: "Não foi possível confirmar", description: e.message, variant: "destructive" });
+    },
   });
 
   if (!entrega) return null;
