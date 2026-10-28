@@ -1,0 +1,23 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "date": "2026-10-28",
+  "manifesto_sha256": "8fa22821ede5dce6a6ba523e5958a893bb1859153a77b7247051738706139efa",
+  "stubs": [
+    "Auth/roles",
+    "C2 guards",
+    "plan selectable",
+    "price cart",
+    "cart hash",
+    "credit",
+    "h15",
+    "financial staff"
+  ],
+  "absent": [
+    "RLS/JWT",
+    "snapshot/tenant validators",
+    "full triggers",
+    "payments",
+    "audit integrity"
+  ],
+  "has_failures": true
+}

@@ -5,7 +5,7 @@
     "status": "PASS",
     "expectativa": "806e5d8789b08cd6790a10feaf95f26d",
     "observado": "806e5d8789b08cd6790a10feaf95f26d",
-    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "nivel": "CONSISTENCIA_LOCAL_HASH_CAPTURA_SELECT",
     "severidade": "P1"
   },
   {
@@ -14,7 +14,7 @@
     "status": "PASS",
     "expectativa": "f632f15c9f46cb9889082fc533a27ea1",
     "observado": "f632f15c9f46cb9889082fc533a27ea1",
-    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "nivel": "CONSISTENCIA_LOCAL_HASH_CAPTURA_SELECT",
     "severidade": "P1"
   },
   {
@@ -23,7 +23,7 @@
     "status": "PASS",
     "expectativa": "37d4f45e388ed7b38f6f397b672629ee",
     "observado": "37d4f45e388ed7b38f6f397b672629ee",
-    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "nivel": "CONSISTENCIA_LOCAL_HASH_CAPTURA_SELECT",
     "severidade": "P1"
   },
   {
@@ -32,7 +32,7 @@
     "status": "PASS",
     "expectativa": "0778b876b300e08d53f1cf7790394fc5",
     "observado": "0778b876b300e08d53f1cf7790394fc5",
-    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "nivel": "CONSISTENCIA_LOCAL_HASH_CAPTURA_SELECT",
     "severidade": "P1"
   },
   {
