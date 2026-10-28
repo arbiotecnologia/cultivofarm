@@ -66,7 +66,7 @@ change("-- replay: only inside the caller tenant (row already scoped)\n  IF v_en
       OR NULLIF(_payload->>'cost_center_id','')::uuid IS DISTINCT FROM v_ar.cost_center_id
       OR COALESCE((_payload->>'fiscal_invoice_required')::boolean,false) IS DISTINCT FROM v_ar.fiscal_invoice_required
       OR (_payload ? 'installments' AND jsonb_typeof(_payload->'installments') NOT IN ('array','null'))
-      OR CASE WHEN jsonb_typeof(_payload->'installments')='array' AND jsonb_array_length(_payload->'installments')>0 THEN
+      OR (CASE WHEN jsonb_typeof(_payload->'installments')='array' AND jsonb_array_length(_payload->'installments')>0 THEN
         jsonb_array_length(_payload->'installments')<>v_ar.installment_count
         OR (SELECT count(DISTINCT (x->>'installment_number')::int) FROM jsonb_array_elements(_payload->'installments') x)<>v_ar.installment_count
         OR EXISTS(SELECT 1 FROM jsonb_array_elements(_payload->'installments') x WHERE (x->>'installment_number')::int NOT BETWEEN 1 AND v_ar.installment_count)
@@ -75,7 +75,7 @@ change("-- replay: only inside the caller tenant (row already scoped)\n  IF v_en
             WHERE receivable_id=v_ar.id AND organization_id=v_org) i
           ON i.installment_number=(x->>'installment_number')::int
           WHERE i.installment_number IS NULL OR x IS NULL OR i.due_date IS DISTINCT FROM (x->>'due_date')::date
-            OR i.original_amount IS DISTINCT FROM (x->>'amount')::numeric) ELSE false END THEN
+            OR i.original_amount IS DISTINCT FROM (x->>'amount')::numeric) ELSE false END) THEN
       RAISE EXCEPTION 'DELIVERY_REPLAY_INTENT_CONFLICT' USING ERRCODE='PT409';
     END IF;
     RETURN v_ar.id;

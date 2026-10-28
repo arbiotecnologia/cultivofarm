@@ -1,4 +1,4 @@
-SYNTHETIC disposable PostgreSQL; 70 checks passed
+SYNTHETIC disposable PostgreSQL; 76 checks passed
 A fatura própria: 1 título, BILLED, 1 auditoria
 replay devolve mesmo id
 replay sem novo título nem auditoria
@@ -66,6 +66,12 @@ replay divergente não cria auditoria
 mark replay idêntico neutro
 mark motivo divergente preserva original
 guard LIVE de hard-delete impede apagar parcelas
+replay agenda vazia aceito
+replay agenda objeto negado
+replay agenda duplicada negado
+parcela automática zero nega e rollback
+parcela zero não cria título
+snapshot repetível não suportado negado
 lock_timeout=3s configurado
 gate preso >3s → 55P03 sem escrita
 timeout sem escrita
