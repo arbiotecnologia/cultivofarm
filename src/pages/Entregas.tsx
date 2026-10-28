@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -110,6 +110,7 @@ export default function Entregas() {
     } catch (error) {
       if (dispatched) unresolved.current.add(key);
       if (captured()) {
+        toast.error(error instanceof Error ? error.message : "Operação de entrega não confirmada.");
         setOperationNotice(dispatched ? "Operação não concluída ou resposta incerta. Pode haver etapas já registradas. Consulte as entregas; nenhum estorno automático foi realizado e o reenvio permanece bloqueado nesta tela." : "Não foi possível iniciar a operação de entrega.");
       }
       throw error;
@@ -144,6 +145,11 @@ export default function Entregas() {
   const [selectedEntrega, setSelectedEntrega] = useState<any>(null);
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [motivoCancel, setMotivoCancel] = useState("");
+  useEffect(() => {
+    setCancelTarget(null); setSelectedEntrega(null); setComprovanteEntrega(null);
+    setConfirmEntregaOpen(false); setFinancialConfirmOpen(false); setPreviewOpen(false);
+    setPreviewPayload(null); setOperationNotice("");
+  }, [deliveryScope.scope]);
   const { criarEntrega, reservarEstoque: hookReservarEstoque, cancelarReservaEstoque } = useEsteiraLaboratorio();
   const [form, setForm] = useState({
     estoque_produto_id: "",
@@ -656,9 +662,7 @@ export default function Entregas() {
       toast.success(`${total} entrega(s) registradas em grupo`);
       setOpen(false);
     },
-    onError: (e: Error) => {
-      if (deliveryScope.ready) toast.error(`Não foi possível registrar a entrega: ${e.message}`);
-    },
+
   });
 
   const updateStatus = useMutation({

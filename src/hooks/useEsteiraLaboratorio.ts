@@ -437,6 +437,7 @@ export function useEsteiraLaboratorio() {
     options: { current?: () => boolean; deferEffects?: boolean } = {},
   ) => {
     const current = options.current ?? (() => true);
+    if (!current()) return false;
     const qtyToReserve = Number(reservaData.quantidade_reservada);
     if (!qtyToReserve || qtyToReserve <= 0) {
       toast.error("Informe uma quantidade válida.");
@@ -477,6 +478,7 @@ export function useEsteiraLaboratorio() {
     }
 
     try {
+      if (!current()) return false;
       const isB2B = origem === "b2b";
       const { error } = await (supabase as any).rpc("reservar_estoque_item", {
         p_item_id: item.id,
@@ -494,8 +496,6 @@ export function useEsteiraLaboratorio() {
         if (!options.deferEffects) { toast.error(error.message || "Erro ao reservar estoque"); invalidateAll(); }
         return false;
       }
-      if (options.deferEffects) return true;
-
       await registrarAuditoria({
         origem,
         osId,
@@ -506,6 +506,8 @@ export function useEsteiraLaboratorio() {
           : `Reserva realizada para OS ${osId}`,
       });
 
+      if (!current()) return false;
+      if (options.deferEffects) return true;
       const titular = reservaData?.titular_nome || reservaData?.cliente_nome;
       toast.success(titular ? `Estoque reservado para ${titular}` : "Estoque reservado com sucesso");
       invalidateAll();
@@ -644,6 +646,7 @@ export function useEsteiraLaboratorio() {
    */
   const criarEntrega = async (entregaData: any, osId: string, origem: string, options: { current?: () => boolean; deferEffects?: boolean } = {}) => {
     const current = options.current ?? (() => true);
+    if (!current()) throw new Error("Contexto de entrega indisponível.");
     if (!entregaData?.estoque_produto_id) {
       toast.error("Não é possível criar entrega sem estoque disponível.");
       return false;

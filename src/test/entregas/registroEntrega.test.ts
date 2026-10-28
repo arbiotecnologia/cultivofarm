@@ -79,13 +79,13 @@ describe("whitelist de p_dados da entrega", () => {
 
 describe("resposta da RPC de criação de entrega", () => {
   it("aceita resposta completa", () => {
-    const r = validarRespostaCriarEntrega({ success: true, entrega_id: "e-1", message: "ok" });
-    expect(r.entrega_id).toBe("e-1");
+    const r = validarRespostaCriarEntrega({ success: true, entrega_id: "22222222-2222-4222-8222-222222222222", message: "ok" });
+    expect(r.entrega_id).toBe("22222222-2222-4222-8222-222222222222");
     expect(r.replay).toBe(false);
   });
 
   it("reconhece replay", () => {
-    const r = validarRespostaCriarEntrega({ success: true, entrega_id: "e-1", replay: true });
+    const r = validarRespostaCriarEntrega({ success: true, entrega_id: "22222222-2222-4222-8222-222222222222", replay: true });
     expect(r.replay).toBe(true);
   });
 
@@ -96,7 +96,7 @@ describe("resposta da RPC de criação de entrega", () => {
   });
 
   it("rejeita resposta sem success", () => {
-    expect(() => validarRespostaCriarEntrega({ entrega_id: "e-1" })).toThrow();
+    expect(() => validarRespostaCriarEntrega({ entrega_id: "22222222-2222-4222-8222-222222222222" })).toThrow();
     expect(() => validarRespostaCriarEntrega(null)).toThrow();
   });
 });
