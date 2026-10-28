@@ -11,7 +11,24 @@ const base: PaymentPlanPayload = { name: 'DRAFT LOCAL', code: 'REF', plan_type: 
   max_days: 0, months_count: 0, installment_count: 1, discount_percent: 0,
   monthly_interest_percent: 0, interest_type: 'compound', pricing_mode: 'discount_from_base',
   requires_credit_approval: true, requires_guarantee: false, requires_financial_approval: true };
-describe('AR Bio × FSF Agro — referência não aplicada, consumidores existentes', () => {
+describe('AR Bio × FSF Agro — política superveniente não aplicada, consumidores existentes', () => {
+  it.each(draft.policies as { key: string; discount_percent: string }[])('40% fixo em $key', policy => {
+    expect(policy.discount_percent).toBe('40');
+  });
+  it.each([
+    ['29d', '0'], ['30d', '0'], ['31d', '1.8'], ['6m_exact', '1.8'],
+    ['6m_plus_1d', '2'], ['12m_exact', '2'], ['above_12m', null],
+  ])('fronteira normativa %s sem homologar calendário ou valor', (key, rate) => {
+    expect(draft.boundary_fixtures.find((f: { key: string }) => f.key === key)?.rate).toBe(rate);
+  });
+  it('mantém incidência indefinida e nenhuma política excepcional aprovada', () => {
+    expect(draft.formula).toBeNull();
+    expect(draft.runtime_enabled).toBe(false);
+    expect(draft.undefined.interest_start).toBeNull();
+    expect(draft.undefined.band_incidence).toBeNull();
+    expect(draft.owner_override.exceptional_policy_approved).toBe(false);
+    expect(draft.owner_override.beyond_12_months).toBe('DENY_UNLESS_SEPARATE_APPROVED_EXCEPTIONAL_POLICY');
+  });
   it.each(draft.reference_vectors as { key: string; discount: string; rate: string; months: number; table: string; expected: string }[])(
     '$key compara preview Number ao vetor previamente conferido em Decimal no PG local', vector => {
       const value = preview({ ...base, discount_percent: Number(vector.discount),
