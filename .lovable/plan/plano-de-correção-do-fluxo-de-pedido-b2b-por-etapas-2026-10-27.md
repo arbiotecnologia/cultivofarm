@@ -99,3 +99,13 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - Ordem de dependências: exposição/pinos → consumidores independentes → contratos criação → composição A2/motor/locks → envase/B2B → instalação independente → migração/publicação → DML/anon → homologação completa. Inventários/testes independentes das etapas 3/4 podem avançar sem instalação.
 - Protocolo: gate canônico antes de esperas, idempotência/advisory → linha → autoridade fresca após **cada** espera → CAS; verificar toda cadeia de locks filhos, não apenas wrapper.
 - Validação desta reconciliação: **85/85 Vitest offline** em quatro arquivos existentes e **22/22 hashes A2 OK**; 76 A2 permanecem resultado histórico sintético, não reexecutado/JWT real. Relatório discrimina warnings e limites.
+
+
+## Aditivo prioritário 28/10 20:24 — contrato canônico do saldo (Etapas6/9)
+
+- [x] Captura LIVE somente metadados no refcanônico:93corpos/8tabelas/33triggers/40policies/38índices; nenhuma linha de usuário/título real. SHA2565291043aa23869274f31f9d24390d7525f1472001798186b990f68b6ad9576bb.
+- [x] Integração PG descartável18corpos distintos:80PASS/14FAIL/8BLOCKED/1NOT RUN; baseline37PASS/10FAIL, experimento43PASS/4FAIL; Auth/tenant/RLS parcial não homologam produção. Vitest222/222 em12arquivos, sem repetir testes da taxa DRAFT nem somar históricos.
+- [x] Matriz suplementar103casos em `docs/auditorias/evidencias-saldo-canonico-20261028/matriz.csv`; original9.180cenários reais intactos e0PASSJWT. Relatório `docs/auditorias/saldo-canonico-recebiveis-20261028.md`.
+- [x] NO-GO documentado: original contém total financiado, juros operacionais passam a somas de eventos; conversão para principal perde financiamento. Experimento zero juros iniciais não supera UPDATE do writeralternativo. Runtime/SQLreview anteriores/entrega/históricos intactos; nenhuma candidata instalável emitida.
+- [ ] P0: reconciliar cadeia B2B INSERT+UPDATE integral e remediação por proveniência; P0 adicional cancelamento sem tenant no corpo (JWT não executado); P1 definições BI/aging/crédito e rateio real centavos pendentes.
+- [ ] Gates: fechamento transitivo helpers/FKs/RLS/tenant/SaaS/risco/fiscal, PRE/POST hash/ACL/policy/trigger+índices agregados e rollbackdeny-only somente após contrato seguro; revisão independente→instalação autorizada→JWT/browser/locks/concorrência/contabilidade. Calendário fracionário/parcelamento/billing seguem indefinidos; produçãoOFF.

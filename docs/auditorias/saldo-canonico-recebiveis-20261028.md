@@ -30,7 +30,7 @@ SHA256: `5291043aa23869274f31f9d24390d7525f1472001798186b990f68b6ad9576bb`.
 | fn_fin_aging(text) | 495aa7b0ff5bf32f362b763a2a3f0f07 |
 | fn_financial_inconsistencies() | 2c75b1da47c9bdab169d28ec04eb0a12 |
 
-Demais hashes/ACL/corpos no manifesto; 18 corpos carregados no ensaio tiveram MD5 normalizado pelo PostgreSQL conferido contra a captura. Hash textual não é homologação funcional ou autorização.
+Demais hashes/ACL/corpos no manifesto; 18 corpos carregados no ensaio tiveram MD5 normalizado pelo PostgreSQL conferido contra a captura. Hash textual não é homologação funcional ou autorização. Gerador experimental efetivo MD5 `2abb7f0efcde19a629b7c346be4121ff`; separado dos hashes capturados por modo no JSON. Baseline e experimento usam schemas recém-criados, sem herdar dados.
 
 ## Semântica identificada e menor contrato proposto
 
@@ -56,20 +56,20 @@ Runner novo **no pacote de parcelas existente**, usando helper `scripts/contract
 
 | Grupo | PASS | FAIL | BLOCKED | NOT RUN |
 |---|---:|---:|---:|---:|
-| Baseline capturada em schema parcial | 36 | 9 | 0 | 0 |
-| Experimento não instalável | 42 | 3 | 0 | 0 |
+| Baseline capturada em schema parcial | 37 | 10 | 0 | 0 |
+| Experimento não instalável | 43 | 4 | 0 | 0 |
 | Gates não certificados | 0 | 0 | 8 | 1 |
-| **Total PG** | **78** | **12** | **8** | **1** |
+| **Total PG** | **80** | **14** | **8** | **1** |
 
 **Vitest: 222/222, 12 arquivos**, cinco novos testes de caracterização; regressões de baixa/estorno, contas, caixa/DRE, financeiro da entrega e consumidor real da entrega. Não somar com históricos sobrepostos. Teste que espera 10.600 é caracterização do defeito, NÃO PASS do requisito saldo correto; matriz PG registra FAIL do requisito.
 
-Cenários: baixa parcial/integral, juros monetários/mora/multa/desconto, replay por mesma chave com ACK descartado pelo chamador, conflito fingerprint, revogação simulada antes da chamada, tenant sintético estrangeiro, recibo/replay/cancelamento, estorno/replay, soma de eventos e imutabilidade título/parcela/pagamento. Não houve simulação de timeout de rede, cliques concorrentes em duas sessões nem revogação durante espera. Estes gates permanecem não certificados.
+Cenários: duas baixas parciais/integral, juros monetários/mora/multa/desconto, replay por mesma chave com ACK descartado pelo chamador, conflito fingerprint, revogação simulada antes da chamada, tenant sintético estrangeiro, recibo/replay/cancelamento, estorno parcial/replay, soma de eventos e imutabilidade título/parcela/pagamento. Não houve simulação de timeout de rede, cliques concorrentes em duas sessões nem revogação durante espera. Estes gates permanecem não certificados.
 
 Fixtures de totais **já definidos**, não nova prova de taxa: tabela10.000, desconto40%, 0m/até30d=6.000; duração numérica1m explicitamente>30d=6.108;6m=6.677,87;8m=7.029,96;12m=7.609,45. Quantidade de parcelas igual a meses e intervalos+30d neste harness são **fixtures mecânicas**, não política de parcelamento/calendário aprovada. Última parcela absorve resíduo centesimal. Principal/juros do schedule sintético não homologam o rateio real antigo.
 
-18 corpos reais: gerador, recálculo, fingerprint/normalização, RPC baixa, estorno, snapshots, append-only, auditoria, metadados/aliases e emissão/cancelamento de recibo, cancelamentos e cashflow/aging. Tipos/defaults/nullability/checks/unique índices relevantes copiados; **FKs externos, RLS, guards de tenant/SaaS/readiness, triggers de risco/B2B/fiscal e creator de pedido não carregados**. Roles/h15/Auth sintéticos. Matriz identifica exclusões por trigger. “Ledger” neste ensaio é **receivable_payments**, não razão contábil.
+18 corpos reais distintos (recarregados para cada modo): gerador, recálculo, fingerprint/normalização, RPC baixa, estorno, snapshots, append-only, auditoria, metadados/aliases e emissão/cancelamento de recibo, cancelamentos e cashflow/aging. Tipos/defaults/nullability/checks/unique índices relevantes copiados; **FKs externos, RLS, guards de tenant/SaaS/readiness, triggers de risco/B2B/fiscal e creator de pedido não carregados**. Roles/h15/Auth sintéticos. Matriz identifica exclusões por trigger. “Ledger” neste ensaio é **receivable_payments**, não razão contábil.
 
-Execução termina com zero se concluiu o diagnóstico, mesmo com FAIL: ler counts/matriz, nunca usar exit code como aprovação. Erros de infraestrutura/hash interrompem a execução.
+Execução termina com zero se concluiu o diagnóstico, mesmo com FAIL: ler counts/matriz e `has_failures=true`/`operational_go=false`, nunca usar exit code como aprovação. Erros de infraestrutura/hash interrompem a execução.
 
 ## Prioridades e impacto
 
@@ -95,3 +95,6 @@ Execução termina com zero se concluiu o diagnóstico, mesmo com FAIL: ler coun
 - Atualizações aditivas deste relatório, bateria original, plano original, roadmap e instruções raiz/pacote.
 
 Reprodução: `python3 scripts/financial-installments-initial-20261024/test-receivable-semantics.py`; comando Vitest completo no log. Nenhum SQL mutante LIVE, migration/GRANT/deploy/publicação, usuário/dado produtivo, cobrança/NF/mensagem; contratos históricos, fontes inativas anteriores e runtime preservados.
+## Revisão independente e validação final
+
+Revisão read-only inspecionou os93corpos,33triggers,40policies e38índices e confirmou MD5 textual; recomendou NO-GO. Corrigidos no harness: exemplo1m, schemas independentes, hash experimental separado, quitação com centavos independentes, duas baixas, comparação por parcela antes do estorno, recusa+atomicidade do cancelamento e sinalização explícita de FAIL. Demais cenários multissessão/cadeia completa ficam BLOCKED, não foram convertidos em PASS. Igualdade BI é teste de hipótese de saldo exigível, não declaração de que competência, caixa e exposição devem sempre ser iguais: após parcial7.550 operacional/7.250 aging/7.300 exposição pela expressão original−recebido são métricas divergentes a contratar.

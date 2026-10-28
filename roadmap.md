@@ -977,7 +977,8 @@
 - [ ] Estoque/envase NO-GO: transição manual contida, gate SHARE da entrega vs EXCLUSIVE do motor incompatível, batch/split/merge e integração completa/JWT real pendentes; release recusado. Contabilidade/SU-518022 mantidos.
 
 ## 28/10 20:24 — P0 contrato principal/juros (somente local)
-- [ ] Capturar somente metadados LIVE canônicos e rastrear geradores, baixa, ledger, triggers, BI e consumidores.
-- [ ] Reproduzir saldo duplicado em PG descartável com corpos reais e documentar limite de integração.
-- [ ] Preparar correção mínima inativa somente se cadeia suficiente; caso contrário NO-GO com elos exatos.
-- [ ] Revisão independente, regressões e atualização aditiva do plano/matriz/relatório, preservando históricos/entrega.
+- [x] Captura canônica metadata-only93corpos/8tabelas/38índices e rastreio; fechamento transitivo não certificado.
+- [x] PG80PASS/14FAIL/8BLOCKED/1NOT RUN,18corpos distintos; duplicação/baixa/recibo/estorno/snapshot e limites documentados.
+- [x] NO-GO: writeralternativo recompõe juros, BI divergente e cancelamento sem tenant; nenhuma candidata/runtime/histórico alterado.
+- [x] Revisão independente e correções do harness;222Vitest/12arquivos; plano e matriz103casos suplementares preservam entrega e históricos.
+- [ ] Futuro pacote seguro/instalação/JWT: bloqueados por cadeia B2B e contratos BI/proveniência; calendário/parcelamento/billing e contabilidade pendentes.
