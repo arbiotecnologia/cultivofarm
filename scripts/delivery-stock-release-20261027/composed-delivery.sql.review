@@ -1,3 +1,6 @@
+BEGIN;
+DO $$ BEGIN RAISE EXCEPTION 'DELIVERY_FRAGMENT_NOT_INSTALLABLE' USING ERRCODE='42501'; END $$;
+-- DISPOSABLE_TEST_FRAGMENT_BEGIN
 -- INACTIVE HARDENING ONLY. NO CLIENT GRANTS. NOT A RELEASE MIGRATION.
 CREATE OR REPLACE FUNCTION platform_private.delivery_recovery_scope_v1(p_os uuid,p_origin text,p_delivery uuid,p_action text)
 RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO '' AS $scope$
@@ -519,3 +522,6 @@ PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'canc
   );
 END;
 $function$;
+
+-- DISPOSABLE_TEST_FRAGMENT_END
+ROLLBACK;
