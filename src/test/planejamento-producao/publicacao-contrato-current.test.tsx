@@ -19,7 +19,7 @@ function mount() {
 }
 
 describe("Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL", () => {
-  beforeEach(() => transport.rpc.mockReset());
+  beforeEach(() => { transport.rpc.mockReset(); });
   it("envia somente planejamento/chave e invalida os consumidores após ACK", async () => {
     transport.rpc.mockResolvedValue({ data: { ok: true, planning_id: planning, os_created: 2, replay: true }, error: null });
     const h = mount();
