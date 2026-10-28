@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## Bateria financeira B2B — somente offline, 28/10/2026
+- [ ] Identificar fórmulas/campos/dias/juros/desconto instalados e calcular expectativas Decimal para base R$10.000.
+- [ ] Executar fixtures locais e PostgreSQL descartável nos contratos existentes; registrar limites sem simular PASS.
+- [ ] Revisar independentemente, atualizar plano original/matriz/relatório e prioridades P0/P1, sem tocar consumidor Entregas.
+- [ ] Homologação real permanece bloqueada por contratos financeiros/operacionais e autorização específica; sem LIVE mutante, pagamentos/fiscal, fixtures produtivas ou publicação.
+
 ## Consumidor REAL de entrega — correção incremental 28/10/2026
 - [x] Reproduzir dupla ação e ACK negativo na página Entregas e dependências reais, sem confundir publicação de planejamento.
 - [x] Corrigir trava/fences/ACK/parcial/cancelamento sem ativação; testes QueryClient/Auth simulados e revisão independente.
