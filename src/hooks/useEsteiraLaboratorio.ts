@@ -434,7 +434,9 @@ export function useEsteiraLaboratorio() {
     osId: string,
     origem: string,
     overrideOrigem: boolean = false,
+    options: { current?: () => boolean; deferEffects?: boolean } = {},
   ) => {
+    const current = options.current ?? (() => true);
     const qtyToReserve = Number(reservaData.quantidade_reservada);
     if (!qtyToReserve || qtyToReserve <= 0) {
       toast.error("Informe uma quantidade válida.");
@@ -487,11 +489,12 @@ export function useEsteiraLaboratorio() {
         p_observacao: reservaData.observacao ?? null,
       });
 
+      if (!current()) return false;
       if (error) {
-        toast.error(error.message || "Erro ao reservar estoque");
-        invalidateAll();
+        if (!options.deferEffects) { toast.error(error.message || "Erro ao reservar estoque"); invalidateAll(); }
         return false;
       }
+      if (options.deferEffects) return true;
 
       await registrarAuditoria({
         origem,
@@ -639,7 +642,8 @@ export function useEsteiraLaboratorio() {
    * idempotente por OS + item de estoque e deixa a entrega em "separado".
    * A OS só chega a "entregue" na confirmação.
    */
-  const criarEntrega = async (entregaData: any, osId: string, origem: string) => {
+  const criarEntrega = async (entregaData: any, osId: string, origem: string, options: { current?: () => boolean; deferEffects?: boolean } = {}) => {
+    const current = options.current ?? (() => true);
     if (!entregaData?.estoque_produto_id) {
       toast.error("Não é possível criar entrega sem estoque disponível.");
       return false;
@@ -655,9 +659,11 @@ export function useEsteiraLaboratorio() {
         p_dados: montarDadosEntrega(entregaData),
       });
 
+      if (!current()) throw new Error("Contexto alterado; resposta da entrega descartada.");
       if (error) throw new Error(traduzErroCockpit(error.message));
 
       const resultado = validarRespostaCriarEntrega(data);
+      if (options.deferEffects) return { id: resultado.entrega_id };
 
       if (resultado.replay) {
         toast.info(resultado.message || "Entrega já registrada para este item.");
