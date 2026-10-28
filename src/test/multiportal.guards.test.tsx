@@ -187,6 +187,7 @@ describe("AppPortalGuard", () => {
     authState.roles = ["cliente_produtor"];
     authState.primaryRole = "cliente_produtor";
     contextsState.data!.has_technical_access = false;
+    if (contextsState.data) contextsState.data.available_contexts = ["producer"];
     renderAppGuard();
     expect(screen.getByText("APP_OK")).toBeInTheDocument();
   });
@@ -220,6 +221,7 @@ describe("AppPortalGuard", () => {
     const { rerender } = renderAppGuard();
     contextsState.isLoading = false;
     authState.roles = ["cliente_produtor"];
+    if (contextsState.data) contextsState.data.available_contexts = ["producer"];
     rerender(
       <MemoryRouter initialEntries={["/app"]}>
         <Routes>

@@ -91,4 +91,27 @@ describe("Publicação existente — contrato e lacunas, transporte simulado, se
     expect(transport.rpc).toHaveBeenCalledTimes(1); expect(h.invalidation).not.toHaveBeenCalled();
     h.unmount(); h.qc.clear();
   });
+  it("libera só a própria trava depois de erro para retentativa explícita", async () => {
+    transport.rpc.mockResolvedValueOnce({ data: null, error: { code: "PT409", message: "conflito" } })
+      .mockResolvedValueOnce({ data: { ok: true, planning_id: planning, os_created: 1 }, error: null });
+    const h = mount();
+    await act(async () => { await expect(h.result.current.mutateAsync(vars)).rejects.toThrow(); });
+    expect(h.invalidation).not.toHaveBeenCalled();
+    await act(async () => { await h.result.current.mutateAsync(vars); });
+    expect(transport.rpc).toHaveBeenCalledTimes(2); expect(h.invalidation).toHaveBeenCalledTimes(3);
+    h.unmount(); h.qc.clear();
+  });
+  it("offline/ACK perdido não inicia novo envio automaticamente", async () => {
+    transport.rpc.mockRejectedValue(new TypeError("Failed to fetch"));
+    const h = mount();
+    await act(async () => { await expect(h.result.current.mutateAsync(vars)).rejects.toThrow(); });
+    expect(transport.rpc).toHaveBeenCalledTimes(1); expect(h.invalidation).not.toHaveBeenCalled();
+    h.unmount(); h.qc.clear();
+  });
+  it("produtor sem contexto canônico não ganha acesso só pelo papel", async () => {
+    transport.auth.profile.ativo = false;
+    const h = mount();
+    await act(async () => { await expect(h.result.current.mutateAsync(vars)).rejects.toThrow(); });
+    expect(transport.rpc).not.toHaveBeenCalled(); h.unmount(); h.qc.clear();
+  });
 });
