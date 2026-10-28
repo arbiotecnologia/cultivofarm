@@ -89,7 +89,7 @@ describe('Página Entregas real / hook real / QueryClient real; Auth e transport
    const p = payload(); Object.assign(p.itens[0].item, { reservado_para_os_id: null, status: 'disponivel' });
    t.from.mockImplementation(table => table === 'ordens_servico' ? { ...chain(table), then: (yes: any) => Promise.resolve({ data: [{ id: ids[0], cliente_id: ids[3] }], error: null }).then(yes) } : chain(table));
    t.rpc.mockResolvedValue({ data: { ok: false }, error: null }); const h = mount();
-   await act(async () => { await Promise.resolve(); });
+   await waitFor(() => expect(h.qc.getQueryCache().findAll({ queryKey: ['todas-os-disponiveis'] })[0]?.state.status).toBe('success'));
    await act(async () => { await expect(t.submit(p)).rejects.toThrow(); });
    expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.rpc.mock.calls[0][0]).toBe('reservar_estoque_item'); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
  });
