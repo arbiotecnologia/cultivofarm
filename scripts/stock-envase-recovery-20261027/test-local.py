@@ -185,6 +185,22 @@ GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   ok(actor()+f"SELECT ({batch[7:-1]}->>'replay')::boolean",'batch same payload replay')
   ok('SELECT count(*)=1 FROM platform_private.stock_batch_requests','batch one immutable receipt')
   err(actor()+batch.replace('quantidade":2','quantidade":1'),'23505','batch changed quantity same key rejects')
+  reset();sql(f"UPDATE lotes SET volume_produzido=10000 WHERE id='{L}';")
+  sql(actor()+multi.replace('item-n-envase','batch-two-setup'))
+  ids=sql('SELECT id FROM estoque_produto ORDER BY id').stdout.strip().splitlines()
+  assert len(ids)==2
+  for item in ids:sql(actor()+f"SELECT rpc_cockpit_cancelar_reserva_v1('{item}','{O}','manual','prepare batch two');")
+  baseline=sql('SELECT count(*) FROM estoque_movimentacoes').stdout.strip()
+  sql("CREATE FUNCTION fail_batch_n() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.acao='reserva' AND EXISTS(SELECT 1 FROM estoque_movimentacoes WHERE acao='reserva') THEN RAISE EXCEPTION 'batch item N'; END IF; RETURN NEW; END$$; CREATE TRIGGER zz_batch_n BEFORE INSERT ON estoque_movimentacoes FOR EACH ROW EXECUTE FUNCTION fail_batch_n();")
+  batch2=f"SELECT rpc_estoque_reservar_v1('{O}','manual','[{{\"item_id\":\"{ids[1]}\",\"quantidade\":1}},{{\"item_id\":\"{ids[0]}\",\"quantidade\":1}}]','batch-two-failure','{{\"cliente_id\":\"{C}\"}}');"
+  err(actor()+batch2,'P0001','batch item N ledger failure after first reservation')
+  ok(f'SELECT count(*)={baseline} FROM estoque_movimentacoes','batch item N restores entire ledger baseline')
+  ok("SELECT bool_and(status='disponivel') FROM estoque_produto",'batch item N rolls first reservation status back')
+  ok('SELECT count(*)=0 FROM platform_private.stock_batch_requests','batch item N no receipt committed')
+  sql('DROP TRIGGER zz_batch_n ON estoque_movimentacoes;')
+  ok(actor()+f"SELECT ({batch2[7:-1]}->>'ok')::boolean",'same failed batch key may commit after complete rollback')
+  reordered=batch2.replace(ids[0],'TEMP').replace(ids[1],ids[0]).replace('TEMP',ids[1])
+  ok(actor()+f"SELECT ({reordered[7:-1]}->>'replay')::boolean",'batch reordered items canonical fingerprint replay')
  finally:
   if started:subprocess.run(pre+[str(PG/'pg_ctl'),'-D',str(tmp/'d'),'stop','-m','fast'],capture_output=True,env=env)
  (H/'results.txt').write_text(f'{len(checks)} PASS PostgreSQL17 local; Auth/SaaS/hash seams synthetic, no hosted JWT/RLS.\n'+'\n'.join(checks)+'\n');print('TOTAL',len(checks),'PASS')
