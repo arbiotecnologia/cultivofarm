@@ -540,7 +540,9 @@ export default function Entregas() {
 
 
       try {
-        for (const { item, quantidade } of itens) {
+        for (const linha of itens) {
+          let item = linha.item;
+          const quantidade = linha.quantidade;
           check();
           if (quantidade <= 0) throw new Error(`Quantidade inválida para o lote ${item.lotes?.codigo_lote || item.id}.`);
           if (quantidade > item._saldo) throw new Error(`Lote ${item.lotes?.codigo_lote || ""}: quantidade ${quantidade} excede o saldo físico (${item._saldo}).`);
@@ -565,6 +567,9 @@ export default function Entregas() {
             );
             check();
             if (!ok) throw new Error(`Falha ao reservar o lote ${item.lotes?.codigo_lote || ""}.`);
+            if (typeof ok !== "object" || !ok.reservadoId) throw new Error("Reserva sem identificador confirmado.");
+            // The canonical reserve RPC returns the newly split row when partial.
+            item = { ...item, id: ok.reservadoId };
             itemOsId = osRef.id;
             itemOsTipo = osRef.type;
             itemClienteId = osRef.cliente_id;

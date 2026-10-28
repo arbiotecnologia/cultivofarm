@@ -496,7 +496,7 @@ export function useEsteiraLaboratorio() {
         if (!options.deferEffects) { toast.error(error.message || "Erro ao reservar estoque"); invalidateAll(); }
         return false;
       }
-      if (options.deferEffects && (typeof reservedId !== "string" || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(reservedId) || reservedId !== item.id)) throw new Error("Reserva não confirmou o item original; resultado pendente de reconciliação.");
+      if (options.deferEffects && (typeof reservedId !== "string" || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(reservedId))) throw new Error("Reserva não confirmada; resultado pendente de reconciliação.");
       await registrarAuditoria({
         origem,
         osId,
@@ -508,7 +508,7 @@ export function useEsteiraLaboratorio() {
       });
 
       if (!current()) return false;
-      if (options.deferEffects) return true;
+      if (options.deferEffects) return { reservadoId: reservedId as string };
       const titular = reservaData?.titular_nome || reservaData?.cliente_nome;
       toast.success(titular ? `Estoque reservado para ${titular}` : "Estoque reservado com sucesso");
       invalidateAll();
