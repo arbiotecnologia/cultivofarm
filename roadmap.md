@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## Política superveniente AR/FSF — 28/10 02:37 UTC
+- [ ] Substituir candidata por40% fixo/0%até30d/1,8%até6m/2%até12m; arquivar referência antiga sem apagar evidência.
+- [ ] Testar Decimal/faixas29/30/31d/6m/6m+1d/12m/>12, alternativas não homologadas e regressões sem tocar entrega.
+- [ ] Atualizar plano original/matriz/diagnóstico/revisão independente e conflitos; operação BLOCKED por incidência/calendário/marginalidade/aprovação jurídica e contratos existentes.
+
 ## Referência AR Bio × FSF Agro — DRAFT, 28/10/2026
 - [x] Registrar fonte/apresentação não contratual, escopo fornecedor/revenda e pendências sem criar tenant/usuários.
 - [x] Contratos existentes e DRAFT definido/indefinido:8vetores Decimal conferidos; PG17PASS/0FAIL/16BLOCKED/1NOT RUN; Vitest121/121,14novos.
