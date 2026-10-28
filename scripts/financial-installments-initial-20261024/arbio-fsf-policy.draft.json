@@ -8,7 +8,8 @@
     "original_available": false,
     "basis": "Transcrição fornecida pelo proprietário em 28/10/2026; arquivo original não localizado",
     "legal_status": "Versão para apresentação comercial — sujeita a validação jurídica e contratual",
-    "contract_in_force_proven": false
+    "contract_in_force_proven": false,
+    "rates_discounts_status": "SUPERADO NAS TAXAS/DESCONTOS"
   },
   "scope": {
     "supplier": "AR Bio",
@@ -23,34 +24,252 @@
     "assignment_status": "draft",
     "identity_resolution": "Exigir parceiro existente do commercial_owner AR Bio; não usar nome, fixture ou tenant FSF legado como autoridade"
   },
-  "formula": "ROUND(table_amount * (1-discount_percent/100) * (1+monthly_interest_percent/100)^months_count,2)",
+  "formula": null,
   "policies": [
-    {"key":"cash","discount_percent":"40","monthly_interest_percent":"0","interest_type":"none","max_days":7,"months_count":"0","requires_settlement":true,"deadline":"até 7 dias OU antes da entrega","requirements":["quitação integral comprovada"]},
-    {"key":"30d","discount_percent":"35","monthly_interest_percent":null,"rate_range":["0","1"],"interest_type":"compound","max_days":30,"months_count":"1","requirements":["limite aprovado"]},
-    {"key":"60d","discount_percent":"30","monthly_interest_percent":"1.5","interest_type":"compound","max_days":60,"months_count":"2","requirements":["aprovação comercial e financeira"]},
-    {"key":"90d","discount_percent":"25","monthly_interest_percent":"2","interest_type":"compound","max_days":90,"months_count":"3","requirements":["contrato","histórico positivo","ausência de saldo vencido"]},
-    {"key":"harvest_approved","discount_percent":"20","monthly_interest_percent":"2","interest_type":"compound","months_range":[6,8],"months_count":null,"requirements":["safra aprovada","garantia","limite"]},
-    {"key":"harvest_medium_risk","discount_percent":"20","monthly_interest_percent":"2.5","interest_type":"compound","months_range":[6,10],"months_count":null,"requirements":["risco médio","garantias a validar"]},
-    {"key":"harvest_no_strong_guarantee","discount_percent":"15","monthly_interest_percent":"3","interest_type":"compound","months_range":[6,10],"months_count":null,"requirements":["garantias adicionais"]}
+    {
+      "key": "up_to_30d",
+      "discount_percent": "40",
+      "monthly_interest_percent": "0",
+      "interest_type": "none",
+      "max_days": 30
+    },
+    {
+      "key": "above_30d_up_to_6m",
+      "discount_percent": "40",
+      "monthly_interest_percent": "1.8",
+      "interest_type": "compound",
+      "min_days_exclusive": 30,
+      "max_months_inclusive": 6
+    },
+    {
+      "key": "above_6m_up_to_12m",
+      "discount_percent": "40",
+      "monthly_interest_percent": "2",
+      "interest_type": "compound",
+      "min_months_exclusive": 6,
+      "max_months_inclusive": 12
+    }
   ],
   "reference_vectors": [
-    {"key":"cash","discount":"40","rate":"0","months":0,"table":"100000","expected":"60000.00"},
-    {"key":"30d_zero_reference_only","discount":"35","rate":"0","months":1,"table":"100000","expected":"65000.00"},
-    {"key":"60d","discount":"30","rate":"1.5","months":2,"table":"100000","expected":"72115.75"},
-    {"key":"90d","discount":"25","rate":"2","months":3,"table":"100000","expected":"79590.60"},
-    {"key":"harvest6_2","discount":"20","rate":"2","months":6,"table":"100000","expected":"90092.99"},
-    {"key":"harvest8_2","discount":"20","rate":"2","months":8,"table":"100000","expected":"93732.75"},
-    {"key":"harvest8_2.5","discount":"20","rate":"2.5","months":8,"table":"100000","expected":"97472.23"},
-    {"key":"harvest8_3","discount":"15","rate":"3","months":8,"table":"100000","expected":"107675.46"}
+    {
+      "key": "hypothetical_single_sale_0m",
+      "discount": "40",
+      "rate": "0",
+      "months": 0,
+      "table": "100000",
+      "expected": "60000.00",
+      "status": "ARITHMETIC_ONLY_NOT_HOMOLOGATED",
+      "incidence": "single_band_since_sale",
+      "month_convention": "EXPLICIT_INTEGER_MONTHS_NO_DATE_AUTHORITY"
+    },
+    {
+      "key": "hypothetical_single_sale_1m",
+      "discount": "40",
+      "rate": "0",
+      "months": 1,
+      "table": "100000",
+      "expected": "60000.00",
+      "status": "ARITHMETIC_ONLY_NOT_HOMOLOGATED",
+      "incidence": "single_band_since_sale",
+      "month_convention": "EXPLICIT_INTEGER_MONTHS_NO_DATE_AUTHORITY"
+    },
+    {
+      "key": "hypothetical_single_sale_2m",
+      "discount": "40",
+      "rate": "1.8",
+      "months": 2,
+      "table": "100000",
+      "expected": "62179.44",
+      "status": "ARITHMETIC_ONLY_NOT_HOMOLOGATED",
+      "incidence": "single_band_since_sale",
+      "month_convention": "EXPLICIT_INTEGER_MONTHS_NO_DATE_AUTHORITY"
+    },
+    {
+      "key": "hypothetical_single_sale_3m",
+      "discount": "40",
+      "rate": "1.8",
+      "months": 3,
+      "table": "100000",
+      "expected": "63298.67",
+      "status": "ARITHMETIC_ONLY_NOT_HOMOLOGATED",
+      "incidence": "single_band_since_sale",
+      "month_convention": "EXPLICIT_INTEGER_MONTHS_NO_DATE_AUTHORITY"
+    },
+    {
+      "key": "hypothetical_single_sale_6m",
+      "discount": "40",
+      "rate": "1.8",
+      "months": 6,
+      "table": "100000",
+      "expected": "66778.69",
+      "status": "ARITHMETIC_ONLY_NOT_HOMOLOGATED",
+      "incidence": "single_band_since_sale",
+      "month_convention": "EXPLICIT_INTEGER_MONTHS_NO_DATE_AUTHORITY"
+    },
+    {
+      "key": "hypothetical_single_sale_8m",
+      "discount": "40",
+      "rate": "2",
+      "months": 8,
+      "table": "100000",
+      "expected": "70299.56",
+      "status": "ARITHMETIC_ONLY_NOT_HOMOLOGATED",
+      "incidence": "single_band_since_sale",
+      "month_convention": "EXPLICIT_INTEGER_MONTHS_NO_DATE_AUTHORITY"
+    },
+    {
+      "key": "hypothetical_single_sale_12m",
+      "discount": "40",
+      "rate": "2",
+      "months": 12,
+      "table": "100000",
+      "expected": "76094.51",
+      "status": "ARITHMETIC_ONLY_NOT_HOMOLOGATED",
+      "incidence": "single_band_since_sale",
+      "month_convention": "EXPLICIT_INTEGER_MONTHS_NO_DATE_AUTHORITY"
+    }
   ],
-  "credit": {"approval_scope":["safra","parceiro","pedido"],"credit_limit":null,"block_if_overdue":true,"order_overdue_tolerance_days":0,"block_broken_agreement":true,"delivery_block_after_days":5,"repeated_default_suspends_special_terms":true},
-  "late_payment": {"status":"SUGGESTED_NOT_ENFORCEABLE","penalty_percent":"2","monthly_late_interest_percent":"1","pro_rata_convention":null,"correction_index":null,"prepayment_policy":null},
-  "undefined": {"harvest_minimum_order_amount":null,"exact_30d_rate":null,"correction_index":null,"pro_rata_day_basis":null,"approval_policy":null,"installment_count":null,"installment_vs_single_due":null,"interest_incidence_schedule":null,"billing_trigger":null,"default_payment_method":null,"safra_period_dates":null,"guarantee_evidence_and_sufficiency":null},
-  "documents": ["contrato B2B","pedido formal","NF","duplicata/boleto","aceite"],
-  "guarantees_examples_not_defaults": ["aval","confissão de dívida","nota promissória","cessão"],
+  "credit": {
+    "approval_scope": [
+      "safra",
+      "parceiro",
+      "pedido"
+    ],
+    "credit_limit": null,
+    "block_if_overdue": true,
+    "order_overdue_tolerance_days": 0,
+    "block_broken_agreement": true,
+    "delivery_block_after_days": 5,
+    "repeated_default_suspends_special_terms": true
+  },
+  "late_payment": {
+    "status": "SUGGESTED_NOT_ENFORCEABLE",
+    "penalty_percent": "2",
+    "monthly_late_interest_percent": "1",
+    "pro_rata_convention": null,
+    "correction_index": null,
+    "prepayment_policy": null
+  },
+  "undefined": {
+    "harvest_minimum_order_amount": null,
+    "correction_index": null,
+    "pro_rata_day_basis": null,
+    "approval_policy": null,
+    "installment_count": null,
+    "installment_vs_single_due": null,
+    "interest_incidence_schedule": null,
+    "billing_trigger": null,
+    "default_payment_method": null,
+    "safra_period_dates": null,
+    "guarantee_evidence_and_sufficiency": null,
+    "interest_start": null,
+    "band_incidence": null,
+    "month_boundary_convention": null,
+    "day_count_convention": null,
+    "installment_amortization": null
+  },
+  "documents": [
+    "contrato B2B",
+    "pedido formal",
+    "NF",
+    "duplicata/boleto",
+    "aceite"
+  ],
+  "guarantees_examples_not_defaults": [
+    "aval",
+    "confissão de dívida",
+    "nota promissória",
+    "cessão"
+  ],
   "triangular_operation": "Somente acordo formal; obrigação da revenda independente do produtor",
-  "release_conditions": ["aprovação comercial","aprovação financeira"],
-  "historical_price_per_hectare_not_runtime": {"Solo 1":"69","Solo 2":"84","BioInseticida 01":"84","BioInseticida 02":"65","BioFungicida":"50","BioInoculante":"25","BioSolubilizador":"50"},
-  "canonical_targets": ["commercial_payment_plans","commercial_payment_plan_assignments","commercial_condition_item_prices","partner_financial_settings","partner_order_payment_terms","partner_order_payment_schedule","partner_documents"],
-  "prohibited": ["automatic_apply","global_default_assignment","overwrite_other_partners","new_tenant","parallel_finance","price_table_import","automatic_legal_approval","live_fixtures"]
+  "release_conditions": [
+    "aprovação comercial",
+    "aprovação financeira"
+  ],
+  "historical_price_per_hectare_not_runtime": {
+    "Solo 1": "69",
+    "Solo 2": "84",
+    "BioInseticida 01": "84",
+    "BioInseticida 02": "65",
+    "BioFungicida": "50",
+    "BioInoculante": "25",
+    "BioSolubilizador": "50"
+  },
+  "canonical_targets": [
+    "commercial_payment_plans",
+    "commercial_payment_plan_assignments",
+    "commercial_condition_item_prices",
+    "partner_financial_settings",
+    "partner_order_payment_terms",
+    "partner_order_payment_schedule",
+    "partner_documents"
+  ],
+  "prohibited": [
+    "automatic_apply",
+    "global_default_assignment",
+    "overwrite_other_partners",
+    "new_tenant",
+    "parallel_finance",
+    "price_table_import",
+    "automatic_legal_approval",
+    "live_fixtures"
+  ],
+  "owner_override": {
+    "id": "owner-20261028T023700Z",
+    "status": "CANDIDATE_NOT_HOMOLOGATED",
+    "fixed_discount_percent": "40",
+    "base_multiplier": "0.60",
+    "historical_source": "arbio-fsf-policy.july2026.historical.json",
+    "settlement_only_discount_gate_superseded": true,
+    "beyond_12_months": "DENY_UNLESS_SEPARATE_APPROVED_EXCEPTIONAL_POLICY",
+    "exceptional_policy_approved": false
+  },
+  "technical_proposals": {
+    "status": "NOT_HOMOLOGATED",
+    "preferred": "single_band_rate_over_explicit_financed_term",
+    "alternative": "marginal_1.8_first_6_then_2_excess",
+    "interest_start_alternatives": [
+      "sale_date",
+      "after_30_days"
+    ],
+    "no_implicit_day_month_conversion": true,
+    "rounding": "Decimal ROUND_HALF_UP final cent; per-installment allocation pending"
+  },
+  "boundary_fixtures": [
+    {
+      "key": "29d",
+      "rate": "0",
+      "status": "DEFINED_RATE"
+    },
+    {
+      "key": "30d",
+      "rate": "0",
+      "status": "DEFINED_RATE"
+    },
+    {
+      "key": "31d",
+      "rate": "1.8",
+      "status": "AMOUNT_BLOCKED"
+    },
+    {
+      "key": "6m_exact",
+      "rate": "1.8",
+      "status": "DATE_CONVENTION_BLOCKED"
+    },
+    {
+      "key": "6m_plus_1d",
+      "rate": "2",
+      "status": "DATE_CONVENTION_BLOCKED"
+    },
+    {
+      "key": "12m_exact",
+      "rate": "2",
+      "status": "DATE_CONVENTION_BLOCKED"
+    },
+    {
+      "key": "above_12m",
+      "rate": null,
+      "status": "DENY_NO_APPROVED_EXCEPTION"
+    }
+  ]
 }
