@@ -1,3 +1,4 @@
 - Keep this independent financial-creation candidate inactive; captured metadata and full-command atomic guards are mandatory, never use hosted writes from tests.
 - Custom installments travel only through a private txid/title/actor/tenant context consumed by the existing generator on INSERT; immutable snapshot and tenant guards never gain exceptions.
 - Future order composition must merge both generator branches and recapture all PRE/POST/containment hashes in a new package; the historical integrated release must never overwrite this correction.
+- Offline finance battery reuses this package and captured installed bodies with independent Decimal expectations; synthetic dependencies and FAIL findings stay explicit, never become runtime formulas or release evidence — prevents duplicated finance and false certification.

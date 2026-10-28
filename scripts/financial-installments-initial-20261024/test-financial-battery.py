@@ -64,7 +64,7 @@ def main():
                      'simulate_b2b_payment_plan_secure':'uuid,uuid,jsonb,date'}[name]
         observed = pg.sql(f"SELECT md5(pg_get_functiondef('public.{name}({signature})'::regprocedure))")
         assert observed == LIVE['hashes'][name], (name, observed)
-        record('pin '+name,'PASS',LIVE['hashes'][name],observed)
+        record('pin '+name,'PASS',LIVE['hashes'][name],observed,scope='CONSISTENCIA_LOCAL_HASH_CAPTURA_SELECT')
     pg.sql('CREATE TRIGGER captured_generator AFTER INSERT ON accounts_receivable FOR EACH ROW EXECUTE FUNCTION fn_generate_receivable_installments();')
     pg.sql(f"INSERT INTO partner_accounts VALUES('{uid(1)}',true);")
     today = pg.sql('SELECT current_date'); from datetime import date
@@ -98,14 +98,23 @@ def main():
         record(label,'PASS' if passed else 'FAIL',str(final),json.dumps(dict(total=str(result['final_amount']),amounts=list(map(str,actual)),dates=dates)))
         principal=sum(D(str(x['principal_amount'])) for x in result['schedule'])
         interest=sum(D(str(x['interest_amount'])) for x in result['schedule'])
+        expected_principal=[money(x*net/final) for x in amounts]
+        expected_interest=[x-p for x,p in zip(amounts,expected_principal)]
+        assert [D(str(x['principal_amount'])) for x in result['schedule']]==expected_principal
+        assert [D(str(x['interest_amount'])) for x in result['schedule']]==expected_interest
         record(label+' conciliacao principal/juros','PASS' if principal==net and interest==final-net else 'FAIL',f'principal={net}; juros={final-net}',f'principal={principal}; juros={interest}')
         fixtures.append(dict(label=label,base='10000.00',discount=str(discount),rate=str(rate),method=kind,months=months,total=str(final),amounts=list(map(str,amounts)),dates=expected_dates))
+        fixtures[-1].update(principal=list(map(str,expected_principal)),interest=list(map(str,expected_interest)))
         if count==3 and rate==1 and discount==0 and days==30:
             pg.sql(f"INSERT INTO partner_orders VALUES('{uid(200)}','{uid(201)}','{{}}');")
             for i,x in enumerate(result['schedule']):
                 pg.sql(f"INSERT INTO partner_order_payment_schedule VALUES('{uid(200)}','{uid(201)}',{i+1},'{x['due_date']}',{x['amount']},{x['interest_amount']});")
             pg.sql(f"INSERT INTO accounts_receivable(id,organization_id,created_by,origin_type,origin_id,total_amount,installment_count,first_due_date) VALUES('{uid(202)}','{uid(2)}','{uid(100)}','B2B_ORDER','{uid(200)}',{final},{count},'{expected_dates[0]}');")
             actual_total=D(pg.sql(f"SELECT sum(original_amount+interest_amount) FROM accounts_receivable_installments WHERE receivable_id='{uid(202)}'"))
+            stored=json.loads(pg.sql(f"SELECT jsonb_agg(jsonb_build_object('amount',original_amount,'interest',interest_amount,'date',due_date) ORDER BY installment_number) FROM accounts_receivable_installments WHERE receivable_id='{uid(202)}'"),parse_float=D)
+            assert [D(str(x['amount'])) for x in stored]==amounts
+            assert [D(str(x['interest'])) for x in stored]==expected_interest
+            assert [x['date'] for x in stored]==expected_dates
             record('gerador B2B + saldo original/juros','PASS' if actual_total==final else 'FAIL',str(final),str(actual_total),'P0')
     # Negative transport/domain cases against captured RPC, with stub authority explicit.
     base=uid(10)
@@ -146,6 +155,7 @@ def main():
     for label,dates in [('manual vencimento repetido',[str(today)]*2),('manual vencimento retroativo',[str(today-timedelta(days=1)),str(today)])]:
         # Isolate missing RPC validation from unknown installed downstream guards.
         output=pg.sql('BEGIN;'+manual(['5000','5000'],dates)+'ROLLBACK;')
+        assert '"success": true' in output
         record(label,'FAIL','Rejeicao no corpo RPC; triggers integrais ainda BLOCKED','Corpo RPC aceitou em transacao local revertida','P1',scope='MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS')
     for label,reason in [
         ('entrada 30% +3x','Sem parametro entrada na RPC B2B; 3000 +2333.33 +2333.33 +2333.34 somente referencia sem juros'),
@@ -172,5 +182,10 @@ def main():
     with (OUT/'matriz-financeira.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
     print('TOTAL',json.dumps({s:sum(x['status']==s for x in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']}))
+    (OUT/'execucao.json').write_text(json.dumps(dict(ref=LIVE['ref'],date=str(today),
+        manifesto_sha256=hashlib.sha256((H/'financial-battery-live.json').read_bytes()).hexdigest(),
+        stubs=['Auth/roles','C2 guards','plan selectable','price cart','cart hash','credit','h15','financial staff'],
+        absent=['RLS/JWT','snapshot/tenant validators','full triggers','payments','audit integrity'],
+        has_failures=any(x['status']=='FAIL' for x in rows)),indent=2)+'\n')
 
 if __name__=='__main__': main()
