@@ -135,7 +135,7 @@ def main():
         deny('snapshot titulo imutavel',f"UPDATE accounts_receivable SET total_amount=1 WHERE id='{t}';",'Snapshot financeiro imutavel',mode)
         deny('evento UPDATE imutavel',f"UPDATE receivable_payments SET amount_received=1 WHERE id='{pay}';",'imutavel',mode)
         # Owner-approved totals are INPUT FIXTURES here; no interest rate recalculation/test repetition.
-        for j,(months,total) in enumerate([(0,'6000'),(1,'6000'),(6,'6677.87'),(8,'7029.96'),(12,'7609.45')],10):
+        for j,(months,total) in enumerate([(0,'6000'),(1,'6108.00'),(6,'6677.87'),(8,'7029.96'),(12,'7609.45')],10):
             t,x=title(offset+j,total,str(D(total)-6000),count=max(1,months))
             actual=D(pg.sql(f"SELECT sum({BAL}) FROM accounts_receivable_installments WHERE receivable_id='{t}'"))
             record(f'valor financiado fixture {months}m conservado na geracao',D(total),actual,mode,'P0')
