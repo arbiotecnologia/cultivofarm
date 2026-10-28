@@ -159,7 +159,7 @@ def writers_scenarios(mode,offset):
     observed=ask('SELECT row_to_json(d) FROM ('+diagnostic+') d;')
     result=json.loads(observed)
     record('diagnostico historico retorna apenas contagem tenant ator',count,result['titles_reviewed'],mode)
-    record('diagnostico suprime grupo estrangeiro pequeno','',pg.sql(scope(B)+diagnostic).splitlines()[-1] if pg.sql(scope(B)+diagnostic).splitlines()[-1] not in ['true','false'] else '',mode)
+    record('diagnostico suprime grupo estrangeiro pequeno','0',ask('SELECT count(*) FROM ('+diagnostic+') d;',org=B),mode)
     no_staff=pg.sql(scope(A,False)+'SELECT count(*) FROM ('+diagnostic+') d;').splitlines()[-1]
     record('diagnostico sem autoridade staff nao retorna grupos','0',no_staff,mode)
 
