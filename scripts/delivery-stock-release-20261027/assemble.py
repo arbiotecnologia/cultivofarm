@@ -79,6 +79,7 @@ def body(t):
 out=["-- INACTIVE composed review candidate (stock/envase + billing + delivery). NOT a migration.",
 "-- Order: gate cf_user_guards_v1 FOR UPDATE -> reauth -> advisory -> reauth -> delivery row -> stock motor (re-enters held gate) -> billing.",
 "BEGIN;","SET LOCAL lock_timeout='3s';","SET LOCAL statement_timeout='15s';",
+"DO $$ BEGIN RAISE EXCEPTION 'HISTORICAL_BILLING_COMPOSITION_A2_REBASE_REQUIRED' USING ERRCODE='42501'; END $$;",
 "-- part 1: stock/envase",body(stock),"-- part 2: billing",body(bill),"-- part 3: delivery (transformed)",deliv,
 "-- Client EXECUTE is NOT granted here; see release.sql.review.","COMMIT;"]
 (H/'composed-delivery.sql.review').write_text(deliv)
