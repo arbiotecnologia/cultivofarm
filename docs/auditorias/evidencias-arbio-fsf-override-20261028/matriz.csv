@@ -1,0 +1,59 @@
+id,cenario,status,expectativa,observado,nivel,severidade
+ARFSF-OVR-001,pin corpo capturado (não recaptura LIVE),PASS,806e5d8789b08cd6790a10feaf95f26d,806e5d8789b08cd6790a10feaf95f26d,LOCAL_HASH,P1
+ARFSF-OVR-002,desconto fixo up_to_30d,PASS,40,40,DRAFT_SPEC,P1
+ARFSF-OVR-003,desconto fixo above_30d_up_to_6m,PASS,40,40,DRAFT_SPEC,P1
+ARFSF-OVR-004,desconto fixo above_6m_up_to_12m,PASS,40,40,DRAFT_SPEC,P1
+ARFSF-OVR-005,vetor fixture hypothetical_single_sale_0m,PASS,60000.00,60000.00,DECIMAL_INDEPENDENT,P1
+ARFSF-OVR-006,helper hypothetical_single_sale_0m,PASS,60000.00,60000.00,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-007,vetor fixture hypothetical_single_sale_1m,PASS,60000.00,60000.00,DECIMAL_INDEPENDENT,P1
+ARFSF-OVR-008,helper hypothetical_single_sale_1m,PASS,60000.00,60000.00,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-009,vetor fixture hypothetical_single_sale_2m,PASS,62179.44,62179.44,DECIMAL_INDEPENDENT,P1
+ARFSF-OVR-010,helper hypothetical_single_sale_2m,PASS,62179.44,62179.44,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-011,vetor fixture hypothetical_single_sale_3m,PASS,63298.67,63298.67,DECIMAL_INDEPENDENT,P1
+ARFSF-OVR-012,helper hypothetical_single_sale_3m,PASS,63298.67,63298.67,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-013,vetor fixture hypothetical_single_sale_6m,PASS,66778.69,66778.69,DECIMAL_INDEPENDENT,P1
+ARFSF-OVR-014,helper hypothetical_single_sale_6m,PASS,66778.69,66778.69,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-015,vetor fixture hypothetical_single_sale_8m,PASS,70299.56,70299.56,DECIMAL_INDEPENDENT,P1
+ARFSF-OVR-016,helper hypothetical_single_sale_8m,PASS,70299.56,70299.56,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-017,vetor fixture hypothetical_single_sale_12m,PASS,76094.51,76094.51,DECIMAL_INDEPENDENT,P1
+ARFSF-OVR-018,helper hypothetical_single_sale_12m,PASS,76094.51,76094.51,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-019,contrafactual única 6m/sale,PASS,66778.69,66778.69,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-020,contrafactual marginal 6m/sale,PASS,66778.69,66778.69,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-021,contrafactual única 6m/after_30d_HYPOTHETICAL_ONE_MONTH,PASS,65597.93,65597.93,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-022,contrafactual marginal 6m/after_30d_HYPOTHETICAL_ONE_MONTH,PASS,65597.93,65597.93,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-023,contrafactual única 8m/sale,PASS,70299.56,70299.56,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-024,contrafactual marginal 8m/sale,PASS,69476.55,69476.55,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-025,contrafactual única 8m/after_30d_HYPOTHETICAL_ONE_MONTH,PASS,68921.14,68921.14,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-026,contrafactual marginal 8m/after_30d_HYPOTHETICAL_ONE_MONTH,PASS,68114.27,68114.27,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-027,contrafactual única 12m/sale,PASS,76094.51,76094.51,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-028,contrafactual marginal 12m/sale,PASS,75203.66,75203.66,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-029,contrafactual única 12m/after_30d_HYPOTHETICAL_ONE_MONTH,PASS,74602.46,74602.46,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-030,contrafactual marginal 12m/after_30d_HYPOTHETICAL_ONE_MONTH,PASS,73729.07,73729.07,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-031,fronteira normativa taxa 29d,PASS,0,0,DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT,P1
+ARFSF-OVR-032,sem juros valor 29d,PASS,60000.00,60000.00,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-033,fronteira normativa taxa 30d,PASS,0,0,DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT,P1
+ARFSF-OVR-034,sem juros valor 30d,PASS,60000.00,60000.00,LOCAL_DECIMAL_PG_ARITHMETIC,P1
+ARFSF-OVR-035,fronteira normativa taxa 31d,PASS,1.8,1.8,DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT,P1
+ARFSF-OVR-036,valor/calendário 31d,BLOCKED,Incidência/data e cálculo aprovados,Rate definida; data civil/30-360 e período financiado não definidos,CONTRACT,P0
+ARFSF-OVR-037,fronteira normativa taxa 6m_exact,PASS,1.8,1.8,DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT,P1
+ARFSF-OVR-038,valor/calendário 6m_exact,BLOCKED,Incidência/data e cálculo aprovados,Rate definida; data civil/30-360 e período financiado não definidos,CONTRACT,P0
+ARFSF-OVR-039,fronteira normativa taxa 6m_plus_1d,PASS,2,2,DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT,P1
+ARFSF-OVR-040,valor/calendário 6m_plus_1d,BLOCKED,Incidência/data e cálculo aprovados,Rate definida; data civil/30-360 e período financiado não definidos,CONTRACT,P0
+ARFSF-OVR-041,fronteira normativa taxa 12m_exact,PASS,2,2,DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT,P1
+ARFSF-OVR-042,valor/calendário 12m_exact,BLOCKED,Incidência/data e cálculo aprovados,Rate definida; data civil/30-360 e período financiado não definidos,CONTRACT,P0
+ARFSF-OVR-043,>12m sem exceção aprovada,PASS,DENY_UNLESS_SEPARATE_APPROVED_EXCEPTIONAL_POLICY,DENY_UNLESS_SEPARATE_APPROVED_EXCEPTIONAL_POLICY,DRAFT_SPEC,P1
+ARFSF-OVR-044,exceção não aprovada,PASS,False,False,DRAFT_SPEC,P1
+ARFSF-OVR-045,desconto não condicionado à quitação antiga,PASS,True,True,DRAFT_SPEC,P1
+ARFSF-OVR-046,>12m bloqueio real,BLOCKED,Contrato/prova/decisão necessários,Nenhum resolver novo instalado; não confundir especificação DENY com enforcement,CONTRACT,P1
+ARFSF-OVR-047,calendário fim mês/ano bissexto e6m+1d,BLOCKED,Contrato/prova/decisão necessários,max_days e months_count não provam meses civis; regra de ancoragem ausente,CONTRACT,P1
+ARFSF-OVR-048,parcelamento/amortização soma/conciliação,BLOCKED,Contrato/prova/decisão necessários,"Não assumir Price, rateio ou juros por parcela; P0 saldo duplicado e P1 centavos anteriores abertos",CONTRACT,P1
+ARFSF-OVR-049,mudança posterior faixa/replay/ACK perdido,BLOCKED,Contrato/prova/decisão necessários,Snapshots/hash e continuity existentes devem ser provados com versão observada; política não instalada,CONTRACT,P1
+ARFSF-OVR-050,snapshot tabela vigente histórico/taxa pós-faturar,BLOCKED,Contrato/prova/decisão necessários,Não modificar históricos; guards cadeia integral/JWT não executados,CONTRACT,P0
+ARFSF-OVR-051,cross-tenant A/B RLS e revogação,BLOCKED,Contrato/prova/decisão necessários,PG schema/Auth reduzidos não demonstram autorização real,CONTRACT,P1
+ARFSF-OVR-052,limite/risco/garantias/acordo/inadimplência,BLOCKED,Contrato/prova/decisão necessários,Preservados; cálculo isolado não prova atribuição nem dupla aprovação,CONTRACT,P1
+ARFSF-OVR-053,produção/entrega/CQ reprovado e título único,BLOCKED,Contrato/prova/decisão necessários,Contratos operacionais e A2 contidos; não abrir writer,CONTRACT,P1
+ARFSF-OVR-054,billing aprovação versus entrega,BLOCKED,Contrato/prova/decisão necessários,Gatilho indeciso; nenhuma cobrança ou retentativa,CONTRACT,P0
+ARFSF-OVR-055,pro-rata/mora/antecipação/correção,BLOCKED,Contrato/prova/decisão necessários,Convenção e índice pendentes; nenhuma fórmula default,CONTRACT,P1
+ARFSF-OVR-056,tabela vigente catálogo/simulador/features,BLOCKED,Contrato/prova/decisão necessários,"Motor comercial único, parceiro canônico e atribuição específica ainda precisam prova",CONTRACT,P1
+ARFSF-OVR-057,aprovação comercial/jurídica,BLOCKED,Contrato/prova/decisão necessários,Preferência única e alternativa marginal NÃO HOMOLOGADAS,CONTRACT,P1
+ARFSF-OVR-058,JWT/browser/LIVE/pagamento/fiscal,NOT RUN,Somente futuro autorizado,Nenhuma operação realizada,REAL,P1

@@ -1,0 +1,13 @@
+{
+  "totals": {
+    "PASS": 41,
+    "FAIL": 0,
+    "BLOCKED": 16,
+    "NOT RUN": 1
+  },
+  "real_PASS": 0,
+  "draft_sha256": "0c516ce34a3dd7ef0280f88b69dd1cbea5b95977e4592ecda6f671dbb262eac1",
+  "ref_of_historical_capture": "swzpzcwiasxmjutrmvkm",
+  "live_recaptured": false,
+  "method": "Decimal 60 digits / ROUND_HALF_UP; captured helper local only; synthetic SETUP; no date resolver enforcement"
+}
