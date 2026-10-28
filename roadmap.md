@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## Auditoria final planejada e testes atuais — 28/10/2026
+- [ ] Matriz rastreável por cenário/perfil/tenant/contrato, evidências sintéticas separadas de JWT/RLS.
+- [ ] Reproduzir e corrigir duplo dispatch/envelope negativo no consumidor existente, sem ativação; testes regressivos.
+- [ ] Executar suítes offline disponíveis e reconfirmar dependências somente leitura; não forçar bloqueios reais.
+- [ ] Roteiro A/B/C com fixtures/cleanup futuro, critérios P0/P1/P2/métricas e gate pós-implantação no plano original.
+
 ## Etapas 5/6 — contratos OS→entrega→estoque, 28/10/2026
 - [x] Captura LIVE somente leitura, comparação dos três pacotes e contratos manuais/B2B/itens; 14/14 corpos estoque e seis tabelas sem drift.
 - [x] Deltas INATIVOS de confirmação/cancelamento, PRE/POST atuais e rollback deny-only; composto billing histórico explicitamente bloqueado, writers intocados.
