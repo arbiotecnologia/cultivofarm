@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## Reconciliação das nove etapas — 28/10/2026 (somente documentação/offline)
+- [x] Retomar o plano original por etapas, cruzar diagrama e A2; distinguir LIVE capturado, implantação externa relatada e candidato inativo.
+- [x] Mapear RPCs/escritores, bloqueadores P0, dependências e próximo pacote independente de consumidores/criação OS-entrega, sem alterar runtime.
+- [x] Relatório docs/auditorias/reconciliacao-fluxo-pedido-b2b-20261028.md e anexo; checklist/aceites no plano original; 85/85 Vitest offline e 22/22 hashes A2, sem SQL hosted, GRANT, migração, fixtures ou publicação.
+- [ ] Implantação e homologação real continuam bloqueadas por revisão independente, envase, B2B/onfarm, JWT A/B e fiscal/contabilidade reais; SU-518022 adiado.
+
 ## Fase A2 — 28/10/2026: isolamento das duas funções financeiras de entrega
 - [x] Reconfirmar LIVE somente leitura no ref swzpzcwiasxmjutrmvkm, hashes, ACL, guardas e consumidores; comparar candidato anterior.
 - [x] Preparar proposta INATIVA fail-closed, PRE/POST e contenção reversível sem restaurar BOLA; 76 checks PostgreSQL17.9/Auth simulada, sem liberação.
