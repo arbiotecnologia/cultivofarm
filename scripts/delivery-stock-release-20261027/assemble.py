@@ -15,6 +15,14 @@ def rep(t,a,b,n):
 deliv=rep(deliv,'PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR SHARE;','PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;',3)
 # R6: same advisory key as the billing candidate (hashtext vs hashtextextended never conflicted).
 deliv=rep(deliv,"PERFORM pg_advisory_xact_lock(hashtext('entrega_faturar:' || p_entrega_id::text));","PERFORM pg_advisory_xact_lock(hashtextextended('entrega_faturar:' || p_entrega_id::text, 0));",1)
+# Fail closed on unowned preexisting expedition; legitimate delivery replay returns earlier.
+deliv=rep(deliv,"    IF v_est.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO'; END IF;",
+"""    IF v_est.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO'; END IF;
+    IF v_est.status::text = 'expedido' THEN
+      RAISE EXCEPTION 'ENTREGA_EXPEDICAO_PREEXISTENTE_REVIEW_REQUIRED' USING ERRCODE='PT409';
+    END IF;""",1)
+deliv=rep(deliv,'  v_finalizada boolean := false; v_avanco jsonb;',
+ '  v_finalizada boolean := false; v_avanco jsonb; v_stock_result jsonb;',1)
 # R3: confirmation only for full reservation; partial delivery rejected before any write.
 deliv=rep(deliv,"""      IF v_ent.qtd > coalesce(v_est.quantidade, 0) THEN
         RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA';
@@ -36,13 +44,33 @@ deliv=rep(deliv,"""    UPDATE public.estoque_produto
       VALUES (v_est.id, 'expedicao', v_ent.qtd, 'reservado', 'expedido',
               v_os_id, v_origem, v_uid, v_est.lote_id, 'Baixa por confirmação de entrega');
     END IF;""","""    IF v_est.status::text <> 'expedido' THEN
-      PERFORM public.rpc_estoque_operar_v1('expedicao', v_est.id, v_ent.qtd,
+      v_stock_result := public.rpc_estoque_operar_v1('expedicao', v_est.id, v_ent.qtd,
         'entrega-confirm-expedicao:' || p_entrega_id::text,
         jsonb_build_object('origem','fn_entrega_confirmar_engine_v1','referencia_tipo','entrega',
           'referencia_id', p_entrega_id, 'os_id', v_os_id, 'os_tipo', v_origem,
           'observacao','Baixa por confirmação de entrega'));
+      IF v_stock_result->>'ok' IS DISTINCT FROM 'true' THEN
+        RAISE EXCEPTION 'ENTREGA_ESTOQUE_SEM_CONFIRMACAO' USING ERRCODE='PT409';
+      END IF;
 PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
     END IF;""",1)
+# Child negative/NULL envelopes never authorize a cancellation success.
+deliv=rep(deliv,"""      );
+      SELECT * INTO v_item FROM public.estoque_produto WHERE id = v_entrega.estoque_produto_id FOR UPDATE;""",
+"""      );
+      IF v_estorno->>'ok' IS DISTINCT FROM 'true' THEN
+        RAISE EXCEPTION 'ENTREGA_ESTORNO_NAO_CONFIRMADO' USING ERRCODE='PT409';
+      END IF;
+      PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+      SELECT * INTO v_item FROM public.estoque_produto WHERE id = v_entrega.estoque_produto_id FOR UPDATE;""",1)
+deliv=rep(deliv,"""      );
+    ELSIF v_item.status::text NOT IN ('disponivel', 'estornado') THEN""",
+"""      );
+      IF v_reserva->>'success' IS DISTINCT FROM 'true' THEN
+        RAISE EXCEPTION 'ENTREGA_RESERVA_NAO_CANCELADA' USING ERRCODE='PT409';
+      END IF;
+      PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+    ELSIF v_item.status::text NOT IN ('disponivel', 'estornado') THEN""",1)
 assert 'FOR SHARE' not in deliv and "hashtext('entrega_faturar" not in deliv
 for t,name in((stock,'stock'),(bill,'billing')):
  if 'FOR SHARE' in t:raise SystemExit('FAIL-CLOSED share gate in '+name)

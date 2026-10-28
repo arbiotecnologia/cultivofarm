@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## Etapas 5/6 — contratos OS→entrega→estoque, 28/10/2026
+- [ ] Captura LIVE somente leitura, comparação dos três pacotes e contratos manuais/B2B/itens.
+- [ ] Deltas INATIVOS de confirmação/cancelamento, PRE/POST atuais e rollback deny-only; sem modificar writers.
+- [ ] Testes PostgreSQL descartáveis de item N, recibos, concorrência e rollback; discriminar motor capturado e stubs.
+- [ ] Atualizar plano original/relatório/gates; instalação, envase, B2B/onfarm e JWT A/B continuam bloqueados.
+
 ## Etapa 6 — consumidor financeiro seguro, 28/10/2026
 - [x] Diálogo existente com estados seguros/releitura, sem generate/mark/fiscal enquanto A2/valor/autoridade indisponíveis; draft/conflicts/fences, sem sucesso fabricado.
 - [x] QueryClient real/Auth-transporte simulados 14 testes +5 contratos offline +42 regressões =61/61; OS/entrega writers/grants intactos.
