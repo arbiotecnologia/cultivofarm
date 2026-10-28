@@ -1,0 +1,325 @@
+$ vitest run src/test/entregas/consumidorEntrega.test.tsx
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > dupla submissão despacha uma criação
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > falha item N conserva efeitos conhecidos sem rollback direto
+[criarEntrega] falha no motor transacional: Error: conflito
+    at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:658:24[90m)[39m
+    at Object.mutationFn [90m(/dev-server/[39msrc/pages/Entregas.tsx:547:27[90m)[39m
+
+ ❯ src/test/entregas/consumidorEntrega.test.tsx (6 tests | 6 failed) 2260ms
+   × Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > dupla submissão despacha uma criação 1101ms
+     → expected "spy" to be called 1 times, but got 2 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"min-w-0 flex-1"[39m
+          [36m>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+            [36m>[39m
+              [0mEntregas[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+            [36m>[39m
+              [0mExpedição e logística de entrega[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M5 12h14"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M12 5v14"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [0mNova Entrega[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"p-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+            [36m>[39m
+              [36m<div>[39m
+                [36m<label[39m
+                  [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+                [36m>[39m
+                  [0mData início[0m
+                [36m</label>[39m
+                [36m<input[39m
+                  [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                  [33mtype[39m=[32m"date"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<label[39m
+                  [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+                [36m>[39m
+                  [0mData fim[0m
+                [36m</label>[39m
+                [36m<input[39m
+                  [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                  [33mtype[39m=[32m"date"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<label[39m
+                  [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+                [36m>[39m
+                  [0mProduto[0m
+                [36m</label>[39m
+                [36m<button[39m
+                  [33maria-autocomplete[39m=[32m"none"[39m
+                  [33maria-controls[39m=[32m"radix-:r0:"[39m
+                  [33maria-expanded[39m=[32m"false"[39m
+                  [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1"[39m
+                  [33mdata-state[39m=[32m"closed"[39m
+                  [33mdir[39m=[32m"ltr"[39m
+                  [33mrole[39m=[32m"combobox"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mstyle[39m=[32m"pointer-events: none;"[39m
+                  [36m>[39m
+                    [0mTodos os produtos[0m
+                  [36m</span>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"24"[39m
+          ...
+   × Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > motor ok:false não anuncia grupo concluído nem compensa ficticiamente 28ms
+     → promise resolved "undefined" instead of rejecting
+   × Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > falha item N conserva efeitos conhecidos sem rollback direto 1028ms
+     → promise resolved "undefined" instead of rejecting
+   × Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK tardio após tenant não expede/invalida/sucesso 40ms
+     → expected undefined to be an instance of Error
+   × Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK tardio após ator não expede/invalida/sucesso 34ms
+     → expected undefined to be an instance of Error
+   × Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK tardio após epoch não expede/invalida/sucesso 27ms
+     → expected undefined to be an instance of Error
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > dupla submissão despacha uma criação
+AssertionError: expected "spy" to be called 1 times, but got 2 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"space-y-4 sm:space-y-6"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-4 sm:mb-6"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"min-w-0 flex-1"[39m
+          [36m>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"text-xl sm:text-2xl font-bold text-foreground break-words leading-tight"[39m
+            [36m>[39m
+              [0mEntregas[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-sm text-muted-foreground break-words"[39m
+            [36m>[39m
+              [0mExpedição e logística de entrega[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"shrink-0 w-full lg:w-auto flex justify-end flex-wrap gap-1.5"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm w-full sm:w-auto"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33mclass[39m=[32m"lucide lucide-plus h-4 w-4 mr-2"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M5 12h14"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M12 5v14"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [0mNova Entrega[0m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"p-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"[39m
+            [36m>[39m
+              [36m<div>[39m
+                [36m<label[39m
+                  [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+                [36m>[39m
+                  [0mData início[0m
+                [36m</label>[39m
+                [36m<input[39m
+                  [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                  [33mtype[39m=[32m"date"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<label[39m
+                  [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+                [36m>[39m
+                  [0mData fim[0m
+                [36m</label>[39m
+                [36m<input[39m
+                  [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+                  [33mtype[39m=[32m"date"[39m
+                  [33mvalue[39m=[32m""[39m
+                [36m/>[39m
+              [36m</div>[39m
+              [36m<div>[39m
+                [36m<label[39m
+                  [33mclass[39m=[32m"sm:text-sm font-semibold sm:font-medium mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-xs"[39m
+                [36m>[39m
+                  [0mProduto[0m
+                [36m</label>[39m
+                [36m<button[39m
+                  [33maria-autocomplete[39m=[32m"none"[39m
+                  [33maria-controls[39m=[32m"radix-:r0:"[39m
+                  [33maria-expanded[39m=[32m"false"[39m
+                  [33mclass[39m=[32m"flex h-12 sm:h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors [&>span]:line-clamp-1"[39m
+                  [33mdata-state[39m=[32m"closed"[39m
+                  [33mdir[39m=[32m"ltr"[39m
+                  [33mrole[39m=[32m"combobox"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mstyle[39m=[32m"pointer-events: none;"[39m
+                  [36m>[39m
+                    [0mTodos os produtos[0m
+                  [36m</span>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"lucide lucide-chevron-down h-4 w-4 opacity-50"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"24"[39m
+          ...
+ ❯ src/test/entregas/consumidorEntrega.test.tsx:30:320
+
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > motor ok:false não anuncia grupo concluído nem compensa ficticiamente
+AssertionError: promise resolved "undefined" instead of rejecting
+
+[32m- Expected:[39m 
+Error {
+  "message": "rejected promise",
+}
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/test/entregas/consumidorEntrega.test.tsx:31:199
+
+ ❯ node_modules/@testing-library/react/dist/act-compat.js:47:24
+ ❯ act node_modules/react/cjs/react.development.js:2512:16
+ ❯ Proxy.act node_modules/@testing-library/react/dist/act-compat.js:46:25
+ ❯ src/test/entregas/consumidorEntrega.test.tsx:31:159
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > falha item N conserva efeitos conhecidos sem rollback direto
+AssertionError: promise resolved "undefined" instead of rejecting
+
+[32m- Expected:[39m 
+Error {
+  "message": "rejected promise",
+}
+
+[31m+ Received:[39m 
+undefined
+
+ ❯ src/test/entregas/consumidorEntrega.test.tsx:32:298
+
+ ❯ node_modules/@testing-library/react/dist/act-compat.js:47:24
+ ❯ act node_modules/react/cjs/react.development.js:2512:16
+ ❯ Proxy.act node_modules/@testing-library/react/dist/act-compat.js:46:25
+ ❯ src/test/entregas/consumidorEntrega.test.tsx:32:250
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK tardio após tenant não expede/invalida/sucesso
+ FAIL  src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK tardio após ator não expede/invalida/sucesso
+ FAIL  src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK tardio após epoch não expede/invalida/sucesso
+AssertionError: expected undefined to be an instance of Error
+ ❯ src/test/entregas/consumidorEntrega.test.tsx:33:611
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  6 failed (6)
+   Start at  02:14:48
+   Duration  4.57s (transform 316ms, setup 82ms, collect 820ms, tests 2.26s, environment 493ms, prepare 78ms)
+
+error: script "test" exited with code 1
