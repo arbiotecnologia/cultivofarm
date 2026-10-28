@@ -1,0 +1,45 @@
+-- INACTIVE SELECT ONLY. No remediation, no IDs, no amounts or personal data.
+-- Auditor must validate canonical project and current staff/tenant authority.
+-- Five-row suppression is privacy minimization, not authorization.
+WITH scoped AS (
+  SELECT ar.id, ar.origin_id, ar.organization_id, ar.total_amount,
+         ar.origin_type, ar.status
+  FROM public.accounts_receivable ar
+  WHERE ar.organization_id = public.h15_actor_organization()
+    AND public.is_financial_staff(auth.uid())
+    AND ar.origin_type = 'B2B_ORDER'
+), per_title AS (
+  SELECT ar.id,
+    (SELECT count(*) FROM public.accounts_receivable_installments i
+      WHERE i.receivable_id=ar.id AND i.organization_id=ar.organization_id) AS parts,
+    (SELECT COALESCE(sum(i.original_amount),0) FROM public.accounts_receivable_installments i
+      WHERE i.receivable_id=ar.id AND i.organization_id=ar.organization_id) IS DISTINCT FROM ar.total_amount AS sum_mismatch,
+    EXISTS (SELECT 1 FROM public.accounts_receivable_installments i
+      WHERE i.receivable_id=ar.id AND i.organization_id IS DISTINCT FROM ar.organization_id) AS foreign_child,
+    EXISTS (SELECT 1 FROM public.accounts_receivable_installments i
+      WHERE i.receivable_id=ar.id AND i.organization_id=ar.organization_id
+        AND i.interest_amount IS DISTINCT FROM
+          (SELECT COALESCE(sum(p.interest_amount),0) FROM public.receivable_payments p
+            WHERE p.installment_id=i.id AND p.organization_id=ar.organization_id)) AS interest_event_mismatch,
+    EXISTS (SELECT 1 FROM public.accounts_receivable_installments i
+      WHERE i.receivable_id=ar.id AND i.organization_id=ar.organization_id
+        AND i.received_amount IS DISTINCT FROM
+          (SELECT COALESCE(sum(p.amount_received),0) FROM public.receivable_payments p
+            WHERE p.installment_id=i.id AND p.organization_id=ar.organization_id)) AS received_event_mismatch,
+    EXISTS (SELECT 1 FROM public.partner_order_payment_schedule s
+      WHERE s.partner_order_id=ar.origin_id AND s.receivable_installment_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM public.accounts_receivable_installments i
+          WHERE i.id=s.receivable_installment_id AND i.receivable_id=ar.id
+            AND i.organization_id=ar.organization_id AND i.installment_number=s.installment_number
+            AND i.original_amount=s.amount AND i.due_date=s.due_date)) AS linked_snapshot_mismatch
+  FROM scoped ar
+)
+SELECT count(*) AS titles_reviewed,
+       count(*) FILTER (WHERE parts=0) AS titles_without_parts,
+       count(*) FILTER (WHERE sum_mismatch) AS titles_with_sum_mismatch,
+       count(*) FILTER (WHERE foreign_child) AS titles_with_foreign_child,
+       count(*) FILTER (WHERE interest_event_mismatch) AS titles_with_interest_event_mismatch,
+       count(*) FILTER (WHERE received_event_mismatch) AS titles_with_received_event_mismatch,
+       count(*) FILTER (WHERE linked_snapshot_mismatch) AS titles_with_linked_snapshot_mismatch
+FROM per_title
+HAVING count(*) >= 5;

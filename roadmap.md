@@ -982,3 +982,9 @@
 - [x] NO-GO: writeralternativo recompõe juros, BI divergente e cancelamento sem tenant; nenhuma candidata/runtime/histórico alterado.
 - [x] Revisão independente e correções do harness;222Vitest/12arquivos; plano e matriz103casos suplementares preservam entrega e históricos.
 - [ ] Futuro pacote seguro/instalação/JWT: bloqueados por cadeia B2B e contratos BI/proveniência; calendário/parcelamento/billing e contabilidade pendentes.
+
+## 28/10 20:38 — fechamento de escritores e contrato financeiro
+- [x] Inventário105corpos/16writerslexicais/17consumidores,64comparações sem drift e semântica/snapshots documentados.
+- [x] PG122PASS/17FAIL/8BLOCKED/1NOT RUN;194Vitest/12arquivos;duas sessões não certificam espera crítica;taxas preservadas.
+- [x] Diagnóstico agregado inativo/sintético, revisão independente, NO-GO e plano original atualizados.
+- [ ] Implantação/remediação: bloqueadas por fechamento transitivo/contratosBI/proveniência/JWT;sem candidato SQL novo.

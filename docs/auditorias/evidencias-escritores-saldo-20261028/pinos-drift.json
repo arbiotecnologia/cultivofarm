@@ -1,0 +1,464 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "base_commit": "1da2c3136beb670d0b94578ee880d24cd06dea41",
+  "root_functions": 59,
+  "direct_helper_functions": 46,
+  "distinct_functions": 105,
+  "relations": 10,
+  "comparisons": [
+    {
+      "signature": "platform_private.b2b_internal_child_snapshot_guard()",
+      "oid": "101073",
+      "old_md5": "f9fcfca4588854d927f7f9a1bdbe4de7",
+      "new_md5": "f9fcfca4588854d927f7f9a1bdbe4de7",
+      "status": "MATCH"
+    },
+    {
+      "signature": "platform_private.b2b_internal_order_snapshot_guard()",
+      "oid": "101068",
+      "old_md5": "9cad2aaa995277b913f8b40816fea504",
+      "new_md5": "9cad2aaa995277b913f8b40816fea504",
+      "status": "MATCH"
+    },
+    {
+      "signature": "platform_private.b2b_own_obligations(uuid,timestamp with time zone,uuid)",
+      "oid": "123116",
+      "old_md5": "74cbea88f6f0ebe10dd8c1df3bdcb0ff",
+      "new_md5": "74cbea88f6f0ebe10dd8c1df3bdcb0ff",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.create_partner_order_secure(uuid,text,jsonb,date,uuid,date,integer,text,text)",
+      "oid": "42552",
+      "old_md5": "7ec41e17ca6cca8cd4ef1404a9edc936",
+      "new_md5": "7ec41e17ca6cca8cd4ef1404a9edc936",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.d51_5_validate_financial_tenant_links()",
+      "oid": "90880",
+      "old_md5": "f470a25ba7e65b366c62ad3ac8aa3112",
+      "new_md5": "f470a25ba7e65b366c62ad3ac8aa3112",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.financial_storage_object_permitted(text,text)",
+      "oid": "90817",
+      "old_md5": "d03da0efc828ed0f99259c75390c6d13",
+      "new_md5": "d03da0efc828ed0f99259c75390c6d13",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_b2b_apply_interest(numeric,text,numeric,numeric)",
+      "oid": "41635",
+      "old_md5": "806e5d8789b08cd6790a10feaf95f26d",
+      "new_md5": "806e5d8789b08cd6790a10feaf95f26d",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "oid": "41637",
+      "old_md5": "213ac31f3a30816ead75365b0d1fed18",
+      "new_md5": "213ac31f3a30816ead75365b0d1fed18",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_fin_aging(text)",
+      "oid": "42577",
+      "old_md5": "495aa7b0ff5bf32f362b763a2a3f0f07",
+      "new_md5": "495aa7b0ff5bf32f362b763a2a3f0f07",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_fin_cashflow(date,date,text,text)",
+      "oid": "42578",
+      "old_md5": "197ffcc5735bcab0454e2936f1b76642",
+      "new_md5": "197ffcc5735bcab0454e2936f1b76642",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_fin_dashboard_kpis(date,date)",
+      "oid": "41685",
+      "old_md5": "664443768c3602fc24d8f46481fafce4",
+      "new_md5": "664443768c3602fc24d8f46481fafce4",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_fin_dre_summary(date,date,text)",
+      "oid": "42579",
+      "old_md5": "eb17b705a9000493f9b8e947ab6a39c8",
+      "new_md5": "eb17b705a9000493f9b8e947ab6a39c8",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_fin_inadimplencia()",
+      "oid": "42581",
+      "old_md5": "bd13971bcd41848e11afacb3694cd9d4",
+      "new_md5": "bd13971bcd41848e11afacb3694cd9d4",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_fin_revenue_by_category(date,date,text,integer)",
+      "oid": "42582",
+      "old_md5": "6146a8ca1690c3e26dc292ccc5da0c0f",
+      "new_md5": "6146a8ca1690c3e26dc292ccc5da0c0f",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_fin_revenue_by_customer(date,date,text,integer)",
+      "oid": "42583",
+      "old_md5": "fcdc55bf749e998e2e478f0ae715422a",
+      "new_md5": "fcdc55bf749e998e2e478f0ae715422a",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_financial_inconsistencies()",
+      "oid": "42584",
+      "old_md5": "2c75b1da47c9bdab169d28ec04eb0a12",
+      "new_md5": "2c75b1da47c9bdab169d28ec04eb0a12",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_generate_receivable_from_entrega(uuid,jsonb)",
+      "oid": "41730",
+      "old_md5": "670ea34d37c4c4fd6612031ad763a3a7",
+      "new_md5": "670ea34d37c4c4fd6612031ad763a3a7",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_generate_receivable_installments()",
+      "oid": "41732",
+      "old_md5": "f632f15c9f46cb9889082fc533a27ea1",
+      "new_md5": "f632f15c9f46cb9889082fc533a27ea1",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_generate_recurring_title(uuid,date,boolean)",
+      "oid": "41733",
+      "old_md5": "b189e44dac1a0429091ea053f032ffb0",
+      "new_md5": "b189e44dac1a0429091ea053f032ffb0",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_h6_guard_title_snapshot()",
+      "oid": "41737",
+      "old_md5": "d9cc5c95f837de9d77cec2159e24bbf9",
+      "new_md5": "d9cc5c95f837de9d77cec2159e24bbf9",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_h6b_payment_fingerprint(text,uuid,jsonb)",
+      "oid": "41740",
+      "old_md5": "37cb7a6ebedbe970454ab12560ac9829",
+      "new_md5": "37cb7a6ebedbe970454ab12560ac9829",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_h6c_entrega_ar_b2b_link()",
+      "oid": "41742",
+      "old_md5": "9d9cdca4e82d515557c0cdd151f1d077",
+      "new_md5": "9d9cdca4e82d515557c0cdd151f1d077",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_h6d_block_hard_delete()",
+      "oid": "41744",
+      "old_md5": "5c07dd23a0c9355c3fe11811004b0381",
+      "new_md5": "5c07dd23a0c9355c3fe11811004b0381",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_mark_financial_overdue()",
+      "oid": "42596",
+      "old_md5": "7c12dddccb56fa36903a741d92fc9afb",
+      "new_md5": "7c12dddccb56fa36903a741d92fc9afb",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_recalc_receivable_installment()",
+      "oid": "41754",
+      "old_md5": "c8a1d33461c76eb3da3c7af1c011cf2b",
+      "new_md5": "c8a1d33461c76eb3da3c7af1c011cf2b",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_reverse_payment(uuid,text,text)",
+      "oid": "41769",
+      "old_md5": "9f2bfe6b1291cfeaa4814ee67c103be6",
+      "new_md5": "9f2bfe6b1291cfeaa4814ee67c103be6",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.fn_revert_recurring_generation(uuid)",
+      "oid": "41770",
+      "old_md5": "e6728e61cdf717c73ddea85e4d72045e",
+      "new_md5": "e6728e61cdf717c73ddea85e4d72045e",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.generate_b2b_receivable_secure_impl(uuid)",
+      "oid": "42604",
+      "old_md5": "1bdac7fae6d702fb42d3a30539e9c9c3",
+      "new_md5": "1bdac7fae6d702fb42d3a30539e9c9c3",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_financial_alerts(date)",
+      "oid": "42615",
+      "old_md5": "3ff948f9a2c4175addc31ae9e71c39af",
+      "new_md5": "3ff948f9a2c4175addc31ae9e71c39af",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_financial_cashflow(date,date,text,text)",
+      "oid": "42617",
+      "old_md5": "45477780820f953b72650a8bf62e9f82",
+      "new_md5": "45477780820f953b72650a8bf62e9f82",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_financial_dashboard_summary(date,date,uuid,uuid,uuid)",
+      "oid": "41786",
+      "old_md5": "f0ee19eefed682c2bd82751b9e5e1be9",
+      "new_md5": "f0ee19eefed682c2bd82751b9e5e1be9",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_financial_dre_summary(date,date,text,uuid)",
+      "oid": "41788",
+      "old_md5": "44ab3f4566779b06911969f5c1e947ce",
+      "new_md5": "44ab3f4566779b06911969f5c1e947ce",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_financial_report_data(text,date,date,uuid,uuid,uuid,text,text)",
+      "oid": "41790",
+      "old_md5": "1f545f115cbf869f15a3e237bfa1909d",
+      "new_md5": "1f545f115cbf869f15a3e237bfa1909d",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_report_customer_statement(uuid,date,date)",
+      "oid": "41796",
+      "old_md5": "73b691e31d3ddd67fc6813d9a92d8156",
+      "new_md5": "73b691e31d3ddd67fc6813d9a92d8156",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_report_delinquency(date)",
+      "oid": "42627",
+      "old_md5": "8f96cf072e238133efb9c848105452d8",
+      "new_md5": "8f96cf072e238133efb9c848105452d8",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_report_deliveries_billing_status(date,date)",
+      "oid": "42628",
+      "old_md5": "18481060076d270362aa0788e50736ac",
+      "new_md5": "18481060076d270362aa0788e50736ac",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_report_monthly_financial(date,date,uuid,text)",
+      "oid": "41797",
+      "old_md5": "b343711231fd7db31523cfb642c80377",
+      "new_md5": "b343711231fd7db31523cfb642c80377",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_report_nfe_pending(jsonb)",
+      "oid": "42629",
+      "old_md5": "7116a4d9e85bb20ec54c740f7d3e5a24",
+      "new_md5": "7116a4d9e85bb20ec54c740f7d3e5a24",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_report_payables(jsonb)",
+      "oid": "42630",
+      "old_md5": "e619ffef9ddc99d9e326edb3ade68e4f",
+      "new_md5": "e619ffef9ddc99d9e326edb3ade68e4f",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_report_receivables(jsonb)",
+      "oid": "42631",
+      "old_md5": "970a18caa86f578cd31de2a56f002f6f",
+      "new_md5": "970a18caa86f578cd31de2a56f002f6f",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.get_top_financial_rankings(date,date,integer)",
+      "oid": "41798",
+      "old_md5": "50a9fc0efaf4e422837569dcbc2586f0",
+      "new_md5": "50a9fc0efaf4e422837569dcbc2586f0",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.guard_financial_document_integrity()",
+      "oid": "116023",
+      "old_md5": "62452456944c53935fde9f15da7bac8e",
+      "new_md5": "62452456944c53935fde9f15da7bac8e",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.is_financial_staff(uuid)",
+      "oid": "42634",
+      "old_md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+      "new_md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.issue_financial_receipt(uuid,text)",
+      "oid": "41808",
+      "old_md5": "49a1d165279ab4253e4e586fc7ccdeb3",
+      "new_md5": "49a1d165279ab4253e4e586fc7ccdeb3",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.recalc_partner_risk_score(uuid)",
+      "oid": "41836",
+      "old_md5": "57a24738323c4a98d1cd141f47e559c4",
+      "new_md5": "57a24738323c4a98d1cd141f47e559c4",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.respond_b2b_order_quote_secure(uuid,jsonb,date,integer,text)",
+      "oid": "42654",
+      "old_md5": "e57d3a6416910937bd02c9180dff0cf1",
+      "new_md5": "e57d3a6416910937bd02c9180dff0cf1",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_b2b_aging(uuid)",
+      "oid": "42666",
+      "old_md5": "b644afcc4db9ffe3f70934b52f16b9b3",
+      "new_md5": "b644afcc4db9ffe3f70934b52f16b9b3",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_b2b_aging_detalhado(date,date,uuid,text)",
+      "oid": "42667",
+      "old_md5": "7ba775cf0fc63a23c3e5a1b32b0ae302",
+      "new_md5": "7ba775cf0fc63a23c3e5a1b32b0ae302",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_b2b_carteira_kpis(date,date)",
+      "oid": "42669",
+      "old_md5": "4bf332fe6af936cb1afd0e566bb186a0",
+      "new_md5": "4bf332fe6af936cb1afd0e566bb186a0",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_b2b_check_governance_block(uuid,text)",
+      "oid": "41869",
+      "old_md5": "921d10758f099faaf87e93ec69115507",
+      "new_md5": "921d10758f099faaf87e93ec69115507",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_b2b_executive_alerts()",
+      "oid": "42671",
+      "old_md5": "c889e9d74aa746ca8f159d684b158d54",
+      "new_md5": "c889e9d74aa746ca8f159d684b158d54",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_b2b_financial_kpis(date,date,uuid)",
+      "oid": "42673",
+      "old_md5": "4712595ead41749d3ffef5c8f46588d3",
+      "new_md5": "4712595ead41749d3ffef5c8f46588d3",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_b2b_governance_kpis()",
+      "oid": "42674",
+      "old_md5": "8b05c0c61a80fe8a062d13aa5d7ddf9f",
+      "new_md5": "8b05c0c61a80fe8a062d13aa5d7ddf9f",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_b2b_partner_profitability(date,date,uuid)",
+      "oid": "42678",
+      "old_md5": "7e5f703dad6f92ff9be6b01672463f93",
+      "new_md5": "7e5f703dad6f92ff9be6b01672463f93",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_b2b_revenue_forecast(uuid)",
+      "oid": "42680",
+      "old_md5": "d1ec2f714516e3c45d8b608405405939",
+      "new_md5": "d1ec2f714516e3c45d8b608405405939",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_cancel_accounts_receivable(uuid,text)",
+      "oid": "41871",
+      "old_md5": "c89a108356d9aa251531d3dfdb54d41a",
+      "new_md5": "c89a108356d9aa251531d3dfdb54d41a",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_cancel_financial_installment(uuid,text,text)",
+      "oid": "41873",
+      "old_md5": "c7d30a08b1cbd00936cd83aa5bf3415c",
+      "new_md5": "c7d30a08b1cbd00936cd83aa5bf3415c",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_create_financial_title(text,jsonb)",
+      "oid": "41905",
+      "old_md5": "0778b876b300e08d53f1cf7790394fc5",
+      "new_md5": "0778b876b300e08d53f1cf7790394fc5",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_portal_partner_financial()",
+      "oid": "42780",
+      "old_md5": "832b0b107151ffd2c2f2be385964c22a",
+      "new_md5": "832b0b107151ffd2c2f2be385964c22a",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_portal_partner_financial(uuid)",
+      "oid": "42781",
+      "old_md5": "ecd99f80a194bb9b540a4c197e0b9afe",
+      "new_md5": "ecd99f80a194bb9b540a4c197e0b9afe",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_portal_partner_financial(uuid,boolean,timestamp with time zone,uuid)",
+      "oid": "123117",
+      "old_md5": "d9d53c802ca11c59d235c7d32d6e8eee",
+      "new_md5": "d9d53c802ca11c59d235c7d32d6e8eee",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_register_receivable_payment(uuid,jsonb)",
+      "oid": "42019",
+      "old_md5": "db41f7e2cfcb196ef64536f62746f365",
+      "new_md5": "db41f7e2cfcb196ef64536f62746f365",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.rpc_upsert_fiscal_invoice_manual(uuid,jsonb)",
+      "oid": "42055",
+      "old_md5": "8010756f67add3a57e4f40c510c268ee",
+      "new_md5": "8010756f67add3a57e4f40c510c268ee",
+      "status": "MATCH"
+    },
+    {
+      "signature": "public.tg_recalc_risk_on_ar_change()",
+      "oid": "42131",
+      "old_md5": "2d38119a0bb885471ba0112c300a4144",
+      "new_md5": "2d38119a0bb885471ba0112c300a4144",
+      "status": "MATCH"
+    }
+  ],
+  "closed_transitive": false,
+  "installable": false,
+  "captures_sha256": {
+    "receivable-writers-live-20261028.json": "bec81b86b40114036d1a752aed83b2094a3b10000387af4e00b11b5a9fae777c",
+    "receivable-writers-dependencies-live-20261028.json": "7ed894900018d22de9b58672f2bb51ec61672ec7b0f8a532bbb1ce0ab3b9267f"
+  }
+}

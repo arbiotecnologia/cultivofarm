@@ -109,3 +109,13 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - [x] NO-GO documentado: original contém total financiado, juros operacionais passam a somas de eventos; conversão para principal perde financiamento. Experimento zero juros iniciais não supera UPDATE do writeralternativo. Runtime/SQLreview anteriores/entrega/históricos intactos; nenhuma candidata instalável emitida.
 - [ ] P0: reconciliar cadeia B2B INSERT+UPDATE integral e remediação por proveniência; P0 adicional cancelamento sem tenant no corpo (JWT não executado); P1 definições BI/aging/crédito e rateio real centavos pendentes.
 - [ ] Gates: fechamento transitivo helpers/FKs/RLS/tenant/SaaS/risco/fiscal, PRE/POST hash/ACL/policy/trigger+índices agregados e rollbackdeny-only somente após contrato seguro; revisão independente→instalação autorizada→JWT/browser/locks/concorrência/contabilidade. Calendário fracionário/parcelamento/billing seguem indefinidos; produçãoOFF.
+
+
+## Continuação 28/10 20:38 — harmonização canônica dos escritores (Etapas6/9)
+
+- [x] Base1da2c3136inspecionada;105corpos metadata-only com OIDs/ACL/owners/MD5,10relações novas,16writerslexicais e17consumidores na matriz suplementar;64comparações sem drift, fechamento transitivo NÃO comprovado.
+- [x] Runner existente ampliado sem duplicar módulos: loop exato de atribuições baseline versus hipótese preservando SUM(eventos), duas sessões/ACK/replay/estorno e diagnóstico de grupos1/4/5. PG122PASS/17FAIL/8BLOCKED/1NOT RUN (148casos);Vitest194/194em12arquivos, sem repetir cálculos aprovados da taxa nem somar históricos.
+- [x] Contrato observado:original/net total financiado;juros inicial no schedule,interest operacional em conflito temporal LIVE;proposta limita juros aos eventos e não altera original/snapshots. Relatório `docs/auditorias/escritores-saldo-canonico-20261028.md`;matrizes/pinos em `evidencias-escritores-saldo-20261028/`.
+- [x] SELECT histórico inativo retorna apenas contagens staff/h15 com supressão pequena; testes sintéticos, nenhum título LIVE. Conciliação manual por empresa/termos/eventos e autorização futura específicas, nunca UPDATE retroativo automático.
+- [ ] NO-GO SQL/frontend/remediação: wrapper/core inteiro,Auth/H15/SaaS/tickets/origem/fiscal/risco/FKs/RLS/índices transitivos e importações/compensação não fechados. Não produzir candidate/PRE/POST/rollback unilateral; futuros pinos completos/deny-only somente após revisão independente.
+- [ ] P0duplicação+replay encargo/cancelamento tenant;P1BI/aging e calendário/parcelamento/billing;duas sessões não comprovam espera crítica;JWT/RLS A/B,contabilidade,envase/B2B e entregas preservados BLOCKED.
