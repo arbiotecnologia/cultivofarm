@@ -10,6 +10,10 @@ import tempfile
 import time
 
 H=Path(__file__).resolve().parent
+def disposable_fragment():
+ text=(H/'composed-delivery.sql.review').read_text()
+ assert text.count('-- DISPOSABLE_TEST_FRAGMENT_BEGIN')==text.count('-- DISPOSABLE_TEST_FRAGMENT_END')==1
+ return text.split('-- DISPOSABLE_TEST_FRAGMENT_BEGIN\n',1)[1].split('\n-- DISPOSABLE_TEST_FRAGMENT_END',1)[0]
 PG=Path('/nix/store/avg1rhq9w93k03qmdaklazcsapn45zpd-postgresql-17.9/bin')
 U='00000000-0000-4000-8000-000000000001'
 V='00000000-0000-4000-8000-000000000002'
@@ -77,7 +81,7 @@ CREATE FUNCTION public.rpc_cockpit_cancelar_reserva_v1(i uuid,o uuid,t text,m te
 GRANT USAGE ON SCHEMA auth,public TO anon,authenticated;"""
   sql(schema)
   fs=json.loads((H.parent/'os-delivery-reopening-20261027/live/definitions.json').read_text())['functions']
-  for n in ['public.fn_cockpit_norm_origem','public.fn_cockpit_assert_operador_origem','public.fn_entrega_assert_confirmador','public.fn_estoque_ctx_open','public.rpc_cockpit_criar_entrega_v1','public.fn_entrega_confirmar_engine_v1','public.rpc_entrega_cancelar_v1','public.rpc_entrega_confirmar_v1']:
+  for n in ['public.fn_cockpit_norm_origem','public.fn_cockpit_assert_operador_origem','public.fn_entrega_assert_confirmador','public.fn_estoque_ctx_open','public.rpc_cockpit_criar_entrega_v1','public.fn_entrega_confirmar_engine_v1','public.rpc_entrega_cancelar_v1','public.rpc_entrega_confirmar_v1','public.rpc_cockpit_confirmar_entrega_v1']:
    sql(fs[n]['definition'])
    ok(f"SELECT md5(pg_get_functiondef(oid))='{fs[n]['md5']}' FROM pg_proc WHERE proname='{n.split('.')[-1]}'",'exact LIVE body '+n)
   E2='00000000-0000-4000-8000-000000000009';S2='00000000-0000-4000-8000-00000000000a'
@@ -102,7 +106,14 @@ GRANT USAGE ON SCHEMA auth,public TO anon,authenticated;"""
   o=drain(p,w)
   assert '40P01' in o or 'deadlock' in o, o;checks.append('baseline SHARE delivery + exclusive motor reproduces 40P01 deadlock');print('PASS',checks[-1])
   # ---- composed candidate ----
-  sql((H/'composed-delivery.sql.review').read_text())
+  before_hash=sql("SELECT md5(pg_get_functiondef('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)'::regprocedure));").stdout.strip()
+  err("BEGIN;"+disposable_fragment()+"DO $$ BEGIN RAISE EXCEPTION 'injected failing POST' USING ERRCODE='42501'; END $$; COMMIT;",'42501','failing POST rolls back complete delivery DDL transaction')
+  ok(f"SELECT md5(pg_get_functiondef('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)'::regprocedure))='{before_hash}';",'failed POST preserves baseline body')
+  err((H/'delivery-only-delta.sql.review').read_text(),'42501','current LIVE OID pins reject disposable metadata drift')
+  ok(f"SELECT md5(pg_get_functiondef('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)'::regprocedure))='{before_hash}';",'pinned delta rejection changes no body')
+  sql(disposable_fragment())
+  post=sql("SELECT json_agg(json_build_object('name',n.nspname||'.'||p.proname,'hash',md5(pg_get_functiondef(p.oid)),'config',p.proconfig)) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.proname IN ('delivery_recovery_scope_v1','rpc_cockpit_criar_entrega_v1','fn_entrega_confirmar_engine_v1','rpc_entrega_cancelar_v1');").stdout.strip()
+  (H/'local-post-hashes.json').write_text(post+'\n')
   ok("SELECT bool_and(prosrc NOT LIKE '%FOR SHARE%') FROM pg_proc WHERE proname IN ('rpc_cockpit_criar_entrega_v1','fn_entrega_confirmar_engine_v1','rpc_entrega_cancelar_v1')",'composed delivery uses only exclusive gate')
   for first,second,label in((can(E),can(E2),'cancel/cancel'),(can(E),conf(E2),'cancel/confirm'),(conf(E),can(E2),'confirm/cancel')):
    reset()
@@ -139,6 +150,24 @@ GRANT USAGE ON SCHEMA auth,public TO anon,authenticated;"""
   reset();sql("CREATE OR REPLACE FUNCTION public.rpc_estoque_operar_v1(a text,i uuid,q numeric,k text,p jsonb) RETURNS jsonb LANGUAGE plpgsql AS $$BEGIN PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; RAISE EXCEPTION 'ledger failure' USING ERRCODE='P0001'; END$$;")
   err(actor()+conf(E),'P0001','motor/ledger failure propagates')
   ok(f"SELECT status='separado' FROM entregas WHERE id='{E}' AND (SELECT count(*) FROM laboratorio_esteira_eventos)=0",'motor failure rolls back delivery and events')
+  # Concrete negative ACK seams, not a claim about the captured stock motor.
+  for reply in ("'{\"ok\":false}'::jsonb", 'NULL::jsonb'):
+   reset();sql("CREATE OR REPLACE FUNCTION public.rpc_estoque_operar_v1(a text,i uuid,q numeric,k text,p jsonb) RETURNS jsonb LANGUAGE plpgsql AS $$BEGIN INSERT INTO motor_calls VALUES(a,i,q,k); UPDATE estoque_produto SET status='expedido' WHERE id=i; RETURN "+reply+"; END$$;")
+   err(actor()+conf(E),'PT409','negative/null motor ACK aborts confirmation '+reply)
+   ok(f"SELECT status='separado' FROM entregas WHERE id='{E}' AND (SELECT count(*) FROM motor_calls)=0 AND (SELECT count(*) FROM laboratorio_esteira_eventos)=0",'negative motor ACK rolls child and parent back '+reply)
+  reset();sql(f"UPDATE estoque_produto SET status='expedido' WHERE id='{S}';")
+  err(actor()+conf(E),'PT409','preexisting expedition cannot confirm unowned delivery')
+  ok(f"SELECT status='separado' FROM entregas WHERE id='{E}' AND (SELECT count(*) FROM motor_calls)=0",'ambiguous expedition no effects')
+  reset();sql("CREATE OR REPLACE FUNCTION public.rpc_cockpit_cancelar_reserva_v1(i uuid,o uuid,t text,m text) RETURNS jsonb LANGUAGE plpgsql AS $$BEGIN INSERT INTO motor_calls VALUES('cancelamento_reserva',i,NULL,'negative'); UPDATE estoque_produto SET status='disponivel' WHERE id=i; RETURN '{\"success\":false}'; END$$;")
+  err(actor()+can(E),'PT409','negative reservation cancel ACK aborts parent')
+  ok(f"SELECT status='separado' FROM entregas WHERE id='{E}' AND (SELECT count(*) FROM motor_calls)=0",'negative cancel ACK rollback')
+  reset();sql(f"INSERT INTO estoque_movimentacoes(id,estoque_produto_id,referencia_tipo,referencia_id,acao,created_at) VALUES(gen_random_uuid(),'{S}','entrega','{E}','expedicao',now());")
+  err(actor()+can(E),'PT409','null reversal ACK aborts cancellation')
+  ok(f"SELECT status='separado' FROM entregas WHERE id='{E}' AND (SELECT count(*) FROM motor_calls)=0",'reversal ACK rollback')
+  # Deny-only containment is exercised locally; never restore vulnerable bodies.
+  sql((H/'containment.sql.review').read_text())
+  err(actor()+conf(E),'42501','containment denies confirmation')
+  err(actor()+can(E),'42501','containment denies cancellation')
   err((H/'release.sql.review').read_text(),'42501','release barrier remains closed')
  finally:
   if started:subprocess.run(pre+[str(PG/'pg_ctl'),'-D',str(tmp/'d'),'stop','-m','fast'],capture_output=True,env=env)

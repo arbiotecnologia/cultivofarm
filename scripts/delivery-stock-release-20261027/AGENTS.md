@@ -2,3 +2,4 @@
 - Compose only via assemble.py from the three source candidates with fail-closed fragment counts; never hand-edit candidate.sql.review — prevents drift.
 - One gate mode (cf_user_guards_v1 FOR UPDATE) and one billing advisory key across delivery/stock/billing; delivery stock writes go only through the canonical motor — prevents SHARE→UPDATE deadlocks and ledger bypass.
 - Partial reservation, B2B and onfarm stay rejected; release barrier stays closed until envase transition and real A/B proofs — local stubs are not JWT/RLS proof.
+- Generate delivery-only deltas and current PRE/POST from captured metadata; reject negative child ACKs and ambiguous expedition, and keep historical full billing composition non-installable pending A2 rebase — prevents stale-body installation and false cancellation success.

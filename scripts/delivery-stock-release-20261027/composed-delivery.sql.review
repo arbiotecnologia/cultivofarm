@@ -1,3 +1,6 @@
+BEGIN;
+DO $$ BEGIN RAISE EXCEPTION 'DELIVERY_FRAGMENT_NOT_INSTALLABLE' USING ERRCODE='42501'; END $$;
+-- DISPOSABLE_TEST_FRAGMENT_BEGIN
 -- INACTIVE HARDENING ONLY. NO CLIENT GRANTS. NOT A RELEASE MIGRATION.
 CREATE OR REPLACE FUNCTION platform_private.delivery_recovery_scope_v1(p_os uuid,p_origin text,p_delivery uuid,p_action text)
 RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO '' AS $scope$
@@ -215,7 +218,7 @@ DECLARE
   v_ent record;
   v_est public.estoque_produto%ROWTYPE;
   v_pendentes int; v_total_entregue numeric; v_total_reservado numeric;
-  v_finalizada boolean := false; v_avanco jsonb;
+  v_finalizada boolean := false; v_avanco jsonb; v_stock_result jsonb;
   v_recebedor_nome text;
   v_entregue_em timestamptz;
   v_faturamento text := nullif(btrim(coalesce(p_opcoes->>'faturamento','')), '');
@@ -282,6 +285,9 @@ PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'conf
     SELECT * INTO v_est FROM public.estoque_produto WHERE id = v_ent.estoque_produto_id FOR UPDATE;
 PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
     IF v_est.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO'; END IF;
+    IF v_est.status::text = 'expedido' THEN
+      RAISE EXCEPTION 'ENTREGA_EXPEDICAO_PREEXISTENTE_REVIEW_REQUIRED' USING ERRCODE='PT409';
+    END IF;
     IF v_est.status::text <> 'expedido' THEN
       IF v_os_id IS NOT NULL THEN
         IF v_est.reservado_para_os_id IS DISTINCT FROM v_os_id THEN
@@ -323,11 +329,14 @@ PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'conf
 
   IF v_est.id IS NOT NULL THEN
     IF v_est.status::text <> 'expedido' THEN
-      PERFORM public.rpc_estoque_operar_v1('expedicao', v_est.id, v_ent.qtd,
+      v_stock_result := public.rpc_estoque_operar_v1('expedicao', v_est.id, v_ent.qtd,
         'entrega-confirm-expedicao:' || p_entrega_id::text,
         jsonb_build_object('origem','fn_entrega_confirmar_engine_v1','referencia_tipo','entrega',
           'referencia_id', p_entrega_id, 'os_id', v_os_id, 'os_tipo', v_origem,
           'observacao','Baixa por confirmação de entrega'));
+      IF v_stock_result->>'ok' IS DISTINCT FROM 'true' THEN
+        RAISE EXCEPTION 'ENTREGA_ESTOQUE_SEM_CONFIRMACAO' USING ERRCODE='PT409';
+      END IF;
 PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
     END IF;
   END IF;
@@ -467,6 +476,10 @@ PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'canc
           'referencia_id', v_entrega.id, 'movimentacao_origem_id', v_mov.id, 'motivo', v_motivo
         )
       );
+      IF v_estorno->>'ok' IS DISTINCT FROM 'true' THEN
+        RAISE EXCEPTION 'ENTREGA_ESTORNO_NAO_CONFIRMADO' USING ERRCODE='PT409';
+      END IF;
+      PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
       SELECT * INTO v_item FROM public.estoque_produto WHERE id = v_entrega.estoque_produto_id FOR UPDATE;
 PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
     END IF;
@@ -478,6 +491,10 @@ PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'canc
         v_origem,
         'Cancelamento da entrega ' || v_entrega.id::text || ': ' || v_motivo
       );
+      IF v_reserva->>'success' IS DISTINCT FROM 'true' THEN
+        RAISE EXCEPTION 'ENTREGA_RESERVA_NAO_CANCELADA' USING ERRCODE='PT409';
+      END IF;
+      PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
     ELSIF v_item.status::text NOT IN ('disponivel', 'estornado') THEN
       RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_ESTOQUE_INCONSISTENTE: status %', v_item.status USING ERRCODE = 'check_violation';
     END IF;
@@ -505,3 +522,6 @@ PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'canc
   );
 END;
 $function$;
+
+-- DISPOSABLE_TEST_FRAGMENT_END
+ROLLBACK;

@@ -31,9 +31,12 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 ## Etapa 5 — Contratos OS, estoque/envase e entrega (autorizada; NO-GO)
 - [x] Aprovar/programar OS **já têm EXECUTE authenticated**; preservar corpos/ACL. Criação manual OS continua direta e não tem RPC equivalente recuperada.
 - [x] Pacotes inativos: Etapa 5 39 checks, estoque/envase 46, composto 31, todos locais/reduzidos. Wrapper confirmação entrega permanece sem EXECUTE authenticated.
+- [x] Rodada 28/10: captura atual read-only (14/14 corpos estoque e seis tabelas sem drift); delta delivery-only INATIVO com PRE/POST, ACK filho obrigatório/expedição ambígua PT409 e containment deny-only. Composto histórico agora aborta antes de DDL por rebase A2 pendente.
+- [x] PostgreSQL descartável: estoque **64/64** (motor/ledger/reserva interna capturados; Auth/schema sintéticos), composto **48/48** (motor/billing/avanço stubs). Item N batch/envase/expedição, replay, disputas e rollback DDL testados; não são integração completa nem JWT.
 - [ ] Rebase do composto sobre A2: ele usa cobrança histórica incompatível com parcelas instaladas. Não considerá-lo composição A2 pronta.
 - [ ] Aceite: motor/ledger/trigger completos, locks/revogação nos dois ordenamentos, transição canônica envase, autoridade B2B/onfarm e reserva parcial revisadas, PRE/POST atuais e JWT A/B real.
 - [ ] Mapear contrato de criação manual OS, criação por pedido e cada ação entrega; não substituir por conversão visita nem inventar fluxo paralelo.
+- [x] Mapeamento atual: manual INSERT distinto de publicação `rpc_planejamento_publicar_v1`→`publish_planning_to_lab`→generator pedido; entrega individual distinta de grupo multichamada; retorno distinto de cancelamento. Relatório `docs/auditorias/etapas5-6-contratos-os-entrega-estoque-20261028.md` com oito gates exatos; equivalência funcional ainda não implementada/provada.
 - Bloqueadores preservados: `ENVASE_TRANSITION_REVIEW_PENDING`, B2B/onfarm, custo gate global, fiscal/contabilidade reais. Autorização já existe para preparar; bloqueio é técnico, não falta de autorização genérica.
 
 ## Etapa 6 — Migrar as telas de OS e Entregas
@@ -43,6 +46,7 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - [x] QueryClient real/Auth-transporte simulados: 14 testes financeiros, 5 contratos offline +42 regressões, **61/61 PASS**. ACK perdido/fiscal ERROR recuperados por registros simulados, não mutação real; invalidação exata e tardios fenced.
 - [ ] Dispatch financeiro/retentativa fiscal só após contrato instalado/provado e revisão independente; nesta versão operação bloqueada sem simular sucesso.
 - [ ] Criação OS/entrega: contrato equivalente provado antes de migrar; falha item N/expedição sem sucesso aparente, CAS/replay/cancelamento/retorno e cercas. Sem fallback direto quando RPC fechada.
+- [x] Próximo pacote offline produzido sem repetir financeiro: **55/55 Vitest**, QueryClient real/transportes simulados em publicação existente. Duplo dispatch e `ok:false` são lacunas caracterizadas, não aceite; nenhum writer OS/entrega alterado.
 - [ ] Publicação coordenada somente após contratos instalados e revisão independente; não fechar DML enquanto telas dependem dele. Writers OS/entrega intactos; consumidor financeiro local read-only não libera operação.
 
 ## Etapa 7 — Fechar escrita direta em OS, entregas e notas fiscais

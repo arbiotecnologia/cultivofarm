@@ -1,5 +1,12 @@
 # F2-B — auditoria e preparação revisável
 
+## Etapas 5/6 — contratos OS→entrega→estoque, 28/10/2026
+- [x] Captura LIVE somente leitura, comparação dos três pacotes e contratos manuais/B2B/itens; 14/14 corpos estoque e seis tabelas sem drift.
+- [x] Deltas INATIVOS de confirmação/cancelamento, PRE/POST atuais e rollback deny-only; composto billing histórico explicitamente bloqueado, writers intocados.
+- [x] PostgreSQL descartável 64 estoque (motor/ledger capturados)/48 composto (stubs); Vitest 55, incluindo QueryClient e lacunas caracterizadas; item N, recibos, concorrência e rollback.
+- [x] Plano original/relatório/gates atualizados em docs/auditorias/etapas5-6-contratos-os-entrega-estoque-20261028.md.
+- [ ] Instalação depende dos oito gates do relatório: contrato envase/B2B/onfarm/CAS/grupo/retorno, composição A2 completa, JWT A/B e revisão independente; sem autorização de instalação nesta rodada.
+
 ## Etapa 6 — consumidor financeiro seguro, 28/10/2026
 - [x] Diálogo existente com estados seguros/releitura, sem generate/mark/fiscal enquanto A2/valor/autoridade indisponíveis; draft/conflicts/fences, sem sucesso fabricado.
 - [x] QueryClient real/Auth-transporte simulados 14 testes +5 contratos offline +42 regressões =61/61; OS/entrega writers/grants intactos.

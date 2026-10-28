@@ -26,3 +26,17 @@ Timeout de gate limitado a 3s (55P03); falha do motor/livro reverte entrega e ev
 - Gate exclusivo serializa globalmente operações de estoque/entrega: exige revisão de custo pelo auditor.
 - Teste integrado com motor real + guards de estoque + cobrança real, e homologação A/B real com revogação durante espera.
 - Contabilidade real, emissão fiscal e SU-518022 permanecem pendentes.
+
+## Rodada 28/10 — delta implementável INATIVO
+
+Relatório completo: `docs/auditorias/etapas5-6-contratos-os-entrega-estoque-20261028.md`.
+O composto histórico agora aborta explicitamente com `HISTORICAL_BILLING_COMPOSITION_A2_REBASE_REQUIRED`; sua cobrança anterior **não pode substituir A2/parcelas**. O gerador preserva os três candidatos originais e produz a parte entrega para testes; não houve instalação.
+
+- `delivery-only-delta.sql.review`: três corpos existentes, transação única, PRE/POST embutidos (OID/hash/owner/ACL/config), dependências de motor/cancelamento/helper pinadas. Sem criação de helper, tabela, GRANT ou replay de cobrança. Recusa no LIVE atual por dependências não instaladas.
+- `current-{functions,extra,tables}-20261028.json`: metadados somente leitura, ref canônico e timestamp. `current-preflight.sql` / `current-postflight.sql`: pinos de captura e estado hipotético somente da entrega; não são POST do composto stock/A2.
+- `build-current-checks.py`: geração offline dos pinos e delta. `containment.sql.review`: rollback deny-only dos cinco entrypoints/engine; não reverte corpo/guard/histórico.
+- Confirmação recusa estoque expedido preexistente sem prova de titularidade (PT409); replay de entrega já confirmada continua anterior. ACK `ok` do motor é obrigatório; cancelamento exige `ok` do estorno e `success` da liberação, reautoriza depois dos filhos.
+- Teste composto **48 PASS**: motor/financeiro/avanço/Auth/schema ainda stubs. Inclui falha POST que reverte DDL, drift OID que aborta, ACK negativo/NULL, expedição ambígua e contenção. Não certifica o delta como instalável.
+- Testes de estoque do módulo existente usam motor/ledger/P1/volume/CQ capturados e a função interna `reservar_estoque_item` capturada nesta rodada; Auth/SaaS/schema/hash continuam sintéticos e triggers de transição/refresh/financeiro omitidos explicitamente.
+
+Não migrar consumidores nem fechar DML com base neste pacote. CAS observado, criação manual/grupo, retorno logístico, transição envase e autoridade B2B/onfarm continuam gates independentes.
