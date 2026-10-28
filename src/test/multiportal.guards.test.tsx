@@ -169,6 +169,12 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("AppPortalGuard", () => {
+  it("nega produtor nominal sem producer na lista canônica", () => {
+    authState.roles = ["cliente_produtor"];
+    authState.primaryRole = "cliente_produtor";
+    renderAppGuard();
+    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
+  });
   it("nega gestor com payload legado verdadeiro e apenas admin canônico", () => {
     authState.roles = ["gestor"];
     if (contextsState.data) Object.assign(contextsState.data, { available_contexts: ["admin"], has_technical_access: true, is_admin: true, has_b2b_access: true });
