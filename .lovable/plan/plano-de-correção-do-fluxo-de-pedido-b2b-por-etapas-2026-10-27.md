@@ -38,11 +38,12 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 
 ## Etapa 6 — Migrar as telas de OS e Entregas
 - [x] Inventário documentado: criação OS INSERT, entrega multi-RPC/compensação/status/rollback diretos, documentos antes de confirmação, diálogo financeiro com compromisso parcial.
-- [ ] **Próximo pacote independente:** compatibilidade/recuperação do `ConfirmarEntregaFinanceiroDialog` e especificação/testes da criação OS/entrega, somente preparação futura, sem ativar writers.
-- [ ] Diálogo: método/RECEITA ativos, agenda compatível, retorno string UUID validado + releitura autorizada; estados rejeitado/incerto/título confirmado/fiscal pendente; nenhuma geração repetida automaticamente.
-- [ ] QueryClient real/transporte simulado: cache com erro 403, ator/tenant/época durante awaits/invalidation, dupla submissão, ACK perdido, falha fiscal parcial, conflito e rascunho sem rebase.
+- [x] Pacote independente local: diálogo existente com quatro estados/releitura e especificação/testes OS-entrega. Relatório `docs/auditorias/etapa6-consumidor-financeiro-20261028.md`.
+- [x] Método ativo obrigatório/RECEITA apenas, UUID/tenant/origem/cliente verificados, draft em erro preservado; agenda só revisão. Nenhum generate/mark/fiscal enviado: A2 não instalada e valor canônico pré-cobrança sem ACL authenticated.
+- [x] QueryClient real/Auth-transporte simulados: 14 testes financeiros, 5 contratos offline +42 regressões, **61/61 PASS**. ACK perdido/fiscal ERROR recuperados por registros simulados, não mutação real; invalidação exata e tardios fenced.
+- [ ] Dispatch financeiro/retentativa fiscal só após contrato instalado/provado e revisão independente; nesta versão operação bloqueada sem simular sucesso.
 - [ ] Criação OS/entrega: contrato equivalente provado antes de migrar; falha item N/expedição sem sucesso aparente, CAS/replay/cancelamento/retorno e cercas. Sem fallback direto quando RPC fechada.
-- [ ] Publicação coordenada somente após contratos instalados e revisão independente; não fechar DML enquanto telas dependem dele. Nada migrado neste lote documental.
+- [ ] Publicação coordenada somente após contratos instalados e revisão independente; não fechar DML enquanto telas dependem dele. Writers OS/entrega intactos; consumidor financeiro local read-only não libera operação.
 
 ## Etapa 7 — Fechar escrita direta em OS, entregas e notas fiscais
 - [ ] Só após consumidores migrados/publicados e RPCs compatíveis: fechamento por comando, SELECT/tenant/jobs privilegiados preservados.
