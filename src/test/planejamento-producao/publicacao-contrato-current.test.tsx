@@ -39,19 +39,19 @@ describe("Publicação existente — contrato e lacunas, transporte simulado, se
     h.unmount(); h.qc.clear();
   });
   it("caracteriza lacuna: dois dispatches concorrentes dependem da idempotência servidor", async () => {
-    let finish: ((v: unknown) => void) | undefined;
-    transport.rpc.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const completions: Array<(v: unknown) => void> = [];
+    transport.rpc.mockImplementation(() => new Promise(resolve => { completions.push(resolve); }));
     const h = mount();
     let first: Promise<unknown> | undefined;
     let second: Promise<unknown> | undefined;
     act(() => { first = h.result.current.mutateAsync(vars); second = h.result.current.mutateAsync(vars); });
     await act(async () => { await Promise.resolve(); });
     expect(transport.rpc).toHaveBeenCalledTimes(2);
-    // Finish both pending calls independently; no production writer is changed.
-    // The first promise is intentionally resolved through its own captured resolver below.
+    await act(async () => {
+      for (const finish of completions) finish({ data: { ok: true, planning_id: planning, os_created: 0, replay: true }, error: null });
+      await Promise.all([first, second]);
+    });
     h.unmount(); h.qc.clear();
-    finish?.({ data: { ok: true, planning_id: planning, os_created: 0, replay: true }, error: null });
-    void first; void second;
   });
   it("caracteriza lacuna: envelope ok:false ainda é aceito pelo consumidor atual", async () => {
     transport.rpc.mockResolvedValue({ data: { ok: false, planning_id: planning, os_created: 0 }, error: null });
