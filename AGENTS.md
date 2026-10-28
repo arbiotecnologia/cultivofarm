@@ -86,4 +86,3 @@
 - Canonical stock reservation returns a UUID that may identify a split row; delivery creation must use that returned item, and multi-request failures must remain partial/uncertain without compensating writes or fictitious rollback — preserves legitimate partial reservation and honest containment.
 - Financial B2B audit extends the original plan through the existing installment review package; independent Decimal fixtures and status matrices never authorize unsupported schedules or replace commercial formulas — prevents parallel modules and synthetic release claims.
 
-- Receivable P0 audit reuses the installment review package; captured financed totals and payment-event adjustments stay distinct, and isolated generator experiments never authorize runtime or historical remediation until alternate writers and BI contracts are reconciled — prevents double interest or financing loss.
