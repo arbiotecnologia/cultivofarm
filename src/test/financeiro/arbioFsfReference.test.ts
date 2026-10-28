@@ -21,6 +21,19 @@ describe('AR Bio × FSF Agro — política superveniente não aplicada, consumid
   ])('fronteira normativa %s sem homologar calendário ou valor', (key, rate) => {
     expect(draft.boundary_fixtures.find((f: { key: string }) => f.key === key)?.rate).toBe(rate);
   });
+  it.each([
+    [30, 0, false, '0'], [31, 0, false, '1.8'],
+    [undefined, 6, false, '1.8'], [undefined, 6, true, '2'],
+    [undefined, 12, false, '2'], [undefined, 12, true, undefined],
+    [-1, 0, false, undefined],
+  ])('seleção offline dias%s/meses%s/excede%s — não converte data nem pro-rata', (days, months, exceeds, expectedRate) => {
+    // Qualificadores de prazo explícitos, não calendário arbitrado ou runtime paralelo.
+    const selected = typeof days === 'number' && days < 0 ? undefined
+      : typeof days === 'number' && days <= 30 ? draft.policies[0]
+      : months < 6 || (months === 6 && !exceeds) ? draft.policies[1]
+      : months < 12 || (months === 12 && !exceeds) ? draft.policies[2] : undefined;
+    expect(selected?.monthly_interest_percent).toBe(expectedRate);
+  });
   it('usa data inicial e taxa única integral sem carência ou marginalidade', () => {
     expect(draft.interest_decision.interest_start).toBe('operation_initial_date');
     expect(draft.interest_decision.band_incidence).toBe('single_selected_rate_over_entire_term');
