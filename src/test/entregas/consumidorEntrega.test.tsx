@@ -87,7 +87,7 @@ describe('Página Entregas real / hook real / QueryClient real; Auth e transport
  });
  it('reserva sem UUID confirmado não continua criação', async () => {
    const p = payload(); Object.assign(p.itens[0].item, { reservado_para_os_id: null, status: 'disponivel' });
-   t.from.mockImplementation(table => table === 'ordens_servico' ? { ...chain(table), then: (yes: any) => Promise.resolve({ data: [{ id: ids[0], cliente_id: ids[3] }], error: null }).then(yes) } : chain(table));
+   t.from.mockImplementation(table => { const c = chain(table); if (table === 'ordens_servico') c.then = (yes: any) => Promise.resolve({ data: [{ id: ids[0], cliente_id: ids[3] }], error: null }).then(yes); return c; });
    t.rpc.mockResolvedValue({ data: { ok: false }, error: null }); const h = mount();
    await waitFor(() => expect(h.qc.getQueryCache().findAll({ queryKey: ['todas-os-disponiveis'] })[0]?.state.status).toBe('success'));
    await act(async () => { await new Promise(r => setTimeout(r, 10)); });
