@@ -121,10 +121,9 @@ def writers_scenarios(mode,offset):
     record('loop repetido nao apaga nem duplica encargo do evento',D('7550'),balance(x),mode,'P0')
     record('juros operacionais permanecem soma dos eventos',D('100'),D(pg.sql(f"SELECT interest_amount FROM accounts_receivable_installments WHERE id='{x}'")),mode,'P0')
     record('snapshot cronograma preserva remuneracao inicial',D('300'),D(pg.sql(f"SELECT interest_amount FROM partner_order_payment_schedule WHERE partner_order_id='{uid(n)}'")),mode)
-    before=state();err=pg.sql(scope()+f"UPDATE partner_order_payment_schedule SET amount=10301 WHERE partner_order_id='{uid(n)}'; DO $fragment$ DECLARE p_partner_order_id uuid:='{uid(n)}'; v_receivable_id uuid:='{t}'; v_org uuid:='{A}'; v_terms record; v_sch record; v_ari_id uuid; v_installments_json jsonb:='[]'; BEGIN SELECT '{uid(n+10000)}'::uuid AS id INTO v_terms; {loop} END $fragment$;",ok=False)
+    before=state();err=pg.sql(scope()+f"BEGIN; UPDATE partner_order_payment_schedule SET amount=10301 WHERE partner_order_id='{uid(n)}'; DO $fragment$ DECLARE p_partner_order_id uuid:='{uid(n)}'; v_receivable_id uuid:='{t}'; v_org uuid:='{A}'; v_terms record; v_sch record; v_ari_id uuid; v_installments_json jsonb:='[]'; BEGIN SELECT '{uid(n+10000)}'::uuid AS id INTO v_terms; {loop} END $fragment$; COMMIT;",ok=False)
     record('snapshot parcela nega divergencia de original','Parcela imutavel','Parcela imutavel' if 'Parcela imutavel' in err else err,mode)
-    # Roll back the separate fixture edit; this is not a production remediation.
-    pg.sql(f"UPDATE partner_order_payment_schedule SET amount=10300 WHERE partner_order_id='{uid(n)}';")
+    record('divergencia de snapshot aborta transacao sem compensar',True,state()==before,mode)
     def concurrent_calls(x,amount,keys):
         barrier=Barrier(2)
         def send(key):
@@ -145,11 +144,16 @@ def writers_scenarios(mode,offset):
     record('ledger concorrente corresponde a valor aceito',D('6000'),D(pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{x}'")),mode)
     t,x=title(offset+73)
     pay,_=payment(x,1000,f'reversal-race-{offset}')
+    reverse_barrier=Barrier(2)
     def reverse(_):
+        reverse_barrier.wait()
         return subprocess.run(pg.psql(),input=scope()+f"SELECT fn_reverse_payment('{pay}','receivable','LOCAL');",text=True,capture_output=True)
     with ThreadPoolExecutor(max_workers=2) as pool:rs=list(pool.map(reverse,range(2)))
     record('estorno simultaneo uma compensacao no ledger',D('0'),D(pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{x}'")),mode,'P0')
     record('estorno simultaneo conserva total financiado',D('10300'),balance(x),mode,'P0')
+    if mode.startswith('EXPERIMENTO'):
+        rs=concurrent_calls(x,10600,[f'over-one-{offset}',f'over-two-{offset}'])
+        record('proposta nega 10600 em duas sessoes',2,sum('excede o saldo' in r.stderr for r in rs),mode,'P0')
 
 def main():
     pg.start();schema()
@@ -250,7 +254,7 @@ def main():
     OUT.mkdir(parents=True,exist_ok=True)
     with (OUT/'matriz.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=rows[0].keys(),lineterminator='\n');w.writeheader();w.writerows(rows)
-    meta=dict(ref=LIVE['ref'],capture_sha256=hashlib.sha256(CAP.read_bytes()).hexdigest(),results=rows,counts={s:sum(r['status']==s for r in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']},captured_body_hashes={s:fun(s)['md5'] for s in set(used)},effective_local_body_hashes_by_mode=mode_hashes,independent_modes=True,has_failures=any(r['status']=='FAIL' for r in rows),operational_go=False,excluded_triggers={t['name']:[x['name'] for x in t['triggers'] or [] if x['name'] not in included_names()] for t in LIVE['tables']},limits='Auth/h15/roles synthetic; exact columns/checks/unique indexes subset; FK/RLS/tenant/SaaS/risk/order/fiscal triggers excluded; ledger means receivable_payments only; experiment not SQL candidate nor production correction',runtime_changes=False)
+    meta=dict(ref=LIVE['ref'],capture_sha256=hashlib.sha256(CAP.read_bytes()).hexdigest(),results=rows,counts={s:sum(r['status']==s for r in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']},captured_body_hashes={s:fun(s)['md5'] for s in set(used)},effective_local_body_hashes_by_mode=mode_hashes,independent_modes=True,has_failures=any(r['status']=='FAIL' for r in rows),operational_go=False,writer_loop_only=WRITERS_PHASE,excluded_triggers={t['name']:[x['name'] for x in t['triggers'] or [] if x['name'] not in included_names()] for t in LIVE['tables']},limits='Auth/h15/roles synthetic; exact columns/checks/unique indexes subset; FK/RLS/tenant/SaaS/risk/order/fiscal triggers excluded; ledger means receivable_payments only; experiment not SQL candidate nor production correction',runtime_changes=False)
     (OUT/'execucao.json').write_text(json.dumps(meta,indent=2)+'\n');print(json.dumps(meta['counts']))
 def included_names():return {'trg_ar_gen_installments','trg_h6_ar_snapshot','trg_audit_ar','trg_h6_ari_snapshot','trg_h6_rp_append_only','trg_recalc_ar_inst','trg_audit_rp','trg_assign_receipt_metadata','trg_sync_receipt_aliases'}
 if __name__=='__main__':main()
