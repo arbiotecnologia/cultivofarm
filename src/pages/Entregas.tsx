@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +44,9 @@ function traduzErroComprovante(msg: string): string {
 }
 import { validatePhoneBR } from "@/lib/masks";
 import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { validarRespostaEstoqueEntrega } from "@/lib/entregas/payloadEntrega";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmarEntregaFinanceiroDialog } from "@/components/financeiro/ConfirmarEntregaFinanceiroDialog";
 import { ConfirmarEntregaDialog } from "@/components/entregas/ConfirmarEntregaDialog";
@@ -73,6 +76,48 @@ export default function Entregas() {
   const queryClient = useQueryClient();
   const { config: brandingConfig, defaults: brandingDefaults } = useSystemConfig();
   const { role } = useAuth();
+  const deliveryScope = useStorageAccessScope("entregas-operations");
+  const operation = useRef<symbol | null>(null);
+  const unresolved = useRef(new Set<string>());
+  const [operationNotice, setOperationNotice] = useState("");
+  const invalidateDelivery = (current: () => boolean) => {
+    if (!current()) return;
+    for (const prefix of ["entregas", "estoque-prontos-entrega"]) {
+      void queryClient.invalidateQueries({ predicate: q => q.queryKey[0] === prefix && q.queryKey.at(-2) === deliveryScope.scope });
+    }
+  };
+  // Per-mount containment, not a server receipt or cross-tab idempotency.
+  const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {
+    const captured = deliveryScope.capture();
+    const key = `${deliveryScope.scope}:${target}`;
+    if (!captured()) throw new Error("Contexto de entrega indisponível.");
+    if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");
+    if (unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");
+    const ticket = Symbol(target);
+    operation.current = ticket;
+    let expired = false;
+    let dispatched = false;
+    const current = () => captured() && !expired;
+    const check = () => { if (!current()) throw new Error("Contexto alterado ou resposta incerta. Nenhuma nova etapa foi enviada."); };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const value = await Promise.race([
+        work(check, () => { check(); dispatched = true; }, current),
+        new Promise<never>((_, reject) => { timer = setTimeout(() => { expired = true; reject(new Error("Tempo de resposta excedido. Resultado incerto; consulte as entregas, sem reenviar.")); }, 30000); }),
+      ]);
+      check();
+      return { value, current };
+    } catch (error) {
+      if (dispatched) unresolved.current.add(key);
+      if (captured()) {
+        setOperationNotice(dispatched ? "Operação não concluída ou resposta incerta. Pode haver etapas já registradas. Consulte as entregas; nenhum estorno automático foi realizado e o reenvio permanece bloqueado nesta tela." : "Não foi possível iniciar a operação de entrega.");
+      }
+      throw error;
+    } finally {
+      if (timer) clearTimeout(timer);
+      if (operation.current === ticket) operation.current = null;
+    }
+  };
   const canCancel = role === "administrador" || role === "gestor" || role === "administrativo";
   const [open, setOpen] = useState(false);
   const [osInicial, setOsInicial] = useState<string | undefined>(undefined);
@@ -121,7 +166,7 @@ export default function Entregas() {
     isError: entregasErro,
     refetch: recarregarEntregas,
     isFetching: entregasFetching,
-  } = useQuery({
+  } = useScopedPortalQuery({
     queryKey: ["entregas"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -150,7 +195,7 @@ export default function Entregas() {
       if (error) throw error;
       return data;
     },
-  });
+  }, { actor: deliveryScope, request: deliveryScope });
 
   // Catálogo de produtos para filtro (com entregas existentes)
   const produtosFiltro = useMemo(() => {
@@ -198,7 +243,7 @@ export default function Entregas() {
     isError: estoqueErro,
     refetch: recarregarEstoque,
     isFetching: estoqueFetching,
-  } = useQuery({
+  } = useScopedPortalQuery({
     queryKey: ["estoque-prontos-entrega"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -235,10 +280,10 @@ export default function Entregas() {
       }
       return data || [];
     },
-  });
+  }, { actor: deliveryScope, request: deliveryScope });
 
 
-  const { data: todasOS = [] } = useQuery({
+  const { data: todasOS = [] } = useScopedPortalQuery({
     queryKey: ["todas-os-disponiveis"],
     queryFn: async () => {
       const [osPadrone, osOnFarm] = await Promise.all([
@@ -249,7 +294,7 @@ export default function Entregas() {
       const f = (osOnFarm.data || []).map((o) => ({ ...o, type: "onfarm", data: o.data_recomendada }));
       return [...p, ...f];
     },
-  });
+  }, { actor: deliveryScope, request: deliveryScope });
 
   const clienteIdsExtra = useMemo(() => {
     const ids = new Set<string>();
@@ -259,14 +304,14 @@ export default function Entregas() {
     return Array.from(ids);
   }, [itensProntos]);
 
-  const { data: clientesExtra = [] } = useQuery({
+  const { data: clientesExtra = [] } = useScopedPortalQuery({
     queryKey: ["entregas-clientes-extra", clienteIdsExtra],
     enabled: clienteIdsExtra.length > 0,
     queryFn: async () => {
       const { data } = await supabase.from("clientes").select("id, nome, codigo_cliente").in("id", clienteIdsExtra);
       return data || [];
     },
-  });
+  }, { actor: deliveryScope, request: deliveryScope });
 
   // Busca dados amigáveis das OS reservadas (numero_os, cliente, produto)
   const osReservadasIds = useMemo(() => {
@@ -280,7 +325,7 @@ export default function Entregas() {
     return { padrao: Array.from(padrao), onfarm: Array.from(onfarm) };
   }, [itensProntos]);
 
-  const { data: osReservadasMap = {} } = useQuery({
+  const { data: osReservadasMap = {} } = useScopedPortalQuery({
     queryKey: ["entregas-os-reservadas", osReservadasIds],
     enabled: osReservadasIds.padrao.length + osReservadasIds.onfarm.length > 0,
     queryFn: async () => {
@@ -301,7 +346,7 @@ export default function Entregas() {
       }
       return map;
     },
-  });
+  }, { actor: deliveryScope, request: deliveryScope });
 
 
   // Soma de quantidade já entregue/em entrega por item de estoque
@@ -397,19 +442,20 @@ export default function Entregas() {
 
   // Realtime: invalida lista de itens ao receber updates do estoque (reservas concorrentes refletem na hora)
   useEffect(() => {
+    if (!deliveryScope.ready) return;
+    const current = deliveryScope.capture();
     let timerEstoque: ReturnType<typeof setTimeout> | null = null;
     let timerEntregas: ReturnType<typeof setTimeout> | null = null;
     const invalidateEstoque = () => {
       if (timerEstoque) clearTimeout(timerEstoque);
       timerEstoque = setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["estoque-prontos-entrega"] });
+        invalidateDelivery(current);
       }, 1200);
     };
     const invalidateEntregas = () => {
       if (timerEntregas) clearTimeout(timerEntregas);
       timerEntregas = setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["entregas"] });
-        queryClient.invalidateQueries({ queryKey: ["estoque-prontos-entrega"] });
+        invalidateDelivery(current);
       }, 1200);
     };
     const channel = supabase
@@ -422,7 +468,7 @@ export default function Entregas() {
       if (timerEntregas) clearTimeout(timerEntregas);
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, deliveryScope.scope]);
 
 
   // Helper: registra tentativa de reserva em auditoria (best-effort, nunca bloqueia o fluxo)
@@ -458,14 +504,17 @@ export default function Entregas() {
   };
 
   const createMutation = useMutation({
-    mutationFn: async (payload: RegistrarEntregaSubmit) => {
+    retry: false,
+    mutationFn: (payload: RegistrarEntregaSubmit) => runDeliveryOperation("create", async (check, dispatch, current) => {
       const { grupoId, itens, osId, osTipo, tipo_entrega, motorista, veiculo, data_saida,
         motorista_telefone, motorista_documento, veiculo_placa, veiculo_tipo,
         hora_saida_prevista, data_chegada_prevista, hora_chegada_prevista,
         destinatario_nome, destinatario_telefone, destinatario_whatsapp,
         endereco_origem, endereco_logradouro, endereco_numero, endereco_complemento,
         endereco_bairro, endereco_cidade, endereco_uf, endereco_cep, endereco_referencia } = payload;
-      if (itens.length === 0) throw new Error("Nenhum item selecionado.");
+      const uuid = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+      if (!uuid.test(grupoId) || !uuid.test(osId) || itens.length === 0 || itens.some(({ item, quantidade }) => !uuid.test(item.id) || !Number.isFinite(quantidade) || quantidade <= 0)) throw new Error("Identificação ou quantidade de entrega inválida.");
+      if (new Set(itens.map(({ item }) => item.id)).size !== itens.length) throw new Error("Item de estoque repetido.");
 
       // Validação/normalização de telefones antes da persistência.
       const motCheck = validatePhoneBR(motorista_telefone, { fieldLabel: "Telefone do motorista" });
@@ -477,10 +526,11 @@ export default function Entregas() {
 
       const osRef = (todasOS as any[]).find((o) => o.id === osId);
       const criadas: string[] = [];
-      const reservasFeitas: { item: any; osId: string; osTipo: string }[] = [];
+
 
       try {
         for (const { item, quantidade } of itens) {
+          check();
           if (quantidade <= 0) throw new Error(`Quantidade inválida para o lote ${item.lotes?.codigo_lote || item.id}.`);
           if (quantidade > item._saldo) throw new Error(`Lote ${item.lotes?.codigo_lote || ""}: quantidade ${quantidade} excede o saldo físico (${item._saldo}).`);
           if (item.status === "reservado" && quantidade > item._saldo_reserva) {
@@ -493,18 +543,21 @@ export default function Entregas() {
 
           if (!itemOsId) {
             if (!osRef) throw new Error("OS de destino não localizada.");
+            dispatch();
             const ok = await hookReservarEstoque(
               item,
               { cliente_id: osRef.cliente_id, quantidade_reservada: quantidade },
               osRef.id,
               osRef.type,
               true, // override: usuário já confirmou origem no diálogo de entrega
+              { current, deferEffects: true },
             );
+            check();
             if (!ok) throw new Error(`Falha ao reservar o lote ${item.lotes?.codigo_lote || ""}.`);
             itemOsId = osRef.id;
             itemOsTipo = osRef.type;
             itemClienteId = osRef.cliente_id;
-            reservasFeitas.push({ item, osId: itemOsId, osTipo: itemOsTipo });
+
           }
 
           // O volume entregue é calculado e gravado pelo servidor a partir do
@@ -544,25 +597,30 @@ export default function Entregas() {
             grupo_entrega_id: grupoId,
           };
 
-          const created = await criarEntrega(entregaData, itemOsId, itemOsTipo);
+          dispatch();
+          const created = await criarEntrega(entregaData, itemOsId, itemOsTipo, { current, deferEffects: true });
+          check();
           if (!created || !(created as any).id) throw new Error("Falha ao gravar entrega.");
           criadas.push((created as any).id);
 
           // Integração com estoque: se a reserva zerou, expede pelo motor canônico.
           // Nenhum UPDATE direto: `rpc_estoque_operar_v1` grava saldo + livro atomicamente.
           try {
-            const { data: entregasAtivas } = await supabase
+            const { data: entregasAtivas, error: leituraError } = await supabase
               .from("entregas")
               .select("quantidade_entregue")
               .eq("estoque_produto_id", item.id)
               .neq("status", "cancelada");
+            check();
+            if (leituraError) throw leituraError;
             const totalEntregue = (entregasAtivas || []).reduce(
               (s: number, e: any) => s + (Number(e.quantidade_entregue) || 0),
               0,
             );
             const qtdReservada = Number(item.quantidade_reservada || 0);
             if (item.status === "reservado" && qtdReservada > 0 && totalEntregue >= qtdReservada) {
-              await operarEstoque(
+              dispatch();
+              const result = await operarEstoque(
                 "expedicao",
                 item.id,
                 qtdReservada,
@@ -577,45 +635,35 @@ export default function Entregas() {
                   observacao: `Expedição automática pela entrega ${(created as any).id}`,
                 },
               );
+              check();
+              validarRespostaEstoqueEntrega(result, "expedicao", item.id);
             }
           } catch (autoExpErr) {
-            console.warn("[auto-expedir] falha ao expedir pelo motor canônico:", mensagemErroEstoque(autoExpErr));
+            throw new Error(`Entrega criada; expedição não confirmada. ${mensagemErroEstoque(autoExpErr)}`);
           }
 
         }
 
         return { grupoId, total: criadas.length };
       } catch (err: any) {
-        // Rollback best-effort
-        for (const id of criadas) {
-          await supabase.from("entregas").update({ status: "cancelada" as any, motivo_cancelamento: `Rollback de entrega múltipla: ${err.message}` } as any).eq("id", id);
-        }
-        for (const r of reservasFeitas) {
-          try {
-            await cancelarReservaEstoque(
-              r.item,
-              r.osId,
-              r.osTipo,
-              `Rollback de entrega múltipla: ${err.message}`,
-            );
-          } catch {}
-
-        }
+        // No compensating writes: multi-request orchestration cannot prove rollback.
         throw err;
       }
-    },
-    onSuccess: ({ total }) => {
-      queryClient.invalidateQueries({ queryKey: ["entregas"] });
-      queryClient.invalidateQueries({ queryKey: ["estoque-prontos-entrega"] });
+    }),
+    onSuccess: ({ value: { total }, current }) => {
+      if (!current()) return;
+      invalidateDelivery(current);
       toast.success(`${total} entrega(s) registradas em grupo`);
       setOpen(false);
     },
-    onError: (e: Error) =>
-      toast.error(`Não foi possível registrar a entrega: ${e.message}`),
+    onError: (e: Error) => {
+      if (deliveryScope.ready) toast.error(`Não foi possível registrar a entrega: ${e.message}`);
+    },
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    retry: false,
+    mutationFn: ({ id, status }: { id: string; status: string }) => runDeliveryOperation(id, async (check, dispatch) => {
       // A confirmação física ("entregue") NÃO passa por aqui: ela exige
       // recebedor identificado e é feita exclusivamente pelo
       // ConfirmarEntregaDialog. Nenhum caminho pode confirmar em silêncio.
@@ -625,65 +673,54 @@ export default function Entregas() {
         );
       }
 
-      const { error } = await supabase.from("entregas").update({ status: status as Tables<"entregas">["status"] }).eq("id", id);
+      if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || status !== "em_rota") throw new Error("Transição de entrega inválida.");
+      dispatch();
+      const { data, error } = await supabase.from("entregas").update({ status: status as Tables<"entregas">["status"] }).eq("id", id).eq("status", "separado").select("id, status");
+      check();
+      if (data?.length !== 1 || data[0].id !== id || data[0].status !== status) throw new Error("Status não confirmado; consulte as entregas.");
       if (error) throw error;
       return true;
-    },
+    }),
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entregas"] });
-      queryClient.invalidateQueries({ queryKey: ["estoque-prontos-entrega"] });
+    onSuccess: ({ current }) => {
+      if (!current()) return;
+      invalidateDelivery(current);
       toast.success("Status atualizado");
     },
   });
 
   const cancelarEntrega = useMutation({
-    mutationFn: async ({ id, motivo }: { id: string; motivo: string }) => {
+    retry: false,
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => runDeliveryOperation(id, async (check, dispatch) => {
+      if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) throw new Error("Entrega inválida.");
       const { data: entrega, error: fetchErr } = await supabase
         .from("entregas")
-        .select("status, estoque_produto_id, quantidade_entregue, ordem_servico_id")
+        .select("id, status, estoque_produto_id, quantidade_entregue, ordem_servico_id")
         .eq("id", id)
         .single();
       
+      check();
       if (fetchErr) throw fetchErr;
+      if (!entrega || entrega.id !== id || !["separado", "em_rota"].includes(entrega.status)) throw new Error("Cancelamento indisponível para este estado. Retorno de entregue exige contrato próprio.");
 
-      if (entrega.status === "entregue" && entrega.estoque_produto_id) {
-        const { data: itemEstoque } = await supabase
-          .from("estoque_produto")
-          .select("id, quantidade, status, lote_id")
-          .eq("id", entrega.estoque_produto_id)
-          .single();
-        
-        if (itemEstoque) {
-          const osId = entrega.ordem_servico_id;
-          const { data: osOnFarm } = await supabase.from("ordens_servico_onfarm").select("id").eq("id", osId).maybeSingle();
-          const origem = osOnFarm ? "onfarm" : "manual";
-          
-          await cancelarReservaEstoque(
-            itemEstoque,
-            osId,
-            origem,
-            `Estorno por cancelamento de entrega: ${motivo}`,
-          );
-
-        }
-      }
-
-      const { error } = await supabase
+      dispatch();
+      const { data: updated, error } = await supabase
         .from("entregas")
         .update({
           status: "cancelada" as any,
           motivo_cancelamento: motivo || null,
         } as any)
-        .eq("id", id);
+        .eq("id", id).eq("status", entrega.status).select("id, status");
+      check();
       if (error) throw error;
+      if (updated?.length !== 1 || updated[0].id !== id || updated[0].status !== "cancelada") throw new Error("Cancelamento não confirmado; consulte a entrega.");
 
       // Estorno da expedição automática pelo motor canônico: reverte exatamente
       // a movimentação de expedição desta entrega, uma única vez (índice único
       // em movimentacao_origem_id impede estorno duplicado).
       try {
         if (entrega.estoque_produto_id) {
-          const { data: movExpedicao } = await supabase
+          const { data: movExpedicao, error: movimentoError } = await supabase
             .from("estoque_movimentacoes")
             .select("id, acao")
             .eq("estoque_produto_id", entrega.estoque_produto_id)
@@ -694,8 +731,11 @@ export default function Entregas() {
             .limit(1)
             .maybeSingle();
 
+          check();
+          if (movimentoError) throw movimentoError;
           if (movExpedicao?.id) {
-            await operarEstoque(
+            dispatch();
+            const result = await operarEstoque(
               "estorno_expedicao",
               entrega.estoque_produto_id,
               null,
@@ -708,15 +748,17 @@ export default function Entregas() {
                 motivo: `Estorno por cancelamento de entrega: ${motivo || "sem motivo informado"}`,
               },
             );
+            check();
+            validarRespostaEstoqueEntrega(result, "estorno_expedicao", entrega.estoque_produto_id);
           }
         }
       } catch (rollbackErr) {
-        console.warn("[estorno-expedicao] falha ao estornar:", mensagemErroEstoque(rollbackErr));
+        throw new Error(`Cancelamento registrado; estorno não confirmado. ${mensagemErroEstoque(rollbackErr)}`);
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entregas"] });
-      queryClient.invalidateQueries({ queryKey: ["estoque-prontos-entrega"] });
+    }),
+    onSuccess: ({ current }) => {
+      if (!current()) return;
+      invalidateDelivery(current);
       toast.success("Entrega cancelada");
       setCancelTarget(null);
       setMotivoCancel("");
@@ -823,7 +865,12 @@ export default function Entregas() {
         }
       />
 
+      {operationNotice && <div role="alert" className="border border-destructive rounded-md p-3 space-y-2">
+        <p>{operationNotice}</p>
+        <Button variant="outline" onClick={() => { if (deliveryScope.ready) { void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
+      </div>}
       <RegistrarEntregaDialog
+        key={deliveryScope.scope}
         open={open}
         onOpenChange={(o) => {
           setOpen(o);
@@ -1005,7 +1052,7 @@ export default function Entregas() {
                     <TableCell className="font-mono-data text-xs">
                       <div className="flex items-center gap-1 flex-wrap">
                         <span>{e.lotes?.codigo_lote || "—"}</span>
-                        {e.grupo_entrega_id && gruposMap.get(e.grupo_entrega_id)! > 1 && (
+                        {e.grupo_entrega_id && (gruposMap.get(e.grupo_entrega_id) ?? 0) > 1 && (
                           <Badge variant="secondary" className="text-[9px] h-4 px-1" title="Entrega em grupo">
                             Grupo · {gruposMap.get(e.grupo_entrega_id)}
                           </Badge>
@@ -1061,8 +1108,7 @@ export default function Entregas() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar entrega?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta entrega ficará marcada como <strong>Cancelada</strong>, não afetará o estoque
-              nem o fechamento da OS, mas permanecerá no histórico para rastreabilidade.
+              A entrega permanecerá no histórico. O cancelamento e o eventual estorno de estoque são etapas distintas; uma falha exige consulta antes de novo envio.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
@@ -1079,7 +1125,8 @@ export default function Entregas() {
             <AlertDialogCancel>Voltar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => cancelTarget && cancelarEntrega.mutate({ id: cancelTarget.id, motivo: motivoCancel.trim() })}
+              disabled={cancelarEntrega.isPending}
+              onClick={(event) => { event.preventDefault(); if (cancelTarget) cancelarEntrega.mutate({ id: cancelTarget.id, motivo: motivoCancel.trim() }); }}
             >
               Confirmar cancelamento
             </AlertDialogAction>
