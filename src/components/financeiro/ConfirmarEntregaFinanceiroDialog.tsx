@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useDeliveryFinanceReconciliation } from "@/hooks/useDeliveryFinanceReconciliation";
@@ -99,8 +99,8 @@ function DeliveryFinanceDialog({ open, onClose, entrega }: Props) {
   const somaParcelas = useMemo(() => Math.round(parcelas.reduce((a, p) => a + Number(p.amount || 0), 0) * 100) / 100, [parcelas]);
   const somaOk = Math.abs(somaParcelas - total) < 0.01;
 
-  const categoryQuery = useQuery({
-    queryKey: ["fin-cat-rcv", access.scope],
+  const categoryQuery = useScopedPortalQuery({
+    queryKey: ["fin-cat-rcv"],
     enabled: recovery.eligible, retry: false, staleTime: 0, refetchOnMount: "always",
     queryFn: async () => {
       const current = access.capture();
@@ -109,9 +109,9 @@ function DeliveryFinanceDialog({ open, onClose, entrega }: Props) {
       if (!current()) throw new Error("Contexto alterado");
       if (error) throw error; return data;
     },
-  });
-  const costQuery = useQuery({
-    queryKey: ["fin-cc-act", access.scope],
+  }, { request: access, actor: access });
+  const costQuery = useScopedPortalQuery({
+    queryKey: ["fin-cc-act"],
     enabled: recovery.eligible, retry: false, staleTime: 0, refetchOnMount: "always",
     queryFn: async () => {
       const current = access.capture();
@@ -120,10 +120,10 @@ function DeliveryFinanceDialog({ open, onClose, entrega }: Props) {
       if (!current()) throw new Error("Contexto alterado");
       if (error) throw error; return data;
     },
-  });
+  }, { request: access, actor: access });
 
-  const paymentQuery = useQuery({
-    queryKey: ["fin-pm-act", access.scope],
+  const paymentQuery = useScopedPortalQuery({
+    queryKey: ["fin-pm-act"],
     enabled: recovery.eligible, retry: false, staleTime: 0, refetchOnMount: "always",
     queryFn: async () => {
       const current = access.capture();
@@ -132,7 +132,7 @@ function DeliveryFinanceDialog({ open, onClose, entrega }: Props) {
       if (!current()) throw new Error("Contexto alterado");
       if (error) throw error; return data;
     },
-  });
+  }, { request: access, actor: access });
 
   const catalogsReady = recovery.eligible && [categoryQuery, costQuery, paymentQuery].every(q => q.isSuccess && !q.error && !q.isFetching);
   const categories = catalogsReady ? (categoryQuery.data ?? []).filter(c => c.active === true && c.type === "RECEITA") : [];

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 
 export type DeliveryFinanceState = "rejeitado" | "resposta_incerta" | "recebivel_confirmado" | "fiscal_pendente";
 export const isFinanceUuid = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -18,9 +19,9 @@ export function useDeliveryFinanceReconciliation(deliveryId: unknown, open: bool
   const [pendingScope, setPendingScope] = useState<string | null>(null);
   const org = profile?.organization_id;
   const eligible = open && access.ready && isFinanceUuid(deliveryId) && isFinanceUuid(org);
-  const key = ["delivery-finance-reconciliation", deliveryId, access.scope];
-  const query = useQuery({
-    queryKey: key, enabled: eligible, retry: false, staleTime: 0, refetchOnMount: "always",
+  const key = ["delivery-finance-reconciliation", deliveryId, access.scope, access.scope];
+  const query = useScopedPortalQuery({
+    queryKey: ["delivery-finance-reconciliation", deliveryId], enabled: eligible, retry: false, staleTime: 0, refetchOnMount: "always",
     refetchOnWindowFocus: false,
     queryFn: async () => {
       const current = access.capture();
@@ -49,7 +50,7 @@ export function useDeliveryFinanceReconciliation(deliveryId: unknown, open: bool
       }
       return ar;
     },
-  });
+  }, { request: access, actor: access });
   useEffect(() => {
     lock.current = null;
     return () => { void qc.cancelQueries({ queryKey: key, exact: true }); qc.removeQueries({ queryKey: key, exact: true }); };
