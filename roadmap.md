@@ -1,9 +1,9 @@
 # F2-B — auditoria e preparação revisável
 
 ## Fase A2 — 28/10/2026: isolamento das duas funções financeiras de entrega
-- [ ] Reconfirmar LIVE somente leitura no ref swzpzcwiasxmjutrmvkm, hashes, ACL, guardas e consumidores; comparar candidato anterior.
-- [ ] Preparar proposta INATIVA fail-closed, PRE/POST e contenção reversível sem restaurar BOLA; testar somente PostgreSQL descartável/Auth simulada.
-- [ ] Entregar relatório discriminando evidência LIVE, testes simulados, riscos de integração e condições para revisão/prova JWT A/B independente.
+- [x] Reconfirmar LIVE somente leitura no ref swzpzcwiasxmjutrmvkm, hashes, ACL, guardas e consumidores; comparar candidato anterior.
+- [x] Preparar proposta INATIVA fail-closed, PRE/POST e contenção reversível sem restaurar BOLA; 76 checks PostgreSQL17.9/Auth simulada, sem liberação.
+- [x] Relatório completo scripts/delivery-finance-a2-20261028/README.md com fontes LIVE, diffs, hashes, redução RBAC, parcelas imutáveis, riscos do engine e organização/convites; runtime intocado.
 - [ ] Prova real/implantação dependem do auditor após revisão; nenhum SQL mutante, GRANT, publicação, dados/sessões ou liberação stock/envase/delivery nesta fase. Contabilidade real e SU-518022 adiados.
 
 ## 27/10 15:57 — dois conflitos Cockpit/aplicação (pacote INATIVO)
