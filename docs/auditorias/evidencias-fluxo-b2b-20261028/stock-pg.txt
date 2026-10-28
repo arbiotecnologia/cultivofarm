@@ -1,0 +1,66 @@
+EVIDENCIA OFFLINE. Sem sessão/JWT hosted. Logs completos temporários omitidos.
+PASS exact LIVE public.rpc_estoque_operar_v1
+PASS exact LIVE public.rpc_estoque_reservar_v1
+PASS exact LIVE public.rpc_cockpit_registrar_envase_v1
+PASS exact LIVE public.fn_envase_material_imutavel
+PASS exact LIVE platform_private.stock_p1_guard
+PASS exact LIVE platform_private.stock_p1_movement_guard
+PASS LIVE definer purge bypass reproduced locally
+PASS purge forgery now denied 23514
+PASS cross tenant envase denied 42501
+PASS anon envase denied 42501
+PASS produced volume exceeded rejected P0001
+PASS over volume no writes
+PASS envase creates stock with real ledger/P1 guards
+PASS one envase stock ledger
+PASS ml to liters and units conserved
+PASS envase replay exact no duplicate
+PASS replay preserves ledger
+PASS manual OS transition not forged
+PASS changed idempotency payload denied P0001
+PASS cross stock denied before replay 42501
+PASS NaN quantity denied 23514
+PASS full expedition real motor and ledger
+PASS expedition replay
+PASS expedition reversal restores real ledger balances
+PASS reversal balance preserved
+PASS cancel wrapper uses real motor
+PASS cancel wrapper replay
+PASS ledger direct update denied 42501
+PASS real append-only trigger blocks privileged local test 42501
+PASS latest CQ rejected denies envase P0001
+PASS CQ denial leaves no stock
+PASS ledger failure rolls whole envase back P0001
+PASS fault atomic envase stock receipt rollback
+PASS nonfinite produced volume denied P0001
+PASS missing line quantity denied P0001
+PASS two connections one envase one replay
+PASS concurrent envase single ledger
+PASS row waiter rechecks committed local revocation
+PASS revoked row waiter no stock
+PASS motor replaces forged GUC with private context
+PASS ledger uses real operation key not forged GUC
+PASS gate revocation committed first denies waiter
+PASS revoked waiter zero writes
+PASS mutation first commits before queued revocation
+PASS 3s timeout no mutation 55P03
+PASS timeout no envase
+PASS item N ledger failure aborts multi-line envase P0001
+PASS item N rolls all stock envase ledger receipts back
+PASS second expedition invalid status aborts whole explicit transaction 23514
+PASS item N no first-item committed receipt
+PASS item N restores first-item balance
+PASS same item competing generation fails status after real wait
+PASS competing keys one expedition ledger
+PASS exact current inner reservation body
+PASS captured inner reservation + canonical batch real ledger
+PASS batch same payload replay
+PASS batch one immutable receipt
+PASS batch changed quantity same key rejects 23505
+PASS batch item N ledger failure after first reservation P0001
+PASS batch item N restores entire ledger baseline
+PASS batch item N rolls first reservation status back
+PASS batch item N no receipt committed
+PASS same failed batch key may commit after complete rollback
+PASS batch reordered items canonical fingerprint replay
+TOTAL 64 PASS

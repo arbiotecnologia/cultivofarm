@@ -169,6 +169,12 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe("AppPortalGuard", () => {
+  it("nega produtor nominal sem producer na lista canônica", () => {
+    authState.roles = ["cliente_produtor"];
+    authState.primaryRole = "cliente_produtor";
+    renderAppGuard();
+    expect(screen.getByText("SEM_PERMISSAO")).toBeInTheDocument();
+  });
   it("nega gestor com payload legado verdadeiro e apenas admin canônico", () => {
     authState.roles = ["gestor"];
     if (contextsState.data) Object.assign(contextsState.data, { available_contexts: ["admin"], has_technical_access: true, is_admin: true, has_b2b_access: true });
@@ -187,6 +193,7 @@ describe("AppPortalGuard", () => {
     authState.roles = ["cliente_produtor"];
     authState.primaryRole = "cliente_produtor";
     contextsState.data!.has_technical_access = false;
+    if (contextsState.data) contextsState.data.available_contexts = ["producer"];
     renderAppGuard();
     expect(screen.getByText("APP_OK")).toBeInTheDocument();
   });
@@ -220,6 +227,7 @@ describe("AppPortalGuard", () => {
     const { rerender } = renderAppGuard();
     contextsState.isLoading = false;
     authState.roles = ["cliente_produtor"];
+    if (contextsState.data) contextsState.data.available_contexts = ["producer"];
     rerender(
       <MemoryRouter initialEntries={["/app"]}>
         <Routes>

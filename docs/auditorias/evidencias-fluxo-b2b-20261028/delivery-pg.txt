@@ -1,0 +1,50 @@
+EVIDENCIA OFFLINE. Sem sessão/JWT hosted. Logs completos temporários omitidos.
+PASS exact LIVE body public.fn_cockpit_norm_origem
+PASS exact LIVE body public.fn_cockpit_assert_operador_origem
+PASS exact LIVE body public.fn_entrega_assert_confirmador
+PASS exact LIVE body public.fn_estoque_ctx_open
+PASS exact LIVE body public.rpc_cockpit_criar_entrega_v1
+PASS exact LIVE body public.fn_entrega_confirmar_engine_v1
+PASS exact LIVE body public.rpc_entrega_cancelar_v1
+PASS exact LIVE body public.rpc_entrega_confirmar_v1
+PASS exact LIVE body public.rpc_cockpit_confirmar_entrega_v1
+PASS baseline SHARE delivery + exclusive motor reproduces 40P01 deadlock
+PASS failing POST rolls back complete delivery DDL transaction 42501
+PASS failed POST preserves baseline body
+PASS current LIVE OID pins reject disposable metadata drift 42501
+PASS pinned delta rejection changes no body
+PASS composed delivery uses only exclusive gate
+PASS composed cancel/cancel serializes without deadlock
+PASS composed cancel/confirm serializes without deadlock
+PASS composed confirm/cancel serializes without deadlock
+PASS full reservation confirm succeeds
+PASS expedition goes through canonical motor once with deterministic key
+PASS no direct ledger insert by delivery
+PASS confirm replay
+PASS replay no second motor call
+PASS partial reservation rejected PT409 PT409
+PASS partial rejection no write
+PASS cross-tenant confirm denied 42501
+PASS anon confirm denied 42501
+PASS B2B stays contained 42501
+PASS onfarm not released by composition
+PASS confirm waits on billing advisory key (unified)
+PASS revocation committed during gate wait denies confirm
+PASS revoked confirm no write
+PASS 3s gate timeout bounded 55P03
+PASS motor/ledger failure propagates P0001
+PASS motor failure rolls back delivery and events
+PASS negative/null motor ACK aborts confirmation '{"ok":false}'::jsonb PT409
+PASS negative motor ACK rolls child and parent back '{"ok":false}'::jsonb
+PASS negative/null motor ACK aborts confirmation NULL::jsonb PT409
+PASS negative motor ACK rolls child and parent back NULL::jsonb
+PASS preexisting expedition cannot confirm unowned delivery PT409
+PASS ambiguous expedition no effects
+PASS negative reservation cancel ACK aborts parent PT409
+PASS negative cancel ACK rollback
+PASS null reversal ACK aborts cancellation PT409
+PASS reversal ACK rollback
+PASS containment denies confirmation 42501
+PASS containment denies cancellation 42501
+PASS release barrier remains closed 42501
+TOTAL 48 PASS

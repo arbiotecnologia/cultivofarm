@@ -46,8 +46,7 @@ describe("P0 pós-publicação — topologia do AuthProvider", () => {
         const source = readFileSync(file, "utf8");
         return /\buseAuth\b/.test(source)
           && sourcePath(file) !== "src/hooks/useAuth.tsx"
-          && !source.includes('from "@/hooks/useAuth"')
-          && !source.includes('from "./useAuth"');
+          && !/from\s+["'](?:@\/hooks\/useAuth|\.\/useAuth)["']/.test(source);
       });
 
     expect(offenders).toEqual([]);

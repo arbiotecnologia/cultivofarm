@@ -1,5 +1,12 @@
 # F2-B — auditoria e preparação revisável
 
+## Auditoria final planejada e testes atuais — 28/10/2026
+- [x] Matriz9.180 cenários perfil/tenant/contrato +evidências offline/gates, JWT real0; CSV/resumo e relatório final.
+- [x] Duplo dispatch/ok:false reproduzidos em planejamento, corrigidos com21 regressões QueryClient; canon-only/ACK/fences/retry OFF sem ativação. Fixtures produtor e detector Auth corrigidos sem alterar guards.
+- [x] Vitest620/620 únicos em43 arquivos (inclui2 integridade matriz) e PostgreSQL188 sintéticos; dependências LIVE só SELECT, A2/entrega/envase/helper ausentes/bloqueados confirmados.
+- [x] Roteiro A/B/C com fixtures/cleanup futuro, P0/P1/P2/métricas e gate pós-implantação no plano original.
+- [ ] Homologação real aguarda dependências instaladas/revisadas e autorização sensível específica para dados/sessões controladas; não executar os runners legados de refs proibidos.
+
 ## Etapas 5/6 — contratos OS→entrega→estoque, 28/10/2026
 - [x] Captura LIVE somente leitura, comparação dos três pacotes e contratos manuais/B2B/itens; 14/14 corpos estoque e seis tabelas sem drift.
 - [x] Deltas INATIVOS de confirmação/cancelamento, PRE/POST atuais e rollback deny-only; composto billing histórico explicitamente bloqueado, writers intocados.

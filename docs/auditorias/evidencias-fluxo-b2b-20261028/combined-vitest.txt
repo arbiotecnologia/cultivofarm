@@ -1,0 +1,18 @@
+EVIDENCIA OFFLINE. Sem sessão/JWT hosted. Logs completos temporários omitidos.
+ ✓ src/test/entregas/creationContracts.offline.test.ts (5 tests) 12ms
+ ✓ src/test/rbac/rbac-audit-matrix.test.ts (6 tests) 10ms
+ ✓ src/test/planejamento-producao/publicacao-idempotente.test.ts (11 tests) 20ms
+ ✓ src/test/dashboard-producao/producao.test.ts (13 tests) 44ms
+ ✓ src/test/planejamento-producao/planejamento.test.ts (18 tests) 53ms
+ ✓ src/test/security/d51-6-storage-path.test.ts (4 tests) 9ms
+ ✓ src/test/security/noSignedAttachmentEmission.test.ts (11 tests) 18ms
+ ✓ src/test/entregas/registroEntrega.test.ts (15 tests) 17ms
+ ✓ src/test/config/authProviderTopology.test.ts (3 tests) 832ms
+ ✓ src/test/planejamento-producao/publicacao-contrato-current.test.tsx (21 tests) 87ms
+ ✓ src/test/multiportal.guards.test.tsx (24 tests) 109ms
+ ✓ src/test/entregas/comprovanteDownloadAutenticado.test.tsx (25 tests) 1575ms
+ ✓ src/test/multiportal.contexts.session.test.tsx (15 tests) 3672ms
+ Test Files  13 passed (13)
+      Tests  171 passed (171)
+   Start at  01:51:33
+   Duration  9.17s (transform 1.08s, setup 4.69s, collect 6.38s, tests 6.46s, environment 34.12s, prepare 3.79s)
