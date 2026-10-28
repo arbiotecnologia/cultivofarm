@@ -5,6 +5,6 @@ REVOKE EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,nu
  public.rpc_cockpit_confirmar_entrega_v1(uuid,uuid,text,jsonb),
  public.rpc_entrega_confirmar_v1(uuid,jsonb,jsonb),
  public.rpc_entrega_cancelar_v1(uuid,text),
- public.fn_entrega_confirmar_engine_v1(uuid,jsonb,jsonb,text,uuid)
+ public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)
  FROM PUBLIC,anon,authenticated;
 COMMIT;
