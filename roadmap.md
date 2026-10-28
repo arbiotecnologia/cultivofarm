@@ -4,7 +4,8 @@
 - [x] Substituir candidata por40% fixo/0%até30d/1,8%até6m/2%até12m; referência anterior arquivada e evidências intactas.
 - [x] Decimal/faixas/contrafactuais: PG41PASS/0FAIL/16BLOCKED/1NOT RUN; regressões129/129 em8arquivos sem tocar entrega.
 - [x] Plano original/matriz/diagnóstico/conflitos documentados; revisão independente do suporte lida.
-- [ ] Operação BLOCKED por incidência/calendário/marginalidade/amortização/billing/aprovação jurídica e contratos existentes; nenhum cálculo real ativado.
+- [x] Decisão definitiva02:40:incidência desde início sem deduzir30d/taxa única integral sem marginalidade; DRAFT/plano/testes atualizados; PG47PASS/0FAIL/15BLOCKED/1NOT RUN. Evidências novas preservam02:37.
+- [ ] Operação BLOCKED por calendário/fracionários/amortização/billing/implantação jurídica e contratos existentes; incidência e faixa única não são mais ambiguidades; produçãoOFF.
 
 ## Referência AR Bio × FSF Agro — DRAFT, 28/10/2026
 - [x] Registrar fonte/apresentação não contratual, escopo fornecedor/revenda e pendências sem criar tenant/usuários.

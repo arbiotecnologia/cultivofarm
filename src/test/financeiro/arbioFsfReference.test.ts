@@ -21,13 +21,43 @@ describe('AR Bio × FSF Agro — política superveniente não aplicada, consumid
   ])('fronteira normativa %s sem homologar calendário ou valor', (key, rate) => {
     expect(draft.boundary_fixtures.find((f: { key: string }) => f.key === key)?.rate).toBe(rate);
   });
-  it('mantém incidência indefinida e nenhuma política excepcional aprovada', () => {
-    expect(draft.formula).toBeNull();
+  it.each([
+    [30, 0, false, '0'], [31, 0, false, '1.8'],
+    [undefined, 6, false, '1.8'], [undefined, 6, true, '2'],
+    [undefined, 12, false, '2'], [undefined, 12, true, undefined],
+    [-1, 0, false, undefined],
+  ])('seleção offline dias%s/meses%s/excede%s — não converte data nem pro-rata', (days, months, exceeds, expectedRate) => {
+    // Qualificadores de prazo explícitos, não calendário arbitrado ou runtime paralelo.
+    const selected = typeof days === 'number' && days < 0 ? undefined
+      : typeof days === 'number' && days <= 30 ? draft.policies[0]
+      : months < 6 || (months === 6 && !exceeds) ? draft.policies[1]
+      : months < 12 || (months === 12 && !exceeds) ? draft.policies[2] : undefined;
+    expect(selected?.monthly_interest_percent).toBe(expectedRate);
+  });
+  it('usa data inicial e taxa única integral sem carência ou marginalidade', () => {
+    expect(draft.interest_decision.interest_start).toBe('operation_initial_date');
+    expect(draft.interest_decision.band_incidence).toBe('single_selected_rate_over_entire_term');
+    expect(draft.interest_decision.deduct_30_days).toBe(false);
+    expect(draft.interest_decision.marginal_rates_allowed).toBe(false);
     expect(draft.runtime_enabled).toBe(false);
-    expect(draft.undefined.interest_start).toBeNull();
-    expect(draft.undefined.band_incidence).toBeNull();
+    expect(draft.undefined.fractional_months_convention).toBeNull();
+    expect(draft.undefined.month_boundary_convention).toBeNull();
     expect(draft.owner_override.exceptional_policy_approved).toBe(false);
     expect(draft.owner_override.beyond_12_months).toBe('DENY_UNLESS_SEPARATE_APPROVED_EXCEPTIONAL_POLICY');
+  });
+  it.each([3, 6, 8, 12])('%sm não deduz 30 dias ou um mês de juros', months => {
+    const rate = months <= 6 ? 1.8 : 2;
+    const whole = preview({ ...base, discount_percent: 40, monthly_interest_percent: rate, months_count: months });
+    const deducted = preview({ ...base, discount_percent: 40, monthly_interest_percent: rate, months_count: months - 1 });
+    expect(Math.round((whole?.final ?? NaN) * 100)).not.toBe(Math.round((deducted?.final ?? NaN) * 100));
+  });
+  it.each([8, 12])('%sm taxa2 integral não confunde com marginal', months => {
+    const whole = preview({ ...base, discount_percent: 40, monthly_interest_percent: 2, months_count: months });
+    const marginalRejected = 60000 * (1.018 ** 6) * (1.02 ** (months - 6));
+    expect(Math.round((whole?.final ?? NaN) * 100)).not.toBe(Math.round(marginalRejected * 100));
+  });
+  it.each([-1, 101])('taxa inválida%s recusada pelo preview existente', monthly_interest_percent => {
+    expect(preview({ ...base, monthly_interest_percent })).toBeNull();
   });
   it.each(draft.reference_vectors as { key: string; discount: string; rate: string; months: number; table: string; expected: string }[])(
     '$key compara preview Number ao vetor previamente conferido em Decimal no PG local', vector => {
