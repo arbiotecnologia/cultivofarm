@@ -66,8 +66,8 @@
       "id": "SALDO-007",
       "cenario": "ACK perdido replay mesmo UUID sem novo efeito",
       "status": "PASS",
-      "esperado": "('57baf552-f087-4b44-a834-08a8f9cfdc29', True)",
-      "observado": "('57baf552-f087-4b44-a834-08a8f9cfdc29', True)",
+      "esperado": "('ca4a3ba8-4638-474f-9d8a-4b5a410543b6', True)",
+      "observado": "('ca4a3ba8-4638-474f-9d8a-4b5a410543b6', True)",
       "modo": "BASELINE",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -126,8 +126,8 @@
       "id": "SALDO-013",
       "cenario": "recibo replay sem duplicar",
       "status": "PASS",
-      "esperado": "('9e306f83-c9b5-407b-ba69-cbd0672694b2', True)",
-      "observado": "('9e306f83-c9b5-407b-ba69-cbd0672694b2', True)",
+      "esperado": "('f0ec6acb-45bb-4a78-959e-96168424a24e', True)",
+      "observado": "('f0ec6acb-45bb-4a78-959e-96168424a24e', True)",
       "modo": "BASELINE",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -176,8 +176,8 @@
       "id": "SALDO-018",
       "cenario": "estorno replay sem duplicar",
       "status": "PASS",
-      "esperado": "('2e2f7f65-dca3-41f2-abbf-048cad70bf5e', True)",
-      "observado": "('2e2f7f65-dca3-41f2-abbf-048cad70bf5e', True)",
+      "esperado": "('aaeb30b3-5870-4b93-81b3-16fb342713db', True)",
+      "observado": "('aaeb30b3-5870-4b93-81b3-16fb342713db', True)",
       "modo": "BASELINE",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
@@ -614,6 +614,36 @@
     },
     {
       "id": "SALDO-062",
+      "cenario": "diagnostico historico retorna apenas contagem tenant ator",
+      "status": "PASS",
+      "esperado": "13",
+      "observado": "13",
+      "modo": "BASELINE",
+      "severidade": "P1",
+      "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
+    },
+    {
+      "id": "SALDO-063",
+      "cenario": "diagnostico suprime grupo estrangeiro pequeno",
+      "status": "PASS",
+      "esperado": "0",
+      "observado": "0",
+      "modo": "BASELINE",
+      "severidade": "P1",
+      "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
+    },
+    {
+      "id": "SALDO-064",
+      "cenario": "diagnostico sem autoridade staff nao retorna grupos",
+      "status": "PASS",
+      "esperado": "0",
+      "observado": "0",
+      "modo": "BASELINE",
+      "severidade": "P1",
+      "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
+    },
+    {
+      "id": "SALDO-065",
       "cenario": "saldo inicial financiado 10300, nao 10600",
       "status": "PASS",
       "esperado": "10300",
@@ -623,7 +653,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-063",
+      "id": "SALDO-066",
       "cenario": "experimento recusa 10600 para total 10300",
       "status": "PASS",
       "esperado": "True",
@@ -633,7 +663,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-064",
+      "id": "SALDO-067",
       "cenario": "parcial, mora monetaria, multa e desconto",
       "status": "PASS",
       "esperado": "7550",
@@ -643,7 +673,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-065",
+      "id": "SALDO-068",
       "cenario": "juros sao soma eventos apos primeira baixa",
       "status": "PASS",
       "esperado": "100",
@@ -653,7 +683,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-066",
+      "id": "SALDO-069",
       "cenario": "saldo operacional e aging exigivel apos parcial",
       "status": "FAIL",
       "esperado": "7550",
@@ -663,7 +693,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-067",
+      "id": "SALDO-070",
       "cenario": "segunda baixa acumula sem perder financiamento",
       "status": "PASS",
       "esperado": "6550",
@@ -673,17 +703,17 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-068",
+      "id": "SALDO-071",
       "cenario": "ACK perdido replay mesmo UUID sem novo efeito",
       "status": "PASS",
-      "esperado": "('8165ca84-2c1b-4a8f-a467-9b995b534dd7', True)",
-      "observado": "('8165ca84-2c1b-4a8f-a467-9b995b534dd7', True)",
+      "esperado": "('54911096-8be4-4b5d-8c05-b608e8c9e86c', True)",
+      "observado": "('54911096-8be4-4b5d-8c05-b608e8c9e86c', True)",
       "modo": "EXPERIMENTO_NAO_INSTALAVEL",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-069",
+      "id": "SALDO-072",
       "cenario": "chave mesma payload divergente",
       "status": "PASS",
       "esperado": "True",
@@ -693,7 +723,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-070",
+      "id": "SALDO-073",
       "cenario": "parcela estrangeira antes replay",
       "status": "PASS",
       "esperado": "True",
@@ -703,7 +733,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-071",
+      "id": "SALDO-074",
       "cenario": "papel revogado sintetico",
       "status": "PASS",
       "esperado": "True",
@@ -713,7 +743,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-072",
+      "id": "SALDO-075",
       "cenario": "cancelar parcela com baixa ativa",
       "status": "PASS",
       "esperado": "True",
@@ -723,7 +753,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-073",
+      "id": "SALDO-076",
       "cenario": "recibo valor evento nao saldo",
       "status": "PASS",
       "esperado": "3000",
@@ -733,17 +763,17 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-074",
+      "id": "SALDO-077",
       "cenario": "recibo replay sem duplicar",
       "status": "PASS",
-      "esperado": "('65933ca0-5dec-4eb0-9bab-d0f920d412b5', True)",
-      "observado": "('65933ca0-5dec-4eb0-9bab-d0f920d412b5', True)",
+      "esperado": "('b1944fab-9e7a-4399-994b-49e6dcec9290', True)",
+      "observado": "('b1944fab-9e7a-4399-994b-49e6dcec9290', True)",
       "modo": "EXPERIMENTO_NAO_INSTALAVEL",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-075",
+      "id": "SALDO-078",
       "cenario": "recibo cross-tenant",
       "status": "PASS",
       "esperado": "True",
@@ -753,7 +783,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-076",
+      "id": "SALDO-079",
       "cenario": "cancelar recibo nao estorna baixa",
       "status": "PASS",
       "esperado": "6550",
@@ -763,7 +793,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-077",
+      "id": "SALDO-080",
       "cenario": "recibo cancelado segunda intencao",
       "status": "PASS",
       "esperado": "True",
@@ -773,7 +803,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-078",
+      "id": "SALDO-081",
       "cenario": "estorno parcial preserva pagamento remanescente",
       "status": "PASS",
       "esperado": "9300",
@@ -783,17 +813,17 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-079",
+      "id": "SALDO-082",
       "cenario": "estorno replay sem duplicar",
       "status": "PASS",
-      "esperado": "('06003c6e-7cda-4f35-b662-b726d71cd587', True)",
-      "observado": "('06003c6e-7cda-4f35-b662-b726d71cd587', True)",
+      "esperado": "('48be6677-6879-4c14-a1d2-8538861ff17d', True)",
+      "observado": "('48be6677-6879-4c14-a1d2-8538861ff17d', True)",
       "modo": "EXPERIMENTO_NAO_INSTALAVEL",
       "severidade": "P1",
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-080",
+      "id": "SALDO-083",
       "cenario": "ledger de eventos liquidos remanescentes",
       "status": "PASS",
       "esperado": "1000",
@@ -803,7 +833,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-081",
+      "id": "SALDO-084",
       "cenario": "snapshot original imutavel",
       "status": "PASS",
       "esperado": "True",
@@ -813,7 +843,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-082",
+      "id": "SALDO-085",
       "cenario": "snapshot titulo imutavel",
       "status": "PASS",
       "esperado": "True",
@@ -823,7 +853,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-083",
+      "id": "SALDO-086",
       "cenario": "evento UPDATE imutavel",
       "status": "PASS",
       "esperado": "True",
@@ -833,7 +863,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-084",
+      "id": "SALDO-087",
       "cenario": "valor financiado fixture 0m conservado na geracao",
       "status": "PASS",
       "esperado": "6000",
@@ -843,7 +873,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-085",
+      "id": "SALDO-088",
       "cenario": "rateio centavos soma 0m",
       "status": "PASS",
       "esperado": "6000",
@@ -853,7 +883,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-086",
+      "id": "SALDO-089",
       "cenario": "quitacao parcela 0m saldo zero",
       "status": "PASS",
       "esperado": "0",
@@ -863,7 +893,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-087",
+      "id": "SALDO-090",
       "cenario": "valor financiado fixture 1m conservado na geracao",
       "status": "PASS",
       "esperado": "6108.00",
@@ -873,7 +903,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-088",
+      "id": "SALDO-091",
       "cenario": "rateio centavos soma 1m",
       "status": "PASS",
       "esperado": "6108.00",
@@ -883,7 +913,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-089",
+      "id": "SALDO-092",
       "cenario": "quitacao parcela 1m saldo zero",
       "status": "PASS",
       "esperado": "0",
@@ -893,7 +923,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-090",
+      "id": "SALDO-093",
       "cenario": "valor financiado fixture 6m conservado na geracao",
       "status": "PASS",
       "esperado": "6677.87",
@@ -903,7 +933,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-091",
+      "id": "SALDO-094",
       "cenario": "rateio centavos soma 6m",
       "status": "PASS",
       "esperado": "6677.87",
@@ -913,7 +943,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-092",
+      "id": "SALDO-095",
       "cenario": "quitacao parcela 6m saldo zero",
       "status": "PASS",
       "esperado": "0",
@@ -923,7 +953,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-093",
+      "id": "SALDO-096",
       "cenario": "valor financiado fixture 8m conservado na geracao",
       "status": "PASS",
       "esperado": "7029.96",
@@ -933,7 +963,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-094",
+      "id": "SALDO-097",
       "cenario": "rateio centavos soma 8m",
       "status": "PASS",
       "esperado": "7029.96",
@@ -943,7 +973,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-095",
+      "id": "SALDO-098",
       "cenario": "quitacao parcela 8m saldo zero",
       "status": "PASS",
       "esperado": "0",
@@ -953,7 +983,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-096",
+      "id": "SALDO-099",
       "cenario": "valor financiado fixture 12m conservado na geracao",
       "status": "PASS",
       "esperado": "7609.45",
@@ -963,7 +993,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-097",
+      "id": "SALDO-100",
       "cenario": "rateio centavos soma 12m",
       "status": "PASS",
       "esperado": "7609.45",
@@ -973,7 +1003,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-098",
+      "id": "SALDO-101",
       "cenario": "quitacao parcela 12m saldo zero",
       "status": "PASS",
       "esperado": "0",
@@ -983,7 +1013,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-099",
+      "id": "SALDO-102",
       "cenario": "ramo generico 1 real 3 parcelas",
       "status": "PASS",
       "esperado": "[Decimal('0.33'), Decimal('0.33'), Decimal('0.34')]",
@@ -993,7 +1023,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-100",
+      "id": "SALDO-103",
       "cenario": "valor invalido 0",
       "status": "PASS",
       "esperado": "True",
@@ -1003,7 +1033,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-101",
+      "id": "SALDO-104",
       "cenario": "valor invalido -1",
       "status": "PASS",
       "esperado": "True",
@@ -1013,7 +1043,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-102",
+      "id": "SALDO-105",
       "cenario": "valor invalido 0.001",
       "status": "PASS",
       "esperado": "True",
@@ -1023,7 +1053,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-103",
+      "id": "SALDO-106",
       "cenario": "valor invalido NaN",
       "status": "PASS",
       "esperado": "True",
@@ -1033,7 +1063,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-104",
+      "id": "SALDO-107",
       "cenario": "cancelamento B2B permanece contido",
       "status": "PASS",
       "esperado": "True",
@@ -1043,7 +1073,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-105",
+      "id": "SALDO-108",
       "cenario": "outro escritor repoe juros financiados apos experimento",
       "status": "FAIL",
       "esperado": "10300",
@@ -1053,7 +1083,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-106",
+      "id": "SALDO-109",
       "cenario": "cashflow capturado concorda com formula aditiva",
       "status": "PASS",
       "esperado": "48892.43",
@@ -1063,7 +1093,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-107",
+      "id": "SALDO-110",
       "cenario": "aging e caixa projetado concordam incluindo ajustes",
       "status": "FAIL",
       "esperado": "48892.43",
@@ -1073,7 +1103,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-108",
+      "id": "SALDO-111",
       "cenario": "cancelamento deve negar parcela de outro tenant e ser atomico",
       "status": "FAIL",
       "esperado": "(True, True)",
@@ -1083,7 +1113,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-109",
+      "id": "SALDO-112",
       "cenario": "loop completo de atribuicoes B2B conserva total (nao autoriza writer)",
       "status": "PASS",
       "esperado": "10300",
@@ -1093,7 +1123,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-110",
+      "id": "SALDO-113",
       "cenario": "loop repetido nao apaga nem duplica encargo do evento",
       "status": "PASS",
       "esperado": "7550",
@@ -1103,7 +1133,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-111",
+      "id": "SALDO-114",
       "cenario": "juros operacionais permanecem soma dos eventos",
       "status": "PASS",
       "esperado": "100",
@@ -1113,7 +1143,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-112",
+      "id": "SALDO-115",
       "cenario": "snapshot cronograma preserva remuneracao inicial",
       "status": "PASS",
       "esperado": "300",
@@ -1123,7 +1153,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-113",
+      "id": "SALDO-116",
       "cenario": "snapshot parcela nega divergencia de original",
       "status": "PASS",
       "esperado": "Parcela imutavel",
@@ -1133,7 +1163,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-114",
+      "id": "SALDO-117",
       "cenario": "divergencia de snapshot aborta transacao sem compensar",
       "status": "PASS",
       "esperado": "True",
@@ -1143,7 +1173,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-115",
+      "id": "SALDO-118",
       "cenario": "duas sessoes mesma chave retorno unico",
       "status": "PASS",
       "esperado": "(2, 1)",
@@ -1153,7 +1183,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-116",
+      "id": "SALDO-119",
       "cenario": "duas sessoes mesma chave ledger unico",
       "status": "PASS",
       "esperado": "3000",
@@ -1163,7 +1193,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-117",
+      "id": "SALDO-120",
       "cenario": "duas sessoes mesma chave saldo correto",
       "status": "PASS",
       "esperado": "7300",
@@ -1173,7 +1203,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-118",
+      "id": "SALDO-121",
       "cenario": "duas baixas excedentes uma aceita outra nega",
       "status": "PASS",
       "esperado": "(1, 1)",
@@ -1183,7 +1213,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-119",
+      "id": "SALDO-122",
       "cenario": "baixas concorrentes distintas nao sobrebaixam",
       "status": "PASS",
       "esperado": "4300",
@@ -1193,7 +1223,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-120",
+      "id": "SALDO-123",
       "cenario": "ledger concorrente corresponde a valor aceito",
       "status": "PASS",
       "esperado": "6000",
@@ -1203,7 +1233,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-121",
+      "id": "SALDO-124",
       "cenario": "estorno simultaneo uma compensacao no ledger",
       "status": "PASS",
       "esperado": "0",
@@ -1213,7 +1243,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-122",
+      "id": "SALDO-125",
       "cenario": "estorno simultaneo conserva total financiado",
       "status": "PASS",
       "esperado": "10300",
@@ -1223,7 +1253,7 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-123",
+      "id": "SALDO-126",
       "cenario": "proposta nega 10600 em duas sessoes",
       "status": "PASS",
       "esperado": "2",
@@ -1233,7 +1263,37 @@
       "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
     },
     {
-      "id": "SALDO-124",
+      "id": "SALDO-127",
+      "cenario": "diagnostico historico retorna apenas contagem tenant ator",
+      "status": "PASS",
+      "esperado": "13",
+      "observado": "13",
+      "modo": "EXPERIMENTO_NAO_INSTALAVEL",
+      "severidade": "P1",
+      "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
+    },
+    {
+      "id": "SALDO-128",
+      "cenario": "diagnostico suprime grupo estrangeiro pequeno",
+      "status": "PASS",
+      "esperado": "0",
+      "observado": "0",
+      "modo": "EXPERIMENTO_NAO_INSTALAVEL",
+      "severidade": "P1",
+      "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
+    },
+    {
+      "id": "SALDO-129",
+      "cenario": "diagnostico sem autoridade staff nao retorna grupos",
+      "status": "PASS",
+      "esperado": "0",
+      "observado": "0",
+      "modo": "EXPERIMENTO_NAO_INSTALAVEL",
+      "severidade": "P1",
+      "nivel": "PG_CORPOS_CAPTURADOS_AUTH_SCHEMA_PARCIAL_SINTETICOS"
+    },
+    {
+      "id": "SALDO-130",
       "cenario": "geracao B2B integral: gates fiscais/preco/tenant/snapshot e escritor alternativo",
       "status": "BLOCKED",
       "esperado": "contrato integrado homologado",
@@ -1243,7 +1303,7 @@
       "nivel": "NAO_CERTIFICADO"
     },
     {
-      "id": "SALDO-125",
+      "id": "SALDO-131",
       "cenario": "mudanca segura de contrato unico com todos consumidores BI",
       "status": "BLOCKED",
       "esperado": "contrato integrado homologado",
@@ -1253,7 +1313,7 @@
       "nivel": "NAO_CERTIFICADO"
     },
     {
-      "id": "SALDO-126",
+      "id": "SALDO-132",
       "cenario": "remediacao historica: nao classificar juros apenas por valor/coincidencia",
       "status": "BLOCKED",
       "esperado": "contrato integrado homologado",
@@ -1263,7 +1323,7 @@
       "nivel": "NAO_CERTIFICADO"
     },
     {
-      "id": "SALDO-127",
+      "id": "SALDO-133",
       "cenario": "revogacao real depois locks e RLS JWT A/B",
       "status": "BLOCKED",
       "esperado": "contrato integrado homologado",
@@ -1273,7 +1333,7 @@
       "nivel": "NAO_CERTIFICADO"
     },
     {
-      "id": "SALDO-128",
+      "id": "SALDO-134",
       "cenario": "ledger contabil: writer/cadeia nao identificados",
       "status": "BLOCKED",
       "esperado": "contrato integrado homologado",
@@ -1283,7 +1343,7 @@
       "nivel": "NAO_CERTIFICADO"
     },
     {
-      "id": "SALDO-129",
+      "id": "SALDO-135",
       "cenario": "calendario fracionario parcelamento e gatilho billing",
       "status": "BLOCKED",
       "esperado": "contrato integrado homologado",
@@ -1293,7 +1353,7 @@
       "nivel": "NAO_CERTIFICADO"
     },
     {
-      "id": "SALDO-130",
+      "id": "SALDO-136",
       "cenario": "mora automatica indice/pro-rata e antecipacao contratual",
       "status": "BLOCKED",
       "esperado": "contrato integrado homologado",
@@ -1303,7 +1363,7 @@
       "nivel": "NAO_CERTIFICADO"
     },
     {
-      "id": "SALDO-131",
+      "id": "SALDO-137",
       "cenario": "concorrencia multi-sessao recibo e cancelamento tenant/RLS",
       "status": "BLOCKED",
       "esperado": "contrato integrado homologado",
@@ -1313,7 +1373,7 @@
       "nivel": "NAO_CERTIFICADO"
     },
     {
-      "id": "SALDO-132",
+      "id": "SALDO-138",
       "cenario": "JWT browser hosted dados pagamento fiscal real",
       "status": "NOT RUN",
       "esperado": "fora de escopo",
@@ -1324,70 +1384,70 @@
     }
   ],
   "counts": {
-    "PASS": 106,
+    "PASS": 112,
     "FAIL": 17,
     "BLOCKED": 8,
     "NOT RUN": 1
   },
   "captured_body_hashes": {
-    "fn_recalc_receivable_installment()": "c8a1d33461c76eb3da3c7af1c011cf2b",
-    "issue_financial_receipt(uuid,text)": "49a1d165279ab4253e4e586fc7ccdeb3",
-    "rpc_cancel_financial_installment(uuid,text,text)": "c7d30a08b1cbd00936cd83aa5bf3415c",
-    "fn_h6b_payment_fingerprint(text,uuid,jsonb)": "37cb7a6ebedbe970454ab12560ac9829",
     "fn_h6b_num(numeric)": "866a978881436def12ac2f99f6b3e8a9",
-    "fn_h6_payments_append_only()": "6857b23b4aef5402b1449a004c94ba7b",
-    "fn_financial_audit()": "46f777c2020ff9a059a80ae6dab4bd12",
-    "fn_assign_receipt_metadata()": "5f817d6cfac5aaaaab85cde417b3520c",
-    "cancel_financial_receipt(uuid,text)": "0174a6a0ec6a4728f7bc8a143aea0bad",
+    "fn_h6b_payment_fingerprint(text,uuid,jsonb)": "37cb7a6ebedbe970454ab12560ac9829",
     "fn_h6_guard_title_snapshot()": "d9cc5c95f837de9d77cec2159e24bbf9",
-    "rpc_register_receivable_payment(uuid,jsonb)": "db41f7e2cfcb196ef64536f62746f365",
-    "fn_h6_guard_ar_installment_snapshot()": "c3f26bc5217a5d86227c7e74f762b3ad",
-    "fn_reverse_payment(uuid,text,text)": "9f2bfe6b1291cfeaa4814ee67c103be6",
-    "cancel_b2b_receivable_secure(uuid,text)": "9935ddb807b0b3da89dfb7d18fea267e",
-    "fn_fin_aging(text)": "495aa7b0ff5bf32f362b763a2a3f0f07",
-    "fn_sync_receipt_aliases()": "e18bff3f6d1ac30e97aa8a38fa06e286",
+    "fn_financial_audit()": "46f777c2020ff9a059a80ae6dab4bd12",
     "fn_fin_cashflow(date,date,text,text)": "197ffcc5735bcab0454e2936f1b76642",
+    "fn_fin_aging(text)": "495aa7b0ff5bf32f362b763a2a3f0f07",
+    "fn_reverse_payment(uuid,text,text)": "9f2bfe6b1291cfeaa4814ee67c103be6",
+    "fn_assign_receipt_metadata()": "5f817d6cfac5aaaaab85cde417b3520c",
+    "fn_sync_receipt_aliases()": "e18bff3f6d1ac30e97aa8a38fa06e286",
+    "cancel_b2b_receivable_secure(uuid,text)": "9935ddb807b0b3da89dfb7d18fea267e",
+    "fn_h6_guard_ar_installment_snapshot()": "c3f26bc5217a5d86227c7e74f762b3ad",
+    "fn_h6_payments_append_only()": "6857b23b4aef5402b1449a004c94ba7b",
+    "issue_financial_receipt(uuid,text)": "49a1d165279ab4253e4e586fc7ccdeb3",
+    "fn_recalc_receivable_installment()": "c8a1d33461c76eb3da3c7af1c011cf2b",
+    "rpc_cancel_financial_installment(uuid,text,text)": "c7d30a08b1cbd00936cd83aa5bf3415c",
+    "rpc_register_receivable_payment(uuid,jsonb)": "db41f7e2cfcb196ef64536f62746f365",
+    "cancel_financial_receipt(uuid,text)": "0174a6a0ec6a4728f7bc8a143aea0bad",
     "fn_generate_receivable_installments()": "f632f15c9f46cb9889082fc533a27ea1"
   },
   "effective_local_body_hashes_by_mode": {
     "BASELINE": {
-      "fn_recalc_receivable_installment()": "c8a1d33461c76eb3da3c7af1c011cf2b",
-      "issue_financial_receipt(uuid,text)": "49a1d165279ab4253e4e586fc7ccdeb3",
-      "rpc_cancel_financial_installment(uuid,text,text)": "c7d30a08b1cbd00936cd83aa5bf3415c",
-      "fn_h6b_payment_fingerprint(text,uuid,jsonb)": "37cb7a6ebedbe970454ab12560ac9829",
       "fn_h6b_num(numeric)": "866a978881436def12ac2f99f6b3e8a9",
-      "fn_h6_payments_append_only()": "6857b23b4aef5402b1449a004c94ba7b",
-      "fn_financial_audit()": "46f777c2020ff9a059a80ae6dab4bd12",
-      "fn_assign_receipt_metadata()": "5f817d6cfac5aaaaab85cde417b3520c",
-      "cancel_financial_receipt(uuid,text)": "0174a6a0ec6a4728f7bc8a143aea0bad",
+      "fn_h6b_payment_fingerprint(text,uuid,jsonb)": "37cb7a6ebedbe970454ab12560ac9829",
       "fn_h6_guard_title_snapshot()": "d9cc5c95f837de9d77cec2159e24bbf9",
-      "rpc_register_receivable_payment(uuid,jsonb)": "db41f7e2cfcb196ef64536f62746f365",
-      "fn_h6_guard_ar_installment_snapshot()": "c3f26bc5217a5d86227c7e74f762b3ad",
-      "fn_reverse_payment(uuid,text,text)": "9f2bfe6b1291cfeaa4814ee67c103be6",
-      "cancel_b2b_receivable_secure(uuid,text)": "9935ddb807b0b3da89dfb7d18fea267e",
-      "fn_fin_aging(text)": "495aa7b0ff5bf32f362b763a2a3f0f07",
-      "fn_sync_receipt_aliases()": "e18bff3f6d1ac30e97aa8a38fa06e286",
+      "fn_financial_audit()": "46f777c2020ff9a059a80ae6dab4bd12",
       "fn_fin_cashflow(date,date,text,text)": "197ffcc5735bcab0454e2936f1b76642",
+      "fn_fin_aging(text)": "495aa7b0ff5bf32f362b763a2a3f0f07",
+      "fn_reverse_payment(uuid,text,text)": "9f2bfe6b1291cfeaa4814ee67c103be6",
+      "fn_assign_receipt_metadata()": "5f817d6cfac5aaaaab85cde417b3520c",
+      "fn_sync_receipt_aliases()": "e18bff3f6d1ac30e97aa8a38fa06e286",
+      "cancel_b2b_receivable_secure(uuid,text)": "9935ddb807b0b3da89dfb7d18fea267e",
+      "fn_h6_guard_ar_installment_snapshot()": "c3f26bc5217a5d86227c7e74f762b3ad",
+      "fn_h6_payments_append_only()": "6857b23b4aef5402b1449a004c94ba7b",
+      "issue_financial_receipt(uuid,text)": "49a1d165279ab4253e4e586fc7ccdeb3",
+      "fn_recalc_receivable_installment()": "c8a1d33461c76eb3da3c7af1c011cf2b",
+      "rpc_cancel_financial_installment(uuid,text,text)": "c7d30a08b1cbd00936cd83aa5bf3415c",
+      "rpc_register_receivable_payment(uuid,jsonb)": "db41f7e2cfcb196ef64536f62746f365",
+      "cancel_financial_receipt(uuid,text)": "0174a6a0ec6a4728f7bc8a143aea0bad",
       "fn_generate_receivable_installments()": "f632f15c9f46cb9889082fc533a27ea1"
     },
     "EXPERIMENTO_NAO_INSTALAVEL": {
-      "fn_recalc_receivable_installment()": "c8a1d33461c76eb3da3c7af1c011cf2b",
-      "issue_financial_receipt(uuid,text)": "49a1d165279ab4253e4e586fc7ccdeb3",
-      "rpc_cancel_financial_installment(uuid,text,text)": "c7d30a08b1cbd00936cd83aa5bf3415c",
-      "fn_h6b_payment_fingerprint(text,uuid,jsonb)": "37cb7a6ebedbe970454ab12560ac9829",
       "fn_h6b_num(numeric)": "866a978881436def12ac2f99f6b3e8a9",
-      "fn_h6_payments_append_only()": "6857b23b4aef5402b1449a004c94ba7b",
-      "fn_financial_audit()": "46f777c2020ff9a059a80ae6dab4bd12",
-      "fn_assign_receipt_metadata()": "5f817d6cfac5aaaaab85cde417b3520c",
-      "cancel_financial_receipt(uuid,text)": "0174a6a0ec6a4728f7bc8a143aea0bad",
+      "fn_h6b_payment_fingerprint(text,uuid,jsonb)": "37cb7a6ebedbe970454ab12560ac9829",
       "fn_h6_guard_title_snapshot()": "d9cc5c95f837de9d77cec2159e24bbf9",
-      "rpc_register_receivable_payment(uuid,jsonb)": "db41f7e2cfcb196ef64536f62746f365",
-      "fn_h6_guard_ar_installment_snapshot()": "c3f26bc5217a5d86227c7e74f762b3ad",
-      "fn_reverse_payment(uuid,text,text)": "9f2bfe6b1291cfeaa4814ee67c103be6",
-      "cancel_b2b_receivable_secure(uuid,text)": "9935ddb807b0b3da89dfb7d18fea267e",
-      "fn_fin_aging(text)": "495aa7b0ff5bf32f362b763a2a3f0f07",
-      "fn_sync_receipt_aliases()": "e18bff3f6d1ac30e97aa8a38fa06e286",
+      "fn_financial_audit()": "46f777c2020ff9a059a80ae6dab4bd12",
       "fn_fin_cashflow(date,date,text,text)": "197ffcc5735bcab0454e2936f1b76642",
+      "fn_fin_aging(text)": "495aa7b0ff5bf32f362b763a2a3f0f07",
+      "fn_reverse_payment(uuid,text,text)": "9f2bfe6b1291cfeaa4814ee67c103be6",
+      "fn_assign_receipt_metadata()": "5f817d6cfac5aaaaab85cde417b3520c",
+      "fn_sync_receipt_aliases()": "e18bff3f6d1ac30e97aa8a38fa06e286",
+      "cancel_b2b_receivable_secure(uuid,text)": "9935ddb807b0b3da89dfb7d18fea267e",
+      "fn_h6_guard_ar_installment_snapshot()": "c3f26bc5217a5d86227c7e74f762b3ad",
+      "fn_h6_payments_append_only()": "6857b23b4aef5402b1449a004c94ba7b",
+      "issue_financial_receipt(uuid,text)": "49a1d165279ab4253e4e586fc7ccdeb3",
+      "fn_recalc_receivable_installment()": "c8a1d33461c76eb3da3c7af1c011cf2b",
+      "rpc_cancel_financial_installment(uuid,text,text)": "c7d30a08b1cbd00936cd83aa5bf3415c",
+      "rpc_register_receivable_payment(uuid,jsonb)": "db41f7e2cfcb196ef64536f62746f365",
+      "cancel_financial_receipt(uuid,text)": "0174a6a0ec6a4728f7bc8a143aea0bad",
       "fn_generate_receivable_installments()": "2abb7f0efcde19a629b7c346be4121ff"
     }
   },
