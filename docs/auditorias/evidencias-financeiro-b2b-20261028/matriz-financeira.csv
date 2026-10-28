@@ -1,0 +1,45 @@
+id,cenario,status,expectativa,observado,nivel,severidade
+FIN-OFF-001,pin fn_b2b_apply_interest,PASS,806e5d8789b08cd6790a10feaf95f26d,806e5d8789b08cd6790a10feaf95f26d,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-002,pin fn_generate_receivable_installments,PASS,f632f15c9f46cb9889082fc533a27ea1,f632f15c9f46cb9889082fc533a27ea1,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-003,pin simulate_b2b_payment_plan_secure,PASS,37d4f45e388ed7b38f6f397b672629ee,37d4f45e388ed7b38f6f397b672629ee,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-004,a vista,PASS,10000.00,"{""total"": ""10000.00"", ""amounts"": [""10000.00""], ""dates"": [""2026-10-28""]}",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-005,a vista conciliacao principal/juros,PASS,principal=10000.00; juros=0.00,principal=10000.00; juros=0.00,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-006,30 dias,PASS,10000.00,"{""total"": ""10000.00"", ""amounts"": [""10000.00""], ""dates"": [""2026-11-27""]}",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-007,30 dias conciliacao principal/juros,PASS,principal=10000.00; juros=0.00,principal=10000.00; juros=0.00,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-008,30-60-90 dias,PASS,10000.00,"{""total"": ""10000.00"", ""amounts"": [""3333.33"", ""3333.33"", ""3333.34""], ""dates"": [""2026-11-27"", ""2026-12-27"", ""2027-01-26""]}",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-009,30-60-90 dias conciliacao principal/juros,PASS,principal=10000.00; juros=0.00,principal=10000.00; juros=0.00,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-010,3x simples 1%,PASS,10300.00,"{""total"": ""10300.00"", ""amounts"": [""3433.33"", ""3433.33"", ""3433.34""], ""dates"": [""2026-11-27"", ""2026-12-27"", ""2027-01-26""]}",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-011,3x simples 1% conciliacao principal/juros,PASS,principal=10000.00; juros=300.00,principal=10000.00; juros=300.00,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-012,gerador B2B + saldo original/juros,FAIL,10300.00,10600.00,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P0
+FIN-OFF-013,6x compostos 1.5%,PASS,10934.43,"{""total"": ""10934.43"", ""amounts"": [""1822.41"", ""1822.41"", ""1822.41"", ""1822.41"", ""1822.41"", ""1822.38""], ""dates"": [""2026-11-27"", ""2026-12-27"", ""2027-01-26"", ""2027-02-25"", ""2027-03-27"", ""2027-04-26""]}",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-014,6x compostos 1.5% conciliacao principal/juros,FAIL,principal=10000.00; juros=934.43,principal=9999.99; juros=934.44,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-015,12x compostos 2%,PASS,12682.42,"{""total"": ""12682.42"", ""amounts"": [""1056.87"", ""1056.87"", ""1056.87"", ""1056.87"", ""1056.87"", ""1056.87"", ""1056.87"", ""1056.87"", ""1056.87"", ""1056.87"", ""1056.87"", ""1056.85""], ""dates"": [""2026-11-27"", ""2026-12-27"", ""2027-01-26"", ""2027-02-25"", ""2027-03-27"", ""2027-04-26"", ""2027-05-26"", ""2027-06-25"", ""2027-07-25"", ""2027-08-24"", ""2027-09-23"", ""2027-10-23""]}",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-016,12x compostos 2% conciliacao principal/juros,FAIL,principal=10000.00; juros=2682.42,principal=9999.95; juros=2682.47,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-017,desconto 5% com 3x simples,PASS,9785.00,"{""total"": ""9785.00"", ""amounts"": [""3261.67"", ""3261.67"", ""3261.66""], ""dates"": [""2026-11-27"", ""2026-12-27"", ""2027-01-26""]}",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-018,desconto 5% com 3x simples conciliacao principal/juros,PASS,principal=9500.00; juros=285.00,principal=9500.00; juros=285.00,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-019,desconto 10% com 6x compostos,PASS,9840.99,"{""total"": ""9840.99"", ""amounts"": [""1640.17"", ""1640.17"", ""1640.17"", ""1640.17"", ""1640.17"", ""1640.14""], ""dates"": [""2026-11-27"", ""2026-12-27"", ""2027-01-26"", ""2027-02-25"", ""2027-03-27"", ""2027-04-26""]}",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-020,desconto 10% com 6x compostos conciliacao principal/juros,FAIL,principal=9000.00; juros=840.99,principal=8999.98; juros=841.01,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-021,carencia 60 dias sem mudar meses,PASS,10300.00,"{""total"": ""10300.00"", ""amounts"": [""3433.33"", ""3433.33"", ""3433.34""], ""dates"": [""2026-12-27"", ""2027-01-26"", ""2027-02-25""]}",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-022,carencia 60 dias sem mudar meses conciliacao principal/juros,PASS,principal=10000.00; juros=300.00,principal=10000.00; juros=300.00,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-023,taxa negativa,PASS,invalid_interest_rate,invalid_interest_rate,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-024,desconto acima 40 gestor,PASS,discount_exceeds_limit,discount_exceeds_limit,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-025,vencimento retroativo RPC,PASS,invalid_due_date,invalid_due_date,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-026,helper puro nao valida taxa negativa,PASS,9700.00 (validacao pertence ao chamador),9700.00,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-027,entrada 30% +3x,BLOCKED,Contrato completo instalado/comprovado,Sem parametro entrada na RPC B2B; 3000 +2333.33 +2333.33 +2333.34 somente referencia sem juros,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-028,entrada 50% +2x,BLOCKED,Contrato completo instalado/comprovado,"Sem parametro entrada; 5000 +2500 +2500 referencia sem juros, base incidencia nao contratada",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-029,entrada maior total,BLOCKED,Contrato completo instalado/comprovado,Entrada nao contratada na RPC B2B,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-030,parcelas desiguais B2B,BLOCKED,Contrato completo instalado/comprovado,Array customizado nao recebido pela criacao/simulacao B2B,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-031,vencimentos personalizados/repetidos,BLOCKED,Contrato completo instalado/comprovado,"RPC B2B recebe primeiro vencimento; demais +30 dias, sem array",PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-032,taxa excessiva servidor,BLOCKED,Contrato completo instalado/comprovado,UI limita 100%; maximo contratual servidor precisa matriz/constraints/resolver completos,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-033,valor zero/parcela zero servidor,BLOCKED,Contrato completo instalado/comprovado,Resolver/cadeia integrais ausentes; nao certificar por cart stub,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-034,alteracao pos-aprovacao e taxa pos-faturamento,BLOCKED,Contrato completo instalado/comprovado,Triggers/snapshots/cadeia completa nao carregados nesta bateria,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-035,cancelamento apos recebivel,BLOCKED,Contrato completo instalado/comprovado,Contrato de cancelamento completo nao exercitado,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-036,na_aprovacao atomicidade,BLOCKED,Contrato completo instalado/comprovado,Origem/contabilidade/trigger/categoria/metodo/feature instalados sem homologacao integral,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-037,na_entrega financeiro,BLOCKED,Contrato completo instalado/comprovado,A2 sem instalacao/homologacao e B2B contido,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-038,nenhum titulo pedido reprovado/CQ reprovado,BLOCKED,Contrato completo instalado/comprovado,Cadeia operacional/CQ/financeira completa nao exercitada,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-039,cross tenant A/B financeiro,BLOCKED,Contrato completo instalado/comprovado,Auth/gates locais sinteticos nao comprovam RLS/JWT,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-040,auditoria e conciliação persistida,BLOCKED,Contrato completo instalado/comprovado,Schema reduzido sem auditoria/baixa real,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-041,mora e antecipacao automáticas,BLOCKED,Contrato completo instalado/comprovado,Ajustes monetarios existem; politica automatica de calculo nao comprovada,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-042,idempotencia servidor/ACK perdido,BLOCKED,Contrato completo instalado/comprovado,Sem receipts/dispatch servidor completo; regressao consumidor separada,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-043,features/plano autoridade,BLOCKED,Contrato completo instalado/comprovado,Stubs de seletor/gate nao comprovam entitlement instalado,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
+FIN-OFF-044,JWT/browser/pagamentos/fiscal reais,NOT RUN,Autorizacao e homologacao futuras,Nenhuma sessao ou dado LIVE alterado,REAL,P1
