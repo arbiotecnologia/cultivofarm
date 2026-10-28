@@ -52,7 +52,7 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 ### Correção incremental do consumidor REAL — 28/10 02:12 UTC
 - [x] Página Entregas + hook/diálogo existentes: baseline seis falhas, correções locais de single-flight, ACK positivo/UUID, reserva split, fences e invalidação scoped; retry OFF. Sem mexer em useProductionPlanning.
 - [x] Item N/expedição/estorno negativos não anunciam sucesso nem fazem compensação fictícia; consulta explícita preserva draft, incerteza fica em quarentena por escopo/mount. Timeout 30s mantém trava até work resolver, sem prometer cancelamento remoto.
-- [x] Revisão independente encontrou reserva split e timeout do diálogo; corrigidos com regressões. Vitest **328/328 em22 arquivos**, incluindo32 testes novos e2 integridade matriz; sintético, não somado aos620 históricos/188PG históricos.
+- [x] Revisão independente encontrou reserva split e timeout do diálogo; corrigidos com regressões. Vitest **332/332 em23 arquivos**, incluindo32 testes novos e2 integridade matriz; sintético, não somado aos620 históricos/188PG históricos.
 - [ ] BLOCKED: publicação/instalação, atomicidade grupo/retorno/CAS/reconciliação durável, A2/envase/autoridade B2B/onfarm; nenhuma reabertura de wrapper/ACL.
 - [ ] NOT RUN: JWT/Storage/browser autenticado/A/B/C, múltiplas abas/remount/produção; estado visual real sem sessão não certifica fluxo. Relatório `docs/auditorias/consumidor-real-entrega-20261028.md`.
 

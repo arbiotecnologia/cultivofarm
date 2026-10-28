@@ -25,7 +25,7 @@
 ## Testes e evidências
 
 - Baseline: **0PASS/6FAIL**, evidência local acima; falhas de proteção reproduzidas, não exploração JWT.
-- Finais: **328/328 em22 arquivos**: `bun run test -- src/test/entregas src/test/cockpit-laboratorio/refinamentos.test.tsx src/test/cockpit-laboratorio/consultaOnly.test.tsx src/test/cockpit-laboratorio/cacheScope.test.tsx src/test/financeiro/deliveryFinanceReconciliation.test.tsx src/test/rbac/order-flow-coverage.test.ts`. Log `evidencias-consumidor-entrega-20261028/vitest.txt`.
+- Finais: **332/332 em23 arquivos**: `bun run test -- src/test/entregas src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx src/test/cockpit-laboratorio/refinamentos.test.tsx src/test/cockpit-laboratorio/consultaOnly.test.tsx src/test/cockpit-laboratorio/cacheScope.test.tsx src/test/financeiro/deliveryFinanceReconciliation.test.tsx src/test/rbac/order-flow-coverage.test.ts`. Log `evidencias-consumidor-entrega-20261028/vitest.txt`.
 - **32 testes novos** (23página +9diálogo). Reexecuções parciais não somadas.320/620 anteriores não representam esta execução; os188PG são históricos **NOT RUN nesta rodada**.
 - Build/typecheck automáticos: última entrada observada build OK após alterações; nenhum comando manual proibido. Erros intermediários de imports/assinaturas enquanto arquivos estavam em edição foram resolvidos. Registre timestamp final no complemento de encerramento.
 - Warnings Router Future Flags e DialogDescription presentes nos testes; a11y visual/foco browser real NÃO certificado. Nenhum runner hosted/legado foi executado.
@@ -56,3 +56,6 @@ Subauditores investigaram os contratos e revisaram o código efetivo (git diff p
 6. Publicação somente após dependências comprovadas/contratos homologados e autorização específica; depois gate obrigatório final do plano original. Fiscal/contabilidade reais e SU-518022 pendentes.
 
 **Não há GO, instalação ou homologação real nesta entrega.**
+
+## Encerramento de revisão
+Revisão final independente não identificou outro bloqueio concreto nos recortes anteriores; revisão estática, não execução JWT. Ajuste final de compatibilidade manteve `reservarEstoque` boolean para consumidores legados e transmite UUID split por callback local `onReserved`, sem novo módulo. Suíte legada4/4 incluída no total final332/332 em23arquivos;32novos preservados. Log automático final observado **build OK 02:23:25 UTC**. Typechecks intermediários do retorno union foram resolvidos sem editar testes legados. Nenhum browser autenticado executado porque sessões LIVE são proibidas e wrappers seguem bloqueados.
