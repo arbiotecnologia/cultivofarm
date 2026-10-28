@@ -48,13 +48,13 @@ for ident,scenario,test,count,level in [
  ('OFF-BROAD','21 arquivos catálogo/pedido/crédito/CQ/estoque/fiscal/Storage/portais', 'docs/auditorias/evidencias-fluxo-b2b-20261028/broad-vitest.txt',288,'Vitest jsdom/mocks/estáticos'),
  ('OFF-STOCK','item N batch/envase/ledger/replay/concorrência', 'scripts/stock-envase-recovery-20261027/results.txt',64,'PostgreSQL descartável motor capturado; Auth/schema sintéticos; triggers omitidos'),
  ('OFF-DELIVERY','locks/ACK negativo/rollback/containment', 'scripts/delivery-stock-release-20261027/results.txt',48,'PostgreSQL descartável motor/billing/avanço stubs'),
- ('OFF-CONSUMER-DELIVERY','página Entregas/hook/diálogo reais: dupla ação, ACK negativo/parcial, escopo, timeout, cancelamento/item N', 'docs/auditorias/evidencias-consumidor-entrega-20261028/vitest.txt',324,'Vitest QueryClient real; Auth/transporte simulados; 30 regressões novas, não JWT'),
+ ('OFF-CONSUMER-DELIVERY','página Entregas/hook/diálogo reais: dupla ação, ACK negativo/parcial, escopo, timeout, cancelamento/item N', 'docs/auditorias/evidencias-consumidor-entrega-20261028/vitest.txt',328,'Vitest QueryClient real; Auth/transporte simulados; 32 regressões novas, não JWT'),
  ('OFF-A2','tenant/replay/categoria/método/parcelas/timeout', 'scripts/delivery-finance-a2-20261028/results.txt',76,'PostgreSQL descartável/Auth sintético; não JWT'),
 ]:
  rows.append(dict(id=ident,passo='evidencia_offline',rota='não executada hosted',perfil='simulado',tenant='simulado',cenario=scenario,precondicao='execução local sem credenciais hosted',expectativa='asserções do teste específico, sem liberar fluxo',contrato='ver relatório/artefatos',teste_automatizado=test,evidencia=f'{count} PASS no escopo específico',status='PASS',nivel=level,severidade='P1'))
 for ident,step,scenario,evidence in [
  ('GAP-01','recebivel_entrega','A2 não instalada; corpos LIVE com risco BOLA documentado','SELECT 01:45 UTC hashes generate/mark anteriores; não explorado JWT A/B'),
- ('GAP-02','expedicao_item_N','grupo UI continua multichamada; patch local recusa ACK negativo, sem atomicidade/reconciliação servidor','src/pages/Entregas.tsx; 30 regressões novas página/diálogo PASS sintético; atomicidade e JWT real BLOCKED'),
+ ('GAP-02','expedicao_item_N','grupo UI continua multichamada; patch local recusa ACK negativo, sem atomicidade/reconciliação servidor','src/pages/Entregas.tsx; 32 regressões novas página/diálogo PASS sintético; atomicidade e JWT real BLOCKED'),
  ('GAP-03','envase','transição canônica completa não demonstrada','ENVASE_TRANSITION_REVIEW_PENDING; suites omitem triggers transição/financeiro'),
  ('GAP-04','OS_manual','cadastro manual sem RPC equivalente instalada; migração DML não concluída','src/pages/OrdensServico.tsx handleCreate; teste contrato offline'),
 ]:

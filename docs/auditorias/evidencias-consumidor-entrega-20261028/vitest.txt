@@ -1,8 +1,7 @@
-$ vitest run src/test/entregas src/test/cockpit-laboratorio/refinamentos.test.tsx src/test/cockpit-laboratorio/consultaOnly.test.tsx src/test/cockpit-laboratorio/cacheScope.test.tsx src/test/financeiro/deliveryFinanceReconciliation.test.tsx
+$ vitest run src/test/entregas src/test/cockpit-laboratorio/refinamentos.test.tsx src/test/cockpit-laboratorio/consultaOnly.test.tsx src/test/cockpit-laboratorio/cacheScope.test.tsx src/test/financeiro/deliveryFinanceReconciliation.test.tsx src/test/rbac/order-flow-coverage.test.ts
 
  RUN  v3.2.4 /dev-server
 
- ✓ src/test/entregas/comprovanteEntregaPdf.test.ts (46 tests) 44ms
 stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — token > token ausente não consulta e não fica carregando
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
@@ -137,7 +136,8 @@ This ensures that you're testing the behavior the user would see in the browser.
     at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
     at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
 
- ✓ src/test/entregas/validarEntrega.test.tsx (16 tests) 585ms
+ ✓ src/test/entregas/validarEntrega.test.tsx (16 tests) 504ms
+ ✓ src/test/entregas/termoPdfEdge.test.ts (36 tests) 1291ms
 stderr | src/test/financeiro/deliveryFinanceReconciliation.test.tsx > Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > método obrigatório/ativo e RECEITA apenas; duplo clique não envia nenhuma cobrança
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
@@ -146,93 +146,108 @@ stderr | src/test/entregas/comprovanteDownloadAutenticado.test.tsx > EntregaComp
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
- ✓ src/test/entregas/conferenciaQrTermo.test.tsx (18 tests) 912ms
- ✓ src/test/entregas/termoPdfEdge.test.ts (36 tests) 1635ms
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: null
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/conferenciaQrTermo.test.tsx (18 tests) 784ms
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: {"ok":false}
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > dupla submissão despacha uma criação
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
+ ✓ src/test/entregas/termoPdfDownload.test.tsx (18 tests) 1057ms
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > falha item N conserva efeitos conhecidos sem rollback direto
 [criarEntrega] falha no motor transacional: Error: conflito
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:667:24[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
- ✓ src/test/entregas/termoPdfDownload.test.tsx (18 tests) 1296ms
- ✓ src/test/entregas/painelEvidencias.test.tsx (8 tests) 846ms
+ ✓ src/test/entregas/copiarLinkIsolamento.test.tsx (2 tests) 885ms
+   ✓ copiar link de validação — isolado das gravações > copiar durante uma assinatura pendente não invalida a gravação  717ms
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: {"success":true}
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/painelEvidencias.test.tsx (8 tests) 776ms
+   ✓ EntregaComprovantePanel — estado fresco do servidor > usa o status atual do servidor mesmo com prop antiga (pendente)  319ms
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK tardio após tenant não expede/invalida/sucesso
 [criarEntrega] falha no motor transacional: Error: Contexto alterado; resposta da entrega descartada.
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:666:29[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK tardio após ator não expede/invalida/sucesso
 [criarEntrega] falha no motor transacional: Error: Contexto alterado; resposta da entrega descartada.
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:666:29[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK tardio após epoch não expede/invalida/sucesso
 [criarEntrega] falha no motor transacional: Error: Contexto alterado; resposta da entrega descartada.
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:666:29[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK criação inválido não expede/invalida: null
 [criarEntrega] falha no motor transacional: Error: Não foi possível confirmar o registro da entrega. Atualize a lista e tente novamente.
     at Module.validarRespostaCriarEntrega [90m(/dev-server/[39msrc/lib/entregas/payloadEntrega.ts:82:11[90m)[39m
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:669:25[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
- ✓ src/test/entregas/painelChecklistOcorrencias.test.tsx (12 tests) 1349ms
-   ✓ EntregaOcorrenciasPanel > não salva descrição em branco  320ms
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK criação inválido não expede/invalida: {"success":true}
 [criarEntrega] falha no motor transacional: Error: Não foi possível confirmar o registro da entrega. Atualize a lista e tente novamente.
     at Module.validarRespostaCriarEntrega [90m(/dev-server/[39msrc/lib/entregas/payloadEntrega.ts:82:11[90m)[39m
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:669:25[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
- ✓ src/test/entregas/copiarLinkIsolamento.test.tsx (2 tests) 1190ms
-   ✓ copiar link de validação — isolado das gravações > copiar durante uma assinatura pendente não invalida a gravação  1034ms
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: {"success":true,"entrega_id":"other","replay":false}
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK criação inválido não expede/invalida: {"success":true,"ok":false,"entrega_id":"44444444-4444-4444-8444-444444444444"}
 [criarEntrega] falha no motor transacional: Error: Não foi possível confirmar o registro da entrega. Atualize a lista e tente novamente.
     at Module.validarRespostaCriarEntrega [90m(/dev-server/[39msrc/lib/entregas/payloadEntrega.ts:82:11[90m)[39m
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:669:25[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK criação inválido não expede/invalida: {"success":true,"entrega_id":"invalid"}
 [criarEntrega] falha no motor transacional: Error: Não foi possível confirmar o registro da entrega. Atualize a lista e tente novamente.
     at Module.validarRespostaCriarEntrega [90m(/dev-server/[39msrc/lib/entregas/payloadEntrega.ts:82:11[90m)[39m
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:669:25[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK criação inválido não expede/invalida: {"success":true,"entrega_id":"44444444-4444-4444-8444-444444444444","replay":"true"}
 [criarEntrega] falha no motor transacional: Error: Não foi possível confirmar o registro da entrega. Atualize a lista e tente novamente.
     at Module.validarRespostaCriarEntrega [90m(/dev-server/[39msrc/lib/entregas/payloadEntrega.ts:82:11[90m)[39m
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:669:25[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
+
+ ✓ src/test/entregas/painelChecklistOcorrencias.test.tsx (12 tests) 1422ms
+   ✓ EntregaOcorrenciasPanel > falha mantém o formulário aberto com os dados preenchidos  339ms
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > dupla ação não envia dois dispatches
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > erro PT409 não repete nem apaga efeitos
 [criarEntrega] falha no motor transacional: Error: PT409
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:667:24[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > erro 42501 não repete nem apaga efeitos
 [criarEntrega] falha no motor transacional: Error: 42501
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:667:24[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > erro 55P03 não repete nem apaga efeitos
 [criarEntrega] falha no motor transacional: Error: 55P03
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:667:24[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
     at runDeliveryOperation [90m(/dev-server/[39msrc/pages/Entregas.tsx:109:21[90m)[39m
 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > ACK perdido bloqueia reenvio explícito e não faz compensação
@@ -251,65 +266,7 @@ stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / 
 stderr | src/test/entregas/consumidorEntrega.test.tsx > Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > timeout abandona etapas posteriores mesmo com ACK tardio
 [criarEntrega] falha no motor transacional: Error: Contexto alterado; resposta da entrega descartada.
     at criarEntrega [90m(/dev-server/[39msrc/hooks/useEsteiraLaboratorio.ts:666:29[90m)[39m
-    at [90m/dev-server/[39msrc/pages/Entregas.tsx:612:27
-
- ✓ src/test/entregas/anexoComprovante.test.tsx (11 tests) 2057ms
-   ✓ EntregaComprovantePanel — anexo > selecionar arquivo não envia nada automaticamente  453ms
-   ✓ EntregaComprovantePanel — anexo > clique duplo não envia o arquivo duas vezes  305ms
-   ✓ EntregaComprovantePanel — anexo > falha na vinculação mantém o arquivo e a nova tentativa não reenvia o arquivo  314ms
- ✓ src/test/entregas/anexoComprovanteConcorrencia.test.tsx (5 tests) 2144ms
-   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante o upload: não inicia a RPC nem afeta a nova entrega  664ms
-   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante a RPC com rejeição tardia: não mostra erro na nova entrega  396ms
-   ✓ EntregaComprovantePanel — concorrência no envio do anexo > falha da operação antiga não destrava o envio em andamento da nova entrega  562ms
- ✓ src/test/entregas/consumidorEntrega.test.tsx (22 tests) 1772ms
-   ✓ Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > cancelamento com estorno negativo mantém draft e não anuncia sucesso  589ms
- ✓ src/test/entregas/comprovanteDownloadAutenticado.test.tsx (25 tests) 2673ms
-   ✓ EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada  652ms
- ✓ src/test/financeiro/deliveryFinanceReconciliation.test.tsx (14 tests) 3058ms
-   ✓ Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > método obrigatório/ativo e RECEITA apenas; duplo clique não envia nenhuma cobrança  541ms
-   ✓ Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > PT409 de releitura preserva draft, oculta cache e não repete escrita  304ms
- ✓ src/test/entregas/assinaturaComprovante.test.tsx (15 tests) 3434ms
-   ✓ EntregaComprovantePanel — assinatura do comprovante > envia PNG com UUID e upsert false e registra a assinatura  447ms
-   ✓ EntregaComprovantePanel — assinatura do comprovante > retry após falha da RPC reaproveita o PNG sem reenviar  418ms
-   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > retry usa o hash e o payload ORIGINAIS e faz um único upload  324ms
-   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > mudar o recebedor descarta o pendente: reenvia o PNG com o novo payload  315ms
-   ✓ EntregaComprovantePanel — término antigo não destrava a ação nova > ação de B em voo continua travada quando a ação de A termina  320ms
-stderr | src/test/entregas/formularioEntregaPrint.test.tsx > FormularioEntregaPrint > renderiza o documento com colunas reais do banco
-⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
-⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
-
-stderr | src/test/cockpit-laboratorio/consultaOnly.test.tsx > consulta Cockpit efetiva — Auth/transporte simulados > executes exclusively list RPC on load, refresh, filtering and pagination; no operational mounts
-⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
-⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
-
- ✓ src/test/entregas/formularioEntregaPrint.test.tsx (5 tests) 258ms
- ✓ src/test/entregas/creationContracts.offline.test.ts (5 tests) 10ms
- ✓ src/test/entregas/registroEntrega.test.ts (15 tests) 8ms
-stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: null
-Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
-
- ✓ src/test/cockpit-laboratorio/consultaOnly.test.tsx (18 tests) 1227ms
-   ✓ consulta Cockpit efetiva — Auth/transporte simulados > executes exclusively list RPC on load, refresh, filtering and pagination; no operational mounts  433ms
-stderr | src/test/cockpit-laboratorio/refinamentos.test.tsx > refinamentos do Cockpit > mostra o pré-requisito de lote no CQ bloqueado
-⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
-⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
-
- ✓ src/test/cockpit-laboratorio/refinamentos.test.tsx (7 tests) 374ms
-stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: {"ok":false}
-Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
-
-stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: {"success":true}
-Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
-
-stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: {"success":true,"entrega_id":"other","replay":false}
-Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
-
-stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > dupla ação não envia dois dispatches
-Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
-
-stderr | src/test/cockpit-laboratorio/cacheScope.test.tsx > Cockpit scopes: real QueryClient, simulated Auth > real Cockpit executes only list RPC and purges legacy caches; never mounts operational children
-⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
-⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+    at [90m/dev-server/[39msrc/pages/Entregas.tsx:617:27
 
 stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK tardio tenant não fecha nem invalida
 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
@@ -317,15 +274,64 @@ Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogCont
 stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK tardio epoch não fecha nem invalida
 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
- ✓ src/test/cockpit-laboratorio/cacheScope.test.tsx (18 tests) 313ms
 stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > ACK tardio entrega não fecha nem invalida
 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
- ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (8 tests) 1326ms
-   ✓ Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: null  331ms
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação existente com transporte simulado — não libera RPC fechada > timeout confirma incerteza e ACK tardio não fecha/invalida
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
 
- Test Files  21 passed (21)
-      Tests  324 passed (324)
-   Start at  02:20:08
-   Duration  11.58s (transform 3.81s, setup 5.94s, collect 34.05s, tests 26.51s, environment 47.21s, prepare 6.34s)
+ ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (9 tests) 2131ms
+   ✓ Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: null  418ms
+   ✓ Confirmação existente com transporte simulado — não libera RPC fechada > ACK inválido preserva dialog/draft: {"ok":false}  307ms
+ ✓ src/test/entregas/anexoComprovanteConcorrencia.test.tsx (5 tests) 2126ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante o upload: não inicia a RPC nem afeta a nova entrega  555ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante a RPC com rejeição tardia: não mostra erro na nova entrega  326ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > A→B→A: resultado da operação antiga não é aplicado ao voltar para A  351ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > falha da operação antiga não destrava o envio em andamento da nova entrega  609ms
+ ✓ src/test/entregas/consumidorEntrega.test.tsx (23 tests) 1750ms
+   ✓ Página Entregas real / hook real / QueryClient real; Auth e transporte simulados > cancelamento com estorno negativo mantém draft e não anuncia sucesso  567ms
+ ✓ src/test/entregas/anexoComprovante.test.tsx (11 tests) 2269ms
+   ✓ EntregaComprovantePanel — anexo > selecionar arquivo não envia nada automaticamente  560ms
+   ✓ EntregaComprovantePanel — anexo > envia com upsert:false e UUID no caminho, apenas ao clicar no botão  386ms
+   ✓ EntregaComprovantePanel — anexo > falha na vinculação mantém o arquivo e a nova tentativa não reenvia o arquivo  339ms
+ ✓ src/test/entregas/comprovanteDownloadAutenticado.test.tsx (25 tests) 2436ms
+   ✓ EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada  498ms
+ ✓ src/test/financeiro/deliveryFinanceReconciliation.test.tsx (14 tests) 3042ms
+   ✓ Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > método obrigatório/ativo e RECEITA apenas; duplo clique não envia nenhuma cobrança  577ms
+stderr | src/test/cockpit-laboratorio/consultaOnly.test.tsx > consulta Cockpit efetiva — Auth/transporte simulados > executes exclusively list RPC on load, refresh, filtering and pagination; no operational mounts
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/entregas/assinaturaComprovante.test.tsx (15 tests) 3549ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > envia PNG com UUID e upsert false e registra a assinatura  356ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > retry após falha da RPC reaproveita o PNG sem reenviar  517ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > retry usa o hash e o payload ORIGINAIS e faz um único upload  325ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > mudar o recebedor descarta o pendente: reenvia o PNG com o novo payload  303ms
+   ✓ EntregaComprovantePanel — término antigo não destrava a ação nova > ação de B em voo continua travada quando a ação de A termina  354ms
+ ✓ src/test/cockpit-laboratorio/consultaOnly.test.tsx (18 tests) 1252ms
+   ✓ consulta Cockpit efetiva — Auth/transporte simulados > executes exclusively list RPC on load, refresh, filtering and pagination; no operational mounts  440ms
+ ✓ src/test/entregas/comprovanteEntregaPdf.test.ts (46 tests) 40ms
+ ✓ src/test/entregas/creationContracts.offline.test.ts (5 tests) 9ms
+ ✓ src/test/entregas/registroEntrega.test.ts (15 tests) 9ms
+ ✓ src/test/rbac/order-flow-coverage.test.ts (2 tests) 8ms
+stderr | src/test/entregas/formularioEntregaPrint.test.tsx > FormularioEntregaPrint > renderiza o documento com colunas reais do banco
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/entregas/formularioEntregaPrint.test.tsx (5 tests) 237ms
+stderr | src/test/cockpit-laboratorio/refinamentos.test.tsx > refinamentos do Cockpit > mostra o pré-requisito de lote no CQ bloqueado
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/cockpit-laboratorio/refinamentos.test.tsx (7 tests) 377ms
+stderr | src/test/cockpit-laboratorio/cacheScope.test.tsx > Cockpit scopes: real QueryClient, simulated Auth > real Cockpit executes only list RPC and purges legacy caches; never mounts operational children
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/cockpit-laboratorio/cacheScope.test.tsx (18 tests) 296ms
+
+ Test Files  22 passed (22)
+      Tests  328 passed (328)
+   Start at  02:21:36
+   Duration  11.81s (transform 4.27s, setup 6.63s, collect 35.99s, tests 26.25s, environment 49.84s, prepare 6.78s)
 
