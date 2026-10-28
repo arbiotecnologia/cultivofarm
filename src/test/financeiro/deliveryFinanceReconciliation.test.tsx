@@ -116,4 +116,32 @@ describe("Etapa6 — QueryClient real, Auth/transportes simulados, operação co
     s.receipt = { ...receipt(), origin_id: "88888888-8888-4888-8888-888888888888" }; setup();
     await screen.findAllByText(/Não foi possível confirmar o recebível/); expect(s.rpc).not.toHaveBeenCalled();
   });
+  it("dupla reconsulta pendente usa um único ticket e invalidação exata", async () => {
+    const { client } = setup(); await draft(); s.hold = true;
+    const invalidation = vi.spyOn(client, "invalidateQueries");
+    const b = screen.getByRole("button", { name: "Reconsultar lançamento" });
+    fireEvent.click(b); fireEvent.click(b);
+    await waitFor(() => expect(s.pending.length).toBe(1));
+    expect(invalidation).toHaveBeenCalledTimes(1);
+    expect(invalidation.mock.calls[0][0]).toMatchObject({ exact: true, refetchType: "none" });
+    await act(async () => { s.hold = false; s.pending.shift()?.(); });
+    await waitFor(() => expect(b).toBeEnabled()); expect(s.rpc).not.toHaveBeenCalled();
+  });
+  it("troca de tenant durante await de invalidação não dispara a próxima leitura", async () => {
+    const { client, view, tree } = setup(); await draft();
+    let finish: (() => void) | undefined;
+    vi.spyOn(client, "invalidateQueries").mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+    fireEvent.click(screen.getByRole("button", { name: "Reconsultar lançamento" }));
+    const count = s.calls.length;
+    s.auth.profile.organization_id = "66666666-6666-4666-8666-666666666666"; s.hold = true;
+    view.rerender(tree());
+    await act(async () => finish?.());
+    expect(s.calls.slice(count).filter(c => c.table === "accounts_receivable")).toHaveLength(0);
+    expect(s.rpc).not.toHaveBeenCalled();
+  });
+  it("método ausente bloqueia revisão e não envia fallback NULL", async () => {
+    setup(); await draft(); fireEvent.change(screen.getAllByRole("combobox")[2], { target: { value: "" } });
+    expect(screen.getByRole("button", { name: "Revisar cobrança indisponível" })).toBeDisabled();
+    expect(s.rpc).not.toHaveBeenCalled();
+  });
 });
