@@ -1,0 +1,479 @@
+[
+  {
+    "id": "FIN-OFF-001",
+    "cenario": "pin fn_b2b_apply_interest",
+    "status": "PASS",
+    "expectativa": "806e5d8789b08cd6790a10feaf95f26d",
+    "observado": "806e5d8789b08cd6790a10feaf95f26d",
+    "nivel": "CONSISTENCIA_LOCAL_HASH_CAPTURA_SELECT",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-002",
+    "cenario": "pin fn_generate_receivable_installments",
+    "status": "PASS",
+    "expectativa": "f632f15c9f46cb9889082fc533a27ea1",
+    "observado": "f632f15c9f46cb9889082fc533a27ea1",
+    "nivel": "CONSISTENCIA_LOCAL_HASH_CAPTURA_SELECT",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-003",
+    "cenario": "pin simulate_b2b_payment_plan_secure",
+    "status": "PASS",
+    "expectativa": "37d4f45e388ed7b38f6f397b672629ee",
+    "observado": "37d4f45e388ed7b38f6f397b672629ee",
+    "nivel": "CONSISTENCIA_LOCAL_HASH_CAPTURA_SELECT",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-004",
+    "cenario": "pin rpc_create_financial_title",
+    "status": "PASS",
+    "expectativa": "0778b876b300e08d53f1cf7790394fc5",
+    "observado": "0778b876b300e08d53f1cf7790394fc5",
+    "nivel": "CONSISTENCIA_LOCAL_HASH_CAPTURA_SELECT",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-005",
+    "cenario": "a vista",
+    "status": "PASS",
+    "expectativa": "10000.00",
+    "observado": "{\"total\": \"10000.00\", \"amounts\": [\"10000.00\"], \"dates\": [\"2026-10-28\"]}",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-006",
+    "cenario": "a vista conciliacao principal/juros",
+    "status": "PASS",
+    "expectativa": "principal=10000.00; juros=0.00",
+    "observado": "principal=10000.00; juros=0.00",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-007",
+    "cenario": "30 dias",
+    "status": "PASS",
+    "expectativa": "10000.00",
+    "observado": "{\"total\": \"10000.00\", \"amounts\": [\"10000.00\"], \"dates\": [\"2026-11-27\"]}",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-008",
+    "cenario": "30 dias conciliacao principal/juros",
+    "status": "PASS",
+    "expectativa": "principal=10000.00; juros=0.00",
+    "observado": "principal=10000.00; juros=0.00",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-009",
+    "cenario": "30-60-90 dias",
+    "status": "PASS",
+    "expectativa": "10000.00",
+    "observado": "{\"total\": \"10000.00\", \"amounts\": [\"3333.33\", \"3333.33\", \"3333.34\"], \"dates\": [\"2026-11-27\", \"2026-12-27\", \"2027-01-26\"]}",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-010",
+    "cenario": "30-60-90 dias conciliacao principal/juros",
+    "status": "PASS",
+    "expectativa": "principal=10000.00; juros=0.00",
+    "observado": "principal=10000.00; juros=0.00",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-011",
+    "cenario": "3x simples 1%",
+    "status": "PASS",
+    "expectativa": "10300.00",
+    "observado": "{\"total\": \"10300.00\", \"amounts\": [\"3433.33\", \"3433.33\", \"3433.34\"], \"dates\": [\"2026-11-27\", \"2026-12-27\", \"2027-01-26\"]}",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-012",
+    "cenario": "3x simples 1% conciliacao principal/juros",
+    "status": "PASS",
+    "expectativa": "principal=10000.00; juros=300.00",
+    "observado": "principal=10000.00; juros=300.00",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-013",
+    "cenario": "gerador B2B + saldo original/juros",
+    "status": "FAIL",
+    "expectativa": "10300.00",
+    "observado": "10600.00",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P0"
+  },
+  {
+    "id": "FIN-OFF-014",
+    "cenario": "6x compostos 1.5%",
+    "status": "PASS",
+    "expectativa": "10934.43",
+    "observado": "{\"total\": \"10934.43\", \"amounts\": [\"1822.41\", \"1822.41\", \"1822.41\", \"1822.41\", \"1822.41\", \"1822.38\"], \"dates\": [\"2026-11-27\", \"2026-12-27\", \"2027-01-26\", \"2027-02-25\", \"2027-03-27\", \"2027-04-26\"]}",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-015",
+    "cenario": "6x compostos 1.5% conciliacao principal/juros",
+    "status": "FAIL",
+    "expectativa": "principal=10000.00; juros=934.43",
+    "observado": "principal=9999.99; juros=934.44",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-016",
+    "cenario": "12x compostos 2%",
+    "status": "PASS",
+    "expectativa": "12682.42",
+    "observado": "{\"total\": \"12682.42\", \"amounts\": [\"1056.87\", \"1056.87\", \"1056.87\", \"1056.87\", \"1056.87\", \"1056.87\", \"1056.87\", \"1056.87\", \"1056.87\", \"1056.87\", \"1056.87\", \"1056.85\"], \"dates\": [\"2026-11-27\", \"2026-12-27\", \"2027-01-26\", \"2027-02-25\", \"2027-03-27\", \"2027-04-26\", \"2027-05-26\", \"2027-06-25\", \"2027-07-25\", \"2027-08-24\", \"2027-09-23\", \"2027-10-23\"]}",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-017",
+    "cenario": "12x compostos 2% conciliacao principal/juros",
+    "status": "FAIL",
+    "expectativa": "principal=10000.00; juros=2682.42",
+    "observado": "principal=9999.95; juros=2682.47",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-018",
+    "cenario": "desconto 5% com 3x simples",
+    "status": "PASS",
+    "expectativa": "9785.00",
+    "observado": "{\"total\": \"9785.00\", \"amounts\": [\"3261.67\", \"3261.67\", \"3261.66\"], \"dates\": [\"2026-11-27\", \"2026-12-27\", \"2027-01-26\"]}",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-019",
+    "cenario": "desconto 5% com 3x simples conciliacao principal/juros",
+    "status": "PASS",
+    "expectativa": "principal=9500.00; juros=285.00",
+    "observado": "principal=9500.00; juros=285.00",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-020",
+    "cenario": "desconto 10% com 6x compostos",
+    "status": "PASS",
+    "expectativa": "9840.99",
+    "observado": "{\"total\": \"9840.99\", \"amounts\": [\"1640.17\", \"1640.17\", \"1640.17\", \"1640.17\", \"1640.17\", \"1640.14\"], \"dates\": [\"2026-11-27\", \"2026-12-27\", \"2027-01-26\", \"2027-02-25\", \"2027-03-27\", \"2027-04-26\"]}",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-021",
+    "cenario": "desconto 10% com 6x compostos conciliacao principal/juros",
+    "status": "FAIL",
+    "expectativa": "principal=9000.00; juros=840.99",
+    "observado": "principal=8999.98; juros=841.01",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-022",
+    "cenario": "carencia 60 dias sem mudar meses",
+    "status": "PASS",
+    "expectativa": "10300.00",
+    "observado": "{\"total\": \"10300.00\", \"amounts\": [\"3433.33\", \"3433.33\", \"3433.34\"], \"dates\": [\"2026-12-27\", \"2027-01-26\", \"2027-02-25\"]}",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-023",
+    "cenario": "carencia 60 dias sem mudar meses conciliacao principal/juros",
+    "status": "PASS",
+    "expectativa": "principal=10000.00; juros=300.00",
+    "observado": "principal=10000.00; juros=300.00",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-024",
+    "cenario": "taxa negativa",
+    "status": "PASS",
+    "expectativa": "invalid_interest_rate",
+    "observado": "invalid_interest_rate",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-025",
+    "cenario": "desconto acima 40 gestor",
+    "status": "PASS",
+    "expectativa": "discount_exceeds_limit",
+    "observado": "discount_exceeds_limit",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-026",
+    "cenario": "vencimento retroativo RPC",
+    "status": "PASS",
+    "expectativa": "invalid_due_date",
+    "observado": "invalid_due_date",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-027",
+    "cenario": "helper puro nao valida taxa negativa",
+    "status": "PASS",
+    "expectativa": "9700.00 (validacao pertence ao chamador)",
+    "observado": "9700.00",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-028",
+    "cenario": "manual 30% +3x sem juros",
+    "status": "PASS",
+    "expectativa": "10000.00; valores/datas exatos; dois eventos auditoria",
+    "observado": "[{\"date\": \"2026-10-28\", \"amount\": 3000.00}, {\"date\": \"2026-11-27\", \"amount\": 2333.33}, {\"date\": \"2026-12-27\", \"amount\": 2333.33}, {\"date\": \"2027-01-26\", \"amount\": 2333.34}]",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-029",
+    "cenario": "manual 50% +2x sem juros",
+    "status": "PASS",
+    "expectativa": "10000.00; valores/datas exatos; dois eventos auditoria",
+    "observado": "[{\"date\": \"2026-10-28\", \"amount\": 5000.00}, {\"date\": \"2026-11-27\", \"amount\": 2500.00}, {\"date\": \"2026-12-27\", \"amount\": 2500.00}]",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-030",
+    "cenario": "manual desigual datas personalizadas",
+    "status": "PASS",
+    "expectativa": "10000.00; valores/datas exatos; dois eventos auditoria",
+    "observado": "[{\"date\": \"2026-11-09\", \"amount\": 1000.00}, {\"date\": \"2026-12-14\", \"amount\": 3500.00}, {\"date\": \"2027-02-16\", \"amount\": 5500.00}]",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-031",
+    "cenario": "manual parcela zero",
+    "status": "PASS",
+    "expectativa": "FIN_TITLE_INVALID_INSTALLMENT sem titulo",
+    "observado": "FIN_TITLE_INVALID_INSTALLMENT",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-032",
+    "cenario": "manual soma excessiva",
+    "status": "PASS",
+    "expectativa": "FIN_TITLE_INVALID_SUM sem titulo",
+    "observado": "FIN_TITLE_INVALID_SUM",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-033",
+    "cenario": "manual fracao centavo",
+    "status": "PASS",
+    "expectativa": "FIN_TITLE_INVALID_INSTALLMENT sem titulo",
+    "observado": "FIN_TITLE_INVALID_INSTALLMENT",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-034",
+    "cenario": "manual vencimento repetido",
+    "status": "FAIL",
+    "expectativa": "Rejeicao no corpo RPC; triggers integrais ainda BLOCKED",
+    "observado": "Corpo RPC aceitou em transacao local revertida",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-035",
+    "cenario": "manual vencimento retroativo",
+    "status": "FAIL",
+    "expectativa": "Rejeicao no corpo RPC; triggers integrais ainda BLOCKED",
+    "observado": "Corpo RPC aceitou em transacao local revertida",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-036",
+    "cenario": "entrada 30% +3x",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Sem parametro entrada na RPC B2B; 3000 +2333.33 +2333.33 +2333.34 somente referencia sem juros",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-037",
+    "cenario": "entrada 50% +2x",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Sem parametro entrada; 5000 +2500 +2500 referencia sem juros, base incidencia nao contratada",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-038",
+    "cenario": "entrada maior total",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Entrada nao contratada na RPC B2B",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-039",
+    "cenario": "parcelas desiguais B2B",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Array customizado nao recebido pela criacao/simulacao B2B",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-040",
+    "cenario": "vencimentos personalizados/repetidos",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "RPC B2B recebe primeiro vencimento; demais +30 dias, sem array",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-041",
+    "cenario": "taxa excessiva servidor",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "UI limita 100%; maximo contratual servidor precisa matriz/constraints/resolver completos",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-042",
+    "cenario": "valor zero/parcela zero servidor",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Resolver/cadeia integrais ausentes; nao certificar por cart stub",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-043",
+    "cenario": "alteracao pos-aprovacao e taxa pos-faturamento",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Triggers/snapshots/cadeia completa nao carregados nesta bateria",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-044",
+    "cenario": "cancelamento apos recebivel",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Contrato de cancelamento completo nao exercitado",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-045",
+    "cenario": "na_aprovacao atomicidade",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Origem/contabilidade/trigger/categoria/metodo/feature instalados sem homologacao integral",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-046",
+    "cenario": "na_entrega financeiro",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "A2 sem instalacao/homologacao e B2B contido",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-047",
+    "cenario": "nenhum titulo pedido reprovado/CQ reprovado",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Cadeia operacional/CQ/financeira completa nao exercitada",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-048",
+    "cenario": "cross tenant A/B financeiro",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Auth/gates locais sinteticos nao comprovam RLS/JWT",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-049",
+    "cenario": "auditoria e conciliação persistida",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Schema reduzido sem auditoria/baixa real",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-050",
+    "cenario": "mora e antecipacao automáticas",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Ajustes monetarios existem; politica automatica de calculo nao comprovada",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-051",
+    "cenario": "idempotencia servidor/ACK perdido",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Sem receipts/dispatch servidor completo; regressao consumidor separada",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-052",
+    "cenario": "features/plano autoridade",
+    "status": "BLOCKED",
+    "expectativa": "Contrato completo instalado/comprovado",
+    "observado": "Stubs de seletor/gate nao comprovam entitlement instalado",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-053",
+    "cenario": "JWT/browser/pagamentos/fiscal reais",
+    "status": "NOT RUN",
+    "expectativa": "Autorizacao e homologacao futuras",
+    "observado": "Nenhuma sessao ou dado LIVE alterado",
+    "nivel": "REAL",
+    "severidade": "P1"
+  }
+]

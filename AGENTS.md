@@ -84,3 +84,4 @@
 
 - Delivery page mutations share a per-mount synchronous lock and scope quarantine; captured fences guard every child dispatch/ACK, timeout retains ownership until work settles, and scoped reads/cache effects never prove server authority — prevents local duplicates and stale adoption without adding parallel writers.
 - Canonical stock reservation returns a UUID that may identify a split row; delivery creation must use that returned item, and multi-request failures must remain partial/uncertain without compensating writes or fictitious rollback — preserves legitimate partial reservation and honest containment.
+- Financial B2B audit extends the original plan through the existing installment review package; independent Decimal fixtures and status matrices never authorize unsupported schedules or replace commercial formulas — prevents parallel modules and synthetic release claims.
