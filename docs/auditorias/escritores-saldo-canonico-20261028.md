@@ -63,12 +63,12 @@ O loop original executado após baixa produz **7.750**, pois troca juros100 por3
 
 | Grupo PG | PASS | FAIL | BLOCKED | NOT RUN |
 |---|---:|---:|---:|---:|
-| Baseline | 51 | 13 | 0 | 0 |
-| Experimento não instalável | 61 | 4 | 0 | 0 |
+| Baseline | 56 | 13 | 0 | 0 |
+| Experimento não instalável | 66 | 4 | 0 | 0 |
 | Gates reais/integrados | 0 | 0 | 8 | 1 |
-| **Total** | **112** | **17** | **8** | **1** |
+| **Total** | **122** | **17** | **8** | **1** |
 
-**138 cenários**, matriz/execucao.json/log em `evidencias-escritores-saldo-20261028`. Não somar com80PASS/14FAIL históricos. Runner existente ampliado, opção `--writers-phase` preserva destino das evidências anteriores. Corpos monetários reais com MD5 conferido; Auth/H15/staff/tabelas reduzidos, FKs/RLS/SaaS/fiscal/risco excluídos explicitamente. Exit zero indica diagnóstico concluído; `has_failures=true`, `operational_go=false`.
+**148 cenários**, matriz/execucao.json/log em `evidencias-escritores-saldo-20261028`. Não somar com80PASS/14FAIL históricos. Runner existente ampliado, opção `--writers-phase` preserva destino das evidências anteriores. Corpos monetários reais com MD5 conferido; Auth/H15/staff/tabelas reduzidos, FKs/RLS/SaaS/fiscal/risco excluídos explicitamente. Exit zero indica diagnóstico concluído; `has_failures=true`, `operational_go=false`.
 
 Cobertura nova: loop exato baseline versus hipótese, repetição depois da baixa, snapshot imutável e transação abortada sem compensação, duas sessões mesma chave/ACK único, chaves distintas excedendo saldo, estorno simultâneo, diagnóstico agregado. Proposta nega10.600 nas duas sessões. Recibo/cancelamento simultâneo e revogação durante locks com guards reais permanecem BLOCKED. Concorrência exercitada localmente não é homologação JWT.
 
@@ -96,3 +96,8 @@ Novos46helpers incluem billing eligibility/priceable/fiscal/origin e wrappers h1
 Plano por empresa: autorização do auditor → diagnóstico agregado → conciliação manual restrita com termos canônicos, schedule vinculado, original, eventos/auditoria/recibos → separar título intacto, pago/estornado, origem ambígua e snapshot divergente → validação contábil/jurídica → autorização específica de procedimento futuro. Não recalcular política atual, fazer UPDATE retroativo, apagar/recriar parcelas, compensar nem alterar documentos emitidos automaticamente. Não inventar ledger contábil paralelo.
 
 **P0:** dupla remuneração inicial; replay de writer que substitui encargo do evento; baixa acima do total e cancelamento sem tenant no corpo. **P1:** aging omite ajustes exigíveis frente ao saldo operacional, métricas BI/crédito e rateio/calendário ainda a contratar. Não quantificar impacto produtivo sem conciliação autorizada. Produção, histórico e cobrança/fiscal permanecem preservados.
+## Revisão independente e limitações adicionais
+
+Revisão read-only confirmou hashes de duas capturas/64comparações e17consumidores, NO-GO e fronteira parcial. Incorporados: validação dos dois ACKs de estorno/UUID único/uma linha reversora, grupos1/4/5 no diagnóstico e indicador juros/eventos. Matriz renomeia a coluna para referências lexicais que podem ser relações, não funções ausentes certificadas; campos também são lexicais e podem pertencer ao ramo payable. `fn_h6b_num` existe no manifesto antigo/harness embora fora da união nova.
+
+As duas sessões são lançadas juntas, mas **não há sinal comprovando espera simultânea na região crítica**; resultado é de duas sessões, não certificação de contenção/locks. Ainda faltam validar auditoria concorrente completa, recibo/cancelamento e ordenamentos de revogação. Diagnóstico não detecta vínculos schedule nulos nem garante cobertura/multiplicidade; foreign_child depende da visibilidade RLS. Flags são apenas triagem manual e não prova de juros duplicados; jamais autorização de UPDATE. Os seis indicadores completos/0títulos e RLS real ficam não homologados.

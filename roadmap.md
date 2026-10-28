@@ -984,6 +984,7 @@
 - [ ] Futuro pacote seguro/instalação/JWT: bloqueados por cadeia B2B e contratos BI/proveniência; calendário/parcelamento/billing e contabilidade pendentes.
 
 ## 28/10 20:38 — fechamento de escritores e contrato financeiro
-- [ ] Inventário ampliado metadata-only, matriz writers/readers e semântica de snapshots.
-- [ ] PG descartável baseline/proposta mínima, simultâneos e regressões com evidência nova, sem repetir taxa aprovada.
-- [ ] Diagnóstico histórico agregado SELECT inativo, harmonização/NO-GO conforme dependências; revisão independente e plano original.
+- [x] Inventário105corpos/16writerslexicais/17consumidores,64comparações sem drift e semântica/snapshots documentados.
+- [x] PG122PASS/17FAIL/8BLOCKED/1NOT RUN;194Vitest/12arquivos;duas sessões não certificam espera crítica;taxas preservadas.
+- [x] Diagnóstico agregado inativo/sintético, revisão independente, NO-GO e plano original atualizados.
+- [ ] Implantação/remediação: bloqueadas por fechamento transitivo/contratosBI/proveniência/JWT;sem candidato SQL novo.

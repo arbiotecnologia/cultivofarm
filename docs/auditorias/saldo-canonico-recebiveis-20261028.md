@@ -98,3 +98,8 @@ Reprodução: `python3 scripts/financial-installments-initial-20261024/test-rece
 ## Revisão independente e validação final
 
 Revisão read-only inspecionou os93corpos,33triggers,40policies e38índices e confirmou MD5 textual; recomendou NO-GO. Corrigidos no harness: exemplo1m, schemas independentes, hash experimental separado, quitação com centavos independentes, duas baixas, comparação por parcela antes do estorno, recusa+atomicidade do cancelamento e sinalização explícita de FAIL. Demais cenários multissessão/cadeia completa ficam BLOCKED, não foram convertidos em PASS. Igualdade BI é teste de hipótese de saldo exigível, não declaração de que competência, caixa e exposição devem sempre ser iguais: após parcial7.550 operacional/7.250 aging/7.300 exposição pela expressão original−recebido são métricas divergentes a contratar.
+
+
+## Continuação 20:38 — fechamento dos escritores, sem substituir esta evidência
+
+Ver `escritores-saldo-canonico-20261028.md`: nova captura105corpos/OIDs,16writerslexicais,64comparações sem drift;148cenários PG122PASS/17FAIL/8BLOCKED/1NOT RUN e194/194Vitest. Loop exato alternativo testado preserva encargo100 no experimento versus300 baseline, mas cadeia autorizada completa continua BLOCKED. Diagnóstico histórico SELECT inativo/sintético e plano manual separados. Sem SQL review novo, runtime/históricos/produção intactos. Contagens desta rodada acima são históricas, não somadas à continuação.
