@@ -1,0 +1,20 @@
+{
+  "postgres": {
+    "PASS": 17,
+    "FAIL": 0,
+    "BLOCKED": 16,
+    "NOT RUN": 1
+  },
+  "real_PASS": 0,
+  "has_failures": false,
+  "draft_sha256": "0d6554be716ce9c6bf17b33ae88220852f420dac5ebc8ea0685b4491ea5d4e35",
+  "stubs": [
+    "Auth/roles/C2",
+    "cart resolver/hash",
+    "plan selector",
+    "schema reduced"
+  ],
+  "credit_hash": "213ac31f3a30816ead75365b0d1fed18",
+  "source_original_available": false,
+  "limitations": "Arithmetic/credit isolated bodies; not payment or policy enforcement"
+}

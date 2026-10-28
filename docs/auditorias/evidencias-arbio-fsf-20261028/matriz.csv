@@ -1,0 +1,36 @@
+id,cenario,status,expectativa,observado,nivel,severidade
+ARFSF-001,pin fn_b2b_apply_interest,PASS,806e5d8789b08cd6790a10feaf95f26d,806e5d8789b08cd6790a10feaf95f26d,LOCAL_HASH_CONSISTENCY,P1
+ARFSF-002,pin simulate_b2b_payment_plan_secure,PASS,37d4f45e388ed7b38f6f397b672629ee,37d4f45e388ed7b38f6f397b672629ee,LOCAL_HASH_CONSISTENCY,P1
+ARFSF-003,cash Decimal vs installed interest (cálculo; quitação não comprovada),PASS,60000.00,60000.00,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-004,30d_zero_reference_only Decimal vs installed interest (0% hipotético; taxa exata NULL),PASS,65000.00,65000.00,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-005,60d Decimal vs installed interest,PASS,72115.75,72115.75,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-006,90d Decimal vs installed interest,PASS,79590.60,79590.60,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-007,harvest6_2 Decimal vs installed interest,PASS,90092.99,90092.99,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-008,harvest8_2 Decimal vs installed interest,PASS,93732.75,93732.75,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-009,harvest8_2.5 Decimal vs installed interest,PASS,97472.23,97472.23,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-010,harvest8_3 Decimal vs installed interest,PASS,107675.46,107675.46,PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT,P1
+ARFSF-011,40% simulação não comprova quitação,BLOCKED,Concessão somente após quitação comprovada,Retorna60000 como simulação sem pagamento; não cria pedido nem constitui concessão,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P0
+ARFSF-012,vencimento retroativo simulação,PASS,invalid_due_date,invalid_due_date,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-013,limite 100000,PASS,OK,OK,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-014,limite 100000.01,PASS,LIMIT_EXCEEDED_BLOCK,LIMIT_EXCEEDED_BLOCK,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-015,limite indefinido,PASS,NO_LIMIT_DEFINED,NO_LIMIT_DEFINED,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-016,saldo vencido um dia + parcial,PASS,OVERDUE_BLOCK;800,"{""partner_id"": ""00000000-0000-4000-8000-000000000001"", ""novo_pedido"": ""0.00"", ""reason_code"": ""OVERDUE_BLOCK"", ""credit_limit"": ""100000.00"", ""tem_vencidos"": true, ""saldo_vencido"": ""800.00"", ""exposicao_atual"": ""800.00"", ""saldo_em_aberto"": ""800.00"", ""block_if_overdue"": true, ""credito_disponivel"": ""99200.00"", ""credit_limit_action"": ""block"", ""exposicao_projetada"": ""800.00"", ""percentual_utilizado"": ""0.80"", ""comprometido_pendente"": ""0.00"", ""overdue_tolerance_days"": 0, ""comprometido_nao_faturado"": ""0.00""}",PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-017,calculador tolerancia5 atraso5,PASS,OK,OK,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-018,calculador tolerancia5 atraso6,PASS,OVERDUE_BLOCK,OVERDUE_BLOCK,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-019,tolerancia5 nao cumpre pedido bloqueado por qualquer vencido,BLOCKED,Pedido0d e entrega>5d gates distintos,Um campo de tolerância não autoriza dois gates; transporte de entrega não exercitado,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-020,fonte cinco páginas/validade contratual,BLOCKED,Contrato instalado e validação,Arquivo não disponível; transcrição não atesta assinatura/vigência,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-021,40% quitado real / parcial / pendente,BLOCKED,Contrato instalado e validação,Receipts/liquidação canônica e concessão precisam contrato instalado,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-022,30d taxa exata,BLOCKED,Contrato instalado e validação,0 a1% não escolhe taxa; vetor0% não default,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-023,safra mínimo/calendário/parcelas,BLOCKED,Contrato instalado e validação,"Parâmetros ausentes, max_days não presumido meses*30",PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-024,risco médio/sem garantia forte,BLOCKED,Contrato instalado e validação,Classificação e suficiência/garantias adicionais sem contrato canônico provado,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-025,90d contrato/histórico positivo,BLOCKED,Contrato instalado e validação,Documento binário/aceite/histórico não provados,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-026,acordo descumprido/reincidência,BLOCKED,Contrato instalado e validação,Sem comando canônico revisado da suspensão,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-027,produção/entrega dupla aprovação,BLOCKED,Contrato instalado e validação,Contratos operacionais/A2 contidos; não ativar,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-028,mora pro-rata/multa/correção,BLOCKED,Contrato instalado e validação,"Sugerida; day basis e índice indefinidos, nenhuma fórmula defaultada",PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-029,antecipação/triangular/documentos,BLOCKED,Contrato instalado e validação,Exigem validação legal e autorização binária própria,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-030,idempotência/ACK perdido,BLOCKED,Contrato instalado e validação,Regressões consumidor executadas separadamente; não receipts pagamento real,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-031,cross-tenant A/B e dois parceiros owner,BLOCKED,Contrato instalado e validação,Calculator não é endpoint; Auth/RLS completos não carregados,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-032,snapshots históricos/taxa pós-faturar,BLOCKED,Contrato instalado e validação,Bateria anterior tem FAIL/P0; cadeia integral imutável não exercitada,PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-033,preços hectare históricos,BLOCKED,Contrato instalado e validação,"Não importar como preços vigentes, resolver dose/custo/ficha exige evidência",PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH,P1
+ARFSF-034,JWT/browser/pagamento/fiscal real,NOT RUN,Gate futuro autorizado,Proibidos nesta rodada,REAL,P1
+ARFSF-035,Vitest referencia e regressões existentes,PASS,121 testes/9arquivos,"121/121;14novos;Auth/transporte sintéticos, sem mutação financeira real",QUERYCLIENT_CONSUMERS_SYNTHETIC,P1

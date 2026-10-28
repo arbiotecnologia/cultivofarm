@@ -1,0 +1,12 @@
+{
+  "rows": 35,
+  "statuses": {
+    "PASS": 18,
+    "FAIL": 0,
+    "BLOCKED": 16,
+    "NOT RUN": 1
+  },
+  "real_PASS": 0,
+  "vitest": 121,
+  "new_vitest": 14
+}
