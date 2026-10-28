@@ -1,0 +1,14 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "captured_at": "2026-10-28T02:25Z",
+  "bodies": {
+    "fn_b2b_apply_interest": "CREATE OR REPLACE FUNCTION public.fn_b2b_apply_interest(p_net numeric, p_interest_type text, p_monthly_pct numeric, p_months numeric)\n RETURNS numeric\n LANGUAGE sql\n IMMUTABLE\n SET search_path TO 'public'\nAS $function$\n",
+    "fn_generate_receivable_installments": "CREATE OR REPLACE FUNCTION public.fn_generate_receivable_installments()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n",
+    "simulate_b2b_payment_plan_secure": "CREATE OR REPLACE FUNCTION public.simulate_b2b_payment_plan_secure(p_partner_id uuid, p_payment_plan_id uuid, p_items jsonb, p_first_due_date date DEFAULT NULL::date)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n"
+  },
+  "hashes": {
+    "fn_b2b_apply_interest": "806e5d8789b08cd6790a10feaf95f26d",
+    "fn_generate_receivable_installments": "f632f15c9f46cb9889082fc533a27ea1",
+    "simulate_b2b_payment_plan_secure": "37d4f45e388ed7b38f6f397b672629ee"
+  }
+}
