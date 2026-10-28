@@ -1,0 +1,308 @@
+[
+  {
+    "id": "ARFSF-001",
+    "cenario": "pin fn_b2b_apply_interest",
+    "status": "PASS",
+    "expectativa": "806e5d8789b08cd6790a10feaf95f26d",
+    "observado": "806e5d8789b08cd6790a10feaf95f26d",
+    "nivel": "LOCAL_HASH_CONSISTENCY",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-002",
+    "cenario": "pin simulate_b2b_payment_plan_secure",
+    "status": "PASS",
+    "expectativa": "37d4f45e388ed7b38f6f397b672629ee",
+    "observado": "37d4f45e388ed7b38f6f397b672629ee",
+    "nivel": "LOCAL_HASH_CONSISTENCY",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-003",
+    "cenario": "cash Decimal vs installed interest",
+    "status": "PASS",
+    "expectativa": "60000.00",
+    "observado": "60000.00",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-004",
+    "cenario": "30d_zero_reference_only Decimal vs installed interest",
+    "status": "PASS",
+    "expectativa": "65000.00",
+    "observado": "65000.00",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-005",
+    "cenario": "60d Decimal vs installed interest",
+    "status": "PASS",
+    "expectativa": "72115.75",
+    "observado": "72115.75",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-006",
+    "cenario": "90d Decimal vs installed interest",
+    "status": "PASS",
+    "expectativa": "79590.60",
+    "observado": "79590.60",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-007",
+    "cenario": "harvest6_2 Decimal vs installed interest",
+    "status": "PASS",
+    "expectativa": "90092.99",
+    "observado": "90092.99",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-008",
+    "cenario": "harvest8_2 Decimal vs installed interest",
+    "status": "PASS",
+    "expectativa": "93732.75",
+    "observado": "93732.75",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-009",
+    "cenario": "harvest8_2.5 Decimal vs installed interest",
+    "status": "PASS",
+    "expectativa": "97472.23",
+    "observado": "97472.23",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-010",
+    "cenario": "harvest8_3 Decimal vs installed interest",
+    "status": "PASS",
+    "expectativa": "107675.46",
+    "observado": "107675.46",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-011",
+    "cenario": "40% simulação não comprova quitação",
+    "status": "BLOCKED",
+    "expectativa": "Concessão somente após quitação comprovada",
+    "observado": "Retorna60000 como simulação sem pagamento; não cria pedido nem constitui concessão",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P0"
+  },
+  {
+    "id": "ARFSF-012",
+    "cenario": "vencimento retroativo simulação",
+    "status": "PASS",
+    "expectativa": "invalid_due_date",
+    "observado": "invalid_due_date",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-013",
+    "cenario": "limite 100000",
+    "status": "PASS",
+    "expectativa": "OK",
+    "observado": "OK",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-014",
+    "cenario": "limite 100000.01",
+    "status": "PASS",
+    "expectativa": "LIMIT_EXCEEDED_BLOCK",
+    "observado": "LIMIT_EXCEEDED_BLOCK",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-015",
+    "cenario": "limite indefinido",
+    "status": "PASS",
+    "expectativa": "NO_LIMIT_DEFINED",
+    "observado": "NO_LIMIT_DEFINED",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-016",
+    "cenario": "saldo vencido um dia + parcial",
+    "status": "PASS",
+    "expectativa": "OVERDUE_BLOCK;800",
+    "observado": "{\"partner_id\": \"00000000-0000-4000-8000-000000000001\", \"novo_pedido\": \"0.00\", \"reason_code\": \"OVERDUE_BLOCK\", \"credit_limit\": \"100000.00\", \"tem_vencidos\": true, \"saldo_vencido\": \"800.00\", \"exposicao_atual\": \"800.00\", \"saldo_em_aberto\": \"800.00\", \"block_if_overdue\": true, \"credito_disponivel\": \"99200.00\", \"credit_limit_action\": \"block\", \"exposicao_projetada\": \"800.00\", \"percentual_utilizado\": \"0.80\", \"comprometido_pendente\": \"0.00\", \"overdue_tolerance_days\": 0, \"comprometido_nao_faturado\": \"0.00\"}",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-017",
+    "cenario": "calculador tolerancia5 atraso5",
+    "status": "PASS",
+    "expectativa": "OK",
+    "observado": "OK",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-018",
+    "cenario": "calculador tolerancia5 atraso6",
+    "status": "PASS",
+    "expectativa": "OVERDUE_BLOCK",
+    "observado": "OVERDUE_BLOCK",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-019",
+    "cenario": "tolerancia5 nao cumpre pedido bloqueado por qualquer vencido",
+    "status": "BLOCKED",
+    "expectativa": "Pedido0d e entrega>5d gates distintos",
+    "observado": "Um campo de tolerância não autoriza dois gates; transporte de entrega não exercitado",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-020",
+    "cenario": "fonte cinco páginas/validade contratual",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Arquivo não disponível; transcrição não atesta assinatura/vigência",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-021",
+    "cenario": "40% quitado real / parcial / pendente",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Receipts/liquidação canônica e concessão precisam contrato instalado",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-022",
+    "cenario": "30d taxa exata",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "0 a1% não escolhe taxa; vetor0% não default",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-023",
+    "cenario": "safra mínimo/calendário/parcelas",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Parâmetros ausentes, max_days não presumido meses*30",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-024",
+    "cenario": "risco médio/sem garantia forte",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Classificação e suficiência/garantias adicionais sem contrato canônico provado",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-025",
+    "cenario": "90d contrato/histórico positivo",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Documento binário/aceite/histórico não provados",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-026",
+    "cenario": "acordo descumprido/reincidência",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Sem comando canônico revisado da suspensão",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-027",
+    "cenario": "produção/entrega dupla aprovação",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Contratos operacionais/A2 contidos; não ativar",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-028",
+    "cenario": "mora pro-rata/multa/correção",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Sugerida; day basis e índice indefinidos, nenhuma fórmula defaultada",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-029",
+    "cenario": "antecipação/triangular/documentos",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Exigem validação legal e autorização binária própria",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-030",
+    "cenario": "idempotência/ACK perdido",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Regressões consumidor executadas separadamente; não receipts pagamento real",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-031",
+    "cenario": "cross-tenant A/B e dois parceiros owner",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Calculator não é endpoint; Auth/RLS completos não carregados",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-032",
+    "cenario": "snapshots históricos/taxa pós-faturar",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Bateria anterior tem FAIL/P0; cadeia integral imutável não exercitada",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-033",
+    "cenario": "preços hectare históricos",
+    "status": "BLOCKED",
+    "expectativa": "Contrato instalado e validação",
+    "observado": "Não importar como preços vigentes, resolver dose/custo/ficha exige evidência",
+    "nivel": "PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-034",
+    "cenario": "JWT/browser/pagamento/fiscal real",
+    "status": "NOT RUN",
+    "expectativa": "Gate futuro autorizado",
+    "observado": "Proibidos nesta rodada",
+    "nivel": "REAL",
+    "severidade": "P1"
+  }
+]
