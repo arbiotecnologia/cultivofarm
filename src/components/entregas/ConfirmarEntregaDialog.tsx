@@ -237,9 +237,16 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
     onSuccess: ({ current, id, submittedMode }) => {
       if (!current()) return;
       toast({ title: "Entrega confirmada com sucesso" });
-      qc.invalidateQueries({ queryKey: ["entregas"] });
-      qc.invalidateQueries({ queryKey: ["entrega-docs", entrega?.id] });
-      qc.invalidateQueries({ queryKey: ["entregas-nao-faturadas"] });
+      const capturedActor = JSON.parse(scope.scope) as unknown[];
+      for (const prefix of ["entregas", "entrega-docs", "entregas-nao-faturadas"]) {
+        void qc.invalidateQueries({ predicate: query => {
+          if (query.queryKey[0] !== prefix || (prefix === "entrega-docs" && query.queryKey[1] !== id)) return false;
+          try {
+            const actor = JSON.parse(String(query.queryKey.at(-2))) as unknown[];
+            return [0, 1, 2, 3, 5].every(index => JSON.stringify(actor[index]) === JSON.stringify(capturedActor[index]));
+          } catch { return false; }
+        } });
+      }
       onClose();
       onConfirmed?.(submittedMode, id);
     },
