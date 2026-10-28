@@ -172,6 +172,19 @@ GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   w,sw=session();sw(actor()+f"SELECT rpc_estoque_operar_v1('expedicao','{stock}',2,'same-item-second','{{}}');");waitlock();send('COMMIT;');p.stdin.close();p.wait(4);w.stdin.close();w.wait(4)
   assert 'ESTQ_STATUS_INVALIDO' in w.stderr.read();checks.append('same item competing generation fails status after real wait');print('PASS',checks[-1])
   ok("SELECT count(*)=1 FROM estoque_movimentacoes WHERE idempotency_key IN ('same-item-first','same-item-second')",'competing keys one expedition ledger')
+  # Load exact currently captured inner reservation, not a replacement motor stub.
+  extra=json.loads((H.parent/'delivery-stock-release-20261027/current-extra-20261028.json').read_text())
+  reserve=next(f for f in extra['functions'] if f['name']=='public.reservar_estoque_item')
+  sql(reserve['definition'])
+  ok(f"SELECT md5(pg_get_functiondef('public.reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)'::regprocedure))='{reserve['hash']}'",'exact current inner reservation body')
+  sql('GRANT EXECUTE ON FUNCTION rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb) TO authenticated;')
+  reset();sql(actor()+envase('batch-setup'));stock=sql('SELECT id FROM estoque_produto LIMIT 1').stdout.strip()
+  sql(actor()+f"SELECT rpc_cockpit_cancelar_reserva_v1('{stock}','{O}','manual','prepare batch');")
+  batch=f"SELECT rpc_estoque_reservar_v1('{O}','manual','[{{\"item_id\":\"{stock}\",\"quantidade\":2}}]','batch-current-one','{{\"cliente_id\":\"{C}\"}}');"
+  ok(actor()+f"SELECT ({batch[7:-1]}->>'ok')::boolean",'captured inner reservation + canonical batch real ledger')
+  ok(actor()+f"SELECT ({batch[7:-1]}->>'replay')::boolean",'batch same payload replay')
+  ok('SELECT count(*)=1 FROM platform_private.stock_batch_requests','batch one immutable receipt')
+  err(actor()+batch.replace('quantidade":2','quantidade":1'),'23505','batch changed quantity same key rejects')
  finally:
   if started:subprocess.run(pre+[str(PG/'pg_ctl'),'-D',str(tmp/'d'),'stop','-m','fast'],capture_output=True,env=env)
  (H/'results.txt').write_text(f'{len(checks)} PASS PostgreSQL17 local; Auth/SaaS/hash seams synthetic, no hosted JWT/RLS.\n'+'\n'.join(checks)+'\n');print('TOTAL',len(checks),'PASS')

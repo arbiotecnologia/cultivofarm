@@ -102,6 +102,11 @@ GRANT USAGE ON SCHEMA auth,public TO anon,authenticated;"""
   o=drain(p,w)
   assert '40P01' in o or 'deadlock' in o, o;checks.append('baseline SHARE delivery + exclusive motor reproduces 40P01 deadlock');print('PASS',checks[-1])
   # ---- composed candidate ----
+  before_hash=sql("SELECT md5(pg_get_functiondef('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)'::regprocedure));").stdout.strip()
+  err("BEGIN;"+(H/'composed-delivery.sql.review').read_text()+"DO $$ BEGIN RAISE EXCEPTION 'injected failing POST' USING ERRCODE='42501'; END $$; COMMIT;",'42501','failing POST rolls back complete delivery DDL transaction')
+  ok(f"SELECT md5(pg_get_functiondef('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)'::regprocedure))='{before_hash}';",'failed POST preserves baseline body')
+  err((H/'delivery-only-delta.sql.review').read_text(),'42501','current LIVE OID pins reject disposable metadata drift')
+  ok(f"SELECT md5(pg_get_functiondef('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)'::regprocedure))='{before_hash}';",'pinned delta rejection changes no body')
   sql((H/'composed-delivery.sql.review').read_text())
   post=sql("SELECT json_agg(json_build_object('name',n.nspname||'.'||p.proname,'hash',md5(pg_get_functiondef(p.oid)),'config',p.proconfig)) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.proname IN ('delivery_recovery_scope_v1','rpc_cockpit_criar_entrega_v1','fn_entrega_confirmar_engine_v1','rpc_entrega_cancelar_v1');").stdout.strip()
   (H/'local-post-hashes.json').write_text(post+'\n')
