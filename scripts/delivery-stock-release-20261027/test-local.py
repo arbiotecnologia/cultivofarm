@@ -41,7 +41,9 @@ def main():
  def actor(u=U):return f"SET ROLE authenticated; SET request.jwt.claim.sub='{u}';"
  def session():
   p=subprocess.Popen(base,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=env)
-  def send(q):p.stdin.write(q+'\n');p.stdin.flush()
+  def send(q):
+   try:p.stdin.write(q+'\n');p.stdin.flush()
+   except BrokenPipeError:pass
   return p,send
  def waiting():
   deadline=time.time()+2
