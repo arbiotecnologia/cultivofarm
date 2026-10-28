@@ -28,7 +28,11 @@ def main():
         assert expected==D(v['expected'])
         observed=D(b.pg.sql(f"SELECT fn_b2b_apply_interest({net},'compound',{v['rate']},{v['months']})"))
         assert observed==expected
-        record(v['key']+' Decimal vs installed interest','PASS',expected,observed)
+        scope='PURE_ARITHMETIC_VECTOR_NOT_POLICY_ENFORCEMENT'
+        label=v['key']+' Decimal vs installed interest'
+        if v['key']=='30d_zero_reference_only': label+=' (0% hipotético; taxa exata NULL)'
+        if v['key']=='cash': label+=' (cálculo; quitação não comprovada)'
+        record(label,'PASS',expected,observed,scope)
     # Negative semantics remain in caller, not the pure arithmetic helper.
     b.pg.sql(f"INSERT INTO partner_accounts VALUES('{b.uid(1)}',true); INSERT INTO commercial_payment_plans VALUES('{b.uid(10)}','CASH LOCAL','CASH',true,0,40,'none',0,7,1,false,false,false,0,'discount_from_base');")
     cart=json.dumps(dict(table_amount=100000,discount_amount=40000,net_amount=60000,quote_required=False,lines=[]))

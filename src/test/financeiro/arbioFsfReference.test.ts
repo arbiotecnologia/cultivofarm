@@ -13,7 +13,7 @@ const base: PaymentPlanPayload = { name: 'DRAFT LOCAL', code: 'REF', plan_type: 
   requires_credit_approval: true, requires_guarantee: false, requires_financial_approval: true };
 describe('AR Bio × FSF Agro — referência não aplicada, consumidores existentes', () => {
   it.each(draft.reference_vectors as { key: string; discount: string; rate: string; months: number; table: string; expected: string }[])(
-    '$key confere a centavos com expectativa Decimal independente', vector => {
+    '$key compara preview Number ao vetor previamente conferido em Decimal no PG local', vector => {
       const value = preview({ ...base, discount_percent: Number(vector.discount),
         monthly_interest_percent: Number(vector.rate), months_count: vector.months }, Number(vector.table));
       expect(value).not.toBeNull();

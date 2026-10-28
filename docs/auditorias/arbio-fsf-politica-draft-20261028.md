@@ -74,6 +74,7 @@ Todos conferem centavos, sem divergência. Corpo de crédito:100.000=OK;100.000,
 Simulador com40% retorna60.000 sem receipt de quitação; **não é FAIL do simulador**, que apenas calcula. Regra de concessão/liquidação fica BLOCKED até contrato e prova canônica. Parcelas, risco/safra/contrato/garantias/histórico/acordos/recidiva, mora/índice/antecipação, aprovação dupla e faturamento/entrega real não demonstrados por calculador.
 
 PG: **17 PASS / 0 FAIL / 16 BLOCKED / 1 NOT RUN**; dois PASS são hashes não funcionais. Zero PASS real; zero FAIL nesta referência não elimina seis FAIL da bateria anterior. Evidências/CSV/JSON em `docs/auditorias/evidencias-arbio-fsf-20261028/`. Testes TypeScript no consumidor preview/atribuição/método/role; regressões de config CAS/tenant, ACK perdido e entrega executadas conjuntamente, contagem final registrada na matriz. Sem duplicar testes históricos como novas homologações.
+Vitest **121/121 em nove arquivos**, 14 novos neste lote. Preview TypeScript usa Number e compara a centavos os vetores previamente conferidos com Decimal no runner Python; não é segunda implementação Decimal. Matriz35 registros:18PASS incluindo grupoVitest/0FAIL/16BLOCKED/1NOT RUN. Revisão independente pediu delimitar cálculos40%/30d, crédito reduzido e nome do teste Number: incorporado, sem certificação jurídica/operacional.
 
 ## Prioridades e recomendações por fases (não executar)
 

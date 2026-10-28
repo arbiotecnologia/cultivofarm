@@ -2,3 +2,4 @@
 - Custom installments travel only through a private txid/title/actor/tenant context consumed by the existing generator on INSERT; immutable snapshot and tenant guards never gain exceptions.
 - Future order composition must merge both generator branches and recapture all PRE/POST/containment hashes in a new package; the historical integrated release must never overwrite this correction.
 - Offline finance battery reuses this package and captured installed bodies with independent Decimal expectations; synthetic dependencies and FAIL findings stay explicit, never become runtime formulas or release evidence — prevents duplicated finance and false certification.
+- Commercial reference drafts are inert specifications, never executable payloads; reuse the existing offline harness and keep missing legal evidence, settlement/guarantee gates and undefined parameters blocked — prevents presentation material from granting commercial authority.
