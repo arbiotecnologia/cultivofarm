@@ -1,0 +1,122 @@
+[
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "37795",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.accounts_receivable",
+    "fingerprint": "8ef1bfc63f42329895b5cb7a3801a842"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "37815",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.accounts_receivable_installments",
+    "fingerprint": "55c9be1e28715342e3778956071c76bd"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres}",
+    "oid": "71446",
+    "rls": true,
+    "force_rls": false,
+    "signature": "cf_user_guards_v1.state",
+    "fingerprint": "815e1db8960fd4ab476a08e5089c785c"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "38637",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.financial_audit_log",
+    "fingerprint": "042f0ebb8ade244f1f3da24bb0004360"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "38644",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.financial_categories",
+    "fingerprint": "b1a4c869d9c726e7aa14263ff6c065e7"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "36842",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.clientes",
+    "fingerprint": "4243756843ab9a372b82cc454d81ab5f"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "38500",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.entrega_reconciliacoes",
+    "fingerprint": "ba4ab061e79f087dcf3a01c029c11b8e"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "36863",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.entregas",
+    "fingerprint": "93493593ba3be6bfafd85ef2be16170a"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "38655",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.financial_cost_centers",
+    "fingerprint": "c1071d281e851006a899493b41778866"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=xtm/postgres,authenticated=rxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "39962",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.organizations",
+    "fingerprint": "582219d88412063d9606aedd2eccc494"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "36958",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.partner_accounts",
+    "fingerprint": "06763aedbd0cee5f3f9dbd0dec1a29b5"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "40229",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.partner_users",
+    "fingerprint": "efdc6a71acfec797d071d5d6b19f060a"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "40252",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.payment_methods",
+    "fingerprint": "46d8f075ba15d432fd69d581902e1216"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "40804",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.profiles",
+    "fingerprint": "25a44678e693146f0b961c32a61cfa81"
+  },
+  {
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+    "oid": "40559",
+    "rls": true,
+    "force_rls": false,
+    "signature": "public.user_roles",
+    "fingerprint": "d4b529f73f394cfa4e9b8b807c92448e"
+  }
+]
