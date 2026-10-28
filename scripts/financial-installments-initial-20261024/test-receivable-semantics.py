@@ -106,6 +106,8 @@ def main():
         if mode=='BASELINE':
             pay,_=payment(i,10600,'overpayment-baseline')
             record('baixa nao pode exceder total contratual',True,D(pg.sql(f"SELECT received_amount FROM accounts_receivable_installments WHERE id='{i}'"))<=D('10300'),mode,'P0')
+        else:
+            deny('experimento recusa 10600 para total 10300',f"SELECT rpc_register_receivable_payment('{i}',{q(json.dumps(dict(amount_received='10600',payment_method_id=PM,idempotency_key='experimental-overpayment')))}::jsonb);",'excede o saldo',mode)
         t,i=title(offset+2)
         pay,call=payment(i,3000,'partial-lost-ack',100,200,50)
         record('parcial, mora monetaria, multa e desconto',D('7550'),balance(i),mode)
@@ -133,7 +135,7 @@ def main():
         deny('snapshot titulo imutavel',f"UPDATE accounts_receivable SET total_amount=1 WHERE id='{t}';",'Snapshot financeiro imutavel',mode)
         deny('evento UPDATE imutavel',f"UPDATE receivable_payments SET amount_received=1 WHERE id='{pay}';",'imutavel',mode)
         # Owner-approved totals are INPUT FIXTURES here; no interest rate recalculation/test repetition.
-        for j,(months,total) in enumerate([(0,'6000'),(1,'6000'),(6,'6677.96'),(8,'7029.96'),(12,'7609.45')],10):
+        for j,(months,total) in enumerate([(0,'6000'),(1,'6000'),(6,'6677.87'),(8,'7029.96'),(12,'7609.45')],10):
             t,x=title(offset+j,total,str(D(total)-6000),count=max(1,months))
             actual=D(pg.sql(f"SELECT sum({BAL}) FROM accounts_receivable_installments WHERE receivable_id='{t}'"))
             record(f'valor financiado fixture {months}m conservado na geracao',D(total),actual,mode,'P0')
@@ -157,6 +159,12 @@ def main():
         additive=D(pg.sql(f"SELECT sum(greatest(0,{BAL})) FROM accounts_receivable_installments WHERE status IN ('OPEN','PARTIAL','OVERDUE')"))
         cf=D(ask(f"SELECT sum(entradas) FROM fn_fin_cashflow('{lo}','{hi}','day','projected');"))
         record('cashflow capturado concorda com formula aditiva',additive,cf,mode)
+        aging=D(ask("SELECT sum(total) FROM fn_fin_aging('RECEIVABLE');"))
+        record('aging e caixa projetado concordam incluindo ajustes',additive,aging,mode,'P1')
+        t,foreign=title(offset+40,org=B)
+        before=state()
+        ask(f"SELECT rpc_cancel_financial_installment('{foreign}','receivable','motivo local');")
+        record('cancelamento deve negar parcela de outro tenant',True,state()==before,mode,'P0')
     for label,severity in [
         ('geracao B2B integral: gates fiscais/preco/tenant/snapshot e escritor alternativo','P0'),
         ('mudanca segura de contrato unico com todos consumidores BI','P0'),
