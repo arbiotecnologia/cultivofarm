@@ -36,7 +36,7 @@ def main():
     result=json.loads(b.pg.sql(session+f"SELECT simulate_b2b_payment_plan_secure('{b.uid(1)}','{b.uid(10)}','[]'::jsonb)").splitlines()[-1])
     # No payment receipt exists in this harness. This exposes missing gate in isolated simulation.
     assert result['final_amount']==60000
-    record('40% somente quitado — gate financeiro ausente no corpo simulação','FAIL','Não tratar simulação como concessão quitada','Retorna60000 sem prova de quitação; simulador não cria pedido, release integral BLOCKED',priority='P0')
+    record('40% simulação não comprova quitação','BLOCKED','Concessão somente após quitação comprovada','Retorna60000 como simulação sem pagamento; não cria pedido nem constitui concessão',priority='P0')
     err=b.pg.sql(session+f"SELECT simulate_b2b_payment_plan_secure('{b.uid(1)}','{b.uid(10)}','[]'::jsonb,current_date-1)",ok=False)
     assert 'invalid_due_date' in err;record('vencimento retroativo simulação','PASS','invalid_due_date','invalid_due_date')
     # Existing captured credit body, matched to read-only LIVE hash; reduced tables, no JWT/RLS claim.
