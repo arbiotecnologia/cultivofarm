@@ -1,0 +1,32 @@
+31 local checks PASS. Auth/schema/stock motor/billing/advancement are SYNTHETIC stubs with the composed lock modes; NOT JWT/RLS nor full ledger integration.
+exact LIVE body public.fn_cockpit_norm_origem
+exact LIVE body public.fn_cockpit_assert_operador_origem
+exact LIVE body public.fn_entrega_assert_confirmador
+exact LIVE body public.fn_estoque_ctx_open
+exact LIVE body public.rpc_cockpit_criar_entrega_v1
+exact LIVE body public.fn_entrega_confirmar_engine_v1
+exact LIVE body public.rpc_entrega_cancelar_v1
+exact LIVE body public.rpc_entrega_confirmar_v1
+baseline SHARE delivery + exclusive motor reproduces 40P01 deadlock
+composed delivery uses only exclusive gate
+composed cancel/cancel serializes without deadlock
+composed cancel/confirm serializes without deadlock
+composed confirm/cancel serializes without deadlock
+full reservation confirm succeeds
+expedition goes through canonical motor once with deterministic key
+no direct ledger insert by delivery
+confirm replay
+replay no second motor call
+partial reservation rejected PT409
+partial rejection no write
+cross-tenant confirm denied
+anon confirm denied
+B2B stays contained
+onfarm not released by composition
+confirm waits on billing advisory key (unified)
+revocation committed during gate wait denies confirm
+revoked confirm no write
+3s gate timeout bounded
+motor/ledger failure propagates
+motor failure rolls back delivery and events
+release barrier remains closed

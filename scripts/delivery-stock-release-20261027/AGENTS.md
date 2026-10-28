@@ -1,0 +1,4 @@
+- Review-only composed package: never apply candidate or publish from here; the auditor installs after independent review — stock/envase remains unapplied.
+- Compose only via assemble.py from the three source candidates with fail-closed fragment counts; never hand-edit candidate.sql.review — prevents drift.
+- One gate mode (cf_user_guards_v1 FOR UPDATE) and one billing advisory key across delivery/stock/billing; delivery stock writes go only through the canonical motor — prevents SHARE→UPDATE deadlocks and ledger bypass.
+- Partial reservation, B2B and onfarm stay rejected; release barrier stays closed until envase transition and real A/B proofs — local stubs are not JWT/RLS proof.

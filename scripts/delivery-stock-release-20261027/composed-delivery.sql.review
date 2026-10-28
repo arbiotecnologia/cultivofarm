@@ -1,0 +1,507 @@
+-- INACTIVE HARDENING ONLY. NO CLIENT GRANTS. NOT A RELEASE MIGRATION.
+CREATE OR REPLACE FUNCTION platform_private.delivery_recovery_scope_v1(p_os uuid,p_origin text,p_delivery uuid,p_action text)
+RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO '' AS $scope$
+DECLARE u uuid:=auth.uid(); org uuid; o record; e record; allowed boolean;
+BEGIN
+ -- VOLATILE refresh after each wait. GUC stock context never grants authority.
+ SELECT p.organization_id INTO org FROM public.profiles p JOIN public.organizations c
+ ON c.id=p.organization_id AND c.ativo IS TRUE WHERE p.user_id=u AND p.ativo IS TRUE;
+ IF u IS NULL OR org IS NULL OR public.technical_actor_ready(u) IS NOT TRUE
+ OR public._saas_user_has_feature(u,'ordens_producao') IS NOT TRUE THEN
+ RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_delivery IS NOT NULL THEN
+ SELECT * INTO e FROM public.entregas WHERE id=p_delivery AND organization_id=org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF e.partner_order_id IS NOT NULL THEN RAISE EXCEPTION 'DELIVERY_B2B_COMPOSITION_PENDING' USING ERRCODE='42501'; END IF;
+ IF e.ordem_servico_onfarm_id IS NOT NULL THEN p_origin:='onfarm'; p_os:=e.ordem_servico_onfarm_id;
+ ELSE p_origin:='manual'; p_os:=e.ordem_servico_id; END IF;
+ END IF;
+ IF p_origin IS NULL OR p_origin NOT IN ('manual','onfarm') OR p_os IS NULL THEN
+ RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF p_origin='manual' THEN
+ SELECT id,cliente_id,organization_id,partner_order_id INTO o FROM public.ordens_servico WHERE id=p_os AND organization_id=org;
+ ELSE
+ SELECT s.id,s.cliente_id,c.organization_id,NULL::uuid partner_order_id INTO o
+ FROM public.ordens_servico_onfarm s JOIN public.clientes c ON c.id=s.cliente_id
+ WHERE s.id=p_os AND c.organization_id=org;
+ END IF;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF o.partner_order_id IS NOT NULL THEN RAISE EXCEPTION 'DELIVERY_B2B_COMPOSITION_PENDING' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=o.cliente_id AND organization_id=org) THEN
+ RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=u AND
+ (r.role::text IN ('administrador','gestor')
+ OR (p_action='create' AND r.role::text='producao')
+ OR (p_action='confirm' AND r.role::text IN ('producao','administrativo'))
+ OR (p_action='cancel' AND r.role::text='administrativo')
+ OR (p_action IN ('create','confirm') AND p_origin='onfarm' AND r.role::text='operador_onfarm'
+ AND EXISTS(SELECT 1 FROM public.user_clientes uc WHERE uc.user_id=u AND uc.cliente_id=o.cliente_id)))) INTO allowed;
+ IF allowed IS NOT TRUE THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN org;
+END $scope$;
+REVOKE ALL ON FUNCTION platform_private.delivery_recovery_scope_v1(uuid,text,uuid,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION platform_private.delivery_recovery_scope_v1(uuid,text,uuid,text) TO service_role;
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_estoque_produto_id uuid, p_quantidade numeric, p_dados jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_est public.estoque_produto%ROWTYPE;
+  v_existente record;
+  v_id uuid;
+  v_cliente_os uuid;
+BEGIN
+PERFORM platform_private.delivery_recovery_scope_v1(p_os_id,public.fn_cockpit_norm_origem(p_origem),NULL,'create');
+PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_GATE_UNAVAILABLE' USING ERRCODE='42501'; END IF;
+PERFORM platform_private.delivery_recovery_scope_v1(p_os_id,public.fn_cockpit_norm_origem(p_origem),NULL,'create');
+  v_origem := public.fn_cockpit_assert_operador_origem(p_origem);
+
+  IF p_os_id IS NULL OR p_estoque_produto_id IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS';
+  END IF;
+  IF p_quantidade IS NULL OR p_quantidade <= 0 OR p_quantidade::text IN ('NaN','Infinity','-Infinity') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_INVALIDA';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('cockpit_criar_entrega:' || p_os_id::text || ':' || p_estoque_produto_id::text));
+PERFORM platform_private.delivery_recovery_scope_v1(p_os_id,public.fn_cockpit_norm_origem(p_origem),NULL,'create');
+
+  SELECT * INTO v_est
+  FROM public.estoque_produto
+  WHERE id = p_estoque_produto_id
+  FOR UPDATE;
+PERFORM platform_private.delivery_recovery_scope_v1(p_os_id,public.fn_cockpit_norm_origem(p_origem),NULL,'create');
+
+  IF v_est.id IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO';
+  END IF;
+
+  IF v_origem = 'onfarm' THEN
+    SELECT cliente_id INTO v_cliente_os
+    FROM public.ordens_servico_onfarm
+    WHERE id = p_os_id;
+  ELSE
+    SELECT cliente_id INTO v_cliente_os
+    FROM public.ordens_servico
+    WHERE id = p_os_id;
+  END IF;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_OS_NAO_ENCONTRADA';
+  END IF;
+
+  IF v_est.status::text NOT IN ('reservado', 'expedido') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_STATUS_ESTOQUE_INVALIDO';
+  END IF;
+  IF v_est.reservado_para_os_id IS DISTINCT FROM p_os_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE';
+  END IF;
+  IF coalesce(v_est.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM';
+  END IF;
+  IF p_quantidade > coalesce(v_est.quantidade, 0) THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA';
+  END IF;
+  IF v_est.reservado_para_cliente_id IS NOT NULL
+     AND v_est.reservado_para_cliente_id IS DISTINCT FROM v_cliente_os THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_CLIENTE';
+  END IF;
+  IF nullif(p_dados->>'cliente_id','') IS NOT NULL
+     AND nullif(p_dados->>'cliente_id','')::uuid IS DISTINCT FROM v_cliente_os THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_CLIENTE';
+  END IF;
+
+  SELECT e.id, e.status::text AS status INTO v_existente
+  FROM public.entregas e
+  WHERE e.estoque_produto_id = p_estoque_produto_id
+    AND e.status::text <> 'cancelada'
+    AND (
+      (v_origem = 'onfarm' AND e.ordem_servico_onfarm_id = p_os_id)
+      OR (v_origem <> 'onfarm' AND e.ordem_servico_id = p_os_id)
+    )
+  ORDER BY e.created_at DESC
+  LIMIT 1;
+
+  IF v_existente.id IS NOT NULL THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'entrega_id', v_existente.id, 'status', v_existente.status, 'message', 'Entrega ja registrada para este item da OS.');
+  END IF;
+
+
+  IF coalesce(nullif(p_dados->>'tipo_entrega',''), 'motorista') NOT IN ('motorista','retirada') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_MODALIDADE_INVALIDA';
+  END IF;
+  IF coalesce(nullif(p_dados->>'endereco_origem',''), 'cadastro') NOT IN ('cadastro','personalizado') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA';
+  END IF;
+  IF v_est.volume_total IS NULL OR v_est.volume_total <= 0 OR v_est.volume_total::text IN ('NaN','Infinity','-Infinity')
+     OR v_est.quantidade IS NULL OR v_est.quantidade <= 0 THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO';
+  END IF;
+
+PERFORM platform_private.delivery_recovery_scope_v1(p_os_id,public.fn_cockpit_norm_origem(p_origem),NULL,'create');
+  PERFORM public.fn_estoque_ctx_open(jsonb_build_object('acao','entrega','origem','rpc_cockpit_criar_entrega_v1','usuario_id',v_uid::text));
+  INSERT INTO public.entregas (
+    ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,
+    lote_id, produto_id, quantidade_entregue, status, cliente_id,
+    data_saida, motorista, veiculo
+  ) VALUES (
+    CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,
+    CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,
+    p_estoque_produto_id,
+    v_est.lote_id,
+    v_est.produto_id,
+    p_quantidade,
+    'separado'::public.status_entrega,
+    v_cliente_os,
+    nullif(p_dados->>'data_saida','')::date,
+    nullif(p_dados->>'motorista',''),
+    nullif(p_dados->>'veiculo','')
+  ) RETURNING id INTO v_id;
+
+
+  -- Only newly created delivery: preserve replay semantics and never overwrite existing history.
+  UPDATE public.entregas SET
+    volume_entregue_ml = round((v_est.volume_total / v_est.quantidade) * p_quantidade * 1000, 6),
+    tipo_entrega = coalesce(nullif(p_dados->>'tipo_entrega',''), 'motorista'),
+    endereco_origem = coalesce(nullif(p_dados->>'endereco_origem',''), 'cadastro'),
+    grupo_entrega_id = nullif(p_dados->>'grupo_entrega_id','')::uuid,
+    hora_saida_prevista = nullif(p_dados->>'hora_saida_prevista','')::time,
+    data_chegada_prevista = nullif(p_dados->>'data_chegada_prevista','')::date,
+    hora_chegada_prevista = nullif(p_dados->>'hora_chegada_prevista','')::time,
+    motorista_telefone = nullif(p_dados->>'motorista_telefone',''),
+    motorista_documento = nullif(p_dados->>'motorista_documento',''),
+    veiculo_placa = nullif(p_dados->>'veiculo_placa',''),
+    veiculo_tipo = nullif(p_dados->>'veiculo_tipo',''),
+    destinatario_nome = nullif(p_dados->>'destinatario_nome',''),
+    destinatario_telefone = nullif(p_dados->>'destinatario_telefone',''),
+    destinatario_whatsapp = nullif(p_dados->>'destinatario_whatsapp',''),
+    endereco_logradouro = nullif(p_dados->>'endereco_logradouro',''),
+    endereco_numero = nullif(p_dados->>'endereco_numero',''),
+    endereco_complemento = nullif(p_dados->>'endereco_complemento',''),
+    endereco_bairro = nullif(p_dados->>'endereco_bairro',''),
+    endereco_cidade = nullif(p_dados->>'endereco_cidade',''),
+    endereco_uf = nullif(p_dados->>'endereco_uf',''),
+    endereco_cep = nullif(p_dados->>'endereco_cep',''),
+    endereco_referencia = nullif(p_dados->>'endereco_referencia','')
+  WHERE id = v_id;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, etapa_nova, acao, usuario_id, observacao)
+  VALUES
+    (p_os_id, v_origem, 'entrega_criada', 'criar_entrega_v1', v_uid,
+     format('Entrega %s criada (motor transacional).', v_id));
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'entrega_id', v_id, 'status', 'separado', 'message', 'Entrega registrada. Confirme a entrega para concluir a OS.');
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.fn_entrega_confirmar_engine_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb DEFAULT '{}'::jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_os_id uuid;
+  v_ent record;
+  v_est public.estoque_produto%ROWTYPE;
+  v_pendentes int; v_total_entregue numeric; v_total_reservado numeric;
+  v_finalizada boolean := false; v_avanco jsonb;
+  v_recebedor_nome text;
+  v_entregue_em timestamptz;
+  v_faturamento text := nullif(btrim(coalesce(p_opcoes->>'faturamento','')), '');
+  v_motivo_nb text := nullif(btrim(coalesce(p_opcoes->>'motivo_nao_faturavel','')), '');
+BEGIN
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
+PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_GATE_UNAVAILABLE' USING ERRCODE='42501'; END IF;
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'COCKPIT_UNAUTHENTICATED'; END IF;
+  IF p_entrega_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS'; END IF;
+
+  PERFORM public.fn_estoque_ctx_open(jsonb_build_object(
+    'acao','entrega','origem','fn_entrega_confirmar_engine_v1','usuario_id', v_uid::text));
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_faturar:' || p_entrega_id::text, 0));
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
+  PERFORM pg_advisory_xact_lock(hashtext('cockpit_entrega:' || p_entrega_id::text));
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
+
+  SELECT e.id, e.status::text AS status, e.estoque_produto_id,
+         coalesce(e.quantidade_entregue, 0) AS qtd, e.partner_order_id,
+         e.ordem_servico_id, e.ordem_servico_onfarm_id
+    INTO v_ent
+    FROM public.entregas e
+   WHERE e.id = p_entrega_id
+   FOR UPDATE;
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
+
+  IF v_ent.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_NAO_ENCONTRADA'; END IF;
+
+  -- Origem: explícita quando informada; derivada do vínculo caso contrário.
+  IF nullif(btrim(coalesce(p_origem,'')), '') IS NOT NULL THEN
+    v_origem := public.fn_cockpit_norm_origem(p_origem);
+  ELSIF v_ent.ordem_servico_onfarm_id IS NOT NULL THEN
+    v_origem := 'onfarm';
+  ELSIF v_ent.partner_order_id IS NOT NULL THEN
+    v_origem := 'b2b';
+  ELSE
+    v_origem := 'manual';
+  END IF;
+
+  v_origem := public.fn_entrega_assert_confirmador(v_origem);
+
+  v_os_id := CASE WHEN v_origem = 'onfarm' THEN v_ent.ordem_servico_onfarm_id
+                  ELSE v_ent.ordem_servico_id END;
+
+  IF p_os_id IS NOT NULL AND v_os_id IS DISTINCT FROM p_os_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_OS';
+  END IF;
+
+  IF v_ent.status = 'cancelada' THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_CANCELADA'; END IF;
+  IF v_ent.status = 'entregue' THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'finalizada', false,
+      'entrega_id', p_entrega_id,
+      'message', 'Entrega já confirmada anteriormente.');
+  END IF;
+
+  IF v_origem = 'b2b' AND v_ent.partner_order_id IS NOT NULL THEN
+    PERFORM public.fn_cockpit_assert_b2b_liberado(v_ent.partner_order_id);
+  END IF;
+
+  IF v_ent.estoque_produto_id IS NOT NULL THEN
+    SELECT * INTO v_est FROM public.estoque_produto WHERE id = v_ent.estoque_produto_id FOR UPDATE;
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
+    IF v_est.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO'; END IF;
+    IF v_est.status::text <> 'expedido' THEN
+      IF v_os_id IS NOT NULL THEN
+        IF v_est.reservado_para_os_id IS DISTINCT FROM v_os_id THEN
+          RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE';
+        END IF;
+        IF coalesce(v_est.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN
+          RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM';
+        END IF;
+      END IF;
+      IF v_ent.qtd > coalesce(v_est.quantidade, 0) THEN
+        RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA';
+      END IF;
+      IF v_est.status::text <> 'reservado' OR v_ent.qtd IS DISTINCT FROM v_est.quantidade_reservada THEN
+        RAISE EXCEPTION 'ENTREGA_RESERVA_PARCIAL_NAO_SUPORTADA: confirme apenas a reserva integral do lote.' USING ERRCODE='PT409';
+      END IF;
+    END IF;
+  END IF;
+
+  -- Recebedor físico é OBRIGATÓRIO e distinto de confirmado_por.
+  v_recebedor_nome := nullif(btrim(coalesce(p_recebedor->>'nome','')), '');
+  IF v_recebedor_nome IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_RECEBEDOR_OBRIGATORIO';
+  END IF;
+
+  v_entregue_em := coalesce(nullif(btrim(coalesce(p_opcoes->>'entregue_em','')), '')::timestamptz, now());
+
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
+  UPDATE public.entregas
+     SET status = 'entregue'::public.status_entrega,
+         entregue_em = v_entregue_em,
+         recebido_por_nome = v_recebedor_nome,
+         recebido_por_cargo = coalesce(nullif(btrim(coalesce(p_recebedor->>'cargo','')), ''), recebido_por_cargo),
+         recebido_por_documento = coalesce(nullif(btrim(coalesce(p_recebedor->>'documento','')), ''), recebido_por_documento),
+         observacoes_confirmacao = coalesce(nullif(btrim(coalesce(p_recebedor->>'observacoes','')), ''), observacoes_confirmacao),
+         confirmado_por = v_uid,
+         financial_status = CASE WHEN v_faturamento = 'bill_later' THEN 'PENDING_BILLING'
+                                 ELSE financial_status END
+   WHERE id = p_entrega_id;
+
+  IF v_est.id IS NOT NULL THEN
+    IF v_est.status::text <> 'expedido' THEN
+      PERFORM public.rpc_estoque_operar_v1('expedicao', v_est.id, v_ent.qtd,
+        'entrega-confirm-expedicao:' || p_entrega_id::text,
+        jsonb_build_object('origem','fn_entrega_confirmar_engine_v1','referencia_tipo','entrega',
+          'referencia_id', p_entrega_id, 'os_id', v_os_id, 'os_tipo', v_origem,
+          'observacao','Baixa por confirmação de entrega'));
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'confirm');
+    END IF;
+  END IF;
+
+  IF v_os_id IS NOT NULL THEN
+    v_avanco := public._rpc_avancar_esteira_laboratorio_internal(v_os_id, v_origem, 'enviar_entrega', NULL);
+
+    INSERT INTO public.laboratorio_esteira_eventos
+      (os_id, origem_os, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+    VALUES (v_os_id, v_origem, 'em_entrega', 'entregue', 'confirmar_entrega_v1', v_uid,
+            format('Confirmação transacional da entrega %s (recebedor: %s)', p_entrega_id, v_recebedor_nome));
+
+    IF v_origem = 'onfarm' THEN
+      SELECT count(*) FILTER (WHERE status::text NOT IN ('entregue','cancelada')),
+             coalesce(sum(quantidade_entregue) FILTER (WHERE status::text = 'entregue'), 0)
+        INTO v_pendentes, v_total_entregue
+        FROM public.entregas WHERE ordem_servico_onfarm_id = v_os_id;
+    ELSE
+      SELECT count(*) FILTER (WHERE status::text NOT IN ('entregue','cancelada')),
+             coalesce(sum(quantidade_entregue) FILTER (WHERE status::text = 'entregue'), 0)
+        INTO v_pendentes, v_total_entregue
+        FROM public.entregas WHERE ordem_servico_id = v_os_id;
+    END IF;
+
+    SELECT coalesce(sum(quantidade_reservada), 0) INTO v_total_reservado
+      FROM public.estoque_produto
+     WHERE reservado_para_os_id = v_os_id
+       AND coalesce(reservado_para_os_tipo, v_origem) = v_origem
+       AND status <> 'estornado'::public.status_estoque;
+
+    IF v_pendentes = 0 AND v_total_reservado > 0 AND v_total_entregue >= v_total_reservado THEN
+      v_avanco := public._rpc_avancar_esteira_laboratorio_internal(v_os_id, v_origem, 'finalizar_os', NULL);
+      IF coalesce((v_avanco->>'success')::boolean, false) THEN
+        v_finalizada := true;
+        INSERT INTO public.laboratorio_esteira_eventos
+          (os_id, origem_os, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+        VALUES (v_os_id, v_origem, 'entregue', 'finalizada', 'finalizacao_automatica_por_entrega', v_uid,
+                'Cobertura completa: OS finalizada na mesma transação da confirmação de entrega.');
+      END IF;
+    END IF;
+  END IF;
+
+  IF v_faturamento = 'not_billable' THEN
+    IF v_motivo_nb IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_MOTIVO_NAO_FATURAVEL_OBRIGATORIO'; END IF;
+    PERFORM public.fn_mark_entrega_not_billable(p_entrega_id, v_motivo_nb);
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'finalizada', v_finalizada,
+    'entrega_id', p_entrega_id, 'os_id', v_os_id, 'origem', v_origem,
+    'parcial', (coalesce(v_pendentes, 0) > 0 OR coalesce(v_total_entregue, 0) < coalesce(v_total_reservado, 0)),
+    'total_entregue', coalesce(v_total_entregue, 0), 'total_reservado', coalesce(v_total_reservado, 0),
+    'message', CASE WHEN v_finalizada THEN 'Entrega confirmada — OS finalizada.'
+                    ELSE 'Entrega confirmada.' END);
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.rpc_entrega_cancelar_v1(p_entrega_id uuid, p_motivo text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_motivo text := nullif(btrim(coalesce(p_motivo, '')), '');
+  v_entrega public.entregas%ROWTYPE;
+  v_item public.estoque_produto%ROWTYPE;
+  v_mov public.estoque_movimentacoes%ROWTYPE;
+  v_origem text;
+  v_estorno jsonb;
+  v_reserva jsonb;
+BEGIN
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_GATE_UNAVAILABLE' USING ERRCODE='42501'; END IF;
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'ENTREGA_NAO_AUTENTICADO' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF NOT (
+    public.has_role(v_uid, 'administrador'::public.app_role)
+    OR public.has_role(v_uid, 'gestor'::public.app_role)
+    OR public.has_role(v_uid, 'administrativo'::public.app_role)
+  ) THEN
+    RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_SEM_PERMISSAO' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF p_entrega_id IS NULL OR v_motivo IS NULL THEN
+    RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_PARAMETROS_INVALIDOS' USING ERRCODE = 'check_violation';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('entrega_cancelar:' || p_entrega_id::text));
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = p_entrega_id FOR UPDATE;
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+
+  IF v_entrega.id IS NULL THEN
+    RAISE EXCEPTION 'ENTREGA_NAO_ENCONTRADA' USING ERRCODE = 'no_data_found';
+  END IF;
+  IF v_entrega.status::text = 'cancelada' THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'entrega_id', v_entrega.id, 'message', 'Entrega ja estava cancelada.');
+  END IF;
+  IF v_entrega.status::text = 'entregue' THEN
+    RAISE EXCEPTION 'ENTREGA_CONFIRMADA_EXIGE_DEVOLUCAO' USING ERRCODE = 'check_violation';
+  END IF;
+  IF v_entrega.status::text NOT IN ('separado', 'em_rota') THEN
+    RAISE EXCEPTION 'ENTREGA_STATUS_NAO_CANCELAVEL' USING ERRCODE = 'check_violation';
+  END IF;
+
+  v_origem := CASE WHEN v_entrega.ordem_servico_onfarm_id IS NOT NULL THEN 'onfarm' ELSE 'manual' END;
+
+  IF v_entrega.estoque_produto_id IS NOT NULL THEN
+    SELECT * INTO v_item FROM public.estoque_produto WHERE id = v_entrega.estoque_produto_id FOR UPDATE;
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+    IF v_item.id IS NULL THEN
+      RAISE EXCEPTION 'ENTREGA_ESTOQUE_NAO_ENCONTRADO' USING ERRCODE = 'no_data_found';
+    END IF;
+
+    SELECT m.* INTO v_mov
+      FROM public.estoque_movimentacoes m
+     WHERE m.estoque_produto_id = v_item.id
+       AND m.referencia_tipo = 'entrega'
+       AND m.referencia_id = v_entrega.id
+       AND m.acao IN ('expedicao', 'entrega')
+       AND NOT EXISTS (SELECT 1 FROM public.estoque_movimentacoes r WHERE r.movimentacao_origem_id = m.id)
+     ORDER BY m.created_at DESC, m.id DESC
+     LIMIT 1
+     FOR UPDATE;
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+
+    IF v_mov.id IS NOT NULL THEN
+      v_estorno := public.rpc_estoque_operar_v1(
+        'estorno_expedicao', v_item.id, NULL,
+        'entrega-cancel-estorno:' || v_entrega.id::text,
+        jsonb_build_object(
+          'origem', 'rpc_entrega_cancelar_v1', 'referencia_tipo', 'entrega',
+          'referencia_id', v_entrega.id, 'movimentacao_origem_id', v_mov.id, 'motivo', v_motivo
+        )
+      );
+      SELECT * INTO v_item FROM public.estoque_produto WHERE id = v_entrega.estoque_produto_id FOR UPDATE;
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+    END IF;
+
+    IF v_item.status::text = 'reservado' THEN
+      v_reserva := public.rpc_cockpit_cancelar_reserva_v1(
+        v_item.id,
+        COALESCE(v_entrega.ordem_servico_onfarm_id, v_entrega.ordem_servico_id),
+        v_origem,
+        'Cancelamento da entrega ' || v_entrega.id::text || ': ' || v_motivo
+      );
+    ELSIF v_item.status::text NOT IN ('disponivel', 'estornado') THEN
+      RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_ESTOQUE_INCONSISTENTE: status %', v_item.status USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+PERFORM platform_private.delivery_recovery_scope_v1(NULL,NULL,p_entrega_id,'cancel');
+  PERFORM set_config('app.entrega_cancelamento_id', v_entrega.id::text, true);
+  UPDATE public.entregas
+     SET status = 'cancelada'::public.status_entrega, motivo_cancelamento = v_motivo
+   WHERE id = v_entrega.id;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, lote_id, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+  VALUES (
+    COALESCE(v_entrega.ordem_servico_onfarm_id, v_entrega.ordem_servico_id),
+    v_origem, v_entrega.lote_id, 'entrega_criada', 'entrega_cancelada',
+    'cancelar_entrega_v1', v_uid, 'Cancelamento atomico. Motivo: ' || v_motivo
+  );
+
+  RETURN jsonb_build_object(
+    'success', true, 'replay', false, 'entrega_id', v_entrega.id,
+    'estoque_estornado', v_estorno IS NOT NULL,
+    'reserva_liberada', v_reserva IS NOT NULL,
+    'message', 'Entrega cancelada e estoque recomposto.'
+  );
+END;
+$function$;
