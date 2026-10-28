@@ -982,3 +982,8 @@
 - [x] NO-GO: writeralternativo recompõe juros, BI divergente e cancelamento sem tenant; nenhuma candidata/runtime/histórico alterado.
 - [x] Revisão independente e correções do harness;222Vitest/12arquivos; plano e matriz103casos suplementares preservam entrega e históricos.
 - [ ] Futuro pacote seguro/instalação/JWT: bloqueados por cadeia B2B e contratos BI/proveniência; calendário/parcelamento/billing e contabilidade pendentes.
+
+## 28/10 20:38 — fechamento de escritores e contrato financeiro
+- [ ] Inventário ampliado metadata-only, matriz writers/readers e semântica de snapshots.
+- [ ] PG descartável baseline/proposta mínima, simultâneos e regressões com evidência nova, sem repetir taxa aprovada.
+- [ ] Diagnóstico histórico agregado SELECT inativo, harmonização/NO-GO conforme dependências; revisão independente e plano original.
