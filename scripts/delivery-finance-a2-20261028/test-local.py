@@ -19,7 +19,7 @@ checks = []
 def main():
     tmp = Path(tempfile.mkdtemp(prefix='billing-', dir='/tmp')); tmp.chmod(0o777)
     prefix = ['setpriv', '--reuid=1000', '--regid=1000', '--clear-groups'] if os.getuid() == 0 else []
-    base = ['bun',str(HERE/'pg-local-driver.cjs'),str(tmp),PORT]
+    base = ['node',str(HERE/'pg-local-driver.cjs'),str(tmp),PORT]
     def sql(q, must=True):
         r = subprocess.run(base, input=q, text=True, capture_output=True)
         if must and r.returncode: raise RuntimeError(r.stderr)
