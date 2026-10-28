@@ -3,6 +3,7 @@
 BEGIN;
 SET LOCAL lock_timeout='3s';
 SET LOCAL statement_timeout='15s';
+DO $$ BEGIN RAISE EXCEPTION 'HISTORICAL_BILLING_COMPOSITION_A2_REBASE_REQUIRED' USING ERRCODE='42501'; END $$;
 -- part 1: stock/envase
 -- INACTIVE. No grants/release; manual completion remains contained.
 CREATE OR REPLACE FUNCTION platform_private.stock_envase_scope_v1(p_lote uuid,p_prog uuid,p_os uuid,p_origem text)
