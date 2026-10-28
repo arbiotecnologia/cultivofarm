@@ -1,4 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { b2bToast } from "@/lib/b2bToast";
@@ -7,7 +9,6 @@ import {
   gerarChaveIdempotencia,
   mensagemPublicacao,
   mensagemSucessoPublicacao,
-  rpcIndisponivel,
 } from "@/lib/planejamento-producao/planejamento";
 
 
@@ -105,13 +106,23 @@ type PublicacaoResultado = { ok: boolean; planning_id: string; os_created: numbe
 
 export function useGenerateProductionOrders() {
   const qc = useQueryClient();
+  const access = useStorageAccessScope("production-publication");
+  const pending = useRef<object | null>(null);
+  const receipts = useRef(new WeakMap<PublicacaoResultado, () => boolean>());
   return useMutation({
+    retry: false,
     mutationFn: async (vars: {
       partner_order_id: string;
       planning_id: string;
       numero?: string;
       idempotency_key?: string;
     }) => {
+      const current = access.capture();
+      if (!current()) throw new Error("Contexto indisponível para publicar.");
+      if (pending.current) throw new Error("Publicação já em andamento; aguarde a resposta existente.");
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuid.test(vars.planning_id) || !uuid.test(vars.partner_order_id)) throw new Error("Identificação do planejamento inválida.");
+      const ticket = {}; pending.current = ticket;
       const chave = vars.idempotency_key ?? gerarChaveIdempotencia(vars.planning_id);
 
       const executar = async (): Promise<PublicacaoResultado> => {
@@ -120,28 +131,29 @@ export function useGenerateProductionOrders() {
           p_planning_id: vars.planning_id,
           p_idempotency_key: chave,
         });
-        if (!error) return data as PublicacaoResultado;
-
-        // Transitório: enquanto a migração H10 não for aplicada, usa o contrato legado.
-        if (rpcIndisponivel(error)) {
-          const legado = await (supabase as any).rpc("publish_planning_to_lab" as any, {
-            p_planning_id: vars.planning_id,
-          });
-          if (legado.error) throw new Error(mensagemPublicacao(legado.error));
-          return { ...(legado.data as PublicacaoResultado), replay: false };
+        if (!current()) throw new Error("Contexto alterado; resultado não adotado. Não repita a publicação sem revisão.");
+        if (error) throw new Error(mensagemPublicacao(error));
+        // A RPC atual está instalada; ausência/erro nunca abre o legado service-only.
+        if (!data || typeof data !== "object" || Array.isArray(data) || data.ok !== true ||
+          data.planning_id !== vars.planning_id || !Number.isSafeInteger(data.os_created) || data.os_created < 0 ||
+          (data.replay !== undefined && typeof data.replay !== "boolean")) {
+          throw new Error("Resposta de publicação não confirmada; revise sem repetir automaticamente.");
         }
-        throw new Error(mensagemPublicacao(error));
+        const result = data as PublicacaoResultado;
+        receipts.current.set(result, current);
+        return result;
       };
 
-      return b2bToast.promise(executar(), {
+      try { return await b2bToast.promise(executar(), {
         action: "generate-op",
         orderNumero: vars.numero ?? vars.planning_id,
         loading: "Publicando demanda no laboratório…",
         success: (r) => mensagemSucessoPublicacao(r),
         errorFallback: "Falha ao publicar demanda no laboratório",
-      });
+      }); } finally { if (pending.current === ticket) pending.current = null; }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (receipts.current.get(result)?.() !== true) return;
       qc.invalidateQueries({ queryKey: ["production-planning"] });
       qc.invalidateQueries({ queryKey: ["production-planning-detail"] });
       qc.invalidateQueries({ queryKey: ["cockpit-laboratorio"] });
