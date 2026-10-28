@@ -118,5 +118,11 @@
     "force_rls": false,
     "signature": "public.user_roles",
     "fingerprint": "d4b529f73f394cfa4e9b8b807c92448e"
+  },
+  {
+    "signature": "public.platform_org_admin_invites",
+    "oid": "83899",
+    "fingerprint": "fd6f643441e0591eb98e6d43f50c5bd2",
+    "source": "read_query 2026-10-28 ~00:42 UTC"
   }
 ]

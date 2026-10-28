@@ -61,7 +61,8 @@ FROM (VALUES  ('public.accounts_receivable','37795','8ef1bfc63f42329895b5cb7a380
  ('public.partner_users','40229','efdc6a71acfec797d071d5d6b19f060a'),
  ('public.payment_methods','40252','46d8f075ba15d432fd69d581902e1216'),
  ('public.profiles','40804','25a44678e693146f0b961c32a61cfa81'),
- ('public.user_roles','40559','d4b529f73f394cfa4e9b8b807c92448e')) v(sig,oid,h)
+ ('public.user_roles','40559','d4b529f73f394cfa4e9b8b807c92448e'),
+ ('public.platform_org_admin_invites','83899','fd6f643441e0591eb98e6d43f50c5bd2')) v(sig,oid,h)
 LEFT JOIN pg_class c ON c.oid=to_regclass(v.sig)
 UNION ALL SELECT 'gate singleton',count(*)=1 FROM cf_user_guards_v1.state WHERE singleton
 UNION ALL SELECT 'operational scopes absent',count(*)=0 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname IN ('stock_envase_scope_v1','delivery_recovery_scope_v1')

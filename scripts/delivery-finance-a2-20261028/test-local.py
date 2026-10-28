@@ -1,6 +1,6 @@
 """SYNTHETIC ONLY: disposable PostgreSQL, synthetic Auth (auth.uid() from GUC test.actor),
-reduced schema and stub helpers (h15_user_organization/is_financial_staff semantics copied
-from LIVE; valor/guard stubs). Loads proposed-functions.sql.review verbatim. Never connects to hosted
+reduced schema and stub price/guard helpers. Three LIVE trigger function bodies loaded
+exactly, but local trigger bindings and Auth are simulated. Loads proposed-functions.sql.review verbatim. Never connects to hosted
 Supabase. Not JWT/RLS homologation."""
 from pathlib import Path
 import tempfile, subprocess, os, time, json

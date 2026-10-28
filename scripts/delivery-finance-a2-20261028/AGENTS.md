@@ -1,0 +1,6 @@
+- A2 is review-only: never execute candidate/containment on hosted, grant, publish, mutate sessions/data or release delivery/stock/envase — prevents unreviewed production changes.
+- Assemble proposed bodies from the historical billing candidate, pin LIVE metadata and generate transaction guards; never hand-edit generated SQL — prevents source drift.
+- Preserve the installed installment generator and immutable history; custom schedule mismatch denies atomically rather than deleting/reinserting — avoids snapshot bypass.
+- Finance authority is internal-only and read afresh in READ COMMITTED after waits; external/cumulative partner or producer roles and unreviewed origins deny — prevents supplier-finance elevation.
+- Rollback replaces only these bodies with deny-only implementations and retains ACL; never restore vulnerable captured LIVE definitions — prevents BOLA recurrence.
+- Local PostgreSQL/Auth/schema tests are simulated; JWT/RLS and full installed-trigger integration require independent canonical-environment proof — prevents false certification.

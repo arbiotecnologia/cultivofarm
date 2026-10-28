@@ -64,7 +64,8 @@ FROM (VALUES  ('public.accounts_receivable','37795','8ef1bfc63f42329895b5cb7a380
  ('public.partner_users','40229','efdc6a71acfec797d071d5d6b19f060a'),
  ('public.payment_methods','40252','46d8f075ba15d432fd69d581902e1216'),
  ('public.profiles','40804','25a44678e693146f0b961c32a61cfa81'),
- ('public.user_roles','40559','d4b529f73f394cfa4e9b8b807c92448e')) v(sig,oid,h)
+ ('public.user_roles','40559','d4b529f73f394cfa4e9b8b807c92448e'),
+ ('public.platform_org_admin_invites','83899','fd6f643441e0591eb98e6d43f50c5bd2')) v(sig,oid,h)
 LEFT JOIN pg_class c ON c.oid=to_regclass(v.sig)
 UNION ALL SELECT 'gate singleton',count(*)=1 FROM cf_user_guards_v1.state WHERE singleton
 UNION ALL SELECT 'operational scopes absent',count(*)=0 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname IN ('stock_envase_scope_v1','delivery_recovery_scope_v1')
@@ -97,6 +98,7 @@ DECLARE
   v_num integer; v_due date; v_amt numeric; v_seen integer[] := '{}';
   v_desc text; v_notes text; v_guard jsonb;
 BEGIN
+  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'DELIVERY_FINANCE_ISOLATION_UNSUPPORTED' USING ERRCODE='25000'; END IF;
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';
   END IF;
@@ -183,21 +185,25 @@ BEGIN
        AND customer_id=v_entrega.cliente_id AND status<>'CANCELED';
     IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_RECEIVABLE_LINK_INVALID' USING ERRCODE='PT409'; END IF;
     IF _payload IS NULL OR jsonb_typeof(_payload)<>'object'
-      OR (_payload->>'total_amount')::numeric IS DISTINCT FROM v_ar.total_amount
+      OR round((_payload->>'total_amount')::numeric,2) IS DISTINCT FROM v_ar.total_amount
       OR NULLIF(_payload->>'category_id','')::uuid IS DISTINCT FROM v_ar.category_id
       OR NULLIF(_payload->>'payment_method_id','')::uuid IS DISTINCT FROM v_ar.payment_method_id
       OR COALESCE((_payload->>'installment_count')::int,1) IS DISTINCT FROM v_ar.installment_count
-      OR COALESCE((_payload->>'issue_date')::date,CURRENT_DATE) IS DISTINCT FROM v_ar.issue_date
-      OR COALESCE((_payload->>'first_due_date')::date,CURRENT_DATE) IS DISTINCT FROM v_ar.first_due_date
+      OR COALESCE((_payload->>'issue_date')::date,v_ar.issue_date) IS DISTINCT FROM v_ar.issue_date
+      OR COALESCE((_payload->>'first_due_date')::date,v_ar.first_due_date) IS DISTINCT FROM v_ar.first_due_date
       OR NULLIF(_payload->>'cost_center_id','')::uuid IS DISTINCT FROM v_ar.cost_center_id
       OR COALESCE((_payload->>'fiscal_invoice_required')::boolean,false) IS DISTINCT FROM v_ar.fiscal_invoice_required
-      OR (_payload ? 'installments' AND jsonb_typeof(_payload->'installments')='array'
-        AND EXISTS(SELECT 1 FROM jsonb_array_elements(_payload->'installments') x FULL JOIN
+      OR (_payload ? 'installments' AND jsonb_typeof(_payload->'installments') NOT IN ('array','null'))
+      OR (CASE WHEN jsonb_typeof(_payload->'installments')='array' AND jsonb_array_length(_payload->'installments')>0 THEN
+        jsonb_array_length(_payload->'installments')<>v_ar.installment_count
+        OR (SELECT count(DISTINCT (x->>'installment_number')::int) FROM jsonb_array_elements(_payload->'installments') x)<>v_ar.installment_count
+        OR EXISTS(SELECT 1 FROM jsonb_array_elements(_payload->'installments') x WHERE (x->>'installment_number')::int NOT BETWEEN 1 AND v_ar.installment_count)
+        OR EXISTS(SELECT 1 FROM jsonb_array_elements(_payload->'installments') x FULL JOIN
           (SELECT installment_number,due_date,original_amount FROM public.accounts_receivable_installments
             WHERE receivable_id=v_ar.id AND organization_id=v_org) i
           ON i.installment_number=(x->>'installment_number')::int
           WHERE i.installment_number IS NULL OR x IS NULL OR i.due_date IS DISTINCT FROM (x->>'due_date')::date
-            OR i.original_amount IS DISTINCT FROM (x->>'amount')::numeric)) THEN
+            OR i.original_amount IS DISTINCT FROM (x->>'amount')::numeric) ELSE false END) THEN
       RAISE EXCEPTION 'DELIVERY_REPLAY_INTENT_CONFLICT' USING ERRCODE='PT409';
     END IF;
     RETURN v_ar.id;
@@ -269,6 +275,19 @@ BEGIN
     RAISE EXCEPTION 'Primeiro vencimento anterior à emissão.' USING ERRCODE='check_violation';
   END IF;
 
+  SELECT p.organization_id INTO v_org
+    FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE
+   WHERE p.user_id=v_uid AND p.ativo IS TRUE AND p.senha_provisoria IS FALSE
+     AND EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=v_uid
+                 AND r.role IN ('administrador','gestor','financeiro'))
+     AND NOT EXISTS(SELECT 1 FROM public.user_roles r WHERE r.user_id=v_uid
+                 AND r.role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor'))
+     AND NOT EXISTS(SELECT 1 FROM public.partner_users pu WHERE pu.user_id=v_uid)
+     AND NOT EXISTS(SELECT 1 FROM public.platform_org_admin_invites i WHERE i.user_id=v_uid
+       AND (i.access_operation_status='processing' OR (i.access_valid_after IS NOT NULL
+         AND auth.uid()=v_uid AND to_timestamp(COALESCE((auth.jwt()->>'iat')::bigint,0))<=i.access_valid_after)));
+  IF v_org IS NULL THEN RAISE EXCEPTION 'DELIVERY_FINANCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  IF v_org IS DISTINCT FROM v_initial_org THEN RAISE EXCEPTION 'DELIVERY_FINANCE_FORBIDDEN' USING ERRCODE='42501'; END IF;
   -- H6-003 canonical value (unchanged logic)
   v_canon := public.fn_entrega_valor_faturavel_v1(_entrega_id);
   v_canon_origem := v_canon->>'origem';
@@ -356,6 +375,9 @@ BEGIN
   -- Existing canonical trigger owns initial installments. Never DELETE/reinsert immutable history.
   IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id=v_ar.id
        AND organization_id=v_org) <> v_count
+    OR EXISTS(SELECT 1 FROM public.accounts_receivable_installments WHERE receivable_id=v_ar.id AND organization_id=v_org
+       AND (original_amount IS NULL OR original_amount::text IN ('NaN','Infinity','-Infinity') OR original_amount<=0
+            OR due_date IS NULL OR due_date<v_issue))
     OR (SELECT sum(original_amount) FROM public.accounts_receivable_installments WHERE receivable_id=v_ar.id
        AND organization_id=v_org) IS DISTINCT FROM v_total THEN
     RAISE EXCEPTION 'DELIVERY_INSTALLMENT_SNAPSHOT_INVALID' USING ERRCODE='23514';
@@ -408,6 +430,7 @@ DECLARE
   v_org uuid; v_initial_org uuid; v_ar public.accounts_receivable%ROWTYPE;
   v_entrega public.entregas%ROWTYPE;
 BEGIN
+  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'DELIVERY_FINANCE_ISOLATION_UNSUPPORTED' USING ERRCODE='25000'; END IF;
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';
   END IF;
@@ -520,7 +543,7 @@ DO $a2$ DECLARE failures text; BEGIN SELECT string_agg(check_name,', ') INTO fai
  ('platform_private.has_role(uuid,app_role)','37054','c5af5b55de6d79da9b73a33948746ae2','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}','search_path=""','postgres'),
  ('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)','41671','6eb78ceebe90196ac5b95bfc127dd63b','{postgres=X/postgres,service_role=X/postgres}','search_path=public, pg_temp','postgres'),
  ('public.fn_entrega_valor_faturavel_v1(uuid)','41675','5ac43dc18eee407723c0d78cd97f0db4','{postgres=X/postgres,service_role=X/postgres}','search_path=public','postgres'),
- ('public.fn_mark_entrega_not_billable(uuid,text)','41748','b6bff95624825c24d10848efff03aa66','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}','search_path=pg_catalog, public, pg_temp,lock_timeout=3s','postgres'),
+ ('public.fn_mark_entrega_not_billable(uuid,text)','41748','893c04fc4027ca6879addaa6d77f1c5f','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}','search_path=pg_catalog, public, pg_temp,lock_timeout=3s','postgres'),
  ('public.is_financial_staff(uuid)','42634','6e8f2fa7b92ca7e039d092353b3ebfe2','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}','search_path=public, pg_temp','postgres'),
  ('public.h15_profile_organization_guard()','67200','43be4da16aae664a48fa4c73315b4420','{postgres=X/postgres,service_role=X/postgres}','search_path=pg_catalog, public','postgres'),
  ('public.fn_generate_receivable_installments()','41732','f632f15c9f46cb9889082fc533a27ea1','{postgres=X/postgres,service_role=X/postgres}','search_path=public','postgres'),
@@ -535,7 +558,7 @@ DO $a2$ DECLARE failures text; BEGIN SELECT string_agg(check_name,', ') INTO fai
  ('public.fn_authz_uid_scope_ok(uuid)','42563','00a9a4d4a075d756d312d69778493b39','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}','search_path=public, pg_temp','postgres'),
  ('public.fn_entrega_guard_faturamento_v1(uuid,numeric)','41673','fe0d6a0f670787f87081fe0650102d22','{postgres=X/postgres,service_role=X/postgres}','search_path=public','postgres'),
  ('public.organizations_guard_status()','84007','1c2241052d227831f625b909eb606bda','{postgres=X/postgres,service_role=X/postgres}','search_path=""','postgres'),
- ('public.fn_generate_receivable_from_entrega(uuid,jsonb)','41730','597f726bea6d4eaeaf68cc5040d0cf44','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}','search_path=pg_catalog, public, pg_temp,lock_timeout=3s','postgres'),
+ ('public.fn_generate_receivable_from_entrega(uuid,jsonb)','41730','8b6413222ee01e784f61df7d2a9ebe84','{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}','search_path=pg_catalog, public, pg_temp,lock_timeout=3s','postgres'),
  ('public.guard_profile_senha_ticket()','84540','bb9ea2f95f8f151ebd4b97c2a2e747b7','{postgres=X/postgres,service_role=X/postgres}','search_path=""','postgres'),
  ('public.guard_profile_senha_provisoria()','83979','e38505f726490b064e61d9aa4e3be5a7','{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}','search_path=""','postgres'),
  ('public.guard_profile_tenant_fields()','90519','bd6d513d936f5c5fb0490b5d1d2f9f1d','{postgres=X/postgres,service_role=X/postgres}','search_path=""','postgres'),
@@ -568,7 +591,8 @@ FROM (VALUES  ('public.accounts_receivable','37795','8ef1bfc63f42329895b5cb7a380
  ('public.partner_users','40229','efdc6a71acfec797d071d5d6b19f060a'),
  ('public.payment_methods','40252','46d8f075ba15d432fd69d581902e1216'),
  ('public.profiles','40804','25a44678e693146f0b961c32a61cfa81'),
- ('public.user_roles','40559','d4b529f73f394cfa4e9b8b807c92448e')) v(sig,oid,h)
+ ('public.user_roles','40559','d4b529f73f394cfa4e9b8b807c92448e'),
+ ('public.platform_org_admin_invites','83899','fd6f643441e0591eb98e6d43f50c5bd2')) v(sig,oid,h)
 LEFT JOIN pg_class c ON c.oid=to_regclass(v.sig)
 UNION ALL SELECT 'gate singleton',count(*)=1 FROM cf_user_guards_v1.state WHERE singleton
 UNION ALL SELECT 'operational scopes absent',count(*)=0 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='platform_private' AND p.proname IN ('stock_envase_scope_v1','delivery_recovery_scope_v1')
