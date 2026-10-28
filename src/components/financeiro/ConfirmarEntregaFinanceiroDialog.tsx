@@ -145,7 +145,7 @@ function DeliveryFinanceDialog({ open, onClose, entrega }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent aria-describedby={undefined} className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Gerar contas a receber da entrega</DialogTitle>
         </DialogHeader>
