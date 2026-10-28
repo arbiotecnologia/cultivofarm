@@ -1,9 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## Bateria financeira B2B — somente offline, 28/10/2026
-- [ ] Identificar fórmulas/campos/dias/juros/desconto instalados e calcular expectativas Decimal para base R$10.000.
-- [ ] Executar fixtures locais e PostgreSQL descartável nos contratos existentes; registrar limites sem simular PASS.
-- [ ] Revisar independentemente, atualizar plano original/matriz/relatório e prioridades P0/P1, sem tocar consumidor Entregas.
+- [x] Identificar fórmulas/campos/dias/juros/desconto instalados e calcular expectativas Decimal para base R$10.000.
+- [x] Executar fixtures locais/PG descartável:29 PASS/6 FAIL/17 BLOCKED/1 NOT RUN; Vitest115/115 em9 arquivos,15 novos.
+- [x] Revisão independente, plano original/matriz suplementar/relatório P0/P1, sem tocar consumidor Entregas; sem homologação real.
+- [ ] P0 saldo com juros duplicados e P1 rateio/datas: revisar cadeia instalada integral antes de propor correções; nenhuma regra alterada.
 - [ ] Homologação real permanece bloqueada por contratos financeiros/operacionais e autorização específica; sem LIVE mutante, pagamentos/fiscal, fixtures produtivas ou publicação.
 
 ## Consumidor REAL de entrega — correção incremental 28/10/2026

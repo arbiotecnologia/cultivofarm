@@ -180,7 +180,7 @@ def main():
     (OUT/'fixtures-decimal.json').write_text(json.dumps(fixtures,indent=2)+'\n')
     (OUT/'resultados-pg.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2)+'\n')
     with (OUT/'matriz-financeira.csv').open('w') as f:
-        w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
+        w=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator='\n');w.writeheader();w.writerows(rows)
     print('TOTAL',json.dumps({s:sum(x['status']==s for x in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']}))
     (OUT/'execucao.json').write_text(json.dumps(dict(ref=LIVE['ref'],date=str(today),
         manifesto_sha256=hashlib.sha256((H/'financial-battery-live.json').read_bytes()).hexdigest(),
