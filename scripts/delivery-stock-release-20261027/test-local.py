@@ -10,6 +10,10 @@ import tempfile
 import time
 
 H=Path(__file__).resolve().parent
+def disposable_fragment():
+ text=(H/'composed-delivery.sql.review').read_text()
+ assert text.count('-- DISPOSABLE_TEST_FRAGMENT_BEGIN')==text.count('-- DISPOSABLE_TEST_FRAGMENT_END')==1
+ return text.split('-- DISPOSABLE_TEST_FRAGMENT_BEGIN\n',1)[1].split('\n-- DISPOSABLE_TEST_FRAGMENT_END',1)[0]
 PG=Path('/nix/store/avg1rhq9w93k03qmdaklazcsapn45zpd-postgresql-17.9/bin')
 U='00000000-0000-4000-8000-000000000001'
 V='00000000-0000-4000-8000-000000000002'
@@ -103,11 +107,11 @@ GRANT USAGE ON SCHEMA auth,public TO anon,authenticated;"""
   assert '40P01' in o or 'deadlock' in o, o;checks.append('baseline SHARE delivery + exclusive motor reproduces 40P01 deadlock');print('PASS',checks[-1])
   # ---- composed candidate ----
   before_hash=sql("SELECT md5(pg_get_functiondef('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)'::regprocedure));").stdout.strip()
-  err("BEGIN;"+(H/'composed-delivery.sql.review').read_text()+"DO $$ BEGIN RAISE EXCEPTION 'injected failing POST' USING ERRCODE='42501'; END $$; COMMIT;",'42501','failing POST rolls back complete delivery DDL transaction')
+  err("BEGIN;"+disposable_fragment()+"DO $$ BEGIN RAISE EXCEPTION 'injected failing POST' USING ERRCODE='42501'; END $$; COMMIT;",'42501','failing POST rolls back complete delivery DDL transaction')
   ok(f"SELECT md5(pg_get_functiondef('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)'::regprocedure))='{before_hash}';",'failed POST preserves baseline body')
   err((H/'delivery-only-delta.sql.review').read_text(),'42501','current LIVE OID pins reject disposable metadata drift')
   ok(f"SELECT md5(pg_get_functiondef('public.fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)'::regprocedure))='{before_hash}';",'pinned delta rejection changes no body')
-  sql((H/'composed-delivery.sql.review').read_text())
+  sql(disposable_fragment())
   post=sql("SELECT json_agg(json_build_object('name',n.nspname||'.'||p.proname,'hash',md5(pg_get_functiondef(p.oid)),'config',p.proconfig)) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.proname IN ('delivery_recovery_scope_v1','rpc_cockpit_criar_entrega_v1','fn_entrega_confirmar_engine_v1','rpc_entrega_cancelar_v1');").stdout.strip()
   (H/'local-post-hashes.json').write_text(post+'\n')
   ok("SELECT bool_and(prosrc NOT LIKE '%FOR SHARE%') FROM pg_proc WHERE proname IN ('rpc_cockpit_criar_entrega_v1','fn_entrega_confirmar_engine_v1','rpc_entrega_cancelar_v1')",'composed delivery uses only exclusive gate')

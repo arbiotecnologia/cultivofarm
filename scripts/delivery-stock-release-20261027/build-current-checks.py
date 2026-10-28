@@ -20,6 +20,8 @@ for after in [False, True]:
         checks.append(f"SELECT {quote('table '+t['name'])} check_name,coalesce((SELECT oid={t['oid']} AND relacl::text={quote(t['acl'])} AND relrowsecurity={'true' if t['rls'] else 'false'} AND relforcerowsecurity={'true' if t['force_rls'] else 'false'} AND (SELECT md5(coalesce(string_agg(t.tgname||':'||pg_get_triggerdef(t.oid)||':'||md5(pg_get_functiondef(t.tgfoid))||':'||t.tgenabled::text,E'\\n' ORDER BY t.tgname),'')) FROM pg_trigger t WHERE t.tgrelid=c.oid AND NOT t.tgisinternal)={quote(t['fingerprint'])} AND (SELECT md5(coalesce(string_agg(row(pol.polname,pol.polcmd,pol.polpermissive,pol.polroles,pg_get_expr(pol.polqual,pol.polrelid),pg_get_expr(pol.polwithcheck,pol.polrelid))::text,E'\\n' ORDER BY pol.polname),'')) FROM pg_policy pol WHERE pol.polrelid=c.oid)={quote(t['policy_hash'])} FROM pg_class c WHERE oid=to_regclass({quote('public.'+t['name'])})),false) ok")
     (H/('current-postflight.sql' if after else 'current-preflight.sql')).write_text('-- READ ONLY; capture-specific delivery-only metadata pins. NOT release.\nBEGIN TRANSACTION READ ONLY;\n'+'\nUNION ALL\n'.join(checks)+';\nROLLBACK;\n')
 body = (H/'composed-delivery.sql.review').read_text()
+assert body.count('-- DISPOSABLE_TEST_FRAGMENT_BEGIN') == body.count('-- DISPOSABLE_TEST_FRAGMENT_END') == 1
+body = body.split('-- DISPOSABLE_TEST_FRAGMENT_BEGIN\n',1)[1].split('\n-- DISPOSABLE_TEST_FRAGMENT_END',1)[0]
 functions = re.findall(r'CREATE OR REPLACE FUNCTION public\..*?\$function\$;', body, re.S)
 assert len(functions) == 3
 pins = [f for f in live['functions'] if f['name'] in targets]

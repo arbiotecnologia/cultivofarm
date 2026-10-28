@@ -82,6 +82,6 @@ out=["-- INACTIVE composed review candidate (stock/envase + billing + delivery).
 "DO $$ BEGIN RAISE EXCEPTION 'HISTORICAL_BILLING_COMPOSITION_A2_REBASE_REQUIRED' USING ERRCODE='42501'; END $$;",
 "-- part 1: stock/envase",body(stock),"-- part 2: billing",body(bill),"-- part 3: delivery (transformed)",deliv,
 "-- Client EXECUTE is NOT granted here; see release.sql.review.","COMMIT;"]
-(H/'composed-delivery.sql.review').write_text(deliv)
+(H/'composed-delivery.sql.review').write_text("BEGIN;\nDO $$ BEGIN RAISE EXCEPTION 'DELIVERY_FRAGMENT_NOT_INSTALLABLE' USING ERRCODE='42501'; END $$;\n-- DISPOSABLE_TEST_FRAGMENT_BEGIN\n"+deliv+"\n-- DISPOSABLE_TEST_FRAGMENT_END\nROLLBACK;\n")
 (H/'candidate.sql.review').write_text('\n'.join(out)+'\n')
 print('OK',hashlib.sha256((H/'candidate.sql.review').read_bytes()).hexdigest())

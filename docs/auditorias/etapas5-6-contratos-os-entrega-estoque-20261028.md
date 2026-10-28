@@ -51,6 +51,7 @@ Escopo SQL delivery-only: `rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,j
 - Corrigidos erros no próprio harness: assinaturas de containment, inicialização de mock que retornava thenable, e preparação de embalagem disponível versus reservada. Reexecutar e auditar resultados finais antes do aceite.
 - Sem browser real/sessão A/B, pois writers/runtime permanecem intactos e proprietário proibiu sessões/fixtures. Typecheck/build pelo harness; log automático deve ser conferido. Não executado build/typecheck manual.
 - PRE/POST atuais são fotografias de auditoria: o POST mantém pinos LIVE de estoque e **não** representa instalação simultânea de suas dependências propostas. O delta standalone exige hashes de recuperação, logo exige recaptura conjunta das dependências/POST antes de instalação; falha OID local e dependências LIVE ausentes são bloqueios intencionais, não ensaio positivo de instalação do delta.
+- Revisão independente local encontrou o fragmento intermediário sem barreira executável: corrigido no gerador para abortar antes de DDL (`DELIVERY_FRAGMENT_NOT_INSTALLABLE`); somente o runner descartável extrai o trecho delimitado, com contagem fail-closed. O gerador do delta extrai os mesmos delimitadores. Nenhum fragmento intermediário foi aplicado hosted.
 
 ## Gates exatos seguintes — nenhum autoriza instalação agora
 
