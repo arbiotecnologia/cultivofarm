@@ -28,6 +28,15 @@
   },
   {
     "id": "FIN-OFF-004",
+    "cenario": "pin rpc_create_financial_title",
+    "status": "PASS",
+    "expectativa": "0778b876b300e08d53f1cf7790394fc5",
+    "observado": "0778b876b300e08d53f1cf7790394fc5",
+    "nivel": "PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-005",
     "cenario": "a vista",
     "status": "PASS",
     "expectativa": "10000.00",
@@ -36,7 +45,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-005",
+    "id": "FIN-OFF-006",
     "cenario": "a vista conciliacao principal/juros",
     "status": "PASS",
     "expectativa": "principal=10000.00; juros=0.00",
@@ -45,7 +54,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-006",
+    "id": "FIN-OFF-007",
     "cenario": "30 dias",
     "status": "PASS",
     "expectativa": "10000.00",
@@ -54,7 +63,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-007",
+    "id": "FIN-OFF-008",
     "cenario": "30 dias conciliacao principal/juros",
     "status": "PASS",
     "expectativa": "principal=10000.00; juros=0.00",
@@ -63,7 +72,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-008",
+    "id": "FIN-OFF-009",
     "cenario": "30-60-90 dias",
     "status": "PASS",
     "expectativa": "10000.00",
@@ -72,7 +81,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-009",
+    "id": "FIN-OFF-010",
     "cenario": "30-60-90 dias conciliacao principal/juros",
     "status": "PASS",
     "expectativa": "principal=10000.00; juros=0.00",
@@ -81,7 +90,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-010",
+    "id": "FIN-OFF-011",
     "cenario": "3x simples 1%",
     "status": "PASS",
     "expectativa": "10300.00",
@@ -90,7 +99,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-011",
+    "id": "FIN-OFF-012",
     "cenario": "3x simples 1% conciliacao principal/juros",
     "status": "PASS",
     "expectativa": "principal=10000.00; juros=300.00",
@@ -99,7 +108,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-012",
+    "id": "FIN-OFF-013",
     "cenario": "gerador B2B + saldo original/juros",
     "status": "FAIL",
     "expectativa": "10300.00",
@@ -108,7 +117,7 @@
     "severidade": "P0"
   },
   {
-    "id": "FIN-OFF-013",
+    "id": "FIN-OFF-014",
     "cenario": "6x compostos 1.5%",
     "status": "PASS",
     "expectativa": "10934.43",
@@ -117,7 +126,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-014",
+    "id": "FIN-OFF-015",
     "cenario": "6x compostos 1.5% conciliacao principal/juros",
     "status": "FAIL",
     "expectativa": "principal=10000.00; juros=934.43",
@@ -126,7 +135,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-015",
+    "id": "FIN-OFF-016",
     "cenario": "12x compostos 2%",
     "status": "PASS",
     "expectativa": "12682.42",
@@ -135,7 +144,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-016",
+    "id": "FIN-OFF-017",
     "cenario": "12x compostos 2% conciliacao principal/juros",
     "status": "FAIL",
     "expectativa": "principal=10000.00; juros=2682.42",
@@ -144,7 +153,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-017",
+    "id": "FIN-OFF-018",
     "cenario": "desconto 5% com 3x simples",
     "status": "PASS",
     "expectativa": "9785.00",
@@ -153,7 +162,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-018",
+    "id": "FIN-OFF-019",
     "cenario": "desconto 5% com 3x simples conciliacao principal/juros",
     "status": "PASS",
     "expectativa": "principal=9500.00; juros=285.00",
@@ -162,7 +171,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-019",
+    "id": "FIN-OFF-020",
     "cenario": "desconto 10% com 6x compostos",
     "status": "PASS",
     "expectativa": "9840.99",
@@ -171,7 +180,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-020",
+    "id": "FIN-OFF-021",
     "cenario": "desconto 10% com 6x compostos conciliacao principal/juros",
     "status": "FAIL",
     "expectativa": "principal=9000.00; juros=840.99",
@@ -180,7 +189,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-021",
+    "id": "FIN-OFF-022",
     "cenario": "carencia 60 dias sem mudar meses",
     "status": "PASS",
     "expectativa": "10300.00",
@@ -189,7 +198,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-022",
+    "id": "FIN-OFF-023",
     "cenario": "carencia 60 dias sem mudar meses conciliacao principal/juros",
     "status": "PASS",
     "expectativa": "principal=10000.00; juros=300.00",
@@ -198,7 +207,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-023",
+    "id": "FIN-OFF-024",
     "cenario": "taxa negativa",
     "status": "PASS",
     "expectativa": "invalid_interest_rate",
@@ -207,7 +216,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-024",
+    "id": "FIN-OFF-025",
     "cenario": "desconto acima 40 gestor",
     "status": "PASS",
     "expectativa": "discount_exceeds_limit",
@@ -216,7 +225,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-025",
+    "id": "FIN-OFF-026",
     "cenario": "vencimento retroativo RPC",
     "status": "PASS",
     "expectativa": "invalid_due_date",
@@ -225,7 +234,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-026",
+    "id": "FIN-OFF-027",
     "cenario": "helper puro nao valida taxa negativa",
     "status": "PASS",
     "expectativa": "9700.00 (validacao pertence ao chamador)",
@@ -234,7 +243,79 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-027",
+    "id": "FIN-OFF-028",
+    "cenario": "manual 30% +3x sem juros",
+    "status": "PASS",
+    "expectativa": "10000.00; valores/datas exatos; dois eventos auditoria",
+    "observado": "[{\"date\": \"2026-10-28\", \"amount\": 3000.00}, {\"date\": \"2026-11-27\", \"amount\": 2333.33}, {\"date\": \"2026-12-27\", \"amount\": 2333.33}, {\"date\": \"2027-01-26\", \"amount\": 2333.34}]",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-029",
+    "cenario": "manual 50% +2x sem juros",
+    "status": "PASS",
+    "expectativa": "10000.00; valores/datas exatos; dois eventos auditoria",
+    "observado": "[{\"date\": \"2026-10-28\", \"amount\": 5000.00}, {\"date\": \"2026-11-27\", \"amount\": 2500.00}, {\"date\": \"2026-12-27\", \"amount\": 2500.00}]",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-030",
+    "cenario": "manual desigual datas personalizadas",
+    "status": "PASS",
+    "expectativa": "10000.00; valores/datas exatos; dois eventos auditoria",
+    "observado": "[{\"date\": \"2026-11-09\", \"amount\": 1000.00}, {\"date\": \"2026-12-14\", \"amount\": 3500.00}, {\"date\": \"2027-02-16\", \"amount\": 5500.00}]",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-031",
+    "cenario": "manual parcela zero",
+    "status": "PASS",
+    "expectativa": "FIN_TITLE_INVALID_INSTALLMENT sem titulo",
+    "observado": "FIN_TITLE_INVALID_INSTALLMENT",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-032",
+    "cenario": "manual soma excessiva",
+    "status": "PASS",
+    "expectativa": "FIN_TITLE_INVALID_SUM sem titulo",
+    "observado": "FIN_TITLE_INVALID_SUM",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-033",
+    "cenario": "manual fracao centavo",
+    "status": "PASS",
+    "expectativa": "FIN_TITLE_INVALID_INSTALLMENT sem titulo",
+    "observado": "FIN_TITLE_INVALID_INSTALLMENT",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-034",
+    "cenario": "manual vencimento repetido",
+    "status": "FAIL",
+    "expectativa": "Rejeicao no corpo RPC; triggers integrais ainda BLOCKED",
+    "observado": "Corpo RPC aceitou em transacao local revertida",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-035",
+    "cenario": "manual vencimento retroativo",
+    "status": "FAIL",
+    "expectativa": "Rejeicao no corpo RPC; triggers integrais ainda BLOCKED",
+    "observado": "Corpo RPC aceitou em transacao local revertida",
+    "nivel": "MANUAL_CORPO_REAL_TRIGGERS_INCOMPLETOS",
+    "severidade": "P1"
+  },
+  {
+    "id": "FIN-OFF-036",
     "cenario": "entrada 30% +3x",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -243,7 +324,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-028",
+    "id": "FIN-OFF-037",
     "cenario": "entrada 50% +2x",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -252,7 +333,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-029",
+    "id": "FIN-OFF-038",
     "cenario": "entrada maior total",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -261,7 +342,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-030",
+    "id": "FIN-OFF-039",
     "cenario": "parcelas desiguais B2B",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -270,7 +351,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-031",
+    "id": "FIN-OFF-040",
     "cenario": "vencimentos personalizados/repetidos",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -279,7 +360,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-032",
+    "id": "FIN-OFF-041",
     "cenario": "taxa excessiva servidor",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -288,7 +369,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-033",
+    "id": "FIN-OFF-042",
     "cenario": "valor zero/parcela zero servidor",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -297,7 +378,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-034",
+    "id": "FIN-OFF-043",
     "cenario": "alteracao pos-aprovacao e taxa pos-faturamento",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -306,7 +387,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-035",
+    "id": "FIN-OFF-044",
     "cenario": "cancelamento apos recebivel",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -315,7 +396,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-036",
+    "id": "FIN-OFF-045",
     "cenario": "na_aprovacao atomicidade",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -324,7 +405,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-037",
+    "id": "FIN-OFF-046",
     "cenario": "na_entrega financeiro",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -333,7 +414,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-038",
+    "id": "FIN-OFF-047",
     "cenario": "nenhum titulo pedido reprovado/CQ reprovado",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -342,7 +423,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-039",
+    "id": "FIN-OFF-048",
     "cenario": "cross tenant A/B financeiro",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -351,7 +432,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-040",
+    "id": "FIN-OFF-049",
     "cenario": "auditoria e conciliação persistida",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -360,7 +441,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-041",
+    "id": "FIN-OFF-050",
     "cenario": "mora e antecipacao automáticas",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -369,7 +450,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-042",
+    "id": "FIN-OFF-051",
     "cenario": "idempotencia servidor/ACK perdido",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -378,7 +459,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-043",
+    "id": "FIN-OFF-052",
     "cenario": "features/plano autoridade",
     "status": "BLOCKED",
     "expectativa": "Contrato completo instalado/comprovado",
@@ -387,7 +468,7 @@
     "severidade": "P1"
   },
   {
-    "id": "FIN-OFF-044",
+    "id": "FIN-OFF-053",
     "cenario": "JWT/browser/pagamentos/fiscal reais",
     "status": "NOT RUN",
     "expectativa": "Autorizacao e homologacao futuras",
