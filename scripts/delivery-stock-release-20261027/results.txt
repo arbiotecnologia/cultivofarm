@@ -1,4 +1,4 @@
-44 local checks PASS. Auth/schema/stock motor/billing/advancement are SYNTHETIC stubs with the composed lock modes; NOT JWT/RLS nor full ledger integration.
+48 local checks PASS. Auth/schema/stock motor/billing/advancement are SYNTHETIC stubs with the composed lock modes; NOT JWT/RLS nor full ledger integration.
 exact LIVE body public.fn_cockpit_norm_origem
 exact LIVE body public.fn_cockpit_assert_operador_origem
 exact LIVE body public.fn_entrega_assert_confirmador
@@ -9,6 +9,10 @@ exact LIVE body public.rpc_entrega_cancelar_v1
 exact LIVE body public.rpc_entrega_confirmar_v1
 exact LIVE body public.rpc_cockpit_confirmar_entrega_v1
 baseline SHARE delivery + exclusive motor reproduces 40P01 deadlock
+failing POST rolls back complete delivery DDL transaction
+failed POST preserves baseline body
+current LIVE OID pins reject disposable metadata drift
+pinned delta rejection changes no body
 composed delivery uses only exclusive gate
 composed cancel/cancel serializes without deadlock
 composed cancel/confirm serializes without deadlock
