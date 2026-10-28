@@ -32,8 +32,8 @@ describe('AR Bio × FSF Agro — referência não aplicada, consumidores existen
     expect(assignmentApplies(a, 'OUTRA-REVENDA', Date.parse('2026-10-28T00:00:00Z'))).toBe(false);
     expect(assignmentApplies(a, 'FSF-LOCAL', Date.parse('2026-10-28T00:00:00Z'))).toBe(true);
   });
-  it.each([['parceiro_b2b'], ['parceiro_b2b_tecnico'], ['administrador', 'parceiro_b2b']])(
-    'perfil externo %s não configura crédito interno', roles => {
+  it.each([{ roles: ['parceiro_b2b'] }, { roles: ['parceiro_b2b_tecnico'] }, { roles: ['administrador', 'parceiro_b2b'] }])(
+    'perfil externo $roles não configura crédito interno', ({ roles }) => {
       expect(canConfigurePartnerSettings(roles)).toBe(false);
     });
   it('método ausente ou inativo não permite assumir quitação', () => {
