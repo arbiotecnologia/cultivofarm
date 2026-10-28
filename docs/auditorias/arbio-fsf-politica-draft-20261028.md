@@ -75,6 +75,7 @@ Simulador com40% retorna60.000 sem receipt de quitação; **não é FAIL do simu
 
 PG: **17 PASS / 0 FAIL / 16 BLOCKED / 1 NOT RUN**; dois PASS são hashes não funcionais. Zero PASS real; zero FAIL nesta referência não elimina seis FAIL da bateria anterior. Evidências/CSV/JSON em `docs/auditorias/evidencias-arbio-fsf-20261028/`. Testes TypeScript no consumidor preview/atribuição/método/role; regressões de config CAS/tenant, ACK perdido e entrega executadas conjuntamente, contagem final registrada na matriz. Sem duplicar testes históricos como novas homologações.
 Vitest **121/121 em nove arquivos**, 14 novos neste lote. Preview TypeScript usa Number e compara a centavos os vetores previamente conferidos com Decimal no runner Python; não é segunda implementação Decimal. Matriz35 registros:18PASS incluindo grupoVitest/0FAIL/16BLOCKED/1NOT RUN. Revisão independente pediu delimitar cálculos40%/30d, crédito reduzido e nome do teste Number: incorporado, sem certificação jurídica/operacional.
+Verificação final16/16 (referência14+integridade matriz2) após ajustes de rotulagem; não somar às121. Erro inicial de fixture `it.each` corrigido somente no teste; verificação automática mais recente build OK às02:36:45 UTC, sem erro atual. `git diff --check` PASS; warnings Router/Dialog legados permanecem. Evidências finais em `vitest-final.log`; não executados build/typecheck manuais.
 
 ## Prioridades e recomendações por fases (não executar)
 
