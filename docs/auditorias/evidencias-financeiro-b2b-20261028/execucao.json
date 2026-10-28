@@ -19,5 +19,12 @@
     "payments",
     "audit integrity"
   ],
-  "has_failures": true
+  "has_failures": true,
+  "postgres_statuses": {
+    "PASS": 29,
+    "FAIL": 6,
+    "BLOCKED": 17,
+    "NOT RUN": 1
+  },
+  "review": "Revisao independente final: FAIL de corpo local honestos; nao homologacao. PG29PASS versus matriz30PASS inclui grupoVitest;4pinos nao funcionais."
 }

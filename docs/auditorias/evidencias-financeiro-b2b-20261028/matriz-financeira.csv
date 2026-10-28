@@ -52,4 +52,4 @@ FIN-OFF-050,mora e antecipacao automáticas,BLOCKED,Contrato completo instalado/
 FIN-OFF-051,idempotencia servidor/ACK perdido,BLOCKED,Contrato completo instalado/comprovado,Sem receipts/dispatch servidor completo; regressao consumidor separada,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
 FIN-OFF-052,features/plano autoridade,BLOCKED,Contrato completo instalado/comprovado,Stubs de seletor/gate nao comprovam entitlement instalado,PG_CORPO_REAL_DEPENDENCIAS_SINTETICAS,P1
 FIN-OFF-053,JWT/browser/pagamentos/fiscal reais,NOT RUN,Autorizacao e homologacao futuras,Nenhuma sessao ou dado LIVE alterado,REAL,P1
-FIN-OFF-054,Vitest consumidores financeiros e regressao entrega,PASS,115 testes locais,"115/115 em 9 arquivos; inclui 16 novos,32 entrega e14 financeiro",QUERYCLIENT_AUTH_TRANSPORTE_SINTETICOS,P1
+FIN-OFF-054,Vitest consumidores financeiros e regressao entrega,PASS,115 testes locais,"115/115 em 9 arquivos; inclui 15 novos,32 entrega e14 financeiro",QUERYCLIENT_AUTH_TRANSPORTE_SINTETICOS,P1
