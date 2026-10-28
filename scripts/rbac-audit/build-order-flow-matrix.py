@@ -61,7 +61,7 @@ for ident,step,scenario,evidence in [
  rows.append(dict(id=ident,passo=step,rota='ver inventário',perfil='não certificado',tenant='A/B/C pendentes',cenario=scenario,precondicao='estado atual auditado',expectativa='Critério P0 de liberação não atendido; não significa exploit JWT reproduzido',contrato='ver relatório',teste_automatizado='auditoria estática/SELECT; teste real BLOCKED',evidencia=evidence,status='FAIL',nivel='GATE_RELEASE_NAO_ATENDIDO',severidade='P0'))
 path=OUT/'matriz-auditoria-fluxo-b2b-20261028.csv'
 with path.open('w',newline='') as f:
- writer=csv.DictWriter(f,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
+ writer=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator="\n");writer.writeheader();writer.writerows(rows)
 counts={s:sum(r['status']==s for r in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']}
 (OUT/'matriz-auditoria-fluxo-b2b-20261028-resumo.json').write_text(json.dumps({'rows':len(rows),'statuses':counts,'real_PASS':0,'profiles':profiles,'steps':len(steps),'axes':axes,'note':'Cobertura planejada não é execução. PASS somente seis grupos offline (execuções sobrepostas não somadas); combinações reais nunca inferidas.'},indent=2,ensure_ascii=False)+'\n')
 print(len(rows),counts)
