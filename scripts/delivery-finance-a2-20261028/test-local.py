@@ -19,7 +19,7 @@ checks = []
 def main():
     tmp = Path(tempfile.mkdtemp(prefix='billing-', dir='/tmp')); tmp.chmod(0o777)
     prefix = ['setpriv', '--reuid=1000', '--regid=1000', '--clear-groups'] if os.getuid() == 0 else []
-    base = ['psql', '-X', '-h', str(tmp), '-p', PORT, '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At']
+    base = [str(Path(subprocess.check_output(['which','initdb'],text=True).strip()).resolve().parent/'psql'), '-X', '-h', str(tmp), '-p', PORT, '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-At']
     def sql(q, must=True):
         r = subprocess.run(base, input=q, text=True, capture_output=True)
         if must and r.returncode: raise RuntimeError(r.stderr)
