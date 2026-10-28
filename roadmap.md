@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## Referência AR Bio × FSF Agro — DRAFT, 28/10/2026
+- [ ] Registrar fonte/apresentação não contratual, escopo fornecedor/revenda e pendências sem criar tenant/usuários.
+- [ ] Mapear contratos existentes, especificar parâmetros definidos/indefinidos e testar oito vetores Decimal/PG e consumidores TypeScript.
+- [ ] Revisar e atualizar plano original/matriz/relatório com gates legais/contratuais e implantação futura, preservando entrega/bateria financeira.
+- [ ] Aplicação/homologação real bloqueadas por fonte original não localizada, validação jurídica/contratual, campos indefinidos e contratos financeiros/operacionais; nenhuma escrita LIVE/publicação.
+
 ## Bateria financeira B2B — somente offline, 28/10/2026
 - [x] Identificar fórmulas/campos/dias/juros/desconto instalados e calcular expectativas Decimal para base R$10.000.
 - [x] Executar fixtures locais/PG descartável:29 PASS/6 FAIL/17 BLOCKED/1 NOT RUN; Vitest115/115 em9 arquivos,15 novos.
