@@ -149,6 +149,9 @@ def writers_scenarios(mode,offset):
         reverse_barrier.wait()
         return subprocess.run(pg.psql(),input=scope()+f"SELECT fn_reverse_payment('{pay}','receivable','LOCAL');",text=True,capture_output=True)
     with ThreadPoolExecutor(max_workers=2) as pool:rs=list(pool.map(reverse,range(2)))
+    returned=[r.stdout.strip().splitlines()[-1] for r in rs if r.returncode==0]
+    record('estorno duas sessoes ACK valido e UUID unico',(2,1),(len(returned),len(set(returned))),mode,'P0')
+    record('estorno duas sessoes uma linha reversora','1',pg.sql(f"SELECT count(*) FROM receivable_payments WHERE reversal_of_payment_id='{pay}'"),mode,'P0')
     record('estorno simultaneo uma compensacao no ledger',D('0'),D(pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{x}'")),mode,'P0')
     record('estorno simultaneo conserva total financiado',D('10300'),balance(x),mode,'P0')
     if mode.startswith('EXPERIMENTO'):
@@ -159,7 +162,14 @@ def writers_scenarios(mode,offset):
     observed=ask('SELECT row_to_json(d) FROM ('+diagnostic+') d;')
     result=json.loads(observed)
     record('diagnostico historico retorna apenas contagem tenant ator',count,result['titles_reviewed'],mode)
+    expected_mismatch=int(pg.sql(f"SELECT count(DISTINCT i.receivable_id) FROM accounts_receivable_installments i JOIN accounts_receivable ar ON ar.id=i.receivable_id WHERE ar.organization_id='{A}' AND ar.origin_type='B2B_ORDER' AND i.organization_id='{A}' AND i.interest_amount IS DISTINCT FROM (SELECT coalesce(sum(rp.interest_amount),0) FROM receivable_payments rp WHERE rp.installment_id=i.id AND rp.organization_id='{A}')"))
+    record('indicador diagnostico juros versus eventos',expected_mismatch,result['titles_with_interest_event_mismatch'],mode)
     record('diagnostico suprime grupo estrangeiro pequeno','0',ask('SELECT count(*) FROM ('+diagnostic+') d;',org=B),mode)
+    for j in range(3):title(offset+80+j,org=B)
+    record('diagnostico suprime quatro titulos','0',ask('SELECT count(*) FROM ('+diagnostic+') d;',org=B),mode)
+    title(offset+83,org=B)
+    five=json.loads(ask('SELECT row_to_json(d) FROM ('+diagnostic+') d;',org=B))
+    record('diagnostico empresa B cinco titulos nao mistura A',5,five['titles_reviewed'],mode)
     no_staff=pg.sql(scope(A,False)+'SELECT count(*) FROM ('+diagnostic+') d;').splitlines()[-1]
     record('diagnostico sem autoridade staff nao retorna grupos','0',no_staff,mode)
 
