@@ -1,5 +1,7 @@
 # AR Bio × FSF Agro — referência comercial DRAFT
 
+> **HISTÓRICO — SUPERADO NAS TAXAS/DESCONTOS em28/10 02:37UTC.** Tabelas, vetores e exigência de quitação exclusiva para40% abaixo são evidência histórica, não candidata vigente. A especificação DRAFT foi substituída; versão antiga em `arbio-fsf-policy.july2026.historical.json`. Política atual/ambiguidades/resultados: `arbio-fsf-politica-superveniente-20261028.md`. Crédito, aprovação, garantias e isolamento compatíveis permanecem; nenhum histórico produtivo foi alterado.
+
 ## Fonte, identidade e estado
 
 **REVIEW ONLY / NO-GO.** Política de julho/2026, cinco páginas conforme informado pelo proprietário, “versão para apresentação comercial — sujeita a validação jurídica e contratual”. A ferramenta de leitura não localizou esse documento; o mount contém catálogos/tabela antigos, não o documento com este título. **Fonte utilizada: transcrição explícita desta solicitação.** Não alegar leitura das cinco páginas, assinatura, vigência ou validação jurídica. Obter original para cotejo e aprovação formal é gate, não impede cálculos da transcrição.
