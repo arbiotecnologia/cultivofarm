@@ -151,7 +151,7 @@ def writers_scenarios(mode,offset):
     with ThreadPoolExecutor(max_workers=2) as pool:rs=list(pool.map(reverse,range(2)))
     returned=[r.stdout.strip().splitlines()[-1] for r in rs if r.returncode==0]
     record('estorno duas sessoes ACK valido e UUID unico',(2,1),(len(returned),len(set(returned))),mode,'P0')
-    record('estorno duas sessoes uma linha reversora','1',pg.sql(f"SELECT count(*) FROM receivable_payments WHERE reversal_of_payment_id='{pay}'"),mode,'P0')
+    record('estorno duas sessoes uma linha reversora','1',pg.sql(f"SELECT count(*) FROM receivable_payments WHERE reversed_payment_id='{pay}'"),mode,'P0')
     record('estorno simultaneo uma compensacao no ledger',D('0'),D(pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{x}'")),mode,'P0')
     record('estorno simultaneo conserva total financiado',D('10300'),balance(x),mode,'P0')
     if mode.startswith('EXPERIMENTO'):
