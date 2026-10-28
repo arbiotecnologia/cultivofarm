@@ -1,0 +1,71 @@
+SYNTHETIC disposable PostgreSQL; 70 checks passed
+A fatura própria: 1 título, BILLED, 1 auditoria
+replay devolve mesmo id
+replay sem novo título nem auditoria
+B não reaproveita/obtém id de entrega faturada de A
+B não fatura entrega de A
+B→A sem escrita
+B não marca sem cobrança entrega de A
+entrega sem empresa negada
+consultor sem papel financeiro negado
+sem sessão negado (faturar)
+sem sessão negado (marcar)
+anon sem EXECUTE
+perfil inativo negado
+categoria DESPESA recusada
+categoria RECEITA inativa recusada
+sem forma de pagamento recusado
+forma de pagamento inativa recusada
+recusas de categoria/forma sem escrita
+parcela repetida recusada
+número fora de 1..n recusado
+vencimento nulo recusado
+vencimento antes da emissão recusado
+parcela negativa recusada
+parcelas não-array recusadas
+total NaN recusado
+primeiro vencimento antes da emissão recusado
+recusas de parcelas sem escrita
+parcelas válidas fora de ordem aceitas
+entrega cancelada → PT409
+entrega não entregue → PT409
+entrega NOT_BILLABLE → PT409
+marcar já faturada → PT409
+marcar própria sem cobrança
+faturar após marcar → PT409
+falha injetada na auditoria
+rollback: nenhum título/parcela/estado
+rollback: nenhuma parcela
+duas chamadas simultâneas: 1 título, 1 auditoria
+segunda chamada recebe mesmo id
+revogação commitada durante espera no gate → 42501
+revogação: nenhuma escrita
+ordem inversa: revogação aguarda o faturamento
+ordem inversa: faturamento comprometido antes, revogação depois
+após revogação, nova chamada negada
+replay com recebível de B não retorna id
+marcação com recebível de B não modifica estado
+cliente ausente/alheio negado antes de criar título
+origem B2B não homologada contida
+marcar origem B2B contida
+papel cumulativo externo contido: parceiro_b2b
+marcação cumulativa externa contida: parceiro_b2b
+papel cumulativo externo contido: parceiro_b2b_tecnico
+marcação cumulativa externa contida: parceiro_b2b_tecnico
+papel cumulativo externo contido: cliente_produtor
+marcação cumulativa externa contida: cliente_produtor
+vínculo parceiro impede writer fornecedor
+primeiro acesso pendente negado
+convite processando negado
+Infinity recusado
+-Infinity recusado
+agenda customizada divergente não reescreve parcelas
+agenda customizada rejeitada faz rollback integral
+replay com método diferente é conflito
+replay divergente não cria auditoria
+mark replay idêntico neutro
+mark motivo divergente preserva original
+guard LIVE de hard-delete impede apagar parcelas
+lock_timeout=3s configurado
+gate preso >3s → 55P03 sem escrita
+timeout sem escrita

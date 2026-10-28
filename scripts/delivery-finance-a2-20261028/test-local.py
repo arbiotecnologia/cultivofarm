@@ -76,7 +76,7 @@ CREATE FUNCTION is_financial_staff(_uid uuid) RETURNS boolean LANGUAGE plpgsql S
 CREATE FUNCTION h15_user_organization(p_user uuid) RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS
  $$SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE
    WHERE p.user_id=p_user AND p.ativo IS TRUE$$;
-CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$SELECT '{"iat":1793145600}'::jsonb$$;
+CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$SELECT '{{"iat":1793145600}}'::jsonb$$;
 CREATE SCHEMA platform_private;
 CREATE TABLE platform_org_admin_invites(user_id uuid,access_operation_status text,access_valid_after timestamptz);
 CREATE TABLE partner_users(user_id uuid);
