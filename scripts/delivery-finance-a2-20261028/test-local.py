@@ -245,6 +245,16 @@ GRANT USAGE ON SCHEMA public TO authenticated;
         err(f"DELETE FROM accounts_receivable_installments;",'23514','guard LIVE de hard-delete impede apagar parcelas')
 
         (HERE/'proposed-pg-metadata.json').write_text(sql("SELECT jsonb_agg(jsonb_build_object('name',proname,'hash',md5(pg_get_functiondef(oid)),'source_hash',md5(prosrc),'config',proconfig)) FROM pg_proc WHERE proname IN ('fn_generate_receivable_from_entrega','fn_mark_entrega_not_billable');").stdout.strip()+'\n')
+        reset()
+        sql(bill(FA,E(1),installments=[]))
+        sql(bill(FA,E(1),installments=[])); checks.append('replay agenda vazia aceito'); print('PASS replay agenda vazia aceito')
+        err(bill(FA,E(1),installments={}), 'PT409','replay agenda objeto negado')
+        err(bill(FA,E(1),installments=[{'installment_number':1,'due_date':'2026-11-27','amount':100}]*2), 'PT409','replay agenda duplicada negado')
+        sql(f"UPDATE entregas SET canon=0.01 WHERE id='{E(2)}';")
+        err(bill(FA,E(2),total_amount=0.01,installment_count=2),'23514','parcela automática zero nega e rollback')
+        ok(nothing(E(2)), 'parcela zero não cria título')
+        err('BEGIN ISOLATION LEVEL REPEATABLE READ; '+bill(FA,E(3)),'25000','snapshot repetível não suportado negado')
+
         # lock_timeout configured
         ok("SELECT bool_and(array_to_string(proconfig,',')='search_path=pg_catalog, public, pg_temp,lock_timeout=3s') FROM pg_proc WHERE proname IN ('fn_generate_receivable_from_entrega','fn_mark_entrega_not_billable');", 'lock_timeout=3s configurado')
         reset()

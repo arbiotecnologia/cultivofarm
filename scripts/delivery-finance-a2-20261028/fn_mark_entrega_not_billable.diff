@@ -1,6 +1,6 @@
 --- LIVE/fn_mark_entrega_not_billable
 +++ A2-INACTIVE/fn_mark_entrega_not_billable
-@@ -2,34 +2,109 @@
+@@ -2,34 +2,110 @@
   RETURNS void
   LANGUAGE plpgsql
   SECURITY DEFINER
@@ -15,6 +15,7 @@
  BEGIN
 -  IF NOT public.is_financial_staff(v_uid) THEN
 -    RAISE EXCEPTION 'Sem permissão para marcar entrega como sem cobrança.' USING ERRCODE='insufficient_privilege';
++  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'DELIVERY_FINANCE_ISOLATION_UNSUPPORTED' USING ERRCODE='25000'; END IF;
 +  IF v_uid IS NULL THEN
 +    RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';
    END IF;

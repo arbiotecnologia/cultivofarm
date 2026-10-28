@@ -57,21 +57,25 @@ change("-- replay: only inside the caller tenant (row already scoped)\n  IF v_en
        AND customer_id=v_entrega.cliente_id AND status<>'CANCELED';
     IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_RECEIVABLE_LINK_INVALID' USING ERRCODE='PT409'; END IF;
     IF _payload IS NULL OR jsonb_typeof(_payload)<>'object'
-      OR (_payload->>'total_amount')::numeric IS DISTINCT FROM v_ar.total_amount
+      OR round((_payload->>'total_amount')::numeric,2) IS DISTINCT FROM v_ar.total_amount
       OR NULLIF(_payload->>'category_id','')::uuid IS DISTINCT FROM v_ar.category_id
       OR NULLIF(_payload->>'payment_method_id','')::uuid IS DISTINCT FROM v_ar.payment_method_id
       OR COALESCE((_payload->>'installment_count')::int,1) IS DISTINCT FROM v_ar.installment_count
-      OR COALESCE((_payload->>'issue_date')::date,CURRENT_DATE) IS DISTINCT FROM v_ar.issue_date
-      OR COALESCE((_payload->>'first_due_date')::date,CURRENT_DATE) IS DISTINCT FROM v_ar.first_due_date
+      OR COALESCE((_payload->>'issue_date')::date,v_ar.issue_date) IS DISTINCT FROM v_ar.issue_date
+      OR COALESCE((_payload->>'first_due_date')::date,v_ar.first_due_date) IS DISTINCT FROM v_ar.first_due_date
       OR NULLIF(_payload->>'cost_center_id','')::uuid IS DISTINCT FROM v_ar.cost_center_id
       OR COALESCE((_payload->>'fiscal_invoice_required')::boolean,false) IS DISTINCT FROM v_ar.fiscal_invoice_required
-      OR (_payload ? 'installments' AND jsonb_typeof(_payload->'installments')='array'
-        AND EXISTS(SELECT 1 FROM jsonb_array_elements(_payload->'installments') x FULL JOIN
+      OR (_payload ? 'installments' AND jsonb_typeof(_payload->'installments') NOT IN ('array','null'))
+      OR CASE WHEN jsonb_typeof(_payload->'installments')='array' AND jsonb_array_length(_payload->'installments')>0 THEN
+        jsonb_array_length(_payload->'installments')<>v_ar.installment_count
+        OR (SELECT count(DISTINCT (x->>'installment_number')::int) FROM jsonb_array_elements(_payload->'installments') x)<>v_ar.installment_count
+        OR EXISTS(SELECT 1 FROM jsonb_array_elements(_payload->'installments') x WHERE (x->>'installment_number')::int NOT BETWEEN 1 AND v_ar.installment_count)
+        OR EXISTS(SELECT 1 FROM jsonb_array_elements(_payload->'installments') x FULL JOIN
           (SELECT installment_number,due_date,original_amount FROM public.accounts_receivable_installments
             WHERE receivable_id=v_ar.id AND organization_id=v_org) i
           ON i.installment_number=(x->>'installment_number')::int
           WHERE i.installment_number IS NULL OR x IS NULL OR i.due_date IS DISTINCT FROM (x->>'due_date')::date
-            OR i.original_amount IS DISTINCT FROM (x->>'amount')::numeric)) THEN
+            OR i.original_amount IS DISTINCT FROM (x->>'amount')::numeric) ELSE false END THEN
       RAISE EXCEPTION 'DELIVERY_REPLAY_INTENT_CONFLICT' USING ERRCODE='PT409';
     END IF;
     RETURN v_ar.id;
@@ -104,6 +108,9 @@ change(a,"""  EXCEPTION WHEN unique_violation THEN
   -- Existing canonical trigger owns initial installments. Never DELETE/reinsert immutable history.
   IF (SELECT count(*) FROM public.accounts_receivable_installments WHERE receivable_id=v_ar.id
        AND organization_id=v_org) <> v_count
+    OR EXISTS(SELECT 1 FROM public.accounts_receivable_installments WHERE receivable_id=v_ar.id AND organization_id=v_org
+       AND (original_amount IS NULL OR original_amount::text IN ('NaN','Infinity','-Infinity') OR original_amount<=0
+            OR due_date IS NULL OR due_date<v_issue))
     OR (SELECT sum(original_amount) FROM public.accounts_receivable_installments WHERE receivable_id=v_ar.id
        AND organization_id=v_org) IS DISTINCT FROM v_total THEN
     RAISE EXCEPTION 'DELIVERY_INSTALLMENT_SNAPSHOT_INVALID' USING ERRCODE='23514';
@@ -137,6 +144,8 @@ change("  UPDATE public.entregas\n    SET financial_status = 'NOT_BILLABLE',", "
   UPDATE public.entregas
     SET financial_status = 'NOT_BILLABLE',""")
 change('not_billable_reason = _reason','not_billable_reason = btrim(_reason)')
+change("  -- H6-003 canonical value (unchanged logic)", "  "+authority+"\n  IF v_org IS DISTINCT FROM v_initial_org THEN RAISE EXCEPTION 'DELIVERY_FINANCE_FORBIDDEN' USING ERRCODE='42501'; END IF;\n  -- H6-003 canonical value (unchanged logic)")
+change("  IF v_uid IS NULL THEN", "  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'DELIVERY_FINANCE_ISOLATION_UNSUPPORTED' USING ERRCODE='25000'; END IF;\n  IF v_uid IS NULL THEN",2)
 # Wrap final work in exactly one installation transaction; guards generated separately.
 ROOT.joinpath('proposed-functions.sql.review').write_text('-- INACTIVE A2. Not a release. No GRANT.\n'+s[s.index('CREATE OR REPLACE FUNCTION'):])
 live=json.loads(ROOT.joinpath('live-functions.json').read_text())
