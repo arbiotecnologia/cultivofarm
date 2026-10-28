@@ -1,0 +1,274 @@
+{
+  "status": "HISTORICAL_SUPERSEDED_RATES_DISCOUNTS",
+  "runtime_enabled": false,
+  "source": {
+    "title": "Política Comercial e Financeira B2B — AR Bio x FSF Agro",
+    "date": "2026-07",
+    "reported_pages": 5,
+    "original_available": false,
+    "basis": "Transcrição fornecida pelo proprietário em 28/10/2026; arquivo original não localizado",
+    "legal_status": "Versão para apresentação comercial — sujeita a validação jurídica e contratual",
+    "contract_in_force_proven": false
+  },
+  "scope": {
+    "supplier": "AR Bio",
+    "supplier_organization_id_reference": "007bb519-cba0-4704-be2c-cb93ad010048",
+    "buyer": "FSF Agro",
+    "buyer_scope": "partner",
+    "buyer_role": "revenda",
+    "customer_id": null,
+    "partner_id": null,
+    "create_tenant": false,
+    "create_user": false,
+    "assignment_status": "draft",
+    "identity_resolution": "Exigir parceiro existente do commercial_owner AR Bio; não usar nome, fixture ou tenant FSF legado como autoridade"
+  },
+  "formula": "ROUND(table_amount * (1-discount_percent/100) * (1+monthly_interest_percent/100)^months_count,2)",
+  "policies": [
+    {
+      "key": "cash",
+      "discount_percent": "40",
+      "monthly_interest_percent": "0",
+      "interest_type": "none",
+      "max_days": 7,
+      "months_count": "0",
+      "requires_settlement": true,
+      "deadline": "até 7 dias OU antes da entrega",
+      "requirements": [
+        "quitação integral comprovada"
+      ]
+    },
+    {
+      "key": "30d",
+      "discount_percent": "35",
+      "monthly_interest_percent": null,
+      "rate_range": [
+        "0",
+        "1"
+      ],
+      "interest_type": "compound",
+      "max_days": 30,
+      "months_count": "1",
+      "requirements": [
+        "limite aprovado"
+      ]
+    },
+    {
+      "key": "60d",
+      "discount_percent": "30",
+      "monthly_interest_percent": "1.5",
+      "interest_type": "compound",
+      "max_days": 60,
+      "months_count": "2",
+      "requirements": [
+        "aprovação comercial e financeira"
+      ]
+    },
+    {
+      "key": "90d",
+      "discount_percent": "25",
+      "monthly_interest_percent": "2",
+      "interest_type": "compound",
+      "max_days": 90,
+      "months_count": "3",
+      "requirements": [
+        "contrato",
+        "histórico positivo",
+        "ausência de saldo vencido"
+      ]
+    },
+    {
+      "key": "harvest_approved",
+      "discount_percent": "20",
+      "monthly_interest_percent": "2",
+      "interest_type": "compound",
+      "months_range": [
+        6,
+        8
+      ],
+      "months_count": null,
+      "requirements": [
+        "safra aprovada",
+        "garantia",
+        "limite"
+      ]
+    },
+    {
+      "key": "harvest_medium_risk",
+      "discount_percent": "20",
+      "monthly_interest_percent": "2.5",
+      "interest_type": "compound",
+      "months_range": [
+        6,
+        10
+      ],
+      "months_count": null,
+      "requirements": [
+        "risco médio",
+        "garantias a validar"
+      ]
+    },
+    {
+      "key": "harvest_no_strong_guarantee",
+      "discount_percent": "15",
+      "monthly_interest_percent": "3",
+      "interest_type": "compound",
+      "months_range": [
+        6,
+        10
+      ],
+      "months_count": null,
+      "requirements": [
+        "garantias adicionais"
+      ]
+    }
+  ],
+  "reference_vectors": [
+    {
+      "key": "cash",
+      "discount": "40",
+      "rate": "0",
+      "months": 0,
+      "table": "100000",
+      "expected": "60000.00"
+    },
+    {
+      "key": "30d_zero_reference_only",
+      "discount": "35",
+      "rate": "0",
+      "months": 1,
+      "table": "100000",
+      "expected": "65000.00"
+    },
+    {
+      "key": "60d",
+      "discount": "30",
+      "rate": "1.5",
+      "months": 2,
+      "table": "100000",
+      "expected": "72115.75"
+    },
+    {
+      "key": "90d",
+      "discount": "25",
+      "rate": "2",
+      "months": 3,
+      "table": "100000",
+      "expected": "79590.60"
+    },
+    {
+      "key": "harvest6_2",
+      "discount": "20",
+      "rate": "2",
+      "months": 6,
+      "table": "100000",
+      "expected": "90092.99"
+    },
+    {
+      "key": "harvest8_2",
+      "discount": "20",
+      "rate": "2",
+      "months": 8,
+      "table": "100000",
+      "expected": "93732.75"
+    },
+    {
+      "key": "harvest8_2.5",
+      "discount": "20",
+      "rate": "2.5",
+      "months": 8,
+      "table": "100000",
+      "expected": "97472.23"
+    },
+    {
+      "key": "harvest8_3",
+      "discount": "15",
+      "rate": "3",
+      "months": 8,
+      "table": "100000",
+      "expected": "107675.46"
+    }
+  ],
+  "credit": {
+    "approval_scope": [
+      "safra",
+      "parceiro",
+      "pedido"
+    ],
+    "credit_limit": null,
+    "block_if_overdue": true,
+    "order_overdue_tolerance_days": 0,
+    "block_broken_agreement": true,
+    "delivery_block_after_days": 5,
+    "repeated_default_suspends_special_terms": true
+  },
+  "late_payment": {
+    "status": "SUGGESTED_NOT_ENFORCEABLE",
+    "penalty_percent": "2",
+    "monthly_late_interest_percent": "1",
+    "pro_rata_convention": null,
+    "correction_index": null,
+    "prepayment_policy": null
+  },
+  "undefined": {
+    "harvest_minimum_order_amount": null,
+    "exact_30d_rate": null,
+    "correction_index": null,
+    "pro_rata_day_basis": null,
+    "approval_policy": null,
+    "installment_count": null,
+    "installment_vs_single_due": null,
+    "interest_incidence_schedule": null,
+    "billing_trigger": null,
+    "default_payment_method": null,
+    "safra_period_dates": null,
+    "guarantee_evidence_and_sufficiency": null
+  },
+  "documents": [
+    "contrato B2B",
+    "pedido formal",
+    "NF",
+    "duplicata/boleto",
+    "aceite"
+  ],
+  "guarantees_examples_not_defaults": [
+    "aval",
+    "confissão de dívida",
+    "nota promissória",
+    "cessão"
+  ],
+  "triangular_operation": "Somente acordo formal; obrigação da revenda independente do produtor",
+  "release_conditions": [
+    "aprovação comercial",
+    "aprovação financeira"
+  ],
+  "historical_price_per_hectare_not_runtime": {
+    "Solo 1": "69",
+    "Solo 2": "84",
+    "BioInseticida 01": "84",
+    "BioInseticida 02": "65",
+    "BioFungicida": "50",
+    "BioInoculante": "25",
+    "BioSolubilizador": "50"
+  },
+  "canonical_targets": [
+    "commercial_payment_plans",
+    "commercial_payment_plan_assignments",
+    "commercial_condition_item_prices",
+    "partner_financial_settings",
+    "partner_order_payment_terms",
+    "partner_order_payment_schedule",
+    "partner_documents"
+  ],
+  "prohibited": [
+    "automatic_apply",
+    "global_default_assignment",
+    "overwrite_other_partners",
+    "new_tenant",
+    "parallel_finance",
+    "price_table_import",
+    "automatic_legal_approval",
+    "live_fixtures"
+  ],
+  "superseded_by": "owner-20261028T023700Z"
+}

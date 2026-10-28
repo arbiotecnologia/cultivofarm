@@ -7,14 +7,14 @@ getcontext().prec=60
 H=Path(__file__).resolve().parent
 spec=importlib.util.spec_from_file_location('financial_battery',H/'test-financial-battery.py')
 b=importlib.util.module_from_spec(spec);spec.loader.exec_module(b)
-CONFIG=json.loads((H/'arbio-fsf-policy.draft.json').read_text())
+CONFIG=json.loads((H/'arbio-fsf-policy.july2026.historical.json').read_text())
 OUT=b.ROOT/'docs/auditorias/evidencias-arbio-fsf-20261028'
 rows=[]
 def record(scenario,status,expected,actual,level='PG_REAL_BODY_REDUCED_SYNTHETIC_AUTH',priority='P1'):
     row=dict(id=f'ARFSF-{len(rows)+1:03}',cenario=scenario,status=status,expectativa=str(expected),observado=str(actual),nivel=level,severidade=priority)
     rows.append(row);print(status,scenario,actual,flush=True)
 def main():
-    assert CONFIG['status']=='DRAFT_REVIEW_ONLY' and not CONFIG['runtime_enabled']
+    assert CONFIG['status']=='HISTORICAL_SUPERSEDED_RATES_DISCOUNTS' and not CONFIG['runtime_enabled']
     b.pg.start();b.pg.sql(b.SETUP)
     for name in ['fn_b2b_apply_interest','simulate_b2b_payment_plan_secure']:
         b.pg.sql(b.LIVE['bodies'][name])
@@ -89,7 +89,7 @@ def main():
         w=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator='\n');w.writeheader();w.writerows(rows)
     totals={s:sum(x['status']==s for x in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']}
     (OUT/'execucao.json').write_text(json.dumps(dict(postgres=totals,real_PASS=0,has_failures=totals['FAIL']>0,
-      draft_sha256=hashlib.sha256((H/'arbio-fsf-policy.draft.json').read_bytes()).hexdigest(),
+      draft_sha256=hashlib.sha256((H/'arbio-fsf-policy.july2026.historical.json').read_bytes()).hexdigest(),
       stubs=['Auth/roles/C2','cart resolver/hash','plan selector','schema reduced'],credit_hash=credit['md5'],
       source_original_available=False,limitations='Arithmetic/credit isolated bodies; not payment or policy enforcement'),indent=2)+'\n')
     print('TOTAL',totals)
