@@ -155,6 +155,23 @@ GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
   reset();p,send=session();send('BEGIN;SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;');time.sleep(.1)
   err(actor()+envase('timeout-001'),'55P03','3s timeout no mutation');send('ROLLBACK;');p.stdin.close();p.wait(4)
   ok('SELECT count(*)=0 FROM envase','timeout no envase')
+  # Item N failure after item 1 executed with captured motor + real ledger guards.
+  # Multi-line envase is one RPC transaction, unlike the current delivery UI group.
+  reset();sql("CREATE FUNCTION fail_second_ledger() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF (SELECT count(*) FROM estoque_movimentacoes)>=1 THEN RAISE EXCEPTION 'item N ledger failure'; END IF; RETURN NEW; END$$; CREATE TRIGGER zz_item_n BEFORE INSERT ON estoque_movimentacoes FOR EACH ROW EXECUTE FUNCTION fail_second_ledger();")
+  multi=envase('item-n-envase').replace('[{"tipo_embalagem":"frasco_1L","quantidade":2}]','[{"tipo_embalagem":"frasco_1L","quantidade":1},{"tipo_embalagem":"bombona_5L","quantidade":1}]')
+  sql(f"UPDATE lotes SET volume_produzido=10000 WHERE id='{L}';")
+  err(actor()+multi,'P0001','item N ledger failure aborts multi-line envase')
+  ok('SELECT (SELECT count(*) FROM envase)=0 AND (SELECT count(*) FROM estoque_produto)=0 AND (SELECT count(*) FROM estoque_movimentacoes)=0 AND (SELECT count(*) FROM cockpit_operacao_idempotencia)=0','item N rolls all stock envase ledger receipts back')
+  sql('DROP TRIGGER zz_item_n ON estoque_movimentacoes;')
+  reset();sql(actor()+envase('two-stock-envase'));stock=sql('SELECT id FROM estoque_produto LIMIT 1').stdout.strip()
+  err(actor()+f"BEGIN; SELECT rpc_estoque_operar_v1('expedicao','{stock}',2,'item-one-expedition','{{}}'); SELECT rpc_estoque_operar_v1('expedicao','{stock}',2,'item-two-invalid-status','{{}}'); COMMIT;",'23514','second expedition invalid status aborts whole explicit transaction')
+  ok("SELECT count(*)=0 FROM estoque_movimentacoes WHERE idempotency_key IN ('item-one-expedition','item-two-invalid-status')",'item N no first-item committed receipt')
+  ok("SELECT status='reservado' AND quantidade_reservada=2 FROM estoque_produto",'item N restores first-item balance')
+  # Same item, different keys: row/status guard is not an observed-version CAS.
+  p,send=session();send(actor()+'BEGIN;'+f"SELECT rpc_estoque_operar_v1('expedicao','{stock}',2,'same-item-first','{{}}');");time.sleep(.2)
+  w,sw=session();sw(actor()+f"SELECT rpc_estoque_operar_v1('expedicao','{stock}',2,'same-item-second','{{}}');");waitlock();send('COMMIT;');p.stdin.close();p.wait(4);w.stdin.close();w.wait(4)
+  assert 'ESTQ_STATUS_INVALIDO' in w.stderr.read();checks.append('same item competing generation fails status after real wait');print('PASS',checks[-1])
+  ok("SELECT count(*)=1 FROM estoque_movimentacoes WHERE idempotency_key IN ('same-item-first','same-item-second')",'competing keys one expedition ledger')
  finally:
   if started:subprocess.run(pre+[str(PG/'pg_ctl'),'-D',str(tmp/'d'),'stop','-m','fast'],capture_output=True,env=env)
  (H/'results.txt').write_text(f'{len(checks)} PASS PostgreSQL17 local; Auth/SaaS/hash seams synthetic, no hosted JWT/RLS.\n'+'\n'.join(checks)+'\n');print('TOTAL',len(checks),'PASS')
