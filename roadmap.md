@@ -3,7 +3,7 @@
 ## Auditoria final planejada e testes atuais — 28/10/2026
 - [x] Matriz9.180 cenários perfil/tenant/contrato +evidências offline/gates, JWT real0; CSV/resumo e relatório final.
 - [x] Duplo dispatch/ok:false reproduzidos em planejamento, corrigidos com21 regressões QueryClient; canon-only/ACK/fences/retry OFF sem ativação. Fixtures produtor e detector Auth corrigidos sem alterar guards.
-- [x] Vitest618/618 em42 arquivos e PostgreSQL188 sintéticos; dependências LIVE só SELECT, A2/entrega/envase/helper ausentes/bloqueados confirmados.
+- [x] Vitest620/620 únicos em43 arquivos (inclui2 integridade matriz) e PostgreSQL188 sintéticos; dependências LIVE só SELECT, A2/entrega/envase/helper ausentes/bloqueados confirmados.
 - [x] Roteiro A/B/C com fixtures/cleanup futuro, P0/P1/P2/métricas e gate pós-implantação no plano original.
 - [ ] Homologação real aguarda dependências instaladas/revisadas e autorização sensível específica para dados/sessões controladas; não executar os runners legados de refs proibidos.
 

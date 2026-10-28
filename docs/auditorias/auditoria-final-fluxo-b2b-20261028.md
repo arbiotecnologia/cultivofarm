@@ -62,6 +62,20 @@ Resultados e comandos resumidos sem tokens em `evidencias-fluxo-b2b-20261028/`. 
 
 Não somar execuções sobrepostas como testes únicos. Warnings Router Future Flags e mocks DOM/act de pedido observados: não ocultados, não são prova de falha hosted. Build/typecheck são automáticos do harness; não executados manualmente. Não rodados testes hosted/e2e/fixtures nem scripts `*-postgres` sem inspeção do destino.
 Os três grupos finais disjuntos (21+13+8 arquivos) somam **618/618 em42 arquivos**. PostgreSQL separado: **188 checks** (64+48+76). Estes totais não cobrem toda a aplicação nem9.180 combinações reais; outros testes permanecem NOT RUN.
+Dois testes adicionais de integridade da matriz (`src/test/rbac/order-flow-coverage.test.ts`) passaram: **620 testes únicos em43 arquivos** no conjunto auditado, sem promover cobertura planejada a execução real. Reexecução final de quatro arquivos:50/50; não somada novamente.
+
+### Arquivos modificados nesta rodada
+
+- Runtime mínimo: `src/hooks/useProductionPlanning.ts`; regra em `src/hooks/AGENTS.md`.
+- Regressões: `src/test/planejamento-producao/publicacao-contrato-current.test.tsx`, `src/test/config/authProviderTopology.test.ts`, `src/test/multiportal.guards.test.tsx`, novo `src/test/rbac/order-flow-coverage.test.ts`.
+- Auditoria: `scripts/rbac-audit/build-order-flow-matrix.py`, CSV/resumo JSON, este relatório, `roteiro-real-fluxo-b2b-20261028.md`, pasta `evidencias-fluxo-b2b-20261028/`.
+- Plano original, `roadmap.md`, regra raiz `AGENTS.md`. Runners descartáveis regravaram apenas seus resultados/metadata locais nos pacotes A2/estoque/entrega; não geraram/aplicaram SQL hosted. Integridade dos manifestos conferida no encerramento.
+
+### Pendências não ocultadas
+
+- **P0/BLOCKED:** A2 não instalada; equivalência OS manual/grupo/CAS/retorno não demonstrada; envase/B2B/onfarm/ledger+financeiro completo sem prova JWT/A/B. Os quatro FAIL da matriz são gates de liberação, não ataques executados.
+- **P1/NOT RUN:** escopo de caches globais de planejamento/BI além deste patch, remount/abas e perda ACK com reconciliação servidor, todos os combos reais/Storage stale URL/tenant transferência/features/planos. Nenhuma prova hosted de settings Auth/signup nem flags externas nesta rodada.
+- **P2/NOT RUN:** UX visual desktop/mobile/acessibilidade real (jsdom não confirma layout/foco real/contraste); warnings dos mocks e Router. Roteiro preparado, não alegar UX homologada.
 
 ## Critérios P0/P1/P2 e métricas pós-implantação
 
