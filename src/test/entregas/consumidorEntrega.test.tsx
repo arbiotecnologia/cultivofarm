@@ -64,6 +64,8 @@ describe('Página Entregas real / hook real / QueryClient real; Auth e transport
    vi.useFakeTimers(); act(() => { request = t.submit(payload()).catch((e: any) => e); });
    await act(async () => { await vi.advanceTimersByTimeAsync(30001); });
    expect(await request).toBeInstanceOf(Error);
+   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
+   expect(t.rpc).toHaveBeenCalledTimes(1);
    await act(async () => { done({ data: ack, error: null }); await Promise.resolve(); });
    expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear();
  });
@@ -77,5 +79,18 @@ describe('Página Entregas real / hook real / QueryClient real; Auth e transport
    await waitFor(() => expect(t.motor).toHaveBeenCalledTimes(1));
    expect(t.updates).toHaveLength(1); expect(t.success).not.toHaveBeenCalled();
    expect(screen.getByRole('button', { name: 'Confirmar cancelamento' })).toBeInTheDocument(); h.qc.clear();
+ });
+
+ it.each([{ ok: true }, { ok: true, replay: false, acao: 'expedicao', movimentacao_id: ids[2], estoque_produto_id: ids[0] }])('ACK estoque parcial/alheio não vira sucesso: %j', async response => {
+   t.motor.mockResolvedValue(response); const h = mount(); await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
+   expect(t.success).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear();
+ });
+ it('reserva sem UUID confirmado não continua criação', async () => {
+   const p = payload(); Object.assign(p.itens[0].item, { reservado_para_os_id: null, status: 'disponivel' });
+   t.from.mockImplementation(table => table === 'ordens_servico' ? { ...chain(table), then: (yes: any) => Promise.resolve({ data: [{ id: ids[0], cliente_id: ids[3] }], error: null }).then(yes) } : chain(table));
+   t.rpc.mockResolvedValue({ data: { ok: false }, error: null }); const h = mount();
+   await act(async () => { await Promise.resolve(); });
+   await act(async () => { await expect(t.submit(p)).rejects.toThrow(); });
+   expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.rpc.mock.calls[0][0]).toBe('reservar_estoque_item'); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
  });
 });
