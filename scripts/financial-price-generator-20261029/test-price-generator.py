@@ -87,7 +87,13 @@ def held(sql):
     """Open transaction that performs `sql` and stays open (holds its locks)."""
     p = subprocess.Popen(pg.psql(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     p.stdin.write("SET statement_timeout='15s'; SELECT pg_backend_pid(); BEGIN; " + sql + " SELECT 'HELD';\n"); p.stdin.flush()
-    pid = int(p.stdout.readline().strip()); out = p.stdout.readline().strip(); assert p.stdout.readline().strip() == 'HELD', out
+    lines = []
+    while True:
+        ln = p.stdout.readline()
+        if not ln: raise AssertionError('holder died: ' + p.stderr.read()[-300:])
+        if ln.strip() == 'HELD': break
+        lines.append(ln.strip())
+    pid = int(lines[0]); out = lines[-1]
     return p, pid, out
 
 
