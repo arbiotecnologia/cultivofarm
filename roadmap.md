@@ -1061,3 +1061,11 @@
 - [ ] Inspeção técnica do pacote exato pelo operador — implantação administrativa já autorizada; hosted proibido nesta chamada.
 - [ ] Sessões reais login/JWT/RLS e saídasOFF observadas — evidências humanas ausentes.
 - [ ] Price/origemNF/contabilidade/settings — gates fechados; boleto cadastrado confirmado pelo proprietário, relato de ausência superado.
+
+## 2026-10-29 21:10 — subconjunto 01 offline
+- [x] Restaurar 44 dependências (recaptura base64 com MD5) e constraint-trigger regulatória — 0 pendências.
+- [x] Corrigir autoridade de aprovação (fornecedor interno; autoaprovação do comprador bloqueada) — 44/44 integrado.
+- [x] Roteiro REST somente leitura com sessões reais (`API-ISOLATION.md`).
+- [ ] Revisão do artefato exato pelo proprietário (bloqueio: decisão do proprietário).
+- [ ] Executar leituras reais A/F1/F2/T4 (bloqueio: sessões dos titulares).
+- [ ] Implantar 01 após as duas anteriores; fiscal, cobranças e automações seguem bloqueados.

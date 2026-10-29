@@ -782,12 +782,13 @@
     },
     {
       "id": "01",
-      "status": "CANDIDATE_PENDING_LOCAL_TEST_AND_INDEPENDENT_REVIEW",
+      "status": "OFFLINE_INTEGRATED_PASS_PENDING_OWNER_REVIEW_AND_REAL_SESSIONS",
       "changes": [
         "private approval tickets",
         "post-wait reauthorization",
         "finite settings gate",
-        "expanded trigger columns"
+        "expanded trigger columns",
+        "supplier-only internal credit authority (replaces buyer-side phase1 visibility)"
       ],
       "preserves": [
         "C2_ACCOUNTING_PENDING",
