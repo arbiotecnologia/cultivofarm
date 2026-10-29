@@ -8,10 +8,10 @@ Nova autorização permite preparar produção e futura implantação após insp
 | Subconjunto | Artefato | Situação |
 |---|---|---|
 | UI | `creditBlockReason.ts` + integração existente em `ResponderCotacaoDialog.tsx` | 8 testes focados passaram; sem mudança de writer. Publicação NÃO realizada |
-| 01 — aprovação/crédito/colunas | `01-credit-approval.install.sql.review` | Candidato transacional com pins atuais, ticket privado e pós-espera; 57 checks de componente passaram. **Não instalar até composição integral/revisão independente** |
+| 01 — aprovação/crédito/colunas | `01-credit-approval.install.sql.review` | 57 checks de componente + 6 ensaios do instalador completo passaram na rodada 20:28. **Autoridade integrada e corridas pós-lock ainda não ensaiadas; sem GO** |
 | 02 — shared credit | `../financial-price-generator-20261029/shared-credit-guard.sql.review` | Bloqueado: integração integral de writers, d51_5, origem, FKs/ledger/importadores e locks ainda não demonstrada em produção |
 | 03 — client link | `../fsf-client-link-20261029/link-partner-client.sql.review` | Não executado. Requer composição completa dos triggers de cliente/parceiro, audit/código, readiness h15 e teste sobre schema integral atual |
-| 04 — Price | `../financial-price-generator-20261029/price-generator.sql.review` | **Não instalável/ativável com stubs**; boleto oficial de produção ausente na última evidência, settings/origem NF/contabilidade pendentes |
+| 04 — Price | `../financial-price-generator-20261029/price-generator.sql.review` | **Não instalável/ativável com stubs**; proprietário confirmou boleto cadastrado em produção, mas limite/settings/origem NF/contabilidade permanecem pendentes |
 
 O arquivo `01-credit-approval.body.sql.review` é somente entrada do harness, **não instalador**. Não executar isoladamente. Não concatenar subconjuntos 02–04 ao 01.
 
@@ -36,9 +36,9 @@ Candidato substitui GUC por ticket `txid_current()+ator+pedido` numa tabela priv
 1. Confirmar no painel e origem observada do app **produção canônica**, versão exata e SHA256 do manifesto aprovado. Arquivo SQL não consegue comprovar project ref pelo nome genérico do banco; não tratar variável/GUC declarada como prova de ambiente.
 2. Inspecionar diffs e `inventory.json`; revisão independente precisa aprovar exatamente subconjunto 01, não o pacote inteiro.
 3. Obter prova sanitizada de saídas OFF separadamente: comunicação, NF/SEFAZ, boleto/banco e auto-receivable. Não basta cinco flags de comunicação. Ausência = BLOCKED para qualquer cenário com escrita.
-4. Reproduzir stack integral atual (incluindo `trg_00_b2b_internal_snapshot`, `trg_auto_b2b_receivable`, RLS/readiness, auditorias e constraints). O componente de 57 checks omite explicitamente essa stack; positivo legado sintético não autoriza pedido real. Montagem integral do instalador/preflight ainda não ensaiada; testes cobrem o corpo candidato e contenção, não todo DDL de instalação.
+4. Restauração 20:28: preflight exato e instalador completo foram ensaiados com corpos reais, ACL/RLS e triggers, inclusive `trg_00_b2b_internal_snapshot`/autotítulo/readiness/auditoria e guards de perfil. Falhas PRE e POST desfizeram DDL; COMMIT/postflight, rerun recusado e contenção com body drift passaram. Isso valida instalação, não aprovação integrada: casos de revogação pós-lock com autoridade real, zero dispatch e caminhos fiscais ainda não foram executados. Os 57 checks continuam somente componente com seams explícitas.
 5. Conferir baseline completo pelo `preflight.sql.readonly` antes da janela. Ele contém DO apenas de inspeção/assertion de catálogo, sem writes comerciais. Qualquer drift/objeto candidato já existente aborta. Não substituir hashes sem recaptura/revisão.
-6. Só em futura chamada autorizada executar instalador transacional aprovado; lock timeout 3s, statement timeout 60s, tabela travada e pins rechecados dentro da mesma transação. Nenhum título/cliente/registro comercial é criado pelo instalador 01.
+6. Implantação administrativa já autorizada; não solicitar novamente por esse motivo. Nesta chamada hosted permanece proibido: operador inspeciona e executa depois, somente quando lacunas técnicas do artefato exato estiverem fechadas. Lock timeout 3s, statement timeout 60s, tabela travada e pins rechecados na transação. Nenhum título/cliente/registro comercial é criado pelo instalador 01.
 7. Conferir postflight exato (corpos/ACL/DDL vs artefato aprovado), zero tickets residuais, policies preservadas e executar releitura por sessões reais. Não chamar RPC de aprovação/criação para provar leitura.
 
 ## Rollback seguro
@@ -51,3 +51,14 @@ Cada titular usa sua própria sessão em `https://app.cultivofarm.com.br`; nunca
 
 **Fluxo até o bloqueio fiscal:** apenas roteiro, ainda não validado em sessões reais.
 **Fluxo financeiro completo:** NÃO VALIDÁVEL enquanto contabilidade/fiscal/settings/origem e composição técnica estiverem pendentes. Nenhum novo bloqueio comercial foi inventado.
+
+## Evidências externas atualizadas — relato do proprietário às 20:28
+
+- Boleto bancário `1e7bd8ba-82e5-4ced-a6ec-55a9661e3e1d` cadastrado pela UI AR Bio. Settings do parceiro FSF `4a7e37e0-632a-41d5-8ccb-c627185ad5b3` salvos pela RPC às `2026-10-29T20:20:51.010284Z`: auto_generate_receivable=false, método Boleto, limite NULL/prazo7 preservados e 0 pedidos/0 recebíveis. Não reconsultado como dado nesta rodada; não confundir com captura de catálogo.
+- Fiscal AR Bio DRAFT/NOT_READY, nfe/nfse/production=false e accountingvalidated NULL. Nenhuma liberação financeira inferida.
+- Tenant FSF `8f57c7dd-0557-4041-b401-7a00f7244626`, administrador Renato auth `cbdc4ef3-005a-4674-8ea3-4410c7d7d212`, não é o parceiro FSF. Comprador teste4 auth `beb25695-3957-48b0-aff8-6316520ea189` está dentro AR Bio e ligado ao parceiro TESTE AUDITORIA `7e52de9a-4bed-4d1e-8200-3255a805465c`, não ao FSF esperado. Lifecycle cross_partner recusa transferência; caminho seguro pendente, sem renomear/transferir/papéis nesta rodada.
+- Sessão AR Bio confirmada pelo proprietário via UI; Fagner/FSF real e isolamento A/B seguem pendentes, não PASS do assistente.
+
+## Limites concretos da restauração
+
+`capture/stack-metadata-2028.json` contém somente catálogo, sem linhas reais/credenciais. Resultado em `incremental-stack-2028/restoration-results.json`: todos os triggers capturados restaurados, nenhum default/policy falhou; 44 funções/views externas não restauradas, principalmente texto sanitizado `[REDACTED]` e schemas SMTP/Storage não incluídos. Closure lexical da aprovação + stack de pedidos + gerador contém 55 nomes e nenhum corpo sanitizado, mas não é prova completa de SQL dinâmico. Uma constraint-trigger do módulo regulatório não foi restaurada como constraint; não integra o recorte01. PostgreSQL local conserva postgres superuser para DDL, enquanto hosted postgres não é superuser: instalação não certifica autoridade de sessão. Nenhum desses limites foi contornado com stub.
