@@ -1043,5 +1043,6 @@
 - [x] Guard B2B bloqueia settings inativas/ausentes/limite 0 (candidato).
 - [x] Guard compartilhado manual/entrega/recorrência/Price, corridas e limite testados.
 - [x] Pacote de cadastro/vínculo FSF idempotente (candidato + testes).
-- [ ] Executar vínculo real — aguarda owner/CNPJ do parceiro FSF (leitura do usuário) e fluxo UI/revisão.
+- [x] Owner/CNPJ do parceiro FSF confirmados read-only (owner AR Bio).
+- [ ] Executar vínculo real — fluxo UI autorizado ou RPC após revisão independente.
 - [ ] Validação fiscal — com a contabilidade.
