@@ -62,7 +62,6 @@
     "guarantee_evidence_and_sufficiency": null,
     "month_boundary_convention": null,
     "day_count_convention": null,
-    "installment_amortization": null,
     "fractional_months_convention": null,
     "credit_exposure_basis": null,
     "business_day_rolling": null,
@@ -165,6 +164,7 @@
     "installment_vs_single_due": "1x single 30d or 2..3 monthly Price",
     "interest_incidence_schedule": "Price on outstanding balance from first period",
     "billing_trigger": "manual_authorized_only",
-    "first_due_anchor": "nf_issue_date"
+    "first_due_anchor": "nf_issue_date",
+    "installment_amortization": "Price; last installment closes balance"
   }
 }
