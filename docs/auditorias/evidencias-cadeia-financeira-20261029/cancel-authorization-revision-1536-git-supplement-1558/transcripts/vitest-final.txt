@@ -1,0 +1,16 @@
+$ vitest run "--maxWorkers=1" --no-file-parallelism src/test/financeiro/cancelAuthorizationPostgres.test.ts src/test/financeiro/receivableRedGreenPostgres.test.ts src/test/financeiro/receivableSemantics.test.ts src/test/financeiro/financialProvenanceOffline.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/financeiro/cancelAuthorizationPostgres.test.ts (1 test) 47364ms
+   ✓ nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline  47362ms
+ ✓ src/test/financeiro/receivableRedGreenPostgres.test.ts (1 test) 5682ms
+   ✓ reproduz P0 red e conserva financiamento e eventos green apenas no PG descartável  5681ms
+ ✓ src/test/financeiro/financialProvenanceOffline.test.ts (1 test) 213ms
+ ✓ src/test/financeiro/receivableSemantics.test.ts (7 tests) 5ms
+
+ Test Files  4 passed (4)
+      Tests  10 passed (10)
+   Start at  15:53:52
+   Duration  57.19s (transform 106ms, setup 281ms, collect 113ms, tests 53.26s, environment 2.09s, prepare 321ms)
+

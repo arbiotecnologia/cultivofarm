@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 436, in <module>
+    try: main()
+         ~~~~^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 396, in main
+    parties.exercise(sys.modules[__name__],risk_metadata)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/cancel-parties-credit.py", line 137, in exercise
+    finally:m.pg.sql(f"UPDATE organizations SET ativo=true WHERE id='{m.A}'; UPDATE partner_accounts SET ativo=true,commercial_owner_organization_id='{m.A}' WHERE id='{partner}';")
+            ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/contracts-c2-20261022/integral/pg.py", line 16, in sql
+    assert r.returncode == 0, r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  cadastro_context_required
+CONTEXT:  PL/pgSQL function public.guard_commercial_partner_registration() line 5 at RAISE
+
