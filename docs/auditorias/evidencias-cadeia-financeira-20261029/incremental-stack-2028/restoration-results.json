@@ -264,5 +264,6 @@
     }
   ],
   "preflight": "FAIL",
-  "preflight_error": "ERROR:  RELATION_DRIFT: clientes\nCONTEXT:  PL/pgSQL function inline_code_block line 259 at RAISE\n"
+  "preflight_error": "ERROR:  RELATION_DRIFT: clientes\nCONTEXT:  PL/pgSQL function inline_code_block line 259 at RAISE\n",
+  "relation_diagnostic": "partner_orders|{postgres=arwdDxt/postgres,anon=arwdDxt/postgres,authenticated=arwdDxt/postgres,service_role=arwdDxt/postgres}|postgres|t|f\nclientes|{postgres=arwdDxt/postgres,anon=arwdDxt/postgres,authenticated=arwdDxt/postgres,service_role=arwdDxt/postgres}|postgres|t|f\norganizations|{postgres=arwdDxt/postgres,anon=xt/postgres,authenticated=rxt/postgres,service_role=arwdDxt/postgres}|postgres|t|f"
 }
