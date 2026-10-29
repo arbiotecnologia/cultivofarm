@@ -119,3 +119,23 @@ Testes: limite exato e +0,01 (manual, Price, entrega, B2B); corridas manual→ma
 **Resultados.** Price+guard 300/0 (256 anteriores preservados); vínculo 33/0; P0 originais 37/0 (RED 10.600/7.750, GREEN 10.300/7.550). Manifesto `price-generator-pg-partner-context-1855` conferido contra `c92752533…`: 6/6. Evidências `evidencias-cadeia-financeira-20261029/shared-credit-fsf-link-1905/`.
 
 **Limites.** Auth/h15/papéis, valor canônico da entrega, guard de faturamento da entrega, próxima data da recorrência e preenchimento de tenant são stubs sintéticos. Não é JWT/RLS real nem E2E. Ficam pendentes: owner/CNPJ reais do parceiro FSF, validação fiscal pela contabilidade (Lucro Presumido/CRT 1 exibidos e não validados), outros escritores fora deste recorte (importadores/SQL dinâmico), rótulos de UI e aplicação revisada. Nenhuma ação hosted, deploy, cobrança ou SEFAZ.
+
+## 29/10/2026 19:25 UTC — Correções da revisão do commit f2d19a6 (componente, não E2E)
+
+Vínculo FSF (`link-partner-client.sql.review`):
+- documento: conta as linhas normalizadas e nega duplicidade (`CLIENT_DOCUMENT_AMBIGUOUS`). Não depende do índice: um teste adversarial remove o índice e cria duplicatas. O índice `clientes_tenant_document_unique` consta na migration capturada;
+- ramo com `client_id` já preenchido: nega cliente ligado a outro parceiro ativo;
+- replay: trava e revalida o parceiro atual (ativo, não excluído, owner), `client_id`, hash do documento e exclusividade. Removido, transferido, revinculado, CNPJ alterado/corrompido ou ator revogado → negado; replay legítimo segue idempotente;
+- CNPJ: aceita só dígitos e `. / - espaço`. Letra + 14 dígitos válidos ou letra final → `PARTNER_CNPJ_INVALID`.
+- Os novos testes rodados contra o candidato anterior abortam no primeiro caso: cliente compartilhado era aceito.
+
+Guard compartilhado (`shared-credit-guard.sql.review`):
+- `B2B_ORDER` deixou de ser isento. O pedido precisa existir no servidor, ser do mesmo parceiro e não ter título ativo. Ele só é abatido enquanto ainda conta como comprometido; título que não aumenta exposição não é recusado por limite (pedido aprovado acima do limite pode ser convertido). O escritor manual força `MANUAL` mesmo com payload malicioso;
+- vínculo devedor→parceiro (ativo, `deleted_at` nulo, owner) re-resolvido após a espera. Desvínculo, exclusão ou transferência commitados durante a espera → `CREDIT_PARTNER_LINK_CHANGED` sem escrita (3 corridas);
+- aprovações do guard B2B: os três ramos de aprovação revalidam a configuração. Settings ausentes/inativas ou limite indefinido mantêm o bloqueio e não registram o aprovador. Aprovação legítima de excesso com configuração válida segue para análise/aprovado. Observação: o trigger capturado só dispara em `UPDATE OF status, total`.
+
+UI: rótulos isolados em `src/components/comercial/creditBlockReason.ts` (ainda não montados em tela), Vitest 4/4.
+
+Resultados: Price+guard 322/0; vínculo 48/0; P0 originais 37/0. Manifesto `shared-credit-fsf-link-1905` conferido contra `f2d19a6`: 10/10. Evidências `review-fixes-1925/`.
+
+Dado real confirmado read-only pelo usuário: parceiro FSF ativo, owner AR Bio, sem `client_id`, CNPJ com DV válido (registrado só como hash), nenhum cliente existente. O vínculo real é viável e não foi executado.

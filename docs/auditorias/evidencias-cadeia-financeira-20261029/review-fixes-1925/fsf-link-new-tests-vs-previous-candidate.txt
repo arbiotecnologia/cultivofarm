@@ -1,0 +1,45 @@
+PASS INSTALL installed registration guard copied verbatim from latest migration 
+PASS ACL anon cannot execute 
+PASS ACL authenticated cannot read receipts 
+PASS LINK creates client from partner data, links partner 
+PASS MAPPING field mapping uses stored partner data only 
+PASS IDEMPOTENCY replay same key: same ids, no write 
+PASS IDEMPOTENCY new key, already linked: same client, no duplicate 
+PASS IDEMPOTENCY same key different partner 
+PASS REUSE existing client with same document reused (gestor_comercial) 
+PASS CONFLICT existing different client_id never overwritten 
+PASS DATA partner without CNPJ: nothing invented 
+PASS DATA partner with invalid CNPJ 
+PASS OWNER owner NULL: no ownership backfill 
+PASS SCOPE inactive partner 
+PASS SCOPE partner of other tenant (uniform) 
+PASS SCOPE nonexistent partner (uniform) 
+PASS UNIQUE_PARTNER two active partners with same CNPJ 
+PASS CONFLICT client already linked to another active partner 
+PASS AUTH financeiro role denied 
+PASS AUTH no session denied 
+PASS AUTH anon role denied 
+PASS TENANT tenant B admin cannot link A partner 
+PASS ISOLATION REPEATABLE READ refused 
+PASS DATA invalid key 
+PASS TENANT tenant B creates its own client for same document; A unchanged 
+PASS RACE concurrent different keys: both ACK, one client, one link 
+PASS REVOCATION_WAIT second actor waits on same key 
+PASS REVOCATION_WAIT revoked during wait: replay denied, result not exposed 
+Traceback (most recent call last):
+  File "/tmp/flred/scripts/fsf-client-link-20261029/test-link-partner-client.py", line 211, in <module>
+    raise SystemExit(1 if main(sys.argv[1] if len(sys.argv) > 1 else None) else 0)
+                          ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/flred/scripts/fsf-client-link-20261029/test-link-partner-client.py", line 172, in main
+    deny('existing client_id shared with another active partner refused', call(P(17), 'link-p17-0001'), 'CLIENT_LINKED_TO_OTHER_PARTNER', 'REVIEW_LINK')
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/flred/scripts/fsf-client-link-20261029/test-link-partner-client.py", line 50, in deny
+    before = state(); err = pg.sql(s, ok=False)
+                            ~~~~~~^^^^^^^^^^^^^
+  File "/tmp/flred/scripts/contracts-c2-20261022/integral/pg.py", line 18, in sql
+    assert r.returncode != 0, 'expected failure, got success: ' + r.stdout[-500:]
+           ^^^^^^^^^^^^^^^^^
+AssertionError: expected failure, got success: 11111111-0000-4000-8000-000000000001
+aaaaaaaa-0000-4000-8000-00000000000a
+{"replayed": false, "client_id": "c0000000-0000-4000-8000-000000000217", "partner_id": "a0000000-0000-4000-8000-000000000217", "client_created": false, "financial_settings": "UNCHANGED_BLOCKED"}
+

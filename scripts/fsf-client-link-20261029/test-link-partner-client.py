@@ -33,7 +33,7 @@ def cnpj(base12):
 
 
 def P(k): return 'a0000000-0000-4000-8000-0000000002%02d' % k  # SYNTHETIC partner
-DOC = {k: cnpj('9900%04d0001' % k) for k in range(1, 20)}       # SYNTHETIC documents
+DOC = {k: cnpj('9900%04d0001' % k) for k in range(1, 31)}       # SYNTHETIC documents
 
 
 def scope(uid=U, org=A): return f"SELECT set_config('test.uid',{q(uid)},false);SELECT set_config('test.org',{q(org)},false);"
@@ -97,6 +97,9 @@ def main(out):
            f"('c0000000-0000-4000-8000-000000000203','{A}','juridica','{DOC[3]}','OUTRO DOC','OUTRO DOC'),('c0000000-0000-4000-8000-000000000211','{A}','juridica','{DOC[11]}','LINKED','LINKED');")
     partner(3, client='c0000000-0000-4000-8000-000000000203', doc=DOC[16])
     partner(11); partner(12, client='c0000000-0000-4000-8000-000000000211', doc=DOC[12])
+    pg.sql(f"INSERT INTO public.clientes(id,organization_id,tipo_pessoa,cpf_cnpj,nome) VALUES('c0000000-0000-4000-8000-000000000217','{A}','juridica','{DOC[17]}','C17');")
+    partner(17, client='c0000000-0000-4000-8000-000000000217'); partner(18, client='c0000000-0000-4000-8000-000000000217')
+    partner(19, doc='A' + DOC[19]); partner(21, doc=DOC[21][:-1] + 'x'); partner(22, doc='%s.%s.%s/%s-%s' % (DOC[22][:2], DOC[22][2:5], DOC[22][5:8], DOC[22][8:12], DOC[22][12:])); partner(20)
     pg.sql((H / 'link-partner-client.sql.review').read_text())
     check('anon cannot execute', 'f', pg.sql("SELECT has_function_privilege('anon','public.rpc_link_partner_client_candidate(uuid,text)','EXECUTE')"), 'ACL')
     check('authenticated cannot read receipts', 'f', pg.sql("SELECT has_table_privilege('authenticated','platform_private.partner_client_link_receipts','SELECT')"), 'ACL')
@@ -165,6 +168,30 @@ def main(out):
     pg.sql(f"DELETE FROM public.test_user_roles WHERE uid='{U2}';")  # committed revocation
     p.stdin.write("COMMIT;\n"); p.stdin.close(); p.wait(10); th.join(15)
     check('revoked during wait: replay denied, result not exposed', (True, False), ('cadastro_context_required' in box['r'].stderr.decode(), 'client_id' in box['r'].stdout.decode()), 'REVOCATION_WAIT')
+    # 8. Review fixes (commit f2d19a6): existing-link sharing, strict CNPJ, stale replay, duplicate documents.
+    deny('existing client_id shared with another active partner refused', call(P(17), 'link-p17-0001'), 'CLIENT_LINKED_TO_OTHER_PARTNER', 'REVIEW_LINK')
+    deny('letter + 14 valid digits is corrupted, not stripped', call(P(19), 'link-p19-0001'), 'PARTNER_CNPJ_INVALID', 'REVIEW_CNPJ')
+    deny('trailing letter refused', call(P(21), 'link-p21-0001'), 'PARTNER_CNPJ_INVALID', 'REVIEW_CNPJ')
+    r22 = ok(call(P(22), 'link-p22-0001'))
+    check('formatted numeric CNPJ accepted, stored as digits', DOC[22], pg.sql(f"SELECT cpf_cnpj FROM public.clientes WHERE id='{r22['client_id']}'"), 'REVIEW_CNPJ')
+    own = lambda sql: pg.sql("ALTER TABLE public.partner_accounts DISABLE TRIGGER commercial_partner_registration_guard;" + sql + "ALTER TABLE public.partner_accounts ENABLE TRIGGER commercial_partner_registration_guard;")  # owner fixture mutation
+    for label, mut, undo, code in (('deactivated', 'ativo=false', 'ativo=true', 'PARTNER_NOT_AVAILABLE'), ('deleted', 'deleted_at=now()', 'deleted_at=NULL', 'PARTNER_NOT_AVAILABLE'),
+                                    ('transferred to tenant B', f"commercial_owner_organization_id='{B}'", f"commercial_owner_organization_id='{A}'", 'PARTNER_NOT_AVAILABLE'),
+                                    ('relinked to other client', "client_id='c0000000-0000-4000-8000-000000000203'", f"client_id='{r['client_id'] if False else pg.sql(f'SELECT client_id FROM public.partner_accounts WHERE id={q(P(1))}')}'", 'LINK_RECEIPT_STALE'),
+                                    ('CNPJ altered', f"cnpj='{DOC[23]}'", f"cnpj='{DOC[1]}'", 'LINK_RECEIPT_STALE'),
+                                    ('CNPJ corrupted', f"cnpj='Z{DOC[1]}'", f"cnpj='{DOC[1]}'", 'PARTNER_CNPJ_INVALID')):
+        own(f"UPDATE public.partner_accounts SET {mut} WHERE id='{P(1)}';")
+        deny('replay after partner ' + label + ' refused', call(P(1), 'link-fsf-0001'), code, 'REVIEW_REPLAY')
+        own(f"UPDATE public.partner_accounts SET {undo} WHERE id='{P(1)}';")
+    own(f"UPDATE public.partner_accounts SET client_id=(SELECT client_id FROM public.partner_accounts WHERE id='{P(1)}') WHERE id='{P(2)}';")
+    deny('replay after client shared with another partner refused', call(P(1), 'link-fsf-0001'), 'LINK_RECEIPT_STALE', 'REVIEW_REPLAY')
+    own(f"UPDATE public.partner_accounts SET client_id='c0000000-0000-4000-8000-000000000202' WHERE id='{P(2)}';")
+    check('legitimate replay still idempotent after restores', True, ok(call(P(1), 'link-fsf-0001'))['replayed'], 'REVIEW_REPLAY')
+    deny('replay by revoked actor refused', call(P(1), 'link-fsf-0001', uid=UF), 'cadastro_context_required', 'REVIEW_REPLAY')
+    check('captured tenant-document unique index present in migration', True, 'CREATE UNIQUE INDEX IF NOT EXISTS clientes_tenant_document_unique' in (ROOT / 'supabase/migrations/20261008160048_0379dfbf-559f-4d87-91bb-89e36ca35bbc.sql').read_text(), 'REVIEW_UNIQUE')
+    pg.sql("DROP INDEX public.clientes_tenant_document_unique;"  # ADVERSARIAL: index absent/drifted
+           f"INSERT INTO public.clientes(organization_id,tipo_pessoa,cpf_cnpj,nome) VALUES('{A}','juridica','{DOC[20]}','DUP1'),('{A}','juridica','{DOC[20][:2]}.{DOC[20][2:]}','DUP2');")
+    deny('duplicate normalized documents never pick arbitrary client', call(P(20), 'link-p20-0001'), 'CLIENT_DOCUMENT_AMBIGUOUS', 'REVIEW_UNIQUE')
     # 7. immutability + finance stays blocked.
     deny('receipt UPDATE immutable', "UPDATE platform_private.partner_client_link_receipts SET client_created=false;", 'LINK_RECEIPT_IMMUTABLE', 'IMMUTABLE')
     deny('receipt DELETE immutable', "DELETE FROM platform_private.partner_client_link_receipts;", 'LINK_RECEIPT_IMMUTABLE', 'IMMUTABLE')

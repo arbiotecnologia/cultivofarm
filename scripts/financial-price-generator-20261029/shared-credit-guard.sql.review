@@ -8,10 +8,19 @@
 -- (2) zz_b2b_shared_credit_guard: one BEFORE INSERT trigger on accounts_receivable that applies the
 --     same partner credit rule to the remaining receivable writers (manual rpc_create_financial_title,
 --     fn_generate_receivable_from_entrega, fn_generate_recurring_title, Price candidate). Writer bodies
---     stay byte-identical. Lock order is always writer-own locks -> partner_orders row (delivery only)
---     -> b2b_credit:<partner>, matching approve/guard (order row -> b2b_credit). B2B_ORDER conversion is
---     skipped (already counted as committed and neutralized by its own generator). Debtors without an
+--     stay byte-identical. Lock order is always writer-own locks -> partner_orders row (B2B_ORDER/delivery)
+--     -> b2b_credit:<partner>, matching approve/guard (order row -> b2b_credit). B2B_ORDER is NOT exempt:
+--     the order must exist server-side for the same partner, be unbilled, and is netted while committed;
+--     the link is re-resolved after the wait. Approval branches of the order guard also re-check config. Debtors without an
 --     active partner of the SAME tenant are untouched: no widening to other tenants or customers.
+
+CREATE FUNCTION platform_private.b2b_credit_config_block(p_partner uuid) RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT CASE
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE) THEN 'configuracao_financeira_inativa'
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE AND s.credit_limit > 0) THEN 'limite_nao_definido'
+  END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_credit_config_block(uuid) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION public.tg_partner_orders_credit_guard()
  RETURNS trigger
@@ -23,6 +32,7 @@ DECLARE
   v jsonb;
   v_amount numeric(14,2);
   v_should_check boolean := false;
+  v_cfg text;
 BEGIN
   IF TG_OP = 'INSERT' THEN
     IF NEW.status NOT IN ('rascunho') THEN v_should_check := true; END IF;
@@ -31,11 +41,25 @@ BEGIN
        AND NEW.status = 'em_analise_comercial'
        AND OLD.status = 'aguardando_aprovacao_credito'
        AND NEW.total IS NOT DISTINCT FROM OLD.total THEN
+      -- CANDIDATE: approval never releases absent/inactive settings or undefined limit.
+      PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
+      v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
+      IF v_cfg IS NOT NULL THEN
+        NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
+        NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
+      END IF;
       NEW.credit_block_reason := NULL;
       RETURN NEW;
     END IF;
 
     IF NEW.credit_approved_by IS NOT NULL AND OLD.credit_approved_by IS NULL THEN
+      -- CANDIDATE: approval never releases absent/inactive settings or undefined limit.
+      PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
+      v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
+      IF v_cfg IS NOT NULL THEN
+        NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
+        NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
+      END IF;
       NEW.credit_block_reason := NULL;
       RETURN NEW;
     END IF;
@@ -44,6 +68,13 @@ BEGIN
        AND NEW.status = 'aprovado'
        AND OLD.status = 'em_analise_comercial'
        AND NEW.total IS NOT DISTINCT FROM OLD.total THEN
+      -- CANDIDATE: approval never releases absent/inactive settings or undefined limit.
+      PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
+      v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
+      IF v_cfg IS NOT NULL THEN
+        NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
+        NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
+      END IF;
       RETURN NEW;
     END IF;
 
@@ -63,10 +94,10 @@ BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
 
   -- CANDIDATE: configuracao financeira ausente/inativa ou limite nao definido bloqueia (fresh read after lock).
-  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
-                  WHERE s.partner_id = NEW.partner_id AND s.active IS TRUE) THEN
+  v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
+  IF v_cfg = 'configuracao_financeira_inativa' THEN
     NEW.status := 'aguardando_aprovacao_credito';
-    NEW.credit_block_reason := 'configuracao_financeira_inativa';
+    NEW.credit_block_reason := v_cfg;
     RETURN NEW;
   END IF;
 
@@ -97,47 +128,68 @@ BEGIN
   RETURN NEW;
 END $function$;
 
+CREATE FUNCTION platform_private.b2b_debtor_partner(p_org uuid, p_customer uuid) RETURNS uuid[]
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT array_agg(pa.id ORDER BY pa.id) FROM public.partner_accounts pa
+   WHERE pa.client_id = p_customer AND pa.commercial_owner_organization_id = p_org
+     AND pa.ativo IS TRUE AND pa.deleted_at IS NULL $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_debtor_partner(uuid, uuid) FROM PUBLIC;
+
 CREATE FUNCTION platform_private.b2b_shared_receivable_credit_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
-DECLARE v_p uuid[]; v_partner uuid; v jsonb; v_delta numeric(14,2); v_po_id uuid; v_po record;
+DECLARE v_p uuid[]; v_partner uuid; v jsonb; v_delta numeric(14,2); v_po_id uuid; v_po record; v_cfg text;
 BEGIN
-  IF NEW.origin_type = 'B2B_ORDER' THEN RETURN NEW; END IF;  -- conversion: committed order -> title, neutral
-  IF NEW.customer_id IS NULL THEN RETURN NEW; END IF;
+  IF NEW.customer_id IS NULL AND NEW.origin_type IS DISTINCT FROM 'B2B_ORDER' THEN RETURN NEW; END IF;
   IF NEW.organization_id IS NULL THEN RAISE EXCEPTION 'CREDIT_TENANT_REQUIRED' USING ERRCODE = '42501'; END IF;
-  SELECT array_agg(pa.id ORDER BY pa.id) INTO v_p FROM public.partner_accounts pa
-   WHERE pa.client_id = NEW.customer_id AND pa.commercial_owner_organization_id = NEW.organization_id AND pa.ativo IS TRUE;
-  IF v_p IS NULL THEN RETURN NEW; END IF;  -- not a partner debtor of this tenant: untouched
+  v_p := platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id);
   IF cardinality(v_p) > 1 THEN RAISE EXCEPTION 'CREDIT_PARTNER_LINK_AMBIGUOUS' USING ERRCODE = '42501'; END IF;
   v_partner := v_p[1];
+  -- Order-linked origins are never trusted from the row: the order must exist server-side, belong to
+  -- the resolved/declared partner, and its amount is netted only while it is still counted as committed.
+  IF NEW.origin_type = 'B2B_ORDER' THEN
+    v_po_id := NEW.origin_id;
+    IF v_po_id IS NULL OR NOT EXISTS (SELECT 1 FROM public.partner_orders po WHERE po.id = v_po_id) THEN
+      RAISE EXCEPTION 'CREDIT_B2B_ORIGIN_UNPROVEN' USING ERRCODE = '23514';
+    END IF;
+  ELSIF NEW.origin_type = 'DELIVERY' AND NEW.origin_id IS NOT NULL THEN
+    SELECT e.partner_order_id INTO v_po_id FROM public.entregas e WHERE e.id = NEW.origin_id;
+  END IF;
+  IF v_po_id IS NOT NULL THEN
+    SELECT po.* INTO v_po FROM public.partner_orders po WHERE po.id = v_po_id FOR UPDATE;  -- order row before b2b_credit
+    IF v_partner IS NULL AND NEW.origin_type = 'B2B_ORDER' THEN v_partner := v_po.partner_id; END IF;
+    IF v_po.partner_id IS NULL OR v_po.partner_id IS DISTINCT FROM v_partner THEN
+      RAISE EXCEPTION 'CREDIT_ORDER_PARTNER_MISMATCH' USING ERRCODE = '23514';
+    END IF;
+    IF NEW.origin_type = 'B2B_ORDER' AND EXISTS (SELECT 1 FROM public.accounts_receivable ar WHERE ar.origin_type = 'B2B_ORDER'
+         AND ar.origin_id = v_po_id AND ar.status <> 'CANCELED') THEN
+      RAISE EXCEPTION 'CREDIT_B2B_ORIGIN_ALREADY_BILLED' USING ERRCODE = 'PT409';
+    END IF;
+  END IF;
+  IF v_partner IS NULL THEN RETURN NEW; END IF;  -- not a partner debtor of this tenant: untouched
   IF NEW.partner_id IS NOT NULL AND NEW.partner_id IS DISTINCT FROM v_partner THEN
     RAISE EXCEPTION 'CREDIT_PARTNER_CONFLICT' USING ERRCODE = '23514';
   END IF;
   IF current_setting('transaction_isolation') <> 'read committed' THEN
     RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE = '0A000';  -- stale snapshot after wait
   END IF;
-  v_delta := round(NEW.total_amount, 2);
-  IF NEW.origin_type = 'DELIVERY' AND NEW.origin_id IS NOT NULL THEN
-    SELECT e.partner_order_id INTO v_po_id FROM public.entregas e WHERE e.id = NEW.origin_id;
-    IF v_po_id IS NOT NULL THEN
-      SELECT po.* INTO v_po FROM public.partner_orders po WHERE po.id = v_po_id FOR UPDATE;  -- row before b2b_credit
-      IF v_po.partner_id IS DISTINCT FROM v_partner THEN
-        RAISE EXCEPTION 'CREDIT_DELIVERY_ORDER_PARTNER_MISMATCH' USING ERRCODE = '23514';
-      END IF;
-    END IF;
-  END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_partner::text, 0));
-  -- Fresh statement snapshots from here on (READ COMMITTED), after any wait.
-  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = v_partner AND s.active IS TRUE) THEN
-    RAISE EXCEPTION 'CREDIT_SETTINGS_INACTIVE' USING ERRCODE = 'PT409';
+  -- Fresh statement snapshots from here on (READ COMMITTED): re-resolve the link after any wait.
+  IF platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id) IS DISTINCT FROM v_p THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';  -- unlinked/relinked/transferred while waiting
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.id = v_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+                  AND pa.commercial_owner_organization_id = NEW.organization_id) THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';
+  END IF;
+  v_cfg := platform_private.b2b_credit_config_block(v_partner);
+  IF v_cfg = 'configuracao_financeira_inativa' THEN RAISE EXCEPTION 'CREDIT_SETTINGS_INACTIVE' USING ERRCODE = 'PT409'; END IF;
+  IF v_cfg = 'limite_nao_definido' THEN RAISE EXCEPTION 'CREDIT_NO_LIMIT_DEFINED' USING ERRCODE = 'PT409'; END IF;
   v := public.fn_b2b_credit_exposure(v_partner, 0, NULL);
-  IF COALESCE((v->>'credit_limit')::numeric, 0) <= 0 THEN RAISE EXCEPTION 'CREDIT_NO_LIMIT_DEFINED' USING ERRCODE = 'PT409'; END IF;
   IF (v->>'block_if_overdue')::boolean AND (v->>'tem_vencidos')::boolean THEN
     RAISE EXCEPTION 'CREDIT_OVERDUE_BLOCK' USING ERRCODE = 'PT409';
   END IF;
+  v_delta := round(NEW.total_amount, 2);
   IF v_po_id IS NOT NULL THEN
-    -- Delivery of a still-committed order: the title replaces the order amount (fn_h6c link marks the
-    -- order generated in this same transaction) — count only the difference, never both.
     SELECT po.* INTO v_po FROM public.partner_orders po WHERE po.id = v_po_id;
     IF COALESCE(v_po.receivable_generated, false) = false
        AND v_po.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue',
@@ -146,7 +198,9 @@ BEGIN
       v_delta := v_delta - round(COALESCE(v_po.final_amount_with_interest, v_po.total, 0), 2);
     END IF;
   END IF;
-  IF (v->>'exposicao_atual')::numeric + v_delta > (v->>'credit_limit')::numeric THEN
+  -- A title that does not increase exposure (conversion/delivery of an already counted, possibly
+  -- credit-approved order) is never refused for limit; any increase must fit.
+  IF v_delta > 0 AND (v->>'exposicao_atual')::numeric + v_delta > (v->>'credit_limit')::numeric THEN
     IF v->>'credit_limit_action' = 'approval_required' THEN
       RAISE EXCEPTION 'CREDIT_LIMIT_EXCEEDED_APPROVAL' USING ERRCODE = 'PT409';
     END IF;

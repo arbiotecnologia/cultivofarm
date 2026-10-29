@@ -1,0 +1,7 @@
+Confirmação read-only pelo usuário (29/10/2026, produção swzpzcwiasxmjutrmvkm) — CONCLUÍDA, nenhuma escrita.
+- Parceiro FSF: 4a7e37e0-632a-41d5-8ccb-c627185ad5b3; ativo=true; deleted_at=NULL; client_id=NULL.
+- commercial_owner_organization_id = AR Bio 007bb519-cba0-4704-be2c-cb93ad010048 (owner provado -> PARTNER_OWNER_UNPROVEN não se aplica).
+- CNPJ gravado: 14 dígitos, DV válido (conferido pelo usuário). Não reproduzido aqui; sha256 dos dígitos: 511e3a6d3cc61fa79400e1474386f43432c2ffb99056a9ecd0d55da11d5d17fa
+- Nenhum cliente no tenant AR Bio por nome FSF nem pelo CNPJ -> o caminho esperado é criar 1 cliente e vincular.
+- Esses valores NÃO foram usados em fixtures; os testes usam apenas IDs/CNPJs sintéticos.
+- Execução real continua fora deste pacote: via fluxo UI autorizado (Clientes > Produtores e Parceiros B2B) ou RPC candidata após revisão; validação fiscal pendente com a contabilidade.
