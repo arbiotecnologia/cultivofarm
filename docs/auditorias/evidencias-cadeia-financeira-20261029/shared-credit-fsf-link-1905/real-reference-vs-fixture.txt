@@ -1,0 +1,13 @@
+Separação dados reais x fixture — rodada 19:05 UTC 29/10/2026 (OFFLINE)
+
+DADOS REAIS (somente relatados pelo usuário via consultas read-only; NÃO usados em nenhum teste):
+- Produção swzpzcwiasxmjutrmvkm: org AR Bio 007bb519… ; parceiro FSF 4a7e37e0… com client_id NULL; nenhum pedido FSF;
+  registro fiscal 0e3e8145-… em DRAFT/HOMOLOGATION sem número/data/vínculo (não é NF emitida).
+- UI (usuário): login AR Bio válido; pedido bloqueado pela validação contábil; regime exibido Lucro Presumido + CRT 1
+  (não corrigido nem validado aqui — pendente contabilidade); busca de destinatário FSF sem resultado (coerente com
+  ausência de cliente FSF no tenant AR Bio).
+- Não capturados aqui: commercial_owner_organization_id, cnpj e demais campos do parceiro FSF. O caminho depende deles:
+  owner = AR Bio → vínculo pela UI existente ou pela RPC candidata; owner NULL → PARTNER_OWNER_UNPROVEN (sem backfill).
+
+FIXTURES (100% sintéticas): todos os UUIDs, CNPJs (dígitos verificadores válidos, números fabricados 9900xxxx0001xx),
+razões sociais 'SINTETICO…', e-mails *.invalid, Auth/h15/has_role.

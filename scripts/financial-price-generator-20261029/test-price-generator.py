@@ -460,9 +460,12 @@ def main(out):
     # P0 regressions; those (10300 vs 10600, replay 7550 vs 7750) run unchanged in test-receivable-red-green.py.
     check('historical 10300/7550 title untouched', hist_before, pg.sql(f"SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM accounts_receivable_installments x WHERE receivable_id='{hist_tid}'"), 'HISTORY')
     check('historical balance still 2750', D('2750.00'), m.balance(hist_inst), 'HISTORY')
+    # Shared partner-credit guard over the remaining receivable writers (separate .review file).
+    load('shared_guard_tests', H / 'shared_guard_tests.py').run(sys.modules[__name__])
     summary = {}
     for c in checks: summary.setdefault(c['mode'], {}).setdefault(c['status'], 0); summary[c['mode']][c['status']] += 1
-    res = dict(level='DISPOSABLE_PG_COMPONENT_NOT_E2E', synthetic=['auth.uid/h15/staff (monetary harness)', 'payment settings stub', 'exposure lower-bound stub', 'NF origin stub', 'accounting gate stub', 'NF reference', 'customers'],
+    res = dict(level='DISPOSABLE_PG_COMPONENT_NOT_E2E', synthetic=['auth.uid/h15/staff (monetary harness)', 'payment settings stub', 'exposure lower-bound stub', 'NF origin stub', 'accounting gate stub', 'NF reference', 'customers', 'delivery canonical value/billing guard stubs', 'next generation date stub', 'tenant fill stub'],
+               shared_guard_sha256=hashlib.sha256((H / 'shared-credit-guard.sql.review').read_bytes()).hexdigest(),
                candidate_sha256=hashlib.sha256((H / 'price-generator.sql.review').read_bytes()).hexdigest(), checks=checks, summary=summary,
                fail=sum(c['status'] == 'FAIL' for c in checks))
     if out: pathlib.Path(out).write_text(json.dumps(res, indent=1, ensure_ascii=False, default=str))
