@@ -69,6 +69,9 @@ def main():
     pg.sql('CREATE TABLE accounts_receivable(id uuid,partner_id uuid,status text); CREATE TABLE accounts_receivable_installments(receivable_id uuid,original_amount numeric,received_amount numeric,status text,due_date date); CREATE TABLE partner_order_financial_links(partner_order_id uuid); ALTER TABLE partner_financial_settings ADD COLUMN overdue_tolerance_days int; ALTER TABLE partner_financial_settings ADD COLUMN block_if_overdue boolean; ALTER TABLE partner_financial_settings ADD COLUMN credit_limit_action text;')
     pg.sql(F['fn_b2b_credit_exposure(uuid,numeric,uuid)']['body']+';')
     check('exact LIVE exposure',F['fn_b2b_credit_exposure(uuid,numeric,uuid)']['md5'],pg.sql("SELECT md5(pg_get_functiondef('fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))"))
+    pg.sql(F['tg_partner_orders_credit_guard()']['body']+';')
+    ct = next(t for t in live['triggers'] if t['name']=='trg_partner_orders_credit_guard')
+    pg.sql(ct['definition']+';')
     pg.sql(f"SELECT set_config('test.uid','{U}',false); SELECT set_config('test.role','true',false); SELECT set_config('test.visible','true',false); INSERT INTO partner_financial_settings VALUES('{P}',true,100000,0,false,'approval_required');")
     def reset(amount=120000):
         pg.sql(f"TRUNCATE partner_orders,partner_order_audit_logs; INSERT INTO partner_orders(id,partner_id,created_by,total,status) VALUES('{O}','{P}','{U}',{amount},'aguardando_aprovacao_credito');")
