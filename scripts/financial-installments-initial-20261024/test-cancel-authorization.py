@@ -270,9 +270,9 @@ def main():
     # Non-READ-COMMITTED is denied, because a new SPI statement cannot refresh its transaction snapshot.
     post="SELECT public.is_financial_staff(auth.uid()) AND public.h15_actor_organization() = v_org INTO v_authorized;\n    IF v_authorized IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"
     body=body.replace('v_org uuid;', 'v_org uuid; v_authorized boolean;')
-    anchor='    IF NOT FOUND THEN'
+    anchor="    IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"
     assert body.count(anchor)==2
-    body=body.replace(anchor,'    '+post+'\n'+anchor)
+    body=body.replace(anchor,anchor+'\n    '+post)
     unguarded_body=body
     body=body.replace('BEGIN\n', "BEGIN\n  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n",1)
     for mode,transformed in [('RED_CAPTURED_WAIT',rpc['body']),('RED_SCOPED_WAIT',scoped_body),('GREEN_OFFLINE_ONLY',body)]:
