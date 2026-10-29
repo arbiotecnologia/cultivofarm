@@ -151,7 +151,8 @@ def oracle_rows(p, n, rate_pct):
         it = _round_cent(bal * i)
         am = bal if k == n - 1 else pmt - it
         bal -= am
-        out.append((str(Decimal(it.numerator) / it.denominator), str(Decimal(am.numerator) / am.denominator)))
+        fmt = lambda f: '%d.%02d' % divmod(int(f * 100), 100)
+        out.append((fmt(it), fmt(am)))
     return out
 
 

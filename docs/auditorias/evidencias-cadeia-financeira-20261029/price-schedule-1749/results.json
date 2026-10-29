@@ -1,0 +1,1512 @@
+{
+ "checks": [
+  {
+   "test": "discount 40% once",
+   "expected": "60000.00",
+   "actual": "60000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "discount odd cents",
+   "expected": "0.01",
+   "actual": "0.01",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "3x 60000 rows",
+   "expected": "[('1080.00', '19644.28'), ('726.40', '19997.88'), ('366.44', '20357.84')]",
+   "actual": "[('1080.00', '19644.28'), ('726.40', '19997.88'), ('366.44', '20357.84')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "3x 60000 payments",
+   "expected": "['20724.28', '20724.28', '20724.28']",
+   "actual": "['20724.28', '20724.28', '20724.28']",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "2x 60000 payments",
+   "expected": "['30812.41', '30812.41']",
+   "actual": "['30812.41', '30812.41']",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "1x 60000 no interest",
+   "expected": "[('0.00', '60000.00')]",
+   "actual": "[('0.00', '60000.00')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 1x 0.03",
+   "expected": "[('0.00', '0.03')]",
+   "actual": "[('0.00', '0.03')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 0.03",
+   "expected": "0.03",
+   "actual": "0.03",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 1x 0.03",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 0.03",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 1x 0.03",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 1x 0.07",
+   "expected": "[('0.00', '0.07')]",
+   "actual": "[('0.00', '0.07')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 0.07",
+   "expected": "0.07",
+   "actual": "0.07",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 1x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 1x 0.07",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 1x 0.10",
+   "expected": "[('0.00', '0.10')]",
+   "actual": "[('0.00', '0.10')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 0.10",
+   "expected": "0.10",
+   "actual": "0.10",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 1x 0.10",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 0.10",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 1x 0.10",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 1x 1.00",
+   "expected": "[('0.00', '1.00')]",
+   "actual": "[('0.00', '1.00')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 1.00",
+   "expected": "1.00",
+   "actual": "1.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 1x 1.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 1.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 1x 1.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 1x 12345.67",
+   "expected": "[('0.00', '12345.67')]",
+   "actual": "[('0.00', '12345.67')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 12345.67",
+   "expected": "12345.67",
+   "actual": "12345.67",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 1x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 1x 12345.67",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 1x 60000.00",
+   "expected": "[('0.00', '60000.00')]",
+   "actual": "[('0.00', '60000.00')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 60000.00",
+   "expected": "60000.00",
+   "actual": "60000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 1x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 1x 60000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 1x 99999.99",
+   "expected": "[('0.00', '99999.99')]",
+   "actual": "[('0.00', '99999.99')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 99999.99",
+   "expected": "99999.99",
+   "actual": "99999.99",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 1x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 1x 99999.99",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 1x 100000.00",
+   "expected": "[('0.00', '100000.00')]",
+   "actual": "[('0.00', '100000.00')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 100000.00",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 1x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 1x 100000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 2x 0.03",
+   "expected": "[('0.00', '0.02'), ('0.00', '0.01')]",
+   "actual": "[('0.00', '0.02'), ('0.00', '0.01')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 0.03",
+   "expected": "0.03",
+   "actual": "0.03",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 2x 0.03",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 0.03",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 2x 0.03",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 2x 0.07",
+   "expected": "[('0.00', '0.04'), ('0.00', '0.03')]",
+   "actual": "[('0.00', '0.04'), ('0.00', '0.03')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 0.07",
+   "expected": "0.07",
+   "actual": "0.07",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 2x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 2x 0.07",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 2x 0.10",
+   "expected": "[('0.00', '0.05'), ('0.00', '0.05')]",
+   "actual": "[('0.00', '0.05'), ('0.00', '0.05')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 0.10",
+   "expected": "0.10",
+   "actual": "0.10",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 2x 0.10",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 0.10",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 2x 0.10",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 2x 1.00",
+   "expected": "[('0.02', '0.49'), ('0.01', '0.51')]",
+   "actual": "[('0.02', '0.49'), ('0.01', '0.51')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 1.00",
+   "expected": "1.00",
+   "actual": "1.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 2x 1.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 1.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 2x 1.00",
+   "expected": "0.02",
+   "actual": "0.02",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 2x 12345.67",
+   "expected": "[('222.22', '6117.78'), ('112.10', '6227.89')]",
+   "actual": "[('222.22', '6117.78'), ('112.10', '6227.89')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 12345.67",
+   "expected": "12345.67",
+   "actual": "12345.67",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 2x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 2x 12345.67",
+   "expected": "222.22",
+   "actual": "222.22",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 2x 60000.00",
+   "expected": "[('1080.00', '29732.41'), ('544.82', '30267.59')]",
+   "actual": "[('1080.00', '29732.41'), ('544.82', '30267.59')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 60000.00",
+   "expected": "60000.00",
+   "actual": "60000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 2x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 2x 60000.00",
+   "expected": "1080.00",
+   "actual": "1080.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 2x 99999.99",
+   "expected": "[('1800.00', '49554.01'), ('908.03', '50445.98')]",
+   "actual": "[('1800.00', '49554.01'), ('908.03', '50445.98')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 99999.99",
+   "expected": "99999.99",
+   "actual": "99999.99",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 2x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 2x 99999.99",
+   "expected": "1800.00",
+   "actual": "1800.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 2x 100000.00",
+   "expected": "[('1800.00', '49554.01'), ('908.03', '50445.99')]",
+   "actual": "[('1800.00', '49554.01'), ('908.03', '50445.99')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 100000.00",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 2x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 2x 100000.00",
+   "expected": "1800.00",
+   "actual": "1800.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 3x 0.03",
+   "expected": "[('0.00', '0.01'), ('0.00', '0.01'), ('0.00', '0.01')]",
+   "actual": "[('0.00', '0.01'), ('0.00', '0.01'), ('0.00', '0.01')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 0.03",
+   "expected": "0.03",
+   "actual": "0.03",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 3x 0.03",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 0.03",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 3x 0.03",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 3x 0.07",
+   "expected": "[('0.00', '0.02'), ('0.00', '0.02'), ('0.00', '0.03')]",
+   "actual": "[('0.00', '0.02'), ('0.00', '0.02'), ('0.00', '0.03')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 0.07",
+   "expected": "0.07",
+   "actual": "0.07",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 3x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 3x 0.07",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 3x 0.10",
+   "expected": "[('0.00', '0.03'), ('0.00', '0.03'), ('0.00', '0.04')]",
+   "actual": "[('0.00', '0.03'), ('0.00', '0.03'), ('0.00', '0.04')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 0.10",
+   "expected": "0.10",
+   "actual": "0.10",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 3x 0.10",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 0.10",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 3x 0.10",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 3x 1.00",
+   "expected": "[('0.02', '0.33'), ('0.01', '0.34'), ('0.01', '0.33')]",
+   "actual": "[('0.02', '0.33'), ('0.01', '0.34'), ('0.01', '0.33')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 1.00",
+   "expected": "1.00",
+   "actual": "1.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 3x 1.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 1.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 3x 1.00",
+   "expected": "0.02",
+   "actual": "0.02",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 3x 12345.67",
+   "expected": "[('222.22', '4042.03'), ('149.47', '4114.78'), ('75.40', '4188.86')]",
+   "actual": "[('222.22', '4042.03'), ('149.47', '4114.78'), ('75.40', '4188.86')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 12345.67",
+   "expected": "12345.67",
+   "actual": "12345.67",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 3x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 3x 12345.67",
+   "expected": "222.22",
+   "actual": "222.22",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 3x 60000.00",
+   "expected": "[('1080.00', '19644.28'), ('726.40', '19997.88'), ('366.44', '20357.84')]",
+   "actual": "[('1080.00', '19644.28'), ('726.40', '19997.88'), ('366.44', '20357.84')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 60000.00",
+   "expected": "60000.00",
+   "actual": "60000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 3x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 3x 60000.00",
+   "expected": "1080.00",
+   "actual": "1080.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 3x 99999.99",
+   "expected": "[('1800.00', '32740.47'), ('1210.67', '33329.80'), ('610.73', '33929.72')]",
+   "actual": "[('1800.00', '32740.47'), ('1210.67', '33329.80'), ('610.73', '33929.72')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 99999.99",
+   "expected": "99999.99",
+   "actual": "99999.99",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 3x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 3x 99999.99",
+   "expected": "1800.00",
+   "actual": "1800.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle full rows 3x 100000.00",
+   "expected": "[('1800.00', '32740.47'), ('1210.67', '33329.80'), ('610.74', '33929.73')]",
+   "actual": "[('1800.00', '32740.47'), ('1210.67', '33329.80'), ('610.74', '33929.73')]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 100000.00",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "no zero/negative row 3x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "first period interest 3x 100000.00",
+   "expected": "1800.00",
+   "actual": "1800.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "not representable 2x 0.01",
+   "expected": "PLAN_NOT_REPRESENTABLE_IN_CENTS",
+   "actual": "PLAN_NOT_REPRESENTABLE_IN_CENTS",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "not representable 3x 0.01",
+   "expected": "PLAN_NOT_REPRESENTABLE_IN_CENTS",
+   "actual": "PLAN_NOT_REPRESENTABLE_IN_CENTS",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "not representable 3x 0.02",
+   "expected": "PLAN_NOT_REPRESENTABLE_IN_CENTS",
+   "actual": "PLAN_NOT_REPRESENTABLE_IN_CENTS",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "RED legacy full-term 3m total",
+   "expected": "63298.67",
+   "actual": "63298.67",
+   "mode": "PRICE_RED_SUPERSEDED",
+   "status": "PASS"
+  },
+  {
+   "test": "RED legacy overcharge vs Price",
+   "expected": "1125.83",
+   "actual": "1125.83",
+   "mode": "PRICE_RED_SUPERSEDED",
+   "status": "PASS"
+  },
+  {
+   "test": "financed total",
+   "expected": "62172.84",
+   "actual": "62172.84",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "total interest = total - principal",
+   "expected": "2172.84",
+   "actual": "2172.84",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal 'NaN'",
+   "expected": "PRINCIPAL_NOT_FINITE",
+   "actual": "PRINCIPAL_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit 'NaN'",
+   "expected": "CREDIT_LIMIT_NOT_FINITE",
+   "actual": "CREDIT_LIMIT_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure 'NaN'",
+   "expected": "EXPOSURE_NOT_FINITE",
+   "actual": "EXPOSURE_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal 'Infinity'",
+   "expected": "PRINCIPAL_NOT_FINITE",
+   "actual": "PRINCIPAL_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit 'Infinity'",
+   "expected": "CREDIT_LIMIT_NOT_FINITE",
+   "actual": "CREDIT_LIMIT_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure 'Infinity'",
+   "expected": "EXPOSURE_NOT_FINITE",
+   "actual": "EXPOSURE_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal '-Infinity'",
+   "expected": "PRINCIPAL_NOT_FINITE",
+   "actual": "PRINCIPAL_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit '-Infinity'",
+   "expected": "CREDIT_LIMIT_NOT_FINITE",
+   "actual": "CREDIT_LIMIT_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure '-Infinity'",
+   "expected": "EXPOSURE_NOT_FINITE",
+   "actual": "EXPOSURE_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal 'sNaN'",
+   "expected": "PRINCIPAL_NOT_FINITE",
+   "actual": "PRINCIPAL_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit 'sNaN'",
+   "expected": "CREDIT_LIMIT_NOT_FINITE",
+   "actual": "CREDIT_LIMIT_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure 'sNaN'",
+   "expected": "EXPOSURE_NOT_FINITE",
+   "actual": "EXPOSURE_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal 'abc'",
+   "expected": "PRINCIPAL_INVALID",
+   "actual": "PRINCIPAL_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit 'abc'",
+   "expected": "CREDIT_LIMIT_INVALID",
+   "actual": "CREDIT_LIMIT_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure 'abc'",
+   "expected": "EXPOSURE_INVALID",
+   "actual": "EXPOSURE_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal ''",
+   "expected": "PRINCIPAL_INVALID",
+   "actual": "PRINCIPAL_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit ''",
+   "expected": "CREDIT_LIMIT_INVALID",
+   "actual": "CREDIT_LIMIT_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure ''",
+   "expected": "EXPOSURE_INVALID",
+   "actual": "EXPOSURE_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal True",
+   "expected": "PRINCIPAL_INVALID_TYPE",
+   "actual": "PRINCIPAL_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit True",
+   "expected": "CREDIT_LIMIT_INVALID_TYPE",
+   "actual": "CREDIT_LIMIT_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure True",
+   "expected": "EXPOSURE_INVALID_TYPE",
+   "actual": "EXPOSURE_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal 60000.0",
+   "expected": "PRINCIPAL_INVALID_TYPE",
+   "actual": "PRINCIPAL_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit 60000.0",
+   "expected": "CREDIT_LIMIT_INVALID_TYPE",
+   "actual": "CREDIT_LIMIT_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure 60000.0",
+   "expected": "EXPOSURE_INVALID_TYPE",
+   "actual": "EXPOSURE_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal None",
+   "expected": "PRINCIPAL_INVALID_TYPE",
+   "actual": "PRINCIPAL_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit None",
+   "expected": "CREDIT_LIMIT_INVALID_TYPE",
+   "actual": "CREDIT_LIMIT_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure None",
+   "expected": "EXPOSURE_INVALID_TYPE",
+   "actual": "EXPOSURE_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal [1]",
+   "expected": "PRINCIPAL_INVALID_TYPE",
+   "actual": "PRINCIPAL_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit [1]",
+   "expected": "CREDIT_LIMIT_INVALID_TYPE",
+   "actual": "CREDIT_LIMIT_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure [1]",
+   "expected": "EXPOSURE_INVALID_TYPE",
+   "actual": "EXPOSURE_INVALID_TYPE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal '1.001'",
+   "expected": "PRINCIPAL_SUBCENT",
+   "actual": "PRINCIPAL_SUBCENT",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit '1.001'",
+   "expected": "CREDIT_LIMIT_SUBCENT",
+   "actual": "CREDIT_LIMIT_SUBCENT",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure '1.001'",
+   "expected": "EXPOSURE_SUBCENT",
+   "actual": "EXPOSURE_SUBCENT",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal '-1'",
+   "expected": "PRINCIPAL_NEGATIVE",
+   "actual": "PRINCIPAL_NEGATIVE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit '-1'",
+   "expected": "CREDIT_LIMIT_NEGATIVE",
+   "actual": "CREDIT_LIMIT_NEGATIVE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exposure '-1'",
+   "expected": "EXPOSURE_NEGATIVE",
+   "actual": "EXPOSURE_NEGATIVE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal '0'",
+   "expected": "PRINCIPAL_NOT_POSITIVE",
+   "actual": "PRINCIPAL_NOT_POSITIVE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "credit_limit '0'",
+   "expected": "ZERO_CREDIT_LIMIT",
+   "actual": "ZERO_CREDIT_LIMIT",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "schedule n=4",
+   "expected": "INSTALLMENTS_OUT_OF_RANGE",
+   "actual": "INSTALLMENTS_OUT_OF_RANGE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "dates n=4",
+   "expected": "INSTALLMENTS_OUT_OF_RANGE",
+   "actual": "INSTALLMENTS_OUT_OF_RANGE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "schedule n=0",
+   "expected": "INSTALLMENTS_OUT_OF_RANGE",
+   "actual": "INSTALLMENTS_OUT_OF_RANGE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "dates n=0",
+   "expected": "INSTALLMENTS_OUT_OF_RANGE",
+   "actual": "INSTALLMENTS_OUT_OF_RANGE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "schedule n=True",
+   "expected": "INSTALLMENTS_INVALID",
+   "actual": "INSTALLMENTS_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "dates n=True",
+   "expected": "INSTALLMENTS_INVALID",
+   "actual": "INSTALLMENTS_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "schedule n=2.0",
+   "expected": "INSTALLMENTS_INVALID",
+   "actual": "INSTALLMENTS_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "dates n=2.0",
+   "expected": "INSTALLMENTS_INVALID",
+   "actual": "INSTALLMENTS_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "schedule n='2'",
+   "expected": "INSTALLMENTS_INVALID",
+   "actual": "INSTALLMENTS_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "dates n='2'",
+   "expected": "INSTALLMENTS_INVALID",
+   "actual": "INSTALLMENTS_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "negative exposure cannot widen limit",
+   "expected": "EXPOSURE_NEGATIVE",
+   "actual": "EXPOSURE_NEGATIVE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "limit exceeded",
+   "expected": "LIMIT_EXCEEDED_BLOCK",
+   "actual": "LIMIT_EXCEEDED_BLOCK",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exact limit accepted principal basis",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal basis fits",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "financed basis exceeds",
+   "expected": "LIMIT_EXCEEDED_BLOCK",
+   "actual": "LIMIT_EXCEEDED_BLOCK",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "basis required",
+   "expected": "EXPOSURE_BASIS_REQUIRED",
+   "actual": "EXPOSURE_BASIS_REQUIRED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "automatic generation blocked (replay)",
+   "expected": "AUTO_GENERATION_BLOCKED",
+   "actual": "AUTO_GENERATION_BLOCKED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "automatic generation blocked (replay)",
+   "expected": "AUTO_GENERATION_BLOCKED",
+   "actual": "AUTO_GENERATION_BLOCKED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "production eligibility denied",
+   "expected": "False",
+   "actual": "False",
+   "mode": "PRODUCTION_GATE",
+   "status": "PASS"
+  },
+  {
+   "test": "production reasons include basis",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRODUCTION_GATE",
+   "status": "PASS"
+  },
+  {
+   "test": "NF+30 first due 2026-01-01",
+   "expected": "2026-01-31",
+   "actual": "2026-01-31",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "later dues candidate 2026-01-01",
+   "expected": "['2026-02-28', '2026-03-31']",
+   "actual": "['2026-02-28', '2026-03-31']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "NF+30 first due 2027-12-31",
+   "expected": "2028-01-30",
+   "actual": "2028-01-30",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "later dues candidate 2027-12-31",
+   "expected": "['2028-02-29', '2028-03-30']",
+   "actual": "['2028-02-29', '2028-03-30']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "NF+30 first due 2026-01-29",
+   "expected": "2026-02-28",
+   "actual": "2026-02-28",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "later dues candidate 2026-01-29",
+   "expected": "['2026-03-28', '2026-04-28']",
+   "actual": "['2026-03-28', '2026-04-28']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "NF+30 first due 2026-12-02",
+   "expected": "2027-01-01",
+   "actual": "2027-01-01",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "later dues candidate 2026-12-02",
+   "expected": "['2027-02-01', '2027-03-01']",
+   "actual": "['2027-02-01', '2027-03-01']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "NF+30 first due 2026-03-01",
+   "expected": "2026-03-31",
+   "actual": "2026-03-31",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "later dues candidate 2026-03-01",
+   "expected": "['2026-04-30', '2026-05-31']",
+   "actual": "['2026-04-30', '2026-05-31']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "NF+30 first due 2023-12-31",
+   "expected": "2024-01-30",
+   "actual": "2024-01-30",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "later dues candidate 2023-12-31",
+   "expected": "['2024-02-29', '2024-03-30']",
+   "actual": "['2024-02-29', '2024-03-30']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "late manual generation keeps NF due 2026-11-03",
+   "expected": "[datetime.date(2026, 12, 3), datetime.date(2027, 1, 3), datetime.date(2027, 2, 3)]",
+   "actual": "[datetime.date(2026, 12, 3), datetime.date(2027, 1, 3), datetime.date(2027, 2, 3)]",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "late manual generation keeps NF due 2026-11-20",
+   "expected": "[datetime.date(2026, 12, 3), datetime.date(2027, 1, 3), datetime.date(2027, 2, 3)]",
+   "actual": "[datetime.date(2026, 12, 3), datetime.date(2027, 1, 3), datetime.date(2027, 2, 3)]",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "late manual generation keeps NF due 2027-01-15",
+   "expected": "[datetime.date(2026, 12, 3), datetime.date(2027, 1, 3), datetime.date(2027, 2, 3)]",
+   "actual": "[datetime.date(2026, 12, 3), datetime.date(2027, 1, 3), datetime.date(2027, 2, 3)]",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "replay twice same dates",
+   "expected": "[datetime.date(2026, 12, 3), datetime.date(2027, 1, 3), datetime.date(2027, 2, 3)]",
+   "actual": "[datetime.date(2026, 12, 3), datetime.date(2027, 1, 3), datetime.date(2027, 2, 3)]",
+   "mode": "NF_ANCHOR_DECIDED",
+   "status": "PASS"
+  },
+  {
+   "test": "nf date None",
+   "expected": "NF_ISSUE_DATE_REQUIRED",
+   "actual": "NF_ISSUE_DATE_REQUIRED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "nf date '2026-11-03'",
+   "expected": "NF_ISSUE_DATE_REQUIRED",
+   "actual": "NF_ISSUE_DATE_REQUIRED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "nf date datetime.datetime(2026, 11, 3, 0, 0)",
+   "expected": "NF_ISSUE_DATE_REQUIRED",
+   "actual": "NF_ISSUE_DATE_REQUIRED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "generation before NF",
+   "expected": "GENERATION_BEFORE_NF",
+   "actual": "GENERATION_BEFORE_NF",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "generated_at string",
+   "expected": "GENERATED_AT_INVALID",
+   "actual": "GENERATED_AT_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  }
+ ],
+ "summary": {
+  "PRICE_GREEN": {
+   "PASS": 192
+  },
+  "PRICE_RED_SUPERSEDED": {
+   "PASS": 2
+  },
+  "PRODUCTION_GATE": {
+   "PASS": 2
+  },
+  "NF_ANCHOR_DECIDED": {
+   "PASS": 10
+  },
+  "CALENDAR_CANDIDATE_ONLY": {
+   "PASS": 6
+  }
+ },
+ "blocked": [
+  "PG end-to-end: captured generators implement no Price schedule and billing stays denied (PAYMENT_TERMS_NOT_DEFINED, C2_ACCOUNTING_PENDING, B2B_INTERNAL_DOWNSTREAM_UNVERIFIED); component tests only",
+  "Exposure basis principal vs financed total not proven in contract (captured fn_b2b_credit_exposure uses original_amount-received and final_amount_with_interest)",
+  "Later-due civil-month clamp, business-day rolling and pro-rata remain candidate/undecided",
+  "Fiscal/accounting provenance and real JWT/RLS A/B"
+ ],
+ "fail": 0
+}
