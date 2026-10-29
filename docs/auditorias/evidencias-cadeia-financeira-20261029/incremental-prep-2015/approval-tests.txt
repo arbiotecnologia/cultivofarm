@@ -36,6 +36,11 @@ PASS foreign scope no audit
 PASS unsupported isolation SQLSTATE
 PASS unsupported isolation atomic state
 PASS unsupported isolation no audit
+PASS reauth race proven blocking pids
+PASS reauth race settled
+PASS revoked during partner lock denied
+PASS revoked during lock no audit
+PASS revoked during lock no ticket
 PASS configured excess legitimate canonical approval
 PASS approved excess analysis status
 PASS one audit
@@ -50,4 +55,4 @@ PASS isolated amount plus cent blocked
 PASS exact limit accepted
 PASS deny-only rollback revokes client entry
 PASS deny-only rollback retains hardened guard
-{"passed": 52, "fail": 0}
+{"passed": 57, "fail": 0}
