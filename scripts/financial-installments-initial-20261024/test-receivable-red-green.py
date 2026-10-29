@@ -2,13 +2,13 @@
 Real captured Auth/h15/RBAC replace permissive helpers; synthetic minimal identity tables.
 No tickets, guard override, LIVE connection or installable SQL is emitted.
 """
-import hashlib, importlib.util, json, sys
+import hashlib, importlib.util, json, sys, argparse, tempfile
 from decimal import Decimal
 from pathlib import Path
 
 H = Path(__file__).resolve().parent
 ROOT = H.parents[1]
-OUT = ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029'
+OUT = None
 spec = importlib.util.spec_from_file_location('monetary', H/'test-receivable-semantics.py')
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
@@ -56,6 +56,13 @@ def identity():
     return installed
 
 def main():
+    global OUT
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--output-dir',type=Path)
+    args=parser.parse_args()
+    OUT=args.output_dir or Path(tempfile.mkdtemp(prefix='receivable-red-green-',dir='/tmp'))
+    assert OUT.resolve() != (ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029').resolve(), 'Historical output is immutable'
+    if args.output_dir: OUT.mkdir(parents=True,exist_ok=False)
     m.pg.start()
     mode_hashes={}
     for mode in ['RED_BASELINE','GREEN_SANDBOX']:

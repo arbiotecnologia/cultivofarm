@@ -3,7 +3,7 @@ Uses existing monetary schema/identity harness. Never fabricates an origin ticke
 """
 import sys
 sys.dont_write_bytecode = True
-import importlib.util, json, hashlib, subprocess, csv, argparse, tempfile, time, re, os
+import importlib.util, json, hashlib, subprocess, csv, argparse, tempfile, time, re, os, threading, queue
 from pathlib import Path
 
 H = Path(__file__).resolve().parent
@@ -16,8 +16,9 @@ parser.add_argument('--output-dir', type=Path)
 args = parser.parse_args()
 OUT = args.output_dir or Path(tempfile.mkdtemp(prefix='cancel-authorization-', dir='/tmp'))
 if args.output_dir:
+    legacy=m.ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029'
+    assert not OUT.resolve().is_relative_to(legacy.resolve()) or 'cancel-authorization-revision-' in OUT.name, 'Historical output is immutable'
     OUT.mkdir(parents=True, exist_ok=False)
-assert OUT.resolve() != (m.ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization').resolve()
 races = []
 checks, pins, omitted_policies, responses = [], [], [], []
 V = m.uid(900001)
@@ -121,17 +122,30 @@ def paid_fixture(n,kind,org):
     return part
 
 
+def locked(process, part):
+    messages=queue.Queue()
+    def read():
+        messages.put((process.stdout.readline().strip(),process.stdout.readline().strip()))
+    threading.Thread(target=read,daemon=True).start()
+    try: result=messages.get(timeout=4)
+    except queue.Empty: raise AssertionError('Holder lock acknowledgement timeout')
+    assert result==(part,'LOCKED'),result
+    return 'LOCKED'
+
+def amounts(part,kind):
+    return m.pg.sql(f"SELECT jsonb_build_object('original',original_amount,'net',net_amount,'interest',interest_amount,'penalty',penalty_amount,'discount',discount_amount,'paid',{'received_amount' if kind=='receivable' else 'paid_amount'}) FROM accounts_{kind}_installments WHERE id='{part}'")
+
 def race(body, mode, kind, revoke, number, isolation='READ COMMITTED'):
     # Owner prepares/locks fixtures, but the RPC is dispatched by authenticated LOGIN only.
     m.pg.sql(body+';')
     part=fixture(number,kind,m.A)
-    before=state(); holder=None; worker=None
+    before=state(); monetary_before=amounts(part,kind); holder=None; worker=None
     label=f'{mode} {kind} wait revoke {revoke} {isolation}'
     tag='cancel_'+str(number)
     try:
         holder=subprocess.Popen(m.pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         holder.stdin.write(f"BEGIN; SET statement_timeout='12s'; SELECT id FROM accounts_{kind}_installments WHERE id='{part}' FOR UPDATE; SELECT 'LOCKED';\n"); holder.stdin.flush()
-        check(label+' holder locked', 'LOCKED', holder.stdout.readline().strip() if holder.stdout.readline().strip()==part else 'MISSING', mode)
+        check(label+' holder locked', 'LOCKED', locked(holder,part), mode)
         claims=m.q(json.dumps(dict(sub=m.U,iat=1793275200)))
         worker=subprocess.Popen(m.pg.psql('authenticated')+['-v','VERBOSITY=verbose'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         worker.stdin.write(f"SET application_name='{tag}'; SET statement_timeout='10s'; SET lock_timeout='7s'; SELECT set_config('request.jwt.claims',{claims},false); BEGIN ISOLATION LEVEL {isolation}; "+call(part,kind)+" COMMIT;\n");worker.stdin.close();worker.stdin=None
@@ -159,6 +173,7 @@ def race(body, mode, kind, revoke, number, isolation='READ COMMITTED'):
             check(label+' RED cancellation persisted','CANCELED',m.pg.sql(f"SELECT status FROM accounts_{kind}_installments WHERE id='{part}'"),mode)
         else:
             check(label+' late tenant trigger denies',True,result.returncode!=0 and unchanged,mode)
+        check(label+' monetary snapshot retained',monetary_before,amounts(part,kind),mode)
         races.append(dict(test=label,wait=observed,returncode=result.returncode,error=error_tuple(result) if result.returncode else None,state_unchanged=unchanged))
     finally:
         for process in [worker,holder]:
@@ -171,8 +186,7 @@ def foreign_no_lock(kind, number):
     try:
         holder=subprocess.Popen(m.pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         holder.stdin.write(f"BEGIN; SET statement_timeout='8s'; SELECT id FROM accounts_{kind}_installments WHERE id='{part}' FOR UPDATE; SELECT 'LOCKED';\n");holder.stdin.flush()
-        assert holder.stdout.readline().strip()==part
-        assert holder.stdout.readline().strip()=='LOCKED'
+        locked(holder,part)
         result=client("SET lock_timeout='200ms';"+call(part,kind))
         check(kind+' foreign locked row denies without waiting on row',('42501','FINANCIAL_SCOPE_DENIED'),error_tuple(result),'GREEN_OFFLINE_ONLY')
         check(kind+' foreign locked row full state unchanged',before,state(),'GREEN_OFFLINE_ONLY')
@@ -307,7 +321,12 @@ def main():
         own_b=fixture(1650+(10 if kind=='payable' else 0),kind,m.B)
         check(kind+' GREEN own B accepted',0,client(call(own_b,kind),V).returncode,'GREEN_OFFLINE_ONLY')
         own=fixture(960+(10 if kind=='payable' else 0),kind,m.A)
+        monetary_before=amounts(own,kind)
+        denied(kind+' GREEN short reason preserved',f"SELECT rpc_cancel_financial_installment('{own}','{kind}','bad');",'Motivo é obrigatório',mode='GREEN_OFFLINE_ONLY')
+        denied(kind+' GREEN invalid kind preserved',call(own,'invalid'),'Tipo inválido',mode='GREEN_OFFLINE_ONLY')
         check(kind+' GREEN own preserved',0,client(call(own,kind)).returncode,'GREEN_OFFLINE_ONLY')
+        check(kind+' GREEN own monetary snapshot retained',monetary_before,amounts(own,kind),'GREEN_OFFLINE_ONLY')
+        check(kind+' GREEN own original concrete', '10300.00', m.pg.sql(f"SELECT original_amount::numeric(14,2) FROM accounts_{kind}_installments WHERE id='{own}'"),'GREEN_OFFLINE_ONLY')
         denied(kind+' GREEN replay preserved',call(own,kind),'já cancelada',mode='GREEN_OFFLINE_ONLY')
         active=paid_fixture(982+(10 if kind=='payable' else 0),kind,m.A)
         denied(kind+' GREEN own payment branch preserved',call(active,kind),'não estornados',mode='GREEN_OFFLINE_ONLY')
@@ -320,7 +339,7 @@ def main():
     (OUT/'rpc-offline-transformation.diff').write_text(''.join(__import__('difflib').unified_diff(rpc['body'].splitlines(True),body.splitlines(True),fromfile='captured',tofile='offline-not-installable')))
     result=dict(counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL']},checks=checks,pins=pins,responses=responses,
         captured_manifest_sha256=hashlib.sha256((H/'receivable-recursive-live-20261029.json').read_bytes()).hexdigest(),
-        transformed_body_md5=hashlib.md5(body.encode()).hexdigest(),
+        transformed_body_md5=hashlib.md5(body.encode()).hexdigest(), postgres_version=m.pg.sql('SHOW server_version'), isolation_contract='GREEN denies non-READ-COMMITTED; separate post-lock SPI SELECT calls exact STABLE helpers',
         omitted_policies=omitted_policies, races=races, helper_metadata=helper_metadata, output_dir=str(OUT), by_mode={mode:sum(c['mode']==mode for c in checks) for mode in sorted({c['mode'] for c in checks})},
         blocked=['B2B own positive requires captured recalc_partner_risk_score and full risk/partner/governance dependency chain'],
         not_run=['Hosted JWT/RLS A/B, full BI/provenance and promotion'],
@@ -330,7 +349,7 @@ def main():
     with (OUT/'matrix.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=list(checks[0]),lineterminator='\n');w.writeheader();w.writerows(checks)
         w.writerow(dict(test='B2B own positive cancellation',expected='Legitimate complete chain',actual='Fixture fails in exact risk trigger before RPC',mode='INTEGRATION',status='BLOCKED'))
-        w.writerow(dict(test='JWT/RLS hosted A/B and lock wait revocation',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN'))
+        w.writerow(dict(test='JWT/RLS hosted A/B and full chain',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN'))
     print(json.dumps(result['counts']))
 
 if __name__=='__main__':
