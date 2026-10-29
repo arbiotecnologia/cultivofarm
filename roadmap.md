@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 29/10 — autorização local do cancelamento financeiro
+- [ ] Reutilizar harness e catálogo capturado para executar RPC como clientes sintéticos A/B, com ACL/RLS e guards efetivos.
+- [ ] Testar próprio/estrangeiro/anônimo/identidade/revogação/replay e distinguir vulnerabilidade de pré-requisito ausente.
+- [ ] Conferir regressões/hashes/revisão independente e atualizar relatório e plano original, sem runtime ou produção.
+
 ## Política superveniente AR/FSF — 28/10 02:37 UTC
 - [x] Substituir candidata por40% fixo/0%até30d/1,8%até6m/2%até12m; referência anterior arquivada e evidências intactas.
 - [x] Decimal/faixas/contrafactuais: PG41PASS/0FAIL/16BLOCKED/1NOT RUN; regressões129/129 em8arquivos sem tocar entrega.
