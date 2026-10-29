@@ -1,0 +1,30 @@
+-- Deny-safe rollback: restore the exact original ALL restrictive guard; neutralize the helper (false body, no EXECUTE).
+-- REVIEW ONLY. Aborts unless the installed state matches the pinned POST state.
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+LOCK TABLE public.partner_orders IN ACCESS EXCLUSIVE MODE;
+DO $pre$
+DECLARE v text;
+BEGIN
+  SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)
+    INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_orders';
+  IF md5(v) <> '87776bb912a6157a493cd0488586c7af' THEN RAISE EXCEPTION 'ROLLBACK_PRE_DRIFT %', md5(v); END IF;
+END $pre$;
+DROP POLICY b2b_phase1_tenant_guard_select ON public.partner_orders;
+DROP POLICY b2b_phase1_tenant_guard_insert ON public.partner_orders;
+DROP POLICY b2b_phase1_tenant_guard_update ON public.partner_orders;
+DROP POLICY b2b_phase1_tenant_guard_delete ON public.partner_orders;
+CREATE POLICY b2b_phase1_tenant_guard ON public.partner_orders AS RESTRICTIVE FOR ALL TO authenticated
+  USING (platform_private.b2b_phase1_partner_visible(partner_id, false))
+  WITH CHECK (platform_private.b2b_phase1_partner_visible(partner_id, false));
+CREATE OR REPLACE FUNCTION platform_private.b2b_owner_internal_partner_readable(p_partner uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $f$ SELECT false $f$;
+REVOKE ALL ON FUNCTION platform_private.b2b_owner_internal_partner_readable(uuid) FROM PUBLIC, anon, authenticated;
+DO $post$
+DECLARE v text;
+BEGIN
+  SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)
+    INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_orders';
+  IF md5(v) <> '8e07ffe28764e18b6b9b5b0f13df8410' THEN RAISE EXCEPTION 'ROLLBACK_POST_DRIFT %', md5(v); END IF;
+END $post$;
+COMMIT;
