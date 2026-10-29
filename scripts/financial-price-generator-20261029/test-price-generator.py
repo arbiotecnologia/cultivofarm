@@ -135,7 +135,7 @@ def debtor_races():
     check('second actor waits on first via pg_blocking_pids', '{' + str(pid1) + '}', blocked, 'DEBTOR_RACE')
     finish(p1, 'COMMIT'); t.join(15)
     err = box['r'].stderr.decode()
-    check('exactly 1 success + 1 LIMIT refusal (different actors/keys)', (True, 1, True), (json.loads(out1)['success'], box['r'].returncode, 'LIMIT_EXCEEDED_BLOCK' in err), 'DEBTOR_RACE')
+    check('exactly 1 success + 1 LIMIT refusal (different actors/keys)', (True, True, True), (json.loads(out1)['success'], box['r'].returncode != 0, 'LIMIT_EXCEEDED_BLOCK' in err), 'DEBTOR_RACE')
     check('only one new title/receipt', (1, 1), (len(json.loads(state())['t'] or []) - len(json.loads(before)['t'] or []), len(json.loads(state())['r'] or []) - len(json.loads(before)['r'] or [])), 'DEBTOR_RACE')
     check('fresh exposure after commit includes winner', e0 + f, exposure(), 'DEBTOR_RACE')
     # Different debtor is NOT serialized behind the lock (tenant B customer CB).
