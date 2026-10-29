@@ -168,12 +168,10 @@ def main(out):
     # Limit on financed total incl. interest: hist 10300 open balance 2750 counts.
     exp_now = D(pg.sql(f"SELECT platform_private.price_credit_exposure('{A}','{C}')"))
     check('synthetic exposure = historical open balance', D('2750.00'), exp_now, 'LIMIT')
-    deny('limit exceeded (100000x3 total 103621.40 > 100000)', nf('2026-10-29') + call(payload(key='k-limit')), 'LIMIT_EXCEEDED_BLOCK', 'LIMIT')
-    pg.sql(STUB_EXPOSURE.replace("+ coalesce(nullif(current_setting('test.extra_exposure',true),'')::numeric,0)", "+ coalesce(nullif(current_setting('test.extra_exposure',true),'')::numeric,0) - 2750"))
-    # exposure now 0 + extra; 60000 net -> 62172.84 financed (3x).
-    base = nf('2026-10-29') + "SELECT set_config('test.extra_exposure','37827.17',false);"
-    deny('threshold +0.01 blocked', base + call(payload(key='k-thr-plus')), 'LIMIT_EXCEEDED_BLOCK', 'LIMIT')
-    base = nf('2026-10-29') + "SELECT set_config('test.extra_exposure','37827.16',false);"
+    # exposure 2750 (historical) + extra; 100000 table -> 60000 net -> 62172.84 financed (3x).
+    base = nf('2026-10-29') + "SELECT set_config('test.extra_exposure','35077.17',false);"
+    deny('financed total incl. interest +0.01 over limit blocked', base + call(payload(key='k-thr-plus')), 'LIMIT_EXCEEDED_BLOCK', 'LIMIT')
+    base = nf('2026-10-29') + "SELECT set_config('test.extra_exposure','35077.16',false);"
     r = ok(base + call(payload(key='k-main-3x')))
     tid = r['receivable_id']
     check('exact threshold accepted', (True, False), (r['success'], r['replayed']), 'LIMIT')
@@ -193,7 +191,7 @@ def main(out):
     deny('captured title snapshot guard', f"UPDATE accounts_receivable SET total_amount=1 WHERE id='{tid}';", 'imutavel', 'SNAPSHOT')
     # Replay.
     before = state()
-    r2 = ok(base + call(payload(key='k-main-3x')))
+    r2 = ok(base + call(payload(key='k-main-3x')))  # replay must not re-check limit nor write
     check('replay same key/payload returns same title, no writes', (tid, True, True), (r2['receivable_id'], r2['replayed'], state() == before), 'IDEMPOTENCY')
     deny('same key different payload PT409', base + call(payload(2, key='k-main-3x')), 'IDEMPOTENCY_KEY_REUSED', 'IDEMPOTENCY')
     # Concurrency: two sessions same new key -> one title.
