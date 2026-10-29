@@ -143,10 +143,53 @@ def resolve_new_plan_policy(policy, n, rate_request=None):
     return dict(n=n, rate=rate, credit_limit=money(a['credit_limit'], 'CREDIT_LIMIT'), first_due=a['first_due'], exposure_basis='financed_total')
 
 
-def production_eligibility(*_a, **_k):
-    """Separated from the candidate API: production stays denied."""
-    return dict(eligible=False, reasons=[
-        'CALENDAR_SOURCE_REQUIRED',
+REQUIRED_LOCALITY = 'Paracatu-MG'
+CALENDAR_SCHEMA = 'cultivofarm.holiday-calendar.v1'
+
+
+def load_real_calendar(path, policy):
+    """Load an official versioned dataset; authority pins locality. No
+    fallback to national-only or another municipality's dataset."""
+    import hashlib
+    want = (policy or {}).get('active_candidate', {}).get('holiday_calendar_locality')
+    if want != REQUIRED_LOCALITY:
+        raise Rejected('CALENDAR_LOCALITY_AUTHORITY_REQUIRED')
+    try:
+        doc = json.loads(pathlib.Path(path).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        raise Rejected('CALENDAR_SOURCE_REQUIRED')
+    if not isinstance(doc, dict) or doc.get('schema') != CALENDAR_SCHEMA or doc.get('kind') != 'REAL_OFFICIAL_SOURCES':
+        raise Rejected('CALENDAR_METADATA_REQUIRED')
+    if doc.get('locality') != want:
+        raise Rejected('CALENDAR_LOCALITY_MISMATCH')
+    if not doc.get('sources') or not all(str(s.get('url', '')).startswith('https://') for s in doc['sources']) or not doc.get('consulted_on'):
+        raise Rejected('CALENDAR_METADATA_REQUIRED')
+    data = doc.get('data')
+    canon = json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    if hashlib.sha256(canon.encode()).hexdigest() != (doc.get('integrity') or {}).get('sha256'):
+        raise Rejected('CALENDAR_INTEGRITY_MISMATCH')
+    try:
+        hol = [datetime.date.fromisoformat(h['date']) for h in data['holidays'] if h.get('classification') == 'FERIADO']
+        opt = {datetime.date.fromisoformat(x['date']) for x in data.get('excluded_optional_points', [])}
+        cs, ce = datetime.date.fromisoformat(doc['coverage_start']), datetime.date.fromisoformat(doc['coverage_end'])
+    except (KeyError, TypeError, ValueError):
+        raise Rejected('CALENDAR_HOLIDAYS_INVALID')
+    if len(hol) != len(data['holidays']) or len(set(hol)) != len(hol) or opt & set(hol):
+        raise Rejected('CALENDAR_HOLIDAYS_INVALID')  # facultativo never becomes holiday
+    return dict(version=doc['version'], locality=doc['locality'], source=doc['sources'][0]['url'],
+                coverage_start=cs, coverage_end=ce, holidays=frozenset(hol), kind='REAL')
+
+
+def production_eligibility(*_a, calendar_dataset=None, **_k):
+    """Separated from the candidate API: production stays denied. The
+    calendar reason is precise: absent source vs valid dataset with limited
+    coverage."""
+    if calendar_dataset is None:
+        cal = ['CALENDAR_SOURCE_REQUIRED']
+    else:
+        validate_calendar(calendar_dataset)
+        cal = ['CALENDAR_COVERAGE_LIMITED_TO_%s..%s' % (calendar_dataset['coverage_start'], calendar_dataset['coverage_end'])]
+    return dict(eligible=False, reasons=cal + [
         'GENERATORS_WITHOUT_PRICE', 'PAYMENT_TERMS_NOT_DEFINED', 'C2_ACCOUNTING_PENDING',
         'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED', 'JWT_RLS_AB_NOT_PROVEN'])
 
