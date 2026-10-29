@@ -47,6 +47,7 @@ def exercise(h, metadata):
         for statement in ["status='em_analise_comercial'","status='aprovado'","credit_approved_by="+m.q(actor)]:
             reject('GREEN zero progression '+label+' '+statement,f"UPDATE harness.credit_probe SET {statement} WHERE id='{probe}';",('23514','B2B_ZERO_CREDIT_LIMIT'),actor)
         h.check('credit restore explicit CAS '+label,0,update(partner,20000,actor).returncode,green)
+    transform('fn_b2b_credit_exposure',"    WHEN v_limit <= 0 THEN 'NO_LIMIT_DEFINED'\n",'')
     # Exact service-only exposure via a reduced DEFINER trigger carrier; no public
     # EXECUTE on the calculator and no fabricated origin/approval/title writer.
     m.pg.sql("CREATE TABLE harness.exposure_probe(id uuid PRIMARY KEY,partner_id uuid,new_amount numeric,exclude_order_id uuid,result jsonb); GRANT INSERT,SELECT,UPDATE ON harness.exposure_probe TO authenticated; CREATE FUNCTION harness.exposure_carrier() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN NEW.result:=public.fn_b2b_credit_exposure(NEW.partner_id,NEW.new_amount,NEW.exclude_order_id); RETURN NEW; END$$; REVOKE ALL ON FUNCTION harness.exposure_carrier() FROM PUBLIC,anon,authenticated; CREATE TRIGGER exposure BEFORE INSERT OR UPDATE ON harness.exposure_probe FOR EACH ROW EXECUTE FUNCTION harness.exposure_carrier();")
@@ -65,6 +66,12 @@ def exercise(h, metadata):
         return json.loads(m.pg.sql(f"SELECT result FROM harness.exposure_probe WHERE id='{ident}'"))
     initial=exposure('initial')
     h.check('exposure financed total minus payment',9300,initial['saldo_em_aberto'],green)
+    h.check('credit zero exposure CAS',0,update(partner,0,m.U).returncode,green)
+    zero=exposure('explicit zero exposure')
+    h.check('credit zero not unlimited exposure reason','LIMIT_EXCEEDED_BLOCK',zero['reason_code'],green)
+    h.check('credit zero available concrete',0,zero['credito_disponivel'],green)
+    h.check('credit zero division safe',0,zero['percentual_utilizado'],green)
+    h.check('credit exposure restore CAS',0,update(partner,20000,m.U).returncode,green)
     order1,order2,linked=m.uid(940001),m.uid(940002),m.uid(940003)
     m.pg.sql(f"INSERT INTO partner_orders(id,partner_id,status,total,final_amount_with_interest) VALUES('{order1}','{partner}','aprovado',999,2000),('{order2}','{partner}','em_analise_comercial',999,1500),('{linked}','{partner}','aprovado',999,5000),('{m.uid(940004)}','{other}','aprovado',999,9000); INSERT INTO partner_order_financial_links(partner_order_id) VALUES('{linked}');")
     result=exposure('mixed',700)
@@ -126,8 +133,9 @@ def exercise(h, metadata):
     assert corrected.count(boundary)==1
     projection=prefix.replace('public.generate_b2b_receivable_secure_impl(p_partner_order_id uuid)','harness.parties_projection(p_partner_order_id uuid)')+" RETURN jsonb_build_object('creditor',v_org,'buyer_partner',v_order.partner_id); END $function$"
     m.pg.sql(projection+'; REVOKE ALL ON FUNCTION harness.parties_projection(uuid) FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION harness.parties_projection(uuid) TO authenticated;')
-    res=h.client(f"SELECT harness.parties_projection('{order1}');")
+    before=h.state();res=h.client(f"SELECT harness.parties_projection('{order1}');")
     h.check('projection exact AR owner FSF buyer',dict(creditor=m.A,buyer_partner=partner),json.loads(res.stdout.splitlines()[-1]),'PARTIES_FRAGMENT_ONLY')
+    h.check('projection no write or snapshot alteration',before,h.state(),'PARTIES_FRAGMENT_ONLY')
     m.pg.sql(f"INSERT INTO user_roles VALUES('{m.U}','administrador');")
     def partner_change(sql):
         res=h.client(sql);assert res.returncode==0,res.stderr
