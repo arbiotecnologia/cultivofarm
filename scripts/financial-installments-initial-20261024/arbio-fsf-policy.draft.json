@@ -156,9 +156,10 @@
       "decision": "BOLETO_BANCARIO",
       "decided_by": "owner",
       "decided_at": "2026-10-29T18:35Z",
-      "catalog": "public.payment_methods(id,name,active) — no code column; resolve exactly one ACTIVE row whose normalized name is \"boleto bancario\"; never invent UUID or activate",
+      "catalog": "public.payment_methods(id,name,active); explicit normalized aliases {\"boleto\",\"boleto bancario\"}, no fuzzy; exactly one ACTIVE row per environment (production|homologation); never invent UUID, activate, or transfer ids across projects",
       "issuance": "NOT_AUTHORIZED: no boleto emission, bank integration, bank account or credentials",
-      "resolution_status": "BLOCKED: PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG (owner read-only capture 2026-10-29: only AUDIT-AR-20260922 active; must not be reused, nothing created/activated)"
+      "resolution_status": "BLOCKED: PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG (owner read-only capture 2026-10-29: only AUDIT-AR-20260922 active; must not be reused, nothing created/activated)",
+      "homologation_observation": "vrlcdwmlytukrjezrrnf: active \"Boleto\" resolves — read-only evidence, NOT applied configuration, NOT permission to issue/install"
     }
   },
   "resolved_by_active_candidate": {
