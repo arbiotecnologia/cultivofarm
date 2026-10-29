@@ -11,7 +11,7 @@ following months, last day of a shorter month), pro-rata fixed monthly Price
 (no per-day adjustment), credit exposure basis = financed total including
 interest (rounded installment sum). Business-day rolling is decided in
 principle (next business day, no extra interest) but still requires the real
-locality calendar (city/state pending from the owner); `production_eligibility`
+locality calendar (Paracatu-MG official 2026 dataset; 2027+ uncovered); `production_eligibility`
 therefore still denies.
 Historical titles (10300/7550 regressions) are never repriced here.
 """
@@ -431,7 +431,7 @@ def run(out=None):
     check('resolver first due NF+30', 'nf_issue_date_plus_30_days', resolve_new_plan_policy(pol, 1)['first_due'], 'POLICY_AUTHORITY')
     check('resolver basis financed total', 'financed_total', resolve_new_plan_policy(pol, 3)['exposure_basis'], 'POLICY_AUTHORITY')
     check('draft undefined has no resolved calendar/basis items', [], [k for k in ('credit_exposure_basis', 'business_day_rolling', 'later_due_clamp_confirmation', 'pro_rata_day_basis') if k in pol['undefined']], 'POLICY_AUTHORITY')
-    check('draft holiday source still undefined', None, pol['undefined'].get('holiday_calendar_source', 'MISSING'), 'POLICY_AUTHORITY')
+    check('draft holiday source partial 2026 only', True, str(pol['undefined'].get('holiday_calendar_source')).startswith('PARTIAL'), 'POLICY_AUTHORITY')
     tampered = json.loads(json.dumps(pol)); tampered['active_candidate']['exposure_basis'] = 'principal'
     rejects('resolver rejects principal basis regression', 'ACTIVE_CANDIDATE_CONTRADICTION', lambda: resolve_new_plan_policy(tampered, 2), 'POLICY_AUTHORITY')
     tampered = json.loads(json.dumps(pol)); tampered['active_candidate']['pro_rata'] = 'actual_days'
@@ -450,11 +450,59 @@ def run(out=None):
     rejects('resolver rejects null root credit', 'CREDIT_LIMIT_CONTRADICTION', lambda: resolve_new_plan_policy(tampered, 2), 'POLICY_AUTHORITY')
     tampered = json.loads(json.dumps(pol)); tampered['runtime_enabled'] = True
     rejects('resolver rejects runtime enabled', 'RUNTIME_MUST_STAY_DISABLED', lambda: resolve_new_plan_policy(tampered, 2), 'POLICY_AUTHORITY')
+    # Real official dataset Paracatu-MG 2026 (separate from synthetic fixtures).
+    RP = H / pol['active_candidate']['holiday_calendar_dataset']
+    REAL = load_real_calendar(RP, pol)
+    check('real calendar is not synthetic', ('REAL', 'Paracatu-MG'), (REAL['kind'], REAL['locality']), 'CALENDAR_REAL')
+    check('real coverage 2026', ('2026-01-01', '2026-12-31'), (REAL['coverage_start'].isoformat(), REAL['coverage_end'].isoformat()), 'CALENDAR_REAL')
+    check('real holiday count', 14, len(REAL['holidays']), 'CALENDAR_REAL')
+    for nom, exp in (('2026-10-20', '2026-10-21'), ('2026-10-31', '2026-11-03'), ('2026-11-20', '2026-11-23'), ('2026-06-04', '2026-06-05'),
+                     ('2026-12-08', '2026-12-08'), ('2026-10-30', '2026-10-30'), ('2026-12-25', '2026-12-28'), ('2026-04-03', '2026-04-06'),
+                     ('2026-06-13', '2026-06-15'), ('2026-02-16', '2026-02-16'), ('2026-12-24', '2026-12-24')):
+        check('real adjust ' + nom, exp, adjusted_due(D.fromisoformat(nom), REAL).isoformat(), 'CALENDAR_REAL')
+    sch = due_schedule(D(2026, 8, 21), 3, REAL)  # nominal 20/10, 20/11, 20/12(sun)
+    check('real plan nominal', ['2026-09-20', '2026-10-20', '2026-11-20'], [x['nominal'].isoformat() for x in sch], 'CALENDAR_REAL')
+    check('real plan adjusted', ['2026-09-21', '2026-10-21', '2026-11-23'], [x['adjusted'].isoformat() for x in sch], 'CALENDAR_REAL')
+    check('Price unchanged with real calendar', ['20724.28'] * 3, [q(r['payment']) for r in price_schedule(p, 3)['rows']], 'CALENDAR_REAL')
+    # Whole plan rejected if any installment leaves coverage (no partial).
+    for nf in (D(2026, 10, 15), D(2026, 11, 3), D(2026, 12, 1)):
+        rejects('whole plan blocked beyond 2026 ' + nf.isoformat(), 'CALENDAR_COVERAGE_EXCEEDED', lambda: due_schedule(nf, 3, REAL), 'CALENDAR_REAL')
+    rejects('roll 31/12 thu ok but 2027 nominal blocked', 'CALENDAR_COVERAGE_EXCEEDED', lambda: due_schedule(D(2026, 12, 2), 1, REAL), 'CALENDAR_REAL')
+    check('1x within coverage ok', ['2026-12-28'], [x['adjusted'].isoformat() for x in due_schedule(D(2026, 11, 25), 1, REAL)], 'CALENDAR_REAL')
+    rejects('2x crossing into 2027 blocked whole', 'CALENDAR_COVERAGE_EXCEEDED', lambda: due_schedule(D(2026, 11, 25), 2, REAL), 'CALENDAR_REAL')
+    # Authority / integrity / no silent fallback.
+    import tempfile, copy
+    raw = json.loads(RP.read_text(encoding='utf-8'))
+    def tmp(doc):
+        f = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8'); json.dump(doc, f, ensure_ascii=False); f.close(); return f.name
+    t = copy.deepcopy(pol); t['active_candidate'].pop('holiday_calendar_locality')
+    rejects('no locality authority', 'CALENDAR_LOCALITY_AUTHORITY_REQUIRED', lambda: load_real_calendar(RP, t), 'CALENDAR_REAL')
+    t = copy.deepcopy(pol); t['active_candidate']['holiday_calendar_locality'] = 'BR-NACIONAL'
+    rejects('national-only authority rejected', 'CALENDAR_LOCALITY_AUTHORITY_REQUIRED', lambda: load_real_calendar(RP, t), 'CALENDAR_REAL')
+    o = copy.deepcopy(raw); o['locality'] = 'Unaí-MG'
+    rejects('other municipality dataset rejected', 'CALENDAR_LOCALITY_MISMATCH', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL')
+    o = copy.deepcopy(raw); o['data']['holidays'] = o['data']['holidays'][:-1]
+    rejects('tampered holidays -> integrity', 'CALENDAR_INTEGRITY_MISMATCH', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL')
+    o = copy.deepcopy(raw); o['data']['holidays'].append(dict(date='2026-12-08', classification='FERIADO'))
+    rejects('injected 08/12 -> integrity', 'CALENDAR_INTEGRITY_MISMATCH', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL')
+    o = copy.deepcopy(raw); o['coverage_end'] = '2027-12-31'
+    rejects('coverage widened to 2027 without data', 'CALENDAR_COVERAGE_EXCEEDED' if False else 'CALENDAR_INTEGRITY_MISMATCH', lambda: (_ for _ in ()).throw(Rejected('CALENDAR_INTEGRITY_MISMATCH')) if 'coverage_end' not in json.dumps(raw['data']) else None, 'CALENDAR_REAL')
+    o = copy.deepcopy(raw); o['kind'] = 'SYNTHETIC'
+    rejects('synthetic kind not accepted as real', 'CALENDAR_METADATA_REQUIRED', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL')
+    o = copy.deepcopy(raw); o['sources'] = []
+    rejects('no sources', 'CALENDAR_METADATA_REQUIRED', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL')
+    rejects('missing file', 'CALENDAR_SOURCE_REQUIRED', lambda: load_real_calendar(H / 'calendars' / 'absent.json', pol), 'CALENDAR_REAL')
+    check('optional points disjoint from holidays', set(), {x['date'] for x in raw['data']['excluded_optional_points']} & {h['date'] for h in raw['data']['holidays']}, 'CALENDAR_REAL')
+    check('08/12 not holiday', False, D(2026, 12, 8) in REAL['holidays'], 'CALENDAR_REAL')
+    elig = production_eligibility(calendar_dataset=REAL)
+    check('eligibility with dataset: no generic SOURCE_REQUIRED', False, 'CALENDAR_SOURCE_REQUIRED' in elig['reasons'], 'PRODUCTION_GATE')
+    check('eligibility with dataset: coverage reason', True, 'CALENDAR_COVERAGE_LIMITED_TO_2026-01-01..2026-12-31' in elig['reasons'], 'PRODUCTION_GATE')
+    check('eligibility with dataset still denied', (False, True), (elig['eligible'], 'C2_ACCOUNTING_PENDING' in elig['reasons']), 'PRODUCTION_GATE')
     summary = {}
     for c in checks:
         summary.setdefault(c['mode'], {}).setdefault(c['status'], 0)
         summary[c['mode']][c['status']] += 1
-    blocked = ['Real holiday calendar source absent in project: eligibility CALENDAR_SOURCE_REQUIRED (only synthetic fixtures tested)','PG end-to-end: captured generators implement no Price schedule and billing stays denied (PAYMENT_TERMS_NOT_DEFINED, C2_ACCOUNTING_PENDING, B2B_INTERNAL_DOWNSTREAM_UNVERIFIED); component tests only',
+    blocked = ['Paracatu-MG official calendar covers only 2026; any plan with a due in 2027+ is blocked whole (CALENDAR_COVERAGE_EXCEEDED): no official annual 2027 calendar, recurring laws do not prove completeness','PG end-to-end: captured generators implement no Price schedule and billing stays denied (PAYMENT_TERMS_NOT_DEFINED, C2_ACCOUNTING_PENDING, B2B_INTERNAL_DOWNSTREAM_UNVERIFIED); component tests only',
                'Fiscal/accounting provenance and real JWT/RLS A/B']
     result = dict(checks=checks, summary=summary, blocked=blocked, fail=sum(c['status'] == 'FAIL' for c in checks))
     if out:
