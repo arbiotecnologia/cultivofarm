@@ -17,7 +17,7 @@ def run(raw=None, mode='HOMOLOG_ISOLATED', scope='READONLY', path=None, root=ROO
     if scope: e['PREFLIGHT_SCOPE'] = scope
     e['PREFLIGHT_ROOT'] = str(root)
     if path is not None: e['PATH'] = path
-    r = subprocess.run(['bash', str(D / 'preflight.sh')], env=e, capture_output=True, text=True); return r.returncode, r.stdout
+    r = subprocess.run([shutil.which('bash'), str(D / 'preflight.sh')], env=e, capture_output=True, text=True); return r.returncode, r.stdout
 class T(unittest.TestCase):
     def test_says_evidence_validator_only(self): self.assertIn('não verifica runtime', run(evid())[1])
     def test_no_mode_or_scope_denies(self):
@@ -49,7 +49,7 @@ class T(unittest.TestCase):
     def test_missing_human_check_blocked(self): self.assertEqual(run(evid(human_check={}))[0], 2)
     def test_missing_evidence_blocked(self): self.assertEqual(run(None)[0], 2)
     def test_missing_rg_denies(self):
-        tmp = tempfile.mkdtemp(); os.symlink(shutil.which('python3'), os.path.join(tmp, 'python3'))
+        tmp = tempfile.mkdtemp(); [os.symlink(shutil.which(b), os.path.join(tmp, b)) for b in ('python3', 'dirname')]
         c, o = run(evid(), path=tmp + ':/usr/bin/env-none'); self.assertEqual(c, 1); self.assertIn('rg ausente', o)
     def test_wrong_root_denies(self):
         c, o = run(evid(), root=pathlib.Path(tempfile.mkdtemp())); self.assertEqual(c, 1); self.assertIn('raiz do projeto inválida', o)
