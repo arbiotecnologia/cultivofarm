@@ -55,6 +55,63 @@ def exercise(h, metadata):
     auth="IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(p_partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;"
     guard=auth+"\n IF NOT "+complete+" THEN RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001'; END IF;"
     transform('recalc_partner_risk_score',"  IF p_partner_id IS NULL THEN RAISE EXCEPTION 'partner_id required'; END IF;", "  IF p_partner_id IS NULL THEN RAISE EXCEPTION 'partner_id required'; END IF;\n "+guard)
+    # Captured service-only calculators remain service-only. Carrier triggers below
+    # exercise their unchanged DEFINER boundary, not new callable client RPCs.
+    for name in ['fn_b2b_credit_exposure','tg_partner_orders_credit_guard','tg_auto_b2b_receivable','fn_b2b_order_billing_eligibility','fn_h6c_entrega_ar_b2b_link']:
+        f=r.captured('public',name);h.acl('FUNCTION',f['signature'],f['acl'])
+    anchor='  v_limit := COALESCE(v_limit,0);'
+    transform('fn_b2b_credit_exposure',anchor,'  '+guard+'\n'+anchor)
+    # A matching row shape is synthetic scaffolding, never an order writer or origin proof.
+    m.pg.sql("ALTER TABLE partner_orders ADD COLUMN total numeric, ADD COLUMN final_amount_with_interest numeric, ADD COLUMN receivable_generated boolean, ADD COLUMN internal_origin_snapshot jsonb; CREATE TABLE partner_order_financial_links(partner_order_id uuid UNIQUE); CREATE SCHEMA harness; GRANT USAGE ON SCHEMA harness TO authenticated; CREATE TABLE harness.credit_probe(id uuid PRIMARY KEY,partner_id uuid,status text,total numeric,final_amount_with_interest numeric,credit_approved_by uuid,credit_block_reason text,receivable_generated boolean DEFAULT false); GRANT SELECT,INSERT,UPDATE,DELETE ON harness.credit_probe TO authenticated; CREATE TRIGGER credit_probe BEFORE INSERT OR UPDATE ON harness.credit_probe FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_credit_guard();")
+    h.extra_state_tables+=['harness.credit_probe','partner_order_financial_links']
+    # The baseline credit trigger's approved shortcut skips the calculator entirely.
+    probe=m.uid(903000);partner=m.uid(900002)
+    res=h.client(f"INSERT INTO harness.credit_probe(id,partner_id,status,total) VALUES('{probe}','{partner}','rascunho',100);")
+    h.check('credit carrier baseline draft accepted',0,res.returncode,'DEFERRED_RED_CAPTURED')
+    res=h.client(f"UPDATE harness.credit_probe SET credit_approved_by='{m.U}',status='aprovado' WHERE id='{probe}';")
+    h.check('RED absent settings approved shortcut accepted',0,res.returncode,'DEFERRED_RED_CAPTURED')
+    h.check('RED shortcut progressed','aprovado',m.pg.sql(f"SELECT status FROM harness.credit_probe WHERE id='{probe}'"),'DEFERRED_RED_CAPTURED')
+    m.pg.sql('DELETE FROM harness.credit_probe;')
+    financial_statuses="('em_analise_comercial','aprovado','aguardando_aprovacao_credito','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado')"
+    scoped_guard=guard.replace('p_partner_id','NEW.partner_id')
+    entry="\n  IF NEW.status IN "+financial_statuses+" OR NEW.credit_approved_by IS NOT NULL THEN\n    "+scoped_guard+"\n  END IF;"
+    transform('tg_partner_orders_credit_guard','BEGIN\n','BEGIN\n'+entry+'\n')
+    transform('tg_auto_b2b_receivable','BEGIN\n','BEGIN\n'+entry.replace(' OR NEW.credit_approved_by IS NOT NULL','')+'\n')
+    # Full captured eligibility remains private; its readiness branch is additionally
+    # exercised as an invoker DO fragment with synthetic v_order, not an exposed RPC.
+    eligibility_guard=guard.replace('p_partner_id','v_order.partner_id')
+    eligibility_guard=eligibility_guard.replace("RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001';","RETURN jsonb_build_object('eligible',false,'reason_code','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED');")
+    anchor="  IF NOT FOUND THEN RETURN jsonb_build_object('eligible',false,'reason_code','ORDER_NOT_FOUND'); END IF;"
+    transform('fn_b2b_order_billing_eligibility',anchor,anchor+'\n'+eligibility_guard)
+    # Link guard moves before the first protected title mutation, no fallback settings.
+    link_guard=guard.replace('p_partner_id','v_po.partner_id')
+    anchor='  -- 1) o recebível passa a pertencer ao parceiro (entra em saldo_em_aberto)'
+    transform('fn_h6c_entrega_ar_b2b_link',anchor,'  '+link_guard+'\n'+anchor)
+    # Wrapper already preserves explicit origin/accounting denials. Add readiness only
+    # after those exact gates, before row/advisory locks and downstream writers.
+    wrapper=r.captured('public','generate_b2b_receivable_secure');h.acl('FUNCTION',wrapper['signature'],wrapper['acl'])
+    for schema,name in [('public','b2b_phase1_partner_visible'),('platform_private','b2b_phase1_order_visible'),('public','b2b_phase1_order_visible')]:
+        f=r.captured(schema,name);h.acl('FUNCTION',f['signature'],f['acl'])
+    # No complete order fixture is inserted. Trigger carrier tests settings denial
+    # directly; full wrapper's origin denial remains source-pinned and NOT RUN.
+    anchor='  -- Canonical row-before-receipt order, matching approval and its billing trigger.'
+    wrapper_guard=guard.replace('p_partner_id','(SELECT partner_id FROM public.partner_orders WHERE id=p_partner_order_id)')
+    transform('generate_b2b_receivable_secure',anchor,'  '+wrapper_guard+'\n'+anchor)
+    for actor,org,partner,label in partners:
+        probe=m.uid(903010+(1 if label=='B' else 0))
+        h.check('deferred draft carrier '+label,0,h.client(f"INSERT INTO harness.credit_probe(id,partner_id,status,total) VALUES('{probe}','{partner}','rascunho',100);",actor).returncode,mode)
+        for status in ['em_analise_comercial','aprovado','entregue']:
+            rejected('deferred credit progression '+status+' '+label,f"UPDATE harness.credit_probe SET status='{status}' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        rejected('deferred credit approved shortcut '+label,f"UPDATE harness.credit_probe SET credit_approved_by='{actor}' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        # Link carrier uses the captured row-locked order lookup, but that order shape
+        # is explicitly reduced and has no invented origin or downstream positive.
+    m.pg.sql("CREATE TABLE harness.delivery_probe(id uuid PRIMARY KEY, partner_order_id uuid,receivable_id uuid,billing_generated_by uuid); GRANT SELECT,INSERT,UPDATE ON harness.delivery_probe TO authenticated; CREATE TRIGGER link_probe BEFORE UPDATE ON harness.delivery_probe FOR EACH ROW EXECUTE FUNCTION fn_h6c_entrega_ar_b2b_link();")
+    h.extra_state_tables.append('harness.delivery_probe')
+    for actor,org,partner,label in partners:
+        order=m.uid(904000+(1 if label=='B' else 0));probe=m.uid(904010+(1 if label=='B' else 0))
+        m.pg.sql(f"INSERT INTO partner_orders(id,partner_id,status) VALUES('{order}','{partner}','rascunho'); INSERT INTO harness.delivery_probe(id,partner_order_id,billing_generated_by) VALUES('{probe}','{order}','{actor}');")
+        rejected('deferred delivery link missing settings '+label,f"UPDATE harness.delivery_probe SET receivable_id='{m.uid(904020)}' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+    m.pg.sql('DELETE FROM partner_orders;')
     # All supplied values must be explicit; no defaulted/null credit or fabricated method.
     anchor=" -- Exact canonical name; method row lock prevents concurrent deactivation through commit."
     validation=""" IF newrow.credit_limit IS NULL OR newrow.credit_limit::text IN ('NaN','Infinity','-Infinity') OR newrow.credit_limit<0
@@ -91,6 +148,18 @@ def exercise(h, metadata):
         res=h.client(f"SELECT recalc_partner_risk_score('{partner}');",actor)
         h.check('deferred configured risk own '+label,0,res.returncode,mode)
         h.check('deferred configured risk legitimate empty history '+label,'0|baixo',m.pg.sql(f"SELECT score,risk_level FROM partner_risk_scores WHERE partner_id='{partner}'"),mode)
+        probe=m.uid(903010+(1 if label=='B' else 0))
+        h.check('deferred configured credit carrier allowed '+label,0,h.client(f"UPDATE harness.credit_probe SET status='em_analise_comercial' WHERE id='{probe}';",actor).returncode,mode)
+        # Method deactivation and active=false must close readiness, even with eleven keys.
+        m.pg.sql(f"UPDATE payment_methods SET active=false WHERE id='{m.PM}';")
+        try:rejected('deferred deactivated method risk '+label,f"SELECT recalc_partner_risk_score('{partner}');",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        finally:m.pg.sql(f"UPDATE payment_methods SET active=true WHERE id='{m.PM}';")
+        expected=m.pg.sql('SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='+m.q(partner))
+        inactive=dict(values);inactive['active']=False
+        h.check('deferred canonical inactive configuration '+label,0,h.client(update(partner,inactive,expected),actor).returncode,mode)
+        rejected('deferred inactive configuration risk '+label,f"SELECT recalc_partner_risk_score('{partner}');",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        expected=m.pg.sql('SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='+m.q(partner))
+        h.check('deferred canonical reactivation '+label,0,h.client(update(partner,values,expected),actor).returncode,mode)
     rejected('deferred anonymous updater',update(m.uid(900002),values),('42501','permission denied for function rpc_update_partner_financial_settings'),None,'anon')
     # Configuration removes only the risk FK blocker, not the origin/fiscal authority.
     part=h.fixture(2050,'receivable',m.A,b2b=True);money=h.amounts(part,'receivable')
