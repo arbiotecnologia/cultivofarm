@@ -183,3 +183,6 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 ## 29/10/2026 18:00 UTC — limite com juros, vencimentos e dia útil (offline)
 - Decidido e aplicado: limite sobre total com juros; 2ª/3ª no mesmo dia dos meses seguintes (último dia se curto, sem deriva); próximo dia útil sem juros extras; sem pro-rata. 269/0 FAIL; Vitest 57/57.
 - BLOCKED: calendário real de feriados (CALENDAR_SOURCE_REQUIRED), composição PG com Price, fiscal/contábil, JWT/RLS real. Produção NO-GO.
+
+## 29/10/2026 18:10 UTC — Calendário Paracatu-MG 2026 (offline)
+- Dataset oficial versionado e selado por hash, localidade Paracatu-MG obrigatória; ajuste de dia útil real testado. 2027+ sem cobertura: plano inteiro bloqueado (`CALENDAR_COVERAGE_EXCEEDED`). Motor 307/0 FAIL. Produção NO-GO pelos gates restantes.

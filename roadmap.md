@@ -1031,4 +1031,5 @@
 - [x] Motor Price, limites, calendário candidato e testes.
 - [x] Âncora NF+30 decidida.
 - [x] Base de exposição (total com juros), vencimentos seguintes, dia útil e sem pro-rata decididos e testados.
-- [ ] Calendário real de feriados (fonte, localidade, cobertura) — aguarda fonte humana.
+- [x] Calendário real Paracatu-MG 2026 (fontes oficiais, hash).
+- [ ] Calendário 2027+ — aguarda decreto/calendário oficial anual de Paracatu.
