@@ -171,3 +171,8 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - Decisões: limite R$100.000; geração só manual autorizada; 1–3 parcelas mensais, 1º vencimento base+30d, Price 1,8% a.m. (1x/30d 0%); 4+ rejeitado; Price substitui full-term só para novos planos; históricos intocados.
 - Resultado: 155 verificações/0 FAIL; Vitest 57/57. Relatório `docs/auditorias/price-parcelamento-offline-20261029.md`.
 - BLOCKED: evento âncora da data-base, pro-rata/período irregular, dia útil; geradores sem Price e gates contábeis/origem; JWT/RLS real. Produção NO-GO.
+
+## 29/10/2026 17:49 UTC — NF+30 e correções do motor Price (offline)
+- Decisão: 1º vencimento = emissão da NF + 30 dias; geração manual não reinicia prazo.
+- Validação de entradas, exposição não negativa, rejeição de planos não representáveis em centavos, oráculo independente; 212 verificações/0 FAIL; Vitest 57/57.
+- BLOCKED: base de exposição (principal × total financiado), clamp/dia útil/pro-rata dos vencimentos seguintes, PG ponta a ponta (geradores sem Price, gates de cobrança/contabilidade), JWT/RLS real. Produção NO-GO.

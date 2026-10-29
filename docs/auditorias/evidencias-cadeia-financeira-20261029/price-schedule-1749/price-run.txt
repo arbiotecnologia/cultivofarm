@@ -1,0 +1,1 @@
+{"total": 212, "fail": 0, "summary": {"PRICE_GREEN": {"PASS": 192}, "PRICE_RED_SUPERSEDED": {"PASS": 2}, "PRODUCTION_GATE": {"PASS": 2}, "NF_ANCHOR_DECIDED": {"PASS": 10}, "CALENDAR_CANDIDATE_ONLY": {"PASS": 6}}}

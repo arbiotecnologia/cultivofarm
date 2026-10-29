@@ -28,3 +28,15 @@ Somente candidato offline. Sem runtime, SQL hosted, migration, deploy, GRANT, us
 
 ## Evidências
 `docs/auditorias/evidencias-cadeia-financeira-20261029/price-schedule-1741/` (`results.json`, `price-run.txt`, `vitest-final.txt`, `SHA256SUMS.versioned`, `check-git-tree.py <commit>`). O manifesto só lista arquivos não ignorados pelo Git; conferir com o checker contra o commit que contiver esta rodada.
+
+## Rodada 17:49 UTC — correções da revisão do commit 69acee5
+- Decisão humana: 1º vencimento = emissão da NF + 30 dias; geração manual tardia/repetida não reinicia prazo (testado com geração em 03/11, 20/11 e 15/01 → mesmas datas).
+- Validação monetária explícita (principal, limite, exposição): NaN/sNaN/Infinity, texto inválido, bool, float, None, lista, subcentavo e negativos viram erros de domínio; exceção não controlada conta como FAIL. Exposição negativa não amplia o limite.
+- Valores minúsculos: planos com parcela/amortização zero ou negativa são rejeitados (`PLAN_NOT_REPRESENTABLE_IN_CENTS`, ex.: 0,01 em 2x/3x, 0,02 em 3x), sem mudar n.
+- Testes tautológicos removidos; oráculo independente em frações com arredondamento próprio compara todas as linhas (juros/amortização) em 24 cenários, mais vetores fixos 60.000 em 3x (1080,00/19644,28; 726,40/19997,88; 366,44/20357,84).
+- `due_dates_candidate` valida n 1..3 (bool/float/texto não), data `date` real (datetime/texto recusados) e geração não anterior à NF. Vencimentos seguintes (mês civil com clamp) são CANDIDATOS, não bloqueio implementado; dia útil e pro-rata não são aplicados.
+- Base de exposição: o mesmo caso (60.000 em 3x com 40.000 já expostos) cabe pelo principal e excede pelo total financiado. A função capturada `fn_b2b_credit_exposure` usa `original_amount - received` e `final_amount_with_interest` (total financiado), mas o contrato não está comprovado: a API candidata exige a base explícita e `production_eligibility` sempre nega.
+- Resultado: 212 verificações, 0 FAIL — PRICE_GREEN 192, PRICE_RED_SUPERSEDED 2 (excesso full-term 1.125,83), PRODUCTION_GATE 2, NF_ANCHOR_DECIDED 10, CALENDAR_CANDIDATE_ONLY 6. Vitest 6 arquivos/57 testes PASS.
+- Manifesto anterior `price-schedule-1741/SHA256SUMS.versioned` conferido contra objetos Git reais do commit 69acee5: 4 entradas, 0 falhas.
+- PG ponta a ponta com Price: NÃO executado (BLOCKED). Os geradores capturados não calculam Price e a cobrança é negada por `PAYMENT_TERMS_NOT_DEFINED`/`C2_ACCOUNTING_PENDING`/`B2B_INTERNAL_DOWNSTREAM_UNVERIFIED`; injetar parcelas contornaria esses gates. Os testes desta rodada são de componente.
+- Evidências: `price-schedule-1749/` (results.json, price-run.txt, vitest-final.txt, check-previous-1741-vs-69acee5.txt, SHA256SUMS.versioned, check-git-tree.py).
