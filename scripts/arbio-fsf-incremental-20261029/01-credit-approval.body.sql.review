@@ -1,0 +1,253 @@
+CREATE FUNCTION platform_private.b2b_credit_config_block(p_partner uuid) RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT CASE
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE) THEN 'configuracao_financeira_inativa'
+    WHEN NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id = p_partner AND s.active IS TRUE AND s.credit_limit > 0 AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity')) THEN 'limite_nao_definido'
+  END $$;
+REVOKE ALL ON FUNCTION platform_private.b2b_credit_config_block(uuid) FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION public.tg_partner_orders_credit_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v jsonb;
+  v_amount numeric(14,2);
+  v_should_check boolean := false;
+  v_cfg text;
+BEGIN
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000';
+  END IF;
+  IF coalesce(NEW.final_amount_with_interest,NEW.total,0)::text IN ('NaN','Infinity','-Infinity')
+     OR coalesce(NEW.final_amount_with_interest,NEW.total,0) < 0 THEN
+    RAISE EXCEPTION 'CREDIT_AMOUNT_INVALID' USING ERRCODE='23514';
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.status NOT IN ('rascunho') THEN v_should_check := true; END IF;
+  ELSIF TG_OP = 'UPDATE' THEN
+    IF NEW.credit_approved_by IS NOT NULL
+       AND NEW.status = 'em_analise_comercial'
+       AND OLD.status = 'aguardando_aprovacao_credito'
+       AND NEW.total IS NOT DISTINCT FROM OLD.total
+       AND NEW.final_amount_with_interest IS NOT DISTINCT FROM OLD.final_amount_with_interest THEN
+      -- CANDIDATE: approval never releases absent/inactive settings or undefined limit.
+      PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
+      v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
+      IF v_cfg IS NOT NULL THEN
+        NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
+        NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
+      END IF;
+      NEW.credit_block_reason := NULL;
+      RETURN NEW;
+    END IF;
+
+    IF NEW.credit_approved_by IS NOT NULL AND OLD.credit_approved_by IS NULL
+       AND NEW.total IS NOT DISTINCT FROM OLD.total
+       AND NEW.final_amount_with_interest IS NOT DISTINCT FROM OLD.final_amount_with_interest THEN
+      -- CANDIDATE: approval never releases absent/inactive settings or undefined limit.
+      PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
+      v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
+      IF v_cfg IS NOT NULL THEN
+        NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
+        NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
+      END IF;
+      NEW.credit_block_reason := NULL;
+      RETURN NEW;
+    END IF;
+
+    IF OLD.credit_approved_by IS NOT NULL
+       AND NEW.status = 'aprovado'
+       AND OLD.status = 'em_analise_comercial'
+       AND NEW.total IS NOT DISTINCT FROM OLD.total
+       AND NEW.final_amount_with_interest IS NOT DISTINCT FROM OLD.final_amount_with_interest THEN
+      -- CANDIDATE: approval never releases absent/inactive settings or undefined limit.
+      PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
+      v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
+      IF v_cfg IS NOT NULL THEN
+        NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
+        NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
+      END IF;
+      RETURN NEW;
+    END IF;
+
+    IF NEW.status IS DISTINCT FROM OLD.status
+       AND NEW.status IN ('em_analise_comercial','aprovado') THEN
+      v_should_check := true;
+    ELSIF (NEW.total IS DISTINCT FROM OLD.total
+        OR NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest)
+       AND NEW.status IN ('em_analise_comercial','aprovado','aguardando_aprovacao_credito') THEN
+      v_should_check := true;
+    END IF;
+  END IF;
+
+  IF NOT v_should_check THEN RETURN NEW; END IF;
+
+  -- Serializa a avaliacao de credito por parceiro dentro da transacao corrente.
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || NEW.partner_id::text, 0));
+
+  -- CANDIDATE: configuracao financeira ausente/inativa ou limite nao definido bloqueia (fresh read after lock).
+  v_cfg := platform_private.b2b_credit_config_block(NEW.partner_id);
+  IF v_cfg IS NOT NULL THEN
+    NEW.status := 'aguardando_aprovacao_credito';
+    NEW.credit_block_reason := v_cfg;
+    RETURN NEW;
+  END IF;
+
+  v_amount := ROUND(COALESCE(NEW.final_amount_with_interest, NEW.total, 0), 2);
+  v := public.fn_b2b_credit_exposure(NEW.partner_id, v_amount, NEW.id);
+
+  IF COALESCE((v->>'credit_limit')::numeric, 0) <= 0 THEN
+    NEW.status := 'aguardando_aprovacao_credito';
+    NEW.credit_block_reason := 'limite_nao_definido';
+    RETURN NEW;
+  END IF;
+
+  IF (v->>'block_if_overdue')::boolean AND (v->>'tem_vencidos')::boolean THEN
+    NEW.status := 'aguardando_aprovacao_credito';
+    NEW.credit_block_reason := 'inadimplencia';
+    RETURN NEW;
+  END IF;
+
+  IF COALESCE((v->>'credit_limit')::numeric,0) > 0
+     AND (v->>'exposicao_projetada')::numeric > (v->>'credit_limit')::numeric THEN
+    NEW.status := 'aguardando_aprovacao_credito';
+    NEW.credit_block_reason := CASE
+      WHEN (v->>'credit_limit_action') = 'approval_required' THEN 'limite_excedido'
+      ELSE 'limite_excedido_bloqueado'
+    END;
+  END IF;
+
+  RETURN NEW;
+END $function$;
+
+
+CREATE TABLE platform_private.credit_approval_tickets_20261029 (
+ transaction_id bigint NOT NULL, actor_id uuid NOT NULL, order_id uuid NOT NULL,
+ PRIMARY KEY(transaction_id, actor_id, order_id));
+REVOKE ALL ON platform_private.credit_approval_tickets_20261029 FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.credit_approval_tickets_20261029 ENABLE ROW LEVEL SECURITY;
+CREATE OR REPLACE FUNCTION public.fn_b2b_guard_credit_approval_fields() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $approval$
+BEGIN
+ IF NEW.credit_approved_at IS DISTINCT FROM OLD.credit_approved_at OR NEW.credit_approved_by IS DISTINCT FROM OLD.credit_approved_by THEN
+   IF NOT EXISTS (SELECT 1 FROM platform_private.credit_approval_tickets_20261029 t
+      WHERE t.transaction_id=txid_current() AND t.actor_id=auth.uid() AND t.order_id=OLD.id)
+      OR NEW.id IS DISTINCT FROM OLD.id OR NEW.partner_id IS DISTINCT FROM OLD.partner_id
+      OR OLD.status::text <> 'aguardando_aprovacao_credito' OR NEW.status::text <> 'em_analise_comercial'
+      OR NEW.credit_approved_by IS DISTINCT FROM auth.uid() OR NEW.credit_approved_at IS NULL
+      OR NEW.total IS DISTINCT FROM OLD.total OR NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest THEN
+      RAISE EXCEPTION 'credit_approval_fields_immutable: use approve_b2b_credit' USING ERRCODE='42501';
+   END IF;
+   DELETE FROM platform_private.credit_approval_tickets_20261029
+    WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id;
+ END IF;
+ RETURN NEW;
+END $approval$;
+
+CREATE OR REPLACE FUNCTION public.approve_b2b_credit(p_partner_order_id uuid, p_notes text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_order public.partner_orders%ROWTYPE;
+  v_final_status public.partner_order_status;
+  v_final_reason text;
+  v_updated integer;
+  v_config text;
+BEGIN
+
+  IF public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth_required'; END IF;
+  IF (public.has_role(v_uid,'administrador') IS NOT TRUE AND public.has_role(v_uid,'gestor') IS NOT TRUE
+          AND public.has_role(v_uid,'financeiro') IS NOT TRUE) THEN
+    RAISE EXCEPTION 'forbidden';
+  END IF;
+
+  SELECT * INTO v_order FROM public.partner_orders
+   WHERE id = p_partner_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'order_not_found'; END IF;
+  -- Re-validate authority after the row-lock wait (READ COMMITTED sees revocations committed meanwhile).
+  IF public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+  IF (public.has_role(v_uid,'administrador') IS NOT TRUE AND public.has_role(v_uid,'gestor') IS NOT TRUE
+          AND public.has_role(v_uid,'financeiro') IS NOT TRUE) THEN
+    RAISE EXCEPTION 'forbidden';
+  END IF;
+  IF EXISTS(SELECT 1 FROM public.partner_orders WHERE id=p_partner_order_id AND c2_external_origin_snapshot->>'contract'='C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1') THEN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE='42501'; END IF;
+
+  IF v_order.status IN ('aprovado','reprovado','cancelado') THEN
+    RAISE EXCEPTION 'already_processed: pedido já está em status %', v_order.status;
+  END IF;
+
+  IF v_order.status = 'em_analise_comercial' THEN
+    RAISE EXCEPTION 'already_released: crédito já liberado, pedido em análise comercial';
+  END IF;
+
+  IF v_order.status <> 'aguardando_aprovacao_credito' THEN
+    RAISE EXCEPTION 'invalid_status: %', v_order.status;
+  END IF;
+
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_order.partner_id::text,0));
+  IF public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE OR auth.uid() IS DISTINCT FROM v_uid
+     OR (public.has_role(v_uid,'administrador') IS NOT TRUE AND public.has_role(v_uid,'gestor') IS NOT TRUE
+         AND public.has_role(v_uid,'financeiro') IS NOT TRUE) THEN
+    RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501';
+  END IF;
+  v_config := platform_private.b2b_credit_config_block(v_order.partner_id);
+  IF v_config IS NOT NULL THEN RAISE EXCEPTION 'credit_release_failed: %',v_config USING ERRCODE='23514'; END IF;
+  INSERT INTO platform_private.credit_approval_tickets_20261029 VALUES(txid_current(),v_uid,p_partner_order_id);
+
+  UPDATE public.partner_orders SET
+    status = 'em_analise_comercial',
+    ready_for_production = false,
+    approved_by = NULL,
+    approved_at = NULL,
+    credit_approved_by = COALESCE(credit_approved_by, v_uid),
+    credit_approved_at = COALESCE(credit_approved_at, now()),
+    credit_approval_notes = COALESCE(NULLIF(p_notes, ''), credit_approval_notes),
+    credit_block_reason = NULL,
+    updated_at = now()
+  WHERE id = p_partner_order_id
+    AND status = 'aguardando_aprovacao_credito';
+
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  DELETE FROM platform_private.credit_approval_tickets_20261029 WHERE transaction_id=txid_current() AND actor_id=v_uid AND order_id=p_partner_order_id;
+
+  IF v_updated <> 1 THEN
+    RAISE EXCEPTION 'concurrent_update: status do pedido mudou durante a aprovação';
+  END IF;
+
+  SELECT status, credit_block_reason INTO v_final_status, v_final_reason
+  FROM public.partner_orders WHERE id = p_partner_order_id;
+
+  IF v_final_status <> 'em_analise_comercial' THEN
+    RAISE EXCEPTION 'credit_release_failed: %', COALESCE(v_final_reason, 'status_nao_liberado');
+  END IF;
+
+  INSERT INTO public.partner_order_audit_logs(usuario_id, partner_id, order_id, acao, dados_anteriores, dados_novos)
+  VALUES (v_uid, v_order.partner_id, p_partner_order_id, 'credito_aprovado',
+          jsonb_build_object('status', v_order.status, 'reason', v_order.credit_block_reason),
+          jsonb_build_object('status', v_final_status, 'approved_by', v_uid, 'notes', p_notes));
+
+  RETURN jsonb_build_object('ok', true, 'order_id', p_partner_order_id, 'status', v_final_status);
+END;
+$function$
+;
+DROP TRIGGER trg_partner_orders_credit_guard ON public.partner_orders;
+CREATE TRIGGER trg_partner_orders_credit_guard
+  BEFORE INSERT OR UPDATE OF status, total, final_amount_with_interest, credit_approved_by ON public.partner_orders
+  FOR EACH ROW EXECUTE FUNCTION public.tg_partner_orders_credit_guard();
+
+REVOKE ALL ON FUNCTION platform_private.b2b_credit_config_block(uuid) FROM PUBLIC,anon,authenticated,service_role;
+ALTER FUNCTION platform_private.b2b_credit_config_block(uuid) OWNER TO postgres;
+ALTER FUNCTION public.fn_b2b_guard_credit_approval_fields() OWNER TO postgres;
+ALTER FUNCTION public.tg_partner_orders_credit_guard() OWNER TO postgres;
+ALTER FUNCTION public.approve_b2b_credit(uuid,text) OWNER TO postgres;

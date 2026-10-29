@@ -1,0 +1,5 @@
+-- DENY-ONLY containment; no history deletion or unsafe restoration. Inspect before execution.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+REVOKE EXECUTE ON FUNCTION public.approve_b2b_credit(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;

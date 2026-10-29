@@ -1,0 +1,5 @@
+-- Read-only: compare exact new body/ACL/DDL with the reviewed build; no business RPC calls.
+SELECT oid::regprocedure::text,md5(pg_get_functiondef(oid)),proacl,prosecdef,proconfig FROM pg_proc WHERE oid IN ('public.approve_b2b_credit(uuid,text)'::regprocedure,'public.fn_b2b_guard_credit_approval_fields()'::regprocedure,'public.tg_partner_orders_credit_guard()'::regprocedure,'platform_private.b2b_credit_config_block(uuid)'::regprocedure);
+SELECT pg_get_triggerdef(oid),tgenabled FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname IN ('trg_partner_orders_credit_guard','trg_b2b_guard_credit_approval_fields');
+SELECT count(*) AS tickets_must_be_zero FROM platform_private.credit_approval_tickets_20261029;
+SELECT policyname,permissive,qual,with_check FROM pg_policies WHERE schemaname='public' AND tablename='organizations';

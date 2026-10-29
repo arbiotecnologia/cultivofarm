@@ -1,0 +1,21 @@
+these 3 paths will be fetched (6.54 MiB download, 23.60 MiB unpacked):
+  /nix/store/bzrk3v0ay4cs0hn656464iyzn6n334js-postgresql-16.13
+  /nix/store/56p2p6syp6p67b3ky4g6v679fxa2im8y-postgresql-16.13-lib
+  /nix/store/wbx4kadm9j3n7b1aqivl91f8mps9szd3-postgresql-16.13-man
+copying path '/nix/store/wbx4kadm9j3n7b1aqivl91f8mps9szd3-postgresql-16.13-man' from 'https://cache.nixos.org'...
+copying path '/nix/store/56p2p6syp6p67b3ky4g6v679fxa2im8y-postgresql-16.13-lib' from 'https://cache.nixos.org'...
+copying path '/nix/store/bzrk3v0ay4cs0hn656464iyzn6n334js-postgresql-16.13' from 'https://cache.nixos.org'...
+Traceback (most recent call last):
+  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 129, in <module>
+    if __name__=='__main__': main()
+                             ~~~~^^
+  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 61, in main
+    pg.sql('CREATE TABLE public.partner_orders('+','.join(columns)+');')
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/contracts-c2-20261022/integral/pg.py", line 16, in sql
+    assert r.returncode == 0, r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  relation "partner_orders_numero_seq" does not exist
+LINE 1: ...numero text DEFAULT ('PB-'::text || lpad((nextval('partner_o...
+                                                             ^
+
