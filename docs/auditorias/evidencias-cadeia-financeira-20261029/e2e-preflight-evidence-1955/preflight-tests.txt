@@ -1,0 +1,26 @@
+test_automation_on_denies_write (__main__.T.test_automation_on_denies_write) ... ok
+test_contradictory_flag_denies (__main__.T.test_contradictory_flag_denies) ... ok
+test_duplicate_flag_false_5x_denies (__main__.T.test_duplicate_flag_false_5x_denies) ... ok
+test_homolog_readonly_go (__main__.T.test_homolog_readonly_go) ... ok
+test_homolog_with_prod_url_denies (__main__.T.test_homolog_with_prod_url_denies) ... ok
+test_homolog_write_blocked_current_state (__main__.T.test_homolog_write_blocked_current_state) ... ok
+test_homolog_write_go_only_with_all_prereqs (__main__.T.test_homolog_write_go_only_with_all_prereqs) ... ok
+test_missing_evidence_blocked (__main__.T.test_missing_evidence_blocked) ... ok
+test_missing_flag_blocked (__main__.T.test_missing_flag_blocked) ... ok
+test_missing_human_check_blocked (__main__.T.test_missing_human_check_blocked) ... ok
+test_missing_rg_denies (__main__.T.test_missing_rg_denies) ... ok
+test_mode_mismatch_denies (__main__.T.test_mode_mismatch_denies) ... ok
+test_no_mode_or_scope_denies (__main__.T.test_no_mode_or_scope_denies) ... ok
+test_observed_prod_with_declared_homolog_denies (__main__.T.test_observed_prod_with_declared_homolog_denies) ... ok
+test_prod_write_always_denied (__main__.T.test_prod_write_always_denied) ... ok
+test_ref_substring_not_accepted (__main__.T.test_ref_substring_not_accepted) ... ok
+test_says_evidence_validator_only (__main__.T.test_says_evidence_validator_only) ... ok
+test_string_false_not_accepted (__main__.T.test_string_false_not_accepted) ... ok
+test_version_substring_or_missing_blocked (__main__.T.test_version_substring_or_missing_blocked) ... ok
+test_write_blocked_without_automation_proof (__main__.T.test_write_blocked_without_automation_proof) ... ok
+test_wrong_root_denies (__main__.T.test_wrong_root_denies) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 5.713s
+
+OK
