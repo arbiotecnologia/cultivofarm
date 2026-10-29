@@ -201,9 +201,15 @@ def order(partner, status, amount, generated=False, link=False):
 
 
 def canonical_exposure():
-    """Captured fn_b2b_credit_exposure composed into the candidate; component evidence, not E2E."""
+    """Captured fn_b2b_credit_exposure + ORIGINAL tg_partner_orders_credit_guard; component evidence, not E2E."""
     real = re.search(r"CREATE FUNCTION platform_private\.price_credit_exposure.*?END \$\$;", bc.build().read_text(), re.S).group(0)
     pg.sql(real.replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION', 1))  # restore candidate body over the earlier stub
+    live = json.loads((PKG / 'receivable-recursive-live-20261029.json').read_text())
+    g = next(f for f in live['functions'] if f['name'] == 'tg_partner_orders_credit_guard')
+    pg.sql(g['body'] + ';')
+    trg = next(t['definition'] for r in live['relations'] if r['name'] == 'partner_orders' for t in (r['triggers'] or []) if t['name'] == 'trg_partner_orders_credit_guard')
+    pg.sql(trg + ';')
+    check('ORIGINAL tg_partner_orders_credit_guard installed (md5) + captured trigger DDL', g['md5'], pg.sql("SELECT md5(pg_get_functiondef('public.tg_partner_orders_credit_guard()'::regprocedure))"), 'B2B_GUARD')
     tid, inst = b2b_title(950, '10000.00', CX, PX)
     m.payment(inst, '1000', 'b2b-cx-1000')
     order(PX, 'aprovado', '2000.00'); order(PX, 'em_analise_comercial', '1500.00')
@@ -212,36 +218,56 @@ def canonical_exposure():
     fx = json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{PX}',0,NULL)"))
     check('canonical: open net of payment events 10000-1000', D('9000.00'), D(str(fx['saldo_em_aberto'])), 'EXPOSURE_CANON')
     check('canonical: committed/pending exclude generated, linked, canceled, draft, other partner', (D('2000.00'), D('1500.00'), D('12500.00')), (D(str(fx['comprometido_nao_faturado'])), D(str(fx['comprometido_pendente'])), D(str(fx['exposicao_atual']))), 'EXPOSURE_CANON')
-    xp = lambda: D(pg.sql(f"SELECT platform_private.price_credit_exposure('{A}','{CX}','{PX}')"))
+    xp = lambda c=CX, p=PX: D(pg.sql(f"SELECT platform_private.price_credit_exposure('{A}','{c}','{p}')"))
+    cx = lambda p, amt=0: json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{p}',{amt},NULL)"))
+    st = lambda oid: pg.sql(f"SELECT status||'|'||coalesce(credit_block_reason,'') FROM partner_orders WHERE id='{oid}'")
     check('candidate exposure = canonical (no Price titles yet)', D('12500.00'), xp(), 'EXPOSURE_CANON')
     env = nf('2026-10-29')
-    # Race against a canonical B2B writer holding the shared b2b_credit key.
     before = state()
-    p1, pid1, _ = held(scope(U) + f"SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:{PX}', 0)); INSERT INTO partner_orders(id,payment_terms_id,partner_id,status,total,final_amount_with_interest) VALUES(gen_random_uuid(),gen_random_uuid(),'{PX}','pendente',50000,50000);")
+    p1, pid1, out = held(f"INSERT INTO partner_orders(id,payment_terms_id,partner_id,status,total,final_amount_with_interest) VALUES(gen_random_uuid(),gen_random_uuid(),'{PX}','pendente',50000,50000) RETURNING id;")
     t, box, blocked = waiter(env + call(payload(1, amount='66666.67', key='k-canon-race', cust=CX), uid=U2), 'price-w5')
-    check('Price waits on canonical b2b_credit key holder', '{' + str(pid1) + '}', blocked, 'EXPOSURE_RACE')
+    check('B2B->Price: Price waits on guard-held b2b_credit', '{' + str(pid1) + '}', blocked, 'EXPOSURE_RACE')
     finish(p1, 'COMMIT'); t.join(15)
-    check('after B2B pending order commits: 12500+50000+40000 refused, no write', (True, True), ('LIMIT_EXCEEDED_BLOCK' in box['r'].stderr.decode(), json.loads(state())['t'] == json.loads(before)['t']), 'EXPOSURE_RACE')
-    check('fresh exposure includes committed B2B order', D('62500.00'), xp(), 'EXPOSURE_RACE')
+    check('B2B order accepted by original guard (62500 <= limit)', 'pendente|', st(out), 'EXPOSURE_RACE')
+    check('B2B->Price: 12500+50000+40000 refused, no write', (True, True), ('LIMIT_EXCEEDED_BLOCK' in box['r'].stderr.decode(), json.loads(state())['t'] == json.loads(before)['t']), 'EXPOSURE_RACE')
     r = ok(env + call(payload(1, amount='62500.00', key='k-canon-exact', cust=CX)))
-    check('exact remaining 37500 accepted (limit 100000)', (True, '37500.00'), (r['success'], f"{D(str(r['financed_total'])):.2f}"), 'EXPOSURE_LIMIT')
-    check('Price title counted once by candidate', D('100000.00'), xp(), 'EXPOSURE_LIMIT')
-    deny('+0.01 over canonical+Price exposure blocked', env + call(payload(1, amount='0.02', key='k-canon-plus', cust=CX)), 'LIMIT_EXCEEDED_BLOCK', 'EXPOSURE_LIMIT')
-    # RISK (reproduced): canonical B2B writers cannot see Price titles (partner_id not carried).
-    blind = json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{PX}',1000,NULL)"))
-    check('RISK reproduced: canonical B2B check says OK for +1000 at real 101000', ('OK', D('63500.00')), (blind['reason_code'], D(str(blind['exposicao_projetada']))), 'RISK_B2B_BLIND')
-    # Hypothesis (harness-only owner UPDATE, partner_id is not a frozen snapshot field): if the title carried partner_id.
-    pg.sql(f"UPDATE accounts_receivable SET partner_id='{PX}' WHERE id='{r['receivable_id']}';")
-    seen = json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{PX}',1000,NULL)"))
-    check('hypothesis partner_id carried: canonical blocks +1000', 'LIMIT_EXCEEDED_BLOCK', seen['reason_code'], 'RISK_B2B_BLIND')
-    check('hypothesis: no double count (canonical sees it, Price sum skips it)', D('100000.00'), xp(), 'EXPOSURE_LIMIT')
-    # Tenant/debtor filter and link gates.
-    check('other partner exposure unaffected by CX titles', D('7777.00'), D(str(json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{PY}',0,NULL)"))['exposicao_atual'])), 'EXPOSURE_CANON')
+    check('Price exact remaining 37500 accepted (limit 100000)', (True, '37500.00'), (r['success'], f"{D(str(r['financed_total'])):.2f}"), 'EXPOSURE_LIMIT')
+    check('Price title carries server-derived partner_id', PX, pg.sql(f"SELECT partner_id FROM accounts_receivable WHERE id='{r['receivable_id']}'"), 'PARTNER_CONTEXT')
+    check('context consumed exactly once', '0', pg.sql("SELECT count(*) FROM platform_private.price_title_partner_context"), 'PARTNER_CONTEXT')
+    check('canonical now SEES Price title (no harness patch)', D('100000.00'), D(str(cx(PX)['exposicao_atual'])), 'EXPOSURE_LIMIT')
+    check('candidate = canonical, no double count', D('100000.00'), xp(), 'EXPOSURE_LIMIT')
+    deny('Price +0.01 over limit blocked', env + call(payload(1, amount='0.02', key='k-canon-plus', cust=CX)), 'LIMIT_EXCEEDED_BLOCK', 'EXPOSURE_LIMIT')
+    check('B2B +0.01 after Price blocked by ORIGINAL guard', 'aguardando_aprovacao_credito|limite_excedido_bloqueado', st(order(PX, 'pendente', '0.01')), 'EXPOSURE_LIMIT')
+    deny('payload partner_id rejected (never trusted)', env + call(payload(1, amount='100.00', key='k-partner-smuggle', cust=CZ, partner_id=PY)), 'PRICE_CLIENT_SCHEDULE_REJECTED', 'PARTNER_CONTEXT')
+    pg.sql(f"INSERT INTO platform_private.price_title_partner_context VALUES(1,'{U}','{A}','{CW}','{PY}');")  # SYNTHETIC stale row of another txid
+    ra = ok(env + call(payload(1, amount='100.00', key='k-replay-partner', cust=CW)))
+    rb = ok(env + call(payload(1, amount='100.00', key='k-replay-partner', cust=CW)))
+    check('stale other-txid context inert; replay keeps one title with validated partner', (ra['receivable_id'], True, PW), (rb['receivable_id'], rb['replayed'], pg.sql(f"SELECT partner_id FROM accounts_receivable WHERE id='{ra['receivable_id']}'")), 'PARTNER_CONTEXT')
+    pg.sql("ALTER TABLE platform_private.price_title_partner_context DISABLE ROW LEVEL SECURITY; DELETE FROM platform_private.price_title_partner_context WHERE transaction_id=1;")  # owner cleanup of synthetic row
+    check('empty partner exposure 0', D('0.00'), xp(CZ, PZ), 'EXPOSURE_EMPTY')
+    p1, pid1, out = held(env + scope(U2) + "SET LOCAL ROLE authenticated; SELECT public.rpc_create_price_receivable_candidate(" + q(json.dumps(payload(1, amount='100000.00', key='k-recip', cust=CZ))) + "::jsonb);")
+    t, box, blocked = waiter(f"INSERT INTO partner_orders(id,payment_terms_id,partner_id,status,total,final_amount_with_interest) VALUES(gen_random_uuid(),gen_random_uuid(),'{PZ}','pendente',40000.01,40000.01) RETURNING id;", 'b2b-w1')
+    check('Price->B2B: original guard waits on Price b2b_credit', '{' + str(pid1) + '}', blocked, 'EXPOSURE_RACE')
+    finish(p1, 'COMMIT'); t.join(15)
+    oz = box['r'].stdout.decode().strip().splitlines()[-1]
+    check('Price->B2B: after commit 60000+40000.01 blocked by guard', 'aguardando_aprovacao_credito|limite_excedido_bloqueado', st(oz), 'EXPOSURE_RACE')
+    ok(env + call(payload(1, amount='100000.00', key='k-w-60000', cust=CW)))
+    check('B2B exact remaining 39900 accepted by guard', 'pendente|', st(order(PW, 'pendente', '39900.00')), 'EXPOSURE_LIMIT')
+    check('B2B +0.01 blocked by guard', 'aguardando_aprovacao_credito|limite_excedido_bloqueado', st(order(PW, 'pendente', '0.01')), 'EXPOSURE_LIMIT')
+    b2b_title(960, '500.00', CO, PO, due=-10); b2b_title(970, '500.00', CN, PN, due=-10)
+    check('overdue counted', (True, D('500.00')), (cx(PO)['tem_vencidos'], D(str(cx(PO)['saldo_vencido']))), 'OVERDUE')
+    deny('Price blocked when overdue and block_if_overdue', env + call(payload(1, amount='100.00', key='k-overdue-block', cust=CO)), 'CREDIT_OVERDUE_BLOCK', 'OVERDUE')
+    check('B2B blocked by guard for overdue', 'aguardando_aprovacao_credito|inadimplencia', st(order(PO, 'pendente', '100.00')), 'OVERDUE')
+    ok(env + call(payload(1, amount='100.00', key='k-overdue-noblock', cust=CN)))
+    check('overdue without block: Price allowed, overdue still counted', D('560.00'), xp(CN, PN), 'OVERDUE')
+    deny('Price denied when partner settings inactive', env + call(payload(1, amount='100.00', key='k-inactive', cust=CI)), 'CREDIT_SETTINGS_INACTIVE', 'SETTINGS_INACTIVE')
+    check('observed: original guard ignores settings.active', 'pendente|', st(order(PI, 'pendente', '100.00')), 'SETTINGS_INACTIVE')
     for cust, code, label in ((C3, 'CREDIT_PARTNER_LINK_REQUIRED', 'no partner link'), (C4, 'CREDIT_PARTNER_LINK_AMBIGUOUS', 'two active partners'),
                               (C5, 'CREDIT_PARTNER_LINK_REQUIRED', 'inactive partner'), (C6, 'CREDIT_LIMIT_CONTRADICTION', 'partner limit 50000 vs policy 100000'),
                               (C7, 'CREDIT_NO_LIMIT_DEFINED', 'partner without settings')):
         deny('gate: ' + label, env + call(payload(1, amount='100.00', key='k-gate-' + cust[-2:], cust=cust)), code, 'EXPOSURE_GATES')
     deny('tenant B actor cannot reach A debtor CX', env + call(payload(1, amount='100.00', key='k-b-cx', cust=CX), uid=V, org=B), 'PAYMENT_SETTINGS_OFFICIAL_ABSENT', 'EXPOSURE_GATES')
+    check('other partner exposure unaffected', D('7777.00'), D(str(cx(PY)['exposicao_atual'])), 'EXPOSURE_CANON')
 
 
 def nf(d): return f"SELECT set_config('test.nf_date','{d}',false);"
