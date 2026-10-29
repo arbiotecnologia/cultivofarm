@@ -53,8 +53,8 @@ def acl(kind, target, entries):
         who, privileges = entry.split('/')[0].split('=')
         who = who or 'PUBLIC'
         if who=='postgres': continue
-        # MAINTAIN exists only on PG17+; not relevant to runtime cancellation.
-        ps = [letters[c] for c in privileges if c in letters and c!='m']
+        # PG17 disposable cluster supports the captured MAINTAIN privilege too.
+        ps = [letters[c] for c in privileges if c in letters]
         if ps: m.pg.sql(f"GRANT {','.join(ps)} ON {kind} {target} TO {who};")
 
 def policies(name):

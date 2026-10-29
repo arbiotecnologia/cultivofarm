@@ -12,14 +12,16 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   ], { encoding: 'utf8', timeout: 180_000 });
   const result = JSON.parse(output.trim().split('\n').at(-1) ?? '{}');
   expect(result.FAIL).toBe(0);
-  expect(result.PASS).toBe(230);
+  expect(result.PASS).toBe(263);
+  expect(result.BLOCKED).toBe(1);
+  expect(result['NOT RUN']).toBe(1);
   const evidence = JSON.parse(readFileSync(join(outputDir, 'results.json'), 'utf8'));
   expect(evidence.races).toHaveLength(14);
   const green = evidence.races.filter((row: { test: string }) => row.test.startsWith('GREEN_OFFLINE_ONLY'));
   expect(green).toHaveLength(4);
   expect(evidence.risk_composition.tables).toContain('partner_risk_scores');
   const barriers = evidence.checks.filter((row: { mode: string }) => row.mode === 'RISK_BLOCKED_EXPECTED');
-  expect(barriers).toHaveLength(8);
+  expect(barriers).toHaveLength(10);
   expect(barriers.every((row: { status: string }) => row.status === 'PASS')).toBe(true);
   for (const row of green) {
     expect(row.wait.wait_event_type).toBe('Lock');
