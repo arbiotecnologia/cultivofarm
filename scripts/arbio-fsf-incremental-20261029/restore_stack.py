@@ -51,7 +51,10 @@ def restore(j):
     tables = [t for t in j['relations'] if t['kind']=='r']
     for t in tables:
         cols = [c for c in j['columns'] if c['schema']==t['schema'] and c['table']==t['name']]
-        pg.sql(f'CREATE TABLE {name(t)} (' + ','.join(q(c['name'])+' '+c['type']+(' NOT NULL' if not c['nullable'] else '')+(' DEFAULT '+c['default'] if c['default'] else '') for c in cols) + ');')
+        def col(c):
+            extra = (' GENERATED ALWAYS AS ('+c['default']+') STORED' if c.get('generated') else ' GENERATED '+('ALWAYS' if c['identity']=='a' else 'BY DEFAULT')+' AS IDENTITY' if c.get('identity') else ' DEFAULT '+c['default'] if c['default'] else '')
+            return q(c['name'])+' '+c['type']+extra+(' NOT NULL' if not c['nullable'] else '')
+        pg.sql(f'CREATE TABLE {name(t)} (' + ','.join(col(c) for c in cols) + ');')
     # Dependency ordering is resolved by retrying exact bodies/views, never placeholder functions.
     pending = [('function',f) for f in j['functions']] + [('view',t) for t in j['relations'] if t['kind'] in ('v','m')]
     failures = {}
