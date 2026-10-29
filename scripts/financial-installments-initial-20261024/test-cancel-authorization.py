@@ -124,6 +124,7 @@ def main():
         own=fixture(910 if kind=='receivable' else 920,kind,m.A)
         foreign=fixture(911 if kind=='receivable' else 921,kind,m.B)
         result=client(f"SELECT count(*) FROM accounts_{kind}_installments WHERE id='{foreign}';")
+        assert result.returncode==0,result.stderr
         check(kind+' foreign SELECT hidden by captured RLS','0',result.stdout.strip().splitlines()[-1])
         before=state()
         result=client(f"UPDATE accounts_{kind}_installments SET status='CANCELED' WHERE id='{own}' RETURNING id;")
