@@ -39,7 +39,7 @@ COUNTERS = ['accounts_receivable', 'accounts_receivable_installments', 'financia
 
 def check(name, expected, actual, note=''):
     status = 'PASS' if expected == actual else 'FAIL'
-    rows.append({'test': name, 'status': status, 'expected': expected, 'actual': actual, 'note': note})
+    rows.append({'test': name, 'status': status, 'expected': expected, 'actual': actual, 'note': (note.split('CONTEXT:')[0] if isinstance(note, str) else note)[:600]})
     print(status, name, '' if status == 'PASS' else f'expected={expected!r} actual={actual!r}', flush=True)
 
 
