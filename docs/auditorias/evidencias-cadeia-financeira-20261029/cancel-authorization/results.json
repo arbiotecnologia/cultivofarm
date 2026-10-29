@@ -1,6 +1,6 @@
 {
   "counts": {
-    "PASS": 41,
+    "PASS": 55,
     "FAIL": 0
   },
   "checks": [
@@ -40,6 +40,20 @@
       "status": "PASS"
     },
     {
+      "test": "receivable own status persisted",
+      "expected": "CANCELED",
+      "actual": "CANCELED",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
+      "test": "receivable exactly one cancellation audit",
+      "expected": "1",
+      "actual": "1",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
       "test": "receivable replay no extra audit",
       "expected": "True",
       "actual": "True",
@@ -69,6 +83,20 @@
     },
     {
       "test": "receivable nonexistent identity denied",
+      "expected": "True",
+      "actual": "True",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
+      "test": "receivable malformed identity denied",
+      "expected": "True",
+      "actual": "True",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
+      "test": "receivable revoked organization denies before mutation",
       "expected": "True",
       "actual": "True",
       "mode": "CAPTURED",
@@ -110,6 +138,20 @@
       "status": "PASS"
     },
     {
+      "test": "receivable own active payment preserved",
+      "expected": "True",
+      "actual": "True",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
+      "test": "receivable RED foreign active payment oracle",
+      "expected": "True",
+      "actual": "True",
+      "mode": "RED_ORACLE_REPRODUCED",
+      "status": "PASS"
+    },
+    {
       "test": "payable foreign SELECT hidden by captured RLS",
       "expected": "0",
       "actual": "0",
@@ -127,6 +169,20 @@
       "test": "payable own client RPC accepted",
       "expected": "0",
       "actual": "0",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
+      "test": "payable own status persisted",
+      "expected": "CANCELED",
+      "actual": "CANCELED",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
+      "test": "payable exactly one cancellation audit",
+      "expected": "1",
+      "actual": "1",
       "mode": "CAPTURED",
       "status": "PASS"
     },
@@ -166,6 +222,20 @@
       "status": "PASS"
     },
     {
+      "test": "payable malformed identity denied",
+      "expected": "True",
+      "actual": "True",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
+      "test": "payable revoked organization denies before mutation",
+      "expected": "True",
+      "actual": "True",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
       "test": "payable revoked profile denied",
       "expected": "True",
       "actual": "True",
@@ -195,6 +265,20 @@
     },
     {
       "test": "payable RED nonexistent distinguishable",
+      "expected": "True",
+      "actual": "True",
+      "mode": "RED_ORACLE_REPRODUCED",
+      "status": "PASS"
+    },
+    {
+      "test": "payable own active payment preserved",
+      "expected": "True",
+      "actual": "True",
+      "mode": "CAPTURED",
+      "status": "PASS"
+    },
+    {
+      "test": "payable RED foreign active payment oracle",
       "expected": "True",
       "actual": "True",
       "mode": "RED_ORACLE_REPRODUCED",
@@ -250,6 +334,13 @@
       "status": "PASS"
     },
     {
+      "test": "receivable GREEN own payment branch preserved",
+      "expected": "True",
+      "actual": "True",
+      "mode": "GREEN_OFFLINE_ONLY",
+      "status": "PASS"
+    },
+    {
       "test": "payable GREEN foreign OPEN",
       "expected": "True",
       "actual": "True",
@@ -286,6 +377,13 @@
     },
     {
       "test": "payable GREEN replay preserved",
+      "expected": "True",
+      "actual": "True",
+      "mode": "GREEN_OFFLINE_ONLY",
+      "status": "PASS"
+    },
+    {
+      "test": "payable GREEN own payment branch preserved",
       "expected": "True",
       "actual": "True",
       "mode": "GREEN_OFFLINE_ONLY",
@@ -353,6 +451,198 @@
         "service_role=X/postgres",
         "authenticated=X/postgres"
       ]
+    }
+  ],
+  "responses": [
+    {
+      "test": "receivable replay no extra audit",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela j\u00e1 cancelada.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 27 at RAISE\n"
+    },
+    {
+      "test": "receivable foreign OPEN tenant guard atomic",
+      "returncode": 3,
+      "stderr": "ERROR:  tenant_scope_violation\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 15 at RAISE\nSQL statement \"UPDATE accounts_receivable_installments SET status='CANCELED' WHERE id = p_installment_id\"\nPL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 28 at SQL statement\n"
+    },
+    {
+      "test": "receivable anon ACL closed",
+      "returncode": 3,
+      "stderr": "ERROR:  permission denied for function rpc_cancel_financial_installment\n"
+    },
+    {
+      "test": "receivable empty identity denied",
+      "returncode": 3,
+      "stderr": "ERROR:  Sem permiss\u00e3o.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 5 at RAISE\n"
+    },
+    {
+      "test": "receivable nonexistent identity denied",
+      "returncode": 3,
+      "stderr": "ERROR:  Sem permiss\u00e3o.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 5 at RAISE\n"
+    },
+    {
+      "test": "receivable malformed identity denied",
+      "returncode": 3,
+      "stderr": "ERROR:  invalid input syntax for type uuid: \"not-a-uuid\"\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 4 at IF\n"
+    },
+    {
+      "test": "receivable revoked organization denies before mutation",
+      "returncode": 3,
+      "stderr": "ERROR:  tenant_context_required\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 9 at RAISE\nSQL statement \"UPDATE accounts_receivable_installments SET status='CANCELED' WHERE id = p_installment_id\"\nPL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 28 at SQL statement\n"
+    },
+    {
+      "test": "receivable revoked profile denied",
+      "returncode": 3,
+      "stderr": "ERROR:  Sem permiss\u00e3o.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 5 at RAISE\n"
+    },
+    {
+      "test": "receivable revoked role denied",
+      "returncode": 3,
+      "stderr": "ERROR:  Sem permiss\u00e3o.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 5 at RAISE\n"
+    },
+    {
+      "test": "receivable RED foreign canceled leaks status",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela j\u00e1 cancelada.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 27 at RAISE\n"
+    },
+    {
+      "test": "receivable RED nonexistent distinguishable",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela n\u00e3o encontrada.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 16 at RAISE\n"
+    },
+    {
+      "test": "receivable own active payment preserved",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela possui recebimentos n\u00e3o estornados.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 24 at RAISE\n"
+    },
+    {
+      "test": "receivable RED foreign active payment oracle",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela possui recebimentos n\u00e3o estornados.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 24 at RAISE\n"
+    },
+    {
+      "test": "payable replay no extra audit",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela j\u00e1 cancelada.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 43 at RAISE\n"
+    },
+    {
+      "test": "payable foreign OPEN tenant guard atomic",
+      "returncode": 3,
+      "stderr": "ERROR:  tenant_scope_violation\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 15 at RAISE\nSQL statement \"UPDATE accounts_payable_installments SET status='CANCELED' WHERE id = p_installment_id\"\nPL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 44 at SQL statement\n"
+    },
+    {
+      "test": "payable anon ACL closed",
+      "returncode": 3,
+      "stderr": "ERROR:  permission denied for function rpc_cancel_financial_installment\n"
+    },
+    {
+      "test": "payable empty identity denied",
+      "returncode": 3,
+      "stderr": "ERROR:  Sem permiss\u00e3o.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 5 at RAISE\n"
+    },
+    {
+      "test": "payable nonexistent identity denied",
+      "returncode": 3,
+      "stderr": "ERROR:  Sem permiss\u00e3o.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 5 at RAISE\n"
+    },
+    {
+      "test": "payable malformed identity denied",
+      "returncode": 3,
+      "stderr": "ERROR:  invalid input syntax for type uuid: \"not-a-uuid\"\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 4 at IF\n"
+    },
+    {
+      "test": "payable revoked organization denies before mutation",
+      "returncode": 3,
+      "stderr": "ERROR:  tenant_context_required\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 9 at RAISE\nSQL statement \"UPDATE accounts_payable_installments SET status='CANCELED' WHERE id = p_installment_id\"\nPL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 44 at SQL statement\n"
+    },
+    {
+      "test": "payable revoked profile denied",
+      "returncode": 3,
+      "stderr": "ERROR:  Sem permiss\u00e3o.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 5 at RAISE\n"
+    },
+    {
+      "test": "payable revoked role denied",
+      "returncode": 3,
+      "stderr": "ERROR:  Sem permiss\u00e3o.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 5 at RAISE\n"
+    },
+    {
+      "test": "payable RED foreign canceled leaks status",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela j\u00e1 cancelada.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 43 at RAISE\n"
+    },
+    {
+      "test": "payable RED nonexistent distinguishable",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela n\u00e3o encontrada.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 32 at RAISE\n"
+    },
+    {
+      "test": "payable own active payment preserved",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela possui pagamentos n\u00e3o estornados.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 40 at RAISE\n"
+    },
+    {
+      "test": "payable RED foreign active payment oracle",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela possui pagamentos n\u00e3o estornados.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 40 at RAISE\n"
+    },
+    {
+      "test": "receivable GREEN foreign OPEN",
+      "returncode": 3,
+      "stderr": "ERROR:  FINANCIAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 18 at RAISE\n"
+    },
+    {
+      "test": "receivable GREEN foreign CANCELED",
+      "returncode": 3,
+      "stderr": "ERROR:  FINANCIAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 18 at RAISE\n"
+    },
+    {
+      "test": "receivable GREEN foreign PARTIAL",
+      "returncode": 3,
+      "stderr": "ERROR:  FINANCIAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 18 at RAISE\n"
+    },
+    {
+      "test": "receivable GREEN nonexistent uniform",
+      "returncode": 3,
+      "stderr": "ERROR:  FINANCIAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 18 at RAISE\n"
+    },
+    {
+      "test": "receivable GREEN replay preserved",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela j\u00e1 cancelada.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 29 at RAISE\n"
+    },
+    {
+      "test": "receivable GREEN own payment branch preserved",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela possui recebimentos n\u00e3o estornados.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 26 at RAISE\n"
+    },
+    {
+      "test": "payable GREEN foreign OPEN",
+      "returncode": 3,
+      "stderr": "ERROR:  FINANCIAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 34 at RAISE\n"
+    },
+    {
+      "test": "payable GREEN foreign CANCELED",
+      "returncode": 3,
+      "stderr": "ERROR:  FINANCIAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 34 at RAISE\n"
+    },
+    {
+      "test": "payable GREEN foreign PARTIAL",
+      "returncode": 3,
+      "stderr": "ERROR:  FINANCIAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 34 at RAISE\n"
+    },
+    {
+      "test": "payable GREEN nonexistent uniform",
+      "returncode": 3,
+      "stderr": "ERROR:  FINANCIAL_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 34 at RAISE\n"
+    },
+    {
+      "test": "payable GREEN replay preserved",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela j\u00e1 cancelada.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 45 at RAISE\n"
+    },
+    {
+      "test": "payable GREEN own payment branch preserved",
+      "returncode": 3,
+      "stderr": "ERROR:  Parcela possui pagamentos n\u00e3o estornados.\nCONTEXT:  PL/pgSQL function rpc_cancel_financial_installment(uuid,text,text) line 42 at RAISE\n"
     }
   ],
   "captured_manifest_sha256": "33bbe2abe605544b38c56cef50ac05ebc6ee035b4d02c0daf1da1b295d3ad56d",
