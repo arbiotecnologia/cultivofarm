@@ -2,6 +2,10 @@
 
 ## Entrega e estado
 
+### Continuidade15:36 — partes confirmadas e limite explícito
+
+Relatório `partes-credito-offline-20261029.md`; runner810PASS/0FAIL/1BLOCKED/1NOT RUN,14corridas e651checks anteriores preservados. Incremento159 separado:9RED/105GREEN/43contrato fiscal reduzido/2fragmento. Hipóteses offline corrigem prioridade tenantcomprador sobre credorowner e progressão com limitezero; exposição13.500 testada, original10.300/evento1.000 preservados. Próximo gate exato PAYMENT_TERMS_NOT_DEFINED; não seedado. Monetário37PASS/proveniência42PASS1BLOCKED/Vitest10PASS, evidências1536;68arquivoshistóricos intactos. ARvende/emite/recebe, FSFcompra; limite finito obrigatório decidido, valorreal/calendário/parcelas/gatilho ainda ausentes. Fiscal/contabilidade/origem/JWTreal NO-GO, sem runtime/produção.
+
 ### Continuidade15:03 — cadastro separado do financeiro, sandbox
 
 Decisão recebida implementada offline; relatório `cadastro-financeiro-diferido-offline-20261029.md`.651PGPASS/0FAIL/1BLOCKED/1NOT RUN,288GREENdiferidos/9RED/8consumidorinativo;NULL e14corridas preservados. CadastroA/B sem settings/tickets, updaterCAS explícito onzevalores/método; riscoFKresolvida, ausente/incompleto impede financeiro no recorte. Contabilidade/origem seguem negadas mesmo após configurar. Monetário37PASS/proveniência42PASS1BLOCKED/Vitest10PASSsem erros, fontes e evidências rodada1503. Sem runtime/SQLimplantável/produção. Não aguarda contrato cadastro; calendário/parcelamento, contabilidade/origem/fiscal/BIproveniência e JWT/RLSreal continuam pendentes.

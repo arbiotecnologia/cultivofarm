@@ -2,6 +2,12 @@
 
 ## Reconciliação em 28/10/2026 — plano original retomado
 
+### Continuidade29/10 15:36 — decisões e testes de partes/crédito (Etapas6/9)
+- [x] Decisões humanas: ARBio vende/emite/recebe/credora; FSFAgro compra/devedora. Limite numérico explícito finito não negativo obrigatório, zero não ilimitado; cadastro primeiro/settings depois. Não equivale a prova fiscal/contábil ou implantação.
+- [x] Runner offline810PASS/0FAIL/1BLOCKED/1NOT RUN,651anteriores/14corridas preservados; incremento159=9RED/105GREEN/43contrato reduzido/2fragmento. Ownerselection e zeroprogression corrigidos só sandbox; exposição13.500, original10.300 e monetário7.550/eventos/estorno/replay preservados. Monetário37/proveniência42/Vitest10PASS;68arquivoshistóricos intactos/evidências1536.
+- [x] Relatório `docs/auditorias/partes-credito-offline-20261029.md`, contratoDRAFT existente e regressão atualizados. Próximo gate fullimpl `billing_not_eligible:PAYMENT_TERMS_NOT_DEFINED`; items/terms vazios compostos sem fabricar aprovação/preço/origem/ticket. Contenções contábeis/origem intactas.
+- [ ] Fornecer limite real e contrato calendário/parcelas/amortização/gatilho para condições vinculadas; evidência externa de emitente/credor/owner/devedor, razão/BI/proveniência/fullchain/JWTreal separada. Não reabrir decisões resolvidas; não emitirSQLimplantável nem ativar/produzir.
+
 **NO-GO operacional.** Este é o mesmo plano de nove etapas, não um novo plano. Relatório: `docs/auditorias/reconciliacao-fluxo-pedido-b2b-20261028.md` e anexo de assinaturas/hash/ACL. Cruzado com o desenho `fluxo-do-pedido-b2b-do-parceiro-à-emissão-fiscal-2026-10-27.md` e A2. O desenho é objetivo, não prova de funcionamento.
 
 Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, migration, fixture, sessão, runtime ou publicação. Instalações externas já relatadas são preservadas, não reaplicadas. Captura LIVE histórica não é recertificação atual. Contabilidade/fiscal reais e SU-518022 permanecem pendentes.
