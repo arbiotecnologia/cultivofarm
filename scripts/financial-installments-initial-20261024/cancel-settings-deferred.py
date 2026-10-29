@@ -76,7 +76,8 @@ def exercise(h, metadata):
     scoped_guard=guard.replace('p_partner_id','NEW.partner_id')
     entry="\n  IF NEW.status IN "+financial_statuses+" OR NEW.credit_approved_by IS NOT NULL THEN\n    "+scoped_guard+"\n  END IF;"
     transform('tg_partner_orders_credit_guard','BEGIN\n','BEGIN\n'+entry+'\n')
-    transform('tg_auto_b2b_receivable','BEGIN\n','BEGIN\n'+entry.replace(' OR NEW.credit_approved_by IS NOT NULL','')+'\n')
+    anchor='BEGIN\n  SELECT * INTO v_settings'
+    transform('tg_auto_b2b_receivable',anchor,'BEGIN\n'+entry.replace(' OR NEW.credit_approved_by IS NOT NULL','')+'\n  SELECT * INTO v_settings')
     # Full captured eligibility remains private; its readiness branch is additionally
     # exercised as an invoker DO fragment with synthetic v_order, not an exposed RPC.
     eligibility_guard=guard.replace('p_partner_id','v_order.partner_id')
