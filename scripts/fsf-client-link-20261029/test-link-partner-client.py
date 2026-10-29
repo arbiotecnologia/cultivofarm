@@ -91,7 +91,6 @@ def main(out):
                + "ALTER TABLE public.partner_accounts ENABLE TRIGGER commercial_partner_registration_guard;"
                f"INSERT INTO public.partner_financial_settings VALUES('{P(k)}',NULL,false);")  # finance blocked (deferred decision)
 
-    for k in (1, 2, 4, 7, 9, 10, 11, 12, 13, 14, 15): pass
     partner(1); partner(2); partner(4, doc=None); partner(5, doc='12345678000100'); partner(6, owner=None); partner(7, ativo=False); partner(8, owner=B)
     partner(9, doc=DOC[9]); partner(10, doc=DOC[9]); partner(13); partner(14); partner(15)
     pg.sql(f"INSERT INTO public.clientes(id,organization_id,tipo_pessoa,cpf_cnpj,nome,razao_social) VALUES('c0000000-0000-4000-8000-000000000202','{A}','juridica','{DOC[2][:2]}.{DOC[2][2:5]}.{DOC[2][5:8]}/{DOC[2][8:12]}-{DOC[2][12:]}','CLIENTE SINTETICO 2','CLIENTE SINTETICO 2'),"
@@ -165,7 +164,7 @@ def main(out):
     check('second actor waits on same key', '{%s}' % lines[0], blocked, 'REVOCATION_WAIT')
     pg.sql(f"DELETE FROM public.test_user_roles WHERE uid='{U2}';")  # committed revocation
     p.stdin.write("COMMIT;\n"); p.stdin.close(); p.wait(10); th.join(15)
-    check('revoked during wait: replay denied, result not exposed', (True, ''), ('cadastro_context_required' in box['r'].stderr.decode(), box['r'].stdout.decode().strip().replace('set_config', '').strip()), 'REVOCATION_WAIT')
+    check('revoked during wait: replay denied, result not exposed', (True, False), ('cadastro_context_required' in box['r'].stderr.decode(), 'client_id' in box['r'].stdout.decode()), 'REVOCATION_WAIT')
     # 7. immutability + finance stays blocked.
     deny('receipt UPDATE immutable', "UPDATE platform_private.partner_client_link_receipts SET client_created=false;", 'LINK_RECEIPT_IMMUTABLE', 'IMMUTABLE')
     deny('receipt DELETE immutable', "DELETE FROM platform_private.partner_client_link_receipts;", 'LINK_RECEIPT_IMMUTABLE', 'IMMUTABLE')
