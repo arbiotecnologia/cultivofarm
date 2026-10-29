@@ -28,7 +28,10 @@ CB = '77777777-7777-4777-8777-777777777777'         # synthetic customer of B
 PA, PB = 'a0000000-0000-4000-8000-0000000000a1', 'b0000000-0000-4000-8000-0000000000b1'
 CX, PX, PY = 'c0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000a2', 'a0000000-0000-4000-8000-0000000000a3'
 C3, C4, C5, C6, C7 = ('c0000000-0000-4000-8000-0000000000c%d' % k for k in (3, 4, 5, 6, 7))
-EXTRA_A = (CX, C3, C4, C5, C6, C7)
+# debtor -> partner for empty/reciprocal (Z), exact B2B (W), overdue block (O), overdue no block (N), inactive settings (I)
+CZ, CW, CO, CN, CI = ('c0000000-0000-4000-8000-0000000000d%d' % k for k in range(1, 6))
+PZ, PW, PO, PN, PI = ('a0000000-0000-4000-8000-0000000000e%d' % k for k in range(1, 6))
+EXTRA_A = (CX, C3, C4, C5, C6, C7, CZ, CW, CO, CN, CI)
 NF = '88888888-8888-4888-8888-888888888888'         # SYNTHETIC NF reference (not a real NF)
 checks = []
 
@@ -182,12 +185,12 @@ def debtor_races():
         check(f'{lvl} refused (stale snapshot), state unchanged', (True, True), ('PRICE_ISOLATION_READ_COMMITTED_REQUIRED' in err, state() == before), 'ISOLATION')
 
 
-def b2b_title(n, total, cust, partner):
+def b2b_title(n, total, cust, partner, due=30):
     """SYNTHETIC B2B title carrying partner_id, through the captured generator path (owner insert)."""
     order, terms, tid = m.uid(n), m.uid(n + 10000), m.uid(n + 20000)
     pg.sql(f"INSERT INTO partner_orders(id,payment_terms_id,c2_external_origin_snapshot,partner_id,status,total,final_amount_with_interest,receivable_generated) VALUES('{order}','{terms}','{{}}'::jsonb,'{partner}','entregue',{total},{total},true);"
-           f"INSERT INTO partner_order_payment_schedule(partner_order_id,payment_terms_id,installment_number,due_date,amount,principal_amount,interest_amount) VALUES('{order}','{terms}',1,CURRENT_DATE+30,{total},{total},0);")
-    m.ask(f"INSERT INTO accounts_receivable(id,origin_type,origin_id,description,category_id,total_amount,first_due_date,installment_count,created_by,organization_id,customer_id,partner_id) VALUES('{tid}','B2B_ORDER','{order}','SYNTHETIC B2B','{K}',{total},CURRENT_DATE+30,1,'{U}','{A}','{cust}','{partner}');", A)
+           f"INSERT INTO partner_order_payment_schedule(partner_order_id,payment_terms_id,installment_number,due_date,amount,principal_amount,interest_amount) VALUES('{order}','{terms}',1,CURRENT_DATE+{due},{total},{total},0);")
+    m.ask(f"INSERT INTO accounts_receivable(id,origin_type,origin_id,description,category_id,total_amount,first_due_date,installment_count,created_by,organization_id,customer_id,partner_id) VALUES('{tid}','B2B_ORDER','{order}','SYNTHETIC B2B','{K}',{total},CURRENT_DATE+{due},1,'{U}','{A}','{cust}','{partner}');", A)
     return tid, pg.sql(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{tid}'")
 
 
@@ -262,7 +265,10 @@ def main(out):
         ('a0000000-0000-4000-8000-0000000000a4','{C4}',true,'{A}'),('a0000000-0000-4000-8000-0000000000a5','{C4}',true,'{A}'),
         ('a0000000-0000-4000-8000-0000000000a6','{C5}',false,'{A}'),('a0000000-0000-4000-8000-0000000000a7','{C6}',true,'{A}'),('a0000000-0000-4000-8000-0000000000a8','{C7}',true,'{A}');
       INSERT INTO public.partner_financial_settings VALUES('{PA}',100000,0,false,'block',true),('{PB}',100000,0,false,'block',true),('{PX}',100000,0,false,'block',true),('{PY}',100000,0,false,'block',true),
-        ('a0000000-0000-4000-8000-0000000000a7',50000,0,false,'block',true);""")
+        ('a0000000-0000-4000-8000-0000000000a7',50000,0,false,'block',true);
+      INSERT INTO public.partner_accounts VALUES('{PZ}','{CZ}',true,'{A}'),('{PW}','{CW}',true,'{A}'),('{PO}','{CO}',true,'{A}'),('{PN}','{CN}',true,'{A}'),('{PI}','{CI}',true,'{A}');
+      INSERT INTO public.partner_financial_settings VALUES('{PZ}',100000,0,false,'block',true),('{PW}',100000,0,false,'block',true),('{PO}',100000,0,true,'block',true),('{PN}',100000,0,false,'block',true),('{PI}',100000,0,false,'block',false);
+      ALTER TABLE partner_orders ADD COLUMN credit_approved_by uuid, ADD COLUMN credit_block_reason text;""")
     fx = next(f for f in json.loads((PKG / 'receivable-recursive-live-20261029.json').read_text())['functions'] if f['name'] == 'fn_b2b_credit_exposure')
     pg.sql(fx['body'] + ';'); pg.sql("REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC;")
     check('captured fn_b2b_credit_exposure installed exact (md5)', fx['md5'], pg.sql("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))"), 'EXPOSURE_CANON')
