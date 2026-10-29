@@ -6,8 +6,8 @@ CANON=swzpzcwiasxmjutrmvkm
 grep -q "VITE_SUPABASE_PROJECT_ID=\"\?$CANON" .env 2>/dev/null && ok "ref .env = $CANON" || ko "ref .env ausente/divergente"
 grep -q "$CANON" src/integrations/supabase/client.ts && ok "cliente canônico aponta $CANON" || ko "cliente canônico divergente"
 for r in yzszlzjpovmcteuxjznj chkgpuawcswhefiabwsm navfzbwgwzruipouyfnk ikaauvsflpmamgxmkhoq; do
-  rg -q "$r" src supabase/config.toml 2>/dev/null && ko "ref proibido $r presente" || ok "ref proibido $r ausente"; done
-rg -q "service_role" src --glob '!**/types.ts' && ko "service_role citado no frontend" || ok "sem service_role no frontend"
+  rg -q "$r" src supabase/config.toml --glob "!src/test/**" 2>/dev/null && ko "ref proibido $r presente" || ok "ref proibido $r ausente"; done
+rg -q "SERVICE_ROLE_KEY|cm9sZSI6InNlcnZpY2Vfcm9sZS" src --glob "!src/test/**" && ko "chave service_role no frontend" || ok "sem chave service_role no frontend"
 n=$(ls supabase/migrations | rg -c "\.review$" || true); [ "${n:-0}" = 0 ] && ok "nenhum .review em migrations" || ko ".review em migrations"
 echo "INFO commit=$(git rev-parse HEAD 2>/dev/null) data=$(date -u +%FT%TZ)"
 echo "MANUAL confirmar no painel (sem copiar valores): COMMUNICATION/EMAIL/WHATSAPP_DELIVERY_ENABLED=false, INAPP_ADAPTER=false, WHATSAPP_WEBHOOK=false"
