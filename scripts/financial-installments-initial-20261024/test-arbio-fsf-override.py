@@ -18,7 +18,7 @@ def check(label, expected, actual, level='LOCAL_DECIMAL_PG_ARITHMETIC'):
     record(label, 'PASS' if expected == actual else 'FAIL', expected, actual, level)
 def money(x): return x.quantize(D('.01'),rounding=ROUND_HALF_UP)
 def main():
-    assert C['status']=='DRAFT_REVIEW_ONLY' and C['runtime_enabled'] is False
+    assert C['status']=='HISTORICAL_SUPERSEDED_FOR_NEW_PLANS' and C['runtime_enabled'] is False
     assert C['interest_decision']['interest_start']=='operation_initial_date'
     assert C['interest_decision']['band_incidence']=='single_selected_rate_over_entire_term'
     assert C['interest_decision']['deduct_30_days'] is False
