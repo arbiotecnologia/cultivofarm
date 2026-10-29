@@ -80,4 +80,4 @@ Somente candidato offline. Sem runtime, SQL hosted, migration, deploy, GRANT, us
 - Cobertura 2026 é limitação do dataset; o proprietário decidiu apenas a localidade Paracatu-MG + nacionais.
 - Manifesto `price-calendar-paracatu-1810/SHA256SUMS.versioned` conferido contra blobs do commit `8a7d7cb97a3118ddf0e57b7186d0084b82d72585`: 6 entradas, 0 divergências/ausências.
 - Logs da rodada 18:10: suíte 865/866 em `docs/auditorias/evidencias-cadeia-financeira-20261029/price-calendar-paracatu-1810/vitest.txt`; reexecução isolada 18/18 em `.../price-calendar-paracatu-1810/vitest-isolated-rerun.txt`.
-- Teste direcionado após esta mudança: motor 313/0 FAIL; Vitest `priceScheduleOffline.test.ts` 1/1. Suíte ampla não repetida.
+- Teste direcionado após esta mudança: motor 314/0 FAIL (42 CALENDAR_REAL); Vitest `priceScheduleOffline.test.ts` 1/1. Suíte ampla não repetida.

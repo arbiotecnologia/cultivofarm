@@ -186,4 +186,4 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 
 ## 29/10/2026 18:10 UTC — Calendário Paracatu-MG 2026 (offline)
 - Dataset oficial versionado e selado por hash, localidade Paracatu-MG obrigatória; ajuste de dia útil real testado. 2027+ sem cobertura: plano inteiro bloqueado (`CALENDAR_COVERAGE_EXCEEDED`). Motor 307/0 FAIL. Produção NO-GO pelos gates restantes.
-- Correção 18:16: cobertura 2026 é limitação do dataset (não decisão do proprietário); NF 2026-10-29 em 3x já bloqueia (28/01/2027), 1x/2x passam; motor 313/0 FAIL.
+- Correção 18:16: cobertura 2026 é limitação do dataset (não decisão do proprietário); NF 2026-10-29 em 3x já bloqueia (28/01/2027), 1x/2x passam; motor 314/0 FAIL (42 CALENDAR_REAL).
