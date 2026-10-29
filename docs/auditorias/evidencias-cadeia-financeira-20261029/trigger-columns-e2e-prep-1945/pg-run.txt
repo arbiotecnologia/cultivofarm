@@ -1,0 +1,339 @@
+PASS EXPOSURE_CANON captured fn_b2b_credit_exposure installed exact (md5) 
+PASS D51_5 captured d51_5 trigger installed on 4 tables (md5-pinned body) 
+PASS INSTALL candidate installs in single transaction 
+PASS ACL anon has no EXECUTE 
+PASS ACL authenticated no direct table access 
+PASS ACL authenticated cannot call private compute 
+PASS DENY_CANDIDATE_AS_IS candidate as-is: settings absent 
+PASS DENY_CANDIDATE_AS_IS fiscal origin unproven 
+PASS DENY_CANDIDATE_AS_IS accounting gate pending 
+PASS CALENDAR_DB calendar not loaded 
+PASS CALENDAR_DB loader rejects wrong digest 
+PASS CALENDAR_DB loader rejects widened coverage (digest) 
+PASS CALENDAR_DB authenticated cannot load calendar 
+PASS CALENDAR_DB other-city dataset under pinned version rejected 
+PASS CALENDAR_DB load official v2 
+PASS CALENDAR_DB 14+14 holidays persisted 
+PASS CALENDAR_DB calendar UPDATE immutable 
+PASS CALENDAR_DB calendar DELETE immutable 
+PASS CALENDAR_DB calendar TRUNCATE immutable 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2027-01-01 
+PASS COMPONENT 2028 due blocks whole plan 
+PASS COMPONENT client schedule rejected 
+PASS COMPONENT client rate rejected 
+PASS COMPONENT automatic generation blocked 
+PASS COMPONENT 4 installments rejected 
+PASS COMPONENT table amount 'NaN' 
+PASS COMPONENT table amount '-1' 
+PASS COMPONENT table amount '1.001' 
+PASS COMPONENT table amount 100 
+PASS COMPONENT missing NF date 
+PASS AUTH no session 
+PASS AUTH anon role 
+PASS AUTH non-staff denied by captured RPC 
+PASS AUTH no tenant 
+PASS AUTH foreign customer (A actor, B customer) 
+PASS AUTH tenant smuggling rejected 
+PASS LIMIT synthetic exposure = historical open balance 
+PASS LIMIT financed total incl. interest +0.01 over limit blocked 
+PASS LIMIT exact threshold accepted 
+PASS COMPONENT NF 2026-10-29 3x due dates 
+PASS COMPONENT nominal dates kept 
+PASS COMPONENT writer rows = Price payments, interest_amount 0 
+PASS COMPONENT title total = financed total 
+PASS COMPONENT cents sum = total 
+PASS COMPONENT context consumed 
+PASS SNAPSHOT snapshot pins calendar version+hash 
+PASS SNAPSHOT snapshot breakdown 
+PASS SNAPSHOT snapshot UPDATE immutable 
+PASS SNAPSHOT snapshot DELETE immutable 
+PASS SNAPSHOT receipt UPDATE immutable 
+PASS SNAPSHOT receipt DELETE immutable 
+PASS SNAPSHOT receipt TRUNCATE immutable 
+PASS D51_5 d51_5: AR of tenant A with tenant B customer 
+PASS D51_5 d51_5: installment re-pointed to foreign tenant 
+PASS D51_5 d51_5: Price title/installments tenant-consistent 
+PASS SNAPSHOT captured title snapshot guard 
+PASS IDEMPOTENCY replay same key/payload returns same title, no writes 
+PASS IDEMPOTENCY same key different payload PT409 
+PASS IDEMPOTENCY concurrent same key: both ACK, one title 
+PASS ROLLBACK integral rollback after success 
+PASS COMPONENT NF 2026-12-02 1x -> 2027-01-04 
+PASS COMPONENT NF 2026-12-31 3x month-end 
+PASS AUTH tenant B title owned by B 
+PASS AUTH B actor cannot use A customer 
+PASS NUMERIC_EDGE compute edge 999999999999.99 1x 
+PASS NUMERIC_EDGE compute edge 999999999999.99 1x fits numeric(14,2) 
+PASS NUMERIC_EDGE compute edge 999999999999.99 3x 
+PASS NUMERIC_EDGE compute edge 999999999999.99 3x fits numeric(14,2) 
+PASS NUMERIC_EDGE compute edge 1000000000000.00 1x 
+PASS NUMERIC_EDGE compute edge 1000000000000.00 3x 
+PASS NUMERIC_EDGE compute edge 1e20 1x 
+PASS NUMERIC_EDGE compute edge 1e20 3x 
+PASS NUMERIC_EDGE compute edge 99999999999999999999999999.99 1x 
+PASS NUMERIC_EDGE compute edge 99999999999999999999999999.99 3x 
+PASS NUMERIC_EDGE RPC at ceiling: limit blocks before any write (no overflow) 
+PASS NUMERIC_EDGE RPC above ceiling rejected 
+PASS DEBTOR_RACE race setup: each request fits alone, sum exceeds 
+PASS DEBTOR_RACE second actor waits on first via pg_blocking_pids 
+PASS DEBTOR_RACE exactly 1 success + 1 LIMIT refusal (different actors/keys) 
+PASS DEBTOR_RACE only one new title/receipt 
+PASS DEBTOR_RACE fresh exposure after commit includes winner 
+PASS DEBTOR_RACE other debtor proceeds while A|C held 
+PASS REVOCATION_WAIT revocation case: waiter blocked by holder 
+PASS REVOCATION_WAIT revoked during wait -> denied after lock, state unchanged 
+PASS REPLAY_REVOCATION legitimate replay idempotent before revocation 
+PASS REPLAY_REVOCATION replay waiter blocked on same KEY lock 
+PASS REPLAY_REVOCATION revoked replay denied, no result exposed, no mutation 
+PASS REPLAY_REVOCATION replay idempotent again after re-grant, no writes 
+PASS ISOLATION REPEATABLE READ refused (stale snapshot), state unchanged 
+PASS ISOLATION SERIALIZABLE refused (stale snapshot), state unchanged 
+PASS B2B_GUARD ORIGINAL tg_partner_orders_credit_guard installed (md5) + captured trigger DDL 
+PASS EXPOSURE_CANON canonical: open net of payment events 10000-1000 
+PASS EXPOSURE_CANON canonical: committed/pending exclude generated, linked, canceled, draft, other partner 
+PASS EXPOSURE_CANON candidate exposure = canonical (no Price titles yet) 
+PASS EXPOSURE_RACE B2B->Price: Price waits on guard-held b2b_credit 
+PASS EXPOSURE_RACE B2B order accepted by original guard (62500 <= limit) 
+PASS EXPOSURE_RACE B2B->Price: 12500+50000+40000 refused, no write 
+PASS EXPOSURE_LIMIT Price exact remaining 37500 accepted (limit 100000) 
+PASS PARTNER_CONTEXT Price title carries server-derived partner_id 
+PASS PARTNER_CONTEXT context consumed exactly once 
+PASS EXPOSURE_LIMIT canonical now SEES Price title (no harness patch) 
+PASS EXPOSURE_LIMIT candidate = canonical, no double count 
+PASS EXPOSURE_LIMIT Price +0.01 over limit blocked 
+PASS EXPOSURE_LIMIT B2B +0.01 after Price blocked by ORIGINAL guard 
+PASS PARTNER_CONTEXT payload partner_id rejected (never trusted) 
+PASS PARTNER_CONTEXT stale other-txid context inert; replay keeps one title with validated partner 
+PASS EXPOSURE_EMPTY empty partner exposure 0 
+PASS EXPOSURE_RACE Price->B2B: original guard waits on Price b2b_credit 
+PASS EXPOSURE_RACE Price->B2B: after commit 60000+40000.01 blocked by guard 
+PASS EXPOSURE_LIMIT B2B exact remaining 39940 (60+60000 Price) accepted by guard 
+PASS EXPOSURE_LIMIT B2B +0.01 blocked by guard 
+PASS OVERDUE overdue counted 
+PASS OVERDUE Price blocked when overdue and block_if_overdue 
+PASS OVERDUE B2B blocked by guard for overdue 
+PASS OVERDUE overdue without block: Price allowed, overdue still counted 
+PASS SETTINGS_INACTIVE Price denied when partner settings inactive 
+PASS SETTINGS_INACTIVE observed: original guard ignores settings.active 
+PASS EXPOSURE_GATES gate: no partner link 
+PASS EXPOSURE_GATES gate: two active partners 
+PASS EXPOSURE_GATES gate: inactive partner 
+PASS EXPOSURE_GATES gate: partner limit 50000 vs policy 100000 
+PASS EXPOSURE_GATES gate: partner without settings 
+PASS EXPOSURE_GATES tenant B actor cannot reach A debtor CX 
+PASS EXPOSURE_CANON other partner exposure unaffected 
+PASS PAYMENT payment settles installment balance 0 
+PASS PAYMENT overpayment beyond Price payment denied 
+PASS REVERSAL reversal restores Price payment balance 
+PASS REVERSAL original_amount unchanged after payment/reversal 
+PASS REVERSAL snapshots unchanged after payment/reversal 
+PASS HISTORY historical 10300/7550 title untouched 
+PASS HISTORY historical balance still 2750 
+PASS SHARED_INSTALL captured delivery/recurring/h6c writers installed exact (md5) 
+PASS SETTINGS_INACTIVE baseline: original guard accepts order with inactive settings 
+PASS BASELINE_GAP baseline: manual writer exceeds partner limit with no credit check 
+PASS SHARED_INSTALL candidate guard body differs from captured only by settings/limit block 
+PASS ACL authenticated cannot EXECUTE shared guard 
+PASS SETTINGS_INACTIVE B2B: inactive settings -> held 
+PASS SETTINGS_INACTIVE B2B: absent settings -> held 
+PASS SETTINGS_INACTIVE B2B: limit 0 is not unlimited -> held 
+PASS B2B_GUARD B2B: exact limit 100000 accepted 
+PASS B2B_GUARD B2B: +0.01 blocked 
+PASS HISTORY baseline order unchanged (no history rewrite) 
+PASS MANUAL manual: partner_id derived server-side 
+PASS MANUAL manual: inactive settings 
+PASS MANUAL manual: limit 0 
+PASS MANUAL manual: two active partners 
+PASS MANUAL manual: REPEATABLE READ refused 
+PASS NO_WIDENING manual: debtor without partner untouched 
+PASS NO_WIDENING manual: partner owned by other tenant never attributed/locked 
+PASS TENANT tenant B manual attributed to B partner only 
+PASS TENANT tenant A actor -> tenant B customer still refused by d51_5 
+PASS SHARED_RACE manual->manual: second waits on b2b_credit 
+PASS SHARED_RACE manual->manual: 60000+30000+20000 second refused after fresh read 
+PASS SHARED_LIMIT manual: exact remaining accepted (100000) 
+PASS SHARED_LIMIT manual: +0.01 refused 
+PASS SHARED_RACE manual->B2B: order guard waits 
+PASS SHARED_RACE manual->B2B: 70000+30000.01 held by guard 
+PASS SHARED_RACE B2B->manual: manual waits 
+PASS SHARED_RACE B2B->manual: 50000+50000.01 refused 
+PASS SHARED_RACE manual->Price: Price waits 
+PASS SHARED_RACE manual->Price: 60000+40000.00 = limit accepted exactly 
+PASS SHARED_LIMIT Price title attributed once (canonical 100000, no double count) 
+PASS SHARED_LIMIT Price +0.02 after manual refused 
+PASS RECURRING recurring: 40000 committed + 60000.01 refused 
+PASS RECURRING recurring: refusal leaves no log/audit (atomic) 
+PASS RECURRING recurring cron session (no JWT) also refused 
+PASS RECURRING recurring: exact fit accepted, partner attributed 
+PASS DELIVERY delivery: committed order counted before billing 
+PASS DELIVERY delivery of committed order at limit accepted (order replaced, not added) 
+PASS DELIVERY delivery replay returns same title 
+PASS DELIVERY delivery title 0.01 above its committed order at limit refused 
+PASS DELIVERY delivery without order over limit refused 
+PASS DELIVERY delivery refusal keeps entrega unbilled 
+PASS DELIVERY delivery exact remaining accepted 
+PASS DELIVERY delivery whose order belongs to another partner refused 
+PASS REVIEW_B2B_ORIGIN malicious manual payload origin_type=B2B_ORDER still checked (writer forces MANUAL) 
+PASS REVIEW_B2B_ORIGIN direct B2B_ORDER with fabricated order id refused 
+PASS REVIEW_B2B_ORIGIN direct B2B_ORDER without origin refused 
+PASS REVIEW_B2B_ORIGIN B2B_ORDER pointing to another partner order refused 
+PASS REVIEW_B2B_ORIGIN legit conversion of committed order at limit accepted (neutral) 
+PASS REVIEW_B2B_ORIGIN second B2B_ORDER for same order refused 
+PASS REVIEW_B2B_ORIGIN B2B_ORDER of already generated order counts in full (+0.01 refused) 
+PASS REVIEW_APPROVAL over-limit order held for approval 
+PASS REVIEW_APPROVAL legit approval of configured excess releases to analysis 
+PASS REVIEW_APPROVAL approved order proceeds to aprovado 
+PASS REVIEW_APPROVAL conversion of credit-approved over-limit order accepted (delta 0) 
+PASS REVIEW_APPROVAL approval with configuracao_financeira_inativa (k=21) stays held, approver not recorded 
+PASS REVIEW_APPROVAL approval with configuracao_financeira_inativa (k=22) stays held, approver not recorded 
+PASS REVIEW_APPROVAL approval with limite_nao_definido (k=23) stays held, approver not recorded 
+PASS REVIEW_APPROVAL approved-then-settings-inactivated cannot reach aprovado 
+PASS REVIEW_RELINK waiter blocked on b2b_credit (k=17) 
+PASS REVIEW_RELINK partner client_id changed during wait -> refused, nothing written (k=17) 
+PASS REVIEW_RELINK waiter blocked on b2b_credit (k=18) 
+PASS REVIEW_RELINK partner deleted_at changed during wait -> refused, nothing written (k=18) 
+PASS REVIEW_RELINK waiter blocked on b2b_credit (k=19) 
+PASS REVIEW_RELINK partner commercial_owner_organization_id changed during wait -> refused, nothing written (k=19) 
+PASS REVIEW_RELINK after partner deletion debtor is no longer attributed 
+PASS TRG_COLUMNS installed trigger DDL == captured LIVE DDL 
+PASS TRG_COLUMNS_RED RED captured DDL: isolated final_amount increase over limit keeps aprovado (guard not fired) 
+PASS TRG_COLUMNS_RED RED captured DDL: isolated approver recorded despite inactive settings 
+PASS TRG_COLUMNS_RED RED captured DDL: isolated approver recorded despite limit 0 
+PASS TRG_COLUMNS_RED RED captured DDL: value change after settings inactivated keeps aprovado 
+PASS TRG_COLUMNS candidate DDL installed 
+PASS TRG_COLUMNS_GREEN GREEN: isolated final_amount increase over limit re-checked, leaves aprovado 
+PASS TRG_COLUMNS_GREEN GREEN: isolated approver with inactive settings not recorded 
+PASS TRG_COLUMNS_GREEN GREEN: isolated approver with limit 0 not recorded 
+PASS TRG_COLUMNS_GREEN GREEN: legit configured excess approval still reaches aprovado 
+PASS TRG_COLUMNS_GREEN GREEN: legit value decrease after approval stays aprovado 
+PASS TRG_COLUMNS_GREEN GREEN: value change after settings inactivated leaves aprovado 
+PASS TRG_COLUMNS_GREEN captured-baseline legit path identical (aprovado + approver) 
+PASS TRG_ROLLBACK rollback restores captured DDL 
+PASS TRG_APPROVAL_FIELDS captured approval-fields guard installed exact (md5) 
+PASS TRG_APPROVAL_FIELDS LIVE: isolated credit_approved_by write without approve_b2b_credit refused 
+{"total": 338, "fail": 0, "summary": {"EXPOSURE_CANON": {"PASS": 5}, "D51_5": {"PASS": 4}, "INSTALL": {"PASS": 1}, "ACL": {"PASS": 4}, "DENY_CANDIDATE_AS_IS": {"PASS": 3}, "CALENDAR_DB": {"PASS": 10}, "SQL_VS_ENGINE": {"PASS": 126}, "COMPONENT": {"PASS": 18}, "AUTH": {"PASS": 8}, "LIMIT": {"PASS": 3}, "SNAPSHOT": {"PASS": 8}, "IDEMPOTENCY": {"PASS": 3}, "ROLLBACK": {"PASS": 1}, "NUMERIC_EDGE": {"PASS": 12}, "DEBTOR_RACE": {"PASS": 6}, "REVOCATION_WAIT": {"PASS": 2}, "REPLAY_REVOCATION": {"PASS": 4}, "ISOLATION": {"PASS": 2}, "B2B_GUARD": {"PASS": 3}, "EXPOSURE_RACE": {"PASS": 5}, "EXPOSURE_LIMIT": {"PASS": 7}, "PARTNER_CONTEXT": {"PASS": 4}, "EXPOSURE_EMPTY": {"PASS": 1}, "OVERDUE": {"PASS": 4}, "SETTINGS_INACTIVE": {"PASS": 6}, "EXPOSURE_GATES": {"PASS": 6}, "PAYMENT": {"PASS": 2}, "REVERSAL": {"PASS": 3}, "HISTORY": {"PASS": 3}, "SHARED_INSTALL": {"PASS": 2}, "BASELINE_GAP": {"PASS": 1}, "MANUAL": {"PASS": 5}, "NO_WIDENING": {"PASS": 2}, "TENANT": {"PASS": 2}, "SHARED_RACE": {"PASS": 8}, "SHARED_LIMIT": {"PASS": 4}, "RECURRING": {"PASS": 4}, "DELIVERY": {"PASS": 8}, "REVIEW_B2B_ORIGIN": {"PASS": 7}, "REVIEW_APPROVAL": {"PASS": 8}, "REVIEW_RELINK": {"PASS": 7}, "TRG_COLUMNS": {"PASS": 2}, "TRG_COLUMNS_RED": {"PASS": 4}, "TRG_COLUMNS_GREEN": {"PASS": 7}, "TRG_ROLLBACK": {"PASS": 1}, "TRG_APPROVAL_FIELDS": {"PASS": 2}}}

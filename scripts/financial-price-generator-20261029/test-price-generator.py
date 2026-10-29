@@ -462,6 +462,7 @@ def main(out):
     check('historical balance still 2750', D('2750.00'), m.balance(hist_inst), 'HISTORY')
     # Shared partner-credit guard over the remaining receivable writers (separate .review file).
     load('shared_guard_tests', H / 'shared_guard_tests.py').run(sys.modules[__name__])
+    load('trigger_columns_tests', H / 'trigger_columns_tests.py').run(sys.modules[__name__])
     summary = {}
     for c in checks: summary.setdefault(c['mode'], {}).setdefault(c['status'], 0); summary[c['mode']][c['status']] += 1
     res = dict(level='DISPOSABLE_PG_COMPONENT_NOT_E2E', synthetic=['auth.uid/h15/staff (monetary harness)', 'payment settings stub', 'exposure lower-bound stub', 'NF origin stub', 'accounting gate stub', 'NF reference', 'customers', 'delivery canonical value/billing guard stubs', 'next generation date stub', 'tenant fill stub'],

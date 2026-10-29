@@ -1,0 +1,11 @@
+PASS ref .env = swzpzcwiasxmjutrmvkm
+PASS cliente canônico aponta swzpzcwiasxmjutrmvkm
+PASS ref proibido yzszlzjpovmcteuxjznj ausente
+PASS ref proibido chkgpuawcswhefiabwsm ausente
+PASS ref proibido navfzbwgwzruipouyfnk ausente
+PASS ref proibido ikaauvsflpmamgxmkhoq ausente
+PASS sem chave service_role no frontend
+PASS nenhum .review em migrations
+INFO commit=cdaf2ba95c9fac8a8cf0802ee3d3803790837ebe data=2026-10-29T19:34:08Z
+MANUAL confirmar no painel (sem copiar valores): COMMUNICATION/EMAIL/WHATSAPP_DELIVERY_ENABLED=false, INAPP_ADAPTER=false, WHATSAPP_WEBHOOK=false
+MANUAL confirmar versão publicada (meta ID) == commit acima; rollback = republicar versão anterior registrada
