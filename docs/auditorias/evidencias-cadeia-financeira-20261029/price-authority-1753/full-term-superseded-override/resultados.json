@@ -1,0 +1,569 @@
+[
+  {
+    "id": "ARFSF-OVR-001",
+    "cenario": "pin corpo capturado (não recaptura LIVE)",
+    "status": "PASS",
+    "expectativa": "806e5d8789b08cd6790a10feaf95f26d",
+    "observado": "806e5d8789b08cd6790a10feaf95f26d",
+    "nivel": "LOCAL_HASH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-002",
+    "cenario": "desconto fixo up_to_30d",
+    "status": "PASS",
+    "expectativa": "40",
+    "observado": "40",
+    "nivel": "DRAFT_SPEC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-003",
+    "cenario": "desconto fixo above_30d_up_to_6m",
+    "status": "PASS",
+    "expectativa": "40",
+    "observado": "40",
+    "nivel": "DRAFT_SPEC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-004",
+    "cenario": "desconto fixo above_6m_up_to_12m",
+    "status": "PASS",
+    "expectativa": "40",
+    "observado": "40",
+    "nivel": "DRAFT_SPEC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-005",
+    "cenario": "vetor fixture owner_whole_term_1m",
+    "status": "PASS",
+    "expectativa": "61080.00",
+    "observado": "61080.00",
+    "nivel": "DECIMAL_INDEPENDENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-006",
+    "cenario": "helper owner_whole_term_1m",
+    "status": "PASS",
+    "expectativa": "61080.00",
+    "observado": "61080.00",
+    "nivel": "LOCAL_DECIMAL_PG_ARITHMETIC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-007",
+    "cenario": "vetor fixture owner_whole_term_3m",
+    "status": "PASS",
+    "expectativa": "63298.67",
+    "observado": "63298.67",
+    "nivel": "DECIMAL_INDEPENDENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-008",
+    "cenario": "helper owner_whole_term_3m",
+    "status": "PASS",
+    "expectativa": "63298.67",
+    "observado": "63298.67",
+    "nivel": "LOCAL_DECIMAL_PG_ARITHMETIC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-009",
+    "cenario": "vetor fixture owner_whole_term_6m",
+    "status": "PASS",
+    "expectativa": "66778.69",
+    "observado": "66778.69",
+    "nivel": "DECIMAL_INDEPENDENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-010",
+    "cenario": "helper owner_whole_term_6m",
+    "status": "PASS",
+    "expectativa": "66778.69",
+    "observado": "66778.69",
+    "nivel": "LOCAL_DECIMAL_PG_ARITHMETIC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-011",
+    "cenario": "vetor fixture owner_whole_term_8m",
+    "status": "PASS",
+    "expectativa": "70299.56",
+    "observado": "70299.56",
+    "nivel": "DECIMAL_INDEPENDENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-012",
+    "cenario": "helper owner_whole_term_8m",
+    "status": "PASS",
+    "expectativa": "70299.56",
+    "observado": "70299.56",
+    "nivel": "LOCAL_DECIMAL_PG_ARITHMETIC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-013",
+    "cenario": "vetor fixture owner_whole_term_12m",
+    "status": "PASS",
+    "expectativa": "76094.51",
+    "observado": "76094.51",
+    "nivel": "DECIMAL_INDEPENDENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-014",
+    "cenario": "helper owner_whole_term_12m",
+    "status": "PASS",
+    "expectativa": "76094.51",
+    "observado": "76094.51",
+    "nivel": "LOCAL_DECIMAL_PG_ARITHMETIC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-015",
+    "cenario": "vetor fixture owner_30d",
+    "status": "PASS",
+    "expectativa": "60000.00",
+    "observado": "60000.00",
+    "nivel": "DECIMAL_INDEPENDENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-016",
+    "cenario": "helper owner_30d",
+    "status": "PASS",
+    "expectativa": "60000.00",
+    "observado": "60000.00",
+    "nivel": "LOCAL_DECIMAL_PG_ARITHMETIC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-017",
+    "cenario": "não deduz mês hipotético 3m",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "DECIMAL_NEGATIVE",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-018",
+    "cenario": "período completo 3m",
+    "status": "PASS",
+    "expectativa": "63298.67",
+    "observado": "63298.67",
+    "nivel": "DRAFT_DECIMAL",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-019",
+    "cenario": "não deduz mês hipotético 6m",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "DECIMAL_NEGATIVE",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-020",
+    "cenario": "período completo 6m",
+    "status": "PASS",
+    "expectativa": "66778.69",
+    "observado": "66778.69",
+    "nivel": "DRAFT_DECIMAL",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-021",
+    "cenario": "não deduz mês hipotético 8m",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "DECIMAL_NEGATIVE",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-022",
+    "cenario": "não usa marginal 8m",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "DECIMAL_NEGATIVE",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-023",
+    "cenario": "período completo 8m",
+    "status": "PASS",
+    "expectativa": "70299.56",
+    "observado": "70299.56",
+    "nivel": "DRAFT_DECIMAL",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-024",
+    "cenario": "não deduz mês hipotético 12m",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "DECIMAL_NEGATIVE",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-025",
+    "cenario": "não usa marginal 12m",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "DECIMAL_NEGATIVE",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-026",
+    "cenario": "período completo 12m",
+    "status": "PASS",
+    "expectativa": "76094.51",
+    "observado": "76094.51",
+    "nivel": "DRAFT_DECIMAL",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-027",
+    "cenario": "fronteira normativa taxa 29d",
+    "status": "PASS",
+    "expectativa": "0",
+    "observado": "0",
+    "nivel": "DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-028",
+    "cenario": "sem juros valor 29d",
+    "status": "PASS",
+    "expectativa": "60000.00",
+    "observado": "60000.00",
+    "nivel": "LOCAL_DECIMAL_PG_ARITHMETIC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-029",
+    "cenario": "fronteira normativa taxa 30d",
+    "status": "PASS",
+    "expectativa": "0",
+    "observado": "0",
+    "nivel": "DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-030",
+    "cenario": "sem juros valor 30d",
+    "status": "PASS",
+    "expectativa": "60000.00",
+    "observado": "60000.00",
+    "nivel": "LOCAL_DECIMAL_PG_ARITHMETIC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-031",
+    "cenario": "fronteira normativa taxa 31d",
+    "status": "PASS",
+    "expectativa": "1.8",
+    "observado": "1.8",
+    "nivel": "DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-032",
+    "cenario": "valor fracionário 31d",
+    "status": "BLOCKED",
+    "expectativa": "Convenção contratual não inteira",
+    "observado": "Faixa definida, sem inventar pro-rata/calendário",
+    "nivel": "CONTRACT",
+    "severidade": "P0"
+  },
+  {
+    "id": "ARFSF-OVR-033",
+    "cenario": "fronteira normativa taxa 6m_exact",
+    "status": "PASS",
+    "expectativa": "1.8",
+    "observado": "1.8",
+    "nivel": "DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-034",
+    "cenario": "fronteira normativa taxa 6m_plus_1d",
+    "status": "PASS",
+    "expectativa": "2",
+    "observado": "2",
+    "nivel": "DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-035",
+    "cenario": "valor fracionário 6m_plus_1d",
+    "status": "BLOCKED",
+    "expectativa": "Convenção contratual não inteira",
+    "observado": "Faixa definida, sem inventar pro-rata/calendário",
+    "nivel": "CONTRACT",
+    "severidade": "P0"
+  },
+  {
+    "id": "ARFSF-OVR-036",
+    "cenario": "fronteira normativa taxa 12m_exact",
+    "status": "PASS",
+    "expectativa": "2",
+    "observado": "2",
+    "nivel": "DRAFT_BOUNDARY_NOT_SERVER_ENFORCEMENT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-037",
+    "cenario": ">12m sem exceção aprovada",
+    "status": "PASS",
+    "expectativa": "DENY_UNLESS_SEPARATE_APPROVED_EXCEPTIONAL_POLICY",
+    "observado": "DENY_UNLESS_SEPARATE_APPROVED_EXCEPTIONAL_POLICY",
+    "nivel": "DRAFT_SPEC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-038",
+    "cenario": "exceção não aprovada",
+    "status": "PASS",
+    "expectativa": "False",
+    "observado": "False",
+    "nivel": "DRAFT_SPEC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-039",
+    "cenario": "desconto não condicionado à quitação antiga",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "DRAFT_SPEC",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-040",
+    "cenario": "simulação 8m taxa2 prazo integral",
+    "status": "PASS",
+    "expectativa": "70299.56",
+    "observado": "70299.56",
+    "nivel": "PG_SIMULATION_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-041",
+    "cenario": "nova simulação6m usa1.8",
+    "status": "PASS",
+    "expectativa": "66778.69",
+    "observado": "66778.69",
+    "nivel": "PG_SIMULATION_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-042",
+    "cenario": "envelope anterior8m não recalculado após mudar plano",
+    "status": "PASS",
+    "expectativa": "70299.56",
+    "observado": "70299.56",
+    "nivel": "TRANSPORT_SNAPSHOT_NOT_PERSISTED",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-043",
+    "cenario": "taxa do envelope anterior preservada",
+    "status": "PASS",
+    "expectativa": "2",
+    "observado": "2.000",
+    "nivel": "TRANSPORT_SNAPSHOT_NOT_PERSISTED",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-044",
+    "cenario": "simulação negativa invalid_interest_rate",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "PG_SIMULATION_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-045",
+    "cenario": "simulação negativa discount_exceeds_limit",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "PG_SIMULATION_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-046",
+    "cenario": "vencimento retroativo recusado",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "PG_SIMULATION_SYNTHETIC_AUTH",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-047",
+    "cenario": "outro parceiro negado guard legado",
+    "status": "PASS",
+    "expectativa": "True",
+    "observado": "True",
+    "nivel": "PG_REDUCED_GUARD_NOT_TENANT_RLS",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-048",
+    "cenario": "centavos base exata 100000.01",
+    "status": "PASS",
+    "expectativa": "63298.68",
+    "observado": "63298.68",
+    "nivel": "DECIMAL_ROUNDING_NOT_INSTALLMENT_POLICY",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-049",
+    "cenario": "centavos base exata 0.01",
+    "status": "PASS",
+    "expectativa": "0.01",
+    "observado": "0.01",
+    "nivel": "DECIMAL_ROUNDING_NOT_INSTALLMENT_POLICY",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-050",
+    "cenario": ">12m bloqueio real",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Nenhum resolver novo instalado; não confundir especificação DENY com enforcement",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-051",
+    "cenario": "calendário fim mês/ano bissexto e6m+1d",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "max_days e months_count não provam meses civis; regra de ancoragem ausente",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-052",
+    "cenario": "parcelamento/amortização soma/conciliação",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Não assumir Price, rateio ou juros por parcela; P0 saldo duplicado e P1 centavos anteriores abertos",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-053",
+    "cenario": "mudança posterior faixa/replay/ACK perdido",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Snapshots/hash e continuity existentes devem ser provados com versão observada; política não instalada",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-054",
+    "cenario": "snapshot tabela vigente histórico/taxa pós-faturar",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Não modificar históricos; guards cadeia integral/JWT não executados",
+    "nivel": "CONTRACT",
+    "severidade": "P0"
+  },
+  {
+    "id": "ARFSF-OVR-055",
+    "cenario": "cross-tenant A/B RLS e revogação",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "PG schema/Auth reduzidos não demonstram autorização real",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-056",
+    "cenario": "limite/risco/garantias/acordo/inadimplência",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Preservados; cálculo isolado não prova atribuição nem dupla aprovação",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-057",
+    "cenario": "produção/entrega/CQ reprovado e título único",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Contratos operacionais e A2 contidos; não abrir writer",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-058",
+    "cenario": "billing aprovação versus entrega",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Gatilho indeciso; nenhuma cobrança ou retentativa",
+    "nivel": "CONTRACT",
+    "severidade": "P0"
+  },
+  {
+    "id": "ARFSF-OVR-059",
+    "cenario": "pro-rata/mora/antecipação/correção",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Convenção e índice pendentes; nenhuma fórmula default",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-060",
+    "cenario": "tabela vigente catálogo/simulador/features",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Motor comercial único, parceiro canônico e atribuição específica ainda precisam prova",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-061",
+    "cenario": "aprovação comercial/jurídica",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Incidência e taxa única decididas pelo proprietário; implantação e validação jurídica não executadas",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-062",
+    "cenario": "1 mês civil versus30dias",
+    "status": "BLOCKED",
+    "expectativa": "Contrato/prova/decisão necessários",
+    "observado": "Exemplo1m financiado>30d é aritmética explícita1.8%; não classifica mês civil automaticamente",
+    "nivel": "CONTRACT",
+    "severidade": "P1"
+  },
+  {
+    "id": "ARFSF-OVR-063",
+    "cenario": "JWT/browser/LIVE/pagamento/fiscal",
+    "status": "NOT RUN",
+    "expectativa": "Somente futuro autorizado",
+    "observado": "Nenhuma operação realizada",
+    "nivel": "REAL",
+    "severidade": "P1"
+  }
+]
