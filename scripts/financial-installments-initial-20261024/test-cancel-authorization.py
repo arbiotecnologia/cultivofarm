@@ -211,7 +211,7 @@ def main():
         limits='Actual LOGIN client roles, captured RPC ACL/installment RLS/all installment triggers; minimal synthetic identity tables. Parent creation/identity-wide guards, payment insert chain and audit SELECT policy not composed. No owner RPC calls, no tickets, no JWT verification, no production operations.')
     (OUT/'results.json').write_text(json.dumps(result,indent=2)+'\n')
     with (OUT/'matrix.csv').open('w') as f:
-        w=csv.DictWriter(f,fieldnames=list(checks[0]));w.writeheader();w.writerows(checks)
+        w=csv.DictWriter(f,fieldnames=list(checks[0]),lineterminator='\n');w.writeheader();w.writerows(checks)
         w.writerow(dict(test='B2B own positive cancellation',expected='Legitimate complete chain',actual='Fixture fails in exact risk trigger before RPC',mode='INTEGRATION',status='BLOCKED'))
         w.writerow(dict(test='JWT/RLS hosted A/B and lock wait revocation',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN'))
     print(json.dumps(result['counts']))
