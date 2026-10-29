@@ -73,6 +73,8 @@ CREATE TRIGGER price_snapshot_no_truncate BEFORE TRUNCATE ON platform_private.pr
   FOR EACH STATEMENT EXECUTE FUNCTION platform_private.price_immutable();
 CREATE TRIGGER price_receipt_immutable BEFORE UPDATE OR DELETE ON platform_private.price_generation_receipts
   FOR EACH ROW EXECUTE FUNCTION platform_private.price_immutable();
+CREATE TRIGGER price_receipt_no_truncate BEFORE TRUNCATE ON platform_private.price_generation_receipts
+  FOR EACH STATEMENT EXECUTE FUNCTION platform_private.price_immutable();
 
 -- Owner-only loader: sealed canonical text must hash to the declared digest; fields derive from it.
 CREATE FUNCTION platform_private.price_calendar_load(p_canonical text, p_sha256 text) RETURNS text
@@ -137,7 +139,7 @@ DECLARE p numeric(14,2); i numeric; pmt numeric(14,2); bal numeric(14,2); it num
         first date; nom date; rows jsonb := '[]'::jsonb; total numeric(14,2) := 0;
 BEGIN
   IF p_table_amount IS NULL OR p_table_amount::text IN ('NaN','Infinity','-Infinity') OR p_table_amount <= 0
-     OR p_table_amount <> round(p_table_amount, 2) OR p_table_amount > 1000000000000 THEN
+     OR p_table_amount <> round(p_table_amount, 2) OR p_table_amount > 999999999999.99 THEN  -- numeric(14,2) ceiling, checked unconstrained
     RAISE EXCEPTION 'TABLE_AMOUNT_INVALID' USING ERRCODE = '23514';
   END IF;
   IF p_n IS NULL OR p_n NOT BETWEEN 1 AND 3 THEN RAISE EXCEPTION 'INSTALLMENTS_OUT_OF_RANGE' USING ERRCODE = '23514'; END IF;
@@ -187,6 +189,11 @@ DECLARE
   v_title jsonb; v_tid uuid; v_got jsonb; v_res jsonb;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE = '42501'; END IF;
+  -- Fresh per-statement snapshots after the debtor lock are required; RR/SERIALIZABLE would
+  -- read exposure from a snapshot taken before the wait.
+  IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN
+    RAISE EXCEPTION 'PRICE_ISOLATION_READ_COMMITTED_REQUIRED' USING ERRCODE = '0A000';
+  END IF;
   IF NOT public.is_financial_staff(v_uid) THEN  -- same captured helper, checked before any gate
     RAISE EXCEPTION 'Sem permissão para criar títulos financeiros.' USING ERRCODE = '42501';
   END IF;
@@ -223,6 +230,18 @@ BEGIN
   IF v_customer IS NULL OR v_nf_ref IS NULL THEN RAISE EXCEPTION 'PRICE_PAYLOAD_INVALID' USING ERRCODE = '23514'; END IF;
   IF jsonb_typeof(p_payload->'table_amount') IS DISTINCT FROM 'string' THEN RAISE EXCEPTION 'TABLE_AMOUNT_INVALID' USING ERRCODE = '23514'; END IF;
 
+  -- Serialize every generation for the same tenant+debtor (any actor, any key). Fixed order for
+  -- all callers: key lock, then debtor lock — never the reverse, so no lock-order deadlock.
+  PERFORM pg_advisory_xact_lock(hashtextextended('price-debtor|' || v_org::text || '|' || v_customer::text, 11));
+  -- Re-authorize after the wait: session, staff and tenant must still hold.
+  IF auth.uid() IS DISTINCT FROM v_uid THEN RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE = '42501'; END IF;
+  IF NOT public.is_financial_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão para criar títulos financeiros.' USING ERRCODE = '42501';
+  END IF;
+  IF platform_private.h15_actor_organization() IS DISTINCT FROM v_org THEN
+    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '42501';
+  END IF;
+
   v_set := platform_private.price_payment_settings(v_org, v_customer);
   IF v_set IS NULL THEN RAISE EXCEPTION 'PAYMENT_SETTINGS_OFFICIAL_ABSENT' USING ERRCODE = '42501'; END IF;
   v_lim := (v_set->>'credit_limit')::numeric;
@@ -235,7 +254,7 @@ BEGIN
 
   v_cal := platform_private.price_pinned_calendar();
   v_s := platform_private.price_compute(v_amount, v_n, v_nf, v_cal);  -- whole plan or exception
-  v_exp := platform_private.price_credit_exposure(v_org, v_customer);
+  v_exp := platform_private.price_credit_exposure(v_org, v_customer);  -- fresh RC statement snapshot, after debtor lock
   IF v_exp IS NULL OR v_exp < 0 THEN RAISE EXCEPTION 'EXPOSURE_INVALID' USING ERRCODE = '23514'; END IF;
   IF v_exp + (v_s->>'financed_total')::numeric > v_lim THEN
     RAISE EXCEPTION 'LIMIT_EXCEEDED_BLOCK' USING ERRCODE = 'PT409';
