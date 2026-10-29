@@ -12,7 +12,7 @@ r = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(r)
 m = r.m
 OUT = m.ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization'
-checks, pins = [], []
+checks, pins, omitted_policies = [], [], []
 V = m.uid(900001)
 
 def check(name, expected, actual, mode='CAPTURED'):
@@ -53,6 +53,10 @@ def policies(name):
     acl('TABLE', name, t['acl'])
     m.pg.sql('ALTER TABLE '+name+' ENABLE ROW LEVEL SECURITY;')
     for p in t['policies'] or []:
+        expression=(p['qual'] or '')+(p['with_check'] or '')
+        if any(x in expression for x in ['b2b_commercial_context','get_cliente_ids_for_user']):
+            # Unavailable permissive partner/producer readers are excluded explicitly; actors here are financeiro only.
+            omitted_policies.append(name+'.'+p['policyname']); continue
         roles = ','.join(p['roles'])
         sql = f'CREATE POLICY "{p["policyname"]}" ON {name} AS {p["permissive"]} FOR {p["cmd"]} TO {roles}'
         if p['qual']: sql += ' USING ('+p['qual']+')'
@@ -169,6 +173,7 @@ def main():
     result=dict(counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL']},checks=checks,pins=pins,
         captured_manifest_sha256=hashlib.sha256((H/'receivable-recursive-live-20261029.json').read_bytes()).hexdigest(),
         transformed_body_md5=hashlib.md5(body.encode()).hexdigest(),
+        omitted_policies=omitted_policies,
         blocked=['B2B own positive requires captured recalc_partner_risk_score and full risk/partner/governance dependency chain'],
         not_run=['Hosted JWT/RLS A/B, lock-wait revocation, full BI/provenance and promotion'],
         vulnerability='Foreign canceled vs missing row status oracle; OPEN foreign mutation denied by exact tenant trigger',
