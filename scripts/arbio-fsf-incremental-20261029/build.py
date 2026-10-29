@@ -126,3 +126,14 @@ END $approval$;
 
 if __name__ == '__main__':
     assemble()
+    results = ROOT / 'docs/auditorias/evidencias-cadeia-financeira-20261029/incremental-prep-2015/approval-results.json'
+    if results.exists():
+        hashes = json.loads(results.read_text())['candidate_function_md5']
+        post = 'DO $post$ BEGIN\n' + '\n'.join(f"IF md5(pg_get_functiondef({quote(sig)}::regprocedure)) IS DISTINCT FROM {quote(md5)} THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;" for sig, md5 in sorted(hashes.items())) + "\nIF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029) THEN RAISE EXCEPTION 'POST_TICKET_RESIDUE'; END IF;\nEND $post$;\n"
+        for name in ['01-credit-approval.install.sql.review', '01-credit-approval.rollback.sql.review']:
+            p = H / name
+            s = p.read_text()
+            p.write_text(s.replace('\nCOMMIT;\n', '\n' + post + 'COMMIT;\n') if 'install' in name else s.replace('REVOKE EXECUTE', post + 'REVOKE EXECUTE'))
+        p = H / 'postflight.sql.readonly'
+        p.write_text(p.read_text() + post)
+        (H / 'expected-postflight.json').write_text(json.dumps({'candidate_function_md5': hashes, 'level':'LOCAL_COMPONENT_EXPECTATIONS_NOT_HOSTED_PROOF'}, indent=2) + '\n')
