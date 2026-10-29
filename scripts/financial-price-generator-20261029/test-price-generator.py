@@ -77,7 +77,6 @@ STUB_EXPOSURE = """CREATE OR REPLACE FUNCTION platform_private.price_credit_expo
 STUB_NF = f"""CREATE OR REPLACE FUNCTION platform_private.price_nf_origin(p_nf uuid, p_org uuid, p_customer uuid) RETURNS date LANGUAGE sql STABLE SET search_path='' AS $$
  SELECT CASE WHEN p_nf='{NF}'::uuid THEN nullif(current_setting('test.nf_date',true),'')::date END $$;"""  # SYNTHETIC NF date
 STUB_ACC = """CREATE OR REPLACE FUNCTION platform_private.price_accounting_gate(p_org uuid, p_customer uuid) RETURNS void LANGUAGE sql STABLE SET search_path='' AS $$ SELECT $$;"""  # SYNTHETIC
-DENY_ONLY = {}
 
 
 def nf(d): return f"SELECT set_config('test.nf_date','{d}',false);"
@@ -141,7 +140,7 @@ def main(out):
             exp = [[r['interest'], r['principal'], r['payment'], x['nominal'].isoformat(), x['adjusted'].isoformat()] for r, x in zip(s['rows'], sch)]
         except eng.Rejected as e:
             exp = str(e)
-        r = pg.sql(f"SELECT platform_private.price_compute({amt},{n},'{nfd}',{cal});", ok=None) if False else subprocess.run(pg.psql(), input=f"SELECT platform_private.price_compute({amt},{n},'{nfd}',{cal});".encode(), capture_output=True)
+        r = subprocess.run(pg.psql(), input=f"SELECT platform_private.price_compute({amt},{n},'{nfd}',{cal});".encode(), capture_output=True)
         if r.returncode == 0:
             js = json.loads(r.stdout.decode().strip(), parse_float=D)
             got = [[D(x["interest"]).quantize(D("0.01")), D(x["principal"]).quantize(D("0.01")), D(x["amount"]).quantize(D("0.01")), x['nominal_due'], x['due_date']] for x in js['rows']]
@@ -219,7 +218,9 @@ def main(out):
     snap_before = pg.sql("SELECT jsonb_agg(to_jsonb(s) ORDER BY receivable_id) FROM platform_private.price_schedule_snapshots s")
     pay_id, _ = m.payment(inst1, '20724.28', 'price-pay-1')
     check('payment settles installment balance 0', D('0.00'), m.balance(inst1), 'PAYMENT')
-    deny('overpayment beyond Price payment denied', m.scope() + f"SELECT rpc_register_receivable_payment('{tid and pg.sql(chr(83)+'ELECT id FROM accounts_receivable_installments WHERE receivable_id='+q(tid)+' AND installment_number=2')}',{q(json.dumps(dict(amount_received='20724.29',idempotency_key='price-over-2',payment_method_id=PM,payment_date='2026-10-28')))}::jsonb);", 'excede', 'PAYMENT')
+    inst2 = pg.sql(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{tid}' AND installment_number=2")
+    over = dict(amount_received='20724.29', idempotency_key='price-over-2', payment_method_id=PM, payment_date='2026-10-28')
+    deny('overpayment beyond Price payment denied', m.scope() + f"SELECT rpc_register_receivable_payment('{inst2}',{q(json.dumps(over))}::jsonb);", 'excede', 'PAYMENT')
     m.ask(f"SELECT fn_reverse_payment('{pay_id}','receivable','LOCAL SINTÉTICO');")
     check('reversal restores Price payment balance', D('20724.28'), m.balance(inst1), 'REVERSAL')
     check('original_amount unchanged after payment/reversal', '20724.28', pg.sql(f"SELECT original_amount FROM accounts_receivable_installments WHERE id='{inst1}'"), 'REVERSAL')
