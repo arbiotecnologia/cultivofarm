@@ -1,0 +1,5 @@
+- Review-only package: never apply install/rollback hosted or publish from here; the owner reviews the exact SQL and PASS evidence first — prevents unreviewed RLS changes.
+- Widen only SELECT on partner_orders for internal owner-organization staff; INSERT/UPDATE/DELETE keep the exact baseline phase1 predicate — prevents read fixes from releasing writes or billing.
+- Never set organizations.partner_account_id or widen the shared phase1 helper — keeps buyer/supplier scopes separate.
+- Rollback is deny-safe: restore the original ALL restrictive guard and neutralize the helper (false body, no EXECUTE) — never leaves wider access.
+- Local tests use synthetic rows and unsigned claims; only real-session REST reads prove JWT/RLS.
