@@ -43,11 +43,12 @@ def run(t):
     pg.sql(next(x['definition'] for x in rel['entregas']['triggers'] if x['name'] == 'trg_h6c_entrega_ar_b2b_link') + ';')
 
     # Fixtures: debtor k -> partner k, tenant A, limit 100000 active block (k=5: limit 0).
-    ks = range(1, 13)
+    pg.sql('ALTER TABLE public.partner_accounts ADD COLUMN IF NOT EXISTS deleted_at timestamptz;')
+    ks = range(1, 25)
     pg.sql("INSERT INTO public.clientes VALUES " + ','.join(f"('{did(k)}','{A}')" for k in ks) + ";"
            "INSERT INTO public.partner_accounts VALUES " + ','.join(f"('{pid(k)}','{did(k)}',true,'{A}')" for k in ks if k != 12) + f",('{pid(12)}','{did(12)}',true,'{B}');"  # 12: owner B, client of A
            "INSERT INTO public.partner_financial_settings(partner_id,credit_limit,overdue_tolerance_days,block_if_overdue,credit_limit_action,active) VALUES "
-           + ','.join(f"('{pid(k)}',{0 if k == 5 else 100000},0,false,'block',true)" for k in ks) + ";")
+           + ','.join(f"('{pid(k)}',{0 if k == 5 else 100000},0,false,{q('approval_required') if k >= 20 else q('block')},true)" for k in ks) + ";")
     # Price stub extended to debtor 8 (SYNTHETIC, same shape as the main stub).
     pg.sql(t.STUB_SETTINGS.replace(f"'{t.C7}'::uuid", f"'{t.C7}'::uuid,'{did(8)}'::uuid"))
 
@@ -156,3 +157,65 @@ def run(t):
     e_bad = pg.sql(f"INSERT INTO public.entregas(id,status,cliente_id,financial_status,partner_order_id) VALUES(gen_random_uuid(),'entregue','{did(3)}','PENDING','{other}') RETURNING id;").splitlines()[0]
     pg.sql(f"INSERT INTO public.test_entrega_valor VALUES('{e_bad}',1);")
     deny('delivery whose order belongs to another partner refused', bill(e_bad, '1.00'), 'CREDIT_DELIVERY_ORDER_PARTNER_MISMATCH', 'DELIVERY')
+
+    # ================= Review fixes (commit f2d19a6) =================
+    # (a) B2B_ORDER is not a free pass.
+    def conv(k, amt, status='aprovado', origin=None, cust=None, partner=None):
+        o = origin or t.order(pid(k), status, amt)
+        terms = pg.sql(f"SELECT payment_terms_id FROM partner_orders WHERE id='{o}'")
+        pg.sql(f"INSERT INTO partner_order_payment_schedule(partner_order_id,payment_terms_id,installment_number,due_date,amount,principal_amount,interest_amount) VALUES('{o}','{terms}',1,CURRENT_DATE+30,{amt},{amt},0) ON CONFLICT DO NOTHING;")
+        return o, t.scope() + f"INSERT INTO accounts_receivable(origin_type,origin_id,description,category_id,total_amount,first_due_date,installment_count,created_by,organization_id,customer_id,partner_id) VALUES('B2B_ORDER','{o}','SINTÉTICO conv','{K}',{amt},CURRENT_DATE+30,1,'{U}','{A}',{q(cust or did(k))},{q(partner or pid(k))}) RETURNING id;"
+    mal = mt(did(13), '100000.01', 'mal')
+    mal = mal.replace('"customer_id"', '"origin_type": "B2B_ORDER", "origin_id": "%s", "partner_id": "%s", "customer_id"' % (t.order(pid(13), 'aprovado', '1.00'), pid(13)))
+    deny('malicious manual payload origin_type=B2B_ORDER still checked (writer forces MANUAL)', mal, 'CREDIT_LIMIT_EXCEEDED_BLOCK', 'REVIEW_B2B_ORIGIN')
+    deny('direct B2B_ORDER with fabricated order id refused', t.scope() + f"INSERT INTO accounts_receivable(origin_type,origin_id,description,category_id,total_amount,first_due_date,installment_count,created_by,organization_id,customer_id,partner_id) VALUES('B2B_ORDER',gen_random_uuid(),'x','{K}',500000,CURRENT_DATE+30,1,'{U}','{A}','{did(13)}','{pid(13)}');", 'CREDIT_B2B_ORIGIN_UNPROVEN', 'REVIEW_B2B_ORIGIN')
+    deny('direct B2B_ORDER without origin refused', t.scope() + f"INSERT INTO accounts_receivable(origin_type,description,category_id,total_amount,first_due_date,installment_count,created_by,organization_id,customer_id) VALUES('B2B_ORDER','x','{K}',500000,CURRENT_DATE+30,1,'{U}','{A}','{did(13)}');", 'CREDIT_B2B_ORIGIN_UNPROVEN', 'REVIEW_B2B_ORIGIN')
+    o14 = t.order(pid(14), 'aprovado', '10.00')
+    _, sql = conv(13, '10.00', origin=o14)
+    deny('B2B_ORDER pointing to another partner order refused', sql, 'CREDIT_ORDER_PARTNER_MISMATCH', 'REVIEW_B2B_ORIGIN')
+    o15, sql = conv(15, '100000.00')
+    tid15 = pg.sql(sql).splitlines()[-1]
+    check('legit conversion of committed order at limit accepted (neutral)', pid(15), pg.sql(f"SELECT partner_id FROM accounts_receivable WHERE id='{tid15}'"), 'REVIEW_B2B_ORIGIN')
+    _, sql = conv(15, '100000.00', origin=o15)
+    deny('second B2B_ORDER for same order refused', sql, 'CREDIT_B2B_ORIGIN_ALREADY_BILLED', 'REVIEW_B2B_ORIGIN')
+    _, sql = conv(16, '0.01', origin=t.order(pid(16), 'aprovado', '100000.00'))
+    pg.sql(f"UPDATE partner_orders SET receivable_generated=true WHERE partner_id='{pid(16)}';")
+    pg.sql(mt(did(16), '100000.00', 'fill16'))
+    deny('B2B_ORDER of already generated order counts in full (+0.01 refused)', sql, 'CREDIT_LIMIT_EXCEEDED_BLOCK', 'REVIEW_B2B_ORIGIN')
+    # approved-over-limit order (approval_required partner 20): conversion does not increase exposure -> accepted.
+    o20 = t.order(pid(20), 'pendente', '120000.00')
+    check('over-limit order held for approval', 'aguardando_aprovacao_credito|limite_excedido', st(o20), 'REVIEW_APPROVAL')
+    pg.sql(f"UPDATE partner_orders SET credit_approved_by='{U}', status='em_analise_comercial' WHERE id='{o20}';")
+    check('legit approval of configured excess releases to analysis', 'em_analise_comercial|', st(o20), 'REVIEW_APPROVAL')
+    pg.sql(f"UPDATE partner_orders SET status='aprovado' WHERE id='{o20}';")
+    check('approved order proceeds to aprovado', 'aprovado|', st(o20), 'REVIEW_APPROVAL')
+    _, sql = conv(20, '120000.00', origin=o20)
+    check('conversion of credit-approved over-limit order accepted (delta 0)', pid(20), pg.sql(f"SELECT partner_id FROM accounts_receivable WHERE id='{pg.sql(sql).splitlines()[-1]}'"), 'REVIEW_APPROVAL')
+    # (b) approval never releases absent/inactive settings or undefined limit.
+    for k, mut, reason in ((21, f"UPDATE public.partner_financial_settings SET active=false WHERE partner_id='{pid(21)}'", 'configuracao_financeira_inativa'),
+                           (22, f"DELETE FROM public.partner_financial_settings WHERE partner_id='{pid(22)}'", 'configuracao_financeira_inativa'),
+                           (23, f"UPDATE public.partner_financial_settings SET credit_limit=0 WHERE partner_id='{pid(23)}'", 'limite_nao_definido')):
+        o = t.order(pid(k), 'pendente', '120000.00'); pg.sql(mut + ';')
+        pg.sql(f"UPDATE partner_orders SET credit_approved_by='{U}', status='em_analise_comercial' WHERE id='{o}';")
+        check(f'approval with {reason} (k={k}) stays held, approver not recorded', f'aguardando_aprovacao_credito|{reason}|', pg.sql(f"SELECT status||'|'||coalesce(credit_block_reason,'')||'|'||coalesce(credit_approved_by::text,'') FROM partner_orders WHERE id='{o}'"), 'REVIEW_APPROVAL')
+        o2 = t.order(pid(k), 'rascunho', '5.00')
+        pg.sql(f"UPDATE partner_orders SET credit_approved_by='{U}' WHERE id='{o2}';")
+        check(f'approver set on other status with {reason} (k={k}) blocked', f'aguardando_aprovacao_credito|{reason}', st(o2), 'REVIEW_APPROVAL')
+    o24 = t.order(pid(24), 'pendente', '120000.00')
+    pg.sql(f"UPDATE partner_orders SET credit_approved_by='{U}', status='em_analise_comercial' WHERE id='{o24}';")
+    pg.sql(f"UPDATE public.partner_financial_settings SET active=false WHERE partner_id='{pid(24)}';")
+    pg.sql(f"UPDATE partner_orders SET status='aprovado' WHERE id='{o24}';")
+    check('approved-then-settings-inactivated cannot reach aprovado', 'aguardando_aprovacao_credito|configuracao_financeira_inativa', st(o24), 'REVIEW_APPROVAL')
+    # (c) link re-validated after the wait: unlink / delete / transfer committed while waiting.
+    for k, mut in ((17, "client_id=NULL"), (18, "deleted_at=now()"), (19, f"commercial_owner_organization_id='{B}'")):
+        p1, b1, _ = t.held(mt(did(k), '10.00', 'hold%d' % k))
+        th, box, blocked = t.waiter(mt(did(k), '10.00', 'wait%d' % k, uid=U2), 'shared-rv%d' % k)
+        check(f'waiter blocked on b2b_credit (k={k})', '{%d}' % b1, blocked, 'REVIEW_RELINK')
+        pg.sql(f"UPDATE public.partner_accounts SET {mut} WHERE id='{pid(k)}';")
+        before = pg.sql(f"SELECT count(*) FROM accounts_receivable WHERE customer_id='{did(k)}'")
+        t.finish(p1, 'COMMIT'); th.join(15)
+        check(f'partner {mut.split("=")[0]} changed during wait -> refused, nothing written (k={k})', (True, str(int(before))),
+              ('CREDIT_PARTNER_LINK_CHANGED' in box['r'].stderr.decode(), pg.sql(f"SELECT count(*) FROM accounts_receivable WHERE customer_id='{did(k)}'")), 'REVIEW_RELINK')
+    deny('deleted partner no longer attributes new titles silently? -> untouched', mt(did(18), '1.00', 'after-del'), 'NEVER', 'REVIEW_RELINK') if False else None
+    rr = json.loads(pg.sql(mt(did(18), '1.00', 'after-del')).splitlines()[-1])
+    check('after partner deletion debtor is no longer attributed', '', pg.sql(f"SELECT coalesce(partner_id::text,'') FROM accounts_receivable WHERE id='{rr['title_id']}'"), 'REVIEW_RELINK')
