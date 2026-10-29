@@ -253,6 +253,7 @@ def canonical_exposure():
     check('Price->B2B: after commit 60000+40000.01 blocked by guard', 'aguardando_aprovacao_credito|limite_excedido_bloqueado', st(oz), 'EXPOSURE_RACE')
     ok(env + call(payload(1, amount='100000.00', key='k-w-60000', cust=CW)))
     check('B2B exact remaining 39900 accepted by guard', 'pendente|', st(order(PW, 'pendente', '39900.00')), 'EXPOSURE_LIMIT')
+    print('DEBUG PW', pg.sql(f"SELECT public.fn_b2b_credit_exposure('{PW}',0.01,NULL)"), pg.sql(f"SELECT string_agg(status||':'||total||':'||coalesce(receivable_generated::text,''),',') FROM partner_orders WHERE partner_id='{PW}'"))
     check('B2B +0.01 blocked by guard', 'aguardando_aprovacao_credito|limite_excedido_bloqueado', st(order(PW, 'pendente', '0.01')), 'EXPOSURE_LIMIT')
     b2b_title(960, '500.00', CO, PO, due=-10); b2b_title(970, '500.00', CN, PN, due=-10)
     check('overdue counted', (True, D('500.00')), (cx(PO)['tem_vencidos'], D(str(cx(PO)['saldo_vencido']))), 'OVERDUE')
