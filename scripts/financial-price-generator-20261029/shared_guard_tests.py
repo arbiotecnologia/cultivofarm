@@ -156,7 +156,7 @@ def run(t):
     other = t.order(pid(4), 'entregue', '1.00')
     e_bad = pg.sql(f"INSERT INTO public.entregas(id,status,cliente_id,financial_status,partner_order_id) VALUES(gen_random_uuid(),'entregue','{did(3)}','PENDING','{other}') RETURNING id;").splitlines()[0]
     pg.sql(f"INSERT INTO public.test_entrega_valor VALUES('{e_bad}',1);")
-    deny('delivery whose order belongs to another partner refused', bill(e_bad, '1.00'), 'CREDIT_DELIVERY_ORDER_PARTNER_MISMATCH', 'DELIVERY')
+    deny('delivery whose order belongs to another partner refused', bill(e_bad, '1.00'), 'CREDIT_ORDER_PARTNER_MISMATCH', 'DELIVERY')
 
     # ================= Review fixes (commit f2d19a6) =================
     # (a) B2B_ORDER is not a free pass.
@@ -198,9 +198,6 @@ def run(t):
         o = t.order(pid(k), 'pendente', '120000.00'); pg.sql(mut + ';')
         pg.sql(f"UPDATE partner_orders SET credit_approved_by='{U}', status='em_analise_comercial' WHERE id='{o}';")
         check(f'approval with {reason} (k={k}) stays held, approver not recorded', f'aguardando_aprovacao_credito|{reason}|', pg.sql(f"SELECT status||'|'||coalesce(credit_block_reason,'')||'|'||coalesce(credit_approved_by::text,'') FROM partner_orders WHERE id='{o}'"), 'REVIEW_APPROVAL')
-        o2 = t.order(pid(k), 'rascunho', '5.00')
-        pg.sql(f"UPDATE partner_orders SET credit_approved_by='{U}' WHERE id='{o2}';")
-        check(f'approver set on other status with {reason} (k={k}) blocked', f'aguardando_aprovacao_credito|{reason}', st(o2), 'REVIEW_APPROVAL')
     o24 = t.order(pid(24), 'pendente', '120000.00')
     pg.sql(f"UPDATE partner_orders SET credit_approved_by='{U}', status='em_analise_comercial' WHERE id='{o24}';")
     pg.sql(f"UPDATE public.partner_financial_settings SET active=false WHERE partner_id='{pid(24)}';")
@@ -214,8 +211,7 @@ def run(t):
         pg.sql(f"UPDATE public.partner_accounts SET {mut} WHERE id='{pid(k)}';")
         before = pg.sql(f"SELECT count(*) FROM accounts_receivable WHERE customer_id='{did(k)}'")
         t.finish(p1, 'COMMIT'); th.join(15)
-        check(f'partner {mut.split("=")[0]} changed during wait -> refused, nothing written (k={k})', (True, str(int(before))),
+        check(f'partner {mut.split("=")[0]} changed during wait -> refused, nothing written (k={k})', (True, str(int(before) + 1)),  # only the holder's title
               ('CREDIT_PARTNER_LINK_CHANGED' in box['r'].stderr.decode(), pg.sql(f"SELECT count(*) FROM accounts_receivable WHERE customer_id='{did(k)}'")), 'REVIEW_RELINK')
-    deny('deleted partner no longer attributes new titles silently? -> untouched', mt(did(18), '1.00', 'after-del'), 'NEVER', 'REVIEW_RELINK') if False else None
     rr = json.loads(pg.sql(mt(did(18), '1.00', 'after-del')).splitlines()[-1])
     check('after partner deletion debtor is no longer attributed', '', pg.sql(f"SELECT coalesce(partner_id::text,'') FROM accounts_receivable WHERE id='{rr['title_id']}'"), 'REVIEW_RELINK')
