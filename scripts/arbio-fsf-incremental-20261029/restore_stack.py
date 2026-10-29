@@ -20,7 +20,7 @@ def acl_sql(kind, obj, acl, owner):
     if acl is None:
         if kind == 'FUNCTION': sql += f'GRANT EXECUTE ON FUNCTION {obj} TO PUBLIC;\n'
         return sql
-    codes = {'r':'SELECT','a':'INSERT','w':'UPDATE','d':'DELETE','D':'TRUNCATE','x':'REFERENCES','t':'TRIGGER','X':'EXECUTE','U':'USAGE','C':'CREATE'}
+    codes = {'r':'SELECT','a':'INSERT','w':'UPDATE','d':'DELETE','D':'TRUNCATE','x':'REFERENCES','t':'TRIGGER','m':'MAINTAIN','X':'EXECUTE','U':'USAGE','C':'CREATE'}
     sql += f'REVOKE ALL ON {kind} {obj} FROM {q(owner)};\n'
     for entry in acl.strip('{}').split(','):
         role, rights = entry.split('=',1); rights = rights.split('/')[0]
