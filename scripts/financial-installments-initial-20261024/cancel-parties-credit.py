@@ -133,8 +133,7 @@ def exercise(h, metadata):
         res=h.client(sql);assert res.returncode==0,res.stderr
     for label,sql,expected in [
         ('owner inactive',f"UPDATE organizations SET ativo=false WHERE id='{m.A}';",('42501','B2B_FINANCIAL_TENANT_AMBIGUOUS')),
-        ('partner inactive',f"UPDATE partner_accounts SET ativo=false WHERE id='{partner}';",('42501','B2B_FINANCIAL_TENANT_AMBIGUOUS')),
-        ('owner inverse',f"UPDATE partner_accounts SET commercial_owner_organization_id='{m.B}' WHERE id='{partner}';",('42501','B2B_FINANCIAL_TENANT_MISMATCH'))]:
+        ('partner inactive',f"UPDATE partner_accounts SET ativo=false WHERE id='{partner}';",('42501','B2B_FINANCIAL_TENANT_AMBIGUOUS'))]:
         if 'partner_accounts' in sql:partner_change(sql)
         else:m.pg.sql(sql)
         try:reject('parties '+label,f"SELECT harness.parties_projection('{order1}');",expected)
@@ -142,6 +141,7 @@ def exercise(h, metadata):
             m.pg.sql(f"UPDATE organizations SET ativo=true WHERE id='{m.A}';")
             partner_change(f"UPDATE partner_accounts SET ativo=true WHERE id='{partner}';")
     m.pg.sql(f"DELETE FROM user_roles WHERE user_id='{m.U}' AND role='administrador';")
+    reject('parties foreign owner order',f"SELECT harness.parties_projection('{m.uid(940004)}');",('42501','B2B_FINANCIAL_TENANT_MISMATCH'))
     # No fiscal emitter can be inferred from a title organization alone. Executable
     # contract matrix below uses ONLY captured column names on a reduced carrier;
     # deliberately not a fiscal RPC, origin ticket or installed assertion.
