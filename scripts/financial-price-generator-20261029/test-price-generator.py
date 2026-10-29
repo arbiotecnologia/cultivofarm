@@ -142,8 +142,8 @@ def main(out):
             exp = str(e)
         r = pg.sql(f"SELECT platform_private.price_compute({amt},{n},'{nfd}',{cal});", ok=None) if False else subprocess.run(pg.psql(), input=f"SELECT platform_private.price_compute({amt},{n},'{nfd}',{cal});".encode(), capture_output=True)
         if r.returncode == 0:
-            js = json.loads(r.stdout.decode().strip())
-            got = [[D(x['interest']), D(x['principal']), D(x['amount']), x['nominal_due'], x['due_date']] for x in js['rows']]
+            js = json.loads(r.stdout.decode().strip(), parse_float=D)
+            got = [[D(x["interest"]).quantize(D("0.01")), D(x["principal"]).quantize(D("0.01")), D(x["amount"]).quantize(D("0.01")), x['nominal_due'], x['due_date']] for x in js['rows']]
             got = got if not isinstance(exp, str) else 'ACCEPTED'
         else:
             err = r.stderr.decode(); got = next((c for c in ('PLAN_NOT_REPRESENTABLE_IN_CENTS', 'CALENDAR_COVERAGE_EXCEEDED') if c in err), err[-200:])
