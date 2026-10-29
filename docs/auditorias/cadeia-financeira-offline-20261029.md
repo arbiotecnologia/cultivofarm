@@ -49,7 +49,7 @@ bun run test src/test/financeiro/receivableRedGreenPostgres.test.ts
 
 ## Consumidores, aliases e BI: não mostrar títulos incorretos
 
-Revisão independente dos17consumidores preservada em `consumers-prior-inventory.json`; não é certificação dos17fluxosUI. Saldo exigível proposto conserva total financiado em original e soma somente eventos; LIVE ainda não garante isso. `calcularSaldoRecebivel`/`saldoParcela` são aditivos, drawer/KPIs herdam o conflito. **Nenhuma troca unilateral de frontend** ou dedução automática dos juros históricos.
+Revisão independente dos17consumidores preservada em `consumers-prior-inventory.json`; fingerprints atuais em `consumers-current.json`:17comparações, zero drift. Não é certificação dos17fluxosUI. Saldo exigível proposto conserva total financiado em original e soma somente eventos; LIVE ainda não garante isso. `calcularSaldoRecebivel`/`saldoParcela` são aditivos, drawer/KPIs herdam o conflito. **Nenhuma troca unilateral de frontend** ou dedução automática dos juros históricos.
 
 `balance`/`saldo` são projeções, não prova de campo canônico; AR usa received_amount/amount_received, AP usa amount_paid. Caixa realizado = eventos; caixa projetado aditivo; aging usa original−recebido−desconto e omite ajustes; DRE/competência/exposição/crédito requerem definição por métrica, não igualdade universal. Exportação/portal e dispatch por nome permanecem dependências explícitas. P1: aprovar definições e provar cada consumidor contra a mesma proveniência antes de promover writer; títulos ambíguos exigem conciliação, nunca recalcular taxas atuais.
 
@@ -74,4 +74,4 @@ Rollback controlado futuro deve ser **deny-only**, sem GRANT nem restauração d
 
 ## Arquivos e revisão
 
-Novos: manifesto recursivo, auditor recursivo, runner red/green, teste Vitest, este relatório e evidências. Aditivos: plano original, roadmap e regra no AGENTS do pacote. Nenhuma edição em Entregas, consumidores runtime, DRAFT ou dependências. Revisões independentes confirmam limite lexical/loop/identidade sintética e NO-GO; lacuna de views/policies incorporada por pg_rewrite/pg_policy. A aprovação final do pacote não autoriza promoção comercial/jurídica ou operacional.
+Novos: manifesto recursivo, auditor recursivo, runner red/green, teste Vitest, este relatório e evidências. Aditivos: plano original, roadmap e regra no AGENTS do pacote. Nenhuma edição em Entregas, consumidores runtime, DRAFT ou dependências. Revisões independentes confirmam limite lexical/loop/identidade sintética e NO-GO; lacuna de views/policies incorporada por pg_rewrite/pg_policy. Revisão final reexecutou37assertions e conferiu hashes; ressalva ADD CONSTRAINT não idempotente em schema arbitrário não se aplica ao schema sempre novo do runner (não instalador). Evidência em `independent-review.md`. SHA256SUMS conferido; git diff --check sem erros; build automático observado OK às14:04:18UTC. A aprovação final do pacote não autoriza promoção comercial/jurídica ou operacional.
