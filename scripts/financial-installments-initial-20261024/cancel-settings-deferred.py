@@ -5,6 +5,15 @@ FIELDS = ['billing_trigger','payment_terms_days','default_payment_method','credi
           'block_if_overdue','auto_generate_receivable','active','credit_limit_action',
           'overdue_tolerance_days','credit_alert_threshold_1','credit_alert_threshold_2']
 
+def proposed_consumer_state(settings, methods, loaded=True, error=False):
+    # Inactive presentation rule only; never financial authorization.
+    if not loaded or error:return 'unavailable'
+    if settings is None:return 'pending_configuration'
+    if any(settings.get(field) is None for field in FIELDS):return 'pending_configuration'
+    if settings['active'] is not True:return 'inactive_configuration'
+    if sum(method.get('active') is True and method.get('name')==settings['default_payment_method'] for method in methods)!=1:return 'pending_configuration'
+    return 'configuration_record_complete_not_operational_authority'
+
 def exercise(h, metadata):
     m,r=h.m,h.r
     mode='DEFERRED_GREEN_SANDBOX'; diffs=[]
@@ -153,6 +162,11 @@ def exercise(h, metadata):
     values=dict(billing_trigger='manual',payment_terms_days=0,default_payment_method='LOCAL_METHOD',credit_limit=20000,
                 block_if_overdue=True,auto_generate_receivable=False,active=True,credit_limit_action='block',
                 overdue_tolerance_days=0,credit_alert_threshold_1=80,credit_alert_threshold_2=90)
+    methods=[dict(name='LOCAL_METHOD',active=True)]
+    for label,settings,loaded,error,expected in [('absent',None,True,False,'pending_configuration'),('loading',None,False,False,'unavailable'),('error',values,True,True,'unavailable'),('complete',values,True,False,'configuration_record_complete_not_operational_authority'),('incomplete',dict(values,credit_limit=None),True,False,'pending_configuration'),('inactive',dict(values,active=False),True,False,'inactive_configuration')]:
+        h.check('inactive consumer '+label,expected,proposed_consumer_state(settings,methods,loaded,error),'DEFERRED_CONSUMER_PROPOSAL')
+    h.check('inactive consumer inactive method','pending_configuration',proposed_consumer_state(values,[dict(name='LOCAL_METHOD',active=False)]),'DEFERRED_CONSUMER_PROPOSAL')
+    h.check('inactive consumer ambiguous method','pending_configuration',proposed_consumer_state(values,methods+methods),'DEFERRED_CONSUMER_PROPOSAL')
     def update(partner,payload,expected=None):
         return 'SELECT rpc_update_partner_financial_settings('+m.q(partner)+','+('NULL' if expected is None else m.q(expected)+'::jsonb')+','+m.q(json.dumps(payload))+'::jsonb);'
     for actor,org,partner,label in partners:
