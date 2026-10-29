@@ -273,5 +273,34 @@
     "deduct_30_days": false,
     "marginal_rates_allowed": false,
     "status": "OWNER_DECIDED_NOT_PRODUCTION_RELEASED"
+  },
+  "price_schedule_candidate": {
+    "status": "OWNER_DECIDED_20261029T1741Z_OFFLINE_CANDIDATE_ONLY",
+    "runtime_enabled": false,
+    "credit_limit": "100000.00",
+    "receivable_generation": "manual_authorized_only",
+    "automatic_generation": "blocked",
+    "installments": {
+      "min": 1,
+      "max": 3,
+      "reject_from": 4
+    },
+    "system": "price_interest_on_outstanding_balance",
+    "rates": {
+      "n1_30d": "0",
+      "n2": "1.8",
+      "n3": "1.8"
+    },
+    "first_due": "explicit_base_date_plus_30_days",
+    "subsequent": "monthly_civil_month_clamped_from_first_due",
+    "cents_rule": "pmt computed at full precision then rounded half-up; last installment closes balance",
+    "supersedes": "whole-principal compound to last due for NEW candidate plans only; historical titles untouched",
+    "historical_2pct_long_term": "inactive_reference_only",
+    "undecided": [
+      "calendar_anchor_event",
+      "irregular_or_pro_rata_period",
+      "business_day_rolling"
+    ],
+    "engine": "price-schedule.py"
   }
 }
