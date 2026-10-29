@@ -174,12 +174,8 @@ BEGIN
   END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_partner::text, 0));
   -- Fresh statement snapshots from here on (READ COMMITTED): re-resolve the link after any wait.
-  IF NEW.customer_id IS NOT NULL OR NEW.origin_type IS DISTINCT FROM 'B2B_ORDER' THEN
-    IF platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id) IS DISTINCT FROM ARRAY[v_partner]
-       AND NOT (NEW.origin_type = 'B2B_ORDER' AND v_p IS NULL
-                AND platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id) IS NULL) THEN
-      RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';
-    END IF;
+  IF platform_private.b2b_debtor_partner(NEW.organization_id, NEW.customer_id) IS DISTINCT FROM v_p THEN
+    RAISE EXCEPTION 'CREDIT_PARTNER_LINK_CHANGED' USING ERRCODE = 'PT409';  -- unlinked/relinked/transferred while waiting
   END IF;
   IF NOT EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.id = v_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
                   AND pa.commercial_owner_organization_id = NEW.organization_id) THEN
@@ -202,7 +198,9 @@ BEGIN
       v_delta := v_delta - round(COALESCE(v_po.final_amount_with_interest, v_po.total, 0), 2);
     END IF;
   END IF;
-  IF (v->>'exposicao_atual')::numeric + v_delta > (v->>'credit_limit')::numeric THEN
+  -- A title that does not increase exposure (conversion/delivery of an already counted, possibly
+  -- credit-approved order) is never refused for limit; any increase must fit.
+  IF v_delta > 0 AND (v->>'exposicao_atual')::numeric + v_delta > (v->>'credit_limit')::numeric THEN
     IF v->>'credit_limit_action' = 'approval_required' THEN
       RAISE EXCEPTION 'CREDIT_LIMIT_EXCEEDED_APPROVAL' USING ERRCODE = 'PT409';
     END IF;
