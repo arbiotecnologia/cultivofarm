@@ -1,0 +1,6 @@
+READ-ONLY OBSERVATION REPORTED BY OWNER — 2026-10-29 — production swzpzcwiasxmjutrmvkm, no mutation by this agent.
+- AR Bio organization exists (007bb519...). FSF partner exists (4a7e37e0...) with client_id NULL -> candidate partner resolution would deny CREDIT_PARTNER_LINK_REQUIRED until a legitimate link exists.
+- No FSF orders.
+- Fiscal row 0e3e8145-7a35-40ee-82db-86fa3a9c6651 (AR Bio): status DRAFT, environment HOMOLOGATION, issue_date NULL, number NULL, no order link. It is NOT an issued NF and cannot serve as fiscal origin.
+DISTINCTION: the owner's authorization to create TEST DATA in production (via the authorized UI flow, by the owner) is not authorization to deploy SQL, run migrations, grant, bill or contact SEFAZ, and is not fiscal origin evidence. No new commercial blocker is created by this note.
+Agent did not log in, spoof JWT, or mutate hosted data.
