@@ -8,11 +8,12 @@ import json, difflib
 def exercise(h, metadata):
     m,r=h.m,h.r
     diffs=[]; green='PARTIES_CREDIT_GREEN_SANDBOX'; red='PARTIES_CREDIT_RED_CAPTURED'
+    def source(name):return next(f for f in r.live['functions'] if f['schema']=='public' and f['name']==name)
     def transform(name, anchor, replacement):
-        old=m.pg.sql('SELECT pg_get_functiondef('+m.q(r.captured('public',name)['signature'])+'::regprocedure)')
+        old=m.pg.sql('SELECT pg_get_functiondef('+m.q(source(name)['signature'])+'::regprocedure)')
         assert old.count(anchor)==1,(name,anchor)
         new=old.replace(anchor,replacement);m.pg.sql(new+';')
-        h.acl('FUNCTION',r.captured('public',name)['signature'],r.captured('public',name)['acl'])
+        h.acl('FUNCTION',source(name)['signature'],source(name)['acl'])
         diffs.append(''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile=name+' previous sandbox',tofile='offline only')))
         return new
     def reject(label,sql,expected,actor=m.U,mode=green):
