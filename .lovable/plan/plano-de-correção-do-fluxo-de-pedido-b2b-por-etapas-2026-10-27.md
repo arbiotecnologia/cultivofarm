@@ -176,3 +176,6 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - Decisão: 1º vencimento = emissão da NF + 30 dias; geração manual não reinicia prazo.
 - Validação de entradas, exposição não negativa, rejeição de planos não representáveis em centavos, oráculo independente; 212 verificações/0 FAIL; Vitest 57/57.
 - BLOCKED: base de exposição (principal × total financiado), clamp/dia útil/pro-rata dos vencimentos seguintes, PG ponta a ponta (geradores sem Price, gates de cobrança/contabilidade), JWT/RLS real. Produção NO-GO.
+
+## 29/10/2026 17:53 UTC — autoridade única da política candidata (offline)
+- Política candidata com uma só regra ativa (Price/100000/manual/1–3/NF+30); modelo de juros integrais e faixas 6/12 meses movido para arquivo histórico substituído, usado só por testes históricos. Leitor recusa regras antigas em novos planos. 228/0 FAIL; Vitest 57/57. Produção NO-GO.

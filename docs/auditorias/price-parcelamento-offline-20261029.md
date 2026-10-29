@@ -40,3 +40,11 @@ Somente candidato offline. Sem runtime, SQL hosted, migration, deploy, GRANT, us
 - Manifesto anterior `price-schedule-1741/SHA256SUMS.versioned` conferido contra objetos Git reais do commit 69acee5: 4 entradas, 0 falhas.
 - PG ponta a ponta com Price: NÃO executado (BLOCKED). Os geradores capturados não calculam Price e a cobrança é negada por `PAYMENT_TERMS_NOT_DEFINED`/`C2_ACCOUNTING_PENDING`/`B2B_INTERNAL_DOWNSTREAM_UNVERIFIED`; injetar parcelas contornaria esses gates. Os testes desta rodada são de componente.
 - Evidências: `price-schedule-1749/` (results.json, price-run.txt, vitest-final.txt, check-previous-1741-vs-69acee5.txt, SHA256SUMS.versioned, check-git-tree.py).
+
+## Rodada 17:53 UTC — autoridade única da política candidata
+- `arbio-fsf-policy.draft.json` agora tem uma única regra ativa (`active_candidate`): R$ 100.000, geração só manual autorizada, 1–3 parcelas Price (1x 0%; 2x/3x 1,8% a.m.), desconto 40% uma vez, NF+30, AR Bio credora/emitente e FSF devedora. `credit.credit_limit` = 100000.00; parcelas, gatilho, incidência e amortização saíram de `undefined` para `resolved_by_active_candidate`. `runtime_enabled` segue false.
+- Modelo anterior (fórmula de juros compostos integrais, faixas 6/12 meses, vetores, fixtures de fronteira) movido sem alteração de conteúdo para `arbio-fsf-policy.full-term-20261028.superseded.json`, rotulado `HISTORICAL_SUPERSEDED_FOR_NEW_PLANS`. Os testes históricos (`test-arbio-fsf-override.py`, `arbioFsfReference.test.ts`) leem esse arquivo.
+- Leitor offline `resolve_new_plan_policy`: novos planos só resolvem pela regra ativa; recusa arquivo antigo, faixas reinjetadas na raiz, taxa 2%, 6 parcelas, limite raiz nulo/contraditório e runtime ligado. 16 testes.
+- Incidente corrigido: a primeira execução do teste histórico regravou `evidencias-arbio-fsf-definitiva-20261028/execucao.json` (só o hash do arquivo-fonte). Foi restaurado a partir do commit 4b31b9253 e a saída do teste foi redirecionada para a pasta nova; diferença final contra 4b31b9253 = nenhuma.
+- Resultados: price-schedule 228 verificações/0 FAIL (POLICY_AUTHORITY 16); teste histórico substituído 47 PASS/0 FAIL/15 BLOCKED/1 NOT RUN; Vitest 6 arquivos/57 PASS. Manifesto `price-schedule-1749` conferido contra objetos Git do commit 4b31b9253: 5 entradas, 0 falhas.
+- Evidências: `price-authority-1753/`.
