@@ -1,0 +1,15 @@
+$ vitest run src/test/financeiro/cancelAuthorizationPostgres.test.ts src/test/financeiro/receivableRedGreenPostgres.test.ts src/test/financeiro/receivableSemantics.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/financeiro/receivableSemantics.test.ts (7 tests) 6ms
+ ✓ src/test/financeiro/receivableRedGreenPostgres.test.ts (1 test) 11657ms
+   ✓ reproduz P0 red e conserva financiamento e eventos green apenas no PG descartável  11655ms
+ ✓ src/test/financeiro/cancelAuthorizationPostgres.test.ts (1 test) 26948ms
+   ✓ nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline  26945ms
+
+ Test Files  3 passed (3)
+      Tests  9 passed (9)
+   Start at  14:33:14
+   Duration  30.88s (transform 157ms, setup 711ms, collect 215ms, tests 38.61s, environment 4.80s, prepare 2.20s)
+

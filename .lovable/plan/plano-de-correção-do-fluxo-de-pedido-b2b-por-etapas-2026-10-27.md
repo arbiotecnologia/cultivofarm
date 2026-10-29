@@ -135,3 +135,9 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - [x] Relatório `docs/auditorias/cancelamento-parcela-autorizacao-20261029.md`, evidências subpasta cancel-authorization; revisão independente e hashes. Próprios MANUAL A/B positivos não equivalem a B2B positivo.
 - [ ] BLOCKED B2B positivo: fixture inteira aborta no trigger risco→recalc_partner_risk_score não composto, com estado inalterado. Compor risco/parceiro/governança/origem, RLSpai/identidade/ACL/FKs antes de afirmar autoridade integral; sem ticket/bypass.
 - [ ] NOT RUN JWT/RLSreal A/B, revogação pós-lock/concorrência, PREPOST/containmentde promoção. BI/proveniência/calendário/parcelas/billing e financeiro/envase/B2B/entrega continuam NO-GO; não emitir *.sql.review.
+
+### Revisão14:28 — fechamento local da corrida de cancelamento
+- [x] GREEN pagamentos estrangeiros reais emAR/AP, SQLSTATE+mensagem exatos/estado monetário integral; Auth/revogação no corpo transformado, própriosA/B/replay/baixas/motivos e valores preservados.
+- [x] 14ensaios multissessão: holderPID exato empg_blocking_pids, revogação committed antes release; RED papel ainda cancela, GREEN pós-lock com helpers capturadosSTABLE nega emREAD COMMITTED. REPEATABLE READ retém snapshot demonstrado; hipótese nega outros isolamentos. Foreign não toma aquele lock estrangeiro no teste.
+- [x] Nova execução189PGPASS/0FAIL inesperados(35capturado/62RED/92GREEN),1BLOCKED/1NOT RUN; Vitest9/9sem somar histórico. Saída nova cancel-authorization-revision-1428, hashes anteriores21OK/1divergente/4ausentes registrados, bytes preservados; reexecuções usam/tmp.
+- [ ] NO-GO integral: riscoB2B/origem/identidade/RLS/FKs/BI/proveniência/JWTreal e isolamentoPostgREST; serialização integral revogação além da janela testada não provada. Sem runtime/SQLimplantável/produção/ativação.

@@ -1,0 +1,3 @@
+# Revisão independente — limites e incorporação
+
+Revisor read-only avaliou hipótese/corpos e logs intermediários, sem hosted. Recomendou PIDexato do holder, explicitar nove tabelas monetárias e preservar caminhos históricos; incorporado antes da execução final. Detectou primeira falhaFOUND, preservada e corrigida. Nova execução189PASS/0FAIL inesperados,14corridas; revisor não reexecutou a versão final. STABLE em comando separado foi comprovado empiricamente emREAD COMMITTED; hipótese não muda volatilidade. REPEATABLE READ permanece contraprova, negado noGREEN. NO-GO integral/JWT/BI/riscoB2B mantém-se.

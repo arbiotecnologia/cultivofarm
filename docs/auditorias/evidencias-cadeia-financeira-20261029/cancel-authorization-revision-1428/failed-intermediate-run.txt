@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 337, in <module>
+    try: main()
+         ~~~~^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 294, in main
+    uniform(kind+' GREEN foreign '+status,part,kind)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 98, in uniform
+    check(name+' exact SQLSTATE/message', expected, error_tuple(result), 'GREEN_OFFLINE_ONLY')
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 29, in check
+    assert expected == actual, row
+           ^^^^^^^^^^^^^^^^^^
+AssertionError: {'test': 'receivable GREEN foreign OPEN exact SQLSTATE/message', 'expected': "('42501', 'FINANCIAL_SCOPE_DENIED')", 'actual': "('42501', 'tenant_scope_violation')", 'mode': 'GREEN_OFFLINE_ONLY', 'status': 'FAIL'}

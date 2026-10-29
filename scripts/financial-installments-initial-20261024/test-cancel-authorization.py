@@ -3,7 +3,7 @@ Uses existing monetary schema/identity harness. Never fabricates an origin ticke
 """
 import sys
 sys.dont_write_bytecode = True
-import importlib.util, json, hashlib, subprocess, csv
+import importlib.util, json, hashlib, subprocess, csv, argparse, tempfile, time, re, os, threading, queue
 from pathlib import Path
 
 H = Path(__file__).resolve().parent
@@ -11,7 +11,15 @@ spec = importlib.util.spec_from_file_location('redgreen', H/'test-receivable-red
 r = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(r)
 m = r.m
-OUT = m.ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization'
+parser = argparse.ArgumentParser()
+parser.add_argument('--output-dir', type=Path)
+args = parser.parse_args()
+OUT = args.output_dir or Path(tempfile.mkdtemp(prefix='cancel-authorization-', dir='/tmp'))
+if args.output_dir:
+    legacy=m.ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029'
+    assert not OUT.resolve().is_relative_to(legacy.resolve()) or 'cancel-authorization-revision-' in OUT.name, 'Historical output is immutable'
+    OUT.mkdir(parents=True, exist_ok=False)
+races = []
 checks, pins, omitted_policies, responses = [], [], [], []
 V = m.uid(900001)
 
@@ -66,7 +74,7 @@ def policies(name):
 def client(sql, actor=m.U, role='authenticated'):
     claims = {} if actor is None else dict(sub=actor,iat=1793275200)
     command = "SELECT set_config('request.jwt.claims',"+m.q(json.dumps(claims))+",false);"+sql
-    return subprocess.run(m.pg.psql(user=role), input=command, text=True, capture_output=True)
+    return subprocess.run(m.pg.psql(user=role)+['-v','VERBOSITY=verbose'], input="SET statement_timeout='12s'; SET lock_timeout='8s';"+command, text=True, capture_output=True, timeout=16)
 
 def state():
     tables=['accounts_receivable','accounts_payable','accounts_receivable_installments','accounts_payable_installments','financial_audit_log','receivable_payments','payable_payments','financial_receipts','partner_order_payment_schedule']
@@ -75,11 +83,22 @@ def state():
 
 def call(part,kind): return f"SELECT rpc_cancel_financial_installment('{part}','{kind}','LOCAL AUDIT REASON');"
 
+def error_tuple(result):
+    match = re.search(r'ERROR:\s+([0-9A-Z]{5}): (.*)', result.stderr)
+    assert match, result.stderr
+    return tuple(match.groups())
+
 def denied(name, sql, marker, actor=m.U, role='authenticated', mode='CAPTURED'):
     before = state(); result = client(sql,actor,role)
     responses.append(dict(test=name,returncode=result.returncode,stderr=result.stderr))
     check(name,True,result.returncode!=0 and marker in result.stderr and state()==before,mode)
     return result.stderr
+
+def uniform(name, part, kind, expected=('42501','FINANCIAL_SCOPE_DENIED')):
+    before = state(); result = client(call(part,kind))
+    check(name+' exact SQLSTATE/message', expected, error_tuple(result), 'GREEN_OFFLINE_ONLY')
+    check(name+' full monetary state unchanged', before, state(), 'GREEN_OFFLINE_ONLY')
+    responses.append(dict(test=name, error=error_tuple(result), stderr=result.stderr))
 
 def fixture(n, kind, org, status='OPEN', b2b=False):
     if kind=='receivable':
@@ -101,6 +120,80 @@ def paid_fixture(n,kind,org):
     m.pg.sql(f"INSERT INTO {'receivable' if kind=='receivable' else 'payable'}_payments(installment_id,{field},payment_method_id,created_by,organization_id) VALUES('{part}',1000,'{m.PM}','{m.U}','{org}');")
     if kind=='payable': m.pg.sql(f"UPDATE accounts_payable_installments SET status='PARTIAL',paid_amount=1000 WHERE id='{part}';")
     return part
+
+
+def locked(process, part):
+    messages=queue.Queue()
+    def read():
+        messages.put((process.stdout.readline().strip(),process.stdout.readline().strip(),process.stdout.readline().strip()))
+    threading.Thread(target=read,daemon=True).start()
+    try: result=messages.get(timeout=4)
+    except queue.Empty: raise AssertionError('Holder lock acknowledgement timeout')
+    assert result[1:]==(part,'LOCKED'),result
+    return int(result[0])
+
+def amounts(part,kind):
+    return m.pg.sql(f"SELECT jsonb_build_object('original',original_amount,'net',net_amount,'interest',interest_amount,'penalty',penalty_amount,'discount',discount_amount,'paid',{'received_amount' if kind=='receivable' else 'paid_amount'}) FROM accounts_{kind}_installments WHERE id='{part}'")
+
+def race(body, mode, kind, revoke, number, isolation='READ COMMITTED'):
+    # Owner prepares/locks fixtures, but the RPC is dispatched by authenticated LOGIN only.
+    m.pg.sql(body+';')
+    part=fixture(number,kind,m.A)
+    before=state(); monetary_before=amounts(part,kind); holder=None; worker=None
+    label=f'{mode} {kind} wait revoke {revoke} {isolation}'
+    tag='cancel_'+str(number)
+    try:
+        holder=subprocess.Popen(m.pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        holder.stdin.write(f"BEGIN; SET statement_timeout='12s'; SELECT pg_backend_pid(); SELECT id FROM accounts_{kind}_installments WHERE id='{part}' FOR UPDATE; SELECT 'LOCKED';\n"); holder.stdin.flush()
+        holder_pid=locked(holder,part)
+        check(label+' holder locked',True,holder_pid>0,mode)
+        claims=m.q(json.dumps(dict(sub=m.U,iat=1793275200)))
+        worker=subprocess.Popen(m.pg.psql('authenticated')+['-v','VERBOSITY=verbose'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        worker.stdin.write(f"SET application_name='{tag}'; SET statement_timeout='10s'; SET lock_timeout='7s'; SELECT set_config('request.jwt.claims',{claims},false); BEGIN ISOLATION LEVEL {isolation}; "+call(part,kind)+" COMMIT;\n");worker.stdin.close();worker.stdin=None
+        observed=None; deadline=time.monotonic()+4
+        while time.monotonic()<deadline:
+            raw=m.pg.sql("SELECT jsonb_build_object('pid',pid,'wait_event_type',wait_event_type,'blockers',pg_blocking_pids(pid)) FROM pg_stat_activity WHERE application_name="+m.q(tag)+" AND wait_event_type='Lock' AND cardinality(pg_blocking_pids(pid))>0")
+            if raw: observed=json.loads(raw);break
+            if worker.poll() is not None: break
+            time.sleep(.025)
+        check(label+' authenticated wait proven against exact holder', True, observed is not None and holder_pid in observed['blockers'], mode)
+        if revoke=='role': change=f"DELETE FROM user_roles WHERE user_id='{m.U}';"
+        else: change=f"UPDATE profiles SET ativo=false WHERE user_id='{m.U}';"
+        m.pg.sql(change) # third independent session commits before holder release
+        check(label+' revocation committed', '0' if revoke=='role' else 'f', m.pg.sql(f"SELECT count(*) FROM user_roles WHERE user_id='{m.U}'" if revoke=='role' else f"SELECT ativo FROM profiles WHERE user_id='{m.U}'"), mode)
+        holder.stdin.write('ROLLBACK;\n');holder.stdin.close();holder.stdin=None
+        holder.communicate(timeout=4)
+        stdout,stderr=worker.communicate(timeout=12)
+        result=subprocess.CompletedProcess([],worker.returncode,stdout,stderr)
+        unchanged=state()==before
+        if mode=='GREEN_OFFLINE_ONLY':
+            check(label+' exact denial', ('42501','FINANCIAL_SCOPE_DENIED'),error_tuple(result),mode)
+            check(label+' no monetary effects',True,unchanged,mode)
+        elif revoke=='role':
+            check(label+' RED revoked role still succeeds',0,result.returncode,mode)
+            check(label+' RED cancellation persisted','CANCELED',m.pg.sql(f"SELECT status FROM accounts_{kind}_installments WHERE id='{part}'"),mode)
+        else:
+            check(label+' late tenant trigger denies',True,result.returncode!=0 and unchanged,mode)
+        check(label+' monetary snapshot retained',monetary_before,amounts(part,kind),mode)
+        races.append(dict(test=label,holder_pid=holder_pid,wait=observed,returncode=result.returncode,error=error_tuple(result) if result.returncode else None,state_unchanged=unchanged))
+    finally:
+        for process in [worker,holder]:
+            if process and process.poll() is None:
+                process.kill();process.communicate(timeout=4)
+        m.pg.sql(f"UPDATE profiles SET ativo=true WHERE user_id='{m.U}'; INSERT INTO user_roles VALUES('{m.U}','financeiro') ON CONFLICT DO NOTHING;")
+
+def foreign_no_lock(kind, number):
+    part=paid_fixture(number,kind,m.B);before=state();holder=None
+    try:
+        holder=subprocess.Popen(m.pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        holder.stdin.write(f"BEGIN; SET statement_timeout='8s'; SELECT pg_backend_pid(); SELECT id FROM accounts_{kind}_installments WHERE id='{part}' FOR UPDATE; SELECT 'LOCKED';\n");holder.stdin.flush()
+        holder_pid=locked(holder,part)
+        result=client("SET lock_timeout='200ms';"+call(part,kind))
+        check(kind+' foreign locked row denies without waiting on row',('42501','FINANCIAL_SCOPE_DENIED'),error_tuple(result),'GREEN_OFFLINE_ONLY')
+        check(kind+' foreign locked row full state unchanged',before,state(),'GREEN_OFFLINE_ONLY')
+    finally:
+        if holder and holder.poll() is None:
+            holder.kill();holder.communicate(timeout=4)
 
 def main():
     m.pg.start(); m.schema(); r.identity()
@@ -187,33 +280,81 @@ def main():
     anchor="IF NOT FOUND THEN RAISE EXCEPTION 'Parcela não encontrada.'; END IF;"
     assert body.count(anchor)==2
     body=body.replace(anchor,"IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;")
+    scoped_body=body
+    # Separate SPI statement in VOLATILE RPC: captured STABLE helpers retain definitions.
+    # Non-READ-COMMITTED is denied, because a new SPI statement cannot refresh its transaction snapshot.
+    post="SELECT public.is_financial_staff(auth.uid()) AND public.h15_actor_organization() = v_org INTO v_authorized;\n    IF v_authorized IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"
+    body=body.replace('v_org uuid;', 'v_org uuid; v_authorized boolean;')
+    anchor="    IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;"
+    assert body.count(anchor)==2
+    body=body.replace(anchor,anchor+'\n    '+post)
+    unguarded_body=body
+    body=body.replace('BEGIN\n', "BEGIN\n  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n",1)
+    for mode,transformed in [('RED_CAPTURED_WAIT',rpc['body']),('RED_SCOPED_WAIT',scoped_body),('GREEN_OFFLINE_ONLY',body)]:
+        for ki,kind in enumerate(['receivable','payable']):
+            for ri,revoke in enumerate(['role','profile']):
+                race(transformed,mode,kind,revoke,1100+len(races)*10)
+    # Demonstrate STABLE helper's old transaction snapshot without changing volatility.
+    for kind in ['receivable','payable']:
+        race(unguarded_body,'RED_REPEATABLE_SNAPSHOT',kind,'role',1400+len(races)*10,'REPEATABLE READ')
     m.pg.sql(body+';')
     for kind in ['receivable','payable']:
+        denied(kind+' GREEN repeatable read closed',"BEGIN ISOLATION LEVEL REPEATABLE READ;"+call(m.uid(999998),kind),'FINANCIAL_SCOPE_DENIED',mode='GREEN_OFFLINE_ONLY')
+        denied(kind+' GREEN serializable closed',"BEGIN ISOLATION LEVEL SERIALIZABLE;"+call(m.uid(999998),kind),'FINANCIAL_SCOPE_DENIED',mode='GREEN_OFFLINE_ONLY')
+
         for status,offset in [('OPEN',0),('CANCELED',1),('PARTIAL',2)]:
-            part=fixture(940+offset+(10 if kind=='payable' else 0),kind,m.B,status)
-            denied(kind+' GREEN foreign '+status,call(part,kind),'FINANCIAL_SCOPE_DENIED',mode='GREEN_OFFLINE_ONLY')
-        denied(kind+' GREEN nonexistent uniform',call(m.uid(999998),kind),'FINANCIAL_SCOPE_DENIED',mode='GREEN_OFFLINE_ONLY')
+            part=paid_fixture(940+offset+(10 if kind=='payable' else 0),kind,m.B) if status=='PARTIAL' else fixture(940+offset+(10 if kind=='payable' else 0),kind,m.B,status)
+            if status=='PARTIAL':
+                check(kind+' GREEN foreign real payment exists','1000.00',m.pg.sql(f"SELECT sum({'amount_received' if kind=='receivable' else 'amount_paid'})::numeric(14,2) FROM {kind}_payments WHERE installment_id='{part}'"),'GREEN_OFFLINE_ONLY')
+            uniform(kind+' GREEN foreign '+status,part,kind)
+        uniform(kind+' GREEN nonexistent uniform',m.uid(999998),kind)
+        foreign_no_lock(kind,1600+(10 if kind=='payable' else 0))
+        for actor,label,marker in [(None,'empty','Sem permissão'),(m.uid(999999),'unknown','Sem permissão'),('not-a-uuid','invalid','invalid input syntax')]:
+            denied(kind+' GREEN identity '+label,call(m.uid(999998),kind),marker,actor,mode='GREEN_OFFLINE_ONLY')
+        for target,disable,restore in [
+            ('profile',f"UPDATE profiles SET ativo=false WHERE user_id='{m.U}'",f"UPDATE profiles SET ativo=true WHERE user_id='{m.U}'"),
+            ('role',f"DELETE FROM user_roles WHERE user_id='{m.U}'",f"INSERT INTO user_roles VALUES('{m.U}','financeiro')"),
+            ('organization',f"UPDATE organizations SET ativo=false WHERE id='{m.A}'",f"UPDATE organizations SET ativo=true WHERE id='{m.A}'")]:
+            try:
+                m.pg.sql(disable+';')
+                denied(kind+' GREEN revoked '+target,call(m.uid(999998),kind),'FINANCIAL_SCOPE_DENIED' if target=='organization' else 'Sem permissão',mode='GREEN_OFFLINE_ONLY')
+            finally: m.pg.sql(restore+';')
+        own_b=fixture(1650+(10 if kind=='payable' else 0),kind,m.B)
+        check(kind+' GREEN own B accepted',0,client(call(own_b,kind),V).returncode,'GREEN_OFFLINE_ONLY')
         own=fixture(960+(10 if kind=='payable' else 0),kind,m.A)
+        monetary_before=amounts(own,kind)
+        denied(kind+' GREEN short reason preserved',f"SELECT rpc_cancel_financial_installment('{own}','{kind}','bad');",'Motivo é obrigatório',mode='GREEN_OFFLINE_ONLY')
+        denied(kind+' GREEN invalid kind preserved',call(own,'invalid'),'Tipo inválido',mode='GREEN_OFFLINE_ONLY')
         check(kind+' GREEN own preserved',0,client(call(own,kind)).returncode,'GREEN_OFFLINE_ONLY')
+        check(kind+' GREEN own monetary snapshot retained',monetary_before,amounts(own,kind),'GREEN_OFFLINE_ONLY')
+        check(kind+' GREEN own original concrete', '10300.00', m.pg.sql(f"SELECT original_amount::numeric(14,2) FROM accounts_{kind}_installments WHERE id='{own}'"),'GREEN_OFFLINE_ONLY')
         denied(kind+' GREEN replay preserved',call(own,kind),'já cancelada',mode='GREEN_OFFLINE_ONLY')
         active=paid_fixture(982+(10 if kind=='payable' else 0),kind,m.A)
         denied(kind+' GREEN own payment branch preserved',call(active,kind),'não estornados',mode='GREEN_OFFLINE_ONLY')
-    OUT.mkdir(parents=True,exist_ok=True)
+    helper_metadata=json.loads(m.pg.sql("SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'volatility',p.provolatile,'md5',md5(pg_get_functiondef(p.oid)))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private','auth') AND p.proname IN ('is_financial_staff','h15_actor_organization','has_role','platform_actor_access_ready','fn_authz_uid_scope_ok')"))
+    for entry in helper_metadata:
+        source=next(f for f in r.live['functions'] if f['signature']==entry['signature'])
+        check('helper unchanged '+entry['signature'],source['md5'],entry['md5'],'GREEN_OFFLINE_ONLY')
+        check('helper STABLE '+entry['signature'],'s',entry['volatility'],'GREEN_OFFLINE_ONLY')
     (OUT/'rpc-captured.txt').write_text(rpc['body'])
     (OUT/'rpc-offline-transformation.diff').write_text(''.join(__import__('difflib').unified_diff(rpc['body'].splitlines(True),body.splitlines(True),fromfile='captured',tofile='offline-not-installable')))
     result=dict(counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL']},checks=checks,pins=pins,responses=responses,
         captured_manifest_sha256=hashlib.sha256((H/'receivable-recursive-live-20261029.json').read_bytes()).hexdigest(),
-        transformed_body_md5=hashlib.md5(body.encode()).hexdigest(),
-        omitted_policies=omitted_policies,
+        transformed_body_md5=hashlib.md5(body.encode()).hexdigest(), postgres_version=m.pg.sql('SHOW server_version'), isolation_contract='GREEN denies non-READ-COMMITTED; separate post-lock SPI SELECT calls exact STABLE helpers',
+        omitted_policies=omitted_policies, races=races, helper_metadata=helper_metadata, output_dir=str(OUT), by_mode={mode:sum(c['mode']==mode for c in checks) for mode in sorted({c['mode'] for c in checks})},
         blocked=['B2B own positive requires captured recalc_partner_risk_score and full risk/partner/governance dependency chain'],
-        not_run=['Hosted JWT/RLS A/B, lock-wait revocation, full BI/provenance and promotion'],
+        not_run=['Hosted JWT/RLS A/B, full BI/provenance and promotion'],
         vulnerability='Foreign canceled vs missing row status oracle; OPEN foreign mutation denied by exact tenant trigger',
         limits='Actual LOGIN client roles, captured RPC ACL/installment RLS/all installment triggers; minimal synthetic identity tables. Parent creation/identity-wide guards, payment insert chain and audit SELECT policy not composed. No owner RPC calls, no tickets, no JWT verification, no production operations.')
     (OUT/'results.json').write_text(json.dumps(result,indent=2)+'\n')
     with (OUT/'matrix.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=list(checks[0]),lineterminator='\n');w.writeheader();w.writerows(checks)
         w.writerow(dict(test='B2B own positive cancellation',expected='Legitimate complete chain',actual='Fixture fails in exact risk trigger before RPC',mode='INTEGRATION',status='BLOCKED'))
-        w.writerow(dict(test='JWT/RLS hosted A/B and lock wait revocation',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN'))
+        w.writerow(dict(test='JWT/RLS hosted A/B and full chain',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN'))
     print(json.dumps(result['counts']))
 
-if __name__=='__main__': main()
+if __name__=='__main__':
+    try: main()
+    finally:
+        if (m.pg.root/'data/postmaster.pid').exists():
+            subprocess.run(m.pg.prefix+['pg_ctl','-D',str(m.pg.root/'data'),'-m','immediate','stop'],capture_output=True,timeout=10)

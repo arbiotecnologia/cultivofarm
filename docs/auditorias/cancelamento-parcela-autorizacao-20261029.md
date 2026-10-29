@@ -54,3 +54,37 @@ bun run test src/test/financeiro/cancelAuthorizationPostgres.test.ts src/test/fi
 ```
 
 Promoção futura: compor risco/identidade/ACL/RLS/FKs integrais, revisão independente, reautorização fresca pós-lock/concorrência, PRE/POST atômico e pinos atuais, autorização específica de JWT/RLS A/B. BI/proveniência/saldo e calendário/parcelas/billing seguem abertos. Containment futuro deny-only, sem restauração vulnerável; nenhuma remediação histórica automática. Financeiro, envase/B2B/entrega continuam OFF.
+## Revisão 14:28 — pagamento estrangeiro e revogação durante espera
+
+**Resultado novo, sem somar históricos:** PostgreSQL17.9 descartável **189 assertions PASS / 0 FAIL inesperados / 1 BLOCKED / 1 NOT RUN**; Vitest **9/9 em3arquivos**. Distribuição:35CAPTURED,6RED_ORACLE_REPRODUCED,22RED_CAPTURED_WAIT,22RED_SCOPED_WAIT,12RED_REPEATABLE_SNAPSHOT,92GREEN_OFFLINE_ONLY. Os62 checks RED demonstram defeitos/limites esperados, não segurança. Não repetir taxas. Evidências novas: `evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/`.
+
+### Correções offline e prova
+
+- GREEN PARTIAL usa `paid_fixture` estrangeira AR/AP com evento persistido de **1.000,00**; não somente status artificial. AR usa recálculo capturado; AP continua preparação sintética de status/paid_amount, sem alegar cadeia real de INSERT de pagamento AP. Foreign OPEN/CANCELED/PARTIAL e inexistente exigem igualdade **SQLSTATE42501 + mensagem FINANCIAL_SCOPE_DENIED**, além de igualdade integral das **nove tabelas monetárias compostas**. Não é igualdade de todo banco/identidade: revogações alteram intencionalmente roles/perfil.
+- Corpo transformado reexecuta identidade vazia/inexistente/malformada, perfil/papel/empresa revogados, próprios A/B, motivos curtos/tipo inválido, replay e baixa ativa. Original concreto10.300,00, net/juros/multa/desconto/pago permanecem. Estado monetário inclui pais, parcelas, eventos, auditoria, recibos e schedule.
+- **14 ensaios multissessão reais locais:** sessão owner prepara e segura FOR UPDATE da própria parcela; RPC executa em LOGIN authenticated. `pg_stat_activity.wait_event_type=Lock` e `pg_blocking_pids` contêm o **PID exato do holder**, depois terceira sessão confirma revogação committed antes do release. Ambos ramos e revogação de papel/perfil. Contexto Auth é sintético, sem JWT verificado.
+- RED capturado e RED somente escopado: revogar **papel** durante espera ainda permite cancelamento. Perfil inativo é negado pelo guard tenant tardio; não provar revogação do papel usando apenas esse caso. GREEN pós-lock nega ambos com42501/FINANCIAL_SCOPE_DENIED e zero efeitos monetários.
+- Hipótese mínima somente sandbox: tenant antes do lookup; filtro tenant no FOR UPDATE; `NOT FOUND` verificado **antes** da nova consulta para não sobrescrever FOUND; então **SQL separado em RPC VOLATILE** chama `is_financial_staff(auth.uid())` e H15 capturados e compara org. Helpers mantêm MD5 e STABLE, sem autorização/ticket inventado nem mudança de volatilidade. Rechecagem em READ COMMITTED observou a revogação nos quatro controles GREEN; não afirmar que STABLE é sempre fresco dentro de uma mesma instrução.
+- **REPEATABLE READ contraprova:** mesmo recheck separado com helpers exatos retém snapshot transacional e permite cancelamento após revogar papel nos dois ramos. GREEN nega REPEATABLE READ e SERIALIZABLE na entrada; isso é restrição da hipótese offline, **não regra instalada**. Não usar READ UNCOMMITTED ou snapshot antigo como prova de segurança.
+- Foreign com pagamento e linha bloqueada por outra sessão nega42501, não55P03, com lock_timeout200ms; se a hipótese tentasse FOR UPDATE dessa linha entraria em conflito. Portanto não adquire aquele lock estrangeiro no cenário testado; não é prova de ausência de qualquer lock SQL.
+- Holder ACK limitado4s via thread/queue, espera comprovada limitada4s, statement_timeout/lock_timeout, communicate limitado e kill/stop em finally. Não esperar indefinidamente. RPCs nunca executadas como owner.
+
+### Integridade histórica e falhas intermediárias
+
+Verificação **antes de editar**:26 entradas históricas,21OK,1MISMATCH e4MISSING. `red-green.json` já divergia do SHA256SUMS: preservar bytes observados, sem regenerar manifesto ou fabricar original. Quatro logs históricos `pg.log`/`vitest.log` das duas pastas não estavam no checkout. `historical-hash-verification.json` registra expected/actual/after: **23 entradas ficaram inalteradas nesta rodada**, inclusive ausências;3 fontes autorizadas evoluíram (runner cancelamento, runner monetário e regressão), com hashes novos. Manifestos antigos continuam explicitamente obsoletos nesses5itens; não alegar checksum histórico integral PASS. Runner cancelamento e red/green monetário agora usam /tmp por padrão e pasta nova explícita, para regressões não sobrescreverem evidência. Pinos históricos de fontes do harness ficam superados pelas mudanças desta rodada, sem editar SHA antigo; manifesto novo fixa fontes atuais.
+
+Primeira execução intermediária falhou ao adicionar SELECT de autorização antes de testar FOUND: query sobrescrevia FOUND e chegava ao guard tenant foreignOPEN. Corrigido ordenando NOT FOUND antes da consulta; falha preservada em `failed-intermediate-run.txt`, não contada como GREEN. Execução final nova completa189/189.
+
+### Comandos, hashes e revisão
+
+```text
+python scripts/financial-installments-initial-20261024/test-cancel-authorization.py --output-dir docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428
+bun run test src/test/financeiro/cancelAuthorizationPostgres.test.ts src/test/financeiro/receivableRedGreenPostgres.test.ts src/test/financeiro/receivableSemantics.test.ts
+sha256sum -c docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/SHA256SUMS
+```
+
+Capturado RPC MD5 `c7d30a08b1cbd00936cd83aa5bf3415c`; hipótese MD5 `842136aa09163b424865e0483a411d5d`; catálogo SHA256 `33bbe2abe605544b38c56cef50ac05ebc6ee035b4d02c0daf1da1b295d3ad56d`. Diff offline na nova pasta; nenhum SQL implantável. Revisão independente detectou necessidade de PID exato, limitação do estado comparado e proteção de saída: incorporadas. Sua ressalva sobre primeira execução corrigida e reexecutada; revisão não é JWT homologado.
+
+Docs PostgreSQL atuais consultadas: https://www.postgresql.org/docs/current/xfunc-volatility.html e https://www.postgresql.org/docs/current/transaction-iso.html . STABLE usa snapshot da instrução que o chama; VOLATILE obtém snapshots para comandos internos em READ COMMITTED, não em isolamento transacional fixo. Não foi utilizada operação específica hosted Supabase nem alterada configuração de isolamento da plataforma; isolamento real PostgREST permanece NOT RUN.
+
+**BLOCKED:** positivo B2B integral no trigger de risco `recalc_partner_risk_score`, como antes; guards/identidade/FKs/ACL/RLS integrais, BI/proveniência e ledger contábil. **NOT RUN:** JWT/RLS real A/B, isolamento PostgREST real, promoção/containment. Existe janela posterior à rechecagem e revogação concorrente fora da espera testada; não provar serialização integral com identidade. Produção/runtime/Entregas/histórico e política comercial preservados; sem hosted DML, migration, GRANT produtivo, deploy, usuários/sessões reais, cobrança/ativação ou remediação. **NO-GO permanece.**
