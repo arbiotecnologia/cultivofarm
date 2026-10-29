@@ -148,3 +148,9 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - [x] Proveniência42PASS/0FAIL/1BLOCKED:13candidatos/14trechos=1EXECUTE/4textformat/9literais; alvosOS/onfarm resolvidos, não executados;17consumidores source-only sem drift. Evidências novas revisão1450/logs/hashes; discrepâncias históricas preservadas sem regravar manifestos. Revisão independente incorporada/testada.
 - [ ] Decisão do proprietário: cadastro deixa settings ausentes para configuração posterior autorizada ou inicializa11valores+método explícitos atomicamente? FrontendINSERT e updater parceiro-existente não resolvem ordem dos triggers; sem definir contrato não preparar alteração lateral/permissiva. Relatório cancelamento indica arquivos/linhas/corpos e teste executável.
 - [ ] NO-GO: origem/fiscal/contabilidade, identidade/order/fullRLS/BIproveniência/ledger e JWTreal/PostgREST permanecem; C2_ACCOUNTING_PENDING/B2B_INTERNAL_DOWNSTREAM_UNVERIFIED intactos. Nenhum SQL implantável/runtime/produção/ativação/remediação.
+
+### Rodada limitada14:58 — tipoNULL no cancelamento
+- [x] BaselinecapturadoNULLkind+payablepróprio cancela/void/auditexato comoauthenticated;43REDcontroles separados, não autorização segura. Receivableprópria/foreign e payableforeign/IDNULL/motivosNULLvazioespaçoscurto/tiposválidos testados.
+- [x] Hipóteseapenasoffline rejeita p_kindISNULL anteslookup com23514,40GREEN novos/estadoinalterado. DeltaúnicoIF explicito preserva guards/tiposválidos; total346PASS/0FAIL/1BLOCKED/1NOT RUN,14corridas/risco reexecutados;Vitest10/10em4arquivos(monetário/proveniência incluídos).
+- [x] Evidênciasnovas revisão1458/diffmínimo/logs/hashes;51arquivoshistóricos preservados. Falha intermediária somente contagemVitest documentada; revisãofonte independente semexecução.
+- [ ] Cadastro/settings continua decisãohumana pendente, NÃO tomada. NO-GOintegral/BIorigemfiscalJWTreal preservado; runtime/migrations/produção intocados.
