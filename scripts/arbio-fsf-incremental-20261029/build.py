@@ -53,6 +53,19 @@ def assemble():
     # Approval shortcuts must not authorize an isolated amount increase.
     guard = guard.replace('AND NEW.total IS NOT DISTINCT FROM OLD.total THEN', 'AND NEW.total IS NOT DISTINCT FROM OLD.total\n       AND NEW.final_amount_with_interest IS NOT DISTINCT FROM OLD.final_amount_with_interest THEN')
     guard = guard.replace('IF NEW.credit_approved_by IS NOT NULL AND OLD.credit_approved_by IS NULL THEN', 'IF NEW.credit_approved_by IS NOT NULL AND OLD.credit_approved_by IS NULL\n       AND NEW.total IS NOT DISTINCT FROM OLD.total\n       AND NEW.final_amount_with_interest IS NOT DISTINCT FROM OLD.final_amount_with_interest THEN')
+    transition = """IF NOT EXISTS (SELECT 1 FROM platform_private.credit_approval_tickets_20261029
+        WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id) THEN
+       RAISE EXCEPTION 'CREDIT_APPROVAL_TICKET_REQUIRED' USING ERRCODE='42501';
+     END IF;
+     DELETE FROM platform_private.credit_approval_tickets_20261029
+       WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id;
+     NEW.credit_block_reason := NULL;"""
+    guard = guard.replace('NEW.credit_block_reason := NULL;', transition, 2)
+    guard = guard.replace("  IF TG_OP = 'INSERT' THEN", """  IF TG_OP='UPDATE' AND OLD.credit_approved_by IS NOT NULL
+     AND (NEW.total IS DISTINCT FROM OLD.total OR NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest) THEN
+    RAISE EXCEPTION 'CREDIT_APPROVED_AMOUNT_IMMUTABLE' USING ERRCODE='42501';
+  END IF;
+  IF TG_OP = 'INSERT' THEN""",1)
     guard = guard.replace("  IF TG_OP = 'INSERT' THEN", "  IF current_setting('transaction_isolation') <> 'read committed' THEN\n    RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000';\n  END IF;\n  IF coalesce(NEW.final_amount_with_interest,NEW.total,0)::text IN ('NaN','Infinity','-Infinity')\n     OR coalesce(NEW.final_amount_with_interest,NEW.total,0) < 0 THEN\n    RAISE EXCEPTION 'CREDIT_AMOUNT_INVALID' USING ERRCODE='23514';\n  END IF;\n  IF TG_OP = 'INSERT' THEN")
     guard = guard.replace("IF v_cfg = 'configuracao_financeira_inativa' THEN", 'IF v_cfg IS NOT NULL THEN')
     ticket = """CREATE TABLE platform_private.credit_approval_tickets_20261029 (
@@ -72,8 +85,6 @@ BEGIN
       OR NEW.total IS DISTINCT FROM OLD.total OR NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest THEN
       RAISE EXCEPTION 'credit_approval_fields_immutable: use approve_b2b_credit' USING ERRCODE='42501';
    END IF;
-   DELETE FROM platform_private.credit_approval_tickets_20261029
-    WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id;
  END IF;
  RETURN NEW;
 END $approval$;
@@ -93,7 +104,7 @@ END $approval$;
   v_config := platform_private.b2b_credit_config_block(v_order.partner_id);
   IF v_config IS NOT NULL THEN RAISE EXCEPTION 'credit_release_failed: %',v_config USING ERRCODE='23514'; END IF;
   INSERT INTO platform_private.credit_approval_tickets_20261029 VALUES(txid_current(),v_uid,p_partner_order_id);""")
-    approve = approve.replace("  PERFORM set_config('arbio.b2b_credit_approval', 'off', true);\n\n  IF NOT FOUND THEN", "  GET DIAGNOSTICS v_updated = ROW_COUNT;\n  DELETE FROM platform_private.credit_approval_tickets_20261029 WHERE transaction_id=txid_current() AND actor_id=v_uid AND order_id=p_partner_order_id;\n\n  IF v_updated <> 1 THEN")
+    approve = approve.replace("  PERFORM set_config('arbio.b2b_credit_approval', 'off', true);\n\n  IF NOT FOUND THEN", "  GET DIAGNOSTICS v_updated = ROW_COUNT;\n  IF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029 WHERE transaction_id=txid_current() AND actor_id=v_uid AND order_id=p_partner_order_id) THEN RAISE EXCEPTION 'CREDIT_APPROVAL_TICKET_UNCONSUMED' USING ERRCODE='42501'; END IF;\n\n  IF v_updated <> 1 THEN")
     approve = approve.replace('IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN', 'IF public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE THEN')
     approve = approve.replace("IF NOT (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor')\n          OR public.has_role(v_uid,'financeiro')) THEN", "IF (public.has_role(v_uid,'administrador') IS NOT TRUE AND public.has_role(v_uid,'gestor') IS NOT TRUE\n          AND public.has_role(v_uid,'financeiro') IS NOT TRUE) THEN")
     assert 'arbio.b2b_credit_approval' not in approve
@@ -116,7 +127,7 @@ END $approval$;
         {'id':'01','status':'CANDIDATE_PENDING_LOCAL_TEST_AND_INDEPENDENT_REVIEW','changes':['private approval tickets','post-wait reauthorization','finite settings gate','expanded trigger columns'],'preserves':['C2_ACCOUNTING_PENDING','B2B_INTERNAL_DOWNSTREAM_UNVERIFIED','ACL of existing functions','organizations policies']},
         {'id':'02-shared-receivable','status':'BLOCKED_TRANSITIVE_WRITERS','requires':'exact d51_5/origin/FK/ledger composition; common ordering across every writer/importer; no synthetic authority'},
         {'id':'03-client-link','status':'BLOCKED_FULL_TRIGGER_COMPOSITION','requires':'real clientes audit/code/tenant triggers, partner audit, h15 readiness chain and existing receipt-name absence; no automatic real link execution'},
-        {'id':'04-Price','status':'BLOCKED_FISCAL_SETTINGS_PAYMENT_ORIGIN','requires':'official active boleto in production, complete settings/exposure, validated NF/accounting/origin; no stubs; no activation'}],
+        {'id':'04-Price','status':'BLOCKED_FISCAL_SETTINGS_PAYMENT_ORIGIN','requires':'boleto production reported registered by owner 20:28; complete settings/exposure, validated NF/accounting/origin still pending; no stubs; no activation'}],
       'dynamic_dependencies':'pg_depend is not a complete PL/pgSQL call graph; captured lexical and dynamic closure must be independently proven before subsets 02–04',
       'organizations':'UNTOUCHED; production has scoped SELECT + restrictive b2b containment, not homolog USING true',
       'approval_baseline':'GUC is caller-settable in SQL; direct table RLS/ACL still applies, so this is not a claim of hosted exploit'}
@@ -130,7 +141,7 @@ if __name__ == '__main__':
     if results.exists():
         hashes = json.loads(results.read_text())['candidate_function_md5']
         post = 'DO $post$ BEGIN\n' + '\n'.join(f"IF md5(pg_get_functiondef({quote(sig)}::regprocedure)) IS DISTINCT FROM {quote(md5)} THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;" for sig, md5 in sorted(hashes.items())) + "\nIF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029) THEN RAISE EXCEPTION 'POST_TICKET_RESIDUE'; END IF;\nEND $post$;\n"
-        for name in ['01-credit-approval.install.sql.review', '01-credit-approval.rollback.sql.review']:
+        for name in ['01-credit-approval.install.sql.review']:
             p = H / name
             s = p.read_text()
             p.write_text(s.replace('\nCOMMIT;\n', '\n' + post + 'COMMIT;\n') if 'install' in name else s.replace('REVOKE EXECUTE', post + 'REVOKE EXECUTE'))
