@@ -20,6 +20,7 @@ if args.output_dir:
     assert not OUT.resolve().is_relative_to(legacy.resolve()) or 'cancel-authorization-revision-' in OUT.name, 'Historical output is immutable'
     OUT.mkdir(parents=True, exist_ok=False)
 races = []
+extra_state_tables = []
 checks, pins, omitted_policies, responses = [], [], [], []
 V = m.uid(900001)
 
@@ -77,8 +78,8 @@ def client(sql, actor=m.U, role='authenticated'):
     return subprocess.run(m.pg.psql(user=role)+['-v','VERBOSITY=verbose'], input="SET statement_timeout='12s'; SET lock_timeout='8s';"+command, text=True, capture_output=True, timeout=16)
 
 def state():
-    tables=['accounts_receivable','accounts_payable','accounts_receivable_installments','accounts_payable_installments','financial_audit_log','receivable_payments','payable_payments','financial_receipts','partner_order_payment_schedule']
-    parts=[m.q(t)+",(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM "+t+" t)" for t in tables]
+    tables=['accounts_receivable','accounts_payable','accounts_receivable_installments','accounts_payable_installments','financial_audit_log','receivable_payments','payable_payments','financial_receipts','partner_order_payment_schedule']+extra_state_tables
+    parts=[m.q(t)+",(SELECT jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text) FROM "+t+" t)" for t in tables]
     return m.pg.sql('SELECT jsonb_build_object('+','.join(parts)+');')
 
 def call(part,kind): return f"SELECT rpc_cancel_financial_installment('{part}','{kind}','LOCAL AUDIT REASON');"
@@ -331,6 +332,15 @@ def main():
         denied(kind+' GREEN replay preserved',call(own,kind),'já cancelada',mode='GREEN_OFFLINE_ONLY')
         active=paid_fixture(982+(10 if kind=='payable' else 0),kind,m.A)
         denied(kind+' GREEN own payment branch preserved',call(active,kind),'não estornados',mode='GREEN_OFFLINE_ONLY')
+    risk_spec=importlib.util.spec_from_file_location('cancel_risk',H/'cancel-risk-composition.py')
+    risk=importlib.util.module_from_spec(risk_spec);risk_spec.loader.exec_module(risk)
+    risk_metadata=risk.compose(sys.modules[__name__]);risk.exercise(sys.modules[__name__],risk_metadata)
+    for kind in ['receivable','payable']:
+        part=fixture(1700+(10 if kind=='payable' else 0),kind,m.A);before=amounts(part,kind)
+        check(kind+' risk composed manual cancellation',0,client(call(part,kind)).returncode,'RISK_GREEN_CONTROL')
+        check(kind+' risk composed snapshot unchanged',before,amounts(part,kind),'RISK_GREEN_CONTROL')
+        foreign=paid_fixture(1730+(10 if kind=='payable' else 0),kind,m.B)
+        uniform(kind+' risk composed foreign full state',foreign,kind)
     helper_metadata=json.loads(m.pg.sql("SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'volatility',p.provolatile,'md5',md5(pg_get_functiondef(p.oid)))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private','auth') AND p.proname IN ('is_financial_staff','h15_actor_organization','has_role','platform_actor_access_ready','fn_authz_uid_scope_ok')"))
     for entry in helper_metadata:
         source=next(f for f in r.live['functions'] if f['signature']==entry['signature'])
@@ -342,14 +352,15 @@ def main():
         captured_manifest_sha256=hashlib.sha256((H/'receivable-recursive-live-20261029.json').read_bytes()).hexdigest(),
         transformed_body_md5=hashlib.md5(body.encode()).hexdigest(), postgres_version=m.pg.sql('SHOW server_version'), isolation_contract='GREEN denies non-READ-COMMITTED; separate post-lock SPI SELECT calls exact STABLE helpers',
         omitted_policies=omitted_policies, races=races, helper_metadata=helper_metadata, output_dir=str(OUT), by_mode={mode:sum(c['mode']==mode for c in checks) for mode in sorted({c['mode'] for c in checks})},
-        blocked=['B2B own positive requires captured recalc_partner_risk_score and full risk/partner/governance dependency chain'],
+        risk_composition=risk_metadata,
+        blocked=[risk_metadata['blocked'],'Full B2B origin/fiscal/BI/provenance and identity/order integration remain unproved'],
         not_run=['Hosted JWT/RLS A/B, full BI/provenance and promotion'],
         vulnerability='Foreign canceled vs missing row status oracle; OPEN foreign mutation denied by exact tenant trigger',
         limits='Actual LOGIN client roles, captured RPC ACL/installment RLS/all installment triggers; minimal synthetic identity tables. Parent creation/identity-wide guards, payment insert chain and audit SELECT policy not composed. No owner RPC calls, no tickets, no JWT verification, no production operations.')
     (OUT/'results.json').write_text(json.dumps(result,indent=2)+'\n')
     with (OUT/'matrix.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=list(checks[0]),lineterminator='\n');w.writeheader();w.writerows(checks)
-        w.writerow(dict(test='B2B own positive cancellation',expected='Legitimate complete chain',actual='Fixture fails in exact risk trigger before RPC',mode='INTEGRATION',status='BLOCKED'))
+        w.writerow(dict(test='B2B own positive cancellation',expected='Legitimate complete chain',actual=risk_metadata['blocked'],mode='INTEGRATION',status='BLOCKED'))
         w.writerow(dict(test='JWT/RLS hosted A/B and full chain',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN'))
     print(json.dumps(result['counts']))
 
