@@ -1,0 +1,18 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/financeiro/priceScheduleOffline.test.ts (1 test) 237ms
+ ✓ src/test/financeiro/financialProvenanceOffline.test.ts (1 test) 366ms
+   ✓ distingue execução SQL de textos e preserva limites da proveniência dos consumidores  363ms
+ ✓ src/test/financeiro/bateriaB2bOffline.test.ts (15 tests) 9ms
+ ✓ src/test/financeiro/arbioFsfReference.test.ts (38 tests) 14ms
+ ✓ src/test/financeiro/receivableRedGreenPostgres.test.ts (1 test) 12441ms
+   ✓ reproduz P0 red e conserva financiamento e eventos green apenas no PG descartável  12438ms
+ ✓ src/test/financeiro/cancelAuthorizationPostgres.test.ts (1 test) 78329ms
+   ✓ nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline  78328ms
+
+ Test Files  6 passed (6)
+      Tests  57 passed (57)
+   Start at  17:54:54
+   Duration  83.11s (transform 1.33s, setup 2.34s, collect 5.35s, tests 91.40s, environment 16.17s, prepare 2.11s)
+

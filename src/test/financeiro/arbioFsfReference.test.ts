@@ -6,7 +6,7 @@ import { activePaymentMethodValid, canConfigurePartnerSettings } from '@/lib/fin
 import type { PaymentPlanPayload } from '@/hooks/useCommercialPaymentPlansAdmin';
 import type { PlanAssignment } from '@/hooks/useCommercialConditions';
 
-const draft = JSON.parse(readFileSync('scripts/financial-installments-initial-20261024/arbio-fsf-policy.draft.json', 'utf8'));
+const draft = JSON.parse(readFileSync('scripts/financial-installments-initial-20261024/arbio-fsf-policy.full-term-20261028.superseded.json', 'utf8'));
 const base: PaymentPlanPayload = { name: 'DRAFT LOCAL', code: 'REF', plan_type: 'custom',
   max_days: 0, months_count: 0, installment_count: 1, discount_percent: 0,
   monthly_interest_percent: 0, interest_type: 'compound', pricing_mode: 'discount_from_base',

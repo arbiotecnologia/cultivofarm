@@ -101,6 +101,33 @@ def candidate_plan(principal, n, exposure_before, credit_limit, exposure_basis, 
     return s
 
 
+SUPERSEDED_ROOT_KEYS = ('formula', 'policies', 'reference_vectors', 'boundary_fixtures', 'interest_decision', 'owner_override', 'technical_proposals')
+
+
+def resolve_new_plan_policy(policy, n, rate_request=None):
+    """Offline reader: new plans resolve ONLY from active_candidate; any
+    superseded rule at the root or an unresolved contradiction fails closed."""
+    if policy.get('runtime_enabled') is not False:
+        raise Rejected('RUNTIME_MUST_STAY_DISABLED')
+    leaked = [k for k in SUPERSEDED_ROOT_KEYS if k in policy]
+    if leaked:
+        raise Rejected('SUPERSEDED_RULE_AT_ROOT')
+    a = policy.get('active_candidate')
+    if not a or policy.get('authority', {}).get('new_plans_may_use_only') != 'active_candidate':
+        raise Rejected('ACTIVE_CANDIDATE_MISSING')
+    if policy['credit'].get('credit_limit') != a['credit_limit']:
+        raise Rejected('CREDIT_LIMIT_CONTRADICTION')
+    if a['system'] != 'price_interest_on_outstanding_balance' or a['receivable_generation'] != 'manual_authorized_only':
+        raise Rejected('ACTIVE_CANDIDATE_CONTRADICTION')
+    n = installments(n)
+    if n > a['installments']['max']:
+        raise Rejected('INSTALLMENTS_OUT_OF_RANGE')
+    rate = Decimal(a['rates']['n1_30d' if n == 1 else 'n%d' % n])
+    if rate != RATE_BY_N[n] or (rate_request is not None and Decimal(str(rate_request)) != rate):
+        raise Rejected('RATE_NOT_FROM_ACTIVE_CANDIDATE')
+    return dict(n=n, rate=rate, credit_limit=money(a['credit_limit'], 'CREDIT_LIMIT'), first_due=a['first_due'])
+
+
 def production_eligibility(*_a, **_k):
     """Separated from the candidate API: production stays denied."""
     return dict(eligible=False, reasons=[
@@ -251,6 +278,29 @@ def run(out=None):
         rejects(f'nf date {v!r}', code, lambda: due_dates_candidate(v, 2))
     rejects('generation before NF', 'GENERATION_BEFORE_NF', lambda: due_dates_candidate(nf, 2, generated_at=D(2026, 11, 2)))
     rejects('generated_at string', 'GENERATED_AT_INVALID', lambda: due_dates_candidate(nf, 2, generated_at='2026-11-20'))
+    # Policy authority: new plans never pick superseded rules.
+    H = pathlib.Path(__file__).parent
+    pol = json.loads((H / 'arbio-fsf-policy.draft.json').read_text())
+    old = json.loads((H / 'arbio-fsf-policy.full-term-20261028.superseded.json').read_text())
+    for n in (1, 2, 3):
+        r = resolve_new_plan_policy(pol, n)
+        check(f'resolver {n}x rate from active candidate', RATE_BY_N[n], r['rate'], 'POLICY_AUTHORITY')
+    check('resolver limit 100000', LIMIT, resolve_new_plan_policy(pol, 2)['credit_limit'], 'POLICY_AUTHORITY')
+    check('resolver first due NF+30', 'nf_issue_date_plus_30_days', resolve_new_plan_policy(pol, 1)['first_due'], 'POLICY_AUTHORITY')
+    check('draft has no superseded root rules', [], [k for k in SUPERSEDED_ROOT_KEYS if k in pol], 'POLICY_AUTHORITY')
+    check('draft runtime disabled', False, pol['runtime_enabled'], 'POLICY_AUTHORITY')
+    check('draft billing trigger resolved manual', 'manual_authorized_only', pol['resolved_by_active_candidate']['billing_trigger'], 'POLICY_AUTHORITY')
+    check('draft undefined no longer lists resolved items', [], [k for k in ('installment_count', 'billing_trigger', 'interest_incidence_schedule', 'installment_amortization') if k in pol['undefined']], 'POLICY_AUTHORITY')
+    check('superseded file labeled', 'HISTORICAL_SUPERSEDED_FOR_NEW_PLANS', old['status'], 'POLICY_AUTHORITY')
+    rejects('resolver rejects superseded file', 'SUPERSEDED_RULE_AT_ROOT', lambda: resolve_new_plan_policy(old, 2), 'POLICY_AUTHORITY')
+    rejects('resolver rejects 2% long-term rate', 'RATE_NOT_FROM_ACTIVE_CANDIDATE', lambda: resolve_new_plan_policy(pol, 3, '2'), 'POLICY_AUTHORITY')
+    rejects('resolver rejects 6 installments', 'INSTALLMENTS_OUT_OF_RANGE', lambda: resolve_new_plan_policy(pol, 6), 'POLICY_AUTHORITY')
+    tampered = json.loads(json.dumps(pol)); tampered['policies'] = old['policies']
+    rejects('resolver rejects reinjected bands', 'SUPERSEDED_RULE_AT_ROOT', lambda: resolve_new_plan_policy(tampered, 2), 'POLICY_AUTHORITY')
+    tampered = json.loads(json.dumps(pol)); tampered['credit']['credit_limit'] = None
+    rejects('resolver rejects null root credit', 'CREDIT_LIMIT_CONTRADICTION', lambda: resolve_new_plan_policy(tampered, 2), 'POLICY_AUTHORITY')
+    tampered = json.loads(json.dumps(pol)); tampered['runtime_enabled'] = True
+    rejects('resolver rejects runtime enabled', 'RUNTIME_MUST_STAY_DISABLED', lambda: resolve_new_plan_policy(tampered, 2), 'POLICY_AUTHORITY')
     summary = {}
     for c in checks:
         summary.setdefault(c['mode'], {}).setdefault(c['status'], 0)

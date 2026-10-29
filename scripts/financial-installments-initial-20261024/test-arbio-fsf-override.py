@@ -8,8 +8,8 @@ H = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('battery', H/'test-financial-battery.py')
 b = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(b)
-C = json.loads((H/'arbio-fsf-policy.draft.json').read_text())
-OUT = b.ROOT/'docs/auditorias/evidencias-arbio-fsf-definitiva-20261028'
+C = json.loads((H/'arbio-fsf-policy.full-term-20261028.superseded.json').read_text())
+OUT = b.ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029/price-authority-1753/full-term-superseded-override'
 rows = []
 def record(label, status, expected, actual, level='LOCAL_DECIMAL_PG_ARITHMETIC', priority='P1'):
     rows.append(dict(id=f'ARFSF-OVR-{len(rows)+1:03}',cenario=label,status=status,
@@ -18,7 +18,7 @@ def check(label, expected, actual, level='LOCAL_DECIMAL_PG_ARITHMETIC'):
     record(label, 'PASS' if expected == actual else 'FAIL', expected, actual, level)
 def money(x): return x.quantize(D('.01'),rounding=ROUND_HALF_UP)
 def main():
-    assert C['status']=='DRAFT_REVIEW_ONLY' and C['runtime_enabled'] is False
+    assert C['status']=='HISTORICAL_SUPERSEDED_FOR_NEW_PLANS' and C['runtime_enabled'] is False
     assert C['interest_decision']['interest_start']=='operation_initial_date'
     assert C['interest_decision']['band_incidence']=='single_selected_rate_over_entire_term'
     assert C['interest_decision']['deduct_30_days'] is False
@@ -107,7 +107,7 @@ def main():
         w=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator='\n');w.writeheader();w.writerows(rows)
     totals={s:sum(r['status']==s for r in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']}
     (OUT/'execucao.json').write_text(json.dumps(dict(totals=totals,real_PASS=0,
-        draft_sha256=hashlib.sha256((H/'arbio-fsf-policy.draft.json').read_bytes()).hexdigest(),
+        draft_sha256=hashlib.sha256((H/'arbio-fsf-policy.full-term-20261028.superseded.json').read_bytes()).hexdigest(),
         ref_of_historical_capture=b.LIVE['ref'],live_recaptured=False,
         method='Decimal 60 digits / ROUND_HALF_UP; captured helper local only; synthetic SETUP; no date resolver enforcement'),indent=2)+'\n')
     print(totals)
