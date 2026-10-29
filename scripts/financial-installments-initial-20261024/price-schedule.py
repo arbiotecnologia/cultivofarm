@@ -6,9 +6,13 @@ balance); 1x -> 0%; 2x/3x -> 1.8% a.m. from the first period; 4+ rejected;
 2026-10-29T17:49Z: first due = fiscal invoice (NF) issue date + 30 days; a late
 or repeated manual generation never restarts the term.
 
-Still CANDIDATE (not decided): civil-month clamp for later dues, business-day
-rolling, pro-rata/irregular periods, and the credit exposure basis (principal
-vs financed total). `production_eligibility` therefore always denies.
+Decided 2026-10-29 (owner confirmation; applied 18:00Z): civil-month clamp (same day of the first nominal in
+following months, last day of a shorter month), pro-rata fixed monthly Price
+(no per-day adjustment), credit exposure basis = financed total including
+interest (rounded installment sum). Business-day rolling is decided in
+principle (next business day, no extra interest) but still requires the real
+locality calendar (city/state pending from the owner); `production_eligibility`
+therefore still denies.
 Historical titles (10300/7550 regressions) are never repriced here.
 """
 from decimal import Decimal, ROUND_HALF_UP, getcontext, InvalidOperation
@@ -324,7 +328,8 @@ def run(out=None):
         rejects('automatic generation blocked (replay)', 'AUTO_GENERATION_BLOCKED', lambda: candidate_plan(p, 2, '0', LIMIT, FT, 'automatic'))
     check('production eligibility denied', False, production_eligibility(p, 3)['eligible'], 'PRODUCTION_GATE')
     check('production reasons include calendar source', True, 'CALENDAR_SOURCE_REQUIRED' in production_eligibility()['reasons'], 'PRODUCTION_GATE')
-    # Dates: NF anchor decided; later dues candidate only.
+    # Dates: NF anchor and nominal calendar decided; adjusted dues await the
+    # real locality calendar.
     D = datetime.date
     for nf, expected in [
         (D(2026, 1, 1), ['2026-01-31', '2026-02-28', '2026-03-31']),
