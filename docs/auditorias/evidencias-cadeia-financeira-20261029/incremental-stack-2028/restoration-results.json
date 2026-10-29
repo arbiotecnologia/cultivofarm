@@ -1,4 +1,4 @@
 {
   "restoration": "BLOCKED",
-  "error": "ERROR:  function auth.uid() does not exist\nLINE 1: ... text,\"cliente_id\" uuid,\"usuario_id\" uuid DEFAULT auth.uid()...\n                                                             ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+  "error": "ERROR:  function platform_private.h15_actor_organization() does not exist\nLINE 1: ...ustment_date\" date,\"organization_id\" uuid DEFAULT platform_p...\n                                                             ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
 }
