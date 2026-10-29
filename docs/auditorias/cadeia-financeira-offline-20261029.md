@@ -108,3 +108,8 @@ Novos: manifesto recursivo, auditor recursivo, runner red/green, teste Vitest, e
 - **Teto numérico:** limite agora 999.999.999.999,99 (numeric(14,2)); 1e12, 1e20 e 26 dígitos rejeitados com `TABLE_AMOUNT_INVALID`, sem overflow; no RPC o teto cai em `LIMIT_EXCEEDED_BLOCK` antes de qualquer escrita.
 - **Correção de relato:** "10300 com baixa 7550, saldo 2750" é só verificação de preservação de fixture, não a regressão P0. Os testes P0 ORIGINAIS foram reexecutados sem alteração: RED 10600/7550/7750, GREEN 10300/7550/7550 — 37 PASS/0 FAIL.
 - Resultados: PG gerador 217/0 FAIL. Exposição/settings/NF/contabilidade continuam deny-only, com stubs SINTÉTICOS. Evidência `price-generator-pg-review-1845/`. Não é E2E nem homologação.
+
+## Complemento 18:41 — catálogo real de métodos (captura read-only do proprietário)
+- Ref `swzpzcwiasxmjutrmvkm`, `BEGIN READ ONLY`, sem mutação: única linha ativa `AUDIT-AR-20260922 - Sem transferencia`. Cópia sanitizada (id por sha256) em `payment-methods-readonly-capture-20261029.json`.
+- Blocker atualizado: `PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG` (substitui ROWS_NOT_CAPTURED). Decisão BOLETO mantida; método AUDIT não reutilizado; nada criado/ativado; UUID real não usado como fixture.
+- Motor 376/0 FAIL (PAYMENT_METHOD 14); Vitest 1/1; PG não reexecutado (lógica SQL inalterada). Evidência `payment-method-boleto-catalog-1841/`.
