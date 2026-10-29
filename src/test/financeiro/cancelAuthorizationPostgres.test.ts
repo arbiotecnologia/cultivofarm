@@ -17,8 +17,8 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   expect(result['NOT RUN']).toBe(1);
   const evidence = JSON.parse(readFileSync(join(outputDir, 'results.json'), 'utf8'));
   expect(evidence.races).toHaveLength(14);
-  expect(evidence.by_mode.RED_NULL_KIND_CAPTURED).toBe(41);
-  expect(evidence.by_mode.GREEN_NULL_KIND_SANDBOX).toBe(42);
+  expect(evidence.by_mode.RED_NULL_KIND_CAPTURED).toBe(43);
+  expect(evidence.by_mode.GREEN_NULL_KIND_SANDBOX).toBe(40);
   const nullKind = evidence.checks.find((row: { test: string }) => row.test === 'GREEN_NULL_KIND_SANDBOX NULL kind own payable exact error');
   expect(nullKind.actual).toBe("('23514', 'Tipo inválido: <NULL>')");
   expect(nullKind.status).toBe('PASS');
