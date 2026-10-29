@@ -1,6 +1,6 @@
 # Renato / Fagner — checagens reais somente leitura
 
-Estado inicial de todos os casos: **NOT RUN — sessão do titular não observada**.
+Sessão AR Bio via UI confirmada pelo proprietário às 20:28; checagens próprias de isolamento do assistente e sessão Fagner/FSF permanecem **NOT RUN**. Comprador teste4 está ligado a TESTE AUDITORIA B2B, não FSF. Tenant FSF não equivale ao parceiro FSF. Não transferir, renomear ou mudar papéis; lifecycle cross_partner recusa e caminho seguro permanece pendente.
 
 1. Cada pessoa abre o domínio publicado em janela própria e entra normalmente. Não compartilhar credenciais, cookies, JWT ou export de storage. Capturar somente versão pública, horário UTC, nome do portal e resultado sanitizado; ocultar documento/e-mail/identificadores pessoais.
 2. Confirmar empresa/portal efetivamente autorizados pelo servidor. Renato AR Bio interno e Fagner FSF parceiro são expectativas a conferir, **não atribuições presumidas**. Administrador de org FSF não equivale a portal parceiro; ausência de `partner_users`/papel/vínculo atual mantém pré-requisito BLOCKED sem conceder acesso.

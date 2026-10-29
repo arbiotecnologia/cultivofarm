@@ -809,7 +809,7 @@
     {
       "id": "04-Price",
       "status": "BLOCKED_FISCAL_SETTINGS_PAYMENT_ORIGIN",
-      "requires": "official active boleto in production, complete settings/exposure, validated NF/accounting/origin; no stubs; no activation"
+      "requires": "boleto production reported registered by owner 20:28; complete settings/exposure, validated NF/accounting/origin still pending; no stubs; no activation"
     }
   ],
   "dynamic_dependencies": "pg_depend is not a complete PL/pgSQL call graph; captured lexical and dynamic closure must be independently proven before subsets 02–04",

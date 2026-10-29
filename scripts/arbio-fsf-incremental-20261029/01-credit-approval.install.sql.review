@@ -560,6 +560,15 @@ DECLARE
   v_should_check boolean := false;
   v_cfg text;
 BEGIN
+  IF TG_OP='UPDATE' AND OLD.credit_approved_by IS NOT NULL
+     AND (NEW.total IS DISTINCT FROM OLD.total OR NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest) THEN
+    RAISE EXCEPTION 'CREDIT_APPROVED_AMOUNT_IMMUTABLE' USING ERRCODE='42501';
+  END IF;
+  IF (NEW.total IS NULL AND NEW.final_amount_with_interest IS NULL)
+     OR (NEW.total IS NOT NULL AND (NEW.total::text IN ('NaN','Infinity','-Infinity') OR NEW.total<0))
+     OR (NEW.final_amount_with_interest IS NOT NULL AND (NEW.final_amount_with_interest::text IN ('NaN','Infinity','-Infinity') OR NEW.final_amount_with_interest<0)) THEN
+    RAISE EXCEPTION 'CREDIT_AMOUNT_INVALID' USING ERRCODE='23514';
+  END IF;
   IF current_setting('transaction_isolation') <> 'read committed' THEN
     RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000';
   END IF;
@@ -582,7 +591,13 @@ BEGIN
         NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
         NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
       END IF;
-      NEW.credit_block_reason := NULL;
+      IF NOT EXISTS (SELECT 1 FROM platform_private.credit_approval_tickets_20261029
+        WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id) THEN
+       RAISE EXCEPTION 'CREDIT_APPROVAL_TICKET_REQUIRED' USING ERRCODE='42501';
+     END IF;
+     DELETE FROM platform_private.credit_approval_tickets_20261029
+       WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id;
+     NEW.credit_block_reason := NULL;
       RETURN NEW;
     END IF;
 
@@ -596,7 +611,13 @@ BEGIN
         NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
         NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
       END IF;
-      NEW.credit_block_reason := NULL;
+      IF NOT EXISTS (SELECT 1 FROM platform_private.credit_approval_tickets_20261029
+        WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id) THEN
+       RAISE EXCEPTION 'CREDIT_APPROVAL_TICKET_REQUIRED' USING ERRCODE='42501';
+     END IF;
+     DELETE FROM platform_private.credit_approval_tickets_20261029
+       WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id;
+     NEW.credit_block_reason := NULL;
       RETURN NEW;
     END IF;
 
@@ -683,8 +704,6 @@ BEGIN
       OR NEW.total IS DISTINCT FROM OLD.total OR NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest THEN
       RAISE EXCEPTION 'credit_approval_fields_immutable: use approve_b2b_credit' USING ERRCODE='42501';
    END IF;
-   DELETE FROM platform_private.credit_approval_tickets_20261029
-    WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id;
  END IF;
  RETURN NEW;
 END $approval$;
@@ -761,7 +780,7 @@ BEGIN
     AND status = 'aguardando_aprovacao_credito';
 
   GET DIAGNOSTICS v_updated = ROW_COUNT;
-  DELETE FROM platform_private.credit_approval_tickets_20261029 WHERE transaction_id=txid_current() AND actor_id=v_uid AND order_id=p_partner_order_id;
+  IF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029 WHERE transaction_id=txid_current() AND actor_id=v_uid AND order_id=p_partner_order_id) THEN RAISE EXCEPTION 'CREDIT_APPROVAL_TICKET_UNCONSUMED' USING ERRCODE='42501'; END IF;
 
   IF v_updated <> 1 THEN
     RAISE EXCEPTION 'concurrent_update: status do pedido mudou durante a aprovação';
@@ -795,10 +814,17 @@ ALTER FUNCTION public.tg_partner_orders_credit_guard() OWNER TO postgres;
 ALTER FUNCTION public.approve_b2b_credit(uuid,text) OWNER TO postgres;
 
 DO $post$ BEGIN
-IF md5(pg_get_functiondef('approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '70caeea8b5da11ceb1ffb736a0c6adad' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
-IF md5(pg_get_functiondef('fn_b2b_guard_credit_approval_fields()'::regprocedure)) IS DISTINCT FROM '20f38cd2c742514d2df75c213a6b94f5' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF md5(pg_get_functiondef('approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '061f8a4748d1d028ad0c103bab5a1cdb' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF md5(pg_get_functiondef('fn_b2b_guard_credit_approval_fields()'::regprocedure)) IS DISTINCT FROM '3bac4722eb855a6932057f42f28b3850' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
 IF md5(pg_get_functiondef('platform_private.b2b_credit_config_block(uuid)'::regprocedure)) IS DISTINCT FROM '582b943911a63a3e3391770fea5f7fbb' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
-IF md5(pg_get_functiondef('tg_partner_orders_credit_guard()'::regprocedure)) IS DISTINCT FROM 'e805449d2c5ab82d5c115655a514182c' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF md5(pg_get_functiondef('tg_partner_orders_credit_guard()'::regprocedure)) IS DISTINCT FROM 'c09a79e48bea260679d82adf1616fcc8' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
 IF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029) THEN RAISE EXCEPTION 'POST_TICKET_RESIDUE'; END IF;
+IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='approve_b2b_credit(uuid,text)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='approve_b2b_credit(uuid,text)'::regprocedure)<>'postgres' THEN RAISE EXCEPTION 'POST_FUNCTION_ACL_OWNER_DRIFT'; END IF;
+IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='tg_partner_orders_credit_guard()'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='tg_partner_orders_credit_guard()'::regprocedure)<>'postgres' THEN RAISE EXCEPTION 'POST_FUNCTION_ACL_OWNER_DRIFT'; END IF;
+IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='fn_b2b_guard_credit_approval_fields()'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres,service_role=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='fn_b2b_guard_credit_approval_fields()'::regprocedure)<>'postgres' THEN RAISE EXCEPTION 'POST_FUNCTION_ACL_OWNER_DRIFT'; END IF;
+IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid='platform_private.b2b_credit_config_block(uuid)'::regprocedure) IS DISTINCT FROM '{postgres=X/postgres}' OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='platform_private.b2b_credit_config_block(uuid)'::regprocedure)<>'postgres' THEN RAISE EXCEPTION 'POST_FUNCTION_ACL_OWNER_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_b2b_guard_credit_approval_fields' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_b2b_guard_credit_approval_fields BEFORE UPDATE ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION fn_b2b_guard_credit_approval_fields()' AND tgenabled='O') THEN RAISE EXCEPTION 'POST_TRIGGER_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname='trg_partner_orders_credit_guard' AND pg_get_triggerdef(oid)='CREATE TRIGGER trg_partner_orders_credit_guard BEFORE INSERT OR UPDATE OF status, total, final_amount_with_interest, credit_approved_by ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_credit_guard()' AND tgenabled='O') THEN RAISE EXCEPTION 'POST_TRIGGER_DRIFT'; END IF;
+IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.credit_approval_tickets_20261029'::regclass AND relrowsecurity AND pg_get_userbyid(relowner)='postgres' AND relacl::text='{postgres=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'POST_TICKET_ACL_RLS_DRIFT'; END IF;
 END $post$;
 COMMIT;

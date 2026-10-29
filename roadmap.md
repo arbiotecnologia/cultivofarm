@@ -1,3 +1,4 @@
+- [ ] Subconjunto01 20:28: restaurar stack metadata real em PG descartável; ensaiar instalador COMMIT/postflight, drift/rollback/rerun/contenção e aprovação; atualizar evidências externas de boleto/settings/identidade sem alterações comerciais ou hosted.
 # F2-B — auditoria e preparação revisável
 
 ## 29/10 15:36 — partes e limite explícito, somente offline
@@ -1055,7 +1056,8 @@
 - [x] Inventário separado UI/approval-trigger/shared/clientlink/Price; ticket privado, SQL pins, postflight e contenção preparados.
 - [x] Testes:57PGapproval/338PriceShared/51link/37P0redgreen/8Vitest/23preflight; evidências novas.
 - [x] Roteiro login/isolamento Renato/Fagner read-only sem credenciais.
-- [ ] Composição catálogo/stack integral e ensaio completo instalador/preflight — dependências não provadas.
-- [ ] Revisão independente e autorização específica execução do pacote exato — nenhuma implantação nesta chamada.
+- [x] Ensaio completo instalador/preflight em PG descartável: PRE/POST atômicos, COMMIT/postflight, rerun e contenção; 6 PASS. Stack capturada restaurada com limites externos explícitos.
+- [ ] Aprovação integrada com autoridade real/restaurada e corridas linha/advisory, zero dispatch/origens fiscais — não executadas; não há GO.
+- [ ] Inspeção técnica do pacote exato pelo operador — implantação administrativa já autorizada; hosted proibido nesta chamada.
 - [ ] Sessões reais login/JWT/RLS e saídasOFF observadas — evidências humanas ausentes.
-- [ ] Price/origemNF/contabilidade/settings/boleto produção — gates permanecem fechados.
+- [ ] Price/origemNF/contabilidade/settings — gates fechados; boleto cadastrado confirmado pelo proprietário, relato de ausência superado.
