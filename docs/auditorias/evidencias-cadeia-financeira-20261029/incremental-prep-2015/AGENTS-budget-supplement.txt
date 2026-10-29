@@ -1,0 +1,2 @@
+Document-only budget adjustment. Original SHA256SUMS remains immutable; its AGENTS.md entry is superseded by this explicit digest. Scoped approval, pins and release rules remain in scripts/arbio-fsf-incremental-20261029/AGENTS.md.
+8a705fe2861407136eab8f4bbe950b434d00b974f8200476066bb83ca58a7664  AGENTS.md

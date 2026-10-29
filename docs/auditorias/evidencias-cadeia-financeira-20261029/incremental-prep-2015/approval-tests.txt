@@ -1,0 +1,58 @@
+PASS exact LIVE body fn_b2b_guard_credit_approval_fields()
+PASS exact LIVE body approve_b2b_credit(uuid,text)
+PASS exact LIVE exposure
+PASS RED captured guard accepts caller-set GUC
+PASS GREEN spoofed GUC no private ticket SQLSTATE
+PASS GREEN spoofed GUC no private ticket atomic state
+PASS GREEN spoofed GUC no private ticket no audit
+PASS undefined/nonfinite limit NULL SQLSTATE
+PASS undefined/nonfinite limit NULL atomic state
+PASS undefined/nonfinite limit NULL no audit
+PASS undefined/nonfinite limit 0 SQLSTATE
+PASS undefined/nonfinite limit 0 atomic state
+PASS undefined/nonfinite limit 0 no audit
+PASS undefined/nonfinite limit -1 SQLSTATE
+PASS undefined/nonfinite limit -1 atomic state
+PASS undefined/nonfinite limit -1 no audit
+PASS undefined/nonfinite limit 'NaN' SQLSTATE
+PASS undefined/nonfinite limit 'NaN' atomic state
+PASS undefined/nonfinite limit 'NaN' no audit
+PASS Infinity refused by real numeric(14,2) type
+PASS inactive settings SQLSTATE
+PASS inactive settings atomic state
+PASS inactive settings no audit
+PASS absent settings SQLSTATE
+PASS absent settings atomic state
+PASS absent settings no audit
+PASS accounting gate preserved SQLSTATE
+PASS accounting gate preserved atomic state
+PASS accounting gate preserved no audit
+PASS role revoked SQLSTATE
+PASS role revoked atomic state
+PASS role revoked no audit
+PASS foreign scope SQLSTATE
+PASS foreign scope atomic state
+PASS foreign scope no audit
+PASS unsupported isolation SQLSTATE
+PASS unsupported isolation atomic state
+PASS unsupported isolation no audit
+PASS reauth race proven blocking pids
+PASS reauth race settled
+PASS revoked during partner lock denied
+PASS revoked during lock no audit
+PASS revoked during lock no ticket
+PASS configured excess legitimate canonical approval
+PASS approved excess analysis status
+PASS one audit
+PASS consumed ticket
+PASS replay processed SQLSTATE
+PASS replay processed atomic state
+PASS replay processed no audit
+PASS private ticket denied authenticated SQLSTATE
+PASS private ticket denied authenticated atomic state
+PASS private ticket denied authenticated no audit
+PASS isolated amount plus cent blocked
+PASS exact limit accepted
+PASS deny-only rollback revokes client entry
+PASS deny-only rollback retains hardened guard
+{"passed": 57, "fail": 0}

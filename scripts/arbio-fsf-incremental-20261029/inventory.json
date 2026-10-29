@@ -1,0 +1,818 @@
+{
+  "ref": "swzpzcwiasxmjutrmvkm",
+  "level": "METADATA_CAPTURE_NOT_JWT_E2E",
+  "counts": {
+    "policies": 42,
+    "triggers": 45,
+    "functions": 49,
+    "relations": 7,
+    "constraints": 50
+  },
+  "functions": [
+    {
+      "signature": "platform_private.b2b_phase1_order_visible(uuid)",
+      "md5": "8504f07fbc3a7975accf919f386d00eb",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "s",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "b2b_phase1_partner_visible(uuid,boolean)",
+      "md5": "6b3defc01a66040146562c60ad224f03",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "s",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "b2b_phase1_order_visible(uuid)",
+      "md5": "8812508716f279a88e3d5a31b15621d8",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "s",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "fn_b2b_guard_credit_approval_fields()",
+      "md5": "8902498ed09c4c5804b1749ee0c31cd7",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "fn_financial_audit()",
+      "md5": "46f777c2020ff9a059a80ae6dab4bd12",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "fn_h6_guard_ar_installment_snapshot()",
+      "md5": "c3f26bc5217a5d86227c7e74f762b3ad",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "fn_h6_guard_title_snapshot()",
+      "md5": "d9cc5c95f837de9d77cec2159e24bbf9",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "fn_h6d_block_hard_delete()",
+      "md5": "5c07dd23a0c9355c3fe11811004b0381",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "partner_audit_trigger()",
+      "md5": "3b8aa711642b2d6fd5b739a21d36e4ba",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "partner_orders_audit_trigger()",
+      "md5": "df139ef01591892436854b7f8c82f2db",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "recalc_partner_prices_on_default_change()",
+      "md5": "127917c3a793e927e217159e4fbf3122",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_recalc_risk_on_ar_change()",
+      "md5": "2d38119a0bb885471ba0112c300a4144",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "set_codigo_cliente()",
+      "md5": "cc90bd60f9cb2e62e96d495861b0434d",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_audit_partner_order_commercial()",
+      "md5": "b537eb6807fbfc48b43b59d49ef7297a",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_b2b_enforce_plan_selectable()",
+      "md5": "3477a02b069c20ae3e1c832ecca6b1e7",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_auto_b2b_receivable()",
+      "md5": "0f679538fe394924b140e54938a3bb9e",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_block_partner_order_delete()",
+      "md5": "55b4f2fa662f1d14dbbb663cb475d6a6",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_block_partner_order_edit_after_op()",
+      "md5": "2884dea0a9efa9ab7badac6bd8b5e46c",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_create_default_pfs()",
+      "md5": "756e5d24883fa387054b4385a232cfcf",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_governance_audit()",
+      "md5": "434063ba6290a00f57291d4ef0f4d41e",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_notify_payment_terms_pending()",
+      "md5": "671f9cb3a245cfccc30a27c16172d802",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_partner_orders_credit_guard()",
+      "md5": "b24a3c30910832e8b14456d912a67589",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_partner_orders_require_items()",
+      "md5": "2b756289555b287255876e635a516c9a",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "tg_sync_b2b_financial_status()",
+      "md5": "e636fcf74c5e1c7c8037d5a17f525c27",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "trg_clientes_audit()",
+      "md5": "83d97f405d434f6ad48557ec91ae40c7",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "trg_partner_order_timeline()",
+      "md5": "833de323eb590a831924d5a5fcb490bd",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "trg_partner_order_to_planning_fn()",
+      "md5": "e5915037d03892fffc5d388595cba685",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "has_role(uuid,app_role)",
+      "md5": "4d90e93d521a4819d9085f28d742030f",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "s",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.has_role(uuid,app_role)",
+      "md5": "c5af5b55de6d79da9b73a33948746ae2",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "s",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.b2b_phase1_partner_visible(uuid,boolean)",
+      "md5": "915f516e605af7cc14584e2e762a2661",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "s",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "is_financial_staff(uuid)",
+      "md5": "6e8f2fa7b92ca7e039d092353b3ebfe2",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "s",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "platform_private.c2p1_settings_fence()",
+      "md5": "f87cc2894dc551d242c2586f17e2cdd4",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "recalc_partner_risk_score(uuid)",
+      "md5": "57a24738323c4a98d1cd141f47e559c4",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "fn_generate_receivable_installments()",
+      "md5": "f632f15c9f46cb9889082fc533a27ea1",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "platform_private.c2_external_final_state_guard()",
+      "md5": "3f1a5a6b11161bd8204293a8c64371e2",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "rpc_create_financial_title(text,jsonb)",
+      "md5": "0778b876b300e08d53f1cf7790394fc5",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "approve_b2b_credit(uuid,text)",
+      "md5": "8127c7b697871fa1eecafa845a551eea",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "platform_private.c2_accounting_pending_guard()",
+      "md5": "669b19490a7a9700f0158db4b31885ad",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "tg_refresh_engagement()",
+      "md5": "87b1de282cdc198d0898cdc5ca08a4c4",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "_saas_trg_require_feature()",
+      "md5": "13ed48832f81cbb35434688ca35fda4b",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "md5": "213ac31f3a30816ead75365b0d1fed18",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "s",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "fn_generate_recurring_title(uuid,date,boolean)",
+      "md5": "b189e44dac1a0429091ea053f032ffb0",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "fn_generate_receivable_from_entrega(uuid,jsonb)",
+      "md5": "670ea34d37c4c4fd6612031ad763a3a7",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "guard_commercial_partner_registration()",
+      "md5": "f60abac756fb4f371d6fccbb133dc2af",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "v",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.b2b_internal_order_snapshot_guard()",
+      "md5": "9cad2aaa995277b913f8b40816fea504",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "v",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "guard_tenant_organization_id()",
+      "md5": "d01a740c1e3e02407131d2b9228bf658",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "v",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "d51_5_validate_financial_tenant_links()",
+      "md5": "f470a25ba7e65b366c62ad3ac8aa3112",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "v",
+      "config": [
+        "search_path=public, pg_temp"
+      ]
+    },
+    {
+      "signature": "tg_pfs_updated_at()",
+      "md5": "69cdff0346e6cd2467b9dc2728a2951a",
+      "owner": "postgres",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "v",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "update_updated_at_column()",
+      "md5": "b1930ed5bca3be839f783c6202ab8147",
+      "owner": "postgres",
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "v",
+      "config": [
+        "search_path=public"
+      ]
+    },
+    {
+      "signature": "h15_actor_organization()",
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "s",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "rpc_update_partner_financial_settings(uuid,jsonb,jsonb)",
+      "md5": "8c2af03a346cc76ea5bb80f07d3b2a68",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "definer": false,
+      "volatility": "v",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.h15_actor_organization()",
+      "md5": "64e10608403238a41a9baf92857ca881",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "s",
+      "config": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "signature": "platform_private.b2b_commercial_context()",
+      "md5": "2f1063f00281c4ca78dcebaab81a9446",
+      "owner": "postgres",
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "definer": true,
+      "volatility": "s",
+      "config": [
+        "search_path=\"\""
+      ]
+    }
+  ],
+  "subsets": [
+    {
+      "id": "UI",
+      "status": "REVIEWABLE_NO_FINANCIAL_WRITE",
+      "files": [
+        "src/components/comercial/creditBlockReason.ts",
+        "src/components/comercial/ResponderCotacaoDialog.tsx"
+      ],
+      "requires": "focused Vitest, harness build/typecheck, production version, real read-only login"
+    },
+    {
+      "id": "01",
+      "status": "CANDIDATE_PENDING_LOCAL_TEST_AND_INDEPENDENT_REVIEW",
+      "changes": [
+        "private approval tickets",
+        "post-wait reauthorization",
+        "finite settings gate",
+        "expanded trigger columns"
+      ],
+      "preserves": [
+        "C2_ACCOUNTING_PENDING",
+        "B2B_INTERNAL_DOWNSTREAM_UNVERIFIED",
+        "ACL of existing functions",
+        "organizations policies"
+      ]
+    },
+    {
+      "id": "02-shared-receivable",
+      "status": "BLOCKED_TRANSITIVE_WRITERS",
+      "requires": "exact d51_5/origin/FK/ledger composition; common ordering across every writer/importer; no synthetic authority"
+    },
+    {
+      "id": "03-client-link",
+      "status": "BLOCKED_FULL_TRIGGER_COMPOSITION",
+      "requires": "real clientes audit/code/tenant triggers, partner audit, h15 readiness chain and existing receipt-name absence; no automatic real link execution"
+    },
+    {
+      "id": "04-Price",
+      "status": "BLOCKED_FISCAL_SETTINGS_PAYMENT_ORIGIN",
+      "requires": "official active boleto in production, complete settings/exposure, validated NF/accounting/origin; no stubs; no activation"
+    }
+  ],
+  "dynamic_dependencies": "pg_depend is not a complete PL/pgSQL call graph; captured lexical and dynamic closure must be independently proven before subsets 02–04",
+  "organizations": "UNTOUCHED; production has scoped SELECT + restrictive b2b containment, not homolog USING true",
+  "approval_baseline": "GUC is caller-settable in SQL; direct table RLS/ACL still applies, so this is not a claim of hosted exploit"
+}

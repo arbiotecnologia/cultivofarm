@@ -246,3 +246,11 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - 2026-10-29 rodada 1950: preflight por modo (DENY/BLOCKED/GO) e checklist corrigido; pré-requisitos PR1–PR5 não executados. BLOCKED/NO-GO.
 
 - 2026-10-29 rodada 1955: preflight vira validador estrito de evidência estruturada por escopo; 21/21 testes; nenhum GO sem evidência. BLOCKED/NO-GO.
+
+## Preparação incremental 29/10 20:15 — sem implantação
+
+Pacote `scripts/arbio-fsf-incremental-20261029/README.md`: captura LIVE somente SELECT canônico,49funções/45triggers/42policies/7relações/50constraints; adicional11funções/241colunas/10arestaspg_depend. Três hashes fornecidos conferem. Organizations produção scoped+restrictive preservada; achado USING true homolog não aplicado.
+
+Aprovação candidata substitui GUC por contexto privado txid/ator/pedido com reauth pós-lock, settings finitas e trigger ampliado.57PG PASS/0FAIL com corrida pg_blocking_pids+revogação; guarda contabilidade preservada e excesso configurado legítimo. SQL transacional com pins/ACL/policies/constraints/colunas, postflight e rollback deny-only preparado. Stack integral e ensaio completo preflight/instalador ainda pendentes: não há GOimplantação.
+
+Regressões338Price/shared,51link,37P0redgreen,8Vitest e23preflight PASS. Diagnóstico monetário antigo preservado em pasta nova80PASS/14FAIL/8BLOCKED/1NOT RUN: falhas P0 esperadas do experimento histórico, não ocultadas. Build automático OK; typecheck independente não executado/certificado nesta rodada. UI já apresenta labels, sem alteração/publicação agora. Shared integral/clientlinkstack/Price semstubs bloqueados. Fiscal/contabilidade/origemNF/settings/boleto produção pendentes. Login Renato/Fagner read-only preparado NOT RUN; JWT/RLS/E2E não certificados. Nenhum título/cliente/perfil/role criado ou hosted mutation/publicação/externos. Evidências `incremental-prep-2015/`. Autorização administrativa mudou, técnica não: inspeção independente do pacote exato antes de execução.

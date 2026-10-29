@@ -1,0 +1,13 @@
+$ vitest run src/test/comercial/creditBlockReason.test.ts src/test/comercial/responderCotacaoCreditReason.test.tsx src/test/financeiro/priceScheduleOffline.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/comercial/creditBlockReason.test.ts (4 tests) 6ms
+ ✓ src/test/financeiro/priceScheduleOffline.test.ts (1 test) 237ms
+ ✓ src/test/comercial/responderCotacaoCreditReason.test.tsx (3 tests) 427ms
+
+ Test Files  3 passed (3)
+      Tests  8 passed (8)
+   Start at  20:20:37
+   Duration  3.77s (transform 162ms, setup 553ms, collect 668ms, tests 670ms, environment 3.00s, prepare 1.78s)
+

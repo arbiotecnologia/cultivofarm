@@ -1,0 +1,12 @@
+-- Read-only: compare exact new body/ACL/DDL with the reviewed build; no business RPC calls.
+SELECT oid::regprocedure::text,md5(pg_get_functiondef(oid)),proacl,prosecdef,proconfig FROM pg_proc WHERE oid IN ('public.approve_b2b_credit(uuid,text)'::regprocedure,'public.fn_b2b_guard_credit_approval_fields()'::regprocedure,'public.tg_partner_orders_credit_guard()'::regprocedure,'platform_private.b2b_credit_config_block(uuid)'::regprocedure);
+SELECT pg_get_triggerdef(oid),tgenabled FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname IN ('trg_partner_orders_credit_guard','trg_b2b_guard_credit_approval_fields');
+SELECT count(*) AS tickets_must_be_zero FROM platform_private.credit_approval_tickets_20261029;
+SELECT policyname,permissive,qual,with_check FROM pg_policies WHERE schemaname='public' AND tablename='organizations';
+DO $post$ BEGIN
+IF md5(pg_get_functiondef('approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '70caeea8b5da11ceb1ffb736a0c6adad' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF md5(pg_get_functiondef('fn_b2b_guard_credit_approval_fields()'::regprocedure)) IS DISTINCT FROM '20f38cd2c742514d2df75c213a6b94f5' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF md5(pg_get_functiondef('platform_private.b2b_credit_config_block(uuid)'::regprocedure)) IS DISTINCT FROM '582b943911a63a3e3391770fea5f7fbb' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF md5(pg_get_functiondef('tg_partner_orders_credit_guard()'::regprocedure)) IS DISTINCT FROM 'e805449d2c5ab82d5c115655a514182c' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029) THEN RAISE EXCEPTION 'POST_TICKET_RESIDUE'; END IF;
+END $post$;
