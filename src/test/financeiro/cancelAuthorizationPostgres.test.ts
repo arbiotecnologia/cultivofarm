@@ -31,8 +31,8 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   expect(finding('projection exact AR owner FSF buyer').status).toBe('PASS');
   expect(finding('GREEN owner proceeds only to legitimate billing denial').actual).toBe("('P0001', 'billing_not_eligible:PAYMENT_TERMS_NOT_DEFINED')");
   expect(finding('credit zero not unlimited exposure reason').actual).toBe('LIMIT_EXCEEDED_BLOCK');
-  expect(finding('exposure exact exposicao_projetada').actual).toBe('13500');
-  expect(finding('exposure financed total minus payment').actual).toBe('9300');
+  expect(Number(finding('exposure exact exposicao_projetada').actual)).toBe(13500);
+  expect(Number(finding('exposure financed total minus payment').actual)).toBe(9300);
   expect(evidence.risk_composition.parties_credit.synthetic_ids.ar_bio_owner).not.toBe(evidence.risk_composition.parties_credit.synthetic_ids.fsf_buyer_tenant);
   for (const tenant of ['A', 'B']) {
     expect(finding(`deferred no settings method ticket ${tenant}`).actual).toBe('0|0');
