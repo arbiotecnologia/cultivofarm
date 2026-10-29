@@ -54,3 +54,5 @@ payable GREEN nonexistent uniform,True,True,GREEN_OFFLINE_ONLY,PASS
 payable GREEN own preserved,0,0,GREEN_OFFLINE_ONLY,PASS
 payable GREEN replay preserved,True,True,GREEN_OFFLINE_ONLY,PASS
 payable GREEN own payment branch preserved,True,True,GREEN_OFFLINE_ONLY,PASS
+B2B own positive cancellation,Legitimate complete chain,Fixture fails in exact risk trigger before RPC,INTEGRATION,BLOCKED
+JWT/RLS hosted A/B and lock wait revocation,Independent canonical proof,No production operations authorized/executed,HOSTED,NOT RUN
