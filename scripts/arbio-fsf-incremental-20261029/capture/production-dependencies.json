@@ -1,0 +1,2421 @@
+{
+  "columns": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": "gen_random_uuid()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "origin_type",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "origin_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "customer_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "description",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "category_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "cost_center_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "total_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "NO",
+      "precision": 14
+    },
+    {
+      "name": "issue_date",
+      "type": "date",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": "CURRENT_DATE",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "first_due_date",
+      "type": "date",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "installment_count",
+      "type": "int4",
+      "scale": 0,
+      "table": "accounts_receivable",
+      "default": "1",
+      "nullable": "NO",
+      "precision": 32
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": "'OPEN'::text",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "fiscal_invoice_required",
+      "type": "bool",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": "false",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "fiscal_invoice_status",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": "'NOT_REQUIRED'::text",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "payment_method_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "fiscal_invoice_number",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "fiscal_access_key",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "fiscal_issue_date",
+      "type": "date",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "recurring_template_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "reference_month",
+      "type": "date",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "auto_generated",
+      "type": "bool",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": "false",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "partner_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "external_payment_id",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "payment_gateway",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "pix_qr_code",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "pix_copia_cola",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "boleto_url",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "fiscal_requirement_source",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "fiscal_policy_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "fiscal_exemption_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable_installments",
+      "default": "gen_random_uuid()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "receivable_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable_installments",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "installment_number",
+      "type": "int4",
+      "scale": 0,
+      "table": "accounts_receivable_installments",
+      "default": null,
+      "nullable": "NO",
+      "precision": 32
+    },
+    {
+      "name": "due_date",
+      "type": "date",
+      "scale": null,
+      "table": "accounts_receivable_installments",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "original_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "accounts_receivable_installments",
+      "default": null,
+      "nullable": "NO",
+      "precision": 14
+    },
+    {
+      "name": "received_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "accounts_receivable_installments",
+      "default": "0",
+      "nullable": "NO",
+      "precision": 14
+    },
+    {
+      "name": "discount_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "accounts_receivable_installments",
+      "default": "0",
+      "nullable": "NO",
+      "precision": 14
+    },
+    {
+      "name": "interest_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "accounts_receivable_installments",
+      "default": "0",
+      "nullable": "NO",
+      "precision": 14
+    },
+    {
+      "name": "penalty_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "accounts_receivable_installments",
+      "default": "0",
+      "nullable": "NO",
+      "precision": 14
+    },
+    {
+      "name": "net_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "accounts_receivable_installments",
+      "default": null,
+      "nullable": "NO",
+      "precision": 14
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "scale": null,
+      "table": "accounts_receivable_installments",
+      "default": "'OPEN'::text",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "paid_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "accounts_receivable_installments",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "accounts_receivable_installments",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "accounts_receivable_installments",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "scale": null,
+      "table": "clientes",
+      "default": "gen_random_uuid()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "nome",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "cpf_cnpj",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "telefone",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "email",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "observacoes",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "clientes",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "clientes",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "tipo_pessoa",
+      "type": "cliente_tipo_pessoa",
+      "scale": null,
+      "table": "clientes",
+      "default": "'juridica'::cliente_tipo_pessoa",
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "razao_social",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "nome_fantasia",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "inscricao_estadual",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "inscricao_municipal",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "site",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "segmento",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_cep",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_logradouro",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_numero",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_complemento",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_bairro",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_municipio",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_estado",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_latitude",
+      "type": "numeric",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_longitude",
+      "type": "numeric",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cobranca_mesmo_endereco",
+      "type": "bool",
+      "scale": null,
+      "table": "clientes",
+      "default": "true",
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cobranca_cep",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cobranca_logradouro",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cobranca_numero",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cobranca_complemento",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cobranca_bairro",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cobranca_municipio",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cobranca_estado",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "contato_financeiro_nome",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "contato_financeiro_email",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "contato_financeiro_telefone",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "status_cliente",
+      "type": "cliente_status",
+      "scale": null,
+      "table": "clientes",
+      "default": "'ativo'::cliente_status",
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "tags",
+      "type": "_text",
+      "scale": null,
+      "table": "clientes",
+      "default": "'{}'::text[]",
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "limite_credito",
+      "type": "numeric",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "condicao_pagamento",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "banco_nome",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "banco_agencia",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "banco_conta",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "banco_tipo_conta",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "banco_pix_chave",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "banco_pix_tipo",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "telefones",
+      "type": "_text",
+      "scale": null,
+      "table": "clientes",
+      "default": "'{}'::text[]",
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "codigo_cliente",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "marca_nome",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "marca_logo_url",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "marca_cor_primaria",
+      "type": "text",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "organization_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "clientes",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": "gen_random_uuid()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "client_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "codigo",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "razao_social",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "nome_fantasia",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cnpj",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "desconto_padrao",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_accounts",
+      "default": "0",
+      "nullable": "NO",
+      "precision": 5
+    },
+    {
+      "name": "observacoes",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "ativo",
+      "type": "bool",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": "true",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "deleted_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "partner_type",
+      "type": "partner_type_enum",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "commercial_region",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "commercial_state",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "commercial_city",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "consultor_responsavel",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "origem_parceiro",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "inscricao_estadual",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "inscricao_municipal",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "regime_tributario",
+      "type": "partner_regime_tributario",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "suframa",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "segmento",
+      "type": "partner_segmento",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "porte",
+      "type": "partner_porte",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "data_inicio_parceria",
+      "type": "date",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cep",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_logradouro",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_numero",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_complemento",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "endereco_bairro",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "email_comercial",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "email_financeiro",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "email_nfe",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "telefone_comercial",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "whatsapp_comercial",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "site",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "limite_credito_brl",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": 14
+    },
+    {
+      "name": "prazo_pagamento_padrao_dias",
+      "type": "int4",
+      "scale": 0,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": 32
+    },
+    {
+      "name": "condicao_pagamento_padrao",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "forma_pagamento_preferida",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "dados_bancarios",
+      "type": "jsonb",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "comissao_percentual",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": 5
+    },
+    {
+      "name": "meta_mensal_brl",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": 14
+    },
+    {
+      "name": "endereco_entrega_igual_comercial",
+      "type": "bool",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": "true",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "entrega_cep",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "entrega_logradouro",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "entrega_numero",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "entrega_complemento",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "entrega_bairro",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "entrega_cidade",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "entrega_estado",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "transportadora_preferida",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "incoterm",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "marca_nome",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "marca_logo_url",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "marca_cor_primaria",
+      "type": "text",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "commercial_owner_organization_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_accounts",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": "gen_random_uuid()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "partner_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "billing_trigger",
+      "type": "text",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": "'na_entrega'::text",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "payment_terms_days",
+      "type": "int4",
+      "scale": 0,
+      "table": "partner_financial_settings",
+      "default": "7",
+      "nullable": "NO",
+      "precision": 32
+    },
+    {
+      "name": "default_payment_method",
+      "type": "text",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "credit_limit",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_financial_settings",
+      "default": null,
+      "nullable": "YES",
+      "precision": 14
+    },
+    {
+      "name": "block_if_overdue",
+      "type": "bool",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": "false",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "auto_generate_receivable",
+      "type": "bool",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": "true",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "active",
+      "type": "bool",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": "true",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "credit_limit_action",
+      "type": "text",
+      "scale": null,
+      "table": "partner_financial_settings",
+      "default": "'block'::text",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "overdue_tolerance_days",
+      "type": "int4",
+      "scale": 0,
+      "table": "partner_financial_settings",
+      "default": "0",
+      "nullable": "NO",
+      "precision": 32
+    },
+    {
+      "name": "credit_alert_threshold_1",
+      "type": "int4",
+      "scale": 0,
+      "table": "partner_financial_settings",
+      "default": "80",
+      "nullable": "NO",
+      "precision": 32
+    },
+    {
+      "name": "credit_alert_threshold_2",
+      "type": "int4",
+      "scale": 0,
+      "table": "partner_financial_settings",
+      "default": "90",
+      "nullable": "NO",
+      "precision": 32
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_order_audit_logs",
+      "default": "gen_random_uuid()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "order_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_order_audit_logs",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "partner_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_order_audit_logs",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "usuario_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_order_audit_logs",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "acao",
+      "type": "text",
+      "scale": null,
+      "table": "partner_order_audit_logs",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "dados_anteriores",
+      "type": "jsonb",
+      "scale": null,
+      "table": "partner_order_audit_logs",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "dados_novos",
+      "type": "jsonb",
+      "scale": null,
+      "table": "partner_order_audit_logs",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_order_audit_logs",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_order_financial_links",
+      "default": "gen_random_uuid()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "partner_order_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_order_financial_links",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "partner_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_order_financial_links",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "receivable_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_order_financial_links",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "financial_status",
+      "type": "text",
+      "scale": null,
+      "table": "partner_order_financial_links",
+      "default": "'gerado'::text",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "billing_trigger",
+      "type": "text",
+      "scale": null,
+      "table": "partner_order_financial_links",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_order_financial_links",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_order_financial_links",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_order_financial_links",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "gen_random_uuid()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "numero",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "('PB-'::text || lpad((nextval('partner_orders_numero_seq'::regclass))::text, 6, '0'::text))",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "partner_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "status",
+      "type": "partner_order_status",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "'pendente'::partner_order_status",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "subtotal",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_orders",
+      "default": "0",
+      "nullable": "NO",
+      "precision": 12
+    },
+    {
+      "name": "desconto_total",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_orders",
+      "default": "0",
+      "nullable": "NO",
+      "precision": 12
+    },
+    {
+      "name": "total",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_orders",
+      "default": "0",
+      "nullable": "NO",
+      "precision": 12
+    },
+    {
+      "name": "observacoes",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_by",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "now()",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "approved_by",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "approved_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "approval_notes",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "requested_delivery_date",
+      "type": "date",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "estimated_delivery_date",
+      "type": "date",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "commercial_notes",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "ready_for_production",
+      "type": "bool",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "false",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "future_financial_link",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "financial_status",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "'pendente'::text",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "receivable_generated",
+      "type": "bool",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "false",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "receivable_generated_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "receivable_generated_by",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "payment_due_date",
+      "type": "date",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "payment_method",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "credit_block_reason",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "credit_approved_by",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "credit_approved_at",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "credit_approval_notes",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "priority",
+      "type": "partner_order_priority",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "'normal'::partner_order_priority",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "itens_pendentes_motivo",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "itens_pendentes_solicitado_em",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "itens_pendentes_solicitado_por",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "itens_pendentes_resolvido_em",
+      "type": "timestamptz",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cultura",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "area_total_ha",
+      "type": "numeric",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "origin_simulation_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "cliente_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "payment_plan_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "payment_terms_id",
+      "type": "uuid",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "payment_condition_status",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "'pending'::text",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "table_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_orders",
+      "default": "0",
+      "nullable": "YES",
+      "precision": 14
+    },
+    {
+      "name": "commercial_discount_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_orders",
+      "default": "0",
+      "nullable": "YES",
+      "precision": 14
+    },
+    {
+      "name": "net_amount_after_discount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_orders",
+      "default": "0",
+      "nullable": "YES",
+      "precision": 14
+    },
+    {
+      "name": "financial_interest_amount",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_orders",
+      "default": "0",
+      "nullable": "YES",
+      "precision": 14
+    },
+    {
+      "name": "final_amount_with_interest",
+      "type": "numeric",
+      "scale": 2,
+      "table": "partner_orders",
+      "default": "0",
+      "nullable": "YES",
+      "precision": 14
+    },
+    {
+      "name": "requires_financial_approval",
+      "type": "bool",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "false",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "financial_approval_status",
+      "type": "text",
+      "scale": null,
+      "table": "partner_orders",
+      "default": "'not_required'::text",
+      "nullable": "NO",
+      "precision": null
+    },
+    {
+      "name": "internal_origin_snapshot",
+      "type": "jsonb",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "internal_economic_snapshot",
+      "type": "jsonb",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    },
+    {
+      "name": "c2_external_origin_snapshot",
+      "type": "jsonb",
+      "scale": null,
+      "table": "partner_orders",
+      "default": null,
+      "nullable": "YES",
+      "precision": null
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "756e5d24883fa387054b4385a232cfcf",
+      "body": "CREATE OR REPLACE FUNCTION public.tg_create_default_pfs()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  INSERT INTO public.partner_financial_settings(partner_id) VALUES (NEW.id)\n  ON CONFLICT (partner_id) DO NOTHING;\n  RETURN NEW;\nEND $function$\n",
+      "name": "tg_create_default_pfs",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "definer": true,
+      "signature": "tg_create_default_pfs()",
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "55edafec08bcc84a00f1526c14334a2c",
+      "body": "CREATE OR REPLACE FUNCTION public.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$ SELECT platform_private.h15_actor_organization(); $function$\n",
+      "name": "h15_actor_organization",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": false,
+      "signature": "h15_actor_organization()",
+      "volatility": "s"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "md5": "8c2af03a346cc76ea5bb80f07d3b2a68",
+      "body": "CREATE OR REPLACE FUNCTION public.rpc_update_partner_financial_settings(p_partner_id uuid, p_expected jsonb, p_values jsonb)\n RETURNS partner_financial_settings\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n SELECT platform_private.c2p1_update_settings(p_partner_id,p_expected,p_values);\n$function$\n",
+      "name": "rpc_update_partner_financial_settings",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": false,
+      "signature": "rpc_update_partner_financial_settings(uuid,jsonb,jsonb)",
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "md5": "670ea34d37c4c4fd6612031ad763a3a7",
+      "body": "CREATE OR REPLACE FUNCTION public.fn_generate_receivable_from_entrega(_entrega_id uuid, _payload jsonb)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_entrega public.entregas%ROWTYPE;\n  v_receivable_id uuid;\n  v_total numeric(14,2);\n  v_canon jsonb;\n  v_canon_valor numeric;\n  v_canon_origem text;\n  v_manual boolean;\n  v_manual_reason text;\n  v_count integer;\n  v_category uuid; v_cost_center uuid; v_payment_method uuid;\n  v_first_due date; v_issue date;\n  v_fiscal_required boolean; v_fiscal_status text;\n  v_installments jsonb; v_sum numeric(14,2) := 0; v_inst jsonb;\n  v_desc text; v_notes text; v_guard jsonb;\nBEGIN\n  IF v_uid IS NULL THEN\n    RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';\n  END IF;\n  IF NOT public.is_financial_staff(v_uid) THEN\n    RAISE EXCEPTION 'Sem permissão para faturar entregas.' USING ERRCODE='insufficient_privilege';\n  END IF;\n\n  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_faturar:' || _entrega_id::text, 0));\n\n  SELECT * INTO v_entrega FROM public.entregas WHERE id = _entrega_id FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada.'; END IF;\n\n  -- H6-003.5 replay estavel\n  IF v_entrega.receivable_id IS NOT NULL THEN\n    RETURN v_entrega.receivable_id;\n  END IF;\n\n  IF v_entrega.status = 'cancelada' THEN\n    RAISE EXCEPTION 'Entrega cancelada não pode ser faturada.' USING ERRCODE='check_violation';\n  END IF;\n  IF v_entrega.status <> 'entregue' THEN\n    RAISE EXCEPTION 'Entrega precisa estar com status \"entregue\" para faturar.' USING ERRCODE='check_violation';\n  END IF;\n  IF v_entrega.cliente_id IS NULL THEN\n    RAISE EXCEPTION 'Entrega sem cliente vinculado.' USING ERRCODE='check_violation';\n  END IF;\n  IF v_entrega.financial_status = 'NOT_BILLABLE' THEN\n    RAISE EXCEPTION 'Entrega marcada como não faturável.' USING ERRCODE='check_violation';\n  END IF;\n\n  v_total           := COALESCE((_payload->>'total_amount')::numeric, 0);\n  v_count           := COALESCE((_payload->>'installment_count')::integer, 1);\n  v_category        := NULLIF(_payload->>'category_id','')::uuid;\n  v_cost_center     := NULLIF(_payload->>'cost_center_id','')::uuid;\n  v_payment_method  := NULLIF(_payload->>'payment_method_id','')::uuid;\n  v_first_due       := COALESCE((_payload->>'first_due_date')::date, CURRENT_DATE);\n  v_issue           := COALESCE((_payload->>'issue_date')::date, CURRENT_DATE);\n  v_fiscal_required := COALESCE((_payload->>'fiscal_invoice_required')::boolean, false);\n  v_fiscal_status   := CASE WHEN v_fiscal_required THEN 'PENDING' ELSE 'NOT_REQUIRED' END;\n  v_installments    := _payload->'installments';\n  v_desc            := COALESCE(NULLIF(_payload->>'description',''), 'Entrega ' || substr(_entrega_id::text,1,8));\n  v_notes           := NULLIF(_payload->>'notes','');\n  v_manual          := COALESCE((_payload->>'manual_financial_adjustment')::boolean, false);\n  v_manual_reason   := NULLIF(trim(_payload->>'manual_adjustment_reason'), '');\n\n  IF v_category IS NULL THEN\n    RAISE EXCEPTION 'Categoria financeira é obrigatória.' USING ERRCODE='check_violation';\n  END IF;\n  IF NOT EXISTS (SELECT 1 FROM public.financial_categories WHERE id = v_category) THEN\n    RAISE EXCEPTION 'Categoria financeira não encontrada.' USING ERRCODE='check_violation';\n  END IF;\n  IF v_count < 1 OR v_count > 36 THEN\n    RAISE EXCEPTION 'Número de parcelas deve estar entre 1 e 36.' USING ERRCODE='check_violation';\n  END IF;\n\n  -- ------- H6-003: valor canonico server-side é a autoridade do total -------\n  v_canon := public.fn_entrega_valor_faturavel_v1(_entrega_id);\n  v_canon_origem := v_canon->>'origem';\n\n  -- reconciliacao parcial: usa exatamente o valor_faturavel_max persistido\n  SELECT r.valor_faturavel_max INTO v_canon_valor\n    FROM public.entrega_reconciliacoes r\n   WHERE r.entrega_id = _entrega_id AND r.status = 'reconciliada'\n   LIMIT 1;\n  IF v_canon_valor IS NULL THEN\n    v_canon_valor := (v_canon->>'valor')::numeric;\n  ELSE\n    v_canon_origem := 'RECONCILIACAO:' || COALESCE(v_canon_origem,'-');\n  END IF;\n\n  IF v_canon_valor IS NOT NULL THEN\n    IF abs(v_total - v_canon_valor) > 0.01 THEN\n      RAISE EXCEPTION 'valor_divergente_do_canonico: informado %, canônico % (origem %).',\n        v_total, v_canon_valor, v_canon_origem USING ERRCODE='check_violation';\n    END IF;\n    v_total := round(v_canon_valor, 2);\n  ELSE\n    -- sem fonte historica confiavel: exige ajuste financeiro manual justificado\n    IF NOT v_manual OR v_manual_reason IS NULL OR length(v_manual_reason) < 10 THEN\n      RAISE EXCEPTION 'valor_canonico_indisponivel: informe manual_financial_adjustment com motivo (mín. 10 caracteres).'\n        USING ERRCODE='check_violation';\n    END IF;\n  END IF;\n\n  IF v_total <= 0 THEN\n    RAISE EXCEPTION 'Valor total inválido.' USING ERRCODE='check_violation';\n  END IF;\n\n  -- GATE: reconciliação obrigatória quando há conferência por item\n  v_guard := public.fn_entrega_guard_faturamento_v1(_entrega_id, v_total);\n\n  IF v_installments IS NOT NULL AND jsonb_array_length(v_installments) > 0 THEN\n    IF jsonb_array_length(v_installments) <> v_count THEN\n      RAISE EXCEPTION 'Quantidade de parcelas (%) diverge de installment_count (%).',\n        jsonb_array_length(v_installments), v_count USING ERRCODE='check_violation';\n    END IF;\n    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP\n      v_sum := v_sum + COALESCE((v_inst->>'amount')::numeric, 0);\n    END LOOP;\n    IF abs(v_sum - v_total) > 0.01 THEN\n      RAISE EXCEPTION 'Soma das parcelas (%) difere do total (%).', v_sum, v_total USING ERRCODE='check_violation';\n    END IF;\n  END IF;\n\n  BEGIN\n    INSERT INTO public.accounts_receivable (\n      origin_type, origin_id, customer_id, description, category_id, cost_center_id,\n      total_amount, issue_date, first_due_date, installment_count,\n      payment_method_id, fiscal_invoice_required, fiscal_invoice_status,\n      notes, created_by\n    ) VALUES (\n      'DELIVERY', _entrega_id, v_entrega.cliente_id, v_desc, v_category, v_cost_center,\n      v_total, v_issue, v_first_due, v_count,\n      v_payment_method, v_fiscal_required, v_fiscal_status,\n      v_notes, v_uid\n    ) RETURNING id INTO v_receivable_id;\n  EXCEPTION WHEN unique_violation THEN\n    SELECT id INTO v_receivable_id FROM public.accounts_receivable\n     WHERE origin_type = 'DELIVERY' AND origin_id = _entrega_id AND status <> 'CANCELED';\n    IF v_receivable_id IS NOT NULL THEN RETURN v_receivable_id; END IF;\n    RAISE EXCEPTION 'Entrega já possui conta a receber ativa.' USING ERRCODE='check_violation';\n  END;\n\n  IF v_installments IS NOT NULL AND jsonb_array_length(v_installments) > 0 THEN\n    DELETE FROM public.accounts_receivable_installments WHERE receivable_id = v_receivable_id;\n    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP\n      INSERT INTO public.accounts_receivable_installments (\n        receivable_id, installment_number, due_date, original_amount, net_amount, status\n      ) VALUES (\n        v_receivable_id,\n        (v_inst->>'installment_number')::integer,\n        (v_inst->>'due_date')::date,\n        (v_inst->>'amount')::numeric,\n        (v_inst->>'amount')::numeric,\n        'OPEN'\n      );\n    END LOOP;\n  END IF;\n\n  UPDATE public.entregas\n     SET receivable_id = v_receivable_id,\n         financial_status = 'BILLED',\n         billing_generated_at = now(),\n         billing_generated_by = v_uid\n   WHERE id = _entrega_id;\n\n  INSERT INTO public.financial_audit_log (\n    entity_type, entity_id, action, old_data, new_data, performed_by\n  ) VALUES (\n    'entregas', _entrega_id, 'DELIVERY_BILLED',\n    jsonb_build_object('receivable_id', v_entrega.receivable_id,\n                       'financial_status', v_entrega.financial_status),\n    jsonb_build_object('receivable_id', v_receivable_id, 'total_amount', v_total,\n      'installment_count', v_count, 'fiscal_invoice_required', v_fiscal_required,\n      'payment_method_id', v_payment_method, 'origem', 'entrega',\n      'valor_canonico', v_canon_valor, 'valor_canonico_origem', v_canon_origem,\n      'manual_financial_adjustment', v_manual, 'manual_adjustment_reason', v_manual_reason,\n      'reconciliacao', v_guard),\n    v_uid\n  );\n\n  RETURN v_receivable_id;\nEND;\n$function$\n",
+      "name": "fn_generate_receivable_from_entrega",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "definer": true,
+      "signature": "fn_generate_receivable_from_entrega(uuid,jsonb)",
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "md5": "b189e44dac1a0429091ea053f032ffb0",
+      "body": "CREATE OR REPLACE FUNCTION public.fn_generate_recurring_title(_template_id uuid, _reference_date date, _is_manual boolean DEFAULT false)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  t public.recurring_financial_templates%ROWTYPE;\n  v_new_id UUID;\n  v_user UUID;\nBEGIN\n  -- H7O: sessão interna/cron (sem JWT) preservada; chamada autenticada exige staff financeiro.\n  IF auth.uid() IS NOT NULL AND NOT public.is_financial_staff(auth.uid()) THEN\n    RAISE EXCEPTION 'permission_denied' USING ERRCODE = '42501',\n      HINT = 'H7O: geração de título recorrente restrita ao staff financeiro.';\n  END IF;\n\n  SELECT * INTO t FROM public.recurring_financial_templates\n  WHERE id = _template_id AND organization_id IS NOT NULL\n    AND (auth.uid() IS NULL OR organization_id = platform_private.h15_actor_organization())\n  FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'Template não encontrado'; END IF;\n\n  IF NOT t.active THEN\n    INSERT INTO public.recurring_generation_log(template_id, reference_date, status, error_message, generated_by, generated_entity_type, amount)\n    VALUES (_template_id, _reference_date, 'SKIPPED', 'Template inativo', auth.uid(), t.type, t.amount);\n    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by, reason)\n    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_GENERATION_SKIPPED', jsonb_build_object('reference_date', _reference_date), auth.uid(), 'Template inativo');\n    RETURN NULL;\n  END IF;\n\n  IF t.end_date IS NOT NULL AND _reference_date > t.end_date THEN\n    INSERT INTO public.recurring_generation_log(template_id, reference_date, status, error_message, generated_by, generated_entity_type, amount)\n    VALUES (_template_id, _reference_date, 'SKIPPED', 'Após data final', auth.uid(), t.type, t.amount);\n    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by, reason)\n    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_GENERATION_SKIPPED', jsonb_build_object('reference_date', _reference_date), auth.uid(), 'Após data final');\n    RETURN NULL;\n  END IF;\n\n  IF EXISTS (SELECT 1 FROM public.recurring_generation_log WHERE template_id = _template_id AND reference_date = _reference_date AND status = 'SUCCESS') THEN\n    INSERT INTO public.recurring_generation_log(template_id, reference_date, status, error_message, generated_by, generated_entity_type, amount)\n    VALUES (_template_id, _reference_date, 'SKIPPED', 'Competência já gerada', auth.uid(), t.type, t.amount);\n    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by, reason)\n    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_GENERATION_SKIPPED', jsonb_build_object('reference_date', _reference_date), auth.uid(), 'Competência já gerada');\n    RETURN NULL;\n  END IF;\n\n  v_user := COALESCE(auth.uid(), t.created_by);\n\n  IF t.type = 'RECEIVABLE' THEN\n    INSERT INTO public.accounts_receivable(\n      organization_id, origin_type, customer_id, description, category_id, cost_center_id,\n      total_amount, issue_date, first_due_date, installment_count, status,\n      fiscal_invoice_required, fiscal_invoice_status, notes, created_by,\n      recurring_template_id, reference_month, auto_generated, payment_method_id\n    ) VALUES (\n      t.organization_id, 'RECURRING', t.customer_id, t.description, t.category_id, t.cost_center_id,\n      t.amount, CURRENT_DATE, _reference_date, 1, 'OPEN',\n      COALESCE(t.fiscal_invoice_required, false),\n      CASE WHEN COALESCE(t.fiscal_invoice_required, false) THEN 'PENDING' ELSE 'NOT_REQUIRED' END,\n      t.notes, v_user,\n      t.id, date_trunc('month', _reference_date)::DATE, NOT _is_manual, t.payment_method_id\n    ) RETURNING id INTO v_new_id;\n\n    INSERT INTO public.recurring_generation_log(template_id, generated_entity_type, generated_entity_id, reference_date, amount, status, generated_by)\n    VALUES (_template_id, 'RECEIVABLE', v_new_id, _reference_date, t.amount, 'SUCCESS', v_user);\n\n    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by)\n    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_RECEIVABLE_GENERATED',\n            jsonb_build_object('receivable_id', v_new_id, 'reference_date', _reference_date, 'amount', t.amount, 'manual', _is_manual),\n            v_user);\n  ELSE\n    INSERT INTO public.accounts_payable(\n      organization_id, origin_type, supplier_name, description, category_id, cost_center_id,\n      total_amount, issue_date, first_due_date, installment_count, status,\n      notes, created_by,\n      recurring_template_id, reference_month, auto_generated\n    ) VALUES (\n      t.organization_id, 'RECURRING', t.supplier_name, t.description, t.category_id, t.cost_center_id,\n      t.amount, CURRENT_DATE, _reference_date, 1, 'OPEN',\n      t.notes, v_user,\n      t.id, date_trunc('month', _reference_date)::DATE, NOT _is_manual\n    ) RETURNING id INTO v_new_id;\n\n    INSERT INTO public.recurring_generation_log(template_id, generated_entity_type, generated_entity_id, reference_date, amount, status, generated_by)\n    VALUES (_template_id, 'PAYABLE', v_new_id, _reference_date, t.amount, 'SUCCESS', v_user);\n\n    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by)\n    VALUES ('RECURRING_TEMPLATE', _template_id, 'RECURRING_PAYABLE_GENERATED',\n            jsonb_build_object('payable_id', v_new_id, 'reference_date', _reference_date, 'amount', t.amount, 'manual', _is_manual),\n            v_user);\n  END IF;\n\n  UPDATE public.recurring_financial_templates\n    SET next_generation_date = public.fn_calc_next_generation_date(t.recurrence_frequency, _reference_date, t.due_day),\n        updated_at = now()\n    WHERE id = _template_id;\n\n  UPDATE public.recurring_financial_templates\n    SET active = false\n    WHERE id = _template_id AND end_date IS NOT NULL AND next_generation_date > end_date;\n\n  RETURN v_new_id;\nEND $function$\n",
+      "name": "fn_generate_recurring_title",
+      "owner": "postgres",
+      "config": [
+        "search_path=public"
+      ],
+      "definer": true,
+      "signature": "fn_generate_recurring_title(uuid,date,boolean)",
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "f60abac756fb4f371d6fccbb133dc2af",
+      "body": "CREATE OR REPLACE FUNCTION public.guard_commercial_partner_registration()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid; v_owner uuid;\nBEGIN\n v_org := public.h15_actor_organization();\n IF auth.uid() IS NULL OR v_org IS NULL OR NOT (public.has_role(auth.uid(),'administrador'::public.app_role) OR public.has_role(auth.uid(),'gestor_comercial'::public.app_role)) THEN RAISE EXCEPTION 'cadastro_context_required' USING ERRCODE='42501'; END IF;\n IF TG_OP='INSERT' THEN\n  IF NEW.commercial_owner_organization_id IS NOT NULL AND NEW.commercial_owner_organization_id IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'cadastro_owner_denied' USING ERRCODE='42501'; END IF;\n  NEW.commercial_owner_organization_id:=v_org;\n  NEW.created_by:=auth.uid(); NEW.codigo:='PARC-'||NEW.id::text;\n ELSE\n  v_owner:=OLD.commercial_owner_organization_id;\n  IF v_owner IS NULL THEN SELECT c.organization_id INTO v_owner FROM public.clientes c WHERE c.id=OLD.client_id; END IF;\n  IF v_owner IS NULL OR v_owner IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'cadastro_owner_denied' USING ERRCODE='42501'; END IF;\n  IF NEW.commercial_owner_organization_id IS DISTINCT FROM OLD.commercial_owner_organization_id OR NEW.created_by IS DISTINCT FROM OLD.created_by OR NEW.id IS DISTINCT FROM OLD.id OR NEW.codigo IS DISTINCT FROM OLD.codigo THEN RAISE EXCEPTION 'cadastro_identity_immutable' USING ERRCODE='42501'; END IF;\n  -- Individual edit with proven OLD client ownership, never a bulk legacy backfill.\n  NEW.commercial_owner_organization_id:=v_owner;\n END IF;\n IF NEW.client_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.clientes c WHERE c.id=NEW.client_id AND c.organization_id=v_org) THEN RAISE EXCEPTION 'cadastro_client_scope_required' USING ERRCODE='42501'; END IF;\n IF NEW.consultor_responsavel IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.profiles p WHERE p.id=NEW.consultor_responsavel AND p.ativo IS TRUE AND p.organization_id=v_org) THEN RAISE EXCEPTION 'cadastro_consultant_scope_denied' USING ERRCODE='42501'; END IF;\n IF length(trim(coalesce(NEW.razao_social,'')))<2 OR length(NEW.razao_social)>200 THEN RAISE EXCEPTION 'cadastro_invalid_name' USING ERRCODE='22023'; END IF;\n IF NEW.desconto_padrao IS NULL OR NEW.desconto_padrao::text IN ('NaN','Infinity','-Infinity') OR NEW.desconto_padrao<0 OR NEW.desconto_padrao>100\n OR (NEW.comissao_percentual IS NOT NULL AND (NEW.comissao_percentual::text IN ('NaN','Infinity','-Infinity') OR NEW.comissao_percentual<0 OR NEW.comissao_percentual>100))\n OR (NEW.limite_credito_brl IS NOT NULL AND (NEW.limite_credito_brl::text IN ('NaN','Infinity','-Infinity') OR NEW.limite_credito_brl<0))\n OR (NEW.meta_mensal_brl IS NOT NULL AND (NEW.meta_mensal_brl::text IN ('NaN','Infinity','-Infinity') OR NEW.meta_mensal_brl<0)) OR NEW.prazo_pagamento_padrao_dias<0 THEN RAISE EXCEPTION 'cadastro_invalid_commercial_values' USING ERRCODE='22023'; END IF;\n RETURN NEW;\nEND $function$\n",
+      "name": "guard_commercial_partner_registration",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": false,
+      "signature": "guard_commercial_partner_registration()",
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "d01a740c1e3e02407131d2b9228bf658",
+      "body": "CREATE OR REPLACE FUNCTION public.guard_tenant_organization_id()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_org uuid;\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RETURN NEW;\n  END IF;\n  v_org := public.h15_actor_organization();\n  IF v_org IS NULL THEN\n    RAISE EXCEPTION 'tenant_context_required' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'INSERT' AND NEW.organization_id IS NULL THEN\n    NEW.organization_id := v_org;\n  END IF;\n  IF NEW.organization_id IS DISTINCT FROM v_org THEN\n    RAISE EXCEPTION 'tenant_scope_violation' USING ERRCODE = '42501';\n  END IF;\n  IF TG_OP = 'UPDATE' AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN\n    RAISE EXCEPTION 'tenant_immutable' USING ERRCODE = '42501';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
+      "name": "guard_tenant_organization_id",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": false,
+      "signature": "guard_tenant_organization_id()",
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "69cdff0346e6cd2467b9dc2728a2951a",
+      "body": "CREATE OR REPLACE FUNCTION public.tg_pfs_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nBEGIN NEW.updated_at=GREATEST(clock_timestamp(),OLD.updated_at+interval '1 microsecond'); RETURN NEW; END $function$\n",
+      "name": "tg_pfs_updated_at",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": false,
+      "signature": "tg_pfs_updated_at()",
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "64e10608403238a41a9baf92857ca881",
+      "body": "CREATE OR REPLACE FUNCTION platform_private.h15_actor_organization()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n SELECT p.organization_id FROM public.profiles p JOIN public.organizations o ON o.id=p.organization_id AND o.ativo IS TRUE WHERE p.user_id=auth.uid() AND p.ativo IS TRUE AND platform_private.platform_actor_access_ready(p.user_id);\n$function$\n",
+      "name": "h15_actor_organization",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": true,
+      "signature": "platform_private.h15_actor_organization()",
+      "volatility": "s"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "9cad2aaa995277b913f8b40816fea504",
+      "body": "CREATE OR REPLACE FUNCTION platform_private.b2b_internal_order_snapshot_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE org uuid; uid uuid:=auth.uid(); cs public.company_fiscal_settings; candidate_count integer; economic jsonb; terms public.partner_order_payment_terms; items jsonb; schedule jsonb;\nBEGIN\n\n -- Explicit external proof; NULL internal origin alone never authorizes a legacy order.\n IF TG_OP='INSERT' AND platform_private.has_ticket('c2_external_order_create',NEW.partner_id) THEN\n  IF NEW.c2_external_origin_snapshot IS NOT NULL OR NEW.internal_origin_snapshot IS NOT NULL OR NEW.internal_economic_snapshot IS NOT NULL\n  THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_SERVER_ONLY' USING ERRCODE='42501'; END IF;\n  IF NOT platform_private.c2_owner_order_create_allowed(uid,NEW.partner_id) OR NEW.created_by IS DISTINCT FROM uid\n  THEN RAISE EXCEPTION 'C2_EXTERNAL_CREATE_DENIED' USING ERRCODE='42501'; END IF;\n  SELECT p.commercial_owner_organization_id,p.client_id INTO org,NEW.cliente_id FROM public.partner_accounts p WHERE p.id=NEW.partner_id FOR SHARE;\n  SELECT count(*) INTO candidate_count FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active;\n  IF candidate_count>1 THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_AMBIGUOUS' USING ERRCODE='42501'; END IF;\n  IF candidate_count=1 THEN SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active FOR SHARE; END IF;\n  IF candidate_count=1 AND cs.configuration_status='VALIDATED' AND cs.accounting_validated_at IS NOT NULL AND nullif(btrim(cs.legal_name),'') IS NOT NULL AND nullif(btrim(cs.cnpj),'') IS NOT NULL THEN\n    NEW.c2_external_origin_snapshot:=jsonb_build_object('contract','C2_EXTERNAL_ORDER_ORIGIN_V1','schema_version','1','organization_id',org,'creditor_organization_id',org,'issuer_organization_id',org,'company_settings_id',cs.id,'company_configuration_version',cs.configuration_version,'issuer_legal_name',cs.legal_name,'issuer_cnpj',cs.cnpj,'actor_user_id',uid,'partner_id',NEW.partner_id);\n  ELSE\n   -- C2_ACCOUNTING_PENDING_V1: honest non-fiscal request; no issuer identity/attestation is copied or invented.\n   NEW.c2_external_origin_snapshot:=jsonb_build_object('contract','C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1','schema_version','1','organization_id',org,'creditor_organization_id',org,'actor_user_id',uid,'partner_id',NEW.partner_id,'issuer_state',CASE WHEN candidate_count=0 THEN 'NOT_CONFIGURED' ELSE coalesce(cs.configuration_status,'UNKNOWN') END,'company_settings_id',cs.id,'accounting_validated',false);\n  END IF;\n  PERFORM platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);\n  IF NEW.ready_for_production OR NEW.status NOT IN ('em_analise_comercial','aguardando_cotacao','aguardando_aprovacao_credito') THEN RAISE EXCEPTION 'C2_EXTERNAL_INITIAL_STATE_DENIED' USING ERRCODE='42501'; END IF;\n  RETURN NEW;\n END IF;\n IF TG_OP='INSERT' AND NEW.c2_external_origin_snapshot IS NOT NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_SERVER_ONLY' USING ERRCODE='42501'; END IF;\n IF TG_OP='UPDATE' AND (OLD.c2_external_origin_snapshot IS NOT NULL OR NEW.c2_external_origin_snapshot IS NOT NULL) THEN\n  IF (NEW.c2_external_origin_snapshot IS DISTINCT FROM OLD.c2_external_origin_snapshot AND NOT platform_private.c2_accounting_promotion_ok(OLD.c2_external_origin_snapshot,NEW.c2_external_origin_snapshot,NEW.id)) OR NEW.internal_origin_snapshot IS DISTINCT FROM OLD.internal_origin_snapshot OR NEW.internal_economic_snapshot IS DISTINCT FROM OLD.internal_economic_snapshot\n  THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_IMMUTABLE' USING ERRCODE='42501'; END IF;\n  PERFORM platform_private.c2_external_origin_assert(OLD.c2_external_origin_snapshot,OLD.partner_id,OLD.cliente_id);\n  PERFORM platform_private.c2_external_origin_assert(NEW.c2_external_origin_snapshot,NEW.partner_id,NEW.cliente_id);\n  IF NEW.partner_id IS DISTINCT FROM OLD.partner_id OR NEW.cliente_id IS DISTINCT FROM OLD.cliente_id OR NEW.created_by IS DISTINCT FROM OLD.created_by THEN RAISE EXCEPTION 'B2B_INTERNAL_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;\n  IF NEW.ready_for_production OR public.fn_b2b_status_is_operational(NEW.status) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF;\n  IF NEW.status IS DISTINCT FROM OLD.status AND OLD.status IN ('cancelado','reprovado') THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMINAL_STATUS' USING ERRCODE='42501'; END IF;\n  IF OLD.internal_economic_snapshot IS NOT NULL AND (to_jsonb(NEW)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes','payment_due_date','payment_method']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes','payment_due_date','payment_method']) THEN RAISE EXCEPTION 'B2B_INTERNAL_ECONOMICS_IMMUTABLE' USING ERRCODE='42501'; END IF;\n IF NEW.status='aprovado' AND OLD.status IS DISTINCT FROM NEW.status THEN\n  IF NOT (public.has_role(uid,'administrador'::public.app_role) OR public.has_role(uid,'gestor_comercial'::public.app_role)) OR OLD.status NOT IN ('em_analise_comercial','solicitado','rascunho') OR NEW.payment_condition_status IS DISTINCT FROM 'defined' THEN RAISE EXCEPTION 'B2B_INTERNAL_APPROVAL_DENIED' USING ERRCODE='42501'; END IF;\n  SELECT * INTO terms FROM public.partner_order_payment_terms t WHERE t.id=NEW.payment_terms_id AND t.partner_order_id=NEW.id FOR SHARE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMS_REQUIRED' USING ERRCODE='42501'; END IF;\n  IF NEW.total IS NULL OR NEW.total::text IN ('NaN','Infinity','-Infinity') OR NEW.total<0 OR terms.final_amount IS DISTINCT FROM NEW.total OR NEW.desconto_total<0 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;\n  IF NOT EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id) OR EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.quantidade IS NULL OR i.quantidade<=0 OR i.quantidade::text IN ('NaN','Infinity','-Infinity') OR i.preco_unitario IS NULL OR i.preco_unitario<0 OR i.preco_unitario::text IN ('NaN','Infinity','-Infinity') OR i.desconto_percentual IS NULL OR i.desconto_percentual<0 OR i.desconto_percentual>100 OR i.desconto_percentual::text IN ('NaN','Infinity','-Infinity'))) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;\n  SELECT jsonb_agg(to_jsonb(i)-ARRAY['created_at'] ORDER BY i.id) INTO items FROM public.partner_order_items i WHERE i.order_id=NEW.id;\n  SELECT jsonb_agg(to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number,s.id) INTO schedule FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND s.payment_terms_id=terms.id;\n  IF schedule IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_REQUIRED' USING ERRCODE='22023'; END IF;\n IF NEW.subtotal IS NULL OR NEW.desconto_total IS NULL OR NEW.subtotal::text IN ('NaN','Infinity','-Infinity') OR NEW.desconto_total::text IN ('NaN','Infinity','-Infinity') OR NEW.subtotal<0 OR NEW.desconto_total<0 OR NEW.desconto_total>NEW.subtotal OR terms.discount_percent_snapshot IS NULL OR terms.discount_percent_snapshot::text IN ('NaN','Infinity','-Infinity') OR terms.discount_percent_snapshot<0 OR terms.discount_percent_snapshot>100 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;\n IF EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.subtotal IS NULL OR i.subtotal<0 OR i.subtotal::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT round(sum(i.subtotal),2) FROM public.partner_order_items i WHERE i.order_id=NEW.id) IS DISTINCT FROM round(terms.net_amount_after_discount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;\n IF EXISTS(SELECT 1 FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND (s.payment_terms_id IS DISTINCT FROM terms.id OR s.installment_number<=0 OR s.due_date IS NULL OR s.amount IS NULL OR s.principal_amount IS NULL OR s.interest_amount IS NULL OR s.amount<0 OR s.principal_amount<0 OR s.interest_amount<0 OR s.amount::text IN ('NaN','Infinity','-Infinity') OR s.principal_amount::text IN ('NaN','Infinity','-Infinity') OR s.interest_amount::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT count(*) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT count(DISTINCT s.installment_number) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT round(sum(s.amount),2) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM round(terms.final_amount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_INVALID' USING ERRCODE='22023'; END IF;\n  economic:=jsonb_build_object('schema_version','1','origin',OLD.c2_external_origin_snapshot,'items',items,'terms',to_jsonb(terms)-ARRAY['updated_at','approval_status','approved_by','approved_at','approval_notes'],'schedule',schedule,'subtotal',NEW.subtotal,'discount',NEW.desconto_total,'total',NEW.total,'sealed_by',uid);\n  NEW.internal_economic_snapshot:=economic;\n\n END IF;\n RETURN NEW;\n END IF;\n IF TG_OP='INSERT' THEN\n  IF uid IS NULL THEN RAISE EXCEPTION 'auth_required' USING ERRCODE='42501'; END IF;\n  org:=public.h15_actor_organization();\n  IF org IS NULL OR NOT public.fn_cc_can_prepare(uid) OR NOT public._saas_user_has_feature(uid,'pedidos_b2b') THEN RAISE EXCEPTION 'B2B_INTERNAL_ACTOR_DENIED' USING ERRCODE='42501'; END IF;\n  -- No client/CNPJ/organizations.partner_account_id inference. All caller snapshots rejected.\n  IF NEW.internal_origin_snapshot IS NOT NULL OR NEW.internal_economic_snapshot IS NOT NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_SERVER_ONLY' USING ERRCODE='42501'; END IF;\n  SELECT count(*) INTO candidate_count FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE;\n  IF candidate_count<>1 THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_AMBIGUOUS' USING ERRCODE='42501'; END IF;\n  SELECT * INTO cs FROM public.company_fiscal_settings c WHERE c.organization_id=org AND c.is_active IS TRUE FOR SHARE;\n  IF cs.configuration_status IS DISTINCT FROM 'VALIDATED' OR cs.accounting_validated_at IS NULL OR nullif(btrim(cs.legal_name),'') IS NULL OR nullif(btrim(cs.cnpj),'') IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_ISSUER_NOT_VALIDATED' USING ERRCODE='42501'; END IF;\n  NEW.internal_origin_snapshot:=jsonb_build_object('schema_version','1','organization_id',org,'creditor_organization_id',org,'issuer_organization_id',org,'company_settings_id',cs.id,'company_configuration_version',cs.configuration_version,'issuer_legal_name',cs.legal_name,'issuer_cnpj',cs.cnpj,'actor_user_id',uid,'partner_id',NEW.partner_id);\n  PERFORM platform_private.b2b_internal_assert_origin(NEW.internal_origin_snapshot,NEW.partner_id,NEW.cliente_id);\n  IF NEW.ready_for_production IS TRUE THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF; IF NEW.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') THEN RAISE EXCEPTION 'B2B_INTERNAL_INITIAL_STATUS_DENIED' USING ERRCODE='42501'; END IF;\n  RETURN NEW;\n END IF;\n IF NEW.internal_origin_snapshot IS DISTINCT FROM OLD.internal_origin_snapshot OR NEW.internal_economic_snapshot IS DISTINCT FROM OLD.internal_economic_snapshot THEN RAISE EXCEPTION 'B2B_INTERNAL_SNAPSHOT_IMMUTABLE' USING ERRCODE='42501'; END IF;\n IF OLD.internal_origin_snapshot IS NULL THEN\n  IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status IN ('aprovado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') THEN RAISE EXCEPTION 'B2B_INTERNAL_LEGACY_ORIGIN_UNPROVEN' USING ERRCODE='42501'; END IF;\n  RETURN NEW;\n END IF;\n PERFORM platform_private.b2b_internal_assert_origin(OLD.internal_origin_snapshot,OLD.partner_id,OLD.cliente_id);\n IF NEW.partner_id IS DISTINCT FROM OLD.partner_id OR NEW.cliente_id IS DISTINCT FROM OLD.cliente_id OR NEW.created_by IS DISTINCT FROM OLD.created_by THEN RAISE EXCEPTION 'B2B_INTERNAL_IDENTITY_IMMUTABLE' USING ERRCODE='42501'; END IF;\n IF OLD.internal_economic_snapshot IS NOT NULL AND (to_jsonb(NEW)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','ready_for_production','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','updated_at','approval_notes','estimated_delivery_date','ready_for_production','financial_status','receivable_generated','receivable_generated_at','receivable_generated_by','future_financial_link','commercial_notes']) THEN RAISE EXCEPTION 'B2B_INTERNAL_ECONOMICS_IMMUTABLE' USING ERRCODE='42501'; END IF;\n IF NEW.status IS DISTINCT FROM OLD.status AND OLD.status IN ('cancelado','reprovado') THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMINAL_STATUS' USING ERRCODE='42501'; END IF;\n IF NEW.ready_for_production IS TRUE THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF; IF public.fn_b2b_status_is_operational(NEW.status) THEN RAISE EXCEPTION 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED' USING ERRCODE='42501'; END IF; IF NEW.ready_for_production IS TRUE AND NEW.status<>'aprovado' THEN RAISE EXCEPTION 'B2B_INTERNAL_UNSEALED_OPERATION' USING ERRCODE='42501'; END IF; IF NEW.status='aprovado' AND OLD.status IS DISTINCT FROM NEW.status THEN\n  IF NOT (public.has_role(uid,'administrador'::public.app_role) OR public.has_role(uid,'gestor_comercial'::public.app_role)) OR OLD.status NOT IN ('em_analise_comercial','solicitado','rascunho') OR NEW.payment_condition_status IS DISTINCT FROM 'defined' THEN RAISE EXCEPTION 'B2B_INTERNAL_APPROVAL_DENIED' USING ERRCODE='42501'; END IF;\n  SELECT * INTO terms FROM public.partner_order_payment_terms t WHERE t.id=NEW.payment_terms_id AND t.partner_order_id=NEW.id FOR SHARE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'B2B_INTERNAL_TERMS_REQUIRED' USING ERRCODE='42501'; END IF;\n  IF NEW.total IS NULL OR NEW.total::text IN ('NaN','Infinity','-Infinity') OR NEW.total<0 OR terms.final_amount IS DISTINCT FROM NEW.total OR NEW.desconto_total<0 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;\n  IF NOT EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id) OR EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.quantidade IS NULL OR i.quantidade<=0 OR i.quantidade::text IN ('NaN','Infinity','-Infinity') OR i.preco_unitario IS NULL OR i.preco_unitario<0 OR i.preco_unitario::text IN ('NaN','Infinity','-Infinity') OR i.desconto_percentual IS NULL OR i.desconto_percentual<0 OR i.desconto_percentual>100 OR i.desconto_percentual::text IN ('NaN','Infinity','-Infinity'))) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;\n  SELECT jsonb_agg(to_jsonb(i)-ARRAY['created_at'] ORDER BY i.id) INTO items FROM public.partner_order_items i WHERE i.order_id=NEW.id;\n  SELECT jsonb_agg(to_jsonb(s)-ARRAY['created_at','status','receivable_installment_id'] ORDER BY s.installment_number,s.id) INTO schedule FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND s.payment_terms_id=terms.id;\n  IF schedule IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_REQUIRED' USING ERRCODE='22023'; END IF;\n IF NEW.subtotal IS NULL OR NEW.desconto_total IS NULL OR NEW.subtotal::text IN ('NaN','Infinity','-Infinity') OR NEW.desconto_total::text IN ('NaN','Infinity','-Infinity') OR NEW.subtotal<0 OR NEW.desconto_total<0 OR NEW.desconto_total>NEW.subtotal OR terms.discount_percent_snapshot IS NULL OR terms.discount_percent_snapshot::text IN ('NaN','Infinity','-Infinity') OR terms.discount_percent_snapshot<0 OR terms.discount_percent_snapshot>100 THEN RAISE EXCEPTION 'B2B_INTERNAL_TOTAL_INVALID' USING ERRCODE='22023'; END IF;\n IF EXISTS(SELECT 1 FROM public.partner_order_items i WHERE i.order_id=NEW.id AND (i.subtotal IS NULL OR i.subtotal<0 OR i.subtotal::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT round(sum(i.subtotal),2) FROM public.partner_order_items i WHERE i.order_id=NEW.id) IS DISTINCT FROM round(terms.net_amount_after_discount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_ITEM_INVALID' USING ERRCODE='22023'; END IF;\n IF EXISTS(SELECT 1 FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id AND (s.payment_terms_id IS DISTINCT FROM terms.id OR s.installment_number<=0 OR s.due_date IS NULL OR s.amount IS NULL OR s.principal_amount IS NULL OR s.interest_amount IS NULL OR s.amount<0 OR s.principal_amount<0 OR s.interest_amount<0 OR s.amount::text IN ('NaN','Infinity','-Infinity') OR s.principal_amount::text IN ('NaN','Infinity','-Infinity') OR s.interest_amount::text IN ('NaN','Infinity','-Infinity'))) OR (SELECT count(*) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT count(DISTINCT s.installment_number) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM terms.installment_count::bigint OR (SELECT round(sum(s.amount),2) FROM public.partner_order_payment_schedule s WHERE s.partner_order_id=NEW.id) IS DISTINCT FROM round(terms.final_amount,2) THEN RAISE EXCEPTION 'B2B_INTERNAL_SCHEDULE_INVALID' USING ERRCODE='22023'; END IF;\n  economic:=jsonb_build_object('schema_version','1','origin',OLD.internal_origin_snapshot,'items',items,'terms',to_jsonb(terms)-ARRAY['updated_at','approval_status','approved_by','approved_at','approval_notes'],'schedule',schedule,'subtotal',NEW.subtotal,'discount',NEW.desconto_total,'total',NEW.total,'sealed_by',uid);\n  NEW.internal_economic_snapshot:=economic;\n ELSIF NEW.status IS DISTINCT FROM OLD.status AND public.fn_b2b_status_is_operational(NEW.status) AND OLD.internal_economic_snapshot IS NULL THEN RAISE EXCEPTION 'B2B_INTERNAL_UNSEALED_OPERATION' USING ERRCODE='42501';\n END IF;\n RETURN NEW;\nEND $function$\n",
+      "name": "b2b_internal_order_snapshot_guard",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": true,
+      "signature": "platform_private.b2b_internal_order_snapshot_guard()",
+      "volatility": "v"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "md5": "2f1063f00281c4ca78dcebaab81a9446",
+      "body": "CREATE OR REPLACE FUNCTION platform_private.b2b_commercial_context()\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE u uuid:=auth.uid(); org uuid; pid uuid; rs text[]; result jsonb; BEGIN\n org:=public.h15_actor_organization();\n SELECT partner_id INTO pid FROM public.partner_users WHERE user_id=u;\n IF NOT public.is_valid_b2b_partner_user(u,pid) THEN RETURN NULL; END IF;\n SELECT array_agg(role::text ORDER BY role::text) INTO rs FROM public.user_roles WHERE user_id=u;\n result:=jsonb_build_object('contract','C2_MULTIPROFILE_V1','actor_id',u,'tenant_id',org,\n 'organization_id',org,'partner_id',pid,'commercial_owner_organization_id',org,'external_roles',rs,\n 'role',CASE WHEN 'parceiro_b2b'=ANY(rs) THEN 'parceiro_b2b' ELSE 'parceiro_b2b_tecnico' END,\n 'papel',CASE WHEN 'parceiro_b2b'=ANY(rs) THEN 'gestor' ELSE 'tecnico' END,'mode','commercial_owner',\n 'manager', 'parceiro_b2b'=ANY(rs),'technician','parceiro_b2b_tecnico'=ANY(rs),\n 'producer_links_valid',platform_private.c2_producer_links(u,org),\n 'profile_stamp',(SELECT updated_at FROM public.profiles WHERE user_id=u),\n 'link_version',(SELECT version FROM public.partner_users WHERE user_id=u));\n RETURN result;\nEND $function$\n",
+      "name": "b2b_commercial_context",
+      "owner": "postgres",
+      "config": [
+        "search_path=\"\""
+      ],
+      "definer": true,
+      "signature": "platform_private.b2b_commercial_context()",
+      "volatility": "s"
+    }
+  ],
+  "dependencies": [
+    {
+      "type": "n",
+      "function": "approve_b2b_credit(uuid,text)",
+      "referenced_id": "13619",
+      "referenced_class": "pg_language"
+    },
+    {
+      "type": "n",
+      "function": "approve_b2b_credit(uuid,text)",
+      "referenced_id": "2200",
+      "referenced_class": "pg_namespace"
+    },
+    {
+      "type": "n",
+      "function": "fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "referenced_id": "13619",
+      "referenced_class": "pg_language"
+    },
+    {
+      "type": "n",
+      "function": "fn_b2b_credit_exposure(uuid,numeric,uuid)",
+      "referenced_id": "2200",
+      "referenced_class": "pg_namespace"
+    },
+    {
+      "type": "n",
+      "function": "fn_b2b_guard_credit_approval_fields()",
+      "referenced_id": "13619",
+      "referenced_class": "pg_language"
+    },
+    {
+      "type": "n",
+      "function": "fn_b2b_guard_credit_approval_fields()",
+      "referenced_id": "2200",
+      "referenced_class": "pg_namespace"
+    },
+    {
+      "type": "n",
+      "function": "rpc_create_financial_title(text,jsonb)",
+      "referenced_id": "13619",
+      "referenced_class": "pg_language"
+    },
+    {
+      "type": "n",
+      "function": "rpc_create_financial_title(text,jsonb)",
+      "referenced_id": "2200",
+      "referenced_class": "pg_namespace"
+    },
+    {
+      "type": "n",
+      "function": "tg_partner_orders_credit_guard()",
+      "referenced_id": "13619",
+      "referenced_class": "pg_language"
+    },
+    {
+      "type": "n",
+      "function": "tg_partner_orders_credit_guard()",
+      "referenced_id": "2200",
+      "referenced_class": "pg_namespace"
+    }
+  ]
+}
