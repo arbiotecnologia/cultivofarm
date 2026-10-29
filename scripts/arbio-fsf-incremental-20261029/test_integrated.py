@@ -108,7 +108,7 @@ def race(kind, oid, revoke_sql, label):
             blocked = True; break
         time.sleep(0.1)
     check(f'{label}: approval waits on {kind} lock (pg_blocking_pids)', True, blocked)
-    pg.sql(revoke_sql)
+    revoke_sql() if callable(revoke_sql) else pg.sql(revoke_sql)
     holder.stdin.write('COMMIT;\n\\q\n'); holder.stdin.flush(); holder.wait(timeout=15)
     th.join(timeout=20)
     r = box.get('r')
@@ -212,13 +212,12 @@ def main():
     # ---------- revocation races (real locks, real authority reread) ----------
     O4 = 'd0000000-0000-4000-8000-000000000004'; order(O4)
     race('row', O4, f"DELETE FROM public.user_roles WHERE user_id='{U_ADM}' AND role='administrador';", 'role revoked during row lock')
-    pg.sql(f"SET session_replication_role=replica; INSERT INTO public.user_roles(user_id,role) SELECT user_id,'administrador' FROM public.user_roles WHERE false;")
     fill('user_roles', {'user_id': U_ADM, 'role': 'administrador'})
     O5 = 'd0000000-0000-4000-8000-000000000005'; order(O5)
     race('advisory', O5, f"UPDATE public.profiles SET ativo=false WHERE user_id='{U_ADM}';", 'profile deactivated during advisory lock')
     pg.sql(f"SET session_replication_role=replica; UPDATE public.profiles SET ativo=true WHERE user_id='{U_ADM}';")
     O6 = 'd0000000-0000-4000-8000-000000000006'; order(O6)
-    race('advisory', O6, f"SET session_replication_role=replica; INSERT INTO public.partner_users(user_id,partner_id,tenant_id) VALUES ('{U_ADM}','{PART}','{ORG_A}');", 'external partner link added during advisory lock')
+    race('advisory', O6, lambda: fill('partner_users', {'user_id': U_ADM, 'partner_id': PART, 'tenant_id': ORG_A}), 'external partner link added during advisory lock')
     check('race paths left zero tickets', '0', pg.sql('SELECT count(*) FROM platform_private.credit_approval_tickets_20261029'))
     check('race paths created no titles/dispatch', before, counters())
 
