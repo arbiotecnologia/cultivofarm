@@ -1,14 +1,23 @@
-# Roteiro E2E com usuários reais AR Bio / FSF (preparação — NÃO executado)
+# Roteiro E2E AR Bio / FSF (preparação — NÃO executado)
 
-Pré-requisitos (bloqueantes): `preflight.sh` = PASS; itens MANUAL confirmados; os responsáveis entram com as PRÓPRIAS contas, em navegadores/perfis separados (A = AR Bio, F = FSF Agro). Não coletar senha, token, cookie ou JWT; não criar contas nem conceder acessos.
-Produção: somente leitura. Massa sintética: só em ambiente isolado/homologação com envios externos desligados.
-Proibido: emitir título real, boleto, NF, e-mail/WhatsApp; simular JWT como prova; contornar o bloqueio fiscal/contábil.
+## Modos (nunca misturar)
+- **PROD_READONLY** — ref `swzpzcwiasxmjutrmvkm`, apenas leitura/navegação; sem criar, aprovar ou alterar nada.
+- **HOMOLOG_ISOLATED** — ref `vrlcdwmlytukrjezrrnf` (ou outro aprovado por evidência); rejeita produção; fixtures sintéticas marcadas e saídas externas OFF.
+Cada modo roda `preflight.sh` com suas variáveis. `RESULT GO` (exit 0) é o único que libera; `BLOCKED` (2) = falta evidência; `DENY` (1) = alvo errado/desconhecido. A versão alvo é a publicada/preview comprovada por evidência — nunca o HEAD local; este roteiro não orienta publicar nem republicar produção.
 
-## Parte 1 — E2E até o bloqueio fiscal (validável)
-Ver `checklist.json` (IDs S*, A*, F*, X*, B*). Cada item: resultado esperado, evidência sanitizada (print sem dados pessoais/CNPJ; IDs como hash sha256 curto), PASS/FAIL/BLOCKED.
+## Estado conhecido (leitura confirmada pelo proprietário)
+- Produção: Renato Cunha = administrador ativo da organização AR Bio; Fagner Furtado = administrador ativo da organização FSF Agro; parceiro FSF tem **0 partner_users** (ninguém tem portal de parceiro FSF). Administrador da organização FSF ≠ portal do parceiro FSF.
+- Homologação: só a organização "FSF Agro HOMOL" `dcf50a75-579a-4828-a0fc-1d8eadcb4b8a`; nenhuma AR Bio, nenhum profile nessas organizações, partner_users 0.
 
-## Parte 2 — Fluxo financeiro completo (NÃO VALIDÁVEL agora)
-Título→parcelas Price→pagamento→estorno com dados reais permanece NOT RUN enquanto: contabilidade/fiscal (`C2_ACCOUNTING_PENDING`, Lucro Presumido/CRT1 não validados), NF de origem inexistente, boleto ausente do catálogo de produção, vínculo FSF↔cliente não executado e candidatos `.review` não instalados. Registrar como BLOCKED com o motivo, nunca PASS.
+## Pré-requisitos NÃO executados (não criar nem conceder aqui)
+- PR1: evidência da versão alvo (meta ID publicado). PR2: evidência das 5 saídas OFF.
+- PR3 (homolog): organização AR Bio, profiles A/F e vínculos de parceiro — inexistentes; sem eles a Parte HOMOLOG fica BLOCKED.
+- PR4 (homolog): prova de que automações de recebível (`trg_auto_b2b_receivable`, `tg_sync_b2b_financial_status`, entrega→AR) não geram título antes do fiscal; sem prova, H5/H6 ficam NÃO EXECUTÁVEIS.
+- PR5: contrato de Storage definido (URL assinada válida até expirar é comportamento autorizado; a negativa vale só para pedido NOVO de URL/objeto de outra organização).
+- Ninguém envia senha/token ao auditor; cada pessoa entra na própria sessão.
 
-## Rollback / encerramento
-Nenhuma escrita prevista em produção. Se algo for gravado por engano: parar, registrar hora/ID (hash) e acionar o auditor; não apagar histórico. Versão publicada anterior fica registrada no preflight.
+## Parte 1 — até o bloqueio fiscal | Parte 2 — financeiro completo
+Parte 2 (título→parcelas→pagamento→estorno reais) é **NÃO VALIDÁVEL** enquanto contabilidade/fiscal estiverem pendentes; registrar BLOCKED, nunca PASS.
+
+## Negações cruzadas
+Somente com fixtures do ambiente isolado e pela API legítima da tela (lista/detalhe por ID da fixture de outra organização). Nunca usar IDs de terceiros em produção. Redirecionamento de rota NÃO conta como prova de isolamento.

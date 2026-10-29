@@ -1,190 +1,207 @@
 {
- "versao": "2026-10-29",
+ "versao": "2026-10-29b",
+ "modos": [
+  "PROD_READONLY",
+  "HOMOLOG_ISOLATED"
+ ],
  "regras": [
   "sem senha/token",
-  "prod read-only",
+  "prod somente leitura",
+  "sem IDs de terceiros em prod",
+  "redirect não prova isolamento",
   "sintético só homolog isolado com saídas OFF",
   "sem título/boleto/NF/e-mail reais"
  ],
  "itens": [
   {
    "id": "S1",
+   "modo": "PROD_READONLY",
    "sessao": "—",
-   "ambiente": "—",
-   "passo": "Rodar preflight.sh e confirmar itens MANUAL",
-   "esperado": "Tudo PASS; senão NO-GO",
-   "modo": "SCRIPT",
+   "passo": "preflight.sh com PREFLIGHT_MODE=PROD_READONLY",
+   "esperado": "RESULT GO; BLOCKED/DENY = parar",
+   "prerequisitos": [
+    "PR1",
+    "PR2"
+   ],
    "resultado": "NOT RUN",
    "evidencia": ""
   },
   {
    "id": "S2",
-   "sessao": "A+F",
-   "ambiente": "prod",
-   "passo": "Confirmar abas/perfis de navegador separados e logout prévio",
-   "esperado": "Nenhuma sessão compartilhada",
-   "modo": "MANUAL",
+   "modo": "HOMOLOG_ISOLATED",
+   "sessao": "—",
+   "passo": "preflight.sh com PREFLIGHT_MODE=HOMOLOG_ISOLATED",
+   "esperado": "RESULT GO; ref de produção = DENY",
+   "prerequisitos": [
+    "PR1",
+    "PR2"
+   ],
    "resultado": "NOT RUN",
    "evidencia": ""
   },
   {
-   "id": "A1",
-   "sessao": "A",
-   "ambiente": "prod read-only",
-   "passo": "Entrar com conta AR Bio; ver nome da empresa no topo",
-   "esperado": "Tenant AR Bio; portal conforme papéis atribuídos",
-   "modo": "MANUAL",
+   "id": "P1",
+   "modo": "PROD_READONLY",
+   "sessao": "Renato (admin AR Bio)",
+   "passo": "Entrar; conferir organização exibida",
+   "esperado": "AR Bio; papéis de administrador",
+   "prerequisitos": [],
    "resultado": "NOT RUN",
    "evidencia": ""
   },
   {
-   "id": "A2",
-   "sessao": "A",
-   "ambiente": "prod read-only",
-   "passo": "Abrir parceiro FSF Agro (sem editar)",
-   "esperado": "Ativo; owner AR Bio; vínculo de cliente ausente (client_id vazio)",
-   "modo": "MANUAL",
+   "id": "P2",
+   "modo": "PROD_READONLY",
+   "sessao": "Renato",
+   "passo": "Abrir cadastro do parceiro FSF (sem editar)",
+   "esperado": "Ativo, owner AR Bio, sem vínculo de cliente",
+   "prerequisitos": [],
    "resultado": "NOT RUN",
    "evidencia": ""
   },
   {
-   "id": "A3",
-   "sessao": "A",
-   "ambiente": "prod read-only",
-   "passo": "Abrir pedidos B2B da FSF",
-   "esperado": "Pedido bloqueado por contabilidade aparece com motivo; nenhuma ação de cobrança disponível",
-   "modo": "MANUAL",
+   "id": "P3",
+   "modo": "PROD_READONLY",
+   "sessao": "Renato",
+   "passo": "Abrir pedidos B2B filtrando FSF",
+   "esperado": "Lista vazia (não há pedidos FSF); criação de pedido indisponível/bloqueada por configuração fiscal/contábil, com motivo",
+   "prerequisitos": [],
    "resultado": "NOT RUN",
    "evidencia": ""
   },
   {
-   "id": "A4",
-   "sessao": "A",
-   "ambiente": "prod read-only",
-   "passo": "Abrir Financeiro > títulos da FSF",
-   "esperado": "Sem títulos reais novos; nada a emitir",
-   "modo": "MANUAL",
+   "id": "P4",
+   "modo": "PROD_READONLY",
+   "sessao": "Renato",
+   "passo": "Financeiro: títulos da FSF",
+   "esperado": "Nenhum título; nenhuma ação de emissão executada",
+   "prerequisitos": [],
    "resultado": "NOT RUN",
    "evidencia": ""
   },
   {
-   "id": "F1",
+   "id": "P5",
+   "modo": "PROD_READONLY",
+   "sessao": "Fagner (admin FSF)",
+   "passo": "Entrar; conferir organização",
+   "esperado": "FSF Agro como administrador da própria organização; NÃO é portal de parceiro (0 partner_users)",
+   "prerequisitos": [],
+   "resultado": "NOT RUN",
+   "evidencia": ""
+  },
+  {
+   "id": "P6",
+   "modo": "PROD_READONLY",
+   "sessao": "Fagner",
+   "passo": "Abrir o próprio Financeiro",
+   "esperado": "Permitido e só dados da FSF; nenhum registro da AR Bio listado",
+   "prerequisitos": [],
+   "resultado": "NOT RUN",
+   "evidencia": ""
+  },
+  {
+   "id": "P7",
+   "modo": "PROD_READONLY",
+   "sessao": "Fagner",
+   "passo": "Procurar portal do parceiro/pedidos ao fornecedor",
+   "esperado": "Não disponível (sem partner_users) — esperado, não falha",
+   "prerequisitos": [],
+   "resultado": "NOT RUN",
+   "evidencia": ""
+  },
+  {
+   "id": "P8",
+   "modo": "PROD_READONLY",
+   "sessao": "ambos",
+   "passo": "Sair e reabrir URL anterior",
+   "esperado": "Exige login; sem dados em cache",
+   "prerequisitos": [],
+   "resultado": "NOT RUN",
+   "evidencia": ""
+  },
+  {
+   "id": "H1",
+   "modo": "HOMOLOG_ISOLATED",
+   "sessao": "A/F sintéticos",
+   "passo": "Login nas duas sessões homolog",
+   "esperado": "Organizações corretas",
+   "prerequisitos": [
+    "PR3"
+   ],
+   "resultado": "BLOCKED",
+   "evidencia": ""
+  },
+  {
+   "id": "H2",
+   "modo": "HOMOLOG_ISOLATED",
    "sessao": "F",
-   "ambiente": "prod read-only",
-   "passo": "Entrar com conta FSF; conferir empresa",
-   "esperado": "Tenant FSF; só dados próprios",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
+   "passo": "Pela API da tela, detalhe de fixture da outra organização por ID",
+   "esperado": "Vazio/negado pela RLS",
+   "prerequisitos": [
+    "PR3"
+   ],
+   "resultado": "BLOCKED",
    "evidencia": ""
   },
   {
-   "id": "F2",
+   "id": "H3",
+   "modo": "HOMOLOG_ISOLATED",
    "sessao": "F",
-   "ambiente": "prod read-only",
-   "passo": "Abrir Meus pedidos/finanças",
-   "esperado": "Vê só obrigações próprias; sem dados internos da AR Bio",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
+   "passo": "Pedir nova URL de anexo de fixture da outra organização",
+   "esperado": "Negado conforme contrato de Storage",
+   "prerequisitos": [
+    "PR3",
+    "PR5"
+   ],
+   "resultado": "BLOCKED",
    "evidencia": ""
   },
   {
-   "id": "X1",
-   "sessao": "F",
-   "ambiente": "prod read-only",
-   "passo": "Abrir por URL direta tela interna da AR Bio (ex.: /financeiro)",
-   "esperado": "Acesso negado/redirecionado; nenhum dado exibido",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
-   "evidencia": ""
-  },
-  {
-   "id": "X2",
+   "id": "H4",
+   "modo": "HOMOLOG_ISOLATED",
    "sessao": "A",
-   "ambiente": "prod read-only",
-   "passo": "Tentar abrir pedido de outra empresa por URL (ID de terceiro conhecido pelo auditor)",
-   "esperado": "Não encontrado/negado",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
+   "passo": "Pedido sintético acima do limite / config inativa / limite 0",
+   "esperado": "Retido com motivo legível",
+   "prerequisitos": [
+    "PR3"
+   ],
+   "resultado": "BLOCKED",
    "evidencia": ""
   },
   {
-   "id": "X3",
-   "sessao": "F",
-   "ambiente": "prod read-only",
-   "passo": "Abrir anexo/arquivo da AR Bio por link antigo",
-   "esperado": "Negado",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
-   "evidencia": ""
-  },
-  {
-   "id": "X4",
-   "sessao": "A+F",
-   "ambiente": "prod read-only",
-   "passo": "Sair; voltar à URL anterior",
-   "esperado": "Pede login; sem dados em cache",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
-   "evidencia": ""
-  },
-  {
-   "id": "B1",
+   "id": "H5",
+   "modo": "HOMOLOG_ISOLATED",
    "sessao": "A",
-   "ambiente": "homolog isolado",
-   "passo": "Com massa SINTÉTICA marcada: criar pedido acima do limite",
-   "esperado": "Retido em aprovação de crédito com motivo legível",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
+   "passo": "Aprovar excesso configurado pelo fluxo canônico",
+   "esperado": "Avança sem gerar título",
+   "prerequisitos": [
+    "PR3",
+    "PR4"
+   ],
+   "resultado": "NOT EXECUTABLE",
    "evidencia": ""
   },
   {
-   "id": "B2",
+   "id": "H6",
+   "modo": "HOMOLOG_ISOLATED",
    "sessao": "A",
-   "ambiente": "homolog isolado",
-   "passo": "Desativar config financeira sintética e tentar aprovar",
-   "esperado": "Continua retido: \"Configuração financeira ausente ou inativa\"",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
-   "evidencia": ""
-  },
-  {
-   "id": "B3",
-   "sessao": "A",
-   "ambiente": "homolog isolado",
-   "passo": "Limite 0 sintético e tentar aprovar",
-   "esperado": "Retido: \"Limite de crédito não definido\"",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
-   "evidencia": ""
-  },
-  {
-   "id": "B4",
-   "sessao": "A",
-   "ambiente": "homolog isolado",
-   "passo": "Excesso configurado legítimo aprovado pelo fluxo canônico",
-   "esperado": "Segue para análise/aprovado",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
-   "evidencia": ""
-  },
-  {
-   "id": "B5",
-   "sessao": "A",
-   "ambiente": "homolog isolado",
    "passo": "Avançar até faturamento",
-   "esperado": "Para no bloqueio fiscal/contábil; registrar BLOCKED, não contornar",
-   "modo": "MANUAL",
-   "resultado": "NOT RUN",
+   "esperado": "Para no bloqueio fiscal; não contornar",
+   "prerequisitos": [
+    "PR3",
+    "PR4"
+   ],
+   "resultado": "NOT EXECUTABLE",
    "evidencia": ""
   },
   {
    "id": "Z1",
+   "modo": "—",
    "sessao": "—",
-   "ambiente": "—",
    "passo": "Fluxo financeiro completo real",
-   "esperado": "NOT VALIDATABLE enquanto gate fiscal/contábil pendente",
-   "modo": "BLOCKED",
-   "resultado": "NOT RUN",
+   "esperado": "NÃO VALIDÁVEL com gate fiscal/contábil pendente",
+   "prerequisitos": [],
+   "resultado": "BLOCKED",
    "evidencia": ""
   }
  ]

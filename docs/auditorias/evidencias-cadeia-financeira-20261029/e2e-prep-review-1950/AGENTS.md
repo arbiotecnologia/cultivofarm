@@ -1,0 +1,4 @@
+- Review/preparation only: never create accounts, grant roles, apply SQL or deploy from here; operators run the checklist manually in real sessions — prevents unreviewed production changes.
+- Never collect passwords, tokens, cookies or JWTs; evidence is sanitized screenshots/IDs hashed — prevents credential leakage.
+- Synthetic data only in an isolated/homolog environment with external outputs blocked; production is read-only — prevents fake or billed records.
+- Report E2E-until-fiscal-block separately from full financial flow, which stays NOT VALIDATABLE while the fiscal/accounting gate is pending — prevents false certification.

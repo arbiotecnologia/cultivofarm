@@ -242,3 +242,5 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - 2026-10-29 rodada 1935: reauth pós row lock no replay, rótulo de crédito na cotação; limitação do trigger UPDATE OF status,total para credit_approved_by. BLOCKED/NO-GO.
 
 - 2026-10-29 rodada 1945: candidato de colunas do gatilho de crédito (RED/GREEN), inventário de escritores, roteiro/checklist E2E real AR Bio/FSF preparado e não executado; financeiro completo NÃO VALIDÁVEL com fiscal pendente. BLOCKED/NO-GO.
+
+- 2026-10-29 rodada 1950: preflight por modo (DENY/BLOCKED/GO) e checklist corrigido; pré-requisitos PR1–PR5 não executados. BLOCKED/NO-GO.
