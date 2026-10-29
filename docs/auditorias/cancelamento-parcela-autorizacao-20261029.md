@@ -118,7 +118,7 @@ Prova: catálogo `receivable-recursive-live-20261029.json`, bodies OID42095/1233
 
 ### Integridade, execução e limites
 
-Verificação histórica registrada nesta rodada:39entradas,28OK/7MISMATCH/4MISSING. Inclui fontes autorizadas já evoluídas e discrepância histórica red-green/logs já informada; **nenhum manifesto antigo regravado**, outputs existentes preservados. Verificação after registra igualdade de bytes de todas39entradas relativamente ao registro before desta rodada (feito após primeira edição autorizada, não alegar que é inventário pré-edição). Novo SHA256SUMS fixa fontes finais/logs/evidências.
+Verificação histórica registrada nesta rodada:39entradas,28OK/7MISMATCH/4MISSING. Inclui fontes autorizadas já evoluídas e discrepância histórica red-green/logs já informada; **nenhum manifesto antigo regravado**, outputs existentes preservados. Verificação after:33entradas mantêm bytes/ausência;6entradas(repetidas em manifestos) correspondem a três fontes autorizadas evoluídas:runner/regressão cancelamento e relatório. Registro before foi feito após primeira edição autorizada, não é inventário pré-edição. Novo SHA256SUMS fixa fontes finais/logs/evidências.
 
 Falhas intermediárias preservadas: ACL auxiliar `clientes` ausente no primeiro ensaio; recomposição de ACL capturada com RLS deny-only em relações vazias corrigiu o bloqueio técnico. Comparação nova revelou MAINTAIN omitido pelo harness herdado; PG17 suporta e agora recompõe ACL exata. Final263/0 após ambas correções. Revisão independente sugeriu metadados/exatidãoFK/estado positivo/contagensBLOCKED/classificador limitado; incorporados e reexecutados.
 
