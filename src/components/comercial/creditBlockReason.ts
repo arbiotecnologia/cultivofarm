@@ -1,4 +1,5 @@
-// Isolated, not yet mounted by any screen: labels for partner_orders.credit_block_reason.
+// Labels for partner_orders.credit_block_reason, shown by ResponderCotacaoDialog (the only screen
+// that currently receives the reason, via respond_b2b_order_quote_secure).
 // The two "configuração/limite" reasons only exist in the INACTIVE shared-credit-guard candidate.
 export const CREDIT_BLOCK_REASON_LABELS: Readonly<Record<string, string>> = Object.freeze({
   inadimplencia: "Bloqueado por títulos vencidos",

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { brl } from "@/lib/financial/format";
 import { useRespondB2BQuote } from "@/hooks/useRespondB2BQuote";
 import { partnerOrderStatusLabel } from "@/lib/partnerOrderStatus";
+import { creditBlockReasonLabel } from "@/components/comercial/creditBlockReason";
 import { PedidoItemProdutoInfo } from "@/components/pedidos-b2b/PedidoItemProdutoInfo";
 
 interface QuoteItem {
@@ -72,8 +73,10 @@ export function ResponderCotacaoDialog({
         first_due_date: firstDue || null,
         motivo: motivo.trim() || null,
       });
+      const reason = creditBlockReasonLabel(result.credit_block_reason);
       toast.success(
-        `Cotação registrada · ${result.numero} → ${partnerOrderStatusLabel(result.status)} · ${brl(Number(result.final_amount))}`,
+        `Cotação registrada · ${result.numero} → ${partnerOrderStatusLabel(result.status)} · ${brl(Number(result.final_amount))}`
+          + (reason ? ` · ${reason}` : ""),
       );
       onOpenChange(false);
       onResponded?.();

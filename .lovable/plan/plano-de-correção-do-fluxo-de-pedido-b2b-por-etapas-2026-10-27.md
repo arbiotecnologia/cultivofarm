@@ -238,3 +238,5 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - Resultados PG descartável: Price+guard 300/0 (256 anteriores + 44 novos); vínculo 33/0; P0 originais 37/0. Evidências `shared-credit-fsf-link-1905/`.
 - Pendente: validação fiscal (contabilidade), owner/CNPJ reais do parceiro FSF, consumidores do novo motivo de bloqueio, JWT/RLS A/B, aplicação revisada. NO-GO operacional mantido.
 - 19:25 — Revisão f2d19a6 corrigida offline: vínculo FSF (unicidade verificada, replay revalidado, CNPJ estrito, cliente compartilhado negado) e guard (B2B_ORDER provado no servidor, vínculo re-resolvido após espera, aprovação não libera configuração inválida); rótulos UI isolados. 322/0, 48/0, P0 37/0, Vitest 4/4. FSF real confirmada (owner AR Bio). NO-GO operacional mantido.
+
+- 2026-10-29 rodada 1935: reauth pós row lock no replay, rótulo de crédito na cotação; limitação do trigger UPDATE OF status,total para credit_approved_by. BLOCKED/NO-GO.
