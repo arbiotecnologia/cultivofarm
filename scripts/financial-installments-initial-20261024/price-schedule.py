@@ -20,7 +20,8 @@ CENT = Decimal('0.01')
 LIMIT = Decimal('100000.00')
 DISCOUNT = Decimal('40')
 RATE_BY_N = {1: Decimal('0'), 2: Decimal('1.8'), 3: Decimal('1.8')}
-EXPOSURE_BASES = ('principal', 'financed_total')
+EXPOSURE_BASES = ('financed_total',)
+MAX_MONEY = Decimal('1000000000000')
 
 
 class Rejected(Exception):
@@ -39,11 +40,17 @@ def money(v, label, allow_zero=False):
         raise Rejected(label + '_INVALID')
     if not d.is_finite():
         raise Rejected(label + '_NOT_FINITE')
+    if abs(d) > MAX_MONEY:
+        raise Rejected(label + '_OUT_OF_RANGE')
+    try:
+        qd = d.quantize(CENT)
+    except InvalidOperation:
+        raise Rejected(label + '_OUT_OF_RANGE')
     if d < 0 or (d == 0 and not allow_zero):
         raise Rejected(label + ('_NEGATIVE' if d < 0 else '_NOT_POSITIVE'))
-    if d != d.quantize(CENT):
+    if d != qd:
         raise Rejected(label + '_SUBCENT')
-    return d.quantize(CENT)
+    return qd
 
 
 def installments(n):
@@ -92,6 +99,8 @@ def candidate_plan(principal, n, exposure_before, credit_limit, exposure_basis, 
     """Candidate API for offline tests. Requires an explicit exposure basis."""
     if generation != 'manual_authorized':
         raise Rejected('AUTO_GENERATION_BLOCKED')
+    if exposure_basis == 'principal':
+        raise Rejected('EXPOSURE_BASIS_PRINCIPAL_REJECTED')
     if exposure_basis not in EXPOSURE_BASES:
         raise Rejected('EXPOSURE_BASIS_REQUIRED')
     s = price_schedule(principal, n)
@@ -125,13 +134,15 @@ def resolve_new_plan_policy(policy, n, rate_request=None):
     rate = Decimal(a['rates']['n1_30d' if n == 1 else 'n%d' % n])
     if rate != RATE_BY_N[n] or (rate_request is not None and Decimal(str(rate_request)) != rate):
         raise Rejected('RATE_NOT_FROM_ACTIVE_CANDIDATE')
-    return dict(n=n, rate=rate, credit_limit=money(a['credit_limit'], 'CREDIT_LIMIT'), first_due=a['first_due'])
+    if a.get('exposure_basis') != 'financed_total_rounded_sum_of_installments_including_interest' or a.get('pro_rata') != 'none':
+        raise Rejected('ACTIVE_CANDIDATE_CONTRADICTION')
+    return dict(n=n, rate=rate, credit_limit=money(a['credit_limit'], 'CREDIT_LIMIT'), first_due=a['first_due'], exposure_basis='financed_total')
 
 
 def production_eligibility(*_a, **_k):
     """Separated from the candidate API: production stays denied."""
     return dict(eligible=False, reasons=[
-        'EXPOSURE_BASIS_UNPROVEN_IN_CONTRACT', 'CALENDAR_CLAMP_BUSINESS_DAY_PRORATA_UNDECIDED',
+        'CALENDAR_SOURCE_REQUIRED',
         'GENERATORS_WITHOUT_PRICE', 'PAYMENT_TERMS_NOT_DEFINED', 'C2_ACCOUNTING_PENDING',
         'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED', 'JWT_RLS_AB_NOT_PROVEN'])
 
@@ -142,11 +153,7 @@ def add_months_clamped(d, months):
     return datetime.date(y, m, min(d.day, calendar.monthrange(y, m)[1]))
 
 
-def due_dates_candidate(nf_issue_date, n, generated_at=None):
-    """Decided: first due = NF issue + 30 days. CANDIDATE: later dues are civil
-    months from the first due with month-end clamp; no business-day rolling and
-    no pro-rata are applied (not decided). generated_at never moves dates."""
-    n = installments(n)
+def _nf(nf_issue_date, generated_at):
     if type(nf_issue_date) is not datetime.date:
         raise Rejected('NF_ISSUE_DATE_REQUIRED')
     if generated_at is not None:
@@ -154,8 +161,61 @@ def due_dates_candidate(nf_issue_date, n, generated_at=None):
             raise Rejected('GENERATED_AT_INVALID')
         if generated_at < nf_issue_date:
             raise Rejected('GENERATION_BEFORE_NF')
-    first = nf_issue_date + datetime.timedelta(days=30)
-    return [add_months_clamped(first, k) for k in range(n)]
+    return nf_issue_date
+
+
+def nominal_dates(nf_issue_date, n, generated_at=None):
+    """Decided: first nominal = NF + 30 days; k-th = same day of first nominal
+    in month +k, last day if shorter, always from the FIRST nominal (no drift).
+    generated_at (manual click) never moves dates."""
+    n = installments(n)
+    nf = _nf(nf_issue_date, generated_at)
+    try:
+        first = nf + datetime.timedelta(days=30)
+        return [add_months_clamped(first, k) for k in range(n)]
+    except (OverflowError, ValueError):
+        raise Rejected('DATE_OUT_OF_RANGE')
+
+
+def validate_calendar(cal):
+    if cal is None:
+        raise Rejected('CALENDAR_SOURCE_REQUIRED')
+    if not isinstance(cal, dict) or not all(cal.get(k) for k in ('version', 'locality', 'source')):
+        raise Rejected('CALENDAR_METADATA_REQUIRED')
+    if type(cal.get('coverage_start')) is not datetime.date or type(cal.get('coverage_end')) is not datetime.date or cal['coverage_end'] < cal['coverage_start']:
+        raise Rejected('CALENDAR_COVERAGE_REQUIRED')
+    hol = cal.get('holidays')
+    if not isinstance(hol, (set, frozenset, list, tuple)) or any(type(h) is not datetime.date for h in hol):
+        raise Rejected('CALENDAR_HOLIDAYS_INVALID')
+    if any(not (cal['coverage_start'] <= h <= cal['coverage_end']) for h in hol):
+        raise Rejected('CALENDAR_HOLIDAY_OUTSIDE_COVERAGE')
+    return frozenset(hol)
+
+
+def adjusted_due(nominal, cal):
+    hol = validate_calendar(cal)
+    d = nominal
+    for _ in range(60):
+        if not (cal['coverage_start'] <= d <= cal['coverage_end']):
+            raise Rejected('CALENDAR_COVERAGE_EXCEEDED')  # absence of data != no holiday
+        if d.weekday() < 5 and d not in hol:
+            return d
+        try:
+            d += datetime.timedelta(days=1)
+        except OverflowError:
+            raise Rejected('DATE_OUT_OF_RANGE')
+    raise Rejected('CALENDAR_NO_BUSINESS_DAY')
+
+
+def due_schedule(nf_issue_date, n, cal, generated_at=None):
+    """Nominal calendar kept separate from adjusted (business-day) due dates.
+    Interest is fixed monthly Price on nominal periods: no extra interest."""
+    noms = nominal_dates(nf_issue_date, n, generated_at)
+    return [dict(nominal=x, adjusted=adjusted_due(x, cal)) for x in noms]
+
+
+def due_dates_candidate(nf_issue_date, n, generated_at=None):
+    return nominal_dates(nf_issue_date, n, generated_at)
 
 
 # ---------- independent oracle (Fraction, own rounding, no shared helpers) ----
@@ -237,25 +297,33 @@ def run(out=None):
     for v, code in bad:
         rejects(f'principal {v!r}', 'PRINCIPAL_' + code, lambda: price_schedule(v, 2))
         lim_code = 'ZERO_CREDIT_LIMIT' if code == 'NOT_POSITIVE' else 'CREDIT_LIMIT_' + code
-        rejects(f'credit_limit {v!r}', lim_code, lambda: candidate_plan(p, 2, '0', v, 'principal'))
+        rejects(f'credit_limit {v!r}', lim_code, lambda: candidate_plan(p, 2, '0', v, 'financed_total'))
         exp_code = None if code == 'NOT_POSITIVE' else 'EXPOSURE_' + code
         if exp_code:
-            rejects(f'exposure {v!r}', exp_code, lambda: candidate_plan(p, 2, v, LIMIT, 'principal'))
+            rejects(f'exposure {v!r}', exp_code, lambda: candidate_plan(p, 2, v, LIMIT, 'financed_total'))
     for n, code in ((4, 'INSTALLMENTS_OUT_OF_RANGE'), (0, 'INSTALLMENTS_OUT_OF_RANGE'), (True, 'INSTALLMENTS_INVALID'), (2.0, 'INSTALLMENTS_INVALID'), ('2', 'INSTALLMENTS_INVALID')):
         rejects(f'schedule n={n!r}', code, lambda: price_schedule(p, n))
         rejects(f'dates n={n!r}', code, lambda: due_dates_candidate(datetime.date(2026, 1, 1), n))
-    # Credit: negative exposure can no longer open room past the limit.
-    rejects('negative exposure cannot widen limit', 'EXPOSURE_NEGATIVE', lambda: candidate_plan('100000.00', 1, '-50000', LIMIT, 'principal'))
-    rejects('limit exceeded', 'LIMIT_EXCEEDED_BLOCK', lambda: candidate_plan('100000.01', 1, '0', LIMIT, 'principal'))
-    check('exact limit accepted principal basis', Decimal('0.00'), candidate_plan('100000.00', 1, '0', LIMIT, 'principal')['available_after'])
-    # Basis ambiguity: same operation passes on principal and fails on financed total.
-    check('principal basis fits', Decimal('0.00'), candidate_plan('60000.00', 3, '40000.00', LIMIT, 'principal')['available_after'])
-    rejects('financed basis exceeds', 'LIMIT_EXCEEDED_BLOCK', lambda: candidate_plan('60000.00', 3, '40000.00', LIMIT, 'financed_total'))
+    for v in ('1E+999999', '9' * 40, '1E-999999', '-1E+999999', '1E+13'):
+        rejects(f'principal magnitude {v}', 'PRINCIPAL_OUT_OF_RANGE', lambda: price_schedule(v, 2))
+        rejects(f'limit magnitude {v}', 'CREDIT_LIMIT_OUT_OF_RANGE', lambda: candidate_plan(p, 2, '0', v, 'financed_total'))
+        rejects(f'exposure magnitude {v}', 'EXPOSURE_OUT_OF_RANGE', lambda: candidate_plan(p, 2, v, LIMIT, 'financed_total'))
+    FT = 'financed_total'
+    rejects('negative exposure cannot widen limit', 'EXPOSURE_NEGATIVE', lambda: candidate_plan('100000.00', 1, '-50000', LIMIT, FT))
+    rejects('principal basis rejected', 'EXPOSURE_BASIS_PRINCIPAL_REJECTED', lambda: candidate_plan(p, 3, '0', LIMIT, 'principal'))
     rejects('basis required', 'EXPOSURE_BASIS_REQUIRED', lambda: candidate_plan(p, 3, '0', LIMIT, None))
+    # Limit on rounded installment sum incl. interest: exact threshold and +0.01.
+    check('3x 60000 exact threshold', Decimal('0.00'), candidate_plan(p, 3, '37827.16', LIMIT, FT)['available_after'], 'CREDIT_FINANCED_TOTAL')
+    rejects('3x 60000 threshold +0.01', 'LIMIT_EXCEEDED_BLOCK', lambda: candidate_plan(p, 3, '37827.17', LIMIT, FT), 'CREDIT_FINANCED_TOTAL')
+    rejects('RED old principal basis would fit (now blocked)', 'LIMIT_EXCEEDED_BLOCK', lambda: candidate_plan('60000.00', 3, '40000.00', LIMIT, FT), 'CREDIT_FINANCED_TOTAL')
+    check('2x 60000 exact threshold', Decimal('0.00'), candidate_plan(p, 2, '38375.18', LIMIT, FT)['available_after'], 'CREDIT_FINANCED_TOTAL')
+    rejects('2x 60000 threshold +0.01', 'LIMIT_EXCEEDED_BLOCK', lambda: candidate_plan(p, 2, '38375.19', LIMIT, FT), 'CREDIT_FINANCED_TOTAL')
+    check('1x exact limit', Decimal('0.00'), candidate_plan('100000.00', 1, '0', LIMIT, FT)['available_after'], 'CREDIT_FINANCED_TOTAL')
+    rejects('1x limit +0.01', 'LIMIT_EXCEEDED_BLOCK', lambda: candidate_plan('100000.01', 1, '0', LIMIT, FT), 'CREDIT_FINANCED_TOTAL')
     for _ in range(2):
-        rejects('automatic generation blocked (replay)', 'AUTO_GENERATION_BLOCKED', lambda: candidate_plan(p, 2, '0', LIMIT, 'principal', 'automatic'))
+        rejects('automatic generation blocked (replay)', 'AUTO_GENERATION_BLOCKED', lambda: candidate_plan(p, 2, '0', LIMIT, FT, 'automatic'))
     check('production eligibility denied', False, production_eligibility(p, 3)['eligible'], 'PRODUCTION_GATE')
-    check('production reasons include basis', True, 'EXPOSURE_BASIS_UNPROVEN_IN_CONTRACT' in production_eligibility()['reasons'], 'PRODUCTION_GATE')
+    check('production reasons include calendar source', True, 'CALENDAR_SOURCE_REQUIRED' in production_eligibility()['reasons'], 'PRODUCTION_GATE')
     # Dates: NF anchor decided; later dues candidate only.
     D = datetime.date
     for nf, expected in [
@@ -268,7 +336,7 @@ def run(out=None):
     ]:
         got = [d.isoformat() for d in due_dates_candidate(nf, 3)]
         check('NF+30 first due ' + nf.isoformat(), (nf + datetime.timedelta(days=30)).isoformat(), got[0], 'NF_ANCHOR_DECIDED')
-        check('later dues candidate ' + nf.isoformat(), expected[1:], got[1:], 'CALENDAR_CANDIDATE_ONLY')
+        check('later nominal dues ' + nf.isoformat(), expected[1:], got[1:], 'NOMINAL_CALENDAR_DECIDED')
     nf = D(2026, 11, 3)
     base = due_dates_candidate(nf, 3)
     for late in (D(2026, 11, 3), D(2026, 11, 20), D(2027, 1, 15)):
@@ -278,6 +346,32 @@ def run(out=None):
         rejects(f'nf date {v!r}', code, lambda: due_dates_candidate(v, 2))
     rejects('generation before NF', 'GENERATION_BEFORE_NF', lambda: due_dates_candidate(nf, 2, generated_at=D(2026, 11, 2)))
     rejects('generated_at string', 'GENERATED_AT_INVALID', lambda: due_dates_candidate(nf, 2, generated_at='2026-11-20'))
+    # Business-day adjustment with an EXPLICITLY SYNTHETIC versioned calendar.
+    SYN = dict(version='synthetic-test-v1', locality='SYNTHETIC-NOT-REAL', source='offline fixture, not a real holiday calendar',
+               coverage_start=D(2026, 1, 1), coverage_end=D(2028, 12, 31),
+               holidays={D(2026, 3, 2), D(2026, 3, 3), D(2026, 3, 4), D(2027, 1, 1), D(2028, 2, 29), D(2028, 3, 1)})
+    sch = due_schedule(D(2026, 1, 1), 3, SYN)  # nominal 31/01 sat, 28/02 sat, 31/03 tue
+    check('weekend rolls first due', ['2026-02-02', '2026-03-05', '2026-03-31'], [x['adjusted'].isoformat() for x in sch], 'BUSINESS_DAY_SYNTHETIC')
+    check('consecutive synthetic holidays after weekend', '2026-03-05', sch[1]['adjusted'].isoformat(), 'BUSINESS_DAY_SYNTHETIC')
+    check('adjustment does not shift nominal anchor', ['2026-01-31', '2026-02-28', '2026-03-31'], [x['nominal'].isoformat() for x in sch], 'BUSINESS_DAY_SYNTHETIC')
+    sch = due_schedule(D(2026, 12, 2), 3, SYN)  # nominal 01/01/2027 holiday (fri)
+    check('year turn holiday', ['2027-01-04', '2027-02-01', '2027-03-01'], [x['adjusted'].isoformat() for x in sch], 'BUSINESS_DAY_SYNTHETIC')
+    sch = due_schedule(D(2027, 12, 31), 3, SYN)  # nominal 30/01/2028 sun, 29/02 holiday, 30/03 thu
+    check('leap day holiday + weekend', ['2028-01-31', '2028-03-02', '2028-03-30'], [x['adjusted'].isoformat() for x in sch], 'BUSINESS_DAY_SYNTHETIC')
+    check('leap nominal kept', ['2028-01-30', '2028-02-29', '2028-03-30'], [x['nominal'].isoformat() for x in sch], 'BUSINESS_DAY_SYNTHETIC')
+    s3a = price_schedule(p, 3)
+    check('Price invariant under business-day adjustment', [r['payment'] for r in s3['rows']], [r['payment'] for r in s3a['rows']], 'BUSINESS_DAY_SYNTHETIC')
+    check('no drift: Jan31 nominal -> Mar31 not Mar28', '2026-03-31', nominal_dates(D(2026, 1, 1), 3)[2].isoformat(), 'NOMINAL_CALENDAR_DECIDED')
+    late = [due_schedule(D(2026, 1, 1), 3, SYN, generated_at=g) for g in (D(2026, 1, 1), D(2026, 2, 20), D(2026, 4, 1))]
+    check('late generation/replay keeps adjusted dues', True, all(x == late[0] for x in late), 'NF_ANCHOR_DECIDED')
+    rejects('no calendar -> CALENDAR_SOURCE_REQUIRED', 'CALENDAR_SOURCE_REQUIRED', lambda: due_schedule(D(2026, 1, 1), 3, None), 'CALENDAR_GATE')
+    rejects('calendar missing locality', 'CALENDAR_METADATA_REQUIRED', lambda: due_schedule(D(2026, 1, 1), 3, dict(SYN, locality='')), 'CALENDAR_GATE')
+    rejects('calendar without coverage', 'CALENDAR_COVERAGE_REQUIRED', lambda: due_schedule(D(2026, 1, 1), 3, dict(SYN, coverage_end=None)), 'CALENDAR_GATE')
+    rejects('due beyond coverage is not "no holiday"', 'CALENDAR_COVERAGE_EXCEEDED', lambda: due_schedule(D(2028, 12, 1), 3, SYN), 'CALENDAR_GATE')
+    rejects('holiday outside coverage', 'CALENDAR_HOLIDAY_OUTSIDE_COVERAGE', lambda: due_schedule(D(2026, 1, 1), 3, dict(SYN, holidays={D(2030, 1, 1)})), 'CALENDAR_GATE')
+    rejects('holiday as string', 'CALENDAR_HOLIDAYS_INVALID', lambda: due_schedule(D(2026, 1, 1), 3, dict(SYN, holidays={'2026-03-02'})), 'CALENDAR_GATE')
+    rejects('date overflow', 'DATE_OUT_OF_RANGE', lambda: nominal_dates(D(9999, 12, 20), 2), 'CALENDAR_GATE')
+    rejects('month overflow', 'DATE_OUT_OF_RANGE', lambda: nominal_dates(D(9999, 11, 1), 3), 'CALENDAR_GATE')
     # Policy authority: new plans never pick superseded rules.
     H = pathlib.Path(__file__).parent
     pol = json.loads((H / 'arbio-fsf-policy.draft.json').read_text())
@@ -287,6 +381,13 @@ def run(out=None):
         check(f'resolver {n}x rate from active candidate', RATE_BY_N[n], r['rate'], 'POLICY_AUTHORITY')
     check('resolver limit 100000', LIMIT, resolve_new_plan_policy(pol, 2)['credit_limit'], 'POLICY_AUTHORITY')
     check('resolver first due NF+30', 'nf_issue_date_plus_30_days', resolve_new_plan_policy(pol, 1)['first_due'], 'POLICY_AUTHORITY')
+    check('resolver basis financed total', 'financed_total', resolve_new_plan_policy(pol, 3)['exposure_basis'], 'POLICY_AUTHORITY')
+    check('draft undefined has no resolved calendar/basis items', [], [k for k in ('credit_exposure_basis', 'business_day_rolling', 'later_due_clamp_confirmation', 'pro_rata_day_basis') if k in pol['undefined']], 'POLICY_AUTHORITY')
+    check('draft holiday source still undefined', None, pol['undefined'].get('holiday_calendar_source', 'MISSING'), 'POLICY_AUTHORITY')
+    tampered = json.loads(json.dumps(pol)); tampered['active_candidate']['exposure_basis'] = 'principal'
+    rejects('resolver rejects principal basis regression', 'ACTIVE_CANDIDATE_CONTRADICTION', lambda: resolve_new_plan_policy(tampered, 2), 'POLICY_AUTHORITY')
+    tampered = json.loads(json.dumps(pol)); tampered['active_candidate']['pro_rata'] = 'actual_days'
+    rejects('resolver rejects pro-rata regression', 'ACTIVE_CANDIDATE_CONTRADICTION', lambda: resolve_new_plan_policy(tampered, 2), 'POLICY_AUTHORITY')
     check('draft has no superseded root rules', [], [k for k in SUPERSEDED_ROOT_KEYS if k in pol], 'POLICY_AUTHORITY')
     check('draft runtime disabled', False, pol['runtime_enabled'], 'POLICY_AUTHORITY')
     check('draft billing trigger resolved manual', 'manual_authorized_only', pol['resolved_by_active_candidate']['billing_trigger'], 'POLICY_AUTHORITY')
@@ -305,9 +406,7 @@ def run(out=None):
     for c in checks:
         summary.setdefault(c['mode'], {}).setdefault(c['status'], 0)
         summary[c['mode']][c['status']] += 1
-    blocked = ['PG end-to-end: captured generators implement no Price schedule and billing stays denied (PAYMENT_TERMS_NOT_DEFINED, C2_ACCOUNTING_PENDING, B2B_INTERNAL_DOWNSTREAM_UNVERIFIED); component tests only',
-               'Exposure basis principal vs financed total not proven in contract (captured fn_b2b_credit_exposure uses original_amount-received and final_amount_with_interest)',
-               'Later-due civil-month clamp, business-day rolling and pro-rata remain candidate/undecided',
+    blocked = ['Real holiday calendar source absent in project: eligibility CALENDAR_SOURCE_REQUIRED (only synthetic fixtures tested)','PG end-to-end: captured generators implement no Price schedule and billing stays denied (PAYMENT_TERMS_NOT_DEFINED, C2_ACCOUNTING_PENDING, B2B_INTERNAL_DOWNSTREAM_UNVERIFIED); component tests only',
                'Fiscal/accounting provenance and real JWT/RLS A/B']
     result = dict(checks=checks, summary=summary, blocked=blocked, fail=sum(c['status'] == 'FAIL' for c in checks))
     if out:
