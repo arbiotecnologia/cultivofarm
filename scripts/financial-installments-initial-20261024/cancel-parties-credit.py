@@ -44,12 +44,32 @@ def exercise(h, metadata):
     # financial progression, even through an existing credit-approved marker.
     anchor="IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(NEW.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;"
     transform('tg_partner_orders_credit_guard',anchor,anchor+"\n    IF EXISTS(SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=NEW.partner_id AND s.credit_limit=0) THEN RAISE EXCEPTION 'B2B_ZERO_CREDIT_LIMIT' USING ERRCODE='23514'; END IF;")
+    # Existing entry guards: after authorization, before writes. Keep original
+    # wrapper origin/accounting gates earlier than this zero-credit denial.
+    for name,expr in [('tg_auto_b2b_receivable','NEW.partner_id'),('fn_b2b_order_billing_eligibility','v_order.partner_id'),('fn_h6c_entrega_ar_b2b_link','v_po.partner_id'),('generate_b2b_receivable_secure','(SELECT partner_id FROM public.partner_orders WHERE id=p_partner_order_id)')]:
+        auth="IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed("+expr+",true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;"
+        denial="RETURN jsonb_build_object('eligible',false,'reason_code','B2B_ZERO_CREDIT_LIMIT');" if name=='fn_b2b_order_billing_eligibility' else "RAISE EXCEPTION 'B2B_ZERO_CREDIT_LIMIT' USING ERRCODE='23514';"
+        transform(name,auth,auth+"\n IF EXISTS(SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id="+expr+" AND s.credit_limit=0) THEN "+denial+" END IF;")
     for actor,org,partner,label in partners:
         probe=m.uid(910000+(label=='B'))
         for statement in ["status='em_analise_comercial'","status='aprovado'","credit_approved_by="+m.q(actor)]:
             reject('GREEN zero progression '+label+' '+statement,f"UPDATE harness.credit_probe SET {statement} WHERE id='{probe}';",('23514','B2B_ZERO_CREDIT_LIMIT'),actor)
         foreign_actor=h.V if actor==m.U else m.U
         reject('GREEN zero foreign scope first '+label,f"UPDATE harness.credit_probe SET status='aprovado' WHERE id='{probe}';",('42501','C2P1_FORBIDDEN'),foreign_actor)
+        auto=m.uid(903010+(label=='B'))
+        reject('GREEN zero automatic '+label,f"UPDATE harness.auto_probe SET status='entregue' WHERE id='{auto}';",('23514','B2B_ZERO_CREDIT_LIMIT'),actor)
+        order=m.uid(911000+(label=='B'));link=m.uid(911010+(label=='B'))
+        m.pg.sql(f"INSERT INTO partner_orders(id,partner_id,status) VALUES('{order}','{partner}','rascunho'); INSERT INTO harness.delivery_probe(id,partner_order_id,billing_generated_by) VALUES('{link}','{order}','{actor}');")
+        reject('GREEN zero wrapper '+label,f"SELECT generate_b2b_receivable_secure('{order}');",('23514','B2B_ZERO_CREDIT_LIMIT'),actor)
+        reject('GREEN zero delivery link '+label,f"UPDATE harness.delivery_probe SET receivable_id='{m.uid(904020)}' WHERE id='{link}';",('23514','B2B_ZERO_CREDIT_LIMIT'),actor)
+        res=h.client(f"INSERT INTO harness.eligibility_probe(id,order_id) VALUES('{link}','{order}');",actor)
+        h.check('GREEN zero eligibility dispatch '+label,0,res.returncode,green)
+        h.check('GREEN zero eligibility denied '+label,dict(eligible=False,reason_code='B2B_ZERO_CREDIT_LIMIT'),json.loads(m.pg.sql(f"SELECT result FROM harness.eligibility_probe WHERE id='{link}'")),green)
+        for column,value,marker in [('internal_origin_snapshot',"'{}'::jsonb",'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED'),('c2_external_origin_snapshot',"'{\"contract\":\"C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1\"}'::jsonb",'C2_ACCOUNTING_PENDING')]:
+            m.pg.sql(f"UPDATE partner_orders SET {column}={value} WHERE id='{order}';")
+            try:reject('GREEN zero still '+marker+' '+label,f"SELECT generate_b2b_receivable_secure('{order}');",('42501',marker),actor)
+            finally:m.pg.sql(f"UPDATE partner_orders SET {column}=NULL WHERE id='{order}';")
+        m.pg.sql(f"DELETE FROM partner_orders WHERE id='{order}';")
         h.check('credit restore explicit CAS '+label,0,update(partner,20000,actor).returncode,green)
     transform('fn_b2b_credit_exposure',"    WHEN v_limit <= 0 THEN 'NO_LIMIT_DEFINED'\n",'')
     # Exact service-only exposure via a reduced DEFINER trigger carrier; no public
@@ -167,7 +187,7 @@ def exercise(h, metadata):
         for value,label in [(None,'NULL'),(other if 'partner' in field else m.B,'inverse/foreign')]:
             bad=dict(row);bad[field]=value
             reject('contract '+field+' '+label,contract(bad),('23514','B2B_PARTIES_CONTRACT_MISMATCH'),mode='PARTIES_CONTRACT_ONLY')
-    metadata['parties_credit']=dict(decisions=dict(seller_creditor_issuer='AR Bio',buyer_debtor='FSF Agro',explicit_credit_limit_required=True,zero_unlimited_policy=False),zero_limit_enforcement_scope='credit-trigger new progression/approval shortcuts and calculator; not certification of all runtime consumers',synthetic_ids=dict(ar_bio_owner=m.A,fsf_buyer_tenant=m.B,fsf_partner=partner),next_full_impl_error=error,projection_not_writer=True,fiscal_matrix_contract_only=True,exposure=result,
+    metadata['parties_credit']=dict(decisions=dict(seller_creditor_issuer='AR Bio',buyer_debtor='FSF Agro',explicit_credit_limit_required=True,zero_unlimited_policy=False),zero_limit_enforcement_scope='credit/auto/eligibility/link/wrapper carriers and calculator; full order writer and positive billing remain unproved',synthetic_ids=dict(ar_bio_owner=m.A,fsf_buyer_tenant=m.B,fsf_partner=partner),next_full_impl_error=error,projection_not_writer=True,fiscal_matrix_contract_only=True,exposure=result,
         blocked='Owner selection corrected offline, but canonical order terms/eligibility, fiscal issuer binding and accounting provenance remain unproved. No origin/accounting denial removed.')
     (h.OUT/'parties-credit-sandbox.diff').write_text('\n'.join(diffs))
     (h.OUT/'parties-credit-captured-impl.txt').write_text(impl['body'])
