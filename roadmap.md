@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 29/10 — autorização local do cancelamento financeiro
+- [x] Reutilizar harness/ACL/RLS/guards para clientes A/B:55assertionsPASS, foreignOPEN negado e oráculoRED reproduzido; transformação somente offline.
+- [x] Próprio MANUAL/anônimo/identidade/revogação/replay/baixas testados; fixtureB2B bloqueia no risco real não composto, sem bypass.
+- [x] Regressões9/9Vitest, revisão independente/relatório/plano original e hashes, sem runtime ou produção.
+- [ ] Promoção BLOCKED por riscoB2B/cadeia integral/BI/proveniência/JWTreal A/B e pós-lock; nenhuma instalação/ativação autorizada.
+
 ## Política superveniente AR/FSF — 28/10 02:37 UTC
 - [x] Substituir candidata por40% fixo/0%até30d/1,8%até6m/2%até12m; referência anterior arquivada e evidências intactas.
 - [x] Decimal/faixas/contrafactuais: PG41PASS/0FAIL/16BLOCKED/1NOT RUN; regressões129/129 em8arquivos sem tocar entrega.

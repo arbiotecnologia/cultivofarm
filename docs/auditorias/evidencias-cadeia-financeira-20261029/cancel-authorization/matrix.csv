@@ -1,0 +1,58 @@
+test,expected,actual,mode,status
+client role has no owner membership/superuser/bypass,f|f|f,f|f|f,CAPTURED,PASS
+captured RPC definition exact,c7d30a08b1cbd00936cd83aa5bf3415c,c7d30a08b1cbd00936cd83aa5bf3415c,CAPTURED,PASS
+receivable foreign SELECT hidden by captured RLS,0,0,CAPTURED,PASS
+receivable direct own UPDATE closed,True,True,CAPTURED,PASS
+receivable own client RPC accepted,0,0,CAPTURED,PASS
+receivable own status persisted,CANCELED,CANCELED,CAPTURED,PASS
+receivable exactly one cancellation audit,1,1,CAPTURED,PASS
+receivable replay no extra audit,True,True,CAPTURED,PASS
+receivable foreign OPEN tenant guard atomic,True,True,CAPTURED,PASS
+receivable anon ACL closed,True,True,CAPTURED,PASS
+receivable empty identity denied,True,True,CAPTURED,PASS
+receivable nonexistent identity denied,True,True,CAPTURED,PASS
+receivable malformed identity denied,True,True,CAPTURED,PASS
+receivable revoked organization denies before mutation,True,True,CAPTURED,PASS
+receivable revoked profile denied,True,True,CAPTURED,PASS
+receivable revoked role denied,True,True,CAPTURED,PASS
+receivable B own accepted,0,0,CAPTURED,PASS
+receivable RED foreign canceled leaks status,True,True,RED_ORACLE_REPRODUCED,PASS
+receivable RED nonexistent distinguishable,True,True,RED_ORACLE_REPRODUCED,PASS
+receivable own active payment preserved,True,True,CAPTURED,PASS
+receivable RED foreign active payment oracle,True,True,RED_ORACLE_REPRODUCED,PASS
+payable foreign SELECT hidden by captured RLS,0,0,CAPTURED,PASS
+payable direct own UPDATE closed,True,True,CAPTURED,PASS
+payable own client RPC accepted,0,0,CAPTURED,PASS
+payable own status persisted,CANCELED,CANCELED,CAPTURED,PASS
+payable exactly one cancellation audit,1,1,CAPTURED,PASS
+payable replay no extra audit,True,True,CAPTURED,PASS
+payable foreign OPEN tenant guard atomic,True,True,CAPTURED,PASS
+payable anon ACL closed,True,True,CAPTURED,PASS
+payable empty identity denied,True,True,CAPTURED,PASS
+payable nonexistent identity denied,True,True,CAPTURED,PASS
+payable malformed identity denied,True,True,CAPTURED,PASS
+payable revoked organization denies before mutation,True,True,CAPTURED,PASS
+payable revoked profile denied,True,True,CAPTURED,PASS
+payable revoked role denied,True,True,CAPTURED,PASS
+payable B own accepted,0,0,CAPTURED,PASS
+payable RED foreign canceled leaks status,True,True,RED_ORACLE_REPRODUCED,PASS
+payable RED nonexistent distinguishable,True,True,RED_ORACLE_REPRODUCED,PASS
+payable own active payment preserved,True,True,CAPTURED,PASS
+payable RED foreign active payment oracle,True,True,RED_ORACLE_REPRODUCED,PASS
+B2B fixture BLOCKED before RPC by exact risk dependency,True,True,CAPTURED,PASS
+receivable GREEN foreign OPEN,True,True,GREEN_OFFLINE_ONLY,PASS
+receivable GREEN foreign CANCELED,True,True,GREEN_OFFLINE_ONLY,PASS
+receivable GREEN foreign PARTIAL,True,True,GREEN_OFFLINE_ONLY,PASS
+receivable GREEN nonexistent uniform,True,True,GREEN_OFFLINE_ONLY,PASS
+receivable GREEN own preserved,0,0,GREEN_OFFLINE_ONLY,PASS
+receivable GREEN replay preserved,True,True,GREEN_OFFLINE_ONLY,PASS
+receivable GREEN own payment branch preserved,True,True,GREEN_OFFLINE_ONLY,PASS
+payable GREEN foreign OPEN,True,True,GREEN_OFFLINE_ONLY,PASS
+payable GREEN foreign CANCELED,True,True,GREEN_OFFLINE_ONLY,PASS
+payable GREEN foreign PARTIAL,True,True,GREEN_OFFLINE_ONLY,PASS
+payable GREEN nonexistent uniform,True,True,GREEN_OFFLINE_ONLY,PASS
+payable GREEN own preserved,0,0,GREEN_OFFLINE_ONLY,PASS
+payable GREEN replay preserved,True,True,GREEN_OFFLINE_ONLY,PASS
+payable GREEN own payment branch preserved,True,True,GREEN_OFFLINE_ONLY,PASS
+B2B own positive cancellation,Legitimate complete chain,Fixture fails in exact risk trigger before RPC,INTEGRATION,BLOCKED
+JWT/RLS hosted A/B and lock wait revocation,Independent canonical proof,No production operations authorized/executed,HOSTED,NOT RUN

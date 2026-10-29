@@ -127,3 +127,11 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - [x] Vitest188/188em11arquivos incluindo PG como1teste; matriz suplementar37PASS/0FAIL/6BLOCKED/1NOT RUN e logs/pinos em `evidencias-cadeia-financeira-20261029`. Relatório `cadeia-financeira-offline-20261029.md`; históricos não somados, taxas não repetidas, Entregas/runtime intactos.
 - [ ] NO-GO: cadeia positiva/fiscal/origem e guardsACL/RLS/FKs completos, SQLdinâmico/importadores, semânticaBI/proveniência/ledger contábil e JWT A/B/esperas; não emitir *.sql.review até demonstração integral. Promoção futura exige PRE/POST completo, revisão, autorização e containmentdeny-only semGRANT/restauração vulnerável/remediação automática.
 - [ ] P0 histórico cancelamento tenant e integrações permanece;P1 aging/competência/crédito/export/calendário/parcelas/billing pendentes. Envase/B2B/entrega e produçãoOFF preservados.
+
+## Rodada29/10 — cancelamento de parcela entre empresas (Etapas6/9)
+
+- [x] Harness existente: RPC capturada executada só em LOGIN authenticated/anon não privilegiados, helpersAuth/H15/RBACcapturados, ACL/RLS e todos triggers de parcelas.55assertionsPASS/0FAIL inesperados; matriz55PASS/0FAIL/1BLOCKED/1NOT RUN, sem somar históricos; Vitest9/9em3arquivos.
+- [x] Refinamento P0: guardtenant nega foreignOPEN atomicamente; seis checksRED reproduzem oráculo cancelada/pagamento/inexistente nos dois ramos, antes do UPDATE. Transformação mínima offline uniformiza foreign/inexistente e conserva próprio/replay/baixas. Nenhum SQL implantável/runtime/produção/histórico alterado.
+- [x] Relatório `docs/auditorias/cancelamento-parcela-autorizacao-20261029.md`, evidências subpasta cancel-authorization; revisão independente e hashes. Próprios MANUAL A/B positivos não equivalem a B2B positivo.
+- [ ] BLOCKED B2B positivo: fixture inteira aborta no trigger risco→recalc_partner_risk_score não composto, com estado inalterado. Compor risco/parceiro/governança/origem, RLSpai/identidade/ACL/FKs antes de afirmar autoridade integral; sem ticket/bypass.
+- [ ] NOT RUN JWT/RLSreal A/B, revogação pós-lock/concorrência, PREPOST/containmentde promoção. BI/proveniência/calendário/parcelas/billing e financeiro/envase/B2B/entrega continuam NO-GO; não emitir *.sql.review.
