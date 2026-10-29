@@ -1,0 +1,15 @@
+test_all_evidence_go (__main__.T.test_all_evidence_go) ... ok
+test_forbidden_ref_denies (__main__.T.test_forbidden_ref_denies) ... ok
+test_homolog_rejects_prod_ref (__main__.T.test_homolog_rejects_prod_ref) ... ok
+test_homolog_unapproved_ref_denies (__main__.T.test_homolog_unapproved_ref_denies) ... ok
+test_missing_flags_and_version_blocked (__main__.T.test_missing_flags_and_version_blocked) ... ok
+test_no_mode_denies (__main__.T.test_no_mode_denies) ... ok
+test_partial_flags_blocked (__main__.T.test_partial_flags_blocked) ... ok
+test_prod_requires_prod_ref (__main__.T.test_prod_requires_prod_ref) ... ok
+test_unknown_mode_denies (__main__.T.test_unknown_mode_denies) ... ok
+test_version_unverified_blocked (__main__.T.test_version_unverified_blocked) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 2.066s
+
+OK

@@ -1,0 +1,7 @@
+DENY modo desconhecido/ausente ('vazio')
+PASS cliente canônico do app = swzpzcwiasxmjutrmvkm (o app; não o alvo)
+PASS sem chave service_role no frontend
+PASS nenhum .review em migrations
+BLOCKED versão alvo não comprovada (HEAD local não serve; não publicar nada)
+BLOCKED saídas externas OFF não comprovadas
+RESULT DENY
