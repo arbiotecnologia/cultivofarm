@@ -1,19 +1,9 @@
 {
   "unrestored_functions_views": [],
-  "defaults_failed": [
-    {
-      "object": "\"storage\".\"objects\".path_tokens",
-      "error": "ERROR:  cannot use column reference in DEFAULT expression\n"
-    }
-  ],
+  "defaults_failed": [],
   "constraints_failed": [],
   "policies_failed": [],
-  "triggers_failed": [
-    {
-      "object": "\"public\".\"microorganism_regulatory_dossiers\".trg_regulatory_published_candidate_guard",
-      "error": "ERROR:  trigger \"trg_regulatory_published_candidate_guard\" for relation \"microorganism_regulatory_dossiers\" already exists\n"
-    }
-  ],
+  "triggers_failed": [],
   "preflight": "PASS",
   "installer_tests": [
     {

@@ -125,10 +125,11 @@ def merge_supplement(j):
         if (r['schema'],r['name']) not in rels: j['relations'].append(r)
     cols={(c['schema'],c['table'],c['name']) for c in j['columns']}
     for c in s['extra_columns'] or []:
-        if (c['schema'],c['table'],c['name']) not in cols: j['columns'].append({**c,'generated':False,'identity':''})
+        if (c['schema'],c['table'],c['name']) not in cols: j['columns'].append({**c,'generated':(c['schema'],c['table'],c['name'])==('storage','objects','path_tokens'),'identity':''})
     ct={x['name']:x['def'] for x in s['constraint_trigger'] or []}
     j['constraints']=[c for c in j['constraints'] if c['name'] not in ct]
-    j['triggers']+= [{'schema':'public','table':'microorganism_regulatory_dossiers','name':n,'definition':d,'enabled':'O'} for n,d in ct.items()]
+    # constraint trigger already restored from triggers capture (pg_get_triggerdef); only drop the invalid ADD CONSTRAINT form
+    assert all(any(t['name']==n for t in j['triggers']) for n in ct)
     return j
 
 if __name__=='__main__':
