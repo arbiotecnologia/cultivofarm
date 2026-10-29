@@ -6,7 +6,7 @@ balance); 1x -> 0%; 2x/3x -> 1.8% a.m. from the first period; 4+ rejected;
 2026-10-29T17:49Z: first due = fiscal invoice (NF) issue date + 30 days; a late
 or repeated manual generation never restarts the term.
 
-Decided 2026-10-29T18:0xZ: civil-month clamp (same day of the first nominal in
+Decided 2026-10-29 (owner confirmation; applied 18:00Z): civil-month clamp (same day of the first nominal in
 following months, last day of a shorter month), pro-rata fixed monthly Price
 (no per-day adjustment), credit exposure basis = financed total including
 interest (rounded installment sum). Business-day rolling is decided in
