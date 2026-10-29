@@ -1,0 +1,40 @@
+$ vitest run "--maxWorkers=1" --no-file-parallelism src/test/financeiro/cancelAuthorizationPostgres.test.ts src/test/financeiro/receivableRedGreenPostgres.test.ts src/test/financeiro/receivableSemantics.test.ts src/test/financeiro/financialProvenanceOffline.test.ts
+
+ RUN  v3.2.4 /dev-server
+
+ ❯ src/test/financeiro/cancelAuthorizationPostgres.test.ts (1 test | 1 failed) 43483ms
+   × nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline 43482ms
+     → expected 744 to be 651 // Object.is equality
+ ✓ src/test/financeiro/receivableSemantics.test.ts (7 tests) 4ms
+ ✓ src/test/financeiro/financialProvenanceOffline.test.ts (1 test) 173ms
+ ✓ src/test/financeiro/receivableRedGreenPostgres.test.ts (1 test) 5491ms
+   ✓ reproduz P0 red e conserva financiamento e eventos green apenas no PG descartável  5490ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/financeiro/cancelAuthorizationPostgres.test.ts > nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline
+AssertionError: expected 744 to be 651 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 651[39m
+[31m+ 744[39m
+
+ ❯ src/test/financeiro/cancelAuthorizationPostgres.test.ts:16:23
+     14|   const result = JSON.parse(output.trim().split('\n').at(-1) ?? '{}');
+     15|   expect(result.FAIL).toBe(0);
+     16|   expect(result.PASS).toBe(651);
+       |                       ^
+     17|   expect(result.BLOCKED).toBe(1);
+     18|   expect(result['NOT RUN']).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 9 passed (10)
+   Start at  15:48:17
+   Duration  52.90s (transform 112ms, setup 330ms, collect 115ms, tests 49.15s, environment 1.95s, prepare 377ms)
+
+error: script "test" exited with code 1

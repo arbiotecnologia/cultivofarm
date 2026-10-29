@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 436, in <module>
+    try: main()
+         ~~~~^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 396, in main
+    parties.exercise(sys.modules[__name__],risk_metadata)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/cancel-parties-credit.py", line 111, in exercise
+    h.check('GREEN owner proceeds only to legitimate billing denial',True,error[1].startswith('billing_not_eligible:'),green)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 36, in check
+    assert equal, row
+           ^^^^^
+AssertionError: {'test': 'GREEN owner proceeds only to legitimate billing denial', 'expected': 'True', 'actual': 'False', 'mode': 'PARTIES_CREDIT_GREEN_SANDBOX', 'status': 'FAIL'}

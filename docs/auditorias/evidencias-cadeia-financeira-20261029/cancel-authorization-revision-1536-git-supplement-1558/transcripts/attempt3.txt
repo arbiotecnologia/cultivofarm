@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 436, in <module>
+    try: main()
+         ~~~~^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 396, in main
+    parties.exercise(sys.modules[__name__],risk_metadata)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/cancel-parties-credit.py", line 87, in exercise
+    reject('RED impl selects buyer tenant ahead of owner',f"SELECT generate_b2b_receivable_secure_impl('{order1}');",('42501','B2B_FINANCIAL_TENANT_MISMATCH'),mode=red)
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/cancel-parties-credit.py", line 21, in reject
+    h.check(label+' exact error',expected,h.error_tuple(res),mode)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/financial-installments-initial-20261024/test-cancel-authorization.py", line 36, in check
+    assert equal, row
+           ^^^^^
+AssertionError: {'test': 'RED impl selects buyer tenant ahead of owner exact error', 'expected': "('42501', 'B2B_FINANCIAL_TENANT_MISMATCH')", 'actual': "('42501', 'permission denied for function generate_b2b_receivable_secure_impl')", 'mode': 'PARTIES_CREDIT_RED_CAPTURED', 'status': 'FAIL'}
