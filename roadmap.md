@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 29/10 14:28 — revisão da autorização de cancelamento
+- [x] Pagamentos estrangeiros reais/exatidão de erros/AuthGREEN/valores e14corridas locais com holderPID; hipótese pós-lock READ COMMITTED, contraprova snapshotREPEATABLE READ sem mudar helpers.
+- [x] 189PGPASS/0FAIL inesperados,9/9Vitest; saídas novas/hashes históricos divergentes e ausentes documentados sem sobrescrever; relatório/plano original atualizados.
+- [ ] Promoção BLOCKED: riscoB2B/cadeia integral/BI/proveniência/JWTreal/isolamentoPostgREST e serialização integral de identidade; produçãoOFF.
+
 ## 29/10 — autorização local do cancelamento financeiro
 - [x] Reutilizar harness/ACL/RLS/guards para clientes A/B:55assertionsPASS, foreignOPEN negado e oráculoRED reproduzido; transformação somente offline.
 - [x] Próprio MANUAL/anônimo/identidade/revogação/replay/baixas testados; fixtureB2B bloqueia no risco real não composto, sem bypass.

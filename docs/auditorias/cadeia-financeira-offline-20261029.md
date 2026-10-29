@@ -2,6 +2,10 @@
 
 ## Entrega e estado
 
+### Revisão14:28 — autorização pós-lock somente offline
+
+Nova pasta `cancel-authorization-revision-1428`:189assertionsPGPASS/0FAIL inesperados,1BLOCKED/1NOT RUN; Vitest9/9em3arquivos.14corridas locais com PID exato do holder; RED papel revogado ainda cancela, GREEN rechecagem separada com helpers STABLE intactos nega emREAD COMMITTED; contraprovaREPEATABLE READ retém snapshot, hipótese nega isolamento diferente. Foreign PARTIAL com evento1.000 retorna42501/mensagem exata como inexistente e não toma lock estrangeiro no ensaio. Detalhes/limites no relatório específico. Histórico antes:21hashesOK/1divergente(red-green.json)/4logs ausentes, preservados sem reparo silencioso; fontes do runner evoluem com hashes novos. Produção/runtime intactos e NO-GO integral mantido.
+
 ### Rodada adicional — cancelamento entre empresas, 29/10
 
 Relatório específico `cancelamento-parcela-autorizacao-20261029.md`; evidências em `evidencias-cadeia-financeira-20261029/cancel-authorization/`. **55 assertions PG PASS/0 FAIL inesperados, 1 BLOCKED/1 NOT RUN na matriz; Vitest9/9em3arquivos**, sem somar históricos. Guard tenant capturado nega escrita estrangeira OPEN; seis checks RED reproduzem exposição de status/pagamento antes do UPDATE nos dois ramos. Transformação mínima somente sandbox uniformiza alvo fora do tenant. Próprio MANUAL positivo não certifica B2B: criação de fixture B2B bloqueia em recalc_partner_risk_score, sem guard/ticket inventado. NO-GO e demais gates preservados; sem runtime/produção/SQL implantável.
