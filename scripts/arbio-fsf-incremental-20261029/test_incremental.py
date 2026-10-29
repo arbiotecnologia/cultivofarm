@@ -78,6 +78,7 @@ def main():
     def deny(name, sql, code):
         before=pg.sql('SELECT to_jsonb(p)::text FROM partner_orders p'); a=pg.sql('SELECT count(*) FROM partner_order_audit_logs')
         err=pg.sql(sql,ok=False)
+        if code not in err: print(err, flush=True)
         check(name+' SQLSTATE',True,code in err)
         check(name+' atomic state',before,pg.sql('SELECT to_jsonb(p)::text FROM partner_orders p'))
         check(name+' no audit',a,pg.sql('SELECT count(*) FROM partner_order_audit_logs'))
