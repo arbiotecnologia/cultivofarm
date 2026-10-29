@@ -69,7 +69,9 @@ def client(sql, actor=m.U, role='authenticated'):
     return subprocess.run(m.pg.psql(user=role), input=command, text=True, capture_output=True)
 
 def state():
-    return m.pg.sql("SELECT jsonb_build_object('ar',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM accounts_receivable_installments t),'ap',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM accounts_payable_installments t),'audit',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM financial_audit_log t),'payments',(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM receivable_payments t));")
+    tables=['accounts_receivable','accounts_payable','accounts_receivable_installments','accounts_payable_installments','financial_audit_log','receivable_payments','payable_payments','financial_receipts','partner_order_payment_schedule']
+    parts=[m.q(t)+",(SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM "+t+" t)" for t in tables]
+    return m.pg.sql('SELECT jsonb_build_object('+','.join(parts)+');')
 
 def call(part,kind): return f"SELECT rpc_cancel_financial_installment('{part}','{kind}','LOCAL AUDIT REASON');"
 
@@ -210,6 +212,8 @@ def main():
     (OUT/'results.json').write_text(json.dumps(result,indent=2)+'\n')
     with (OUT/'matrix.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=list(checks[0]));w.writeheader();w.writerows(checks)
+        w.writerow(dict(test='B2B own positive cancellation',expected='Legitimate complete chain',actual='Fixture fails in exact risk trigger before RPC',mode='INTEGRATION',status='BLOCKED'))
+        w.writerow(dict(test='JWT/RLS hosted A/B and lock wait revocation',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN'))
     print(json.dumps(result['counts']))
 
 if __name__=='__main__': main()
