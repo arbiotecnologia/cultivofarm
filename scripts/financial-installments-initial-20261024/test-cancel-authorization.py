@@ -337,8 +337,16 @@ def main():
     risk_metadata=risk.compose(sys.modules[__name__]);risk.exercise(sys.modules[__name__],risk_metadata)
     for kind in ['receivable','payable']:
         part=fixture(1700+(10 if kind=='payable' else 0),kind,m.A);before=amounts(part,kind)
+        unrelated=state()
         check(kind+' risk composed manual cancellation',0,client(call(part,kind)).returncode,'RISK_GREEN_CONTROL')
         check(kind+' risk composed snapshot unchanged',before,amounts(part,kind),'RISK_GREEN_CONTROL')
+        check(kind+' risk composed persisted cancellation','CANCELED',m.pg.sql(f"SELECT status FROM accounts_{kind}_installments WHERE id='{part}'"),'RISK_GREEN_CONTROL')
+        check(kind+' risk composed exactly one actor audit','1',m.pg.sql(f"SELECT count(*) FROM financial_audit_log WHERE entity_id='{part}' AND action='INSTALLMENT_CANCELED' AND performed_by='{m.U}'"),'RISK_GREEN_CONTROL')
+        before_state=json.loads(unrelated);after_state=json.loads(state())
+        for key in before_state:
+            if key not in ['accounts_'+kind+'_installments','financial_audit_log']:
+                assert before_state[key]==after_state[key],key
+        check(kind+' risk composed unrelated state unchanged',True,all(before_state[key]==after_state[key] for key in before_state if key not in ['accounts_'+kind+'_installments','financial_audit_log']),'RISK_GREEN_CONTROL')
         foreign=paid_fixture(1730+(10 if kind=='payable' else 0),kind,m.B)
         uniform(kind+' risk composed foreign full state',foreign,kind)
     helper_metadata=json.loads(m.pg.sql("SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'volatility',p.provolatile,'md5',md5(pg_get_functiondef(p.oid)))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private','auth') AND p.proname IN ('is_financial_staff','h15_actor_organization','has_role','platform_actor_access_ready','fn_authz_uid_scope_ok')"))
@@ -348,7 +356,8 @@ def main():
         check('helper STABLE '+entry['signature'],'s',entry['volatility'],'GREEN_OFFLINE_ONLY')
     (OUT/'rpc-captured.txt').write_text(rpc['body'])
     (OUT/'rpc-offline-transformation.diff').write_text(''.join(__import__('difflib').unified_diff(rpc['body'].splitlines(True),body.splitlines(True),fromfile='captured',tofile='offline-not-installable')))
-    result=dict(counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL']},checks=checks,pins=pins,responses=responses,
+    checks.extend([dict(test='B2B own positive cancellation',expected='Legitimate complete chain',actual=risk_metadata['blocked'],mode='INTEGRATION',status='BLOCKED'),dict(test='JWT/RLS hosted A/B and full chain',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN')])
+    result=dict(counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL','BLOCKED','NOT RUN']},disposition='BLOCKED_INTEGRATION',checks=checks,pins=pins,responses=responses,
         captured_manifest_sha256=hashlib.sha256((H/'receivable-recursive-live-20261029.json').read_bytes()).hexdigest(),
         transformed_body_md5=hashlib.md5(body.encode()).hexdigest(), postgres_version=m.pg.sql('SHOW server_version'), isolation_contract='GREEN denies non-READ-COMMITTED; separate post-lock SPI SELECT calls exact STABLE helpers',
         omitted_policies=omitted_policies, races=races, helper_metadata=helper_metadata, output_dir=str(OUT), by_mode={mode:sum(c['mode']==mode for c in checks) for mode in sorted({c['mode'] for c in checks})},
@@ -360,8 +369,6 @@ def main():
     (OUT/'results.json').write_text(json.dumps(result,indent=2)+'\n')
     with (OUT/'matrix.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=list(checks[0]),lineterminator='\n');w.writeheader();w.writerows(checks)
-        w.writerow(dict(test='B2B own positive cancellation',expected='Legitimate complete chain',actual=risk_metadata['blocked'],mode='INTEGRATION',status='BLOCKED'))
-        w.writerow(dict(test='JWT/RLS hosted A/B and full chain',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN'))
     print(json.dumps(result['counts']))
 
 if __name__=='__main__':

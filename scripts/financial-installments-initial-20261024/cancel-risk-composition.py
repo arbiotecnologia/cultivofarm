@@ -1,4 +1,5 @@
 """Captured disposable risk/governance slice; never seed around a failing guard."""
+import json
 NAMES = ['partner_accounts', 'partner_financial_settings', 'partner_risk_scores',
          'financial_governance_audit_log', 'partner_audit_logs']
 
@@ -39,6 +40,17 @@ def compose(h):
             else: omitted.append(name+'.'+c['name'])
         for tr in t['triggers'] or []: m.pg.sql(tr['definition']+';')
         h.policies(name)
+        actual=json.loads(m.pg.sql("SELECT jsonb_build_object('columns',(SELECT jsonb_agg(jsonb_build_object('name',a.attname,'type',format_type(a.atttypid,a.atttypmod),'default',pg_get_expr(d.adbin,d.adrelid),'notnull',a.attnotnull) ORDER BY a.attnum) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid="+m.q(name)+"::regclass AND a.attnum>0 AND NOT a.attisdropped),'constraints',(SELECT jsonb_agg(jsonb_build_object('name',conname,'definition',pg_get_constraintdef(oid)) ORDER BY conname) FROM pg_constraint WHERE conrelid="+m.q(name)+"::regclass),'triggers',(SELECT jsonb_agg(jsonb_build_object('name',tgname,'definition',pg_get_triggerdef(oid),'enabled',tgenabled) ORDER BY tgname) FROM pg_trigger WHERE tgrelid="+m.q(name)+"::regclass AND NOT tgisinternal),'owner',pg_get_userbyid(relowner),'acl',relacl::text[],'rls',relrowsecurity,'force_rls',relforcerowsecurity) FROM pg_class WHERE oid="+m.q(name)+"::regclass"))
+        columns=[{k:c[k] for k in ['name','type','default','notnull']} for c in r.live['columns'] if c['relation_oid']==t['oid']]
+        h.check(name+' captured columns',columns,actual['columns'],'RISK_METADATA')
+        constraints=sorted([{k:c[k] for k in ['name','definition']} for c in t['constraints'] or []],key=lambda c:c['name'])
+        h.check(name+' captured constraints',constraints,actual['constraints'],'RISK_METADATA')
+        triggers=sorted([{k:tr[k] for k in ['name','definition','enabled']} for tr in t['triggers'] or []],key=lambda tr:tr['name'])
+        h.check(name+' captured trigger definitions/enabled',triggers,actual['triggers'] or [],'RISK_METADATA')
+        h.check(name+' owner ACL RLS',(t['owner'],sorted(t['acl']),t['rls'],t['force_rls']),(actual['owner'],sorted(actual['acl']),actual['rls'],actual['force_rls']),'RISK_METADATA')
+        policy_actual=json.loads(m.pg.sql("SELECT COALESCE(jsonb_agg(jsonb_build_object('policyname',policyname,'permissive',permissive,'roles',roles,'cmd',cmd,'qual',qual,'with_check',with_check) ORDER BY policyname),'[]') FROM pg_policies WHERE schemaname='public' AND tablename="+m.q(name)))
+        policy_expected=sorted([{k:p[k] for k in ['policyname','permissive','roles','cmd','qual','with_check']} for p in t['policies'] or []],key=lambda p:p['policyname'])
+        h.check(name+' captured policies',policy_expected,policy_actual,'RISK_METADATA')
     h.extra_state_tables=NAMES+['platform_private.authz_tickets']
     return dict(functions=[s+'.'+n for s,n in functions],tables=NAMES,omitted_fks=omitted,
         limits='Calculator slice only: order table retains minimal harness plus referenced columns; order INSERT/FKs/triggers/RLS not composed, zero order fixtures. Empty support identity/catalog schemas lack transitives; partner creation must clear every captured partner/settings trigger before positive B2B.')
@@ -66,6 +78,7 @@ def exercise(h, metadata):
     for actor,label in [(m.U,'A'),(h.V,'B')]:
         before=h.state(); result=h.client(f"SELECT recalc_partner_risk_score('{partner}');",actor)
         h.check('risk '+label+' exact FK barrier','23503',h.error_tuple(result)[0],'RISK_BLOCKED_EXPECTED')
+        h.check('risk '+label+' specific partner FK',True,'partner_risk_scores_partner_id_fkey' in result.stderr and 'table "partner_risk_scores"' in result.stderr,'RISK_BLOCKED_EXPECTED')
         h.check('risk '+label+' FK barrier atomic',before,h.state(),'RISK_BLOCKED_EXPECTED')
         h.responses.append(dict(test='full risk calculator '+label,stderr=result.stderr))
     h.check('risk no fabricated ticket or partner','0|0',m.pg.sql('SELECT (SELECT count(*) FROM platform_private.authz_tickets),(SELECT count(*) FROM partner_accounts)'),'RISK_CAPTURED')

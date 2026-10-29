@@ -5,11 +5,12 @@ H=Path(__file__).resolve().parent; ROOT=H.parents[1]
 E=ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029'
 
 def classify(line):
-    # Strip SQL strings before distinguishing EXECUTE keyword from access-level data.
+    # Frozen candidate-site classifier, NOT a general SQL parser.
+    if '--' in line or '/*' in line or re.search(r'\$\w*\$',line): return 'UNRESOLVED'
     outside=re.sub(r"'(?:''|[^'])*'", "''",line)
-    if re.search(r'\bEXECUTE\s+(?:format\s*\(|[a-z_]\w*)',outside,re.I): return 'EXECUTABLE_DYNAMIC_SQL'
+    if re.search(r'\bEXECUTE\b',outside,re.I): return 'EXECUTABLE_DYNAMIC_SQL'
     if re.search(r'\bformat\s*\(',outside,re.I): return 'TEXT_FORMAT_NOT_SQL_EXECUTE'
-    return 'LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE'
+    return 'LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE' if "'execute'" in line else 'UNRESOLVED'
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--output-dir',type=Path);a=p.parse_args()
@@ -36,6 +37,9 @@ def main():
     check('mutation EXECUTE','EXECUTABLE_DYNAMIC_SQL',classify("EXECUTE format('SELECT * FROM %I',table_name);"))
     check('mutation access literal','LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE',classify("access_level IN ('read','execute','manage')"))
     check('mutation text format','TEXT_FORMAT_NOT_SQL_EXECUTE',classify("format('Pedido %s',order_number)"))
+    check('literal EXECUTE','EXECUTABLE_DYNAMIC_SQL',classify("EXECUTE 'SELECT 1';"))
+    check('comment stays unresolved','UNRESOLVED',classify('-- EXECUTE format(statement)'))
+    check('dollar quote stays unresolved','UNRESOLVED',classify('EXECUTE $$SELECT 1$$'))
     dynamic=next(f for f in live['functions'] if int(f['oid'])==41591)
     branch="IF p_origem_os IN ('manual','b2b') THEN v_tabela_os := 'ordens_servico';\n    ELSE v_tabela_os := 'ordens_servico_onfarm';"
     check('dynamic identifier finite branch',1,dynamic['body'].count(branch))
@@ -51,7 +55,8 @@ def main():
         check('fingerprint '+c['path'],True,actual==c['current_md5']==c['md5']==previous['md5'])
         assert c['proof']=='SOURCE_ONLY_NOT_END_TO_END' and c['scope']=='SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED'
         consumers.append(dict(path=c['path'],md5=actual,proof=c['proof'],scope=c['scope']))
-    result=dict(candidate_sites=rows,classifications=counts,consumers=consumers,checks=checks,counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL']},dynamic_targets=targets,
+    checks.append(dict(test='Consumer/BI external provenance',expected='End-to-end authority and semantics',actual='Source-only fingerprints',status='BLOCKED'))
+    result=dict(candidate_sites=rows,classifications=counts,consumers=consumers,checks=checks,counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL','BLOCKED']},disposition='BLOCKED_PROVENANCE',dynamic_targets=targets,
         assertion_basis='Concrete independently failing assertions are recorded individually; dynamic targets resolved from pinned assignment branch, not executed operationally',
         blocked=['Only executable dynamic candidate requires full laboratory authorization chain; no operational execution authorized by this classification','External importer/job/runtime dispatch and metric-specific BI/accounting provenance remain unproved'],operational_go=False)
     (out/'provenance.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result['counts']))
