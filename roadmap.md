@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 29/10 — continuidade autônoma offline de risco B2B
+- [ ] Compor recálculo de risco/parceiro/governança capturados no harness descartável, preservando guards e negações contratuais.
+- [ ] Executar regressões monetárias/autorização e próxima prova técnica independente de proveniência; evidências novas por rodada, sem sobrescrever histórico.
+- [ ] Atualizar relatório/plano original com contagens segregadas, hashes e intervenção humana exata; produção e runtime preservados.
+
 ## 29/10 14:28 — revisão da autorização de cancelamento
 - [x] Pagamentos estrangeiros reais/exatidão de erros/AuthGREEN/valores e14corridas locais com holderPID; hipótese pós-lock READ COMMITTED, contraprova snapshotREPEATABLE READ sem mudar helpers.
 - [x] 189PGPASS/0FAIL inesperados,9/9Vitest; saídas novas/hashes históricos divergentes e ausentes documentados sem sobrescrever; relatório/plano original atualizados.
