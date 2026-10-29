@@ -27,112 +27,17 @@
     "assignment_status": "draft",
     "identity_resolution": "Exigir parceiro existente do commercial_owner AR Bio; não usar nome, fixture ou tenant FSF legado como autoridade"
   },
-  "formula": "For due_days <= 30: ROUND(table_snapshot_amount * 0.60, 2); for authorized due_days > 30: ROUND(table_snapshot_amount * 0.60 * (1 + band_monthly_rate / 100)^explicit_months_count, 2)",
-  "policies": [
-    {
-      "key": "up_to_30d",
-      "discount_percent": "40",
-      "monthly_interest_percent": "0",
-      "interest_type": "none",
-      "max_days": 30
-    },
-    {
-      "key": "above_30d_up_to_6m",
-      "discount_percent": "40",
-      "monthly_interest_percent": "1.8",
-      "interest_type": "compound",
-      "min_days_exclusive": 30,
-      "max_months_inclusive": 6
-    },
-    {
-      "key": "above_6m_up_to_12m",
-      "discount_percent": "40",
-      "monthly_interest_percent": "2",
-      "interest_type": "compound",
-      "min_months_exclusive": 6,
-      "max_months_inclusive": 12
-    }
-  ],
-  "reference_vectors": [
-    {
-      "key": "owner_whole_term_1m",
-      "discount": "40",
-      "rate": "1.8",
-      "months": 1,
-      "table": "100000",
-      "expected": "61080.00",
-      "status": "OFFLINE_ARITHMETIC_OWNER_RULE_NOT_COMMERCIAL_PASS",
-      "incidence": "single_band_since_operation_initial_date",
-      "condition": "due_days > 30; months supplied explicitly; no calendar conversion"
-    },
-    {
-      "key": "owner_whole_term_3m",
-      "discount": "40",
-      "rate": "1.8",
-      "months": 3,
-      "table": "100000",
-      "expected": "63298.67",
-      "status": "OFFLINE_ARITHMETIC_OWNER_RULE_NOT_COMMERCIAL_PASS",
-      "incidence": "single_band_since_operation_initial_date",
-      "condition": "due_days > 30; months supplied explicitly; no calendar conversion"
-    },
-    {
-      "key": "owner_whole_term_6m",
-      "discount": "40",
-      "rate": "1.8",
-      "months": 6,
-      "table": "100000",
-      "expected": "66778.69",
-      "status": "OFFLINE_ARITHMETIC_OWNER_RULE_NOT_COMMERCIAL_PASS",
-      "incidence": "single_band_since_operation_initial_date",
-      "condition": "due_days > 30; months supplied explicitly; no calendar conversion"
-    },
-    {
-      "key": "owner_whole_term_8m",
-      "discount": "40",
-      "rate": "2",
-      "months": 8,
-      "table": "100000",
-      "expected": "70299.56",
-      "status": "OFFLINE_ARITHMETIC_OWNER_RULE_NOT_COMMERCIAL_PASS",
-      "incidence": "single_band_since_operation_initial_date",
-      "condition": "due_days > 30; months supplied explicitly; no calendar conversion"
-    },
-    {
-      "key": "owner_whole_term_12m",
-      "discount": "40",
-      "rate": "2",
-      "months": 12,
-      "table": "100000",
-      "expected": "76094.51",
-      "status": "OFFLINE_ARITHMETIC_OWNER_RULE_NOT_COMMERCIAL_PASS",
-      "incidence": "single_band_since_operation_initial_date",
-      "condition": "due_days > 30; months supplied explicitly; no calendar conversion"
-    },
-    {
-      "key": "owner_30d",
-      "discount": "40",
-      "rate": "0",
-      "months": 0,
-      "days": 30,
-      "table": "100000",
-      "expected": "60000.00",
-      "status": "OFFLINE_ARITHMETIC_NOT_COMMERCIAL_PASS",
-      "incidence": "zero_interest_up_to_30d",
-      "condition": "explicit 30 days; not synonymous with one calendar month"
-    }
-  ],
   "credit": {
     "approval_scope": [
       "safra",
       "parceiro",
       "pedido"
     ],
-    "credit_limit": null,
+    "credit_limit": "100000.00",
     "explicit_numeric_limit_required": true,
     "missing_null_negative_nan_infinity": "DENY_FINANCE",
     "explicit_zero_is_unlimited": false,
-    "credit_limit_value_status": "NOT_PROVIDED_FINANCE_BLOCKED",
+    "credit_limit_value_status": "OWNER_DECIDED_OFFLINE_CANDIDATE",
     "block_if_overdue": true,
     "order_overdue_tolerance_days": 0,
     "block_broken_agreement": true,
@@ -152,17 +57,16 @@
     "correction_index": null,
     "pro_rata_day_basis": null,
     "approval_policy": null,
-    "installment_count": null,
-    "installment_vs_single_due": null,
-    "interest_incidence_schedule": null,
-    "billing_trigger": null,
     "default_payment_method": null,
     "safra_period_dates": null,
     "guarantee_evidence_and_sufficiency": null,
     "month_boundary_convention": null,
     "day_count_convention": null,
     "installment_amortization": null,
-    "fractional_months_convention": null
+    "fractional_months_convention": null,
+    "credit_exposure_basis": null,
+    "business_day_rolling": null,
+    "later_due_clamp_confirmation": null
   },
   "documents": [
     "contrato B2B",
@@ -210,72 +114,17 @@
     "automatic_legal_approval",
     "live_fixtures"
   ],
-  "owner_override": {
-    "id": "owner-20261028T024000Z",
-    "status": "DEFINITIVE_OWNER_DECISION_DRAFT_ONLY",
-    "fixed_discount_percent": "40",
-    "base_multiplier": "0.60",
-    "historical_source": "arbio-fsf-policy.july2026.historical.json",
-    "settlement_only_discount_gate_superseded": true,
-    "beyond_12_months": "DENY_UNLESS_SEPARATE_APPROVED_EXCEPTIONAL_POLICY",
-    "exceptional_policy_approved": false,
-    "supersedes": "owner-20261028T023700Z"
-  },
-  "technical_proposals": {
-    "status": "SUPERSEDED_BY_DEFINITIVE_OWNER_DECISION",
-    "rejected": [
-      "after_30_days",
-      "marginal_1.8_first_6_then_2_excess"
+  "authority": {
+    "single_active_candidate": "active_candidate",
+    "new_plans_may_use_only": "active_candidate",
+    "superseded_models": [
+      "arbio-fsf-policy.full-term-20261028.superseded.json",
+      "arbio-fsf-policy.july2026.historical.json"
     ],
-    "no_implicit_day_month_conversion": true,
-    "rounding": "Decimal ROUND_HALF_UP final cent; installment allocation pending"
+    "historical_titles": "never repriced"
   },
-  "boundary_fixtures": [
-    {
-      "key": "29d",
-      "rate": "0",
-      "status": "DEFINED_RATE"
-    },
-    {
-      "key": "30d",
-      "rate": "0",
-      "status": "DEFINED_RATE"
-    },
-    {
-      "key": "31d",
-      "rate": "1.8",
-      "status": "AMOUNT_BLOCKED"
-    },
-    {
-      "key": "6m_exact",
-      "rate": "1.8",
-      "status": "DATE_CONVENTION_BLOCKED"
-    },
-    {
-      "key": "6m_plus_1d",
-      "rate": "2",
-      "status": "DATE_CONVENTION_BLOCKED"
-    },
-    {
-      "key": "12m_exact",
-      "rate": "2",
-      "status": "DATE_CONVENTION_BLOCKED"
-    },
-    {
-      "key": "above_12m",
-      "rate": null,
-      "status": "DENY_NO_APPROVED_EXCEPTION"
-    }
-  ],
-  "interest_decision": {
-    "interest_start": "operation_initial_date",
-    "band_incidence": "single_selected_rate_over_entire_term",
-    "deduct_30_days": false,
-    "marginal_rates_allowed": false,
-    "status": "OWNER_DECIDED_NOT_PRODUCTION_RELEASED"
-  },
-  "price_schedule_candidate": {
-    "status": "OWNER_DECIDED_20261029T1741Z_OFFLINE_CANDIDATE_ONLY",
+  "active_candidate": {
+    "status": "OWNER_DECIDED_OFFLINE_CANDIDATE_ONLY",
     "runtime_enabled": false,
     "credit_limit": "100000.00",
     "receivable_generation": "manual_authorized_only",
@@ -291,11 +140,9 @@
       "n2": "1.8",
       "n3": "1.8"
     },
-    "first_due": "nf_issue_date_plus_30_days (OWNER_DECIDED_20261029T1749Z); manual generation never restarts term",
+    "first_due": "nf_issue_date_plus_30_days",
     "subsequent": "CANDIDATE civil months from first due with month-end clamp; business day and pro-rata undecided",
     "cents_rule": "pmt computed at full precision then rounded half-up; last installment closes balance",
-    "supersedes": "whole-principal compound to last due for NEW candidate plans only; historical titles untouched",
-    "historical_2pct_long_term": "inactive_reference_only",
     "undecided": [
       "later_due_clamp_confirmation",
       "irregular_or_pro_rata_period",
@@ -304,6 +151,20 @@
     ],
     "engine": "price-schedule.py",
     "exposure_basis": "UNDECIDED principal_vs_financed_total; production eligibility denied",
-    "small_amounts": "plans with zero/negative cents rows rejected PLAN_NOT_REPRESENTABLE_IN_CENTS"
+    "small_amounts": "plans with zero/negative cents rows rejected PLAN_NOT_REPRESENTABLE_IN_CENTS",
+    "discount_percent": "40",
+    "discount_applied": "once",
+    "creditor_issuer": "AR Bio",
+    "debtor": "FSF Agro",
+    "manual_generation_restarts_term": false,
+    "beyond_3_installments": "REJECT",
+    "long_term_2pct_and_6_12m_bands": "SUPERSEDED_INACTIVE_REFERENCE"
+  },
+  "resolved_by_active_candidate": {
+    "installment_count": "1..3",
+    "installment_vs_single_due": "1x single 30d or 2..3 monthly Price",
+    "interest_incidence_schedule": "Price on outstanding balance from first period",
+    "billing_trigger": "manual_authorized_only",
+    "first_due_anchor": "nf_issue_date"
   }
 }

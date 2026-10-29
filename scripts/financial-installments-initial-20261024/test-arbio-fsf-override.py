@@ -8,7 +8,7 @@ H = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location('battery', H/'test-financial-battery.py')
 b = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(b)
-C = json.loads((H/'arbio-fsf-policy.draft.json').read_text())
+C = json.loads((H/'arbio-fsf-policy.full-term-20261028.superseded.json').read_text())
 OUT = b.ROOT/'docs/auditorias/evidencias-arbio-fsf-definitiva-20261028'
 rows = []
 def record(label, status, expected, actual, level='LOCAL_DECIMAL_PG_ARITHMETIC', priority='P1'):
@@ -107,7 +107,7 @@ def main():
         w=csv.DictWriter(f,fieldnames=list(rows[0]),lineterminator='\n');w.writeheader();w.writerows(rows)
     totals={s:sum(r['status']==s for r in rows) for s in ['PASS','FAIL','BLOCKED','NOT RUN']}
     (OUT/'execucao.json').write_text(json.dumps(dict(totals=totals,real_PASS=0,
-        draft_sha256=hashlib.sha256((H/'arbio-fsf-policy.draft.json').read_bytes()).hexdigest(),
+        draft_sha256=hashlib.sha256((H/'arbio-fsf-policy.full-term-20261028.superseded.json').read_bytes()).hexdigest(),
         ref_of_historical_capture=b.LIVE['ref'],live_recaptured=False,
         method='Decimal 60 digits / ROUND_HALF_UP; captured helper local only; synthetic SETUP; no date resolver enforcement'),indent=2)+'\n')
     print(totals)
