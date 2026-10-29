@@ -291,16 +291,19 @@
       "n2": "1.8",
       "n3": "1.8"
     },
-    "first_due": "explicit_base_date_plus_30_days",
-    "subsequent": "monthly_civil_month_clamped_from_first_due",
+    "first_due": "nf_issue_date_plus_30_days (OWNER_DECIDED_20261029T1749Z); manual generation never restarts term",
+    "subsequent": "CANDIDATE civil months from first due with month-end clamp; business day and pro-rata undecided",
     "cents_rule": "pmt computed at full precision then rounded half-up; last installment closes balance",
     "supersedes": "whole-principal compound to last due for NEW candidate plans only; historical titles untouched",
     "historical_2pct_long_term": "inactive_reference_only",
     "undecided": [
-      "calendar_anchor_event",
+      "later_due_clamp_confirmation",
       "irregular_or_pro_rata_period",
-      "business_day_rolling"
+      "business_day_rolling",
+      "credit_exposure_basis"
     ],
-    "engine": "price-schedule.py"
+    "engine": "price-schedule.py",
+    "exposure_basis": "UNDECIDED principal_vs_financed_total; production eligibility denied",
+    "small_amounts": "plans with zero/negative cents rows rejected PLAN_NOT_REPRESENTABLE_IN_CENTS"
   }
 }

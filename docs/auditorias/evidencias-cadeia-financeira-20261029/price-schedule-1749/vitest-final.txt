@@ -1,0 +1,19 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/financeiro/priceScheduleOffline.test.ts (1 test) 337ms
+   ✓ Price candidato AR Bio x FSF (offline) > motor Price e rejeições passam sem falhas  330ms
+ ✓ src/test/financeiro/financialProvenanceOffline.test.ts (1 test) 529ms
+   ✓ distingue execução SQL de textos e preserva limites da proveniência dos consumidores  526ms
+ ✓ src/test/financeiro/bateriaB2bOffline.test.ts (15 tests) 10ms
+ ✓ src/test/financeiro/arbioFsfReference.test.ts (38 tests) 23ms
+ ✓ src/test/financeiro/receivableRedGreenPostgres.test.ts (1 test) 16112ms
+   ✓ reproduz P0 red e conserva financiamento e eventos green apenas no PG descartável  16101ms
+ ✓ src/test/financeiro/cancelAuthorizationPostgres.test.ts (1 test) 79426ms
+   ✓ nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline  79414ms
+
+ Test Files  6 passed (6)
+      Tests  57 passed (57)
+   Start at  17:50:53
+   Duration  86.68s (transform 1.72s, setup 2.68s, collect 7.89s, tests 96.44s, environment 18.64s, prepare 8.34s)
+
