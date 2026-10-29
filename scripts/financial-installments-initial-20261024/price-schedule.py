@@ -599,7 +599,11 @@ def run(out=None):
     pm_rel = [r for r in cap['rels'] if r.get('r') == 'payment_methods']
     check('captured payment_methods schema (id,name,active,created_at), no code column', ['id', 'name', 'active', 'created_at'], [c[0] for c in pm_rel[0]['cols']], 'PAYMENT_METHOD')
     check('captured payment_methods has no rows', True, all('rows' not in r and 'data' not in r for r in pm_rel), 'PAYMENT_METHOD')
-    rejects('real resolution blocked: rows not captured', 'PAYMENT_METHOD_CATALOG_ROWS_NOT_CAPTURED', lambda: resolve_payment_method(pol, None), 'PAYMENT_METHOD')
+    rejects('schema-only capture (None) still rejected', 'PAYMENT_METHOD_CATALOG_ROWS_NOT_CAPTURED', lambda: resolve_payment_method(pol, None), 'PAYMENT_METHOD')
+    rc = json.loads((H / 'payment-methods-readonly-capture-20261029.json').read_text())
+    real_rows = [dict(id='SANITIZED-' + r['id_sha256'][:26], name=r['name'], active=r['active']) for r in rc['rows']]
+    check('real read-only capture: ref + no mutation + 1 row', ('swzpzcwiasxmjutrmvkm', False, 1), (rc['project_ref'], rc['mutation'], len(rc['rows'])), 'PAYMENT_METHOD')
+    rejects('real catalog: boleto absent (AUDIT not reused)', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, real_rows), 'PAYMENT_METHOD')
     check('decision recorded, pending removed', ('BOLETO_BANCARIO', False), (pol['active_candidate']['default_payment_method']['decision'], 'default_payment_method' in pol['undefined']), 'PAYMENT_METHOD')
     SYNPM = 'deadbeef-0000-4000-8000-00000000b01e'  # SYNTHETIC fixture id, never real
     check('synthetic active boleto resolves', SYNPM, resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=True, synthetic=True), dict(id='x' * 36, name='PIX', active=True)]), 'PAYMENT_METHOD')

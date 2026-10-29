@@ -158,7 +158,7 @@
       "decided_at": "2026-10-29T18:35Z",
       "catalog": "public.payment_methods(id,name,active) — no code column; resolve exactly one ACTIVE row whose normalized name is \"boleto bancario\"; never invent UUID or activate",
       "issuance": "NOT_AUTHORIZED: no boleto emission, bank integration, bank account or credentials",
-      "resolution_status": "BLOCKED: captured catalog has schema only, zero rows (PAYMENT_METHOD_CATALOG_ROWS_NOT_CAPTURED)"
+      "resolution_status": "BLOCKED: PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG (owner read-only capture 2026-10-29: only AUDIT-AR-20260922 active; must not be reused, nothing created/activated)"
     }
   },
   "resolved_by_active_candidate": {
@@ -173,6 +173,6 @@
     "business_day_rolling": "next business day, no extra interest",
     "pro_rata": "none",
     "holiday_calendar_locality": "Paracatu-MG (owner decision 2026-10-29)",
-    "default_payment_method": "Boleto bancário (owner decision 2026-10-29); catalog row unresolved"
+    "default_payment_method": "Boleto bancário (owner decision 2026-10-29); absent from real catalog"
   }
 }
