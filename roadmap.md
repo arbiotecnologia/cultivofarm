@@ -1036,7 +1036,7 @@
 - [x] Calendário v2 2026–2027 (2027 por leis recorrentes vigentes).
 - [ ] Calendário 2028+ — nova versão quando necessário, mesmas fontes.
 - [x] Gerador Price candidato + calendário no banco (PG descartável, componente).
-- [ ] Método de pagamento oficial — aguardando resposta do proprietário.
+- [ ] Método Boleto oficial em produção — escolhido, ausente na última evidência; não reutilizar audit/homolog.
 - [ ] Origem fiscal NF, contabilidade C2, exposição canônica e JWT/RLS A/B reais.
 
 ## 29/10 19:05 — Guard compartilhado e vínculo FSF (offline)
@@ -1049,3 +1049,13 @@
 
 - [ ] Executar checklist E2E real AR Bio/FSF (aguarda sessões dos usuários e preflight manual)
 - [ ] Instalar candidato de colunas do gatilho (aguarda revisão independente)
+
+## 29/10 20:15 — preparação incremental, sem execução
+- [x] Captura metadata produção e três hashes confirmados; organizations intocada.
+- [x] Inventário separado UI/approval-trigger/shared/clientlink/Price; ticket privado, SQL pins, postflight e contenção preparados.
+- [x] Testes:57PGapproval/338PriceShared/51link/37P0redgreen/8Vitest/23preflight; evidências novas.
+- [x] Roteiro login/isolamento Renato/Fagner read-only sem credenciais.
+- [ ] Composição catálogo/stack integral e ensaio completo instalador/preflight — dependências não provadas.
+- [ ] Revisão independente e autorização específica execução do pacote exato — nenhuma implantação nesta chamada.
+- [ ] Sessões reais login/JWT/RLS e saídasOFF observadas — evidências humanas ausentes.
+- [ ] Price/origemNF/contabilidade/settings/boleto produção — gates permanecem fechados.

@@ -86,3 +86,5 @@
 - Canonical stock reservation returns a UUID that may identify a split row; delivery creation must use that returned item, and multi-request failures must remain partial/uncertain without compensating writes or fictitious rollback — preserves legitimate partial reservation and honest containment.
 - Financial B2B audit extends the original plan through the existing installment review package; independent Decimal fixtures and status matrices never authorize unsupported schedules or replace commercial formulas — prevents parallel modules and synthetic release claims.
 
+
+- Incremental AR Bio/FSF deployment artifacts follow scripts/arbio-fsf-incremental-20261029/AGENTS.md and current production pins; private approval tickets and deny-only rollback never activate unproven Price/shared/link subsets — prevents GUC authority and transitive release.

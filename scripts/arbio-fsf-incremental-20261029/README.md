@@ -8,7 +8,7 @@ Nova autorização permite preparar produção e futura implantação após insp
 | Subconjunto | Artefato | Situação |
 |---|---|---|
 | UI | `creditBlockReason.ts` + integração existente em `ResponderCotacaoDialog.tsx` | 8 testes focados passaram; sem mudança de writer. Publicação NÃO realizada |
-| 01 — aprovação/crédito/colunas | `01-credit-approval.install.sql.review` | Candidato transacional com pins atuais, ticket privado e pós-espera; 52 checks de componente passaram. **Não instalar até composição integral/revisão independente** |
+| 01 — aprovação/crédito/colunas | `01-credit-approval.install.sql.review` | Candidato transacional com pins atuais, ticket privado e pós-espera; 57 checks de componente passaram. **Não instalar até composição integral/revisão independente** |
 | 02 — shared credit | `../financial-price-generator-20261029/shared-credit-guard.sql.review` | Bloqueado: integração integral de writers, d51_5, origem, FKs/ledger/importadores e locks ainda não demonstrada em produção |
 | 03 — client link | `../fsf-client-link-20261029/link-partner-client.sql.review` | Não executado. Requer composição completa dos triggers de cliente/parceiro, audit/código, readiness h15 e teste sobre schema integral atual |
 | 04 — Price | `../financial-price-generator-20261029/price-generator.sql.review` | **Não instalável/ativável com stubs**; boleto oficial de produção ausente na última evidência, settings/origem NF/contabilidade pendentes |
@@ -36,7 +36,7 @@ Candidato substitui GUC por ticket `txid_current()+ator+pedido` numa tabela priv
 1. Confirmar no painel e origem observada do app **produção canônica**, versão exata e SHA256 do manifesto aprovado. Arquivo SQL não consegue comprovar project ref pelo nome genérico do banco; não tratar variável/GUC declarada como prova de ambiente.
 2. Inspecionar diffs e `inventory.json`; revisão independente precisa aprovar exatamente subconjunto 01, não o pacote inteiro.
 3. Obter prova sanitizada de saídas OFF separadamente: comunicação, NF/SEFAZ, boleto/banco e auto-receivable. Não basta cinco flags de comunicação. Ausência = BLOCKED para qualquer cenário com escrita.
-4. Reproduzir stack integral atual (incluindo `trg_00_b2b_internal_snapshot`, `trg_auto_b2b_receivable`, RLS/readiness, auditorias e constraints). O componente de 52 checks omite explicitamente essa stack; positivo legado sintético não autoriza pedido real.
+4. Reproduzir stack integral atual (incluindo `trg_00_b2b_internal_snapshot`, `trg_auto_b2b_receivable`, RLS/readiness, auditorias e constraints). O componente de 57 checks omite explicitamente essa stack; positivo legado sintético não autoriza pedido real. Montagem integral do instalador/preflight ainda não ensaiada; testes cobrem o corpo candidato e contenção, não todo DDL de instalação.
 5. Conferir baseline completo pelo `preflight.sql.readonly` antes da janela. Ele contém DO apenas de inspeção/assertion de catálogo, sem writes comerciais. Qualquer drift/objeto candidato já existente aborta. Não substituir hashes sem recaptura/revisão.
 6. Só em futura chamada autorizada executar instalador transacional aprovado; lock timeout 3s, statement timeout 60s, tabela travada e pins rechecados dentro da mesma transação. Nenhum título/cliente/registro comercial é criado pelo instalador 01.
 7. Conferir postflight exato (corpos/ACL/DDL vs artefato aprovado), zero tickets residuais, policies preservadas e executar releitura por sessões reais. Não chamar RPC de aprovação/criação para provar leitura.
