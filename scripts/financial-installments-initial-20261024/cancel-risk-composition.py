@@ -14,6 +14,10 @@ def compose(h):
                         values=[m.q(v['value']) for v in r.live['enums'] if v['name']==e['name']]
                         m.pg.sql('CREATE TYPE '+c['type']+' AS ENUM ('+','.join(values)+');')
         h.table(name)
+        if name not in NAMES:
+            h.acl('TABLE',name,t['acl'])
+            m.pg.sql('ALTER TABLE '+name+' ENABLE ROW LEVEL SECURITY;')
+            h.omitted_policies.extend(name+'.'+p['policyname']+' (empty support deny-only)' for p in t['policies'] or [])
     # Calculator read surface only. No fabricated order/origin fixture.
     m.pg.sql('ALTER TABLE partner_orders ADD COLUMN partner_id uuid REFERENCES partner_accounts(id); ALTER TABLE partner_orders ADD COLUMN created_at timestamptz DEFAULT now(); ALTER TABLE partner_orders ADD COLUMN status text;')
     ticket=next(t for t in r.live['relations'] if t['schema']=='platform_private' and t['name']=='authz_tickets')
