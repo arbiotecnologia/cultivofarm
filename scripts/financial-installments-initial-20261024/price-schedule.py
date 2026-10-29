@@ -187,6 +187,32 @@ def load_real_calendar(path, policy):
                 coverage_start=cs, coverage_end=ce, holidays=frozenset(hol), kind='REAL')
 
 
+def _norm(t):
+    import unicodedata
+    return ' '.join(unicodedata.normalize('NFKD', t).encode('ascii', 'ignore').decode().casefold().split())
+
+
+def resolve_payment_method(policy, catalog_rows):
+    """Resolve the decided default method against a CAPTURED catalog only.
+    catalog_rows=None means the rows were never captured (schema-only)."""
+    dm = (policy or {}).get('active_candidate', {}).get('default_payment_method') or {}
+    if dm.get('decision') != 'BOLETO_BANCARIO':
+        raise Rejected('PAYMENT_METHOD_DECISION_REQUIRED')
+    if catalog_rows is None:
+        raise Rejected('PAYMENT_METHOD_CATALOG_ROWS_NOT_CAPTURED')
+    hits = [r for r in catalog_rows if isinstance(r, dict) and isinstance(r.get('name'), str) and _norm(r['name']) == 'boleto bancario']
+    if not hits:
+        raise Rejected('PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG')
+    active = [r for r in hits if r.get('active') is True]
+    if not active:
+        raise Rejected('PAYMENT_METHOD_BOLETO_INACTIVE')
+    if len(active) > 1:
+        raise Rejected('PAYMENT_METHOD_BOLETO_AMBIGUOUS')
+    if not isinstance(active[0].get('id'), str) or len(active[0]['id']) != 36:
+        raise Rejected('PAYMENT_METHOD_ID_INVALID')
+    return active[0]['id']
+
+
 def production_eligibility(*_a, calendar_dataset=None, **_k):
     """Separated from the candidate API: production stays denied. The
     calendar reason is precise: absent source vs valid dataset with limited
@@ -568,6 +594,23 @@ def run(out=None):
     check('CNJ forensic/recess not imported', False, any(D(2027, 2, 8) == h or D(2027, 8, 11) == h or D(2027, 3, 24) == h for h in R2['holidays']), 'CALENDAR_REAL_V2')
     e2 = production_eligibility(calendar_dataset=R2)
     check('v2 eligibility reason precise and still denied', (False, True, False), (e2['eligible'], 'CALENDAR_COVERAGE_LIMITED_TO_2026-01-01..2027-12-31' in e2['reasons'], 'CALENDAR_SOURCE_REQUIRED' in e2['reasons']), 'PRODUCTION_GATE')
+    # Default payment method: BOLETO BANCARIO resolved only from captured catalog.
+    cap = json.loads((H.parent / 'contracts-c2-20261022' / 'integral' / 'hosted-capture.json').read_text())
+    pm_rel = [r for r in cap['rels'] if r.get('r') == 'payment_methods']
+    check('captured payment_methods schema (id,name,active,created_at), no code column', ['id', 'name', 'active', 'created_at'], [c[0] for c in pm_rel[0]['cols']], 'PAYMENT_METHOD')
+    check('captured payment_methods has no rows', True, all('rows' not in r and 'data' not in r for r in pm_rel), 'PAYMENT_METHOD')
+    rejects('real resolution blocked: rows not captured', 'PAYMENT_METHOD_CATALOG_ROWS_NOT_CAPTURED', lambda: resolve_payment_method(pol, None), 'PAYMENT_METHOD')
+    check('decision recorded, pending removed', ('BOLETO_BANCARIO', False), (pol['active_candidate']['default_payment_method']['decision'], 'default_payment_method' in pol['undefined']), 'PAYMENT_METHOD')
+    SYNPM = 'deadbeef-0000-4000-8000-00000000b01e'  # SYNTHETIC fixture id, never real
+    check('synthetic active boleto resolves', SYNPM, resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=True, synthetic=True), dict(id='x' * 36, name='PIX', active=True)]), 'PAYMENT_METHOD')
+    check('accent/case/space insensitive', SYNPM, resolve_payment_method(pol, [dict(id=SYNPM, name='  BOLETO   bancario ', active=True)]), 'PAYMENT_METHOD')
+    rejects('synthetic inactive boleto', 'PAYMENT_METHOD_BOLETO_INACTIVE', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=False)]), 'PAYMENT_METHOD')
+    rejects('boleto absent', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='PIX', active=True)]), 'PAYMENT_METHOD')
+    rejects('no fuzzy match "Boleto"', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto', active=True)]), 'PAYMENT_METHOD')
+    rejects('two active boletos ambiguous', 'PAYMENT_METHOD_BOLETO_AMBIGUOUS', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=True), dict(id='e' * 36, name='boleto bancario', active=True)]), 'PAYMENT_METHOD')
+    rejects('empty catalog', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, []), 'PAYMENT_METHOD')
+    t = copy.deepcopy(pol); t['active_candidate'].pop('default_payment_method')
+    rejects('decision missing', 'PAYMENT_METHOD_DECISION_REQUIRED', lambda: resolve_payment_method(t, []), 'PAYMENT_METHOD')
     elig = production_eligibility(calendar_dataset=REAL)
     check('eligibility with dataset: no generic SOURCE_REQUIRED', False, 'CALENDAR_SOURCE_REQUIRED' in elig['reasons'], 'PRODUCTION_GATE')
     check('eligibility with dataset: coverage reason', True, 'CALENDAR_COVERAGE_LIMITED_TO_2026-01-01..2026-12-31' in elig['reasons'], 'PRODUCTION_GATE')
