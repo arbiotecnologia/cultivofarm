@@ -37,6 +37,18 @@ BEGIN
   RETURN r = d[14];
 END $$;
 
+-- Partner CNPJ: only the formatting characters of the existing numeric scope (digits . / - space)
+-- are accepted and removed; any other character (letters, etc.) is a corrupted document and denied.
+CREATE FUNCTION platform_private.partner_cnpj_digits(p text) RETURNS text LANGUAGE plpgsql IMMUTABLE SET search_path = '' AS $$
+DECLARE v text;
+BEGIN
+  IF p IS NULL OR btrim(p) = '' THEN RAISE EXCEPTION 'PARTNER_CNPJ_REQUIRED' USING ERRCODE = '23514'; END IF;
+  IF p !~ '^[0-9./ -]+$' THEN RAISE EXCEPTION 'PARTNER_CNPJ_INVALID' USING ERRCODE = '23514'; END IF;
+  v := regexp_replace(p, '[./ -]', '', 'g');
+  IF NOT platform_private.cnpj_valid(v) THEN RAISE EXCEPTION 'PARTNER_CNPJ_INVALID' USING ERRCODE = '23514'; END IF;
+  RETURN v;
+END $$;
+
 CREATE FUNCTION platform_private.partner_client_link_authorize() RETURNS uuid
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_org uuid := public.h15_actor_organization();
@@ -69,6 +81,21 @@ BEGIN
   SELECT * INTO v_rcpt FROM platform_private.partner_client_link_receipts WHERE organization_id = v_org AND idempotency_key = p_idempotency_key;
   IF FOUND THEN
     IF v_rcpt.partner_id IS DISTINCT FROM p_partner_id THEN RAISE EXCEPTION 'IDEMPOTENCY_KEY_REUSED' USING ERRCODE = 'PT409'; END IF;
+    -- Replay re-validates CURRENT partner availability/owner and the recorded link before answering.
+    SELECT * INTO v_pa FROM public.partner_accounts WHERE id = p_partner_id FOR UPDATE;
+    IF NOT FOUND OR v_pa.ativo IS NOT TRUE OR v_pa.deleted_at IS NOT NULL
+       OR v_pa.commercial_owner_organization_id IS DISTINCT FROM v_org THEN
+      RAISE EXCEPTION 'PARTNER_NOT_AVAILABLE' USING ERRCODE = '42501';
+    END IF;
+    v_doc := platform_private.partner_cnpj_digits(v_pa.cnpj);
+    IF v_pa.client_id IS DISTINCT FROM v_rcpt.client_id
+       OR encode(extensions.digest(v_doc, 'sha256'), 'hex') IS DISTINCT FROM v_rcpt.document_sha256
+       OR NOT EXISTS (SELECT 1 FROM public.clientes c WHERE c.id = v_rcpt.client_id AND c.organization_id = v_org
+                       AND upper(regexp_replace(coalesce(c.cpf_cnpj, ''), '[[:space:]./-]', '', 'g')) = v_doc)
+       OR EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.client_id = v_rcpt.client_id AND pa.id <> v_pa.id
+                   AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN
+      RAISE EXCEPTION 'LINK_RECEIPT_STALE' USING ERRCODE = 'PT409';
+    END IF;
     RETURN jsonb_build_object('partner_id', v_rcpt.partner_id, 'client_id', v_rcpt.client_id, 'client_created', v_rcpt.client_created,
                               'replayed', true, 'financial_settings', 'UNCHANGED_BLOCKED');
   END IF;
@@ -82,9 +109,7 @@ BEGIN
     END IF;
     RAISE EXCEPTION 'PARTNER_NOT_AVAILABLE' USING ERRCODE = '42501';
   END IF;
-  v_doc := regexp_replace(coalesce(v_pa.cnpj, ''), '[^0-9]', '', 'g');
-  IF v_doc = '' THEN RAISE EXCEPTION 'PARTNER_CNPJ_REQUIRED' USING ERRCODE = '23514'; END IF;
-  IF NOT platform_private.cnpj_valid(v_doc) THEN RAISE EXCEPTION 'PARTNER_CNPJ_INVALID' USING ERRCODE = '23514'; END IF;
+  v_doc := platform_private.partner_cnpj_digits(v_pa.cnpj);
 
   PERFORM pg_advisory_xact_lock(hashtextextended('cliente_doc:' || v_org || ':' || v_doc, 0));
   IF platform_private.partner_client_link_authorize() IS DISTINCT FROM v_org THEN
@@ -100,10 +125,16 @@ BEGIN
                     AND upper(regexp_replace(coalesce(c.cpf_cnpj, ''), '[[:space:]./-]', '', 'g')) = v_doc) THEN
       RAISE EXCEPTION 'PARTNER_CLIENT_CONFLICT' USING ERRCODE = 'PT409';  -- never overwrite an existing link
     END IF;
+    IF EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.client_id = v_pa.client_id AND pa.id <> v_pa.id
+                AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN
+      RAISE EXCEPTION 'CLIENT_LINKED_TO_OTHER_PARTNER' USING ERRCODE = 'PT409';
+    END IF;
     v_client := v_pa.client_id;
   ELSE
-    SELECT c.id INTO v_client FROM public.clientes c
+    -- Never pick an arbitrary row: uniqueness is checked here, not assumed from an index.
+    SELECT count(*), min(c.id::text)::uuid INTO v_n, v_client FROM public.clientes c
      WHERE c.organization_id = v_org AND upper(regexp_replace(coalesce(c.cpf_cnpj, ''), '[[:space:]./-]', '', 'g')) = v_doc;
+    IF v_n > 1 THEN RAISE EXCEPTION 'CLIENT_DOCUMENT_AMBIGUOUS' USING ERRCODE = 'PT409'; END IF;
     IF v_client IS NOT NULL AND EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.client_id = v_client AND pa.id <> v_pa.id
                                          AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN
       RAISE EXCEPTION 'CLIENT_LINKED_TO_OTHER_PARTNER' USING ERRCODE = 'PT409';
