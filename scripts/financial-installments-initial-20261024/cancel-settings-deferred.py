@@ -209,6 +209,32 @@ def exercise(h, metadata):
     rejected('deferred anonymous updater',update(m.uid(900002),values),('42501','permission denied for function rpc_update_partner_financial_settings'),None,'anon')
     rejected('deferred no direct ticket issuer',"SELECT platform_private.issue_ticket('c2p1_settings_write','"+m.uid(900002)+"');",('42501','permission denied for function issue_ticket'))
     rejected('deferred no direct settings writer',"INSERT INTO partner_financial_settings(partner_id) VALUES('"+m.uid(900002)+"');",('42501','permission denied for table partner_financial_settings'))
+    for name in ['fn_b2b_credit_exposure','fn_b2b_order_billing_eligibility','tg_partner_orders_credit_guard','fn_h6c_entrega_ar_b2b_link']:
+        signature=next(f['signature'] for f in r.live['functions'] if f['schema']=='public' and f['name']==name)
+        h.check('deferred captured service-only ACL '+name,'f',m.pg.sql("SELECT has_function_privilege('authenticated',"+m.q(signature)+",'EXECUTE')"),mode)
+    # A legacy incomplete row is created only via the exact captured CAS updater;
+    # never insert around the settings fence or invoke its issuer directly.
+    hardened=m.pg.sql("SELECT pg_get_functiondef('platform_private.c2p1_update_settings(uuid,jsonb,jsonb)'::regprocedure)")
+    for actor,org,partner,label in partners:
+        expected=m.pg.sql('SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='+m.q(partner))
+        legacy=dict(values);legacy['credit_limit']=None
+        f=r.captured('platform_private','c2p1_update_settings');h.acl('FUNCTION',f['signature'],f['acl'])
+        try:
+            h.check('RED captured updater permits incomplete credit '+label,0,h.client(update(partner,legacy,expected),actor).returncode,'DEFERRED_RED_CAPTURED')
+        finally:m.pg.sql(hardened+';')
+        rejected('deferred legacy incomplete risk '+label,f"SELECT recalc_partner_risk_score('{partner}');",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        probe=m.uid(903010+(1 if label=='B' else 0))
+        rejected('deferred legacy incomplete credit '+label,f"UPDATE harness.credit_probe SET status='aprovado' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        rejected('deferred legacy incomplete automatic '+label,f"UPDATE harness.auto_probe SET status='entregue' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        order=m.uid(906000+(1 if label=='B' else 0));probe=m.uid(906010+(1 if label=='B' else 0))
+        m.pg.sql(f"INSERT INTO partner_orders(id,partner_id,status) VALUES('{order}','{partner}','rascunho'); INSERT INTO harness.delivery_probe(id,partner_order_id,billing_generated_by) VALUES('{probe}','{order}','{actor}');")
+        rejected('deferred legacy incomplete wrapper '+label,f"SELECT generate_b2b_receivable_secure('{order}');",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        rejected('deferred legacy incomplete link '+label,f"UPDATE harness.delivery_probe SET receivable_id='{m.uid(904020)}' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        h.check('deferred legacy eligibility dispatch '+label,0,h.client(f"INSERT INTO harness.eligibility_probe(id,order_id) VALUES('{probe}','{order}');",actor).returncode,mode)
+        h.check('deferred legacy eligibility closed '+label,{'eligible':False,'reason_code':'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'},json.loads(m.pg.sql(f"SELECT result FROM harness.eligibility_probe WHERE id='{probe}'")),mode)
+        expected=m.pg.sql('SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='+m.q(partner))
+        h.check('deferred repair legacy only canonical '+label,0,h.client(update(partner,values,expected),actor).returncode,mode)
+        m.pg.sql(f"DELETE FROM partner_orders WHERE id='{order}';")
     # Configuration removes only the risk FK blocker, not the origin/fiscal authority.
     part=h.fixture(2050,'receivable',m.A,b2b=True);money=h.amounts(part,'receivable')
     h.check('deferred B2B-shaped own cancel after risk composition',0,h.client(h.call(part,'receivable')).returncode,mode)
