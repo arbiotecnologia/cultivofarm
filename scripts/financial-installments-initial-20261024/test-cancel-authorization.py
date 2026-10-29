@@ -84,7 +84,7 @@ def fixture(n, kind, org, status='OPEN', b2b=False):
         partner='NULL' if not b2b else m.q(m.uid(900002))
         # Prepare immutable parent at INSERT, never reclassify an existing snapshot.
         m.pg.sql("SELECT set_config('request.jwt.claims','{}',false);"+
-                 f"INSERT INTO accounts_receivable(id,description,category_id,total_amount,first_due_date,created_by,organization_id,origin_type,partner_id) VALUES('{title}','LOCAL','{m.K}',10300,CURRENT_DATE+30,'{m.U}','{org}','{'B2B_ORDER' if b2b else 'MANUAL'}',{partner});")
+                 f"INSERT INTO accounts_receivable(id,description,category_id,total_amount,first_due_date,created_by,organization_id,origin_type,partner_id,customer_id) VALUES('{title}','LOCAL','{m.K}',10300,CURRENT_DATE+30,'{m.U}','{org}','{'B2B_ORDER' if b2b else 'MANUAL'}',{partner},'{m.C}');")
         part=m.pg.sql(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{title}'")
     else:
         title,part=m.uid(n+20000),m.uid(n+40000)
