@@ -267,7 +267,7 @@ PV = 'e0000000-0000-4000-8000-000000000a01'
 def seed_plan(orgs=(ORG_A, ORG_F)):
     fill('saas_modules', {'id': MOD, 'key': 'b2b', 'active': True})
     fill('saas_features', {'id': FEAT, 'module_id': MOD, 'key': 'pedidos_b2b', 'active': True})
-    fill('saas_plan_versions', {'id': PV, 'status': 'PUBLISHED', 'effective_from': '2026-01-01', 'effective_to': None})
+    fill('saas_plan_versions', {'id': PV, 'status': 'PUBLISHED', 'version_number': 1, 'effective_from': '2026-01-01', 'effective_to': None})
     fill('saas_plan_version_features', {'plan_version_id': PV, 'feature_id': FEAT, 'enabled': True})
     for i, org in enumerate(orgs):
         fill('organization_subscriptions', {'id': f'e0000000-0000-4000-8000-00000000050{i}', 'organization_id': org, 'plan_version_id': PV,
