@@ -119,6 +119,7 @@ def merge_supplement(j):
         else: j['functions'].append({k:f[k] for k in ('schema','name','signature','owner','acl','md5','body')})
     names={x['name'] for x in j['schemas']}
     j['schemas']+= [x for x in s['schemas'] if x['name'] not in names]
+    j['enums']+= s.get('enums',[])
     rels={(x['schema'],x['name']) for x in j['relations']}
     for r in s['extra_relations'] or []:
         if (r['schema'],r['name']) not in rels: j['relations'].append(r)

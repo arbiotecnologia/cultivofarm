@@ -1,4 +1,44 @@
 {
-  "restoration": "BLOCKED",
-  "error": "ERROR:  type \"storage.buckettype\" does not exist\nLINE 1: ...allowed_mime_types\" text[],\"owner_id\" text,\"type\" storage.bu...\n                                                             ^\n"
+  "unrestored_functions_views": [],
+  "defaults_failed": [
+    {
+      "object": "\"storage\".\"objects\".path_tokens",
+      "error": "ERROR:  cannot use column reference in DEFAULT expression\n"
+    }
+  ],
+  "constraints_failed": [],
+  "policies_failed": [],
+  "triggers_failed": [
+    {
+      "object": "\"public\".\"microorganism_regulatory_dossiers\".trg_regulatory_published_candidate_guard",
+      "error": "ERROR:  trigger \"trg_regulatory_published_candidate_guard\" for relation \"microorganism_regulatory_dossiers\" already exists\n"
+    }
+  ],
+  "preflight": "PASS",
+  "installer_tests": [
+    {
+      "test": "wrong preflight aborts installer",
+      "status": "PASS"
+    },
+    {
+      "test": "wrong POST atomically rolls back DDL",
+      "status": "PASS"
+    },
+    {
+      "test": "complete installer COMMIT",
+      "status": "PASS"
+    },
+    {
+      "test": "complete postflight",
+      "status": "PASS"
+    },
+    {
+      "test": "rerun refused",
+      "status": "PASS"
+    },
+    {
+      "test": "deny-only containment survives body drift",
+      "status": "PASS"
+    }
+  ]
 }
