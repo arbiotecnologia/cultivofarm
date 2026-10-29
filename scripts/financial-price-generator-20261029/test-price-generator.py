@@ -69,7 +69,7 @@ def payload(n=3, amount='100000.00', key='price-key-0001', cust=C, **kw):
 STUB_SETTINGS = f"""CREATE OR REPLACE FUNCTION platform_private.price_payment_settings(p_org uuid, p_customer uuid) RETURNS jsonb LANGUAGE sql STABLE SET search_path='' AS $$
  SELECT CASE WHEN (p_org,p_customer) IN (('{A}'::uuid,'{C}'::uuid),('{B}'::uuid,'{CB}'::uuid)) THEN jsonb_build_object('credit_limit','100000.00','payment_method_id','{PM}','category_id','{K}','synthetic',true)
  END $$;"""  # SYNTHETIC: foreign pair -> NULL (absent)
-STUB_EXPOSURE = """CREATE OR REPLACE FUNCTION platform_private.price_credit_exposure(p_org uuid, p_customer uuid) RETURNS numeric LANGUAGE sql STABLE SET search_path='' AS $$
+STUB_EXPOSURE = """CREATE OR REPLACE FUNCTION platform_private.price_credit_exposure(p_org uuid, p_customer uuid, p_partner uuid) RETURNS numeric LANGUAGE sql STABLE SET search_path='' AS $$
  SELECT coalesce(sum(greatest(i.original_amount+i.interest_amount+i.penalty_amount-i.discount_amount-i.received_amount,0)),0)
    + coalesce(nullif(current_setting('test.extra_exposure',true),'')::numeric,0)
  FROM public.accounts_receivable_installments i JOIN public.accounts_receivable r ON r.id=i.receivable_id
@@ -118,7 +118,7 @@ def waiter(sql, tag):
     return t, box, blocked
 
 
-def exposure(): return D(pg.sql(f"SELECT platform_private.price_credit_exposure('{A}','{C}')"))
+def exposure(): return D(pg.sql(f"SELECT platform_private.price_credit_exposure('{A}','{C}','{PA}')"))
 
 
 def debtor_races():
@@ -269,7 +269,7 @@ def main(out):
     deny('tenant smuggling rejected', nf('2026-10-29') + call(payload(key='k-smuggle', organization_id=B)), 'PRICE_CLIENT_SCHEDULE_REJECTED', 'AUTH')
     pg.sql(STUB_EXPOSURE)
     # Limit on financed total incl. interest: hist 10300 open balance 2750 counts.
-    exp_now = D(pg.sql(f"SELECT platform_private.price_credit_exposure('{A}','{C}')"))
+    exp_now = exposure()
     check('synthetic exposure = historical open balance', D('2750.00'), exp_now, 'LIMIT')
     # exposure 2750 (historical) + extra; 100000 table -> 60000 net -> 62172.84 financed (3x).
     base = nf('2026-10-29') + "SELECT set_config('test.extra_exposure','35077.17',false);"
