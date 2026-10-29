@@ -144,8 +144,13 @@ def main():
         check(kind+' B own accepted',0,client(call(foreign,kind),V).returncode)
         denied(kind+' RED foreign canceled leaks status',call(foreign,kind),'já cancelada',mode='RED_ORACLE_REPRODUCED')
         denied(kind+' RED nonexistent distinguishable',call(m.uid(999998),kind),'não encontrada',mode='RED_ORACLE_REPRODUCED')
-    b2b=fixture(930,'receivable',m.A,b2b=True)
-    denied('B2B positive exact risk dependency absent',call(b2b,'receivable'),'recalc_partner_risk_score')
+    before=state()
+    try:
+        fixture(930,'receivable',m.A,b2b=True)
+        raise RuntimeError('Expected uncomposed risk dependency')
+    except AssertionError as error:
+        check('B2B fixture BLOCKED before RPC by exact risk dependency',True,
+              'recalc_partner_risk_score' in str(error) and state()==before)
     # A status oracle is reproduced, not an unauthorized mutation. Scope SELECT before row lock
     # closes only that oracle in the sandbox; no runtime file or SQL installer emitted.
     body=rpc['body']
