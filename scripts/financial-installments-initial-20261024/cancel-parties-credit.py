@@ -108,6 +108,7 @@ def exercise(h, metadata):
     # not fabricate terms or flip eligible. Capture its real error as BLOCKED.
     before=h.state();res=h.client(impl_call())
     error=h.error_tuple(res)
+    print('owner next gate',error,file=__import__('sys').stderr)
     h.check('GREEN owner proceeds only to legitimate billing denial',True,error[1].startswith('billing_not_eligible:'),green)
     h.check('GREEN billing denial atomic',before,h.state(),green)
     h.responses.append(dict(test='owner full impl next gate',stderr=res.stderr))
