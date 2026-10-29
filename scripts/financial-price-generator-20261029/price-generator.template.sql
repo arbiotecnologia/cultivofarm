@@ -52,6 +52,19 @@ CREATE TABLE platform_private.price_generation_receipts (
   PRIMARY KEY (actor_id, organization_id, idempotency_key)
 );
 
+-- Private, transaction-scoped partner context: written only by the Price RPC from the server-validated
+-- link, consumed exactly once by the AR BEFORE INSERT trigger. Never derived from the payload.
+CREATE TABLE platform_private.price_title_partner_context (
+  transaction_id bigint NOT NULL,
+  actor_id uuid NOT NULL,
+  organization_id uuid NOT NULL,
+  customer_id uuid NOT NULL,
+  partner_id uuid NOT NULL,
+  PRIMARY KEY (transaction_id, organization_id, customer_id)
+);
+REVOKE ALL ON platform_private.price_title_partner_context FROM PUBLIC, anon, authenticated, service_role;
+ALTER TABLE platform_private.price_title_partner_context ENABLE ROW LEVEL SECURITY;
+
 REVOKE ALL ON platform_private.holiday_calendars, platform_private.price_schedule_snapshots,
   platform_private.price_generation_receipts FROM PUBLIC, anon, authenticated, service_role;
 ALTER TABLE platform_private.holiday_calendars ENABLE ROW LEVEL SECURITY;
@@ -190,6 +203,9 @@ BEGIN
   IF v->>'reason_code' IN ('OVERDUE_BLOCK', 'NO_LIMIT_DEFINED') THEN
     RAISE EXCEPTION 'CREDIT_%', v->>'reason_code' USING ERRCODE = 'PT409';
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings WHERE partner_id = p_partner AND active IS TRUE) THEN
+    RAISE EXCEPTION 'CREDIT_SETTINGS_INACTIVE' USING ERRCODE = 'PT409';
+  END IF;
   IF (v->>'credit_limit')::numeric IS DISTINCT FROM 100000.00 THEN
     RAISE EXCEPTION 'CREDIT_LIMIT_CONTRADICTION' USING ERRCODE = '23514';
   END IF;
@@ -208,6 +224,28 @@ BEGIN RAISE EXCEPTION 'FISCAL_ORIGIN_UNPROVEN' USING ERRCODE = '42501'; END $$;
 CREATE FUNCTION platform_private.price_accounting_gate(p_org uuid, p_customer uuid) RETURNS void
 LANGUAGE plpgsql STABLE SET search_path = '' AS $$
 BEGIN RAISE EXCEPTION 'C2_ACCOUNTING_PENDING' USING ERRCODE = '42501'; END $$;
+
+CREATE FUNCTION platform_private.price_ar_partner_from_context() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE c platform_private.price_title_partner_context;
+BEGIN
+  SELECT * INTO c FROM platform_private.price_title_partner_context
+   WHERE transaction_id = txid_current() AND organization_id = NEW.organization_id AND customer_id = NEW.customer_id;
+  IF NOT FOUND THEN RETURN NEW; END IF;  -- every other writer is untouched
+  IF NEW.partner_id IS NOT NULL AND NEW.partner_id IS DISTINCT FROM c.partner_id THEN
+    RAISE EXCEPTION 'PRICE_PARTNER_CONTEXT_CONFLICT' USING ERRCODE = '23514';
+  END IF;
+  IF NEW.created_by IS DISTINCT FROM c.actor_id
+     OR platform_private.price_credit_partner(NEW.organization_id, NEW.customer_id) IS DISTINCT FROM c.partner_id THEN
+    RAISE EXCEPTION 'PRICE_PARTNER_CONTEXT_MISMATCH' USING ERRCODE = '23514';
+  END IF;
+  NEW.partner_id := c.partner_id;
+  DELETE FROM platform_private.price_title_partner_context
+   WHERE transaction_id = c.transaction_id AND organization_id = c.organization_id AND customer_id = c.customer_id;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER price_ar_partner_context BEFORE INSERT ON public.accounts_receivable
+  FOR EACH ROW EXECUTE FUNCTION platform_private.price_ar_partner_from_context();
 
 CREATE FUNCTION public.rpc_create_price_receivable_candidate(p_payload jsonb) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
@@ -230,7 +268,7 @@ BEGIN
   END IF;
   IF v_org IS NULL THEN RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '42501'; END IF;
   IF jsonb_typeof(p_payload) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'PRICE_PAYLOAD_INVALID' USING ERRCODE = '23514'; END IF;
-  IF p_payload ?| ARRAY['installments','total_amount','rate','first_due_date','interest','organization_id','tenant_id'] THEN
+  IF p_payload ?| ARRAY['installments','total_amount','rate','first_due_date','interest','organization_id','tenant_id','partner_id','partner'] THEN
     RAISE EXCEPTION 'PRICE_CLIENT_SCHEDULE_REJECTED' USING ERRCODE = '23514';
   END IF;
   IF coalesce(p_payload->>'generation', '') <> 'manual_authorized' THEN
@@ -306,6 +344,8 @@ BEGIN
     RAISE EXCEPTION 'LIMIT_EXCEEDED_BLOCK' USING ERRCODE = 'PT409';
   END IF;
 
+  -- Partner context from the validated link (never the payload), consumed by the AR insert trigger.
+  INSERT INTO platform_private.price_title_partner_context VALUES (txid_current(), v_uid, v_org, v_customer, v_partner);
   -- Reuse captured title RPC: its auth/staff/tenant/category guards and the private context path.
   v_title := public.rpc_create_financial_title('receivable', jsonb_build_object(
     'customer_id', v_customer, 'description', coalesce(nullif(btrim(p_payload->>'description'), ''), 'Price manual'),
@@ -319,7 +359,9 @@ BEGIN
     INTO v_got FROM public.accounts_receivable_installments WHERE receivable_id = v_tid;
   IF v_got IS DISTINCT FROM (SELECT jsonb_agg(jsonb_build_object('n', (r->>'installment_number')::int, 'due', (r->>'due_date')::date,
         'amt', (r->>'amount')::numeric(14,2), 'int', 0::numeric(14,2)) ORDER BY (r->>'installment_number')::int) FROM jsonb_array_elements(v_s->'rows') r)
-     OR EXISTS (SELECT 1 FROM platform_private.financial_initial_installments WHERE transaction_id = txid_current() AND title_id = v_tid) THEN
+     OR EXISTS (SELECT 1 FROM platform_private.financial_initial_installments WHERE transaction_id = txid_current() AND title_id = v_tid)
+     OR EXISTS (SELECT 1 FROM platform_private.price_title_partner_context WHERE transaction_id = txid_current())
+     OR (SELECT partner_id FROM public.accounts_receivable WHERE id = v_tid) IS DISTINCT FROM v_partner THEN
     RAISE EXCEPTION 'PRICE_WRITER_MISMATCH' USING ERRCODE = '23514';
   END IF;
   INSERT INTO platform_private.price_schedule_snapshots VALUES (v_tid, v_org, v_customer, v_uid, txid_current(),
@@ -334,7 +376,7 @@ END $$;
 REVOKE ALL ON FUNCTION platform_private.price_immutable(), platform_private.price_calendar_load(text,text),
   platform_private.price_pinned_calendar(), platform_private.price_adjusted_due(date, platform_private.holiday_calendars),
   platform_private.price_compute(numeric,int,date,platform_private.holiday_calendars),
-  platform_private.price_payment_settings(uuid,uuid), platform_private.price_credit_partner(uuid,uuid), platform_private.price_credit_exposure(uuid,uuid,uuid),
+  platform_private.price_payment_settings(uuid,uuid), platform_private.price_credit_partner(uuid,uuid), platform_private.price_ar_partner_from_context(), platform_private.price_credit_exposure(uuid,uuid,uuid),
   platform_private.price_nf_origin(uuid,uuid,uuid), platform_private.price_accounting_gate(uuid,uuid)
   FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.rpc_create_price_receivable_candidate(jsonb) FROM PUBLIC, anon, service_role;
