@@ -391,6 +391,9 @@ def main():
     deferred_spec=importlib.util.spec_from_file_location('cancel_deferred',H/'cancel-settings-deferred.py')
     deferred=importlib.util.module_from_spec(deferred_spec);deferred_spec.loader.exec_module(deferred)
     deferred.exercise(sys.modules[__name__],risk_metadata)
+    parties_spec=importlib.util.spec_from_file_location('cancel_parties',H/'cancel-parties-credit.py')
+    parties=importlib.util.module_from_spec(parties_spec);parties_spec.loader.exec_module(parties)
+    parties.exercise(sys.modules[__name__],risk_metadata)
     for kind in ['receivable','payable']:
         part=fixture(1700+(10 if kind=='payable' else 0),kind,m.A);before=amounts(part,kind)
         unrelated=state()

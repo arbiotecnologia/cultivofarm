@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 29/10 15:36 — partes e limite explícito, somente offline
+- [ ] Executar matriz partes/owner e exposição/limite com corpos capturados, preservando651checks/14corridas e monetário/proveniência.
+- [ ] Registrar decisões AR vendedor/emitente/credor, FSF comprador/devedor e limite finito obrigatório no contrato candidato/plano original; evidências novas e hashes históricos.
+- [ ] Cadeia fiscal/contábil integral permanece sem homologação e sem autorização produtiva.
+
 ## 29/10 15:03 — decisão cadastro separado, offline
 - [x] Cadastro A/B sem settings/tickets; updater CAS onze valores explícitos; gates ausente/incompleto/inativo e contratos contábeis intactos.
 - [x] 651PGPASS/0FAIL/1BLOCKED/1NOT RUN,14corridas/NULL;37monetário/42proveniência/10Vitest sem erros; evidências1503/hash/relatórios/plano original e consumidor inativo.
