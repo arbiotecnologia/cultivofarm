@@ -187,6 +187,9 @@ DECLARE
   v_title jsonb; v_tid uuid; v_got jsonb; v_res jsonb;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE = '42501'; END IF;
+  IF NOT public.is_financial_staff(v_uid) THEN  -- same captured helper, checked before any gate
+    RAISE EXCEPTION 'Sem permissão para criar títulos financeiros.' USING ERRCODE = '42501';
+  END IF;
   IF v_org IS NULL THEN RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '42501'; END IF;
   IF jsonb_typeof(p_payload) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'PRICE_PAYLOAD_INVALID' USING ERRCODE = '23514'; END IF;
   IF p_payload ?| ARRAY['installments','total_amount','rate','first_due_date','interest','organization_id','tenant_id'] THEN
@@ -221,6 +224,7 @@ BEGIN
   IF jsonb_typeof(p_payload->'table_amount') IS DISTINCT FROM 'string' THEN RAISE EXCEPTION 'TABLE_AMOUNT_INVALID' USING ERRCODE = '23514'; END IF;
 
   v_set := platform_private.price_payment_settings(v_org, v_customer);
+  IF v_set IS NULL THEN RAISE EXCEPTION 'PAYMENT_SETTINGS_OFFICIAL_ABSENT' USING ERRCODE = '42501'; END IF;
   v_lim := (v_set->>'credit_limit')::numeric;
   IF v_lim IS DISTINCT FROM 100000.00 THEN RAISE EXCEPTION 'CREDIT_LIMIT_CONTRADICTION' USING ERRCODE = '23514'; END IF;
   IF (v_set->>'payment_method_id') IS NULL OR (v_set->>'category_id') IS NULL THEN

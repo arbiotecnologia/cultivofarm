@@ -62,13 +62,13 @@ def ok(sql):
 
 
 def payload(n=3, amount='100000.00', key='price-key-0001', cust=C, **kw):
-    d = dict(generation='manual_authorized', idempotency_key=key, customer_id=cust, nf_reference=NF, table_amount=amount, installment_count=n, description='SINTÉTICO Price')
+    d = dict(generation='manual_authorized', idempotency_key=key if key.startswith('price-') else 'price-' + key, customer_id=cust, nf_reference=NF, table_amount=amount, installment_count=n, description='SINTÉTICO Price')
     d.update(kw); return d
 
 
 STUB_SETTINGS = f"""CREATE OR REPLACE FUNCTION platform_private.price_payment_settings(p_org uuid, p_customer uuid) RETURNS jsonb LANGUAGE sql STABLE SET search_path='' AS $$
  SELECT CASE WHEN (p_org,p_customer) IN (('{A}'::uuid,'{C}'::uuid),('{B}'::uuid,'{CB}'::uuid)) THEN jsonb_build_object('credit_limit','100000.00','payment_method_id','{PM}','category_id','{K}','synthetic',true)
- ELSE (SELECT NULL::jsonb FROM (SELECT 1/0) z) END $$;"""  # SYNTHETIC: foreign pair raises
+ END $$;"""  # SYNTHETIC: foreign pair -> NULL (absent)
 STUB_EXPOSURE = """CREATE OR REPLACE FUNCTION platform_private.price_credit_exposure(p_org uuid, p_customer uuid) RETURNS numeric LANGUAGE sql STABLE SET search_path='' AS $$
  SELECT coalesce(sum(greatest(i.original_amount+i.interest_amount+i.penalty_amount-i.discount_amount-i.received_amount,0)),0)
    + coalesce(nullif(current_setting('test.extra_exposure',true),'')::numeric,0)
@@ -162,7 +162,7 @@ def main(out):
     deny('anon role', nf('2026-10-29') + call(payload(key='k-anon'), role='anon'), 'permission denied', 'AUTH')
     deny('non-staff denied by captured RPC', nf('2026-10-29') + call(payload(key='k-nostaff'), staff=False), 'Sem permissão', 'AUTH')
     deny('no tenant', nf('2026-10-29') + call(payload(key='k-noorg'), org=None), 'FINANCIAL_TENANT_REQUIRED', 'AUTH')
-    deny('foreign customer (A actor, B customer)', nf('2026-10-29') + call(payload(key='k-foreign', cust=CB)), 'division by zero', 'AUTH')
+    deny('foreign customer (A actor, B customer)', nf('2026-10-29') + call(payload(key='k-foreign', cust=CB)), 'PAYMENT_SETTINGS_OFFICIAL_ABSENT', 'AUTH')
     deny('tenant smuggling rejected', nf('2026-10-29') + call(payload(key='k-smuggle', organization_id=B)), 'PRICE_CLIENT_SCHEDULE_REJECTED', 'AUTH')
     pg.sql(STUB_EXPOSURE)
     # Limit on financed total incl. interest: hist 10300 open balance 2750 counts.
@@ -202,7 +202,7 @@ def main(out):
         return subprocess.run(pg.psql(), input=(nf('2026-10-29') + "SELECT set_config('test.extra_exposure','0',false);" + call(payload(1, amount='1000.00', key='k-race'))).encode(), capture_output=True)
     with ThreadPoolExecutor(2) as ex: rs = list(ex.map(send, range(2)))
     ids = {json.loads(x.stdout.decode().strip().splitlines()[-1])['receivable_id'] for x in rs if x.returncode == 0}
-    check('concurrent same key: both ACK, one title', (2, 1, '1'), (sum(x.returncode == 0 for x in rs), len(ids), pg.sql("SELECT count(*) FROM platform_private.price_generation_receipts WHERE idempotency_key='k-race'")), 'IDEMPOTENCY')
+    check('concurrent same key: both ACK, one title', (2, 1, '1'), (sum(x.returncode == 0 for x in rs), len(ids), pg.sql("SELECT count(*) FROM platform_private.price_generation_receipts WHERE idempotency_key='price-k-race'")), 'IDEMPOTENCY')
     # Integral rollback: success inside a transaction then forced failure.
     before = state()
     err = pg.sql(nf('2026-10-29') + scope() + "BEGIN; SET LOCAL ROLE authenticated; SELECT public.rpc_create_price_receivable_candidate(" + q(json.dumps(payload(2, amount='5000.00', key='k-rollback'))) + "::jsonb); DO $$BEGIN RAISE EXCEPTION 'FORCED_POST_FAILURE'; END$$; COMMIT;", ok=False)
@@ -215,7 +215,7 @@ def main(out):
     # Tenant B actor with own customer (A/B isolation in component scope).
     r5 = ok(nf('2026-10-29') + call(payload(2, amount='1000.00', key='k-b-own', cust=CB), uid=V, org=B))
     check('tenant B title owned by B', B, pg.sql(f"SELECT organization_id FROM accounts_receivable WHERE id='{r5['receivable_id']}'"), 'AUTH')
-    deny('B actor cannot use A customer', nf('2026-10-29') + call(payload(2, amount='1000.00', key='k-b-foreign', cust=C), uid=V, org=B), 'division by zero', 'AUTH')
+    deny('B actor cannot use A customer', nf('2026-10-29') + call(payload(2, amount='1000.00', key='k-b-foreign', cust=C), uid=V, org=B), 'PAYMENT_SETTINGS_OFFICIAL_ABSENT', 'AUTH')
     # Payment and reversal through captured RPCs on Price installment 1.
     inst1 = pg.sql(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{tid}' AND installment_number=1")
     snap_before = pg.sql("SELECT jsonb_agg(to_jsonb(s) ORDER BY receivable_id) FROM platform_private.price_schedule_snapshots s")
