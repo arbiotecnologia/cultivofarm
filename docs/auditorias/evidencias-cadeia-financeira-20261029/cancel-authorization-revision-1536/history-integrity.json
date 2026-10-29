@@ -1,0 +1,346 @@
+{
+  "checked": 68,
+  "unchanged": 68,
+  "files": [
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/SHA256SUMS",
+      "before": "80e2b5abc9b11ea297c3800175a09f26b945897347418b28178190b3e154dd9b",
+      "after": "80e2b5abc9b11ea297c3800175a09f26b945897347418b28178190b3e154dd9b"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/closure.json",
+      "before": "31448fa5b34e3a1c515fb78f6c1f05406b1381c5e86d874b2f46f81ecb663587",
+      "after": "31448fa5b34e3a1c515fb78f6c1f05406b1381c5e86d874b2f46f81ecb663587"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/consumers-current.json",
+      "before": "7312e2bb087318226c34973679b915ce76807bad8301b3f4d3a7552b25e82095",
+      "after": "7312e2bb087318226c34973679b915ce76807bad8301b3f4d3a7552b25e82095"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/consumers-prior-inventory.json",
+      "before": "730a23f89f9566f94b7268c449bc20fb0a5f8fc9b6f2def89332765ad802fffd",
+      "after": "730a23f89f9566f94b7268c449bc20fb0a5f8fc9b6f2def89332765ad802fffd"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/dependency-edges.csv",
+      "before": "9d13adfe73391142c3d39c1444339d871e9165ae2e36327d21118f7e08eded99",
+      "after": "9d13adfe73391142c3d39c1444339d871e9165ae2e36327d21118f7e08eded99"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/drift.json",
+      "before": "6c9b7dd21083989b7cc3bb5f453a5b27ef2a2f9654ada417cf7d31ef7e340f2e",
+      "after": "6c9b7dd21083989b7cc3bb5f453a5b27ef2a2f9654ada417cf7d31ef7e340f2e"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/execution-summary.json",
+      "before": "924a91ed820268e9960579aac5082893b2993070da6aa3fe5afa7056ff49a896",
+      "after": "924a91ed820268e9960579aac5082893b2993070da6aa3fe5afa7056ff49a896"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/independent-review.md",
+      "before": "93c8f13fc2dafc8bce8faeaa9442de34d2c19697bd5a538932f610a6f27a478e",
+      "after": "93c8f13fc2dafc8bce8faeaa9442de34d2c19697bd5a538932f610a6f27a478e"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/matrix.csv",
+      "before": "309f1313a327cb0920e5d684a2e566145869019531e22f8d2abe48bf6d1d7759",
+      "after": "309f1313a327cb0920e5d684a2e566145869019531e22f8d2abe48bf6d1d7759"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/object-pins.csv",
+      "before": "20c63962408d1eecbe150334f1c12838fc0fdbd696a25770885a64fa0332d109",
+      "after": "20c63962408d1eecbe150334f1c12838fc0fdbd696a25770885a64fa0332d109"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/red-green.json",
+      "before": "90685915c4e64f27e27f6d76ea04b194d837ddea2f240f28dae53f92864756c7",
+      "after": "90685915c4e64f27e27f6d76ea04b194d837ddea2f240f28dae53f92864756c7"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/SHA256SUMS",
+      "before": "4c0081798eca582223c2c6cd92b2573d31e5d5f09fee96dd3e551fa024f047d5",
+      "after": "4c0081798eca582223c2c6cd92b2573d31e5d5f09fee96dd3e551fa024f047d5"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/failed-intermediate-run.txt",
+      "before": "7a744ab8d30ae6ce9f3c22248e2191e523203d06b47c7d7301158b6e3635c97b",
+      "after": "7a744ab8d30ae6ce9f3c22248e2191e523203d06b47c7d7301158b6e3635c97b"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/historical-hash-verification.json",
+      "before": "ee1f84a6c377e282ea71b48bb0f321a325ee28cfff5e3f57a2047bca8a3766f4",
+      "after": "ee1f84a6c377e282ea71b48bb0f321a325ee28cfff5e3f57a2047bca8a3766f4"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/independent-review.md",
+      "before": "e5a283515d92afdfa082c232e7faaa1817323f412d8c98b5b7ad68a74eeba219",
+      "after": "e5a283515d92afdfa082c232e7faaa1817323f412d8c98b5b7ad68a74eeba219"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/matrix.csv",
+      "before": "1bb385d14fe433cce9b767661bbf02ec5d38834390596fd040f1defb879906bf",
+      "after": "1bb385d14fe433cce9b767661bbf02ec5d38834390596fd040f1defb879906bf"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/pg-run.txt",
+      "before": "ae78a711a05c5af08ebf4c2ceb50a5bd6e6cfcddbeeb3c269b7e971d9e63b8d0",
+      "after": "ae78a711a05c5af08ebf4c2ceb50a5bd6e6cfcddbeeb3c269b7e971d9e63b8d0"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/results.json",
+      "before": "ae818225498fbf409887031d4dbf27189d7a6100a1fb6c6bd31b5f26959bcc54",
+      "after": "ae818225498fbf409887031d4dbf27189d7a6100a1fb6c6bd31b5f26959bcc54"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/rpc-captured.txt",
+      "before": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f",
+      "after": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/rpc-offline-transformation.diff",
+      "before": "c2303e0d7fbdeb58daebf81a3b0addc9dd9a719492373fe37fbbe09dcf23e697",
+      "after": "c2303e0d7fbdeb58daebf81a3b0addc9dd9a719492373fe37fbbe09dcf23e697"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1428/vitest-run.txt",
+      "before": "c8f82766e931149bfd95be51f8461be508e94495ea9b8bffe88a7225b9cd6ec1",
+      "after": "c8f82766e931149bfd95be51f8461be508e94495ea9b8bffe88a7225b9cd6ec1"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/SHA256SUMS",
+      "before": "79b452c07f7f59325d614dfd1457be568f32cdb8863de4ec84ca0348e1fd7cb0",
+      "after": "79b452c07f7f59325d614dfd1457be568f32cdb8863de4ec84ca0348e1fd7cb0"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/historical-hashes-after.json",
+      "before": "e25b095555bca8877250a83bb4c31a922acd0aaf969945a1a365aefb81ea0704",
+      "after": "e25b095555bca8877250a83bb4c31a922acd0aaf969945a1a365aefb81ea0704"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/historical-hashes-before.json",
+      "before": "d6087d0c1729ac9f9c2278d54dcb5e2f7bb5934773491ea09e37afa988291353",
+      "after": "d6087d0c1729ac9f9c2278d54dcb5e2f7bb5934773491ea09e37afa988291353"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/independent-review.md",
+      "before": "500e73c061385dbc073e399c3d7da795880380de1c69f17ddce85eadf3b0dd5a",
+      "after": "500e73c061385dbc073e399c3d7da795880380de1c69f17ddce85eadf3b0dd5a"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1458/SHA256SUMS",
+      "before": "997ab9230349284bcc9547ed7547a8ab562d47a5e7e12854802720848cb9a950",
+      "after": "997ab9230349284bcc9547ed7547a8ab562d47a5e7e12854802720848cb9a950"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1458/historical-integrity.json",
+      "before": "880ce96b29c2a9693a777b2cd043df38daa55968edf8461c1ce24424bc92dc2c",
+      "after": "880ce96b29c2a9693a777b2cd043df38daa55968edf8461c1ce24424bc92dc2c"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1458/independent-review.md",
+      "before": "7f119e86f234d6a43c4a0cf3c4c659d4683def74d6365ec38fdd052c81e2630a",
+      "after": "7f119e86f234d6a43c4a0cf3c4c659d4683def74d6365ec38fdd052c81e2630a"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1458/matrix.csv",
+      "before": "95e24b434776446da505718351d75807989f370d14384a6a44ffe94892219c35",
+      "after": "95e24b434776446da505718351d75807989f370d14384a6a44ffe94892219c35"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1458/null-kind-only.diff",
+      "before": "072580b61f2c0524cb9f7ba9f1917273c6c9a76adb55b60337878cfef74ff3c4",
+      "after": "072580b61f2c0524cb9f7ba9f1917273c6c9a76adb55b60337878cfef74ff3c4"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1458/results.json",
+      "before": "ea135d8ed84a8054b196c326507dc2160e82d3e450a6cc8f4b5f7a0000ef8c3f",
+      "after": "ea135d8ed84a8054b196c326507dc2160e82d3e450a6cc8f4b5f7a0000ef8c3f"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1458/rpc-captured.txt",
+      "before": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f",
+      "after": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1458/rpc-offline-transformation.diff",
+      "before": "a125aadca9f98beb96e81f47f3df0481ff20791f6836b610b09cfa0618f11ef0",
+      "after": "a125aadca9f98beb96e81f47f3df0481ff20791f6836b610b09cfa0618f11ef0"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/SHA256SUMS",
+      "before": "fdc1f1e399383c1c0238cb954e0fe02a9bdf7dfabe7f5cc8abac5862829f3767",
+      "after": "fdc1f1e399383c1c0238cb954e0fe02a9bdf7dfabe7f5cc8abac5862829f3767"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/consumer-proposal.md",
+      "before": "cd1f5170cc83083b96942fac5f3e3dcf60ad806567cab603fb8b1bb1db66bac6",
+      "after": "cd1f5170cc83083b96942fac5f3e3dcf60ad806567cab603fb8b1bb1db66bac6"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/historical-integrity-after.json",
+      "before": "31007812b5e6c358892a956f1465a0b4376d7408ba9637f22bd5c4864de823cf",
+      "after": "31007812b5e6c358892a956f1465a0b4376d7408ba9637f22bd5c4864de823cf"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/historical-integrity-before.json",
+      "before": "ea4b3c781fd677dcc1ccec8422fbe95720309d6835912821ec02540c3465bdd6",
+      "after": "ea4b3c781fd677dcc1ccec8422fbe95720309d6835912821ec02540c3465bdd6"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/historical-preservation.json",
+      "before": "7fa483cb5cf44768c97f8f6219c1208aa3a3c37bc07f638116cb6a65351c0f04",
+      "after": "7fa483cb5cf44768c97f8f6219c1208aa3a3c37bc07f638116cb6a65351c0f04"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/source-hashes.json",
+      "before": "461d87062f5093dbbb15ca19307b20d33744ec772251f7d9f3a8ae4d0d16df1c",
+      "after": "461d87062f5093dbbb15ca19307b20d33744ec772251f7d9f3a8ae4d0d16df1c"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization/SHA256SUMS",
+      "before": "34bd0ffb50e0bc81d76e4f0f33219b203b7c59b5377b761c205002f95747efff",
+      "after": "34bd0ffb50e0bc81d76e4f0f33219b203b7c59b5377b761c205002f95747efff"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization/independent-review.md",
+      "before": "0ece5d00e953920c45e8a73549aa15ced1ea4eaa3d5915c99168e0311ba0c504",
+      "after": "0ece5d00e953920c45e8a73549aa15ced1ea4eaa3d5915c99168e0311ba0c504"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization/matrix.csv",
+      "before": "3a6e9c1dd62efef87f9c0429f717e9a099cddc81722ca85fc85997614ca3ada3",
+      "after": "3a6e9c1dd62efef87f9c0429f717e9a099cddc81722ca85fc85997614ca3ada3"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization/results.json",
+      "before": "4cdcd41ecfb4e0efa28edfb7b02235c0a699beed16258519a6fc4f00ac037457",
+      "after": "4cdcd41ecfb4e0efa28edfb7b02235c0a699beed16258519a6fc4f00ac037457"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization/rpc-captured.txt",
+      "before": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f",
+      "after": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization/rpc-offline-transformation.diff",
+      "before": "f4fd94ce8747917001cad929c639d1573d1d746c5f7194315ad35fd8af07ebdd",
+      "after": "f4fd94ce8747917001cad929c639d1573d1d746c5f7194315ad35fd8af07ebdd"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/authorization-cancel-authorization-revision-1503/deferred-settings-sandbox.diff",
+      "before": "bd7f9a295f22d85bf406071e289a441e21ad4fe94c0bddf612f768b29d3b57fc",
+      "after": "bd7f9a295f22d85bf406071e289a441e21ad4fe94c0bddf612f768b29d3b57fc"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/authorization-cancel-authorization-revision-1503/null-kind-only.diff",
+      "before": "072580b61f2c0524cb9f7ba9f1917273c6c9a76adb55b60337878cfef74ff3c4",
+      "after": "072580b61f2c0524cb9f7ba9f1917273c6c9a76adb55b60337878cfef74ff3c4"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/authorization-cancel-authorization-revision-1503/rpc-captured.txt",
+      "before": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f",
+      "after": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/authorization-cancel-authorization-revision-1503/rpc-offline-transformation.diff",
+      "before": "a125aadca9f98beb96e81f47f3df0481ff20791f6836b610b09cfa0618f11ef0",
+      "after": "a125aadca9f98beb96e81f47f3df0481ff20791f6836b610b09cfa0618f11ef0"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/final-cancel-authorization-revision-1503/deferred-settings-sandbox.diff",
+      "before": "bd7f9a295f22d85bf406071e289a441e21ad4fe94c0bddf612f768b29d3b57fc",
+      "after": "bd7f9a295f22d85bf406071e289a441e21ad4fe94c0bddf612f768b29d3b57fc"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/final-cancel-authorization-revision-1503/matrix.csv",
+      "before": "36600e812a85531acdde9f3aba1f8d0f90fbc99ce2d0f58ae0b1385741a01d17",
+      "after": "36600e812a85531acdde9f3aba1f8d0f90fbc99ce2d0f58ae0b1385741a01d17"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/final-cancel-authorization-revision-1503/null-kind-only.diff",
+      "before": "072580b61f2c0524cb9f7ba9f1917273c6c9a76adb55b60337878cfef74ff3c4",
+      "after": "072580b61f2c0524cb9f7ba9f1917273c6c9a76adb55b60337878cfef74ff3c4"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/final-cancel-authorization-revision-1503/results.json",
+      "before": "feb7191feff6977f4fd65a4b18bad1674f25bdae3002e53993ad7e574e5fb41d",
+      "after": "feb7191feff6977f4fd65a4b18bad1674f25bdae3002e53993ad7e574e5fb41d"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/final-cancel-authorization-revision-1503/rpc-captured.txt",
+      "before": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f",
+      "after": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/final-cancel-authorization-revision-1503/rpc-offline-transformation.diff",
+      "before": "a125aadca9f98beb96e81f47f3df0481ff20791f6836b610b09cfa0618f11ef0",
+      "after": "a125aadca9f98beb96e81f47f3df0481ff20791f6836b610b09cfa0618f11ef0"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/monetary/red-green.json",
+      "before": "da4acb694dd118442f9c6d2ca9d8d86a9609bc294730689274c7f259252a600e",
+      "after": "da4acb694dd118442f9c6d2ca9d8d86a9609bc294730689274c7f259252a600e"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1503/provenance/provenance.json",
+      "before": "41aebc08dfaf8da7f434692a28f82931b1df1844cf3e36b42ae14e4665cad8e3",
+      "after": "41aebc08dfaf8da7f434692a28f82931b1df1844cf3e36b42ae14e4665cad8e3"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/cancel-authorization-revision-final/matrix.csv",
+      "before": "33f2f38a7278c5ac72fea0541e61a02b7de86e9aa04750fb6d08800a5087c43c",
+      "after": "33f2f38a7278c5ac72fea0541e61a02b7de86e9aa04750fb6d08800a5087c43c"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/cancel-authorization-revision-final/results.json",
+      "before": "1df6d8bb445c49c86a842e25638cec677520cdae6793fd30a6d135c6a9d918f0",
+      "after": "1df6d8bb445c49c86a842e25638cec677520cdae6793fd30a6d135c6a9d918f0"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/cancel-authorization-revision-final/rpc-captured.txt",
+      "before": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f",
+      "after": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/cancel-authorization-revision-final/rpc-offline-transformation.diff",
+      "before": "c2303e0d7fbdeb58daebf81a3b0addc9dd9a719492373fe37fbbe09dcf23e697",
+      "after": "c2303e0d7fbdeb58daebf81a3b0addc9dd9a719492373fe37fbbe09dcf23e697"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/cancel-authorization-revision-risk/matrix.csv",
+      "before": "8c544825564853a6d539418b334f769fe500c6f6e9a532ff48c57e7461d98c8e",
+      "after": "8c544825564853a6d539418b334f769fe500c6f6e9a532ff48c57e7461d98c8e"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/cancel-authorization-revision-risk/results.json",
+      "before": "55889ca9449c6274c2cd3b7c8723991591191bd92b759f00e3bd76c7f458263a",
+      "after": "55889ca9449c6274c2cd3b7c8723991591191bd92b759f00e3bd76c7f458263a"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/cancel-authorization-revision-risk/rpc-captured.txt",
+      "before": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f",
+      "after": "e7b481f0474b0930357cfa4e0616946a2c6c8bdbc73c44a015c696861779c36f"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/cancel-authorization-revision-risk/rpc-offline-transformation.diff",
+      "before": "c2303e0d7fbdeb58daebf81a3b0addc9dd9a719492373fe37fbbe09dcf23e697",
+      "after": "c2303e0d7fbdeb58daebf81a3b0addc9dd9a719492373fe37fbbe09dcf23e697"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/monetary/red-green.json",
+      "before": "342f4a77ff5de8fd884880918803113267074a244002d055ed3a9b5332b54602",
+      "after": "342f4a77ff5de8fd884880918803113267074a244002d055ed3a9b5332b54602"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/provenance-final/provenance.json",
+      "before": "41aebc08dfaf8da7f434692a28f82931b1df1844cf3e36b42ae14e4665cad8e3",
+      "after": "41aebc08dfaf8da7f434692a28f82931b1df1844cf3e36b42ae14e4665cad8e3"
+    },
+    {
+      "path": "docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/provenance/provenance.json",
+      "before": "9355c77931f8d0a92dabaf81eeb4fc5e8b2405753e3fc7a7aabbdd570ea43160",
+      "after": "9355c77931f8d0a92dabaf81eeb4fc5e8b2405753e3fc7a7aabbdd570ea43160"
+    }
+  ]
+}

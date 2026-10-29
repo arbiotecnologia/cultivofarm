@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 29/10 15:36 — partes e limite explícito, somente offline
+- [x] Executar810checks/0FAIL/14corridas; preservar651anteriores,monetário37/proveniência42/Vitest10PASS; hipóteses owner/zero só offline.
+- [x] Decisões registradas noDRAFT/planooriginal/relatório; evidências1536 e68arquivoshistóricos preservados.
+- [ ] Cadeia fiscal/contábil integral permanece sem homologação e sem autorização produtiva.
+
 ## 29/10 15:03 — decisão cadastro separado, offline
 - [x] Cadastro A/B sem settings/tickets; updater CAS onze valores explícitos; gates ausente/incompleto/inativo e contratos contábeis intactos.
 - [x] 651PGPASS/0FAIL/1BLOCKED/1NOT RUN,14corridas/NULL;37monetário/42proveniência/10Vitest sem erros; evidências1503/hash/relatórios/plano original e consumidor inativo.

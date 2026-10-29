@@ -1,0 +1,487 @@
+{
+  "candidate_sites": [
+    {
+      "signature": "_rpc_avancar_esteira_laboratorio_internal(uuid,text,text,uuid)",
+      "line": 39,
+      "text": "    EXECUTE format('SELECT status::text FROM %I WHERE id = $1 FOR UPDATE', v_tabela_os)",
+      "classification": "EXECUTABLE_DYNAMIC_SQL",
+      "md5": "c40d513eae404c1141edb40df5336b92"
+    },
+    {
+      "signature": "is_active_visit_participant(uuid,uuid)",
+      "line": 11,
+      "text": " AND public.technical_client_link(p_user_id,r.cliente_id,ARRAY['read','execute','manage']));",
+      "classification": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "md5": "bdabf4f458528a91d385d738bfcf3f90"
+    },
+    {
+      "signature": "is_visit_responsible(uuid,uuid)",
+      "line": 10,
+      "text": " AND public.technical_client_link(p_user_id,r.cliente_id,ARRAY['read','execute','manage'])",
+      "classification": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "md5": "e356cc48a0f2e7588d38a1c1b2dba489"
+    },
+    {
+      "signature": "rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)",
+      "line": 183,
+      "text": "          format('Envase transacional [%s]: %s registros, %s entradas, reservado %s ml, livre %s ml, pendente %s ml. %s',",
+      "classification": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "md5": "867c445736fbd2de9416ae4ad6a9d253"
+    },
+    {
+      "signature": "tg_notify_payment_terms_pending()",
+      "line": 30,
+      "text": "  v_msg := format('Pedido B2B %s aguarda aprova\u00e7\u00e3o da condi\u00e7\u00e3o de pagamento.', COALESCE(NEW.numero,''));",
+      "classification": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "md5": "671f9cb3a245cfccc30a27c16172d802"
+    },
+    {
+      "signature": "can_manage_technical_visit(uuid,uuid)",
+      "line": 12,
+      "text": " AND public.technical_client_link(p_user_id,r.cliente_id,ARRAY['execute','manage'])",
+      "classification": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "md5": "d95c2c2b34af117d467d7d4b2b775002"
+    },
+    {
+      "signature": "can_user_access_cliente(uuid)",
+      "line": 55,
+      "text": "            v_user_id, _cliente_id, ARRAY['read','execute','manage']",
+      "classification": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "md5": "4c2eaf7ab10e204e7ad57d41cb418554"
+    },
+    {
+      "signature": "can_user_access_cliente(uuid,uuid)",
+      "line": 25,
+      "text": "        _user_id, _cliente_id, ARRAY['read','execute','manage']",
+      "classification": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "md5": "4e0c374caa04bb9bf9fac9cc4e6723f1"
+    },
+    {
+      "signature": "can_view_technical_visit(uuid,uuid)",
+      "line": 12,
+      "text": " AND public.technical_client_link(p_user_id,r.cliente_id,ARRAY['read','execute','manage'])",
+      "classification": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "md5": "e15341289ee33e1912adf63d4076b620"
+    },
+    {
+      "signature": "generate_b2b_receivable_secure_impl(uuid)",
+      "line": 137,
+      "text": "    format('Pedido B2B %s - %s', v_order.numero, COALESCE(v_partner.nome_fantasia, v_partner.razao_social)),",
+      "classification": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "md5": "1bdac7fae6d702fb42d3a30539e9c9c3"
+    },
+    {
+      "signature": "generate_b2b_receivable_secure_impl(uuid)",
+      "line": 146,
+      "text": "    format(E'Condi\u00e7\u00e3o: %s (%s)\\nDesconto: %s%%  Juros: %s%% a.m. x %s meses\\nTabela: %s  L\u00edquido: %s  Final: %s\\nFiscal: %s (%s)',",
+      "classification": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "md5": "1bdac7fae6d702fb42d3a30539e9c9c3"
+    },
+    {
+      "signature": "has_active_user_cliente_access(uuid,uuid,text[])",
+      "line": 1,
+      "text": "CREATE OR REPLACE FUNCTION public.has_active_user_cliente_access(_user_id uuid, _cliente_id uuid, _levels text[] DEFAULT ARRAY['read'::text, 'execute'::text, 'manage'::text])",
+      "classification": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "md5": "e099f51d128620e5a68cc3e9001dd976"
+    },
+    {
+      "signature": "producer_request_mutation_guard()",
+      "line": 55,
+      "text": "       AND uc.access_level::text IN ('read','execute','manage'))))",
+      "classification": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "md5": "5618a1a45b96707373bca29a140b6499"
+    },
+    {
+      "signature": "platform_private.tenant_smtp_lane_source_reason(uuid,uuid,uuid,uuid)",
+      "line": 20,
+      "text": "  AND (uc.valid_until IS NULL OR uc.valid_until>=now()) AND uc.access_level::text IN ('read','execute','manage')) THEN RETURN 'recipient_portfolio_revoked'; END IF;",
+      "classification": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "md5": "2da5309c2b447af194929c86f4befd99"
+    }
+  ],
+  "classifications": {
+    "EXECUTABLE_DYNAMIC_SQL": 1,
+    "TEXT_FORMAT_NOT_SQL_EXECUTE": 4,
+    "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE": 9
+  },
+  "consumers": [
+    {
+      "path": "src/components/financeiro/NovaContaDialog.tsx",
+      "md5": "0ba91048b39e187512f5dec0dee5b4a8",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/components/financeiro/BaixaDialog.tsx",
+      "md5": "8681cb83a6fae198c0a1a68695c6a2f8",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/components/financeiro/EstornoDialog.tsx",
+      "md5": "f65079449053ce266021f6241a91fec1",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/pages/financeiro/ContasReceber.tsx",
+      "md5": "13829ec5cef5ac66091a66278202311a",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/components/financeiro/ContaDrawer.tsx",
+      "md5": "ac8945ae0ba9a9dc661b411ba0cbead0",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/lib/financeiro/baixaRecebimento.ts",
+      "md5": "0db165a97b5f796caa1ceda73787b83e",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/lib/financeiro/contasReceber.ts",
+      "md5": "0ebfd180cca33a5c18e78012eaf56782",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/hooks/useB2BFinanceiro.ts",
+      "md5": "34f3e9b43dbf97010090dc9d29deed37",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/hooks/useDeliveryFinanceReconciliation.ts",
+      "md5": "a8fac0db1d11083375bab059354311c1",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/pages/financeiro/FluxoCaixa.tsx",
+      "md5": "f195624eedb63e40e52b065244be6e8b",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/pages/financeiro/DRE.tsx",
+      "md5": "888d3ef0068bf374652e9c3dfc4a97cc",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/pages/financeiro/Recorrencias.tsx",
+      "md5": "75cda2138e8b3cf79597896b0b4f7812",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/pages/portal/PortalFinanceiro.tsx",
+      "md5": "427f906b95204581839995b437fa01cc",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "src/components/financeiro/relatorios/ReportShell.tsx",
+      "md5": "0ec06253a97d39a04fb338a74bd8a6d1",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "supabase/functions/generate-financial-report/index.ts",
+      "md5": "dc9658059c4f8d725a9466c92e412619",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "supabase/functions/fase-e-runtime-harness/index.ts",
+      "md5": "3c5b6a966822d965b18eefabebe9a34f",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    },
+    {
+      "path": "supabase/functions/entrega-runtime-harness/index.ts",
+      "md5": "a7767bb19e033354219752a02632b09f",
+      "proof": "SOURCE_ONLY_NOT_END_TO_END",
+      "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+    }
+  ],
+  "checks": [
+    {
+      "test": "_rpc_avancar_esteira_laboratorio_internal(uuid,text,text,uuid):39",
+      "expected": "EXECUTABLE_DYNAMIC_SQL",
+      "actual": "EXECUTABLE_DYNAMIC_SQL",
+      "status": "PASS"
+    },
+    {
+      "test": "is_active_visit_participant(uuid,uuid):11",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "is_visit_responsible(uuid,uuid):10",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text):183",
+      "expected": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "actual": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "tg_notify_payment_terms_pending():30",
+      "expected": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "actual": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "can_manage_technical_visit(uuid,uuid):12",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "can_user_access_cliente(uuid):55",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "can_user_access_cliente(uuid,uuid):25",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "can_view_technical_visit(uuid,uuid):12",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "generate_b2b_receivable_secure_impl(uuid):137",
+      "expected": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "actual": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "generate_b2b_receivable_secure_impl(uuid):146",
+      "expected": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "actual": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "has_active_user_cliente_access(uuid,uuid,text[]):1",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "producer_request_mutation_guard():55",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "platform_private.tenant_smtp_lane_source_reason(uuid,uuid,uuid,uuid):20",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "impl formats are not executable SQL",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "mutation EXECUTE",
+      "expected": "EXECUTABLE_DYNAMIC_SQL",
+      "actual": "EXECUTABLE_DYNAMIC_SQL",
+      "status": "PASS"
+    },
+    {
+      "test": "mutation access literal",
+      "expected": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "actual": "LEXICAL_ACCESS_LEVEL_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "mutation text format",
+      "expected": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "actual": "TEXT_FORMAT_NOT_SQL_EXECUTE",
+      "status": "PASS"
+    },
+    {
+      "test": "literal EXECUTE",
+      "expected": "EXECUTABLE_DYNAMIC_SQL",
+      "actual": "EXECUTABLE_DYNAMIC_SQL",
+      "status": "PASS"
+    },
+    {
+      "test": "comment stays unresolved",
+      "expected": "UNRESOLVED",
+      "actual": "UNRESOLVED",
+      "status": "PASS"
+    },
+    {
+      "test": "dollar quote stays unresolved",
+      "expected": "UNRESOLVED",
+      "actual": "UNRESOLVED",
+      "status": "PASS"
+    },
+    {
+      "test": "dynamic identifier finite branch",
+      "expected": 1,
+      "actual": 1,
+      "status": "PASS"
+    },
+    {
+      "test": "dynamic target captured ordens_servico",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "dynamic target captured ordens_servico_onfarm",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "17 consumer identities",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/components/financeiro/NovaContaDialog.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/components/financeiro/BaixaDialog.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/components/financeiro/EstornoDialog.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/pages/financeiro/ContasReceber.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/components/financeiro/ContaDrawer.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/lib/financeiro/baixaRecebimento.ts",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/lib/financeiro/contasReceber.ts",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/hooks/useB2BFinanceiro.ts",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/hooks/useDeliveryFinanceReconciliation.ts",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/pages/financeiro/FluxoCaixa.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/pages/financeiro/DRE.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/pages/financeiro/Recorrencias.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/pages/portal/PortalFinanceiro.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint src/components/financeiro/relatorios/ReportShell.tsx",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint supabase/functions/generate-financial-report/index.ts",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint supabase/functions/fase-e-runtime-harness/index.ts",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "fingerprint supabase/functions/entrega-runtime-harness/index.ts",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "test": "Consumer/BI external provenance",
+      "expected": "End-to-end authority and semantics",
+      "actual": "Source-only fingerprints",
+      "status": "BLOCKED"
+    }
+  ],
+  "counts": {
+    "PASS": 42,
+    "FAIL": 0,
+    "BLOCKED": 1
+  },
+  "disposition": "BLOCKED_PROVENANCE",
+  "dynamic_targets": [
+    "ordens_servico",
+    "ordens_servico_onfarm"
+  ],
+  "assertion_basis": "Concrete independently failing assertions are recorded individually; dynamic targets resolved from pinned assignment branch, not executed operationally",
+  "blocked": [
+    "Only executable dynamic candidate requires full laboratory authorization chain; no operational execution authorized by this classification",
+    "External importer/job/runtime dispatch and metric-specific BI/accounting provenance remain unproved"
+  ],
+  "operational_go": false
+}

@@ -13,7 +13,7 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   ], { encoding: 'utf8', timeout: 180_000 });
   const result = JSON.parse(output.trim().split('\n').at(-1) ?? '{}');
   expect(result.FAIL).toBe(0);
-  expect(result.PASS).toBe(651);
+  expect(result.PASS).toBe(810);
   expect(result.BLOCKED).toBe(1);
   expect(result['NOT RUN']).toBe(1);
   const evidence = JSON.parse(readFileSync(join(outputDir, 'results.json'), 'utf8'));
@@ -28,6 +28,12 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   expect(evidence.risk_composition.tables).toContain('partner_risk_scores');
   expect(evidence.risk_composition.deferred.risk_fk_resolved).toBe(true);
   const finding = (name: string) => evidence.checks.find((row: { test: string }) => row.test === name);
+  expect(finding('projection exact AR owner FSF buyer').status).toBe('PASS');
+  expect(finding('GREEN owner proceeds only to legitimate billing denial').actual).toBe("('P0001', 'billing_not_eligible:PAYMENT_TERMS_NOT_DEFINED')");
+  expect(finding('credit zero not unlimited exposure reason').actual).toBe('LIMIT_EXCEEDED_BLOCK');
+  expect(Number(finding('exposure exact exposicao_projetada').actual)).toBe(13500);
+  expect(Number(finding('exposure financed total minus payment').actual)).toBe(9300);
+  expect(evidence.risk_composition.parties_credit.synthetic_ids.ar_bio_owner).not.toBe(evidence.risk_composition.parties_credit.synthetic_ids.fsf_buyer_tenant);
   for (const tenant of ['A', 'B']) {
     expect(finding(`deferred no settings method ticket ${tenant}`).actual).toBe('0|0');
     expect(finding(`deferred complete updater ${tenant}`).actual).toBe('0');
@@ -35,6 +41,10 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
     expect(finding(`deferred legacy incomplete wrapper ${tenant} exact error`).actual).toBe("('P0001', 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED')");
     expect(finding(`deferred configured still C2_ACCOUNTING_PENDING ${tenant} exact error`).actual).toBe("('42501', 'C2_ACCOUNTING_PENDING')");
     expect(finding(`deferred configured still B2B_INTERNAL_DOWNSTREAM_UNVERIFIED ${tenant} exact error`).actual).toBe("('42501', 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')");
+    expect(finding(`GREEN zero foreign scope first ${tenant} exact error`).actual).toBe("('42501', 'C2P1_FORBIDDEN')");
+    for (const entry of ['automatic', 'wrapper', 'delivery link']) {
+      expect(finding(`GREEN zero ${entry} ${tenant} exact error`).actual).toBe("('23514', 'B2B_ZERO_CREDIT_LIMIT')");
+    }
   }
   const barriers = evidence.checks.filter((row: { mode: string }) => row.mode === 'RISK_BLOCKED_EXPECTED');
   expect(barriers).toHaveLength(10);

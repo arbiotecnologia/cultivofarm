@@ -1,0 +1,89 @@
+--- tg_partner_orders_credit_guard previous sandbox
++++ offline only
+@@ -12,6 +12,7 @@
+ 
+   IF NEW.status IN ('pendente','solicitado','aguardando_ajuste_comercial','aguardando_itens','em_analise_comercial','aprovado','aguardando_aprovacao_credito','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') OR NEW.credit_approved_by IS NOT NULL THEN
+     IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(NEW.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++    IF EXISTS(SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=NEW.partner_id AND s.credit_limit=0) THEN RAISE EXCEPTION 'B2B_ZERO_CREDIT_LIMIT' USING ERRCODE='23514'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
+       WHERE s.partner_id=NEW.partner_id AND s.active IS TRUE
+       AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
+
+--- tg_auto_b2b_receivable previous sandbox
++++ offline only
+@@ -11,6 +11,7 @@
+ 
+   IF NEW.status IN ('pendente','solicitado','aguardando_ajuste_comercial','aguardando_itens','em_analise_comercial','aprovado','aguardando_aprovacao_credito','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') THEN
+     IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(NEW.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF EXISTS(SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=NEW.partner_id AND s.credit_limit=0) THEN RAISE EXCEPTION 'B2B_ZERO_CREDIT_LIMIT' USING ERRCODE='23514'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
+       WHERE s.partner_id=NEW.partner_id AND s.active IS TRUE
+       AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
+
+--- fn_b2b_order_billing_eligibility previous sandbox
++++ offline only
+@@ -9,6 +9,7 @@
+   SELECT * INTO v_order FROM public.partner_orders WHERE id = p_partner_order_id;
+   IF NOT FOUND THEN RETURN jsonb_build_object('eligible',false,'reason_code','ORDER_NOT_FOUND'); END IF;
+ IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(v_order.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF EXISTS(SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=v_order.partner_id AND s.credit_limit=0) THEN RETURN jsonb_build_object('eligible',false,'reason_code','B2B_ZERO_CREDIT_LIMIT'); END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
+       WHERE s.partner_id=v_order.partner_id AND s.active IS TRUE
+       AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
+
+--- fn_h6c_entrega_ar_b2b_link previous sandbox
++++ offline only
+@@ -18,6 +18,7 @@
+   IF NOT FOUND THEN RETURN NEW; END IF;
+ 
+   IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(v_po.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF EXISTS(SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=v_po.partner_id AND s.credit_limit=0) THEN RAISE EXCEPTION 'B2B_ZERO_CREDIT_LIMIT' USING ERRCODE='23514'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
+       WHERE s.partner_id=v_po.partner_id AND s.active IS TRUE
+       AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
+
+--- generate_b2b_receivable_secure previous sandbox
++++ offline only
+@@ -24,6 +24,7 @@
+   END IF;
+ 
+   IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed((SELECT partner_id FROM public.partner_orders WHERE id=p_partner_order_id),true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF EXISTS(SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=(SELECT partner_id FROM public.partner_orders WHERE id=p_partner_order_id) AND s.credit_limit=0) THEN RAISE EXCEPTION 'B2B_ZERO_CREDIT_LIMIT' USING ERRCODE='23514'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
+       WHERE s.partner_id=(SELECT partner_id FROM public.partner_orders WHERE id=p_partner_order_id) AND s.active IS TRUE
+       AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
+
+--- fn_b2b_credit_exposure previous sandbox
++++ offline only
+@@ -78,7 +78,6 @@
+ 
+   v_reason := CASE
+     WHEN v_block AND v_overdue > 0 THEN 'OVERDUE_BLOCK'
+-    WHEN v_limit <= 0 THEN 'NO_LIMIT_DEFINED'
+     WHEN v_proj > v_limit AND v_action = 'approval_required' THEN 'LIMIT_EXCEEDED_APPROVAL'
+     WHEN v_proj > v_limit THEN 'LIMIT_EXCEEDED_BLOCK'
+     ELSE 'OK' END;
+
+--- generate_b2b_receivable_secure_impl previous sandbox
++++ offline only
+@@ -36,15 +36,11 @@
+   IF NOT FOUND THEN RAISE EXCEPTION 'Pedido não encontrado'; END IF;
+ 
+   -- Deterministic partner ownership, never caller-supplied organization.
+-  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
+-    FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;
+-  -- c2_ord_owner_tenant: cliente comercial sem tenant próprio fatura no tenant dono.
+-  IF v_org_count = 0 THEN
+-    SELECT count(*), min(o.id::text)::uuid INTO v_org_count, v_org
+-      FROM public.partner_accounts pa JOIN public.organizations o ON o.id = pa.commercial_owner_organization_id
+-     WHERE pa.id = v_order.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+-       AND o.ativo IS TRUE AND o.status = 'ativa';
+-  END IF;
++  -- Offline decision: the creditor is the commercial owner, never the buyer tenant.
++  SELECT count(*), min(o.id::text)::uuid INTO v_org_count, v_org
++    FROM public.partner_accounts pa JOIN public.organizations o ON o.id=pa.commercial_owner_organization_id
++   WHERE pa.id=v_order.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
++     AND o.ativo IS TRUE AND o.status='ativa';
+   IF v_org_count <> 1 OR v_org IS NULL THEN
+     RAISE EXCEPTION 'B2B_FINANCIAL_TENANT_AMBIGUOUS' USING ERRCODE='42501';
+   END IF;

@@ -1,0 +1,11 @@
+--- previous-offline-hypothesis
++++ null-reject-offline-only
+@@ -13,7 +13,7 @@
+   IF p_reason IS NULL OR length(trim(p_reason)) < 5 THEN
+     RAISE EXCEPTION 'Motivo é obrigatório (mín. 5 caracteres).' USING ERRCODE='check_violation';
+   END IF;
+-  IF p_kind NOT IN ('receivable','payable') THEN
++  IF p_kind IS NULL OR p_kind NOT IN ('receivable','payable') THEN
+     RAISE EXCEPTION 'Tipo inválido: %', p_kind USING ERRCODE='check_violation';
+   END IF;
+ 

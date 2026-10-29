@@ -13,8 +13,11 @@
   },
   "scope": {
     "supplier": "AR Bio",
+    "seller_creditor_invoice_issuer": "AR Bio",
     "supplier_organization_id_reference": "007bb519-cba0-4704-be2c-cb93ad010048",
     "buyer": "FSF Agro",
+    "buyer_debtor": "FSF Agro",
+    "parties_decision_status": "OWNER_CONFIRMED_20261029T153600Z_NOT_FISCAL_ACCOUNTING_PROOF",
     "buyer_scope": "partner",
     "buyer_role": "revenda",
     "customer_id": null,
@@ -126,6 +129,10 @@
       "pedido"
     ],
     "credit_limit": null,
+    "explicit_numeric_limit_required": true,
+    "missing_null_negative_nan_infinity": "DENY_FINANCE",
+    "explicit_zero_is_unlimited": false,
+    "credit_limit_value_status": "NOT_PROVIDED_FINANCE_BLOCKED",
     "block_if_overdue": true,
     "order_overdue_tolerance_days": 0,
     "block_broken_agreement": true,
