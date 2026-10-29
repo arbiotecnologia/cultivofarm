@@ -1,0 +1,76 @@
+-- partner_orders: SELECT-only read for internal staff of the commercial owner organization.
+-- REVIEW ONLY. Target ref swzpzcwiasxmjutrmvkm. Transactional; any pin mismatch aborts with no change.
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+SET LOCAL statement_timeout = '30s';
+-- Lock first so policy pins are read and replaced under the same ACCESS EXCLUSIVE lock (no TOCTOU on policies).
+LOCK TABLE public.partner_orders IN ACCESS EXCLUSIVE MODE;
+
+-- ---------- PREFLIGHT (pins captured read-only 2026-10-29 21:5xZ) ----------
+DO $pre$
+DECLARE v text;
+BEGIN
+  IF (SELECT md5(pg_get_functiondef('platform_private.b2b_phase1_partner_visible(uuid,boolean)'::regprocedure))) <> '915f516e605af7cc14584e2e762a2661'
+  THEN RAISE EXCEPTION 'PRE_PIN_PHASE1_VISIBLE'; END IF;
+  IF (SELECT md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure))) <> '64e10608403238a41a9baf92857ca881'
+  THEN RAISE EXCEPTION 'PRE_PIN_H15'; END IF;
+  IF (SELECT md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure))) <> 'c5af5b55de6d79da9b73a33948746ae2'
+  THEN RAISE EXCEPTION 'PRE_PIN_HAS_ROLE'; END IF;
+  IF to_regprocedure('platform_private.b2b_owner_internal_partner_readable(uuid)') IS NOT NULL
+  THEN RAISE EXCEPTION 'PRE_ALREADY_INSTALLED'; END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.partner_orders'::regclass)
+  THEN RAISE EXCEPTION 'PRE_RLS_OFF'; END IF;
+  SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)
+    INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_orders';
+  IF md5(v) <> '8e07ffe28764e18b6b9b5b0f13df8410' THEN RAISE EXCEPTION 'PRE_POLICIES_DRIFT %', md5(v); END IF;
+END $pre$;
+
+-- ---------- CHANGE ----------
+CREATE FUNCTION platform_private.b2b_owner_internal_partner_readable(p_partner uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $f$
+  -- Read-only predicate. Internal staff (administrador/gestor_comercial/financeiro) of the active organization that
+  -- commercially owns an active partner. External roles or active partner links deny. Reads no partner_orders (no recursion).
+  SELECT auth.uid() IS NOT NULL AND p_partner IS NOT NULL
+    AND NOT EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id = auth.uid()
+                    AND r.role::text IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor'))
+    AND NOT EXISTS (SELECT 1 FROM public.partner_users pu WHERE pu.user_id = auth.uid() AND pu.revoked_at IS NULL)
+    AND EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id = auth.uid()
+                AND r.role::text IN ('administrador','gestor_comercial','financeiro'))
+    AND EXISTS (SELECT 1 FROM public.partner_accounts pa
+                JOIN public.organizations owner ON owner.id = pa.commercial_owner_organization_id
+                     AND owner.ativo IS TRUE AND owner.status = 'ativa'
+                WHERE pa.id = p_partner AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+                  AND pa.commercial_owner_organization_id = platform_private.h15_actor_organization())
+$f$;
+REVOKE ALL ON FUNCTION platform_private.b2b_owner_internal_partner_readable(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION platform_private.b2b_owner_internal_partner_readable(uuid) TO authenticated, service_role;
+
+DROP POLICY b2b_phase1_tenant_guard ON public.partner_orders;
+CREATE POLICY b2b_phase1_tenant_guard_select ON public.partner_orders AS RESTRICTIVE FOR SELECT TO authenticated
+  USING (platform_private.b2b_phase1_partner_visible(partner_id, false) OR platform_private.b2b_owner_internal_partner_readable(partner_id));
+CREATE POLICY b2b_phase1_tenant_guard_insert ON public.partner_orders AS RESTRICTIVE FOR INSERT TO authenticated
+  WITH CHECK (platform_private.b2b_phase1_partner_visible(partner_id, false));
+CREATE POLICY b2b_phase1_tenant_guard_update ON public.partner_orders AS RESTRICTIVE FOR UPDATE TO authenticated
+  USING (platform_private.b2b_phase1_partner_visible(partner_id, false))
+  WITH CHECK (platform_private.b2b_phase1_partner_visible(partner_id, false));
+CREATE POLICY b2b_phase1_tenant_guard_delete ON public.partner_orders AS RESTRICTIVE FOR DELETE TO authenticated
+  USING (platform_private.b2b_phase1_partner_visible(partner_id, false));
+
+-- ---------- POSTFLIGHT ----------
+DO $post$
+DECLARE v text;
+BEGIN
+  IF (SELECT md5(pg_get_functiondef('platform_private.b2b_phase1_partner_visible(uuid,boolean)'::regprocedure))) <> '915f516e605af7cc14584e2e762a2661'
+     OR (SELECT md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure))) <> '64e10608403238a41a9baf92857ca881'
+     OR (SELECT md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure))) <> 'c5af5b55de6d79da9b73a33948746ae2'
+  THEN RAISE EXCEPTION 'POST_DEPENDENCY_DRIFT'; END IF;
+  IF (SELECT md5(pg_get_functiondef('platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure))) <> 'fa72ca18fc673cb4a5ff4867e65137cd'
+  THEN RAISE EXCEPTION 'POST_HELPER_BODY_DRIFT'; END IF;
+  IF (SELECT NOT prosecdef OR proconfig IS DISTINCT FROM ARRAY['search_path=""'] OR array_to_string(proacl,',') <> 'postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres'
+      FROM pg_proc WHERE oid = 'platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure)
+  THEN RAISE EXCEPTION 'POST_HELPER_ACL_OR_CONFIG'; END IF;
+  SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)
+    INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_orders';
+  IF md5(v) <> '87776bb912a6157a493cd0488586c7af' THEN RAISE EXCEPTION 'POST_POLICIES_DRIFT %', md5(v); END IF;
+END $post$;
+COMMIT;

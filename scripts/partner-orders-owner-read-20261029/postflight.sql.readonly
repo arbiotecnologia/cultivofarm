@@ -1,0 +1,19 @@
+BEGIN READ ONLY;
+
+DO $post$
+DECLARE v text;
+BEGIN
+  IF (SELECT md5(pg_get_functiondef('platform_private.b2b_phase1_partner_visible(uuid,boolean)'::regprocedure))) <> '915f516e605af7cc14584e2e762a2661'
+     OR (SELECT md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure))) <> '64e10608403238a41a9baf92857ca881'
+     OR (SELECT md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure))) <> 'c5af5b55de6d79da9b73a33948746ae2'
+  THEN RAISE EXCEPTION 'POST_DEPENDENCY_DRIFT'; END IF;
+  IF (SELECT md5(pg_get_functiondef('platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure))) <> 'fa72ca18fc673cb4a5ff4867e65137cd'
+  THEN RAISE EXCEPTION 'POST_HELPER_BODY_DRIFT'; END IF;
+  IF (SELECT NOT prosecdef OR proconfig IS DISTINCT FROM ARRAY['search_path=""'] OR array_to_string(proacl,',') <> 'postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres'
+      FROM pg_proc WHERE oid = 'platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure)
+  THEN RAISE EXCEPTION 'POST_HELPER_ACL_OR_CONFIG'; END IF;
+  SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)
+    INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_orders';
+  IF md5(v) <> '87776bb912a6157a493cd0488586c7af' THEN RAISE EXCEPTION 'POST_POLICIES_DRIFT %', md5(v); END IF;
+END $post$;
+ROLLBACK;

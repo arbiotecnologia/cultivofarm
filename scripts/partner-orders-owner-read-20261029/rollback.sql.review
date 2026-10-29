@@ -2,6 +2,7 @@
 -- REVIEW ONLY. Aborts unless the installed state matches the pinned POST state.
 BEGIN;
 SET LOCAL lock_timeout = '3s';
+LOCK TABLE public.partner_orders IN ACCESS EXCLUSIVE MODE;
 DO $pre$
 DECLARE v text;
 BEGIN
