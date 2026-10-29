@@ -1,5 +1,9 @@
 # Cancelamento de parcela — autorização offline, 29/10/2026
 
+## Continuidade15:03 — decisão cadastro/configuração implementada offline
+
+Detalhamento novo `cadastro-financeiro-diferido-offline-20261029.md`:651PGPASS/0FAIL/1BLOCKED/1NOT RUN;288GREENdiferidos/9RED/8propostas consumidor inativas;14corridas e NULL43RED/40GREEN preservados. CadastroA/B permitido semsettings/tickets fabricados; configuração completa só via updaterCAS onze valores/método/tenant/RBAC/audit. Ausente/legado incompleto/inativo fecha risco/crédito/auto/link/eligibilidade/wrapper; completa resolveFKrisco, não contabilidade/origem. C2_ACCOUNTING_PENDING/B2B_INTERNAL_DOWNSTREAM_UNVERIFIED continuam negados antes/depois. Monetário37PASS,proveniência42PASS/1BLOCKED,Vitest10/10sem erros finais; rodada nova1503/hashes/histórico preservado. Sem runtime/migrations/produção. Decisão de cadastro não está mais pendente; contratos contábil/origem/calendário e cadeia integral/JWTreal permanecem NO-GO.
+
 **NO-GO para implantação/ativação.** Rodada restrita ao pacote existente; produção, runtime, histórico, política comercial e Entregas intocados. Nenhuma consulta hosted nova: fonte é o catálogo previamente capturado no ref `swzpzcwiasxmjutrmvkm`. Estado Git inicialmente limpo; histórico inspecionado, sem revert nem alteração de dependências.
 
 ## Resultado desta rodada, sem somar históricos

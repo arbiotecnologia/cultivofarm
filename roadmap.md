@@ -1,15 +1,20 @@
 # F2-B — auditoria e preparação revisável
 
+## 29/10 15:03 — decisão cadastro separado, offline
+- [x] Cadastro A/B sem settings/tickets; updater CAS onze valores explícitos; gates ausente/incompleto/inativo e contratos contábeis intactos.
+- [x] 651PGPASS/0FAIL/1BLOCKED/1NOT RUN,14corridas/NULL;37monetário/42proveniência/10Vitest sem erros; evidências1503/hash/relatórios/plano original e consumidor inativo.
+- [ ] Liberação contábil/origem: aguarda contrato/prova autorizada para retirar negações explícitas; calendário/parcelas indefinidos e homologação JWTreal dependem de decisão/autorização humana específica. ProduçãoNO-GO.
+
 ## 29/10 14:58 — tipo NULL no cancelamento (offline limitado)
 - [x] Reproduzir NULL→payable comstatus/audit/voidcapturados;43REDcontroles/40GREEN, rejeiçãoNULL23514 somente sandbox.
 - [x] Reexecutar346PGPASS/0FAIL/1BLOCKED/1NOT RUN,14corridas/risco e10/10Vitest comproveniência/monetário; revisão1458/plano/relatório/hashes novos.
-- [ ] Cadastro continua aguardando decisãohumana, sem decisão unilateral; gates integraisNO-GO preservados.
+- [x] Decisão cadastro recebida15:03 e implementada offline acima; gates integraisNO-GO preservados.
 
 ## 29/10 — continuidade autônoma offline de risco B2B
 - [x] Compor20corpos/cinco tabelas risco/parceiro/governança capturados; calculator chega àFK, cadastroA/B nega settings semticket e rollbackcompleto;25metadados exatos.
 - [x] Executar263PGPASS/0FAIL/1BLOCKED/1NOTRUN,37monetário,42proveniência/1BLOCKED e10Vitest; evidências novas revisão1450 sem sobrescrever histórico.
 - [x] Atualizar relatório/plano original com contagens segregadas e decisão exata; produção e runtime preservados.
-- [ ] Decisão humana: cadastro com settings ausentes/configuração posterior ou11valores+método explícitos atomicamente? Caminho canônico atual não resolve; gates contábil/origem/fiscal/BI/JWTreal continuam NO-GO.
+- [x] Decisão resolvida15:03: cadastrar sem settings e configurar depois; hipótese offline acima, gates contábil/origem/fiscal/BI/JWTreal continuam NO-GO.
 
 ## 29/10 14:28 — revisão da autorização de cancelamento
 - [x] Pagamentos estrangeiros reais/exatidão de erros/AuthGREEN/valores e14corridas locais com holderPID; hipótese pós-lock READ COMMITTED, contraprova snapshotREPEATABLE READ sem mudar helpers.

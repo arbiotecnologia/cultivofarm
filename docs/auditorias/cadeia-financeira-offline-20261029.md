@@ -2,6 +2,10 @@
 
 ## Entrega e estado
 
+### Continuidade15:03 — cadastro separado do financeiro, sandbox
+
+Decisão recebida implementada offline; relatório `cadastro-financeiro-diferido-offline-20261029.md`.651PGPASS/0FAIL/1BLOCKED/1NOT RUN,288GREENdiferidos/9RED/8consumidorinativo;NULL e14corridas preservados. CadastroA/B sem settings/tickets, updaterCAS explícito onzevalores/método; riscoFKresolvida, ausente/incompleto impede financeiro no recorte. Contabilidade/origem seguem negadas mesmo após configurar. Monetário37PASS/proveniência42PASS1BLOCKED/Vitest10PASSsem erros, fontes e evidências rodada1503. Sem runtime/SQLimplantável/produção. Não aguarda contrato cadastro; calendário/parcelamento, contabilidade/origem/fiscal/BIproveniência e JWT/RLSreal continuam pendentes.
+
 ### Continuidade14:50 — risco composto, cadastro bloqueado legitimamente
 
 Runner existente+`cancel-risk-composition.py`:263PASS/0FAIL inesperados/1BLOCKED/1NOT RUN; cinco tabelas e20corpos capturados,25checksmetadados, calcA/B atingeFKparceiro23503, cadastroA/B negaC2P1_SETTINGS_WRITE_CLOSED atomicamente sem ticket. Menor decisão humana: cadastro com settings ausentes e configuração posterior ou inicialização transacional de11valores/método explícitos? Caminho direto e updater existente não compõem cadastro atual. Não contornar. Proveniência42PASS/0FAIL/1BLOCKED:14trechos=1EXECUTE/4textformat/9literais; alvosOS/onfarm finitos resolvidos sem operação,17fingerprints source-only. Monetário37PASS(18RED/19GREEN), Vitest10/10em4arquivos;14corridas reexecutadas. Evidências novas revisão1450, históricos preservados/hashes28OK/7MISMATCH/4MISSING explicitados; detalhes no relatório cancelamento. Sem SQL implantável/runtime/produção; NO-GO integral.
