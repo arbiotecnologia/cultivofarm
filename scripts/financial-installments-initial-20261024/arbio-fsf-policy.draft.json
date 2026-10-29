@@ -59,7 +59,7 @@
     "default_payment_method": null,
     "safra_period_dates": null,
     "guarantee_evidence_and_sufficiency": null,
-    "holiday_calendar_source": "PARTIAL: Paracatu-MG 2026 official dataset; 2027+ not covered (no official annual calendar)"
+    "holiday_calendar_source": "PARTIAL: Paracatu-MG v2 covers 2026 (decreto 8.035/2025 + leis) and 2027 (cálculo pelas leis recorrentes vigentes em 2026-10-29); 2028+ not covered"
   },
   "documents": [
     "contrato B2B",
@@ -151,7 +151,8 @@
     "holiday_calendar": "explicit versioned official dataset required; locality pinned Paracatu-MG (national + municipal general holidays); no fallback to national-only or other municipality; absent -> CALENDAR_SOURCE_REQUIRED; outside coverage -> CALENDAR_COVERAGE_EXCEEDED for the whole plan",
     "period_convention": "fixed monthly Price periods",
     "holiday_calendar_locality": "Paracatu-MG",
-    "holiday_calendar_dataset": "calendars/paracatu-mg-2026.json"
+    "holiday_calendar_dataset": "calendars/paracatu-mg-2026-2027.json",
+    "holiday_calendar_dataset_version": "paracatu-mg-2026-2027-v2"
   },
   "resolved_by_active_candidate": {
     "installment_count": "1..3",

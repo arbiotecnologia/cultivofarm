@@ -81,3 +81,13 @@ Somente candidato offline. Sem runtime, SQL hosted, migration, deploy, GRANT, us
 - Manifesto `price-calendar-paracatu-1810/SHA256SUMS.versioned` conferido contra blobs do commit `8a7d7cb97a3118ddf0e57b7186d0084b82d72585`: 6 entradas, 0 divergências/ausências.
 - Logs da rodada 18:10: suíte 865/866 em `docs/auditorias/evidencias-cadeia-financeira-20261029/price-calendar-paracatu-1810/vitest.txt`; reexecução isolada 18/18 em `.../price-calendar-paracatu-1810/vitest-isolated-rerun.txt`.
 - Teste direcionado após esta mudança: motor 314/0 FAIL (42 CALENDAR_REAL); Vitest `priceScheduleOffline.test.ts` 1/1. Suíte ampla não repetida.
+
+## 29/10/2026 18:25 UTC — Calendário Paracatu-MG v2 (2026–2027) por leis recorrentes
+
+- Novo dataset `calendars/paracatu-mg-2026-2027.json` (`paracatu-mg-2026-2027-v2`, cobertura 2026-01-01..2027-12-31), gerado por `calendars/build-paracatu-2026-2027.py`; v1 `paracatu-mg-2026.json` preservado byte a byte. Política seleciona explicitamente arquivo e versão (`holiday_calendar_dataset_version`), com rejeição `CALENDAR_VERSION_MISMATCH`.
+- 2026 copiado de v1 (decreto 8.035/2025 + leis). 2027: **cálculo pelas leis recorrentes vigentes consultadas em 2026-10-29**, não calendário anual publicado nem garantia contra legislação futura. 14 feriados: 01/01, 26/03 (Paixão), 21/04, 01/05, 27/05 (Corpus municipal), 13/06, 07/09, 12/10, 20/10, 31/10, 02/11, 15/11, 20/11, 25/12. Sem facultativos; 08/12/2027 não-feriado.
+- Fontes conferidas nesta rodada: Lei 662/1949 texto atualizado (Câmara, red. 10.607/2002: 01/01, 21/04, 01/05, 07/09, 02/11, 15/11, 25/12); Lei 6.802/1980 (12/10); Lei 14.759/2023 (20/11, texto via índice oficial planalto; acesso direto bloqueado ao robô); Lei 2.383/2001 (gwlegis Câmara: 13/06, 31/10, 08/12, Paixão); Lei 3.227/2016 (Câmara: Corpus no inciso III); Lei 2.579/2005 (20/10). CNJ 6544 usado só para corroborar 26/03 e 27/05; recessos/forenses (08–09/02, 24–25/03, 11/08) não importados.
+- Páscoa 2027 = 28/03: Meeus no gerador e Gauss independente no teste.
+- Testes: NF 2026-10-29 3x → 30/11, 28/12, 28/01/2027, parcelas 3×R$ 20.724,28 inalteradas; NF 2026-12-02 → 01/01/2027 ajusta 04/01/2027; limites 29/30/31 jan 2027 com clamp 28/02 (dom) → 01/03; 31/12/2027 último dia coberto; qualquer vencimento em 2028 bloqueia o plano inteiro.
+- Resultados: motor 362/0 FAIL (47 CALENDAR_REAL_V2, 42 v1 preservados); histórico substituído 47 PASS/15 BLOCKED/1 NOT RUN; Vitest `priceScheduleOffline` 1/1. Suíte ampla não repetida. Evidências `price-calendar-paracatu-2027-1825/`.
+- Limitação atual: cobertura até 31/12/2027; produção NO-GO pelos gates restantes.

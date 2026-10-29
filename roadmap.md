@@ -1032,4 +1032,5 @@
 - [x] Âncora NF+30 decidida.
 - [x] Base de exposição (total com juros), vencimentos seguintes, dia útil e sem pro-rata decididos e testados.
 - [x] Calendário real Paracatu-MG 2026 (fontes oficiais, hash).
-- [ ] Calendário 2027+ — dataset atual cobre só 2026; nova versão exige fonte oficial (calendário anual ou legislação vigente recorrente comprovada).
+- [x] Calendário v2 2026–2027 (2027 por leis recorrentes vigentes).
+- [ ] Calendário 2028+ — nova versão quando necessário, mesmas fontes.
