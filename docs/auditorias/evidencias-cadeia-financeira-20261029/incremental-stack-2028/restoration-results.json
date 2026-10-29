@@ -1,0 +1,4 @@
+{
+  "restoration": "BLOCKED",
+  "error": "ERROR:  cannot use column reference in DEFAULT expression\nLINE 1: ...firmed_at\" timestamp with time zone DEFAULT LEAST(email_conf...\n                                                             ^\n"
+}
