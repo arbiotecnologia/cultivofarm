@@ -59,10 +59,10 @@ def spoof_result(uid, oid):
     return 'ERROR' if rc else out.splitlines()[-1]
 
 
-def fill(table, values):
+def fill(table, values, schema='public'):
     cols = json.loads(pg.sql(f"""SELECT coalesce(json_agg(json_build_object('n',a.attname,'t',format_type(a.atttypid,a.atttypmod),'typ',t.typtype,'oid',a.atttypid)),'[]')
       FROM pg_attribute a JOIN pg_type t ON t.oid=a.atttypid LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
-      WHERE a.attrelid='public.{table}'::regclass AND a.attnum>0 AND NOT a.attisdropped AND a.attnotnull AND d.adbin IS NULL AND a.attgenerated='' AND a.attidentity=''"""))
+      WHERE a.attrelid='{schema}.{table}'::regclass AND a.attnum>0 AND NOT a.attisdropped AND a.attnotnull AND d.adbin IS NULL AND a.attgenerated='' AND a.attidentity=''"""))
     v = dict(values)
     for c in cols:
         if c['n'] in v: continue
@@ -82,7 +82,7 @@ def fill(table, values):
         if isinstance(x, (int, float)): return str(x)
         if isinstance(x, (dict, list)): return "'" + json.dumps(x).replace("'", "''") + "'"
         return "'" + str(x).replace("'", "''") + "'"
-    pg.sql(f"SET session_replication_role=replica; INSERT INTO public.{table}({','.join(v)}) VALUES ({','.join(lit(x) for x in v.values())});")
+    pg.sql(f"SET session_replication_role=replica; INSERT INTO {schema}.{table}({','.join(v)}) VALUES ({','.join(lit(x) for x in v.values())});")
 
 
 def counters():
@@ -139,6 +139,8 @@ def main():
     for org, partner_link in ((ORG_A, None), (ORG_F, None)):
         fill('organizations', {'id': org, 'ativo': True, 'status': 'ativa', 'partner_account_id': partner_link})
     fill('partner_accounts', {'id': PART, 'commercial_owner_organization_id': ORG_A, 'ativo': True})
+    for uid in (U_ADM, U_FIN, U_FSF, U_CUM, U_SUP):
+        fill('users', {'id': uid}, 'auth')
     for uid, org in ((U_ADM, ORG_A), (U_FIN, ORG_A), (U_FSF, ORG_F), (U_CUM, ORG_A), (U_SUP, ORG_A)):
         fill('profiles', {'user_id': uid, 'organization_id': org, 'ativo': True, 'senha_provisoria': False})
     for uid, role in ((U_ADM, 'administrador'), (U_FIN, 'financeiro'), (U_FSF, 'administrador'),
