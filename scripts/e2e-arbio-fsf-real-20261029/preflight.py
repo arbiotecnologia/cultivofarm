@@ -50,12 +50,11 @@ def main(env, root):
     if mode not in ('PROD_READONLY', 'HOMOLOG_ISOLATED'): mark(BOTH, 'DENY', f'modo desconhecido/ausente ({mode or "vazio"})')
     if scope not in ('READONLY', 'WRITE_SCENARIOS'): mark(BOTH, 'DENY', f'escopo desconhecido/ausente ({scope or "vazio"})')
     if mode == 'PROD_READONLY': mark((wr,), 'DENY', 'produção nunca tem escopo de escrita')
-    ev, path = None, env.get('PREFLIGHT_EVIDENCE', '')
-    try: ev = json.loads(pathlib.Path(path).read_text(encoding='utf-8'), object_pairs_hook=no_dups)
+    ev, path, loaded = None, env.get('PREFLIGHT_EVIDENCE', ''), False
+    try: ev = json.loads(pathlib.Path(path).read_text(encoding='utf-8'), object_pairs_hook=no_dups); loaded = True
     except Dup as e: mark(BOTH, 'DENY', f'chave repetida na evidência {e}')
     except Exception: mark(BOTH, 'BLOCKED', 'evidência ausente/ilegível')
-    if path and ev is None and log and log[-1].startswith(('DENY chave', 'BLOCKED evidência')): pass
-    elif not isinstance(ev, dict):
+    if loaded and not isinstance(ev, dict):
         mark(BOTH, 'DENY', f'raiz da evidência não é objeto JSON ({type(ev).__name__})'); ev = None
     if ev is not None:
         if ev.get('mode') != mode: mark(BOTH, 'DENY', 'modo da evidência difere do modo pedido')
