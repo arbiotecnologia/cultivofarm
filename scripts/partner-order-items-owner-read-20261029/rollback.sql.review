@@ -1,0 +1,22 @@
+-- Deny-safe rollback for items: restore original ALL guard, neutralize helper. Does not touch partner_orders.
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+LOCK TABLE public.partner_order_items IN ACCESS EXCLUSIVE MODE;
+DO $pre$ DECLARE v text; BEGIN
+  SELECT md5(string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_order_items';
+  IF v <> '__POST_POLICIES_MD5__' THEN RAISE EXCEPTION 'ROLLBACK_PRE_DRIFT %', v; END IF;
+END $pre$;
+DROP POLICY b2b_phase1_tenant_guard_select ON public.partner_order_items;
+DROP POLICY b2b_phase1_tenant_guard_insert ON public.partner_order_items;
+DROP POLICY b2b_phase1_tenant_guard_update ON public.partner_order_items;
+DROP POLICY b2b_phase1_tenant_guard_delete ON public.partner_order_items;
+CREATE POLICY b2b_phase1_tenant_guard ON public.partner_order_items AS RESTRICTIVE FOR ALL TO authenticated
+  USING (platform_private.b2b_phase1_order_visible(order_id)) WITH CHECK (platform_private.b2b_phase1_order_visible(order_id));
+CREATE OR REPLACE FUNCTION platform_private.b2b_owner_internal_order_readable(p_order uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $f$ SELECT false $f$;
+REVOKE ALL ON FUNCTION platform_private.b2b_owner_internal_order_readable(uuid) FROM PUBLIC, anon, authenticated;
+DO $post$ DECLARE v text; BEGIN
+  SELECT md5(string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_order_items';
+  IF v <> '3233f822832e8121b0c42aaf572c4ada' THEN RAISE EXCEPTION 'ROLLBACK_POST_DRIFT %', v; END IF;
+END $post$;
+COMMIT;

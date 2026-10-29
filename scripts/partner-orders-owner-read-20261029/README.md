@@ -9,3 +9,5 @@ Pins: pré-políticas `8e07ffe28764e18b6b9b5b0f13df8410` (lido no hosted 21:5xZ)
 Arquivos para revisão: `install.sql.final.review`, `rollback.sql.final.review`, `preflight.sql.readonly`, `postflight.sql.readonly`, `pins.json`. Evidência: `docs/auditorias/evidencias-cadeia-financeira-20261029/partner-orders-owner-read/` (42/42).
 
 Limites: PG descartável, linhas sintéticas, claims sem assinatura (não prova JWT/RLS). Nenhum ator sintético tem DML permitido no baseline, então a equivalência DML foi provada no lado negado (SQLSTATE 42501/0 linhas/estado inalterado), não num caminho de escrita bem-sucedido. Prova real: repetir o GET do admin AR Bio (esperado 7) e os negativos FSF após instalação. Decisão superadmin do pacote de crédito segue pendência separada.
+
+**Itens pendentes:** este pacote sozinho não libera `partner_order_items` (a tela de itens continua vazia). Complemento obrigatório para leitura completa: `scripts/partner-order-items-owner-read-20261029/`.

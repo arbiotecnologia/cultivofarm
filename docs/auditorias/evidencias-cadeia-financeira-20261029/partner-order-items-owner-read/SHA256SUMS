@@ -1,0 +1,12 @@
+17e4527b601236d617ffc0070153713980cbe4a75362368a7651e0a8f99babfc  scripts/partner-order-items-owner-read-20261029/AGENTS.md
+3ccbe131cb229f75bbb118f971b232773b39f9bdf26b4ddda12698e98157090d  scripts/partner-order-items-owner-read-20261029/README.md
+da9ba9d04ac09436f9808b7ea74d4c07c304bb2850b53e69c7bbb364315f80f5  scripts/partner-order-items-owner-read-20261029/install.sql.review
+1a67dcc4c73294358a70824d387ebcbcd820c791de06535a83f345c2c889de30  scripts/partner-order-items-owner-read-20261029/install.sql.final.review
+e83fb1dcc233924db22d5e6d0e88a5f85b149b9ac4b0b2d924f50319e2cd229c  scripts/partner-order-items-owner-read-20261029/rollback.sql.review
+014fb208ec186c8c18c5fb76219497787b83f549de31d4fc9b2376b922781f59  scripts/partner-order-items-owner-read-20261029/rollback.sql.final.review
+669fea15ac3148930a28a17e35871c1ecd6586d677efbbfdd85f637c8a956308  scripts/partner-order-items-owner-read-20261029/preflight.sql.readonly
+6ca05c6e2982fc879509cf7af647ff9c6e397e8253a0d5bb761e208de15d37a2  scripts/partner-order-items-owner-read-20261029/postflight.sql.readonly
+8280829daa4112a53eaf5497ac42807b38041cfd6e6960803a6012ebe49b698d  scripts/partner-order-items-owner-read-20261029/pins.json
+4049c35aac82c93c0eab6da33cbf65467a7fae574e9eaa53db4f8e97ba1d71a7  scripts/partner-order-items-owner-read-20261029/test_items_owner_read.py
+7db7fb8e54441ae8229751378b0e456c0bf33974aa062b3aa67c68ff488212c4  docs/auditorias/evidencias-cadeia-financeira-20261029/partner-order-items-owner-read/results.json
+4104f6719c1f6c55603d6640cb7918aac0d9170e8504aa976c8acdcc00fbaf73  docs/auditorias/evidencias-cadeia-financeira-20261029/partner-order-items-owner-read/run.log
