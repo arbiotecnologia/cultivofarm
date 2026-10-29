@@ -12,11 +12,16 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   ], { encoding: 'utf8', timeout: 180_000 });
   const result = JSON.parse(output.trim().split('\n').at(-1) ?? '{}');
   expect(result.FAIL).toBe(0);
-  expect(result.PASS).toBe(263);
+  expect(result.PASS).toBe(346);
   expect(result.BLOCKED).toBe(1);
   expect(result['NOT RUN']).toBe(1);
   const evidence = JSON.parse(readFileSync(join(outputDir, 'results.json'), 'utf8'));
   expect(evidence.races).toHaveLength(14);
+  expect(evidence.by_mode.RED_NULL_KIND_CAPTURED).toBe(43);
+  expect(evidence.by_mode.GREEN_NULL_KIND_SANDBOX).toBe(40);
+  const nullKind = evidence.checks.find((row: { test: string }) => row.test === 'GREEN_NULL_KIND_SANDBOX NULL kind own payable exact error');
+  expect(nullKind.actual).toBe("('23514', 'Tipo inválido: <NULL>')");
+  expect(nullKind.status).toBe('PASS');
   const green = evidence.races.filter((row: { test: string }) => row.test.startsWith('GREEN_OFFLINE_ONLY'));
   expect(green).toHaveLength(4);
   expect(evidence.risk_composition.tables).toContain('partner_risk_scores');

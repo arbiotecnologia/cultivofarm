@@ -1,5 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
+## 29/10 14:58 — tipo NULL no cancelamento (offline limitado)
+- [x] Reproduzir NULL→payable comstatus/audit/voidcapturados;43REDcontroles/40GREEN, rejeiçãoNULL23514 somente sandbox.
+- [x] Reexecutar346PGPASS/0FAIL/1BLOCKED/1NOT RUN,14corridas/risco e10/10Vitest comproveniência/monetário; revisão1458/plano/relatório/hashes novos.
+- [ ] Cadastro continua aguardando decisãohumana, sem decisão unilateral; gates integraisNO-GO preservados.
+
 ## 29/10 — continuidade autônoma offline de risco B2B
 - [x] Compor20corpos/cinco tabelas risco/parceiro/governança capturados; calculator chega àFK, cadastroA/B nega settings semticket e rollbackcompleto;25metadados exatos.
 - [x] Executar263PGPASS/0FAIL/1BLOCKED/1NOTRUN,37monetário,42proveniência/1BLOCKED e10Vitest; evidências novas revisão1450 sem sobrescrever histórico.
