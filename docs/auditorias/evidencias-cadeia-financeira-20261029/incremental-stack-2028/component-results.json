@@ -1,0 +1,363 @@
+{
+  "level": "DISPOSABLE_CURRENT_BODIES_AUTH_SEAMS_NOT_E2E",
+  "candidate_function_md5": {
+    "approve_b2b_credit(uuid,text)": "061f8a4748d1d028ad0c103bab5a1cdb",
+    "tg_partner_orders_credit_guard()": "c09a79e48bea260679d82adf1616fcc8",
+    "fn_b2b_guard_credit_approval_fields()": "3bac4722eb855a6932057f42f28b3850",
+    "platform_private.b2b_credit_config_block(uuid)": "582b943911a63a3e3391770fea5f7fbb"
+  },
+  "checks": [
+    {
+      "test": "exact LIVE body fn_b2b_guard_credit_approval_fields()",
+      "status": "PASS",
+      "expected": "8902498ed09c4c5804b1749ee0c31cd7",
+      "actual": "8902498ed09c4c5804b1749ee0c31cd7"
+    },
+    {
+      "test": "exact LIVE body approve_b2b_credit(uuid,text)",
+      "status": "PASS",
+      "expected": "8127c7b697871fa1eecafa845a551eea",
+      "actual": "8127c7b697871fa1eecafa845a551eea"
+    },
+    {
+      "test": "exact LIVE exposure",
+      "status": "PASS",
+      "expected": "213ac31f3a30816ead75365b0d1fed18",
+      "actual": "213ac31f3a30816ead75365b0d1fed18"
+    },
+    {
+      "test": "RED captured guard accepts caller-set GUC",
+      "status": "PASS",
+      "expected": "11111111-1111-4111-8111-111111111111",
+      "actual": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "test": "GREEN spoofed GUC no private ticket SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "GREEN spoofed GUC no private ticket atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "GREEN spoofed GUC no private ticket no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "undefined/nonfinite limit NULL SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "undefined/nonfinite limit NULL atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "undefined/nonfinite limit NULL no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "undefined/nonfinite limit 0 SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "undefined/nonfinite limit 0 atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "undefined/nonfinite limit 0 no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "undefined/nonfinite limit -1 SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "undefined/nonfinite limit -1 atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "undefined/nonfinite limit -1 no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "undefined/nonfinite limit 'NaN' SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "undefined/nonfinite limit 'NaN' atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "undefined/nonfinite limit 'NaN' no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "Infinity refused by real numeric(14,2) type",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "inactive settings SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "inactive settings atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "inactive settings no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "absent settings SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "absent settings atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "absent settings no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "accounting gate preserved SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "accounting gate preserved atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": {\"contract\": \"C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1\"}, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": {\"contract\": \"C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1\"}, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "accounting gate preserved no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "role revoked SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "role revoked atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "role revoked no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "foreign scope SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "foreign scope atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "foreign scope no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "unsupported isolation SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "unsupported isolation atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000002\", \"status\": \"aguardando_aprovacao_credito\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:31.725036+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:31.725036+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": null, \"credit_approved_by\": null, \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": null, \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "unsupported isolation no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "reauth race proven blocking pids",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "reauth race settled",
+      "status": "PASS",
+      "expected": false,
+      "actual": false
+    },
+    {
+      "test": "revoked during partner lock denied",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "revoked during lock no audit",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "revoked during lock no ticket",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "configured excess legitimate canonical approval",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "approved excess analysis status",
+      "status": "PASS",
+      "expected": "em_analise_comercial",
+      "actual": "em_analise_comercial"
+    },
+    {
+      "test": "one audit",
+      "status": "PASS",
+      "expected": "1",
+      "actual": "1"
+    },
+    {
+      "test": "consumed ticket",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0"
+    },
+    {
+      "test": "replay processed SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "replay processed atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:32.919076+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:32.936713+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": \"2026-10-29T20:43:32.936713+00:00\", \"credit_approved_by\": \"11111111-1111-4111-8111-111111111111\", \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": \"SYNTHETIC\", \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:32.919076+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:32.936713+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": \"2026-10-29T20:43:32.936713+00:00\", \"credit_approved_by\": \"11111111-1111-4111-8111-111111111111\", \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": \"SYNTHETIC\", \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "replay processed no audit",
+      "status": "PASS",
+      "expected": "1",
+      "actual": "1"
+    },
+    {
+      "test": "private ticket denied authenticated SQLSTATE",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "test": "private ticket denied authenticated atomic state",
+      "status": "PASS",
+      "expected": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:32.919076+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:32.936713+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": \"2026-10-29T20:43:32.936713+00:00\", \"credit_approved_by\": \"11111111-1111-4111-8111-111111111111\", \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": \"SYNTHETIC\", \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}",
+      "actual": "{\"id\": \"33333333-3333-4333-8333-333333333333\", \"total\": 120000.00, \"numero\": \"PB-000003\", \"status\": \"em_analise_comercial\", \"cultura\": null, \"priority\": \"normal\", \"subtotal\": 0.00, \"cliente_id\": null, \"created_at\": \"2026-10-29T20:43:32.919076+00:00\", \"created_by\": \"11111111-1111-4111-8111-111111111111\", \"partner_id\": \"22222222-2222-4222-8222-222222222222\", \"updated_at\": \"2026-10-29T20:43:32.936713+00:00\", \"approved_at\": null, \"approved_by\": null, \"observacoes\": null, \"table_amount\": 0.00, \"area_total_ha\": null, \"approval_notes\": null, \"desconto_total\": 0.00, \"payment_method\": null, \"payment_plan_id\": null, \"commercial_notes\": null, \"financial_status\": \"pendente\", \"payment_due_date\": null, \"payment_terms_id\": null, \"credit_approved_at\": \"2026-10-29T20:43:32.936713+00:00\", \"credit_approved_by\": \"11111111-1111-4111-8111-111111111111\", \"credit_block_reason\": null, \"origin_simulation_id\": null, \"ready_for_production\": false, \"receivable_generated\": false, \"credit_approval_notes\": \"SYNTHETIC\", \"future_financial_link\": null, \"itens_pendentes_motivo\": null, \"estimated_delivery_date\": null, \"receivable_generated_at\": null, \"receivable_generated_by\": null, \"requested_delivery_date\": null, \"internal_origin_snapshot\": null, \"payment_condition_status\": \"pending\", \"financial_approval_status\": \"not_required\", \"financial_interest_amount\": 0.00, \"net_amount_after_discount\": 0.00, \"commercial_discount_amount\": 0.00, \"final_amount_with_interest\": 0.00, \"internal_economic_snapshot\": null, \"c2_external_origin_snapshot\": null, \"requires_financial_approval\": false, \"itens_pendentes_resolvido_em\": null, \"itens_pendentes_solicitado_em\": null, \"itens_pendentes_solicitado_por\": null}"
+    },
+    {
+      "test": "private ticket denied authenticated no audit",
+      "status": "PASS",
+      "expected": "1",
+      "actual": "1"
+    },
+    {
+      "test": "isolated amount plus cent blocked",
+      "status": "PASS",
+      "expected": "aguardando_aprovacao_credito",
+      "actual": "aguardando_aprovacao_credito"
+    },
+    {
+      "test": "exact limit accepted",
+      "status": "PASS",
+      "expected": "aprovado",
+      "actual": "aprovado"
+    },
+    {
+      "test": "deny-only rollback revokes client entry",
+      "status": "PASS",
+      "expected": "f",
+      "actual": "f"
+    },
+    {
+      "test": "deny-only rollback retains hardened guard",
+      "status": "PASS",
+      "expected": false,
+      "actual": false
+    }
+  ],
+  "passed": 57,
+  "fail": 0,
+  "omitted": [
+    "full partner_order trigger stack",
+    "real JWT/RLS sessions",
+    "h15 implementation chain",
+    "business data",
+    "external outputs",
+    "shared writer integration"
+  ]
+}
