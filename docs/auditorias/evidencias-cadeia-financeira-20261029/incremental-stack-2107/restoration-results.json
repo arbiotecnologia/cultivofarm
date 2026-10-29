@@ -1,0 +1,34 @@
+{
+  "unrestored_functions_views": [],
+  "defaults_failed": [],
+  "constraints_failed": [],
+  "policies_failed": [],
+  "triggers_failed": [],
+  "preflight": "PASS",
+  "installer_tests": [
+    {
+      "test": "wrong preflight aborts installer",
+      "status": "PASS"
+    },
+    {
+      "test": "wrong POST atomically rolls back DDL",
+      "status": "PASS"
+    },
+    {
+      "test": "complete installer COMMIT",
+      "status": "PASS"
+    },
+    {
+      "test": "complete postflight",
+      "status": "PASS"
+    },
+    {
+      "test": "rerun refused",
+      "status": "PASS"
+    },
+    {
+      "test": "deny-only containment survives body drift",
+      "status": "PASS"
+    }
+  ]
+}

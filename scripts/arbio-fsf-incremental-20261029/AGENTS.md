@@ -3,3 +3,4 @@
 - Approval authority uses a private transaction/actor/order ticket, never a GUC; rollback is deny-only and retains history and restrictive policies — prevents reopening bypasses.
 - Preserve organizations unchanged, all fiscal/accounting/downstream gates and external outputs OFF; the Price generator and client-link activation remain individually gated — prevents transitive operational release.
 - Restore exact catalog bodies with dependency ordering, report sanitization and role differences explicitly, and distinguish installer tests from actor/lock integration — prevents schema-only success from certifying authority.
+- Credit approval authority is supplier-internal only (owner organization of the partner, no external roles/links, reread after each lock), never buyer-side phase1 visibility — prevents buyer self-approval.

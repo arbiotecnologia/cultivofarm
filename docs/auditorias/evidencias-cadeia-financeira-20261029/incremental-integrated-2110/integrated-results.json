@@ -1,0 +1,382 @@
+{
+  "scope": "disposable PG, exact captured catalog, synthetic rows, PostgREST-style claims without signature: NOT JWT/RLS/E2E proof",
+  "candidate_function_md5": {
+    "public.approve_b2b_credit(uuid,text)": "53673ea183c6f0a1fd4e7861f20e52a0",
+    "public.fn_b2b_guard_credit_approval_fields()": "3bac4722eb855a6932057f42f28b3850",
+    "public.tg_partner_orders_credit_guard()": "c09a79e48bea260679d82adf1616fcc8",
+    "platform_private.b2b_credit_config_block(uuid)": "582b943911a63a3e3391770fea5f7fbb",
+    "platform_private.b2b_credit_internal_authority(uuid,uuid)": "897a89edb970aa0772c38035854891b6"
+  },
+  "pass": 44,
+  "fail": 0,
+  "rows": [
+    {
+      "test": "restoration has zero unresolved objects",
+      "status": "PASS",
+      "expected": {
+        "unrestored_functions_views": 0,
+        "defaults_failed": 0,
+        "constraints_failed": 0,
+        "policies_failed": 0,
+        "triggers_failed": 0
+      },
+      "actual": {
+        "unrestored_functions_views": 0,
+        "defaults_failed": 0,
+        "constraints_failed": 0,
+        "policies_failed": 0,
+        "triggers_failed": 0
+      },
+      "note": ""
+    },
+    {
+      "test": "exact preflight passes on restored stack",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": ""
+    },
+    {
+      "test": "fixture: no invented SaaS entitlement seeded",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0",
+      "note": "saas gate is exercised as real code"
+    },
+    {
+      "test": "baseline without subscription: phase1 scope denies before SaaS gate",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "{\"sub\": \"c0000000-0000-4000-8000-000000000001\", \"role\": \"authenticated\", \"iat\": 1793310456}\nERROR:  b2b_phase1_scope_denied\n"
+    },
+    {
+      "test": "real entitlement resolver returns pedidos_b2b (synthetic subscription rows)",
+      "status": "PASS",
+      "expected": "1",
+      "actual": "1",
+      "note": ""
+    },
+    {
+      "test": "RED baseline: internal ARBio admin cannot approve (phase1 resolves buyer partner)",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  b2b_phase1_scope_denied\n"
+    },
+    {
+      "test": "RED baseline: buyer tenant admin whose org points to partner self-approves credit (rolled back)",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "{\"sub\": \"c0000000-0000-4000-8000-000000000003\", \"role\": \"authenticated\", \"iat\": 1793310457}\n{\"ok\": true, \"status\": \"em_analise_comercial\", \"order_id\": \"d0000000-0000-4000-8000-000000000001\"}\nem_analise_comercial|true"
+    },
+    {
+      "test": "baseline GUC spoof by tenantFSF: no row changed",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ROWS=0"
+    },
+    {
+      "test": "baseline GUC spoof by ARBio admin: no row changed",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ROWS=0"
+    },
+    {
+      "test": "baseline order unchanged after spoof attempts",
+      "status": "PASS",
+      "expected": "aguardando_aprovacao_credito|-|limite_excedido",
+      "actual": "aguardando_aprovacao_credito|-|limite_excedido",
+      "note": ""
+    },
+    {
+      "test": "installer COMMIT + postflight on restored stack",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": ""
+    },
+    {
+      "test": "negative: tenantFSF admin denied",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  b2b_credit_internal_scope_denied\n"
+    },
+    {
+      "test": "negative: cumulative admin+parceiro_b2b denied",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  b2b_credit_internal_scope_denied\n"
+    },
+    {
+      "test": "negative: superadmin (deliberate narrowing) denied",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  b2b_credit_internal_scope_denied\n"
+    },
+    {
+      "test": "GREEN: buyer tenant pointing to partner cannot self-approve",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  b2b_credit_internal_scope_denied\n"
+    },
+    {
+      "test": "GUC spoof by tenantFSF after install: no row changed",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ROWS=0"
+    },
+    {
+      "test": "GUC spoof by ARBio admin after install: no row changed",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ROWS=0"
+    },
+    {
+      "test": "order unchanged after spoof attempts",
+      "status": "PASS",
+      "expected": "aguardando_aprovacao_credito|-|limite_excedido",
+      "actual": "aguardando_aprovacao_credito|-|limite_excedido",
+      "note": ""
+    },
+    {
+      "test": "positive path blocked by real SaaS gate when subscription cancelled, atomically",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "it_block_reason = NULL,\n    updated_at = now()\n  WHERE id = p_partner_order_id\n    AND status = 'aguardando_aprovacao_credito'\"\nPL/pgSQL function approve_b2b_credit(uuid,text) line 54 at SQL statement"
+    },
+    {
+      "test": "SaaS abort leaves order unchanged and zero tickets",
+      "status": "PASS",
+      "expected": "aguardando_aprovacao_credito|-|limite_excedido|0",
+      "actual": "aguardando_aprovacao_credito|-|limite_excedido|0",
+      "note": ""
+    },
+    {
+      "test": "positive: internal ARBio admin releases credit",
+      "status": "PASS",
+      "expected": "em_analise_comercial|c0000000-0000-4000-8000-000000000001|-",
+      "actual": "em_analise_comercial|c0000000-0000-4000-8000-000000000001|-",
+      "note": "{\"sub\": \"c0000000-0000-4000-8000-000000000001\", \"role\": \"authenticated\", \"iat\": 1793310458}\n{\"ok\": true, \"status\": \"em_analise_comercial\", \"order_id\": \"d0000000-0000-4000-8000-000000000001\"}"
+    },
+    {
+      "test": "positive: exactly one audit row",
+      "status": "PASS",
+      "expected": "1",
+      "actual": "1",
+      "note": ""
+    },
+    {
+      "test": "positive: zero residual tickets",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0",
+      "note": ""
+    },
+    {
+      "test": "zero titles/dispatch/fiscal/planning on credit release (na_aprovacao + auto ON)",
+      "status": "PASS",
+      "expected": {
+        "accounts_receivable": "0",
+        "accounts_receivable_installments": "0",
+        "financial_documents": "0",
+        "fiscal_invoices": "0",
+        "comunicacao_outbox": "0",
+        "comunicacao_eventos": "0",
+        "notificacoes_operacionais": "0",
+        "portal_notificacoes": "0",
+        "production_planning": "0",
+        "production_timeline_events": "0",
+        "partner_order_payment_schedule": "0"
+      },
+      "actual": {
+        "accounts_receivable": "0",
+        "accounts_receivable_installments": "0",
+        "financial_documents": "0",
+        "fiscal_invoices": "0",
+        "comunicacao_outbox": "0",
+        "comunicacao_eventos": "0",
+        "notificacoes_operacionais": "0",
+        "portal_notificacoes": "0",
+        "production_planning": "0",
+        "production_timeline_events": "0",
+        "partner_order_payment_schedule": "0"
+      },
+      "note": ""
+    },
+    {
+      "test": "replay refused (already_released), no second audit",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  already_released: crédito já liberado, pedido em análise comercial\n"
+    },
+    {
+      "test": "credit release never sets production/commercial approval",
+      "status": "PASS",
+      "expected": "false|-",
+      "actual": "false|-",
+      "note": ""
+    },
+    {
+      "test": "inactive settings deny (no fallback)",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  credit_release_failed: configuracao_financeira_inativa\n"
+    },
+    {
+      "test": "zero limit is never unlimited",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  credit_release_failed: limite_nao_definido\n"
+    },
+    {
+      "test": "C2_ACCOUNTING_PENDING preserved",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  C2_ACCOUNTING_PENDING\n"
+    },
+    {
+      "test": "accounting-pending order unchanged",
+      "status": "PASS",
+      "expected": "aguardando_aprovacao_credito|-|limite_excedido",
+      "actual": "aguardando_aprovacao_credito|-|limite_excedido",
+      "note": ""
+    },
+    {
+      "test": "role revoked during row lock: approval waits on row lock (pg_blocking_pids)",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": ""
+    },
+    {
+      "test": "role revoked during row lock: revoked while waiting is denied",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  b2b_credit_internal_scope_denied\n"
+    },
+    {
+      "test": "role revoked during row lock: order unchanged",
+      "status": "PASS",
+      "expected": "aguardando_aprovacao_credito|-|limite_excedido",
+      "actual": "aguardando_aprovacao_credito|-|limite_excedido",
+      "note": ""
+    },
+    {
+      "test": "profile deactivated during advisory lock: approval waits on advisory lock (pg_blocking_pids)",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": ""
+    },
+    {
+      "test": "profile deactivated during advisory lock: revoked while waiting is denied",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  b2b_credit_internal_scope_denied\n"
+    },
+    {
+      "test": "profile deactivated during advisory lock: order unchanged",
+      "status": "PASS",
+      "expected": "aguardando_aprovacao_credito|-|limite_excedido",
+      "actual": "aguardando_aprovacao_credito|-|limite_excedido",
+      "note": ""
+    },
+    {
+      "test": "external partner link added during advisory lock: approval waits on advisory lock (pg_blocking_pids)",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": ""
+    },
+    {
+      "test": "external partner link added during advisory lock: revoked while waiting is denied",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  b2b_credit_internal_scope_denied\n"
+    },
+    {
+      "test": "external partner link added during advisory lock: order unchanged",
+      "status": "PASS",
+      "expected": "aguardando_aprovacao_credito|-|limite_excedido",
+      "actual": "aguardando_aprovacao_credito|-|limite_excedido",
+      "note": ""
+    },
+    {
+      "test": "race paths left zero tickets",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0",
+      "note": ""
+    },
+    {
+      "test": "race paths created no titles/dispatch",
+      "status": "PASS",
+      "expected": {
+        "accounts_receivable": "0",
+        "accounts_receivable_installments": "0",
+        "financial_documents": "0",
+        "fiscal_invoices": "0",
+        "comunicacao_outbox": "0",
+        "comunicacao_eventos": "0",
+        "notificacoes_operacionais": "0",
+        "portal_notificacoes": "0",
+        "production_planning": "0",
+        "production_timeline_events": "0",
+        "partner_order_payment_schedule": "0"
+      },
+      "actual": {
+        "accounts_receivable": "0",
+        "accounts_receivable_installments": "0",
+        "financial_documents": "0",
+        "fiscal_invoices": "0",
+        "comunicacao_outbox": "0",
+        "comunicacao_eventos": "0",
+        "notificacoes_operacionais": "0",
+        "portal_notificacoes": "0",
+        "production_planning": "0",
+        "production_timeline_events": "0",
+        "partner_order_payment_schedule": "0"
+      },
+      "note": ""
+    },
+    {
+      "test": "after rollback approval EXECUTE denied",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": "ERROR:  permission denied for function approve_b2b_credit\n"
+    },
+    {
+      "test": "rollback retains history",
+      "status": "PASS",
+      "expected": "2",
+      "actual": "2",
+      "note": ""
+    },
+    {
+      "test": "rollback retains ticket table and guards",
+      "status": "PASS",
+      "expected": "t",
+      "actual": "t",
+      "note": ""
+    }
+  ]
+}

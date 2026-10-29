@@ -1,9 +1,10 @@
 {
   "candidate_function_md5": {
-    "approve_b2b_credit(uuid,text)": "061f8a4748d1d028ad0c103bab5a1cdb",
-    "tg_partner_orders_credit_guard()": "c09a79e48bea260679d82adf1616fcc8",
-    "fn_b2b_guard_credit_approval_fields()": "3bac4722eb855a6932057f42f28b3850",
-    "platform_private.b2b_credit_config_block(uuid)": "582b943911a63a3e3391770fea5f7fbb"
+    "public.approve_b2b_credit(uuid,text)": "53673ea183c6f0a1fd4e7861f20e52a0",
+    "public.fn_b2b_guard_credit_approval_fields()": "3bac4722eb855a6932057f42f28b3850",
+    "public.tg_partner_orders_credit_guard()": "c09a79e48bea260679d82adf1616fcc8",
+    "platform_private.b2b_credit_config_block(uuid)": "582b943911a63a3e3391770fea5f7fbb",
+    "platform_private.b2b_credit_internal_authority(uuid,uuid)": "897a89edb970aa0772c38035854891b6"
   },
   "level": "LOCAL_COMPONENT_EXPECTATIONS_NOT_HOSTED_PROOF"
 }
