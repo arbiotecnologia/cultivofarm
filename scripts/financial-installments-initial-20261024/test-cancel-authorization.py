@@ -383,6 +383,9 @@ def main():
     risk_spec=importlib.util.spec_from_file_location('cancel_risk',H/'cancel-risk-composition.py')
     risk=importlib.util.module_from_spec(risk_spec);risk_spec.loader.exec_module(risk)
     risk_metadata=risk.compose(sys.modules[__name__]);risk.exercise(sys.modules[__name__],risk_metadata)
+    deferred_spec=importlib.util.spec_from_file_location('cancel_deferred',H/'cancel-settings-deferred.py')
+    deferred=importlib.util.module_from_spec(deferred_spec);deferred_spec.loader.exec_module(deferred)
+    deferred.exercise(sys.modules[__name__],risk_metadata)
     for kind in ['receivable','payable']:
         part=fixture(1700+(10 if kind=='payable' else 0),kind,m.A);before=amounts(part,kind)
         unrelated=state()
