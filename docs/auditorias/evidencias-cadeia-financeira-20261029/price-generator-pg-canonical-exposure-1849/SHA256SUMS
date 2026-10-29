@@ -1,0 +1,6 @@
+961a9aea6e235cf74e126fee2c7bcc3c729f3102f8b5b03ba13e845de43bc1d4  ./candidate.sql.review.snapshot
+f6f19ef147ae5cd7948568f77fbbf33b34c41f6ee6605b57ac02a4f6be77d873  ./homolog-reference-readonly-20261029.txt
+a92fbccbdc014b007719eb129bc21423a34e895d7569bfe98f68252132846010  ./original-p0-red-green.run.txt
+49f1ed30ac314d7a38891dc1273294ab8c28ef85263a7b727347c8d752fd6fc1  ./original-p0-red-green/red-green.json
+ccaf3f0f53347eb63b6019d89da3714198d14974258dda265b5de35d7d4f6277  ./pg-run.txt
+a1fea5bb69343483ee411e42f595a8edb2fb41c67f7c1ae23e22005c9583cb2a  ./results.json
