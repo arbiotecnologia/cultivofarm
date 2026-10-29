@@ -120,6 +120,9 @@ def exercise(h, metadata):
             finally:m.pg.sql(f"UPDATE partner_orders SET {column}=NULL WHERE id='{order}';")
     # The auto trigger must reject before generating, while a draft remains possible.
     m.pg.sql("CREATE TRIGGER auto_probe BEFORE UPDATE ON harness.credit_probe FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable();")
+    for actor,org,partner,label in partners:
+        probe=m.uid(903010+(1 if label=='B' else 0))
+        rejected('deferred automatic billing absent '+label,f"UPDATE harness.credit_probe SET status='entregue' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
     m.pg.sql('DELETE FROM partner_orders;')
     # All supplied values must be explicit; no defaulted/null credit or fabricated method.
     anchor=" -- Exact canonical name; method row lock prevents concurrent deactivation through commit."
@@ -148,6 +151,10 @@ def exercise(h, metadata):
         rejected('deferred invalid method '+label,update(partner,invalid),('22023','C2P1_PAYMENT_METHOD_INVALID'),actor)
         other=m.uid(900003) if label=='A' else m.uid(900002)
         rejected('deferred foreign updater '+label,update(other,values),('42501','C2P1_FORBIDDEN'),actor)
+        for target,disable,restore in [('profile',f"UPDATE profiles SET ativo=false WHERE user_id='{actor}';",f"UPDATE profiles SET ativo=true WHERE user_id='{actor}';"),('role',f"DELETE FROM user_roles WHERE user_id='{actor}';",f"INSERT INTO user_roles VALUES('{actor}','financeiro');"),('tenant',f"UPDATE organizations SET ativo=false WHERE id='{org}';",f"UPDATE organizations SET ativo=true WHERE id='{org}';")]:
+            m.pg.sql(disable)
+            try:rejected('deferred revoked '+target+' updater '+label,update(partner,values),('42501','C2P1_FORBIDDEN'),actor)
+            finally:m.pg.sql(restore)
         res=h.client(update(partner,values),actor)
         h.check('deferred complete updater '+label,0,res.returncode,mode)
         h.check('deferred exact eleven values '+label,values,json.loads(m.pg.sql('SELECT to_jsonb(s)-ARRAY[\'id\',\'partner_id\',\'created_at\',\'updated_at\'] FROM partner_financial_settings s WHERE partner_id='+m.q(partner))),mode)
