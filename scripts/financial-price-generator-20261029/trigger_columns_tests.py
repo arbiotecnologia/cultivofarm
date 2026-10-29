@@ -70,5 +70,5 @@ def run(t):
     pg.sql(F['fn_b2b_guard_credit_approval_fields']['body'] + ';'); pg.sql(trg['trg_b2b_guard_credit_approval_fields'] + ';')
     check('captured approval-fields guard installed exact (md5)', F['fn_b2b_guard_credit_approval_fields']['md5'], pg.sql("SELECT md5(pg_get_functiondef('public.fn_b2b_guard_credit_approval_fields()'::regprocedure))"), 'TRG_APPROVAL_FIELDS')
     o = t.order(pid(45), 'pendente', '120000.00')
-    t.deny('LIVE: isolated credit_approved_by write without approve_b2b_credit refused', f"UPDATE partner_orders SET credit_approved_by='{U}' WHERE id='{o}';", 'P0001', 'TRG_APPROVAL_FIELDS')
+    t.deny('LIVE: isolated credit_approved_by write without approve_b2b_credit refused', f"UPDATE partner_orders SET credit_approved_by='{U}' WHERE id='{o}';", 'credit_approval_fields_immutable', 'TRG_APPROVAL_FIELDS')
     pg.sql(f"DROP TRIGGER trg_b2b_guard_credit_approval_fields ON partner_orders;")
