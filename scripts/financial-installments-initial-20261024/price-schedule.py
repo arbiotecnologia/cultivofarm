@@ -11,7 +11,7 @@ following months, last day of a shorter month), pro-rata fixed monthly Price
 (no per-day adjustment), credit exposure basis = financed total including
 interest (rounded installment sum). Business-day rolling is decided in
 principle (next business day, no extra interest) but still requires the real
-locality calendar (Paracatu-MG official 2026 dataset; 2027+ uncovered); `production_eligibility`
+locality calendar (Paracatu-MG v2 dataset 2026-2027; 2028+ uncovered); `production_eligibility`
 therefore still denies.
 Historical titles (10300/7550 regressions) are never repriced here.
 """
@@ -163,6 +163,9 @@ def load_real_calendar(path, policy):
         raise Rejected('CALENDAR_SOURCE_REQUIRED')
     if not isinstance(doc, dict) or doc.get('schema') != CALENDAR_SCHEMA or doc.get('kind') != 'REAL_OFFICIAL_SOURCES':
         raise Rejected('CALENDAR_METADATA_REQUIRED')
+    pin = (policy or {}).get('active_candidate', {}).get('holiday_calendar_dataset_version')
+    if pin is not None and pathlib.Path(path).name == pathlib.Path(policy['active_candidate'].get('holiday_calendar_dataset', '')).name and doc.get('version') != pin:
+        raise Rejected('CALENDAR_VERSION_MISMATCH')
     if doc.get('locality') != want:
         raise Rejected('CALENDAR_LOCALITY_MISMATCH')
     if not doc.get('sources') or not all(str(s.get('url', '')).startswith('https://') for s in doc['sources']) or not doc.get('consulted_on'):
@@ -455,7 +458,7 @@ def run(out=None):
     tampered = json.loads(json.dumps(pol)); tampered['runtime_enabled'] = True
     rejects('resolver rejects runtime enabled', 'RUNTIME_MUST_STAY_DISABLED', lambda: resolve_new_plan_policy(tampered, 2), 'POLICY_AUTHORITY')
     # Real official dataset Paracatu-MG 2026 (separate from synthetic fixtures).
-    RP = H / pol['active_candidate']['holiday_calendar_dataset']
+    RP = H / 'calendars' / 'paracatu-mg-2026.json'  # v1 immutable, still verified
     REAL = load_real_calendar(RP, pol)
     check('real calendar is not synthetic', ('REAL', 'Paracatu-MG'), (REAL['kind'], REAL['locality']), 'CALENDAR_REAL')
     check('real coverage 2026', ('2026-01-01', '2026-12-31'), (REAL['coverage_start'].isoformat(), REAL['coverage_end'].isoformat()), 'CALENDAR_REAL')
@@ -507,6 +510,64 @@ def run(out=None):
     rejects('missing file', 'CALENDAR_SOURCE_REQUIRED', lambda: load_real_calendar(H / 'calendars' / 'absent.json', pol), 'CALENDAR_REAL')
     check('optional points disjoint from holidays', set(), {x['date'] for x in raw['data']['excluded_optional_points']} & {h['date'] for h in raw['data']['holidays']}, 'CALENDAR_REAL')
     check('08/12 not holiday', False, D(2026, 12, 8) in REAL['holidays'], 'CALENDAR_REAL')
+    # v2 Paracatu-MG 2026-2027, selected explicitly by the policy.
+    def gauss_easter(y):  # independent formulation (Gauss with corrections)
+        a, b, c = y % 19, y % 4, y % 7
+        k = y // 100; pp = (13 + 8 * k) // 25; qq = k // 4
+        M = (15 - pp + k - qq) % 30; N = (4 + k - qq) % 7
+        dd = (19 * a + M) % 30; ee = (2 * b + 4 * c + 6 * dd + N) % 7
+        day = 22 + dd + ee
+        if dd == 29 and ee == 6: return D(y, 4, 19)
+        if dd == 28 and ee == 6 and (11 * M + 11) % 30 < 19: return D(y, 4, 18)
+        return D(y, 3, day) if day <= 31 else D(y, 4, day - 31)
+    for y, e in ((2024, '2024-03-31'), (2025, '2025-04-20'), (2026, '2026-04-05'), (2027, '2027-03-28'), (2019, '2019-04-21')):
+        check('independent Easter ' + str(y), e, gauss_easter(y).isoformat(), 'CALENDAR_REAL_V2')
+    RP2 = H / pol['active_candidate']['holiday_calendar_dataset']
+    R2 = load_real_calendar(RP2, pol)
+    raw2 = json.loads(RP2.read_text(encoding='utf-8'))
+    check('policy selects v2 explicitly', ('paracatu-mg-2026-2027-v2', 'paracatu-mg-2026-2027.json'), (R2['version'], RP2.name), 'CALENDAR_REAL_V2')
+    check('v2 coverage', ('2026-01-01', '2027-12-31'), (R2['coverage_start'].isoformat(), R2['coverage_end'].isoformat()), 'CALENDAR_REAL_V2')
+    h26v1 = [h for h in raw['data']['holidays']]
+    h26v2 = [{k: v for k, v in h.items() if k != 'origin'} for h in raw2['data']['holidays'] if h['date'] < '2027']
+    check('v2 keeps 2026 entries identical to v1', h26v1, h26v2, 'CALENDAR_REAL_V2')
+    y27 = sorted(h.isoformat() for h in R2['holidays'] if h.year == 2027)
+    E27 = gauss_easter(2027)
+    exp27 = sorted(['2027-01-01', (E27 - datetime.timedelta(days=2)).isoformat(), '2027-04-21', '2027-05-01', (E27 + datetime.timedelta(days=60)).isoformat(), '2027-06-13',
+                    '2027-09-07', '2027-10-12', '2027-10-20', '2027-10-31', '2027-11-02', '2027-11-15', '2027-11-20', '2027-12-25'])
+    check('2027 = 14 holidays from laws + independent Easter', exp27, y27, 'CALENDAR_REAL_V2')
+    check('Sexta Santa 2027 / Corpus 2027', ('2027-03-26', '2027-05-27'), ((E27 - datetime.timedelta(days=2)).isoformat(), (E27 + datetime.timedelta(days=60)).isoformat()), 'CALENDAR_REAL_V2')
+    check('2027 origin is computed from recurring law', {'RECURRING_LAW_COMPUTED', 'RECURRING_LAW_COMPUTED_MOVABLE'}, {h['origin'] for h in raw2['data']['holidays'] if h['date'] >= '2027'}, 'CALENDAR_REAL_V2')
+    for nom, exp in (('2027-12-08', '2027-12-08'), ('2027-05-28', '2027-05-28'), ('2027-02-08', '2027-02-08'), ('2027-02-09', '2027-02-09'),
+                     ('2027-08-11', '2027-08-11'), ('2027-03-25', '2027-03-25'), ('2027-03-26', '2027-03-29'), ('2027-05-27', '2027-05-28'),
+                     ('2027-01-01', '2027-01-04'), ('2027-10-12', '2027-10-13'), ('2027-11-20', '2027-11-22'), ('2027-12-25', '2027-12-27')):
+        check('v2 adjust ' + nom, exp, adjusted_due(D.fromisoformat(nom), R2).isoformat(), 'CALENDAR_REAL_V2')
+    for nom, exp in (('2026-10-20', '2026-10-21'), ('2026-10-31', '2026-11-03'), ('2026-06-04', '2026-06-05'), ('2026-12-08', '2026-12-08')):
+        check('v2 keeps 2026 adjust ' + nom, exp, adjusted_due(D.fromisoformat(nom), R2).isoformat(), 'CALENDAR_REAL_V2')
+    adj = lambda nf, n: [x['adjusted'].isoformat() for x in due_schedule(nf, n, R2)]
+    nomd = lambda nf, n: [x.isoformat() for x in nominal_dates(nf, n)]
+    check('NF 2026-10-29 3x v2 nominal', ['2026-11-28', '2026-12-28', '2027-01-28'], nomd(D(2026, 10, 29), 3), 'CALENDAR_REAL_V2')
+    check('NF 2026-10-29 3x v2 adjusted', ['2026-11-30', '2026-12-28', '2027-01-28'], adj(D(2026, 10, 29), 3), 'CALENDAR_REAL_V2')
+    check('NF 2026-10-29 3x same Price installments', ['20724.28'] * 3, [q(r['payment']) for r in price_schedule(p, 3)['rows']], 'CALENDAR_REAL_V2')
+    check('NF 2026-12-02 1x 01/01 -> 04/01/2027', ['2027-01-04'], adj(D(2026, 12, 2), 1), 'CALENDAR_REAL_V2')
+    check('NF 2026-12-02 3x', ['2027-01-04', '2027-02-01', '2027-03-01'], adj(D(2026, 12, 2), 3), 'CALENDAR_REAL_V2')
+    # Month-end limits: first nominal on 29/30/31 January 2027.
+    for nf, nom, ad in ((D(2026, 12, 30), ['2027-01-29', '2027-02-28', '2027-03-29'], ['2027-01-29', '2027-03-01', '2027-03-29']),
+                        (D(2026, 12, 31), ['2027-01-30', '2027-02-28', '2027-03-30'], ['2027-02-01', '2027-03-01', '2027-03-30']),
+                        (D(2027, 1, 1), ['2027-01-31', '2027-02-28', '2027-03-31'], ['2027-02-01', '2027-03-01', '2027-03-31'])):
+        check('month-end nominal ' + nom[0], nom, nomd(nf, 3), 'CALENDAR_REAL_V2')
+        check('month-end adjusted ' + nom[0], ad, adj(nf, 3), 'CALENDAR_REAL_V2')
+    check('last covered day 2027-12-31 fri', ['2027-12-31'], adj(D(2027, 12, 1), 1), 'CALENDAR_REAL_V2')
+    for nf, n in ((D(2027, 11, 15), 3), (D(2027, 12, 2), 1), (D(2027, 10, 20), 3), (D(2027, 11, 20), 2)):
+        rejects(f'2028 blocks whole plan NF {nf} {n}x', 'CALENDAR_COVERAGE_EXCEEDED', lambda: due_schedule(nf, n, R2), 'CALENDAR_REAL_V2')
+    t = copy.deepcopy(pol); t['active_candidate']['holiday_calendar_dataset_version'] = 'paracatu-mg-2026-v1'
+    rejects('policy version pin mismatch', 'CALENDAR_VERSION_MISMATCH', lambda: load_real_calendar(RP2, t), 'CALENDAR_REAL_V2')
+    o = copy.deepcopy(raw2); o['data']['holidays'] = [h for h in o['data']['holidays'] if h['date'] != '2027-03-26']
+    rejects('v2 tampered 2027 -> integrity', 'CALENDAR_INTEGRITY_MISMATCH', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL_V2')
+    o = copy.deepcopy(raw2); o['coverage_end'] = '2028-12-31'
+    rejects('v2 widened to 2028 -> integrity', 'CALENDAR_INTEGRITY_MISMATCH', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL_V2')
+    check('CNJ forensic/recess not imported', False, any(D(2027, 2, 8) == h or D(2027, 8, 11) == h or D(2027, 3, 24) == h for h in R2['holidays']), 'CALENDAR_REAL_V2')
+    e2 = production_eligibility(calendar_dataset=R2)
+    check('v2 eligibility reason precise and still denied', (False, True, False), (e2['eligible'], 'CALENDAR_COVERAGE_LIMITED_TO_2026-01-01..2027-12-31' in e2['reasons'], 'CALENDAR_SOURCE_REQUIRED' in e2['reasons']), 'PRODUCTION_GATE')
     elig = production_eligibility(calendar_dataset=REAL)
     check('eligibility with dataset: no generic SOURCE_REQUIRED', False, 'CALENDAR_SOURCE_REQUIRED' in elig['reasons'], 'PRODUCTION_GATE')
     check('eligibility with dataset: coverage reason', True, 'CALENDAR_COVERAGE_LIMITED_TO_2026-01-01..2026-12-31' in elig['reasons'], 'PRODUCTION_GATE')
@@ -515,7 +576,7 @@ def run(out=None):
     for c in checks:
         summary.setdefault(c['mode'], {}).setdefault(c['status'], 0)
         summary[c['mode']][c['status']] += 1
-    blocked = ['Paracatu-MG official calendar covers only 2026; any plan with a due in 2027+ is blocked whole (CALENDAR_COVERAGE_EXCEEDED): no official annual 2027 calendar, recurring laws do not prove completeness','PG end-to-end: captured generators implement no Price schedule and billing stays denied (PAYMENT_TERMS_NOT_DEFINED, C2_ACCOUNTING_PENDING, B2B_INTERNAL_DOWNSTREAM_UNVERIFIED); component tests only',
+    blocked = ['Paracatu-MG v2 covers 2026-2027 (2027 computed from recurring laws in force on 2026-10-29, not a published annual calendar); any due in 2028+ blocks the whole plan (CALENDAR_COVERAGE_EXCEEDED)','PG end-to-end: captured generators implement no Price schedule and billing stays denied (PAYMENT_TERMS_NOT_DEFINED, C2_ACCOUNTING_PENDING, B2B_INTERNAL_DOWNSTREAM_UNVERIFIED); component tests only',
                'Fiscal/accounting provenance and real JWT/RLS A/B']
     result = dict(checks=checks, summary=summary, blocked=blocked, fail=sum(c['status'] == 'FAIL' for c in checks))
     if out:
