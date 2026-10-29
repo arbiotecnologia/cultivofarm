@@ -128,13 +128,20 @@ def exercise(h, metadata):
     m.pg.sql(projection+'; REVOKE ALL ON FUNCTION harness.parties_projection(uuid) FROM PUBLIC,anon; GRANT EXECUTE ON FUNCTION harness.parties_projection(uuid) TO authenticated;')
     res=h.client(f"SELECT harness.parties_projection('{order1}');")
     h.check('projection exact AR owner FSF buyer',dict(creditor=m.A,buyer_partner=partner),json.loads(res.stdout.splitlines()[-1]),'PARTIES_FRAGMENT_ONLY')
+    m.pg.sql(f"INSERT INTO user_roles VALUES('{m.U}','administrador');")
+    def partner_change(sql):
+        res=h.client(sql);assert res.returncode==0,res.stderr
     for label,sql,expected in [
         ('owner inactive',f"UPDATE organizations SET ativo=false WHERE id='{m.A}';",('42501','B2B_FINANCIAL_TENANT_AMBIGUOUS')),
         ('partner inactive',f"UPDATE partner_accounts SET ativo=false WHERE id='{partner}';",('42501','B2B_FINANCIAL_TENANT_AMBIGUOUS')),
         ('owner inverse',f"UPDATE partner_accounts SET commercial_owner_organization_id='{m.B}' WHERE id='{partner}';",('42501','B2B_FINANCIAL_TENANT_MISMATCH'))]:
-        m.pg.sql(sql)
+        if 'partner_accounts' in sql:partner_change(sql)
+        else:m.pg.sql(sql)
         try:reject('parties '+label,f"SELECT harness.parties_projection('{order1}');",expected)
-        finally:m.pg.sql(f"UPDATE organizations SET ativo=true WHERE id='{m.A}'; UPDATE partner_accounts SET ativo=true,commercial_owner_organization_id='{m.A}' WHERE id='{partner}';")
+        finally:
+            m.pg.sql(f"UPDATE organizations SET ativo=true WHERE id='{m.A}';")
+            partner_change(f"UPDATE partner_accounts SET ativo=true WHERE id='{partner}';")
+    m.pg.sql(f"DELETE FROM user_roles WHERE user_id='{m.U}' AND role='administrador';")
     # No fiscal emitter can be inferred from a title organization alone. Executable
     # contract matrix below uses ONLY captured column names on a reduced carrier;
     # deliberately not a fiscal RPC, origin ticket or installed assertion.
