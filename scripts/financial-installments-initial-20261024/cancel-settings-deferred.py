@@ -98,6 +98,15 @@ def exercise(h, metadata):
     anchor='  -- Canonical row-before-receipt order, matching approval and its billing trigger.'
     wrapper_guard=guard.replace('p_partner_id','(SELECT partner_id FROM public.partner_orders WHERE id=p_partner_order_id)')
     transform('generate_b2b_receivable_secure',anchor,'  '+wrapper_guard+'\n'+anchor)
+    # Preserve both canonical alternatives; resolve internal authorization first so
+    # no unrelated external entitlement reader is required for an internal actor.
+    f=next(f for f in r.live['functions'] if f['name']=='generate_b2b_receivable_secure' and f['schema']=='public')
+    current=m.pg.sql("SELECT pg_get_functiondef('generate_b2b_receivable_secure(uuid)'::regprocedure)")
+    original="ELSIF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (\n    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id\n      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN"
+    replacement="ELSIF NOT (EXISTS (\n    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id\n      AND platform_private.c2p1_settings_allowed(po.partner_id,true)) OR public.b2b_phase1_order_visible(p_partner_order_id)) THEN"
+    assert current.count(original)==1
+    reordered=current.replace(original,replacement);m.pg.sql(reordered+';')
+    diffs.append(''.join(difflib.unified_diff(current.splitlines(True),reordered.splitlines(True),fromfile='wrapper readiness hypothesis',tofile='same alternatives internal first')))
     for actor,org,partner,label in partners:
         probe=m.uid(903010+(1 if label=='B' else 0))
         h.check('deferred draft carrier '+label,0,h.client(f"INSERT INTO harness.credit_probe(id,partner_id,status,total) VALUES('{probe}','{partner}','rascunho',100);",actor).returncode,mode)
