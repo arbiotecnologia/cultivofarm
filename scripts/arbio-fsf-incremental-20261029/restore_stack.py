@@ -105,8 +105,33 @@ def restore(j):
         except AssertionError as e: triggers_failed.append({'object':name(t)+'.'+t['name'],'error':str(e)})
     return {'unrestored_functions_views':[{'object':x.get('signature',name(x)),'error':failures[x.get('signature',name(x))]} for _,x in remaining], 'defaults_failed':defaults_failed,'constraints_failed':constraints_failed,'policies_failed':policies_failed,'triggers_failed':triggers_failed}
 
+def merge_supplement(j):
+    """Replace sanitized bodies with md5-verified base64-transported exact catalog bodies; add missing schemas."""
+    import hashlib
+    sp=H/'capture/stack-supplement-2107.json'
+    if not sp.exists(): return j
+    s=json.loads(sp.read_text())
+    for f in s['functions']:
+        assert hashlib.md5(f['body'].encode()).hexdigest()==f['md5'] and '[REDACTED]' not in f['body'], f['signature']
+    by={f['signature']:i for i,f in enumerate(j['functions'])}
+    for f in s['functions']:
+        if f['signature'] in by: j['functions'][by[f['signature']]].update(body=f['body'],md5=f['md5'])
+        else: j['functions'].append({k:f[k] for k in ('schema','name','signature','owner','acl','md5','body')})
+    names={x['name'] for x in j['schemas']}
+    j['schemas']+= [x for x in s['schemas'] if x['name'] not in names]
+    rels={(x['schema'],x['name']) for x in j['relations']}
+    for r in s['extra_relations'] or []:
+        if (r['schema'],r['name']) not in rels: j['relations'].append(r)
+    cols={(c['schema'],c['table'],c['name']) for c in j['columns']}
+    for c in s['extra_columns'] or []:
+        if (c['schema'],c['table'],c['name']) not in cols: j['columns'].append({**c,'generated':False,'identity':''})
+    ct={x['name']:x['def'] for x in s['constraint_trigger'] or []}
+    j['constraints']=[c for c in j['constraints'] if c['name'] not in ct]
+    j['triggers']+= [{'schema':'public','table':'microorganism_regulatory_dossiers','name':n,'definition':d,'enabled':'O'} for n,d in ct.items()]
+    return j
+
 if __name__=='__main__':
-    j=json.loads(Path(sys.argv[1]).read_text())
+    j=merge_supplement(json.loads(Path(sys.argv[1]).read_text()))
     try:
         result=restore(j)
         result['preflight']='NOT RUN'
