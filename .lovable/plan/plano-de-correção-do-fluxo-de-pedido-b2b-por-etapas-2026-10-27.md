@@ -202,3 +202,10 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - **Teto numérico:** limite agora 999.999.999.999,99 (numeric(14,2)); 1e12, 1e20 e 26 dígitos rejeitados com `TABLE_AMOUNT_INVALID`, sem overflow; no RPC o teto cai em `LIMIT_EXCEEDED_BLOCK` antes de qualquer escrita.
 - **Correção de relato:** "10300 com baixa 7550, saldo 2750" é só verificação de preservação de fixture, não a regressão P0. Os testes P0 ORIGINAIS foram reexecutados sem alteração: RED 10600/7550/7750, GREEN 10300/7550/7550 — 37 PASS/0 FAIL.
 - Resultados: PG gerador 217/0 FAIL. Exposição/settings/NF/contabilidade continuam deny-only, com stubs SINTÉTICOS. Evidência `price-generator-pg-review-1845/`. Não é E2E nem homologação.
+
+## Revisão 18:43 — reautorização antes do replay (candidato `c25ae5ec…`)
+- Após o lock da CHAVE e antes de ler/retornar recibo: sessão, staff (`IS NOT TRUE` nega NULL) e tenant revalidados; segunda revalidação após o lock do devedor mantida.
+- Teste: replay legítimo idempotente; segunda sessão bloqueada na mesma chave (`pg_blocking_pids`), revogação commitada antes da liberação → negado, resultado antigo não exposto, estado inalterado; após nova concessão sintética, replay idempotente sem escrita.
+- PG 221/0 FAIL (217 anteriores + 4); P0 originais 37 PASS/0 FAIL (10600/7550/7750 RED, 10300/7550/7550 GREEN). Evidência `price-generator-pg-replay-reauth-1843/` (manifesto novo verificado).
+- Manifesto `price-generator-pg-review-1845/SHA256SUMS` conferido contra blobs do commit `eb6430b0…`: 5/5 OK.
+- Limitações: revogação via seam sintético; exposição/settings/NF/contabilidade deny-only com stubs; sem JWT/RLS A/B real, PostgREST ou E2E; Boleto ausente em produção.

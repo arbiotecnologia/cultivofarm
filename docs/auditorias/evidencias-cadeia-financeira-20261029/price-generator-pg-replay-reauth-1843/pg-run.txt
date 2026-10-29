@@ -1,0 +1,222 @@
+PASS D51_5 captured d51_5 trigger installed on 4 tables (md5-pinned body) 
+PASS INSTALL candidate installs in single transaction 
+PASS ACL anon has no EXECUTE 
+PASS ACL authenticated no direct table access 
+PASS ACL authenticated cannot call private compute 
+PASS DENY_CANDIDATE_AS_IS candidate as-is: settings absent 
+PASS DENY_CANDIDATE_AS_IS fiscal origin unproven 
+PASS DENY_CANDIDATE_AS_IS accounting gate pending 
+PASS CALENDAR_DB calendar not loaded 
+PASS CALENDAR_DB loader rejects wrong digest 
+PASS CALENDAR_DB loader rejects widened coverage (digest) 
+PASS CALENDAR_DB authenticated cannot load calendar 
+PASS CALENDAR_DB other-city dataset under pinned version rejected 
+PASS CALENDAR_DB load official v2 
+PASS CALENDAR_DB 14+14 holidays persisted 
+PASS CALENDAR_DB calendar UPDATE immutable 
+PASS CALENDAR_DB calendar DELETE immutable 
+PASS CALENDAR_DB calendar TRUNCATE immutable 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 0.05 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 0.05 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 0.05 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 1.00 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 1.00 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 1.00 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 12345.67 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 99999.99 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 100000.00 3x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 1x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 2x NF2027-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-01-01 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-08-21 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-10-29 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-12-02 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-12-30 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2026-12-31 
+PASS SQL_VS_ENGINE SQL == engine 166666.66 3x NF2027-01-01 
+PASS COMPONENT 2028 due blocks whole plan 
+PASS COMPONENT client schedule rejected 
+PASS COMPONENT client rate rejected 
+PASS COMPONENT automatic generation blocked 
+PASS COMPONENT 4 installments rejected 
+PASS COMPONENT table amount 'NaN' 
+PASS COMPONENT table amount '-1' 
+PASS COMPONENT table amount '1.001' 
+PASS COMPONENT table amount 100 
+PASS COMPONENT missing NF date 
+PASS AUTH no session 
+PASS AUTH anon role 
+PASS AUTH non-staff denied by captured RPC 
+PASS AUTH no tenant 
+PASS AUTH foreign customer (A actor, B customer) 
+PASS AUTH tenant smuggling rejected 
+PASS LIMIT synthetic exposure = historical open balance 
+PASS LIMIT financed total incl. interest +0.01 over limit blocked 
+PASS LIMIT exact threshold accepted 
+PASS COMPONENT NF 2026-10-29 3x due dates 
+PASS COMPONENT nominal dates kept 
+PASS COMPONENT writer rows = Price payments, interest_amount 0 
+PASS COMPONENT title total = financed total 
+PASS COMPONENT cents sum = total 
+PASS COMPONENT context consumed 
+PASS SNAPSHOT snapshot pins calendar version+hash 
+PASS SNAPSHOT snapshot breakdown 
+PASS SNAPSHOT snapshot UPDATE immutable 
+PASS SNAPSHOT snapshot DELETE immutable 
+PASS SNAPSHOT receipt UPDATE immutable 
+PASS SNAPSHOT receipt DELETE immutable 
+PASS SNAPSHOT receipt TRUNCATE immutable 
+PASS D51_5 d51_5: AR of tenant A with tenant B customer 
+PASS D51_5 d51_5: installment re-pointed to foreign tenant 
+PASS D51_5 d51_5: Price title/installments tenant-consistent 
+PASS SNAPSHOT captured title snapshot guard 
+PASS IDEMPOTENCY replay same key/payload returns same title, no writes 
+PASS IDEMPOTENCY same key different payload PT409 
+PASS IDEMPOTENCY concurrent same key: both ACK, one title 
+PASS ROLLBACK integral rollback after success 
+PASS COMPONENT NF 2026-12-02 1x -> 2027-01-04 
+PASS COMPONENT NF 2026-12-31 3x month-end 
+PASS AUTH tenant B title owned by B 
+PASS AUTH B actor cannot use A customer 
+PASS NUMERIC_EDGE compute edge 999999999999.99 1x 
+PASS NUMERIC_EDGE compute edge 999999999999.99 1x fits numeric(14,2) 
+PASS NUMERIC_EDGE compute edge 999999999999.99 3x 
+PASS NUMERIC_EDGE compute edge 999999999999.99 3x fits numeric(14,2) 
+PASS NUMERIC_EDGE compute edge 1000000000000.00 1x 
+PASS NUMERIC_EDGE compute edge 1000000000000.00 3x 
+PASS NUMERIC_EDGE compute edge 1e20 1x 
+PASS NUMERIC_EDGE compute edge 1e20 3x 
+PASS NUMERIC_EDGE compute edge 99999999999999999999999999.99 1x 
+PASS NUMERIC_EDGE compute edge 99999999999999999999999999.99 3x 
+PASS NUMERIC_EDGE RPC at ceiling: limit blocks before any write (no overflow) 
+PASS NUMERIC_EDGE RPC above ceiling rejected 
+PASS DEBTOR_RACE race setup: each request fits alone, sum exceeds 
+PASS DEBTOR_RACE second actor waits on first via pg_blocking_pids 
+PASS DEBTOR_RACE exactly 1 success + 1 LIMIT refusal (different actors/keys) 
+PASS DEBTOR_RACE only one new title/receipt 
+PASS DEBTOR_RACE fresh exposure after commit includes winner 
+PASS DEBTOR_RACE other debtor proceeds while A|C held 
+PASS REVOCATION_WAIT revocation case: waiter blocked by holder 
+PASS REVOCATION_WAIT revoked during wait -> denied after lock, state unchanged 
+PASS REPLAY_REVOCATION legitimate replay idempotent before revocation 
+PASS REPLAY_REVOCATION replay waiter blocked on same KEY lock 
+PASS REPLAY_REVOCATION revoked replay denied, no result exposed, no mutation 
+PASS REPLAY_REVOCATION replay idempotent again after re-grant, no writes 
+PASS ISOLATION REPEATABLE READ refused (stale snapshot), state unchanged 
+PASS ISOLATION SERIALIZABLE refused (stale snapshot), state unchanged 
+PASS PAYMENT payment settles installment balance 0 
+PASS PAYMENT overpayment beyond Price payment denied 
+PASS REVERSAL reversal restores Price payment balance 
+PASS REVERSAL original_amount unchanged after payment/reversal 
+PASS REVERSAL snapshots unchanged after payment/reversal 
+PASS HISTORY historical 10300/7550 title untouched 
+PASS HISTORY historical balance still 2750 
+{"total": 221, "fail": 0, "summary": {"D51_5": {"PASS": 4}, "INSTALL": {"PASS": 1}, "ACL": {"PASS": 3}, "DENY_CANDIDATE_AS_IS": {"PASS": 3}, "CALENDAR_DB": {"PASS": 10}, "SQL_VS_ENGINE": {"PASS": 126}, "COMPONENT": {"PASS": 18}, "AUTH": {"PASS": 8}, "LIMIT": {"PASS": 3}, "SNAPSHOT": {"PASS": 8}, "IDEMPOTENCY": {"PASS": 3}, "ROLLBACK": {"PASS": 1}, "NUMERIC_EDGE": {"PASS": 12}, "DEBTOR_RACE": {"PASS": 6}, "REVOCATION_WAIT": {"PASS": 2}, "REPLAY_REVOCATION": {"PASS": 4}, "ISOLATION": {"PASS": 2}, "PAYMENT": {"PASS": 2}, "REVERSAL": {"PASS": 3}, "HISTORY": {"PASS": 2}}}

@@ -194,7 +194,7 @@ BEGIN
   IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN
     RAISE EXCEPTION 'PRICE_ISOLATION_READ_COMMITTED_REQUIRED' USING ERRCODE = '0A000';
   END IF;
-  IF NOT public.is_financial_staff(v_uid) THEN  -- same captured helper, checked before any gate
+  IF public.is_financial_staff(v_uid) IS NOT TRUE THEN  -- same captured helper, checked before any gate
     RAISE EXCEPTION 'Sem permissão para criar títulos financeiros.' USING ERRCODE = '42501';
   END IF;
   IF v_org IS NULL THEN RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '42501'; END IF;
@@ -209,6 +209,14 @@ BEGIN
   IF v_key IS NULL OR length(v_key) NOT BETWEEN 8 AND 200 THEN RAISE EXCEPTION 'IDEMPOTENCY_KEY_REQUIRED' USING ERRCODE = '23514'; END IF;
   v_hash := encode(sha256(convert_to((p_payload - 'idempotency_key')::text, 'UTF8')), 'hex');
   PERFORM pg_advisory_xact_lock(hashtextextended(v_uid::text || '|' || v_org::text || '|' || v_key, 7));
+  -- Re-authorize after the KEY wait, before any receipt read/replay: a revoked actor never sees old results.
+  IF auth.uid() IS DISTINCT FROM v_uid THEN RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE = '42501'; END IF;
+  IF public.is_financial_staff(v_uid) IS NOT TRUE THEN
+    RAISE EXCEPTION 'Sem permissão para criar títulos financeiros.' USING ERRCODE = '42501';
+  END IF;
+  IF platform_private.h15_actor_organization() IS DISTINCT FROM v_org THEN
+    RAISE EXCEPTION 'FINANCIAL_TENANT_REQUIRED' USING ERRCODE = '42501';
+  END IF;
   SELECT * INTO v_rcpt FROM platform_private.price_generation_receipts
     WHERE actor_id = v_uid AND organization_id = v_org AND idempotency_key = v_key;
   IF FOUND THEN
@@ -235,7 +243,7 @@ BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended('price-debtor|' || v_org::text || '|' || v_customer::text, 11));
   -- Re-authorize after the wait: session, staff and tenant must still hold.
   IF auth.uid() IS DISTINCT FROM v_uid THEN RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE = '42501'; END IF;
-  IF NOT public.is_financial_staff(v_uid) THEN
+  IF public.is_financial_staff(v_uid) IS NOT TRUE THEN
     RAISE EXCEPTION 'Sem permissão para criar títulos financeiros.' USING ERRCODE = '42501';
   END IF;
   IF platform_private.h15_actor_organization() IS DISTINCT FROM v_org THEN

@@ -118,3 +118,10 @@ Novos: manifesto recursivo, auditor recursivo, runner red/green, teste Vitest, e
 - Resolver aceita só aliases normalizados explícitos `Boleto` e `Boleto Bancário` (sem fuzzy: "Boleto Pix", "Boletos" etc. rejeitados), exige ambiente declarado (production `swzpzcwiasxmjutrmvkm` | homologation `vrlcdwmlytukrjezrrnf`) e exatamente um ativo; ambos aliases ativos → `PAYMENT_METHOD_BOLETO_AMBIGUOUS`.
 - Homologação (captura read-only do proprietário): "Boleto" ativo resolve — evidência de leitura, NÃO configuração aplicada nem permissão de emitir/instalar; UUID sanitizado, nunca transferido para produção.
 - Produção permanece `PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG`. Motor 387/0 FAIL (PAYMENT_METHOD 25); Vitest 1/1; PG não reexecutado (SQL inalterado). Evidência `payment-method-aliases-homolog-1842/`.
+
+## Revisão 18:43 — reautorização antes do replay (candidato `c25ae5ec…`)
+- Após o lock da CHAVE e antes de ler/retornar recibo: sessão, staff (`IS NOT TRUE` nega NULL) e tenant revalidados; segunda revalidação após o lock do devedor mantida.
+- Teste: replay legítimo idempotente; segunda sessão bloqueada na mesma chave (`pg_blocking_pids`), revogação commitada antes da liberação → negado, resultado antigo não exposto, estado inalterado; após nova concessão sintética, replay idempotente sem escrita.
+- PG 221/0 FAIL (217 anteriores + 4); P0 originais 37 PASS/0 FAIL (10600/7550/7750 RED, 10300/7550/7550 GREEN). Evidência `price-generator-pg-replay-reauth-1843/` (manifesto novo verificado).
+- Manifesto `price-generator-pg-review-1845/SHA256SUMS` conferido contra blobs do commit `eb6430b0…`: 5/5 OK.
+- Limitações: revogação via seam sintético; exposição/settings/NF/contabilidade deny-only com stubs; sem JWT/RLS A/B real, PostgREST ou E2E; Boleto ausente em produção.
