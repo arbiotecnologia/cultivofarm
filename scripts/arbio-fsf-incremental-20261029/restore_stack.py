@@ -48,6 +48,8 @@ def restore(j):
     for e in j['enums']:
         pg.sql(f'CREATE TYPE {name(e)} AS ENUM (' + ','.join("'"+v.replace("'","''")+"'" for v in e['labels']) + ');')
     for s in j['sequences']: pg.sql(s['definition'])
+    for f in j['functions']:
+        if f['schema']=='auth' and f['name'] in ('uid','role','jwt'): pg.sql(f['body'])
     tables = [t for t in j['relations'] if t['kind']=='r']
     for t in tables:
         cols = [c for c in j['columns'] if c['schema']==t['schema'] and c['table']==t['name']]
