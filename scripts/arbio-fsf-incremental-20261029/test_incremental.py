@@ -31,7 +31,7 @@ def main():
     pg.sql("""CREATE ROLE authenticated; CREATE ROLE anon; CREATE ROLE service_role;
     CREATE SCHEMA auth; CREATE SCHEMA platform_private;
     CREATE TYPE app_role AS ENUM ('administrador','gestor','financeiro');
-    CREATE TYPE partner_order_status AS ENUM ('rascunho','pendente','em_analise_comercial','aguardando_aprovacao_credito','aprovado','reprovado','cancelado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','solicitado','aguardando_cotacao');
+    CREATE TYPE partner_order_status AS ENUM ('rascunho','pendente','em_analise_comercial','aguardando_aprovacao_credito','aprovado','reprovado','cancelado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','solicitado','aguardando_cotacao','aguardando_ajuste_comercial','aguardando_itens','reprovado_sem_itens','confirmado','em_separacao');
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('test.uid',true),'')::uuid$$;
     CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql AS $$SELECT $1=auth.uid() AND coalesce(nullif(current_setting('test.role',true),''),'false')::boolean$$;
     CREATE FUNCTION public.b2b_phase1_order_visible(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT coalesce(nullif(current_setting('test.visible',true),''),'false')::boolean$$;
