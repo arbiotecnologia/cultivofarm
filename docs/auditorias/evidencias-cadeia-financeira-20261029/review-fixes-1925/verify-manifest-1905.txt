@@ -1,0 +1,1 @@
+shared-credit-fsf-link-1905/SHA256SUMS vs f2d19a6: 10 OK, 0 divergentes/ausentes; diff local: nenhum

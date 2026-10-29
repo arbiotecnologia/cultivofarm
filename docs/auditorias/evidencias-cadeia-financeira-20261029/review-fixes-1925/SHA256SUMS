@@ -1,0 +1,12 @@
+101c11c4d73e8dd00c787795856a0b7d8c2518feddb83fd36804e5ceffc09fbe  ./fsf-link-new-tests-vs-previous-candidate.txt
+0c88e3e8d9c4b706285082b6cebdea18f1d02fdb52b97ca8f79976c7af462810  ./fsf-link-pg-run.txt
+e5f8adac316c13aad47e8aace098109278b0b4e4125dea9f7a02299081d6d300  ./fsf-link-results.json
+0df941ff191d4fb6484c79a6453443ac365f764132c32836c5ea17a27811dd5f  ./link-partner-client.sql.review.snapshot
+a92fbccbdc014b007719eb129bc21423a34e895d7569bfe98f68252132846010  ./original-p0-red-green.run.txt
+0201377742b38140fa451856fbe3f867adea96dfb7ef57df7a0c771f655c2e11  ./original-p0-red-green/red-green.json
+1217a93ded595606a0aec49a54afc196fb35b7d591e9d905b400d7554fd66717  ./price-and-shared-guard-pg-run.txt
+b933a07167012e9a91304940702ed50247c649089b387c5f6fd3834f45bbfd5f  ./price-and-shared-guard-results.json
+92855a5df5aee7aab1c1b3398b6a21b5ee063d0e427019489875e001a9576511  ./real-reference-confirmed.txt
+ad1809f29cb1510c0ed5a1b444aef00b8d17501137b9303ae60b7d4e6084d0c6  ./shared-credit-guard.sql.review.snapshot
+2e80b8daba6c92d714aead2632c9b6178a3124f52499b47a04c33bc1a7eb456d  ./verify-manifest-1905.txt
+20684fed78d2cbe422d76829ea86bc7da49c26697c63e9bf00907034ccb768c9  ./vitest-credit-block-reason.txt

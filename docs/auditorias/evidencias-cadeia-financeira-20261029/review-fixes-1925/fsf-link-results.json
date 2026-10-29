@@ -1,0 +1,416 @@
+{
+ "level": "DISPOSABLE_PG_COMPONENT_NOT_E2E",
+ "synthetic": [
+  "auth.uid/h15/has_role",
+  "all ids and CNPJs",
+  "partner/client rows"
+ ],
+ "candidate_sha256": "0df941ff191d4fb6484c79a6453443ac365f764132c32836c5ea17a27811dd5f",
+ "checks": [
+  {
+   "test": "installed registration guard copied verbatim from latest migration",
+   "expected": "True",
+   "actual": "True",
+   "mode": "INSTALL",
+   "status": "PASS"
+  },
+  {
+   "test": "anon cannot execute",
+   "expected": "f",
+   "actual": "f",
+   "mode": "ACL",
+   "status": "PASS"
+  },
+  {
+   "test": "authenticated cannot read receipts",
+   "expected": "f",
+   "actual": "f",
+   "mode": "ACL",
+   "status": "PASS"
+  },
+  {
+   "test": "creates client from partner data, links partner",
+   "expected": "(True, False, 'a0000000-0000-4000-8000-000000000201', '7c43ab9e-a04c-4f91-996f-62ff8325e360')",
+   "actual": "(True, False, 'a0000000-0000-4000-8000-000000000201', '7c43ab9e-a04c-4f91-996f-62ff8325e360')",
+   "mode": "LINK",
+   "status": "PASS"
+  },
+  {
+   "test": "field mapping uses stored partner data only",
+   "expected": "('aaaaaaaa-0000-4000-8000-00000000000a', 'juridica', '99000001000101', 'SINTETICO PARCEIRO 1 LTDA', 'SINT 1', 'SINT 1', 'ISENTO', 'c1@sintetico.invalid', 'f1@sintetico.invalid', '38000000001', '38600000', 'Paracatu', 'MG', None)",
+   "actual": "('aaaaaaaa-0000-4000-8000-00000000000a', 'juridica', '99000001000101', 'SINTETICO PARCEIRO 1 LTDA', 'SINT 1', 'SINT 1', 'ISENTO', 'c1@sintetico.invalid', 'f1@sintetico.invalid', '38000000001', '38600000', 'Paracatu', 'MG', None)",
+   "mode": "MAPPING",
+   "status": "PASS"
+  },
+  {
+   "test": "replay same key: same ids, no write",
+   "expected": "('7c43ab9e-a04c-4f91-996f-62ff8325e360', True, True)",
+   "actual": "('7c43ab9e-a04c-4f91-996f-62ff8325e360', True, True)",
+   "mode": "IDEMPOTENCY",
+   "status": "PASS"
+  },
+  {
+   "test": "new key, already linked: same client, no duplicate",
+   "expected": "('7c43ab9e-a04c-4f91-996f-62ff8325e360', False, '1')",
+   "actual": "('7c43ab9e-a04c-4f91-996f-62ff8325e360', False, '1')",
+   "mode": "IDEMPOTENCY",
+   "status": "PASS"
+  },
+  {
+   "test": "same key different partner",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "IDEMPOTENCY",
+   "status": "PASS"
+  },
+  {
+   "test": "existing client with same document reused (gestor_comercial)",
+   "expected": "('c0000000-0000-4000-8000-000000000202', False)",
+   "actual": "('c0000000-0000-4000-8000-000000000202', False)",
+   "mode": "REUSE",
+   "status": "PASS"
+  },
+  {
+   "test": "existing different client_id never overwritten",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "CONFLICT",
+   "status": "PASS"
+  },
+  {
+   "test": "partner without CNPJ: nothing invented",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "DATA",
+   "status": "PASS"
+  },
+  {
+   "test": "partner with invalid CNPJ",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "DATA",
+   "status": "PASS"
+  },
+  {
+   "test": "owner NULL: no ownership backfill",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "OWNER",
+   "status": "PASS"
+  },
+  {
+   "test": "inactive partner",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SCOPE",
+   "status": "PASS"
+  },
+  {
+   "test": "partner of other tenant (uniform)",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SCOPE",
+   "status": "PASS"
+  },
+  {
+   "test": "nonexistent partner (uniform)",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SCOPE",
+   "status": "PASS"
+  },
+  {
+   "test": "two active partners with same CNPJ",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "UNIQUE_PARTNER",
+   "status": "PASS"
+  },
+  {
+   "test": "client already linked to another active partner",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "CONFLICT",
+   "status": "PASS"
+  },
+  {
+   "test": "financeiro role denied",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "no session denied",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "anon role denied",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "tenant B admin cannot link A partner",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "TENANT",
+   "status": "PASS"
+  },
+  {
+   "test": "REPEATABLE READ refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "ISOLATION",
+   "status": "PASS"
+  },
+  {
+   "test": "invalid key",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "DATA",
+   "status": "PASS"
+  },
+  {
+   "test": "tenant B creates its own client for same document; A unchanged",
+   "expected": "(True, 'bbbbbbbb-0000-4000-8000-00000000000b', '[{\"id\": \"7c43ab9e-a04c-4f91-996f-62ff8325e360\", \"nome\": \"SINT 1\", \"email\": \"c1@sintetico.invalid\", \"cpf_cnpj\": \"99000001000101\", \"telefone\": \"38000000001\", \"tipo_pessoa\": \"juridica\", \"endereco_cep\": \"38600000\", \"razao_social\": \"SINTETICO PARCEIRO 1 LTDA\", \"nome_fantasia\": \"SINT 1\", \"limite_credito\": null, \"endereco_bairro\": \"Centro\", \"endereco_estado\": \"MG\", \"endereco_numero\": \"1\", \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": \"Paracatu\", \"inscricao_estadual\": \"ISENTO\", \"endereco_logradouro\": \"Rua Sintetica\", \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": \"f1@sintetico.invalid\"}, {\"id\": \"c0000000-0000-4000-8000-000000000202\", \"nome\": \"CLIENTE SINTETICO 2\", \"email\": null, \"cpf_cnpj\": \"99.000.002/0001-48\", \"telefone\": null, \"tipo_pessoa\": \"juridica\", \"endereco_cep\": null, \"razao_social\": \"CLIENTE SINTETICO 2\", \"nome_fantasia\": null, \"limite_credito\": null, \"endereco_bairro\": null, \"endereco_estado\": null, \"endereco_numero\": null, \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": null, \"inscricao_estadual\": null, \"endereco_logradouro\": null, \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": null}, {\"id\": \"c0000000-0000-4000-8000-000000000203\", \"nome\": \"OUTRO DOC\", \"email\": null, \"cpf_cnpj\": \"99000003000192\", \"telefone\": null, \"tipo_pessoa\": \"juridica\", \"endereco_cep\": null, \"razao_social\": \"OUTRO DOC\", \"nome_fantasia\": null, \"limite_credito\": null, \"endereco_bairro\": null, \"endereco_estado\": null, \"endereco_numero\": null, \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": null, \"inscricao_estadual\": null, \"endereco_logradouro\": null, \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": null}, {\"id\": \"c0000000-0000-4000-8000-000000000211\", \"nome\": \"LINKED\", \"email\": null, \"cpf_cnpj\": \"99000011000139\", \"telefone\": null, \"tipo_pessoa\": \"juridica\", \"endereco_cep\": null, \"razao_social\": \"LINKED\", \"nome_fantasia\": null, \"limite_credito\": null, \"endereco_bairro\": null, \"endereco_estado\": null, \"endereco_numero\": null, \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": null, \"inscricao_estadual\": null, \"endereco_logradouro\": null, \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": null}, {\"id\": \"c0000000-0000-4000-8000-000000000217\", \"nome\": \"C17\", \"email\": null, \"cpf_cnpj\": \"99000017000106\", \"telefone\": null, \"tipo_pessoa\": \"juridica\", \"endereco_cep\": null, \"razao_social\": null, \"nome_fantasia\": null, \"limite_credito\": null, \"endereco_bairro\": null, \"endereco_estado\": null, \"endereco_numero\": null, \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": null, \"inscricao_estadual\": null, \"endereco_logradouro\": null, \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": null}]')",
+   "actual": "(True, 'bbbbbbbb-0000-4000-8000-00000000000b', '[{\"id\": \"7c43ab9e-a04c-4f91-996f-62ff8325e360\", \"nome\": \"SINT 1\", \"email\": \"c1@sintetico.invalid\", \"cpf_cnpj\": \"99000001000101\", \"telefone\": \"38000000001\", \"tipo_pessoa\": \"juridica\", \"endereco_cep\": \"38600000\", \"razao_social\": \"SINTETICO PARCEIRO 1 LTDA\", \"nome_fantasia\": \"SINT 1\", \"limite_credito\": null, \"endereco_bairro\": \"Centro\", \"endereco_estado\": \"MG\", \"endereco_numero\": \"1\", \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": \"Paracatu\", \"inscricao_estadual\": \"ISENTO\", \"endereco_logradouro\": \"Rua Sintetica\", \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": \"f1@sintetico.invalid\"}, {\"id\": \"c0000000-0000-4000-8000-000000000202\", \"nome\": \"CLIENTE SINTETICO 2\", \"email\": null, \"cpf_cnpj\": \"99.000.002/0001-48\", \"telefone\": null, \"tipo_pessoa\": \"juridica\", \"endereco_cep\": null, \"razao_social\": \"CLIENTE SINTETICO 2\", \"nome_fantasia\": null, \"limite_credito\": null, \"endereco_bairro\": null, \"endereco_estado\": null, \"endereco_numero\": null, \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": null, \"inscricao_estadual\": null, \"endereco_logradouro\": null, \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": null}, {\"id\": \"c0000000-0000-4000-8000-000000000203\", \"nome\": \"OUTRO DOC\", \"email\": null, \"cpf_cnpj\": \"99000003000192\", \"telefone\": null, \"tipo_pessoa\": \"juridica\", \"endereco_cep\": null, \"razao_social\": \"OUTRO DOC\", \"nome_fantasia\": null, \"limite_credito\": null, \"endereco_bairro\": null, \"endereco_estado\": null, \"endereco_numero\": null, \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": null, \"inscricao_estadual\": null, \"endereco_logradouro\": null, \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": null}, {\"id\": \"c0000000-0000-4000-8000-000000000211\", \"nome\": \"LINKED\", \"email\": null, \"cpf_cnpj\": \"99000011000139\", \"telefone\": null, \"tipo_pessoa\": \"juridica\", \"endereco_cep\": null, \"razao_social\": \"LINKED\", \"nome_fantasia\": null, \"limite_credito\": null, \"endereco_bairro\": null, \"endereco_estado\": null, \"endereco_numero\": null, \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": null, \"inscricao_estadual\": null, \"endereco_logradouro\": null, \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": null}, {\"id\": \"c0000000-0000-4000-8000-000000000217\", \"nome\": \"C17\", \"email\": null, \"cpf_cnpj\": \"99000017000106\", \"telefone\": null, \"tipo_pessoa\": \"juridica\", \"endereco_cep\": null, \"razao_social\": null, \"nome_fantasia\": null, \"limite_credito\": null, \"endereco_bairro\": null, \"endereco_estado\": null, \"endereco_numero\": null, \"organization_id\": \"aaaaaaaa-0000-4000-8000-00000000000a\", \"endereco_municipio\": null, \"inscricao_estadual\": null, \"endereco_logradouro\": null, \"inscricao_municipal\": null, \"endereco_complemento\": null, \"contato_financeiro_email\": null}]')",
+   "mode": "TENANT",
+   "status": "PASS"
+  },
+  {
+   "test": "concurrent different keys: both ACK, one client, one link",
+   "expected": "(2, 1, '1', 1)",
+   "actual": "(2, 1, '1', 1)",
+   "mode": "RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "second actor waits on same key",
+   "expected": "{3934}",
+   "actual": "{3934}",
+   "mode": "REVOCATION_WAIT",
+   "status": "PASS"
+  },
+  {
+   "test": "revoked during wait: replay denied, result not exposed",
+   "expected": "(True, False)",
+   "actual": "(True, False)",
+   "mode": "REVOCATION_WAIT",
+   "status": "PASS"
+  },
+  {
+   "test": "existing client_id shared with another active partner refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_LINK",
+   "status": "PASS"
+  },
+  {
+   "test": "letter + 14 valid digits is corrupted, not stripped",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_CNPJ",
+   "status": "PASS"
+  },
+  {
+   "test": "trailing letter refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_CNPJ",
+   "status": "PASS"
+  },
+  {
+   "test": "formatted numeric CNPJ accepted, stored as digits",
+   "expected": "99000022000119",
+   "actual": "99000022000119",
+   "mode": "REVIEW_CNPJ",
+   "status": "PASS"
+  },
+  {
+   "test": "replay after partner deactivated refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_REPLAY",
+   "status": "PASS"
+  },
+  {
+   "test": "replay after partner deleted refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_REPLAY",
+   "status": "PASS"
+  },
+  {
+   "test": "replay after partner transferred to tenant B refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_REPLAY",
+   "status": "PASS"
+  },
+  {
+   "test": "replay after partner relinked to other client refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_REPLAY",
+   "status": "PASS"
+  },
+  {
+   "test": "replay after partner CNPJ altered refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_REPLAY",
+   "status": "PASS"
+  },
+  {
+   "test": "replay after partner CNPJ corrupted refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_REPLAY",
+   "status": "PASS"
+  },
+  {
+   "test": "replay after client shared with another partner refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_REPLAY",
+   "status": "PASS"
+  },
+  {
+   "test": "legitimate replay still idempotent after restores",
+   "expected": "True",
+   "actual": "True",
+   "mode": "REVIEW_REPLAY",
+   "status": "PASS"
+  },
+  {
+   "test": "replay by revoked actor refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_REPLAY",
+   "status": "PASS"
+  },
+  {
+   "test": "captured tenant-document unique index present in migration",
+   "expected": "True",
+   "actual": "True",
+   "mode": "REVIEW_UNIQUE",
+   "status": "PASS"
+  },
+  {
+   "test": "duplicate normalized documents never pick arbitrary client",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_UNIQUE",
+   "status": "PASS"
+  },
+  {
+   "test": "receipt UPDATE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "IMMUTABLE",
+   "status": "PASS"
+  },
+  {
+   "test": "receipt DELETE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "IMMUTABLE",
+   "status": "PASS"
+  },
+  {
+   "test": "receipt TRUNCATE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "IMMUTABLE",
+   "status": "PASS"
+  },
+  {
+   "test": "financial settings untouched by every link (still blocked)",
+   "expected": "[{\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000201\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000202\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000203\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000204\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000205\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000206\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000207\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000208\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000209\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000210\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000211\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000212\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000213\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000214\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000215\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000217\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000218\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000219\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000220\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000221\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000222\", \"credit_limit\": null}]",
+   "actual": "[{\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000201\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000202\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000203\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000204\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000205\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000206\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000207\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000208\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000209\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000210\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000211\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000212\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000213\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000214\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000215\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000217\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000218\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000219\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000220\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000221\", \"credit_limit\": null}, {\"active\": false, \"partner_id\": \"a0000000-0000-4000-8000-000000000222\", \"credit_limit\": null}]",
+   "mode": "FINANCE_BLOCKED",
+   "status": "PASS"
+  },
+  {
+   "test": "partner limite_credito_brl never copied to client",
+   "expected": "0",
+   "actual": "0",
+   "mode": "FINANCE_BLOCKED",
+   "status": "PASS"
+  }
+ ],
+ "summary": {
+  "INSTALL": {
+   "PASS": 1
+  },
+  "ACL": {
+   "PASS": 2
+  },
+  "LINK": {
+   "PASS": 1
+  },
+  "MAPPING": {
+   "PASS": 1
+  },
+  "IDEMPOTENCY": {
+   "PASS": 3
+  },
+  "REUSE": {
+   "PASS": 1
+  },
+  "CONFLICT": {
+   "PASS": 2
+  },
+  "DATA": {
+   "PASS": 3
+  },
+  "OWNER": {
+   "PASS": 1
+  },
+  "SCOPE": {
+   "PASS": 3
+  },
+  "UNIQUE_PARTNER": {
+   "PASS": 1
+  },
+  "AUTH": {
+   "PASS": 3
+  },
+  "TENANT": {
+   "PASS": 2
+  },
+  "ISOLATION": {
+   "PASS": 1
+  },
+  "RACE": {
+   "PASS": 1
+  },
+  "REVOCATION_WAIT": {
+   "PASS": 2
+  },
+  "REVIEW_LINK": {
+   "PASS": 1
+  },
+  "REVIEW_CNPJ": {
+   "PASS": 3
+  },
+  "REVIEW_REPLAY": {
+   "PASS": 9
+  },
+  "REVIEW_UNIQUE": {
+   "PASS": 2
+  },
+  "IMMUTABLE": {
+   "PASS": 3
+  },
+  "FINANCE_BLOCKED": {
+   "PASS": 2
+  }
+ },
+ "fail": 0
+}

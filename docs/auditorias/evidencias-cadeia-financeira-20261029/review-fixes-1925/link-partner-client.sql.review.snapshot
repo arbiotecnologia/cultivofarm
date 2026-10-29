@@ -1,0 +1,167 @@
+-- INACTIVE REVIEW CANDIDATE — disposable PostgreSQL only. Never apply hosted, never copy into
+-- supabase/migrations, never GRANT in production, never run against real partner/client rows.
+--
+-- Purpose: register the B2B partner's OWN company as a client of the commercial owner tenant and
+-- link partner_accounts.client_id, idempotently, reusing data already stored on the partner.
+-- No CNPJ/name is ever typed or invented here; finance stays blocked (settings untouched).
+-- The partner UPDATE still passes through the installed guard_commercial_partner_registration().
+
+CREATE TABLE platform_private.partner_client_link_receipts (
+  organization_id uuid NOT NULL,
+  idempotency_key text NOT NULL,
+  actor_id uuid NOT NULL,
+  partner_id uuid NOT NULL,
+  client_id uuid NOT NULL,
+  client_created boolean NOT NULL,
+  document_sha256 text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (organization_id, idempotency_key)
+);
+ALTER TABLE platform_private.partner_client_link_receipts ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON platform_private.partner_client_link_receipts FROM PUBLIC;
+CREATE FUNCTION platform_private.partner_client_link_immutable() RETURNS trigger
+LANGUAGE plpgsql SET search_path = '' AS $$ BEGIN RAISE EXCEPTION 'LINK_RECEIPT_IMMUTABLE' USING ERRCODE = '42501'; END $$;
+CREATE TRIGGER partner_client_link_receipts_immutable BEFORE UPDATE OR DELETE ON platform_private.partner_client_link_receipts
+  FOR EACH ROW EXECUTE FUNCTION platform_private.partner_client_link_immutable();
+CREATE TRIGGER partner_client_link_receipts_no_truncate BEFORE TRUNCATE ON platform_private.partner_client_link_receipts
+  FOR EACH STATEMENT EXECUTE FUNCTION platform_private.partner_client_link_immutable();
+
+CREATE FUNCTION platform_private.cnpj_valid(p text) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path = '' AS $$
+DECLARE d int[]; s int; r int; w1 int[] := ARRAY[5,4,3,2,9,8,7,6,5,4,3,2]; w2 int[] := ARRAY[6,5,4,3,2,9,8,7,6,5,4,3,2];
+BEGIN
+  IF p IS NULL OR p !~ '^[0-9]{14}$' OR p ~ '^(.)\1{13}$' THEN RETURN false; END IF;
+  d := ARRAY(SELECT substr(p, i, 1)::int FROM generate_series(1, 14) i);
+  s := 0; FOR i IN 1..12 LOOP s := s + d[i] * w1[i]; END LOOP; r := s % 11; r := CASE WHEN r < 2 THEN 0 ELSE 11 - r END;
+  IF r <> d[13] THEN RETURN false; END IF;
+  s := 0; FOR i IN 1..13 LOOP s := s + d[i] * w2[i]; END LOOP; r := s % 11; r := CASE WHEN r < 2 THEN 0 ELSE 11 - r END;
+  RETURN r = d[14];
+END $$;
+
+-- Partner CNPJ: only the formatting characters of the existing numeric scope (digits . / - space)
+-- are accepted and removed; any other character (letters, etc.) is a corrupted document and denied.
+CREATE FUNCTION platform_private.partner_cnpj_digits(p text) RETURNS text LANGUAGE plpgsql IMMUTABLE SET search_path = '' AS $$
+DECLARE v text;
+BEGIN
+  IF p IS NULL OR btrim(p) = '' THEN RAISE EXCEPTION 'PARTNER_CNPJ_REQUIRED' USING ERRCODE = '23514'; END IF;
+  IF p !~ '^[0-9./ -]+$' THEN RAISE EXCEPTION 'PARTNER_CNPJ_INVALID' USING ERRCODE = '23514'; END IF;
+  v := regexp_replace(p, '[./ -]', '', 'g');
+  IF NOT platform_private.cnpj_valid(v) THEN RAISE EXCEPTION 'PARTNER_CNPJ_INVALID' USING ERRCODE = '23514'; END IF;
+  RETURN v;
+END $$;
+
+CREATE FUNCTION platform_private.partner_client_link_authorize() RETURNS uuid
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS $$
+DECLARE v_org uuid := public.h15_actor_organization();
+BEGIN
+  IF auth.uid() IS NULL OR v_org IS NULL
+     OR (public.has_role(auth.uid(), 'administrador'::public.app_role) IS NOT TRUE
+         AND public.has_role(auth.uid(), 'gestor_comercial'::public.app_role) IS NOT TRUE) THEN
+    RAISE EXCEPTION 'cadastro_context_required' USING ERRCODE = '42501';
+  END IF;
+  RETURN v_org;
+END $$;
+
+CREATE FUNCTION public.rpc_link_partner_client_candidate(p_partner_id uuid, p_idempotency_key text) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
+DECLARE
+  v_uid uuid := auth.uid(); v_org uuid; v_pa public.partner_accounts; v_doc text; v_client uuid; v_created boolean := false;
+  v_rcpt platform_private.partner_client_link_receipts; v_n int;
+BEGIN
+  v_org := platform_private.partner_client_link_authorize();
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'LINK_ISOLATION_UNSUPPORTED' USING ERRCODE = '0A000';
+  END IF;
+  IF p_partner_id IS NULL OR p_idempotency_key IS NULL OR p_idempotency_key !~ '^[A-Za-z0-9._:-]{8,120}$' THEN
+    RAISE EXCEPTION 'LINK_REQUEST_INVALID' USING ERRCODE = '22023';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended('partner_client_link:' || v_org || ':' || p_idempotency_key, 0));
+  IF platform_private.partner_client_link_authorize() IS DISTINCT FROM v_org THEN  -- re-check after wait
+    RAISE EXCEPTION 'cadastro_context_required' USING ERRCODE = '42501';
+  END IF;
+  SELECT * INTO v_rcpt FROM platform_private.partner_client_link_receipts WHERE organization_id = v_org AND idempotency_key = p_idempotency_key;
+  IF FOUND THEN
+    IF v_rcpt.partner_id IS DISTINCT FROM p_partner_id THEN RAISE EXCEPTION 'IDEMPOTENCY_KEY_REUSED' USING ERRCODE = 'PT409'; END IF;
+    -- Replay re-validates CURRENT partner availability/owner and the recorded link before answering.
+    SELECT * INTO v_pa FROM public.partner_accounts WHERE id = p_partner_id FOR UPDATE;
+    IF NOT FOUND OR v_pa.ativo IS NOT TRUE OR v_pa.deleted_at IS NOT NULL
+       OR v_pa.commercial_owner_organization_id IS DISTINCT FROM v_org THEN
+      RAISE EXCEPTION 'PARTNER_NOT_AVAILABLE' USING ERRCODE = '42501';
+    END IF;
+    v_doc := platform_private.partner_cnpj_digits(v_pa.cnpj);
+    IF v_pa.client_id IS DISTINCT FROM v_rcpt.client_id
+       OR encode(extensions.digest(v_doc, 'sha256'), 'hex') IS DISTINCT FROM v_rcpt.document_sha256
+       OR NOT EXISTS (SELECT 1 FROM public.clientes c WHERE c.id = v_rcpt.client_id AND c.organization_id = v_org
+                       AND upper(regexp_replace(coalesce(c.cpf_cnpj, ''), '[[:space:]./-]', '', 'g')) = v_doc)
+       OR EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.client_id = v_rcpt.client_id AND pa.id <> v_pa.id
+                   AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN
+      RAISE EXCEPTION 'LINK_RECEIPT_STALE' USING ERRCODE = 'PT409';
+    END IF;
+    RETURN jsonb_build_object('partner_id', v_rcpt.partner_id, 'client_id', v_rcpt.client_id, 'client_created', v_rcpt.client_created,
+                              'replayed', true, 'financial_settings', 'UNCHANGED_BLOCKED');
+  END IF;
+
+  SELECT * INTO v_pa FROM public.partner_accounts WHERE id = p_partner_id FOR UPDATE;
+  -- Uniform denial: unknown, foreign, inactive or deleted partners are indistinguishable.
+  IF NOT FOUND OR v_pa.ativo IS NOT TRUE OR v_pa.deleted_at IS NOT NULL
+     OR v_pa.commercial_owner_organization_id IS DISTINCT FROM v_org THEN
+    IF FOUND AND v_pa.commercial_owner_organization_id IS NULL AND v_pa.ativo IS TRUE THEN
+      RAISE EXCEPTION 'PARTNER_OWNER_UNPROVEN' USING ERRCODE = '42501';  -- no ownership backfill here
+    END IF;
+    RAISE EXCEPTION 'PARTNER_NOT_AVAILABLE' USING ERRCODE = '42501';
+  END IF;
+  v_doc := platform_private.partner_cnpj_digits(v_pa.cnpj);
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('cliente_doc:' || v_org || ':' || v_doc, 0));
+  IF platform_private.partner_client_link_authorize() IS DISTINCT FROM v_org THEN
+    RAISE EXCEPTION 'cadastro_context_required' USING ERRCODE = '42501';
+  END IF;
+  SELECT count(*) INTO v_n FROM public.partner_accounts pa
+   WHERE pa.commercial_owner_organization_id = v_org AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+     AND regexp_replace(coalesce(pa.cnpj, ''), '[^0-9]', '', 'g') = v_doc;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'PARTNER_CNPJ_AMBIGUOUS' USING ERRCODE = '23514'; END IF;
+
+  IF v_pa.client_id IS NOT NULL THEN
+    IF NOT EXISTS (SELECT 1 FROM public.clientes c WHERE c.id = v_pa.client_id AND c.organization_id = v_org
+                    AND upper(regexp_replace(coalesce(c.cpf_cnpj, ''), '[[:space:]./-]', '', 'g')) = v_doc) THEN
+      RAISE EXCEPTION 'PARTNER_CLIENT_CONFLICT' USING ERRCODE = 'PT409';  -- never overwrite an existing link
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.client_id = v_pa.client_id AND pa.id <> v_pa.id
+                AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN
+      RAISE EXCEPTION 'CLIENT_LINKED_TO_OTHER_PARTNER' USING ERRCODE = 'PT409';
+    END IF;
+    v_client := v_pa.client_id;
+  ELSE
+    -- Never pick an arbitrary row: uniqueness is checked here, not assumed from an index.
+    SELECT count(*), min(c.id::text)::uuid INTO v_n, v_client FROM public.clientes c
+     WHERE c.organization_id = v_org AND upper(regexp_replace(coalesce(c.cpf_cnpj, ''), '[[:space:]./-]', '', 'g')) = v_doc;
+    IF v_n > 1 THEN RAISE EXCEPTION 'CLIENT_DOCUMENT_AMBIGUOUS' USING ERRCODE = 'PT409'; END IF;
+    IF v_client IS NOT NULL AND EXISTS (SELECT 1 FROM public.partner_accounts pa WHERE pa.client_id = v_client AND pa.id <> v_pa.id
+                                         AND pa.ativo IS TRUE AND pa.deleted_at IS NULL) THEN
+      RAISE EXCEPTION 'CLIENT_LINKED_TO_OTHER_PARTNER' USING ERRCODE = 'PT409';
+    END IF;
+    IF v_client IS NULL THEN
+      INSERT INTO public.clientes(organization_id, tipo_pessoa, cpf_cnpj, razao_social, nome_fantasia, nome,
+                                  inscricao_estadual, inscricao_municipal, email, contato_financeiro_email, telefone,
+                                  endereco_cep, endereco_logradouro, endereco_numero, endereco_complemento, endereco_bairro,
+                                  endereco_municipio, endereco_estado)
+      VALUES (v_org, 'juridica', v_doc, v_pa.razao_social, v_pa.nome_fantasia, coalesce(nullif(btrim(v_pa.nome_fantasia), ''), v_pa.razao_social),
+              v_pa.inscricao_estadual, v_pa.inscricao_municipal, v_pa.email_comercial, v_pa.email_financeiro, v_pa.telefone_comercial,
+              v_pa.cep, v_pa.endereco_logradouro, v_pa.endereco_numero, v_pa.endereco_complemento, v_pa.endereco_bairro,
+              v_pa.commercial_city, v_pa.commercial_state)
+      RETURNING id INTO v_client;
+      v_created := true;
+    END IF;
+    UPDATE public.partner_accounts SET client_id = v_client WHERE id = v_pa.id;  -- installed registration guard runs
+  END IF;
+
+  INSERT INTO platform_private.partner_client_link_receipts(organization_id, idempotency_key, actor_id, partner_id, client_id, client_created, document_sha256)
+  VALUES (v_org, p_idempotency_key, v_uid, v_pa.id, v_client, v_created, encode(extensions.digest(v_doc, 'sha256'), 'hex'));
+  RETURN jsonb_build_object('partner_id', v_pa.id, 'client_id', v_client, 'client_created', v_created,
+                            'replayed', false, 'financial_settings', 'UNCHANGED_BLOCKED');
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_link_partner_client_candidate(uuid, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION platform_private.partner_client_link_authorize() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_link_partner_client_candidate(uuid, text) TO authenticated;  -- disposable DB only
+
+-- ROLLBACK: DROP FUNCTION public.rpc_link_partner_client_candidate(uuid,text); keep receipts and
+-- any created client/link (history is never deleted); unlinking is a separate reviewed edit.

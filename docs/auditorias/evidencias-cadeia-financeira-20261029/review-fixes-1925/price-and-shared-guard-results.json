@@ -1,0 +1,2399 @@
+{
+ "level": "DISPOSABLE_PG_COMPONENT_NOT_E2E",
+ "synthetic": [
+  "auth.uid/h15/staff (monetary harness)",
+  "payment settings stub",
+  "exposure lower-bound stub",
+  "NF origin stub",
+  "accounting gate stub",
+  "NF reference",
+  "customers",
+  "delivery canonical value/billing guard stubs",
+  "next generation date stub",
+  "tenant fill stub"
+ ],
+ "shared_guard_sha256": "ad1809f29cb1510c0ed5a1b444aef00b8d17501137b9303ae60b7d4e6084d0c6",
+ "candidate_sha256": "033a01df72c4be8cd119fc8476880abb67a6340faf9610f8c5550197b2b0a03d",
+ "checks": [
+  {
+   "test": "captured fn_b2b_credit_exposure installed exact (md5)",
+   "expected": "213ac31f3a30816ead75365b0d1fed18",
+   "actual": "213ac31f3a30816ead75365b0d1fed18",
+   "mode": "EXPOSURE_CANON",
+   "status": "PASS"
+  },
+  {
+   "test": "captured d51_5 trigger installed on 4 tables (md5-pinned body)",
+   "expected": "4",
+   "actual": "4",
+   "mode": "D51_5",
+   "status": "PASS"
+  },
+  {
+   "test": "candidate installs in single transaction",
+   "expected": "t",
+   "actual": "t",
+   "mode": "INSTALL",
+   "status": "PASS"
+  },
+  {
+   "test": "anon has no EXECUTE",
+   "expected": "f",
+   "actual": "f",
+   "mode": "ACL",
+   "status": "PASS"
+  },
+  {
+   "test": "authenticated no direct table access",
+   "expected": "f",
+   "actual": "f",
+   "mode": "ACL",
+   "status": "PASS"
+  },
+  {
+   "test": "authenticated cannot call private compute",
+   "expected": "f",
+   "actual": "f",
+   "mode": "ACL",
+   "status": "PASS"
+  },
+  {
+   "test": "candidate as-is: settings absent",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "DENY_CANDIDATE_AS_IS",
+   "status": "PASS"
+  },
+  {
+   "test": "fiscal origin unproven",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "DENY_CANDIDATE_AS_IS",
+   "status": "PASS"
+  },
+  {
+   "test": "accounting gate pending",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "DENY_CANDIDATE_AS_IS",
+   "status": "PASS"
+  },
+  {
+   "test": "calendar not loaded",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "loader rejects wrong digest",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "loader rejects widened coverage (digest)",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "authenticated cannot load calendar",
+   "expected": "f",
+   "actual": "f",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "other-city dataset under pinned version rejected",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "load official v2",
+   "expected": "paracatu-mg-2026-2027-v2",
+   "actual": "paracatu-mg-2026-2027-v2",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "14+14 holidays persisted",
+   "expected": "28",
+   "actual": "28",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "calendar UPDATE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "calendar DELETE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "calendar TRUNCATE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "CALENDAR_DB",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 1x NF2026-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2026-01-31', '2026-02-02']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2026-01-31', '2026-02-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 1x NF2026-08-21",
+   "expected": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2026-09-20', '2026-09-21']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2026-09-20', '2026-09-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 1x NF2026-10-29",
+   "expected": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2026-11-28', '2026-11-30']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2026-11-28', '2026-11-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 1x NF2026-12-02",
+   "expected": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2027-01-01', '2027-01-04']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2027-01-01', '2027-01-04']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 1x NF2026-12-30",
+   "expected": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2027-01-29', '2027-01-29']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2027-01-29', '2027-01-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 1x NF2026-12-31",
+   "expected": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2027-01-30', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2027-01-30', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 1x NF2027-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2027-01-31', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.03'), Decimal('0.03'), '2027-01-31', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 2x NF2026-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2026-01-31', '2026-02-02'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-02-28', '2026-03-02']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2026-01-31', '2026-02-02'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-02-28', '2026-03-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 2x NF2026-08-21",
+   "expected": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2026-09-20', '2026-09-21'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-10-20', '2026-10-21']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2026-09-20', '2026-09-21'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-10-20', '2026-10-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 2x NF2026-10-29",
+   "expected": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2026-11-28', '2026-11-30'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-12-28', '2026-12-28']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2026-11-28', '2026-11-30'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-12-28', '2026-12-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 2x NF2026-12-02",
+   "expected": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2027-01-01', '2027-01-04'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-01', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2027-01-01', '2027-01-04'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-01', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 2x NF2026-12-30",
+   "expected": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2027-01-29', '2027-01-29'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2027-01-29', '2027-01-29'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 2x NF2026-12-31",
+   "expected": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2027-01-30', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2027-01-30', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 2x NF2027-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2027-01-31', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.02'), Decimal('0.02'), '2027-01-31', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 3x NF2026-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-01-31', '2026-02-02'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-02-28', '2026-03-02'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-03-31', '2026-03-31']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-01-31', '2026-02-02'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-02-28', '2026-03-02'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-03-31', '2026-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 3x NF2026-08-21",
+   "expected": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-09-20', '2026-09-21'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-10-20', '2026-10-21'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-11-20', '2026-11-23']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-09-20', '2026-09-21'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-10-20', '2026-10-21'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-11-20', '2026-11-23']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 3x NF2026-10-29",
+   "expected": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-11-28', '2026-11-30'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-12-28', '2026-12-28'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-28', '2027-01-28']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-11-28', '2026-11-30'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2026-12-28', '2026-12-28'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-28', '2027-01-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 3x NF2026-12-02",
+   "expected": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-01', '2027-01-04'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-01', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-03-01', '2027-03-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-01', '2027-01-04'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-01', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-03-01', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 3x NF2026-12-30",
+   "expected": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-29', '2027-01-29'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-03-29', '2027-03-29']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-29', '2027-01-29'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-03-29', '2027-03-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 3x NF2026-12-31",
+   "expected": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-30', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-03-30', '2027-03-30']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-30', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-03-30', '2027-03-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 0.05 3x NF2027-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-31', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-03-31', '2027-03-31']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-01-31', '2027-02-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.01'), Decimal('0.01'), '2027-03-31', '2027-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 1x NF2026-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2026-01-31', '2026-02-02']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2026-01-31', '2026-02-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 1x NF2026-08-21",
+   "expected": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2026-09-20', '2026-09-21']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2026-09-20', '2026-09-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 1x NF2026-10-29",
+   "expected": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2026-11-28', '2026-11-30']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2026-11-28', '2026-11-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 1x NF2026-12-02",
+   "expected": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2027-01-01', '2027-01-04']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2027-01-01', '2027-01-04']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 1x NF2026-12-30",
+   "expected": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2027-01-29', '2027-01-29']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2027-01-29', '2027-01-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 1x NF2026-12-31",
+   "expected": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2027-01-30', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2027-01-30', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 1x NF2027-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2027-01-31', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('0.60'), Decimal('0.60'), '2027-01-31', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 2x NF2026-01-01",
+   "expected": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-01-31', '2026-02-02'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-02-28', '2026-03-02']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-01-31', '2026-02-02'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-02-28', '2026-03-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 2x NF2026-08-21",
+   "expected": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-09-20', '2026-09-21'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-10-20', '2026-10-21']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-09-20', '2026-09-21'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-10-20', '2026-10-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 2x NF2026-10-29",
+   "expected": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-11-28', '2026-11-30'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-12-28', '2026-12-28']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-11-28', '2026-11-30'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2026-12-28', '2026-12-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 2x NF2026-12-02",
+   "expected": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-01-01', '2027-01-04'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-02-01', '2027-02-01']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-01-01', '2027-01-04'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-02-01', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 2x NF2026-12-30",
+   "expected": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-01-29', '2027-01-29'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-01-29', '2027-01-29'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 2x NF2026-12-31",
+   "expected": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-01-30', '2027-02-01'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-01-30', '2027-02-01'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 2x NF2027-01-01",
+   "expected": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-01-31', '2027-02-01'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-01-31', '2027-02-01'], [Decimal('0.01'), Decimal('0.30'), Decimal('0.31'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 3x NF2026-01-01",
+   "expected": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-01-31', '2026-02-02'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-02-28', '2026-03-02'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2026-03-31', '2026-03-31']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-01-31', '2026-02-02'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-02-28', '2026-03-02'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2026-03-31', '2026-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 3x NF2026-08-21",
+   "expected": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-09-20', '2026-09-21'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-10-20', '2026-10-21'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2026-11-20', '2026-11-23']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-09-20', '2026-09-21'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-10-20', '2026-10-21'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2026-11-20', '2026-11-23']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 3x NF2026-10-29",
+   "expected": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-11-28', '2026-11-30'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-12-28', '2026-12-28'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-01-28', '2027-01-28']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-11-28', '2026-11-30'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2026-12-28', '2026-12-28'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-01-28', '2027-01-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 3x NF2026-12-02",
+   "expected": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-01-01', '2027-01-04'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-02-01', '2027-02-01'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-03-01', '2027-03-01']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-01-01', '2027-01-04'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-02-01', '2027-02-01'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-03-01', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 3x NF2026-12-30",
+   "expected": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-01-29', '2027-01-29'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-03-29', '2027-03-29']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-01-29', '2027-01-29'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-03-29', '2027-03-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 3x NF2026-12-31",
+   "expected": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-01-30', '2027-02-01'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-03-30', '2027-03-30']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-01-30', '2027-02-01'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-03-30', '2027-03-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 1.00 3x NF2027-01-01",
+   "expected": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-01-31', '2027-02-01'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-03-31', '2027-03-31']]",
+   "actual": "[[Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-01-31', '2027-02-01'], [Decimal('0.01'), Decimal('0.20'), Decimal('0.21'), '2027-02-28', '2027-03-01'], [Decimal('0.00'), Decimal('0.20'), Decimal('0.20'), '2027-03-31', '2027-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 1x NF2026-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2026-01-31', '2026-02-02']]",
+   "actual": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2026-01-31', '2026-02-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 1x NF2026-08-21",
+   "expected": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2026-09-20', '2026-09-21']]",
+   "actual": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2026-09-20', '2026-09-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 1x NF2026-10-29",
+   "expected": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2026-11-28', '2026-11-30']]",
+   "actual": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2026-11-28', '2026-11-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 1x NF2026-12-02",
+   "expected": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2027-01-01', '2027-01-04']]",
+   "actual": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2027-01-01', '2027-01-04']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 1x NF2026-12-30",
+   "expected": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2027-01-29', '2027-01-29']]",
+   "actual": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2027-01-29', '2027-01-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 1x NF2026-12-31",
+   "expected": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2027-01-30', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2027-01-30', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 1x NF2027-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2027-01-31', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('7407.40'), Decimal('7407.40'), '2027-01-31', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 2x NF2026-01-01",
+   "expected": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2026-01-31', '2026-02-02'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2026-02-28', '2026-03-02']]",
+   "actual": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2026-01-31', '2026-02-02'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2026-02-28', '2026-03-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 2x NF2026-08-21",
+   "expected": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2026-09-20', '2026-09-21'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2026-10-20', '2026-10-21']]",
+   "actual": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2026-09-20', '2026-09-21'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2026-10-20', '2026-10-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 2x NF2026-10-29",
+   "expected": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2026-11-28', '2026-11-30'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2026-12-28', '2026-12-28']]",
+   "actual": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2026-11-28', '2026-11-30'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2026-12-28', '2026-12-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 2x NF2026-12-02",
+   "expected": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2027-01-01', '2027-01-04'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2027-02-01', '2027-02-01']]",
+   "actual": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2027-01-01', '2027-01-04'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2027-02-01', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 2x NF2026-12-30",
+   "expected": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2027-01-29', '2027-01-29'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2027-01-29', '2027-01-29'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 2x NF2026-12-31",
+   "expected": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2027-01-30', '2027-02-01'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2027-01-30', '2027-02-01'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 2x NF2027-01-01",
+   "expected": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2027-01-31', '2027-02-01'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('133.33'), Decimal('3670.67'), Decimal('3804.00'), '2027-01-31', '2027-02-01'], [Decimal('67.26'), Decimal('3736.73'), Decimal('3803.99'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 3x NF2026-01-01",
+   "expected": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2026-01-31', '2026-02-02'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2026-02-28', '2026-03-02'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2026-03-31', '2026-03-31']]",
+   "actual": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2026-01-31', '2026-02-02'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2026-02-28', '2026-03-02'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2026-03-31', '2026-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 3x NF2026-08-21",
+   "expected": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2026-09-20', '2026-09-21'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2026-10-20', '2026-10-21'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2026-11-20', '2026-11-23']]",
+   "actual": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2026-09-20', '2026-09-21'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2026-10-20', '2026-10-21'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2026-11-20', '2026-11-23']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 3x NF2026-10-29",
+   "expected": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2026-11-28', '2026-11-30'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2026-12-28', '2026-12-28'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-01-28', '2027-01-28']]",
+   "actual": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2026-11-28', '2026-11-30'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2026-12-28', '2026-12-28'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-01-28', '2027-01-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 3x NF2026-12-02",
+   "expected": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2027-01-01', '2027-01-04'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2027-02-01', '2027-02-01'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-03-01', '2027-03-01']]",
+   "actual": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2027-01-01', '2027-01-04'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2027-02-01', '2027-02-01'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-03-01', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 3x NF2026-12-30",
+   "expected": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2027-01-29', '2027-01-29'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2027-02-28', '2027-03-01'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-03-29', '2027-03-29']]",
+   "actual": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2027-01-29', '2027-01-29'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2027-02-28', '2027-03-01'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-03-29', '2027-03-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 3x NF2026-12-31",
+   "expected": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2027-01-30', '2027-02-01'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2027-02-28', '2027-03-01'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-03-30', '2027-03-30']]",
+   "actual": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2027-01-30', '2027-02-01'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2027-02-28', '2027-03-01'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-03-30', '2027-03-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 12345.67 3x NF2027-01-01",
+   "expected": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2027-01-31', '2027-02-01'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2027-02-28', '2027-03-01'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-03-31', '2027-03-31']]",
+   "actual": "[[Decimal('133.33'), Decimal('2425.22'), Decimal('2558.55'), '2027-01-31', '2027-02-01'], [Decimal('89.68'), Decimal('2468.87'), Decimal('2558.55'), '2027-02-28', '2027-03-01'], [Decimal('45.24'), Decimal('2513.31'), Decimal('2558.55'), '2027-03-31', '2027-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 1x NF2026-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2026-01-31', '2026-02-02']]",
+   "actual": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2026-01-31', '2026-02-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 1x NF2026-08-21",
+   "expected": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2026-09-20', '2026-09-21']]",
+   "actual": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2026-09-20', '2026-09-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 1x NF2026-10-29",
+   "expected": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2026-11-28', '2026-11-30']]",
+   "actual": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2026-11-28', '2026-11-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 1x NF2026-12-02",
+   "expected": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2027-01-01', '2027-01-04']]",
+   "actual": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2027-01-01', '2027-01-04']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 1x NF2026-12-30",
+   "expected": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2027-01-29', '2027-01-29']]",
+   "actual": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2027-01-29', '2027-01-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 1x NF2026-12-31",
+   "expected": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2027-01-30', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2027-01-30', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 1x NF2027-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2027-01-31', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('59999.99'), Decimal('59999.99'), '2027-01-31', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 2x NF2026-01-01",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2026-01-31', '2026-02-02'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-02-28', '2026-03-02']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2026-01-31', '2026-02-02'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-02-28', '2026-03-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 2x NF2026-08-21",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2026-09-20', '2026-09-21'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-10-20', '2026-10-21']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2026-09-20', '2026-09-21'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-10-20', '2026-10-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 2x NF2026-10-29",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2026-11-28', '2026-11-30'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-12-28', '2026-12-28']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2026-11-28', '2026-11-30'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-12-28', '2026-12-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 2x NF2026-12-02",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2027-01-01', '2027-01-04'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-01', '2027-02-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2027-01-01', '2027-01-04'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-01', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 2x NF2026-12-30",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2027-01-29', '2027-01-29'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2027-01-29', '2027-01-29'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 2x NF2026-12-31",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2027-01-30', '2027-02-01'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2027-01-30', '2027-02-01'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 2x NF2027-01-01",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2027-01-31', '2027-02-01'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.40'), Decimal('30812.40'), '2027-01-31', '2027-02-01'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 3x NF2026-01-01",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-01-31', '2026-02-02'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-02-28', '2026-03-02'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2026-03-31', '2026-03-31']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-01-31', '2026-02-02'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-02-28', '2026-03-02'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2026-03-31', '2026-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 3x NF2026-08-21",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-09-20', '2026-09-21'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-10-20', '2026-10-21'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2026-11-20', '2026-11-23']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-09-20', '2026-09-21'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-10-20', '2026-10-21'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2026-11-20', '2026-11-23']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 3x NF2026-10-29",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-11-28', '2026-11-30'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-12-28', '2026-12-28'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-01-28', '2027-01-28']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-11-28', '2026-11-30'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-12-28', '2026-12-28'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-01-28', '2027-01-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 3x NF2026-12-02",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-01', '2027-01-04'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-01', '2027-02-01'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-03-01', '2027-03-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-01', '2027-01-04'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-01', '2027-02-01'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-03-01', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 3x NF2026-12-30",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-29', '2027-01-29'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-03-29', '2027-03-29']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-29', '2027-01-29'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-03-29', '2027-03-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 3x NF2026-12-31",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-30', '2027-02-01'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-03-30', '2027-03-30']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-30', '2027-02-01'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-03-30', '2027-03-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 99999.99 3x NF2027-01-01",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-31', '2027-02-01'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-03-31', '2027-03-31']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-31', '2027-02-01'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.83'), Decimal('20724.27'), '2027-03-31', '2027-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 1x NF2026-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2026-01-31', '2026-02-02']]",
+   "actual": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2026-01-31', '2026-02-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 1x NF2026-08-21",
+   "expected": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2026-09-20', '2026-09-21']]",
+   "actual": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2026-09-20', '2026-09-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 1x NF2026-10-29",
+   "expected": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2026-11-28', '2026-11-30']]",
+   "actual": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2026-11-28', '2026-11-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 1x NF2026-12-02",
+   "expected": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2027-01-01', '2027-01-04']]",
+   "actual": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2027-01-01', '2027-01-04']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 1x NF2026-12-30",
+   "expected": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2027-01-29', '2027-01-29']]",
+   "actual": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2027-01-29', '2027-01-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 1x NF2026-12-31",
+   "expected": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2027-01-30', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2027-01-30', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 1x NF2027-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2027-01-31', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('60000.00'), Decimal('60000.00'), '2027-01-31', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 2x NF2026-01-01",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2026-01-31', '2026-02-02'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-02-28', '2026-03-02']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2026-01-31', '2026-02-02'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-02-28', '2026-03-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 2x NF2026-08-21",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2026-09-20', '2026-09-21'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-10-20', '2026-10-21']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2026-09-20', '2026-09-21'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-10-20', '2026-10-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 2x NF2026-10-29",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2026-11-28', '2026-11-30'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-12-28', '2026-12-28']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2026-11-28', '2026-11-30'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2026-12-28', '2026-12-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 2x NF2026-12-02",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2027-01-01', '2027-01-04'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-01', '2027-02-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2027-01-01', '2027-01-04'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-01', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 2x NF2026-12-30",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2027-01-29', '2027-01-29'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2027-01-29', '2027-01-29'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 2x NF2026-12-31",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2027-01-30', '2027-02-01'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2027-01-30', '2027-02-01'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 2x NF2027-01-01",
+   "expected": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2027-01-31', '2027-02-01'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('29732.41'), Decimal('30812.41'), '2027-01-31', '2027-02-01'], [Decimal('544.82'), Decimal('30267.59'), Decimal('30812.41'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 3x NF2026-01-01",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-01-31', '2026-02-02'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-02-28', '2026-03-02'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2026-03-31', '2026-03-31']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-01-31', '2026-02-02'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-02-28', '2026-03-02'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2026-03-31', '2026-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 3x NF2026-08-21",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-09-20', '2026-09-21'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-10-20', '2026-10-21'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2026-11-20', '2026-11-23']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-09-20', '2026-09-21'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-10-20', '2026-10-21'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2026-11-20', '2026-11-23']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 3x NF2026-10-29",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-11-28', '2026-11-30'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-12-28', '2026-12-28'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-01-28', '2027-01-28']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2026-11-28', '2026-11-30'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2026-12-28', '2026-12-28'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-01-28', '2027-01-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 3x NF2026-12-02",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-01', '2027-01-04'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-01', '2027-02-01'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-03-01', '2027-03-01']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-01', '2027-01-04'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-01', '2027-02-01'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-03-01', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 3x NF2026-12-30",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-29', '2027-01-29'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-03-29', '2027-03-29']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-29', '2027-01-29'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-03-29', '2027-03-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 3x NF2026-12-31",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-30', '2027-02-01'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-03-30', '2027-03-30']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-30', '2027-02-01'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-03-30', '2027-03-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 100000.00 3x NF2027-01-01",
+   "expected": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-31', '2027-02-01'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-03-31', '2027-03-31']]",
+   "actual": "[[Decimal('1080.00'), Decimal('19644.28'), Decimal('20724.28'), '2027-01-31', '2027-02-01'], [Decimal('726.40'), Decimal('19997.88'), Decimal('20724.28'), '2027-02-28', '2027-03-01'], [Decimal('366.44'), Decimal('20357.84'), Decimal('20724.28'), '2027-03-31', '2027-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 1x NF2026-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2026-01-31', '2026-02-02']]",
+   "actual": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2026-01-31', '2026-02-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 1x NF2026-08-21",
+   "expected": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2026-09-20', '2026-09-21']]",
+   "actual": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2026-09-20', '2026-09-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 1x NF2026-10-29",
+   "expected": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2026-11-28', '2026-11-30']]",
+   "actual": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2026-11-28', '2026-11-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 1x NF2026-12-02",
+   "expected": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2027-01-01', '2027-01-04']]",
+   "actual": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2027-01-01', '2027-01-04']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 1x NF2026-12-30",
+   "expected": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2027-01-29', '2027-01-29']]",
+   "actual": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2027-01-29', '2027-01-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 1x NF2026-12-31",
+   "expected": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2027-01-30', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2027-01-30', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 1x NF2027-01-01",
+   "expected": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2027-01-31', '2027-02-01']]",
+   "actual": "[[Decimal('0.00'), Decimal('100000.00'), Decimal('100000.00'), '2027-01-31', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 2x NF2026-01-01",
+   "expected": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2026-01-31', '2026-02-02'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2026-02-28', '2026-03-02']]",
+   "actual": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2026-01-31', '2026-02-02'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2026-02-28', '2026-03-02']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 2x NF2026-08-21",
+   "expected": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2026-09-20', '2026-09-21'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2026-10-20', '2026-10-21']]",
+   "actual": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2026-09-20', '2026-09-21'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2026-10-20', '2026-10-21']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 2x NF2026-10-29",
+   "expected": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2026-11-28', '2026-11-30'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2026-12-28', '2026-12-28']]",
+   "actual": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2026-11-28', '2026-11-30'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2026-12-28', '2026-12-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 2x NF2026-12-02",
+   "expected": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2027-01-01', '2027-01-04'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2027-02-01', '2027-02-01']]",
+   "actual": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2027-01-01', '2027-01-04'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2027-02-01', '2027-02-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 2x NF2026-12-30",
+   "expected": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2027-01-29', '2027-01-29'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2027-01-29', '2027-01-29'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 2x NF2026-12-31",
+   "expected": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2027-01-30', '2027-02-01'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2027-01-30', '2027-02-01'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 2x NF2027-01-01",
+   "expected": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2027-01-31', '2027-02-01'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2027-02-28', '2027-03-01']]",
+   "actual": "[[Decimal('1800.00'), Decimal('49554.01'), Decimal('51354.01'), '2027-01-31', '2027-02-01'], [Decimal('908.03'), Decimal('50445.99'), Decimal('51354.02'), '2027-02-28', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 3x NF2026-01-01",
+   "expected": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2026-01-31', '2026-02-02'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2026-02-28', '2026-03-02'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2026-03-31', '2026-03-31']]",
+   "actual": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2026-01-31', '2026-02-02'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2026-02-28', '2026-03-02'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2026-03-31', '2026-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 3x NF2026-08-21",
+   "expected": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2026-09-20', '2026-09-21'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2026-10-20', '2026-10-21'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2026-11-20', '2026-11-23']]",
+   "actual": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2026-09-20', '2026-09-21'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2026-10-20', '2026-10-21'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2026-11-20', '2026-11-23']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 3x NF2026-10-29",
+   "expected": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2026-11-28', '2026-11-30'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2026-12-28', '2026-12-28'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-01-28', '2027-01-28']]",
+   "actual": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2026-11-28', '2026-11-30'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2026-12-28', '2026-12-28'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-01-28', '2027-01-28']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 3x NF2026-12-02",
+   "expected": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2027-01-01', '2027-01-04'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2027-02-01', '2027-02-01'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-03-01', '2027-03-01']]",
+   "actual": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2027-01-01', '2027-01-04'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2027-02-01', '2027-02-01'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-03-01', '2027-03-01']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 3x NF2026-12-30",
+   "expected": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2027-01-29', '2027-01-29'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2027-02-28', '2027-03-01'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-03-29', '2027-03-29']]",
+   "actual": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2027-01-29', '2027-01-29'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2027-02-28', '2027-03-01'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-03-29', '2027-03-29']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 3x NF2026-12-31",
+   "expected": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2027-01-30', '2027-02-01'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2027-02-28', '2027-03-01'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-03-30', '2027-03-30']]",
+   "actual": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2027-01-30', '2027-02-01'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2027-02-28', '2027-03-01'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-03-30', '2027-03-30']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "SQL == engine 166666.66 3x NF2027-01-01",
+   "expected": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2027-01-31', '2027-02-01'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2027-02-28', '2027-03-01'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-03-31', '2027-03-31']]",
+   "actual": "[[Decimal('1800.00'), Decimal('32740.47'), Decimal('34540.47'), '2027-01-31', '2027-02-01'], [Decimal('1210.67'), Decimal('33329.80'), Decimal('34540.47'), '2027-02-28', '2027-03-01'], [Decimal('610.74'), Decimal('33929.73'), Decimal('34540.47'), '2027-03-31', '2027-03-31']]",
+   "mode": "SQL_VS_ENGINE",
+   "status": "PASS"
+  },
+  {
+   "test": "2028 due blocks whole plan",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "client schedule rejected",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "client rate rejected",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "automatic generation blocked",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "4 installments rejected",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "table amount 'NaN'",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "table amount '-1'",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "table amount '1.001'",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "table amount 100",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "missing NF date",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "no session",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "anon role",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "non-staff denied by captured RPC",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "no tenant",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "foreign customer (A actor, B customer)",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "tenant smuggling rejected",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "synthetic exposure = historical open balance",
+   "expected": "2750.00",
+   "actual": "2750.00",
+   "mode": "LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "financed total incl. interest +0.01 over limit blocked",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "exact threshold accepted",
+   "expected": "(True, False)",
+   "actual": "(True, False)",
+   "mode": "LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "NF 2026-10-29 3x due dates",
+   "expected": "['2026-11-30', '2026-12-28', '2027-01-28']",
+   "actual": "['2026-11-30', '2026-12-28', '2027-01-28']",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "nominal dates kept",
+   "expected": "['2026-11-28', '2026-12-28', '2027-01-28']",
+   "actual": "['2026-11-28', '2026-12-28', '2027-01-28']",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "writer rows = Price payments, interest_amount 0",
+   "expected": "1:2026-11-30:20724.28:0.00:20724.28,2:2026-12-28:20724.28:0.00:20724.28,3:2027-01-28:20724.28:0.00:20724.28",
+   "actual": "1:2026-11-30:20724.28:0.00:20724.28,2:2026-12-28:20724.28:0.00:20724.28,3:2027-01-28:20724.28:0.00:20724.28",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "title total = financed total",
+   "expected": "62172.84",
+   "actual": "62172.84",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "cents sum = total",
+   "expected": "t",
+   "actual": "t",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "context consumed",
+   "expected": "0",
+   "actual": "0",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "snapshot pins calendar version+hash",
+   "expected": "('paracatu-mg-2026-2027-v2', 'a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269')",
+   "actual": "('paracatu-mg-2026-2027-v2', 'a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269')",
+   "mode": "SNAPSHOT",
+   "status": "PASS"
+  },
+  {
+   "test": "snapshot breakdown",
+   "expected": "(['1080.00', '726.40', '366.44'], '60000.00', '1.800')",
+   "actual": "(['1080.00', '726.40', '366.44'], '60000.00', '1.800')",
+   "mode": "SNAPSHOT",
+   "status": "PASS"
+  },
+  {
+   "test": "snapshot UPDATE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SNAPSHOT",
+   "status": "PASS"
+  },
+  {
+   "test": "snapshot DELETE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SNAPSHOT",
+   "status": "PASS"
+  },
+  {
+   "test": "receipt UPDATE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SNAPSHOT",
+   "status": "PASS"
+  },
+  {
+   "test": "receipt DELETE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SNAPSHOT",
+   "status": "PASS"
+  },
+  {
+   "test": "receipt TRUNCATE immutable",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SNAPSHOT",
+   "status": "PASS"
+  },
+  {
+   "test": "d51_5: AR of tenant A with tenant B customer",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "D51_5",
+   "status": "PASS"
+  },
+  {
+   "test": "d51_5: installment re-pointed to foreign tenant",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "D51_5",
+   "status": "PASS"
+  },
+  {
+   "test": "d51_5: Price title/installments tenant-consistent",
+   "expected": "A|3",
+   "actual": "A|3",
+   "mode": "D51_5",
+   "status": "PASS"
+  },
+  {
+   "test": "captured title snapshot guard",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SNAPSHOT",
+   "status": "PASS"
+  },
+  {
+   "test": "replay same key/payload returns same title, no writes",
+   "expected": "('1b5e137f-9202-4824-ad99-9cf46d1efccd', True, True)",
+   "actual": "('1b5e137f-9202-4824-ad99-9cf46d1efccd', True, True)",
+   "mode": "IDEMPOTENCY",
+   "status": "PASS"
+  },
+  {
+   "test": "same key different payload PT409",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "IDEMPOTENCY",
+   "status": "PASS"
+  },
+  {
+   "test": "concurrent same key: both ACK, one title",
+   "expected": "(2, 1, '1')",
+   "actual": "(2, 1, '1')",
+   "mode": "IDEMPOTENCY",
+   "status": "PASS"
+  },
+  {
+   "test": "integral rollback after success",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "ROLLBACK",
+   "status": "PASS"
+  },
+  {
+   "test": "NF 2026-12-02 1x -> 2027-01-04",
+   "expected": "['2027-01-04']",
+   "actual": "['2027-01-04']",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "NF 2026-12-31 3x month-end",
+   "expected": "(['2027-01-30', '2027-02-28', '2027-03-30'], ['2027-02-01', '2027-03-01', '2027-03-30'])",
+   "actual": "(['2027-01-30', '2027-02-28', '2027-03-30'], ['2027-02-01', '2027-03-01', '2027-03-30'])",
+   "mode": "COMPONENT",
+   "status": "PASS"
+  },
+  {
+   "test": "tenant B title owned by B",
+   "expected": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+   "actual": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "B actor cannot use A customer",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "AUTH",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 999999999999.99 1x",
+   "expected": "OK",
+   "actual": "OK",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 999999999999.99 1x fits numeric(14,2)",
+   "expected": "t",
+   "actual": "t",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 999999999999.99 3x",
+   "expected": "OK",
+   "actual": "OK",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 999999999999.99 3x fits numeric(14,2)",
+   "expected": "t",
+   "actual": "t",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 1000000000000.00 1x",
+   "expected": "TABLE_AMOUNT_INVALID",
+   "actual": "TABLE_AMOUNT_INVALID",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 1000000000000.00 3x",
+   "expected": "TABLE_AMOUNT_INVALID",
+   "actual": "TABLE_AMOUNT_INVALID",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 1e20 1x",
+   "expected": "TABLE_AMOUNT_INVALID",
+   "actual": "TABLE_AMOUNT_INVALID",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 1e20 3x",
+   "expected": "TABLE_AMOUNT_INVALID",
+   "actual": "TABLE_AMOUNT_INVALID",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 99999999999999999999999999.99 1x",
+   "expected": "TABLE_AMOUNT_INVALID",
+   "actual": "TABLE_AMOUNT_INVALID",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "compute edge 99999999999999999999999999.99 3x",
+   "expected": "TABLE_AMOUNT_INVALID",
+   "actual": "TABLE_AMOUNT_INVALID",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "RPC at ceiling: limit blocks before any write (no overflow)",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "RPC above ceiling rejected",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "NUMERIC_EDGE",
+   "status": "PASS"
+  },
+  {
+   "test": "race setup: each request fits alone, sum exceeds",
+   "expected": "(True, False)",
+   "actual": "(True, False)",
+   "mode": "DEBTOR_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "second actor waits on first via pg_blocking_pids",
+   "expected": "{8589}",
+   "actual": "{8589}",
+   "mode": "DEBTOR_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "exactly 1 success + 1 LIMIT refusal (different actors/keys)",
+   "expected": "(True, True, True)",
+   "actual": "(True, True, True)",
+   "mode": "DEBTOR_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "only one new title/receipt",
+   "expected": "(1, 1)",
+   "actual": "(1, 1)",
+   "mode": "DEBTOR_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "fresh exposure after commit includes winner",
+   "expected": "86744.56",
+   "actual": "86744.56",
+   "mode": "DEBTOR_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "other debtor proceeds while A|C held",
+   "expected": "0",
+   "actual": "0",
+   "mode": "DEBTOR_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "revocation case: waiter blocked by holder",
+   "expected": "{8612}",
+   "actual": "{8612}",
+   "mode": "REVOCATION_WAIT",
+   "status": "PASS"
+  },
+  {
+   "test": "revoked during wait -> denied after lock, state unchanged",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVOCATION_WAIT",
+   "status": "PASS"
+  },
+  {
+   "test": "legitimate replay idempotent before revocation",
+   "expected": "('f6ef14ab-2c71-4ca6-927c-1b791972c4ae', True)",
+   "actual": "('f6ef14ab-2c71-4ca6-927c-1b791972c4ae', True)",
+   "mode": "REPLAY_REVOCATION",
+   "status": "PASS"
+  },
+  {
+   "test": "replay waiter blocked on same KEY lock",
+   "expected": "{8632}",
+   "actual": "{8632}",
+   "mode": "REPLAY_REVOCATION",
+   "status": "PASS"
+  },
+  {
+   "test": "revoked replay denied, no result exposed, no mutation",
+   "expected": "(True, False, True)",
+   "actual": "(True, False, True)",
+   "mode": "REPLAY_REVOCATION",
+   "status": "PASS"
+  },
+  {
+   "test": "replay idempotent again after re-grant, no writes",
+   "expected": "('f6ef14ab-2c71-4ca6-927c-1b791972c4ae', True, True)",
+   "actual": "('f6ef14ab-2c71-4ca6-927c-1b791972c4ae', True, True)",
+   "mode": "REPLAY_REVOCATION",
+   "status": "PASS"
+  },
+  {
+   "test": "REPEATABLE READ refused (stale snapshot), state unchanged",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "ISOLATION",
+   "status": "PASS"
+  },
+  {
+   "test": "SERIALIZABLE refused (stale snapshot), state unchanged",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "ISOLATION",
+   "status": "PASS"
+  },
+  {
+   "test": "ORIGINAL tg_partner_orders_credit_guard installed (md5) + captured trigger DDL",
+   "expected": "b24a3c30910832e8b14456d912a67589",
+   "actual": "b24a3c30910832e8b14456d912a67589",
+   "mode": "B2B_GUARD",
+   "status": "PASS"
+  },
+  {
+   "test": "canonical: open net of payment events 10000-1000",
+   "expected": "9000.00",
+   "actual": "9000.0",
+   "mode": "EXPOSURE_CANON",
+   "status": "PASS"
+  },
+  {
+   "test": "canonical: committed/pending exclude generated, linked, canceled, draft, other partner",
+   "expected": "(Decimal('2000.00'), Decimal('1500.00'), Decimal('12500.00'))",
+   "actual": "(Decimal('2000.0'), Decimal('1500.0'), Decimal('12500.0'))",
+   "mode": "EXPOSURE_CANON",
+   "status": "PASS"
+  },
+  {
+   "test": "candidate exposure = canonical (no Price titles yet)",
+   "expected": "12500.00",
+   "actual": "12500.00",
+   "mode": "EXPOSURE_CANON",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B->Price: Price waits on guard-held b2b_credit",
+   "expected": "{8708}",
+   "actual": "{8708}",
+   "mode": "EXPOSURE_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B order accepted by original guard (62500 <= limit)",
+   "expected": "pendente|",
+   "actual": "pendente|",
+   "mode": "EXPOSURE_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B->Price: 12500+50000+40000 refused, no write",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "EXPOSURE_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "Price exact remaining 37500 accepted (limit 100000)",
+   "expected": "(True, '37500.00')",
+   "actual": "(True, '37500.00')",
+   "mode": "EXPOSURE_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "Price title carries server-derived partner_id",
+   "expected": "a0000000-0000-4000-8000-0000000000a2",
+   "actual": "a0000000-0000-4000-8000-0000000000a2",
+   "mode": "PARTNER_CONTEXT",
+   "status": "PASS"
+  },
+  {
+   "test": "context consumed exactly once",
+   "expected": "0",
+   "actual": "0",
+   "mode": "PARTNER_CONTEXT",
+   "status": "PASS"
+  },
+  {
+   "test": "canonical now SEES Price title (no harness patch)",
+   "expected": "100000.00",
+   "actual": "100000.0",
+   "mode": "EXPOSURE_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "candidate = canonical, no double count",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "EXPOSURE_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "Price +0.01 over limit blocked",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "EXPOSURE_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B +0.01 after Price blocked by ORIGINAL guard",
+   "expected": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "actual": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "mode": "EXPOSURE_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "payload partner_id rejected (never trusted)",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "PARTNER_CONTEXT",
+   "status": "PASS"
+  },
+  {
+   "test": "stale other-txid context inert; replay keeps one title with validated partner",
+   "expected": "('49c44d2d-0519-41d9-b513-4905ae0e1fbb', True, 'a0000000-0000-4000-8000-0000000000e2')",
+   "actual": "('49c44d2d-0519-41d9-b513-4905ae0e1fbb', True, 'a0000000-0000-4000-8000-0000000000e2')",
+   "mode": "PARTNER_CONTEXT",
+   "status": "PASS"
+  },
+  {
+   "test": "empty partner exposure 0",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "EXPOSURE_EMPTY",
+   "status": "PASS"
+  },
+  {
+   "test": "Price->B2B: original guard waits on Price b2b_credit",
+   "expected": "{8763}",
+   "actual": "{8763}",
+   "mode": "EXPOSURE_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "Price->B2B: after commit 60000+40000.01 blocked by guard",
+   "expected": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "actual": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "mode": "EXPOSURE_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B exact remaining 39940 (60+60000 Price) accepted by guard",
+   "expected": "pendente|",
+   "actual": "pendente|",
+   "mode": "EXPOSURE_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B +0.01 blocked by guard",
+   "expected": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "actual": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "mode": "EXPOSURE_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "overdue counted",
+   "expected": "(True, Decimal('500.00'))",
+   "actual": "(True, Decimal('500.0'))",
+   "mode": "OVERDUE",
+   "status": "PASS"
+  },
+  {
+   "test": "Price blocked when overdue and block_if_overdue",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "OVERDUE",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B blocked by guard for overdue",
+   "expected": "aguardando_aprovacao_credito|inadimplencia",
+   "actual": "aguardando_aprovacao_credito|inadimplencia",
+   "mode": "OVERDUE",
+   "status": "PASS"
+  },
+  {
+   "test": "overdue without block: Price allowed, overdue still counted",
+   "expected": "560.00",
+   "actual": "560.00",
+   "mode": "OVERDUE",
+   "status": "PASS"
+  },
+  {
+   "test": "Price denied when partner settings inactive",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SETTINGS_INACTIVE",
+   "status": "PASS"
+  },
+  {
+   "test": "observed: original guard ignores settings.active",
+   "expected": "pendente|",
+   "actual": "pendente|",
+   "mode": "SETTINGS_INACTIVE",
+   "status": "PASS"
+  },
+  {
+   "test": "gate: no partner link",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "EXPOSURE_GATES",
+   "status": "PASS"
+  },
+  {
+   "test": "gate: two active partners",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "EXPOSURE_GATES",
+   "status": "PASS"
+  },
+  {
+   "test": "gate: inactive partner",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "EXPOSURE_GATES",
+   "status": "PASS"
+  },
+  {
+   "test": "gate: partner limit 50000 vs policy 100000",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "EXPOSURE_GATES",
+   "status": "PASS"
+  },
+  {
+   "test": "gate: partner without settings",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "EXPOSURE_GATES",
+   "status": "PASS"
+  },
+  {
+   "test": "tenant B actor cannot reach A debtor CX",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "EXPOSURE_GATES",
+   "status": "PASS"
+  },
+  {
+   "test": "other partner exposure unaffected",
+   "expected": "7777.00",
+   "actual": "7777.0",
+   "mode": "EXPOSURE_CANON",
+   "status": "PASS"
+  },
+  {
+   "test": "payment settles installment balance 0",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PAYMENT",
+   "status": "PASS"
+  },
+  {
+   "test": "overpayment beyond Price payment denied",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "PAYMENT",
+   "status": "PASS"
+  },
+  {
+   "test": "reversal restores Price payment balance",
+   "expected": "20724.28",
+   "actual": "20724.28",
+   "mode": "REVERSAL",
+   "status": "PASS"
+  },
+  {
+   "test": "original_amount unchanged after payment/reversal",
+   "expected": "20724.28",
+   "actual": "20724.28",
+   "mode": "REVERSAL",
+   "status": "PASS"
+  },
+  {
+   "test": "snapshots unchanged after payment/reversal",
+   "expected": "[{\"rows\": [{\"amount\": 60.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 60.00, \"created_at\": \"2026-10-29T19:23:31.486684+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000d4\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"06d366b8-495e-4d7f-a642-15ad10e0ee4e\", \"financed_total\": 60.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 898, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 500.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 20724.28, \"balance\": 40355.72, \"due_date\": \"2026-11-30\", \"interest\": 1080.00, \"principal\": 19644.28, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}, {\"amount\": 20724.28, \"balance\": 20357.84, \"due_date\": \"2026-12-28\", \"interest\": 726.40, \"principal\": 19997.88, \"nominal_due\": \"2026-12-28\", \"installment_number\": 2}, {\"amount\": 20724.28, \"balance\": 0.00, \"due_date\": \"2027-01-28\", \"interest\": 366.44, \"principal\": 20357.84, \"nominal_due\": \"2027-01-28\", \"installment_number\": 3}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 60000.00, \"created_at\": \"2026-10-29T19:23:26.835893+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"1b5e137f-9202-4824-ad99-9cf46d1efccd\", \"financed_total\": 62172.84, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 842, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 37827.16, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 3, \"monthly_rate_percent\": 1.800}, {\"rows\": [{\"amount\": 207.24, \"balance\": 403.56, \"due_date\": \"2027-02-01\", \"interest\": 10.80, \"principal\": 196.44, \"nominal_due\": \"2027-01-30\", \"installment_number\": 1}, {\"amount\": 207.24, \"balance\": 203.58, \"due_date\": \"2027-03-01\", \"interest\": 7.26, \"principal\": 199.98, \"nominal_due\": \"2027-02-28\", \"installment_number\": 2}, {\"amount\": 207.24, \"balance\": 0.00, \"due_date\": \"2027-03-30\", \"interest\": 3.66, \"principal\": 203.58, \"nominal_due\": \"2027-03-30\", \"installment_number\": 3}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 600.00, \"created_at\": \"2026-10-29T19:23:27.964901+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 1000.00, \"nf_issue_date\": \"2026-12-31\", \"receivable_id\": \"1f536901-fe87-4a7f-b2b7-8f29aece45bb\", \"financed_total\": 621.72, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 853, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 66122.84, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 3, \"monthly_rate_percent\": 1.800}, {\"rows\": [{\"amount\": 60000.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60000.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"99999999-9999-4999-8999-999999999992\", \"principal\": 60000.00, \"created_at\": \"2026-10-29T19:23:30.839073+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000d1\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"2916f82e-f28b-4a37-a480-f8c5b9ffc803\", \"financed_total\": 60000.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 886, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 0.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 20000.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 20000.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 20000.00, \"created_at\": \"2026-10-29T19:23:28.553801+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 33333.33, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"3078b8c9-8535-41ae-8f90-66649a6c37ec\", \"financed_total\": 20000.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 857, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 70000.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 60.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"66666666-6666-4666-8666-666666666666\", \"principal\": 60.00, \"created_at\": \"2026-10-29T19:23:28.782692+00:00\", \"customer_id\": \"77777777-7777-4777-8777-777777777777\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"3727230a-6b8b-4bbe-ab34-6b228873afcd\", \"financed_total\": 60.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 858, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 616.25, \"organization_id\": \"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 60000.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60000.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 60000.00, \"created_at\": \"2026-10-29T19:23:30.959481+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000d2\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"37b5006a-04e0-4013-96c6-14a73097d103\", \"financed_total\": 60000.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 888, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 60.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 60.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 60.00, \"created_at\": \"2026-10-29T19:23:30.669509+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000d2\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"49c44d2d-0519-41d9-b513-4905ae0e1fbb\", \"financed_total\": 60.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 883, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 0.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 308.12, \"balance\": 302.68, \"due_date\": \"2026-11-30\", \"interest\": 10.80, \"principal\": 297.32, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}, {\"amount\": 308.13, \"balance\": 0.00, \"due_date\": \"2026-12-28\", \"interest\": 5.45, \"principal\": 302.68, \"nominal_due\": \"2026-12-28\", \"installment_number\": 2}], \"actor_id\": \"66666666-6666-4666-8666-666666666666\", \"principal\": 600.00, \"created_at\": \"2026-10-29T19:23:28.012088+00:00\", \"customer_id\": \"77777777-7777-4777-8777-777777777777\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 1000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"65226923-3b53-4ed7-aa09-9138a1cf45de\", \"financed_total\": 616.25, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 854, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 0.00, \"organization_id\": \"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 2, \"monthly_rate_percent\": 1.800}, {\"rows\": [{\"amount\": 37500.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 37500.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 37500.00, \"created_at\": \"2026-10-29T19:23:30.274741+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000c1\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 62500.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"73bca76e-b6a4-4b11-b1b6-62bdc08c401c\", \"financed_total\": 37500.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 880, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 62500.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 600.00, \"balance\": 0.00, \"due_date\": \"2027-01-04\", \"interest\": 0.00, \"principal\": 600.00, \"nominal_due\": \"2027-01-01\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 600.00, \"created_at\": \"2026-10-29T19:23:27.908208+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 1000.00, \"nf_issue_date\": \"2026-12-02\", \"receivable_id\": \"bd37106f-7bd5-41b7-ac05-24394b601df1\", \"financed_total\": 600.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 852, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 65522.84, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 600.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 600.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 600.00, \"created_at\": \"2026-10-29T19:23:27.747671+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 1000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"c66c3d0c-a461-43a0-be05-98bcaf2195ff\", \"financed_total\": 600.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 850, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 64922.84, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 60.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"99999999-9999-4999-8999-999999999994\", \"principal\": 60.00, \"created_at\": \"2026-10-29T19:23:29.02779+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"f6ef14ab-2c71-4ca6-927c-1b791972c4ae\", \"financed_total\": 60.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 860, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 86744.56, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}]",
+   "actual": "[{\"rows\": [{\"amount\": 60.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 60.00, \"created_at\": \"2026-10-29T19:23:31.486684+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000d4\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"06d366b8-495e-4d7f-a642-15ad10e0ee4e\", \"financed_total\": 60.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 898, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 500.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 20724.28, \"balance\": 40355.72, \"due_date\": \"2026-11-30\", \"interest\": 1080.00, \"principal\": 19644.28, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}, {\"amount\": 20724.28, \"balance\": 20357.84, \"due_date\": \"2026-12-28\", \"interest\": 726.40, \"principal\": 19997.88, \"nominal_due\": \"2026-12-28\", \"installment_number\": 2}, {\"amount\": 20724.28, \"balance\": 0.00, \"due_date\": \"2027-01-28\", \"interest\": 366.44, \"principal\": 20357.84, \"nominal_due\": \"2027-01-28\", \"installment_number\": 3}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 60000.00, \"created_at\": \"2026-10-29T19:23:26.835893+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"1b5e137f-9202-4824-ad99-9cf46d1efccd\", \"financed_total\": 62172.84, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 842, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 37827.16, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 3, \"monthly_rate_percent\": 1.800}, {\"rows\": [{\"amount\": 207.24, \"balance\": 403.56, \"due_date\": \"2027-02-01\", \"interest\": 10.80, \"principal\": 196.44, \"nominal_due\": \"2027-01-30\", \"installment_number\": 1}, {\"amount\": 207.24, \"balance\": 203.58, \"due_date\": \"2027-03-01\", \"interest\": 7.26, \"principal\": 199.98, \"nominal_due\": \"2027-02-28\", \"installment_number\": 2}, {\"amount\": 207.24, \"balance\": 0.00, \"due_date\": \"2027-03-30\", \"interest\": 3.66, \"principal\": 203.58, \"nominal_due\": \"2027-03-30\", \"installment_number\": 3}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 600.00, \"created_at\": \"2026-10-29T19:23:27.964901+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 1000.00, \"nf_issue_date\": \"2026-12-31\", \"receivable_id\": \"1f536901-fe87-4a7f-b2b7-8f29aece45bb\", \"financed_total\": 621.72, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 853, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 66122.84, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 3, \"monthly_rate_percent\": 1.800}, {\"rows\": [{\"amount\": 60000.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60000.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"99999999-9999-4999-8999-999999999992\", \"principal\": 60000.00, \"created_at\": \"2026-10-29T19:23:30.839073+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000d1\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"2916f82e-f28b-4a37-a480-f8c5b9ffc803\", \"financed_total\": 60000.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 886, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 0.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 20000.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 20000.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 20000.00, \"created_at\": \"2026-10-29T19:23:28.553801+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 33333.33, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"3078b8c9-8535-41ae-8f90-66649a6c37ec\", \"financed_total\": 20000.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 857, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 70000.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 60.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"66666666-6666-4666-8666-666666666666\", \"principal\": 60.00, \"created_at\": \"2026-10-29T19:23:28.782692+00:00\", \"customer_id\": \"77777777-7777-4777-8777-777777777777\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"3727230a-6b8b-4bbe-ab34-6b228873afcd\", \"financed_total\": 60.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 858, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 616.25, \"organization_id\": \"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 60000.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60000.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 60000.00, \"created_at\": \"2026-10-29T19:23:30.959481+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000d2\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"37b5006a-04e0-4013-96c6-14a73097d103\", \"financed_total\": 60000.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 888, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 60.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 60.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 60.00, \"created_at\": \"2026-10-29T19:23:30.669509+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000d2\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"49c44d2d-0519-41d9-b513-4905ae0e1fbb\", \"financed_total\": 60.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 883, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 0.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 308.12, \"balance\": 302.68, \"due_date\": \"2026-11-30\", \"interest\": 10.80, \"principal\": 297.32, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}, {\"amount\": 308.13, \"balance\": 0.00, \"due_date\": \"2026-12-28\", \"interest\": 5.45, \"principal\": 302.68, \"nominal_due\": \"2026-12-28\", \"installment_number\": 2}], \"actor_id\": \"66666666-6666-4666-8666-666666666666\", \"principal\": 600.00, \"created_at\": \"2026-10-29T19:23:28.012088+00:00\", \"customer_id\": \"77777777-7777-4777-8777-777777777777\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 1000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"65226923-3b53-4ed7-aa09-9138a1cf45de\", \"financed_total\": 616.25, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 854, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 0.00, \"organization_id\": \"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 2, \"monthly_rate_percent\": 1.800}, {\"rows\": [{\"amount\": 37500.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 37500.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 37500.00, \"created_at\": \"2026-10-29T19:23:30.274741+00:00\", \"customer_id\": \"c0000000-0000-4000-8000-0000000000c1\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 62500.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"73bca76e-b6a4-4b11-b1b6-62bdc08c401c\", \"financed_total\": 37500.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 880, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 62500.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 600.00, \"balance\": 0.00, \"due_date\": \"2027-01-04\", \"interest\": 0.00, \"principal\": 600.00, \"nominal_due\": \"2027-01-01\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 600.00, \"created_at\": \"2026-10-29T19:23:27.908208+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 1000.00, \"nf_issue_date\": \"2026-12-02\", \"receivable_id\": \"bd37106f-7bd5-41b7-ac05-24394b601df1\", \"financed_total\": 600.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 852, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 65522.84, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 600.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 600.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"11111111-1111-4111-8111-111111111111\", \"principal\": 600.00, \"created_at\": \"2026-10-29T19:23:27.747671+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 1000.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"c66c3d0c-a461-43a0-be05-98bcaf2195ff\", \"financed_total\": 600.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 850, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 64922.84, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}, {\"rows\": [{\"amount\": 60.00, \"balance\": 0.00, \"due_date\": \"2026-11-30\", \"interest\": 0.00, \"principal\": 60.00, \"nominal_due\": \"2026-11-28\", \"installment_number\": 1}], \"actor_id\": \"99999999-9999-4999-8999-999999999994\", \"principal\": 60.00, \"created_at\": \"2026-10-29T19:23:29.02779+00:00\", \"customer_id\": \"33333333-3333-4333-8333-333333333333\", \"credit_limit\": 100000.00, \"nf_reference\": \"88888888-8888-4888-8888-888888888888\", \"table_amount\": 100.00, \"nf_issue_date\": \"2026-10-29\", \"receivable_id\": \"f6ef14ab-2c71-4ca6-927c-1b791972c4ae\", \"financed_total\": 60.00, \"policy_version\": \"arbio-fsf-active-candidate\", \"transaction_id\": 860, \"calendar_sha256\": \"a1dd49dab91e309b101ddaa79cdee762868cfdbc730be88566b8646973b20269\", \"exposure_before\": 86744.56, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"calendar_version\": \"paracatu-mg-2026-2027-v2\", \"discount_percent\": 40.00, \"installment_count\": 1, \"monthly_rate_percent\": 0.000}]",
+   "mode": "REVERSAL",
+   "status": "PASS"
+  },
+  {
+   "test": "historical 10300/7550 title untouched",
+   "expected": "[{\"id\": \"2877ca05-f63d-4fb1-9a02-3468d489dcdc\", \"status\": \"PARTIAL\", \"paid_at\": null, \"due_date\": \"2026-11-28\", \"created_at\": \"2026-10-29T19:23:21.705137+00:00\", \"net_amount\": 10300.00, \"receivable_id\": \"00000000-0000-4000-8000-000000020910\", \"penalty_amount\": 0.00, \"discount_amount\": 0.00, \"interest_amount\": 0.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"original_amount\": 10300.00, \"received_amount\": 7550.00, \"installment_number\": 1}]",
+   "actual": "[{\"id\": \"2877ca05-f63d-4fb1-9a02-3468d489dcdc\", \"status\": \"PARTIAL\", \"paid_at\": null, \"due_date\": \"2026-11-28\", \"created_at\": \"2026-10-29T19:23:21.705137+00:00\", \"net_amount\": 10300.00, \"receivable_id\": \"00000000-0000-4000-8000-000000020910\", \"penalty_amount\": 0.00, \"discount_amount\": 0.00, \"interest_amount\": 0.00, \"organization_id\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\", \"original_amount\": 10300.00, \"received_amount\": 7550.00, \"installment_number\": 1}]",
+   "mode": "HISTORY",
+   "status": "PASS"
+  },
+  {
+   "test": "historical balance still 2750",
+   "expected": "2750.00",
+   "actual": "2750.00",
+   "mode": "HISTORY",
+   "status": "PASS"
+  },
+  {
+   "test": "captured delivery/recurring/h6c writers installed exact (md5)",
+   "expected": "['670ea34d37c4c4fd6612031ad763a3a7', 'b189e44dac1a0429091ea053f032ffb0', '9d9cdca4e82d515557c0cdd151f1d077']",
+   "actual": "['670ea34d37c4c4fd6612031ad763a3a7', 'b189e44dac1a0429091ea053f032ffb0', '9d9cdca4e82d515557c0cdd151f1d077']",
+   "mode": "SHARED_INSTALL",
+   "status": "PASS"
+  },
+  {
+   "test": "baseline: original guard accepts order with inactive settings",
+   "expected": "pendente|",
+   "actual": "pendente|",
+   "mode": "SETTINGS_INACTIVE",
+   "status": "PASS"
+  },
+  {
+   "test": "baseline: manual writer exceeds partner limit with no credit check",
+   "expected": "('150000.00', None)",
+   "actual": "('150000.00', None)",
+   "mode": "BASELINE_GAP",
+   "status": "PASS"
+  },
+  {
+   "test": "candidate guard body differs from captured only by settings/limit block",
+   "expected": "True",
+   "actual": "True",
+   "mode": "SHARED_INSTALL",
+   "status": "PASS"
+  },
+  {
+   "test": "authenticated cannot EXECUTE shared guard",
+   "expected": "f",
+   "actual": "f",
+   "mode": "ACL",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B: inactive settings -> held",
+   "expected": "aguardando_aprovacao_credito|configuracao_financeira_inativa",
+   "actual": "aguardando_aprovacao_credito|configuracao_financeira_inativa",
+   "mode": "SETTINGS_INACTIVE",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B: absent settings -> held",
+   "expected": "aguardando_aprovacao_credito|configuracao_financeira_inativa",
+   "actual": "aguardando_aprovacao_credito|configuracao_financeira_inativa",
+   "mode": "SETTINGS_INACTIVE",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B: limit 0 is not unlimited -> held",
+   "expected": "aguardando_aprovacao_credito|limite_nao_definido",
+   "actual": "aguardando_aprovacao_credito|limite_nao_definido",
+   "mode": "SETTINGS_INACTIVE",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B: exact limit 100000 accepted",
+   "expected": "pendente|",
+   "actual": "pendente|",
+   "mode": "B2B_GUARD",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B: +0.01 blocked",
+   "expected": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "actual": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "mode": "B2B_GUARD",
+   "status": "PASS"
+  },
+  {
+   "test": "baseline order unchanged (no history rewrite)",
+   "expected": "pendente|",
+   "actual": "pendente|",
+   "mode": "HISTORY",
+   "status": "PASS"
+  },
+  {
+   "test": "manual: partner_id derived server-side",
+   "expected": "a0000000-0000-4000-8000-000000000101",
+   "actual": "a0000000-0000-4000-8000-000000000101",
+   "mode": "MANUAL",
+   "status": "PASS"
+  },
+  {
+   "test": "manual: inactive settings",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "MANUAL",
+   "status": "PASS"
+  },
+  {
+   "test": "manual: limit 0",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "MANUAL",
+   "status": "PASS"
+  },
+  {
+   "test": "manual: two active partners",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "MANUAL",
+   "status": "PASS"
+  },
+  {
+   "test": "manual: REPEATABLE READ refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "MANUAL",
+   "status": "PASS"
+  },
+  {
+   "test": "manual: debtor without partner untouched",
+   "expected": "",
+   "actual": "",
+   "mode": "NO_WIDENING",
+   "status": "PASS"
+  },
+  {
+   "test": "manual: partner owned by other tenant never attributed/locked",
+   "expected": "('', '0')",
+   "actual": "('', '0')",
+   "mode": "NO_WIDENING",
+   "status": "PASS"
+  },
+  {
+   "test": "tenant B manual attributed to B partner only",
+   "expected": "b0000000-0000-4000-8000-0000000000b1",
+   "actual": "b0000000-0000-4000-8000-0000000000b1",
+   "mode": "TENANT",
+   "status": "PASS"
+  },
+  {
+   "test": "tenant A actor -> tenant B customer still refused by d51_5",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "TENANT",
+   "status": "PASS"
+  },
+  {
+   "test": "manual->manual: second waits on b2b_credit",
+   "expected": "{9013}",
+   "actual": "{9013}",
+   "mode": "SHARED_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "manual->manual: 60000+30000+20000 second refused after fresh read",
+   "expected": "True",
+   "actual": "True",
+   "mode": "SHARED_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "manual: exact remaining accepted (100000)",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "SHARED_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "manual: +0.01 refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SHARED_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "manual->B2B: order guard waits",
+   "expected": "{9034}",
+   "actual": "{9034}",
+   "mode": "SHARED_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "manual->B2B: 70000+30000.01 held by guard",
+   "expected": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "actual": "aguardando_aprovacao_credito|limite_excedido_bloqueado",
+   "mode": "SHARED_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B->manual: manual waits",
+   "expected": "{9046}",
+   "actual": "{9046}",
+   "mode": "SHARED_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B->manual: 50000+50000.01 refused",
+   "expected": "True",
+   "actual": "True",
+   "mode": "SHARED_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "manual->Price: Price waits",
+   "expected": "{9056}",
+   "actual": "{9056}",
+   "mode": "SHARED_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "manual->Price: 60000+40000.00 = limit accepted exactly",
+   "expected": "True",
+   "actual": "True",
+   "mode": "SHARED_RACE",
+   "status": "PASS"
+  },
+  {
+   "test": "Price title attributed once (canonical 100000, no double count)",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "SHARED_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "Price +0.02 after manual refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "SHARED_LIMIT",
+   "status": "PASS"
+  },
+  {
+   "test": "recurring: 40000 committed + 60000.01 refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "RECURRING",
+   "status": "PASS"
+  },
+  {
+   "test": "recurring: refusal leaves no log/audit (atomic)",
+   "expected": "0",
+   "actual": "0",
+   "mode": "RECURRING",
+   "status": "PASS"
+  },
+  {
+   "test": "recurring cron session (no JWT) also refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "RECURRING",
+   "status": "PASS"
+  },
+  {
+   "test": "recurring: exact fit accepted, partner attributed",
+   "expected": "a0000000-0000-4000-8000-000000000102",
+   "actual": "a0000000-0000-4000-8000-000000000102",
+   "mode": "RECURRING",
+   "status": "PASS"
+  },
+  {
+   "test": "delivery: committed order counted before billing",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "DELIVERY",
+   "status": "PASS"
+  },
+  {
+   "test": "delivery of committed order at limit accepted (order replaced, not added)",
+   "expected": "('a0000000-0000-4000-8000-000000000103', 't', '100000.00')",
+   "actual": "('a0000000-0000-4000-8000-000000000103', 't', '100000.00')",
+   "mode": "DELIVERY",
+   "status": "PASS"
+  },
+  {
+   "test": "delivery replay returns same title",
+   "expected": "4ea14004-5b78-4752-a9fc-a6873b04357b",
+   "actual": "4ea14004-5b78-4752-a9fc-a6873b04357b",
+   "mode": "DELIVERY",
+   "status": "PASS"
+  },
+  {
+   "test": "delivery title 0.01 above its committed order at limit refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "DELIVERY",
+   "status": "PASS"
+  },
+  {
+   "test": "delivery without order over limit refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "DELIVERY",
+   "status": "PASS"
+  },
+  {
+   "test": "delivery refusal keeps entrega unbilled",
+   "expected": "PENDING|",
+   "actual": "PENDING|",
+   "mode": "DELIVERY",
+   "status": "PASS"
+  },
+  {
+   "test": "delivery exact remaining accepted",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "DELIVERY",
+   "status": "PASS"
+  },
+  {
+   "test": "delivery whose order belongs to another partner refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "DELIVERY",
+   "status": "PASS"
+  },
+  {
+   "test": "malicious manual payload origin_type=B2B_ORDER still checked (writer forces MANUAL)",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_B2B_ORIGIN",
+   "status": "PASS"
+  },
+  {
+   "test": "direct B2B_ORDER with fabricated order id refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_B2B_ORIGIN",
+   "status": "PASS"
+  },
+  {
+   "test": "direct B2B_ORDER without origin refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_B2B_ORIGIN",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B_ORDER pointing to another partner order refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_B2B_ORIGIN",
+   "status": "PASS"
+  },
+  {
+   "test": "legit conversion of committed order at limit accepted (neutral)",
+   "expected": "a0000000-0000-4000-8000-000000000115",
+   "actual": "a0000000-0000-4000-8000-000000000115",
+   "mode": "REVIEW_B2B_ORIGIN",
+   "status": "PASS"
+  },
+  {
+   "test": "second B2B_ORDER for same order refused",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_B2B_ORIGIN",
+   "status": "PASS"
+  },
+  {
+   "test": "B2B_ORDER of already generated order counts in full (+0.01 refused)",
+   "expected": "(True, True)",
+   "actual": "(True, True)",
+   "mode": "REVIEW_B2B_ORIGIN",
+   "status": "PASS"
+  },
+  {
+   "test": "over-limit order held for approval",
+   "expected": "aguardando_aprovacao_credito|limite_excedido",
+   "actual": "aguardando_aprovacao_credito|limite_excedido",
+   "mode": "REVIEW_APPROVAL",
+   "status": "PASS"
+  },
+  {
+   "test": "legit approval of configured excess releases to analysis",
+   "expected": "em_analise_comercial|",
+   "actual": "em_analise_comercial|",
+   "mode": "REVIEW_APPROVAL",
+   "status": "PASS"
+  },
+  {
+   "test": "approved order proceeds to aprovado",
+   "expected": "aprovado|",
+   "actual": "aprovado|",
+   "mode": "REVIEW_APPROVAL",
+   "status": "PASS"
+  },
+  {
+   "test": "conversion of credit-approved over-limit order accepted (delta 0)",
+   "expected": "a0000000-0000-4000-8000-000000000120",
+   "actual": "a0000000-0000-4000-8000-000000000120",
+   "mode": "REVIEW_APPROVAL",
+   "status": "PASS"
+  },
+  {
+   "test": "approval with configuracao_financeira_inativa (k=21) stays held, approver not recorded",
+   "expected": "aguardando_aprovacao_credito|configuracao_financeira_inativa|",
+   "actual": "aguardando_aprovacao_credito|configuracao_financeira_inativa|",
+   "mode": "REVIEW_APPROVAL",
+   "status": "PASS"
+  },
+  {
+   "test": "approval with configuracao_financeira_inativa (k=22) stays held, approver not recorded",
+   "expected": "aguardando_aprovacao_credito|configuracao_financeira_inativa|",
+   "actual": "aguardando_aprovacao_credito|configuracao_financeira_inativa|",
+   "mode": "REVIEW_APPROVAL",
+   "status": "PASS"
+  },
+  {
+   "test": "approval with limite_nao_definido (k=23) stays held, approver not recorded",
+   "expected": "aguardando_aprovacao_credito|limite_nao_definido|",
+   "actual": "aguardando_aprovacao_credito|limite_nao_definido|",
+   "mode": "REVIEW_APPROVAL",
+   "status": "PASS"
+  },
+  {
+   "test": "approved-then-settings-inactivated cannot reach aprovado",
+   "expected": "aguardando_aprovacao_credito|configuracao_financeira_inativa",
+   "actual": "aguardando_aprovacao_credito|configuracao_financeira_inativa",
+   "mode": "REVIEW_APPROVAL",
+   "status": "PASS"
+  },
+  {
+   "test": "waiter blocked on b2b_credit (k=17)",
+   "expected": "{9302}",
+   "actual": "{9302}",
+   "mode": "REVIEW_RELINK",
+   "status": "PASS"
+  },
+  {
+   "test": "partner client_id changed during wait -> refused, nothing written (k=17)",
+   "expected": "(True, '1')",
+   "actual": "(True, '1')",
+   "mode": "REVIEW_RELINK",
+   "status": "PASS"
+  },
+  {
+   "test": "waiter blocked on b2b_credit (k=18)",
+   "expected": "{9318}",
+   "actual": "{9318}",
+   "mode": "REVIEW_RELINK",
+   "status": "PASS"
+  },
+  {
+   "test": "partner deleted_at changed during wait -> refused, nothing written (k=18)",
+   "expected": "(True, '1')",
+   "actual": "(True, '1')",
+   "mode": "REVIEW_RELINK",
+   "status": "PASS"
+  },
+  {
+   "test": "waiter blocked on b2b_credit (k=19)",
+   "expected": "{9334}",
+   "actual": "{9334}",
+   "mode": "REVIEW_RELINK",
+   "status": "PASS"
+  },
+  {
+   "test": "partner commercial_owner_organization_id changed during wait -> refused, nothing written (k=19)",
+   "expected": "(True, '1')",
+   "actual": "(True, '1')",
+   "mode": "REVIEW_RELINK",
+   "status": "PASS"
+  },
+  {
+   "test": "after partner deletion debtor is no longer attributed",
+   "expected": "",
+   "actual": "",
+   "mode": "REVIEW_RELINK",
+   "status": "PASS"
+  }
+ ],
+ "summary": {
+  "EXPOSURE_CANON": {
+   "PASS": 5
+  },
+  "D51_5": {
+   "PASS": 4
+  },
+  "INSTALL": {
+   "PASS": 1
+  },
+  "ACL": {
+   "PASS": 4
+  },
+  "DENY_CANDIDATE_AS_IS": {
+   "PASS": 3
+  },
+  "CALENDAR_DB": {
+   "PASS": 10
+  },
+  "SQL_VS_ENGINE": {
+   "PASS": 126
+  },
+  "COMPONENT": {
+   "PASS": 18
+  },
+  "AUTH": {
+   "PASS": 8
+  },
+  "LIMIT": {
+   "PASS": 3
+  },
+  "SNAPSHOT": {
+   "PASS": 8
+  },
+  "IDEMPOTENCY": {
+   "PASS": 3
+  },
+  "ROLLBACK": {
+   "PASS": 1
+  },
+  "NUMERIC_EDGE": {
+   "PASS": 12
+  },
+  "DEBTOR_RACE": {
+   "PASS": 6
+  },
+  "REVOCATION_WAIT": {
+   "PASS": 2
+  },
+  "REPLAY_REVOCATION": {
+   "PASS": 4
+  },
+  "ISOLATION": {
+   "PASS": 2
+  },
+  "B2B_GUARD": {
+   "PASS": 3
+  },
+  "EXPOSURE_RACE": {
+   "PASS": 5
+  },
+  "EXPOSURE_LIMIT": {
+   "PASS": 7
+  },
+  "PARTNER_CONTEXT": {
+   "PASS": 4
+  },
+  "EXPOSURE_EMPTY": {
+   "PASS": 1
+  },
+  "OVERDUE": {
+   "PASS": 4
+  },
+  "SETTINGS_INACTIVE": {
+   "PASS": 6
+  },
+  "EXPOSURE_GATES": {
+   "PASS": 6
+  },
+  "PAYMENT": {
+   "PASS": 2
+  },
+  "REVERSAL": {
+   "PASS": 3
+  },
+  "HISTORY": {
+   "PASS": 3
+  },
+  "SHARED_INSTALL": {
+   "PASS": 2
+  },
+  "BASELINE_GAP": {
+   "PASS": 1
+  },
+  "MANUAL": {
+   "PASS": 5
+  },
+  "NO_WIDENING": {
+   "PASS": 2
+  },
+  "TENANT": {
+   "PASS": 2
+  },
+  "SHARED_RACE": {
+   "PASS": 8
+  },
+  "SHARED_LIMIT": {
+   "PASS": 4
+  },
+  "RECURRING": {
+   "PASS": 4
+  },
+  "DELIVERY": {
+   "PASS": 8
+  },
+  "REVIEW_B2B_ORIGIN": {
+   "PASS": 7
+  },
+  "REVIEW_APPROVAL": {
+   "PASS": 8
+  },
+  "REVIEW_RELINK": {
+   "PASS": 7
+  }
+ },
+ "fail": 0
+}
