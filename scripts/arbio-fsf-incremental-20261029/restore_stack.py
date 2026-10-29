@@ -21,6 +21,7 @@ def acl_sql(kind, obj, acl, owner):
         if kind == 'FUNCTION': sql += f'GRANT EXECUTE ON FUNCTION {obj} TO PUBLIC;\n'
         return sql
     codes = {'r':'SELECT','a':'INSERT','w':'UPDATE','d':'DELETE','D':'TRUNCATE','x':'REFERENCES','t':'TRIGGER','X':'EXECUTE','U':'USAGE','C':'CREATE'}
+    sql += f'REVOKE ALL ON {kind} {obj} FROM {q(owner)};\n'
     for entry in acl.strip('{}').split(','):
         role, rights = entry.split('=',1); rights = rights.split('/')[0]
         grants = [codes[c] for c in rights if c in codes]
