@@ -91,7 +91,7 @@ def exercise(h, metadata):
     # Wrapper already preserves explicit origin/accounting denials. Add readiness only
     # after those exact gates, before row/advisory locks and downstream writers.
     wrapper=r.captured('public','generate_b2b_receivable_secure');h.acl('FUNCTION',wrapper['signature'],wrapper['acl'])
-    for schema,name in [('public','b2b_phase1_partner_visible'),('platform_private','b2b_phase1_order_visible'),('public','b2b_phase1_order_visible')]:
+    for schema,name in [('platform_private','b2b_phase1_partner_visible'),('public','b2b_phase1_partner_visible'),('platform_private','b2b_phase1_order_visible'),('public','b2b_phase1_order_visible')]:
         f=r.captured(schema,name);h.acl('FUNCTION',f['signature'],f['acl'])
     # No complete order fixture is inserted. Trigger carrier tests settings denial
     # directly; full wrapper's origin denial remains source-pinned and NOT RUN.
