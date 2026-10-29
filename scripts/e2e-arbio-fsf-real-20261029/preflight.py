@@ -50,12 +50,12 @@ def main(env, root):
     if mode not in ('PROD_READONLY', 'HOMOLOG_ISOLATED'): mark(BOTH, 'DENY', f'modo desconhecido/ausente ({mode or "vazio"})')
     if scope not in ('READONLY', 'WRITE_SCENARIOS'): mark(BOTH, 'DENY', f'escopo desconhecido/ausente ({scope or "vazio"})')
     if mode == 'PROD_READONLY': mark((wr,), 'DENY', 'produção nunca tem escopo de escrita')
-    ev, path = None, env.get('PREFLIGHT_EVIDENCE', '')
-    try: ev = json.loads(pathlib.Path(path).read_text(encoding='utf-8'), object_pairs_hook=no_dups)
+    ev, path, loaded = None, env.get('PREFLIGHT_EVIDENCE', ''), False
+    try: ev = json.loads(pathlib.Path(path).read_text(encoding='utf-8'), object_pairs_hook=no_dups); loaded = True
     except Dup as e: mark(BOTH, 'DENY', f'chave repetida na evidência {e}')
     except Exception: mark(BOTH, 'BLOCKED', 'evidência ausente/ilegível')
-    if not isinstance(ev, dict):
-        ev = None
+    if loaded and not isinstance(ev, dict):
+        mark(BOTH, 'DENY', f'raiz da evidência não é objeto JSON ({type(ev).__name__})'); ev = None
     if ev is not None:
         if ev.get('mode') != mode: mark(BOTH, 'DENY', 'modo da evidência difere do modo pedido')
         ref = ev.get('observed_project_ref')
@@ -65,8 +65,12 @@ def main(env, root):
         elif mode == 'HOMOLOG_ISOLATED' and ref == PROD: mark(BOTH, 'DENY', 'homolog com ref observado de produção')
         elif mode == 'HOMOLOG_ISOLATED' and ref != HOMOL: mark(BOTH, 'DENY', 'ref observado ≠ homolog aprovado')
         u = ev.get('runtime_url')
-        host = urlsplit(u).hostname if isinstance(u, str) else None
-        if not isinstance(u, str) or urlsplit(u).scheme != 'https' or not host: mark(BOTH, 'BLOCKED', 'URL de runtime ausente/inválida')
+        try:
+            sp = urlsplit(u) if isinstance(u, str) else None
+            host, scheme = (sp.hostname, sp.scheme) if sp else (None, None)
+        except Exception:
+            host, scheme = None, None
+        if not isinstance(u, str) or scheme != 'https' or not host: mark(BOTH, 'BLOCKED', 'URL de runtime ausente/inválida')
         elif mode == 'PROD_READONLY' and host not in PROD_HOSTS: mark(BOTH, 'DENY', 'URL não é de produção')
         elif mode == 'HOMOLOG_ISOLATED' and host in PROD_HOSTS: mark(BOTH, 'DENY', 'homolog com URL de produção')
         if not (isinstance(ev.get('commit'), str) and re.fullmatch(r'[0-9a-f]{40}', ev['commit'])): mark(BOTH, 'BLOCKED', 'commit observado ausente/inválido (40 hex)')
