@@ -32,9 +32,10 @@ def main():
     CREATE SCHEMA auth; CREATE SCHEMA platform_private;
     CREATE TYPE app_role AS ENUM ('administrador','gestor','financeiro');
     CREATE TYPE partner_order_status AS ENUM ('rascunho','pendente','em_analise_comercial','aguardando_aprovacao_credito','aprovado','reprovado','cancelado','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','solicitado','aguardando_cotacao','aguardando_ajuste_comercial','aguardando_itens','reprovado_sem_itens');
-    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT nullif(current_setting('test.uid',true),'')::uuid$$;
-    CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql AS $$SELECT $1=auth.uid() AND coalesce(nullif(current_setting('test.role',true),''),'false')::boolean$$;
-    CREATE FUNCTION public.b2b_phase1_order_visible(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT coalesce(nullif(current_setting('test.visible',true),''),'false')::boolean$$;
+    CREATE TABLE public.synthetic_scope(uid uuid,allowed boolean,visible boolean);
+    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT uid FROM public.synthetic_scope$$;
+    CREATE FUNCTION public.has_role(uuid,app_role) RETURNS boolean LANGUAGE sql AS $$SELECT $1=auth.uid() AND allowed FROM public.synthetic_scope$$;
+    CREATE FUNCTION public.b2b_phase1_order_visible(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT visible FROM public.synthetic_scope$$;
     CREATE TABLE public.partner_financial_settings(partner_id uuid,active boolean,credit_limit numeric(14,2));
     CREATE TABLE public.partner_order_audit_logs(usuario_id uuid,partner_id uuid,order_id uuid,acao text,dados_anteriores jsonb,dados_novos jsonb);
     """)
@@ -72,7 +73,7 @@ def main():
     pg.sql(F['tg_partner_orders_credit_guard()']['body']+';')
     ct = next(t for t in live['triggers'] if t['name']=='trg_partner_orders_credit_guard')
     pg.sql(ct['definition']+';')
-    pg.sql(f"SELECT set_config('test.uid','{U}',false); SELECT set_config('test.role','true',false); SELECT set_config('test.visible','true',false); INSERT INTO partner_financial_settings VALUES('{P}',true,100000,0,false,'approval_required');")
+    pg.sql(f"INSERT INTO synthetic_scope VALUES('{U}',true,true); INSERT INTO partner_financial_settings VALUES('{P}',true,100000,0,false,'approval_required');")
     def reset(amount=120000):
         pg.sql(f"TRUNCATE partner_orders,partner_order_audit_logs; INSERT INTO partner_orders(id,partner_id,created_by,total,status) VALUES('{O}','{P}','{U}',{amount},'aguardando_aprovacao_credito');")
     def deny(name, sql, code):
@@ -102,11 +103,11 @@ def main():
     pg.sql(f"INSERT INTO partner_financial_settings VALUES('{P}',true,100000,0,false,'approval_required');")
     pg.sql(f"UPDATE partner_orders SET c2_external_origin_snapshot='{{\"contract\":\"C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1\"}}';")
     deny('accounting gate preserved',call(),'C2_ACCOUNTING_PENDING')
-    pg.sql("UPDATE partner_orders SET c2_external_origin_snapshot=NULL; SELECT set_config('test.role','false',false);")
+    pg.sql("UPDATE partner_orders SET c2_external_origin_snapshot=NULL; UPDATE synthetic_scope SET allowed=false;")
     deny('role revoked',call(),'forbidden')
-    pg.sql("SELECT set_config('test.role','true',false); SELECT set_config('test.visible','false',false);")
+    pg.sql("UPDATE synthetic_scope SET allowed=true,visible=false;")
     deny('foreign scope',call(),'b2b_phase1_scope_denied')
-    pg.sql("SELECT set_config('test.visible','true',false);")
+    pg.sql("UPDATE synthetic_scope SET visible=true;")
     deny('unsupported isolation', 'BEGIN ISOLATION LEVEL REPEATABLE READ;'+call(),'CREDIT_ISOLATION_UNSUPPORTED')
     reset()
     r=json.loads(pg.sql(call()).splitlines()[-1])
