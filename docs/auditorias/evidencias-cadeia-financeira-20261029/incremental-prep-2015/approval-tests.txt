@@ -5,17 +5,28 @@ PASS RED captured guard accepts caller-set GUC
 PASS GREEN spoofed GUC no private ticket SQLSTATE
 PASS GREEN spoofed GUC no private ticket atomic state
 PASS GREEN spoofed GUC no private ticket no audit
+PASS undefined/nonfinite limit NULL SQLSTATE
+PASS undefined/nonfinite limit NULL atomic state
+PASS undefined/nonfinite limit NULL no audit
+PASS undefined/nonfinite limit 0 SQLSTATE
+PASS undefined/nonfinite limit 0 atomic state
+PASS undefined/nonfinite limit 0 no audit
+PASS undefined/nonfinite limit -1 SQLSTATE
+PASS undefined/nonfinite limit -1 atomic state
+PASS undefined/nonfinite limit -1 no audit
+PASS undefined/nonfinite limit 'NaN' SQLSTATE
+PASS undefined/nonfinite limit 'NaN' atomic state
+PASS undefined/nonfinite limit 'NaN' no audit
 Traceback (most recent call last):
-  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 132, in <module>
+  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 134, in <module>
     if __name__=='__main__': main()
                              ~~~~^^
-  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 96, in main
-    deny('undefined/nonfinite limit '+val,call(),'credit_release_failed')
-    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 81, in deny
-    check(name+' SQLSTATE',True,code in err)
-    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 20, in check
-    assert expected == actual, (name, expected, actual)
-           ^^^^^^^^^^^^^^^^^^
-AssertionError: ('undefined/nonfinite limit NULL SQLSTATE', True, False)
+  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 97, in main
+    pg.sql(f'UPDATE partner_financial_settings SET active=true,credit_limit={val};')
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/contracts-c2-20261022/integral/pg.py", line 16, in sql
+    assert r.returncode == 0, r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  numeric field overflow
+DETAIL:  A field with precision 14, scale 2 cannot hold an infinite value.
+
