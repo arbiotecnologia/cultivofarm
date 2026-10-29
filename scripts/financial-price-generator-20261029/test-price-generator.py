@@ -153,6 +153,23 @@ def debtor_races():
     pg.sql(f"INSERT INTO public.test_staff_revoked VALUES('{U3}');")
     finish(p1, 'ROLLBACK'); t.join(15)
     check('revoked during wait -> denied after lock, state unchanged', (True, True), ('Sem permissão' in box['r'].stderr.decode(), state() == before), 'REVOCATION_WAIT')
+    # Same-KEY wait + revocation: replay of an existing receipt must be denied after the key lock.
+    U4 = '99999999-9999-4999-8999-999999999994'  # SYNTHETIC staff actor
+    r0 = ok(env0 + call(payload(1, amount='100.00', key='k-replay-revoke'), uid=U4))
+    rl = ok(env0 + call(payload(1, amount='100.00', key='k-replay-revoke'), uid=U4))
+    check('legitimate replay idempotent before revocation', (r0['receivable_id'], True), (rl['receivable_id'], rl['replayed']), 'REPLAY_REVOCATION')
+    keylock = "SELECT pg_advisory_xact_lock(hashtextextended('" + U4 + "|" + A + "|price-k-replay-revoke', 7));"
+    p1, pid1, _ = held(keylock)
+    before = state()
+    t, box, blocked = waiter(env0 + call(payload(1, amount='100.00', key='k-replay-revoke'), uid=U4), 'price-w4')
+    check('replay waiter blocked on same KEY lock', '{' + str(pid1) + '}', blocked, 'REPLAY_REVOCATION')
+    pg.sql(f"INSERT INTO public.test_staff_revoked VALUES('{U4}');")  # committed before release
+    finish(p1, 'ROLLBACK'); t.join(15)
+    out4, err4 = box['r'].stdout.decode(), box['r'].stderr.decode()
+    check('revoked replay denied, no result exposed, no mutation', (True, False, True), ('Sem permissão' in err4, r0['receivable_id'] in out4, state() == before), 'REPLAY_REVOCATION')
+    pg.sql(f"DELETE FROM public.test_staff_revoked WHERE uid='{U4}';")
+    rl2 = ok(env0 + call(payload(1, amount='100.00', key='k-replay-revoke'), uid=U4))
+    check('replay idempotent again after re-grant, no writes', (r0['receivable_id'], True, True), (rl2['receivable_id'], rl2['replayed'], state() == before), 'REPLAY_REVOCATION')
     # Non-RC isolation refused before any lock/write.
     for lvl in ('REPEATABLE READ', 'SERIALIZABLE'):
         before = state()
