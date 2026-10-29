@@ -2,6 +2,10 @@
 
 ## Entrega e estado
 
+### Rodada adicional — cancelamento entre empresas, 29/10
+
+Relatório específico `cancelamento-parcela-autorizacao-20261029.md`; evidências em `evidencias-cadeia-financeira-20261029/cancel-authorization/`. **55 assertions PG PASS/0 FAIL inesperados, 1 BLOCKED/1 NOT RUN na matriz; Vitest9/9em3arquivos**, sem somar históricos. Guard tenant capturado nega escrita estrangeira OPEN; seis checks RED reproduzem exposição de status/pagamento antes do UPDATE nos dois ramos. Transformação mínima somente sandbox uniformiza alvo fora do tenant. Próprio MANUAL positivo não certifica B2B: criação de fixture B2B bloqueia em recalc_partner_risk_score, sem guard/ticket inventado. NO-GO e demais gates preservados; sem runtime/produção/SQL implantável.
+
 **PASS para regressão local estrita; NO-GO para implantação, remediação histórica e ativação financeira/entrega.** Esta fase adiciona execução reproduzível, não apenas diagnóstico. Nenhum consumidor runtime, política comercial, título histórico ou pacote anterior foi modificado. Sem SQL hosted mutante, GRANT, migração, sessão/fixture real, publicação, cobrança ou fiscal.
 
 Fontes: `escritores-saldo-canonico-20261028.md` e plano B2B original. Histórico Git inspecionado antes das edições; havia alterações de `package.json`/`bun.lock` do ambiente, preservadas sem revert ou edição. Resultados históricos 122/17/8/1 não foram sobrescritos ou somados à rodada atual.
