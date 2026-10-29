@@ -193,3 +193,12 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 
 ## 29/10/2026 18:40 UTC — Gerador Price candidato (PG descartável)
 - Candidato inativo com calendário selado, snapshot/recibo imutáveis e reuso do RPC/contexto capturados; 189/0 FAIL como componente. Continua negado por configuração de pagamento oficial, origem fiscal NF, contabilidade C2 e exposição canônica. Produção NO-GO.
+
+## Revisão 18:45 — gerador Price (candidato anterior 1f85d817 → `1fcb1dca…`), PG descartável apenas
+- **Serialização por devedor:** advisory lock `price-debtor|org|cliente` após o lock da chave (ordem fixa chave→devedor para todos); reautoriza sessão/staff/tenant depois da espera; exposição lida após o lock em snapshot fresco de READ COMMITTED. REPEATABLE READ/SERIALIZABLE recusados antes de qualquer lock/escrita (`PRICE_ISOLATION_READ_COMMITTED_REQUIRED`, 0A000).
+- **Corrida provada:** atores U/U2, chaves diferentes, mesmo devedor; cada pedido (R$20.000 financiado) cabe isolado, soma excede: espera confirmada por `pg_blocking_pids`, exatamente 1 sucesso + 1 `LIMIT_EXCEEDED_BLOCK`, 1 título/recibo. Outro devedor não serializa. Staff revogado durante a espera → negado após o lock, estado inalterado. Seam de revogação sintético (`test_staff_revoked`).
+- **Recibos:** trigger BEFORE TRUNCATE adicionado; DELETE/TRUNCATE testados.
+- **d51_5:** corpo capturado (md5) e triggers em 4 tabelas compostos sobre fixture sintética `clientes(id,tenant)`; cliente estrangeiro e parcela re-apontada negados. Não é prova de RLS real.
+- **Teto numérico:** limite agora 999.999.999.999,99 (numeric(14,2)); 1e12, 1e20 e 26 dígitos rejeitados com `TABLE_AMOUNT_INVALID`, sem overflow; no RPC o teto cai em `LIMIT_EXCEEDED_BLOCK` antes de qualquer escrita.
+- **Correção de relato:** "10300 com baixa 7550, saldo 2750" é só verificação de preservação de fixture, não a regressão P0. Os testes P0 ORIGINAIS foram reexecutados sem alteração: RED 10600/7550/7750, GREEN 10300/7550/7550 — 37 PASS/0 FAIL.
+- Resultados: PG gerador 217/0 FAIL. Exposição/settings/NF/contabilidade continuam deny-only, com stubs SINTÉTICOS. Evidência `price-generator-pg-review-1845/`. Não é E2E nem homologação.
