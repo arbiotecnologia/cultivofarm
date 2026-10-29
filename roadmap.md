@@ -1030,4 +1030,5 @@
 ## 29/10 17:41 — Price até 3 parcelas, offline
 - [x] Motor Price, limites, calendário candidato e testes.
 - [x] Âncora NF+30 decidida.
-- [ ] Base de exposição (principal × total financiado), clamp, dia útil e pro-rata — aguardam decisão humana.
+- [x] Base de exposição (total com juros), vencimentos seguintes, dia útil e sem pro-rata decididos e testados.
+- [ ] Calendário real de feriados (fonte, localidade, cobertura) — aguarda fonte humana.
