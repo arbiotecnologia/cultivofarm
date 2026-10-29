@@ -78,8 +78,8 @@ def exercise(h, metadata):
     transform('tg_partner_orders_credit_guard','BEGIN\n','BEGIN\n'+entry+'\n')
     anchor='BEGIN\n  SELECT * INTO v_settings'
     transform('tg_auto_b2b_receivable',anchor,'BEGIN\n'+entry.replace(' OR NEW.credit_approved_by IS NOT NULL','')+'\n  SELECT * INTO v_settings')
-    # Full captured eligibility remains private; its readiness branch is additionally
-    # exercised as an invoker DO fragment with synthetic v_order, not an exposed RPC.
+    # Full captured eligibility remains private. A synthetic trigger carrier calls
+    # the service-only function under its captured owner; no new authorization claim.
     eligibility_guard=guard.replace('p_partner_id','v_order.partner_id')
     eligibility_guard=eligibility_guard.replace("RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001';","RETURN jsonb_build_object('eligible',false,'reason_code','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED');")
     anchor="  IF NOT FOUND THEN RETURN jsonb_build_object('eligible',false,'reason_code','ORDER_NOT_FOUND'); END IF;"
@@ -117,9 +117,13 @@ def exercise(h, metadata):
         # is explicitly reduced and has no invented origin or downstream positive.
     m.pg.sql("CREATE TABLE harness.delivery_probe(id uuid PRIMARY KEY, partner_order_id uuid,receivable_id uuid,billing_generated_by uuid); GRANT SELECT,INSERT,UPDATE ON harness.delivery_probe TO authenticated; CREATE TRIGGER link_probe BEFORE UPDATE ON harness.delivery_probe FOR EACH ROW EXECUTE FUNCTION fn_h6c_entrega_ar_b2b_link();")
     h.extra_state_tables.append('harness.delivery_probe')
+    m.pg.sql("ALTER TABLE partner_orders ADD COLUMN financial_approval_status text, ADD COLUMN requires_financial_approval boolean; CREATE TABLE harness.eligibility_probe(id uuid PRIMARY KEY,order_id uuid,result jsonb); GRANT SELECT,INSERT,UPDATE ON harness.eligibility_probe TO authenticated; CREATE FUNCTION harness.eligibility_carrier() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN NEW.result:=public.fn_b2b_order_billing_eligibility(NEW.order_id); RETURN NEW; END$$; REVOKE ALL ON FUNCTION harness.eligibility_carrier() FROM PUBLIC,anon,authenticated; CREATE TRIGGER eligibility_probe BEFORE INSERT OR UPDATE ON harness.eligibility_probe FOR EACH ROW EXECUTE FUNCTION harness.eligibility_carrier();")
+    h.extra_state_tables.append('harness.eligibility_probe')
     for actor,org,partner,label in partners:
         order=m.uid(904000+(1 if label=='B' else 0));probe=m.uid(904010+(1 if label=='B' else 0))
         m.pg.sql(f"INSERT INTO partner_orders(id,partner_id,status) VALUES('{order}','{partner}','rascunho'); INSERT INTO harness.delivery_probe(id,partner_order_id,billing_generated_by) VALUES('{probe}','{order}','{actor}');")
+        h.check('deferred eligibility carrier dispatch '+label,0,h.client(f"INSERT INTO harness.eligibility_probe(id,order_id) VALUES('{probe}','{order}');",actor).returncode,mode)
+        h.check('deferred eligibility exact missing '+label,{'eligible':False,'reason_code':'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'},json.loads(m.pg.sql(f"SELECT result FROM harness.eligibility_probe WHERE id='{probe}'")),mode)
         rejected('deferred delivery link missing settings '+label,f"UPDATE harness.delivery_probe SET receivable_id='{m.uid(904020)}' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
         rejected('deferred billing wrapper missing settings '+label,f"SELECT generate_b2b_receivable_secure('{order}');",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
         for column,value,marker in [('internal_origin_snapshot',"'{}'::jsonb",'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED'),('c2_external_origin_snapshot',"'{\"contract\":\"C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1\"}'::jsonb",'C2_ACCOUNTING_PENDING')]:
@@ -153,9 +157,12 @@ def exercise(h, metadata):
         for field in FIELDS:
             invalid=dict(values);invalid.pop(field)
             rejected('deferred missing '+field+' '+label,update(partner,invalid),('22023','C2P1_INVALID_PAYLOAD'),actor)
-        for field in ['credit_limit','default_payment_method']:
+        for field in FIELDS:
             invalid=dict(values);invalid[field]=None
             rejected('deferred NULL '+field+' '+label,update(partner,invalid),('22023','C2P1_INVALID_PAYLOAD'),actor)
+        for value in [-1,'NaN','Infinity','-Infinity']:
+            invalid=dict(values);invalid['credit_limit']=value
+            rejected('deferred invalid credit '+str(value)+' '+label,update(partner,invalid),('22023','C2P1_INVALID_PAYLOAD'),actor)
         invalid=dict(values);invalid['default_payment_method']='UNKNOWN'
         rejected('deferred invalid method '+label,update(partner,invalid),('22023','C2P1_PAYMENT_METHOD_INVALID'),actor)
         other=m.uid(900003) if label=='A' else m.uid(900002)
@@ -188,12 +195,17 @@ def exercise(h, metadata):
         # Fully configured does not discharge internal/accounting origin containment.
         order=m.uid(905000+(1 if label=='B' else 0))
         m.pg.sql(f"INSERT INTO partner_orders(id,partner_id,status) VALUES('{order}','{partner}','rascunho');")
+        probe=m.uid(905010+(1 if label=='B' else 0))
+        h.check('deferred configured eligibility dispatch '+label,0,h.client(f"INSERT INTO harness.eligibility_probe(id,order_id) VALUES('{probe}','{order}');",actor).returncode,mode)
+        h.check('deferred configured eligibility still order denied '+label,{'eligible':False,'reason_code':'ORDER_NOT_APPROVED','status':'rascunho'},json.loads(m.pg.sql(f"SELECT result FROM harness.eligibility_probe WHERE id='{probe}'")),mode)
         for column,value,marker in [('internal_origin_snapshot',"'{}'::jsonb",'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED'),('c2_external_origin_snapshot',"'{\"contract\":\"C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1\"}'::jsonb",'C2_ACCOUNTING_PENDING')]:
             m.pg.sql(f"UPDATE partner_orders SET {column}={value} WHERE id='{order}';")
             try:rejected('deferred configured still '+marker+' '+label,f"SELECT generate_b2b_receivable_secure('{order}');",('42501',marker),actor)
             finally:m.pg.sql(f"UPDATE partner_orders SET {column}=NULL WHERE id='{order}';")
         m.pg.sql(f"DELETE FROM partner_orders WHERE id='{order}';")
     rejected('deferred anonymous updater',update(m.uid(900002),values),('42501','permission denied for function rpc_update_partner_financial_settings'),None,'anon')
+    rejected('deferred no direct ticket issuer',"SELECT platform_private.issue_ticket('c2p1_settings_write','"+m.uid(900002)+"');",('42501','permission denied for function issue_ticket'))
+    rejected('deferred no direct settings writer',"INSERT INTO partner_financial_settings(partner_id) VALUES('"+m.uid(900002)+"');",('42501','permission denied for table partner_financial_settings'))
     # Configuration removes only the risk FK blocker, not the origin/fiscal authority.
     part=h.fixture(2050,'receivable',m.A,b2b=True);money=h.amounts(part,'receivable')
     h.check('deferred B2B-shaped own cancel after risk composition',0,h.client(h.call(part,'receivable')).returncode,mode)
@@ -201,5 +213,6 @@ def exercise(h, metadata):
     metadata['deferred']=dict(decision='register first; finance later',values_are_synthetic=True,
         registered_partners=[p for _,_,p,_ in partners],risk_fk_resolved=True,
         limits='B2B-shaped parent uses existing reduced monetary harness, not proven order/origin/fiscal. No positive full billing claim.')
+    metadata['deferred']['carriers']='harness.credit_probe/delivery_probe/eligibility_probe are disposable row shapes, not runtime writers, RLS or complete order/entrega integration; only captured financial function boundaries exercised.'
     metadata['blocked']='Full B2B order/origin/fiscal/accounting and billing transitive authority remain unproved; risk FK/registration blocker resolved only in sandbox.'
     (h.OUT/'deferred-settings-sandbox.diff').write_text('\n'.join(diffs))
