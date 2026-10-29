@@ -5,7 +5,7 @@ installments package, then the INACTIVE Price candidate. The four unproven depen
 (payment settings, canonical exposure, fiscal NF origin, accounting gate) stay deny-only and
 are replaced ONLY by explicitly SYNTHETIC stubs for component steps. No hosted connection.
 """
-import hashlib, importlib.util, json, subprocess, sys, pathlib
+import hashlib, importlib.util, json, re, subprocess, sys, pathlib
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal as D
 sys.dont_write_bytecode = True
@@ -24,6 +24,11 @@ pg = m.pg
 A, B, U, PM, C, K = m.A, m.B, m.U, m.PM, m.C, m.K
 V = '66666666-6666-4666-8666-666666666666'          # second synthetic actor (tenant B)
 CB = '77777777-7777-4777-8777-777777777777'         # synthetic customer of B
+# SYNTHETIC partners/debtors for canonical exposure composition (never real ids).
+PA, PB = 'a0000000-0000-4000-8000-0000000000a1', 'b0000000-0000-4000-8000-0000000000b1'
+CX, PX, PY = 'c0000000-0000-4000-8000-0000000000c1', 'a0000000-0000-4000-8000-0000000000a2', 'a0000000-0000-4000-8000-0000000000a3'
+C3, C4, C5, C6, C7 = ('c0000000-0000-4000-8000-0000000000c%d' % k for k in (3, 4, 5, 6, 7))
+EXTRA_A = (CX, C3, C4, C5, C6, C7)
 NF = '88888888-8888-4888-8888-888888888888'         # SYNTHETIC NF reference (not a real NF)
 checks = []
 
@@ -67,7 +72,7 @@ def payload(n=3, amount='100000.00', key='price-key-0001', cust=C, **kw):
 
 
 STUB_SETTINGS = f"""CREATE OR REPLACE FUNCTION platform_private.price_payment_settings(p_org uuid, p_customer uuid) RETURNS jsonb LANGUAGE sql STABLE SET search_path='' AS $$
- SELECT CASE WHEN (p_org,p_customer) IN (('{A}'::uuid,'{C}'::uuid),('{B}'::uuid,'{CB}'::uuid)) THEN jsonb_build_object('credit_limit','100000.00','payment_method_id','{PM}','category_id','{K}','synthetic',true)
+ SELECT CASE WHEN (p_org,p_customer) IN (('{A}'::uuid,'{C}'::uuid),('{B}'::uuid,'{CB}'::uuid)) OR (p_org='{A}'::uuid AND p_customer IN ({','.join("'%s'::uuid" % x for x in EXTRA_A)})) THEN jsonb_build_object('credit_limit','100000.00','payment_method_id','{PM}','category_id','{K}','synthetic',true)
  END $$;"""  # SYNTHETIC: foreign pair -> NULL (absent)
 STUB_EXPOSURE = """CREATE OR REPLACE FUNCTION platform_private.price_credit_exposure(p_org uuid, p_customer uuid, p_partner uuid) RETURNS numeric LANGUAGE sql STABLE SET search_path='' AS $$
  SELECT coalesce(sum(greatest(i.original_amount+i.interest_amount+i.penalty_amount-i.discount_amount-i.received_amount,0)),0)
@@ -177,6 +182,65 @@ def debtor_races():
         check(f'{lvl} refused (stale snapshot), state unchanged', (True, True), ('PRICE_ISOLATION_READ_COMMITTED_REQUIRED' in err, state() == before), 'ISOLATION')
 
 
+def b2b_title(n, total, cust, partner):
+    """SYNTHETIC B2B title carrying partner_id, through the captured generator path (owner insert)."""
+    order, terms, tid = m.uid(n), m.uid(n + 10000), m.uid(n + 20000)
+    pg.sql(f"INSERT INTO partner_orders(id,payment_terms_id,c2_external_origin_snapshot,partner_id,status,total,final_amount_with_interest,receivable_generated) VALUES('{order}','{terms}','{{}}'::jsonb,'{partner}','entregue',{total},{total},true);"
+           f"INSERT INTO partner_order_payment_schedule(partner_order_id,payment_terms_id,installment_number,due_date,amount,principal_amount,interest_amount) VALUES('{order}','{terms}',1,CURRENT_DATE+30,{total},{total},0);")
+    m.ask(f"INSERT INTO accounts_receivable(id,origin_type,origin_id,description,category_id,total_amount,first_due_date,installment_count,created_by,organization_id,customer_id,partner_id) VALUES('{tid}','B2B_ORDER','{order}','SYNTHETIC B2B','{K}',{total},CURRENT_DATE+30,1,'{U}','{A}','{cust}','{partner}');", A)
+    return tid, pg.sql(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{tid}'")
+
+
+def order(partner, status, amount, generated=False, link=False):
+    oid = pg.sql(f"INSERT INTO partner_orders(id,payment_terms_id,partner_id,status,total,final_amount_with_interest,receivable_generated) VALUES(gen_random_uuid(),gen_random_uuid(),'{partner}','{status}',{amount},{amount},{str(generated).lower()}) RETURNING id;").splitlines()[0]
+    if link: pg.sql(f"INSERT INTO public.partner_order_financial_links(partner_order_id) VALUES('{oid}');")
+    return oid
+
+
+def canonical_exposure():
+    """Captured fn_b2b_credit_exposure composed into the candidate; component evidence, not E2E."""
+    real = re.search(r"CREATE FUNCTION platform_private\.price_credit_exposure.*?END \$\$;", bc.build().read_text(), re.S).group(0)
+    pg.sql(real.replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION', 1))  # restore candidate body over the earlier stub
+    tid, inst = b2b_title(950, '10000.00', CX, PX)
+    m.payment(inst, '1000', 'b2b-cx-1000')
+    order(PX, 'aprovado', '2000.00'); order(PX, 'em_analise_comercial', '1500.00')
+    order(PX, 'entregue', '5000.00', generated=True); order(PX, 'aprovado', '3000.00', link=True)
+    order(PX, 'cancelado', '999.00'); order(PX, 'rascunho', '444.00'); order(PY, 'aprovado', '7777.00')
+    fx = json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{PX}',0,NULL)"))
+    check('canonical: open net of payment events 10000-1000', D('9000.00'), D(str(fx['saldo_em_aberto'])), 'EXPOSURE_CANON')
+    check('canonical: committed/pending exclude generated, linked, canceled, draft, other partner', (D('2000.00'), D('1500.00'), D('12500.00')), (D(str(fx['comprometido_nao_faturado'])), D(str(fx['comprometido_pendente'])), D(str(fx['exposicao_atual']))), 'EXPOSURE_CANON')
+    xp = lambda: D(pg.sql(f"SELECT platform_private.price_credit_exposure('{A}','{CX}','{PX}')"))
+    check('candidate exposure = canonical (no Price titles yet)', D('12500.00'), xp(), 'EXPOSURE_CANON')
+    env = nf('2026-10-29')
+    # Race against a canonical B2B writer holding the shared b2b_credit key.
+    before = state()
+    p1, pid1, _ = held(scope(U) + f"SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:{PX}', 0)); INSERT INTO partner_orders(id,payment_terms_id,partner_id,status,total,final_amount_with_interest) VALUES(gen_random_uuid(),gen_random_uuid(),'{PX}','pendente',50000,50000);")
+    t, box, blocked = waiter(env + call(payload(1, amount='66666.67', key='k-canon-race', cust=CX), uid=U2), 'price-w5')
+    check('Price waits on canonical b2b_credit key holder', '{' + str(pid1) + '}', blocked, 'EXPOSURE_RACE')
+    finish(p1, 'COMMIT'); t.join(15)
+    check('after B2B pending order commits: 12500+50000+40000 refused, no write', (True, True), ('LIMIT_EXCEEDED_BLOCK' in box['r'].stderr.decode(), json.loads(state())['t'] == json.loads(before)['t']), 'EXPOSURE_RACE')
+    check('fresh exposure includes committed B2B order', D('62500.00'), xp(), 'EXPOSURE_RACE')
+    r = ok(env + call(payload(1, amount='62500.00', key='k-canon-exact', cust=CX)))
+    check('exact remaining 37500 accepted (limit 100000)', (True, '37500.00'), (r['success'], f"{D(str(r['financed_total'])):.2f}"), 'EXPOSURE_LIMIT')
+    check('Price title counted once by candidate', D('100000.00'), xp(), 'EXPOSURE_LIMIT')
+    deny('+0.01 over canonical+Price exposure blocked', env + call(payload(1, amount='0.02', key='k-canon-plus', cust=CX)), 'LIMIT_EXCEEDED_BLOCK', 'EXPOSURE_LIMIT')
+    # RISK (reproduced): canonical B2B writers cannot see Price titles (partner_id not carried).
+    blind = json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{PX}',1000,NULL)"))
+    check('RISK reproduced: canonical B2B check says OK for +1000 at real 101000', ('OK', D('63500.00')), (blind['reason_code'], D(str(blind['exposicao_projetada']))), 'RISK_B2B_BLIND')
+    # Hypothesis (harness-only owner UPDATE, partner_id is not a frozen snapshot field): if the title carried partner_id.
+    pg.sql(f"UPDATE accounts_receivable SET partner_id='{PX}' WHERE id='{r['receivable_id']}';")
+    seen = json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{PX}',1000,NULL)"))
+    check('hypothesis partner_id carried: canonical blocks +1000', 'LIMIT_EXCEEDED_BLOCK', seen['reason_code'], 'RISK_B2B_BLIND')
+    check('hypothesis: no double count (canonical sees it, Price sum skips it)', D('100000.00'), xp(), 'EXPOSURE_LIMIT')
+    # Tenant/debtor filter and link gates.
+    check('other partner exposure unaffected by CX titles', D('7777.00'), D(str(json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{PY}',0,NULL)"))['exposicao_atual'])), 'EXPOSURE_CANON')
+    for cust, code, label in ((C3, 'CREDIT_PARTNER_LINK_REQUIRED', 'no partner link'), (C4, 'CREDIT_PARTNER_LINK_AMBIGUOUS', 'two active partners'),
+                              (C5, 'CREDIT_PARTNER_LINK_REQUIRED', 'inactive partner'), (C6, 'CREDIT_LIMIT_CONTRADICTION', 'partner limit 50000 vs policy 100000'),
+                              (C7, 'CREDIT_NO_LIMIT_DEFINED', 'partner without settings')):
+        deny('gate: ' + label, env + call(payload(1, amount='100.00', key='k-gate-' + cust[-2:], cust=cust)), code, 'EXPOSURE_GATES')
+    deny('tenant B actor cannot reach A debtor CX', env + call(payload(1, amount='100.00', key='k-b-cx', cust=CX), uid=V, org=B), 'PAYMENT_SETTINGS_OFFICIAL_ABSENT', 'EXPOSURE_GATES')
+
+
 def nf(d): return f"SELECT set_config('test.nf_date','{d}',false);"
 
 
@@ -187,6 +251,21 @@ def main(out):
       CREATE TABLE financial_cost_centers(id uuid PRIMARY KEY, active boolean);""" + f"INSERT INTO financial_categories VALUES('{K}',true,'RECEITA');")
     # Captured d51_5 tenant-link trigger composed over a SYNTHETIC clientes fixture (id->tenant only).
     pg.sql(f"CREATE TABLE public.clientes(id uuid PRIMARY KEY, organization_id uuid NOT NULL); INSERT INTO public.clientes VALUES('{C}','{A}'),('{CB}','{B}');")  # SYNTHETIC
+    pg.sql(f"INSERT INTO public.clientes SELECT unnest(ARRAY[{','.join(q(x) for x in EXTRA_A)}]::uuid[]),'{A}';")
+    # Reduced B2B schema (only columns read by the captured exposure body), SYNTHETIC rows.
+    pg.sql(f"""ALTER TABLE partner_orders ADD COLUMN partner_id uuid, ADD COLUMN status text, ADD COLUMN total numeric(14,2),
+      ADD COLUMN final_amount_with_interest numeric(14,2), ADD COLUMN receivable_generated boolean DEFAULT false;
+      CREATE TABLE public.partner_order_financial_links(id uuid PRIMARY KEY DEFAULT gen_random_uuid(), partner_order_id uuid);
+      CREATE TABLE public.partner_financial_settings(partner_id uuid PRIMARY KEY, credit_limit numeric(14,2), overdue_tolerance_days int, block_if_overdue boolean, credit_limit_action text, active boolean);
+      CREATE TABLE public.partner_accounts(id uuid PRIMARY KEY, client_id uuid, ativo boolean, commercial_owner_organization_id uuid);
+      INSERT INTO public.partner_accounts VALUES('{PA}','{C}',true,'{A}'),('{PB}','{CB}',true,'{B}'),('{PX}','{CX}',true,'{A}'),('{PY}',NULL,true,'{A}'),
+        ('a0000000-0000-4000-8000-0000000000a4','{C4}',true,'{A}'),('a0000000-0000-4000-8000-0000000000a5','{C4}',true,'{A}'),
+        ('a0000000-0000-4000-8000-0000000000a6','{C5}',false,'{A}'),('a0000000-0000-4000-8000-0000000000a7','{C6}',true,'{A}'),('a0000000-0000-4000-8000-0000000000a8','{C7}',true,'{A}');
+      INSERT INTO public.partner_financial_settings VALUES('{PA}',100000,0,false,'block',true),('{PB}',100000,0,false,'block',true),('{PX}',100000,0,false,'block',true),('{PY}',100000,0,false,'block',true),
+        ('a0000000-0000-4000-8000-0000000000a7',50000,0,false,'block',true);""")
+    fx = next(f for f in json.loads((PKG / 'receivable-recursive-live-20261029.json').read_text())['functions'] if f['name'] == 'fn_b2b_credit_exposure')
+    pg.sql(fx['body'] + ';'); pg.sql("REVOKE ALL ON FUNCTION public.fn_b2b_credit_exposure(uuid,numeric,uuid) FROM PUBLIC;")
+    check('captured fn_b2b_credit_exposure installed exact (md5)', fx['md5'], pg.sql("SELECT md5(pg_get_functiondef('public.fn_b2b_credit_exposure(uuid,numeric,uuid)'::regprocedure))"), 'EXPOSURE_CANON')
     m.install('d51_5_validate_financial_tenant_links()')
     d51 = [(t['name'], tr['definition']) for t in m.LIVE['tables'] if t['name'] in ('accounts_receivable', 'accounts_receivable_installments', 'receivable_payments', 'financial_receipts') for tr in (t['triggers'] or []) if tr['name'] == 'd51_5_validate_tenant_links']
     for _, ddl in d51: pg.sql(ddl + ';')
@@ -332,6 +411,7 @@ def main(out):
     deny('RPC at ceiling: limit blocks before any write (no overflow)', nf('2026-10-29') + call(payload(3, amount='999999999999.99', key='k-ceiling')), 'LIMIT_EXCEEDED_BLOCK', 'NUMERIC_EDGE')
     deny('RPC above ceiling rejected', nf('2026-10-29') + call(payload(3, amount='1000000000000.00', key='k-over-ceiling')), 'TABLE_AMOUNT_INVALID', 'NUMERIC_EDGE')
     debtor_races()
+    canonical_exposure()
     # Payment and reversal through captured RPCs on Price installment 1.
     inst1 = pg.sql(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{tid}' AND installment_number=1")
     snap_before = pg.sql("SELECT jsonb_agg(to_jsonb(s) ORDER BY receivable_id) FROM platform_private.price_schedule_snapshots s")

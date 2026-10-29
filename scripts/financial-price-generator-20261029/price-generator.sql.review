@@ -168,9 +168,40 @@ END $$;
 CREATE FUNCTION platform_private.price_payment_settings(p_org uuid, p_customer uuid) RETURNS jsonb
 LANGUAGE plpgsql STABLE SET search_path = '' AS $$
 BEGIN RAISE EXCEPTION 'PAYMENT_SETTINGS_OFFICIAL_ABSENT' USING ERRCODE = '42501'; END $$;
-CREATE FUNCTION platform_private.price_credit_exposure(p_org uuid, p_customer uuid) RETURNS numeric
+-- Debtor -> partner: exactly one ACTIVE partner whose client is the debtor under this commercial owner.
+CREATE FUNCTION platform_private.price_credit_partner(p_org uuid, p_customer uuid) RETURNS uuid
 LANGUAGE plpgsql STABLE SET search_path = '' AS $$
-BEGIN RAISE EXCEPTION 'CREDIT_EXPOSURE_CANONICAL_UNCOMPOSED' USING ERRCODE = '42501'; END $$;
+DECLARE v uuid[];
+BEGIN
+  SELECT array_agg(pa.id ORDER BY pa.id) INTO v FROM public.partner_accounts pa
+   WHERE pa.client_id = p_customer AND pa.commercial_owner_organization_id = p_org AND pa.ativo IS TRUE;
+  IF v IS NULL THEN RAISE EXCEPTION 'CREDIT_PARTNER_LINK_REQUIRED' USING ERRCODE = '42501'; END IF;
+  IF cardinality(v) > 1 THEN RAISE EXCEPTION 'CREDIT_PARTNER_LINK_AMBIGUOUS' USING ERRCODE = '42501'; END IF;
+  RETURN v[1];
+END $$;
+-- Canonical exposure: captured public.fn_b2b_credit_exposure (open titles original-received by partner,
+-- committed + pending orders without generated receivable/link) PLUS open Price titles of this
+-- tenant+debtor that the canonical function cannot see (partner_id not carried), counted once.
+CREATE FUNCTION platform_private.price_credit_exposure(p_org uuid, p_customer uuid, p_partner uuid) RETURNS numeric
+LANGUAGE plpgsql STABLE SET search_path = '' AS $$
+DECLARE v jsonb; v_price numeric(14,2);
+BEGIN
+  v := public.fn_b2b_credit_exposure(p_partner, 0, NULL);
+  IF v->>'reason_code' IN ('OVERDUE_BLOCK', 'NO_LIMIT_DEFINED') THEN
+    RAISE EXCEPTION 'CREDIT_%', v->>'reason_code' USING ERRCODE = 'PT409';
+  END IF;
+  IF (v->>'credit_limit')::numeric IS DISTINCT FROM 100000.00 THEN
+    RAISE EXCEPTION 'CREDIT_LIMIT_CONTRADICTION' USING ERRCODE = '23514';
+  END IF;
+  SELECT coalesce(sum(i.original_amount - i.received_amount), 0) INTO v_price
+    FROM platform_private.price_schedule_snapshots s
+    JOIN public.accounts_receivable ar ON ar.id = s.receivable_id AND ar.organization_id = p_org AND ar.customer_id = p_customer
+    JOIN public.accounts_receivable_installments i ON i.receivable_id = ar.id
+   WHERE s.organization_id = p_org AND s.customer_id = p_customer
+     AND ar.partner_id IS DISTINCT FROM p_partner AND ar.status <> 'CANCELED'
+     AND i.status IN ('OPEN', 'PARTIAL', 'OVERDUE');
+  RETURN round((v->>'exposicao_atual')::numeric + v_price, 2);
+END $$;
 CREATE FUNCTION platform_private.price_nf_origin(p_nf uuid, p_org uuid, p_customer uuid) RETURNS date
 LANGUAGE plpgsql STABLE SET search_path = '' AS $$
 BEGIN RAISE EXCEPTION 'FISCAL_ORIGIN_UNPROVEN' USING ERRCODE = '42501'; END $$;
@@ -186,7 +217,7 @@ DECLARE
   v_key text; v_hash text; v_rcpt platform_private.price_generation_receipts;
   v_customer uuid; v_n int; v_nf_ref uuid; v_nf date; v_amount numeric;
   v_cal platform_private.holiday_calendars; v_s jsonb; v_set jsonb; v_exp numeric(14,2); v_lim numeric(14,2);
-  v_title jsonb; v_tid uuid; v_got jsonb; v_res jsonb;
+  v_title jsonb; v_tid uuid; v_partner uuid; v_got jsonb; v_res jsonb;
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE = '42501'; END IF;
   -- Fresh per-statement snapshots after the debtor lock are required; RR/SERIALIZABLE would
@@ -262,7 +293,14 @@ BEGIN
 
   v_cal := platform_private.price_pinned_calendar();
   v_s := platform_private.price_compute(v_amount, v_n, v_nf, v_cal);  -- whole plan or exception
-  v_exp := platform_private.price_credit_exposure(v_org, v_customer);  -- fresh RC statement snapshot, after debtor lock
+  v_partner := platform_private.price_credit_partner(v_org, v_customer);
+  -- Canonical B2B credit key shared with create/approve/quote/order-credit-guard writers (taken last).
+  PERFORM pg_advisory_xact_lock(hashtextextended('b2b_credit:' || v_partner::text, 0));
+  IF auth.uid() IS DISTINCT FROM v_uid OR public.is_financial_staff(v_uid) IS NOT TRUE
+     OR platform_private.h15_actor_organization() IS DISTINCT FROM v_org THEN
+    RAISE EXCEPTION 'Sem permissão para criar títulos financeiros.' USING ERRCODE = '42501';
+  END IF;
+  v_exp := platform_private.price_credit_exposure(v_org, v_customer, v_partner);  -- fresh RC statement snapshot, after locks
   IF v_exp IS NULL OR v_exp < 0 THEN RAISE EXCEPTION 'EXPOSURE_INVALID' USING ERRCODE = '23514'; END IF;
   IF v_exp + (v_s->>'financed_total')::numeric > v_lim THEN
     RAISE EXCEPTION 'LIMIT_EXCEEDED_BLOCK' USING ERRCODE = 'PT409';
@@ -296,7 +334,7 @@ END $$;
 REVOKE ALL ON FUNCTION platform_private.price_immutable(), platform_private.price_calendar_load(text,text),
   platform_private.price_pinned_calendar(), platform_private.price_adjusted_due(date, platform_private.holiday_calendars),
   platform_private.price_compute(numeric,int,date,platform_private.holiday_calendars),
-  platform_private.price_payment_settings(uuid,uuid), platform_private.price_credit_exposure(uuid,uuid),
+  platform_private.price_payment_settings(uuid,uuid), platform_private.price_credit_partner(uuid,uuid), platform_private.price_credit_exposure(uuid,uuid,uuid),
   platform_private.price_nf_origin(uuid,uuid,uuid), platform_private.price_accounting_gate(uuid,uuid)
   FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.rpc_create_price_receivable_candidate(jsonb) FROM PUBLIC, anon, service_role;
