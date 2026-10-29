@@ -1,16 +1,32 @@
 PASS exact LIVE body fn_b2b_guard_credit_approval_fields()
 PASS exact LIVE body approve_b2b_credit(uuid,text)
 PASS exact LIVE exposure
-PASS RED captured guard accepts caller-set GUC
 Traceback (most recent call last):
-  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 129, in <module>
+  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 132, in <module>
     if __name__=='__main__': main()
                              ~~~~^^
-  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 85, in main
-    pg.sql((H/'01-credit-approval.body.sql.review').read_text())
-    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 84, in main
+    reset()
+    ~~~~~^^
+  File "/dev-server/scripts/arbio-fsf-incremental-20261029/test_incremental.py", line 77, in reset
+    pg.sql(f"TRUNCATE partner_orders,partner_order_audit_logs; INSERT INTO partner_orders(id,partner_id,created_by,total,status) VALUES('{O}','{P}','{U}',{amount},'aguardando_aprovacao_credito');")
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/dev-server/scripts/contracts-c2-20261022/integral/pg.py", line 16, in sql
     assert r.returncode == 0, r.stderr[-3000:]
            ^^^^^^^^^^^^^^^^^
-AssertionError: ERROR:  trigger "trg_partner_orders_credit_guard" for table "partner_orders" does not exist
+AssertionError: ERROR:  invalid input value for enum partner_order_status: "aguardando_ajuste_comercial"
+LINE 5: ...                   'aguardando_aprovacao_credito','aguardand...
+                                                             ^
+QUERY:  SELECT COALESCE(SUM(ROUND(COALESCE(po.final_amount_with_interest, po.total, 0),2)),0)
+                     FROM public.partner_orders po
+  WHERE po.partner_id = p_partner_id
+    AND po.status IN ('pendente','solicitado','em_analise_comercial',
+                      'aguardando_aprovacao_credito','aguardando_ajuste_comercial',
+                      'aguardando_itens')
+    AND COALESCE(po.receivable_generated,false) = false
+    AND NOT EXISTS (SELECT 1 FROM public.partner_order_financial_links pofl
+                    WHERE pofl.partner_order_id = po.id)
+    AND (p_exclude_order_id IS NULL OR po.id <> p_exclude_order_id)
+CONTEXT:  PL/pgSQL function fn_b2b_credit_exposure(uuid,numeric,uuid) line 47 at SQL statement
+PL/pgSQL function tg_partner_orders_credit_guard() line 46 at assignment
 
