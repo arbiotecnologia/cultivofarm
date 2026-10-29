@@ -59,7 +59,7 @@
     "default_payment_method": null,
     "safra_period_dates": null,
     "guarantee_evidence_and_sufficiency": null,
-    "holiday_calendar_source": null
+    "holiday_calendar_source": "PARTIAL: Paracatu-MG 2026 official dataset; 2027+ not covered (no official annual calendar)"
   },
   "documents": [
     "contrato B2B",
@@ -148,8 +148,10 @@
     "nominal_calendar": "first nominal = NF issue + 30 days; installment k = same day as first nominal in month +k, last day if shorter (computed from first nominal, no drift)",
     "business_day_adjustment": "weekend/holiday rolls forward to next business day; no extra interest; adjusted date never shifts nominal anchor",
     "pro_rata": "none",
-    "holiday_calendar": "explicit versioned input with locality and coverage required; absent -> CALENDAR_SOURCE_REQUIRED; no real calendar in project",
-    "period_convention": "fixed monthly Price periods"
+    "holiday_calendar": "explicit versioned official dataset required; locality pinned Paracatu-MG (national + municipal general holidays); no fallback to national-only or other municipality; absent -> CALENDAR_SOURCE_REQUIRED; outside coverage -> CALENDAR_COVERAGE_EXCEEDED for the whole plan",
+    "period_convention": "fixed monthly Price periods",
+    "holiday_calendar_locality": "Paracatu-MG",
+    "holiday_calendar_dataset": "calendars/paracatu-mg-2026.json"
   },
   "resolved_by_active_candidate": {
     "installment_count": "1..3",
@@ -161,6 +163,7 @@
     "credit_exposure_basis": "financed total with interest",
     "later_dues": "same day following months, month-end clamp",
     "business_day_rolling": "next business day, no extra interest",
-    "pro_rata": "none"
+    "pro_rata": "none",
+    "holiday_calendar_locality": "Paracatu-MG (owner decision 2026-10-29)"
   }
 }
