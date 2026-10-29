@@ -104,12 +104,18 @@ def exercise(h, metadata):
    WHERE pa.id=v_order.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
      AND o.ativo IS TRUE AND o.status='ativa';"""
     corrected=transform('generate_b2b_receivable_secure_impl',anchor,replacement)
+    for name in ['partner_order_items','partner_order_payment_terms']:
+        h.table(name)
+        h.extra_state_tables.append(name)
+        h.acl('TABLE',name,h.relation(name)['acl'])
+        m.pg.sql('ALTER TABLE '+name+' ENABLE ROW LEVEL SECURITY;')
+        # Empty relations cannot fabricate prices/terms/approval; only compose
+        # captured columns/checks to reach the legitimate missing-contract denial.
     # order approved fixture lacks legitimate terms: reach exact captured gate,
     # not fabricate terms or flip eligible. Capture its real error as BLOCKED.
     before=h.state();res=h.client(impl_call())
     error=h.error_tuple(res)
-    print('owner next gate',error,file=__import__('sys').stderr)
-    h.check('GREEN owner proceeds only to legitimate billing denial',True,error[1].startswith('billing_not_eligible:'),green)
+    h.check('GREEN owner proceeds only to legitimate billing denial',('P0001','billing_not_eligible:PAYMENT_TERMS_NOT_DEFINED'),error,green)
     h.check('GREEN billing denial atomic',before,h.state(),green)
     h.responses.append(dict(test='owner full impl next gate',stderr=res.stderr))
     reject('GREEN buyer cannot become creditor',impl_call(),('42501','B2B_FINANCIAL_TENANT_MISMATCH'),h.V)
