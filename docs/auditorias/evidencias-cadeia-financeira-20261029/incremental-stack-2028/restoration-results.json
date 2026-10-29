@@ -1,4 +1,268 @@
 {
-  "restoration": "BLOCKED",
-  "error": "ERROR:  function platform_private.h15_actor_organization() does not exist\nLINE 1: ...ustment_date\" date,\"organization_id\" uuid DEFAULT platform_p...\n                                                             ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+  "unrestored_functions_views": [
+    {
+      "object": "rpc_planejamento_publicar_v1(uuid,text)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 22: ...ction_planning_publications WHERE idempotency_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "platform_private.manual_cq_v1(uuid,uuid,jsonb)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 117: ...ckpit_operacao_idempotencia WHERE idempotency_key=[REDACTED]...\n                                                               ^\n"
+    },
+    {
+      "object": "platform_private.catalog_tenant_set_visibility_core(text,uuid,boolean,integer,text,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 32: ...uid AND organization_id=v_org AND idempotency_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "tenant_catalog_set_visibility(text,uuid,boolean,integer,text,uuid)",
+      "error": "ERROR:  function platform_private.catalog_tenant_set_visibility_core(text, uuid, boolean, integer, text, uuid) does not exist\nLINE 6:   SELECT platform_private.catalog_tenant_set_visibility_core...\n                 ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    {
+      "object": "b2b_claim_provisioning(uuid,uuid,text,text,app_role[],uuid[],uuid)",
+      "error": "ERROR:  function platform_private.b2b_claim_provisioning(uuid, uuid, text, text, public.app_role[], uuid[], uuid) does not exist\nLINE 5: AS $function$ SELECT platform_private.b2b_claim_provisioning...\n                             ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    {
+      "object": "platform_private.b2b_claim_provisioning(uuid,uuid,text,text,app_role[],uuid[],uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 28:  WHERE actor_id=auth.uid() AND idempotency_key=[REDACTED] FO...\n                                                        ^\n"
+    },
+    {
+      "object": "platform_private.b2b_claim_provisioning(uuid,uuid,text,text,app_role,uuid[],uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 29:  WHERE actor_id=auth.uid() AND idempotency_key=[REDACTED] FO...\n                                                        ^\n"
+    },
+    {
+      "object": "b2b_claim_provisioning(uuid,uuid,text,text)",
+      "error": "ERROR:  function platform_private.b2b_claim_provisioning(uuid, uuid, text, text) does not exist\nLINE 6:  SELECT platform_private.b2b_claim_provisioning(p_partner,p_...\n                ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    {
+      "object": "b2b_complete_provisioning_compensation(uuid,uuid,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 29: ...AND cliente_id=ANY(r.cliente_ids) AND assigned_by=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "b2b_claim_provisioning(uuid,uuid,text,text,app_role,uuid[],uuid)",
+      "error": "ERROR:  function platform_private.b2b_claim_provisioning(uuid, uuid, text, text, public.app_role, uuid[], uuid) does not exist\nLINE 6:  SELECT platform_private.b2b_claim_provisioning(p_partner,p_...\n                ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    {
+      "object": "rpc_cc_upsert_item_price(uuid,uuid,uuid,text,uuid,uuid,uuid,uuid,text,numeric,numeric,text,numeric,numeric,date,date,boolean,text)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 32:        SET assignment_id=[REDACTED] plan_id=p_plan_id, buyer...\n                                  ^\n"
+    },
+    {
+      "object": "platform_private.tenant_email_settings_save(bigint,jsonb,text)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 36:  credential_configured=[REDACTED]'DRAFT',sender_verified=fal...\n                                ^\n"
+    },
+    {
+      "object": "tenant_email_settings_save(bigint,jsonb,text)",
+      "error": "ERROR:  function platform_private.tenant_email_settings_save(bigint, jsonb, text) does not exist\nLINE 6:  SELECT platform_private.tenant_email_settings_save(p_expect...\n                ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    {
+      "object": "platform_private.tenant_smtp_test_claim(text,bigint,uuid,boolean)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 20: ..._id=v_org AND actor_id=auth.uid() AND request_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "tenant_smtp_test_claim(text,bigint,uuid,boolean)",
+      "error": "ERROR:  function platform_private.tenant_smtp_test_claim(text, bigint, uuid, boolean) does not exist\nLINE 5: AS $function$ SELECT platform_private.tenant_smtp_test_claim...\n                             ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    {
+      "object": "tenant_smtp_test_finish(uuid,uuid,uuid,text)",
+      "error": "ERROR:  schema \"tenant_smtp_executor\" does not exist\nLINE 5: AS $function$ SELECT tenant_smtp_executor.tenant_smtp_test_f...\n                             ^\n"
+    },
+    {
+      "object": "tenant_smtp_test_prepare(uuid,uuid,uuid)",
+      "error": "ERROR:  schema \"tenant_smtp_executor\" does not exist\nLINE 5: AS $function$ SELECT tenant_smtp_executor.tenant_smtp_test_p...\n                             ^\n"
+    },
+    {
+      "object": "platform_private.tenant_smtp_sender_challenge_claim(bigint,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 16: ..._id=v_org AND actor_id=auth.uid() AND request_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "tenant_smtp_sender_challenge_claim(bigint,uuid)",
+      "error": "ERROR:  function platform_private.tenant_smtp_sender_challenge_claim(bigint, uuid) does not exist\nLINE 5: AS $function$ SELECT platform_private.tenant_smtp_sender_cha...\n                             ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    {
+      "object": "tenant_smtp_sender_challenge_prepare(uuid,uuid,uuid,text,text)",
+      "error": "ERROR:  schema \"tenant_smtp_executor\" does not exist\nLINE 5: AS $function$ SELECT tenant_smtp_executor.tenant_smtp_sender...\n                             ^\n"
+    },
+    {
+      "object": "tenant_smtp_sender_challenge_finish(uuid,uuid,uuid,text)",
+      "error": "ERROR:  schema \"tenant_smtp_executor\" does not exist\nLINE 5: AS $function$ SELECT tenant_smtp_executor.tenant_smtp_sender...\n                             ^\n"
+    },
+    {
+      "object": "platform_private.tenant_smtp_lane_ready(uuid)",
+      "error": "ERROR:  schema \"tenant_smtp_executor\" does not exist\nLINE 6: AS $function$ SELECT tenant_smtp_executor.tenant_smtp_dispat...\n                             ^\n"
+    },
+    {
+      "object": "tenant_smtp_lane_claim(text)",
+      "error": "ERROR:  schema \"tenant_smtp_executor\" does not exist\nLINE 5: AS $function$ SELECT tenant_smtp_executor.tenant_smtp_lane_c...\n                             ^\n"
+    },
+    {
+      "object": "tenant_smtp_lane_authorize(uuid,uuid)",
+      "error": "ERROR:  schema \"tenant_smtp_executor\" does not exist\nLINE 5: AS $function$ SELECT tenant_smtp_executor.tenant_smtp_lane_a...\n                             ^\n"
+    },
+    {
+      "object": "tenant_smtp_lane_finish(uuid,uuid,text)",
+      "error": "ERROR:  schema \"tenant_smtp_executor\" does not exist\nLINE 5: AS $function$ SELECT tenant_smtp_executor.tenant_smtp_lane_f...\n                             ^\n"
+    },
+    {
+      "object": "rpc_set_payable_allocations(uuid,jsonb,text,integer,uuid)",
+      "error": "ERROR:  function finance_private.set_payable_allocations(uuid, jsonb, text, integer, uuid) does not exist\nLINE 6:  SELECT finance_private.set_payable_allocations(p_payable_id...\n                ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    {
+      "object": "rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 38: ...rm_private.stock_batch_requests WHERE request_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "platform_private.user_edit_f2_common(uuid,timestamp with time zone,jsonb,app_role[],uuid[],uuid,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 59: ...uid() AND organization_id=org AND idempotency_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "recover_partner_order_attempt_v1(uuid,text,bigint,boolean,uuid)",
+      "error": "ERROR:  function platform_private.c2_recover_order_attempt_core(uuid, text, bigint, boolean, uuid) does not exist\nLINE 6:  SELECT platform_private.c2_recover_order_attempt_core(p_par...\n                ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
+    },
+    {
+      "object": "platform_private.c2_recover_order_attempt_core(uuid,text,bigint,boolean,uuid)",
+      "error": "ERROR:  mismatched parentheses at or near \";\"\nLINE 50: ...mpotency_key=[REDACTED] THEN 'closed' ELSE 'uncertain' END);\n                                                                       ^\n"
+    },
+    {
+      "object": "rpc_salvar_aplicacao_v1(uuid,jsonb,uuid,jsonb,uuid[])",
+      "error": "ERROR:  schema \"storage\" does not exist\nCONTEXT:  compilation of PL/pgSQL function \"rpc_salvar_aplicacao_v1\" near line 7\n"
+    },
+    {
+      "object": "platform_fail_org_admin_provisioning(uuid,uuid,text)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 14: ...p_job_id AND status='processando' AND lease_token=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "platform_claim_org_admin_provisioning(uuid,text,text,text,text,text,boolean)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 47:        SET status='processando', lease_token=[REDACTED]     ...\n                                                      ^\n"
+    },
+    {
+      "object": "platform_accept_org_admin_email_delivery(uuid,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 27:          email_lease_token=[REDACTED]   WHERE id=j.id AND em...\n                                    ^\n"
+    },
+    {
+      "object": "platform_fail_org_admin_email_delivery(uuid,uuid,text,integer)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 30:    WHERE id=j.id AND email_lease_token=[REDACTED]  RETURN js...\n                                                ^\n"
+    },
+    {
+      "object": "platform_claim_org_admin_email_delivery(uuid,integer)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 42:          email_idempotency_key=[REDACTED]         email_leas...\n                                        ^\n"
+    },
+    {
+      "object": "platform_mark_org_admin_email_ambiguous(uuid,uuid,text)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 15: ...ated_at=now() WHERE id=j.id AND email_lease_token=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "rpc_fiscal_event_sefaz_prepare_v1(uuid,text,text,text,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 27: ...tor_org AND event_type=v_type AND idempotency_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "platform_publish_plan_version_draft(uuid,text,uuid,text)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 71:     publish_key=[REDACTED] WHERE id=v.id;\n                         ^\n"
+    },
+    {
+      "object": "platform_private.set_org_principal_admin_core(uuid,uuid,text,uuid,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 20: ...ction='principal_transferred' AND idempotency_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "platform_private.update_org_admin_core(uuid,text,text,text,text,timestamp with time zone,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 25: ...ction='admin_profile_updated' AND idempotency_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "platform_begin_org_admin_email_change(uuid,uuid,text,text,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 21: ...orm_org_admin_email_changes WHERE idempotency_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "platform_private.update_organization_profile_core(uuid,text,text,text,text,timestamp with time zone,uuid,jsonb)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 33: ....organization_profile_audit WHERE idempotency_key=[REDACTED]...\n                                                              ^\n"
+    },
+    {
+      "object": "finance_private.set_payable_allocations(uuid,jsonb,text,integer,uuid)",
+      "error": "ERROR:  syntax error at or near \"[\"\nLINE 26: ...ons WHERE payable_id=p_payable_id AND request_key=[REDACTED]...\n                                                              ^\n"
+    }
+  ],
+  "defaults_failed": [],
+  "constraints_failed": [
+    {
+      "object": "\"public\".\"microorganism_regulatory_dossiers\".trg_regulatory_published_candidate_guard",
+      "error": "ERROR:  syntax error at or near \"TRIGGER\"\nLINE 1: ...TRAINT \"trg_regulatory_published_candidate_guard\" TRIGGER DE...\n                                                             ^\n"
+    }
+  ],
+  "policies_failed": [],
+  "triggers_failed": [
+    {
+      "object": "\"auth\".\"users\".a00_cf_user_gate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"auth\".\"users\".a00_cf_user_no_truncate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"user_clientes\".a00_cf_user_gate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"user_clientes\".a00_cf_user_no_truncate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"user_clientes\".z90_cf_touch_profile",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"platform_org_admin_invites\".a00_cf_invitation_gate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"platform_org_admin_invites\".a00_cf_invitation_no_truncate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"platform_org_admin_invites\".z90_cf_invitation_profile_stamp",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"partner_users\".a00_cf_user_gate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"partner_users\".a00_cf_user_no_truncate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"partner_users\".z90_cf_touch_profile",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"profiles\".a00_cf_user_gate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"profiles\".a00_cf_user_no_truncate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"profiles\".z99_cf_profile_stamp",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"profiles\".z99_cf_require_admin",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"user_roles\".a00_cf_user_gate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"user_roles\".a00_cf_user_no_truncate",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"user_roles\".z90_cf_touch_profile",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    },
+    {
+      "object": "\"public\".\"user_roles\".z99_cf_require_admin",
+      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+    }
+  ],
+  "preflight": "FAIL",
+  "preflight_error": "ERROR:  FUNCTION_OR_ACL_DRIFT: tg_pfs_updated_at()\nCONTEXT:  PL/pgSQL function inline_code_block line 92 at RAISE\n"
 }
