@@ -101,6 +101,7 @@ def main():
     m.pg.sql(f"INSERT INTO profiles VALUES('{V}','{m.B}',true,false); INSERT INTO user_roles VALUES('{V}','financeiro'); CREATE TABLE auth.users(id uuid PRIMARY KEY); INSERT INTO auth.users VALUES('{m.U}'),('{V}');")
     m.pg.sql('DROP TABLE accounts_payable_installments,payable_payments,accounts_payable;')
     for name in ['accounts_payable','accounts_payable_installments','payable_payments']: table(name)
+    acl('TABLE','accounts_receivable',relation('accounts_receivable')['acl'])
     m.pg.sql('ALTER TABLE financial_audit_log ADD CONSTRAINT financial_audit_log_performed_by_fkey FOREIGN KEY(performed_by) REFERENCES auth.users(id);')
     for name in ['guard_tenant_organization_id','d51_5_validate_financial_tenant_links','fn_h6_guard_ap_installment_snapshot','fn_h6d_block_hard_delete','tg_recalc_risk_on_ar_change']: install(name)
     for name in ['accounts_receivable_installments','accounts_payable_installments']:
