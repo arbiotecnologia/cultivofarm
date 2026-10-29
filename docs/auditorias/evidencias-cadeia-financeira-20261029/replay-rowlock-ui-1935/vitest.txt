@@ -1,0 +1,12 @@
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/comercial/creditBlockReason.test.ts (4 tests) 6ms
+ ✓ src/test/comercial/responderCotacaoCreditReason.test.tsx (3 tests) 564ms
+   ✓ ResponderCotacaoDialog credit block reason > shows the inactive-settings reason returned by the server  309ms
+
+ Test Files  2 passed (2)
+      Tests  7 passed (7)
+   Start at  19:27:17
+   Duration  4.04s (transform 258ms, setup 323ms, collect 851ms, tests 570ms, environment 2.25s, prepare 284ms)
+
