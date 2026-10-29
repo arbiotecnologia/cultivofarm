@@ -1,0 +1,54 @@
+-- partner_order_items: SELECT-only read for internal staff of the commercial owner (via order -> partner).
+-- REVIEW ONLY. Target ref swzpzcwiasxmjutrmvkm. Requires partner-orders-owner-read installed (pinned below).
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+SET LOCAL statement_timeout = '30s';
+LOCK TABLE public.partner_orders, public.partner_order_items IN ACCESS EXCLUSIVE MODE;
+-- ---------- PREFLIGHT ----------
+DO $pre$
+DECLARE v text;
+BEGIN
+  IF to_regprocedure('platform_private.b2b_owner_internal_partner_readable(uuid)') IS NULL
+     OR (SELECT md5(pg_get_functiondef('platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure))) <> 'fa72ca18fc673cb4a5ff4867e65137cd'
+  THEN RAISE EXCEPTION 'PRE_ORDERS_PACKAGE_MISSING'; END IF;
+  SELECT md5(SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_orders';
+  IF v <> '87776bb912a6157a493cd0488586c7af' THEN RAISE EXCEPTION 'PRE_ORDERS_POLICIES_DRIFT %', v; END IF;
+  IF (SELECT md5(pg_get_functiondef('platform_private.b2b_phase1_order_visible(uuid)'::regprocedure))) <> '8504f07fbc3a7975accf919f386d00eb'
+  THEN RAISE EXCEPTION 'PRE_PIN_ORDER_VISIBLE'; END IF;
+  IF to_regprocedure('platform_private.b2b_owner_internal_order_readable(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'PRE_ALREADY_INSTALLED'; END IF;
+  SELECT md5(SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_order_items';
+  IF v <> '3233f822832e8121b0c42aaf572c4ada' THEN RAISE EXCEPTION 'PRE_POLICIES_DRIFT %', v; END IF;
+END $pre$;
+-- ---------- CHANGE ----------
+CREATE FUNCTION platform_private.b2b_owner_internal_order_readable(p_order uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $f$
+  SELECT EXISTS (SELECT 1 FROM public.partner_orders o
+                 WHERE o.id = p_order AND platform_private.b2b_owner_internal_partner_readable(o.partner_id))
+$f$;
+REVOKE ALL ON FUNCTION platform_private.b2b_owner_internal_order_readable(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION platform_private.b2b_owner_internal_order_readable(uuid) TO authenticated, service_role;
+DROP POLICY b2b_phase1_tenant_guard ON public.partner_order_items;
+CREATE POLICY b2b_phase1_tenant_guard_select ON public.partner_order_items AS RESTRICTIVE FOR SELECT TO authenticated
+  USING (platform_private.b2b_phase1_order_visible(order_id) OR platform_private.b2b_owner_internal_order_readable(order_id));
+CREATE POLICY b2b_phase1_tenant_guard_insert ON public.partner_order_items AS RESTRICTIVE FOR INSERT TO authenticated
+  WITH CHECK (platform_private.b2b_phase1_order_visible(order_id));
+CREATE POLICY b2b_phase1_tenant_guard_update ON public.partner_order_items AS RESTRICTIVE FOR UPDATE TO authenticated
+  USING (platform_private.b2b_phase1_order_visible(order_id)) WITH CHECK (platform_private.b2b_phase1_order_visible(order_id));
+CREATE POLICY b2b_phase1_tenant_guard_delete ON public.partner_order_items AS RESTRICTIVE FOR DELETE TO authenticated
+  USING (platform_private.b2b_phase1_order_visible(order_id));
+-- ---------- POSTFLIGHT ----------
+DO $post$
+DECLARE v text;
+BEGIN
+  IF (SELECT md5(pg_get_functiondef('platform_private.b2b_phase1_order_visible(uuid)'::regprocedure))) <> '8504f07fbc3a7975accf919f386d00eb'
+     OR (SELECT md5(pg_get_functiondef('platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure))) <> 'fa72ca18fc673cb4a5ff4867e65137cd'
+  THEN RAISE EXCEPTION 'POST_DEPENDENCY_DRIFT'; END IF;
+  IF (SELECT md5(pg_get_functiondef('platform_private.b2b_owner_internal_order_readable(uuid)'::regprocedure))) <> '__HELPER_MD5__'
+  THEN RAISE EXCEPTION 'POST_HELPER_BODY_DRIFT'; END IF;
+  IF (SELECT NOT prosecdef OR proconfig IS DISTINCT FROM ARRAY['search_path=""'] OR array_to_string(proacl,',') <> 'postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres'
+      FROM pg_proc WHERE oid='platform_private.b2b_owner_internal_order_readable(uuid)'::regprocedure)
+  THEN RAISE EXCEPTION 'POST_HELPER_ACL_OR_CONFIG'; END IF;
+  SELECT md5(SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_order_items';
+  IF v <> '__POST_POLICIES_MD5__' THEN RAISE EXCEPTION 'POST_POLICIES_DRIFT %', v; END IF;
+END $post$;
+COMMIT;

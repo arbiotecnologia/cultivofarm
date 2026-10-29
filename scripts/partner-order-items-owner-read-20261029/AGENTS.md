@@ -1,0 +1,4 @@
+- Review-only complement: never apply hosted or publish from here; requires the partner-orders-owner-read package installed first (pinned) — prevents a header-only release being reported as full order reading.
+- Widen only SELECT on partner_order_items via order→partner→commercial owner; keep permissive SELECT roles and exact DML predicates — never invent finance item access.
+- Never modify shared phase1 helpers; rollback restores the original ALL guard and neutralizes the helper — deny-safe.
+- Local tests use synthetic rows and unsigned claims; only real-session REST reads prove JWT/RLS.
