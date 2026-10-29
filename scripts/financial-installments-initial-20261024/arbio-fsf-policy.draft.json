@@ -147,8 +147,9 @@
     "exposure_basis": "financed_total_rounded_sum_of_installments_including_interest",
     "nominal_calendar": "first nominal = NF issue + 30 days; installment k = same day as first nominal in month +k, last day if shorter (computed from first nominal, no drift)",
     "business_day_adjustment": "weekend/holiday rolls forward to next business day; no extra interest; adjusted date never shifts nominal anchor",
-    "pro_rata": "none; fixed monthly Price periods",
-    "holiday_calendar": "explicit versioned input with locality and coverage required; absent -> CALENDAR_SOURCE_REQUIRED; no real calendar in project"
+    "pro_rata": "none",
+    "holiday_calendar": "explicit versioned input with locality and coverage required; absent -> CALENDAR_SOURCE_REQUIRED; no real calendar in project",
+    "period_convention": "fixed monthly Price periods"
   },
   "resolved_by_active_candidate": {
     "installment_count": "1..3",
