@@ -3,6 +3,7 @@
 ## 29/10 15:36 — partes e limite explícito, somente offline
 - [x] Executar810checks/0FAIL/14corridas; preservar651anteriores,monetário37/proveniência42/Vitest10PASS; hipóteses owner/zero só offline.
 - [x] Decisões registradas noDRAFT/planooriginal/relatório; evidências1536 e68arquivoshistóricos preservados.
+- [x] Método padrão Boleto Bancário registrado na autoridade candidata; resolução real BLOCKED: linhas de payment_methods não capturadas.
 - [ ] Cadeia fiscal/contábil integral permanece sem homologação e sem autorização produtiva.
 
 ## 29/10 15:03 — decisão cadastro separado, offline
