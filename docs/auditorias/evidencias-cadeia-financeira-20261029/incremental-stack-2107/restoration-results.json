@@ -1,0 +1,4 @@
+{
+  "restoration": "BLOCKED",
+  "error": "ERROR:  type \"storage.buckettype\" does not exist\nLINE 1: ...allowed_mime_types\" text[],\"owner_id\" text,\"type\" storage.bu...\n                                                             ^\n"
+}
