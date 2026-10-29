@@ -9,7 +9,7 @@ spec = importlib.util.spec_from_file_location('battery', H/'test-financial-batte
 b = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(b)
 C = json.loads((H/'arbio-fsf-policy.full-term-20261028.superseded.json').read_text())
-OUT = b.ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029/price-authority-1753/full-term-superseded-override'
+OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('/tmp/arbio-fsf-override-out')  # never default to versioned evidence
 rows = []
 def record(label, status, expected, actual, level='LOCAL_DECIMAL_PG_ARITHMETIC', priority='P1'):
     rows.append(dict(id=f'ARFSF-OVR-{len(rows)+1:03}',cenario=label,status=status,
