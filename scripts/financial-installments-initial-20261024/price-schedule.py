@@ -304,10 +304,10 @@ def run(out=None):
     for n, code in ((4, 'INSTALLMENTS_OUT_OF_RANGE'), (0, 'INSTALLMENTS_OUT_OF_RANGE'), (True, 'INSTALLMENTS_INVALID'), (2.0, 'INSTALLMENTS_INVALID'), ('2', 'INSTALLMENTS_INVALID')):
         rejects(f'schedule n={n!r}', code, lambda: price_schedule(p, n))
         rejects(f'dates n={n!r}', code, lambda: due_dates_candidate(datetime.date(2026, 1, 1), n))
-    for v in ('1E+999999', '9' * 40, '1E-999999', '-1E+999999', '1E+13'):
-        rejects(f'principal magnitude {v}', 'PRINCIPAL_OUT_OF_RANGE', lambda: price_schedule(v, 2))
-        rejects(f'limit magnitude {v}', 'CREDIT_LIMIT_OUT_OF_RANGE', lambda: candidate_plan(p, 2, '0', v, 'financed_total'))
-        rejects(f'exposure magnitude {v}', 'EXPOSURE_OUT_OF_RANGE', lambda: candidate_plan(p, 2, v, LIMIT, 'financed_total'))
+    for v, code in (('1E+999999', 'OUT_OF_RANGE'), ('9' * 40, 'OUT_OF_RANGE'), ('-1E+999999', 'OUT_OF_RANGE'), ('1E+13', 'OUT_OF_RANGE'), ('1E-999999', 'SUBCENT')):
+        rejects(f'principal magnitude {v}', 'PRINCIPAL_' + code, lambda: price_schedule(v, 2))
+        rejects(f'limit magnitude {v}', 'CREDIT_LIMIT_' + code, lambda: candidate_plan(p, 2, '0', v, 'financed_total'))
+        rejects(f'exposure magnitude {v}', 'EXPOSURE_' + code, lambda: candidate_plan(p, 2, v, LIMIT, 'financed_total'))
     FT = 'financed_total'
     rejects('negative exposure cannot widen limit', 'EXPOSURE_NEGATIVE', lambda: candidate_plan('100000.00', 1, '-50000', LIMIT, FT))
     rejects('principal basis rejected', 'EXPOSURE_BASIS_PRINCIPAL_REJECTED', lambda: candidate_plan(p, 3, '0', LIMIT, 'principal'))
