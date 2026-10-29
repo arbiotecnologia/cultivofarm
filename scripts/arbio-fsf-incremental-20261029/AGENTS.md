@@ -1,0 +1,4 @@
+- This package prepares incremental production review under the owner's 2026-10-29 authorization; never execute hosted SQL or publish in the preparation turn — exact artifacts require inspection first.
+- Assemble transactional SQL only from captured production metadata and reviewed sources with exact pins; synthetic harness seams never enter deployable SQL — prevents false financial authority.
+- Approval authority uses a private transaction/actor/order ticket, never a GUC; rollback is deny-only and retains history and restrictive policies — prevents reopening bypasses.
+- Preserve organizations unchanged, all fiscal/accounting/downstream gates and external outputs OFF; the Price generator and client-link activation remain individually gated — prevents transitive operational release.
