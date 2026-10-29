@@ -1029,4 +1029,5 @@
 
 ## 29/10 17:41 — Price até 3 parcelas, offline
 - [x] Motor Price, limites, calendário candidato e testes.
-- [ ] Calendário: evento âncora, pro-rata e dia útil (aguarda decisão humana).
+- [x] Âncora NF+30 decidida.
+- [ ] Base de exposição (principal × total financiado), clamp, dia útil e pro-rata — aguardam decisão humana.
