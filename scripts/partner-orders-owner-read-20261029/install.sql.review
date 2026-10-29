@@ -3,6 +3,8 @@
 BEGIN;
 SET LOCAL lock_timeout = '3s';
 SET LOCAL statement_timeout = '30s';
+-- Lock first so policy pins are read and replaced under the same ACCESS EXCLUSIVE lock (no TOCTOU on policies).
+LOCK TABLE public.partner_orders IN ACCESS EXCLUSIVE MODE;
 
 -- ---------- PREFLIGHT (pins captured read-only 2026-10-29 21:5xZ) ----------
 DO $pre$
@@ -58,6 +60,10 @@ CREATE POLICY b2b_phase1_tenant_guard_delete ON public.partner_orders AS RESTRIC
 DO $post$
 DECLARE v text;
 BEGIN
+  IF (SELECT md5(pg_get_functiondef('platform_private.b2b_phase1_partner_visible(uuid,boolean)'::regprocedure))) <> '915f516e605af7cc14584e2e762a2661'
+     OR (SELECT md5(pg_get_functiondef('platform_private.h15_actor_organization()'::regprocedure))) <> '64e10608403238a41a9baf92857ca881'
+     OR (SELECT md5(pg_get_functiondef('platform_private.has_role(uuid,public.app_role)'::regprocedure))) <> 'c5af5b55de6d79da9b73a33948746ae2'
+  THEN RAISE EXCEPTION 'POST_DEPENDENCY_DRIFT'; END IF;
   IF (SELECT md5(pg_get_functiondef('platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure))) <> '__HELPER_MD5__'
   THEN RAISE EXCEPTION 'POST_HELPER_BODY_DRIFT'; END IF;
   IF (SELECT NOT prosecdef OR proconfig IS DISTINCT FROM ARRAY['search_path=""'] OR array_to_string(proacl,',') <> 'postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres'

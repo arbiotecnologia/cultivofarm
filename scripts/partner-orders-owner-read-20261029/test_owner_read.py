@@ -38,8 +38,15 @@ POL_Q = """SELECT md5(string_agg(policyname||'|'||permissive||'|'||cmd||'|'||arr
 
 
 def first_err(out):
-    m = re.search(r'ERROR:\s+(.*)', out)
-    return 'ERR:' + m.group(1)[:120] if m else out.splitlines()[-1] if out else ''
+    """Structured outcome: SQLSTATE for errors (VERBOSITY verbose), otherwise the last result line (counts)."""
+    m = re.search(r'ERROR:\s+([0-9A-Z]{5}):', out)
+    if m: return 'SQLSTATE=' + m.group(1)
+    if 'ERROR' in out: return 'ERR_UNPARSED'
+    return out.strip().splitlines()[-1] if out.strip() else ''
+
+
+def state():
+    return pg.sql("SELECT md5(string_agg(to_jsonb(o)::text, ',' ORDER BY id)) FROM public.partner_orders o")
 
 
 def snapshot(order_json):
@@ -48,21 +55,20 @@ def snapshot(order_json):
     for k, uid in U.items():
         r = {}
         for lab, pid in (('sel_PART', PART), ('sel_PART2', PART2)):
-            rc, out = attempt(uid, f"SELECT 'N='||count(*) FROM public.partner_orders WHERE partner_id='{pid}';")
+            rc, out = attempt(uid, "\\set VERBOSITY verbose\n" + f"SELECT 'N='||count(*) FROM public.partner_orders WHERE partner_id='{pid}';")
             r[lab] = first_err(out)
         new = json.loads(order_json); new['id'] = 'e0000000-0000-4000-8000-0000000000ff'
         lit = json.dumps(new).replace("'", "''")
-        rc, out = attempt(uid, f"BEGIN; INSERT INTO public.partner_orders SELECT * FROM jsonb_populate_record(NULL::public.partner_orders, '{lit}'::jsonb); SELECT 'INSERTED'; ROLLBACK;")
+        rc, out = attempt(uid, "\\set VERBOSITY verbose\n" + f"BEGIN; INSERT INTO public.partner_orders SELECT * FROM jsonb_populate_record(NULL::public.partner_orders, '{lit}'::jsonb); SELECT 'INSERTED'; ROLLBACK;")
         r['insert'] = first_err(out)
-        rc, out = attempt(uid, f"BEGIN; WITH u AS (UPDATE public.partner_orders SET updated_at=updated_at WHERE id='{O1}' RETURNING 1) SELECT 'U='||count(*) FROM u; ROLLBACK;")
+        rc, out = attempt(uid, "\\set VERBOSITY verbose\n" + f"BEGIN; WITH u AS (UPDATE public.partner_orders SET updated_at=updated_at WHERE id='{O1}' RETURNING 1) SELECT 'U='||count(*) FROM u; ROLLBACK;")
         r['update'] = first_err(out)
-        rc, out = attempt(uid, f"BEGIN; WITH u AS (UPDATE public.partner_orders SET partner_id='{PART2}' WHERE id='{O1}' RETURNING 1) SELECT 'U='||count(*) FROM u; ROLLBACK;")
+        rc, out = attempt(uid, "\\set VERBOSITY verbose\n" + f"BEGIN; WITH u AS (UPDATE public.partner_orders SET partner_id='{PART2}' WHERE id='{O1}' RETURNING 1) SELECT 'U='||count(*) FROM u; ROLLBACK;")
         r['update_move'] = first_err(out)
-        rc, out = attempt(uid, f"BEGIN; WITH d AS (DELETE FROM public.partner_orders WHERE id='{O1}' RETURNING 1) SELECT 'D='||count(*) FROM d; ROLLBACK;")
+        rc, out = attempt(uid, "\\set VERBOSITY verbose\n" + f"BEGIN; WITH d AS (DELETE FROM public.partner_orders WHERE id='{O1}' RETURNING 1) SELECT 'D='||count(*) FROM d; ROLLBACK;")
         r['delete'] = first_err(out)
         res[k] = r
-    r = pg.sql("SET ROLE anon; SELECT 'N='||count(*) FROM public.partner_orders;", False)
-    res['anon'] = {'sel_all': first_err(r)}
+    res['anon'] = {'sel_all': first_err(pg.sql("SET ROLE anon; SELECT 'N='||count(*) FROM public.partner_orders;"))}
     return res
 
 
@@ -91,7 +97,15 @@ def main():
     fill('partner_orders', {'id': O2, 'partner_id': PART2, 'status': 'pendente', 'total': 10, 'subtotal': 10, 'created_by': U['fsf_admin']})
     order_json = pg.sql(f"SELECT to_jsonb(o) FROM public.partner_orders o WHERE id='{O1}'")
 
+    lit0 = json.dumps({**json.loads(order_json), 'id': 'e0000000-0000-4000-8000-0000000000fe'}).replace("'", "''")
+    ctl = pg.sql(f"BEGIN; INSERT INTO public.partner_orders SELECT * FROM jsonb_populate_record(NULL::public.partner_orders, '{lit0}'::jsonb); SELECT 'OK'; ROLLBACK;", False) if False else None
+    rc, ctl = attempt(None, '') if False else (0, pg.sql(f"SET session_replication_role=replica; BEGIN; INSERT INTO public.partner_orders SELECT * FROM jsonb_populate_record(NULL::public.partner_orders, '{lit0}'::jsonb); SELECT 'INS_OK'; ROLLBACK;"))
+    check('fixture control: INSERT payload is structurally valid (privileged, rolled back)', 'INS_OK', ctl.strip().splitlines()[-1])
+    s0 = state()
     base = snapshot(order_json)
+    check('baseline matrix persisted nothing', s0, state())
+    bad_dml = {k: v for k, v in base.items() for x, y in v.items() if y in ('ERR_UNPARSED',) or (y.startswith('SQLSTATE=') and y not in ('SQLSTATE=42501',))}
+    check('baseline DML outcomes are only RLS denial (42501) or zero-row counts, never fixture errors', {}, bad_dml)
     check('RED baseline: ARBio admin (owner, no partner_account_id) sees zero own-partner orders', 'N=0', base['arbio_admin']['sel_PART'])
 
     install = (H / 'install.sql.review').read_text().replace('__PRE_POLICIES_MD5__', '8e07ffe28764e18b6b9b5b0f13df8410')
@@ -114,16 +128,29 @@ def main():
     (H / 'install.sql.final.review').write_text(final)
     rb = (H / 'rollback.sql.review').read_text().replace('__PRE_POLICIES_MD5__', '8e07ffe28764e18b6b9b5b0f13df8410').replace('__POST_POLICIES_MD5__', pins['post_policies_md5'])
     (H / 'rollback.sql.final.review').write_text(rb)
+    pre_ro = 'BEGIN READ ONLY;\n' + final.split('-- ---------- PREFLIGHT')[1].split('-- ---------- CHANGE')[0].split('\n',1)[1] + 'ROLLBACK;\n'
+    post_ro = 'BEGIN READ ONLY;\n' + final.split('-- ---------- POSTFLIGHT ----------')[1].replace('COMMIT;', 'ROLLBACK;')
+    (H / 'preflight.sql.readonly').write_text(pre_ro); (H / 'postflight.sql.readonly').write_text(post_ro)
+    pg.sql(pre_ro); check('read-only preflight passes on baseline', True, True)
+    r = pg.sql(post_ro, False); check('read-only postflight fails before install', True, 'POST_HELPER' in r or 'does not exist' in r)
     pg.sql(final)
+    pg.sql(post_ro); check('read-only postflight passes after install', True, True)
     check('installer COMMIT with exact POST pins', pins['post_policies_md5'], pg.sql(POL_Q))
     r = pg.sql(final, False)
     check('rerun refused (PRE drift / already installed)', True, 'PRE_' in r)
     check('helper ACL: no PUBLIC/anon execute', 'postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres',
           pg.sql("SELECT array_to_string(proacl,',') FROM pg_proc WHERE oid='platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure"))
-    check('helper does not reference partner_orders (no recursion)', 'f',
-          pg.sql("SELECT position('partner_orders' in prosrc)>0 FROM pg_proc WHERE oid='platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure"))
+    src = pg.sql("SELECT prosrc FROM pg_proc WHERE oid='platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure")
+    code = re.sub(r'--[^\n]*', '', src)
+    refs = sorted(set(re.findall(r'public\.(\w+)|platform_private\.(\w+)', code)))
+    check('helper SQL (comments stripped) references only profiles-free scope tables/functions, never partner_orders',
+          [('', 'h15_actor_organization'), ('organizations', ''), ('partner_accounts', ''), ('partner_users', ''), ('user_roles', '')], refs)
+    nested = pg.sql("SELECT string_agg(DISTINCT n, ',') FROM (SELECT unnest(regexp_matches(prosrc, 'partner_orders', 'g')) n FROM pg_proc WHERE oid IN ('platform_private.h15_actor_organization()'::regprocedure, 'platform_private.platform_actor_access_ready(uuid)'::regprocedure)) x")
+    check('transitive helpers (h15, access_ready) do not read partner_orders', '', nested)
 
+    s1 = state()
     post = snapshot(order_json)
+    check('post-install matrix persisted nothing', s1, state())
     check('DML matrix identical to baseline for every actor (INSERT/UPDATE/move/DELETE)', dml_only(base), dml_only(post))
     exp_sel = {k: base[k]['sel_PART'] for k in U}
     exp_sel.update({'arbio_admin': 'N=1', 'arbio_fin': 'N=1', 'arbio_gc': 'N=1'})
@@ -136,7 +163,7 @@ def main():
         check(f'negative: {k} sees zero ARBio partner orders', 'N=0', post[k]['sel_PART'])
     check('B2B external path preserved (same as baseline)', base['ext_partner_part']['sel_PART'], post['ext_partner_part']['sel_PART'])
     check('anon still zero', 'N=0', post['anon']['sel_all'])
-    sel = lambda: first_err(attempt(U['arbio_admin'], f"SELECT 'N='||count(*) FROM public.partner_orders WHERE partner_id='{PART}';")[1])
+    sel = lambda: first_err(attempt(U['arbio_admin'], "\\set VERBOSITY verbose\n" + f"SELECT 'N='||count(*) FROM public.partner_orders WHERE partner_id='{PART}';")[1])
     pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET ativo=false WHERE id='{ORG_A}';")
     check('inactive owner org denies', 'N=0', sel())
     pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET ativo=true WHERE id='{ORG_A}'; UPDATE public.partner_accounts SET ativo=false WHERE id='{PART}';")
@@ -148,6 +175,12 @@ def main():
     check('active external partner link denies internal read', 'N=0', sel())
     pg.sql(f"SET session_replication_role=replica; DELETE FROM public.partner_users WHERE user_id='{U['arbio_admin']}';")
     check('positive restored after fixture reset', 'N=1', sel())
+    pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_accounts SET deleted_at=now() WHERE id='{PART}';")
+    check('deleted partner denies', 'N=0', sel())
+    pg.sql(f"SET session_replication_role=replica; UPDATE public.partner_accounts SET deleted_at=NULL WHERE id='{PART}';")
+    pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET status='suspensa' WHERE id='{ORG_A}';")
+    check('owner org status not ativa denies', 'N=0', sel())
+    pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET status='ativa' WHERE id='{ORG_A}';")
     rc, out = attempt(U['arbio_admin'], f"SELECT 'N='||count(*) FROM public.partner_orders o JOIN public.partner_accounts pa ON pa.id=o.partner_id WHERE o.partner_id='{PART}';")
     check('hook embed shape (orders + partner_accounts) readable for owner admin', 'N=1', first_err(out))
     rc, out = attempt(U['arbio_admin'], f"SELECT platform_private.b2b_owner_internal_partner_readable('{PART}');")
