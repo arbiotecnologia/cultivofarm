@@ -54,7 +54,7 @@ def restore(j):
     for t in tables:
         cols = [c for c in j['columns'] if c['schema']==t['schema'] and c['table']==t['name']]
         def col(c):
-            extra = (' GENERATED ALWAYS AS ('+c['default']+') STORED' if c.get('generated') else ' GENERATED '+('ALWAYS' if c['identity']=='a' else 'BY DEFAULT')+' AS IDENTITY' if c.get('identity') else ' DEFAULT '+c['default'] if c['default'] else '')
+            extra = (' GENERATED ALWAYS AS ('+c['default']+') STORED' if c.get('generated') else ' GENERATED '+('ALWAYS' if c['identity']=='a' else 'BY DEFAULT')+' AS IDENTITY' if c.get('identity') else '')
             return q(c['name'])+' '+c['type']+extra+(' NOT NULL' if not c['nullable'] else '')
         pg.sql(f'CREATE TABLE {name(t)} (' + ','.join(col(c) for c in cols) + ');')
     # Dependency ordering is resolved by retrying exact bodies/views, never placeholder functions.
@@ -70,6 +70,11 @@ def restore(j):
         if len(remaining)==len(pending): break
         pending=remaining
     # Only the subset closure is required, unrelated unresolved modules are explicitly reported.
+    defaults_failed=[]
+    for c in j['columns']:
+        if c['default'] and not c.get('generated') and not c.get('identity') and any(t['name']==c['table'] and t['schema']==c['schema'] for t in tables):
+            try: pg.sql(f'ALTER TABLE {name(c)} ALTER COLUMN {q(c["name"])} SET DEFAULT '+c['default']+';')
+            except AssertionError as e: defaults_failed.append({'object':name(c)+'.'+c['name'],'error':str(e)})
     for t in tables:
         pg.sql(acl_sql('TABLE',name(t),t['acl'],t['owner']))
         pg.sql(f'ALTER TABLE {name(t)} {"ENABLE" if t["rls"] else "DISABLE"} ROW LEVEL SECURITY; ALTER TABLE {name(t)} {"FORCE" if t["force_rls"] else "NO FORCE"} ROW LEVEL SECURITY;')
@@ -97,7 +102,7 @@ def restore(j):
             mode={'D':'DISABLE','O':'ENABLE','R':'ENABLE REPLICA','A':'ENABLE ALWAYS'}[t['enabled']]
             pg.sql(f'ALTER TABLE {name(t)} {mode} TRIGGER {q(t["name"])};')
         except AssertionError as e: triggers_failed.append({'object':name(t)+'.'+t['name'],'error':str(e)})
-    return {'unrestored_functions_views':[{'object':x.get('signature',name(x)),'error':failures[x.get('signature',name(x))]} for _,x in remaining], 'constraints_failed':constraints_failed,'policies_failed':policies_failed,'triggers_failed':triggers_failed}
+    return {'unrestored_functions_views':[{'object':x.get('signature',name(x)),'error':failures[x.get('signature',name(x))]} for _,x in remaining], 'defaults_failed':defaults_failed,'constraints_failed':constraints_failed,'policies_failed':policies_failed,'triggers_failed':triggers_failed}
 
 if __name__=='__main__':
     j=json.loads(Path(sys.argv[1]).read_text())
