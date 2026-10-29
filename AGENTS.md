@@ -87,4 +87,4 @@
 - Financial B2B audit extends the original plan through the existing installment review package; independent Decimal fixtures and status matrices never authorize unsupported schedules or replace commercial formulas — prevents parallel modules and synthetic release claims.
 
 
-- Incremental AR Bio/FSF deployment artifacts follow scripts/arbio-fsf-incremental-20261029/AGENTS.md and current production pins; private approval tickets and deny-only rollback never activate unproven Price/shared/link subsets — prevents GUC authority and transitive release.
+- Incremental deployment: read scripts/arbio-fsf-incremental-20261029/AGENTS.md — preserves release gates.
