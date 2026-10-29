@@ -1,0 +1,1 @@
+Revisão limitada de fonte da matriz NULL/tipos/motivos/IDs: sem defeitos identificados; revisor não executou testes. Execução agente346/0/1BLOCKED/1NOT RUN eVitest10/10. Nenhuma decisão cadastro ou operação hosted.
