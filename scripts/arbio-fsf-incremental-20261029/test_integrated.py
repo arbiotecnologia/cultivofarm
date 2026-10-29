@@ -151,11 +151,15 @@ def main():
 
     # ---------- RED on captured baseline (before install), each in rolled-back transaction ----------
     order('d0000000-0000-4000-8000-000000000001')
+    rc, out = attempt(U_ADM, "BEGIN; SELECT public.approve_b2b_credit('d0000000-0000-4000-8000-000000000001','saas'); ROLLBACK;")
+    check('baseline without subscription: phase1 scope denies before SaaS gate', True, rc != 0 and 'b2b_phase1_scope_denied' in out, out[-200:])
+    seed_plan()
+    check('real entitlement resolver returns pedidos_b2b (synthetic subscription rows)', '1', pg.sql(f"SELECT count(*) FROM platform_private.entitlements_for_user('{U_ADM}') WHERE feature_key='pedidos_b2b'"))
     base_internal = session(U_ADM, "BEGIN; SELECT public.approve_b2b_credit('d0000000-0000-4000-8000-000000000001','red'); ROLLBACK;", False)
     check('RED baseline: internal ARBio admin cannot approve (phase1 resolves buyer partner)', True, 'b2b_phase1_scope_denied' in base_internal, base_internal[-200:])
     pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET partner_account_id='{PART}' WHERE id='{ORG_F}';")
-    base_self = session(U_FSF, "BEGIN; SET LOCAL arbio.x=1; SELECT public.approve_b2b_credit('d0000000-0000-4000-8000-000000000001','red'); ROLLBACK;", False)
-    check('RED baseline: buyer tenant admin reaches beyond scope gate when org points to partner', False, 'b2b_phase1_scope_denied' in base_self, base_self[-300:])
+    rc, base_self = attempt(U_FSF, "BEGIN; SELECT public.approve_b2b_credit('d0000000-0000-4000-8000-000000000001','red')::text; SELECT status||'|'||(credit_approved_by IS NOT NULL) FROM public.partner_orders WHERE id='d0000000-0000-4000-8000-000000000001'; ROLLBACK;")
+    check('RED baseline: buyer tenant admin whose org points to partner self-approves credit (rolled back)', True, rc == 0 and 'em_analise_comercial|true' in base_self, base_self[-300:])
     (OUT / 'red-baseline-self-approval.txt').write_text(base_self[-2000:] + '\n')
     pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET partner_account_id=NULL WHERE id='{ORG_F}';")
     for uid, label in ((U_FSF, 'tenantFSF'), (U_ADM, 'ARBio admin')):
@@ -185,21 +189,12 @@ def main():
         sp = spoof_result(uid, O1)
         check(f'GUC spoof by {label} after install: no row changed', True, sp in ('ERROR', 'ROWS=0'), sp)
     check('order unchanged after spoof attempts', 'aguardando_aprovacao_credito|-|limite_excedido', ost(O1))
-    pos = session(U_ADM, f"SELECT public.approve_b2b_credit('{O1}','ok');", False)
-    saas_blocked = 'saas_feature_not_entitled' in pos
-    check('positive internal approval reaches real SaaS gate (no entitlement invented) and aborts atomically', True, saas_blocked, pos[-200:])
-    check('aborted approval leaves order unchanged', 'aguardando_aprovacao_credito|-|limite_excedido', ost(O1))
-    check('aborted approval leaves zero tickets', '0', pg.sql('SELECT count(*) FROM platform_private.credit_approval_tickets_20261029'))
-
-    # Grant entitlement through the real read path? Not invented: we locate the entitlement source and record it.
-    src = pg.sql("SELECT pg_get_functiondef('platform_private.entitlements_for_user(uuid)'::regprocedure)")
-    (OUT / 'entitlements_for_user.sql').write_text(src + '\n')
-    # Positive path requires a real-shape subscription chain; seed it only from the captured function's own tables.
-    seeded = seed_entitlement(src)
-    check('entitlement chain seeded as synthetic rows of real tables (pre-state)', True, seeded)
-    ent = pg.sql(f"SELECT count(*) FROM platform_private.entitlements_for_user('{U_ADM}') WHERE feature_key='pedidos_b2b'")
-    check('real entitlement resolver now returns pedidos_b2b for ARBio admin', '1', ent)
-    out = session(U_ADM, f"SELECT public.approve_b2b_credit('{O1}','ok')::text;", False if ent != '1' else True)
+    pg.sql(f"SET session_replication_role=replica; UPDATE public.organization_subscriptions SET status='CANCELLED' WHERE organization_id='{ORG_A}';")
+    rc, e = attempt(U_ADM, f"SELECT public.approve_b2b_credit('{O1}','saas');")
+    check('positive path blocked by real SaaS gate when subscription cancelled, atomically', True, rc != 0 and 'saas_feature_not_entitled' in e, e[-200:])
+    check('SaaS abort leaves order unchanged and zero tickets', 'aguardando_aprovacao_credito|-|limite_excedido|0', ost(O1) + '|' + pg.sql('SELECT count(*) FROM platform_private.credit_approval_tickets_20261029'))
+    pg.sql(f"SET session_replication_role=replica; UPDATE public.organization_subscriptions SET status='ACTIVE' WHERE organization_id='{ORG_A}';")
+    rc, out = attempt(U_ADM, f"SELECT public.approve_b2b_credit('{O1}','ok')::text;")
     check('positive: internal ARBio admin releases credit', 'em_analise_comercial|' + U_ADM + '|-', ost(O1), str(out)[-300:])
     check('positive: exactly one audit row', '1', pg.sql(f"SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id='{O1}' AND acao='credito_aprovado'"))
     check('positive: zero residual tickets', '0', pg.sql('SELECT count(*) FROM platform_private.credit_approval_tickets_20261029'))
@@ -227,10 +222,10 @@ def main():
 
     # ---------- revocation races (real locks, real authority reread) ----------
     O4 = 'd0000000-0000-4000-8000-000000000004'; order(O4)
-    race('row', O4, f"DELETE FROM public.user_roles WHERE user_id='{U_ADM}' AND role='administrador';", 'role revoked during row lock')
+    race('row', O4, f"SET session_replication_role=replica; DELETE FROM public.user_roles WHERE user_id='{U_ADM}' AND role='administrador';", 'role revoked during row lock')
     fill('user_roles', {'user_id': U_ADM, 'role': 'administrador'})
     O5 = 'd0000000-0000-4000-8000-000000000005'; order(O5)
-    race('advisory', O5, f"UPDATE public.profiles SET ativo=false WHERE user_id='{U_ADM}';", 'profile deactivated during advisory lock')
+    race('advisory', O5, f"SET session_replication_role=replica; UPDATE public.profiles SET ativo=false WHERE user_id='{U_ADM}';", 'profile deactivated during advisory lock')
     pg.sql(f"SET session_replication_role=replica; UPDATE public.profiles SET ativo=true WHERE user_id='{U_ADM}';")
     O6 = 'd0000000-0000-4000-8000-000000000006'; order(O6)
     race('advisory', O6, lambda: fill('partner_users', {'user_id': U_ADM, 'partner_id': PART, 'tenant_id': ORG_A}), 'external partner link added during advisory lock')
@@ -264,8 +259,19 @@ def seed_entitlement(src):
         return False
 
 
-def seed_plan():
-    raise AssertionError('NOT_IMPLEMENTED_YET')
+MOD = 'e0000000-0000-4000-8000-0000000000m1'.replace('m', '0')
+FEAT = 'e0000000-0000-4000-8000-000000000f01'
+PV = 'e0000000-0000-4000-8000-000000000a01'
+
+
+def seed_plan(orgs=(ORG_A, ORG_F)):
+    fill('saas_modules', {'id': MOD, 'key': 'b2b', 'active': True})
+    fill('saas_features', {'id': FEAT, 'module_id': MOD, 'key': 'pedidos_b2b', 'active': True})
+    fill('saas_plan_versions', {'id': PV, 'status': 'PUBLISHED', 'effective_from': '2026-01-01', 'effective_to': None})
+    fill('saas_plan_version_features', {'plan_version_id': PV, 'feature_id': FEAT, 'enabled': True})
+    for i, org in enumerate(orgs):
+        fill('organization_subscriptions', {'id': f'e0000000-0000-4000-8000-00000000050{i}', 'organization_id': org, 'plan_version_id': PV,
+                                            'status': 'ACTIVE', 'started_at': '2026-01-01', 'cancel_at': None})
 
 
 if __name__ == '__main__':
