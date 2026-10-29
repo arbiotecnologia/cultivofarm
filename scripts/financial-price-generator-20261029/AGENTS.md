@@ -1,0 +1,4 @@
+- Package is INACTIVE and review-only: never apply hosted, never copy into supabase/migrations, never grant in production — disposable PostgreSQL only.
+- Generate price-generator.sql.review only via build-candidate.py (pins calendar version/locality/sealed digest from the policy dataset); never hand-edit — prevents pin drift.
+- Price installments reach the existing generator only through captured rpc_create_financial_title and the private txid context; original_amount carries the payment and interest_amount stays 0, breakdown lives in the immutable snapshot — prevents a parallel writer and P0 double interest.
+- Payment settings, canonical exposure, fiscal NF origin and accounting gate stay deny-only in the candidate; tests may replace them only with labeled SYNTHETIC stubs and must report that as component evidence, never E2E — prevents fabricated authority.
