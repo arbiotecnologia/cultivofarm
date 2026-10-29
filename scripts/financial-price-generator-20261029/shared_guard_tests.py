@@ -4,6 +4,7 @@ CAPTURED/REVIEWED ones (md5-checked); helpers they call that are not part of thi
 SYNTHETIC stubs (delivery canonical value, delivery billing guard, next generation date, tenant fill).
 """
 import json
+from decimal import Decimal as D
 
 
 def did(k): return 'c0000000-0000-4000-8000-0000000001%02d' % k   # SYNTHETIC debtor
@@ -16,7 +17,7 @@ def run(t):
     F = {f['name']: f for f in live['functions']}
     rel = {r['name']: r for r in live['relations']}
     st = lambda oid: pg.sql(f"SELECT status||'|'||coalesce(credit_block_reason,'') FROM partner_orders WHERE id='{oid}'")
-    cx = lambda p: json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{p}',0,NULL)"))
+    cx = lambda p: json.loads(pg.sql(f"SELECT public.fn_b2b_credit_exposure('{p}',0,NULL)"), parse_float=D)
 
     # ---- Reduced schema for the remaining writers (SYNTHETIC rows only).
     pg.sql("""ALTER TABLE partner_orders ADD COLUMN IF NOT EXISTS financial_status text, ADD COLUMN IF NOT EXISTS receivable_generated_at timestamptz, ADD COLUMN IF NOT EXISTS receivable_generated_by uuid;
@@ -86,7 +87,7 @@ def run(t):
     deny('tenant A actor -> tenant B customer still refused by d51_5', mt(CB, '1.00', 'xa'), 'FINANCIAL_CUSTOMER', 'TENANT')
 
     # Race manual -> manual (different actors/keys, same debtor): exactly one fits.
-    p1, pid1, _ = t.held(mt(did(1), '30000.00', 'race-a').replace('SELECT public.rpc', 'SELECT (public.rpc', 1).replace('::jsonb);', '::jsonb))::text;', 1))
+    p1, pid1, _ = t.held(mt(did(1), '30000.00', 'race-a'))
     th, box, blocked = t.waiter(mt(did(1), '20000.00', 'race-b', uid=U2), 'shared-w1')
     check('manual->manual: second waits on b2b_credit', '{%d}' % pid1, blocked, 'SHARED_RACE')
     t.finish(p1, 'COMMIT'); th.join(15)
