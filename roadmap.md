@@ -1038,3 +1038,10 @@
 - [x] Gerador Price candidato + calendário no banco (PG descartável, componente).
 - [ ] Método de pagamento oficial — aguardando resposta do proprietário.
 - [ ] Origem fiscal NF, contabilidade C2, exposição canônica e JWT/RLS A/B reais.
+
+## 29/10 19:05 — Guard compartilhado e vínculo FSF (offline)
+- [x] Guard B2B bloqueia settings inativas/ausentes/limite 0 (candidato).
+- [x] Guard compartilhado manual/entrega/recorrência/Price, corridas e limite testados.
+- [x] Pacote de cadastro/vínculo FSF idempotente (candidato + testes).
+- [ ] Executar vínculo real — aguarda owner/CNPJ do parceiro FSF (leitura do usuário) e fluxo UI/revisão.
+- [ ] Validação fiscal — com a contabilidade.

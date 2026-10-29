@@ -1,0 +1,4 @@
+- Package is INACTIVE and review-only: never apply hosted, never copy into supabase/migrations, never grant or run against real AR Bio/FSF rows — disposable PostgreSQL only.
+- Client data comes only from the partner row already stored server-side; never type, infer or invent CNPJ/name, never copy partner credit limit — prevents fabricated registrations.
+- Link is idempotent by tenant+key receipt, serialized by key then tenant+document locks with re-authorization after each wait; an existing different client_id, ambiguous active partners or a client linked to another partner abort — prevents duplicates and silent relinking.
+- NULL commercial owner is denied (PARTNER_OWNER_UNPROVEN), never backfilled; partner UPDATE still passes the installed registration guard; financial settings are never touched — finance stays blocked until the deferred configuration.
