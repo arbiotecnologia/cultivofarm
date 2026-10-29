@@ -1,0 +1,3 @@
+-- INACTIVE REVIEW ROLLBACK — restores the captured LIVE trigger DDL byte-equivalent (narrower column list).
+DROP TRIGGER IF EXISTS trg_partner_orders_credit_guard ON public.partner_orders;
+CREATE TRIGGER trg_partner_orders_credit_guard BEFORE INSERT OR UPDATE OF status, total ON public.partner_orders FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_credit_guard();

@@ -1046,3 +1046,6 @@
 - [x] Owner/CNPJ do parceiro FSF confirmados read-only (owner AR Bio).
 - [ ] Executar vínculo real — fluxo UI autorizado ou RPC após revisão independente.
 - [ ] Validação fiscal — com a contabilidade.
+
+- [ ] Executar checklist E2E real AR Bio/FSF (aguarda sessões dos usuários e preflight manual)
+- [ ] Instalar candidato de colunas do gatilho (aguarda revisão independente)

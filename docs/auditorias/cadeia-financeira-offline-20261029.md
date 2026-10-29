@@ -150,3 +150,6 @@ Novos: manifesto recursivo, auditor recursivo, runner red/green, teste Vitest, e
 
 ## Rodada 1935
 Reauth pós row lock no replay do vínculo (RED 1925 → GREEN 51/0); motivo de crédito exibido na resposta de cotação (Vitest 7/7). Limitação registrada: trigger `UPDATE OF status,total` não cobre alteração isolada de `credit_approved_by`. Evidência `evidencias-cadeia-financeira-20261029/replay-rowlock-ui-1935/`. NO-GO mantido.
+
+## Rodada 1945
+Gatilho `UPDATE OF status,total` (capturado) não cobria `final_amount_with_interest`/`credit_approved_by` isolados: RED reproduzido, candidato DDL GREEN, rollback conferido; PG 338/0, P0 37/0, Vitest 7/7. UPDATE direto por `authenticated` não é provável offline (políticas capturadas incompletas). Roteiro E2E real preparado em `scripts/e2e-arbio-fsf-real-20261029/`, não executado. Evidência `trigger-columns-e2e-prep-1945/`. NO-GO.

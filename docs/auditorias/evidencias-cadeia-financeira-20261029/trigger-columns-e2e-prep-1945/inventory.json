@@ -1,0 +1,195 @@
+{
+ "source": "receivable-recursive-live-20261029.json (captured LIVE, read-only)",
+ "functions_total": 1267,
+ "partner_orders_writers": [
+  {
+   "name": "reject_partner_order",
+   "md5": "00e8de46e566d0b4e28d32f990514ff7",
+   "cols": [
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "fn_h6c_entrega_ar_b2b_link",
+   "md5": "9d9cdca4e82d515557c0cdd151f1d077",
+   "cols": [],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "fn_h6c_set_canonical_payment_terms",
+   "md5": "92eb0a19aed67bb829ccbec88aa9cf2d",
+   "cols": [],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "tg_partner_order_items_resolve_pending",
+   "md5": "2e80e713bc0fe3785e1008405a0d02a3",
+   "cols": [
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "tg_sync_b2b_financial_status",
+   "md5": "e636fcf74c5e1c7c8037d5a17f525c27",
+   "cols": [],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "trg_entrega_sync_partner_order_fn",
+   "md5": "e8fb9e9512db8d1cfb801e37f63ee497",
+   "cols": [
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "approve_b2b_payment_terms_secure",
+   "md5": "a61daa8542058bdbf239903d655c2a1b",
+   "cols": [],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "approve_partner_order",
+   "md5": "664f63441c92a6716f0117362255ec9e",
+   "cols": [
+    "credit_block_reason",
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "auto_reject_partner_orders_no_items",
+   "md5": "d2bcda54692a95792ed1c12ce7e287ab",
+   "cols": [
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "trg_os_sync_partner_order_fn",
+   "md5": "d219a4922c0c6d2a464175dc61bdf5a3",
+   "cols": [
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "generate_b2b_receivable_secure_impl",
+   "md5": "1bdac7fae6d702fb42d3a30539e9c9c3",
+   "cols": [
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "create_partner_order_secure",
+   "md5": "7ec41e17ca6cca8cd4ef1404a9edc936",
+   "cols": [
+    "final_amount_with_interest",
+    "total"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "reject_b2b_payment_terms_secure",
+   "md5": "40777d0cec6a7d8a8d4dfcb3370b08b6",
+   "cols": [],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "request_b2b_payment_terms_adjustment_secure",
+   "md5": "f9bf8f543564af480d08e7bebd111b88",
+   "cols": [],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "request_partner_order_items",
+   "md5": "c9e9c05db76910604b6f5e612aabeabe",
+   "cols": [
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "respond_b2b_order_quote_secure",
+   "md5": "e57d3a6416910937bd02c9180dff0cf1",
+   "cols": [
+    "credit_block_reason",
+    "final_amount_with_interest",
+    "status",
+    "total"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "approve_b2b_credit",
+   "md5": "8127c7b697871fa1eecafa845a551eea",
+   "cols": [
+    "credit_approved_at",
+    "credit_approved_by",
+    "credit_block_reason",
+    "status"
+   ],
+   "guc": true,
+   "dynamic": false
+  },
+  {
+   "name": "convert_partner_simulation_to_order_secure",
+   "md5": "953c73011730214094577bfb55d46e87",
+   "cols": [
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "c2_promote_accounting_pending_order_core",
+   "md5": "df7bf2e845c23da77e11a7b9a7e61e59",
+   "cols": [],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "update_partner_order_notes",
+   "md5": "6988f6c5759d593dee2bab218b1f8119",
+   "cols": [],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "set_partner_order_delivery_date",
+   "md5": "3f6e9e10bd8f0364d64f89722e5e0f3d",
+   "cols": [],
+   "guc": false,
+   "dynamic": false
+  },
+  {
+   "name": "update_partner_order_status",
+   "md5": "afe84d5385cec97d4ea8f423c83fa48e",
+   "cols": [
+    "status"
+   ],
+   "guc": false,
+   "dynamic": false
+  }
+ ],
+ "dynamic_sql_touching_partner_orders": []
+}
