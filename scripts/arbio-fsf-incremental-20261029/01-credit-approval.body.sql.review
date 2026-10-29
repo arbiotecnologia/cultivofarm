@@ -18,6 +18,10 @@ DECLARE
   v_should_check boolean := false;
   v_cfg text;
 BEGIN
+  IF TG_OP='UPDATE' AND OLD.credit_approved_by IS NOT NULL
+     AND (NEW.total IS DISTINCT FROM OLD.total OR NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest) THEN
+    RAISE EXCEPTION 'CREDIT_APPROVED_AMOUNT_IMMUTABLE' USING ERRCODE='42501';
+  END IF;
   IF current_setting('transaction_isolation') <> 'read committed' THEN
     RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000';
   END IF;
@@ -40,7 +44,13 @@ BEGIN
         NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
         NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
       END IF;
-      NEW.credit_block_reason := NULL;
+      IF NOT EXISTS (SELECT 1 FROM platform_private.credit_approval_tickets_20261029
+        WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id) THEN
+       RAISE EXCEPTION 'CREDIT_APPROVAL_TICKET_REQUIRED' USING ERRCODE='42501';
+     END IF;
+     DELETE FROM platform_private.credit_approval_tickets_20261029
+       WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id;
+     NEW.credit_block_reason := NULL;
       RETURN NEW;
     END IF;
 
@@ -54,7 +64,13 @@ BEGIN
         NEW.status := 'aguardando_aprovacao_credito'; NEW.credit_block_reason := v_cfg;
         NEW.credit_approved_by := OLD.credit_approved_by; RETURN NEW;
       END IF;
-      NEW.credit_block_reason := NULL;
+      IF NOT EXISTS (SELECT 1 FROM platform_private.credit_approval_tickets_20261029
+        WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id) THEN
+       RAISE EXCEPTION 'CREDIT_APPROVAL_TICKET_REQUIRED' USING ERRCODE='42501';
+     END IF;
+     DELETE FROM platform_private.credit_approval_tickets_20261029
+       WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id;
+     NEW.credit_block_reason := NULL;
       RETURN NEW;
     END IF;
 
@@ -141,8 +157,6 @@ BEGIN
       OR NEW.total IS DISTINCT FROM OLD.total OR NEW.final_amount_with_interest IS DISTINCT FROM OLD.final_amount_with_interest THEN
       RAISE EXCEPTION 'credit_approval_fields_immutable: use approve_b2b_credit' USING ERRCODE='42501';
    END IF;
-   DELETE FROM platform_private.credit_approval_tickets_20261029
-    WHERE transaction_id=txid_current() AND actor_id=auth.uid() AND order_id=OLD.id;
  END IF;
  RETURN NEW;
 END $approval$;
@@ -219,7 +233,7 @@ BEGIN
     AND status = 'aguardando_aprovacao_credito';
 
   GET DIAGNOSTICS v_updated = ROW_COUNT;
-  DELETE FROM platform_private.credit_approval_tickets_20261029 WHERE transaction_id=txid_current() AND actor_id=v_uid AND order_id=p_partner_order_id;
+  IF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029 WHERE transaction_id=txid_current() AND actor_id=v_uid AND order_id=p_partner_order_id) THEN RAISE EXCEPTION 'CREDIT_APPROVAL_TICKET_UNCONSUMED' USING ERRCODE='42501'; END IF;
 
   IF v_updated <> 1 THEN
     RAISE EXCEPTION 'concurrent_update: status do pedido mudou durante a aprovação';
