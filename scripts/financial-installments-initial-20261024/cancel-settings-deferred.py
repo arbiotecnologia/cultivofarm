@@ -63,7 +63,7 @@ def exercise(h, metadata):
     transform('fn_b2b_credit_exposure',anchor,'  '+guard+'\n'+anchor)
     # A matching row shape is synthetic scaffolding, never an order writer or origin proof.
     m.pg.sql("ALTER TABLE partner_orders ADD COLUMN total numeric, ADD COLUMN final_amount_with_interest numeric, ADD COLUMN receivable_generated boolean, ADD COLUMN internal_origin_snapshot jsonb; CREATE TABLE partner_order_financial_links(partner_order_id uuid UNIQUE); CREATE SCHEMA harness; GRANT USAGE ON SCHEMA harness TO authenticated; CREATE TABLE harness.credit_probe(id uuid PRIMARY KEY,partner_id uuid,status text,total numeric,final_amount_with_interest numeric,credit_approved_by uuid,credit_block_reason text,receivable_generated boolean DEFAULT false); GRANT SELECT,INSERT,UPDATE,DELETE ON harness.credit_probe TO authenticated; CREATE TRIGGER credit_probe BEFORE INSERT OR UPDATE ON harness.credit_probe FOR EACH ROW EXECUTE FUNCTION tg_partner_orders_credit_guard();")
-    h.extra_state_tables+=['harness.credit_probe','partner_order_financial_links']
+    h.extra_state_tables+=['harness.credit_probe','partner_order_financial_links','partner_orders']
     # The baseline credit trigger's approved shortcut skips the calculator entirely.
     probe=m.uid(903000);partner=m.uid(900002)
     res=h.client(f"INSERT INTO harness.credit_probe(id,partner_id,status,total) VALUES('{probe}','{partner}','rascunho',100);")
@@ -72,7 +72,7 @@ def exercise(h, metadata):
     h.check('RED absent settings approved shortcut accepted',0,res.returncode,'DEFERRED_RED_CAPTURED')
     h.check('RED shortcut progressed','aprovado',m.pg.sql(f"SELECT status FROM harness.credit_probe WHERE id='{probe}'"),'DEFERRED_RED_CAPTURED')
     m.pg.sql('DELETE FROM harness.credit_probe;')
-    financial_statuses="('em_analise_comercial','aprovado','aguardando_aprovacao_credito','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado')"
+    financial_statuses="('pendente','solicitado','aguardando_ajuste_comercial','aguardando_itens','em_analise_comercial','aprovado','aguardando_aprovacao_credito','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado')"
     scoped_guard=guard.replace('p_partner_id','NEW.partner_id')
     entry="\n  IF NEW.status IN "+financial_statuses+" OR NEW.credit_approved_by IS NOT NULL THEN\n    "+scoped_guard+"\n  END IF;"
     transform('tg_partner_orders_credit_guard','BEGIN\n','BEGIN\n'+entry+'\n')
@@ -98,19 +98,19 @@ def exercise(h, metadata):
     anchor='  -- Canonical row-before-receipt order, matching approval and its billing trigger.'
     wrapper_guard=guard.replace('p_partner_id','(SELECT partner_id FROM public.partner_orders WHERE id=p_partner_order_id)')
     transform('generate_b2b_receivable_secure',anchor,'  '+wrapper_guard+'\n'+anchor)
-    # Preserve both canonical alternatives; resolve internal authorization first so
-    # no unrelated external entitlement reader is required for an internal actor.
+    # Preserve both alternatives with explicit CASE; Boolean OR is not an
+    # evaluation-order guarantee and cannot fence the external dependency.
     f=next(f for f in r.live['functions'] if f['name']=='generate_b2b_receivable_secure' and f['schema']=='public')
     current=m.pg.sql("SELECT pg_get_functiondef('generate_b2b_receivable_secure(uuid)'::regprocedure)")
     original="ELSIF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (\n    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id\n      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN"
-    replacement="ELSIF NOT (EXISTS (\n    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id\n      AND platform_private.c2p1_settings_allowed(po.partner_id,true)) OR public.b2b_phase1_order_visible(p_partner_order_id)) THEN"
+    replacement="ELSIF NOT (CASE WHEN EXISTS (\n    SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id\n      AND platform_private.c2p1_settings_allowed(po.partner_id,true)) THEN true ELSE public.b2b_phase1_order_visible(p_partner_order_id) END) THEN"
     assert current.count(original)==1
     reordered=current.replace(original,replacement);m.pg.sql(reordered+';')
     diffs.append(''.join(difflib.unified_diff(current.splitlines(True),reordered.splitlines(True),fromfile='wrapper readiness hypothesis',tofile='same alternatives internal first')))
     for actor,org,partner,label in partners:
         probe=m.uid(903010+(1 if label=='B' else 0))
         h.check('deferred draft carrier '+label,0,h.client(f"INSERT INTO harness.credit_probe(id,partner_id,status,total) VALUES('{probe}','{partner}','rascunho',100);",actor).returncode,mode)
-        for status in ['em_analise_comercial','aprovado','entregue']:
+        for status in ['pendente','solicitado','aguardando_ajuste_comercial','aguardando_itens','em_analise_comercial','aprovado','entregue']:
             rejected('deferred credit progression '+status+' '+label,f"UPDATE harness.credit_probe SET status='{status}' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
         rejected('deferred credit approved shortcut '+label,f"UPDATE harness.credit_probe SET credit_approved_by='{actor}' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
         # Link carrier uses the captured row-locked order lookup, but that order shape
@@ -132,10 +132,12 @@ def exercise(h, metadata):
             try:rejected('deferred preserved '+marker+' '+label,f"SELECT generate_b2b_receivable_secure('{order}');",('42501',marker),actor)
             finally:m.pg.sql(f"UPDATE partner_orders SET {column}=NULL WHERE id='{order}';")
     # The auto trigger must reject before generating, while a draft remains possible.
-    m.pg.sql("CREATE TRIGGER auto_probe BEFORE UPDATE ON harness.credit_probe FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable();")
+    m.pg.sql("CREATE TABLE harness.auto_probe (LIKE harness.credit_probe INCLUDING ALL); GRANT SELECT,INSERT,UPDATE ON harness.auto_probe TO authenticated; CREATE TRIGGER auto_probe BEFORE UPDATE ON harness.auto_probe FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable();")
+    h.extra_state_tables.append('harness.auto_probe')
     for actor,org,partner,label in partners:
         probe=m.uid(903010+(1 if label=='B' else 0))
-        rejected('deferred automatic billing absent '+label,f"UPDATE harness.credit_probe SET status='entregue' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        h.check('deferred isolated automatic draft '+label,0,h.client(f"INSERT INTO harness.auto_probe(id,partner_id,status,total) VALUES('{probe}','{partner}','rascunho',100);",actor).returncode,mode)
+        rejected('deferred automatic billing absent '+label,f"UPDATE harness.auto_probe SET status='entregue' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
     m.pg.sql('DELETE FROM partner_orders;')
     # All supplied values must be explicit; no defaulted/null credit or fabricated method.
     anchor=" -- Exact canonical name; method row lock prevents concurrent deactivation through commit."
