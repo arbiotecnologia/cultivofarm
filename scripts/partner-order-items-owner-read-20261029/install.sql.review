@@ -11,12 +11,12 @@ BEGIN
   IF to_regprocedure('platform_private.b2b_owner_internal_partner_readable(uuid)') IS NULL
      OR (SELECT md5(pg_get_functiondef('platform_private.b2b_owner_internal_partner_readable(uuid)'::regprocedure))) <> 'fa72ca18fc673cb4a5ff4867e65137cd'
   THEN RAISE EXCEPTION 'PRE_ORDERS_PACKAGE_MISSING'; END IF;
-  SELECT md5(SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_orders';
+  SELECT md5(string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_orders';
   IF v <> '87776bb912a6157a493cd0488586c7af' THEN RAISE EXCEPTION 'PRE_ORDERS_POLICIES_DRIFT %', v; END IF;
   IF (SELECT md5(pg_get_functiondef('platform_private.b2b_phase1_order_visible(uuid)'::regprocedure))) <> '8504f07fbc3a7975accf919f386d00eb'
   THEN RAISE EXCEPTION 'PRE_PIN_ORDER_VISIBLE'; END IF;
   IF to_regprocedure('platform_private.b2b_owner_internal_order_readable(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'PRE_ALREADY_INSTALLED'; END IF;
-  SELECT md5(SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_order_items';
+  SELECT md5(string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_order_items';
   IF v <> '3233f822832e8121b0c42aaf572c4ada' THEN RAISE EXCEPTION 'PRE_POLICIES_DRIFT %', v; END IF;
 END $pre$;
 -- ---------- CHANGE ----------
@@ -48,7 +48,7 @@ BEGIN
   IF (SELECT NOT prosecdef OR proconfig IS DISTINCT FROM ARRAY['search_path=""'] OR array_to_string(proacl,',') <> 'postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres'
       FROM pg_proc WHERE oid='platform_private.b2b_owner_internal_order_readable(uuid)'::regprocedure)
   THEN RAISE EXCEPTION 'POST_HELPER_ACL_OR_CONFIG'; END IF;
-  SELECT md5(SELECT string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_order_items';
+  SELECT md5(string_agg(policyname||'|'||permissive||'|'||cmd||'|'||array_to_string(roles,',')||'|'||coalesce(qual,'')||'|'||coalesce(with_check,''), E'\n' ORDER BY policyname)) INTO v FROM pg_policies WHERE schemaname='public' AND tablename='partner_order_items';
   IF v <> '__POST_POLICIES_MD5__' THEN RAISE EXCEPTION 'POST_POLICIES_DRIFT %', v; END IF;
 END $post$;
 COMMIT;
