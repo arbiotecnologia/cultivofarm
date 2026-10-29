@@ -1,12 +1,13 @@
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 
-it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline', () => {
+it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação offline', async () => {
   const outputDir = join(mkdtempSync(join(tmpdir(), 'cancel-vitest-')), 'results');
-  const output = execFileSync('python3', [
+  const { stdout: output } = await promisify(execFile)('python3', [
     'scripts/financial-installments-initial-20261024/test-cancel-authorization.py',
     '--output-dir', outputDir,
   ], { encoding: 'utf8', timeout: 180_000 });
