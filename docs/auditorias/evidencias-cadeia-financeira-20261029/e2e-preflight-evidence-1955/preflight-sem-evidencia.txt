@@ -1,0 +1,4 @@
+INFO validador de evidência fornecida: não verifica runtime, rede ou credenciais
+INFO cliente do repositório é informativo; não prova para onde o app em execução aponta
+BLOCKED evidência ausente/ilegível
+PREFLIGHT_RESULT READONLY=BLOCKED WRITE_SCENARIOS=BLOCKED

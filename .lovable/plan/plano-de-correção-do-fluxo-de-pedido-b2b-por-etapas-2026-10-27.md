@@ -244,3 +244,5 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - 2026-10-29 rodada 1945: candidato de colunas do gatilho de crédito (RED/GREEN), inventário de escritores, roteiro/checklist E2E real AR Bio/FSF preparado e não executado; financeiro completo NÃO VALIDÁVEL com fiscal pendente. BLOCKED/NO-GO.
 
 - 2026-10-29 rodada 1950: preflight por modo (DENY/BLOCKED/GO) e checklist corrigido; pré-requisitos PR1–PR5 não executados. BLOCKED/NO-GO.
+
+- 2026-10-29 rodada 1955: preflight vira validador estrito de evidência estruturada por escopo; 21/21 testes; nenhum GO sem evidência. BLOCKED/NO-GO.

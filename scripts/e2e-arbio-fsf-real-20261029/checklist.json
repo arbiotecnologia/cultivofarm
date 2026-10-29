@@ -1,5 +1,5 @@
 {
- "versao": "2026-10-29b",
+ "versao": "2026-10-29c",
  "modos": [
   "PROD_READONLY",
   "HOMOLOG_ISOLATED"
@@ -10,15 +10,16 @@
   "sem IDs de terceiros em prod",
   "redirect não prova isolamento",
   "sintético só homolog isolado com saídas OFF",
-  "sem título/boleto/NF/e-mail reais"
+  "sem título/boleto/NF/e-mail reais",
+  "preflight valida evidência fornecida; não é checagem de runtime"
  ],
  "itens": [
   {
    "id": "S1",
    "modo": "PROD_READONLY",
    "sessao": "—",
-   "passo": "preflight.sh com PREFLIGHT_MODE=PROD_READONLY",
-   "esperado": "RESULT GO; BLOCKED/DENY = parar",
+   "passo": "PREFLIGHT_MODE=PROD_READONLY PREFLIGHT_SCOPE=READONLY PREFLIGHT_EVIDENCE=<json>",
+   "esperado": "READONLY=GO; WRITE_SCENARIOS=DENY sempre; BLOCKED/DENY = parar",
    "prerequisitos": [
     "PR1",
     "PR2"
@@ -30,8 +31,8 @@
    "id": "S2",
    "modo": "HOMOLOG_ISOLATED",
    "sessao": "—",
-   "passo": "preflight.sh com PREFLIGHT_MODE=HOMOLOG_ISOLATED",
-   "esperado": "RESULT GO; ref de produção = DENY",
+   "passo": "PREFLIGHT_MODE=HOMOLOG_ISOLATED PREFLIGHT_SCOPE=WRITE_SCENARIOS PREFLIGHT_EVIDENCE=<json>",
+   "esperado": "Hoje BLOCKED (PR3/PR4); ref ou URL de produção = DENY",
    "prerequisitos": [
     "PR1",
     "PR2"
