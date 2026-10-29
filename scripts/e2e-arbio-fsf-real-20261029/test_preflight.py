@@ -53,4 +53,11 @@ class T(unittest.TestCase):
         c, o = run(evid(), path=tmp + ':/usr/bin/env-none'); self.assertEqual(c, 1); self.assertIn('rg ausente', o)
     def test_wrong_root_denies(self):
         c, o = run(evid(), root=pathlib.Path(tempfile.mkdtemp())); self.assertEqual(c, 1); self.assertIn('raiz do projeto inválida', o)
+    def test_non_object_root_never_go(self):
+        for raw in ('[]', 'null', 'true', '123', '"x"', '""', '[{}]'):
+            with self.subTest(raw=raw):
+                c, o = run(raw); self.assertNotEqual(c, 0); self.assertIn('READONLY=DENY WRITE_SCENARIOS=DENY', o)
+    def test_malformed_url_not_go(self):
+        for u in ('https://[::1', 'https://[zz]/', 'http://app.cultivofarm.com.br', '', 'https://'):
+            with self.subTest(u=u): self.assertNotEqual(run(evid(runtime_url=u))[0], 0)
 if __name__ == '__main__': unittest.main(verbosity=2)
