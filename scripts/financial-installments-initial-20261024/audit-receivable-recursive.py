@@ -48,6 +48,14 @@ def main():
                 edge(int(d['objid']), target, 'PG_DEPEND_' + str(d['refclassid']), d['deptype'])
                 if int(d['refclassid']) == 1255 and target in functions: selected.add(target)
                 if int(d['refclassid']) == 1259 and target in relations: tables.add(target)
+            # View dependency records are owned by pg_rewrite, not pg_proc.
+            if int(d['classid']) == 2618 and int(d['refclassid']) == 1259 and int(d['refobjid']) in tables:
+                for other in data['dependencies']:
+                    if int(other['classid']) == 2618 and other['objid'] == d['objid']:
+                        target=int(other['refobjid'])
+                        edge(int(d['refobjid']),target,'PG_REWRITE_'+str(other['refclassid']),str(d['objid']))
+                        if int(other['refclassid']) == 1255 and target in functions: selected.add(target)
+                        if int(other['refclassid']) == 1259 and target in relations: tables.add(target)
         for rid in list(tables):
             r = relations[rid]
             for tr in r['triggers'] or []:

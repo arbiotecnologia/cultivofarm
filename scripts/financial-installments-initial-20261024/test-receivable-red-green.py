@@ -82,7 +82,7 @@ def main():
         if mode=='GREEN_SANDBOX':
             replay();check('writer assignment replay no effects',before,m.state(),mode)
         check('initial finance snapshot remains 300',Decimal('300'),Decimal(m.pg.sql(f"SELECT interest_amount FROM partner_order_payment_schedule WHERE partner_order_id='{m.uid(501)}'")),mode)
-        m.payment(x,1000,'second')
+        m.payment(x,1000,'second-partial')
         check('second partial',Decimal('6550'),m.balance(x),mode)
         rev=m.ask(f"SELECT fn_reverse_payment('{pay}','receivable','LOCAL REASON');")
         check('reversal preserves remaining event',Decimal('9300'),m.balance(x),mode)
@@ -94,6 +94,14 @@ def main():
         m.pg.sql(f"UPDATE profiles SET organization_id='{m.A}',ativo=false WHERE user_id='{m.U}';")
         err=m.pg.sql(m.scope()+call,ok=False)
         check('actual inactive profile denies payment',True,('Sem permissão' in err or 'FINANCIAL_SCOPE_DENIED' in err) and m.state()==before,mode)
+        wrapper=captured('public','generate_b2b_receivable_secure')
+        captured('public','generate_b2b_receivable_secure_impl')
+        # Execute the complete installed wrapper only along a demonstrable closed path.
+        # No permissive scope helper is installed to reach its positive financial branch.
+        before=m.state()
+        err=m.pg.sql("SELECT set_config('request.jwt.claims','{}',false); SELECT generate_b2b_receivable_secure('"+m.uid(501)+"');",ok=False)
+        check('complete wrapper anonymous denies without effects',True,'auth_required' in err and m.state()==before,mode)
+        mode_hashes[mode+'_wrapper']=wrapper['md5']
         mode_hashes[mode]=dict(generator=hashlib.md5(generator.encode()).hexdigest(),loop_fragment_sha256=hashlib.sha256(loop.encode()).hexdigest(),identity={f['signature']:f['md5'] for f in installed})
     OUT.mkdir(parents=True,exist_ok=True)
     result=dict(checks=checks,counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL']},hashes=mode_hashes,
