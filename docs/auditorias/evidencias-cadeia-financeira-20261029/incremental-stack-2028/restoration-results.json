@@ -264,5 +264,5 @@
     }
   ],
   "preflight": "FAIL",
-  "preflight_error": "ERROR:  FUNCTION_OR_ACL_DRIFT: tg_pfs_updated_at()\nCONTEXT:  PL/pgSQL function inline_code_block line 92 at RAISE\n"
+  "preflight_error": "ERROR:  RELATION_DRIFT: clientes\nCONTEXT:  PL/pgSQL function inline_code_block line 259 at RAISE\n"
 }
