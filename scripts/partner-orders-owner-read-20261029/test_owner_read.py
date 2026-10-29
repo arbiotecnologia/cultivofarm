@@ -98,8 +98,8 @@ def main():
     order_json = pg.sql(f"SELECT to_jsonb(o) FROM public.partner_orders o WHERE id='{O1}'")
 
     lit0 = json.dumps({**json.loads(order_json), 'id': 'e0000000-0000-4000-8000-0000000000fe'}).replace("'", "''")
-    ctl = pg.sql(f"BEGIN; INSERT INTO public.partner_orders SELECT * FROM jsonb_populate_record(NULL::public.partner_orders, '{lit0}'::jsonb); SELECT 'OK'; ROLLBACK;", False) if False else None
-    rc, ctl = attempt(None, '') if False else (0, pg.sql(f"SET session_replication_role=replica; BEGIN; INSERT INTO public.partner_orders SELECT * FROM jsonb_populate_record(NULL::public.partner_orders, '{lit0}'::jsonb); SELECT 'INS_OK'; ROLLBACK;"))
+
+    ctl = pg.sql(f"SET session_replication_role=replica; BEGIN; INSERT INTO public.partner_orders SELECT * FROM jsonb_populate_record(NULL::public.partner_orders, '{lit0}'::jsonb); SELECT 'INS_OK'; ROLLBACK;")
     check('fixture control: INSERT payload is structurally valid (privileged, rolled back)', 'INS_OK', ctl.strip().splitlines()[-1])
     s0 = state()
     base = snapshot(order_json)
