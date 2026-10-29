@@ -74,7 +74,25 @@ def assemble():
   IF TG_OP = 'INSERT' THEN""",1)
     guard = guard.replace("  IF TG_OP = 'INSERT' THEN", "  IF current_setting('transaction_isolation') <> 'read committed' THEN\n    RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000';\n  END IF;\n  IF coalesce(NEW.final_amount_with_interest,NEW.total,0)::text IN ('NaN','Infinity','-Infinity')\n     OR coalesce(NEW.final_amount_with_interest,NEW.total,0) < 0 THEN\n    RAISE EXCEPTION 'CREDIT_AMOUNT_INVALID' USING ERRCODE='23514';\n  END IF;\n  IF TG_OP = 'INSERT' THEN")
     guard = guard.replace("IF v_cfg = 'configuracao_financeira_inativa' THEN", 'IF v_cfg IS NOT NULL THEN')
-    ticket = """CREATE TABLE platform_private.credit_approval_tickets_20261029 (
+    ticket = """CREATE FUNCTION platform_private.b2b_credit_internal_authority(p_order uuid, p_uid uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $auth$
+  -- Internal supplier-only authority (fresh read each call, READ COMMITTED): actor must belong to the
+  -- commercial owner organization of the order's partner; external/cumulative partner or producer roles deny.
+  SELECT p_uid IS NOT NULL AND p_uid = auth.uid()
+    AND NOT EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id = p_uid
+                    AND r.role::text IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor'))
+    AND NOT EXISTS (SELECT 1 FROM public.partner_users pu WHERE pu.user_id = p_uid AND pu.revoked_at IS NULL)
+    AND (public.has_role(p_uid,'administrador') IS TRUE OR public.has_role(p_uid,'gestor') IS TRUE
+         OR public.has_role(p_uid,'financeiro') IS TRUE)
+    AND EXISTS (SELECT 1 FROM public.partner_orders o
+                JOIN public.partner_accounts pa ON pa.id = o.partner_id AND pa.ativo IS TRUE AND pa.deleted_at IS NULL
+                JOIN public.organizations owner ON owner.id = pa.commercial_owner_organization_id
+                     AND owner.ativo IS TRUE AND owner.status = 'ativa'
+                WHERE o.id = p_order
+                  AND pa.commercial_owner_organization_id = platform_private.h15_actor_organization())
+$auth$;
+REVOKE ALL ON FUNCTION platform_private.b2b_credit_internal_authority(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+CREATE TABLE platform_private.credit_approval_tickets_20261029 (
  transaction_id bigint NOT NULL, actor_id uuid NOT NULL, order_id uuid NOT NULL,
  PRIMARY KEY(transaction_id, actor_id, order_id));
 REVOKE ALL ON platform_private.credit_approval_tickets_20261029 FROM PUBLIC,anon,authenticated,service_role;
@@ -114,15 +132,22 @@ END $approval$;
     approve = approve.replace('IF NOT public.b2b_phase1_order_visible(p_partner_order_id) THEN', 'IF public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE THEN')
     approve = approve.replace("IF NOT (public.has_role(v_uid,'administrador') OR public.has_role(v_uid,'gestor')\n          OR public.has_role(v_uid,'financeiro')) THEN", "IF (public.has_role(v_uid,'administrador') IS NOT TRUE AND public.has_role(v_uid,'gestor') IS NOT TRUE\n          AND public.has_role(v_uid,'financeiro') IS NOT TRUE) THEN")
     assert 'arbio.b2b_credit_approval' not in approve
+    # Integrated finding 21:10: phase1 visibility resolves org_partner (buyer side); internal owner staff get NULL
+    # and a tenant whose organization points to the partner could self-approve. Replace with supplier-only authority.
+    n = approve.count('public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE')
+    assert n == 3, n
+    approve = approve.replace('public.b2b_phase1_order_visible(p_partner_order_id) IS NOT TRUE', 'platform_private.b2b_credit_internal_authority(p_partner_order_id, v_uid) IS NOT TRUE')
+    approve = approve.replace("RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'", "RAISE EXCEPTION 'b2b_credit_internal_scope_denied' USING ERRCODE='42501'")
+    assert 'b2b_phase1_order_visible' not in approve
     ddl = (ROOT / 'scripts/financial-price-generator-20261029/credit-guard-trigger-columns.sql.review').read_text()
     ddl = ddl[ddl.index('DROP TRIGGER'):].replace('DROP TRIGGER IF EXISTS', 'DROP TRIGGER')
     body = guard + '\n' + ticket + '\n' + approve + ';\n' + ddl
     body += '\nREVOKE ALL ON FUNCTION platform_private.b2b_credit_config_block(uuid) FROM PUBLIC,anon,authenticated,service_role;\n'
-    body += '\n'.join(f'ALTER FUNCTION {s} OWNER TO postgres;' for s in ['platform_private.b2b_credit_config_block(uuid)','public.fn_b2b_guard_credit_approval_fields()','public.tg_partner_orders_credit_guard()','public.approve_b2b_credit(uuid,text)']) + '\n'
+    body += '\n'.join(f'ALTER FUNCTION {s} OWNER TO postgres;' for s in ['platform_private.b2b_credit_config_block(uuid)','platform_private.b2b_credit_internal_authority(uuid,uuid)','public.fn_b2b_guard_credit_approval_fields()','public.tg_partner_orders_credit_guard()','public.approve_b2b_credit(uuid,text)']) + '\n'
     (H / '01-credit-approval.body.sql.review').write_text(body)
     prefix = '-- REVIEW ONLY. No execution this turn. Operator must verify canonical project in dashboard and exact approved artifact.\nBEGIN;\nSET LOCAL search_path=public,pg_catalog;\nSET LOCAL lock_timeout=\'3s\';\nSET LOCAL statement_timeout=\'60s\';\nLOCK TABLE public.partner_orders IN SHARE ROW EXCLUSIVE MODE;\n'
     pre = (H / 'preflight.sql.readonly').read_text()
-    absent = "DO $$ BEGIN IF to_regclass('platform_private.credit_approval_tickets_20261029') IS NOT NULL OR to_regprocedure('platform_private.b2b_credit_config_block(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'CANDIDATE_ALREADY_PRESENT'; END IF; END $$;\n"
+    absent = "DO $$ BEGIN IF to_regclass('platform_private.credit_approval_tickets_20261029') IS NOT NULL OR to_regprocedure('platform_private.b2b_credit_config_block(uuid)') IS NOT NULL OR to_regprocedure('platform_private.b2b_credit_internal_authority(uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'CANDIDATE_ALREADY_PRESENT'; END IF; END $$;\n"
     (H / '01-credit-approval.install.sql.review').write_text(prefix + pre + absent + body + '\nCOMMIT;\n')
     # Containment only: retain hardened functions/tickets and trigger columns; never restore GUC bodies.
     (H / '01-credit-approval.rollback.sql.review').write_text("-- DENY-ONLY containment; no history deletion or unsafe restoration. Inspect before execution.\nBEGIN;\nSET LOCAL lock_timeout='3s';\nREVOKE EXECUTE ON FUNCTION public.approve_b2b_credit(uuid,text) FROM PUBLIC,anon,authenticated,service_role;\nCOMMIT;\n")
@@ -138,7 +163,7 @@ END $approval$;
       'organizations':'UNTOUCHED; production has scoped SELECT + restrictive b2b containment, not homolog USING true',
       'approval_baseline':'GUC is caller-settable in SQL; direct table RLS/ACL still applies, so this is not a claim of hosted exploit'}
     (H / 'inventory.json').write_text(json.dumps(inventory,ensure_ascii=False,indent=2)+'\n')
-    (H / 'postflight.sql.readonly').write_text("-- Read-only: compare exact new body/ACL/DDL with the reviewed build; no business RPC calls.\nSELECT oid::regprocedure::text,md5(pg_get_functiondef(oid)),proacl,prosecdef,proconfig FROM pg_proc WHERE oid IN ('public.approve_b2b_credit(uuid,text)'::regprocedure,'public.fn_b2b_guard_credit_approval_fields()'::regprocedure,'public.tg_partner_orders_credit_guard()'::regprocedure,'platform_private.b2b_credit_config_block(uuid)'::regprocedure);\nSELECT pg_get_triggerdef(oid),tgenabled FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname IN ('trg_partner_orders_credit_guard','trg_b2b_guard_credit_approval_fields');\nSELECT count(*) AS tickets_must_be_zero FROM platform_private.credit_approval_tickets_20261029;\nSELECT policyname,permissive,qual,with_check FROM pg_policies WHERE schemaname='public' AND tablename='organizations';\n")
+    (H / 'postflight.sql.readonly').write_text("-- Read-only: compare exact new body/ACL/DDL with the reviewed build; no business RPC calls.\nSELECT oid::regprocedure::text,md5(pg_get_functiondef(oid)),proacl,prosecdef,proconfig FROM pg_proc WHERE oid IN ('public.approve_b2b_credit(uuid,text)'::regprocedure,'public.fn_b2b_guard_credit_approval_fields()'::regprocedure,'public.tg_partner_orders_credit_guard()'::regprocedure,'platform_private.b2b_credit_config_block(uuid)'::regprocedure,'platform_private.b2b_credit_internal_authority(uuid,uuid)'::regprocedure);\nSELECT pg_get_triggerdef(oid),tgenabled FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname IN ('trg_partner_orders_credit_guard','trg_b2b_guard_credit_approval_fields');\nSELECT count(*) AS tickets_must_be_zero FROM platform_private.credit_approval_tickets_20261029;\nSELECT policyname,permissive,qual,with_check FROM pg_policies WHERE schemaname='public' AND tablename='organizations';\n")
 
 
 if __name__ == '__main__':
@@ -150,7 +175,7 @@ if __name__ == '__main__':
         post += "\nIF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029) THEN RAISE EXCEPTION 'POST_TICKET_RESIDUE'; END IF;\n"
         live=json.loads((H/'capture/production-metadata.json').read_text())
         for sig in hashes:
-            if sig=='platform_private.b2b_credit_config_block(uuid)': acl='{postgres=X/postgres}'
+            if sig in ('platform_private.b2b_credit_config_block(uuid)','platform_private.b2b_credit_internal_authority(uuid,uuid)'): acl='{postgres=X/postgres}'
             else:
                 f=next(f for f in live['functions'] if f['signature']==sig.removeprefix('public.'))
                 acl='{'+','.join(f['acl'])+'}' if f['acl'] is not None else 'NULL'
