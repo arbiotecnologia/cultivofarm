@@ -33,8 +33,8 @@ def exercise(h, metadata):
             foreign_org=m.B if org==m.A else m.A
             rejected('deferred foreign registration '+label,f"INSERT INTO partner_accounts(id,razao_social,commercial_owner_organization_id) VALUES('{m.uid(902000+(1 if label=='B' else 0))}','LOCAL FOREIGN','{foreign_org}');",('42501','cadastro_owner_denied'),actor)
         finally:m.pg.sql(f"DELETE FROM user_roles WHERE user_id='{actor}' AND role='administrador';")
-    rejected('deferred anonymous registration',"INSERT INTO partner_accounts(razao_social) VALUES('LOCAL ANON');",('42501','permission denied for table partner_accounts'),None,'anon')
-    rejected('deferred no registration role',"INSERT INTO partner_accounts(razao_social) VALUES('LOCAL NO ROLE');",('42501','new row violates row-level security policy for table "partner_accounts"'))
+    rejected('deferred anonymous registration',"INSERT INTO partner_accounts(razao_social) VALUES('LOCAL ANON');",('42501','permission denied for function h15_actor_organization'),None,'anon')
+    rejected('deferred no registration role',"INSERT INTO partner_accounts(razao_social) VALUES('LOCAL NO ROLE');",('42501','cadastro_context_required'))
     # RED: captured calculator manufactures a low risk score when no settings exist.
     for actor,org,partner,label in partners:
         res=h.client(f"SELECT recalc_partner_risk_score('{partner}');",actor)
