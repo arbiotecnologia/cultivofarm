@@ -114,6 +114,28 @@ if __name__=='__main__':
         except AssertionError as e:
             result['preflight']='FAIL'; result['preflight_error']=str(e)
             result['relation_diagnostic']=pg.sql("SELECT relname,relacl,pg_get_userbyid(relowner),relrowsecurity,relforcerowsecurity FROM pg_class WHERE relname IN ('clientes','partner_orders','organizations');")
+        if result['preflight']=='PASS':
+            tests=[]
+            def check(label,sql,fail=None):
+                if fail:
+                    error=pg.sql(sql,False); assert fail in error,error
+                else: pg.sql(sql)
+                tests.append({'test':label,'status':'PASS'})
+            install=(H/'01-credit-approval.install.sql.review').read_text()
+            check('wrong preflight aborts installer',install.replace("'b24a3c30910832e8b14456d912a67589'","'00000000000000000000000000000000'"),'FUNCTION_OR_ACL_DRIFT')
+            assert pg.sql("SELECT to_regclass('platform_private.credit_approval_tickets_20261029') IS NULL")=='t'
+            check('wrong POST atomically rolls back DDL',install.replace("RAISE EXCEPTION 'POST_TICKET_RESIDUE'", "RAISE EXCEPTION 'POST_TICKET_RESIDUE'").replace('DO $post$ BEGIN','DO $post$ BEGIN RAISE EXCEPTION \'INJECTED_POST_FAILURE\';'),'INJECTED_POST_FAILURE')
+            assert pg.sql("SELECT to_regclass('platform_private.credit_approval_tickets_20261029') IS NULL")=='t'
+            check('complete installer COMMIT',install)
+            check('complete postflight',(H/'postflight.sql.readonly').read_text())
+            check('rerun refused',install,'FUNCTION_OR_ACL_DRIFT')
+            # Containment must still work with body drift; diagnostic assertions cannot block revoke.
+            pg.sql("ALTER FUNCTION public.approve_b2b_credit(uuid,text) SET search_path=pg_catalog;")
+            check('deny-only containment survives body drift',(H/'01-credit-approval.rollback.sql.review').read_text())
+            for role in ('anon','authenticated','service_role'):
+                assert pg.sql(f"SELECT has_function_privilege('{role}','public.approve_b2b_credit(uuid,text)','EXECUTE')")=='f'
+            assert pg.sql("SELECT to_regclass('platform_private.credit_approval_tickets_20261029') IS NOT NULL")=='t'
+            result['installer_tests']=tests
     except Exception as e:
         result={'restoration':'BLOCKED','error':str(e)}
     Path(sys.argv[2]).write_text(json.dumps(result,indent=2)+'\n')
