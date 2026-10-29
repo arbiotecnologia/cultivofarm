@@ -474,6 +474,13 @@ def run(out=None):
     rejects('roll 31/12 thu ok but 2027 nominal blocked', 'CALENDAR_COVERAGE_EXCEEDED', lambda: due_schedule(D(2026, 12, 2), 1, REAL), 'CALENDAR_REAL')
     check('1x within coverage ok', ['2026-12-28'], [x['adjusted'].isoformat() for x in due_schedule(D(2026, 11, 25), 1, REAL)], 'CALENDAR_REAL')
     rejects('2x crossing into 2027 blocked whole', 'CALENDAR_COVERAGE_EXCEEDED', lambda: due_schedule(D(2026, 11, 25), 2, REAL), 'CALENDAR_REAL')
+    # Exact cutoff examples (NF 2026-10-29 = today of the review).
+    check('NF 2026-10-29 1x', ['2026-11-30'], [x['adjusted'].isoformat() for x in due_schedule(D(2026, 10, 29), 1, REAL)], 'CALENDAR_REAL')
+    check('NF 2026-10-29 2x', ['2026-11-30', '2026-12-28'], [x['adjusted'].isoformat() for x in due_schedule(D(2026, 10, 29), 2, REAL)], 'CALENDAR_REAL')
+    check('NF 2026-10-29 3x nominal reaches 2027', '2027-01-28', nominal_dates(D(2026, 10, 29), 3)[2].isoformat(), 'CALENDAR_REAL')
+    rejects('NF 2026-10-29 3x blocked whole', 'CALENDAR_COVERAGE_EXCEEDED', lambda: due_schedule(D(2026, 10, 29), 3, REAL), 'CALENDAR_REAL')
+    for n in (1, 2, 3):
+        rejects(f'NF 2026-12-02 {n}x first nominal 2027-01-01 blocked', 'CALENDAR_COVERAGE_EXCEEDED', lambda: due_schedule(D(2026, 12, 2), n, REAL), 'CALENDAR_REAL')
     # Authority / integrity / no silent fallback.
     import tempfile, copy
     raw = json.loads(RP.read_text(encoding='utf-8'))
