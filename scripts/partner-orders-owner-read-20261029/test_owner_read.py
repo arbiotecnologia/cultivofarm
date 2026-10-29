@@ -57,7 +57,7 @@ def snapshot(order_json):
         for lab, pid in (('sel_PART', PART), ('sel_PART2', PART2)):
             rc, out = attempt(uid, "\\set VERBOSITY verbose\n" + f"SELECT 'N='||count(*) FROM public.partner_orders WHERE partner_id='{pid}';")
             r[lab] = first_err(out)
-        new = json.loads(order_json); new['id'] = 'e0000000-0000-4000-8000-0000000000ff'
+        new = json.loads(order_json); new['id'] = 'e0000000-0000-4000-8000-0000000000ff'; new['numero'] = 'PB-SYN-FF'
         lit = json.dumps(new).replace("'", "''")
         rc, out = attempt(uid, "\\set VERBOSITY verbose\n" + f"BEGIN; INSERT INTO public.partner_orders SELECT * FROM jsonb_populate_record(NULL::public.partner_orders, '{lit}'::jsonb); SELECT 'INSERTED'; ROLLBACK;")
         r['insert'] = first_err(out)
@@ -97,7 +97,7 @@ def main():
     fill('partner_orders', {'id': O2, 'partner_id': PART2, 'status': 'pendente', 'total': 10, 'subtotal': 10, 'created_by': U['fsf_admin']})
     order_json = pg.sql(f"SELECT to_jsonb(o) FROM public.partner_orders o WHERE id='{O1}'")
 
-    lit0 = json.dumps({**json.loads(order_json), 'id': 'e0000000-0000-4000-8000-0000000000fe'}).replace("'", "''")
+    lit0 = json.dumps({**json.loads(order_json), 'id': 'e0000000-0000-4000-8000-0000000000fe', 'numero': 'PB-SYN-FE'}).replace("'", "''")
 
     ctl = pg.sql(f"SET session_replication_role=replica; BEGIN; INSERT INTO public.partner_orders SELECT * FROM jsonb_populate_record(NULL::public.partner_orders, '{lit0}'::jsonb); SELECT 'INS_OK'; ROLLBACK;")
     check('fixture control: INSERT payload is structurally valid (privileged, rolled back)', 'INS_OK', ctl.strip().splitlines()[-1])
