@@ -1,9 +1,10 @@
 # F2-B — auditoria e preparação revisável
 
 ## 29/10 — continuidade autônoma offline de risco B2B
-- [ ] Compor recálculo de risco/parceiro/governança capturados no harness descartável, preservando guards e negações contratuais.
-- [ ] Executar regressões monetárias/autorização e próxima prova técnica independente de proveniência; evidências novas por rodada, sem sobrescrever histórico.
-- [ ] Atualizar relatório/plano original com contagens segregadas, hashes e intervenção humana exata; produção e runtime preservados.
+- [x] Compor20corpos/cinco tabelas risco/parceiro/governança capturados; calculator chega àFK, cadastroA/B nega settings semticket e rollbackcompleto;25metadados exatos.
+- [x] Executar263PGPASS/0FAIL/1BLOCKED/1NOTRUN,37monetário,42proveniência/1BLOCKED e10Vitest; evidências novas revisão1450 sem sobrescrever histórico.
+- [x] Atualizar relatório/plano original com contagens segregadas e decisão exata; produção e runtime preservados.
+- [ ] Decisão humana: cadastro com settings ausentes/configuração posterior ou11valores+método explícitos atomicamente? Caminho canônico atual não resolve; gates contábil/origem/fiscal/BI/JWTreal continuam NO-GO.
 
 ## 29/10 14:28 — revisão da autorização de cancelamento
 - [x] Pagamentos estrangeiros reais/exatidão de erros/AuthGREEN/valores e14corridas locais com holderPID; hipótese pós-lock READ COMMITTED, contraprova snapshotREPEATABLE READ sem mudar helpers.
