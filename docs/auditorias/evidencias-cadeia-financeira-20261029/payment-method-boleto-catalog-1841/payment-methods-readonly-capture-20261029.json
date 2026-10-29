@@ -1,0 +1,17 @@
+{
+  "kind": "READ_ONLY_CAPTURE_REPORTED_BY_OWNER",
+  "captured_by": "Renato S. Cunha",
+  "captured_at": "2026-10-29",
+  "project_ref": "swzpzcwiasxmjutrmvkm",
+  "statement": "BEGIN READ ONLY; SELECT id,name,active FROM public.payment_methods ORDER BY name,id LIMIT 100; COMMIT;",
+  "mutation": false,
+  "sanitized": "id replaced by sha256; real UUID never used as fixture or reused",
+  "rows": [
+    {
+      "id_sha256": "be981c25fdb126d9f476ac71cf81a5b4c90efb85ded4c9889f61fa6bbef34623",
+      "name": "AUDIT-AR-20260922 - Sem transferencia",
+      "active": true
+    }
+  ],
+  "result": "PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG"
+}
