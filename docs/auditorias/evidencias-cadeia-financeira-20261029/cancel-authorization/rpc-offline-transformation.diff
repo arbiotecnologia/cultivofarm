@@ -1,0 +1,36 @@
+--- captured
++++ offline-not-installable
+@@ -4,7 +4,7 @@
+  SECURITY DEFINER
+  SET search_path TO 'public'
+ AS $function$
+-DECLARE v_status text; v_has_payment boolean; v_table text;
++DECLARE v_status text; v_has_payment boolean; v_table text; v_org uuid;
+ BEGIN
+   IF NOT is_financial_staff(auth.uid()) THEN
+     RAISE EXCEPTION 'Sem permissão.' USING ERRCODE='insufficient_privilege';
+@@ -16,9 +16,11 @@
+     RAISE EXCEPTION 'Tipo inválido: %', p_kind USING ERRCODE='check_violation';
+   END IF;
+ 
++  v_org := public.h15_actor_organization();
++  IF v_org IS NULL THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+   IF p_kind = 'receivable' THEN
+-    SELECT status INTO v_status FROM accounts_receivable_installments WHERE id = p_installment_id FOR UPDATE;
+-    IF NOT FOUND THEN RAISE EXCEPTION 'Parcela não encontrada.'; END IF;
++    SELECT status INTO v_status FROM accounts_receivable_installments WHERE id = p_installment_id AND organization_id = v_org FOR UPDATE;
++    IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+     IF v_status IN ('PAID','PARTIAL') THEN
+       SELECT EXISTS (
+         SELECT 1 FROM receivable_payments rp
+@@ -33,8 +35,8 @@
+     UPDATE accounts_receivable_installments SET status='CANCELED' WHERE id = p_installment_id;
+     v_table := 'accounts_receivable_installments';
+   ELSE
+-    SELECT status INTO v_status FROM accounts_payable_installments WHERE id = p_installment_id FOR UPDATE;
+-    IF NOT FOUND THEN RAISE EXCEPTION 'Parcela não encontrada.'; END IF;
++    SELECT status INTO v_status FROM accounts_payable_installments WHERE id = p_installment_id AND organization_id = v_org FOR UPDATE;
++    IF NOT FOUND THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+     IF v_status IN ('PAID','PARTIAL') THEN
+       SELECT EXISTS (
+         SELECT 1 FROM payable_payments pp
