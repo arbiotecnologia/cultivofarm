@@ -48,14 +48,14 @@ def main():
                 edge(int(d['objid']), target, 'PG_DEPEND_' + str(d['refclassid']), d['deptype'])
                 if int(d['refclassid']) == 1255 and target in functions: selected.add(target)
                 if int(d['refclassid']) == 1259 and target in relations: tables.add(target)
-            # View dependency records are owned by pg_rewrite, not pg_proc.
-            if int(d['classid']) == 2618 and int(d['refclassid']) == 1259 and int(d['refobjid']) in tables:
-                for other in data['dependencies']:
-                    if int(other['classid']) == 2618 and other['objid'] == d['objid']:
-                        target=int(other['refobjid'])
-                        edge(int(d['refobjid']),target,'PG_REWRITE_'+str(other['refclassid']),str(d['objid']))
-                        if int(other['refclassid']) == 1255 and target in functions: selected.add(target)
-                        if int(other['refclassid']) == 1259 and target in relations: tables.add(target)
+            # Map dependency owner explicitly; never traverse reverse unrelated views.
+            owners={int(x['oid']):int(x['relation_oid']) for x in data.get('rewrite',[])+data.get('policy_objects',[])}
+            owner=owners.get(int(d['objid'])) if int(d['classid']) in (2618,3256) else None
+            if owner in tables:
+                target=int(d['refobjid'])
+                edge(owner,target,'CATALOG_EXPRESSION_'+str(d['classid'])+'_'+str(d['refclassid']),str(d['objid']))
+                if int(d['refclassid']) == 1255 and target in functions: selected.add(target)
+                if int(d['refclassid']) == 1259 and target in relations: tables.add(target)
         for rid in list(tables):
             r = relations[rid]
             for tr in r['triggers'] or []:

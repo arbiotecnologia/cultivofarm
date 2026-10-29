@@ -41,6 +41,14 @@ def identity():
         ('platform_private','has_role'),('public','has_role'),('public','fn_authz_uid_scope_ok'),('public','is_financial_staff')]:
         installed.append(captured(schema,name))
     m.pg.sql(f"INSERT INTO organizations VALUES('{m.A}',true),('{m.B}',true); INSERT INTO profiles VALUES('{m.U}','{m.A}',true,false); INSERT INTO user_roles VALUES('{m.U}','financeiro');")
+    # Exact FK definitions for the monetary chain, not substitute authorization.
+    supported={'accounts_receivable','accounts_receivable_installments','receivable_payments','organizations','payment_methods','bank_accounts'}
+    for relation in live['relations']:
+        if relation['name'] not in {'accounts_receivable','accounts_receivable_installments','receivable_payments'}: continue
+        for constraint in relation['constraints'] or []:
+            definition=constraint['definition']
+            if definition.startswith('FOREIGN KEY') and any('REFERENCES '+name+'(' in definition for name in supported):
+                m.pg.sql('ALTER TABLE '+relation['name']+' ADD CONSTRAINT '+constraint['name']+' '+definition+';')
     def scope(org=m.A, staff=True):
         # Local request context only, not JWT verification. Revocation is real table data.
         return f"SELECT set_config('request.jwt.claims','{{\"sub\":\"{m.U}\",\"iat\":1793275200}}',false);"
@@ -82,12 +90,16 @@ def main():
         if mode=='GREEN_SANDBOX':
             replay();check('writer assignment replay no effects',before,m.state(),mode)
         check('initial finance snapshot remains 300',Decimal('300'),Decimal(m.pg.sql(f"SELECT interest_amount FROM partner_order_payment_schedule WHERE partner_order_id='{m.uid(501)}'")),mode)
+        before=m.state();err=m.pg.sql(m.scope()+f"UPDATE accounts_receivable_installments SET original_amount=10000 WHERE id='{x}';",ok=False)
+        check('snapshot immutable and atomic',True,'Parcela imutavel' in err and m.state()==before,mode)
+        check('event ledger retains original interest',Decimal('100'),Decimal(m.pg.sql(f"SELECT sum(interest_amount) FROM receivable_payments WHERE installment_id='{x}'")),mode)
         m.payment(x,1000,'second-partial')
         check('second partial',Decimal('6550'),m.balance(x),mode)
         rev=m.ask(f"SELECT fn_reverse_payment('{pay}','receivable','LOCAL REASON');")
         check('reversal preserves remaining event',Decimal('9300'),m.balance(x),mode)
         before=m.state();check('reversal replay UUID',rev,m.ask(f"SELECT fn_reverse_payment('{pay}','receivable','LOCAL REASON');"),mode)
         check('reversal replay no effects',before,m.state(),mode)
+        check('ledger after reversal remaining 1000',Decimal('1000'),Decimal(m.pg.sql(f"SELECT sum(amount_received) FROM receivable_payments WHERE installment_id='{x}'")),mode)
         m.pg.sql(f"UPDATE profiles SET organization_id='{m.B}' WHERE user_id='{m.U}';")
         before=m.state();err=m.pg.sql(m.scope()+call,ok=False)
         check('h15 actual tenant denies replay',True,'FINANCIAL_SCOPE_DENIED' in err and m.state()==before,mode)
