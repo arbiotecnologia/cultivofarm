@@ -80,10 +80,12 @@ def denied(name, sql, marker, actor=m.U, role='authenticated', mode='CAPTURED'):
 
 def fixture(n, kind, org, status='OPEN', b2b=False):
     if kind=='receivable':
-        title,part=m.title(n,org=org)
-        # Owner only prepares synthetic persisted fixtures, never invokes tested RPC.
+        title=m.uid(n+20000)
+        partner='NULL' if not b2b else m.q(m.uid(900002))
+        # Prepare immutable parent at INSERT, never reclassify an existing snapshot.
         m.pg.sql("SELECT set_config('request.jwt.claims','{}',false);"+
-                 f"UPDATE accounts_receivable SET origin_type='{'B2B_ORDER' if b2b else 'MANUAL'}',partner_id={'NULL' if not b2b else m.q(m.uid(900002))} WHERE id='{title}';")
+                 f"INSERT INTO accounts_receivable(id,description,category_id,total_amount,first_due_date,created_by,organization_id,origin_type,partner_id) VALUES('{title}','LOCAL','{m.K}',10300,CURRENT_DATE+30,'{m.U}','{org}','{'B2B_ORDER' if b2b else 'MANUAL'}',{partner});")
+        part=m.pg.sql(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{title}'")
     else:
         title,part=m.uid(n+20000),m.uid(n+40000)
         m.pg.sql(f"INSERT INTO accounts_payable(id,description,category_id,total_amount,first_due_date,created_by,organization_id) VALUES('{title}','LOCAL','{m.K}',10300,CURRENT_DATE+30,'{m.U}','{org}'); INSERT INTO accounts_payable_installments(id,payable_id,installment_number,due_date,original_amount,net_amount,organization_id) VALUES('{part}','{title}',1,CURRENT_DATE+30,10300,10300,'{org}');")
