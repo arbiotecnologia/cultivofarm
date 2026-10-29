@@ -88,6 +88,7 @@ def fixture(n, kind, org, status='OPEN', b2b=False):
 
 def main():
     m.pg.start(); m.schema(); r.identity()
+    m.scope = lambda *args, **kwargs: "SELECT set_config('request.jwt.claims','{}',false);"
     m.pg.sql("CREATE ROLE authenticated LOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT; CREATE ROLE anon LOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT; CREATE ROLE service_role NOLOGIN; CREATE ROLE dashboard_user NOLOGIN; CREATE ROLE supabase_auth_admin NOLOGIN; GRANT USAGE ON SCHEMA public,auth,platform_private TO authenticated,anon;")
     m.pg.sql(f"INSERT INTO profiles VALUES('{V}','{m.B}',true,false); INSERT INTO user_roles VALUES('{V}','financeiro'); CREATE TABLE auth.users(id uuid PRIMARY KEY); INSERT INTO auth.users VALUES('{m.U}'),('{V}');")
     m.pg.sql('DROP TABLE accounts_payable_installments,payable_payments,accounts_payable;')
@@ -102,9 +103,11 @@ def main():
         for tr in t['triggers'] or []:
             if m.pg.sql("SELECT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname="+m.q(tr['name'])+" AND tgrelid="+m.q(name)+"::regclass)")=='f': m.pg.sql(tr['definition']+';')
         policies(name)
-    for f in r.live['functions']:
-        if m.pg.sql('SELECT to_regprocedure('+m.q(f['schema']+'.'+f['signature'].split('.')[-1])+') IS NOT NULL')=='t':
-            acl('FUNCTION',f['schema']+'.'+f['signature'].split('.')[-1],f['acl'])
+    local_functions = json.loads(m.pg.sql("SELECT jsonb_agg(jsonb_build_object('schema',n.nspname,'name',p.proname,'signature',p.oid::regprocedure::text)) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','auth','platform_private')"))
+    for local in local_functions:
+        matches = [f for f in r.live['functions'] if f['schema']==local['schema'] and f['name']==local['name']]
+        if len(matches)==1:
+            acl('FUNCTION',local['signature'],matches[0]['acl'])
     rpc=next(f for f in r.live['functions'] if f['name']=='rpc_cancel_financial_installment')
     pins.append({k:rpc[k] for k in ['oid','signature','md5','owner','acl']})
     check('client role has no owner membership/superuser/bypass', 'f|f|f',m.pg.sql("SELECT rolsuper,rolbypassrls,pg_has_role('authenticated','postgres','MEMBER') FROM pg_roles WHERE rolname='authenticated'"))
@@ -114,7 +117,9 @@ def main():
         foreign=fixture(911 if kind=='receivable' else 921,kind,m.B)
         result=client(f"SELECT count(*) FROM accounts_{kind}_installments WHERE id='{foreign}';")
         check(kind+' foreign SELECT hidden by captured RLS','0',result.stdout.strip().splitlines()[-1])
-        denied(kind+' direct own UPDATE closed',f"UPDATE accounts_{kind}_installments SET status='CANCELED' WHERE id='{own}' RETURNING id; SELECT 1/0;",'division by zero')
+        before=state()
+        result=client(f"UPDATE accounts_{kind}_installments SET status='CANCELED' WHERE id='{own}' RETURNING id;")
+        check(kind+' direct own UPDATE closed',True,result.returncode==0 and own not in result.stdout and state()==before)
         check(kind+' own client RPC accepted',0,client(call(own,kind)).returncode)
         denied(kind+' replay no extra audit',call(own,kind),'já cancelada')
         denied(kind+' foreign OPEN tenant guard atomic',call(foreign,kind),'tenant_scope_violation')
