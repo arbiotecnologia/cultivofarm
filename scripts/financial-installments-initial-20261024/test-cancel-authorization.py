@@ -88,6 +88,8 @@ def fixture(n, kind, org, status='OPEN', b2b=False):
 
 def main():
     m.pg.start(); m.schema(); r.identity()
+    for e in r.live['enums']:
+        if e['name']=='app_role': m.pg.sql('ALTER TYPE app_role ADD VALUE IF NOT EXISTS '+m.q(e['value'])+';')
     m.scope = lambda *args, **kwargs: "SELECT set_config('request.jwt.claims','{}',false);"
     m.pg.sql("CREATE ROLE authenticated LOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT; CREATE ROLE anon LOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT; CREATE ROLE service_role NOLOGIN; CREATE ROLE dashboard_user NOLOGIN; CREATE ROLE supabase_auth_admin NOLOGIN; GRANT USAGE ON SCHEMA public,auth,platform_private TO authenticated,anon;")
     m.pg.sql(f"INSERT INTO profiles VALUES('{V}','{m.B}',true,false); INSERT INTO user_roles VALUES('{V}','financeiro'); CREATE TABLE auth.users(id uuid PRIMARY KEY); INSERT INTO auth.users VALUES('{m.U}'),('{V}');")
