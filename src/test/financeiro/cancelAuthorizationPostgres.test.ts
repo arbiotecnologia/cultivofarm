@@ -12,7 +12,7 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   ], { encoding: 'utf8', timeout: 180_000 });
   const result = JSON.parse(output.trim().split('\n').at(-1) ?? '{}');
   expect(result.FAIL).toBe(0);
-  expect(result.PASS).toBe(346);
+  expect(result.PASS).toBe(651);
   expect(result.BLOCKED).toBe(1);
   expect(result['NOT RUN']).toBe(1);
   const evidence = JSON.parse(readFileSync(join(outputDir, 'results.json'), 'utf8'));
@@ -25,6 +25,16 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   const green = evidence.races.filter((row: { test: string }) => row.test.startsWith('GREEN_OFFLINE_ONLY'));
   expect(green).toHaveLength(4);
   expect(evidence.risk_composition.tables).toContain('partner_risk_scores');
+  expect(evidence.risk_composition.deferred.risk_fk_resolved).toBe(true);
+  const finding = (name: string) => evidence.checks.find((row: { test: string }) => row.test === name);
+  for (const tenant of ['A', 'B']) {
+    expect(finding(`deferred no settings method ticket ${tenant}`).actual).toBe('0|0');
+    expect(finding(`deferred complete updater ${tenant}`).actual).toBe('0');
+    expect(finding(`deferred absent settings risk ${tenant} exact error`).actual).toBe("('P0001', 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED')");
+    expect(finding(`deferred legacy incomplete wrapper ${tenant} exact error`).actual).toBe("('P0001', 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED')");
+    expect(finding(`deferred configured still C2_ACCOUNTING_PENDING ${tenant} exact error`).actual).toBe("('42501', 'C2_ACCOUNTING_PENDING')");
+    expect(finding(`deferred configured still B2B_INTERNAL_DOWNSTREAM_UNVERIFIED ${tenant} exact error`).actual).toBe("('42501', 'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED')");
+  }
   const barriers = evidence.checks.filter((row: { mode: string }) => row.mode === 'RISK_BLOCKED_EXPECTED');
   expect(barriers).toHaveLength(10);
   expect(barriers.every((row: { status: string }) => row.status === 'PASS')).toBe(true);
