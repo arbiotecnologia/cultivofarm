@@ -1,0 +1,48 @@
+{
+  "kind": "READ_ONLY_CAPTURE_REPORTED_BY_OWNER",
+  "environment": "homologation",
+  "project_ref": "vrlcdwmlytukrjezrrnf",
+  "project_name": "CultivoFarm-Homolog",
+  "captured_at": "2026-10-29",
+  "mutation": false,
+  "statement": "BEGIN READ ONLY; SELECT id,name,active FROM public.payment_methods ORDER BY name,id LIMIT 100; COMMIT;",
+  "sanitized": "ids replaced by sha256; homolog UUID never transferred to production nor used as fixture",
+  "rows": [
+    {
+      "id_sha256": "54a6d93c337735ea20aca9a0c1b54a75ec39ec637fbd650575b32d25eb03b319",
+      "name": "Boleto",
+      "active": true
+    },
+    {
+      "id_sha256": null,
+      "name": "Cartão",
+      "active": null,
+      "note": "listed by owner; id/active not reported"
+    },
+    {
+      "id_sha256": null,
+      "name": "Dinheiro",
+      "active": null,
+      "note": "listed by owner; id/active not reported"
+    },
+    {
+      "id_sha256": null,
+      "name": "Outro",
+      "active": null,
+      "note": "listed by owner; id/active not reported"
+    },
+    {
+      "id_sha256": null,
+      "name": "Pix",
+      "active": null,
+      "note": "listed by owner; id/active not reported"
+    },
+    {
+      "id_sha256": null,
+      "name": "Transferência Bancária",
+      "active": null,
+      "note": "listed by owner; id/active not reported"
+    }
+  ],
+  "observed_resolution": "Boleto resolves (alias) — READ-ONLY EVIDENCE, NOT applied configuration, NOT permission to issue/install"
+}
