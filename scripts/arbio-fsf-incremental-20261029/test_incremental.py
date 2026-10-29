@@ -58,7 +58,7 @@ def main():
         typ = c['type']
         if typ=='numeric' and c['precision']: typ += f"({c['precision']},{c['scale']})"
         columns.append(c['name']+' '+typ+(' DEFAULT '+c['default'] if c['default'] else '')+(' NOT NULL' if c['nullable']=='NO' else ''))
-    pg.sql('CREATE TABLE public.partner_orders('+','.join(columns)+');')
+    pg.sql('CREATE SEQUENCE public.partner_orders_numero_seq; CREATE TABLE public.partner_orders('+','.join(columns)+');')
     # Install exact real approval bodies, not a surrogate function.
     for sig in ('fn_b2b_guard_credit_approval_fields()','approve_b2b_credit(uuid,text)'):
         pg.sql(F[sig]['body']+';')
