@@ -111,7 +111,9 @@ if __name__=='__main__':
         result=restore(j)
         result['preflight']='NOT RUN'
         try: pg.sql((H/'preflight.sql.readonly').read_text()); result['preflight']='PASS'
-        except AssertionError as e: result['preflight']='FAIL'; result['preflight_error']=str(e)
+        except AssertionError as e:
+            result['preflight']='FAIL'; result['preflight_error']=str(e)
+            result['relation_diagnostic']=pg.sql("SELECT relname,relacl,pg_get_userbyid(relowner),relrowsecurity,relforcerowsecurity FROM pg_class WHERE relname IN ('clientes','partner_orders','organizations');")
     except Exception as e:
         result={'restoration':'BLOCKED','error':str(e)}
     Path(sys.argv[2]).write_text(json.dumps(result,indent=2)+'\n')
