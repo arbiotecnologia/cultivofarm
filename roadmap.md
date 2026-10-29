@@ -988,3 +988,9 @@
 - [x] PG122PASS/17FAIL/8BLOCKED/1NOT RUN;194Vitest/12arquivos;duas sessões não certificam espera crítica;taxas preservadas.
 - [x] Diagnóstico agregado inativo/sintético, revisão independente, NO-GO e plano original atualizados.
 - [ ] Implantação/remediação: bloqueadas por fechamento transitivo/contratosBI/proveniência/JWT;sem candidato SQL novo.
+
+## 29/10 — pacote executável da cadeia financeira P0
+- [x] Catálogo recursivo454funções/150relações/5.826arestas e13candidatos dinâmicos;pg_rewrite/policy/FKs/ACL;59comparações sem drift, fechamento semântico não certificado.
+- [x] Red/green estrito37assertionsPGPASS, duas violaçõesRED esperadas/greenzero; H15/RBACcapturados+FKsmonetárias/ledger/snapshot/replay/estorno; wrapper anônimo completo nega, positivoBLOCKED sem bypass.
+- [x] Vitest188/188em11arquivos; matriz37PASS/0FAIL/6BLOCKED/1NOT RUN, relatório e critérios de promoção/rollbackdeny-only; histórico/taxas/Entregas intactos.
+- [ ] Implantação e SQLreview novo: dependem cadeia positiva/guards completos/dinâmico/semânticaBI/proveniência/JWT A/B;calendário/parcelas/billing e ledger contábil pendentes, produçãoOFF.
