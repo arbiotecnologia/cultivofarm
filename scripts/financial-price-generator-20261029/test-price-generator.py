@@ -79,6 +79,81 @@ STUB_NF = f"""CREATE OR REPLACE FUNCTION platform_private.price_nf_origin(p_nf u
 STUB_ACC = """CREATE OR REPLACE FUNCTION platform_private.price_accounting_gate(p_org uuid, p_customer uuid) RETURNS void LANGUAGE sql STABLE SET search_path='' AS $$ SELECT $$;"""  # SYNTHETIC
 
 
+U2 = '99999999-9999-4999-8999-999999999992'   # SYNTHETIC second staff actor, tenant A
+U3 = '99999999-9999-4999-8999-999999999993'   # SYNTHETIC third staff actor, revoked during wait
+
+
+def held(sql):
+    """Open transaction that performs `sql` and stays open (holds its locks)."""
+    p = subprocess.Popen(pg.psql(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    p.stdin.write("SET statement_timeout='15s'; SELECT pg_backend_pid(); BEGIN; " + sql + " SELECT 'HELD';\n"); p.stdin.flush()
+    pid = int(p.stdout.readline().strip()); out = p.stdout.readline().strip(); assert p.stdout.readline().strip() == 'HELD', out
+    return p, pid, out
+
+
+def finish(p, verb):
+    try:
+        p.stdin.write(verb + ";\n"); p.stdin.close(); p.wait(timeout=10)
+    finally:
+        if p.poll() is None: p.kill()
+
+
+def waiter(sql, tag):
+    box = {}
+    def run():
+        box['r'] = subprocess.run(pg.psql(), input=(f"SET application_name='{tag}'; SET statement_timeout='15s';" + sql).encode(), capture_output=True)
+    import threading, time
+    t = threading.Thread(target=run, daemon=True); t.start()
+    blocked = None
+    for _ in range(100):
+        blocked = pg.sql(f"SELECT coalesce((SELECT pg_blocking_pids(pid)::text FROM pg_stat_activity WHERE application_name='{tag}' AND wait_event_type='Lock'),'')")
+        if blocked: break
+        time.sleep(0.05)
+    return t, box, blocked
+
+
+def exposure(): return D(pg.sql(f"SELECT platform_private.price_credit_exposure('{A}','{C}')"))
+
+
+def debtor_races():
+    """Two DIFFERENT actors, DIFFERENT keys, SAME tenant+debtor; each fits alone, sum exceeds."""
+    pg.sql("CREATE TABLE public.test_staff_revoked(uid uuid PRIMARY KEY);"  # SYNTHETIC revocation seam
+           "CREATE OR REPLACE FUNCTION is_financial_staff(uuid) RETURNS boolean LANGUAGE sql AS $$SELECT $1=auth.uid() AND current_setting('test.staff',true)='true' AND NOT EXISTS(SELECT 1 FROM public.test_staff_revoked WHERE uid=$1)$$;")
+    e0 = exposure(); f = D('20000.00'); extra = D('100000.00') - e0 - D('30000.00')  # e0+extra+f=90000 fits, +2f=110000 exceeds
+    env = nf('2026-10-29') + f"SELECT set_config('test.extra_exposure','{extra}',false);"
+    one = lambda key, uid: env + scope(uid) + "SET LOCAL ROLE authenticated; SELECT public.rpc_create_price_receivable_candidate(" + q(json.dumps(payload(1, amount='33333.33', key=key))) + "::jsonb);"
+    check('race setup: each request fits alone, sum exceeds', (True, False), (e0 + extra + f <= 100000, e0 + extra + 2 * f <= 100000), 'DEBTOR_RACE')
+    before = state()
+    p1, pid1, out1 = held(one('k-race-debtor-u', U))
+    t, box, blocked = waiter(env + call(payload(1, amount='33333.33', key='k-race-debtor-u2'), uid=U2), 'price-w2')
+    check('second actor waits on first via pg_blocking_pids', '{' + str(pid1) + '}', blocked, 'DEBTOR_RACE')
+    finish(p1, 'COMMIT'); t.join(15)
+    err = box['r'].stderr.decode()
+    check('exactly 1 success + 1 LIMIT refusal (different actors/keys)', (True, 1, True), (json.loads(out1)['success'], box['r'].returncode, 'LIMIT_EXCEEDED_BLOCK' in err), 'DEBTOR_RACE')
+    check('only one new title/receipt', (1, 1), (len(json.loads(state())['t'] or []) - len(json.loads(before)['t'] or []), len(json.loads(state())['r'] or []) - len(json.loads(before)['r'] or [])), 'DEBTOR_RACE')
+    check('fresh exposure after commit includes winner', e0 + f, exposure(), 'DEBTOR_RACE')
+    # Different debtor is NOT serialized behind the lock (tenant B customer CB).
+    p1, pid1, _ = held(env + scope(U) + "SELECT pg_advisory_xact_lock(hashtextextended('price-debtor|" + A + "|" + C + "', 11));")
+    rb = subprocess.run(pg.psql(), input=(nf('2026-10-29') + "SET lock_timeout='500ms';" + call(payload(1, amount='100.00', key='k-race-other-debtor', cust=CB), uid=V, org=B)).encode(), capture_output=True)
+    finish(p1, 'ROLLBACK')
+    check('other debtor proceeds while A|C held', 0, rb.returncode, 'DEBTOR_RACE')
+    # Revocation during wait: staff revoked while blocked -> denied after lock, nothing written.
+    pg.sql("SELECT set_config('test.extra_exposure','0',false);")
+    env0 = nf('2026-10-29')
+    p1, pid1, _ = held(env0 + scope(U) + "SELECT pg_advisory_xact_lock(hashtextextended('price-debtor|" + A + "|" + C + "', 11));")
+    before = state()
+    t, box, blocked = waiter(env0 + call(payload(1, amount='100.00', key='k-race-revoked'), uid=U3), 'price-w3')
+    check('revocation case: waiter blocked by holder', '{' + str(pid1) + '}', blocked, 'REVOCATION_WAIT')
+    pg.sql(f"INSERT INTO public.test_staff_revoked VALUES('{U3}');")
+    finish(p1, 'ROLLBACK'); t.join(15)
+    check('revoked during wait -> denied after lock, state unchanged', (True, True), ('Sem permissão' in box['r'].stderr.decode(), state() == before), 'REVOCATION_WAIT')
+    # Non-RC isolation refused before any lock/write.
+    for lvl in ('REPEATABLE READ', 'SERIALIZABLE'):
+        before = state()
+        err = pg.sql(env0 + scope(U2) + f"BEGIN ISOLATION LEVEL {lvl}; SET LOCAL ROLE authenticated; SELECT public.rpc_create_price_receivable_candidate(" + q(json.dumps(payload(1, amount='100.00', key='k-iso-' + lvl[:3]))) + "::jsonb); COMMIT;", ok=False)
+        check(f'{lvl} refused (stale snapshot), state unchanged', (True, True), ('PRICE_ISOLATION_READ_COMMITTED_REQUIRED' in err, state() == before), 'ISOLATION')
+
+
 def nf(d): return f"SELECT set_config('test.nf_date','{d}',false);"
 
 
@@ -87,6 +162,12 @@ def main(out):
     pg.sql("""CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
       CREATE TABLE financial_categories(id uuid PRIMARY KEY, active boolean, type text);
       CREATE TABLE financial_cost_centers(id uuid PRIMARY KEY, active boolean);""" + f"INSERT INTO financial_categories VALUES('{K}',true,'RECEITA');")
+    # Captured d51_5 tenant-link trigger composed over a SYNTHETIC clientes fixture (id->tenant only).
+    pg.sql(f"CREATE TABLE public.clientes(id uuid PRIMARY KEY, organization_id uuid NOT NULL); INSERT INTO public.clientes VALUES('{C}','{A}'),('{CB}','{B}');")  # SYNTHETIC
+    m.install('d51_5_validate_financial_tenant_links()')
+    d51 = [(t['name'], tr['definition']) for t in m.LIVE['tables'] if t['name'] in ('accounts_receivable', 'accounts_receivable_installments', 'receivable_payments', 'financial_receipts') for tr in (t['triggers'] or []) if tr['name'] == 'd51_5_validate_tenant_links']
+    for _, ddl in d51: pg.sql(ddl + ';')
+    check('captured d51_5 trigger installed on 4 tables (md5-pinned body)', 4, len(d51), 'D51_5')
     # Reviewed context generator + title RPC (this package's review bodies, unchanged).
     for f in ('fn_generate_receivable_installments.sql.review', 'rpc_create_financial_title.sql.review'):
         pg.sql((PKG / f).read_text())
@@ -187,6 +268,11 @@ def main(out):
     deny('snapshot UPDATE immutable', f"UPDATE platform_private.price_schedule_snapshots SET financed_total=1 WHERE receivable_id='{tid}';", 'PRICE_RECORD_IMMUTABLE', 'SNAPSHOT')
     deny('snapshot DELETE immutable', "DELETE FROM platform_private.price_schedule_snapshots;", 'PRICE_RECORD_IMMUTABLE', 'SNAPSHOT')
     deny('receipt UPDATE immutable', "UPDATE platform_private.price_generation_receipts SET request_sha256='x';", 'PRICE_RECORD_IMMUTABLE', 'SNAPSHOT')
+    deny('receipt DELETE immutable', "DELETE FROM platform_private.price_generation_receipts;", 'PRICE_RECORD_IMMUTABLE', 'SNAPSHOT')
+    deny('receipt TRUNCATE immutable', "TRUNCATE platform_private.price_generation_receipts;", 'PRICE_RECORD_IMMUTABLE', 'SNAPSHOT')
+    deny('d51_5: AR of tenant A with tenant B customer', f"INSERT INTO accounts_receivable(origin_type,description,category_id,total_amount,first_due_date,installment_count,created_by,organization_id,customer_id) VALUES('MANUAL','x','{K}',10,CURRENT_DATE,1,'{U}','{A}','{CB}');", 'FINANCIAL_CUSTOMER_TENANT_MISMATCH', 'D51_5')
+    deny('d51_5: installment re-pointed to foreign tenant', f"UPDATE accounts_receivable_installments SET organization_id='{B}' WHERE receivable_id='{tid}' AND installment_number=3;", 'FINANCIAL_RECEIVABLE_TENANT_MISMATCH', 'D51_5')
+    check('d51_5: Price title/installments tenant-consistent', 'A|3', pg.sql(f"SELECT CASE WHEN r.organization_id='{A}' THEN 'A' END||'|'||count(*) FROM accounts_receivable r JOIN accounts_receivable_installments i ON i.receivable_id=r.id AND i.organization_id=r.organization_id WHERE r.id='{tid}' GROUP BY r.organization_id"), 'D51_5')
     deny('captured title snapshot guard', f"UPDATE accounts_receivable SET total_amount=1 WHERE id='{tid}';", 'imutavel', 'SNAPSHOT')
     # Replay.
     before = state()
@@ -213,6 +299,16 @@ def main(out):
     r5 = ok(nf('2026-10-29') + call(payload(2, amount='1000.00', key='k-b-own', cust=CB), uid=V, org=B))
     check('tenant B title owned by B', B, pg.sql(f"SELECT organization_id FROM accounts_receivable WHERE id='{r5['receivable_id']}'"), 'AUTH')
     deny('B actor cannot use A customer', nf('2026-10-29') + call(payload(2, amount='1000.00', key='k-b-foreign', cust=C), uid=V, org=B), 'PAYMENT_SETTINGS_OFFICIAL_ABSENT', 'AUTH')
+    # numeric(14,2) ceiling: reject clearly, no unexpected overflow.
+    for amt, want in (('999999999999.99', 'OK'), ('1000000000000.00', 'TABLE_AMOUNT_INVALID'), ('1e20', 'TABLE_AMOUNT_INVALID'), ('99999999999999999999999999.99', 'TABLE_AMOUNT_INVALID')):
+        for n in (1, 3):
+            rr = subprocess.run(pg.psql(), input=f"SELECT (platform_private.price_compute({amt},{n},'2026-10-29',{cal})->>'financed_total');".encode(), capture_output=True)
+            got = 'OK' if rr.returncode == 0 else ('TABLE_AMOUNT_INVALID' if 'TABLE_AMOUNT_INVALID' in rr.stderr.decode() else rr.stderr.decode()[-160:])
+            check(f'compute edge {amt} {n}x', want, got, 'NUMERIC_EDGE')
+            if rr.returncode == 0: check(f'compute edge {amt} {n}x fits numeric(14,2)', 't', pg.sql(f"SELECT ({q(rr.stdout.decode().strip())}::numeric)::numeric(14,2) IS NOT NULL"), 'NUMERIC_EDGE')
+    deny('RPC at ceiling: limit blocks before any write (no overflow)', nf('2026-10-29') + call(payload(3, amount='999999999999.99', key='k-ceiling')), 'LIMIT_EXCEEDED_BLOCK', 'NUMERIC_EDGE')
+    deny('RPC above ceiling rejected', nf('2026-10-29') + call(payload(3, amount='1000000000000.00', key='k-over-ceiling')), 'TABLE_AMOUNT_INVALID', 'NUMERIC_EDGE')
+    debtor_races()
     # Payment and reversal through captured RPCs on Price installment 1.
     inst1 = pg.sql(f"SELECT id FROM accounts_receivable_installments WHERE receivable_id='{tid}' AND installment_number=1")
     snap_before = pg.sql("SELECT jsonb_agg(to_jsonb(s) ORDER BY receivable_id) FROM platform_private.price_schedule_snapshots s")
@@ -225,6 +321,8 @@ def main(out):
     check('reversal restores Price payment balance', D('20724.28'), m.balance(inst1), 'REVERSAL')
     check('original_amount unchanged after payment/reversal', '20724.28', pg.sql(f"SELECT original_amount FROM accounts_receivable_installments WHERE id='{inst1}'"), 'REVERSAL')
     check('snapshots unchanged after payment/reversal', snap_before, pg.sql("SELECT jsonb_agg(to_jsonb(s) ORDER BY receivable_id) FROM platform_private.price_schedule_snapshots s"), 'REVERSAL')
+    # NOTE: this is a fixture-preservation check (10300 title + 7550 payment -> 2750), NOT the original
+    # P0 regressions; those (10300 vs 10600, replay 7550 vs 7750) run unchanged in test-receivable-red-green.py.
     check('historical 10300/7550 title untouched', hist_before, pg.sql(f"SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM accounts_receivable_installments x WHERE receivable_id='{hist_tid}'"), 'HISTORY')
     check('historical balance still 2750', D('2750.00'), m.balance(hist_inst), 'HISTORY')
     summary = {}
