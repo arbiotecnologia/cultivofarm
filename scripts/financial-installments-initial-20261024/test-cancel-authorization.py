@@ -136,6 +136,49 @@ def locked(process, part):
 def amounts(part,kind):
     return m.pg.sql(f"SELECT jsonb_build_object('original',original_amount,'net',net_amount,'interest',interest_amount,'penalty',penalty_amount,'discount',discount_amount,'paid',{'received_amount' if kind=='receivable' else 'paid_amount'}) FROM accounts_{kind}_installments WHERE id='{part}'")
 
+def parameter_matrix(mode, offset):
+    # SQL NULL is deliberately emitted, never interpolated as the string 'None'.
+    def sql(part,kind,reason='LOCAL AUDIT REASON'):
+        values=['NULL' if value is None else m.q(value) for value in [part,kind,reason]]
+        return 'SELECT rpc_cancel_financial_installment('+','.join(values)+');'
+    def reject(label,part,kind,expected,reason='LOCAL AUDIT REASON'):
+        before=state(); result=client(sql(part,kind,reason))
+        check(mode+' '+label+' exact error',expected,error_tuple(result),mode)
+        check(mode+' '+label+' full state unchanged',before,state(),mode)
+        responses.append(dict(test=mode+' '+label,returncode=result.returncode,stderr=result.stderr))
+    def success(label,part,kind,actual_kind):
+        before=json.loads(state());money=amounts(part,actual_kind)
+        result=client(sql(part,kind));after=json.loads(state())
+        check(mode+' '+label+' void result',True,result.returncode==0 and result.stdout.splitlines()[-1:]==[''],mode)
+        check(mode+' '+label+' status','CANCELED',m.pg.sql(f"SELECT status FROM accounts_{actual_kind}_installments WHERE id='{part}'"),mode)
+        audits=[row for row in after['financial_audit_log'] or [] if row['entity_id']==part and row['action']=='INSTALLMENT_CANCELED']
+        expected=dict(entity_type='accounts_'+actual_kind+'_installments',entity_id=part,action='INSTALLMENT_CANCELED',old_data={'status':'OPEN'},new_data={'status':'CANCELED'},performed_by=m.U,reason='LOCAL AUDIT REASON')
+        check(mode+' '+label+' exact actor audit', [expected],[{key:row[key] for key in expected} for row in audits],mode)
+        check(mode+' '+label+' monetary retained',money,amounts(part,actual_kind),mode)
+        unaffected=all(before[key]==after[key] for key in before if key not in ['accounts_'+actual_kind+'_installments','financial_audit_log'])
+        check(mode+' '+label+' unrelated state retained',True,unaffected,mode)
+        responses.append(dict(test=mode+' '+label,returncode=result.returncode,stdout=result.stdout,audit=audits))
+    ap=fixture(offset,'payable',m.A);ar=fixture(offset+1,'receivable',m.A)
+    foreign_ap=fixture(offset+2,'payable',m.B);foreign_ar=fixture(offset+3,'receivable',m.B)
+    green=mode=='GREEN_NULL_KIND_SANDBOX'
+    if green:
+        for label,part in [('own payable',ap),('own receivable',ar),('foreign payable',foreign_ap),('foreign receivable',foreign_ar)]:
+            reject('NULL kind '+label,part,None,('23514','Tipo inválido: <NULL>'))
+    else:
+        success('RED NULL kind dispatches payable',ap,None,'payable')
+        for label,part in [('own receivable',ar),('foreign receivable',foreign_ar)]:
+            reject('NULL kind '+label,part,None,('P0001','Parcela não encontrada.'))
+        reject('NULL kind foreign payable',foreign_ap,None,('42501','tenant_scope_violation'))
+    for kind in [None,'receivable','payable']:
+        expected=('23514','Tipo inválido: <NULL>') if green and kind is None else ('42501','FINANCIAL_SCOPE_DENIED') if green else ('P0001','Parcela não encontrada.')
+        reject('NULL installment '+str(kind),None,kind,expected)
+    for kind in ['receivable','payable']:
+        part=ar if kind=='receivable' else ap
+        for label,reason in [('NULL',None),('empty',''),('spaces','    '),('short','bad')]:
+            reject('reason '+label+' '+kind,part,kind,('23514','Motivo é obrigatório (mín. 5 caracteres).'),reason)
+        valid=fixture(offset+10+(1 if kind=='payable' else 0),kind,m.A)
+        success('valid '+kind,valid,kind,kind)
+
 def race(body, mode, kind, revoke, number, isolation='READ COMMITTED'):
     # Owner prepares/locks fixtures, but the RPC is dispatched by authenticated LOGIN only.
     m.pg.sql(body+';')
@@ -265,6 +308,7 @@ def main():
     except AssertionError as error:
         check('B2B fixture BLOCKED before RPC by exact risk dependency',True,
               'recalc_partner_risk_score' in str(error) and state()==before)
+    parameter_matrix('RED_NULL_KIND_CAPTURED',1800)
     # A status oracle is reproduced, not an unauthorized mutation. Scope SELECT before row lock
     # closes only that oracle in the sandbox; no runtime file or SQL installer emitted.
     body=rpc['body']
@@ -291,6 +335,10 @@ def main():
     body=body.replace(anchor,anchor+'\n    '+post)
     unguarded_body=body
     body=body.replace('BEGIN\n', "BEGIN\n  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'FINANCIAL_SCOPE_DENIED' USING ERRCODE='42501'; END IF;\n",1)
+    previous_body=body
+    anchor="IF p_kind NOT IN ('receivable','payable') THEN"
+    assert body.count(anchor)==1
+    body=body.replace(anchor,"IF p_kind IS NULL OR p_kind NOT IN ('receivable','payable') THEN")
     for mode,transformed in [('RED_CAPTURED_WAIT',rpc['body']),('RED_SCOPED_WAIT',scoped_body),('GREEN_OFFLINE_ONLY',body)]:
         for ki,kind in enumerate(['receivable','payable']):
             for ri,revoke in enumerate(['role','profile']):
@@ -349,6 +397,7 @@ def main():
         check(kind+' risk composed unrelated state unchanged',True,all(before_state[key]==after_state[key] for key in before_state if key not in ['accounts_'+kind+'_installments','financial_audit_log']),'RISK_GREEN_CONTROL')
         foreign=paid_fixture(1730+(10 if kind=='payable' else 0),kind,m.B)
         uniform(kind+' risk composed foreign full state',foreign,kind)
+    parameter_matrix('GREEN_NULL_KIND_SANDBOX',1900)
     helper_metadata=json.loads(m.pg.sql("SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'volatility',p.provolatile,'md5',md5(pg_get_functiondef(p.oid)))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','platform_private','auth') AND p.proname IN ('is_financial_staff','h15_actor_organization','has_role','platform_actor_access_ready','fn_authz_uid_scope_ok')"))
     for entry in helper_metadata:
         source=next(f for f in r.live['functions'] if f['signature']==entry['signature'])
@@ -356,6 +405,7 @@ def main():
         check('helper STABLE '+entry['signature'],'s',entry['volatility'],'GREEN_OFFLINE_ONLY')
     (OUT/'rpc-captured.txt').write_text(rpc['body'])
     (OUT/'rpc-offline-transformation.diff').write_text(''.join(__import__('difflib').unified_diff(rpc['body'].splitlines(True),body.splitlines(True),fromfile='captured',tofile='offline-not-installable')))
+    (OUT/'null-kind-only.diff').write_text(''.join(__import__('difflib').unified_diff(previous_body.splitlines(True),body.splitlines(True),fromfile='previous-offline-hypothesis',tofile='null-reject-offline-only')))
     checks.extend([dict(test='B2B own positive cancellation',expected='Legitimate complete chain',actual=risk_metadata['blocked'],mode='INTEGRATION',status='BLOCKED'),dict(test='JWT/RLS hosted A/B and full chain',expected='Independent canonical proof',actual='No production operations authorized/executed',mode='HOSTED',status='NOT RUN')])
     result=dict(counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL','BLOCKED','NOT RUN']},disposition='BLOCKED_INTEGRATION',checks=checks,pins=pins,responses=responses,
         captured_manifest_sha256=hashlib.sha256((H/'receivable-recursive-live-20261029.json').read_bytes()).hexdigest(),
