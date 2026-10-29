@@ -125,12 +125,12 @@ def paid_fixture(n,kind,org):
 def locked(process, part):
     messages=queue.Queue()
     def read():
-        messages.put((process.stdout.readline().strip(),process.stdout.readline().strip()))
+        messages.put((process.stdout.readline().strip(),process.stdout.readline().strip(),process.stdout.readline().strip()))
     threading.Thread(target=read,daemon=True).start()
     try: result=messages.get(timeout=4)
     except queue.Empty: raise AssertionError('Holder lock acknowledgement timeout')
-    assert result==(part,'LOCKED'),result
-    return 'LOCKED'
+    assert result[1:]==(part,'LOCKED'),result
+    return int(result[0])
 
 def amounts(part,kind):
     return m.pg.sql(f"SELECT jsonb_build_object('original',original_amount,'net',net_amount,'interest',interest_amount,'penalty',penalty_amount,'discount',discount_amount,'paid',{'received_amount' if kind=='receivable' else 'paid_amount'}) FROM accounts_{kind}_installments WHERE id='{part}'")
@@ -144,8 +144,9 @@ def race(body, mode, kind, revoke, number, isolation='READ COMMITTED'):
     tag='cancel_'+str(number)
     try:
         holder=subprocess.Popen(m.pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-        holder.stdin.write(f"BEGIN; SET statement_timeout='12s'; SELECT id FROM accounts_{kind}_installments WHERE id='{part}' FOR UPDATE; SELECT 'LOCKED';\n"); holder.stdin.flush()
-        check(label+' holder locked', 'LOCKED', locked(holder,part), mode)
+        holder.stdin.write(f"BEGIN; SET statement_timeout='12s'; SELECT pg_backend_pid(); SELECT id FROM accounts_{kind}_installments WHERE id='{part}' FOR UPDATE; SELECT 'LOCKED';\n"); holder.stdin.flush()
+        holder_pid=locked(holder,part)
+        check(label+' holder locked',True,holder_pid>0,mode)
         claims=m.q(json.dumps(dict(sub=m.U,iat=1793275200)))
         worker=subprocess.Popen(m.pg.psql('authenticated')+['-v','VERBOSITY=verbose'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         worker.stdin.write(f"SET application_name='{tag}'; SET statement_timeout='10s'; SET lock_timeout='7s'; SELECT set_config('request.jwt.claims',{claims},false); BEGIN ISOLATION LEVEL {isolation}; "+call(part,kind)+" COMMIT;\n");worker.stdin.close();worker.stdin=None
@@ -155,7 +156,7 @@ def race(body, mode, kind, revoke, number, isolation='READ COMMITTED'):
             if raw: observed=json.loads(raw);break
             if worker.poll() is not None: break
             time.sleep(.025)
-        check(label+' authenticated wait proven', True, observed is not None, mode)
+        check(label+' authenticated wait proven against exact holder', True, observed is not None and holder_pid in observed['blockers'], mode)
         if revoke=='role': change=f"DELETE FROM user_roles WHERE user_id='{m.U}';"
         else: change=f"UPDATE profiles SET ativo=false WHERE user_id='{m.U}';"
         m.pg.sql(change) # third independent session commits before holder release
@@ -174,7 +175,7 @@ def race(body, mode, kind, revoke, number, isolation='READ COMMITTED'):
         else:
             check(label+' late tenant trigger denies',True,result.returncode!=0 and unchanged,mode)
         check(label+' monetary snapshot retained',monetary_before,amounts(part,kind),mode)
-        races.append(dict(test=label,wait=observed,returncode=result.returncode,error=error_tuple(result) if result.returncode else None,state_unchanged=unchanged))
+        races.append(dict(test=label,holder_pid=holder_pid,wait=observed,returncode=result.returncode,error=error_tuple(result) if result.returncode else None,state_unchanged=unchanged))
     finally:
         for process in [worker,holder]:
             if process and process.poll() is None:
@@ -185,8 +186,8 @@ def foreign_no_lock(kind, number):
     part=paid_fixture(number,kind,m.B);before=state();holder=None
     try:
         holder=subprocess.Popen(m.pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-        holder.stdin.write(f"BEGIN; SET statement_timeout='8s'; SELECT id FROM accounts_{kind}_installments WHERE id='{part}' FOR UPDATE; SELECT 'LOCKED';\n");holder.stdin.flush()
-        locked(holder,part)
+        holder.stdin.write(f"BEGIN; SET statement_timeout='8s'; SELECT pg_backend_pid(); SELECT id FROM accounts_{kind}_installments WHERE id='{part}' FOR UPDATE; SELECT 'LOCKED';\n");holder.stdin.flush()
+        holder_pid=locked(holder,part)
         result=client("SET lock_timeout='200ms';"+call(part,kind))
         check(kind+' foreign locked row denies without waiting on row',('42501','FINANCIAL_SCOPE_DENIED'),error_tuple(result),'GREEN_OFFLINE_ONLY')
         check(kind+' foreign locked row full state unchanged',before,state(),'GREEN_OFFLINE_ONLY')
