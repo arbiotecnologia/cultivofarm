@@ -1,0 +1,1 @@
+Proposta INATIVA: usePartnerFinancialSettings preserva null para ausência e baseline CAS NULL. Não hidratar defaults como configuração persistida. loading/error=unavailable; null/incompleta=pending_configuration; active=false=inactive_configuration. Registro completo nunca autoriza billing/origem/fiscal. Testes em cancel-settings-deferred.py; runtime não editado.
