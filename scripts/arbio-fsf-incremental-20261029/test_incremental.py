@@ -93,9 +93,10 @@ def main():
     # Existing function ACL must be set as captured in this synthetic database before testing entrypoint ACL.
     pg.sql('REVOKE ALL ON FUNCTION approve_b2b_credit(uuid,text) FROM PUBLIC; GRANT EXECUTE ON FUNCTION approve_b2b_credit(uuid,text) TO authenticated,service_role; GRANT USAGE ON SCHEMA public,auth TO authenticated;')
     def call(): return f"SELECT public.approve_b2b_credit('{O}','SYNTHETIC');"
-    for val in ('NULL','0','-1',"'NaN'","'Infinity'"):
+    for val in ('NULL','0','-1',"'NaN'"):
         pg.sql(f'UPDATE partner_financial_settings SET active=true,credit_limit={val};')
         deny('undefined/nonfinite limit '+val,call(),'credit_release_failed')
+    check('Infinity refused by real numeric(14,2) type',True,'numeric field overflow' in pg.sql("UPDATE partner_financial_settings SET credit_limit='Infinity';",ok=False))
     pg.sql('UPDATE partner_financial_settings SET active=false,credit_limit=100000;')
     deny('inactive settings',call(),'credit_release_failed')
     pg.sql('DELETE FROM partner_financial_settings;')
