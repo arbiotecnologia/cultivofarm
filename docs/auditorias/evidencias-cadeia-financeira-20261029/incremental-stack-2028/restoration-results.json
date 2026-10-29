@@ -1,4 +1,4 @@
 {
   "restoration": "BLOCKED",
-  "error": "ERROR:  cannot use column reference in DEFAULT expression\nLINE 1: ...firmed_at\" timestamp with time zone DEFAULT LEAST(email_conf...\n                                                             ^\n"
+  "error": "ERROR:  function auth.uid() does not exist\nLINE 1: ... text,\"cliente_id\" uuid,\"usuario_id\" uuid DEFAULT auth.uid()...\n                                                             ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\n"
 }
