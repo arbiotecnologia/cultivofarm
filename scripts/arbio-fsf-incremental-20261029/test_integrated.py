@@ -189,11 +189,11 @@ def main():
         sp = spoof_result(uid, O1)
         check(f'GUC spoof by {label} after install: no row changed', True, sp in ('ERROR', 'ROWS=0'), sp)
     check('order unchanged after spoof attempts', 'aguardando_aprovacao_credito|-|limite_excedido', ost(O1))
-    pg.sql(f"SET session_replication_role=replica; UPDATE public.organization_subscriptions SET status='CANCELLED' WHERE organization_id='{ORG_A}';")
+    pg.sql(f"SET session_replication_role=replica; UPDATE public.organization_subscriptions SET status='CANCELLED', cancelled_at=now() WHERE organization_id='{ORG_A}';")
     rc, e = attempt(U_ADM, f"SELECT public.approve_b2b_credit('{O1}','saas');")
     check('positive path blocked by real SaaS gate when subscription cancelled, atomically', True, rc != 0 and 'saas_feature_not_entitled' in e, e[-200:])
     check('SaaS abort leaves order unchanged and zero tickets', 'aguardando_aprovacao_credito|-|limite_excedido|0', ost(O1) + '|' + pg.sql('SELECT count(*) FROM platform_private.credit_approval_tickets_20261029'))
-    pg.sql(f"SET session_replication_role=replica; UPDATE public.organization_subscriptions SET status='ACTIVE' WHERE organization_id='{ORG_A}';")
+    pg.sql(f"SET session_replication_role=replica; UPDATE public.organization_subscriptions SET status='ACTIVE', cancelled_at=NULL WHERE organization_id='{ORG_A}';")
     rc, out = attempt(U_ADM, f"SELECT public.approve_b2b_credit('{O1}','ok')::text;")
     check('positive: internal ARBio admin releases credit', 'em_analise_comercial|' + U_ADM + '|-', ost(O1), str(out)[-300:])
     check('positive: exactly one audit row', '1', pg.sql(f"SELECT count(*) FROM public.partner_order_audit_logs WHERE order_id='{O1}' AND acao='credito_aprovado'"))
@@ -267,7 +267,7 @@ PV = 'e0000000-0000-4000-8000-000000000a01'
 def seed_plan(orgs=(ORG_A, ORG_F)):
     fill('saas_modules', {'id': MOD, 'key': 'b2b', 'active': True})
     fill('saas_features', {'id': FEAT, 'module_id': MOD, 'key': 'pedidos_b2b', 'active': True})
-    fill('saas_plan_versions', {'id': PV, 'status': 'PUBLISHED', 'version_number': 1, 'effective_from': '2026-01-01', 'effective_to': None})
+    fill('saas_plan_versions', {'id': PV, 'status': 'PUBLISHED', 'version_number': 1, 'revision': 1, 'price_amount': 0, 'currency': 'BRL', 'billing_cycle': 'monthly', 'trial_days': 30, 'published_at': '2026-01-01', 'limits_snapshot': {}, 'features_snapshot': ['pedidos_b2b'], 'effective_from': '2026-01-01', 'effective_to': None})
     fill('saas_plan_version_features', {'plan_version_id': PV, 'feature_id': FEAT, 'enabled': True})
     for i, org in enumerate(orgs):
         fill('organization_subscriptions', {'id': f'e0000000-0000-4000-8000-00000000050{i}', 'organization_id': org, 'plan_version_id': PV,
