@@ -3,6 +3,9 @@ import importlib.util
 import json
 import pathlib
 import sys
+import subprocess
+import threading
+import time
 
 sys.dont_write_bytecode = True
 H = pathlib.Path(__file__).resolve().parent
@@ -110,12 +113,40 @@ def main():
     deny('foreign scope',call(),'b2b_phase1_scope_denied')
     pg.sql("UPDATE synthetic_scope SET visible=true;")
     deny('unsupported isolation', 'BEGIN ISOLATION LEVEL REPEATABLE READ;'+call(),'CREDIT_ISOLATION_UNSUPPORTED')
+    # Deterministic fresh read after the shared credit lock, distinct from order row lock.
+    held=subprocess.Popen(pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    box={}
+    thread=None
+    try:
+        held.stdin.write(f"BEGIN; SELECT pg_advisory_xact_lock(hashtextextended('b2b_credit:{P}',0)); SELECT 'HELD';\n"); held.stdin.flush()
+        while held.stdout.readline().strip() != 'HELD':
+            if held.poll() is not None: raise AssertionError('lock holder died')
+        def wait():
+            box['r']=subprocess.run(pg.psql(),input=("SET application_name='incremental_reauth'; SET statement_timeout='10s'; "+call()).encode(),capture_output=True)
+        thread=threading.Thread(target=wait,daemon=True); thread.start()
+        blocked=False
+        for _ in range(100):
+            if pg.sql("SELECT exists(SELECT 1 FROM pg_stat_activity WHERE application_name='incremental_reauth' AND cardinality(pg_blocking_pids(pid))>0)")=='t':
+                blocked=True; break
+            time.sleep(.05)
+        check('reauth race proven blocking pids',True,blocked)
+        pg.sql('UPDATE synthetic_scope SET allowed=false;')
+        held.stdin.write('COMMIT;\n'); held.stdin.close(); held.wait(timeout=10)
+        thread.join(timeout=15)
+        check('reauth race settled',False,thread.is_alive())
+        check('revoked during partner lock denied',True,box['r'].returncode != 0 and b'b2b_phase1_scope_denied' in box['r'].stderr)
+        check('revoked during lock no audit','0',pg.sql('SELECT count(*) FROM partner_order_audit_logs'))
+        check('revoked during lock no ticket','0',pg.sql('SELECT count(*) FROM platform_private.credit_approval_tickets_20261029'))
+    finally:
+        if held.poll() is None: held.kill(); held.wait(timeout=5)
+        pg.sql('UPDATE synthetic_scope SET allowed=true;')
     reset()
     r=json.loads(pg.sql(call()).splitlines()[-1])
     check('configured excess legitimate canonical approval',True,r['ok'])
     check('approved excess analysis status','em_analise_comercial',pg.sql('SELECT status FROM partner_orders'))
     check('one audit','1',pg.sql('SELECT count(*) FROM partner_order_audit_logs'))
     check('consumed ticket','0',pg.sql('SELECT count(*) FROM platform_private.credit_approval_tickets_20261029'))
+    new_hashes=pg.sql("SELECT jsonb_object_agg(oid::regprocedure::text,md5(pg_get_functiondef(oid))) FROM pg_proc WHERE oid IN ('approve_b2b_credit(uuid,text)'::regprocedure,'fn_b2b_guard_credit_approval_fields()'::regprocedure,'tg_partner_orders_credit_guard()'::regprocedure,'platform_private.b2b_credit_config_block(uuid)'::regprocedure)")
     deny('replay processed',call(),'already_released')
     deny('private ticket denied authenticated','SET ROLE authenticated; SELECT * FROM platform_private.credit_approval_tickets_20261029;','permission denied')
     reset(50000)
@@ -127,7 +158,7 @@ def main():
     pg.sql((H/'01-credit-approval.rollback.sql.review').read_text())
     check('deny-only rollback revokes client entry','f',pg.sql("SELECT has_function_privilege('authenticated','approve_b2b_credit(uuid,text)','EXECUTE')"))
     check('deny-only rollback retains hardened guard',False,'arbio.b2b_credit_approval' in pg.sql("SELECT pg_get_functiondef('fn_b2b_guard_credit_approval_fields()'::regprocedure)"))
-    result={'level':'DISPOSABLE_CURRENT_BODIES_AUTH_SEAMS_NOT_E2E','checks':rows,'passed':len(rows),'fail':0,'omitted':['full partner_order trigger stack','real JWT/RLS sessions','h15 implementation chain','business data','external outputs','shared writer integration']}
+    result={'level':'DISPOSABLE_CURRENT_BODIES_AUTH_SEAMS_NOT_E2E','candidate_function_md5':json.loads(new_hashes),'checks':rows,'passed':len(rows),'fail':0,'omitted':['full partner_order trigger stack','real JWT/RLS sessions','h15 implementation chain','business data','external outputs','shared writer integration']}
     pathlib.Path(sys.argv[1]).write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
     print(json.dumps({'passed':len(rows),'fail':0}))
 

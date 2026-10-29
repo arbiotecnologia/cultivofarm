@@ -24,6 +24,7 @@ def assemble():
     pins = []
     for sig, f in sorted(functions.items()):
         pins.append(f"IF md5(pg_get_functiondef({quote(sig)}::regprocedure)) IS DISTINCT FROM {quote(f['md5'])} OR (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid={quote(sig)}::regprocedure) IS DISTINCT FROM {quote('{' + ','.join(f['acl']) + '}' if f['acl'] is not None else 'NULL')} THEN RAISE EXCEPTION 'FUNCTION_OR_ACL_DRIFT: %', {quote(sig)}; END IF;")
+        pins.append(f"IF (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid={quote(sig)}::regprocedure) IS DISTINCT FROM {quote(f['owner'])} THEN RAISE EXCEPTION 'FUNCTION_OWNER_DRIFT: %', {quote(sig)}; END IF;")
     for t in live['triggers']:
         pins.append(f"IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid={quote('public.'+t['table'])}::regclass AND tgname={quote(t['name'])} AND pg_get_triggerdef(oid)={quote(t['definition'])} AND tgenabled={quote(t['enabled'])}) THEN RAISE EXCEPTION 'TRIGGER_DRIFT: %', {quote(t['name'])}; END IF;")
     for p in live['policies']:
@@ -32,6 +33,17 @@ def assemble():
         pins.append(f"IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid={quote('public.'+c['table'])}::regclass AND conname={quote(c['name'])} AND pg_get_constraintdef(oid)={quote(c['definition'])} AND convalidated={'true' if c['validated'] else 'false'}) THEN RAISE EXCEPTION 'CONSTRAINT_DRIFT: %', {quote(c['name'])}; END IF;")
     for r in live['relations']:
         pins.append(f"IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid={quote('public.'+r['name'])}::regclass AND relrowsecurity={'true' if r['rls'] else 'false'} AND relforcerowsecurity={'true' if r['force_rls'] else 'false'} AND pg_get_userbyid(relowner)={quote(r['owner'])} AND coalesce(relacl::text,'NULL')={quote('{' + ','.join(r['acl']) + '}' if r['acl'] is not None else 'NULL')}) THEN RAISE EXCEPTION 'RELATION_DRIFT: %', {quote(r['name'])}; END IF;")
+        for key, view, predicate in [('triggers','pg_trigger',f"tgrelid={quote('public.'+r['name'])}::regclass AND NOT tgisinternal"),('constraints','pg_constraint',f"conrelid={quote('public.'+r['name'])}::regclass"),('policies','pg_policies',f"schemaname='public' AND tablename={quote(r['name'])}")]:
+            source_key = 'tablename' if key=='policies' else 'table'
+            if key=='constraints' and r['name']=='organizations': continue
+            if key=='triggers' and r['name']=='organizations': continue
+            count=sum(x[source_key]==r['name'] for x in live[key])
+            pins.append(f"IF (SELECT count(*) FROM {view} WHERE {predicate}) <> {count} THEN RAISE EXCEPTION 'CATALOG_ADDITION_DRIFT: %', {quote(r['name']+':'+key)}; END IF;")
+    for c in deps['columns']:
+        pins.append(f"IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name={quote(c['table'])} AND column_name={quote(c['name'])} AND udt_name={quote(c['type'])} AND is_nullable={quote(c['nullable'])} AND coalesce(column_default,'')={quote(c['default'] or '')} AND numeric_precision IS NOT DISTINCT FROM {c['precision'] if c['precision'] is not None else 'NULL'} AND numeric_scale IS NOT DISTINCT FROM {c['scale'] if c['scale'] is not None else 'NULL'}) THEN RAISE EXCEPTION 'COLUMN_DRIFT: %', {quote(c['table']+'.'+c['name'])}; END IF;")
+    for table in sorted({c['table'] for c in deps['columns']}):
+        count=sum(c['table']==table for c in deps['columns'])
+        pins.append(f"IF (SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name={quote(table)}) <> {count} THEN RAISE EXCEPTION 'COLUMN_ADDITION_DRIFT: %', {quote(table)}; END IF;")
     (H / 'preflight.sql.readonly').write_text('-- Metadata only; no business writes. Inspect the complete capture and rerun before execution.\nDO $pins$ BEGIN\n' + '\n'.join(pins) + '\nEND $pins$;\n')
     shared = (ROOT / 'scripts/financial-price-generator-20261029/shared-credit-guard.sql.review').read_text()
     # Subset 01 deliberately excludes the receivable insert guard: its integration is NOT proven.
@@ -91,7 +103,7 @@ END $approval$;
     body += '\nREVOKE ALL ON FUNCTION platform_private.b2b_credit_config_block(uuid) FROM PUBLIC,anon,authenticated,service_role;\n'
     body += '\n'.join(f'ALTER FUNCTION {s} OWNER TO postgres;' for s in ['platform_private.b2b_credit_config_block(uuid)','public.fn_b2b_guard_credit_approval_fields()','public.tg_partner_orders_credit_guard()','public.approve_b2b_credit(uuid,text)']) + '\n'
     (H / '01-credit-approval.body.sql.review').write_text(body)
-    prefix = '-- REVIEW ONLY. No execution this turn. Operator must verify canonical project in dashboard and exact approved artifact.\nBEGIN;\nSET LOCAL lock_timeout=\'3s\';\nSET LOCAL statement_timeout=\'60s\';\nLOCK TABLE public.partner_orders IN SHARE ROW EXCLUSIVE MODE;\n'
+    prefix = '-- REVIEW ONLY. No execution this turn. Operator must verify canonical project in dashboard and exact approved artifact.\nBEGIN;\nSET LOCAL search_path=public,pg_catalog;\nSET LOCAL lock_timeout=\'3s\';\nSET LOCAL statement_timeout=\'60s\';\nLOCK TABLE public.partner_orders IN SHARE ROW EXCLUSIVE MODE;\n'
     pre = (H / 'preflight.sql.readonly').read_text()
     absent = "DO $$ BEGIN IF to_regclass('platform_private.credit_approval_tickets_20261029') IS NOT NULL OR to_regprocedure('platform_private.b2b_credit_config_block(uuid)') IS NOT NULL THEN RAISE EXCEPTION 'CANDIDATE_ALREADY_PRESENT'; END IF; END $$;\n"
     (H / '01-credit-approval.install.sql.review').write_text(prefix + pre + absent + body + '\nCOMMIT;\n')
