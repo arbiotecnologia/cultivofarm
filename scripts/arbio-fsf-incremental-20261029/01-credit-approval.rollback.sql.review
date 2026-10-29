@@ -1,5 +1,12 @@
 -- DENY-ONLY containment; no history deletion or unsafe restoration. Inspect before execution.
 BEGIN;
 SET LOCAL lock_timeout='3s';
+DO $post$ BEGIN
+IF md5(pg_get_functiondef('approve_b2b_credit(uuid,text)'::regprocedure)) IS DISTINCT FROM '70caeea8b5da11ceb1ffb736a0c6adad' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF md5(pg_get_functiondef('fn_b2b_guard_credit_approval_fields()'::regprocedure)) IS DISTINCT FROM '20f38cd2c742514d2df75c213a6b94f5' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF md5(pg_get_functiondef('platform_private.b2b_credit_config_block(uuid)'::regprocedure)) IS DISTINCT FROM '582b943911a63a3e3391770fea5f7fbb' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF md5(pg_get_functiondef('tg_partner_orders_credit_guard()'::regprocedure)) IS DISTINCT FROM 'e805449d2c5ab82d5c115655a514182c' THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;
+IF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029) THEN RAISE EXCEPTION 'POST_TICKET_RESIDUE'; END IF;
+END $post$;
 REVOKE EXECUTE ON FUNCTION public.approve_b2b_credit(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;
