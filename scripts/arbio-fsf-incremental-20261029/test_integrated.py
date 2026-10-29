@@ -48,6 +48,17 @@ def session(uid, body, ok=True, app='itest'):
     return pg.sql(f"SET application_name='{app}'; SET ROLE authenticated; SELECT set_config('request.jwt.claims', '{claims}', false);\n{body}", ok)
 
 
+def attempt(uid, body):
+    claims = json.dumps({'sub': uid, 'role': 'authenticated', 'iat': int(time.time())})
+    r = subprocess.run(pg.psql(), input=f"SET ROLE authenticated; SELECT set_config('request.jwt.claims', '{claims}', false);\n{body}", capture_output=True, text=True)
+    return r.returncode, (r.stdout + r.stderr).strip()
+
+
+def spoof_result(uid, oid):
+    rc, out = attempt(uid, f"SELECT set_config('arbio.b2b_credit_approval','on',false); WITH u AS (UPDATE public.partner_orders SET credit_approved_by=auth.uid(), credit_approved_at=now() WHERE id='{oid}' RETURNING 1) SELECT 'ROWS='||count(*) FROM u;")
+    return 'ERROR' if rc else out.splitlines()[-1]
+
+
 def fill(table, values):
     cols = json.loads(pg.sql(f"""SELECT coalesce(json_agg(json_build_object('n',a.attname,'t',format_type(a.atttypid,a.atttypmod),'typ',t.typtype,'oid',a.atttypid)),'[]')
       FROM pg_attribute a JOIN pg_type t ON t.oid=a.atttypid LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
@@ -145,9 +156,12 @@ def main():
     pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET partner_account_id='{PART}' WHERE id='{ORG_F}';")
     base_self = session(U_FSF, "BEGIN; SET LOCAL arbio.x=1; SELECT public.approve_b2b_credit('d0000000-0000-4000-8000-000000000001','red'); ROLLBACK;", False)
     check('RED baseline: buyer tenant admin reaches beyond scope gate when org points to partner', False, 'b2b_phase1_scope_denied' in base_self, base_self[-300:])
+    (OUT / 'red-baseline-self-approval.txt').write_text(base_self[-2000:] + '\n')
     pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET partner_account_id=NULL WHERE id='{ORG_F}';")
-    spoof = session(U_FSF, "BEGIN; SELECT set_config('arbio.b2b_credit_approval','on',true); UPDATE public.partner_orders SET credit_approved_by=auth.uid(), credit_approved_at=now() WHERE id='d0000000-0000-4000-8000-000000000001'; ROLLBACK;", False)
-    check('baseline direct GUC spoof by client is still denied (RLS/ACL/other guards)', True, 'ERROR' in spoof, spoof[-200:])
+    for uid, label in ((U_FSF, 'tenantFSF'), (U_ADM, 'ARBio admin')):
+        sp = spoof_result(uid, 'd0000000-0000-4000-8000-000000000001')
+        check(f'baseline GUC spoof by {label}: no row changed', True, sp in ('ERROR', 'ROWS=0'), sp)
+    check('baseline order unchanged after spoof attempts', 'aguardando_aprovacao_credito|-|limite_excedido', ost('d0000000-0000-4000-8000-000000000001'))
 
     # ---------- install exact artifact ----------
     pg.sql((H / '01-credit-approval.install.sql.review').read_text())
@@ -167,8 +181,10 @@ def main():
     e = session(U_FSF, f"SELECT public.approve_b2b_credit('{O1}','self');", False)
     check('GREEN: buyer tenant pointing to partner cannot self-approve', True, 'b2b_credit_internal_scope_denied' in e, e[-200:])
     pg.sql(f"SET session_replication_role=replica; UPDATE public.organizations SET partner_account_id=NULL WHERE id='{ORG_F}';")
-    e = session(U_FSF, f"BEGIN; SELECT set_config('arbio.b2b_credit_approval','on',true); UPDATE public.partner_orders SET credit_approved_by=auth.uid(), credit_approved_at=now() WHERE id='{O1}'; ROLLBACK;", False)
-    check('GUC spoof denied after install', True, 'ERROR' in e, e[-200:])
+    for uid, label in ((U_FSF, 'tenantFSF'), (U_ADM, 'ARBio admin')):
+        sp = spoof_result(uid, O1)
+        check(f'GUC spoof by {label} after install: no row changed', True, sp in ('ERROR', 'ROWS=0'), sp)
+    check('order unchanged after spoof attempts', 'aguardando_aprovacao_credito|-|limite_excedido', ost(O1))
     pos = session(U_ADM, f"SELECT public.approve_b2b_credit('{O1}','ok');", False)
     saas_blocked = 'saas_feature_not_entitled' in pos
     check('positive internal approval reaches real SaaS gate (no entitlement invented) and aborts atomically', True, saas_blocked, pos[-200:])
