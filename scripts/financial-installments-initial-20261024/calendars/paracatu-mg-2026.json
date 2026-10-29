@@ -190,7 +190,18 @@
   ]
  },
  "integrity": {
-  "algorithm": "sha256-canonical-json(data)",
-  "sha256": "3f50864a9ec371f84f1aed48c7ae2398568f4c9f3b01f2eb812d175c7c0eb14e"
+  "algorithm": "sha256 of canonical JSON (sort_keys, compact, utf-8) of fields schema,version,locality,kind,coverage_start,coverage_end,consulted_on,sources,data",
+  "fields": [
+   "schema",
+   "version",
+   "locality",
+   "kind",
+   "coverage_start",
+   "coverage_end",
+   "consulted_on",
+   "sources",
+   "data"
+  ],
+  "sha256": "58f1f95f4b65541cd2c3d8f1c43158050166856dcab638df28e42fc0e7839775"
  }
 }

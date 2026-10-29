@@ -145,6 +145,9 @@ def resolve_new_plan_policy(policy, n, rate_request=None):
 
 REQUIRED_LOCALITY = 'Paracatu-MG'
 CALENDAR_SCHEMA = 'cultivofarm.holiday-calendar.v1'
+# Coverage/locality are sealed with the data: widening coverage cannot turn
+# unknown dates into business days.
+INTEGRITY_FIELDS = ('schema', 'version', 'locality', 'kind', 'coverage_start', 'coverage_end', 'consulted_on', 'sources', 'data')
 
 
 def load_real_calendar(path, policy):
@@ -165,7 +168,8 @@ def load_real_calendar(path, policy):
     if not doc.get('sources') or not all(str(s.get('url', '')).startswith('https://') for s in doc['sources']) or not doc.get('consulted_on'):
         raise Rejected('CALENDAR_METADATA_REQUIRED')
     data = doc.get('data')
-    canon = json.dumps(data, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    sealed = {k: doc.get(k) for k in INTEGRITY_FIELDS}
+    canon = json.dumps(sealed, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
     if hashlib.sha256(canon.encode()).hexdigest() != (doc.get('integrity') or {}).get('sha256'):
         raise Rejected('CALENDAR_INTEGRITY_MISMATCH')
     try:
@@ -371,8 +375,8 @@ def run(out=None):
         rejects('automatic generation blocked (replay)', 'AUTO_GENERATION_BLOCKED', lambda: candidate_plan(p, 2, '0', LIMIT, FT, 'automatic'))
     check('production eligibility denied', False, production_eligibility(p, 3)['eligible'], 'PRODUCTION_GATE')
     check('production reasons include calendar source', True, 'CALENDAR_SOURCE_REQUIRED' in production_eligibility()['reasons'], 'PRODUCTION_GATE')
-    # Dates: NF anchor and nominal calendar decided; adjusted dues await the
-    # real locality calendar.
+    # Dates: NF anchor and nominal calendar decided; adjusted dues use the
+    # versioned calendar (synthetic fixtures here; real Paracatu-MG below).
     D = datetime.date
     for nf, expected in [
         (D(2026, 1, 1), ['2026-01-31', '2026-02-28', '2026-03-31']),
@@ -486,7 +490,9 @@ def run(out=None):
     o = copy.deepcopy(raw); o['data']['holidays'].append(dict(date='2026-12-08', classification='FERIADO'))
     rejects('injected 08/12 -> integrity', 'CALENDAR_INTEGRITY_MISMATCH', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL')
     o = copy.deepcopy(raw); o['coverage_end'] = '2027-12-31'
-    rejects('coverage widened to 2027 without data', 'CALENDAR_COVERAGE_EXCEEDED' if False else 'CALENDAR_INTEGRITY_MISMATCH', lambda: (_ for _ in ()).throw(Rejected('CALENDAR_INTEGRITY_MISMATCH')) if 'coverage_end' not in json.dumps(raw['data']) else None, 'CALENDAR_REAL')
+    rejects('coverage widened to 2027 -> integrity', 'CALENDAR_INTEGRITY_MISMATCH', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL')
+    o = copy.deepcopy(raw); o['sources'][0]['url'] = 'https://example.com/x.pdf'
+    rejects('source swapped -> integrity', 'CALENDAR_INTEGRITY_MISMATCH', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL')
     o = copy.deepcopy(raw); o['kind'] = 'SYNTHETIC'
     rejects('synthetic kind not accepted as real', 'CALENDAR_METADATA_REQUIRED', lambda: load_real_calendar(tmp(o), pol), 'CALENDAR_REAL')
     o = copy.deepcopy(raw); o['sources'] = []
