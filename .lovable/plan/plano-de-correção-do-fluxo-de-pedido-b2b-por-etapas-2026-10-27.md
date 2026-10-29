@@ -190,3 +190,6 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 
 ## 29/10/2026 18:25 UTC — Calendário v2 2026–2027
 - 2027 calculado pelas leis recorrentes vigentes (v1 2026 imutável); cobertura até 31/12/2027, 2028+ bloqueia plano inteiro. Motor 362/0 FAIL. Produção NO-GO.
+
+## 29/10/2026 18:40 UTC — Gerador Price candidato (PG descartável)
+- Candidato inativo com calendário selado, snapshot/recibo imutáveis e reuso do RPC/contexto capturados; 189/0 FAIL como componente. Continua negado por configuração de pagamento oficial, origem fiscal NF, contabilidade C2 e exposição canônica. Produção NO-GO.

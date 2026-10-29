@@ -1034,3 +1034,6 @@
 - [x] Calendário real Paracatu-MG 2026 (fontes oficiais, hash).
 - [x] Calendário v2 2026–2027 (2027 por leis recorrentes vigentes).
 - [ ] Calendário 2028+ — nova versão quando necessário, mesmas fontes.
+- [x] Gerador Price candidato + calendário no banco (PG descartável, componente).
+- [ ] Método de pagamento oficial — aguardando resposta do proprietário.
+- [ ] Origem fiscal NF, contabilidade C2, exposição canônica e JWT/RLS A/B reais.
