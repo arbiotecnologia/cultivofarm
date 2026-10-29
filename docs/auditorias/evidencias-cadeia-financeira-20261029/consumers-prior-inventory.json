@@ -1,0 +1,104 @@
+[
+  {
+    "path": "src/components/financeiro/NovaContaDialog.tsx",
+    "md5": "0ba91048b39e187512f5dec0dee5b4a8",
+    "reference_lines": "64,95,98,102,128,142,161,169,190,302,304",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/components/financeiro/BaixaDialog.tsx",
+    "md5": "8681cb83a6fae198c0a1a68695c6a2f8",
+    "reference_lines": "66,117,121,233,234,244,396,554,555",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/components/financeiro/EstornoDialog.tsx",
+    "md5": "f65079449053ce266021f6241a91fec1",
+    "reference_lines": "17,24,26,68,86",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/pages/financeiro/ContasReceber.tsx",
+    "md5": "13829ec5cef5ac66091a66278202311a",
+    "reference_lines": "50,52,85,87,100,121,137,154,286",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/components/financeiro/ContaDrawer.tsx",
+    "md5": "ac8945ae0ba9a9dc661b411ba0cbead0",
+    "reference_lines": "32,33,60,129,189,191",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/lib/financeiro/baixaRecebimento.ts",
+    "md5": "0db165a97b5f796caa1ceda73787b83e",
+    "reference_lines": "14,16,22,49,51,66,85,151",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/lib/financeiro/contasReceber.ts",
+    "md5": "0ebfd180cca33a5c18e78012eaf56782",
+    "reference_lines": "7,45,47,74,98,100",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/hooks/useB2BFinanceiro.ts",
+    "md5": "34f3e9b43dbf97010090dc9d29deed37",
+    "reference_lines": "41,62,119,170,246,285,297,308,319,365,381,403,418,429,442",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/hooks/useDeliveryFinanceReconciliation.ts",
+    "md5": "a8fac0db1d11083375bab059354311c1",
+    "reference_lines": "13,44,45,57",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/pages/financeiro/FluxoCaixa.tsx",
+    "md5": "f195624eedb63e40e52b065244be6e8b",
+    "reference_lines": "315,316,330,343,344,358,427,428,429,431,456,458,482,485,521",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/pages/financeiro/DRE.tsx",
+    "md5": "888d3ef0068bf374652e9c3dfc4a97cc",
+    "reference_lines": "320,322,325,333,347,359,364,366,369,377,393,394,395,396,405",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/pages/financeiro/Recorrencias.tsx",
+    "md5": "75cda2138e8b3cf79597896b0b4f7812",
+    "reference_lines": "397,398,509",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/pages/portal/PortalFinanceiro.tsx",
+    "md5": "427f906b95204581839995b437fa01cc",
+    "reference_lines": "20,21,32,62",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "src/components/financeiro/relatorios/ReportShell.tsx",
+    "md5": "0ec06253a97d39a04fb338a74bd8a6d1",
+    "reference_lines": "",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "supabase/functions/generate-financial-report/index.ts",
+    "md5": "dc9658059c4f8d725a9466c92e412619",
+    "reference_lines": "13,50,93",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "supabase/functions/fase-e-runtime-harness/index.ts",
+    "md5": "3c5b6a966822d965b18eefabebe9a34f",
+    "reference_lines": "165,166,238,244,257,260,261,264,285,290,332,443,444,455,456",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  },
+  {
+    "path": "supabase/functions/entrega-runtime-harness/index.ts",
+    "md5": "a7767bb19e033354219752a02632b09f",
+    "reference_lines": "186,187,188,193,231,240,246,259,265,270,280,281,288,292,295,301,316,317,324,328,330,332,333,356,362,369,373,374,377,381,389,390",
+    "scope": "SOURCE_ONLY_DYNAMIC_DISPATCH_UNCLOSED"
+  }
+]

@@ -1,0 +1,455 @@
+oid,signature,md5,owner,acl,security_definer
+16542,auth.uid(),ea3b41bf29e2ad573067939329aa088e,supabase_auth_admin,"['=X/supabase_auth_admin', 'supabase_auth_admin=X/supabase_auth_admin', 'dashboard_user=X/supabase_auth_admin']",False
+16714,auth.jwt(),20054548ba2003f61a6bcb472175700b,supabase_auth_admin,"['=X/supabase_auth_admin', 'postgres=X/supabase_auth_admin', 'supabase_auth_admin=X/supabase_auth_admin', 'dashboard_user=X/supabase_auth_admin']",False
+37054,"platform_private.has_role(uuid,app_role)",c5af5b55de6d79da9b73a33948746ae2,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+37073,get_cliente_ids_for_user(uuid),c80d5900692d960f649d0a9f7850fe2c,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+37276,fn_fiscal_uf_ibge_code(text),9261dd7f47317296b2b07dc3afbb2bbc,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41569,"_avancar_os_status(text,uuid,text)",3da8242d67462c916a2d971f5ea7bb97,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41575,"_comunicacao_publish_system_event(text,text,uuid,jsonb,text)",d09be07e0c3ab8b93b5898aa7940afbf,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41578,_comunicacao_trg_os_onfarm_pronto_retirada(),caf0ea8a3b74b13ea6fdccd00c7d17aa,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41579,_comunicacao_trg_os_pronto_retirada(),b0340dbc6fa5c5f880f0881ad845cb52,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41580,_comunicacao_trg_portal_solicitacao(),9c7b762fd575862e38408d9a1a2dba7a,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41588,"_notify_role(app_role,text,text,text,text)",e056d90a03ab1ec7ea7e8b6fdee7b594,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41589,"_portal_cliente_user_has_link(uuid,uuid)",8cfb4e9add72489dc8b8a866827dc136,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41590,_refresh_esteira_laboratorio_after_change(),2f361c1fd9de578cf45796d82f3754e0,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41591,"_rpc_avancar_esteira_laboratorio_internal(uuid,text,text,uuid)",c40d513eae404c1141edb40df5336b92,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41593,_sync_planning_from_os(),0e79d2c5c352a41f147a62bb1ae5afe4,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41597,audit_partner_order_payment_terms(),96b68bec5b11f2a414f333c68a00d765,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41599,auto_advance_solicitacao_on_os(),aa083b710f910bda03723dc95ae37ff0,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41600,auto_advance_solicitacao_on_registro(),adb2f6e43a8142f649b424c8076071da,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41606,can_user_access_fazenda(uuid),8c8d0dfd80fa05e0be30cc5ed95bb400,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41608,catalog_set_updated_at(),fb190552f11c13546aa101005f83bbb8,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41609,catalog_sources_set_source_key(),6bc20797464e0ef2c95140c69ec46338,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41612,check_os_item_ref(),d059f0014afe15e9d9405fc54a478f2e,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41613,check_os_status_transition(),8dc2c40052b006e51b1defc0284a09e6,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41619,comunicacao_outbox_touch(),1fd9a26cf0806d0d64b2a0dd3fcc011a,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41621,comunicacao_templates_guard_immutable(),4acc002fbd638683017525667a3d605a,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41622,enforce_cliente_id_for_produtor(),ecad56badcb2120f7048fad7519f76f4,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41624,fiscal_audit_trigger(),5083ccb4946ee883c08011bfafce4513,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41626,fiscal_invoice_items_state_guard(),4e9676888f40b377a70e5369d9e74a36,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41627,fiscal_sinief20_snapshot_immutable(),b3d75f4259360b3c7c7c4f5977f4c7ac,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41630,fn_assign_receipt_metadata(),5f817d6cfac5aaaaab85cde417b3520c,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41631,fn_audit_category_dre(),a161b0bc3963cbc4d117b9a8d15677a3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41632,fn_audit_financial_documents(),5f9283679efe1b6503ece3ebb3f748b8,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41633,fn_audit_fiscal_status(),89ad79839a81240ee52c659060ab1795,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41637,"fn_b2b_credit_exposure(uuid,numeric,uuid)",213ac31f3a30816ead75365b0d1fed18,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41639,fn_b2b_guard_credit_approval_fields(),8902498ed09c4c5804b1749ee0c31cd7,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41640,fn_b2b_guard_order_items_immutable(),bc1c4dca3a9f5a247a3c098dcbe1c06f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41641,fn_b2b_order_billing_eligibility(uuid),db977875e15ea49ce10fb3e5388d7dfb,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41642,fn_b2b_order_priceable(uuid),e8681bc3e8f87d86189a371a919cb3b9,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41643,fn_b2b_plan_referenced(uuid),3323ef065f4c3f3911a09a13c03cb3f3,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41644,"fn_b2b_plan_selectable(uuid,timestamp with time zone)",4cb833a3eae76cbebce920f34cd5d5ce,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41646,fn_b2b_status_is_approved_or_later(partner_order_status),8fed429cd642c9eaa431f8bbfa320931,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41647,fn_b2b_status_is_operational(partner_order_status),1b397fd4f651c103e6eddcc3e140a86e,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41648,"fn_calc_next_generation_date(text,date,integer)",6b2d210bb83d553ea0ecb64a45ea81ee,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41649,fn_calc_os_faturamento_totals(),7eab3220c30097c1ea7cebc8921d297a,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41650,"fn_catalogo_litro_canonico(uuid,uuid)",96242cdebadd271f0b60d60c444c3fb5,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41652,"fn_catalogo_sync_mestre_preco(uuid,uuid)",098f437d25a696d9c4142740a58829e6,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41655,fn_cockpit_assert_b2b_liberado(uuid),65859c6036077da399e15bc4ba6cbdfc,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41656,fn_cockpit_norm_origem(text),701ba8da92fc3df9ea0e5270ab5e74b2,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41662,fn_cq_aprovado_avanca_os(),5b1905b8fc743e1181904db931b165f9,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41663,fn_cq_autoria_servidor(),329913a20fa9284bd794a034ca4cdfd0,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41664,fn_cq_resultado_imutavel(),1ffd8093e77aa56a8814ed6e292ef299,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41666,fn_create_programacao_on_os_classica_insert(),27b31332cebda532e2d99d9547f9b67c,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41667,fn_create_programacao_on_os_onfarm_insert(),0916100603e4252bb91492fa2d2127cd,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41668,fn_cultura_em_uso(uuid),09914f45444b2f6df26a150b98647c28,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41673,"fn_entrega_guard_faturamento_v1(uuid,numeric)",fe0d6a0f670787f87081fe0650102d22,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41674,fn_entrega_marcar_cancelamento(),c5ba9bf8b5b019124d00e36e5a7b0f2a,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41675,fn_entrega_valor_faturavel_v1(uuid),5ac43dc18eee407723c0d78cd97f0db4,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41678,fn_envase_material_imutavel(),a1b1200dfba57684958a8ea94e7afe66,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41681,fn_estoque_ctx_open(jsonb),0ed7e5b17cdca353135b562121aeb9dc,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41682,fn_estoque_ctx_read(),25bba24bf824b91b59dd48523be85769,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41684,fn_estoque_produto_guard(),fdb38c8e1a6497600c914104bf32c3d3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41685,"fn_fin_dashboard_kpis(date,date)",664443768c3602fc24d8f46481fafce4,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",False
+41686,fn_financial_audit(),46f777c2020ff9a059a80ae6dab4bd12,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41696,fn_fiscal_cep_is_valid(text),3650ace9f4beb4fdda8bfbc725a737c1,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41697,fn_fiscal_certificate_ref_guard(),4a0f47222d9bb1fca21a464f747f652d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41698,fn_fiscal_cnpj_is_valid(text),32af63d8d61496b713f9909b3425769e,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41700,fn_fiscal_cpf_is_valid(text),08b43e26d594f1a0676094d53f351f0f,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41701,fn_fiscal_digits(text),8480172e90be48afd7ec1eb7bfb4fbc1,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41703,fn_fiscal_emitter_pendencies_row(company_fiscal_settings),efbc457c1e8e77c6fea758a17b6d39c6,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41708,"fn_fiscal_ibge_municipio_coerente(text,text)",5971b365ddfdb8a1737d01e7b956fba0,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41709,"fn_fiscal_ie_check(text,text)",57799f3ff2128496df0a242d1b04a3b8,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41717,fn_fiscal_recipient_pendencies_row(customer_fiscal_profiles),dffca9bf6ae8dafd63dfec9edd4d4f4d,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41718,"fn_fiscal_requirement_resolve(text,text,text,text,uuid,date)",8bb99a3c335b5f9876d99d988dcf94b0,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41726,fn_fiscal_sefaz_tx_guard(),1661123d056217810d8fb175b46fdd8b,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41727,fn_fiscal_sefaz_tx_link_guard(),d908116081eff89e5979055a2e99e0a1,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41728,fn_fiscal_status_is_terminal(text),7e1a2b23cd0f139c9f09f34fc5334de6,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41729,fn_generate_payable_installments(),f4b15f02171e321e5ca0370255ccbff1,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41730,"fn_generate_receivable_from_entrega(uuid,jsonb)",670ea34d37c4c4fd6612031ad763a3a7,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41732,fn_generate_receivable_installments(),f632f15c9f46cb9889082fc533a27ea1,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41733,"fn_generate_recurring_title(uuid,date,boolean)",b189e44dac1a0429091ea053f032ffb0,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41735,fn_h6_guard_ap_installment_snapshot(),6f5a1baf716b5fc170cabccbbdcdef79,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41736,fn_h6_guard_ar_installment_snapshot(),c3f26bc5217a5d86227c7e74f762b3ad,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41737,fn_h6_guard_title_snapshot(),d9cc5c95f837de9d77cec2159e24bbf9,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41738,fn_h6_payments_append_only(),6857b23b4aef5402b1449a004c94ba7b,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41739,fn_h6b_num(numeric),866a978881436def12ac2f99f6b3e8a9,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41740,"fn_h6b_payment_fingerprint(text,uuid,jsonb)",37cb7a6ebedbe970454ab12560ac9829,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41741,fn_h6b_reconciliacao_valor_faturavel(),34d8e494a57f39715be5653baf2335c4,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41742,fn_h6c_entrega_ar_b2b_link(),9d9cdca4e82d515557c0cdd151f1d077,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41743,fn_h6c_set_canonical_payment_terms(),92eb0a19aed67bb829ccbec88aa9cf2d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41744,fn_h6d_block_hard_delete(),5c07dd23a0c9355c3fe11811004b0381,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41745,fn_h6d_hard_delete_allowed(),5b3578ac073dafb1f0455ebfaa5c123a,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41746,fn_h7j_fiscal_invoice_delete_guard(),91542df1170e1989da0cd96200c3a0ee,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41747,fn_ledger_append_only(),a7aae92122f2ba24edffa1b79ce389ac,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41750,fn_notify_lab_on_programacao(),c910c1466bbc06328e3eb9f5b2b132ca,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41751,fn_onfarm_scope_lote(uuid),e10a4e58f17599a970f925b4eec070d5,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41752,fn_produto_etiquetas_updated_at(),a079e72993956dee9deb31463b475875,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41753,fn_recalc_payable_installment(),01c8b64cb9b3584b51231cca96a43783,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41754,fn_recalc_receivable_installment(),c8a1d33461c76eb3da3c7af1c011cf2b,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41755,fn_recurring_generation_audit(),d3db1134f58c8889d6f3d74ca6333605,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41756,fn_recurring_template_audit(),bf7ebce5e6bce0c7cba66176469ee6ad,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41769,"fn_reverse_payment(uuid,text,text)",9f2bfe6b1291cfeaa4814ee67c103be6,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41770,fn_revert_recurring_generation(uuid),e6728e61cdf717c73ddea85e4d72045e,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41772,fn_set_initial_next_generation(),acee62f91b2190679315df0090f6a52d,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41773,fn_sync_entrega_financial_status(),829616d1d23271f7678059d8e34fcb1e,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41774,fn_sync_os_classica_downstream(),06e64b76968f91e19f03b24363ac610a,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41775,fn_sync_receipt_aliases(),e18bff3f6d1ac30e97aa8a38fa06e286,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41776,fn_sync_report_export_aliases(),a04960193eb4fed39f602bdcf19bf1fd,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41778,fn_validate_entrega_confirmacao(),6add438d185c91379d436dc90d1e7617,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41779,fn_validate_entrega_estoque(),2c2412690cf8c52121a5aed8cdd34436,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41780,fn_validate_envase_cq(),fc4a739dc17d709d70102885c115112f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+41781,fn_validate_envase_volume(),9d2f0ba3df89e211bee4bb7b85f0804b,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41782,gen_numero_solicitacao(),599a70e26ac8d043045b7cb4c4c7e1d9,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41783,gerar_codigo_lote(integer),194703302cf0400c10d6d0dda2468d5d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41784,gerar_codigo_visita(integer),5ccec17bfe18cd6c70f79f56cb048dd4,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41786,"get_financial_dashboard_summary(date,date,uuid,uuid,uuid)",f0ee19eefed682c2bd82751b9e5e1be9,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",False
+41788,"get_financial_dre_summary(date,date,text,uuid)",44ab3f4566779b06911969f5c1e947ce,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41790,"get_financial_report_data(text,date,date,uuid,uuid,uuid,text,text)",1f545f115cbf869f15a3e237bfa1909d,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41795,get_report_accountability(jsonb),f7c562d4ecc4d3e98075759184c561c6,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41796,"get_report_customer_statement(uuid,date,date)",73b691e31d3ddd67fc6813d9a92d8156,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41797,"get_report_monthly_financial(date,date,uuid,text)",b343711231fd7db31523cfb642c80377,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41798,"get_top_financial_rankings(date,date,integer)",50a9fc0efaf4e422837569dcbc2586f0,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",False
+41799,get_user_partner_id(),b334c3a454ebc4233d3b9e0d0a700d78,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41801,handle_new_user(),6f3c5072b776329ac5ff9f8bbf6fd7b2,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41804,"is_active_visit_participant(uuid,uuid)",bdabf4f458528a91d385d738bfcf3f90,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41807,"is_visit_responsible(uuid,uuid)",e356cc48a0f2e7588d38a1c1b2dba489,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41808,"issue_financial_receipt(uuid,text)",49a1d165279ab4253e4e586fc7ccdeb3,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41810,jsonb_object_keys_count(jsonb),b17b4a467ac6c615eecb29f5def78c79,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41811,log_catalog_change(),b4099f0d780e8b7af56356d6dea0e6fe,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41812,log_estoque_movimentacao(),45dcb6afde3b37528b972cc018e5162a,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41814,log_os_onfarm_status_change(),cd6e103f87d34097f10802febcc02a51,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41816,"log_report_view(text,jsonb)",8d58dcb5e8627bcdf4da99b53401691d,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41818,lote_volume_envasado(uuid),06d444c44f19b6569053c76b3122dcef,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41819,mask_sensitive_jsonb(jsonb),6da55c2319c5978bf706c5779ddd32e4,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41821,notify_consultor_atribuido_op(),e443c3aa804bfe5bf6c54181bb0021f7,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41822,notify_consultor_on_confirmacao_produtor(),f3b93a119f117f9c5569d8e8bf2899b3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41823,notify_managers_on_simulation_sent(),45e577d434ab2deff58748ac86ce865f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41825,notify_visita_finalizada(),705fbe0d0c1f2f3ea7ded00d55120de4,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41826,partner_audit_trigger(),3b8aa711642b2d6fd5b739a21d36e4ba,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41827,partner_order_has_production(uuid),0cfac18049e90c5427ada9d11ab2c2c4,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41828,partner_orders_audit_trigger(),df139ef01591892436854b7f8c82f2db,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41829,partner_ppp_compute_final(),1b0e5dbfdc7dee0ffb17a38927960bc2,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41831,prefixo_para_microrganismo(text),6450668db364eb7984537c9dfbab7e84,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41832,prefixo_para_produto(text),34edabae8b60058d6a4f6db35398d715,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41833,"proximo_codigo(text,text)",e061a6487d6d3d30436d9bd3ca0e2be1,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41834,recalc_partner_order_production(uuid),6b46438f25454fd1c239aa4963496309,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41835,recalc_partner_prices_on_default_change(),127917c3a793e927e217159e4fbf3122,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41836,recalc_partner_risk_score(uuid),57a24738323c4a98d1cd141f47e559c4,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41838,refresh_esteira_laboratorio(),bbb2e580bfc6ffddfa833f950c38e0f3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41839,refresh_partner_engagement(uuid),7a52c5469fe62d326971e29c26a7e476,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41842,regulatory_audit_trigger(),59b30cd1a282db6f87891f8446292604,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41846,regulatory_touch_updated_at(),3e32ca31780e1a81e0687d9e0bb14044,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+41869,"rpc_b2b_check_governance_block(uuid,text)",921d10758f099faaf87e93ec69115507,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41871,"rpc_cancel_accounts_receivable(uuid,text)",c89a108356d9aa251531d3dfdb54d41a,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41873,"rpc_cancel_financial_installment(uuid,text,text)",c7d30a08b1cbd00936cd83aa5bf3415c,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41900,"rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)",867c445736fbd2de9416ae4ad6a9d253,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+41905,"rpc_create_financial_title(text,jsonb)",0778b876b300e08d53f1cf7790394fc5,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+41989,"rpc_fiscal_tax_rule_publish(uuid,text)",d70626482d4a75f457dbcd388ba26efd,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42019,"rpc_register_receivable_payment(uuid,jsonb)",db41f7e2cfcb196ef64536f62746f365,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42055,"rpc_upsert_fiscal_invoice_manual(uuid,jsonb)",8010756f67add3a57e4f40c510c268ee,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42060,"rpc_validar_integridade_esteira(text,uuid)",d453515653da35e713255ffe17cf2f73,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42061,"rpc_validar_integridade_esteira(uuid,text,text)",c81b6a095fb57b1357c6565e43ff79e1,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42064,set_codigo_cliente(),cc90bd60f9cb2e62e96d495861b0434d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42065,set_codigo_microrganismo(),22f33bb511f309ada40f710d017fcdb5,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42066,set_codigo_produto(),e5ef4aa8489889e7d20e03dc62b455ae,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42067,set_codigo_visita(),568ea47bed05a2c09a611757a3d0fd9d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42069,set_numero_os(),b8c7e3437577cc46eedb5c5c17746647,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42070,set_numero_os_regular(),e132d714014a46dfbe38670920182ef0,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42071,set_pdf_status_default(),f3145aa1d30803411cab0368188567f8,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42072,set_updated_at(),c2cb4ce18c3937410b91c3c0b5a389c7,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42073,sync_catalogo_volumes_calc(),7362f1a8a53acdebba899a7e5524aecf,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42074,sync_microorganism_pricing(),bc44c7f7e2b0bd488a62cceffad36645,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42075,sync_os_onfarm_downstream(),f5ba706828f4c157a55a8d594b5c1848,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42076,sync_product_pricing(),521100dd184dfe1f05feb68764bca5ec,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42077,sync_talhao_safra_atual(),74c8e2033db8d91520891ab600b1325c,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42078,sync_user_cliente_principal(),1d053564ccd5fa672a10ec87d5cb0baa,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42079,tg_audit_partner_order_commercial(),b537eb6807fbfc48b43b59d49ef7297a,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42080,tg_auto_b2b_receivable(),0f679538fe394924b140e54938a3bb9e,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42081,tg_b2b_block_receivable_before_approval(),9d559f2f04613704467cb488de0d842f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42082,tg_b2b_enforce_plan_selectable(),3477a02b069c20ae3e1c832ecca6b1e7,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42083,tg_block_partner_order_delete(),55b4f2fa662f1d14dbbb663cb475d6a6,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42084,tg_block_partner_order_edit_after_op(),2884dea0a9efa9ab7badac6bd8b5e46c,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42085,tg_block_partner_order_items_after_op(),6e7c1a8ac409cf64442396d48f73abb5,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42086,tg_block_planning_delete(),7549e5b0ce574f6982327a87a42e4887,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42087,tg_block_production_link_delete(),c60cc2afa71f77e3397fcecdfe7fbe84,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42088,tg_commercial_audit(),59f38730b9f37102cbf2ed4bd44a7e00,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42089,tg_commercial_conditions_touch(),e573921e5debcc13930a325e1a986c6a,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42090,tg_commercial_price_rules_audit(),3d644370c3ca3a154c3b5f2ac06faa0b,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42091,tg_commercial_price_rules_plan_mode_guard(),96504996cf8141227757807e33b33055,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42092,tg_commercial_price_rules_producer_inert(),d17634b9bbe99dacc0338c1cc173d573,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42093,tg_commercial_price_rules_touch(),3287ab9869a5dc8a27ae0a6173c6914f,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42094,tg_cpp_guard_financial_immutability(),e3f5caab4c5a1ef8767817598ba916d8,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42095,tg_create_default_pfs(),756e5d24883fa387054b4385a232cfcf,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42096,tg_culturas_block_delete_in_use(),595048c41c3a64f6f42a0099d448c78d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42097,tg_culturas_stamp_desativacao(),767abfe7df36cad3a477571f75739fe1,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42098,tg_entrega_conf_lock_after_sign(),d7bccb8f0482651f9489296aeb4d7806,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42099,tg_entrega_reconc_immutability(),bb8882c8d42d0a1cc9519e6f38dc702a,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42100,tg_entrega_termos_immutability(),8bc4994d70b9e6c431d86a2262a93668,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42101,tg_fiscal_certificates_audit(),681444c53d1fc7b6893565ccb0e836c1,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42102,tg_fiscal_cfs_audit(),f4686482bfaf206c2200987317cb33d6,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42103,tg_fiscal_emitter_refresh_readiness(),ea8480028819be1c2a0a3b581153e106,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42104,tg_fiscal_homologation_evidence_guard(),6cb551a4333485bb876746eefeb98f3d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42105,tg_fiscal_invoice_sync_normalized_status(),384e42b0041d59a86e4f696be8b4b50a,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42106,tg_fiscal_operation_policy_immutable(),4ff6dd994d4d921452d4563ab0f41570,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42107,tg_fiscal_recipient_refresh_readiness(),4660bf5cfa013d8aae900e00670eab19,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42108,tg_fiscal_reservation_immutable(),2b9f82a2dbf7998ef6c82035d0afe6e9,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42109,tg_fiscal_tax_rule_immutable(),18c2f061211dfc296f52a5d4e89eac40,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42110,tg_fiscal_xml_runs_immutable(),9293ccd2196cb61a823e73ae94f555a6,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42112,tg_governance_audit(),434063ba6290a00f57291d4ef0f4d41e,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42113,tg_h7_fiscal_events_append_only(),2c855b70ac813ac7125dcc869c20b111,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42114,tg_h7_fiscal_invoice_immutable_v1(),37b2342921df8bf839f4597ad033696d,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42117,tg_notify_payment_terms_pending(),671f9cb3a245cfccc30a27c16172d802,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42118,tg_partner_order_items_resolve_pending(),2e80e713bc0fe3785e1008405a0d02a3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42119,tg_partner_orders_credit_guard(),b24a3c30910832e8b14456d912a67589,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42120,tg_partner_orders_require_items(),2b756289555b287255876e635a516c9a,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42123,tg_pfs_updated_at(),69cdff0346e6cd2467b9dc2728a2951a,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42124,tg_pofl_updated_at(),c06d5b386e01bceceefd80f420363c3b,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42125,tg_produto_etiquetas_snapshot_immutable(),dfa0d503e58e4127594518d42170a22c,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42126,tg_protect_os_structural_fields(),8c9c5436e1f0091706a4ff17c9f365fa,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42127,tg_ptc_updated_at(),28bca6d67e97216c26b167003b0dddcf,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42128,tg_recalc_planning_from_entrega(),9f7c032ef8df2cae0097b8a24ee4016f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42129,tg_recalc_planning_from_link(),ef6e3fdb1b90b9c3be629d8b8257e738,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42130,tg_recalc_planning_from_os(),ac8746e2c142d33bfb9e4f3c6d5daf6d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42131,tg_recalc_risk_on_ar_change(),2d38119a0bb885471ba0112c300a4144,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42132,tg_refresh_engagement(),87b1de282cdc198d0898cdc5ca08a4c4,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42133,tg_set_current_price_table(),fede7c96e58322ecad3496ff6a87fb7a,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42134,tg_set_updated_at(),494198e1eb8f9c98c4cf075ed9d79bb9,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42136,tg_sync_b2b_financial_status(),e636fcf74c5e1c7c8037d5a17f525c27,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42137,tg_unique_current_price_table(),9f17f26e10afff5f4b201124f168fe88,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42139,trg_catalogo_volumes_sync_mestre(),3d2962d4186239559d3f0a4cf4a8d445,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42140,trg_clientes_audit(),83d97f405d434f6ad48557ec91ae40c7,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42141,trg_entrega_sync_partner_order_fn(),e8fb9e9512db8d1cfb801e37f63ee497,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42142,trg_mestre_guard_preco_canonico(),598e4a9e1d0b7347bb719c5b04360b69,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42143,trg_os_sync_partner_order_fn(),d219a4922c0c6d2a464175dc61bdf5a3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42144,trg_partner_order_timeline(),833de323eb590a831924d5a5fcb490bd,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42145,trg_partner_order_to_planning_fn(),e5915037d03892fffc5d388595cba685,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42146,tva_touch_updated_at(),6a610a579237c222ce13f31b5057f357,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42147,update_updated_at_column(),b1930ed5bca3be839f783c6202ab8147,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42149,validate_estoque_entrada(),9e24938a8d716a02ba023c9fb7ce24e9,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42150,validate_estoque_reserva(),9bdbd6bc6fc957993bbdff466db6ef22,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42152,validate_partner_user_client_fn(),dcafec82ec7147ab67ce17ab934d3619,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42154,validate_registro_status_transition(),870ae079971d1802edfbd5d526c34f4f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42155,validate_responsavel_producao(),443795794c2cb18b295239a0c81021c6,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42156,validate_retorno_tecnico_consistency(),899217cc0ebaf09a2cf4c5948ea6604f,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42532,can_manage_catalog_tecnico(uuid),62b899022e664e3746489d515ad8aaa6,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42533,"can_manage_technical_visit(uuid,uuid)",d95c2c2b34af117d467d7d4b2b775002,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42535,can_user_access_aplicacao(uuid),04067ba43cea3eed845a1fd3735061e0,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42537,can_user_access_cliente(uuid),4c2eaf7ab10e204e7ad57d41cb418554,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42538,"can_user_access_cliente(uuid,uuid)",4e0c374caa04bb9bf9fac9cc4e6723f1,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42539,can_user_access_estoque_embalagem(uuid),d435a0228d1b5b56029153f3ac6549a1,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42540,can_user_access_produto_etiqueta(uuid),3461b265f7b3ee93b9c9e90cfc1a7438,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42541,can_user_access_registro_consultor(uuid),609c1485e4f82d6946a586dff25874b8,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42544,can_user_manage_estoque_embalagem(uuid),23d59e58411846b1300957a96f35a66a,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42546,can_view_catalog_internal(uuid),b04164dd8464d16f52cb69e7bcf83de7,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42547,"can_view_technical_visit(uuid,uuid)",e15341289ee33e1912adf63d4076b620,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42558,enforce_micro_profile_approval(),aefdfd0aeb40e3dc9a0fc6da99c18b2e,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42559,enforce_product_profile_approval(),6dc74ef968128a92eb702ac51f41d6c2,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+42560,enforce_visit_immutability(),8a6a92bb748f745526ed163ec52464aa,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42563,fn_authz_uid_scope_ok(uuid),00a9a4d4a075d756d312d69778493b39,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42566,fn_cc_can_prepare(uuid),439d9c28f69029b9c71fddbef1054e57,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42569,fn_cockpit_assert_operador_origem(text),ec7bd47943764dc4bfda9cdbea2cf283,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42570,fn_cockpit_ctx_programacao(uuid),d39da56ff10ae7b0ecf6d438b981f2f0,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42571,fn_cockpit_is_gestor(),ba163f110a2552850fdfebc8f01a2419,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42577,fn_fin_aging(text),495aa7b0ff5bf32f362b763a2a3f0f07,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",False
+42578,"fn_fin_cashflow(date,date,text,text)",197ffcc5735bcab0454e2936f1b76642,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42579,"fn_fin_dre_summary(date,date,text)",eb17b705a9000493f9b8e947ab6a39c8,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42581,fn_fin_inadimplencia(),bd13971bcd41848e11afacb3694cd9d4,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",False
+42582,"fn_fin_revenue_by_category(date,date,text,integer)",6146a8ca1690c3e26dc292ccc5da0c0f,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42583,"fn_fin_revenue_by_customer(date,date,text,integer)",fcdc55bf749e998e2e478f0ae715422a,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42584,fn_financial_inconsistencies(),2c75b1da47c9bdab169d28ec04eb0a12,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42587,fn_fiscal_can_operate(uuid),f16b3d0f44e2118d2171ab9a713060cb,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42588,fn_fiscal_can_read_internal(uuid),f15b14bf9652457a16637541f77d11d2,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42596,fn_mark_financial_overdue(),7c12dddccb56fa36903a741d92fc9afb,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42597,fn_onfarm_scope_cliente(uuid),99913124b02d905ce09ab04ffcff8230,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42598,"fn_regulatory_can_approve(text,uuid)",08d6b066872cb2bd71522b7ab849a955,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42599,fn_regulatory_can_prepare(uuid),0d4011f262d5595e42c520f8b32f9858,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42600,fn_regulatory_can_read(uuid),c3ad1c00121c629e2b683b9aeb8818b7,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42603,generate_b2b_receivable_secure(uuid),c49cc7ccedbcb28cba9b816b7e47c521,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42604,generate_b2b_receivable_secure_impl(uuid),1bdac7fae6d702fb42d3a30539e9c9c3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42614,"get_b2b_user_role_for_partner(uuid,uuid)",ab0a8226dd3adacca0c4be111da661d5,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42615,get_financial_alerts(date),3ff948f9a2c4175addc31ae9e71c39af,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",False
+42617,"get_financial_cashflow(date,date,text,text)",45477780820f953b72650a8bf62e9f82,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42627,get_report_delinquency(date),8f96cf072e238133efb9c848105452d8,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42628,"get_report_deliveries_billing_status(date,date)",18481060076d270362aa0788e50736ac,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42629,get_report_nfe_pending(jsonb),7116a4d9e85bb20ec54c740f7d3e5a24,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42630,get_report_payables(jsonb),e619ffef9ddc99d9e326edb3ade68e4f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42631,get_report_receivables(jsonb),970a18caa86f578cd31de2a56f002f6f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42632,"has_active_user_cliente_access(uuid,uuid,text[])",e099f51d128620e5a68cc3e9001dd976,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42633,is_delivery_staff(uuid),aa500abecc84ca8c901753c519f36fa1,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42634,is_financial_staff(uuid),6e8f2fa7b92ca7e039d092353b3ebfe2,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42635,is_operational_staff(uuid),f4b093c506cb05d39aa466bae94a6df8,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42636,"is_valid_b2b_partner_user(uuid,uuid)",0bb0dea04be8ca84c66db7ca6329876c,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+42666,rpc_b2b_aging(uuid),b644afcc4db9ffe3f70934b52f16b9b3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42667,"rpc_b2b_aging_detalhado(date,date,uuid,text)",7ba775cf0fc63a23c3e5a1b32b0ae302,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42669,"rpc_b2b_carteira_kpis(date,date)",4bf332fe6af936cb1afd0e566bb186a0,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42671,rpc_b2b_executive_alerts(),c889e9d74aa746ca8f159d684b158d54,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42673,"rpc_b2b_financial_kpis(date,date,uuid)",4712595ead41749d3ffef5c8f46588d3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42674,rpc_b2b_governance_kpis(),8b05c0c61a80fe8a062d13aa5d7ddf9f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42678,"rpc_b2b_partner_profitability(date,date,uuid)",7e5f703dad6f92ff9be6b01672463f93,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42680,rpc_b2b_revenue_forecast(uuid),d1ec2f714516e3c45d8b608405405939,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42780,rpc_portal_partner_financial(),832b0b107151ffd2c2f2be385964c22a,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42781,rpc_portal_partner_financial(uuid),ecd99f80a194bb9b540a4c197e0b9afe,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42819,sync_puc_to_ptc_fn(),4dc955897950bf70ee8e1072bbae1ff2,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42820,tg_block_pofl_delete(),14e8805a8633bef223ff842650b6d0cc,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+42826,visitas_campo_guard(),f69455b72d067d0d96fab74987b4cc4e,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+59608,fn_entrega_comprovante_exigir_arquivo_v1(),19c6b819e64f2afddb15bbdd94b47b56,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+60505,fn_entrega_assinatura_exigir_imagem_v1(),5f67fed54d10983086f5917f8c196403,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+60522,fn_entrega_comprovante_preservar_encerrado_v1(),7834a80a6bfdf2126cf93b2a8a74ec02,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+61233,guard_profile_sensitive_fields(),1c2ad8d0ef38ea66866f8b85d3acb109,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+63778,fn_fiscal_audit_base_reduction(),75a9e528c09d434a6c2807908542f2cd,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+67184,platform_private.h15_actor_organization(),64e10608403238a41a9baf92857ca881,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+67185,h15_company_access(uuid),c7a0e73d86584b70ee874a6397b1dbf4,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+67186,h15_invoice_access(uuid),14c030513bcea4c30a9453547bdd8231,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+67187,h15_require_staff(),6e0776133908e6857bf1829329256ad5,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+67189,h15_require_company(uuid),d9cc092cfd98836a7834377b7e9a6ca5,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+67190,h15_active_company(),78dc1f60878c972cd2b5370cbaa2f664,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+67194,h15_invoice_integrity(),3935fc3eef39373ab7c2cede1894d812,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+67196,h15_company_integrity(),6b96ad6dceb5797fa65118942b264c13,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+67198,"h15_related_company(text,uuid)",6cd53e8978347a7604c5185d4c79b703,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+67199,h15_related_integrity(),0ff600469a00ffb6d4cd4ec4450d29b5,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+67200,h15_profile_organization_guard(),43be4da16aae664a48fa4c73315b4420,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+72649,saas_subscription_history_no_mutation(),d8ed434eb5c061b6390025630056ea8f,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+72651,saas_subscription_no_delete(),d733847a8586e0859460c58ec47e7f4d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+72653,saas_subscription_audit(),a8446ac52d3f434d5135770c06144d74,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+72697,is_platform_superadmin(uuid),3dfe79d976821244d9b7a7f893d765f2,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+72698,guard_superadmin_role_assignment(),4a59f48e25096848a79be6de9d959cef,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+83811,ofo_guard(),569baaa572c8415144bfb9dc27203af6,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+83821,ofo_stamp_author(),ccebfa580dd73525dc04c41c59908c3c,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+83823,ofo_stamp_end(),f2f4da4936c21900897996f597ff5318,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+83826,"_saas_user_has_feature(uuid,text)",501dd958e117d2df8a4d38f6bcbeed04,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+83854,_saas_trg_require_feature(),13ed48832f81cbb35434688ca35fda4b,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+83979,guard_profile_senha_provisoria(),e38505f726490b064e61d9aa4e3be5a7,postgres,"['=X/postgres', 'postgres=X/postgres', 'anon=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+84007,organizations_guard_status(),1c2241052d227831f625b909eb606bda,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+84536,"platform_private.has_ticket(text,uuid)",29adae3347e8a5ff23327fa86fceb54b,postgres,['postgres=X/postgres'],True
+84540,guard_profile_senha_ticket(),bb9ea2f95f8f151ebd4b97c2a2e747b7,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+90454,platform_private.current_user_organization_id(),8da1a59de9d58041148b4544ebfbd0a2,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+90519,guard_profile_tenant_fields(),bd6d513d936f5c5fb0490b5d1d2f9f1d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+90530,platform_private.is_same_tenant_user(uuid),311bae91946bd96880a64fbc4960d0ee,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+90531,platform_private.is_tenant_admin_for_user(uuid),6f548278ad7a8fc39e83cad7c0101de2,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+90690,guard_tenant_organization_id(),d01a740c1e3e02407131d2b9228bf658,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+90817,"financial_storage_object_permitted(text,text)",d03da0efc828ed0f99259c75390c6d13,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+90880,d51_5_validate_financial_tenant_links(),f470a25ba7e65b366c62ad3ac8aa3112,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+90967,h15_user_organization(uuid),ff3688c33c7211b6c3fe60447a7728ac,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+90973,"h15_fiscal_audit_access(text,uuid)",7509f3dd5fcb72f58cf01a68227a3718,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+92408,saas_plan_version_no_mutation(),543ad75d5f6c1ce4a201b021883d9e90,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+92430,saas_subscription_guard(),448cf01b89fff319e01190d8926077b1,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+92432,saas_plan_version_guard(),d2c19e97facc94e91553b2373c1e3cdb,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+92434,saas_plan_version_feature_guard(),a426ebf8dfec07b5a0217cc4b6e87765,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+92456,saas_no_delete(),a67ad318077f202d3d4f9d93ce6cb333,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+92459,saas_history_no_mutation(),b54ba1f15beca1ef32ed0238da7a0fd3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+92461,saas_trial_validate(),b526fb8f9e5ba24dafe24f80edf4e478,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+92496,saas_feature_override_guard(),15fdd505417f308478680353b7a29a78,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+92859,saas_subscription_require_published_version(),98c78c294c1c056f93e8ed2607665040,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+93332,platform_private.entitlements_for_user(uuid),7f4ec7facaebbdf35444dd490fdebe56,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+94183,platform_private.b2b_actor_scope(uuid),c3f2997746f24bc2efd15db5c0ccc862,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+94274,"platform_private.assert_b2b_partner_scope(uuid,uuid)",f86f43f9d9ad3ed97b840fcc02c79476,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+95383,"platform_private.b2b_phase1_partner_visible(uuid,boolean)",915f516e605af7cc14584e2e762a2661,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+95384,platform_private.b2b_phase1_order_visible(uuid),8504f07fbc3a7975accf919f386d00eb,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+95403,"b2b_phase1_partner_visible(uuid,boolean)",6b3defc01a66040146562c60ad224f03,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+95404,b2b_phase1_order_visible(uuid),8812508716f279a88e3d5a31b15621d8,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+95577,platform_private.platform_actor_access_ready(uuid),048249c0c2106c3761e26eacb8d0de84,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+95587,"has_role(uuid,app_role)",4d90e93d521a4819d9085f28d742030f,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+95588,h15_actor_organization(),55edafec08bcc84a00f1526c14334a2c,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+96242,platform_private.stock_p1_lote_owned(uuid),a06f69d41e1f1f996c3c37de6e5c69fb,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+96243,stock_p1_lote_owned(uuid),c276c7826319a6c2058e0c239a1a5954,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+96245,platform_private.stock_p1_guard(),ad87685f4b7bc87bd8cc3f41f283966d,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+96512,"platform_private.stock_p1_movement_owned(uuid,uuid)",9d5199e2226bf08314ea98e7ba1bd56f,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+96513,"stock_p1_movement_owned(uuid,uuid)",aac11ad7b68d10fe225996f13f32e9b4,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+96515,platform_private.stock_p1_movement_guard(),f8b5d6828da2db8151b1490f364ef585,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+99876,"platform_private.notification_source_org(text,uuid)",6853303eccf9c8824c353143d6bcb6c1,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+99877,"platform_private.notification_user_ok(uuid,uuid)",dadfd39f1fd16c94549dc77e99dd6fa4,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+99878,"platform_private.notification_p1_visible(uuid,text,uuid,uuid)",ba6fb694fbe66ac230b5ad11a24122b8,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+99881,platform_private.notification_p1_guard(),f3269298fb3f0b5fdbdf193afa91d0dc,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+99893,"notification_p1_visible(uuid,text,uuid,uuid)",9f281bcacc931e1d064d552e6898d3b5,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+99926,platform_private.notification_outbox_closed(),2a2d135f608821cdaffe2125df9117f7,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+99928,"platform_private.notification_source_client(text,uuid)",697e25c0764d9a59e495ac684cca9cf6,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+100551,storage1_path_strict(text),94164fa3b90088b0a1f16ac465a635d4,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+100869,guard_commercial_partner_registration(),f60abac756fb4f371d6fccbb133dc2af,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+101066,platform_private.b2b_internal_origin_valid(jsonb),70a7c317765a4888b38e8bf277ded7d3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",False
+101067,"platform_private.b2b_internal_assert_origin(jsonb,uuid,uuid)",6bbb61aa5899b18d13ac55d4f76f45e1,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+101068,platform_private.b2b_internal_order_snapshot_guard(),9cad2aaa995277b913f8b40816fea504,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+101073,platform_private.b2b_internal_child_snapshot_guard(),f9fcfca4588854d927f7f9a1bdbe4de7,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+101193,platform_private.b2b_commercial_context(),2f1063f00281c4ca78dcebaab81a9446,postgres,"['postgres=X/postgres', 'service_role=X/postgres', 'authenticated=X/postgres']",True
+101228,platform_private.b2b_direct_partner_row_allowed(),8967832dbfa4ee782c4c063ca5e1e3d4,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+101258,platform_private.b2b_coherent_self_partner(uuid),56d8f1e84bbf889eb2d3f990c3ed1162,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+101267,platform_private.b2b_organization_full_row_allowed(),48c06c94d9c0e4de2ad8d99d5280a99b,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+102523,technical_actor_ready(uuid),b5d0994b6eb976b14122cd2a1ec798cf,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+102524,"technical_refs_in_actor_tenant(uuid,uuid,uuid)",1d178d4acb1439a16600cab10b63f29e,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+102525,"technical_client_link(uuid,uuid,text[])",1df7b9983b8dac1af06b9108eb32e7f0,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+102561,technical_child_read_scope(uuid),220b06fa2e634b7ea23df04cbd473c5e,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+102637,enforce_technical_content_editable(),eb4e8d56cde229056c4730f9742a8f4b,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+102970,guard_financial_category_platform_write(),588d9db718a05c684fd56004bd0584d7,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+109263,platform_private.catalog_touch_version(),37728459aa7afb365686338c4aaa0d57,postgres,['postgres=X/postgres'],False
+109933,"platform_private.catalog_composition_type_allowed(text,text)",5de1a1b51543865311c0fda702233d3f,postgres,['postgres=X/postgres'],False
+109979,platform_private.catalog_composition_touch(),6dc6e64559ece6e7a12789d79c537c12,postgres,['postgres=X/postgres'],False
+109981,platform_private.catalog_composition_row_guard(),3e9492073fafdb012ce2b2636e6bb066,postgres,['postgres=X/postgres'],False
+109983,platform_private.catalog_composition_family_guard(),38be87cad410f38c63a49f47461cac30,postgres,['postgres=X/postgres'],True
+110887,"platform_private.lab_item_is_manufacturable(uuid,uuid)",853595394240e8f2a61ac2d621118271,postgres,['postgres=X/postgres'],True
+110888,"platform_private.lab_assert_manufacturable(uuid,uuid)",fe24f00acbffa9b6d71c84d0c4ff8eb4,postgres,['postgres=X/postgres'],True
+110889,platform_private.trg_lab_programming_biological_only(),d253b17831afaacef106b5c5e1efbb29,postgres,['postgres=X/postgres'],True
+110891,platform_private.trg_lab_lot_biological_only(),58abf38671745d272abeb923ee866083,postgres,['postgres=X/postgres'],True
+110893,platform_private.trg_lab_os_biological_only(),75b55313502aecaf7226cd0a235f1a4f,postgres,['postgres=X/postgres'],True
+111400,producer_request_mutation_guard(),5618a1a45b96707373bca29a140b6499,postgres,['postgres=X/postgres'],True
+111633,platform_private.tenant_email_actor_org(),cce7d02cc6a065d820c358e9dcc9badf,postgres,"['postgres=X/postgres', 'authenticated=X/postgres']",True
+111641,platform_private.tenant_email_require_review(),e2cd027dabf9b5a132643cd516a33c8a,postgres,['postgres=X/postgres'],True
+111648,platform_private.tenant_email_validate_config(jsonb),df03f4d457b7baf79547f53c9cf65a50,postgres,['postgres=X/postgres'],False
+111649,platform_private.tenant_email_invariant(),94374985bb32a6422c53f050b9563858,postgres,['postgres=X/postgres'],False
+111657,platform_private.tenant_email_review_fence(),8a07811f8107744286677f36c3821a57,postgres,['postgres=X/postgres'],True
+111805,platform_private.tenant_smtp_test_actor(uuid),623421e33f0cb8a41dc6adfe91c48d1f,postgres,['postgres=X/postgres'],True
+112494,platform_private.tenant_smtp_f4_invalidate(),aaaf6b840c8a36286379749d96fff7b3,postgres,['postgres=X/postgres'],True
+112761,"platform_private.tenant_smtp_lane_log(platform_private.tenant_smtp_dispatch_jobs,text,text,uuid)",5f87ae61140f53a753f050f381780566,postgres,['postgres=X/postgres'],True
+112762,"platform_private.tenant_smtp_lane_recipient(uuid,uuid)",c64dd74c292aed440c843c2833c8bd0e,postgres,['postgres=X/postgres'],True
+112764,"platform_private.tenant_smtp_lane_source_reason(uuid,uuid,uuid,uuid)",2da5309c2b447af194929c86f4befd99,postgres,['postgres=X/postgres'],True
+112765,platform_private.tenant_smtp_lane_ready(uuid),7a212e400fdb645960198e5159b27ea5,postgres,['postgres=X/postgres'],True
+112766,"platform_private.tenant_smtp_lane_cancel(platform_private.tenant_smtp_dispatch_jobs,text,uuid)",9ecd9b9b1f4ceae559faa1014e0069bf,postgres,['postgres=X/postgres'],True
+112767,"platform_private.tenant_smtp_lane_cancel_queued(uuid,text,uuid)",b7e75667d4fdf17b60e7ac8aa3f8f9f7,postgres,['postgres=X/postgres'],True
+112768,platform_private.tenant_smtp_lane_enqueue_solicitacao(),f771a868ff324b1ce72308f04756e0b4,postgres,['postgres=X/postgres'],True
+115613,partner_users_derive_tenant(),def221f86b1f2afc84866a6c53f075c3,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+115615,partner_users_bump_version(),4b6bf383dc0dae10def21fcb407e1640,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+116023,guard_financial_document_integrity(),62452456944c53935fde9f15da7bac8e,postgres,"['postgres=X/postgres', 'service_role=X/postgres']",True
+117583,platform_private.entrega_termo_tenant_ok(uuid),8ef541cf6a657757a1a615df54f12aa5,postgres,"['postgres=X/postgres', 'authenticated=X/postgres']",True
+117670,platform_private.guard_manual_lot_write_v1(),4eab765e76ca79f16a7dd481887496d9,postgres,['postgres=X/postgres'],True
+118390,platform_private.guard_manual_program_binding_v1(),7c168ffa9393207fb3388c9546c19d05,postgres,['postgres=X/postgres'],True
+118494,platform_private.guard_manual_lot_delete_v1(),0d490a2910e7fb63dd50fd4c86e1cf0f,postgres,['postgres=X/postgres'],True
+118531,platform_private.guard_manual_cq_write_v1(),4c9738cabaf11d8ac59a4ac0e58abfa4,postgres,['postgres=X/postgres'],True
+118533,platform_private.guard_manual_cq_parent_v1(),fbe67571995aa8e4c942ca29215c15b5,postgres,['postgres=X/postgres'],True
+120758,platform_private.catalog_family_labels_touch(),f9d7829a28840ea91a06d06afe3c8bf3,postgres,['postgres=X/postgres'],False
+120760,"platform_private.catalog_family_label_check(text,text)",de5ea169ab903a959a55741a23c88ade,postgres,['postgres=X/postgres'],True
+120761,platform_private.catalog_family_label_validate(),79784d2858d4b83ff650d82b7eee3c45,postgres,['postgres=X/postgres'],True
+120928,platform_private.global_product_fiscal_write_ready(),e08e5b579051e2866745cfbf27550320,postgres,"['postgres=X/postgres', 'authenticated=X/postgres']",True
+120929,platform_private.global_product_fiscal_read_ready(),a33cee569e8264365f8913105b3366f7,postgres,"['postgres=X/postgres', 'authenticated=X/postgres']",True
+120930,platform_private.global_product_fiscal_before_write(),db436eb02fc46a11bd407be80599f5c1,postgres,['postgres=X/postgres'],True
+120931,platform_private.global_product_fiscal_statement_gate(),1d4d1107af4e543d67b117cca13cccb5,postgres,['postgres=X/postgres'],True
+123098,"platform_private.c2_producer_links(uuid,uuid)",881cdf48a5b20df4d93e42ef1edf1bee,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+123115,platform_private.b2b_own_obligations_owner(uuid),29d950dbb0a1790c8c500a2125102d1f,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+123116,"platform_private.b2b_own_obligations(uuid,timestamp with time zone,uuid)",74cbea88f6f0ebe10dd8c1df3bdcb0ff,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",True
+123117,"rpc_portal_partner_financial(uuid,boolean,timestamp with time zone,uuid)",d9d53c802ca11c59d235c7d32d6e8eee,postgres,"['postgres=X/postgres', 'authenticated=X/postgres', 'service_role=X/postgres']",False
+123317,platform_private.c2p1_internal_actor(app_role[]),97bab97591a9f662bad7b1ccf837bfcd,postgres,"['postgres=X/postgres', 'authenticated=X/postgres']",True
+123318,"platform_private.c2p1_assignment_allowed(text,uuid,uuid)",ecada72965cd1042fc1502b37864ab42,postgres,"['postgres=X/postgres', 'authenticated=X/postgres']",True
+123319,"platform_private.c2p1_settings_allowed(uuid,boolean)",57baa5fd657952d9383ad0c422c1d028,postgres,"['postgres=X/postgres', 'authenticated=X/postgres']",True
+123320,platform_private.c2p1_assignment_fence(),4db90f14719c84a327a190f0d91a4d44,postgres,['postgres=X/postgres'],True
+123322,platform_private.c2p1_settings_fence(),f87cc2894dc551d242c2586f17e2cdd4,postgres,['postgres=X/postgres'],True
+123326,"platform_private.c2p1_item_allowed(uuid,uuid,text,uuid,uuid)",0e303620d70fa5d9d8b5c6702ee8526f,postgres,"['postgres=X/postgres', 'authenticated=X/postgres']",True
+123329,platform_private.c2p1_item_fence(),b15f84985a3bb51d60f3f1128455bf8d,postgres,['postgres=X/postgres'],True
+123331,platform_private.c2p1_assignment_children_fence(),a75201d8046e4bb09005ac3c39a5f1db,postgres,['postgres=X/postgres'],True
+123333,platform_private.c2p1_rule_fence(),397723e1a28d19c5bf43939e135f1919,postgres,['postgres=X/postgres'],True
+123335,"platform_private.c2p1_rule_snapshot_allowed(jsonb,uuid)",fbed3a4c79a1679c4fbe0dfc13411381,postgres,['postgres=X/postgres'],True
+123336,"platform_private.c2p1_rule_log_allowed(text,uuid,jsonb,jsonb)",929816d95b7a76b201a45b6d1e74f0a2,postgres,"['postgres=X/postgres', 'authenticated=X/postgres']",True
+123421,"platform_private.c2_owner_order_create_allowed(uuid,uuid)",5f0a08d1d4f8d8c5a7ae58e24c71071e,postgres,['postgres=X/postgres'],True
+127036,"platform_private.c2_external_origin_assert(jsonb,uuid,uuid)",999e5e9fd9887595e252523fb2142726,postgres,['postgres=X/postgres'],True
+127041,platform_private.c2_external_final_state_guard(),3f1a5a6b11161bd8204293a8c64371e2,postgres,['postgres=X/postgres'],True
+127045,platform_private.c2_external_origin_contract_valid(jsonb),369fd07cd9c659b87941b9a3bf972868,postgres,['postgres=X/postgres'],False
+127046,"platform_private.c2_accounting_promotion_ok(jsonb,jsonb,uuid)",05938c5e9abf096d560e57aad10af69f,postgres,['postgres=X/postgres'],True
+127047,platform_private.c2_accounting_pending_guard(),669b19490a7a9700f0158db4b31885ad,postgres,['postgres=X/postgres'],True
+127750,platform_private.guard_visit_plan_preservation(),618797b75f8c6b962dc70c0841c84de1,postgres,['postgres=X/postgres'],True

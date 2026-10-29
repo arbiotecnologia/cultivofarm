@@ -1,0 +1,22 @@
+{
+  "counts": {
+    "PASS": 37,
+    "FAIL": 0,
+    "BLOCKED": 6,
+    "NOT RUN": 1
+  },
+  "baseline_contract_failures": 2,
+  "green_contract_failures": 0,
+  "operational_go": false,
+  "vitest": {
+    "files": 11,
+    "tests": 188
+  },
+  "catalog": {
+    "roots": 57,
+    "functions": 454,
+    "relations": 150,
+    "edges": 5826,
+    "dynamic_candidates": 13
+  }
+}
