@@ -1026,3 +1026,7 @@
 - [x] Red/green estrito37assertionsPGPASS, duas violaçõesRED esperadas/greenzero; H15/RBACcapturados+FKsmonetárias/ledger/snapshot/replay/estorno; wrapper anônimo completo nega, positivoBLOCKED sem bypass.
 - [x] Vitest188/188em11arquivos; matriz37PASS/0FAIL/6BLOCKED/1NOT RUN, relatório e critérios de promoção/rollbackdeny-only; histórico/taxas/Entregas intactos.
 - [ ] Implantação e SQLreview novo: dependem cadeia positiva/guards completos/dinâmico/semânticaBI/proveniência/JWT A/B;calendário/parcelas/billing e ledger contábil pendentes, produçãoOFF.
+
+## 29/10 17:41 — Price até 3 parcelas, offline
+- [x] Motor Price, limites, calendário candidato e testes.
+- [ ] Calendário: evento âncora, pro-rata e dia útil (aguarda decisão humana).

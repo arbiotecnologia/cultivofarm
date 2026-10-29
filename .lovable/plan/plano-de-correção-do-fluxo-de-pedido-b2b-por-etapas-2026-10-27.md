@@ -166,3 +166,8 @@ Neste lote somente documentação e testes offline; nenhuma SQL hosted, GRANT, m
 - [x] Hipóteseapenasoffline rejeita p_kindISNULL anteslookup com23514,40GREEN novos/estadoinalterado. DeltaúnicoIF explicito preserva guards/tiposválidos; total346PASS/0FAIL/1BLOCKED/1NOT RUN,14corridas/risco reexecutados;Vitest10/10em4arquivos(monetário/proveniência incluídos).
 - [x] Evidênciasnovas revisão1458/diffmínimo/logs/hashes;51arquivoshistóricos preservados. Falha intermediária somente contagemVitest documentada; revisãofonte independente semexecução.
 - [ ] Cadastro/settings continua decisãohumana pendente, NÃO tomada. NO-GOintegral/BIorigemfiscalJWTreal preservado; runtime/migrations/produção intocados.
+
+## 29/10/2026 17:41 UTC — Price até 3 parcelas (offline)
+- Decisões: limite R$100.000; geração só manual autorizada; 1–3 parcelas mensais, 1º vencimento base+30d, Price 1,8% a.m. (1x/30d 0%); 4+ rejeitado; Price substitui full-term só para novos planos; históricos intocados.
+- Resultado: 155 verificações/0 FAIL; Vitest 57/57. Relatório `docs/auditorias/price-parcelamento-offline-20261029.md`.
+- BLOCKED: evento âncora da data-base, pro-rata/período irregular, dia útil; geradores sem Price e gates contábeis/origem; JWT/RLS real. Produção NO-GO.
