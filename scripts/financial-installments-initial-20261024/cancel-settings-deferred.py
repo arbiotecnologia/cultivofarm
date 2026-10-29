@@ -162,7 +162,8 @@ def exercise(h, metadata):
             rejected('deferred NULL '+field+' '+label,update(partner,invalid),('22023','C2P1_INVALID_PAYLOAD'),actor)
         for value in [-1,'NaN','Infinity','-Infinity']:
             invalid=dict(values);invalid['credit_limit']=value
-            rejected('deferred invalid credit '+str(value)+' '+label,update(partner,invalid),('22023','C2P1_INVALID_PAYLOAD'),actor)
+            expected=('22003','numeric field overflow') if value in ['Infinity','-Infinity'] else ('22023','C2P1_INVALID_PAYLOAD')
+            rejected('deferred invalid credit '+str(value)+' '+label,update(partner,invalid),expected,actor)
         invalid=dict(values);invalid['default_payment_method']='UNKNOWN'
         rejected('deferred invalid method '+label,update(partner,invalid),('22023','C2P1_PAYMENT_METHOD_INVALID'),actor)
         other=m.uid(900003) if label=='A' else m.uid(900002)
