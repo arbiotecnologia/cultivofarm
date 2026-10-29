@@ -13,7 +13,7 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   ], { encoding: 'utf8', timeout: 180_000 });
   const result = JSON.parse(output.trim().split('\n').at(-1) ?? '{}');
   expect(result.FAIL).toBe(0);
-  expect(result.PASS).toBe(651);
+  expect(result.PASS).toBe(744);
   expect(result.BLOCKED).toBe(1);
   expect(result['NOT RUN']).toBe(1);
   const evidence = JSON.parse(readFileSync(join(outputDir, 'results.json'), 'utf8'));
@@ -28,6 +28,12 @@ it('nega cancelamento estrangeiro e reproduz oráculo antes da transformação o
   expect(evidence.risk_composition.tables).toContain('partner_risk_scores');
   expect(evidence.risk_composition.deferred.risk_fk_resolved).toBe(true);
   const finding = (name: string) => evidence.checks.find((row: { test: string }) => row.test === name);
+  expect(finding('projection exact AR owner FSF buyer').status).toBe('PASS');
+  expect(finding('GREEN owner proceeds only to legitimate billing denial').actual).toBe("('P0001', 'billing_not_eligible:PAYMENT_TERMS_NOT_DEFINED')");
+  expect(finding('credit zero not unlimited exposure reason').actual).toBe('LIMIT_EXCEEDED_BLOCK');
+  expect(finding('exposure exact exposicao_projetada').actual).toBe('13500');
+  expect(finding('exposure financed total minus payment').actual).toBe('9300');
+  expect(evidence.risk_composition.parties_credit.synthetic_ids.ar_bio_owner).not.toBe(evidence.risk_composition.parties_credit.synthetic_ids.fsf_buyer_tenant);
   for (const tenant of ['A', 'B']) {
     expect(finding(`deferred no settings method ticket ${tenant}`).actual).toBe('0|0');
     expect(finding(`deferred complete updater ${tenant}`).actual).toBe('0');
