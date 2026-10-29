@@ -88,3 +88,45 @@ Capturado RPC MD5 `c7d30a08b1cbd00936cd83aa5bf3415c`; hipótese MD5 `842136aa091
 Docs PostgreSQL atuais consultadas: https://www.postgresql.org/docs/current/xfunc-volatility.html e https://www.postgresql.org/docs/current/transaction-iso.html . STABLE usa snapshot da instrução que o chama; VOLATILE obtém snapshots para comandos internos em READ COMMITTED, não em isolamento transacional fixo. Não foi utilizada operação específica hosted Supabase nem alterada configuração de isolamento da plataforma; isolamento real PostgREST permanece NOT RUN.
 
 **BLOCKED:** positivo B2B integral no trigger de risco `recalc_partner_risk_score`, como antes; guards/identidade/FKs/ACL/RLS integrais, BI/proveniência e ledger contábil. **NOT RUN:** JWT/RLS real A/B, isolamento PostgREST real, promoção/containment. Existe janela posterior à rechecagem e revogação concorrente fora da espera testada; não provar serialização integral com identidade. Produção/runtime/Entregas/histórico e política comercial preservados; sem hosted DML, migration, GRANT produtivo, deploy, usuários/sessões reais, cobrança/ativação ou remediação. **NO-GO permanece.**
+
+## Continuidade autônoma 14:50 — composição do próximo elo
+
+**Resultado final desta rodada, sem somar históricos/reexecuções:** cancelamento/risco **263 PASS, 0 FAIL inesperados, 1 BLOCKED, 1 NOT RUN**; proveniência **42 PASS, 0 FAIL, 1 BLOCKED**; monetário red/green **37 PASS, 0 FAIL inesperados** (18 RED baseline, 19 GREEN sandbox); Vitest **10/10 em 4 arquivos**. Assertions internas PG não somam com Vitest. Saída nova: `evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1450/`; execuções intermediárias e finais separadas.
+
+### Progresso executável
+
+- Novo `cancel-risk-composition.py`, importado pelo runner existente: 20 corpos capturados exatos, cinco tabelas de risco/parceiro/governança com colunas/defaults/nullability, constraints/FKs, todos seus triggers/enabled, políticas, owner/ACL/RLS comparados ao catálogo. **25 checks de metadados**, **25 controles capturados de risco**, **10 controles GREEN** e **10 assertions de barreiras BLOCKED esperadas**. Os demais checks:35CAPTURED,62RED de oráculo/corrida/snapshot,96GREEN offline. PASS de uma barreira não é positivo B2B.
+- Calculator completo `recalc_partner_risk_score` deixa de ser símbolo ausente; chamadas LOGIN authenticated A/B chegam à FK **`partner_risk_scores_partner_id_fkey`/23503**, com tabela exata e rollback de risco/governança/monetário/tickets. Anônimo ACL negado; papel financeiro revogado nega42501/permission_denied. Nenhuma chamada ao calculator como owner para alegar autorização.
+- Cadastro sintético A/B como administradores locais reais chega a **42501/C2P1_SETTINGS_WRITE_CLOSED**; estado de15tabelas composto permanece igual. Nenhum parceiro/ticket é fabricado, trigger desligado ou helper permissivo introduzido. Settings updater/issuer/validator capturados são instalados, mas o issuer **não é chamado diretamente**.
+- Cancelamento MANUAL após composição conserva10.300, transição CANCELED, auditoria única por ator e estado não relacionado; foreign com evento1.000 nega uniformemente, incluindo estado risco/governança/tickets. Esses controles não certificam origem B2B. Os14ensaios de espera anteriores são reexecutados; helpersSTABLE permanecem exatos e hipótese continua READ COMMITTED-only.
+- Novo `test-financial-provenance.py`/regressão:13candidatos/14trechos separam **1SQL EXECUTE**, **4formatações de texto**, **9literais de nível de acesso**. Linhas137/146 do impl B2B não executam SQL. Único EXECUTE tem alvos finitos capturados `ordens_servico`/`ordens_servico_onfarm`, resolvidos por branch e metadados, **não executados operacionalmente**.17fingerprints atuais/prévios sem drift, mantendo SOURCE_ONLY_NOT_END_TO_END. Classificador restrito aos pontos congelados, comentários/dollar quotes desconhecidos=UNRESOLVED; controles de mutação executáveis registrados.
+
+### Menor impedimento que exige decisão do proprietário
+
+**Contrato de cadastro de parceiro/configuração financeira não definido para a composição atual.** Caminho capturado:
+
+```text
+partner_accounts INSERT
+ → tg_create_default_pfs: INSERT settings(partner_id), sem ticket/método
+ → c2p1_settings_fence: exige autoridade + ticket + método ativo único
+ → C2P1_SETTINGS_WRITE_CLOSED (rollback completo)
+```
+
+Prova: catálogo `receivable-recursive-live-20261029.json`, bodies OID42095/123322/123319; MD5 respectivamente756e5d24883fa387054b4385a232cfcf/f87cc2894dc551d242c2586f17e2cdd4/57baa5fd657952d9383ad0c422c1d028. Frontend `src/hooks/useParceiroB2BMutations.ts:80–84` faz INSERT direto. `src/hooks/useB2BFinanceiro.ts:161–174` configura **parceiro já existente**, com11valores explícitos e método escolhido. Updater capturado em `scripts/owner-orders-20261023/internal-origin-composition-20261023/baseline/platform_private.c2p1_update_settings.sql:9–40` exige parceiro antes de emitir/apagar o ticket. Não há provisioner de cadastro capturado ou correção revisada que resolva essa ordem; somente envolver INSERT/RPC em transação não resolve.
+
+**Decisão exata necessária:** cadastro pode deixar configurações ausentes para configuração posterior autorizada, ou deve inicializar11valores explicitamente na mesma transação? Se inicialização obrigatória, qual fluxo fornece esses valores e a escolha canônica de método? Não escolher método/defaults nem mudar o trigger unilateralmente. A decisão permite preparar correção offline específica, não autoriza implantação. Contabilidade/origem/fiscal continuam gates separados: negações C2_ACCOUNTING_PENDING/B2B_INTERNAL_DOWNSTREAM_UNVERIFIED intactas; nenhum positivo wrapper inventado.
+
+### Integridade, execução e limites
+
+Verificação histórica registrada nesta rodada:39entradas,28OK/7MISMATCH/4MISSING. Inclui fontes autorizadas já evoluídas e discrepância histórica red-green/logs já informada; **nenhum manifesto antigo regravado**, outputs existentes preservados. Verificação after:33entradas mantêm bytes/ausência;6entradas(repetidas em manifestos) correspondem a três fontes autorizadas evoluídas:runner/regressão cancelamento e relatório. Registro before foi feito após primeira edição autorizada, não é inventário pré-edição. Novo SHA256SUMS fixa fontes finais/logs/evidências.
+
+Falhas intermediárias preservadas: ACL auxiliar `clientes` ausente no primeiro ensaio; recomposição de ACL capturada com RLS deny-only em relações vazias corrigiu o bloqueio técnico. Comparação nova revelou MAINTAIN omitido pelo harness herdado; PG17 suporta e agora recompõe ACL exata. Final263/0 após ambas correções. Revisão independente sugeriu metadados/exatidãoFK/estado positivo/contagensBLOCKED/classificador limitado; incorporados e reexecutados.
+
+```text
+python3 scripts/financial-installments-initial-20261024/test-cancel-authorization.py --output-dir <pasta-nova/cancel-authorization-revision-final>
+python3 scripts/financial-installments-initial-20261024/test-financial-provenance.py --output-dir <pasta-nova/provenance-final>
+python3 scripts/financial-installments-initial-20261024/test-receivable-red-green.py --output-dir <pasta-nova/monetary>
+bun run test src/test/financeiro/cancelAuthorizationPostgres.test.ts src/test/financeiro/receivableRedGreenPostgres.test.ts src/test/financeiro/receivableSemantics.test.ts src/test/financeiro/financialProvenanceOffline.test.ts
+```
+
+**Limites explícitos:** cinco tabelas exatas não equivalem a integração integral. Orders segue superfície mínima read-only; zerofixturesdepedido, sem seus triggers/FKs/RLS; schemas auxiliares vazios têm políticas omitidas deny-only, não autoridade positiva; identity/payment seams parciais. Calculator não conclui UPSERT positivo sem parceiro legítimo. BI/proveniência métrica/ledger/histórico requerem decisão contábil; dispatch/importadores e JWT/RLS/PostgREST real requerem prova/autorização independente. Nenhuma alteração runtime/produção, SQL implantável, hosted mutation/GRANT/migration/deploy/sessão real/ativação/cobrança/remediação. **NO-GO integral preservado.**

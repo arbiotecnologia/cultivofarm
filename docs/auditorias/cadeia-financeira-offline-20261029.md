@@ -2,6 +2,10 @@
 
 ## Entrega e estado
 
+### Continuidade14:50 — risco composto, cadastro bloqueado legitimamente
+
+Runner existente+`cancel-risk-composition.py`:263PASS/0FAIL inesperados/1BLOCKED/1NOT RUN; cinco tabelas e20corpos capturados,25checksmetadados, calcA/B atingeFKparceiro23503, cadastroA/B negaC2P1_SETTINGS_WRITE_CLOSED atomicamente sem ticket. Menor decisão humana: cadastro com settings ausentes e configuração posterior ou inicialização transacional de11valores/método explícitos? Caminho direto e updater existente não compõem cadastro atual. Não contornar. Proveniência42PASS/0FAIL/1BLOCKED:14trechos=1EXECUTE/4textformat/9literais; alvosOS/onfarm finitos resolvidos sem operação,17fingerprints source-only. Monetário37PASS(18RED/19GREEN), Vitest10/10em4arquivos;14corridas reexecutadas. Evidências novas revisão1450, históricos preservados/hashes28OK/7MISMATCH/4MISSING explicitados; detalhes no relatório cancelamento. Sem SQL implantável/runtime/produção; NO-GO integral.
+
 ### Revisão14:28 — autorização pós-lock somente offline
 
 Nova pasta `cancel-authorization-revision-1428`:189assertionsPGPASS/0FAIL inesperados,1BLOCKED/1NOT RUN; Vitest9/9em3arquivos.14corridas locais com PID exato do holder; RED papel revogado ainda cancela, GREEN rechecagem separada com helpers STABLE intactos nega emREAD COMMITTED; contraprovaREPEATABLE READ retém snapshot, hipótese nega isolamento diferente. Foreign PARTIAL com evento1.000 retorna42501/mensagem exata como inexistente e não toma lock estrangeiro no ensaio. Detalhes/limites no relatório específico. Histórico antes:21hashesOK/1divergente(red-green.json)/4logs ausentes, preservados sem reparo silencioso; fontes do runner evoluem com hashes novos. Produção/runtime intactos e NO-GO integral mantido.

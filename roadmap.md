@@ -1,5 +1,11 @@
 # F2-B — auditoria e preparação revisável
 
+## 29/10 — continuidade autônoma offline de risco B2B
+- [x] Compor20corpos/cinco tabelas risco/parceiro/governança capturados; calculator chega àFK, cadastroA/B nega settings semticket e rollbackcompleto;25metadados exatos.
+- [x] Executar263PGPASS/0FAIL/1BLOCKED/1NOTRUN,37monetário,42proveniência/1BLOCKED e10Vitest; evidências novas revisão1450 sem sobrescrever histórico.
+- [x] Atualizar relatório/plano original com contagens segregadas e decisão exata; produção e runtime preservados.
+- [ ] Decisão humana: cadastro com settings ausentes/configuração posterior ou11valores+método explícitos atomicamente? Caminho canônico atual não resolve; gates contábil/origem/fiscal/BI/JWTreal continuam NO-GO.
+
 ## 29/10 14:28 — revisão da autorização de cancelamento
 - [x] Pagamentos estrangeiros reais/exatidão de erros/AuthGREEN/valores e14corridas locais com holderPID; hipótese pós-lock READ COMMITTED, contraprova snapshotREPEATABLE READ sem mudar helpers.
 - [x] 189PGPASS/0FAIL inesperados,9/9Vitest; saídas novas/hashes históricos divergentes e ausentes documentados sem sobrescrever; relatório/plano original atualizados.

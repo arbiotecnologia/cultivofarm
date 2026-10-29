@@ -1,0 +1,57 @@
+CREATE OR REPLACE FUNCTION public.rpc_cancel_financial_installment(p_installment_id uuid, p_kind text, p_reason text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_status text; v_has_payment boolean; v_table text;
+BEGIN
+  IF NOT is_financial_staff(auth.uid()) THEN
+    RAISE EXCEPTION 'Sem permissão.' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF p_reason IS NULL OR length(trim(p_reason)) < 5 THEN
+    RAISE EXCEPTION 'Motivo é obrigatório (mín. 5 caracteres).' USING ERRCODE='check_violation';
+  END IF;
+  IF p_kind NOT IN ('receivable','payable') THEN
+    RAISE EXCEPTION 'Tipo inválido: %', p_kind USING ERRCODE='check_violation';
+  END IF;
+
+  IF p_kind = 'receivable' THEN
+    SELECT status INTO v_status FROM accounts_receivable_installments WHERE id = p_installment_id FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Parcela não encontrada.'; END IF;
+    IF v_status IN ('PAID','PARTIAL') THEN
+      SELECT EXISTS (
+        SELECT 1 FROM receivable_payments rp
+        WHERE rp.installment_id = p_installment_id AND COALESCE(rp.is_reversal,false) = false
+          AND NOT EXISTS (SELECT 1 FROM receivable_payments r2 WHERE r2.reversed_payment_id = rp.id)
+      ) INTO v_has_payment;
+      IF v_has_payment THEN
+        RAISE EXCEPTION 'Parcela possui recebimentos não estornados.' USING ERRCODE='check_violation';
+      END IF;
+    END IF;
+    IF v_status = 'CANCELED' THEN RAISE EXCEPTION 'Parcela já cancelada.'; END IF;
+    UPDATE accounts_receivable_installments SET status='CANCELED' WHERE id = p_installment_id;
+    v_table := 'accounts_receivable_installments';
+  ELSE
+    SELECT status INTO v_status FROM accounts_payable_installments WHERE id = p_installment_id FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Parcela não encontrada.'; END IF;
+    IF v_status IN ('PAID','PARTIAL') THEN
+      SELECT EXISTS (
+        SELECT 1 FROM payable_payments pp
+        WHERE pp.installment_id = p_installment_id AND COALESCE(pp.is_reversal,false) = false
+          AND NOT EXISTS (SELECT 1 FROM payable_payments r2 WHERE r2.reversed_payment_id = pp.id)
+      ) INTO v_has_payment;
+      IF v_has_payment THEN
+        RAISE EXCEPTION 'Parcela possui pagamentos não estornados.' USING ERRCODE='check_violation';
+      END IF;
+    END IF;
+    IF v_status = 'CANCELED' THEN RAISE EXCEPTION 'Parcela já cancelada.'; END IF;
+    UPDATE accounts_payable_installments SET status='CANCELED' WHERE id = p_installment_id;
+    v_table := 'accounts_payable_installments';
+  END IF;
+
+  INSERT INTO financial_audit_log(entity_type, entity_id, action, old_data, new_data, performed_by, reason)
+  VALUES (v_table, p_installment_id, 'INSTALLMENT_CANCELED',
+          jsonb_build_object('status', v_status),
+          jsonb_build_object('status','CANCELED'), auth.uid(), p_reason);
+END$function$
