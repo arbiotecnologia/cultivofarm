@@ -1,0 +1,6 @@
+READ-ONLY CAPTURE REPORTED BY OWNER — 2026-10-29 — project vrlcdwmlytukrjezrrnf (CultivoFarm-Homolog, STAGING marker confirmed), BEGIN READ ONLY, no mutation.
+partner_orders=0; fiscal_invoices=0; partner_documents=0.
+organizations: single org FSF Agro (HOMOL). partner_accounts: single active partner "FSF Agro Homologação LTDA", client_id NULL, commercial_owner_organization_id NULL.
+company_fiscal_settings (org FSF): legal_name NULL, trade_name NULL, fiscal_environment NOT_CONFIGURED.
+Result: no AR Bio -> FSF Agro order/NF pair available. BLOCKER: HOMOLOG_REFERENCE_ABSENT. Nothing invented; no fixture promoted to authorized NF.
+Also: homolog partner has no client/commercial-owner link, so the candidate partner resolution would fail CREDIT_PARTNER_LINK_REQUIRED there.
