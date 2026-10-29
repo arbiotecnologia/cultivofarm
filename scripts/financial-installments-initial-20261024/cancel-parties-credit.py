@@ -81,10 +81,14 @@ def exercise(h, metadata):
     impl=r.captured('public','generate_b2b_receivable_secure_impl')
     h.acl('FUNCTION',impl['signature'],impl['acl'])
     h.table('partner_order_audit_logs');h.extra_state_tables.append('partner_order_audit_logs')
+    h.check('impl captured client EXECUTE closed','f',m.pg.sql("SELECT has_function_privilege('authenticated','generate_b2b_receivable_secure_impl(uuid)','EXECUTE')"),green)
+    m.pg.sql("CREATE TABLE harness.impl_probe(id uuid PRIMARY KEY,order_id uuid,result jsonb); GRANT INSERT,SELECT ON harness.impl_probe TO authenticated; CREATE FUNCTION harness.impl_carrier() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN NEW.result:=public.generate_b2b_receivable_secure_impl(NEW.order_id); RETURN NEW; END$$; REVOKE ALL ON FUNCTION harness.impl_carrier() FROM PUBLIC,anon,authenticated; CREATE TRIGGER impl_probe BEFORE INSERT ON harness.impl_probe FOR EACH ROW EXECUTE FUNCTION harness.impl_carrier();")
+    h.extra_state_tables.append('harness.impl_probe')
+    def impl_call():return "INSERT INTO harness.impl_probe(id,order_id) VALUES('"+m.uid(950000+len(h.checks))+"','"+order1+"');"
     # FSF is a synthetic buyer tenant explicitly linked to the synthetic partner,
     # never a productive UUID derived from its displayed name.
     m.pg.sql(f"UPDATE organizations SET partner_account_id='{partner}' WHERE id='{m.B}';")
-    reject('RED impl selects buyer tenant ahead of owner',f"SELECT generate_b2b_receivable_secure_impl('{order1}');",('42501','B2B_FINANCIAL_TENANT_MISMATCH'),mode=red)
+    reject('RED impl selects buyer tenant ahead of owner',impl_call(),('42501','B2B_FINANCIAL_TENANT_MISMATCH'),mode=red)
     anchor="""  SELECT count(*), min(o.id::text)::uuid INTO v_org_count,v_org
     FROM public.organizations o WHERE o.partner_account_id=v_order.partner_id;
   -- c2_ord_owner_tenant: cliente comercial sem tenant próprio fatura no tenant dono.
@@ -102,12 +106,12 @@ def exercise(h, metadata):
     corrected=transform('generate_b2b_receivable_secure_impl',anchor,replacement)
     # order approved fixture lacks legitimate terms: reach exact captured gate,
     # not fabricate terms or flip eligible. Capture its real error as BLOCKED.
-    before=h.state();res=h.client(f"SELECT generate_b2b_receivable_secure_impl('{order1}');")
+    before=h.state();res=h.client(impl_call())
     error=h.error_tuple(res)
     h.check('GREEN owner proceeds only to legitimate billing denial',True,error[1].startswith('billing_not_eligible:'),green)
     h.check('GREEN billing denial atomic',before,h.state(),green)
     h.responses.append(dict(test='owner full impl next gate',stderr=res.stderr))
-    reject('GREEN buyer cannot become creditor',f"SELECT generate_b2b_receivable_secure_impl('{order1}');",('42501','B2B_FINANCIAL_TENANT_MISMATCH'),h.V)
+    reject('GREEN buyer cannot become creditor',impl_call(),('42501','B2B_FINANCIAL_TENANT_MISMATCH'),h.V)
     # Fragment projection reuses the captured pre-gate body, scoped independently
     # of denied full billing. It returns identity only, cannot mint any title/ticket.
     boundary='  -- GATE Fase C: elegibilidade server-side'
