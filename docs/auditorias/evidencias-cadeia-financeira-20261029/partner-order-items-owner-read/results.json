@@ -1,0 +1,979 @@
+{
+  "rows": [
+    {
+      "test": "restoration has zero unresolved objects",
+      "status": "PASS",
+      "expected": {
+        "unrestored_functions_views": 0,
+        "defaults_failed": 0,
+        "constraints_failed": 0,
+        "policies_failed": 0,
+        "triggers_failed": 0
+      },
+      "actual": {
+        "unrestored_functions_views": 0,
+        "defaults_failed": 0,
+        "constraints_failed": 0,
+        "policies_failed": 0,
+        "triggers_failed": 0
+      },
+      "note": ""
+    },
+    {
+      "test": "restored items policies equal hosted capture",
+      "status": "PASS",
+      "expected": "3233f822832e8121b0c42aaf572c4ada",
+      "actual": "3233f822832e8121b0c42aaf572c4ada",
+      "note": ""
+    },
+    {
+      "test": "restored phase1_order_visible equals hosted pin",
+      "status": "PASS",
+      "expected": "8504f07fbc3a7975accf919f386d00eb",
+      "actual": "8504f07fbc3a7975accf919f386d00eb",
+      "note": ""
+    },
+    {
+      "test": "fixture control: item INSERT payload valid (privileged, rolled back)",
+      "status": "PASS",
+      "expected": "INS_OK",
+      "actual": "INS_OK",
+      "note": ""
+    },
+    {
+      "test": "baseline persisted nothing",
+      "status": "PASS",
+      "expected": "5f4ce065b40a24379cf7ce39cacadcc4",
+      "actual": "5f4ce065b40a24379cf7ce39cacadcc4",
+      "note": ""
+    },
+    {
+      "test": "baseline DML outcomes only 42501 or row counts (no fixture errors)",
+      "status": "PASS",
+      "expected": {},
+      "actual": {},
+      "note": ""
+    },
+    {
+      "test": "RED baseline: ARBio admin sees zero order and zero items",
+      "status": "PASS",
+      "expected": [
+        "N=0",
+        "N=0"
+      ],
+      "actual": [
+        "N=0",
+        "N=0"
+      ],
+      "note": ""
+    },
+    {
+      "test": "orders-only stage persisted nothing",
+      "status": "PASS",
+      "expected": "5f4ce065b40a24379cf7ce39cacadcc4",
+      "actual": "5f4ce065b40a24379cf7ce39cacadcc4",
+      "note": ""
+    },
+    {
+      "test": "GAP: orders package alone -> admin sees order but still zero items",
+      "status": "PASS",
+      "expected": [
+        "N=1",
+        "N=0"
+      ],
+      "actual": [
+        "N=1",
+        "N=0"
+      ],
+      "note": ""
+    },
+    {
+      "test": "wrong POST pin aborts atomically",
+      "status": "PASS",
+      "expected": [
+        "POST_HELPER_BODY_DRIFT",
+        "f",
+        "3233f822832e8121b0c42aaf572c4ada"
+      ],
+      "actual": [
+        "POST_HELPER_BODY_DRIFT",
+        "f",
+        "3233f822832e8121b0c42aaf572c4ada"
+      ],
+      "note": ""
+    },
+    {
+      "test": "read-only preflight passes (orders installed, items baseline)",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": ""
+    },
+    {
+      "test": "read-only postflight passes after install",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": ""
+    },
+    {
+      "test": "rerun refused",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": ""
+    },
+    {
+      "test": "helper ACL: no PUBLIC/anon",
+      "status": "PASS",
+      "expected": "postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres",
+      "actual": "postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres",
+      "note": ""
+    },
+    {
+      "test": "helper references only partner_orders + owner predicate (no items -> no recursion)",
+      "status": "PASS",
+      "expected": [
+        [
+          "",
+          "b2b_owner_internal_partner_readable"
+        ],
+        [
+          "partner_orders",
+          ""
+        ]
+      ],
+      "actual": [
+        [
+          "",
+          "b2b_owner_internal_partner_readable"
+        ],
+        [
+          "partner_orders",
+          ""
+        ]
+      ],
+      "note": ""
+    },
+    {
+      "test": "partner_orders policies never reference partner_order_items",
+      "status": "PASS",
+      "expected": "0",
+      "actual": "0",
+      "note": ""
+    },
+    {
+      "test": "post-install persisted nothing",
+      "status": "PASS",
+      "expected": "5f4ce065b40a24379cf7ce39cacadcc4",
+      "actual": "5f4ce065b40a24379cf7ce39cacadcc4",
+      "note": ""
+    },
+    {
+      "test": "DML matrix identical to baseline for every actor",
+      "status": "PASS",
+      "expected": {
+        "arbio_admin": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_fin": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "fsf_admin": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_cum_admin_parceiro": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "superadmin": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_gc": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_norole": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_admin_inactive": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "ext_partner_part": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_gestor": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "anon": {}
+      },
+      "actual": {
+        "arbio_admin": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_fin": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "fsf_admin": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_cum_admin_parceiro": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "superadmin": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_gc": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_norole": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_admin_inactive": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "ext_partner_part": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_gestor": {
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "anon": {}
+      },
+      "note": ""
+    },
+    {
+      "test": "items of own partner: only ARBio admin/gestor_comercial newly see (financeiro not in baseline permissive)",
+      "status": "PASS",
+      "expected": {
+        "arbio_admin": "N=1",
+        "arbio_fin": "N=0",
+        "fsf_admin": "N=0",
+        "arbio_cum_admin_parceiro": "N=0",
+        "superadmin": "N=0",
+        "arbio_gc": "N=1",
+        "arbio_norole": "N=0",
+        "arbio_admin_inactive": "N=0",
+        "ext_partner_part": "N=1",
+        "arbio_gestor": "N=0"
+      },
+      "actual": {
+        "arbio_admin": "N=1",
+        "arbio_fin": "N=0",
+        "fsf_admin": "N=0",
+        "arbio_cum_admin_parceiro": "N=0",
+        "superadmin": "N=0",
+        "arbio_gc": "N=1",
+        "arbio_norole": "N=0",
+        "arbio_admin_inactive": "N=0",
+        "ext_partner_part": "N=1",
+        "arbio_gestor": "N=0"
+      },
+      "note": ""
+    },
+    {
+      "test": "ARBio internal actors see zero items of other-tenant order",
+      "status": "PASS",
+      "expected": [
+        "N=0",
+        "N=0",
+        "N=0"
+      ],
+      "actual": [
+        "N=0",
+        "N=0",
+        "N=0"
+      ],
+      "note": ""
+    },
+    {
+      "test": "negative: fsf_admin sees zero ARBio items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "negative: arbio_cum_admin_parceiro sees zero ARBio items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "negative: arbio_norole sees zero ARBio items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "negative: arbio_admin_inactive sees zero ARBio items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "negative: arbio_gestor sees zero ARBio items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "negative: superadmin sees zero ARBio items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "negative: arbio_fin sees zero ARBio items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "external B2B partner path preserved",
+      "status": "PASS",
+      "expected": "N=1",
+      "actual": "N=1",
+      "note": ""
+    },
+    {
+      "test": "anon still zero",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "inactive owner org denies items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "inactive partner denies items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "deleted partner denies items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "inactive profile denies items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "mixed external role added denies items",
+      "status": "PASS",
+      "expected": "N=0",
+      "actual": "N=0",
+      "note": ""
+    },
+    {
+      "test": "positive restored after fixture resets",
+      "status": "PASS",
+      "expected": "N=1",
+      "actual": "N=1",
+      "note": ""
+    },
+    {
+      "test": "hook join items->produtos readable for owner admin (catalog RLS unchanged)",
+      "status": "PASS",
+      "expected": "P=1",
+      "actual": "P=1",
+      "note": ""
+    },
+    {
+      "test": "tenantFSF join on ARBio items returns zero",
+      "status": "PASS",
+      "expected": "P=0",
+      "actual": "P=0",
+      "note": ""
+    },
+    {
+      "test": "items rollback restores exact original items policies",
+      "status": "PASS",
+      "expected": "3233f822832e8121b0c42aaf572c4ada",
+      "actual": "3233f822832e8121b0c42aaf572c4ada",
+      "note": ""
+    },
+    {
+      "test": "items rollback leaves orders package intact",
+      "status": "PASS",
+      "expected": "87776bb912a6157a493cd0488586c7af",
+      "actual": "87776bb912a6157a493cd0488586c7af",
+      "note": ""
+    },
+    {
+      "test": "rollback neutralizes helper",
+      "status": "PASS",
+      "expected": "postgres=X/postgres,service_role=X/postgres",
+      "actual": "postgres=X/postgres,service_role=X/postgres",
+      "note": ""
+    },
+    {
+      "test": "matrix after items rollback equals orders-only stage",
+      "status": "PASS",
+      "expected": {
+        "arbio_admin": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=1",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_fin": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=1",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "fsf_admin": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_cum_admin_parceiro": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "superadmin": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_gc": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=1",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_norole": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_admin_inactive": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "ext_partner_part": {
+          "items_O1": "N=1",
+          "items_O2": "N=0",
+          "orders_O1": "N=1",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_gestor": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "anon": {
+          "items_all": "N=0"
+        }
+      },
+      "actual": {
+        "arbio_admin": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=1",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_fin": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=1",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "fsf_admin": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_cum_admin_parceiro": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "superadmin": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_gc": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=1",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_norole": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_admin_inactive": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "ext_partner_part": {
+          "items_O1": "N=1",
+          "items_O2": "N=0",
+          "orders_O1": "N=1",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "arbio_gestor": {
+          "items_O1": "N=0",
+          "items_O2": "N=0",
+          "orders_O1": "N=0",
+          "insert": "SQLSTATE=42501",
+          "update": "U=0",
+          "update_move": "U=0",
+          "delete": "D=0"
+        },
+        "anon": {
+          "items_all": "N=0"
+        }
+      },
+      "note": ""
+    },
+    {
+      "test": "rollback rerun refused",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "note": ""
+    }
+  ],
+  "pins": {
+    "helper_md5": "262f21fdf51d0a1056508e19830b5519",
+    "post_policies_md5": "97359d2bea70fd0fe650e7cd3f074b46"
+  },
+  "baseline": {
+    "arbio_admin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_fin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "fsf_admin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_cum_admin_parceiro": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "superadmin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_gc": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_norole": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_admin_inactive": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "ext_partner_part": {
+      "items_O1": "N=1",
+      "items_O2": "N=0",
+      "orders_O1": "N=1",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_gestor": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "anon": {
+      "items_all": "N=0"
+    }
+  },
+  "orders_only": {
+    "arbio_admin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=1",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_fin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=1",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "fsf_admin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_cum_admin_parceiro": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "superadmin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_gc": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=1",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_norole": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_admin_inactive": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "ext_partner_part": {
+      "items_O1": "N=1",
+      "items_O2": "N=0",
+      "orders_O1": "N=1",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_gestor": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "anon": {
+      "items_all": "N=0"
+    }
+  },
+  "post": {
+    "arbio_admin": {
+      "items_O1": "N=1",
+      "items_O2": "N=0",
+      "orders_O1": "N=1",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_fin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=1",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "fsf_admin": {
+      "items_O1": "N=0",
+      "items_O2": "N=1",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_cum_admin_parceiro": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "superadmin": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_gc": {
+      "items_O1": "N=1",
+      "items_O2": "N=0",
+      "orders_O1": "N=1",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_norole": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_admin_inactive": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "ext_partner_part": {
+      "items_O1": "N=1",
+      "items_O2": "N=0",
+      "orders_O1": "N=1",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "arbio_gestor": {
+      "items_O1": "N=0",
+      "items_O2": "N=0",
+      "orders_O1": "N=0",
+      "insert": "SQLSTATE=42501",
+      "update": "U=0",
+      "update_move": "U=0",
+      "delete": "D=0"
+    },
+    "anon": {
+      "items_all": "N=0"
+    }
+  }
+}
