@@ -1,7 +1,7 @@
 {
   "ref": "swzpzcwiasxmjutrmvkm",
   "captured_at": "2026-10-29T13:48:21.211787+00:00",
-  "capture_sha256": "b4d8da262a843eb50108657297f0c7e13881e252dab7d43d18b127a207879429",
+  "capture_sha256": "33bbe2abe605544b38c56cef50ac05ebc6ee035b4d02c0daf1da1b295d3ad56d",
   "roots": [
     41637,
     41685,
@@ -25213,7 +25213,7 @@
     "roots": 57,
     "functions": 454,
     "relations": 150,
-    "edges": 4278,
+    "edges": 5826,
     "dynamic_candidates": 13
   },
   "recursive_fixed_point": true,
