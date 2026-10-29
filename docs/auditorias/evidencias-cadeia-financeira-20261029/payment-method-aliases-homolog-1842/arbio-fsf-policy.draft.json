@@ -1,0 +1,179 @@
+{
+  "status": "DRAFT_REVIEW_ONLY",
+  "runtime_enabled": false,
+  "source": {
+    "title": "Política Comercial e Financeira B2B — AR Bio x FSF Agro",
+    "date": "2026-07",
+    "reported_pages": 5,
+    "original_available": false,
+    "basis": "Transcrição fornecida pelo proprietário em 28/10/2026; arquivo original não localizado",
+    "legal_status": "Versão para apresentação comercial — sujeita a validação jurídica e contratual",
+    "contract_in_force_proven": false,
+    "rates_discounts_status": "SUPERADO NAS TAXAS/DESCONTOS"
+  },
+  "scope": {
+    "supplier": "AR Bio",
+    "seller_creditor_invoice_issuer": "AR Bio",
+    "supplier_organization_id_reference": "007bb519-cba0-4704-be2c-cb93ad010048",
+    "buyer": "FSF Agro",
+    "buyer_debtor": "FSF Agro",
+    "parties_decision_status": "OWNER_CONFIRMED_20261029T153600Z_NOT_FISCAL_ACCOUNTING_PROOF",
+    "buyer_scope": "partner",
+    "buyer_role": "revenda",
+    "customer_id": null,
+    "partner_id": null,
+    "create_tenant": false,
+    "create_user": false,
+    "assignment_status": "draft",
+    "identity_resolution": "Exigir parceiro existente do commercial_owner AR Bio; não usar nome, fixture ou tenant FSF legado como autoridade"
+  },
+  "credit": {
+    "approval_scope": [
+      "safra",
+      "parceiro",
+      "pedido"
+    ],
+    "credit_limit": "100000.00",
+    "explicit_numeric_limit_required": true,
+    "missing_null_negative_nan_infinity": "DENY_FINANCE",
+    "explicit_zero_is_unlimited": false,
+    "credit_limit_value_status": "OWNER_DECIDED_OFFLINE_CANDIDATE",
+    "block_if_overdue": true,
+    "order_overdue_tolerance_days": 0,
+    "block_broken_agreement": true,
+    "delivery_block_after_days": 5,
+    "repeated_default_suspends_special_terms": true
+  },
+  "late_payment": {
+    "status": "SUGGESTED_NOT_ENFORCEABLE",
+    "penalty_percent": "2",
+    "monthly_late_interest_percent": "1",
+    "pro_rata_convention": null,
+    "correction_index": null,
+    "prepayment_policy": null
+  },
+  "undefined": {
+    "harvest_minimum_order_amount": null,
+    "correction_index": null,
+    "approval_policy": null,
+    "safra_period_dates": null,
+    "guarantee_evidence_and_sufficiency": null,
+    "holiday_calendar_source": "PARTIAL: Paracatu-MG v2 covers 2026 (decreto 8.035/2025 + leis) and 2027 (cálculo pelas leis recorrentes vigentes em 2026-10-29); 2028+ not covered"
+  },
+  "documents": [
+    "contrato B2B",
+    "pedido formal",
+    "NF",
+    "duplicata/boleto",
+    "aceite"
+  ],
+  "guarantees_examples_not_defaults": [
+    "aval",
+    "confissão de dívida",
+    "nota promissória",
+    "cessão"
+  ],
+  "triangular_operation": "Somente acordo formal; obrigação da revenda independente do produtor",
+  "release_conditions": [
+    "aprovação comercial",
+    "aprovação financeira"
+  ],
+  "historical_price_per_hectare_not_runtime": {
+    "Solo 1": "69",
+    "Solo 2": "84",
+    "BioInseticida 01": "84",
+    "BioInseticida 02": "65",
+    "BioFungicida": "50",
+    "BioInoculante": "25",
+    "BioSolubilizador": "50"
+  },
+  "canonical_targets": [
+    "commercial_payment_plans",
+    "commercial_payment_plan_assignments",
+    "commercial_condition_item_prices",
+    "partner_financial_settings",
+    "partner_order_payment_terms",
+    "partner_order_payment_schedule",
+    "partner_documents"
+  ],
+  "prohibited": [
+    "automatic_apply",
+    "global_default_assignment",
+    "overwrite_other_partners",
+    "new_tenant",
+    "parallel_finance",
+    "price_table_import",
+    "automatic_legal_approval",
+    "live_fixtures"
+  ],
+  "authority": {
+    "single_active_candidate": "active_candidate",
+    "new_plans_may_use_only": "active_candidate",
+    "superseded_models": [
+      "arbio-fsf-policy.full-term-20261028.superseded.json",
+      "arbio-fsf-policy.july2026.historical.json"
+    ],
+    "historical_titles": "never repriced"
+  },
+  "active_candidate": {
+    "status": "OWNER_DECIDED_OFFLINE_CANDIDATE_ONLY",
+    "runtime_enabled": false,
+    "credit_limit": "100000.00",
+    "receivable_generation": "manual_authorized_only",
+    "automatic_generation": "blocked",
+    "installments": {
+      "min": 1,
+      "max": 3,
+      "reject_from": 4
+    },
+    "system": "price_interest_on_outstanding_balance",
+    "rates": {
+      "n1_30d": "0",
+      "n2": "1.8",
+      "n3": "1.8"
+    },
+    "first_due": "nf_issue_date_plus_30_days",
+    "cents_rule": "pmt computed at full precision then rounded half-up; last installment closes balance",
+    "engine": "price-schedule.py",
+    "small_amounts": "plans with zero/negative cents rows rejected PLAN_NOT_REPRESENTABLE_IN_CENTS",
+    "discount_percent": "40",
+    "discount_applied": "once",
+    "creditor_issuer": "AR Bio",
+    "debtor": "FSF Agro",
+    "manual_generation_restarts_term": false,
+    "beyond_3_installments": "REJECT",
+    "long_term_2pct_and_6_12m_bands": "SUPERSEDED_INACTIVE_REFERENCE",
+    "exposure_basis": "financed_total_rounded_sum_of_installments_including_interest",
+    "nominal_calendar": "first nominal = NF issue + 30 days; installment k = same day as first nominal in month +k, last day if shorter (computed from first nominal, no drift)",
+    "business_day_adjustment": "weekend/holiday rolls forward to next business day; no extra interest; adjusted date never shifts nominal anchor",
+    "pro_rata": "none",
+    "holiday_calendar": "explicit versioned official dataset required; locality pinned Paracatu-MG (national + municipal general holidays); no fallback to national-only or other municipality; absent -> CALENDAR_SOURCE_REQUIRED; outside coverage -> CALENDAR_COVERAGE_EXCEEDED for the whole plan",
+    "period_convention": "fixed monthly Price periods",
+    "holiday_calendar_locality": "Paracatu-MG",
+    "holiday_calendar_dataset": "calendars/paracatu-mg-2026-2027.json",
+    "holiday_calendar_dataset_version": "paracatu-mg-2026-2027-v2",
+    "default_payment_method": {
+      "decision": "BOLETO_BANCARIO",
+      "decided_by": "owner",
+      "decided_at": "2026-10-29T18:35Z",
+      "catalog": "public.payment_methods(id,name,active); explicit normalized aliases {\"boleto\",\"boleto bancario\"}, no fuzzy; exactly one ACTIVE row per environment (production|homologation); never invent UUID, activate, or transfer ids across projects",
+      "issuance": "NOT_AUTHORIZED: no boleto emission, bank integration, bank account or credentials",
+      "resolution_status": "BLOCKED: PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG (owner read-only capture 2026-10-29: only AUDIT-AR-20260922 active; must not be reused, nothing created/activated)",
+      "homologation_observation": "vrlcdwmlytukrjezrrnf: active \"Boleto\" resolves — read-only evidence, NOT applied configuration, NOT permission to issue/install"
+    }
+  },
+  "resolved_by_active_candidate": {
+    "installment_count": "1..3",
+    "installment_vs_single_due": "1x single 30d or 2..3 monthly Price",
+    "interest_incidence_schedule": "Price on outstanding balance from first period",
+    "billing_trigger": "manual_authorized_only",
+    "first_due_anchor": "nf_issue_date",
+    "installment_amortization": "Price; last installment closes balance",
+    "credit_exposure_basis": "financed total with interest",
+    "later_dues": "same day following months, month-end clamp",
+    "business_day_rolling": "next business day, no extra interest",
+    "pro_rata": "none",
+    "holiday_calendar_locality": "Paracatu-MG (owner decision 2026-10-29)",
+    "default_payment_method": "Boleto bancário (owner decision 2026-10-29); absent from real catalog"
+  }
+}

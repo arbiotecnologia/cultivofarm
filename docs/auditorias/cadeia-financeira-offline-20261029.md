@@ -113,3 +113,8 @@ Novos: manifesto recursivo, auditor recursivo, runner red/green, teste Vitest, e
 - Ref `swzpzcwiasxmjutrmvkm`, `BEGIN READ ONLY`, sem mutação: única linha ativa `AUDIT-AR-20260922 - Sem transferencia`. Cópia sanitizada (id por sha256) em `payment-methods-readonly-capture-20261029.json`.
 - Blocker atualizado: `PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG` (substitui ROWS_NOT_CAPTURED). Decisão BOLETO mantida; método AUDIT não reutilizado; nada criado/ativado; UUID real não usado como fixture.
 - Motor 376/0 FAIL (PAYMENT_METHOD 14); Vitest 1/1; PG não reexecutado (lógica SQL inalterada). Evidência `payment-method-boleto-catalog-1841/`.
+
+## Complemento 18:42 — aliases explícitos e captura de homologação
+- Resolver aceita só aliases normalizados explícitos `Boleto` e `Boleto Bancário` (sem fuzzy: "Boleto Pix", "Boletos" etc. rejeitados), exige ambiente declarado (production `swzpzcwiasxmjutrmvkm` | homologation `vrlcdwmlytukrjezrrnf`) e exatamente um ativo; ambos aliases ativos → `PAYMENT_METHOD_BOLETO_AMBIGUOUS`.
+- Homologação (captura read-only do proprietário): "Boleto" ativo resolve — evidência de leitura, NÃO configuração aplicada nem permissão de emitir/instalar; UUID sanitizado, nunca transferido para produção.
+- Produção permanece `PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG`. Motor 387/0 FAIL (PAYMENT_METHOD 25); Vitest 1/1; PG não reexecutado (SQL inalterado). Evidência `payment-method-aliases-homolog-1842/`.

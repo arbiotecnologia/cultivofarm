@@ -13,5 +13,6 @@
       "active": true
     }
   ],
-  "result": "PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG"
+  "result": "PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG",
+  "environment": "production"
 }

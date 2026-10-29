@@ -192,15 +192,21 @@ def _norm(t):
     return ' '.join(unicodedata.normalize('NFKD', t).encode('ascii', 'ignore').decode().casefold().split())
 
 
-def resolve_payment_method(policy, catalog_rows):
+PAYMENT_METHOD_ALIASES = frozenset({'boleto', 'boleto bancario'})  # explicit, normalized; no fuzzy
+PAYMENT_METHOD_ENVIRONMENTS = {'production': 'swzpzcwiasxmjutrmvkm', 'homologation': 'vrlcdwmlytukrjezrrnf'}
+
+
+def resolve_payment_method(policy, catalog_rows, environment=None):
     """Resolve the decided default method against a CAPTURED catalog only.
     catalog_rows=None means the rows were never captured (schema-only)."""
     dm = (policy or {}).get('active_candidate', {}).get('default_payment_method') or {}
     if dm.get('decision') != 'BOLETO_BANCARIO':
         raise Rejected('PAYMENT_METHOD_DECISION_REQUIRED')
+    if environment not in PAYMENT_METHOD_ENVIRONMENTS:
+        raise Rejected('PAYMENT_METHOD_ENVIRONMENT_REQUIRED')
     if catalog_rows is None:
         raise Rejected('PAYMENT_METHOD_CATALOG_ROWS_NOT_CAPTURED')
-    hits = [r for r in catalog_rows if isinstance(r, dict) and isinstance(r.get('name'), str) and _norm(r['name']) == 'boleto bancario']
+    hits = [r for r in catalog_rows if isinstance(r, dict) and isinstance(r.get('name'), str) and _norm(r['name']) in PAYMENT_METHOD_ALIASES]
     if not hits:
         raise Rejected('PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG')
     active = [r for r in hits if r.get('active') is True]
@@ -210,7 +216,7 @@ def resolve_payment_method(policy, catalog_rows):
         raise Rejected('PAYMENT_METHOD_BOLETO_AMBIGUOUS')
     if not isinstance(active[0].get('id'), str) or len(active[0]['id']) != 36:
         raise Rejected('PAYMENT_METHOD_ID_INVALID')
-    return active[0]['id']
+    return {'environment': environment, 'id': active[0]['id']}
 
 
 def production_eligibility(*_a, calendar_dataset=None, **_k):
@@ -599,22 +605,36 @@ def run(out=None):
     pm_rel = [r for r in cap['rels'] if r.get('r') == 'payment_methods']
     check('captured payment_methods schema (id,name,active,created_at), no code column', ['id', 'name', 'active', 'created_at'], [c[0] for c in pm_rel[0]['cols']], 'PAYMENT_METHOD')
     check('captured payment_methods has no rows', True, all('rows' not in r and 'data' not in r for r in pm_rel), 'PAYMENT_METHOD')
-    rejects('schema-only capture (None) still rejected', 'PAYMENT_METHOD_CATALOG_ROWS_NOT_CAPTURED', lambda: resolve_payment_method(pol, None), 'PAYMENT_METHOD')
+    rejects('schema-only capture (None) still rejected', 'PAYMENT_METHOD_CATALOG_ROWS_NOT_CAPTURED', lambda: resolve_payment_method(pol, None, 'production'), 'PAYMENT_METHOD')
     rc = json.loads((H / 'payment-methods-readonly-capture-20261029.json').read_text())
     real_rows = [dict(id='SANITIZED-' + r['id_sha256'][:26], name=r['name'], active=r['active']) for r in rc['rows']]
     check('real read-only capture: ref + no mutation + 1 row', ('swzpzcwiasxmjutrmvkm', False, 1), (rc['project_ref'], rc['mutation'], len(rc['rows'])), 'PAYMENT_METHOD')
-    rejects('real catalog: boleto absent (AUDIT not reused)', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, real_rows), 'PAYMENT_METHOD')
+    rejects('real catalog: boleto absent (AUDIT not reused)', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, real_rows, 'production'), 'PAYMENT_METHOD')
     check('decision recorded, pending removed', ('BOLETO_BANCARIO', False), (pol['active_candidate']['default_payment_method']['decision'], 'default_payment_method' in pol['undefined']), 'PAYMENT_METHOD')
     SYNPM = 'deadbeef-0000-4000-8000-00000000b01e'  # SYNTHETIC fixture id, never real
-    check('synthetic active boleto resolves', SYNPM, resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=True, synthetic=True), dict(id='x' * 36, name='PIX', active=True)]), 'PAYMENT_METHOD')
-    check('accent/case/space insensitive', SYNPM, resolve_payment_method(pol, [dict(id=SYNPM, name='  BOLETO   bancario ', active=True)]), 'PAYMENT_METHOD')
-    rejects('synthetic inactive boleto', 'PAYMENT_METHOD_BOLETO_INACTIVE', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=False)]), 'PAYMENT_METHOD')
-    rejects('boleto absent', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='PIX', active=True)]), 'PAYMENT_METHOD')
-    rejects('no fuzzy match "Boleto"', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto', active=True)]), 'PAYMENT_METHOD')
-    rejects('two active boletos ambiguous', 'PAYMENT_METHOD_BOLETO_AMBIGUOUS', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=True), dict(id='e' * 36, name='boleto bancario', active=True)]), 'PAYMENT_METHOD')
-    rejects('empty catalog', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, []), 'PAYMENT_METHOD')
+    check('synthetic active boleto resolves', dict(environment='production', id=SYNPM), resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=True, synthetic=True), dict(id='x' * 36, name='PIX', active=True)], 'production'), 'PAYMENT_METHOD')
+    check('accent/case/space insensitive', dict(environment='production', id=SYNPM), resolve_payment_method(pol, [dict(id=SYNPM, name='  BOLETO   bancario ', active=True)], 'production'), 'PAYMENT_METHOD')
+    rejects('synthetic inactive boleto', 'PAYMENT_METHOD_BOLETO_INACTIVE', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=False)], 'production'), 'PAYMENT_METHOD')
+    rejects('boleto absent', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='PIX', active=True)], 'production'), 'PAYMENT_METHOD')
+    check('alias Boleto accepted', dict(environment='production', id=SYNPM), resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto', active=True)], 'production'), 'PAYMENT_METHOD')
+    rejects('no fuzzy: Boleto Pix', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Pix', active=True)], 'production'), 'PAYMENT_METHOD')
+    rejects('no fuzzy: Boletos', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boletos', active=True)], 'production'), 'PAYMENT_METHOD')
+    rejects('no fuzzy: Boleto-Bancário Express', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto-Bancário Express', active=True)], 'production'), 'PAYMENT_METHOD')
+    rejects('no fuzzy: Pagamento Boleto', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Pagamento Boleto', active=True)], 'production'), 'PAYMENT_METHOD')
+    rejects('both aliases active ambiguous', 'PAYMENT_METHOD_BOLETO_AMBIGUOUS', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto', active=True), dict(id='e' * 36, name='Boleto Bancário', active=True)], 'production'), 'PAYMENT_METHOD')
+    check('alias inactive + other alias active resolves active', dict(environment='production', id=SYNPM), resolve_payment_method(pol, [dict(id='e' * 36, name='Boleto', active=False), dict(id=SYNPM, name='Boleto Bancário', active=True)], 'production'), 'PAYMENT_METHOD')
+    rejects('environment required', 'PAYMENT_METHOD_ENVIRONMENT_REQUIRED', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto', active=True)]), 'PAYMENT_METHOD')
+    rejects('unknown environment', 'PAYMENT_METHOD_ENVIRONMENT_REQUIRED', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto', active=True)], 'staging'), 'PAYMENT_METHOD')
+    hc = json.loads((H / 'payment-methods-readonly-capture-homolog-20261029.json').read_text())
+    check('homolog capture: ref/env/no mutation', ('vrlcdwmlytukrjezrrnf', 'homologation', False), (hc['project_ref'], hc['environment'], hc['mutation']), 'PAYMENT_METHOD')
+    hrows = [dict(id='SANITIZED-' + (r['id_sha256'] or '0' * 26)[:26], name=r['name'], active=r['active']) for r in hc['rows']]
+    hres = resolve_payment_method(pol, hrows, hc['environment'])
+    check('homolog observed: Boleto resolves (evidence only, not applied)', ('homologation', 'SANITIZED-' + hc['rows'][0]['id_sha256'][:26]), (hres['environment'], hres['id']), 'PAYMENT_METHOD')
+    check('production still blocked after homolog evidence', True, rc['environment'] == 'production' and hc['project_ref'] != rc['project_ref'], 'PAYMENT_METHOD')
+    rejects('two active boletos ambiguous', 'PAYMENT_METHOD_BOLETO_AMBIGUOUS', lambda: resolve_payment_method(pol, [dict(id=SYNPM, name='Boleto Bancário', active=True), dict(id='e' * 36, name='boleto bancario', active=True)], 'production'), 'PAYMENT_METHOD')
+    rejects('empty catalog', 'PAYMENT_METHOD_BOLETO_NOT_IN_CATALOG', lambda: resolve_payment_method(pol, [], 'production'), 'PAYMENT_METHOD')
     t = copy.deepcopy(pol); t['active_candidate'].pop('default_payment_method')
-    rejects('decision missing', 'PAYMENT_METHOD_DECISION_REQUIRED', lambda: resolve_payment_method(t, []), 'PAYMENT_METHOD')
+    rejects('decision missing', 'PAYMENT_METHOD_DECISION_REQUIRED', lambda: resolve_payment_method(t, [], 'production'), 'PAYMENT_METHOD')
     elig = production_eligibility(calendar_dataset=REAL)
     check('eligibility with dataset: no generic SOURCE_REQUIRED', False, 'CALENDAR_SOURCE_REQUIRED' in elig['reasons'], 'PRODUCTION_GATE')
     check('eligibility with dataset: coverage reason', True, 'CALENDAR_COVERAGE_LIMITED_TO_2026-01-01..2026-12-31' in elig['reasons'], 'PRODUCTION_GATE')
