@@ -1,0 +1,196 @@
+{
+ "schema": "cultivofarm.holiday-calendar.v1",
+ "version": "paracatu-mg-2026-v1",
+ "locality": "Paracatu-MG",
+ "ibge_locality_note": "Paracatu, Minas Gerais",
+ "kind": "REAL_OFFICIAL_SOURCES",
+ "coverage_start": "2026-01-01",
+ "coverage_end": "2026-12-31",
+ "consulted_on": "2026-10-29",
+ "scope_note": "Feriados gerais (nacionais + municipais). Não inclui feriados forenses, bancários nem pontos facultativos. Federal Corpus Christi é facultativo; aqui é feriado por lei municipal.",
+ "sources": [
+  {
+   "id": "decreto-8035-2025",
+   "url": "https://www.paracatu.mg.gov.br/arquivos/decreto_8_035_12114530.pdf",
+   "note": "Anexo 2026; 3 páginas conferidas visualmente pelo proprietário"
+  },
+  {
+   "id": "noticia-prefeitura",
+   "url": "https://www.paracatu.mg.gov.br/portal/noticias/0/3/3534/confira-o-calendario-de-feriados-e-pontos-facultativos-de-2026"
+  },
+  {
+   "id": "camara-legislacao",
+   "url": "https://www.paracatu.mg.leg.br/legislacao/5",
+   "note": "Lei 3.227/2016 vigente; PDF da Câmara retornou 403, texto indexado oficial usado"
+  },
+  {
+   "id": "lei-2579-2005",
+   "url": "https://www.paracatu.mg.leg.br/html/norma-juridica/4/completo"
+  },
+  {
+   "id": "nacionais-agencia-gov",
+   "url": "https://agenciagov.ebc.com.br/noticias/202512/confira-o-calendario-oficial-de-feriados-nacionais-e-pontos-facultativos-em-2026"
+  }
+ ],
+ "coverage_2027": "NOT_COVERED: decreto 2026 não prova calendário 2027; leis recorrentes não provam completude (novas leis/decreto anual 2027 ausentes); datas 2027 -> CALENDAR_COVERAGE_EXCEEDED",
+ "data": {
+  "holidays": [
+   {
+    "date": "2026-01-01",
+    "name": "Confraternização Universal",
+    "scope": "national",
+    "legal_basis": "Lei federal 662/1949 (red. Lei 10.607/2002); Anexo Decreto municipal 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-04-03",
+    "name": "Sexta-feira da Paixão",
+    "scope": "municipal",
+    "legal_basis": "Lei municipal 2.383/2001; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-04-21",
+    "name": "Tiradentes",
+    "scope": "national",
+    "legal_basis": "Lei federal 662/1949; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-05-01",
+    "name": "Dia do Trabalho",
+    "scope": "national",
+    "legal_basis": "Lei federal 662/1949; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-06-04",
+    "name": "Corpus Christi",
+    "scope": "municipal",
+    "legal_basis": "Lei municipal 2.383/2001 inciso III red. Lei 3.227/2016; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-06-13",
+    "name": "Santo Antônio (padroeiro)",
+    "scope": "municipal",
+    "legal_basis": "Lei municipal 2.383/2001; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-09-07",
+    "name": "Independência do Brasil",
+    "scope": "national",
+    "legal_basis": "Lei federal 662/1949; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-10-12",
+    "name": "Nossa Senhora Aparecida",
+    "scope": "national",
+    "legal_basis": "Lei federal 6.802/1980; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-10-20",
+    "name": "Aniversário de Paracatu",
+    "scope": "municipal",
+    "legal_basis": "Lei municipal 2.579/2005; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-10-31",
+    "name": "Dia da Reforma",
+    "scope": "municipal",
+    "legal_basis": "Lei municipal 2.383/2001; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-11-02",
+    "name": "Finados",
+    "scope": "national",
+    "legal_basis": "Lei federal 662/1949; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-11-15",
+    "name": "Proclamação da República",
+    "scope": "national",
+    "legal_basis": "Lei federal 662/1949; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-11-20",
+    "name": "Dia Nacional de Zumbi e da Consciência Negra",
+    "scope": "national",
+    "legal_basis": "Lei federal 14.759/2023; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   },
+   {
+    "date": "2026-12-25",
+    "name": "Natal",
+    "scope": "national",
+    "legal_basis": "Lei federal 662/1949; Anexo Decreto 8.035/2025",
+    "classification": "FERIADO"
+   }
+  ],
+  "excluded_optional_points": [
+   {
+    "date": "2026-01-02",
+    "classification": "PONTO_FACULTATIVO",
+    "business_day": true
+   },
+   {
+    "date": "2026-02-16",
+    "classification": "PONTO_FACULTATIVO",
+    "business_day": true
+   },
+   {
+    "date": "2026-02-17",
+    "classification": "PONTO_FACULTATIVO",
+    "business_day": true
+   },
+   {
+    "date": "2026-04-02",
+    "classification": "PONTO_FACULTATIVO",
+    "business_day": true
+   },
+   {
+    "date": "2026-04-20",
+    "classification": "PONTO_FACULTATIVO",
+    "business_day": true
+   },
+   {
+    "date": "2026-06-05",
+    "classification": "PONTO_FACULTATIVO",
+    "business_day": true
+   },
+   {
+    "date": "2026-10-30",
+    "classification": "PONTO_FACULTATIVO",
+    "business_day": true
+   },
+   {
+    "date": "2026-12-24",
+    "classification": "PONTO_FACULTATIVO",
+    "business_day": true
+   },
+   {
+    "date": "2026-12-31",
+    "classification": "PONTO_FACULTATIVO",
+    "business_day": true
+   }
+  ],
+  "explicitly_not_holiday": [
+   {
+    "date": "2026-12-08",
+    "name": "Imaculada Conceição",
+    "reason": "Lei 3.227/2016 substituiu no inciso III da Lei 2.383/2001 por Corpus Christi"
+   }
+  ]
+ },
+ "integrity": {
+  "algorithm": "sha256-canonical-json(data)",
+  "sha256": "3f50864a9ec371f84f1aed48c7ae2398568f4c9f3b01f2eb812d175c7c0eb14e"
+ }
+}
