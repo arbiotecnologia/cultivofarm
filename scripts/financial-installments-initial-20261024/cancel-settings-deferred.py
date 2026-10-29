@@ -112,6 +112,14 @@ def exercise(h, metadata):
         order=m.uid(904000+(1 if label=='B' else 0));probe=m.uid(904010+(1 if label=='B' else 0))
         m.pg.sql(f"INSERT INTO partner_orders(id,partner_id,status) VALUES('{order}','{partner}','rascunho'); INSERT INTO harness.delivery_probe(id,partner_order_id,billing_generated_by) VALUES('{probe}','{order}','{actor}');")
         rejected('deferred delivery link missing settings '+label,f"UPDATE harness.delivery_probe SET receivable_id='{m.uid(904020)}' WHERE id='{probe}';",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        rejected('deferred billing wrapper missing settings '+label,f"SELECT generate_b2b_receivable_secure('{order}');",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
+        for column,value,marker in [('internal_origin_snapshot',"'{}'::jsonb",'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED'),('c2_external_origin_snapshot',"'{\"contract\":\"C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1\"}'::jsonb",'C2_ACCOUNTING_PENDING')]:
+            # Markers are denial-only probes, not valid origin/fiscal tickets.
+            m.pg.sql(f"UPDATE partner_orders SET {column}={value} WHERE id='{order}';")
+            try:rejected('deferred preserved '+marker+' '+label,f"SELECT generate_b2b_receivable_secure('{order}');",('42501',marker),actor)
+            finally:m.pg.sql(f"UPDATE partner_orders SET {column}=NULL WHERE id='{order}';")
+    # The auto trigger must reject before generating, while a draft remains possible.
+    m.pg.sql("CREATE TRIGGER auto_probe BEFORE UPDATE ON harness.credit_probe FOR EACH ROW EXECUTE FUNCTION tg_auto_b2b_receivable();")
     m.pg.sql('DELETE FROM partner_orders;')
     # All supplied values must be explicit; no defaulted/null credit or fabricated method.
     anchor=" -- Exact canonical name; method row lock prevents concurrent deactivation through commit."
@@ -161,6 +169,14 @@ def exercise(h, metadata):
         rejected('deferred inactive configuration risk '+label,f"SELECT recalc_partner_risk_score('{partner}');",('P0001','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'),actor)
         expected=m.pg.sql('SELECT to_jsonb(s) FROM partner_financial_settings s WHERE partner_id='+m.q(partner))
         h.check('deferred canonical reactivation '+label,0,h.client(update(partner,values,expected),actor).returncode,mode)
+        # Fully configured does not discharge internal/accounting origin containment.
+        order=m.uid(905000+(1 if label=='B' else 0))
+        m.pg.sql(f"INSERT INTO partner_orders(id,partner_id,status) VALUES('{order}','{partner}','rascunho');")
+        for column,value,marker in [('internal_origin_snapshot',"'{}'::jsonb",'B2B_INTERNAL_DOWNSTREAM_UNVERIFIED'),('c2_external_origin_snapshot',"'{\"contract\":\"C2_EXTERNAL_ORDER_REQUEST_PENDING_ACCOUNTING_V1\"}'::jsonb",'C2_ACCOUNTING_PENDING')]:
+            m.pg.sql(f"UPDATE partner_orders SET {column}={value} WHERE id='{order}';")
+            try:rejected('deferred configured still '+marker+' '+label,f"SELECT generate_b2b_receivable_secure('{order}');",('42501',marker),actor)
+            finally:m.pg.sql(f"UPDATE partner_orders SET {column}=NULL WHERE id='{order}';")
+        m.pg.sql(f"DELETE FROM partner_orders WHERE id='{order}';")
     rejected('deferred anonymous updater',update(m.uid(900002),values),('42501','permission denied for function rpc_update_partner_financial_settings'),None,'anon')
     # Configuration removes only the risk FK blocker, not the origin/fiscal authority.
     part=h.fixture(2050,'receivable',m.A,b2b=True);money=h.amounts(part,'receivable')
