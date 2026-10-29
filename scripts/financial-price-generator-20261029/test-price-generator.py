@@ -54,6 +54,7 @@ def call(payload, uid=U, org=A, staff=True, role='authenticated'):
 def deny(name, sql, code, mode):
     before = state(); err = pg.sql(sql, ok=False)
     check(name, (True, True), (code in err, state() == before), mode)
+    if code not in err: print('   ERR:', err.strip().splitlines()[0][:300])
 
 
 def ok(sql):
@@ -69,7 +70,7 @@ STUB_SETTINGS = f"""CREATE OR REPLACE FUNCTION platform_private.price_payment_se
  SELECT CASE WHEN (p_org,p_customer) IN (('{A}'::uuid,'{C}'::uuid),('{B}'::uuid,'{CB}'::uuid)) THEN jsonb_build_object('credit_limit','100000.00','payment_method_id','{PM}','category_id','{K}','synthetic',true)
  ELSE (SELECT NULL::jsonb FROM (SELECT 1/0) z) END $$;"""  # SYNTHETIC: foreign pair raises
 STUB_EXPOSURE = """CREATE OR REPLACE FUNCTION platform_private.price_credit_exposure(p_org uuid, p_customer uuid) RETURNS numeric LANGUAGE sql STABLE SET search_path='' AS $$
- SELECT coalesce(sum(greatest(i.original_amount+i.interest_amount+i.penalty_amount-i.discount_amount-i.received_amount,0)),0)+coalesce(current_setting('test.extra_exposure',true),'')::text::numeric*0
+ SELECT coalesce(sum(greatest(i.original_amount+i.interest_amount+i.penalty_amount-i.discount_amount-i.received_amount,0)),0)
    + coalesce(nullif(current_setting('test.extra_exposure',true),'')::numeric,0)
  FROM public.accounts_receivable_installments i JOIN public.accounts_receivable r ON r.id=i.receivable_id
  WHERE r.organization_id=p_org AND r.customer_id=p_customer AND i.status NOT IN ('CANCELED','CANCELLED') $$;"""  # SYNTHETIC lower-bound
