@@ -83,6 +83,9 @@ BEGIN
     IF v_rcpt.partner_id IS DISTINCT FROM p_partner_id THEN RAISE EXCEPTION 'IDEMPOTENCY_KEY_REUSED' USING ERRCODE = 'PT409'; END IF;
     -- Replay re-validates CURRENT partner availability/owner and the recorded link before answering.
     SELECT * INTO v_pa FROM public.partner_accounts WHERE id = p_partner_id FOR UPDATE;
+    IF platform_private.partner_client_link_authorize() IS DISTINCT FROM v_org THEN  -- re-check after row-lock wait
+      RAISE EXCEPTION 'cadastro_context_required' USING ERRCODE = '42501';
+    END IF;
     IF NOT FOUND OR v_pa.ativo IS NOT TRUE OR v_pa.deleted_at IS NOT NULL
        OR v_pa.commercial_owner_organization_id IS DISTINCT FROM v_org THEN
       RAISE EXCEPTION 'PARTNER_NOT_AVAILABLE' USING ERRCODE = '42501';
@@ -101,6 +104,9 @@ BEGIN
   END IF;
 
   SELECT * INTO v_pa FROM public.partner_accounts WHERE id = p_partner_id FOR UPDATE;
+  IF platform_private.partner_client_link_authorize() IS DISTINCT FROM v_org THEN  -- re-check after row-lock wait
+    RAISE EXCEPTION 'cadastro_context_required' USING ERRCODE = '42501';
+  END IF;
   -- Uniform denial: unknown, foreign, inactive or deleted partners are indistinguishable.
   IF NOT FOUND OR v_pa.ativo IS NOT TRUE OR v_pa.deleted_at IS NOT NULL
      OR v_pa.commercial_owner_organization_id IS DISTINCT FROM v_org THEN

@@ -192,6 +192,27 @@ def main(out):
     pg.sql("DROP INDEX public.clientes_tenant_document_unique;"  # ADVERSARIAL: index absent/drifted
            f"INSERT INTO public.clientes(organization_id,tipo_pessoa,cpf_cnpj,nome) VALUES('{A}','juridica','{DOC[20]}','DUP1'),('{A}','juridica','{DOC[20][:2]}.{DOC[20][2:]}','DUP2');")
     deny('duplicate normalized documents never pick arbitrary client', call(P(20), 'link-p20-0001'), 'CLIENT_DOCUMENT_AMBIGUOUS', 'REVIEW_UNIQUE')
+    # 9. Replay waits on the PARTNER ROW lock (not the key lock); revocation committed meanwhile -> denied.
+    p = subprocess.Popen(pg.psql(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    p.stdin.write(f"SELECT pg_backend_pid(); BEGIN; SELECT 1 FROM public.partner_accounts WHERE id='{P(1)}' FOR UPDATE; SELECT 'HELD';\n"); p.stdin.flush()
+    lines = []
+    while True:
+        ln = p.stdout.readline()
+        if ln.strip() == 'HELD' or not ln: break
+        lines.append(ln.strip())
+    pg.sql(f"INSERT INTO public.test_user_roles VALUES('{U2}','gestor_comercial','{A}');")  # U2 legit again for this case
+    box = {}
+    th = threading.Thread(target=lambda: box.setdefault('r', subprocess.run(pg.psql(), input=("SET application_name='w-row';" + call(P(1), 'link-fsf-0001', uid=U2)).encode(), capture_output=True))); th.start()
+    blocked = ''
+    for _ in range(100):
+        blocked = pg.sql("SELECT coalesce((SELECT pg_blocking_pids(pid)::text FROM pg_stat_activity WHERE application_name='w-row' AND wait_event_type='Lock' AND wait_event='transactionid'),'')")
+        if blocked: break
+        time.sleep(0.05)
+    check('replay waits on partner row lock (key lock already acquired)', '{%s}' % lines[0], blocked, 'REVOCATION_ROW_WAIT')
+    pg.sql(f"DELETE FROM public.test_user_roles WHERE uid='{U2}';")
+    p.stdin.write("COMMIT;\n"); p.stdin.close(); p.wait(10); th.join(15)
+    check('revoked during row-lock wait: replay denied, result not exposed', (True, False), ('cadastro_context_required' in box['r'].stderr.decode(), 'client_id' in box['r'].stdout.decode()), 'REVOCATION_ROW_WAIT')
+    check('same replay by authorized actor still idempotent', True, ok(call(P(1), 'link-fsf-0001'))['replayed'], 'REVOCATION_ROW_WAIT')
     # 7. immutability + finance stays blocked.
     deny('receipt UPDATE immutable', "UPDATE platform_private.partner_client_link_receipts SET client_created=false;", 'LINK_RECEIPT_IMMUTABLE', 'IMMUTABLE')
     deny('receipt DELETE immutable', "DELETE FROM platform_private.partner_client_link_receipts;", 'LINK_RECEIPT_IMMUTABLE', 'IMMUTABLE')
