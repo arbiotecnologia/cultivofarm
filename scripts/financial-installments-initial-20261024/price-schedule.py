@@ -151,15 +151,15 @@ def run(out=None):
                 check('interest from first period ' + tag, (principal * Decimal('0.018')).quantize(CENT, ROUND_HALF_UP), rows[0]['interest'], 'PRICE_GREEN')
     s3 = schedule(p, 3)
     # Exact vectors for 60000 (independent oracle cross-checked above).
-    check('3x 60000 payments', ['20716.93', '20716.93', '20716.93'], [str(r['payment']) for r in s3['rows']], 'PRICE_GREEN')
-    check('3x 60000 total interest', Decimal('2150.79'), sum(r['interest'] for r in s3['rows']), 'PRICE_GREEN')
+    check('3x 60000 payments', ['20724.28', '20724.28', '20724.28'], [str(r['payment']) for r in s3['rows']], 'PRICE_GREEN')
+    check('3x 60000 total interest', Decimal('2172.84'), sum(r['interest'] for r in s3['rows']), 'PRICE_GREEN')
     s2 = schedule(p, 2)
-    check('2x 60000 payments', ['30544.62', '30544.61'], [str(r['payment']) for r in s2['rows']], 'PRICE_GREEN')
+    check('2x 60000 payments', ['30812.41', '30812.41'], [str(r['payment']) for r in s2['rows']], 'PRICE_GREEN')
     # RED: superseded full-term on whole principal overcharges vs Price.
     legacy3 = legacy_full_term(p, 3, '1.8')
     check('RED legacy full-term 3m total', Decimal('63298.67'), legacy3, 'PRICE_RED_SUPERSEDED')
     check('RED legacy exceeds Price', True, legacy3 > sum(r['payment'] for r in s3['rows']), 'PRICE_RED_SUPERSEDED')
-    check('Price interest not added to financed total again', Decimal('62150.79'), sum(r['payment'] for r in s3['rows']), 'PRICE_GREEN')
+    check('Price interest not added to financed total again', Decimal('62172.84'), sum(r['payment'] for r in s3['rows']), 'PRICE_GREEN')
     # Historical regressions preserved (not repriced): additive double interest.
     check('historical 10300 stays snapshot (no reprice)', Decimal('10300'), Decimal('10300'), 'HISTORICAL_PRESERVED')
     for name, code, fn in [

@@ -1,0 +1,1109 @@
+{
+ "checks": [
+  {
+   "test": "discount 40% once",
+   "expected": "60000.00",
+   "actual": "60000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "discount not compounded twice",
+   "expected": "False",
+   "actual": "False",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 60000.00",
+   "expected": "60000.00",
+   "actual": "60000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 1x 60000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 1x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 1x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 1x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 1x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 1x 60000.00",
+   "expected": "{\"principal\": \"60000.00\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"60000.00\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"60000.00\", \"payment\": \"60000.00\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"60000.00\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"60000.00\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"60000.00\", \"payment\": \"60000.00\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "1x/30d zero interest 1x 60000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 0.07",
+   "expected": "0.07",
+   "actual": "0.07",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 1x 0.07",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 1x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 1x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 1x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 1x 0.07",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 1x 0.07",
+   "expected": "{\"principal\": \"0.07\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"0.07\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"0.07\", \"payment\": \"0.07\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"0.07\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"0.07\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"0.07\", \"payment\": \"0.07\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "1x/30d zero interest 1x 0.07",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 99999.99",
+   "expected": "99999.99",
+   "actual": "99999.99",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 1x 99999.99",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 1x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 1x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 1x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 1x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 1x 99999.99",
+   "expected": "{\"principal\": \"99999.99\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"99999.99\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"99999.99\", \"payment\": \"99999.99\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"99999.99\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"99999.99\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"99999.99\", \"payment\": \"99999.99\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "1x/30d zero interest 1x 99999.99",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 100000.00",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 1x 100000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 1x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 1x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 1x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 1x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 1x 100000.00",
+   "expected": "{\"principal\": \"100000.00\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"100000.00\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"100000.00\", \"payment\": \"100000.00\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"100000.00\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"100000.00\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"100000.00\", \"payment\": \"100000.00\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "1x/30d zero interest 1x 100000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 1x 12345.67",
+   "expected": "12345.67",
+   "actual": "12345.67",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 1x 12345.67",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 1x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 1x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 1x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 1x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 1x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 1x 12345.67",
+   "expected": "{\"principal\": \"12345.67\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"12345.67\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"12345.67\", \"payment\": \"12345.67\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"12345.67\", \"n\": 1, \"rate\": \"0\", \"pmt_exact\": \"12345.67\", \"rows\": [{\"period\": 1, \"interest\": \"0.00\", \"principal\": \"12345.67\", \"payment\": \"12345.67\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "1x/30d zero interest 1x 12345.67",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 60000.00",
+   "expected": "60000.00",
+   "actual": "60000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 2x 60000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 2x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 2x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 2x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 2x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 2x 60000.00",
+   "expected": "{\"principal\": \"60000.00\", \"n\": 2, \"rate\": \"1.8\", \"pmt_exact\": \"30812.408325074331020812685827552031714568880079290\", \"rows\": [{\"period\": 1, \"interest\": \"1080.00\", \"principal\": \"29732.41\", \"payment\": \"30812.41\", \"balance\": \"30267.59\"}, {\"period\": 2, \"interest\": \"544.82\", \"principal\": \"30267.59\", \"payment\": \"30812.41\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"60000.00\", \"n\": 2, \"rate\": \"1.8\", \"pmt_exact\": \"30812.408325074331020812685827552031714568880079290\", \"rows\": [{\"period\": 1, \"interest\": \"1080.00\", \"principal\": \"29732.41\", \"payment\": \"30812.41\", \"balance\": \"30267.59\"}, {\"period\": 2, \"interest\": \"544.82\", \"principal\": \"30267.59\", \"payment\": \"30812.41\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest from first period 2x 60000.00",
+   "expected": "1080.00",
+   "actual": "1080.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 99999.99",
+   "expected": "99999.99",
+   "actual": "99999.99",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 2x 99999.99",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 2x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 2x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 2x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 2x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 2x 99999.99",
+   "expected": "{\"principal\": \"99999.99\", \"n\": 2, \"rate\": \"1.8\", \"pmt_exact\": \"51354.008739722497522299306243805748265609514370670\", \"rows\": [{\"period\": 1, \"interest\": \"1800.00\", \"principal\": \"49554.01\", \"payment\": \"51354.01\", \"balance\": \"50445.98\"}, {\"period\": 2, \"interest\": \"908.03\", \"principal\": \"50445.98\", \"payment\": \"51354.01\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"99999.99\", \"n\": 2, \"rate\": \"1.8\", \"pmt_exact\": \"51354.008739722497522299306243805748265609514370670\", \"rows\": [{\"period\": 1, \"interest\": \"1800.00\", \"principal\": \"49554.01\", \"payment\": \"51354.01\", \"balance\": \"50445.98\"}, {\"period\": 2, \"interest\": \"908.03\", \"principal\": \"50445.98\", \"payment\": \"51354.01\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest from first period 2x 99999.99",
+   "expected": "1800.00",
+   "actual": "1800.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 100000.00",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 2x 100000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 2x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 2x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 2x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 2x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 2x 100000.00",
+   "expected": "{\"principal\": \"100000.00\", \"n\": 2, \"rate\": \"1.8\", \"pmt_exact\": \"51354.013875123885034687809712586719524281466798816\", \"rows\": [{\"period\": 1, \"interest\": \"1800.00\", \"principal\": \"49554.01\", \"payment\": \"51354.01\", \"balance\": \"50445.99\"}, {\"period\": 2, \"interest\": \"908.03\", \"principal\": \"50445.99\", \"payment\": \"51354.02\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"100000.00\", \"n\": 2, \"rate\": \"1.8\", \"pmt_exact\": \"51354.013875123885034687809712586719524281466798816\", \"rows\": [{\"period\": 1, \"interest\": \"1800.00\", \"principal\": \"49554.01\", \"payment\": \"51354.01\", \"balance\": \"50445.99\"}, {\"period\": 2, \"interest\": \"908.03\", \"principal\": \"50445.99\", \"payment\": \"51354.02\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest from first period 2x 100000.00",
+   "expected": "1800.00",
+   "actual": "1800.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 2x 12345.67",
+   "expected": "12345.67",
+   "actual": "12345.67",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 2x 12345.67",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 2x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 2x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 2x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 2x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 2x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 2x 12345.67",
+   "expected": "{\"principal\": \"12345.67\", \"n\": 2, \"rate\": \"1.8\", \"pmt_exact\": \"6339.9970847770069375619425173439048562933597621414\", \"rows\": [{\"period\": 1, \"interest\": \"222.22\", \"principal\": \"6117.78\", \"payment\": \"6340.00\", \"balance\": \"6227.89\"}, {\"period\": 2, \"interest\": \"112.10\", \"principal\": \"6227.89\", \"payment\": \"6339.99\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"12345.67\", \"n\": 2, \"rate\": \"1.8\", \"pmt_exact\": \"6339.9970847770069375619425173439048562933597621414\", \"rows\": [{\"period\": 1, \"interest\": \"222.22\", \"principal\": \"6117.78\", \"payment\": \"6340.00\", \"balance\": \"6227.89\"}, {\"period\": 2, \"interest\": \"112.10\", \"principal\": \"6227.89\", \"payment\": \"6339.99\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest from first period 2x 12345.67",
+   "expected": "222.22",
+   "actual": "222.22",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 60000.00",
+   "expected": "60000.00",
+   "actual": "60000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 3x 60000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 3x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 3x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 3x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 3x 60000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 3x 60000.00",
+   "expected": "{\"principal\": \"60000.00\", \"n\": 3, \"rate\": \"1.8\", \"pmt_exact\": \"20724.281353255253863047928117645672168375064335023\", \"rows\": [{\"period\": 1, \"interest\": \"1080.00\", \"principal\": \"19644.28\", \"payment\": \"20724.28\", \"balance\": \"40355.72\"}, {\"period\": 2, \"interest\": \"726.40\", \"principal\": \"19997.88\", \"payment\": \"20724.28\", \"balance\": \"20357.84\"}, {\"period\": 3, \"interest\": \"366.44\", \"principal\": \"20357.84\", \"payment\": \"20724.28\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"60000.00\", \"n\": 3, \"rate\": \"1.8\", \"pmt_exact\": \"20724.281353255253863047928117645672168375064335023\", \"rows\": [{\"period\": 1, \"interest\": \"1080.00\", \"principal\": \"19644.28\", \"payment\": \"20724.28\", \"balance\": \"40355.72\"}, {\"period\": 2, \"interest\": \"726.40\", \"principal\": \"19997.88\", \"payment\": \"20724.28\", \"balance\": \"20357.84\"}, {\"period\": 3, \"interest\": \"366.44\", \"principal\": \"20357.84\", \"payment\": \"20724.28\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest from first period 3x 60000.00",
+   "expected": "1080.00",
+   "actual": "1080.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 99999.99",
+   "expected": "99999.99",
+   "actual": "99999.99",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 3x 99999.99",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 3x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 3x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 3x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 3x 99999.99",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 3x 99999.99",
+   "expected": "{\"principal\": \"99999.99\", \"n\": 3, \"rate\": \"1.8\", \"pmt_exact\": \"34540.465468045197562537569688088100673013079162527\", \"rows\": [{\"period\": 1, \"interest\": \"1800.00\", \"principal\": \"32740.47\", \"payment\": \"34540.47\", \"balance\": \"67259.52\"}, {\"period\": 2, \"interest\": \"1210.67\", \"principal\": \"33329.80\", \"payment\": \"34540.47\", \"balance\": \"33929.72\"}, {\"period\": 3, \"interest\": \"610.73\", \"principal\": \"33929.72\", \"payment\": \"34540.45\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"99999.99\", \"n\": 3, \"rate\": \"1.8\", \"pmt_exact\": \"34540.465468045197562537569688088100673013079162527\", \"rows\": [{\"period\": 1, \"interest\": \"1800.00\", \"principal\": \"32740.47\", \"payment\": \"34540.47\", \"balance\": \"67259.52\"}, {\"period\": 2, \"interest\": \"1210.67\", \"principal\": \"33329.80\", \"payment\": \"34540.47\", \"balance\": \"33929.72\"}, {\"period\": 3, \"interest\": \"610.73\", \"principal\": \"33929.72\", \"payment\": \"34540.45\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest from first period 3x 99999.99",
+   "expected": "1800.00",
+   "actual": "1800.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 100000.00",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 3x 100000.00",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 3x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 3x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 3x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 3x 100000.00",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 3x 100000.00",
+   "expected": "{\"principal\": \"100000.00\", \"n\": 3, \"rate\": \"1.8\", \"pmt_exact\": \"34540.468922092089771746546862742786947291773891704\", \"rows\": [{\"period\": 1, \"interest\": \"1800.00\", \"principal\": \"32740.47\", \"payment\": \"34540.47\", \"balance\": \"67259.53\"}, {\"period\": 2, \"interest\": \"1210.67\", \"principal\": \"33329.80\", \"payment\": \"34540.47\", \"balance\": \"33929.73\"}, {\"period\": 3, \"interest\": \"610.74\", \"principal\": \"33929.73\", \"payment\": \"34540.47\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"100000.00\", \"n\": 3, \"rate\": \"1.8\", \"pmt_exact\": \"34540.468922092089771746546862742786947291773891704\", \"rows\": [{\"period\": 1, \"interest\": \"1800.00\", \"principal\": \"32740.47\", \"payment\": \"34540.47\", \"balance\": \"67259.53\"}, {\"period\": 2, \"interest\": \"1210.67\", \"principal\": \"33329.80\", \"payment\": \"34540.47\", \"balance\": \"33929.73\"}, {\"period\": 3, \"interest\": \"610.74\", \"principal\": \"33929.73\", \"payment\": \"34540.47\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest from first period 3x 100000.00",
+   "expected": "1800.00",
+   "actual": "1800.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "sum principal 3x 12345.67",
+   "expected": "12345.67",
+   "actual": "12345.67",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "final balance zero 3x 12345.67",
+   "expected": "0.00",
+   "actual": "0.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "payment=interest+principal 3x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest non-increasing 3x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "principal non-decreasing 3x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "oracle pmt 3x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "last installment within n cents of pmt 3x 12345.67",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "replay deterministic 3x 12345.67",
+   "expected": "{\"principal\": \"12345.67\", \"n\": 3, \"rate\": \"1.8\", \"pmt_exact\": \"4264.2523095740464993235819120695774253157163418160\", \"rows\": [{\"period\": 1, \"interest\": \"222.22\", \"principal\": \"4042.03\", \"payment\": \"4264.25\", \"balance\": \"8303.64\"}, {\"period\": 2, \"interest\": \"149.47\", \"principal\": \"4114.78\", \"payment\": \"4264.25\", \"balance\": \"4188.86\"}, {\"period\": 3, \"interest\": \"75.40\", \"principal\": \"4188.86\", \"payment\": \"4264.26\", \"balance\": \"0.00\"}]}",
+   "actual": "{\"principal\": \"12345.67\", \"n\": 3, \"rate\": \"1.8\", \"pmt_exact\": \"4264.2523095740464993235819120695774253157163418160\", \"rows\": [{\"period\": 1, \"interest\": \"222.22\", \"principal\": \"4042.03\", \"payment\": \"4264.25\", \"balance\": \"8303.64\"}, {\"period\": 2, \"interest\": \"149.47\", \"principal\": \"4114.78\", \"payment\": \"4264.25\", \"balance\": \"4188.86\"}, {\"period\": 3, \"interest\": \"75.40\", \"principal\": \"4188.86\", \"payment\": \"4264.26\", \"balance\": \"0.00\"}]}",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "interest from first period 3x 12345.67",
+   "expected": "222.22",
+   "actual": "222.22",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "3x 60000 payments",
+   "expected": "['20724.28', '20724.28', '20724.28']",
+   "actual": "['20724.28', '20724.28', '20724.28']",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "3x 60000 total interest",
+   "expected": "2172.84",
+   "actual": "2172.84",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "2x 60000 payments",
+   "expected": "['30812.41', '30812.41']",
+   "actual": "['30812.41', '30812.41']",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "RED legacy full-term 3m total",
+   "expected": "63298.67",
+   "actual": "63298.67",
+   "mode": "PRICE_RED_SUPERSEDED",
+   "status": "PASS"
+  },
+  {
+   "test": "RED legacy exceeds Price",
+   "expected": "True",
+   "actual": "True",
+   "mode": "PRICE_RED_SUPERSEDED",
+   "status": "PASS"
+  },
+  {
+   "test": "Price interest not added to financed total again",
+   "expected": "62172.84",
+   "actual": "62172.84",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "historical 10300 stays snapshot (no reprice)",
+   "expected": "10300",
+   "actual": "10300",
+   "mode": "HISTORICAL_PRESERVED",
+   "status": "PASS"
+  },
+  {
+   "test": "reject 4 installments",
+   "expected": "INSTALLMENTS_OUT_OF_RANGE",
+   "actual": "INSTALLMENTS_OUT_OF_RANGE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject 0 installments",
+   "expected": "INSTALLMENTS_OUT_OF_RANGE",
+   "actual": "INSTALLMENTS_OUT_OF_RANGE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject bool installments",
+   "expected": "INSTALLMENTS_INVALID",
+   "actual": "INSTALLMENTS_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject float principal",
+   "expected": "PRINCIPAL_FLOAT_FORBIDDEN",
+   "actual": "PRINCIPAL_FLOAT_FORBIDDEN",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject NaN principal",
+   "expected": "PRINCIPAL_NOT_FINITE",
+   "actual": "PRINCIPAL_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject Infinity principal",
+   "expected": "PRINCIPAL_NOT_FINITE",
+   "actual": "PRINCIPAL_NOT_FINITE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject negative principal",
+   "expected": "PRINCIPAL_NOT_POSITIVE",
+   "actual": "PRINCIPAL_NOT_POSITIVE",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject subcent principal",
+   "expected": "PRINCIPAL_SUBCENT",
+   "actual": "PRINCIPAL_SUBCENT",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject limit exceeded",
+   "expected": "LIMIT_EXCEEDED_BLOCK",
+   "actual": "LIMIT_EXCEEDED_BLOCK",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject limit with exposure",
+   "expected": "LIMIT_EXCEEDED_BLOCK",
+   "actual": "LIMIT_EXCEEDED_BLOCK",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject limit NULL",
+   "expected": "CREDIT_LIMIT_REQUIRED",
+   "actual": "CREDIT_LIMIT_REQUIRED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject limit zero not unlimited",
+   "expected": "ZERO_CREDIT_LIMIT",
+   "actual": "ZERO_CREDIT_LIMIT",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject limit NaN",
+   "expected": "CREDIT_LIMIT_INVALID",
+   "actual": "CREDIT_LIMIT_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject limit Infinity",
+   "expected": "CREDIT_LIMIT_INVALID",
+   "actual": "CREDIT_LIMIT_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject limit negative",
+   "expected": "CREDIT_LIMIT_INVALID",
+   "actual": "CREDIT_LIMIT_INVALID",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject automatic generation",
+   "expected": "AUTO_GENERATION_BLOCKED",
+   "actual": "AUTO_GENERATION_BLOCKED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject automatic generation replay",
+   "expected": "AUTO_GENERATION_BLOCKED",
+   "actual": "AUTO_GENERATION_BLOCKED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject calendar anchor undecided",
+   "expected": "CALENDAR_ANCHOR_UNDECIDED",
+   "actual": "CALENDAR_ANCHOR_UNDECIDED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject calendar pro-rata undecided",
+   "expected": "CALENDAR_RULE_UNDECIDED",
+   "actual": "CALENDAR_RULE_UNDECIDED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject calendar business-day undecided",
+   "expected": "CALENDAR_RULE_UNDECIDED",
+   "actual": "CALENDAR_RULE_UNDECIDED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "reject manual click is not base date",
+   "expected": "BASE_DATE_REQUIRED",
+   "actual": "BASE_DATE_REQUIRED",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "exact limit accepted",
+   "expected": "100000.00",
+   "actual": "100000.00",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  },
+  {
+   "test": "CALENDAR_CANDIDATE dates from 2026-01-01",
+   "expected": "['2026-01-31', '2026-02-28', '2026-03-31']",
+   "actual": "['2026-01-31', '2026-02-28', '2026-03-31']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "CALENDAR_CANDIDATE dates from 2027-12-31",
+   "expected": "['2028-01-30', '2028-02-29', '2028-03-30']",
+   "actual": "['2028-01-30', '2028-02-29', '2028-03-30']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "CALENDAR_CANDIDATE dates from 2026-01-29",
+   "expected": "['2026-02-28', '2026-03-28', '2026-04-28']",
+   "actual": "['2026-02-28', '2026-03-28', '2026-04-28']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "CALENDAR_CANDIDATE dates from 2026-12-02",
+   "expected": "['2027-01-01', '2027-02-01', '2027-03-01']",
+   "actual": "['2027-01-01', '2027-02-01', '2027-03-01']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "CALENDAR_CANDIDATE dates from 2026-03-01",
+   "expected": "['2026-03-31', '2026-04-30', '2026-05-31']",
+   "actual": "['2026-03-31', '2026-04-30', '2026-05-31']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "CALENDAR_CANDIDATE dates from 2023-12-31",
+   "expected": "['2024-01-30', '2024-02-29', '2024-03-30']",
+   "actual": "['2024-01-30', '2024-02-29', '2024-03-30']",
+   "mode": "CALENDAR_CANDIDATE_ONLY",
+   "status": "PASS"
+  },
+  {
+   "test": "candidate periods independent of dates",
+   "expected": "[{'period': 1, 'interest': Decimal('1080.00'), 'principal': Decimal('19644.28'), 'payment': Decimal('20724.28'), 'balance': Decimal('40355.72')}, {'period': 2, 'interest': Decimal('726.40'), 'principal': Decimal('19997.88'), 'payment': Decimal('20724.28'), 'balance': Decimal('20357.84')}, {'period': 3, 'interest': Decimal('366.44'), 'principal': Decimal('20357.84'), 'payment': Decimal('20724.28'), 'balance': Decimal('0.00')}]",
+   "actual": "[{'period': 1, 'interest': Decimal('1080.00'), 'principal': Decimal('19644.28'), 'payment': Decimal('20724.28'), 'balance': Decimal('40355.72')}, {'period': 2, 'interest': Decimal('726.40'), 'principal': Decimal('19997.88'), 'payment': Decimal('20724.28'), 'balance': Decimal('20357.84')}, {'period': 3, 'interest': Decimal('366.44'), 'principal': Decimal('20357.84'), 'payment': Decimal('20724.28'), 'balance': Decimal('0.00')}]",
+   "mode": "PRICE_GREEN",
+   "status": "PASS"
+  }
+ ],
+ "summary": {
+  "PRICE_GREEN": {
+   "PASS": 146
+  },
+  "PRICE_RED_SUPERSEDED": {
+   "PASS": 2
+  },
+  "HISTORICAL_PRESERVED": {
+   "PASS": 1
+  },
+  "CALENDAR_CANDIDATE_ONLY": {
+   "PASS": 6
+  }
+ },
+ "blocked": [
+  "Composed PG chain with Price: captured generators implement no Price schedule and billing stays denied (PAYMENT_TERMS_NOT_DEFINED, C2_ACCOUNTING_PENDING, B2B_INTERNAL_DOWNSTREAM_UNVERIFIED)",
+  "Calendar anchor event, irregular/pro-rata period and business-day rolling undecided",
+  "Fiscal/accounting provenance and real JWT/RLS A/B"
+ ],
+ "fail": 0
+}
