@@ -12,7 +12,7 @@ r = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(r)
 m = r.m
 OUT = m.ROOT/'docs/auditorias/evidencias-cadeia-financeira-20261029/cancel-authorization'
-checks, pins, omitted_policies = [], [], []
+checks, pins, omitted_policies, responses = [], [], [], []
 V = m.uid(900001)
 
 def check(name, expected, actual, mode='CAPTURED'):
@@ -75,6 +75,7 @@ def call(part,kind): return f"SELECT rpc_cancel_financial_installment('{part}','
 
 def denied(name, sql, marker, actor=m.U, role='authenticated', mode='CAPTURED'):
     before = state(); result = client(sql,actor,role)
+    responses.append(dict(test=name,returncode=result.returncode,stderr=result.stderr))
     check(name,True,result.returncode!=0 and marker in result.stderr and state()==before,mode)
     return result.stderr
 
@@ -90,6 +91,13 @@ def fixture(n, kind, org, status='OPEN', b2b=False):
         title,part=m.uid(n+20000),m.uid(n+40000)
         m.pg.sql(f"INSERT INTO accounts_payable(id,description,category_id,total_amount,first_due_date,created_by,organization_id) VALUES('{title}','LOCAL','{m.K}',10300,CURRENT_DATE+30,'{m.U}','{org}'); INSERT INTO accounts_payable_installments(id,payable_id,installment_number,due_date,original_amount,net_amount,organization_id) VALUES('{part}','{title}',1,CURRENT_DATE+30,10300,10300,'{org}');")
     if status!='OPEN': m.pg.sql(f"UPDATE accounts_{kind}_installments SET status='{status}' WHERE id='{part}';")
+    return part
+
+def paid_fixture(n,kind,org):
+    part=fixture(n,kind,org)
+    field='amount_received' if kind=='receivable' else 'amount_paid'
+    m.pg.sql(f"INSERT INTO {'receivable' if kind=='receivable' else 'payable'}_payments(installment_id,{field},payment_method_id,created_by,organization_id) VALUES('{part}',1000,'{m.PM}','{m.U}','{org}');")
+    if kind=='payable': m.pg.sql(f"UPDATE accounts_payable_installments SET status='PARTIAL',paid_amount=1000 WHERE id='{part}';")
     return part
 
 def main():
@@ -131,11 +139,17 @@ def main():
         result=client(f"UPDATE accounts_{kind}_installments SET status='CANCELED' WHERE id='{own}' RETURNING id;")
         check(kind+' direct own UPDATE closed',True,result.returncode==0 and own not in result.stdout and state()==before)
         check(kind+' own client RPC accepted',0,client(call(own,kind)).returncode)
+        check(kind+' own status persisted','CANCELED',m.pg.sql(f"SELECT status FROM accounts_{kind}_installments WHERE id='{own}'"))
+        check(kind+' exactly one cancellation audit','1',m.pg.sql(f"SELECT count(*) FROM financial_audit_log WHERE entity_id='{own}' AND action='INSTALLMENT_CANCELED' AND performed_by='{m.U}'"))
         denied(kind+' replay no extra audit',call(own,kind),'já cancelada')
         denied(kind+' foreign OPEN tenant guard atomic',call(foreign,kind),'tenant_scope_violation')
         denied(kind+' anon ACL closed',call(foreign,kind),'permission denied',None,'anon')
         denied(kind+' empty identity denied',call(foreign,kind),'Sem permissão',None)
         denied(kind+' nonexistent identity denied',call(foreign,kind),'Sem permissão',m.uid(999999))
+        denied(kind+' malformed identity denied',call(foreign,kind),'invalid input syntax','not-a-uuid')
+        m.pg.sql(f"UPDATE organizations SET ativo=false WHERE id='{m.A}';")
+        denied(kind+' revoked organization denies before mutation',call(foreign,kind),'tenant_context_required')
+        m.pg.sql(f"UPDATE organizations SET ativo=true WHERE id='{m.A}';")
         m.pg.sql(f"UPDATE profiles SET ativo=false WHERE user_id='{m.U}';")
         denied(kind+' revoked profile denied',call(foreign,kind),'Sem permissão')
         m.pg.sql(f"UPDATE profiles SET ativo=true WHERE user_id='{m.U}'; DELETE FROM user_roles WHERE user_id='{m.U}';")
@@ -144,6 +158,10 @@ def main():
         check(kind+' B own accepted',0,client(call(foreign,kind),V).returncode)
         denied(kind+' RED foreign canceled leaks status',call(foreign,kind),'já cancelada',mode='RED_ORACLE_REPRODUCED')
         denied(kind+' RED nonexistent distinguishable',call(m.uid(999998),kind),'não encontrada',mode='RED_ORACLE_REPRODUCED')
+        active=paid_fixture(980+(10 if kind=='payable' else 0),kind,m.A)
+        denied(kind+' own active payment preserved',call(active,kind),'não estornados')
+        active=paid_fixture(981+(10 if kind=='payable' else 0),kind,m.B)
+        denied(kind+' RED foreign active payment oracle',call(active,kind),'não estornados',mode='RED_ORACLE_REPRODUCED')
     before=state()
     try:
         fixture(930,'receivable',m.A,b2b=True)
@@ -176,10 +194,12 @@ def main():
         own=fixture(960+(10 if kind=='payable' else 0),kind,m.A)
         check(kind+' GREEN own preserved',0,client(call(own,kind)).returncode,'GREEN_OFFLINE_ONLY')
         denied(kind+' GREEN replay preserved',call(own,kind),'já cancelada',mode='GREEN_OFFLINE_ONLY')
+        active=paid_fixture(982+(10 if kind=='payable' else 0),kind,m.A)
+        denied(kind+' GREEN own payment branch preserved',call(active,kind),'não estornados',mode='GREEN_OFFLINE_ONLY')
     OUT.mkdir(parents=True,exist_ok=True)
     (OUT/'rpc-captured.txt').write_text(rpc['body'])
     (OUT/'rpc-offline-transformation.diff').write_text(''.join(__import__('difflib').unified_diff(rpc['body'].splitlines(True),body.splitlines(True),fromfile='captured',tofile='offline-not-installable')))
-    result=dict(counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL']},checks=checks,pins=pins,
+    result=dict(counts={s:sum(c['status']==s for c in checks) for s in ['PASS','FAIL']},checks=checks,pins=pins,responses=responses,
         captured_manifest_sha256=hashlib.sha256((H/'receivable-recursive-live-20261029.json').read_bytes()).hexdigest(),
         transformed_body_md5=hashlib.md5(body.encode()).hexdigest(),
         omitted_policies=omitted_policies,
