@@ -44,6 +44,14 @@ bun run test --maxWorkers=1 --no-file-parallelism src/test/financeiro/cancelAuth
 
 ## Próxima intervenção exata e limites
 
+### Suplemento15:58 — discrepância de empacotamento, sem nova execução
+
+Revisão do commit `6107d3fbe0c47bc74c431d3a25779a79edfbd812`: o proprietário reportou `read_file`404 para `vitest-final.log`, apesar da entrada noSHA256SUMS. Conferência `git ls-files` e `git ls-tree` confirmou **11/28 entradas do manifesto no commit;17/28 logs ausentes**, ignorados por `*.log`. Portanto, o manifesto anterior certificava bytes locais, não disponibilidade versionada; sua declaração de logs preservados não significava acessibilidade pelo commit.
+
+Os17originais ainda existem localmente e todos coincidem comSHA256 do manifesto original. Cópias byte a byte `.txt` em **`evidencias-cadeia-financeira-20261029/cancel-authorization-revision-1536-git-supplement-1558/logs/`**, incluindo `vitest-final.txt`, `postgres.txt`, `monetary.txt`, `provenance.txt` e tentativas. Nenhuma execução nova, nenhum log inventado, nenhum byte ausente do commit alegado recuperado. Originais e manifests históricos intactos.
+
+`source-manifest-reconciliation.json` registra presença/ausência de cada entrada no commit revisado e correspondência local/cópia; `SHA256SUMS.versioned` é o suplemento, exclui arquivos não rastreados e não altera oSHA256SUMS histórico. `check-git-tree.py <commit>` verifica existência **e bytes de blobs do commit**, não apenas disco. Suplemento confere as11evidências originais versionadas e as cópias novas; auto-manifest não incluído para evitar referência circular. Limite/gatilho/calendário aguardam resposta humana; nenhum ajuste funcional/runtime/produção nesta entrega.
+
 Não falta decidir vendedor/comprador, limite obrigatório nem cadastro posterior. Falta **fornecer limite numérico real autorizado e condições canônicas vinculáveis ao pedido**: calendário/dias fracionários, quantidade/distribuição/amortização das parcelas e gatilho de faturamento. A fixture usa manual/20.000 apenas como dados sintéticos, não decisões comerciais. Sem esses contratos, não fabricar PAYMENT_TERMS para tornar gate positivo.
 
 Separadamente, evidência externa ainda necessária: origem canônica credor/owner/cliente; emitente fiscal vinculado ao mesmo credor e destinatário/devedor corretos; razão/BI/proveniência e consumidores integrais; full order/RLS/trigger/FKs/ledger; revisão e homologaçãoJWT/RLS/PostgRESTA/B autorizada. `C2_ACCOUNTING_PENDING` e `B2B_INTERNAL_DOWNSTREAM_UNVERIFIED` intactos. Nenhum positivo contábil/fiscal, cobrança ou remediação histórica. **NO-GO de produção.**
