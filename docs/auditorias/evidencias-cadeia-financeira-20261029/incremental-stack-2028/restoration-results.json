@@ -185,83 +185,32 @@
     }
   ],
   "policies_failed": [],
-  "triggers_failed": [
+  "triggers_failed": [],
+  "preflight": "PASS",
+  "installer_tests": [
     {
-      "object": "\"auth\".\"users\".a00_cf_user_gate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+      "test": "wrong preflight aborts installer",
+      "status": "PASS"
     },
     {
-      "object": "\"auth\".\"users\".a00_cf_user_no_truncate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+      "test": "wrong POST atomically rolls back DDL",
+      "status": "PASS"
     },
     {
-      "object": "\"public\".\"user_clientes\".a00_cf_user_gate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+      "test": "complete installer COMMIT",
+      "status": "PASS"
     },
     {
-      "object": "\"public\".\"user_clientes\".a00_cf_user_no_truncate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+      "test": "complete postflight",
+      "status": "PASS"
     },
     {
-      "object": "\"public\".\"user_clientes\".z90_cf_touch_profile",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+      "test": "rerun refused",
+      "status": "PASS"
     },
     {
-      "object": "\"public\".\"platform_org_admin_invites\".a00_cf_invitation_gate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"platform_org_admin_invites\".a00_cf_invitation_no_truncate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"platform_org_admin_invites\".z90_cf_invitation_profile_stamp",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"partner_users\".a00_cf_user_gate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"partner_users\".a00_cf_user_no_truncate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"partner_users\".z90_cf_touch_profile",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"profiles\".a00_cf_user_gate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"profiles\".a00_cf_user_no_truncate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"profiles\".z99_cf_profile_stamp",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"profiles\".z99_cf_require_admin",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"user_roles\".a00_cf_user_gate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"user_roles\".a00_cf_user_no_truncate",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"user_roles\".z90_cf_touch_profile",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
-    },
-    {
-      "object": "\"public\".\"user_roles\".z99_cf_require_admin",
-      "error": "ERROR:  schema \"cf_user_guards_v1\" does not exist\n"
+      "test": "deny-only containment survives body drift",
+      "status": "PASS"
     }
-  ],
-  "preflight": "PASS"
+  ]
 }
