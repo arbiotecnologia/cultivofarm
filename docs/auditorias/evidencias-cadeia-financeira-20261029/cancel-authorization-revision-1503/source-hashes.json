@@ -1,0 +1,5 @@
+{
+  "scripts/financial-installments-initial-20261024/cancel-settings-deferred.py": "77a1e7e96a0cc3417ce1309629e330012d80ea2bb9a9255cdf1a0280a0248af0",
+  "scripts/financial-installments-initial-20261024/test-cancel-authorization.py": "35db71ebe29d9e5204250c3eb1d066e25c5dffb5b000d9431a83384fac756888",
+  "src/test/financeiro/cancelAuthorizationPostgres.test.ts": "50d54128baeee39d4faa64f6af9f38ed1e6c2048201067ab6a93757cc0b2ac9c"
+}

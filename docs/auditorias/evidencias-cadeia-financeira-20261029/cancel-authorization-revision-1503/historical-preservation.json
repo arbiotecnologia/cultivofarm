@@ -1,0 +1,26 @@
+{
+  "changed_since_before": [
+    "scripts/financial-installments-initial-20261024/test-cancel-authorization.py",
+    "src/test/financeiro/cancelAuthorizationPostgres.test.ts",
+    "docs/auditorias/cancelamento-parcela-autorizacao-20261029.md",
+    "docs/auditorias/cancelamento-parcela-autorizacao-20261029.md",
+    "scripts/financial-installments-initial-20261024/test-cancel-authorization.py",
+    "src/test/financeiro/cancelAuthorizationPostgres.test.ts",
+    ".lovable/plan/plano-de-corre\u00e7\u00e3o-do-fluxo-de-pedido-b2b-por-etapas-2026-10-27.md",
+    "docs/auditorias/cadeia-financeira-offline-20261029.md",
+    "docs/auditorias/cancelamento-parcela-autorizacao-20261029.md",
+    "scripts/financial-installments-initial-20261024/test-cancel-authorization.py",
+    "src/test/financeiro/cancelAuthorizationPostgres.test.ts",
+    ".lovable/plan/plano-de-corre\u00e7\u00e3o-do-fluxo-de-pedido-b2b-por-etapas-2026-10-27.md",
+    "docs/auditorias/cancelamento-parcela-autorizacao-20261029.md",
+    "roadmap.md",
+    "scripts/financial-installments-initial-20261024/test-cancel-authorization.py",
+    "src/test/financeiro/cancelAuthorizationPostgres.test.ts"
+  ],
+  "historical_evidence_changed": [],
+  "after_counts": {
+    "OK": 64,
+    "MISMATCH": 19,
+    "MISSING": 4
+  }
+}

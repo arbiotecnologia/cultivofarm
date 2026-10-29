@@ -25,10 +25,15 @@ checks, pins, omitted_policies, responses = [], [], [], []
 V = m.uid(900001)
 
 def check(name, expected, actual, mode='CAPTURED'):
+    # Compare complete states first; persist hashes instead of repeated multi-MB JSON.
+    equal = expected == actual
+    if isinstance(expected,str) and isinstance(actual,str) and max(len(expected),len(actual))>2000:
+        expected='sha256:'+hashlib.sha256(expected.encode()).hexdigest()
+        actual='sha256:'+hashlib.sha256(actual.encode()).hexdigest()
     row = dict(test=name, expected=str(expected), actual=str(actual), mode=mode,
-               status='PASS' if expected == actual else 'FAIL')
+               status='PASS' if equal else 'FAIL')
     checks.append(row)
-    assert expected == actual, row
+    assert equal, row
 
 def relation(name):
     return next(x for x in r.live['relations'] if x['schema']=='public' and x['name']==name)
@@ -383,6 +388,9 @@ def main():
     risk_spec=importlib.util.spec_from_file_location('cancel_risk',H/'cancel-risk-composition.py')
     risk=importlib.util.module_from_spec(risk_spec);risk_spec.loader.exec_module(risk)
     risk_metadata=risk.compose(sys.modules[__name__]);risk.exercise(sys.modules[__name__],risk_metadata)
+    deferred_spec=importlib.util.spec_from_file_location('cancel_deferred',H/'cancel-settings-deferred.py')
+    deferred=importlib.util.module_from_spec(deferred_spec);deferred_spec.loader.exec_module(deferred)
+    deferred.exercise(sys.modules[__name__],risk_metadata)
     for kind in ['receivable','payable']:
         part=fixture(1700+(10 if kind=='payable' else 0),kind,m.A);before=amounts(part,kind)
         unrelated=state()

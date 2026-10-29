@@ -1,0 +1,192 @@
+--- tg_create_default_pfs() captured
++++ sandbox-only
+@@ -5,7 +5,6 @@
+  SET search_path TO 'public'
+ AS $function$
+ BEGIN
+-  INSERT INTO public.partner_financial_settings(partner_id) VALUES (NEW.id)
+-  ON CONFLICT (partner_id) DO NOTHING;
++  -- Decision: no financial provisioning at registration. Canonical CAS configures later.
+   RETURN NEW;
+ END $function$
+
+--- recalc_partner_risk_score(uuid) captured
++++ sandbox-only
+@@ -24,6 +24,17 @@
+   END IF;
+ 
+   IF p_partner_id IS NULL THEN RAISE EXCEPTION 'partner_id required'; END IF;
++ IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(p_partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
++      WHERE s.partner_id=p_partner_id AND s.active IS TRUE
++      AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
++      AND s.default_payment_method IS NOT NULL AND s.credit_limit IS NOT NULL
++      AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity') AND s.credit_limit>=0
++      AND s.block_if_overdue IS NOT NULL AND s.auto_generate_receivable IS NOT NULL
++      AND s.credit_limit_action IS NOT NULL AND s.overdue_tolerance_days IS NOT NULL
++      AND s.credit_alert_threshold_1 IS NOT NULL AND s.credit_alert_threshold_2 IS NOT NULL
++      AND (SELECT count(*) FROM public.payment_methods pm
++           WHERE pm.name=s.default_payment_method AND pm.active IS TRUE)=1) THEN RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001'; END IF;
+ 
+   SELECT COALESCE(AVG(GREATEST(0, CURRENT_DATE - ari.due_date)),0)::numeric,
+          COUNT(*) FILTER (WHERE ari.status='OVERDUE' OR (ari.status IN ('OPEN','PARTIAL') AND ari.due_date < CURRENT_DATE))
+
+--- fn_b2b_credit_exposure(uuid,numeric,uuid) captured
++++ sandbox-only
+@@ -15,6 +15,17 @@
+          COALESCE(block_if_overdue,false), COALESCE(credit_limit_action,'block')
+     INTO v_limit, v_tolerance, v_block, v_action
+   FROM public.partner_financial_settings WHERE partner_id = p_partner_id;
++  IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(p_partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
++      WHERE s.partner_id=p_partner_id AND s.active IS TRUE
++      AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
++      AND s.default_payment_method IS NOT NULL AND s.credit_limit IS NOT NULL
++      AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity') AND s.credit_limit>=0
++      AND s.block_if_overdue IS NOT NULL AND s.auto_generate_receivable IS NOT NULL
++      AND s.credit_limit_action IS NOT NULL AND s.overdue_tolerance_days IS NOT NULL
++      AND s.credit_alert_threshold_1 IS NOT NULL AND s.credit_alert_threshold_2 IS NOT NULL
++      AND (SELECT count(*) FROM public.payment_methods pm
++           WHERE pm.name=s.default_payment_method AND pm.active IS TRUE)=1) THEN RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001'; END IF;
+   v_limit := COALESCE(v_limit,0); v_tolerance := COALESCE(v_tolerance,0);
+   v_block := COALESCE(v_block,false); v_action := COALESCE(v_action,'block');
+ 
+
+--- tg_partner_orders_credit_guard() captured
++++ sandbox-only
+@@ -9,6 +9,20 @@
+   v_amount numeric(14,2);
+   v_should_check boolean := false;
+ BEGIN
++
++  IF NEW.status IN ('pendente','solicitado','aguardando_ajuste_comercial','aguardando_itens','em_analise_comercial','aprovado','aguardando_aprovacao_credito','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') OR NEW.credit_approved_by IS NOT NULL THEN
++    IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(NEW.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
++      WHERE s.partner_id=NEW.partner_id AND s.active IS TRUE
++      AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
++      AND s.default_payment_method IS NOT NULL AND s.credit_limit IS NOT NULL
++      AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity') AND s.credit_limit>=0
++      AND s.block_if_overdue IS NOT NULL AND s.auto_generate_receivable IS NOT NULL
++      AND s.credit_limit_action IS NOT NULL AND s.overdue_tolerance_days IS NOT NULL
++      AND s.credit_alert_threshold_1 IS NOT NULL AND s.credit_alert_threshold_2 IS NOT NULL
++      AND (SELECT count(*) FROM public.payment_methods pm
++           WHERE pm.name=s.default_payment_method AND pm.active IS TRUE)=1) THEN RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001'; END IF;
++  END IF;
+   IF TG_OP = 'INSERT' THEN
+     IF NEW.status NOT IN ('rascunho') THEN v_should_check := true; END IF;
+   ELSIF TG_OP = 'UPDATE' THEN
+
+--- tg_auto_b2b_receivable() captured
++++ sandbox-only
+@@ -8,6 +8,20 @@
+   v_settings record;
+   v_should boolean := false;
+ BEGIN
++
++  IF NEW.status IN ('pendente','solicitado','aguardando_ajuste_comercial','aguardando_itens','em_analise_comercial','aprovado','aguardando_aprovacao_credito','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') THEN
++    IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(NEW.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
++      WHERE s.partner_id=NEW.partner_id AND s.active IS TRUE
++      AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
++      AND s.default_payment_method IS NOT NULL AND s.credit_limit IS NOT NULL
++      AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity') AND s.credit_limit>=0
++      AND s.block_if_overdue IS NOT NULL AND s.auto_generate_receivable IS NOT NULL
++      AND s.credit_limit_action IS NOT NULL AND s.overdue_tolerance_days IS NOT NULL
++      AND s.credit_alert_threshold_1 IS NOT NULL AND s.credit_alert_threshold_2 IS NOT NULL
++      AND (SELECT count(*) FROM public.payment_methods pm
++           WHERE pm.name=s.default_payment_method AND pm.active IS TRUE)=1) THEN RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001'; END IF;
++  END IF;
+   SELECT * INTO v_settings FROM public.partner_financial_settings WHERE partner_id = NEW.partner_id AND active = true;
+   IF NOT FOUND OR NOT v_settings.auto_generate_receivable THEN RETURN NEW; END IF;
+   IF NEW.receivable_generated THEN RETURN NEW; END IF;
+
+--- fn_b2b_order_billing_eligibility(uuid) captured
++++ sandbox-only
+@@ -8,6 +8,17 @@
+ BEGIN
+   SELECT * INTO v_order FROM public.partner_orders WHERE id = p_partner_order_id;
+   IF NOT FOUND THEN RETURN jsonb_build_object('eligible',false,'reason_code','ORDER_NOT_FOUND'); END IF;
++IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(v_order.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
++      WHERE s.partner_id=v_order.partner_id AND s.active IS TRUE
++      AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
++      AND s.default_payment_method IS NOT NULL AND s.credit_limit IS NOT NULL
++      AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity') AND s.credit_limit>=0
++      AND s.block_if_overdue IS NOT NULL AND s.auto_generate_receivable IS NOT NULL
++      AND s.credit_limit_action IS NOT NULL AND s.overdue_tolerance_days IS NOT NULL
++      AND s.credit_alert_threshold_1 IS NOT NULL AND s.credit_alert_threshold_2 IS NOT NULL
++      AND (SELECT count(*) FROM public.payment_methods pm
++           WHERE pm.name=s.default_payment_method AND pm.active IS TRUE)=1) THEN RETURN jsonb_build_object('eligible',false,'reason_code','B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED'); END IF;
+ 
+   IF v_order.status IN ('cancelado','reprovado','reprovado_sem_itens') THEN
+     RETURN jsonb_build_object('eligible',false,'reason_code','ORDER_CANCELED_OR_REJECTED','status',v_order.status);
+
+--- fn_h6c_entrega_ar_b2b_link() captured
++++ sandbox-only
+@@ -17,6 +17,17 @@
+   SELECT * INTO v_po FROM public.partner_orders WHERE id = NEW.partner_order_id FOR UPDATE;
+   IF NOT FOUND THEN RETURN NEW; END IF;
+ 
++  IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(v_po.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
++      WHERE s.partner_id=v_po.partner_id AND s.active IS TRUE
++      AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
++      AND s.default_payment_method IS NOT NULL AND s.credit_limit IS NOT NULL
++      AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity') AND s.credit_limit>=0
++      AND s.block_if_overdue IS NOT NULL AND s.auto_generate_receivable IS NOT NULL
++      AND s.credit_limit_action IS NOT NULL AND s.overdue_tolerance_days IS NOT NULL
++      AND s.credit_alert_threshold_1 IS NOT NULL AND s.credit_alert_threshold_2 IS NOT NULL
++      AND (SELECT count(*) FROM public.payment_methods pm
++           WHERE pm.name=s.default_payment_method AND pm.active IS TRUE)=1) THEN RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001'; END IF;
+   -- 1) o recebível passa a pertencer ao parceiro (entra em saldo_em_aberto)
+   UPDATE public.accounts_receivable
+      SET partner_id = v_po.partner_id
+
+--- generate_b2b_receivable_secure(uuid) captured
++++ sandbox-only
+@@ -23,6 +23,17 @@
+     RAISE EXCEPTION 'partner_order_id_required' USING ERRCODE='P0001';
+   END IF;
+ 
++  IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed((SELECT partner_id FROM public.partner_orders WHERE id=p_partner_order_id),true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;
++ IF NOT EXISTS (SELECT 1 FROM public.partner_financial_settings s
++      WHERE s.partner_id=(SELECT partner_id FROM public.partner_orders WHERE id=p_partner_order_id) AND s.active IS TRUE
++      AND s.billing_trigger IS NOT NULL AND s.payment_terms_days IS NOT NULL
++      AND s.default_payment_method IS NOT NULL AND s.credit_limit IS NOT NULL
++      AND s.credit_limit::text NOT IN ('NaN','Infinity','-Infinity') AND s.credit_limit>=0
++      AND s.block_if_overdue IS NOT NULL AND s.auto_generate_receivable IS NOT NULL
++      AND s.credit_limit_action IS NOT NULL AND s.overdue_tolerance_days IS NOT NULL
++      AND s.credit_alert_threshold_1 IS NOT NULL AND s.credit_alert_threshold_2 IS NOT NULL
++      AND (SELECT count(*) FROM public.payment_methods pm
++           WHERE pm.name=s.default_payment_method AND pm.active IS TRUE)=1) THEN RAISE EXCEPTION 'B2B_FINANCIAL_SETTINGS_NOT_CONFIGURED' USING ERRCODE='P0001'; END IF;
+   -- Canonical row-before-receipt order, matching approval and its billing trigger.
+   PERFORM 1 FROM public.partner_orders WHERE id=p_partner_order_id FOR UPDATE;
+ 
+
+--- wrapper readiness hypothesis
++++ same alternatives internal first
+@@ -9,9 +9,9 @@
+ 
+   IF auth.uid() IS NULL THEN
+     IF pg_trigger_depth()=0 THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+-  ELSIF NOT (public.b2b_phase1_order_visible(p_partner_order_id) OR EXISTS (
++  ELSIF NOT (CASE WHEN EXISTS (
+     SELECT 1 FROM public.partner_orders po WHERE po.id=p_partner_order_id
+-      AND platform_private.c2p1_settings_allowed(po.partner_id,true))) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
++      AND platform_private.c2p1_settings_allowed(po.partner_id,true)) THEN true ELSE public.b2b_phase1_order_visible(p_partner_order_id) END) THEN RAISE EXCEPTION 'b2b_phase1_scope_denied' USING ERRCODE='42501'; END IF;
+   IF NOT (pg_trigger_depth() > 0 or public.has_role(auth.uid(), 'administrador'::public.app_role)
+       or public.has_role(auth.uid(), 'gestor'::public.app_role)
+       or public.has_role(auth.uid(), 'financeiro'::public.app_role)) THEN
+
+--- platform_private.c2p1_update_settings(uuid,jsonb,jsonb) captured
++++ sandbox-only
+@@ -26,6 +26,9 @@
+  IF p_expected IS NOT NULL THEN RAISE EXCEPTION 'settings_conflict' USING ERRCODE='PT409'; END IF;
+  END IF;
+  newrow=jsonb_populate_record(NULL::public.partner_financial_settings,p_values);
++ IF newrow.credit_limit IS NULL OR newrow.credit_limit::text IN ('NaN','Infinity','-Infinity') OR newrow.credit_limit<0
++ OR EXISTS(SELECT 1 FROM jsonb_each(p_values) e WHERE e.value='null'::jsonb)
++ THEN RAISE EXCEPTION 'C2P1_INVALID_PAYLOAD' USING ERRCODE='22023'; END IF;
+  -- Exact canonical name; method row lock prevents concurrent deactivation through commit.
+  PERFORM 1 FROM public.payment_methods WHERE name=newrow.default_payment_method AND active IS TRUE FOR SHARE;
+  IF (SELECT count(*) FROM public.payment_methods WHERE name=newrow.default_payment_method AND active IS TRUE)<>1
