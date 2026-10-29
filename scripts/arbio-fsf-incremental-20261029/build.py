@@ -66,6 +66,12 @@ def assemble():
     RAISE EXCEPTION 'CREDIT_APPROVED_AMOUNT_IMMUTABLE' USING ERRCODE='42501';
   END IF;
   IF TG_OP = 'INSERT' THEN""",1)
+    guard = guard.replace("  IF TG_OP = 'INSERT' THEN", """  IF (NEW.total IS NULL AND NEW.final_amount_with_interest IS NULL)
+     OR (NEW.total IS NOT NULL AND (NEW.total::text IN ('NaN','Infinity','-Infinity') OR NEW.total<0))
+     OR (NEW.final_amount_with_interest IS NOT NULL AND (NEW.final_amount_with_interest::text IN ('NaN','Infinity','-Infinity') OR NEW.final_amount_with_interest<0)) THEN
+    RAISE EXCEPTION 'CREDIT_AMOUNT_INVALID' USING ERRCODE='23514';
+  END IF;
+  IF TG_OP = 'INSERT' THEN""",1)
     guard = guard.replace("  IF TG_OP = 'INSERT' THEN", "  IF current_setting('transaction_isolation') <> 'read committed' THEN\n    RAISE EXCEPTION 'CREDIT_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000';\n  END IF;\n  IF coalesce(NEW.final_amount_with_interest,NEW.total,0)::text IN ('NaN','Infinity','-Infinity')\n     OR coalesce(NEW.final_amount_with_interest,NEW.total,0) < 0 THEN\n    RAISE EXCEPTION 'CREDIT_AMOUNT_INVALID' USING ERRCODE='23514';\n  END IF;\n  IF TG_OP = 'INSERT' THEN")
     guard = guard.replace("IF v_cfg = 'configuracao_financeira_inativa' THEN", 'IF v_cfg IS NOT NULL THEN')
     ticket = """CREATE TABLE platform_private.credit_approval_tickets_20261029 (
@@ -137,10 +143,23 @@ END $approval$;
 
 if __name__ == '__main__':
     assemble()
-    results = ROOT / 'docs/auditorias/evidencias-cadeia-financeira-20261029/incremental-prep-2015/approval-results.json'
+    results = Path(__import__('os').environ.get('SUBSET01_EXPECTATIONS',str(ROOT / 'docs/auditorias/evidencias-cadeia-financeira-20261029/incremental-prep-2015/approval-results.json')))
     if results.exists():
         hashes = json.loads(results.read_text())['candidate_function_md5']
-        post = 'DO $post$ BEGIN\n' + '\n'.join(f"IF md5(pg_get_functiondef({quote(sig)}::regprocedure)) IS DISTINCT FROM {quote(md5)} THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;" for sig, md5 in sorted(hashes.items())) + "\nIF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029) THEN RAISE EXCEPTION 'POST_TICKET_RESIDUE'; END IF;\nEND $post$;\n"
+        post = 'DO $post$ BEGIN\n' + '\n'.join(f"IF md5(pg_get_functiondef({quote(sig)}::regprocedure)) IS DISTINCT FROM {quote(md5)} THEN RAISE EXCEPTION 'POST_BODY_DRIFT'; END IF;" for sig, md5 in sorted(hashes.items()))
+        post += "\nIF EXISTS(SELECT 1 FROM platform_private.credit_approval_tickets_20261029) THEN RAISE EXCEPTION 'POST_TICKET_RESIDUE'; END IF;\n"
+        live=json.loads((H/'capture/production-metadata.json').read_text())
+        for sig in hashes:
+            if sig=='platform_private.b2b_credit_config_block(uuid)': acl='{postgres=X/postgres}'
+            else:
+                f=next(f for f in live['functions'] if f['signature']==sig.removeprefix('public.'))
+                acl='{'+','.join(f['acl'])+'}' if f['acl'] is not None else 'NULL'
+            post += f"IF (SELECT coalesce(proacl::text,'NULL') FROM pg_proc WHERE oid={quote(sig)}::regprocedure) IS DISTINCT FROM {quote(acl)} OR (SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid={quote(sig)}::regprocedure)<>'postgres' THEN RAISE EXCEPTION 'POST_FUNCTION_ACL_OWNER_DRIFT'; END IF;\n"
+        for t in live['triggers']:
+            if t['table']=='partner_orders' and t['name'] in ('trg_partner_orders_credit_guard','trg_b2b_guard_credit_approval_fields'):
+                definition=t['definition'].replace('UPDATE OF status, total','UPDATE OF status, total, final_amount_with_interest, credit_approved_by')
+                post+=f"IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.partner_orders'::regclass AND tgname={quote(t['name'])} AND pg_get_triggerdef(oid)={quote(definition)} AND tgenabled='O') THEN RAISE EXCEPTION 'POST_TRIGGER_DRIFT'; END IF;\n"
+        post+="IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='platform_private.credit_approval_tickets_20261029'::regclass AND relrowsecurity AND pg_get_userbyid(relowner)='postgres' AND relacl::text='{postgres=arwdDxtm/postgres}') THEN RAISE EXCEPTION 'POST_TICKET_ACL_RLS_DRIFT'; END IF;\nEND $post$;\n"
         for name in ['01-credit-approval.install.sql.review']:
             p = H / name
             s = p.read_text()
