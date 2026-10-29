@@ -17,9 +17,11 @@ def exercise(h, metadata):
         diffs.append(''.join(difflib.unified_diff(old.splitlines(True),new.splitlines(True),fromfile=name+' previous sandbox',tofile='offline only')))
         return new
     def reject(label,sql,expected,actor=m.U,mode=green):
-        before=h.state();res=h.client(sql,actor)
+        before=h.state();identities=m.pg.sql("SELECT jsonb_build_object('orgs',(SELECT jsonb_agg(to_jsonb(o) ORDER BY id) FROM organizations o),'profiles',(SELECT jsonb_agg(to_jsonb(p) ORDER BY user_id) FROM profiles p),'roles',(SELECT jsonb_agg(to_jsonb(u) ORDER BY user_id,role) FROM user_roles u))")
+        res=h.client(sql,actor)
         h.check(label+' exact error',expected,h.error_tuple(res),mode)
         h.check(label+' entire state unchanged',before,h.state(),mode)
+        h.check(label+' identity state unchanged',identities,m.pg.sql("SELECT jsonb_build_object('orgs',(SELECT jsonb_agg(to_jsonb(o) ORDER BY id) FROM organizations o),'profiles',(SELECT jsonb_agg(to_jsonb(p) ORDER BY user_id) FROM profiles p),'roles',(SELECT jsonb_agg(to_jsonb(u) ORDER BY user_id,role) FROM user_roles u))"),mode)
         h.responses.append(dict(test=label,stderr=res.stderr))
     values=dict(billing_trigger='manual',payment_terms_days=0,default_payment_method='LOCAL_METHOD',credit_limit=20000,
         block_if_overdue=True,auto_generate_receivable=False,active=True,credit_limit_action='block',
@@ -40,12 +42,14 @@ def exercise(h, metadata):
         h.check('RED zero approved shortcut '+label,0,h.client(f"UPDATE harness.credit_probe SET credit_approved_by='{actor}' WHERE id='{probe}';",actor).returncode,red)
     # Gate ahead of every approved shortcut; zero is configured but cannot authorize
     # financial progression, even through an existing credit-approved marker.
-    anchor="  IF NEW.status IN ('pendente','solicitado','aguardando_ajuste_comercial','aguardando_itens','em_analise_comercial','aprovado','aguardando_aprovacao_credito','em_producao','produzido','aguardando_entrega','confirmado','em_separacao','enviado','entregue','faturado') OR NEW.credit_approved_by IS NOT NULL THEN"
+    anchor="IF auth.uid() IS NOT NULL AND NOT platform_private.c2p1_settings_allowed(NEW.partner_id,true) THEN RAISE EXCEPTION 'C2P1_FORBIDDEN' USING ERRCODE='42501'; END IF;"
     transform('tg_partner_orders_credit_guard',anchor,anchor+"\n    IF EXISTS(SELECT 1 FROM public.partner_financial_settings s WHERE s.partner_id=NEW.partner_id AND s.credit_limit=0) THEN RAISE EXCEPTION 'B2B_ZERO_CREDIT_LIMIT' USING ERRCODE='23514'; END IF;")
     for actor,org,partner,label in partners:
         probe=m.uid(910000+(label=='B'))
         for statement in ["status='em_analise_comercial'","status='aprovado'","credit_approved_by="+m.q(actor)]:
             reject('GREEN zero progression '+label+' '+statement,f"UPDATE harness.credit_probe SET {statement} WHERE id='{probe}';",('23514','B2B_ZERO_CREDIT_LIMIT'),actor)
+        foreign_actor=h.V if actor==m.U else m.U
+        reject('GREEN zero foreign scope first '+label,f"UPDATE harness.credit_probe SET status='aprovado' WHERE id='{probe}';",('42501','C2P1_FORBIDDEN'),foreign_actor)
         h.check('credit restore explicit CAS '+label,0,update(partner,20000,actor).returncode,green)
     transform('fn_b2b_credit_exposure',"    WHEN v_limit <= 0 THEN 'NO_LIMIT_DEFINED'\n",'')
     # Exact service-only exposure via a reduced DEFINER trigger carrier; no public
@@ -85,7 +89,8 @@ def exercise(h, metadata):
     h.check('exposure immutable financed original','10300.00',m.pg.sql(f"SELECT original_amount::numeric(14,2) FROM accounts_receivable_installments WHERE id='{part}'"),green)
     # Full captured implementation: exercise its actual early ownership branch.
     # It remains gated before any title, fiscal or installment creation.
-    impl=r.captured('public','generate_b2b_receivable_secure_impl')
+    impl=source('generate_b2b_receivable_secure_impl')
+    m.pg.sql(impl['body']+';')
     h.acl('FUNCTION',impl['signature'],impl['acl'])
     h.table('partner_order_audit_logs');h.extra_state_tables.append('partner_order_audit_logs')
     h.check('impl captured client EXECUTE closed','f',m.pg.sql("SELECT has_function_privilege('authenticated','generate_b2b_receivable_secure_impl(uuid)','EXECUTE')"),green)
@@ -162,7 +167,7 @@ def exercise(h, metadata):
         for value,label in [(None,'NULL'),(other if 'partner' in field else m.B,'inverse/foreign')]:
             bad=dict(row);bad[field]=value
             reject('contract '+field+' '+label,contract(bad),('23514','B2B_PARTIES_CONTRACT_MISMATCH'),mode='PARTIES_CONTRACT_ONLY')
-    metadata['parties_credit']=dict(decisions=dict(seller_creditor_issuer='AR Bio',buyer_debtor='FSF Agro',explicit_credit_limit_required=True,zero_unlimited=False),synthetic_ids=dict(ar_bio_owner=m.A,fsf_buyer_tenant=m.B,fsf_partner=partner),next_full_impl_error=error,projection_not_writer=True,fiscal_matrix_contract_only=True,exposure=result,
+    metadata['parties_credit']=dict(decisions=dict(seller_creditor_issuer='AR Bio',buyer_debtor='FSF Agro',explicit_credit_limit_required=True,zero_unlimited_policy=False),zero_limit_enforcement_scope='credit-trigger new progression/approval shortcuts and calculator; not certification of all runtime consumers',synthetic_ids=dict(ar_bio_owner=m.A,fsf_buyer_tenant=m.B,fsf_partner=partner),next_full_impl_error=error,projection_not_writer=True,fiscal_matrix_contract_only=True,exposure=result,
         blocked='Owner selection corrected offline, but canonical order terms/eligibility, fiscal issuer binding and accounting provenance remain unproved. No origin/accounting denial removed.')
     (h.OUT/'parties-credit-sandbox.diff').write_text('\n'.join(diffs))
     (h.OUT/'parties-credit-captured-impl.txt').write_text(impl['body'])

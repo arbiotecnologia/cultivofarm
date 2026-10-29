@@ -426,7 +426,7 @@ def main():
         blocked=[risk_metadata['blocked'],'Full B2B origin/fiscal/BI/provenance and identity/order integration remain unproved'],
         not_run=['Hosted JWT/RLS A/B, full BI/provenance and promotion'],
         vulnerability='Foreign canceled vs missing row status oracle; OPEN foreign mutation denied by exact tenant trigger',
-        limits='Actual LOGIN client roles, captured RPC ACL/installment RLS/all installment triggers; minimal synthetic identity tables. Parent creation/identity-wide guards, payment insert chain and audit SELECT policy not composed. No owner RPC calls, no tickets, no JWT verification, no production operations.')
+        limits='Cancellation RPC uses nonprivileged LOGIN roles with captured ACL/installment RLS/triggers. Private exposure/implementation bodies additionally use disposable postgres-owned DEFINER trigger carriers, not canonical wrapper authority. Party projection is pre-gate fragment-only; fiscal matrix contract-only. Minimal synthetic identities, incomplete parent/payment/audit integration, no JWT verification or production operations; tickets only via captured authorized settings CAS.')
     (OUT/'results.json').write_text(json.dumps(result,indent=2)+'\n')
     with (OUT/'matrix.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=list(checks[0]),lineterminator='\n');w.writeheader();w.writerows(checks)
