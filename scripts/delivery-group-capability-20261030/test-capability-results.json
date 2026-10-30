@@ -1,0 +1,11 @@
+[
+  {
+    "test": "exact applied release-combined a566faa4 installed + proof POST (hosted state reproduced)",
+    "status": "PASS"
+  },
+  {
+    "test": "execution stopped at concrete failure",
+    "status": "FAIL",
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 96, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 42, in main\n    assemble.build(); inst = (H / 'install.sql.review').read_text()\n    ^^^^^^^^^^^^^^\nAttributeError: module 'assemble' has no attribute 'build'\n"
+  }
+]
