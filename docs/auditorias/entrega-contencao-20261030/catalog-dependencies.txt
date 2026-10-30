@@ -1,0 +1,268 @@
+[map[acl:{postgres=X/postgres,service_role=X/postgres} body_md5:c40d513eae404c1141edb40df5336b92 definition:CREATE OR REPLACE FUNCTION public._rpc_avancar_esteira_laboratorio_internal(p_os_id uuid, p_origem_os text, p_etapa_destino text, p_programacao_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+    v_user_role public.app_role;
+    v_profile_id UUID;
+    v_status_atual TEXT;
+    v_lote_id UUID;
+    v_etapa_anterior_os TEXT;
+    v_tabela_os TEXT;
+    v_validacao jsonb;
+    v_cq_atual TEXT;
+    v_status_alvo TEXT;
+BEGIN
+    SELECT role INTO v_user_role FROM public.user_roles WHERE user_id = auth.uid() LIMIT 1;
+    SELECT id INTO v_profile_id FROM public.profiles WHERE user_id = auth.uid() LIMIT 1;
+
+    IF p_origem_os IN ('manual','b2b') THEN v_tabela_os := 'ordens_servico';
+    ELSE v_tabela_os := 'ordens_servico_onfarm';
+    END IF;
+
+    -- Status alvo canônico por etapa. 'criar_entrega' NAO tem status alvo:
+    -- criar a entrega deixa a OS em pronto_entrega ate a confirmacao fisica.
+    v_status_alvo := CASE p_etapa_destino
+        WHEN 'assumir_producao' THEN 'em_producao'
+        WHEN 'enviar_cq'        THEN 'em_cq'
+        WHEN 'enviar_envase'    THEN 'envase'
+        WHEN 'concluir_envase'  THEN 'pronto_entrega'
+        WHEN 'gerar_estoque'    THEN 'pronto_entrega'
+        WHEN 'reservar_estoque' THEN 'pronto_entrega'
+        WHEN 'enviar_entrega'   THEN 'entregue'
+        WHEN 'finalizar_os'     THEN 'finalizada'
+        ELSE NULL
+    END;
+
+    EXECUTE format('SELECT status::text FROM %I WHERE id = $1 FOR UPDATE', v_tabela_os)
+    INTO v_status_atual USING p_os_id;
+
+    IF v_status_atual IS NULL THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Ordem de serviço não encontrada.');
+    END IF;
+
+    -- IDEMPOTÊNCIA SERVER-SIDE (Gate 5): se a OS já está no status alvo da
+    -- etapa, o replay é absorvido SEM novo evento de auditoria e SEM efeito.
+    IF v_status_alvo IS NOT NULL AND v_status_atual = v_status_alvo THEN
+        RETURN jsonb_build_object(
+            'success', true,
+            'replay', true,
+            'message', 'Etapa já aplicada anteriormente.'
+        );
+    END IF;
+
+    SELECT * INTO v_validacao FROM public.rpc_validar_integridade_esteira(p_os_id, p_origem_os, p_etapa_destino);
+    IF NOT (v_validacao->>'permitido')::BOOLEAN THEN
+        RETURN jsonb_build_object('success', false, 'message', (v_validacao->'bloqueios'->>0));
+    END IF;
+
+    v_etapa_anterior_os := v_status_atual;
+
+    IF p_programacao_id IS NOT NULL AND p_programacao_id <> '00000000-0000-0000-0000-000000000000'::uuid THEN
+        SELECT id INTO v_lote_id FROM public.lotes WHERE programacao_id = p_programacao_id FOR UPDATE;
+    ELSE
+        IF p_origem_os IN ('manual','b2b') THEN
+            SELECT l.id INTO v_lote_id FROM public.lotes l JOIN public.programacao_producao pp ON l.programacao_id = pp.id WHERE pp.ordem_servico_id = p_os_id LIMIT 1;
+        ELSE
+            SELECT l.id INTO v_lote_id FROM public.lotes l JOIN public.programacao_producao pp ON l.programacao_id = pp.id WHERE pp.ordem_servico_onfarm_id = p_os_id LIMIT 1;
+        END IF;
+    END IF;
+
+    CASE p_etapa_destino
+        WHEN 'assumir_producao' THEN
+            PERFORM public._avancar_os_status(p_origem_os, p_os_id, 'em_producao');
+            IF p_programacao_id IS NOT NULL THEN
+                UPDATE public.programacao_producao SET status = 'em_producao', responsavel_id = v_profile_id WHERE id = p_programacao_id;
+            END IF;
+        WHEN 'gerar_lote' THEN NULL;
+        WHEN 'enviar_cq' THEN
+            PERFORM public._avancar_os_status(p_origem_os, p_os_id, 'em_cq');
+            UPDATE public.lotes SET status = 'aguardando_cq' WHERE id = v_lote_id;
+        WHEN 'aprovar_cq', 'reprovar_cq' THEN
+            IF v_lote_id IS NULL THEN
+                RETURN jsonb_build_object('success', false, 'message', 'Nenhum lote localizado para registrar o CQ.');
+            END IF;
+            PERFORM pg_advisory_xact_lock(hashtext('cq_lote:' || v_lote_id::text));
+
+            SELECT resultado::text INTO v_cq_atual
+              FROM public.controle_qualidade
+             WHERE lote_id = v_lote_id
+             ORDER BY created_at DESC, seq DESC
+             LIMIT 1;
+
+            IF p_etapa_destino = 'aprovar_cq' THEN
+                -- replay de CQ aprovado: nao duplica laudo NEM evento
+                IF v_cq_atual IS NOT DISTINCT FROM 'aprovado' THEN
+                    UPDATE public.lotes SET status = 'aprovado' WHERE id = v_lote_id;
+                    RETURN jsonb_build_object('success', true, 'replay', true,
+                        'message', 'CQ já registrado como aprovado.');
+                END IF;
+                UPDATE public.lotes SET status = 'aprovado' WHERE id = v_lote_id;
+                INSERT INTO public.controle_qualidade (lote_id, resultado, responsavel_id)
+                VALUES (v_lote_id, 'aprovado', v_profile_id);
+            ELSE
+                IF v_cq_atual IS NOT DISTINCT FROM 'reprovado' THEN
+                    UPDATE public.lotes SET status = 'reprovado' WHERE id = v_lote_id;
+                    RETURN jsonb_build_object('success', true, 'replay', true,
+                        'message', 'CQ já registrado como reprovado.');
+                END IF;
+                UPDATE public.lotes SET status = 'reprovado' WHERE id = v_lote_id;
+                INSERT INTO public.controle_qualidade (lote_id, resultado, responsavel_id)
+                VALUES (v_lote_id, 'reprovado', v_profile_id);
+            END IF;
+        WHEN 'enviar_envase' THEN PERFORM public._avancar_os_status(p_origem_os, p_os_id, 'envase');
+        WHEN 'concluir_envase' THEN PERFORM public._avancar_os_status(p_origem_os, p_os_id, 'pronto_entrega');
+        WHEN 'gerar_estoque', 'reservar_estoque' THEN PERFORM public._avancar_os_status(p_origem_os, p_os_id, 'pronto_entrega');
+        -- GATE 4: criar_entrega NAO altera o status da OS para 'entregue'.
+        WHEN 'criar_entrega' THEN NULL;
+        WHEN 'enviar_entrega' THEN PERFORM public._avancar_os_status(p_origem_os, p_os_id, 'entregue');
+        WHEN 'finalizar_os' THEN PERFORM public._avancar_os_status(p_origem_os, p_os_id, 'finalizada');
+        ELSE
+    END CASE;
+
+    INSERT INTO public.laboratorio_esteira_eventos (os_id, origem_os, programacao_id, etapa_anterior, etapa_nova, acao, usuario_id)
+    VALUES (p_os_id, p_origem_os, p_programacao_id, v_etapa_anterior_os, p_etapa_destino, p_etapa_destino, auth.uid());
+
+    RETURN jsonb_build_object('success', true, 'replay', false, 'message', 'Etapa avançada com sucesso');
+END;
+$function$
+ signature:_rpc_avancar_esteira_laboratorio_internal(uuid,text,text,uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} body_md5:ec7bd47943764dc4bfda9cdbea2cf283 definition:CREATE OR REPLACE FUNCTION public.fn_cockpit_assert_operador_origem(p_origem text)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_origem text := public.fn_cockpit_norm_origem(p_origem);
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'COCKPIT_UNAUTHENTICATED'; END IF;
+
+  IF public.has_role(v_uid, 'administrador'::app_role)
+     OR public.has_role(v_uid, 'gestor'::app_role) THEN
+    RETURN v_origem;
+  END IF;
+
+  -- produção: fluxo industrial (manual/onfarm/b2b), sem privilégio de override
+  IF public.has_role(v_uid, 'producao'::app_role) THEN
+    RETURN v_origem;
+  END IF;
+
+  -- operador on-farm: alçada restrita à própria origem
+  IF public.has_role(v_uid, 'operador_onfarm'::app_role) THEN
+    IF v_origem <> 'onfarm' THEN
+      RAISE EXCEPTION 'COCKPIT_FORBIDDEN_ORIGEM';
+    END IF;
+    RETURN v_origem;
+  END IF;
+
+  RAISE EXCEPTION 'COCKPIT_FORBIDDEN';
+END;
+$function$
+ signature:fn_cockpit_assert_operador_origem(text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} body_md5:62f210a4d3052cad23977e43a4dcf0e5 definition:CREATE OR REPLACE FUNCTION public.fn_entrega_assert_confirmador(p_origem text)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_origem text := public.fn_cockpit_norm_origem(p_origem);
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'COCKPIT_UNAUTHENTICATED'; END IF;
+
+  IF public.has_role(v_uid, 'administrador'::app_role)
+     OR public.has_role(v_uid, 'gestor'::app_role)
+     OR public.has_role(v_uid, 'administrativo'::app_role)
+     OR public.has_role(v_uid, 'producao'::app_role) THEN
+    RETURN v_origem;
+  END IF;
+
+  IF public.has_role(v_uid, 'operador_onfarm'::app_role) THEN
+    IF v_origem <> 'onfarm' THEN RAISE EXCEPTION 'COCKPIT_FORBIDDEN_ORIGEM'; END IF;
+    RETURN v_origem;
+  END IF;
+
+  RAISE EXCEPTION 'COCKPIT_FORBIDDEN';
+END;
+$function$
+ signature:fn_entrega_assert_confirmador(text)] map[acl:{postgres=X/postgres,service_role=X/postgres} body_md5:c5ba9bf8b5b019124d00e36e5a7b0f2a definition:CREATE OR REPLACE FUNCTION public.fn_entrega_marcar_cancelamento()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  IF NEW.status::text = 'cancelada'
+     AND (TG_OP = 'INSERT' OR OLD.status::text IS DISTINCT FROM 'cancelada') THEN
+    IF auth.uid() IS NOT NULL
+       AND current_setting('app.entrega_cancelamento_id', true) IS DISTINCT FROM NEW.id::text THEN
+      RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_EXIGE_RPC'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    NEW.cancelada_em := COALESCE(NEW.cancelada_em, now());
+    NEW.cancelada_por := COALESCE(NEW.cancelada_por, auth.uid());
+  END IF;
+  RETURN NEW;
+END;
+$function$
+ signature:fn_entrega_marcar_cancelamento()] map[acl:{postgres=X/postgres,service_role=X/postgres} body_md5:0ed7e5b17cdca353135b562121aeb9dc definition:CREATE OR REPLACE FUNCTION public.fn_estoque_ctx_open(p_ctx jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_atual text := NULLIF(current_setting('app.estoque_mov_ctx', true), '');
+BEGIN
+  -- Contexto externo (operação principal) tem precedência sobre chamadas internas aninhadas
+  IF v_atual IS NOT NULL THEN RETURN; END IF;
+  PERFORM set_config('app.estoque_mov_ctx', COALESCE(p_ctx, '{}'::jsonb)::text, true);
+END; $function$
+ signature:fn_estoque_ctx_open(jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres} body_md5:6add438d185c91379d436dc90d1e7617 definition:CREATE OR REPLACE FUNCTION public.fn_validate_entrega_confirmacao()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_anexos int;
+BEGIN
+  IF NEW.status::text = 'entregue'
+     AND (TG_OP = 'INSERT' OR OLD.status::text IS DISTINCT FROM 'entregue') THEN
+
+    IF TG_OP = 'UPDATE' AND OLD.status::text = 'cancelada' THEN
+      RAISE EXCEPTION 'Não é possível confirmar uma entrega cancelada.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF COALESCE(TRIM(NEW.recebido_por_nome), '') = '' THEN
+      RAISE EXCEPTION 'Informe o nome de quem recebeu a entrega.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF NEW.confirmado_por IS NULL THEN
+      RAISE EXCEPTION 'A entrega precisa ser confirmada por um usuário autenticado.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF NEW.entregue_em IS NULL THEN
+      NEW.entregue_em := now();
+    END IF;
+
+    IF NEW.comprovante_entrega_obrigatorio THEN
+      SELECT count(*) INTO v_anexos
+        FROM public.entrega_documentos
+        WHERE entrega_id = NEW.id;
+      IF v_anexos = 0 THEN
+        RAISE EXCEPTION 'É obrigatório anexar pelo menos um comprovante para confirmar esta entrega.'
+          USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+ signature:fn_validate_entrega_confirmacao()]]

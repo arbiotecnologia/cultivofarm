@@ -1,0 +1,3010 @@
+[map[acl:{postgres=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION platform_private.entrega_termo_tenant_ok(p_entrega_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  SELECT p_entrega_id IS NOT NULL AND EXISTS (
+    SELECT 1
+      FROM public.entregas e
+      JOIN public.clientes c ON c.id = e.cliente_id
+     WHERE e.id = p_entrega_id
+       AND e.organization_id IS NOT NULL
+       AND c.organization_id = e.organization_id
+       AND e.organization_id = platform_private.h15_actor_organization());
+$function$
+ private_schema:1 proname:entrega_termo_tenant_ok prosecdef:true schema:platform_private signature:platform_private.entrega_termo_tenant_ok(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public._entrega_seed_checklist(_entrega_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.entrega_checklist WHERE entrega_id = _entrega_id) THEN
+    INSERT INTO public.entrega_checklist (entrega_id, item, obrigatorio) VALUES
+      (_entrega_id, 'Conferir cliente e fazenda', true),
+      (_entrega_id, 'Conferir produtos', true),
+      (_entrega_id, 'Conferir lotes', true),
+      (_entrega_id, 'Conferir volumes', true),
+      (_entrega_id, 'Conferir validade', true),
+      (_entrega_id, 'Conferir formulário impresso ou digital', true),
+      (_entrega_id, 'Coletar assinatura do recebedor', true),
+      (_entrega_id, 'Registrar ressalvas, se houver', false),
+      (_entrega_id, 'Anexar comprovante assinado ou finalizar assinatura digital', true);
+  END IF;
+END $function$
+ private_schema:1 proname:_entrega_seed_checklist prosecdef:true schema:public signature:_entrega_seed_checklist(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_comprovante_entrega_montar_v1(p_entrega_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+DECLARE
+  e            public.entregas%ROWTYPE;
+  v_emitente   jsonb;
+  v_destino    jsonb;
+  v_os         jsonb;
+  v_itens      jsonb;
+  v_transporte jsonb;
+  v_receb      jsonb;
+BEGIN
+  PERFORM public.h15_require_staff();
+
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'COMPROVANTE_UNAUTHENTICATED' USING ERRCODE='42501'; END IF;
+  IF NOT coalesce(public.is_delivery_staff(auth.uid()),false) THEN RAISE EXCEPTION 'COMPROVANTE_FORBIDDEN' USING ERRCODE='42501'; END IF;
+  SELECT * INTO e FROM public.entregas WHERE id = p_entrega_id;
+  IF e.id IS NULL THEN
+    RAISE EXCEPTION 'COMPROVANTE_ENTREGA_NAO_ENCONTRADA';
+  END IF;
+
+  SELECT jsonb_build_object(
+           'razao_social', cs.legal_name,
+           'nome_fantasia', cs.trade_name,
+           'cnpj', cs.cnpj,
+           'inscricao_estadual', cs.state_registration,
+           'email', cs.fiscal_email,
+           'telefone', cs.phone,
+           'logradouro', cs.street,
+           'numero', cs.number,
+           'complemento', cs.complement,
+           'bairro', cs.neighborhood,
+           'cidade', cs.city,
+           'uf', cs.state,
+           'cep', cs.postal_code
+         )
+    INTO v_emitente
+    FROM (SELECT * FROM public.company_fiscal_settings WHERE organization_id = public.h15_actor_organization()) cs
+   WHERE cs.is_active
+   ORDER BY cs.updated_at DESC NULLS LAST
+   LIMIT 1;
+
+  SELECT jsonb_build_object(
+           'cliente_id', c.id,
+           'nome', coalesce(nullif(btrim(c.razao_social), ''), c.nome),
+           'nome_fantasia', c.nome_fantasia,
+           'cpf_cnpj', c.cpf_cnpj,
+           'telefone', coalesce(nullif(btrim(c.telefone), ''), e.destinatario_telefone),
+           'email', c.email,
+           'cidade', coalesce(nullif(btrim(e.endereco_cidade), ''), c.endereco_municipio),
+           'uf', coalesce(nullif(btrim(e.endereco_uf), ''), c.endereco_estado)
+         )
+    INTO v_destino
+    FROM public.clientes c
+   WHERE c.id = e.cliente_id;
+
+  v_destino := coalesce(v_destino, '{}'::jsonb) || jsonb_build_object(
+    'destinatario_nome', e.destinatario_nome,
+    'local_entrega', nullif(btrim(concat_ws(', ',
+        nullif(btrim(coalesce(e.endereco_logradouro, '')), ''),
+        nullif(btrim(coalesce(e.endereco_numero, '')), ''),
+        nullif(btrim(coalesce(e.endereco_bairro, '')), ''),
+        nullif(btrim(coalesce(e.endereco_cidade, '')), ''),
+        nullif(btrim(coalesce(e.endereco_uf, '')), ''))), '')
+  );
+
+  -- OS canonica: fluxo padrao (ordens_servico) ou fluxo On-Farm legitimo.
+  SELECT jsonb_build_object(
+           'os_id', o.id,
+           'numero_os', o.numero_os,
+           'origem', coalesce(o.origem, 'manual'),
+           'tipo', 'ordem_servico'
+         )
+    INTO v_os
+    FROM public.ordens_servico o
+   WHERE o.id = e.ordem_servico_id;
+
+  IF v_os IS NULL AND e.ordem_servico_onfarm_id IS NOT NULL THEN
+    SELECT jsonb_build_object(
+             'os_id', onf.id,
+             'numero_os', onf.numero_os,
+             'origem', 'on_farm',
+             'tipo', 'ordem_servico_onfarm'
+           )
+      INTO v_os
+      FROM public.ordens_servico_onfarm onf
+     WHERE onf.id = e.ordem_servico_onfarm_id;
+  END IF;
+
+  -- Origem legitima adicional mapeada no dominio: entrega vinculada a pedido
+  -- de parceiro (B2B) sem OS de laboratorio. Documentado em
+  -- docs/auditorias/comprovante-entrega-fase2.md.
+  IF v_os IS NULL AND e.partner_order_id IS NOT NULL THEN
+    SELECT jsonb_build_object(
+             'os_id', po.id,
+             'numero_os', po.numero,
+             'origem', 'pedido_parceiro',
+             'tipo', 'partner_order'
+           )
+      INTO v_os
+      FROM public.partner_orders po
+     WHERE po.id = e.partner_order_id;
+  END IF;
+
+  -- Itens: caminho canonico por etiqueta
+  SELECT jsonb_agg(item ORDER BY item->>'lote')
+    INTO v_itens
+    FROM (
+      SELECT jsonb_build_object(
+               'produto', coalesce(pe.produto_nome, pr.nome),
+               'microrganismo', coalesce(array_to_string(pe.cepas, ', '), m.nome_cientifico, m.nome),
+               'lote', coalesce(pe.lote_codigo, l.codigo_lote),
+               'fabricacao', coalesce(pe.fabricado_em::date, l.data_producao),
+               'validade', pe.validade_em::date,
+               'embalagem', coalesce(eb.tipo_embalagem, pe.unidade),
+               'quantidade', coalesce(pe.quantidade_embalagens, 1),
+               'volume_unitario_ml', pe.volume,
+               'volume_total_ml', coalesce(pe.volume, 0) * coalesce(pe.quantidade_embalagens, 1)
+             ) AS item
+        FROM public.entrega_etiquetas ee
+        JOIN public.produto_etiquetas pe ON pe.id = ee.etiqueta_id
+        LEFT JOIN public.produtos pr ON pr.id = pe.produto_id
+        LEFT JOIN public.lotes l ON l.id = pe.lote_id
+        LEFT JOIN public.microrganismos m ON m.id = l.microrganismo_id
+        LEFT JOIN public.estoque_embalagens eb ON eb.id = pe.embalagem_id
+       WHERE ee.entrega_id = p_entrega_id AND ee.ativo
+    ) s;
+
+  -- Fallback: vinculo direto da entrega (fluxo classico produto_id/lote_id).
+  -- Referencias sempre por e2 (linha atual), sem depender da variavel PL/pgSQL.
+  IF v_itens IS NULL OR jsonb_array_length(v_itens) = 0 THEN
+    SELECT jsonb_build_array(jsonb_build_object(
+             'produto', pr.nome,
+             'microrganismo', coalesce(m.nome_cientifico, m.nome),
+             'lote', l.codigo_lote,
+             'fabricacao', l.data_producao,
+             'validade', ep.validade,
+             'embalagem', env.tipo_embalagem,
+             'quantidade', e2.quantidade_entregue,
+             'volume_unitario_ml', coalesce(
+               env.volume_por_unidade,
+               CASE WHEN coalesce(e2.quantidade_entregue, 0) > 0
+                    THEN round(e2.volume_entregue_ml / e2.quantidade_entregue, 2) END),
+             'volume_total_ml', coalesce(
+               e2.volume_entregue_ml,
+               env.volume_por_unidade * e2.quantidade_entregue)
+           ))
+      INTO v_itens
+      FROM public.entregas e2
+      LEFT JOIN public.produtos pr
+             ON pr.id = coalesce(e2.produto_id,
+                                 (SELECT l2.produto_id FROM public.lotes l2 WHERE l2.id = e2.lote_id))
+      LEFT JOIN public.lotes l ON l.id = e2.lote_id
+      LEFT JOIN public.microrganismos m ON m.id = l.microrganismo_id
+      LEFT JOIN public.estoque_produto ep ON ep.id = e2.estoque_produto_id
+      LEFT JOIN LATERAL (
+        SELECT en.tipo_embalagem, en.volume_por_unidade
+          FROM public.envase en
+         WHERE en.lote_id = e2.lote_id
+         ORDER BY en.data_envase DESC NULLS LAST
+         LIMIT 1
+      ) env ON true
+     WHERE e2.id = p_entrega_id;
+  END IF;
+
+  v_transporte := jsonb_build_object(
+    'modalidade', e.tipo_entrega,
+    'motorista', e.motorista,
+    'motorista_telefone', e.motorista_telefone,
+    'veiculo', e.veiculo,
+    'placa', e.veiculo_placa,
+    'veiculo_tipo', e.veiculo_tipo,
+    'data_saida', e.data_saida,
+    'hora_saida_prevista', e.hora_saida_prevista
+  );
+
+  v_receb := jsonb_build_object(
+    'recebido_por_nome', coalesce(nullif(btrim(coalesce(e.recebido_por_nome, '')), ''),
+                                  nullif(btrim(coalesce(e.recebedor_nome, '')), '')),
+    'documento', coalesce(e.recebido_por_documento, e.recebedor_documento),
+    'cargo', coalesce(e.recebido_por_cargo, e.recebedor_cargo),
+    'observacoes', e.observacoes_confirmacao,
+    'confirmado_em', coalesce(e.confirmada_em, e.entregue_em, e.recebimento_confirmado_em),
+    'confirmado_por', coalesce(e.confirmado_por, e.confirmada_por, e.recebimento_confirmado_por),
+    'assinatura_tipo', e.assinatura_tipo
+  );
+
+  RETURN jsonb_build_object(
+    'template_versao', 'comprovante-entrega-v1',
+    'entrega_id', e.id,
+    'entrega_status', e.status::text,
+    'emitente', coalesce(v_emitente, '{}'::jsonb),
+    'destinatario', coalesce(v_destino, '{}'::jsonb),
+    'ordem_servico', v_os,
+    'itens', coalesce(v_itens, '[]'::jsonb),
+    'transporte', v_transporte,
+    'recebimento', v_receb
+  );
+END
+$function$
+ private_schema:1 proname:fn_comprovante_entrega_montar_v1 prosecdef:true schema:public signature:fn_comprovante_entrega_montar_v1(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_assert_confirmador(p_origem text)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid    uuid := auth.uid();
+  v_origem text := public.fn_cockpit_norm_origem(p_origem);
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'COCKPIT_UNAUTHENTICATED'; END IF;
+
+  IF public.has_role(v_uid, 'administrador'::app_role)
+     OR public.has_role(v_uid, 'gestor'::app_role)
+     OR public.has_role(v_uid, 'administrativo'::app_role)
+     OR public.has_role(v_uid, 'producao'::app_role) THEN
+    RETURN v_origem;
+  END IF;
+
+  IF public.has_role(v_uid, 'operador_onfarm'::app_role) THEN
+    IF v_origem <> 'onfarm' THEN RAISE EXCEPTION 'COCKPIT_FORBIDDEN_ORIGEM'; END IF;
+    RETURN v_origem;
+  END IF;
+
+  RAISE EXCEPTION 'COCKPIT_FORBIDDEN';
+END;
+$function$
+ private_schema:1 proname:fn_entrega_assert_confirmador prosecdef:true schema:public signature:fn_entrega_assert_confirmador(text)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_assinatura_exigir_imagem_v1()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+BEGIN
+ IF NEW.assinatura_tipo='digital_tela' AND NEW.assinatura_digital_png_path IS NULL THEN
+  RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='A assinatura digital exige uma imagem armazenada.';
+ END IF;
+ IF NEW.assinatura_digital_png_path IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM storage.objects o
+  WHERE o.bucket_id='entrega-documentos' AND o.name=NEW.assinatura_digital_png_path
+ ) THEN
+  RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Imagem da assinatura não encontrada ou sem acesso no armazenamento.';
+ END IF;
+ RETURN NEW;
+END;
+$function$
+ private_schema:1 proname:fn_entrega_assinatura_exigir_imagem_v1 prosecdef:false schema:public signature:fn_entrega_assinatura_exigir_imagem_v1()] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_build_snapshot_v1(p_entrega_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+DECLARE
+  v jsonb;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'sessao_invalida' USING ERRCODE = '42501';
+  END IF;
+  IF NOT coalesce(public.is_delivery_staff(auth.uid()), false) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE = '42501';
+  END IF;
+  SELECT jsonb_strip_nulls(jsonb_build_object(
+    'template_versao', 'termo-entrega-v1',
+    'gerado_em', now(),
+    'entrega', to_jsonb(e),
+    'cliente', (SELECT to_jsonb(c) FROM public.clientes c WHERE c.id = e.cliente_id),
+    'ordem_servico', (SELECT to_jsonb(o) FROM public.ordens_servico o WHERE o.id = e.ordem_servico_id),
+    'ordem_servico_onfarm', (SELECT to_jsonb(o) FROM public.ordens_servico_onfarm o WHERE o.id = e.ordem_servico_onfarm_id),
+    'pedido_b2b', (SELECT to_jsonb(po) FROM public.partner_orders po WHERE po.id = e.partner_order_id),
+    'comprovante', (SELECT to_jsonb(cp) FROM public.entrega_comprovantes cp WHERE cp.id = e.comprovante_id),
+    'entregador', jsonb_build_object(
+      'motorista', e.motorista, 'documento', e.motorista_documento,
+      'telefone', e.motorista_telefone, 'veiculo', e.veiculo,
+      'placa', e.veiculo_placa, 'tipo', e.veiculo_tipo),
+    'destino', jsonb_build_object(
+      'destinatario', e.destinatario_nome, 'telefone', e.destinatario_telefone,
+      'logradouro', e.endereco_logradouro, 'numero', e.endereco_numero,
+      'complemento', e.endereco_complemento, 'bairro', e.endereco_bairro,
+      'cidade', e.endereco_cidade, 'uf', e.endereco_uf, 'cep', e.endereco_cep,
+      'referencia', e.endereco_referencia, 'origem', e.endereco_origem),
+    'recebedor', jsonb_build_object(
+      'nome', e.recebedor_nome, 'documento', e.recebedor_documento,
+      'cargo', e.recebedor_cargo, 'telefone', e.recebedor_telefone),
+    'itens', coalesce((
+      SELECT jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
+        'etiqueta', to_jsonb(pe),
+        'embalagem', (SELECT to_jsonb(eb) FROM public.estoque_embalagens eb WHERE eb.id = pe.embalagem_id),
+        'lote', (SELECT to_jsonb(l) FROM public.lotes l WHERE l.id = pe.lote_id),
+        'produto', (SELECT to_jsonb(pr) FROM public.produtos pr WHERE pr.id = pe.produto_id),
+        'conferencia', (SELECT to_jsonb(ci) FROM public.entrega_conferencia_itens ci
+                        WHERE ci.entrega_id = p_entrega_id AND ci.etiqueta_id = pe.id)
+      )) ORDER BY pe.id)
+      FROM public.entrega_etiquetas ee
+      JOIN public.produto_etiquetas pe ON pe.id = ee.etiqueta_id
+      WHERE ee.entrega_id = p_entrega_id AND ee.ativo
+    ), '[]'::jsonb),
+    'checklist', coalesce((SELECT jsonb_agg(to_jsonb(ck) ORDER BY ck.id)
+                           FROM public.entrega_checklist ck WHERE ck.entrega_id = p_entrega_id), '[]'::jsonb),
+    'ocorrencias', coalesce((SELECT jsonb_agg(to_jsonb(oc) ORDER BY oc.id)
+                             FROM public.entrega_ocorrencias oc WHERE oc.entrega_id = p_entrega_id), '[]'::jsonb),
+    'divergencias', coalesce((
+      SELECT jsonb_agg(jsonb_build_object('etiqueta_id', ci.etiqueta_id, 'status', ci.status,
+                                          'quantidade', ci.quantidade, 'motivo', ci.motivo) ORDER BY ci.id)
+      FROM public.entrega_conferencia_itens ci
+      WHERE ci.entrega_id = p_entrega_id AND ci.status <> 'aceito'), '[]'::jsonb)
+  ))
+  INTO v
+  FROM public.entregas e
+  WHERE e.id = p_entrega_id;
+
+  IF v IS NULL THEN
+    RAISE EXCEPTION 'entrega_nao_encontrada' USING ERRCODE = 'raise_exception';
+  END IF;
+  RETURN v;
+END $function$
+ private_schema:1 proname:fn_entrega_build_snapshot_v1 prosecdef:true schema:public signature:fn_entrega_build_snapshot_v1(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_cobertura_v1(p_entrega_id uuid)
+ RETURNS text
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT CASE
+    WHEN (SELECT count(*) FROM public.entrega_etiquetas ee
+          WHERE ee.entrega_id = p_entrega_id AND ee.ativo) = 0 THEN 'pendente'
+    WHEN EXISTS (SELECT 1 FROM public.entrega_etiquetas ee
+                 LEFT JOIN public.entrega_conferencia_itens ci
+                   ON ci.entrega_id = ee.entrega_id AND ci.etiqueta_id = ee.etiqueta_id
+                 WHERE ee.entrega_id = p_entrega_id AND ee.ativo
+                   AND coalesce(ci.status,'pendente') = 'pendente') THEN 'pendente'
+    WHEN EXISTS (SELECT 1 FROM public.entrega_conferencia_itens ci
+                 WHERE ci.entrega_id = p_entrega_id AND ci.status = 'recusado') THEN 'parcial'
+    ELSE 'integral'
+  END
+$function$
+ private_schema:1 proname:fn_entrega_cobertura_v1 prosecdef:true schema:public signature:fn_entrega_cobertura_v1(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_comprovante_exigir_arquivo_v1()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+BEGIN
+  IF NEW.arquivo_path IS NULL THEN
+    IF NEW.assinatura_tipo = 'fisica_anexada' THEN
+      RAISE EXCEPTION USING ERRCODE = '23514',
+        MESSAGE = 'O comprovante físico exige um arquivo anexado.';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM storage.objects AS o
+    WHERE o.bucket_id = 'entrega-documentos'
+      AND o.name = NEW.arquivo_path
+  ) THEN
+    RAISE EXCEPTION USING ERRCODE = '23514',
+      MESSAGE = 'Arquivo do comprovante não encontrado ou sem acesso no armazenamento.';
+  END IF;
+  RETURN NEW;
+END;
+$function$
+ private_schema:1 proname:fn_entrega_comprovante_exigir_arquivo_v1 prosecdef:false schema:public signature:fn_entrega_comprovante_exigir_arquivo_v1()] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_comprovante_preservar_encerrado_v1()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+DECLARE
+ v_operacionais text[]:=ARRAY['updated_at','metadata','qr_code_path','qr_code_generated_at','validation_public_enabled','validation_expires_at','validation_url'];
+ v_campo text;
+BEGIN
+ IF TG_OP='DELETE' THEN
+  IF OLD.status='confirmado' OR OLD.metadata ? 'comprovante_snapshot_v1' THEN
+   RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Comprovante encerrado não pode ser excluído.';
+  END IF;
+  RETURN OLD;
+ END IF;
+ IF OLD.status='confirmado' AND
+   (to_jsonb(NEW)-v_operacionais) IS DISTINCT FROM (to_jsonb(OLD)-v_operacionais) THEN
+  RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Dados do comprovante confirmado não podem ser alterados.';
+ END IF;
+ IF OLD.metadata ? 'comprovante_snapshot_v1' THEN
+  IF NEW.id IS DISTINCT FROM OLD.id OR NEW.entrega_id IS DISTINCT FROM OLD.entrega_id THEN
+   RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Vínculo do comprovante congelado não pode ser alterado.';
+  END IF;
+  FOREACH v_campo IN ARRAY ARRAY['comprovante_snapshot_v1','comprovante_snapshot_hash','comprovante_numero'] LOOP
+   IF NEW.metadata->v_campo IS DISTINCT FROM OLD.metadata->v_campo THEN
+    RAISE EXCEPTION USING ERRCODE='23514', MESSAGE='Conteúdo do comprovante congelado não pode ser alterado.';
+   END IF;
+  END LOOP;
+ END IF;
+ RETURN NEW;
+END;
+$function$
+ private_schema:1 proname:fn_entrega_comprovante_preservar_encerrado_v1 prosecdef:false schema:public signature:fn_entrega_comprovante_preservar_encerrado_v1()] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_confirmar_engine_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb DEFAULT '{}'::jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_os_id uuid;
+  v_ent record;
+  v_est public.estoque_produto%ROWTYPE;
+  v_pendentes int; v_total_entregue numeric; v_total_reservado numeric;
+  v_finalizada boolean := false; v_avanco jsonb;
+  v_recebedor_nome text;
+  v_entregue_em timestamptz;
+  v_faturamento text := nullif(btrim(coalesce(p_opcoes->>'faturamento','')), '');
+  v_motivo_nb text := nullif(btrim(coalesce(p_opcoes->>'motivo_nao_faturavel','')), '');
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'COCKPIT_UNAUTHENTICATED'; END IF;
+  IF p_entrega_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS'; END IF;
+
+  PERFORM public.fn_estoque_ctx_open(jsonb_build_object(
+    'acao','entrega','origem','fn_entrega_confirmar_engine_v1','usuario_id', v_uid::text));
+
+  PERFORM pg_advisory_xact_lock(hashtext('cockpit_entrega:' || p_entrega_id::text));
+
+  SELECT e.id, e.status::text AS status, e.estoque_produto_id,
+         coalesce(e.quantidade_entregue, 0) AS qtd, e.partner_order_id,
+         e.ordem_servico_id, e.ordem_servico_onfarm_id
+    INTO v_ent
+    FROM public.entregas e
+   WHERE e.id = p_entrega_id
+   FOR UPDATE;
+
+  IF v_ent.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_NAO_ENCONTRADA'; END IF;
+
+  -- Origem: explícita quando informada; derivada do vínculo caso contrário.
+  IF nullif(btrim(coalesce(p_origem,'')), '') IS NOT NULL THEN
+    v_origem := public.fn_cockpit_norm_origem(p_origem);
+  ELSIF v_ent.ordem_servico_onfarm_id IS NOT NULL THEN
+    v_origem := 'onfarm';
+  ELSIF v_ent.partner_order_id IS NOT NULL THEN
+    v_origem := 'b2b';
+  ELSE
+    v_origem := 'manual';
+  END IF;
+
+  v_origem := public.fn_entrega_assert_confirmador(v_origem);
+
+  v_os_id := CASE WHEN v_origem = 'onfarm' THEN v_ent.ordem_servico_onfarm_id
+                  ELSE v_ent.ordem_servico_id END;
+
+  IF p_os_id IS NOT NULL AND v_os_id IS DISTINCT FROM p_os_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_OS';
+  END IF;
+
+  IF v_ent.status = 'cancelada' THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_CANCELADA'; END IF;
+  IF v_ent.status = 'entregue' THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'finalizada', false,
+      'entrega_id', p_entrega_id,
+      'message', 'Entrega já confirmada anteriormente.');
+  END IF;
+
+  IF v_origem = 'b2b' AND v_ent.partner_order_id IS NOT NULL THEN
+    PERFORM public.fn_cockpit_assert_b2b_liberado(v_ent.partner_order_id);
+  END IF;
+
+  IF v_ent.estoque_produto_id IS NOT NULL THEN
+    SELECT * INTO v_est FROM public.estoque_produto WHERE id = v_ent.estoque_produto_id FOR UPDATE;
+    IF v_est.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO'; END IF;
+    IF v_est.status::text <> 'expedido' THEN
+      IF v_os_id IS NOT NULL THEN
+        IF v_est.reservado_para_os_id IS DISTINCT FROM v_os_id THEN
+          RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE';
+        END IF;
+        IF coalesce(v_est.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN
+          RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM';
+        END IF;
+      END IF;
+      IF v_ent.qtd > coalesce(v_est.quantidade, 0) THEN
+        RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA';
+      END IF;
+    END IF;
+  END IF;
+
+  -- Recebedor físico é OBRIGATÓRIO e distinto de confirmado_por.
+  v_recebedor_nome := nullif(btrim(coalesce(p_recebedor->>'nome','')), '');
+  IF v_recebedor_nome IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_RECEBEDOR_OBRIGATORIO';
+  END IF;
+
+  v_entregue_em := coalesce(nullif(btrim(coalesce(p_opcoes->>'entregue_em','')), '')::timestamptz, now());
+
+  UPDATE public.entregas
+     SET status = 'entregue'::public.status_entrega,
+         entregue_em = v_entregue_em,
+         recebido_por_nome = v_recebedor_nome,
+         recebido_por_cargo = coalesce(nullif(btrim(coalesce(p_recebedor->>'cargo','')), ''), recebido_por_cargo),
+         recebido_por_documento = coalesce(nullif(btrim(coalesce(p_recebedor->>'documento','')), ''), recebido_por_documento),
+         observacoes_confirmacao = coalesce(nullif(btrim(coalesce(p_recebedor->>'observacoes','')), ''), observacoes_confirmacao),
+         confirmado_por = v_uid,
+         financial_status = CASE WHEN v_faturamento = 'bill_later' THEN 'PENDING_BILLING'
+                                 ELSE financial_status END
+   WHERE id = p_entrega_id;
+
+  IF v_est.id IS NOT NULL THEN
+    UPDATE public.estoque_produto
+       SET status = 'expedido'::public.status_estoque, expedido_por = v_uid,
+           expedido_em = now(), updated_at = now()
+     WHERE id = v_est.id AND status <> 'expedido'::public.status_estoque;
+
+    IF FOUND THEN
+      INSERT INTO public.estoque_movimentacoes
+        (estoque_produto_id, acao, quantidade, status_anterior, status_novo, os_id, os_tipo, usuario_id, lote_id, observacao)
+      VALUES (v_est.id, 'expedicao', v_ent.qtd, 'reservado', 'expedido',
+              v_os_id, v_origem, v_uid, v_est.lote_id, 'Baixa por confirmação de entrega');
+    END IF;
+  END IF;
+
+  IF v_os_id IS NOT NULL THEN
+    v_avanco := public._rpc_avancar_esteira_laboratorio_internal(v_os_id, v_origem, 'enviar_entrega', NULL);
+
+    INSERT INTO public.laboratorio_esteira_eventos
+      (os_id, origem_os, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+    VALUES (v_os_id, v_origem, 'em_entrega', 'entregue', 'confirmar_entrega_v1', v_uid,
+            format('Confirmação transacional da entrega %s (recebedor: %s)', p_entrega_id, v_recebedor_nome));
+
+    IF v_origem = 'onfarm' THEN
+      SELECT count(*) FILTER (WHERE status::text NOT IN ('entregue','cancelada')),
+             coalesce(sum(quantidade_entregue) FILTER (WHERE status::text = 'entregue'), 0)
+        INTO v_pendentes, v_total_entregue
+        FROM public.entregas WHERE ordem_servico_onfarm_id = v_os_id;
+    ELSE
+      SELECT count(*) FILTER (WHERE status::text NOT IN ('entregue','cancelada')),
+             coalesce(sum(quantidade_entregue) FILTER (WHERE status::text = 'entregue'), 0)
+        INTO v_pendentes, v_total_entregue
+        FROM public.entregas WHERE ordem_servico_id = v_os_id;
+    END IF;
+
+    SELECT coalesce(sum(quantidade_reservada), 0) INTO v_total_reservado
+      FROM public.estoque_produto
+     WHERE reservado_para_os_id = v_os_id
+       AND coalesce(reservado_para_os_tipo, v_origem) = v_origem
+       AND status <> 'estornado'::public.status_estoque;
+
+    IF v_pendentes = 0 AND v_total_reservado > 0 AND v_total_entregue >= v_total_reservado THEN
+      v_avanco := public._rpc_avancar_esteira_laboratorio_internal(v_os_id, v_origem, 'finalizar_os', NULL);
+      IF coalesce((v_avanco->>'success')::boolean, false) THEN
+        v_finalizada := true;
+        INSERT INTO public.laboratorio_esteira_eventos
+          (os_id, origem_os, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+        VALUES (v_os_id, v_origem, 'entregue', 'finalizada', 'finalizacao_automatica_por_entrega', v_uid,
+                'Cobertura completa: OS finalizada na mesma transação da confirmação de entrega.');
+      END IF;
+    END IF;
+  END IF;
+
+  IF v_faturamento = 'not_billable' THEN
+    IF v_motivo_nb IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_MOTIVO_NAO_FATURAVEL_OBRIGATORIO'; END IF;
+    PERFORM public.fn_mark_entrega_not_billable(p_entrega_id, v_motivo_nb);
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'finalizada', v_finalizada,
+    'entrega_id', p_entrega_id, 'os_id', v_os_id, 'origem', v_origem,
+    'parcial', (coalesce(v_pendentes, 0) > 0 OR coalesce(v_total_entregue, 0) < coalesce(v_total_reservado, 0)),
+    'total_entregue', coalesce(v_total_entregue, 0), 'total_reservado', coalesce(v_total_reservado, 0),
+    'message', CASE WHEN v_finalizada THEN 'Entrega confirmada — OS finalizada.'
+                    ELSE 'Entrega confirmada.' END);
+END;
+$function$
+ private_schema:1 proname:fn_entrega_confirmar_engine_v1 prosecdef:true schema:public signature:fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_evidencia_estado_editavel_v1()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+DECLARE v_id uuid; v_status text; v_comp_status text;
+BEGIN
+ IF TG_OP='UPDATE' AND NEW.entrega_id IS DISTINCT FROM OLD.entrega_id THEN
+  RAISE EXCEPTION USING ERRCODE='23514',MESSAGE='Não é permitido transferir evidências entre entregas.';
+ END IF;
+ IF TG_OP='DELETE' THEN v_id:=OLD.entrega_id; ELSE v_id:=NEW.entrega_id; END IF;
+ SELECT e.status,e.comprovante_status INTO v_status,v_comp_status
+ FROM public.entregas e WHERE e.id=v_id FOR SHARE;
+ IF NOT FOUND THEN
+  RAISE EXCEPTION USING ERRCODE='23514',MESSAGE='Entrega não encontrada ou sem acesso.';
+ END IF;
+ IF v_status='cancelada' OR v_comp_status IN ('confirmado','dispensado') THEN
+  RAISE EXCEPTION USING ERRCODE='23514',MESSAGE='As evidências desta entrega estão encerradas e não podem ser alteradas.';
+ END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+ RETURN NEW;
+END;
+$function$
+ private_schema:1 proname:fn_entrega_evidencia_estado_editavel_v1 prosecdef:false schema:public signature:fn_entrega_evidencia_estado_editavel_v1()] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_guard_faturamento_v1(p_entrega_id uuid, p_total numeric)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_r public.entrega_reconciliacoes%ROWTYPE;
+  v_conf int;
+  v_canon jsonb;
+  v_max numeric;
+  v_canon_valor numeric;
+BEGIN
+  SELECT count(*)::int INTO v_conf
+    FROM public.entrega_conferencia_itens WHERE entrega_id = p_entrega_id;
+
+  v_canon := public.fn_entrega_valor_faturavel_v1(p_entrega_id);
+
+  -- H6C-001: condição comercial pendente/rejeitada/não vinculada bloqueia o
+  -- faturamento em qualquer modo, inclusive o manual.
+  IF (v_canon->>'origem') = 'bloqueado' THEN
+    RAISE EXCEPTION 'condicao_b2b_bloqueada: %', COALESCE(v_canon->>'motivo','indefinido')
+      USING ERRCODE='check_violation';
+  END IF;
+
+  v_canon_valor := NULLIF(v_canon->>'valor','')::numeric;
+
+  IF v_conf = 0 THEN
+    -- H6c-003: entrega integral também é comparada ao canônico, quando existir.
+    IF v_canon_valor IS NOT NULL AND p_total IS NOT NULL
+       AND abs(p_total - v_canon_valor) > 0.01 THEN
+      RAISE EXCEPTION 'valor_divergente_do_canonico: informado=%, canonico=%',
+        round(p_total,2), round(v_canon_valor,2) USING ERRCODE='check_violation';
+    END IF;
+    IF v_canon_valor IS NULL THEN
+      -- sem fonte histórica confiável: fluxo legado/manual, o guard não arbitra preço.
+      RETURN jsonb_build_object('modo','legado','ratio_aceito',1,'canonico',v_canon);
+    END IF;
+    RETURN jsonb_build_object('modo','integral_canonico','ratio_aceito',1,
+                              'valor_faturavel_max', round(v_canon_valor,2),
+                              'canonico', v_canon);
+  END IF;
+
+  SELECT * INTO v_r FROM public.entrega_reconciliacoes
+   WHERE entrega_id = p_entrega_id AND status = 'reconciliada';
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'entrega_nao_reconciliada: conclua a conferencia e a reconciliacao antes de faturar'
+      USING ERRCODE='check_violation';
+  END IF;
+  IF NOT v_r.faturavel THEN
+    RAISE EXCEPTION 'entrega_nao_faturavel: todos os itens foram recusados'
+      USING ERRCODE='check_violation';
+  END IF;
+
+  v_max := COALESCE(v_r.valor_faturavel_max, v_canon_valor);
+  IF v_max IS NOT NULL AND p_total > v_max + 0.01 THEN
+    RAISE EXCEPTION 'valor_acima_do_aceito' USING ERRCODE='check_violation';
+  END IF;
+
+  RETURN jsonb_build_object('modo', 'reconciliado', 'reconciliacao_id', v_r.id,
+                            'ratio_aceito', v_r.ratio_aceito,
+                            'valor_faturavel_max', v_max, 'canonico', v_canon);
+END
+$function$
+ private_schema:1 proname:fn_entrega_guard_faturamento_v1 prosecdef:true schema:public signature:fn_entrega_guard_faturamento_v1(uuid,numeric)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_marcar_cancelamento()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  IF NEW.status::text = 'cancelada'
+     AND (TG_OP = 'INSERT' OR OLD.status::text IS DISTINCT FROM 'cancelada') THEN
+    IF auth.uid() IS NOT NULL
+       AND current_setting('app.entrega_cancelamento_id', true) IS DISTINCT FROM NEW.id::text THEN
+      RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_EXIGE_RPC'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    NEW.cancelada_em := COALESCE(NEW.cancelada_em, now());
+    NEW.cancelada_por := COALESCE(NEW.cancelada_por, auth.uid());
+  END IF;
+  RETURN NEW;
+END;
+$function$
+ private_schema:1 proname:fn_entrega_marcar_cancelamento prosecdef:true schema:public signature:fn_entrega_marcar_cancelamento()] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_entrega_valor_faturavel_v1(p_entrega_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_e public.entregas%ROWTYPE;
+  v_po public.partner_orders%ROWTYPE;
+  v_t public.partner_order_payment_terms%ROWTYPE;
+  v_fin text;
+  v_ap text;
+  v_total_snapshot numeric;
+  v_origem text;
+  v_base numeric;
+  v_aceito numeric;
+  v_valor numeric;
+  v_conf int;
+  v_itens jsonb;
+  v_ident jsonb;
+BEGIN
+  SELECT * INTO v_e FROM public.entregas WHERE id = p_entrega_id;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('origem','indisponivel','motivo','entrega_nao_encontrada');
+  END IF;
+
+  SELECT count(*)::int INTO v_conf
+    FROM public.entrega_conferencia_itens WHERE entrega_id = p_entrega_id;
+
+  -- ------------------- caminho B2B (snapshot canônico) -------------------
+  IF v_e.partner_order_id IS NOT NULL THEN
+    SELECT * INTO v_po FROM public.partner_orders WHERE id = v_e.partner_order_id;
+    IF NOT FOUND THEN
+      RETURN jsonb_build_object('origem','indisponivel','motivo','pedido_b2b_nao_encontrado');
+    END IF;
+
+    v_fin := COALESCE(v_po.financial_approval_status, 'not_required');
+    v_ident := jsonb_build_object(
+      'partner_order_id', v_po.id,
+      'payment_terms_id', v_po.payment_terms_id,
+      'financial_approval_status', v_fin,
+      'order_status', v_po.status);
+
+    IF v_po.payment_terms_id IS NOT NULL THEN
+      -- identidade imutável da condição econômica
+      SELECT * INTO v_t FROM public.partner_order_payment_terms
+       WHERE id = v_po.payment_terms_id;
+      IF NOT FOUND OR v_t.partner_order_id IS DISTINCT FROM v_po.id THEN
+        RETURN jsonb_build_object('origem','bloqueado','motivo','termo_canonico_invalido')
+               || v_ident;
+      END IF;
+
+      v_ap := COALESCE(v_t.approval_status, 'pending');
+      v_ident := v_ident || jsonb_build_object('approval_status', v_ap);
+
+      IF v_ap = 'approved' THEN
+        NULL; -- liberado
+      ELSIF v_ap = 'not_required'
+            AND v_fin = 'not_required'
+            AND COALESCE(v_po.requires_financial_approval, false) = false THEN
+        NULL; -- liberado: nenhuma aprovação exigida em nenhum nível
+      ELSE
+        -- pending / rejected / adjustment_requested / incoerência => fail-closed.
+        -- Proibido fallback silencioso para outro termo ou para o pedido.
+        RETURN jsonb_build_object('origem','bloqueado','motivo','condicao_b2b_nao_liberada')
+               || v_ident;
+      END IF;
+
+      v_total_snapshot := v_t.final_amount;
+      v_origem := 'B2B_PAYMENT_TERMS_SNAPSHOT';
+    ELSE
+      -- legado: sem condição vinculada ao pedido.
+      IF EXISTS (SELECT 1 FROM public.partner_order_payment_terms t
+                  WHERE t.partner_order_id = v_po.id) THEN
+        -- existe termo, mas não é o canônico do pedido => nunca usar "o mais novo"
+        RETURN jsonb_build_object('origem','bloqueado','motivo','termo_nao_vinculado_ao_pedido')
+               || v_ident;
+      END IF;
+      IF v_fin IN ('pending','rejected') THEN
+        RETURN jsonb_build_object('origem','bloqueado','motivo','aprovacao_financeira_'||v_fin)
+               || v_ident;
+      END IF;
+      IF COALESCE(v_po.status,'') IN ('cancelado','reprovado','reprovado_sem_itens',
+                                      'rascunho','pendente','solicitado','em_analise_comercial',
+                                      'aguardando_aprovacao_credito','aguardando_ajuste_comercial',
+                                      'aguardando_itens','aguardando_cotacao') THEN
+        RETURN jsonb_build_object('origem','bloqueado','motivo','pedido_nao_faturavel')
+               || v_ident;
+      END IF;
+      v_total_snapshot := COALESCE(v_po.final_amount_with_interest, v_po.total);
+      v_origem := 'B2B_ORDER_SNAPSHOT_LEGACY';
+    END IF;
+
+    IF v_total_snapshot IS NULL OR v_total_snapshot <= 0 THEN
+      RETURN jsonb_build_object('origem','indisponivel','motivo','snapshot_b2b_ausente')
+             || v_ident;
+    END IF;
+
+    -- base econômica do pedido = soma dos subtotais snapshot dos itens
+    SELECT COALESCE(sum(COALESCE(i.subtotal,
+             COALESCE(i.preco_unitario_final_snapshot, i.preco_unitario, 0) * COALESCE(i.quantidade,0))), 0)
+      INTO v_base
+      FROM public.partner_order_items i WHERE i.order_id = v_po.id;
+
+    IF v_conf = 0 OR v_base <= 0 THEN
+      RETURN jsonb_build_object('origem', v_origem, 'valor', round(v_total_snapshot,2),
+        'metodo', jsonb_build_object('tipo','integral','total_snapshot', round(v_total_snapshot,2),
+                                     'base_itens', round(COALESCE(v_base,0),2)))
+             || v_ident;
+    END IF;
+
+    -- participação econômica aceita POR PRODUTO (volume conferido aceito / volume conferido)
+    WITH conf AS (
+      SELECT ee.produto_id AS produto_id, ci.status AS status,
+             COALESCE(ee.volume,0) * COALESCE(ci.quantidade,1) AS vol
+        FROM public.entrega_conferencia_itens ci
+        JOIN public.estoque_embalagens ee ON ee.id = ci.embalagem_id
+       WHERE ci.entrega_id = p_entrega_id
+    ), ratio AS (
+      SELECT produto_id,
+             CASE WHEN SUM(vol) > 0
+                  THEN LEAST(1, round(COALESCE(SUM(vol) FILTER (WHERE status='aceito'), 0) / SUM(vol), 6))
+                  ELSE 0 END AS r
+        FROM conf GROUP BY produto_id
+    ), itens AS (
+      SELECT i.product_id AS product_id,
+             COALESCE(i.subtotal,
+               COALESCE(i.preco_unitario_final_snapshot, i.preco_unitario, 0) * COALESCE(i.quantidade,0)) AS sub,
+             COALESCE(r.r, 0) AS r
+        FROM public.partner_order_items i
+        LEFT JOIN ratio r ON r.produto_id = i.product_id
+       WHERE i.order_id = v_po.id
+    )
+    SELECT COALESCE(sum(sub * r),0),
+           COALESCE(jsonb_agg(jsonb_build_object('produto_id', product_id,
+                     'subtotal_snapshot', round(sub,2), 'ratio_aceito', r,
+                     'base_aceita_item', round(sub * r, 2))
+                    ORDER BY product_id), '[]'::jsonb)
+      INTO v_aceito, v_itens
+      FROM itens;
+
+    IF abs(v_aceito - v_base) <= 0.01 THEN
+      v_valor := round(v_total_snapshot, 2);
+    ELSE
+      -- alocação do ajuste histórico do pedido (juros/desconto de nível pedido)
+      -- proporcional à participação econômica aceita dos itens.
+      v_valor := round(v_total_snapshot * (v_aceito / v_base), 2);
+    END IF;
+
+    RETURN jsonb_build_object('origem', v_origem, 'valor', v_valor,
+      'metodo', jsonb_build_object('tipo','participacao_economica_aceita_x_snapshot',
+        'total_snapshot', round(v_total_snapshot,2),
+        'base_itens', round(v_base,2), 'base_aceita', round(v_aceito,2),
+        'fator', round(v_aceito / NULLIF(v_base,0), 6), 'itens', v_itens))
+           || v_ident;
+  END IF;
+
+  -- ---------------- caminho OS / base de faturamento histórica -------------
+  IF v_e.os_faturamento_base_id IS NOT NULL THEN
+    SELECT b.valor_total_faturavel INTO v_total_snapshot
+      FROM public.os_faturamento_base b WHERE b.id = v_e.os_faturamento_base_id;
+    IF v_total_snapshot IS NOT NULL AND v_total_snapshot > 0 THEN
+      RETURN jsonb_build_object('origem','OS_FATURAMENTO_BASE_SNAPSHOT',
+        'valor', round(v_total_snapshot,2),
+        'metodo', jsonb_build_object('tipo','os_base','os_faturamento_base_id', v_e.os_faturamento_base_id));
+    END IF;
+  END IF;
+
+  RETURN jsonb_build_object('origem','indisponivel','motivo','sem_fonte_historica_confiavel');
+END
+$function$
+ private_schema:1 proname:fn_entrega_valor_faturavel_v1 prosecdef:true schema:public signature:fn_entrega_valor_faturavel_v1(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_generate_receivable_from_entrega(_entrega_id uuid, _payload jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_entrega public.entregas%ROWTYPE;
+  v_receivable_id uuid;
+  v_total numeric(14,2);
+  v_canon jsonb;
+  v_canon_valor numeric;
+  v_canon_origem text;
+  v_manual boolean;
+  v_manual_reason text;
+  v_count integer;
+  v_category uuid; v_cost_center uuid; v_payment_method uuid;
+  v_first_due date; v_issue date;
+  v_fiscal_required boolean; v_fiscal_status text;
+  v_installments jsonb; v_sum numeric(14,2) := 0; v_inst jsonb;
+  v_desc text; v_notes text; v_guard jsonb;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Sessão inválida.' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF NOT public.is_financial_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão para faturar entregas.' USING ERRCODE='insufficient_privilege';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_faturar:' || _entrega_id::text, 0));
+
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = _entrega_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada.'; END IF;
+
+  -- H6-003.5 replay estavel
+  IF v_entrega.receivable_id IS NOT NULL THEN
+    RETURN v_entrega.receivable_id;
+  END IF;
+
+  IF v_entrega.status = 'cancelada' THEN
+    RAISE EXCEPTION 'Entrega cancelada não pode ser faturada.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_entrega.status <> 'entregue' THEN
+    RAISE EXCEPTION 'Entrega precisa estar com status "entregue" para faturar.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_entrega.cliente_id IS NULL THEN
+    RAISE EXCEPTION 'Entrega sem cliente vinculado.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_entrega.financial_status = 'NOT_BILLABLE' THEN
+    RAISE EXCEPTION 'Entrega marcada como não faturável.' USING ERRCODE='check_violation';
+  END IF;
+
+  v_total           := COALESCE((_payload->>'total_amount')::numeric, 0);
+  v_count           := COALESCE((_payload->>'installment_count')::integer, 1);
+  v_category        := NULLIF(_payload->>'category_id','')::uuid;
+  v_cost_center     := NULLIF(_payload->>'cost_center_id','')::uuid;
+  v_payment_method  := NULLIF(_payload->>'payment_method_id','')::uuid;
+  v_first_due       := COALESCE((_payload->>'first_due_date')::date, CURRENT_DATE);
+  v_issue           := COALESCE((_payload->>'issue_date')::date, CURRENT_DATE);
+  v_fiscal_required := COALESCE((_payload->>'fiscal_invoice_required')::boolean, false);
+  v_fiscal_status   := CASE WHEN v_fiscal_required THEN 'PENDING' ELSE 'NOT_REQUIRED' END;
+  v_installments    := _payload->'installments';
+  v_desc            := COALESCE(NULLIF(_payload->>'description',''), 'Entrega ' || substr(_entrega_id::text,1,8));
+  v_notes           := NULLIF(_payload->>'notes','');
+  v_manual          := COALESCE((_payload->>'manual_financial_adjustment')::boolean, false);
+  v_manual_reason   := NULLIF(trim(_payload->>'manual_adjustment_reason'), '');
+
+  IF v_category IS NULL THEN
+    RAISE EXCEPTION 'Categoria financeira é obrigatória.' USING ERRCODE='check_violation';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.financial_categories WHERE id = v_category) THEN
+    RAISE EXCEPTION 'Categoria financeira não encontrada.' USING ERRCODE='check_violation';
+  END IF;
+  IF v_count < 1 OR v_count > 36 THEN
+    RAISE EXCEPTION 'Número de parcelas deve estar entre 1 e 36.' USING ERRCODE='check_violation';
+  END IF;
+
+  -- ------- H6-003: valor canonico server-side é a autoridade do total -------
+  v_canon := public.fn_entrega_valor_faturavel_v1(_entrega_id);
+  v_canon_origem := v_canon->>'origem';
+
+  -- reconciliacao parcial: usa exatamente o valor_faturavel_max persistido
+  SELECT r.valor_faturavel_max INTO v_canon_valor
+    FROM public.entrega_reconciliacoes r
+   WHERE r.entrega_id = _entrega_id AND r.status = 'reconciliada'
+   LIMIT 1;
+  IF v_canon_valor IS NULL THEN
+    v_canon_valor := (v_canon->>'valor')::numeric;
+  ELSE
+    v_canon_origem := 'RECONCILIACAO:' || COALESCE(v_canon_origem,'-');
+  END IF;
+
+  IF v_canon_valor IS NOT NULL THEN
+    IF abs(v_total - v_canon_valor) > 0.01 THEN
+      RAISE EXCEPTION 'valor_divergente_do_canonico: informado %, canônico % (origem %).',
+        v_total, v_canon_valor, v_canon_origem USING ERRCODE='check_violation';
+    END IF;
+    v_total := round(v_canon_valor, 2);
+  ELSE
+    -- sem fonte historica confiavel: exige ajuste financeiro manual justificado
+    IF NOT v_manual OR v_manual_reason IS NULL OR length(v_manual_reason) < 10 THEN
+      RAISE EXCEPTION 'valor_canonico_indisponivel: informe manual_financial_adjustment com motivo (mín. 10 caracteres).'
+        USING ERRCODE='check_violation';
+    END IF;
+  END IF;
+
+  IF v_total <= 0 THEN
+    RAISE EXCEPTION 'Valor total inválido.' USING ERRCODE='check_violation';
+  END IF;
+
+  -- GATE: reconciliação obrigatória quando há conferência por item
+  v_guard := public.fn_entrega_guard_faturamento_v1(_entrega_id, v_total);
+
+  IF v_installments IS NOT NULL AND jsonb_array_length(v_installments) > 0 THEN
+    IF jsonb_array_length(v_installments) <> v_count THEN
+      RAISE EXCEPTION 'Quantidade de parcelas (%) diverge de installment_count (%).',
+        jsonb_array_length(v_installments), v_count USING ERRCODE='check_violation';
+    END IF;
+    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP
+      v_sum := v_sum + COALESCE((v_inst->>'amount')::numeric, 0);
+    END LOOP;
+    IF abs(v_sum - v_total) > 0.01 THEN
+      RAISE EXCEPTION 'Soma das parcelas (%) difere do total (%).', v_sum, v_total USING ERRCODE='check_violation';
+    END IF;
+  END IF;
+
+  BEGIN
+    INSERT INTO public.accounts_receivable (
+      origin_type, origin_id, customer_id, description, category_id, cost_center_id,
+      total_amount, issue_date, first_due_date, installment_count,
+      payment_method_id, fiscal_invoice_required, fiscal_invoice_status,
+      notes, created_by
+    ) VALUES (
+      'DELIVERY', _entrega_id, v_entrega.cliente_id, v_desc, v_category, v_cost_center,
+      v_total, v_issue, v_first_due, v_count,
+      v_payment_method, v_fiscal_required, v_fiscal_status,
+      v_notes, v_uid
+    ) RETURNING id INTO v_receivable_id;
+  EXCEPTION WHEN unique_violation THEN
+    SELECT id INTO v_receivable_id FROM public.accounts_receivable
+     WHERE origin_type = 'DELIVERY' AND origin_id = _entrega_id AND status <> 'CANCELED';
+    IF v_receivable_id IS NOT NULL THEN RETURN v_receivable_id; END IF;
+    RAISE EXCEPTION 'Entrega já possui conta a receber ativa.' USING ERRCODE='check_violation';
+  END;
+
+  IF v_installments IS NOT NULL AND jsonb_array_length(v_installments) > 0 THEN
+    DELETE FROM public.accounts_receivable_installments WHERE receivable_id = v_receivable_id;
+    FOR v_inst IN SELECT * FROM jsonb_array_elements(v_installments) LOOP
+      INSERT INTO public.accounts_receivable_installments (
+        receivable_id, installment_number, due_date, original_amount, net_amount, status
+      ) VALUES (
+        v_receivable_id,
+        (v_inst->>'installment_number')::integer,
+        (v_inst->>'due_date')::date,
+        (v_inst->>'amount')::numeric,
+        (v_inst->>'amount')::numeric,
+        'OPEN'
+      );
+    END LOOP;
+  END IF;
+
+  UPDATE public.entregas
+     SET receivable_id = v_receivable_id,
+         financial_status = 'BILLED',
+         billing_generated_at = now(),
+         billing_generated_by = v_uid
+   WHERE id = _entrega_id;
+
+  INSERT INTO public.financial_audit_log (
+    entity_type, entity_id, action, old_data, new_data, performed_by
+  ) VALUES (
+    'entregas', _entrega_id, 'DELIVERY_BILLED',
+    jsonb_build_object('receivable_id', v_entrega.receivable_id,
+                       'financial_status', v_entrega.financial_status),
+    jsonb_build_object('receivable_id', v_receivable_id, 'total_amount', v_total,
+      'installment_count', v_count, 'fiscal_invoice_required', v_fiscal_required,
+      'payment_method_id', v_payment_method, 'origem', 'entrega',
+      'valor_canonico', v_canon_valor, 'valor_canonico_origem', v_canon_origem,
+      'manual_financial_adjustment', v_manual, 'manual_adjustment_reason', v_manual_reason,
+      'reconciliacao', v_guard),
+    v_uid
+  );
+
+  RETURN v_receivable_id;
+END;
+$function$
+ private_schema:1 proname:fn_generate_receivable_from_entrega prosecdef:true schema:public signature:fn_generate_receivable_from_entrega(uuid,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_h6c_entrega_ar_b2b_link()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_po public.partner_orders%ROWTYPE;
+  v_settings record;
+BEGIN
+  IF NEW.receivable_id IS NULL
+     OR NEW.partner_order_id IS NULL
+     OR NEW.receivable_id IS NOT DISTINCT FROM OLD.receivable_id THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT * INTO v_po FROM public.partner_orders WHERE id = NEW.partner_order_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN NEW; END IF;
+
+  -- 1) o recebível passa a pertencer ao parceiro (entra em saldo_em_aberto)
+  UPDATE public.accounts_receivable
+     SET partner_id = v_po.partner_id
+   WHERE id = NEW.receivable_id AND partner_id IS DISTINCT FROM v_po.partner_id;
+
+  -- 2) vínculo financeiro canônico (idempotente: unique em partner_order_id)
+  SELECT * INTO v_settings FROM public.partner_financial_settings WHERE partner_id = v_po.partner_id;
+  INSERT INTO public.partner_order_financial_links(
+    partner_order_id, partner_id, receivable_id, financial_status, billing_trigger, created_by)
+  VALUES (v_po.id, v_po.partner_id, NEW.receivable_id, 'gerado',
+          COALESCE(v_settings.billing_trigger, 'entrega'), NEW.billing_generated_by)
+  ON CONFLICT (partner_order_id) DO NOTHING;
+
+  -- 3) pedido deixa de ser "comprometido não faturado"
+  UPDATE public.partner_orders
+     SET financial_status = 'gerado',
+         receivable_generated = true,
+         receivable_generated_at = COALESCE(receivable_generated_at, now()),
+         receivable_generated_by = COALESCE(receivable_generated_by, NEW.billing_generated_by)
+   WHERE id = v_po.id AND COALESCE(receivable_generated,false) = false;
+
+  RETURN NEW;
+END
+$function$
+ private_schema:1 proname:fn_h6c_entrega_ar_b2b_link prosecdef:true schema:public signature:fn_h6c_entrega_ar_b2b_link()] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_mark_entrega_not_billable(_entrega_id uuid, _reason text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_entrega public.entregas%ROWTYPE;
+BEGIN
+  IF NOT public.is_financial_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão para marcar entrega como sem cobrança.' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF _reason IS NULL OR length(trim(_reason)) = 0 THEN
+    RAISE EXCEPTION 'Motivo é obrigatório.' USING ERRCODE='check_violation';
+  END IF;
+
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = _entrega_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada.'; END IF;
+  IF v_entrega.receivable_id IS NOT NULL THEN
+    RAISE EXCEPTION 'Entrega já foi faturada.' USING ERRCODE='check_violation';
+  END IF;
+
+  UPDATE public.entregas
+    SET financial_status = 'NOT_BILLABLE',
+        not_billable_reason = _reason
+    WHERE id = _entrega_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)
+  VALUES ('entregas', _entrega_id, 'MARK_NOT_BILLABLE',
+    jsonb_build_object('financial_status', v_entrega.financial_status),
+    jsonb_build_object('financial_status', 'NOT_BILLABLE', 'reason', _reason),
+    v_uid);
+END $function$
+ private_schema:1 proname:fn_mark_entrega_not_billable prosecdef:true schema:public signature:fn_mark_entrega_not_billable(uuid,text)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_sync_entrega_financial_status()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  -- bloqueia troca de receivable_id já vinculado
+  IF TG_OP = 'UPDATE'
+     AND OLD.receivable_id IS NOT NULL
+     AND NEW.receivable_id IS DISTINCT FROM OLD.receivable_id THEN
+    RAISE EXCEPTION 'Esta entrega já possui faturamento gerado e não pode ser alterada.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  -- vinculou receivable agora => BILLED
+  IF (TG_OP = 'INSERT' AND NEW.receivable_id IS NOT NULL)
+     OR (TG_OP = 'UPDATE' AND OLD.receivable_id IS NULL AND NEW.receivable_id IS NOT NULL) THEN
+    NEW.financial_status := 'BILLED';
+    NEW.billing_generated_at := COALESCE(NEW.billing_generated_at, now());
+    NEW.billing_generated_by := COALESCE(NEW.billing_generated_by, auth.uid());
+  END IF;
+
+  -- entrega cancelada
+  IF NEW.status::text = 'cancelada' THEN
+    NEW.financial_status := 'CANCELED';
+  END IF;
+
+  -- valida NOT_BILLABLE
+  IF NEW.financial_status = 'NOT_BILLABLE'
+     AND (NEW.not_billable_reason IS NULL OR length(trim(NEW.not_billable_reason)) = 0) THEN
+    RAISE EXCEPTION 'Informe o motivo para marcar a entrega como sem cobrança.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  -- default quando não definido
+  IF NEW.financial_status IS NULL THEN
+    NEW.financial_status := 'PENDING_BILLING';
+  END IF;
+
+  RETURN NEW;
+END $function$
+ private_schema:1 proname:fn_sync_entrega_financial_status prosecdef:true schema:public signature:fn_sync_entrega_financial_status()] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_validate_entrega_confirmacao()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_anexos int;
+BEGIN
+  IF NEW.status::text = 'entregue'
+     AND (TG_OP = 'INSERT' OR OLD.status::text IS DISTINCT FROM 'entregue') THEN
+
+    IF TG_OP = 'UPDATE' AND OLD.status::text = 'cancelada' THEN
+      RAISE EXCEPTION 'Não é possível confirmar uma entrega cancelada.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF COALESCE(TRIM(NEW.recebido_por_nome), '') = '' THEN
+      RAISE EXCEPTION 'Informe o nome de quem recebeu a entrega.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF NEW.confirmado_por IS NULL THEN
+      RAISE EXCEPTION 'A entrega precisa ser confirmada por um usuário autenticado.'
+        USING ERRCODE = 'check_violation';
+    END IF;
+
+    IF NEW.entregue_em IS NULL THEN
+      NEW.entregue_em := now();
+    END IF;
+
+    IF NEW.comprovante_entrega_obrigatorio THEN
+      SELECT count(*) INTO v_anexos
+        FROM public.entrega_documentos
+        WHERE entrega_id = NEW.id;
+      IF v_anexos = 0 THEN
+        RAISE EXCEPTION 'É obrigatório anexar pelo menos um comprovante para confirmar esta entrega.'
+          USING ERRCODE = 'check_violation';
+      END IF;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+ private_schema:1 proname:fn_validate_entrega_confirmacao prosecdef:true schema:public signature:fn_validate_entrega_confirmacao()] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.fn_validate_entrega_estoque()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_estoque_id uuid;
+  v_qtd_fisica_disponivel numeric;
+  v_qtd_reservada_os numeric;
+  v_qtd_ja_entregue_lote_os numeric;
+  v_lote_codigo text;
+BEGIN
+  -- Se a entrega já está sendo criada/atualizada como cancelada, não validar saldo
+  IF NEW.status::text = 'cancelada' THEN
+    RETURN NEW;
+  END IF;
+
+  v_estoque_id := NEW.estoque_produto_id;
+
+  IF v_estoque_id IS NULL THEN
+    RAISE EXCEPTION 'ID do estoque não informado na entrega.' USING ERRCODE = 'check_violation';
+  END IF;
+
+  SELECT 
+    ep.quantidade, 
+    ep.quantidade_reservada,
+    l.codigo_lote
+  INTO 
+    v_qtd_fisica_disponivel, 
+    v_qtd_reservada_os,
+    v_lote_codigo
+  FROM public.estoque_produto ep
+  JOIN public.lotes l ON l.id = ep.lote_id
+  WHERE ep.id = v_estoque_id;
+
+  -- Acumula somente entregas válidas (ignora canceladas)
+  SELECT COALESCE(SUM(quantidade_entregue), 0)
+  INTO v_qtd_ja_entregue_lote_os
+  FROM public.entregas
+  WHERE estoque_produto_id = v_estoque_id 
+    AND ordem_servico_id = NEW.ordem_servico_id
+    AND id <> NEW.id
+    AND status::text <> 'cancelada';
+
+  IF NEW.quantidade_entregue > v_qtd_fisica_disponivel THEN
+    RAISE EXCEPTION 'Saldo físico insuficiente no lote %. Disponível: %, Solicitado: %.',
+      v_lote_codigo, v_qtd_fisica_disponivel, NEW.quantidade_entregue
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF (v_qtd_ja_entregue_lote_os + NEW.quantidade_entregue) > v_qtd_reservada_os THEN
+    RAISE EXCEPTION 'Quantidade excede o saldo reservado para esta Ordem de Serviço no lote %. Reservado total: %, Já entregue: %, Saldo restante: %.',
+      v_lote_codigo, v_qtd_reservada_os, v_qtd_ja_entregue_lote_os, (v_qtd_reservada_os - v_qtd_ja_entregue_lote_os)
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+ private_schema:1 proname:fn_validate_entrega_estoque prosecdef:true schema:public signature:fn_validate_entrega_estoque()] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_anexar_comprovante_entrega(p_entrega_id uuid, p_payload jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_entrega public.entregas%ROWTYPE;
+  v_comp_id uuid;
+  v_rec_nome text := nullif(trim(coalesce(p_payload->>'recebedor_nome','')), '');
+  v_hash text;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'Sem permissão'; END IF;
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = p_entrega_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada'; END IF;
+  IF v_entrega.status = 'cancelada' THEN RAISE EXCEPTION 'Entrega cancelada'; END IF;
+  IF v_entrega.assinatura_obrigatoria AND v_rec_nome IS NULL THEN
+    RAISE EXCEPTION 'recebedor_nome é obrigatório';
+  END IF;
+  IF coalesce(p_payload->>'arquivo_path','') = '' THEN
+    RAISE EXCEPTION 'arquivo_path é obrigatório';
+  END IF;
+
+  v_comp_id := v_entrega.comprovante_id;
+  IF v_comp_id IS NULL THEN
+    PERFORM public.rpc_gerar_formulario_entrega(p_entrega_id);
+    SELECT comprovante_id INTO v_comp_id FROM public.entregas WHERE id = p_entrega_id;
+  END IF;
+
+  UPDATE public.entrega_comprovantes SET
+    status = 'anexado',
+    arquivo_path = p_payload->>'arquivo_path',
+    arquivo_url = p_payload->>'arquivo_url',
+    arquivo_nome = p_payload->>'arquivo_nome',
+    arquivo_mime = p_payload->>'arquivo_mime',
+    assinatura_coletada = true,
+    assinatura_tipo = 'fisica_anexada',
+    recebedor_nome = v_rec_nome,
+    recebedor_documento = nullif(p_payload->>'recebedor_documento',''),
+    recebedor_cargo = nullif(p_payload->>'recebedor_cargo',''),
+    recebedor_telefone = nullif(p_payload->>'recebedor_telefone',''),
+    data_assinatura = coalesce((p_payload->>'data_assinatura')::timestamptz, now()),
+    anexado_por = v_uid,
+    anexado_em = now(),
+    updated_at = now()
+  WHERE id = v_comp_id
+  RETURNING validation_hash INTO v_hash;
+
+  UPDATE public.entregas SET
+    comprovante_status = 'anexado',
+    assinatura_tipo = 'fisica_anexada',
+    recebedor_nome = coalesce(v_rec_nome, recebedor_nome),
+    recebedor_documento = coalesce(nullif(p_payload->>'recebedor_documento',''), recebedor_documento),
+    recebedor_cargo = coalesce(nullif(p_payload->>'recebedor_cargo',''), recebedor_cargo),
+    recebedor_telefone = coalesce(nullif(p_payload->>'recebedor_telefone',''), recebedor_telefone),
+    comprovante_anexado_em = now(),
+    comprovante_anexado_por = v_uid,
+    updated_at = now()
+  WHERE id = p_entrega_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', p_entrega_id, 'DELIVERY_PROOF_ATTACHED',
+          jsonb_build_object('comprovante_id', v_comp_id, 'arquivo_path', p_payload->>'arquivo_path'), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'comprovante_id', v_comp_id, 'validation_hash', v_hash);
+END $function$
+ private_schema:1 proname:rpc_anexar_comprovante_entrega prosecdef:true schema:public signature:rpc_anexar_comprovante_entrega(uuid,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_atualizar_checklist_entrega(p_checklist_id uuid, p_concluido boolean, p_observacao text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_entrega_id uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'Sem permissão'; END IF;
+  SELECT entrega_id INTO v_entrega_id FROM public.entrega_checklist WHERE id = p_checklist_id;
+  IF v_entrega_id IS NULL THEN RAISE EXCEPTION 'Checklist não encontrado'; END IF;
+
+  UPDATE public.entrega_checklist SET
+    concluido = p_concluido,
+    observacao = coalesce(p_observacao, observacao),
+    concluido_por = CASE WHEN p_concluido THEN v_uid ELSE NULL END,
+    concluido_em = CASE WHEN p_concluido THEN now() ELSE NULL END
+  WHERE id = p_checklist_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', v_entrega_id, 'DELIVERY_CHECKLIST_UPDATED',
+          jsonb_build_object('checklist_id', p_checklist_id, 'concluido', p_concluido), v_uid);
+
+  RETURN jsonb_build_object('success', true);
+END $function$
+ private_schema:1 proname:rpc_atualizar_checklist_entrega prosecdef:true schema:public signature:rpc_atualizar_checklist_entrega(uuid,boolean,text)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_cockpit_confirmar_entrega_v1(p_entrega_id uuid, p_os_id uuid, p_origem text, p_recebedor jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  IF p_os_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS'; END IF;
+  IF coalesce(btrim(p_recebedor->>'nome'), '') = '' THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_RECEBEDOR_OBRIGATORIO';
+  END IF;
+  RETURN public.fn_entrega_confirmar_engine_v1(p_entrega_id, p_os_id, p_origem, p_recebedor, '{}'::jsonb);
+END;
+$function$
+ private_schema:1 proname:rpc_cockpit_confirmar_entrega_v1 prosecdef:true schema:public signature:rpc_cockpit_confirmar_entrega_v1(uuid,uuid,text,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_estoque_produto_id uuid, p_quantidade numeric, p_dados jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_est public.estoque_produto%ROWTYPE;
+  v_existente record;
+  v_id uuid;
+  v_cliente_os uuid;
+BEGIN
+  v_origem := public.fn_cockpit_assert_operador_origem(p_origem);
+
+  IF p_os_id IS NULL OR p_estoque_produto_id IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_PARAMS_INVALIDOS';
+  END IF;
+  IF coalesce(p_quantidade, 0) <= 0 THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_INVALIDA';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('cockpit_criar_entrega:' || p_os_id::text || ':' || p_estoque_produto_id::text));
+
+  SELECT * INTO v_est
+  FROM public.estoque_produto
+  WHERE id = p_estoque_produto_id
+  FOR UPDATE;
+
+  IF v_est.id IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_ESTOQUE_NAO_ENCONTRADO';
+  END IF;
+
+  IF v_origem = 'onfarm' THEN
+    SELECT cliente_id INTO v_cliente_os
+    FROM public.ordens_servico_onfarm
+    WHERE id = p_os_id;
+  ELSE
+    SELECT cliente_id INTO v_cliente_os
+    FROM public.ordens_servico
+    WHERE id = p_os_id;
+  END IF;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_OS_NAO_ENCONTRADA';
+  END IF;
+
+  IF v_est.status::text NOT IN ('reservado', 'expedido') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_STATUS_ESTOQUE_INVALIDO';
+  END IF;
+  IF v_est.reservado_para_os_id IS DISTINCT FROM p_os_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ESTOQUE';
+  END IF;
+  IF coalesce(v_est.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_ORIGEM';
+  END IF;
+  IF p_quantidade > coalesce(v_est.quantidade, 0) THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_QUANTIDADE_EXCEDE_RESERVA';
+  END IF;
+  IF v_est.reservado_para_cliente_id IS NOT NULL
+     AND v_est.reservado_para_cliente_id IS DISTINCT FROM v_cliente_os THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_CLIENTE';
+  END IF;
+  IF nullif(p_dados->>'cliente_id','') IS NOT NULL
+     AND nullif(p_dados->>'cliente_id','')::uuid IS DISTINCT FROM v_cliente_os THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ENTREGA_CLIENTE';
+  END IF;
+
+  SELECT e.id, e.status::text AS status INTO v_existente
+  FROM public.entregas e
+  WHERE e.estoque_produto_id = p_estoque_produto_id
+    AND e.status::text <> 'cancelada'
+    AND (
+      (v_origem = 'onfarm' AND e.ordem_servico_onfarm_id = p_os_id)
+      OR (v_origem <> 'onfarm' AND e.ordem_servico_id = p_os_id)
+    )
+  ORDER BY e.created_at DESC
+  LIMIT 1;
+
+  IF v_existente.id IS NOT NULL THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'entrega_id', v_existente.id, 'status', v_existente.status, 'message', 'Entrega ja registrada para este item da OS.');
+  END IF;
+
+
+  IF coalesce(nullif(p_dados->>'tipo_entrega',''), 'motorista') NOT IN ('motorista','retirada') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_MODALIDADE_INVALIDA';
+  END IF;
+  IF coalesce(nullif(p_dados->>'endereco_origem',''), 'cadastro') NOT IN ('cadastro','personalizado') THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_ENDERECO_ORIGEM_INVALIDA';
+  END IF;
+  IF v_est.volume_total IS NULL OR v_est.volume_total <= 0 OR v_est.volume_total::text IN ('NaN','Infinity','-Infinity')
+     OR v_est.quantidade IS NULL OR v_est.quantidade <= 0 THEN
+    RAISE EXCEPTION 'COCKPIT_ENTREGA_VOLUME_ESTOQUE_INVALIDO';
+  END IF;
+
+  INSERT INTO public.entregas (
+    ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,
+    lote_id, produto_id, quantidade_entregue, status, cliente_id,
+    data_saida, motorista, veiculo
+  ) VALUES (
+    CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,
+    CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,
+    p_estoque_produto_id,
+    v_est.lote_id,
+    v_est.produto_id,
+    p_quantidade,
+    'separado'::public.status_entrega,
+    v_cliente_os,
+    nullif(p_dados->>'data_saida','')::date,
+    nullif(p_dados->>'motorista',''),
+    nullif(p_dados->>'veiculo','')
+  ) RETURNING id INTO v_id;
+
+
+  -- Only newly created delivery: preserve replay semantics and never overwrite existing history.
+  UPDATE public.entregas SET
+    volume_entregue_ml = round((v_est.volume_total / v_est.quantidade) * p_quantidade * 1000, 6),
+    tipo_entrega = coalesce(nullif(p_dados->>'tipo_entrega',''), 'motorista'),
+    endereco_origem = coalesce(nullif(p_dados->>'endereco_origem',''), 'cadastro'),
+    grupo_entrega_id = nullif(p_dados->>'grupo_entrega_id','')::uuid,
+    hora_saida_prevista = nullif(p_dados->>'hora_saida_prevista','')::time,
+    data_chegada_prevista = nullif(p_dados->>'data_chegada_prevista','')::date,
+    hora_chegada_prevista = nullif(p_dados->>'hora_chegada_prevista','')::time,
+    motorista_telefone = nullif(p_dados->>'motorista_telefone',''),
+    motorista_documento = nullif(p_dados->>'motorista_documento',''),
+    veiculo_placa = nullif(p_dados->>'veiculo_placa',''),
+    veiculo_tipo = nullif(p_dados->>'veiculo_tipo',''),
+    destinatario_nome = nullif(p_dados->>'destinatario_nome',''),
+    destinatario_telefone = nullif(p_dados->>'destinatario_telefone',''),
+    destinatario_whatsapp = nullif(p_dados->>'destinatario_whatsapp',''),
+    endereco_logradouro = nullif(p_dados->>'endereco_logradouro',''),
+    endereco_numero = nullif(p_dados->>'endereco_numero',''),
+    endereco_complemento = nullif(p_dados->>'endereco_complemento',''),
+    endereco_bairro = nullif(p_dados->>'endereco_bairro',''),
+    endereco_cidade = nullif(p_dados->>'endereco_cidade',''),
+    endereco_uf = nullif(p_dados->>'endereco_uf',''),
+    endereco_cep = nullif(p_dados->>'endereco_cep',''),
+    endereco_referencia = nullif(p_dados->>'endereco_referencia','')
+  WHERE id = v_id;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, etapa_nova, acao, usuario_id, observacao)
+  VALUES
+    (p_os_id, v_origem, 'entrega_criada', 'criar_entrega_v1', v_uid,
+     format('Entrega %s criada (motor transacional).', v_id));
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'entrega_id', v_id, 'status', 'separado', 'message', 'Entrega registrada. Confirme a entrega para concluir a OS.');
+END;
+$function$
+ private_schema:1 proname:rpc_cockpit_criar_entrega_v1 prosecdef:true schema:public signature:rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_coletar_assinatura_digital_entrega(p_entrega_id uuid, p_payload jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_entrega public.entregas%ROWTYPE;
+  v_comp_id uuid;
+  v_rec_nome text := nullif(trim(coalesce(p_payload->>'recebedor_nome','')), '');
+  v_hash text := nullif(p_payload->>'assinatura_hash','');
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'Sem permissão'; END IF;
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = p_entrega_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada'; END IF;
+  IF v_entrega.status = 'cancelada' THEN RAISE EXCEPTION 'Entrega cancelada'; END IF;
+  IF v_rec_nome IS NULL THEN RAISE EXCEPTION 'recebedor_nome é obrigatório'; END IF;
+  IF v_hash IS NULL THEN RAISE EXCEPTION 'assinatura_hash é obrigatório'; END IF;
+
+  v_comp_id := v_entrega.comprovante_id;
+  IF v_comp_id IS NULL THEN
+    PERFORM public.rpc_gerar_formulario_entrega(p_entrega_id);
+    SELECT comprovante_id INTO v_comp_id FROM public.entregas WHERE id = p_entrega_id;
+  END IF;
+
+  UPDATE public.entrega_comprovantes SET
+    status = 'assinatura_digital_coletada',
+    assinatura_coletada = true,
+    assinatura_tipo = 'digital_tela',
+    assinatura_digital_png_path = nullif(p_payload->>'assinatura_digital_png_path',''),
+    assinatura_digital_svg = nullif(p_payload->>'assinatura_digital_svg',''),
+    assinatura_hash = v_hash,
+    assinatura_ip = nullif(p_payload->>'assinatura_ip',''),
+    assinatura_user_agent = nullif(p_payload->>'assinatura_user_agent',''),
+    assinatura_capturada_em = now(),
+    recebedor_nome = v_rec_nome,
+    recebedor_documento = nullif(p_payload->>'recebedor_documento',''),
+    recebedor_cargo = nullif(p_payload->>'recebedor_cargo',''),
+    recebedor_telefone = nullif(p_payload->>'recebedor_telefone',''),
+    data_assinatura = now(),
+    validation_hash = encode(extensions.digest(p_entrega_id::text || v_hash || now()::text, 'sha256'), 'hex'),
+    updated_at = now()
+  WHERE id = v_comp_id;
+
+  UPDATE public.entregas SET
+    comprovante_status = 'assinatura_digital_coletada',
+    assinatura_tipo = 'digital_tela',
+    recebedor_nome = v_rec_nome,
+    recebedor_documento = coalesce(nullif(p_payload->>'recebedor_documento',''), recebedor_documento),
+    recebedor_cargo = coalesce(nullif(p_payload->>'recebedor_cargo',''), recebedor_cargo),
+    recebedor_telefone = coalesce(nullif(p_payload->>'recebedor_telefone',''), recebedor_telefone),
+    assinatura_digital_capturada_em = now(),
+    assinatura_digital_capturada_por = v_uid,
+    updated_at = now()
+  WHERE id = p_entrega_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', p_entrega_id, 'DELIVERY_DIGITAL_SIGNATURE_CAPTURED',
+          jsonb_build_object('comprovante_id', v_comp_id, 'hash', v_hash), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'comprovante_id', v_comp_id);
+END $function$
+ private_schema:1 proname:rpc_coletar_assinatura_digital_entrega prosecdef:true schema:public signature:rpc_coletar_assinatura_digital_entrega(uuid,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_confirmar_entrega_embalagens(p_entrega_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_count int := 0;
+  r record;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth required'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador'::app_role)
+       OR public.has_role(v_uid,'gestor'::app_role)
+       OR public.has_role(v_uid,'producao'::app_role)
+       OR public.has_role(v_uid,'operador_onfarm'::app_role)) THEN
+    RAISE EXCEPTION 'sem permissão';
+  END IF;
+
+  FOR r IN
+    SELECT id, status FROM public.estoque_embalagens
+     WHERE entrega_id = p_entrega_id AND status IN ('reservado','separado')
+     FOR UPDATE
+  LOOP
+    UPDATE public.estoque_embalagens
+       SET status='entregue', entregue_em=now(), entregue_por=v_uid
+     WHERE id = r.id;
+    INSERT INTO public.estoque_embalagem_movimentacoes(
+      embalagem_id, tipo_movimentacao, status_anterior, status_novo, entrega_id, user_id
+    ) VALUES (r.id, 'entrega_confirmada', r.status, 'entregue', p_entrega_id, v_uid);
+    v_count := v_count + 1;
+  END LOOP;
+
+  IF v_count = 0 THEN
+    RAISE EXCEPTION 'nenhuma embalagem reservada/separada para esta entrega';
+  END IF;
+
+  PERFORM public.rpc_recalcular_separacao_entrega(p_entrega_id);
+  INSERT INTO public.financial_audit_log(entity_type, entity_id, action, performed_by, new_data)
+    VALUES ('estoque_embalagem', p_entrega_id, 'EMB_DELIVERED', v_uid,
+            jsonb_build_object('entrega_id', p_entrega_id, 'qtd', v_count));
+  RETURN jsonb_build_object('success', true, 'total', v_count);
+END $function$
+ private_schema:1 proname:rpc_confirmar_entrega_embalagens prosecdef:true schema:public signature:rpc_confirmar_entrega_embalagens(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_confirmar_recebimento_entrega(p_entrega_id uuid, p_payload jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_entrega public.entregas%ROWTYPE;
+  v_comp public.entrega_comprovantes%ROWTYPE;
+  v_ressalvas text := nullif(trim(coalesce(p_payload->>'ressalvas','')), '');
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'Sem permissão'; END IF;
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = p_entrega_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada'; END IF;
+  IF v_entrega.status = 'cancelada' THEN RAISE EXCEPTION 'Entrega cancelada'; END IF;
+  IF v_entrega.assinatura_obrigatoria
+     AND nullif(trim(coalesce(v_entrega.recebedor_nome,'')),'') IS NULL THEN
+    RAISE EXCEPTION 'recebedor_nome é obrigatório';
+  END IF;
+  IF v_entrega.comprovante_id IS NULL THEN
+    RAISE EXCEPTION 'Não há comprovante para confirmar';
+  END IF;
+  SELECT * INTO v_comp FROM public.entrega_comprovantes WHERE id = v_entrega.comprovante_id;
+  IF v_comp.status NOT IN ('anexado','assinatura_digital_coletada','assinado','impresso','gerado') THEN
+    RAISE EXCEPTION 'Status de comprovante não permite confirmação (%).', v_comp.status;
+  END IF;
+  IF v_entrega.assinatura_obrigatoria
+     AND v_comp.status NOT IN ('anexado','assinatura_digital_coletada','assinado') THEN
+    RAISE EXCEPTION 'Comprovante sem assinatura. Anexe ou colete a assinatura digital.';
+  END IF;
+
+  UPDATE public.entrega_comprovantes SET
+    status = 'confirmado',
+    confirmado_por = v_uid,
+    confirmado_em = now(),
+    ressalvas = coalesce(v_ressalvas, ressalvas),
+    possui_ressalvas = (v_ressalvas IS NOT NULL) OR possui_ressalvas,
+    validation_hash = encode(extensions.digest(p_entrega_id::text || coalesce(validation_hash,'') || 'CONF' || now()::text, 'sha256'),'hex'),
+    updated_at = now()
+  WHERE id = v_comp.id;
+
+  UPDATE public.entregas SET
+    comprovante_status = 'confirmado',
+    recebimento_confirmado_em = now(),
+    recebimento_confirmado_por = v_uid,
+    updated_at = now()
+  WHERE id = p_entrega_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by, reason)
+  VALUES ('entrega', p_entrega_id, 'DELIVERY_RECEIPT_CONFIRMED',
+          jsonb_build_object('comprovante_id', v_comp.id, 'ressalvas', v_ressalvas), v_uid, v_ressalvas);
+
+  RETURN jsonb_build_object('success', true);
+END $function$
+ private_schema:1 proname:rpc_confirmar_recebimento_entrega prosecdef:true schema:public signature:rpc_confirmar_recebimento_entrega(uuid,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_desvincular_etiqueta_entrega(p_entrega_id uuid, p_etiqueta_id uuid, p_motivo text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Não autenticado'; END IF;
+  IF NOT (
+    public.has_role(v_uid,'administrador'::app_role)
+    OR public.has_role(v_uid,'gestor'::app_role)
+    OR public.has_role(v_uid,'producao'::app_role)
+    OR public.has_role(v_uid,'operador_onfarm'::app_role)
+  ) THEN
+    RAISE EXCEPTION 'Sem permissão';
+  END IF;
+  IF coalesce(length(trim(p_motivo)),0) < 3 THEN
+    RAISE EXCEPTION 'Motivo obrigatório';
+  END IF;
+
+  UPDATE public.entrega_etiquetas
+     SET ativo = false,
+         desvinculado_em = now(),
+         desvinculado_por = v_uid,
+         motivo_desvinculacao = p_motivo
+   WHERE entrega_id = p_entrega_id
+     AND etiqueta_id = p_etiqueta_id
+     AND ativo = true;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Vínculo não encontrado ou já desvinculado';
+  END IF;
+
+  INSERT INTO public.produto_etiqueta_eventos(etiqueta_id, evento, user_id, payload)
+  VALUES (p_etiqueta_id, 'etiqueta_substituida', v_uid,
+          jsonb_build_object('entrega_id', p_entrega_id, 'motivo', p_motivo, 'acao','desvinculada'));
+
+  BEGIN
+    INSERT INTO public.financial_audit_log(entity_type, entity_id, action, new_data, performed_by, reason)
+    VALUES ('produto_etiqueta', p_etiqueta_id, 'LABEL_DELIVERY_UNLINKED',
+            jsonb_build_object('entrega_id', p_entrega_id, 'motivo', p_motivo), v_uid, p_motivo);
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  RETURN jsonb_build_object('ok', true);
+END;
+$function$
+ private_schema:1 proname:rpc_desvincular_etiqueta_entrega prosecdef:true schema:public signature:rpc_desvincular_etiqueta_entrega(uuid,uuid,text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_dispensar_assinatura_entrega(p_entrega_id uuid, p_motivo text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_motivo text := nullif(trim(coalesce(p_motivo,'')),'');
+  v_comp_id uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador'::app_role)
+          OR public.has_role(v_uid,'gestor'::app_role)
+          OR public.has_role(v_uid,'administrativo'::app_role)) THEN
+    RAISE EXCEPTION 'Apenas admin/gestor/administrativo podem dispensar assinatura';
+  END IF;
+  IF v_motivo IS NULL OR length(v_motivo) < 5 THEN
+    RAISE EXCEPTION 'Motivo é obrigatório (mínimo 5 caracteres)';
+  END IF;
+
+  SELECT comprovante_id INTO v_comp_id FROM public.entregas WHERE id = p_entrega_id;
+  IF v_comp_id IS NULL THEN
+    PERFORM public.rpc_gerar_formulario_entrega(p_entrega_id);
+    SELECT comprovante_id INTO v_comp_id FROM public.entregas WHERE id = p_entrega_id;
+  END IF;
+
+  UPDATE public.entrega_comprovantes SET
+    status = 'confirmado',
+    assinatura_tipo = 'dispensada',
+    observacoes = coalesce(observacoes,'') || E'\n[DISPENSA] ' || v_motivo,
+    validation_hash = encode(extensions.digest(p_entrega_id::text || 'DISP' || now()::text,'sha256'),'hex'),
+    confirmado_por = v_uid,
+    confirmado_em = now(),
+    updated_at = now()
+  WHERE id = v_comp_id;
+
+  INSERT INTO public.entrega_ocorrencias (entrega_id, tipo, descricao, gravidade, registrado_por)
+  VALUES (p_entrega_id, 'observacao', 'Assinatura dispensada: ' || v_motivo, 'media', v_uid);
+
+  UPDATE public.entregas SET
+    comprovante_status = 'dispensado',
+    assinatura_tipo = 'dispensada',
+    recebimento_confirmado_em = now(),
+    recebimento_confirmado_por = v_uid,
+    updated_at = now()
+  WHERE id = p_entrega_id;
+
+
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, performed_by, reason)
+  VALUES ('entrega', p_entrega_id, 'DELIVERY_SIGNATURE_WAIVED', v_uid, v_motivo);
+
+  RETURN jsonb_build_object('success', true);
+END $function$
+ private_schema:1 proname:rpc_dispensar_assinatura_entrega prosecdef:true schema:public signature:rpc_dispensar_assinatura_entrega(uuid,text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_entrega_assinar_termo_v1(p_termo_id uuid, p_payload jsonb, p_idempotency_key text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_t public.entrega_termos%ROWTYPE;
+  v_fp text;
+  v_rec text := nullif(trim(coalesce(p_payload->>'recebedor_nome','')), '');
+  v_tipo text := coalesce(nullif(p_payload->>'assinatura_tipo',''), 'digital_tela');
+  v_ahash text := nullif(p_payload->>'assinatura_hash','');
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'sessao_invalida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'sem_permissao'; END IF;
+  IF coalesce(trim(p_idempotency_key),'') = '' THEN RAISE EXCEPTION 'idempotency_key_obrigatoria'; END IF;
+  IF v_rec IS NULL THEN RAISE EXCEPTION 'recebedor_nome_obrigatorio'; END IF;
+  IF v_tipo <> 'dispensada' AND v_ahash IS NULL THEN RAISE EXCEPTION 'assinatura_hash_obrigatoria'; END IF;
+
+  SELECT * INTO v_t FROM public.entrega_termos WHERE id = p_termo_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;
+  -- Tenant explícito: ator canônico ativo/pronto (h15) e entrega+cliente da mesma empresa.
+  IF NOT platform_private.entrega_termo_tenant_ok(v_t.entrega_id) THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_termo:' || v_t.entrega_id::text, 0));
+  SELECT * INTO v_t FROM public.entrega_termos WHERE id = p_termo_id FOR UPDATE;
+  -- Revalida após os locks (perfil/papel/empresa podem ter mudado durante a espera).
+  IF NOT FOUND OR NOT public.is_delivery_staff(v_uid)
+     OR NOT platform_private.entrega_termo_tenant_ok(v_t.entrega_id) THEN
+    RAISE EXCEPTION 'termo_nao_encontrado';
+  END IF;
+
+  v_fp := encode(extensions.digest(
+    v_t.snapshot_hash || '|' || v_rec || '|' || coalesce(v_ahash,'') || '|' || v_tipo, 'sha256'), 'hex');
+
+  -- Replay
+  IF v_t.status = 'assinado' THEN
+    IF v_t.idempotency_key = p_idempotency_key THEN
+      IF v_t.request_fingerprint IS DISTINCT FROM v_fp THEN
+        RAISE EXCEPTION 'idempotency_payload_mismatch';
+      END IF;
+      RETURN jsonb_build_object('success', true, 'replay', true, 'termo_id', v_t.id,
+                                'versao', v_t.versao, 'snapshot_hash', v_t.snapshot_hash);
+    END IF;
+    RAISE EXCEPTION 'termo_ja_assinado';
+  END IF;
+
+  IF v_t.status <> 'rascunho' THEN RAISE EXCEPTION 'termo_estado_invalido: %', v_t.status; END IF;
+
+  IF EXISTS (SELECT 1 FROM public.entrega_termos
+             WHERE entrega_id = v_t.entrega_id AND idempotency_key = p_idempotency_key AND id <> v_t.id) THEN
+    RAISE EXCEPTION 'idempotency_key_reutilizada';
+  END IF;
+
+  -- O rascunho deve representar os dados atuais, exceto a hora de geração.
+  -- O replay acima permanece imutável e não refaz a assinatura.
+  PERFORM 1 FROM public.entregas
+   WHERE id = v_t.entrega_id AND status <> 'cancelada'
+   FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'entrega_invalida'; END IF;
+
+  IF (v_t.snapshot - 'gerado_em') IS DISTINCT FROM
+     (public.fn_entrega_build_snapshot_v1(v_t.entrega_id) - 'gerado_em')
+     OR v_t.cobertura IS DISTINCT FROM public.fn_entrega_cobertura_v1(v_t.entrega_id) THEN
+    RAISE EXCEPTION 'termo_desatualizado: atualize o rascunho antes de assinar';
+  END IF;
+  IF v_t.snapshot_hash IS DISTINCT FROM
+     encode(extensions.digest(v_t.template_versao || '|' || v_t.snapshot::text, 'sha256'), 'hex') THEN
+    RAISE EXCEPTION 'termo_integridade_invalida';
+  END IF;
+
+  IF v_t.cobertura = 'pendente' AND coalesce((p_payload->>'permitir_pendencia')::boolean, false) IS FALSE THEN
+    RAISE EXCEPTION 'cobertura_pendente: conferir todos os itens antes de assinar';
+  END IF;
+
+  UPDATE public.entrega_termos SET
+    status = 'assinado',
+    recebedor_nome = v_rec,
+    recebedor_documento = nullif(p_payload->>'recebedor_documento',''),
+    recebedor_cargo = nullif(p_payload->>'recebedor_cargo',''),
+    recebedor_telefone = nullif(p_payload->>'recebedor_telefone',''),
+    assinatura_hash = v_ahash,
+    assinatura_tipo = v_tipo,
+    assinatura_origem = nullif(p_payload->>'origem',''),
+    assinado_em = now(),
+    assinado_por = v_uid,
+    idempotency_key = p_idempotency_key,
+    request_fingerprint = v_fp
+  WHERE id = p_termo_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', v_t.entrega_id, 'DELIVERY_TERM_SIGNED',
+          jsonb_build_object('termo_id', p_termo_id, 'versao', v_t.versao,
+                             'snapshot_hash', v_t.snapshot_hash, 'cobertura', v_t.cobertura), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'termo_id', p_termo_id,
+                            'versao', v_t.versao, 'snapshot_hash', v_t.snapshot_hash,
+                            'cobertura', v_t.cobertura);
+END $function$
+ private_schema:1 proname:rpc_entrega_assinar_termo_v1 prosecdef:true schema:public signature:rpc_entrega_assinar_termo_v1(uuid,jsonb,text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_entrega_cancelar_termo_v1(p_termo_id uuid, p_motivo text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_t public.entrega_termos%ROWTYPE;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'sessao_invalida'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador'::public.app_role)
+          OR public.has_role(v_uid,'gestor'::public.app_role)
+          OR public.has_role(v_uid,'administrativo'::public.app_role)) THEN
+    RAISE EXCEPTION 'sem_permissao';
+  END IF;
+  IF length(coalesce(trim(p_motivo),'')) < 5 THEN RAISE EXCEPTION 'motivo_obrigatorio'; END IF;
+
+  SELECT * INTO v_t FROM public.entrega_termos WHERE id = p_termo_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;
+  -- Tenant explícito: ator canônico ativo/pronto (h15) e entrega+cliente da mesma empresa.
+  IF NOT platform_private.entrega_termo_tenant_ok(v_t.entrega_id) THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;
+  -- Revalida o papel após o lock da linha.
+  IF NOT (public.has_role(v_uid,'administrador'::public.app_role)
+          OR public.has_role(v_uid,'gestor'::public.app_role)
+          OR public.has_role(v_uid,'administrativo'::public.app_role)) THEN
+    RAISE EXCEPTION 'sem_permissao';
+  END IF;
+  IF v_t.status NOT IN ('rascunho','assinado') THEN RAISE EXCEPTION 'termo_estado_invalido: %', v_t.status; END IF;
+
+  UPDATE public.entrega_termos
+     SET status = 'cancelado', cancelado_em = now(), cancelado_por = v_uid,
+         motivo_cancelamento = trim(p_motivo)
+   WHERE id = p_termo_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', v_t.entrega_id, 'DELIVERY_TERM_CANCELLED',
+          jsonb_build_object('termo_id', p_termo_id, 'versao', v_t.versao, 'motivo', trim(p_motivo)), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'termo_id', p_termo_id, 'status', 'cancelado');
+END $function$
+ private_schema:1 proname:rpc_entrega_cancelar_termo_v1 prosecdef:true schema:public signature:rpc_entrega_cancelar_termo_v1(uuid,text)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_entrega_cancelar_v1(p_entrega_id uuid, p_motivo text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_motivo text := nullif(btrim(coalesce(p_motivo, '')), '');
+  v_entrega public.entregas%ROWTYPE;
+  v_item public.estoque_produto%ROWTYPE;
+  v_mov public.estoque_movimentacoes%ROWTYPE;
+  v_origem text;
+  v_estorno jsonb;
+  v_reserva jsonb;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'ENTREGA_NAO_AUTENTICADO' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF NOT (
+    public.has_role(v_uid, 'administrador'::public.app_role)
+    OR public.has_role(v_uid, 'gestor'::public.app_role)
+    OR public.has_role(v_uid, 'administrativo'::public.app_role)
+  ) THEN
+    RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_SEM_PERMISSAO' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  IF p_entrega_id IS NULL OR v_motivo IS NULL THEN
+    RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_PARAMETROS_INVALIDOS' USING ERRCODE = 'check_violation';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('entrega_cancelar:' || p_entrega_id::text));
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = p_entrega_id FOR UPDATE;
+
+  IF v_entrega.id IS NULL THEN
+    RAISE EXCEPTION 'ENTREGA_NAO_ENCONTRADA' USING ERRCODE = 'no_data_found';
+  END IF;
+  IF v_entrega.status::text = 'cancelada' THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'entrega_id', v_entrega.id, 'message', 'Entrega ja estava cancelada.');
+  END IF;
+  IF v_entrega.status::text = 'entregue' THEN
+    RAISE EXCEPTION 'ENTREGA_CONFIRMADA_EXIGE_DEVOLUCAO' USING ERRCODE = 'check_violation';
+  END IF;
+  IF v_entrega.status::text NOT IN ('separado', 'em_rota') THEN
+    RAISE EXCEPTION 'ENTREGA_STATUS_NAO_CANCELAVEL' USING ERRCODE = 'check_violation';
+  END IF;
+
+  v_origem := CASE WHEN v_entrega.ordem_servico_onfarm_id IS NOT NULL THEN 'onfarm' ELSE 'manual' END;
+
+  IF v_entrega.estoque_produto_id IS NOT NULL THEN
+    SELECT * INTO v_item FROM public.estoque_produto WHERE id = v_entrega.estoque_produto_id FOR UPDATE;
+    IF v_item.id IS NULL THEN
+      RAISE EXCEPTION 'ENTREGA_ESTOQUE_NAO_ENCONTRADO' USING ERRCODE = 'no_data_found';
+    END IF;
+
+    SELECT m.* INTO v_mov
+      FROM public.estoque_movimentacoes m
+     WHERE m.estoque_produto_id = v_item.id
+       AND m.referencia_tipo = 'entrega'
+       AND m.referencia_id = v_entrega.id
+       AND m.acao IN ('expedicao', 'entrega')
+       AND NOT EXISTS (SELECT 1 FROM public.estoque_movimentacoes r WHERE r.movimentacao_origem_id = m.id)
+     ORDER BY m.created_at DESC, m.id DESC
+     LIMIT 1
+     FOR UPDATE;
+
+    IF v_mov.id IS NOT NULL THEN
+      v_estorno := public.rpc_estoque_operar_v1(
+        'estorno_expedicao', v_item.id, NULL,
+        'entrega-cancel-estorno:' || v_entrega.id::text,
+        jsonb_build_object(
+          'origem', 'rpc_entrega_cancelar_v1', 'referencia_tipo', 'entrega',
+          'referencia_id', v_entrega.id, 'movimentacao_origem_id', v_mov.id, 'motivo', v_motivo
+        )
+      );
+      SELECT * INTO v_item FROM public.estoque_produto WHERE id = v_entrega.estoque_produto_id FOR UPDATE;
+    END IF;
+
+    IF v_item.status::text = 'reservado' THEN
+      v_reserva := public.rpc_cockpit_cancelar_reserva_v1(
+        v_item.id,
+        COALESCE(v_entrega.ordem_servico_onfarm_id, v_entrega.ordem_servico_id),
+        v_origem,
+        'Cancelamento da entrega ' || v_entrega.id::text || ': ' || v_motivo
+      );
+    ELSIF v_item.status::text NOT IN ('disponivel', 'estornado') THEN
+      RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_ESTOQUE_INCONSISTENTE: status %', v_item.status USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
+  PERFORM set_config('app.entrega_cancelamento_id', v_entrega.id::text, true);
+  UPDATE public.entregas
+     SET status = 'cancelada'::public.status_entrega, motivo_cancelamento = v_motivo
+   WHERE id = v_entrega.id;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, lote_id, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+  VALUES (
+    COALESCE(v_entrega.ordem_servico_onfarm_id, v_entrega.ordem_servico_id),
+    v_origem, v_entrega.lote_id, 'entrega_criada', 'entrega_cancelada',
+    'cancelar_entrega_v1', v_uid, 'Cancelamento atomico. Motivo: ' || v_motivo
+  );
+
+  RETURN jsonb_build_object(
+    'success', true, 'replay', false, 'entrega_id', v_entrega.id,
+    'estoque_estornado', v_estorno IS NOT NULL,
+    'reserva_liberada', v_reserva IS NOT NULL,
+    'message', 'Entrega cancelada e estoque recomposto.'
+  );
+END;
+$function$
+ private_schema:1 proname:rpc_entrega_cancelar_v1 prosecdef:true schema:public signature:rpc_entrega_cancelar_v1(uuid,text)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_entrega_confirmar_v1(p_entrega_id uuid, p_recebedor jsonb, p_opcoes jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+BEGIN
+  RETURN public.fn_entrega_confirmar_engine_v1(p_entrega_id, NULL, NULL, p_recebedor, p_opcoes);
+END;
+$function$
+ private_schema:1 proname:rpc_entrega_confirmar_v1 prosecdef:true schema:public signature:rpc_entrega_confirmar_v1(uuid,jsonb,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_entrega_gerar_termo_v1(p_entrega_id uuid, p_template_versao text DEFAULT 'termo-entrega-v1'::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_snap jsonb;
+  v_hash text;
+  v_cob text;
+  v_id uuid;
+  v_versao integer;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'sessao_invalida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'sem_permissao'; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_termo:' || p_entrega_id::text, 0));
+  -- Tenant explícito: ator canônico ativo/pronto (h15) e entrega+cliente da mesma empresa.
+  IF NOT public.is_delivery_staff(v_uid) OR NOT platform_private.entrega_termo_tenant_ok(p_entrega_id) THEN
+    RAISE EXCEPTION 'sem_permissao';
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.entrega_termos WHERE entrega_id = p_entrega_id AND status = 'assinado') THEN
+    RAISE EXCEPTION 'termo_ja_assinado';
+  END IF;
+
+  v_snap := public.fn_entrega_build_snapshot_v1(p_entrega_id);
+  v_cob := public.fn_entrega_cobertura_v1(p_entrega_id);
+  v_hash := encode(extensions.digest(p_template_versao || '|' || v_snap::text, 'sha256'), 'hex');
+
+  SELECT id INTO v_id FROM public.entrega_termos
+   WHERE entrega_id = p_entrega_id AND status = 'rascunho' LIMIT 1;
+
+  IF v_id IS NOT NULL THEN
+    UPDATE public.entrega_termos
+       SET snapshot = v_snap, snapshot_hash = v_hash, cobertura = v_cob,
+           template_versao = p_template_versao, comprovante_id = (SELECT comprovante_id FROM public.entregas WHERE id = p_entrega_id)
+     WHERE id = v_id
+     RETURNING versao INTO v_versao;
+  ELSE
+    SELECT coalesce(max(versao), 0) + 1 INTO v_versao
+      FROM public.entrega_termos WHERE entrega_id = p_entrega_id;
+    INSERT INTO public.entrega_termos
+      (entrega_id, comprovante_id, versao, template_versao, status, snapshot, snapshot_hash, cobertura, created_by,
+       substitui_termo_id)
+    VALUES (p_entrega_id, (SELECT comprovante_id FROM public.entregas WHERE id = p_entrega_id),
+            v_versao, p_template_versao, 'rascunho', v_snap, v_hash, v_cob, v_uid,
+            (SELECT id FROM public.entrega_termos WHERE entrega_id = p_entrega_id
+              AND status IN ('cancelado','substituido') ORDER BY versao DESC LIMIT 1))
+    RETURNING id INTO v_id;
+  END IF;
+
+  RETURN jsonb_build_object('success', true, 'termo_id', v_id, 'versao', v_versao,
+                            'snapshot_hash', v_hash, 'cobertura', v_cob);
+END $function$
+ private_schema:1 proname:rpc_entrega_gerar_termo_v1 prosecdef:true schema:public signature:rpc_entrega_gerar_termo_v1(uuid,text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_entrega_reconciliar_v1(p_entrega_id uuid, p_idempotency_key text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_e public.entregas%ROWTYPE;
+  v_t public.entrega_termos%ROWTYPE;
+  v_r public.entrega_reconciliacoes%ROWTYPE;
+  v_total int := 0; v_ok int := 0; v_no int := 0; v_pend int := 0;
+  v_qtd_ok numeric := 0; v_qtd_no numeric := 0;
+  v_vol_ok numeric := 0; v_vol_no numeric := 0;
+  v_ratio numeric := 0;
+  v_fp text;
+  v_item record;
+  v_id uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'sessao_invalida' USING ERRCODE='insufficient_privilege'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF coalesce(trim(p_idempotency_key),'') = '' THEN RAISE EXCEPTION 'idempotency_key_obrigatoria'; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_reconc:' || p_entrega_id::text, 0));
+
+  SELECT * INTO v_e FROM public.entregas WHERE id = p_entrega_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'entrega_nao_encontrada'; END IF;
+  IF v_e.status = 'cancelada' THEN RAISE EXCEPTION 'entrega_cancelada'; END IF;
+
+  SELECT * INTO v_t FROM public.entrega_termos
+   WHERE entrega_id = p_entrega_id AND status = 'assinado'
+   ORDER BY versao DESC LIMIT 1;
+  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_assinado'; END IF;
+
+  SELECT count(*)::int,
+         count(*) FILTER (WHERE status='aceito')::int,
+         count(*) FILTER (WHERE status='recusado')::int,
+         count(*) FILTER (WHERE status='pendente')::int,
+         coalesce(sum(quantidade) FILTER (WHERE status='aceito'),0),
+         coalesce(sum(quantidade) FILTER (WHERE status='recusado'),0)
+    INTO v_total, v_ok, v_no, v_pend, v_qtd_ok, v_qtd_no
+    FROM public.entrega_conferencia_itens WHERE entrega_id = p_entrega_id;
+
+  IF v_total = 0 THEN RAISE EXCEPTION 'conferencia_ausente'; END IF;
+  IF v_pend > 0 THEN RAISE EXCEPTION 'conferencia_pendente: % item(ns) sem decisao', v_pend; END IF;
+
+  v_fp := encode(extensions.digest(
+    v_t.snapshot_hash || '|' || v_total::text || '|' || v_ok::text || '|' || v_no::text
+    || '|' || v_qtd_ok::text || '|' || v_qtd_no::text, 'sha256'), 'hex');
+
+  SELECT * INTO v_r FROM public.entrega_reconciliacoes
+   WHERE entrega_id = p_entrega_id AND status = 'reconciliada';
+  IF FOUND THEN
+    IF v_r.idempotency_key IS DISTINCT FROM p_idempotency_key THEN
+      RAISE EXCEPTION 'entrega_ja_reconciliada';
+    END IF;
+    IF v_r.request_fingerprint IS DISTINCT FROM v_fp THEN
+      RAISE EXCEPTION 'idempotency_payload_mismatch';
+    END IF;
+    RETURN jsonb_build_object('success', true, 'replay', true,
+      'reconciliacao_id', v_r.id, 'itens_aceitos', v_r.itens_aceitos,
+      'itens_recusados', v_r.itens_recusados, 'faturavel', v_r.faturavel,
+      'ratio_aceito', v_r.ratio_aceito);
+  END IF;
+
+  FOR v_item IN
+    SELECT ci.id, ci.status, ci.quantidade, ci.motivo, ci.etiqueta_id, ci.embalagem_id
+      FROM public.entrega_conferencia_itens ci
+     WHERE ci.entrega_id = p_entrega_id
+     ORDER BY ci.id
+  LOOP
+    IF v_item.status = 'aceito' THEN
+      IF v_item.embalagem_id IS NOT NULL THEN
+        UPDATE public.estoque_embalagens
+           SET status = 'entregue', entregue_em = now(), entregue_por = v_uid,
+               entrega_id = p_entrega_id, updated_at = now()
+         WHERE id = v_item.embalagem_id
+           AND status <> 'entregue';
+
+        INSERT INTO public.estoque_embalagem_movimentacoes
+          (embalagem_id, tipo_movimentacao, status_anterior, status_novo, origem, destino,
+           entrega_id, user_id, observacao, metadata)
+        SELECT v_item.embalagem_id, 'entrega_confirmada', 'separado', 'entregue',
+               'entrega', 'cliente', p_entrega_id, v_uid,
+               'baixa por conferencia aceita',
+               jsonb_build_object('conferencia_item_id', v_item.id, 'termo_id', v_t.id);
+      END IF;
+      IF v_item.etiqueta_id IS NOT NULL THEN
+        UPDATE public.produto_etiquetas
+           SET entrega_id = p_entrega_id, updated_at = now()
+         WHERE id = v_item.etiqueta_id;
+      END IF;
+    ELSE
+      IF v_item.embalagem_id IS NOT NULL THEN
+        UPDATE public.estoque_embalagens
+           SET status = 'em_estoque', entrega_id = NULL, entrega_item_id = NULL,
+               reservado_em = NULL, reservado_por = NULL,
+               separado_em = NULL, separado_por = NULL,
+               entregue_em = NULL, entregue_por = NULL,
+               updated_at = now()
+         WHERE id = v_item.embalagem_id;
+
+        INSERT INTO public.estoque_embalagem_movimentacoes
+          (embalagem_id, tipo_movimentacao, status_anterior, status_novo, origem, destino,
+           entrega_id, user_id, observacao, metadata)
+        VALUES (v_item.embalagem_id, 'estorno_recusa', 'separado', 'em_estoque',
+                'entrega', 'estoque', p_entrega_id, v_uid,
+                left(coalesce(v_item.motivo,'recusa na conferencia'), 240),
+                jsonb_build_object('conferencia_item_id', v_item.id, 'termo_id', v_t.id));
+      END IF;
+      IF v_item.etiqueta_id IS NOT NULL THEN
+        UPDATE public.produto_etiquetas
+           SET entrega_id = NULL, updated_at = now()
+         WHERE id = v_item.etiqueta_id;
+      END IF;
+    END IF;
+  END LOOP;
+
+  SELECT coalesce(sum(ee.volume * ci.quantidade) FILTER (WHERE ci.status='aceito'), 0),
+         coalesce(sum(ee.volume * ci.quantidade) FILTER (WHERE ci.status='recusado'), 0)
+    INTO v_vol_ok, v_vol_no
+    FROM public.entrega_conferencia_itens ci
+    LEFT JOIN public.estoque_embalagens ee ON ee.id = ci.embalagem_id
+   WHERE ci.entrega_id = p_entrega_id;
+
+  v_ratio := CASE WHEN (v_qtd_ok + v_qtd_no) > 0
+                  THEN round(v_qtd_ok / (v_qtd_ok + v_qtd_no), 5) ELSE 0 END;
+
+  INSERT INTO public.entrega_reconciliacoes (
+    entrega_id, termo_id, termo_versao, status,
+    itens_total, itens_aceitos, itens_recusados,
+    quantidade_aceita, quantidade_recusada, volume_aceito, volume_recusado,
+    ratio_aceito, faturavel, resumo, idempotency_key, request_fingerprint, reconciliado_por
+  ) VALUES (
+    p_entrega_id, v_t.id, v_t.versao, 'reconciliada',
+    v_total, v_ok, v_no,
+    v_qtd_ok, v_qtd_no, v_vol_ok, v_vol_no,
+    v_ratio, (v_ok > 0),
+    jsonb_build_object(
+      'termo_snapshot_hash', v_t.snapshot_hash,
+      'cobertura', v_t.cobertura,
+      'itens', (SELECT coalesce(jsonb_agg(jsonb_build_object(
+                  'conferencia_item_id', ci.id, 'status', ci.status,
+                  'quantidade', ci.quantidade) ORDER BY ci.id), '[]'::jsonb)
+                FROM public.entrega_conferencia_itens ci WHERE ci.entrega_id = p_entrega_id)
+    ),
+    p_idempotency_key, v_fp, v_uid
+  ) RETURNING id INTO v_id;
+
+  UPDATE public.entregas SET
+    status = CASE WHEN v_ok > 0 THEN 'entregue'::status_entrega ELSE status END,
+    recebido_por_nome = coalesce(nullif(trim(recebido_por_nome), ''), v_t.recebedor_nome),
+    recebido_por_documento = coalesce(recebido_por_documento, v_t.recebedor_documento),
+    confirmado_por = coalesce(confirmado_por, v_uid),
+    entregue_em = CASE WHEN v_ok > 0 THEN coalesce(entregue_em, now()) ELSE entregue_em END,
+    confirmada_em = coalesce(confirmada_em, now()),
+    confirmada_por = coalesce(confirmada_por, v_uid),
+    quantidade_entregue = v_qtd_ok,
+    volume_entregue_ml = v_vol_ok,
+    financial_status = CASE WHEN v_ok > 0 THEN 'PENDING_BILLING' ELSE 'NOT_BILLABLE' END,
+    not_billable_reason = CASE WHEN v_ok = 0 THEN 'RECUSA_TOTAL_NA_CONFERENCIA' ELSE not_billable_reason END,
+    updated_at = now()
+  WHERE id = p_entrega_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', p_entrega_id, 'DELIVERY_RECONCILED',
+          jsonb_build_object('reconciliacao_id', v_id, 'termo_id', v_t.id,
+                             'itens_aceitos', v_ok, 'itens_recusados', v_no,
+                             'ratio_aceito', v_ratio, 'faturavel', (v_ok > 0)), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'reconciliacao_id', v_id,
+    'itens_total', v_total, 'itens_aceitos', v_ok, 'itens_recusados', v_no,
+    'quantidade_aceita', v_qtd_ok, 'quantidade_recusada', v_qtd_no,
+    'ratio_aceito', v_ratio, 'faturavel', (v_ok > 0));
+END $function$
+ private_schema:1 proname:rpc_entrega_reconciliar_v1 prosecdef:true schema:public signature:rpc_entrega_reconciliar_v1(uuid,text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_entrega_reentrega_saldo_v1(p_entrega_id uuid, p_idempotency_key text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_e public.entregas%ROWTYPE;
+  v_new uuid;
+  v_n int := 0;
+  v_exist uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'sessao_invalida' USING ERRCODE='insufficient_privilege'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN
+    RAISE EXCEPTION 'sem_permissao' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF coalesce(trim(p_idempotency_key),'') = '' THEN RAISE EXCEPTION 'idempotency_key_obrigatoria'; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_reentrega:' || p_entrega_id::text, 0));
+
+  SELECT * INTO v_e FROM public.entregas WHERE id = p_entrega_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'entrega_nao_encontrada'; END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM public.entrega_reconciliacoes
+                  WHERE entrega_id = p_entrega_id AND status = 'reconciliada') THEN
+    RAISE EXCEPTION 'entrega_nao_reconciliada';
+  END IF;
+
+  SELECT id INTO v_exist FROM public.entregas WHERE reentrega_origem_id = p_entrega_id;
+  IF v_exist IS NOT NULL THEN
+    RETURN jsonb_build_object('success', true, 'replay', true, 'entrega_id', v_exist);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM public.entrega_conferencia_itens
+                  WHERE entrega_id = p_entrega_id AND status = 'recusado') THEN
+    RAISE EXCEPTION 'sem_saldo_recusado';
+  END IF;
+
+  INSERT INTO public.entregas (
+    ordem_servico_id, ordem_servico_onfarm_id, cliente_id, produto_id, lote_id,
+    status, tipo_entrega, assinatura_obrigatoria, comprovante_status,
+    financial_status, reentrega_origem_id, observacoes_confirmacao
+  ) VALUES (
+    v_e.ordem_servico_id, v_e.ordem_servico_onfarm_id, v_e.cliente_id, v_e.produto_id, v_e.lote_id,
+    'separado', coalesce(v_e.tipo_entrega,'motorista'), coalesce(v_e.assinatura_obrigatoria, true), 'pendente',
+    'PENDING_BILLING', p_entrega_id,
+    'Reentrega do saldo recusado na conferencia da entrega de origem.'
+  ) RETURNING id INTO v_new;
+
+  INSERT INTO public.entrega_etiquetas (entrega_id, etiqueta_id, created_by, ativo)
+  SELECT v_new, ci.etiqueta_id, v_uid, true
+    FROM public.entrega_conferencia_itens ci
+   WHERE ci.entrega_id = p_entrega_id AND ci.status = 'recusado' AND ci.etiqueta_id IS NOT NULL;
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', p_entrega_id, 'DELIVERY_REDELIVERY_CREATED',
+          jsonb_build_object('entrega_reentrega_id', v_new, 'itens', v_n,
+                             'idempotency_key', p_idempotency_key), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'entrega_id', v_new, 'itens', v_n);
+END $function$
+ private_schema:1 proname:rpc_entrega_reentrega_saldo_v1 prosecdef:true schema:public signature:rpc_entrega_reentrega_saldo_v1(uuid,text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_entrega_registrar_conferencia_v1(p_entrega_id uuid, p_itens jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_item jsonb;
+  v_etq uuid;
+  v_status text;
+  v_qtd numeric;
+  v_motivo text;
+  v_emb uuid;
+  v_cq boolean;
+  v_n integer := 0;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'sessao_invalida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'sem_permissao'; END IF;
+
+  -- Compartilha a trava com geração/assinatura; validar estado depois de adquiri-la.
+  PERFORM pg_advisory_xact_lock(hashtextextended('entrega_termo:' || p_entrega_id::text, 0));
+  IF NOT EXISTS (SELECT 1 FROM public.entregas WHERE id = p_entrega_id AND status <> 'cancelada') THEN
+    RAISE EXCEPTION 'entrega_invalida';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.entrega_termos WHERE entrega_id = p_entrega_id AND status = 'assinado') THEN
+    RAISE EXCEPTION 'termo_ja_assinado';
+  END IF;
+
+
+  FOR v_item IN SELECT * FROM jsonb_array_elements(coalesce(p_itens, '[]'::jsonb))
+  LOOP
+    v_etq := nullif(v_item->>'etiqueta_id','')::uuid;
+    v_status := coalesce(nullif(v_item->>'status',''), 'pendente');
+    v_qtd := coalesce(nullif(v_item->>'quantidade','')::numeric, 1);
+    v_motivo := nullif(trim(coalesce(v_item->>'motivo','')), '');
+
+    IF v_etq IS NULL THEN RAISE EXCEPTION 'etiqueta_id_obrigatorio'; END IF;
+    IF v_status NOT IN ('aceito','recusado','pendente') THEN
+      RAISE EXCEPTION 'status_invalido: %', v_status;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM public.entrega_etiquetas ee
+                   WHERE ee.entrega_id = p_entrega_id AND ee.etiqueta_id = v_etq AND ee.ativo) THEN
+      RAISE EXCEPTION 'etiqueta_nao_vinculada_a_entrega';
+    END IF;
+
+    SELECT pe.embalagem_id, pe.cq_liberado INTO v_emb, v_cq
+    FROM public.produto_etiquetas pe WHERE pe.id = v_etq;
+
+    IF v_status = 'aceito' THEN
+      IF EXISTS (SELECT 1 FROM public.produto_etiquetas pe
+                 WHERE pe.id = v_etq
+                   AND (pe.status IN ('cancelada','substituida')
+                        OR (pe.validade_em IS NOT NULL AND pe.validade_em < current_date))) THEN
+        RAISE EXCEPTION 'etiqueta_invalida_ou_vencida';
+      END IF;
+      IF coalesce(v_cq, false) IS FALSE THEN
+        RAISE EXCEPTION 'cq_nao_liberado';
+      END IF;
+      IF v_emb IS NULL THEN
+        RAISE EXCEPTION 'embalagem_nao_vinculada_a_etiqueta';
+      END IF;
+    END IF;
+
+    INSERT INTO public.entrega_conferencia_itens
+      (entrega_id, etiqueta_id, embalagem_id, status, quantidade, motivo, conferido_em, conferido_por)
+    VALUES (p_entrega_id, v_etq, v_emb, v_status, v_qtd, v_motivo, now(), v_uid)
+    ON CONFLICT (entrega_id, etiqueta_id) WHERE etiqueta_id IS NOT NULL
+    DO UPDATE SET status = EXCLUDED.status,
+                  quantidade = EXCLUDED.quantidade,
+                  motivo = EXCLUDED.motivo,
+                  embalagem_id = EXCLUDED.embalagem_id,
+                  conferido_em = now(),
+                  conferido_por = v_uid;
+    v_n := v_n + 1;
+  END LOOP;
+
+  RETURN jsonb_build_object('success', true, 'itens', v_n,
+    'cobertura', public.fn_entrega_cobertura_v1(p_entrega_id));
+END $function$
+ private_schema:1 proname:rpc_entrega_registrar_conferencia_v1 prosecdef:true schema:public signature:rpc_entrega_registrar_conferencia_v1(uuid,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_entrega_registrar_pdf_termo_v1(p_termo_id uuid, p_pdf_path text, p_pdf_hash text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_t public.entrega_termos%ROWTYPE;
+BEGIN
+  SELECT * INTO v_t FROM public.entrega_termos WHERE id = p_termo_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'termo_nao_encontrado'; END IF;
+  IF v_t.status <> 'assinado' THEN RAISE EXCEPTION 'termo_nao_assinado'; END IF;
+  IF coalesce(trim(p_pdf_path),'') = '' OR coalesce(trim(p_pdf_hash),'') = '' THEN
+    RAISE EXCEPTION 'pdf_path_e_hash_obrigatorios';
+  END IF;
+
+  IF v_t.pdf_path IS NOT NULL THEN
+    IF v_t.pdf_path = p_pdf_path AND v_t.pdf_hash = p_pdf_hash THEN
+      RETURN jsonb_build_object('success', true, 'replay', true, 'pdf_path', v_t.pdf_path);
+    END IF;
+    RAISE EXCEPTION 'pdf_ja_registrado';
+  END IF;
+
+  UPDATE public.entrega_termos
+     SET pdf_path = p_pdf_path, pdf_hash = p_pdf_hash, pdf_gerado_em = now()
+   WHERE id = p_termo_id;
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'pdf_path', p_pdf_path);
+END $function$
+ private_schema:1 proname:rpc_entrega_registrar_pdf_termo_v1 prosecdef:true schema:public signature:rpc_entrega_registrar_pdf_termo_v1(uuid,text,text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_gerar_formulario_entrega(p_entrega_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_entrega public.entregas%ROWTYPE;
+  v_comp public.entrega_comprovantes%ROWTYPE;
+  v_num text;
+  v_token uuid := gen_random_uuid();
+  v_hash text;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão para gerar formulário de entrega';
+  END IF;
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = p_entrega_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada'; END IF;
+  IF v_entrega.status = 'cancelada' THEN RAISE EXCEPTION 'Entrega cancelada'; END IF;
+
+  -- reuse if exists
+  SELECT * INTO v_comp FROM public.entrega_comprovantes
+    WHERE entrega_id = p_entrega_id AND tipo = 'formulario_entrega'
+    ORDER BY gerado_em DESC LIMIT 1;
+
+  IF v_comp.id IS NOT NULL AND v_comp.status NOT IN ('rejeitado','cancelado') THEN
+    RETURN jsonb_build_object(
+      'success', true, 'reused', true,
+      'entrega_id', p_entrega_id,
+      'comprovante_id', v_comp.id,
+      'numero_formulario', v_comp.numero_formulario,
+      'validation_token', v_comp.validation_token,
+      'validation_url', v_comp.validation_url
+    );
+  END IF;
+
+  v_num := 'AR-ENT-' || lpad(nextval('public.entrega_formulario_seq')::text, 6, '0');
+  v_hash := encode(extensions.digest(p_entrega_id::text || v_num || v_token::text || now()::text, 'sha256'), 'hex');
+
+  INSERT INTO public.entrega_comprovantes (
+    entrega_id, numero_formulario, tipo, status,
+    validation_token, validation_hash, qr_code_payload, gerado_por
+  ) VALUES (
+    p_entrega_id, v_num, 'formulario_entrega', 'gerado',
+    v_token, v_hash, v_token::text, v_uid
+  ) RETURNING * INTO v_comp;
+
+  UPDATE public.entregas SET
+    comprovante_status = 'formulario_gerado',
+    comprovante_id = v_comp.id,
+    formulario_gerado_em = now(),
+    formulario_gerado_por = v_uid,
+    validation_token = v_token,
+    validation_hash = v_hash,
+    updated_at = now()
+  WHERE id = p_entrega_id;
+
+  PERFORM public._entrega_seed_checklist(p_entrega_id);
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', p_entrega_id, 'DELIVERY_FORM_GENERATED',
+          jsonb_build_object('comprovante_id', v_comp.id, 'numero_formulario', v_num), v_uid);
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'entrega_id', p_entrega_id,
+    'comprovante_id', v_comp.id,
+    'numero_formulario', v_num,
+    'validation_token', v_token,
+    'validation_hash', v_hash
+  );
+END $function$
+ private_schema:1 proname:rpc_gerar_formulario_entrega prosecdef:true schema:public signature:rpc_gerar_formulario_entrega(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_get_comprovante_entrega_data(p_entrega_id uuid, p_reemissao boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid       uuid := auth.uid();
+  e           public.entregas%ROWTYPE;
+  v_conteudo  jsonb;
+  v_snapshot  jsonb;
+  v_comp      public.entrega_comprovantes%ROWTYPE;
+  v_doc_tipo  text;
+  v_receb     text;
+  v_numero    text;
+  v_hash      text;
+  v_reemissoes int := 0;
+  v_congelado boolean := false;
+  v_item      jsonb;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'COMPROVANTE_UNAUTHENTICATED';
+  END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN
+    RAISE EXCEPTION 'COMPROVANTE_FORBIDDEN';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('comprovante_entrega:' || p_entrega_id::text));
+
+  SELECT * INTO e FROM public.entregas WHERE id = p_entrega_id FOR UPDATE;
+  IF e.id IS NULL THEN
+    RAISE EXCEPTION 'COMPROVANTE_ENTREGA_NAO_ENCONTRADA';
+  END IF;
+  IF e.status = 'cancelada' THEN
+    RAISE EXCEPTION 'COMPROVANTE_ENTREGA_CANCELADA';
+  END IF;
+
+  v_receb := nullif(btrim(coalesce(e.recebido_por_nome, e.recebedor_nome, '')), '');
+  v_doc_tipo := CASE
+                  WHEN e.status = 'entregue' AND v_receb IS NOT NULL THEN 'comprovante'
+                  ELSE 'romaneio'
+                END;
+
+  v_conteudo := public.fn_comprovante_entrega_montar_v1(p_entrega_id);
+
+  -- Documento operacional: sempre montado do estado atual, sem congelar.
+  IF v_doc_tipo = 'romaneio' THEN
+    RETURN jsonb_build_object(
+      'doc_tipo', 'romaneio',
+      'titulo', 'Romaneio de Entrega',
+      'definitivo', false,
+      'numero_documento', 'RM-' || upper(substr(replace(e.id::text, '-', ''), 1, 8)),
+      'emitido_em', now(),
+      'conteudo', v_conteudo,
+      'aviso', 'Documento operacional. Nao comprova o recebimento fisico.'
+    );
+  END IF;
+
+  -- Comprovante definitivo: cliente + OS + produto + lote + quantidade + volume.
+  IF (v_conteudo->'destinatario'->>'cliente_id') IS NULL THEN
+    RAISE EXCEPTION 'COMPROVANTE_CLIENTE_OBRIGATORIO';
+  END IF;
+  IF v_conteudo->'ordem_servico' IS NULL
+     OR jsonb_typeof(v_conteudo->'ordem_servico') <> 'object'
+     OR (v_conteudo->'ordem_servico'->>'os_id') IS NULL THEN
+    RAISE EXCEPTION 'COMPROVANTE_OS_OBRIGATORIA';
+  END IF;
+  IF jsonb_array_length(v_conteudo->'itens') = 0 THEN
+    RAISE EXCEPTION 'COMPROVANTE_SEM_ITENS';
+  END IF;
+  FOR v_item IN SELECT * FROM jsonb_array_elements(v_conteudo->'itens') LOOP
+    IF nullif(btrim(coalesce(v_item->>'produto', '')), '') IS NULL THEN
+      RAISE EXCEPTION 'COMPROVANTE_PRODUTO_OBRIGATORIO';
+    END IF;
+    IF nullif(btrim(coalesce(v_item->>'lote', '')), '') IS NULL THEN
+      RAISE EXCEPTION 'COMPROVANTE_LOTE_OBRIGATORIO';
+    END IF;
+    IF coalesce((v_item->>'quantidade')::numeric, 0) <= 0 THEN
+      RAISE EXCEPTION 'COMPROVANTE_QUANTIDADE_OBRIGATORIA';
+    END IF;
+    IF coalesce((v_item->>'volume_total_ml')::numeric, 0) <= 0 THEN
+      RAISE EXCEPTION 'COMPROVANTE_VOLUME_OBRIGATORIO';
+    END IF;
+  END LOOP;
+  IF (v_conteudo->'recebimento'->>'confirmado_em') IS NULL THEN
+    RAISE EXCEPTION 'COMPROVANTE_CONFIRMACAO_SEM_DATA';
+  END IF;
+
+  SELECT * INTO v_comp
+    FROM public.entrega_comprovantes
+   WHERE entrega_id = p_entrega_id
+     AND metadata ? 'comprovante_snapshot_v1'
+   ORDER BY gerado_em DESC
+   LIMIT 1;
+
+  IF v_comp.id IS NOT NULL THEN
+    v_congelado := true;
+    v_snapshot  := v_comp.metadata->'comprovante_snapshot_v1';
+    v_numero    := coalesce(v_comp.metadata->>'comprovante_numero', v_comp.numero_formulario);
+    v_hash      := v_comp.metadata->>'comprovante_snapshot_hash';
+    v_reemissoes := coalesce((v_comp.metadata->>'comprovante_reemissoes')::int, 0);
+  ELSE
+    SELECT * INTO v_comp
+      FROM public.entrega_comprovantes
+     WHERE entrega_id = p_entrega_id
+     ORDER BY gerado_em DESC
+     LIMIT 1;
+
+    v_numero := 'CE-' || to_char(now(), 'YYYY') || '-'
+             || lpad(nextval('public.comprovante_entrega_seq')::text, 6, '0');
+    v_snapshot := v_conteudo || jsonb_build_object(
+      'congelado_em', now(),
+      'congelado_por', v_uid,
+      'numero_documento', v_numero
+    );
+    v_hash := encode(extensions.digest(v_snapshot::text, 'sha256'), 'hex');
+
+    IF v_comp.id IS NULL THEN
+      INSERT INTO public.entrega_comprovantes (
+        entrega_id, numero_formulario, tipo, status,
+        validation_token, gerado_por, metadata
+      ) VALUES (
+        p_entrega_id, v_numero, 'comprovante_entrega', 'confirmado',
+        gen_random_uuid(), v_uid,
+        jsonb_build_object(
+          'comprovante_snapshot_v1', v_snapshot,
+          'comprovante_snapshot_hash', v_hash,
+          'comprovante_numero', v_numero,
+          'comprovante_reemissoes', 0
+        )
+      ) RETURNING * INTO v_comp;
+    ELSE
+      UPDATE public.entrega_comprovantes
+         SET metadata = metadata || jsonb_build_object(
+               'comprovante_snapshot_v1', v_snapshot,
+               'comprovante_snapshot_hash', v_hash,
+               'comprovante_numero', v_numero,
+               'comprovante_reemissoes', 0
+             ),
+             updated_at = now()
+       WHERE id = v_comp.id
+       RETURNING * INTO v_comp;
+    END IF;
+
+    INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+    VALUES ('entrega', p_entrega_id, 'DELIVERY_RECEIPT_SNAPSHOT_FROZEN',
+            jsonb_build_object('comprovante_id', v_comp.id, 'numero', v_numero, 'hash', v_hash), v_uid);
+  END IF;
+
+  IF p_reemissao AND v_congelado THEN
+    v_reemissoes := v_reemissoes + 1;
+    UPDATE public.entrega_comprovantes
+       SET metadata = metadata || jsonb_build_object(
+             'comprovante_reemissoes', v_reemissoes,
+             'comprovante_ultima_reemissao_em', now(),
+             'comprovante_ultima_reemissao_por', v_uid),
+           updated_at = now()
+     WHERE id = v_comp.id;
+
+    INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+    VALUES ('entrega', p_entrega_id, 'DELIVERY_RECEIPT_REISSUED',
+            jsonb_build_object('comprovante_id', v_comp.id, 'reemissao', v_reemissoes), v_uid);
+  END IF;
+
+  RETURN jsonb_build_object(
+    'doc_tipo', 'comprovante',
+    'titulo', 'Comprovante de Entrega',
+    'definitivo', true,
+    'numero_documento', v_numero,
+    'comprovante_id', v_comp.id,
+    'snapshot_hash', v_hash,
+    'reemissoes', v_reemissoes,
+    'emitido_em', now(),
+    'conteudo', v_snapshot,
+    'aviso', 'Este documento comprova exclusivamente a entrega fisica dos produtos nele relacionados. '
+          || 'Nao substitui documento fiscal, receituario agronomico, prescricao tecnica ou laudo tecnico '
+          || 'quando legalmente exigiveis.'
+  );
+END
+$function$
+ private_schema:1 proname:rpc_get_comprovante_entrega_data prosecdef:true schema:public signature:rpc_get_comprovante_entrega_data(uuid,boolean)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_recalcular_separacao_entrega(p_entrega_id uuid)
+ RETURNS text
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_total int; v_res int; v_sep int; v_ent int; v_status text;
+BEGIN
+  SELECT count(*) FILTER (WHERE status NOT IN ('cancelado','descartado')),
+         count(*) FILTER (WHERE status='reservado'),
+         count(*) FILTER (WHERE status='separado'),
+         count(*) FILTER (WHERE status='entregue')
+    INTO v_total, v_res, v_sep, v_ent
+    FROM public.estoque_embalagens WHERE entrega_id = p_entrega_id;
+  IF v_total = 0 THEN v_status := 'pendente';
+  ELSIF (v_sep + v_ent) = v_total THEN v_status := 'separada';
+  ELSIF (v_sep + v_ent) > 0 THEN v_status := 'parcialmente_separada';
+  ELSE v_status := 'pendente';
+  END IF;
+  UPDATE public.entregas SET separacao_status = v_status WHERE id = p_entrega_id;
+  RETURN v_status;
+END $function$
+ private_schema:1 proname:rpc_recalcular_separacao_entrega prosecdef:true schema:public signature:rpc_recalcular_separacao_entrega(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_registrar_ocorrencia_entrega(p_entrega_id uuid, p_payload jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_id uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida'; END IF;
+  IF NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'Sem permissão'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.entregas WHERE id = p_entrega_id) THEN
+    RAISE EXCEPTION 'Entrega não encontrada';
+  END IF;
+
+  INSERT INTO public.entrega_ocorrencias (entrega_id, tipo, descricao, gravidade, registrado_por, metadata)
+  VALUES (
+    p_entrega_id,
+    coalesce(p_payload->>'tipo','observacao'),
+    coalesce(p_payload->>'descricao',''),
+    coalesce(p_payload->>'gravidade','baixa'),
+    v_uid,
+    coalesce(p_payload->'metadata','{}'::jsonb)
+  ) RETURNING id INTO v_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', p_entrega_id, 'DELIVERY_OCCURRENCE_REGISTERED',
+          jsonb_build_object('ocorrencia_id', v_id, 'tipo', p_payload->>'tipo'), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'id', v_id);
+END $function$
+ private_schema:1 proname:rpc_registrar_ocorrencia_entrega prosecdef:true schema:public signature:rpc_registrar_ocorrencia_entrega(uuid,jsonb)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_reservar_embalagem_entrega(p_embalagem_id uuid, p_entrega_id uuid, p_entrega_item_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_st text; v_val date; v_ent_st text;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth required'; END IF;
+  IF NOT public.can_user_manage_estoque_embalagem(p_embalagem_id) THEN RAISE EXCEPTION 'sem permissão'; END IF;
+  SELECT status, validade_em INTO v_st, v_val FROM public.estoque_embalagens WHERE id = p_embalagem_id;
+  IF v_st IS NULL THEN RAISE EXCEPTION 'embalagem inexistente'; END IF;
+  IF v_st <> 'em_estoque' THEN RAISE EXCEPTION 'embalagem não está em estoque (status=%)', v_st; END IF;
+  IF v_val IS NOT NULL AND v_val < CURRENT_DATE THEN RAISE EXCEPTION 'embalagem vencida'; END IF;
+  SELECT status::text INTO v_ent_st FROM public.entregas WHERE id = p_entrega_id;
+  IF v_ent_st IS NULL THEN RAISE EXCEPTION 'entrega inexistente'; END IF;
+  IF v_ent_st = 'cancelada' THEN RAISE EXCEPTION 'entrega cancelada'; END IF;
+  UPDATE public.estoque_embalagens
+     SET status='reservado', entrega_id=p_entrega_id, entrega_item_id=p_entrega_item_id,
+         reservado_em=now(), reservado_por=v_uid
+   WHERE id = p_embalagem_id;
+  INSERT INTO public.estoque_embalagem_movimentacoes(embalagem_id, tipo_movimentacao, status_anterior, status_novo, entrega_id, entrega_item_id, user_id)
+    VALUES (p_embalagem_id, 'reserva_entrega', v_st, 'reservado', p_entrega_id, p_entrega_item_id, v_uid);
+  PERFORM public.rpc_recalcular_separacao_entrega(p_entrega_id);
+  INSERT INTO public.financial_audit_log(entity_type, entity_id, action, performed_by, new_data)
+    VALUES ('estoque_embalagem', p_embalagem_id, 'EMB_RESERVED', v_uid, jsonb_build_object('entrega_id', p_entrega_id));
+  RETURN jsonb_build_object('success', true);
+END $function$
+ private_schema:1 proname:rpc_reservar_embalagem_entrega prosecdef:true schema:public signature:rpc_reservar_embalagem_entrega(uuid,uuid,uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres,anon=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.rpc_validar_comprovante_entrega(p_validation_token uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_comp public.entrega_comprovantes%ROWTYPE;
+  v_msg text;
+  v_allowed boolean;
+  v_retry integer;
+BEGIN
+  -- H7O: rate-limit server-side (token/origem/global) antes de qualquer leitura — resposta idêntica
+  -- para token existente ou inexistente (anti-enumeração).
+  SELECT rl.allowed, rl.retry_after_seconds
+    INTO v_allowed, v_retry
+    FROM private.fn_public_validation_rate_check(p_validation_token) rl;
+  IF NOT COALESCE(v_allowed, false) THEN
+    RETURN jsonb_build_object(
+      'valido', false,
+      'mensagem', 'Muitas tentativas de validação. Aguarde alguns instantes e tente novamente.',
+      'retry_after_seconds', COALESCE(v_retry, 60)
+    );
+  END IF;
+
+  SELECT * INTO v_comp FROM public.entrega_comprovantes WHERE validation_token = p_validation_token;
+  IF NOT FOUND OR NOT v_comp.validation_public_enabled THEN
+    RETURN jsonb_build_object('valido', false, 'mensagem', 'Comprovante não encontrado ou indisponível.');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.entregas e WHERE e.id=v_comp.entrega_id AND e.status<>'cancelada') THEN
+    RETURN jsonb_build_object('valido',false,'mensagem','Comprovante não encontrado ou indisponível.');
+  END IF;
+  IF v_comp.validation_expires_at IS NOT NULL AND v_comp.validation_expires_at < now() THEN
+    RETURN jsonb_build_object('valido', false, 'mensagem', 'Comprovante expirado.');
+  END IF;
+  IF v_comp.status IN ('cancelado','rejeitado') THEN
+    RETURN jsonb_build_object('valido', false, 'mensagem', 'Comprovante cancelado.');
+  END IF;
+
+  v_msg := CASE v_comp.assinatura_tipo
+    WHEN 'dispensada' THEN 'Comprovante registrado com dispensa formal de assinatura no sistema AR Bio.'
+    WHEN 'digital_tela' THEN 'Comprovante registrado com assinatura digital operacional no sistema AR Bio.'
+    WHEN 'fisica_anexada' THEN 'Comprovante registrado com formulário físico assinado no sistema AR Bio.'
+    ELSE 'Comprovante de entrega registrado no sistema AR Bio.'
+  END;
+
+  RETURN jsonb_build_object(
+    'valido', true,
+    'status', v_comp.status,
+    'assinatura_tipo', v_comp.assinatura_tipo,
+    'possui_ressalvas', COALESCE(v_comp.possui_ressalvas, false),
+    'numero_formulario', v_comp.numero_formulario,
+    'data_confirmacao', v_comp.confirmado_em,
+    'data_assinatura', v_comp.data_assinatura,
+    'validation_hash', v_comp.validation_hash,
+    'mensagem', v_msg
+  );
+END $function$
+ private_schema:1 proname:rpc_validar_comprovante_entrega prosecdef:true schema:public signature:rpc_validar_comprovante_entrega(uuid)] map[acl:{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.tg_entrega_conf_lock_after_sign()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_eid uuid := coalesce(NEW.entrega_id, OLD.entrega_id);
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.entrega_termos t
+             WHERE t.entrega_id = v_eid AND t.status = 'assinado') THEN
+    RAISE EXCEPTION 'conferencia_bloqueada: existe termo assinado para esta entrega'
+      USING ERRCODE = 'raise_exception';
+  END IF;
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  NEW.updated_at := now();
+  RETURN NEW;
+END $function$
+ private_schema:1 proname:tg_entrega_conf_lock_after_sign prosecdef:false schema:public signature:tg_entrega_conf_lock_after_sign()] map[acl:{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.tg_entrega_reconc_immutability()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'entrega_reconciliacao_imutavel: delete proibido';
+  END IF;
+  IF NEW.entrega_id IS DISTINCT FROM OLD.entrega_id
+     OR NEW.termo_id IS DISTINCT FROM OLD.termo_id
+     OR NEW.itens_aceitos IS DISTINCT FROM OLD.itens_aceitos
+     OR NEW.itens_recusados IS DISTINCT FROM OLD.itens_recusados
+     OR NEW.quantidade_aceita IS DISTINCT FROM OLD.quantidade_aceita
+     OR NEW.resumo IS DISTINCT FROM OLD.resumo
+     OR NEW.request_fingerprint IS DISTINCT FROM OLD.request_fingerprint THEN
+    RAISE EXCEPTION 'entrega_reconciliacao_imutavel: campos congelados';
+  END IF;
+  NEW.updated_at := now();
+  RETURN NEW;
+END $function$
+ private_schema:1 proname:tg_entrega_reconc_immutability prosecdef:false schema:public signature:tg_entrega_reconc_immutability()] map[acl:{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.tg_entrega_termos_immutability()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.status <> 'rascunho' THEN
+      RAISE EXCEPTION 'termo_imutavel: documento % nao pode ser excluido', OLD.id
+        USING ERRCODE = 'raise_exception';
+    END IF;
+    RETURN OLD;
+  END IF;
+
+  IF OLD.status IN ('assinado','cancelado','substituido') THEN
+    IF NEW.snapshot IS DISTINCT FROM OLD.snapshot
+       OR NEW.snapshot_hash IS DISTINCT FROM OLD.snapshot_hash
+       OR NEW.versao IS DISTINCT FROM OLD.versao
+       OR NEW.template_versao IS DISTINCT FROM OLD.template_versao
+       OR NEW.entrega_id IS DISTINCT FROM OLD.entrega_id
+       OR NEW.recebedor_nome IS DISTINCT FROM OLD.recebedor_nome
+       OR NEW.recebedor_documento IS DISTINCT FROM OLD.recebedor_documento
+       OR NEW.assinatura_hash IS DISTINCT FROM OLD.assinatura_hash
+       OR NEW.assinado_em IS DISTINCT FROM OLD.assinado_em
+       OR NEW.assinado_por IS DISTINCT FROM OLD.assinado_por
+       OR NEW.cobertura IS DISTINCT FROM OLD.cobertura THEN
+      RAISE EXCEPTION 'termo_imutavel: documento assinado nao pode ser alterado'
+        USING ERRCODE = 'raise_exception';
+    END IF;
+    -- PDF só pode ser gravado uma vez por versão
+    IF OLD.pdf_path IS NOT NULL AND NEW.pdf_path IS DISTINCT FROM OLD.pdf_path THEN
+      RAISE EXCEPTION 'termo_pdf_imutavel: ja existe PDF ativo para esta versao'
+        USING ERRCODE = 'raise_exception';
+    END IF;
+    IF OLD.status <> 'assinado' AND NEW.status <> OLD.status THEN
+      RAISE EXCEPTION 'termo_estado_terminal: transicao % -> % proibida', OLD.status, NEW.status
+        USING ERRCODE = 'raise_exception';
+    END IF;
+  END IF;
+
+  NEW.updated_at := now();
+  RETURN NEW;
+END $function$
+ private_schema:1 proname:tg_entrega_termos_immutability prosecdef:false schema:public signature:tg_entrega_termos_immutability()] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.tg_recalc_planning_from_entrega()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_po uuid;
+BEGIN
+  IF NEW.ordem_servico_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT l.partner_order_id INTO v_po
+    FROM public.production_order_link l
+   WHERE l.ordem_servico_id = NEW.ordem_servico_id
+   LIMIT 1;
+
+  IF v_po IS NOT NULL THEN
+    PERFORM public.recalc_partner_order_production(v_po);
+  END IF;
+
+  RETURN NEW;
+END;
+$function$
+ private_schema:1 proname:tg_recalc_planning_from_entrega prosecdef:true schema:public signature:tg_recalc_planning_from_entrega()] map[acl:{postgres=X/postgres,service_role=X/postgres} database_name:postgres definition:CREATE OR REPLACE FUNCTION public.trg_entrega_sync_partner_order_fn()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_partner_order_id uuid;
+  v_total int; v_delivered int;
+BEGIN
+  SELECT os.partner_order_id INTO v_partner_order_id
+    FROM public.ordens_servico os WHERE os.id = COALESCE(NEW.ordem_servico_id, OLD.ordem_servico_id);
+  IF v_partner_order_id IS NULL THEN RETURN NEW; END IF;
+
+  SELECT COUNT(*), COUNT(*) FILTER (WHERE e.status = 'entregue')
+    INTO v_total, v_delivered
+    FROM public.entregas e
+    JOIN public.ordens_servico os ON os.id = e.ordem_servico_id
+   WHERE os.partner_order_id = v_partner_order_id;
+
+  IF v_total > 0 AND v_delivered = v_total THEN
+    UPDATE public.partner_orders SET status = 'entregue', updated_at = now()
+      WHERE id = v_partner_order_id AND status <> 'entregue';
+    UPDATE public.production_planning SET status = 'entregue', updated_at = now()
+      WHERE partner_order_id = v_partner_order_id;
+    INSERT INTO public.production_timeline_events (partner_order_id, event_type, meta)
+    VALUES (v_partner_order_id, 'entrega_realizada', jsonb_build_object('total', v_total));
+  END IF;
+  RETURN NEW;
+END $function$
+ private_schema:1 proname:trg_entrega_sync_partner_order_fn prosecdef:true schema:public signature:trg_entrega_sync_partner_order_fn()]]
