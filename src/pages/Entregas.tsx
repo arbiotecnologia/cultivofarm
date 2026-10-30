@@ -795,10 +795,12 @@ export default function Entregas() {
           <p>
             {pending === "corrupt"
               ? "Registro local de envio pendente ilegível ou armazenamento indisponível: novos envios ficam bloqueados nesta sessão. Consulte as entregas."
-              : "Há um envio com resultado incerto. Novos envios ficam bloqueados até a repetição exata confirmar ou o servidor recusar."}
+              : pending.replayRejected
+                ? `A repetição do envio incerto foi recusada (${pending.replayRejected}); isso não prova que o envio original não foi gravado. É necessária consulta/reconciliação autorizada; novos envios continuam bloqueados.`
+                : "Há um envio com resultado incerto. Novos envios ficam bloqueados até a repetição exata confirmar."}
           </p>
         )}
-        {pending && pending !== "corrupt" && (
+        {pending && pending !== "corrupt" && !pending.replayRejected && (
           <Button variant="outline" disabled={replayPending.isPending} onClick={() => replayPending.mutate()}>Repetir envio pendente</Button>
         )}
         <Button variant="outline" onClick={() => { if (deliveryScope.ready) { void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
