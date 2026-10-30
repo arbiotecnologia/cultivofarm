@@ -12,7 +12,19 @@
     "status": "PASS"
   },
   {
-    "test": "captured exact post baseline; rerun test required",
-    "status": "BLOCKED"
+    "test": "full installation COMMIT and exact postflight",
+    "status": "PASS"
+  },
+  {
+    "test": "independent batch body owner ACL unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "rerun denied",
+    "status": "PASS"
+  },
+  {
+    "test": "deny-only rollback retains tables and history",
+    "status": "PASS"
   }
 ]
