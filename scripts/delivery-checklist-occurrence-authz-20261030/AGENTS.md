@@ -1,0 +1,3 @@
+- Preparation only: never apply hosted, publish or grant from this package.
+- Only the two UI writers change: same signature/envelope/audit/ACL plus h15 actor org, tenant-scoped FOR SHARE lock and re-authorization after it; never open entregas DML.
+- Rollback is deny-only (revoke client EXECUTE); never restore unscoped bodies. Synthetic claims are not hosted JWT proof.

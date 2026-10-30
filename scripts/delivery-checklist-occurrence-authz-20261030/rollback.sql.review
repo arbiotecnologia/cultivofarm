@@ -1,0 +1,6 @@
+-- Deny-only: never restore the unscoped bodies; close client EXECUTE on both writers (UI shows its error, data kept).
+BEGIN;
+SET LOCAL lock_timeout='3s';
+REVOKE EXECUTE ON FUNCTION public.rpc_atualizar_checklist_entrega(uuid,boolean,text) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.rpc_registrar_ocorrencia_entrega(uuid,jsonb) FROM PUBLIC, anon, authenticated;
+COMMIT;

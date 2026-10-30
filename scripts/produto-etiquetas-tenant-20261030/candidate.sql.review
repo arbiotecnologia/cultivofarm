@@ -1,0 +1,29 @@
+-- produto_etiquetas tenant barrier. Ownership = organization of the label's lote (lote_id is immutable by
+-- trg_produto_etiquetas_snapshot_immutable; lotes.organization_id is tenant-guarded). Every other provided root must
+-- agree (envase, stock item, packaging, delivery, client, farm); missing lote, NULL org or any conflict => NULL => deny.
+-- Never derived from gerada_por/current profile or from can_user_access_produto_etiqueta visibility.
+-- Helper only computes provenance (DEFINER so it reads roots without recursive RLS); authorization stays in the policy.
+CREATE FUNCTION platform_private.produto_etiqueta_root_org_v1(
+  p_lote uuid, p_envase uuid, p_estoque_item uuid, p_embalagem uuid, p_entrega uuid, p_cliente uuid, p_fazenda uuid)
+RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'pg_catalog' AS $f$
+ SELECT l.organization_id FROM public.lotes l
+  WHERE l.id = p_lote AND l.organization_id IS NOT NULL
+    AND (p_envase IS NULL OR EXISTS (SELECT 1 FROM public.envase v WHERE v.id = p_envase AND v.lote_id = l.id AND v.organization_id = l.organization_id))
+    AND (p_estoque_item IS NULL OR EXISTS (SELECT 1 FROM public.estoque_produto s WHERE s.id = p_estoque_item AND s.lote_id = l.id
+          AND (p_envase IS NULL OR s.envase_id IS NULL OR s.envase_id = p_envase)))
+    AND (p_embalagem IS NULL OR EXISTS (SELECT 1 FROM public.estoque_embalagens m WHERE m.id = p_embalagem AND m.lote_id = l.id
+          AND (p_envase IS NULL OR m.envase_id IS NULL OR m.envase_id = p_envase)
+          AND (m.cliente_id IS NULL OR EXISTS (SELECT 1 FROM public.clientes mc WHERE mc.id = m.cliente_id AND mc.organization_id = l.organization_id))))
+    AND (p_entrega IS NULL OR EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = p_entrega AND e.organization_id = l.organization_id))
+    AND (p_cliente IS NULL OR EXISTS (SELECT 1 FROM public.clientes c WHERE c.id = p_cliente AND c.organization_id = l.organization_id))
+    AND (p_fazenda IS NULL OR EXISTS (SELECT 1 FROM public.fazendas f WHERE f.id = p_fazenda AND f.organization_id = l.organization_id
+          AND (p_cliente IS NULL OR f.cliente_id = p_cliente)))
+$f$;
+REVOKE ALL ON FUNCTION platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid) TO authenticated;
+CREATE POLICY produto_etiquetas_tenant_root_r ON public.produto_etiquetas AS RESTRICTIVE FOR ALL TO authenticated
+  USING (platform_private.produto_etiqueta_root_org_v1(lote_id, envase_id, estoque_item_id, embalagem_id, entrega_id, cliente_id, fazenda_id)
+         = platform_private.h15_actor_organization())
+  WITH CHECK (platform_private.produto_etiqueta_root_org_v1(lote_id, envase_id, estoque_item_id, embalagem_id, entrega_id, cliente_id, fazenda_id)
+         = platform_private.h15_actor_organization());
+REVOKE TRUNCATE ON public.produto_etiquetas FROM PUBLIC, anon, authenticated;
