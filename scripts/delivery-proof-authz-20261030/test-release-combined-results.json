@@ -1,0 +1,27 @@
+[
+  {
+    "test": "combined release has exactly one BEGIN and one COMMIT",
+    "status": "PASS",
+    "bytes": 1300752
+  },
+  {
+    "test": "forced failure in final proof POST rolls back the atomic part too (no barrier-without-proof window)",
+    "status": "PASS"
+  },
+  {
+    "test": "combined COMMIT: barrier, proof RPCs and adapters installed together",
+    "status": "PASS"
+  },
+  {
+    "test": "standalone exact proof POST passes after combined install",
+    "status": "PASS"
+  },
+  {
+    "test": "combined rerun refused without changes",
+    "status": "PASS"
+  },
+  {
+    "test": "legacy adapter reachable by authenticated and fails closed for unknown actor (not permission denied)",
+    "status": "PASS"
+  }
+]
