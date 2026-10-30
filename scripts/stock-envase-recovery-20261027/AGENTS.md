@@ -1,5 +1,5 @@
 - Keep this package review-only; never install or grant client access during preparation — production release remains independent.
-- Preserve manual lot/CQ/binding/delete guards as immutable dependencies; never mint CQ tickets or force a lot/OS transition — avoids reopening contained production stages.
+- Preserve manual lot/CQ/binding/delete guards; never mint CQ tickets or force lot/OS status. The only guard change allowed is v2's additive status-only em_cq→envase branch for the private `manual_envase_transition_v1` ticket, minted solely by the envase completion core under existing CQ criteria — avoids reopening contained stages.
 - Reuse existing envase, stock motor and batch signatures with fresh post-wait scope; no GUC may grant authority — preserves tenant isolation.
 - Tests must load exact stock tenant/ledger/volume guards; explicitly name omitted triggers/Auth seams and do not claim full delivery integration — prevents false certification.
-- Containment is deny-only for changed entrypoints and never restores the envase purge escape — preserves history.
+- Containment is deny-only for changed entrypoints and never restores the envase purge escape — preserves history.- v2 is rebased on the applied post-atomic/proof bodies (assemble_v2.py from capture/current.json + post-expected.json); never reapply the 27/10 motor body or drop the split delta — prevents silent regression of installed fixes.

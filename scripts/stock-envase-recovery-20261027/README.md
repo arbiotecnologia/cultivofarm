@@ -45,3 +45,28 @@ Ensaio carrega motor/batch/envase LIVE, testa hashes de seis corpos; usa **motor
 - Homologação real A/B, papéis, revogação e efeitos completos ficam com auditor após revisão. Contabilidade real, emissão/cobrança e SU-518022 permanecem pendentes; comunicações OFF.
 
 Portanto: o pacote reduz bloqueios com provas locais mais completas que o anterior, mas **não libera estoque/envase nem torna entrega pronta**. Revisão/instalação/publicação independentes, sem restauração de escape por rollback.
+## v2 — rebase sobre o estado aplicado (30/10), NÃO aplicado
+
+Gerado por `assemble_v2.py` a partir de `capture/current.json` e `post-expected.json` (pós-`a566faa4`). Substitui o candidato de 27/10, cujo pin do motor (`c71a9e84`) ficou obsoleto.
+
+- **Motor:** corpo aplicado `44b150bf` (split preservado) com o gate único inserido antes do primeiro lock de linha. O batch recebe o mesmo gate.
+- **Envase:** escopo manual, gate antes da idempotência/locks, reautorização após cada espera, NaN/linha inválida. A conclusão chama `platform_private.stock_envase_complete_v1`, que:
+  - exige lote aprovado, último CQ aprovado (critério existente), envase do lote e cobertura da necessidade (ou override de gestor);
+  - emite o ticket privado `manual_envase_transition_v1`;
+  - leva a OS em_cq→envase→pronto_entrega e consome o ticket.
+- **Guard pai de CQ:** um ramo aditivo, só de status, para esse ticket. Os demais ramos ficam byte-idênticos.
+- **Entrega em grupo:** consome a reserva inteira desta OS (manual, mesmo cliente, sem parceiro), expedindo sem liberar/re-reservar. Lotes livres continuam no batch; reserva de outra OS, parcial ou de outro tenant → `DELIVERY_RESERVATION_NOT_OWNED`.
+- **Imutabilidade do material:** sem o escape de purge; volumes finitos.
+- **Rollback deny-only:** transição sempre fechada; guard, motor, batch e grupo voltam aos corpos aplicados exatos; o escape não volta.
+- Sem grants a clientes.
+
+**Resultado:** `run_bounded_v2.py` → `test_v2_pg.py` com **37 PASS / 0 FAIL**, 248 s, exit 0. Restauração completa, `release-combined` exato e POST de comprovação. Logs e resultados em `test_v2_pg-current.log.txt` e `test-v2-results.json`. Cobertura:
+- drift/POST forçado/COMMIT/rerun;
+- helper/ticket negados ao cliente; UPDATE direto e spoof de GUC negados;
+- tenant B; CQ reprovado; linha inválida; envase parcial sem transição; envase completo (papel produção); replay;
+- reserva de outra OS e parcial negadas; corrida com uma única entrega; misto reservado+livre; ledger;
+- gate 55P03 e inversão 40P01 sem resíduo; zero financeiro/fiscal/comunicação; rollback preservando histórico.
+
+Os grants de harness são só locais. O cancelamento de reserva do cockpit (`rpc_cockpit_cancelar_reserva_v1`) fica fora do v2, sem alteração.
+
+**Limites:** dados de upstream são carregados estaticamente (replica) para estágios já LIVE. Não é prova JWT/RLS/Storage hosted. Ver `LOT-GUARD-INVENTORY.md` e `../delivery-group-capability-20261030/PREREQUISITES.md`.
