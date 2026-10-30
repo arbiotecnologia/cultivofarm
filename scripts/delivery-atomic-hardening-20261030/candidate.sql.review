@@ -70,7 +70,9 @@ BEGIN
  RETURN NEW;
 END $$;
 REVOKE ALL ON FUNCTION platform_private.delivery_mutation_guard_20261030() FROM PUBLIC,anon,authenticated,service_role;
-CREATE TRIGGER a00_delivery_mutation_closed BEFORE INSERT OR UPDATE OR DELETE ON public.entregas
+-- Runs after tenant_organization_guard hydrates organization_id and after
+-- canonical field validators; still BEFORE the row and downstream effects.
+CREATE TRIGGER zz_delivery_mutation_closed BEFORE INSERT OR UPDATE OR DELETE ON public.entregas
 FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_mutation_guard_20261030();
 -- Preserve SELECT/RLS and independent stock grants. Close table AND column DML.
 REVOKE INSERT,UPDATE,DELETE,TRUNCATE ON public.entregas FROM PUBLIC,anon,authenticated;
