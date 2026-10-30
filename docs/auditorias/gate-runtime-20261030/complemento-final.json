@@ -1,0 +1,843 @@
+{
+  "numTotalTestSuites": 14,
+  "numPassedTestSuites": 14,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 73,
+  "numPassedTests": 73,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1793321701124,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "claimPendingRegistro"
+          ],
+          "fullName": "claimPendingRegistro apenas o primeiro claim concorrente vence",
+          "status": "passed",
+          "title": "apenas o primeiro claim concorrente vence",
+          "duration": 22.79334199999994,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "claimPendingRegistro"
+          ],
+          "fullName": "claimPendingRegistro após release, novo claim funciona",
+          "status": "passed",
+          "title": "após release, novo claim funciona",
+          "duration": 14.178593000000092,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "claimPendingRegistro"
+          ],
+          "fullName": "claimPendingRegistro getPendingRegistros filtra itens em sincronização",
+          "status": "passed",
+          "title": "getPendingRegistros filtra itens em sincronização",
+          "duration": 3.1747230000000854,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "claimPendingCheckin"
+          ],
+          "fullName": "claimPendingCheckin checkin: claim duplicado é rejeitado",
+          "status": "passed",
+          "title": "checkin: claim duplicado é rejeitado",
+          "duration": 1.8738610000000335,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "claimPendingFoto"
+          ],
+          "fullName": "claimPendingFoto dois claims concorrentes têm exatamente um vencedor",
+          "status": "passed",
+          "title": "dois claims concorrentes têm exatamente um vencedor",
+          "duration": 8.979333000000224,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321721128,
+      "endTime": 1793321721178.9792,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/offlineDb.claim.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "dedup: claim impede dupla execução (StrictMode)"
+          ],
+          "fullName": "dedup: claim impede dupla execução (StrictMode) dois claims paralelos para o mesmo registro: apenas um vence",
+          "status": "passed",
+          "title": "dois claims paralelos para o mesmo registro: apenas um vence",
+          "duration": 20.139909999999873,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "dedup: claim impede dupla execução (StrictMode)"
+          ],
+          "fullName": "dedup: claim impede dupla execução (StrictMode) após claim, getPendingRegistros oculta o item",
+          "status": "passed",
+          "title": "após claim, getPendingRegistros oculta o item",
+          "duration": 4.280027999999675,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "dedup: idempotência via client_uuid (erro 23505)"
+          ],
+          "fullName": "dedup: idempotência via client_uuid (erro 23505) não reenvia quando referência existe E objeto está confirmado no storage",
+          "status": "passed",
+          "title": "não reenvia quando referência existe E objeto está confirmado no storage",
+          "duration": 10.293230000000221,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "dedup: idempotência via client_uuid (erro 23505)"
+          ],
+          "fullName": "dedup: idempotência via client_uuid (erro 23505) referência órfã (sem objeto no storage) provoca reenvio",
+          "status": "passed",
+          "title": "referência órfã (sem objeto no storage) provoca reenvio",
+          "duration": 1.6701419999999416,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "dedup: idempotência via client_uuid (erro 23505)"
+          ],
+          "fullName": "dedup: idempotência via client_uuid (erro 23505) client_uuid pertencente a outro registro vira idempotency_conflict",
+          "status": "passed",
+          "title": "client_uuid pertencente a outro registro vira idempotency_conflict",
+          "duration": 1.3685669999999845,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "dedup: idempotência via client_uuid (erro 23505)"
+          ],
+          "fullName": "dedup: idempotência via client_uuid (erro 23505) upload bem-sucedido valida via list e insere referência",
+          "status": "passed",
+          "title": "upload bem-sucedido valida via list e insere referência",
+          "duration": 1.6035029999998187,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "dedup: idempotência via client_uuid (erro 23505)"
+          ],
+          "fullName": "dedup: idempotência via client_uuid (erro 23505) retorna falha quando storage não confirma o upload",
+          "status": "passed",
+          "title": "retorna falha quando storage não confirma o upload",
+          "duration": 1.3142440000001443,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "dedup: idempotência via client_uuid (erro 23505)"
+          ],
+          "fullName": "dedup: idempotência via client_uuid (erro 23505) respeita MAX_UPLOAD_ATTEMPTS",
+          "status": "passed",
+          "title": "respeita MAX_UPLOAD_ATTEMPTS",
+          "duration": 1.0961369999999988,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321719527,
+      "endTime": 1793321719569.0962,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/offlineSync.dedupe.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados executes exclusively list RPC on load, refresh, filtering and pagination; no operational mounts",
+          "status": "passed",
+          "title": "executes exclusively list RPC on load, refresh, filtering and pagination; no operational mounts",
+          "duration": 981.2691580000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados late A is aborted and never displayed in B; scope remount resets search/page",
+          "status": "passed",
+          "title": "late A is aborted and never displayed in B; scope remount resets search/page",
+          "duration": 510.21550600000046,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados logout immediately clears actual list and blocks requests/refetch",
+          "status": "passed",
+          "title": "logout immediately clears actual list and blocks requests/refetch",
+          "duration": 297.0069940000003,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados loading immediately clears actual list and blocks requests/refetch",
+          "status": "passed",
+          "title": "loading immediately clears actual list and blocks requests/refetch",
+          "duration": 278.33192299999973,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados inactive immediately clears actual list and blocks requests/refetch",
+          "status": "passed",
+          "title": "inactive immediately clears actual list and blocks requests/refetch",
+          "duration": 359.39737200000036,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados no-tenant immediately clears actual list and blocks requests/refetch",
+          "status": "passed",
+          "title": "no-tenant immediately clears actual list and blocks requests/refetch",
+          "duration": 492.97422800000004,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados roles-revoked immediately clears actual list and blocks requests/refetch",
+          "status": "passed",
+          "title": "roles-revoked immediately clears actual list and blocks requests/refetch",
+          "duration": 225.48915599999964,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados reader cockpit-laboratorio cannot opt into list mode with wrong RPC key, even manual refetch",
+          "status": "passed",
+          "title": "reader cockpit-laboratorio cannot opt into list mode with wrong RPC key, even manual refetch",
+          "duration": 6.8238939999992,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados reader profiles-esteira cannot opt into list mode with wrong RPC key, even manual refetch",
+          "status": "passed",
+          "title": "reader profiles-esteira cannot opt into list mode with wrong RPC key, even manual refetch",
+          "duration": 4.43988999999965,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados reader cockpit-alertas-reconhecidos cannot opt into list mode with wrong RPC key, even manual refetch",
+          "status": "passed",
+          "title": "reader cockpit-alertas-reconhecidos cannot opt into list mode with wrong RPC key, even manual refetch",
+          "duration": 4.423339000000851,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados reader esteira-history cannot opt into list mode with wrong RPC key, even manual refetch",
+          "status": "passed",
+          "title": "reader esteira-history cannot opt into list mode with wrong RPC key, even manual refetch",
+          "duration": 4.431609000001117,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados reader pendencias-esteira cannot opt into list mode with wrong RPC key, even manual refetch",
+          "status": "passed",
+          "title": "reader pendencias-esteira cannot opt into list mode with wrong RPC key, even manual refetch",
+          "duration": 5.209924000000683,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados reader cockpit-producao-resumo cannot opt into list mode with wrong RPC key, even manual refetch",
+          "status": "passed",
+          "title": "reader cockpit-producao-resumo cannot opt into list mode with wrong RPC key, even manual refetch",
+          "duration": 4.314196000001175,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados reader estoque-disponivel-lote cannot opt into list mode with wrong RPC key, even manual refetch",
+          "status": "passed",
+          "title": "reader estoque-disponivel-lote cannot opt into list mode with wrong RPC key, even manual refetch",
+          "duration": 3.2914740000014717,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados reader metricas-laboratorio cannot opt into list mode with wrong RPC key, even manual refetch",
+          "status": "passed",
+          "title": "reader metricas-laboratorio cannot opt into list mode with wrong RPC key, even manual refetch",
+          "duration": 4.992958000000726,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados reader cockpit-is-hml cannot opt into list mode with wrong RPC key, even manual refetch",
+          "status": "passed",
+          "title": "reader cockpit-is-hml cannot opt into list mode with wrong RPC key, even manual refetch",
+          "duration": 3.1214970000000903,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados enabled=false blocks manual refetch of the permitted list key",
+          "status": "passed",
+          "title": "enabled=false blocks manual refetch of the permitted list key",
+          "duration": 5.436059999999998,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "consulta Cockpit efetiva — Auth/transporte simulados"
+          ],
+          "fullName": "consulta Cockpit efetiva — Auth/transporte simulados contained RPC error renders safely without any fallback",
+          "status": "passed",
+          "title": "contained RPC error renders safely without any fallback",
+          "duration": 163.35693700000047,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321711837,
+      "endTime": 1793321715193.357,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/cockpit-laboratorio/consultaOnly.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "deferEffects entrega o UUID dividido confirmado sem efeitos globais",
+          "status": "passed",
+          "title": "deferEffects entrega o UUID dividido confirmado sem efeitos globais",
+          "duration": 30.109942000000046,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "UUID inválido null não confirma nem audita",
+          "status": "passed",
+          "title": "UUID inválido null não confirma nem audita",
+          "duration": 4.962289000000055,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "UUID inválido {} não confirma nem audita",
+          "status": "passed",
+          "title": "UUID inválido {} não confirma nem audita",
+          "duration": 4.244650999999976,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "UUID inválido \"original\" não confirma nem audita",
+          "status": "passed",
+          "title": "UUID inválido \"original\" não confirma nem audita",
+          "duration": 3.505996999999752,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "UUID inválido false não confirma nem audita",
+          "status": "passed",
+          "title": "UUID inválido false não confirma nem audita",
+          "duration": 6.743292999999994,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "fence before impede adoção/filhos/efeitos adiados",
+          "status": "passed",
+          "title": "fence before impede adoção/filhos/efeitos adiados",
+          "duration": 3.691739999999754,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "fence rpc impede adoção/filhos/efeitos adiados",
+          "status": "passed",
+          "title": "fence rpc impede adoção/filhos/efeitos adiados",
+          "duration": 3.9254320000000007,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "fence audit impede adoção/filhos/efeitos adiados",
+          "status": "passed",
+          "title": "fence audit impede adoção/filhos/efeitos adiados",
+          "duration": 2.5867929999999433,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321718817,
+      "endTime": 1793321718876.587,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/entregas/reservaDeferredRuntimeGate.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida valida UUID, nunca aceita string arbitrária ou objeto como ID",
+          "status": "passed",
+          "title": "valida UUID, nunca aceita string arbitrária ou objeto como ID",
+          "duration": 2.34852200000023,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida método obrigatório/ativo e RECEITA apenas; duplo clique não envia nenhuma cobrança",
+          "status": "passed",
+          "title": "método obrigatório/ativo e RECEITA apenas; duplo clique não envia nenhuma cobrança",
+          "duration": 828.6989910000002,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida ACK perdido: reconsulta encontra título pelo vínculo sem segunda geração",
+          "status": "passed",
+          "title": "ACK perdido: reconsulta encontra título pelo vínculo sem segunda geração",
+          "duration": 317.3981649999996,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida falha fiscal já persistida não finge rollback nem chama fiscal/geração",
+          "status": "passed",
+          "title": "falha fiscal já persistida não finge rollback nem chama fiscal/geração",
+          "duration": 354.88711799999965,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida PT409 de releitura preserva draft, oculta cache e não repete escrita",
+          "status": "passed",
+          "title": "PT409 de releitura preserva draft, oculta cache e não repete escrita",
+          "duration": 335.6068919999998,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida 42501 de releitura preserva draft, oculta cache e não repete escrita",
+          "status": "passed",
+          "title": "42501 de releitura preserva draft, oculta cache e não repete escrita",
+          "duration": 294.8392080000003,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida resposta tardia após tenant não publica título nem cache antigo",
+          "status": "passed",
+          "title": "resposta tardia após tenant não publica título nem cache antigo",
+          "duration": 405.62084400000003,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida resposta tardia após epoch não publica título nem cache antigo",
+          "status": "passed",
+          "title": "resposta tardia após epoch não publica título nem cache antigo",
+          "duration": 407.16070300000047,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida resposta tardia após actor não publica título nem cache antigo",
+          "status": "passed",
+          "title": "resposta tardia após actor não publica título nem cache antigo",
+          "duration": 425.331725,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida cache de título seguido de erro 403 esconde ação financeira",
+          "status": "passed",
+          "title": "cache de título seguido de erro 403 esconde ação financeira",
+          "duration": 270.83344300000135,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida vínculo alheio é rejeitado, sem sucesso ou RPC",
+          "status": "passed",
+          "title": "vínculo alheio é rejeitado, sem sucesso ou RPC",
+          "duration": 100.53944500000034,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida dupla reconsulta pendente usa um único ticket e invalidação exata",
+          "status": "passed",
+          "title": "dupla reconsulta pendente usa um único ticket e invalidação exata",
+          "duration": 327.23292400000173,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida troca de tenant durante await de invalidação não dispara a próxima leitura",
+          "status": "passed",
+          "title": "troca de tenant durante await de invalidação não dispara a próxima leitura",
+          "duration": 367.5698110000012,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida método ausente bloqueia revisão e não envia fallback NULL",
+          "status": "passed",
+          "title": "método ausente bloqueia revisão e não envia fallback NULL",
+          "duration": 285.0503749999989,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida"
+          ],
+          "fullName": "Etapa6 — QueryClient real, Auth/transportes simulados, operação contida chave exata da reconciliação corresponde ao cache real e desmontagem remove o título",
+          "status": "passed",
+          "title": "chave exata da reconciliação corresponde ao cache real e desmontagem remove o título",
+          "duration": 251.44822300000124,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321706241,
+      "endTime": 1793321711216.4482,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/financeiro/deliveryFinanceReconciliation.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "página envia origem+versão 3 e timestamp observado pelo contrato v2, PT409 não repete",
+          "status": "passed",
+          "title": "página envia origem+versão 3 e timestamp observado pelo contrato v2, PT409 não repete",
+          "duration": 945.2048329999998,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "workspace 42501 impede abrir confirmação e despachar reprogramação",
+          "status": "passed",
+          "title": "workspace 42501 impede abrir confirmação e despachar reprogramação",
+          "duration": 148.82023500000014,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "workspace PGRST202 impede abrir confirmação e despachar reprogramação",
+          "status": "passed",
+          "title": "workspace PGRST202 impede abrir confirmação e despachar reprogramação",
+          "duration": 94.07095200000003,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "workspace tardio após mudança de tenant não abre diálogo anterior",
+          "status": "passed",
+          "title": "workspace tardio após mudança de tenant não abre diálogo anterior",
+          "duration": 115.55945799999972,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro na lista não é vazio e não inicia RPC de mutação",
+          "status": "passed",
+          "title": "erro na lista não é vazio e não inicia RPC de mutação",
+          "duration": 78.21452999999929,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321715515,
+      "endTime": 1793321716897.2146,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/monitoramento/pageRuntimeGate.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "fila Campo completa resolve mapping, despacha contrato único e limpa somente após envelope",
+          "status": "passed",
+          "title": "fila Campo completa resolve mapping, despacha contrato único e limpa somente após envelope",
+          "duration": 68.71866899999986,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "outro dono retém pendência sem RPC",
+          "status": "passed",
+          "title": "outro dono retém pendência sem RPC",
+          "duration": 18.26042099999995,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "outro tenant retém pendência sem RPC",
+          "status": "passed",
+          "title": "outro tenant retém pendência sem RPC",
+          "duration": 23.555649999999332,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "sem pai retém pendência sem RPC",
+          "status": "passed",
+          "title": "sem pai retém pendência sem RPC",
+          "duration": 26.948330999999598,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "CAS inválido retém pendência sem RPC",
+          "status": "passed",
+          "title": "CAS inválido retém pendência sem RPC",
+          "duration": 13.114682999999786,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "PT409 preserva fila e não repete automaticamente",
+          "status": "passed",
+          "title": "PT409 preserva fila e não repete automaticamente",
+          "duration": 33.66944599999988,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "42501 preserva fila e não repete automaticamente",
+          "status": "passed",
+          "title": "42501 preserva fila e não repete automaticamente",
+          "duration": 14.161214999999174,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "08006 preserva fila e não repete automaticamente",
+          "status": "passed",
+          "title": "08006 preserva fila e não repete automaticamente",
+          "duration": 61.12456800000018,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "ACK inválido {} mantém pendência",
+          "status": "passed",
+          "title": "ACK inválido {} mantém pendência",
+          "duration": 55.69868300000053,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "ACK inválido {\"id\":\"33333333-3333-4333-8333-333333333333\",\"registro_consultor_id\":\"22222222-2222-4222-8222-222222222222\",\"client_uuid\":\"22222222-2222-4222-8222-222222222222\",\"versao\":1,\"replayed\":false} mantém pendência",
+          "status": "passed",
+          "title": "ACK inválido {\"id\":\"33333333-3333-4333-8333-333333333333\",\"registro_consultor_id\":\"22222222-2222-4222-8222-222222222222\",\"client_uuid\":\"22222222-2222-4222-8222-222222222222\",\"versao\":1,\"replayed\":false} mantém pendência",
+          "duration": 8.590747000000192,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "ACK inválido {\"id\":\"33333333-3333-4333-8333-333333333333\",\"registro_consultor_id\":\"11111111-1111-4111-8111-111111111111\",\"client_uuid\":\"22222222-2222-4222-8222-222222222222\",\"versao\":2,\"replayed\":false} mantém pendência",
+          "status": "passed",
+          "title": "ACK inválido {\"id\":\"33333333-3333-4333-8333-333333333333\",\"registro_consultor_id\":\"11111111-1111-4111-8111-111111111111\",\"client_uuid\":\"22222222-2222-4222-8222-222222222222\",\"versao\":2,\"replayed\":false} mantém pendência",
+          "duration": 7.30325399999947,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "epoch durante RPC não apaga nem confirma pendência antiga",
+          "status": "passed",
+          "title": "epoch durante RPC não apaga nem confirma pendência antiga",
+          "duration": 64.22435799999948,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "tenant durante RPC não apaga nem confirma pendência antiga",
+          "status": "passed",
+          "title": "tenant durante RPC não apaga nem confirma pendência antiga",
+          "duration": 69.28970599999957,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "nova revisão durante RPC não apaga nem confirma pendência antiga",
+          "status": "passed",
+          "title": "nova revisão durante RPC não apaga nem confirma pendência antiga",
+          "duration": 62.55879399999958,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321705759,
+      "endTime": 1793321706287.5588,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/visita/campoSyncRuntimeGate.test.tsx"
+    }
+  ]
+}

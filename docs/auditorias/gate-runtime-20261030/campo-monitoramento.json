@@ -1,0 +1,1587 @@
+{
+  "numTotalTestSuites": 10,
+  "numPassedTestSuites": 10,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 158,
+  "numPassedTests": 158,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1793321508367,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "alerta com origem usa somente v2 com CAS de alerta (microssegundos) e versão da visita",
+          "status": "passed",
+          "title": "alerta com origem usa somente v2 com CAS de alerta (microssegundos) e versão da visita",
+          "duration": 50.940160000000105,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "visita finalizada: envelope sem atualização mantém a mesma versão",
+          "status": "passed",
+          "title": "visita finalizada: envelope sem atualização mantém a mesma versão",
+          "duration": 7.594102000000021,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "envelope v2 inválido {\"visit_version\":3} não confirma",
+          "status": "passed",
+          "title": "envelope v2 inválido {\"visit_version\":3} não confirma",
+          "duration": 12.229493999999704,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "envelope v2 inválido {\"registro_origem_id\":\"11111111-1111-4111-8111-111111111111\"} não confirma",
+          "status": "passed",
+          "title": "envelope v2 inválido {\"registro_origem_id\":\"11111111-1111-4111-8111-111111111111\"} não confirma",
+          "duration": 6.486356999999771,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "envelope v2 inválido {\"request_id\":\"22222222-2222-4222-8222-222222222222\"} não confirma",
+          "status": "passed",
+          "title": "envelope v2 inválido {\"request_id\":\"22222222-2222-4222-8222-222222222222\"} não confirma",
+          "duration": 4.684702000000016,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "envelope v2 inválido {\"extra\":1} não confirma",
+          "status": "passed",
+          "title": "envelope v2 inválido {\"extra\":1} não confirma",
+          "duration": 3.584744000000228,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "envelope v2 inválido {\"visita_atualizada\":\"sim\"} não confirma",
+          "status": "passed",
+          "title": "envelope v2 inválido {\"visita_atualizada\":\"sim\"} não confirma",
+          "duration": 4.525221999999758,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "envelope v2 inválido {\"modo\":\"somente_alerta\"} não confirma",
+          "status": "passed",
+          "title": "envelope v2 inválido {\"modo\":\"somente_alerta\"} não confirma",
+          "duration": 2.9121279999999388,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "envelope v2 inválido {\"visita_atualizada\":false,\"visit_version\":3} não confirma",
+          "status": "passed",
+          "title": "envelope v2 inválido {\"visita_atualizada\":false,\"visit_version\":3} não confirma",
+          "duration": 6.003592000000026,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "envelope v2 inválido {} não confirma",
+          "status": "passed",
+          "title": "envelope v2 inválido {} não confirma",
+          "duration": 3.12820899999997,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "envelope v2 inválido {\"modo\":\"visita_alerta\"} não confirma",
+          "status": "passed",
+          "title": "envelope v2 inválido {\"modo\":\"visita_alerta\"} não confirma",
+          "duration": 3.013871999999992,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "versão de visita null nega antes do envio",
+          "status": "passed",
+          "title": "versão de visita null nega antes do envio",
+          "duration": 2.6232279999999264,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "versão de visita 0 nega antes do envio",
+          "status": "passed",
+          "title": "versão de visita 0 nega antes do envio",
+          "duration": 2.1551429999999527,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "versão de visita 1.5 nega antes do envio",
+          "status": "passed",
+          "title": "versão de visita 1.5 nega antes do envio",
+          "duration": 1.9859489999998914,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "v2 ausente não cai para v1 nem escrita direta",
+          "status": "passed",
+          "title": "v2 ausente não cai para v1 nem escrita direta",
+          "duration": 2.8970439999998234,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "cliente antigo (v1) recebendo PT428 exibe mensagem segura",
+          "status": "passed",
+          "title": "cliente antigo (v1) recebendo PT428 exibe mensagem segura",
+          "duration": 2.634904000000006,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo envia CAS do alerta e da visita e exige tipo real inalterado",
+          "status": "passed",
+          "title": "vínculo envia CAS do alerta e da visita e exige tipo real inalterado",
+          "duration": 3.5147890000002917,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo com retorno {\"tipo_alerta\":\"estresse_hidrico\"} não confirma",
+          "status": "passed",
+          "title": "vínculo com retorno {\"tipo_alerta\":\"estresse_hidrico\"} não confirma",
+          "duration": 2.724655999999868,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo com retorno {\"registro_origem_id\":\"11111111-1111-4111-8111-111111111111\"} não confirma",
+          "status": "passed",
+          "title": "vínculo com retorno {\"registro_origem_id\":\"11111111-1111-4111-8111-111111111111\"} não confirma",
+          "duration": 2.0554480000000694,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo com retorno {\"visit_version\":4} não confirma",
+          "status": "passed",
+          "title": "vínculo com retorno {\"visit_version\":4} não confirma",
+          "duration": 2.666893000000073,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo erro PT409 sem repetir",
+          "status": "passed",
+          "title": "vínculo erro PT409 sem repetir",
+          "duration": 3.5408009999996466,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo erro 22023 sem repetir",
+          "status": "passed",
+          "title": "vínculo erro 22023 sem repetir",
+          "duration": 2.9161619999999857,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo erro PT404 sem repetir",
+          "status": "passed",
+          "title": "vínculo erro PT404 sem repetir",
+          "duration": 5.5130979999999,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo erro PGRST202 sem repetir",
+          "status": "passed",
+          "title": "vínculo erro PGRST202 sem repetir",
+          "duration": 2.2871949999998833,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "UI: cancelar não envia; confirmar envia uma vez e notifica a visita",
+          "status": "passed",
+          "title": "UI: cancelar não envia; confirmar envia uma vez e notifica a visita",
+          "duration": 418.36617600000045,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "UI: visita finalizada/somente leitura não oferece vínculo",
+          "status": "passed",
+          "title": "UI: visita finalizada/somente leitura não oferece vínculo",
+          "duration": 10.354262999999719,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "UI: servidor sem instalação mostra indisponível sem caminho alternativo",
+          "status": "passed",
+          "title": "UI: servidor sem instalação mostra indisponível sem caminho alternativo",
+          "duration": 9.763632999999572,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "UI: incerteza mantém a mesma chave na nova confirmação",
+          "status": "passed",
+          "title": "UI: incerteza mantém a mesma chave na nova confirmação",
+          "duration": 112.0069169999997,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "PT409 multiple_alerts_share_visit mostra bloqueio claro sem repetir",
+          "status": "passed",
+          "title": "PT409 multiple_alerts_share_visit mostra bloqueio claro sem repetir",
+          "duration": 2.9255910000001677,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "PT409 plan_notice_incoherent mostra bloqueio claro sem repetir",
+          "status": "passed",
+          "title": "PT409 plan_notice_incoherent mostra bloqueio claro sem repetir",
+          "duration": 2.035233000000062,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "PT409 origin_without_plan_unsupported mostra bloqueio claro sem repetir",
+          "status": "passed",
+          "title": "PT409 origin_without_plan_unsupported mostra bloqueio claro sem repetir",
+          "duration": 1.8415290000002642,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo PT409/visit_already_has_origin_alert explica política",
+          "status": "passed",
+          "title": "vínculo PT409/visit_already_has_origin_alert explica política",
+          "duration": 2.2125740000001315,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo 22023/origin_date_mismatch explica política",
+          "status": "passed",
+          "title": "vínculo 22023/origin_date_mismatch explica política",
+          "duration": 1.8805669999997008,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "vínculo PT409/origin_requires_saved_plan explica política",
+          "status": "passed",
+          "title": "vínculo PT409/origin_requires_saved_plan explica política",
+          "duration": 1.9184470000000147,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321541876,
+      "endTime": 1793321542582.9185,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/monitoramento/origemAlertaAgronomico.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado timestamp  bloqueia antes do RPC",
+          "status": "passed",
+          "title": "timestamp  bloqueia antes do RPC",
+          "duration": 34.02692500000012,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado timestamp 2026-10-27 bloqueia antes do RPC",
+          "status": "passed",
+          "title": "timestamp 2026-10-27 bloqueia antes do RPC",
+          "duration": 8.468132999999852,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado timestamp invalid bloqueia antes do RPC",
+          "status": "passed",
+          "title": "timestamp invalid bloqueia antes do RPC",
+          "duration": 6.099228999999923,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envia revisão exata microsegundos; PT409 preserva data e não repete",
+          "status": "passed",
+          "title": "envia revisão exata microsegundos; PT409 preserva data e não repete",
+          "duration": 8.466910000000098,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado 403/404 uniformes e signed-out sem RPC",
+          "status": "passed",
+          "title": "403/404 uniformes e signed-out sem RPC",
+          "duration": 9.906304000000091,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado 40001 verdadeiro não vira sucesso/retry e mantém timestamp",
+          "status": "passed",
+          "title": "40001 verdadeiro não vira sucesso/retry e mantém timestamp",
+          "duration": 3.8217279999998937,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado retorno null não é sucesso",
+          "status": "passed",
+          "title": "retorno null não é sucesso",
+          "duration": 4.035570999999891,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado retorno {} não é sucesso",
+          "status": "passed",
+          "title": "retorno {} não é sucesso",
+          "duration": 5.132790000000114,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado retorno {\"success\":false} não é sucesso",
+          "status": "passed",
+          "title": "retorno {\"success\":false} não é sucesso",
+          "duration": 4.95952299999999,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado retorno {\"id\":\"foreign\"} não é sucesso",
+          "status": "passed",
+          "title": "retorno {\"id\":\"foreign\"} não é sucesso",
+          "duration": 3.1809650000000147,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope apenas id correspondente bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope apenas id correspondente bloqueia sucesso/invalidação sem retry",
+          "duration": 2.7782099999999446,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope apenas alerta_id correspondente bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope apenas alerta_id correspondente bloqueia sucesso/invalidação sem retry",
+          "duration": 2.3638269999996737,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope success ausente bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope success ausente bloqueia sucesso/invalidação sem retry",
+          "duration": 2.134722000000238,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope success string bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope success string bloqueia sucesso/invalidação sem retry",
+          "duration": 2.3836590000000797,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope success false bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope success false bloqueia sucesso/invalidação sem retry",
+          "duration": 5.291005000000041,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope alerta divergente bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope alerta divergente bloqueia sucesso/invalidação sem retry",
+          "duration": 4.979363000000376,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope data divergente bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope data divergente bloqueia sucesso/invalidação sem retry",
+          "duration": 2.7953950000000987,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope data anterior ausente bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope data anterior ausente bloqueia sucesso/invalidação sem retry",
+          "duration": 2.1871869999999944,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope data anterior inválida bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope data anterior inválida bloqueia sucesso/invalidação sem retry",
+          "duration": 2.3380480000000716,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope origem ausente bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope origem ausente bloqueia sucesso/invalidação sem retry",
+          "duration": 2.1898160000000644,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope origem inválida bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope origem inválida bloqueia sucesso/invalidação sem retry",
+          "duration": 2.160243999999693,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope erro extra bloqueia sucesso/invalidação sem retry",
+          "status": "passed",
+          "title": "envelope erro extra bloqueia sucesso/invalidação sem retry",
+          "duration": 2.2142539999999826,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope completo confirma origem null",
+          "status": "passed",
+          "title": "envelope completo confirma origem null",
+          "duration": 2.9451280000002953,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado envelope completo confirma origem 33333333-3333-4333-8333-333333333333",
+          "status": "passed",
+          "title": "envelope completo confirma origem 33333333-3333-4333-8333-333333333333",
+          "duration": 28.47066199999972,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado retorno após revogação não gera sucesso/invalidação",
+          "status": "passed",
+          "title": "retorno após revogação não gera sucesso/invalidação",
+          "duration": 4.622913000000153,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado"
+          ],
+          "fullName": "reprogramar — hook real, Auth/transporte simulados, contrato instalado relatado duplo envio/exceção não duplica e libera trava para retry manual",
+          "status": "passed",
+          "title": "duplo envio/exceção não duplica e libera trava para retry manual",
+          "duration": 12.24782099999993,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321544985,
+      "endTime": 1793321545156.2478,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/monitoramento/reprogramarCasClient.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "contrato objeto JSONB real mantém Nutrição/Estande e CAS observado sem outra leitura",
+          "status": "passed",
+          "title": "contrato objeto JSONB real mantém Nutrição/Estande e CAS observado sem outra leitura",
+          "duration": 78.00597799999969,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "versão null negada sem dispatch",
+          "status": "passed",
+          "title": "versão null negada sem dispatch",
+          "duration": 11.01905700000043,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "versão 0 negada sem dispatch",
+          "status": "passed",
+          "title": "versão 0 negada sem dispatch",
+          "duration": 7.1089640000000145,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "versão -1 negada sem dispatch",
+          "status": "passed",
+          "title": "versão -1 negada sem dispatch",
+          "duration": 6.114309999999932,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "versão 1.5 negada sem dispatch",
+          "status": "passed",
+          "title": "versão 1.5 negada sem dispatch",
+          "duration": 4.078704000000016,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retorno inválido null não confirma",
+          "status": "passed",
+          "title": "retorno inválido null não confirma",
+          "duration": 5.769898000000012,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retorno inválido %j não confirma",
+          "status": "passed",
+          "title": "retorno inválido %j não confirma",
+          "duration": 3.098117999999886,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "status": "passed",
+          "title": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "duration": 2.873266000000058,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retorno inválido {\"ok\":false,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "status": "passed",
+          "title": "retorno inválido {\"ok\":false,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "duration": 5.131206999999904,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retorno inválido {\"ok\":true,\"registro_id\":\"22222222-2222-4222-8222-222222222222\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "status": "passed",
+          "title": "retorno inválido {\"ok\":true,\"registro_id\":\"22222222-2222-4222-8222-222222222222\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "duration": 3.7140120000003662,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":8,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "status": "passed",
+          "title": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":8,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "duration": 2.5296909999997297,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"11111111-1111-4111-8111-111111111111\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "status": "passed",
+          "title": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"11111111-1111-4111-8111-111111111111\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "duration": 2.151756000000205,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-02\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "status": "passed",
+          "title": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-02\",\"plano\":{\"items\":[\"Nutrição\",\"Estande\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "duration": 3.369216999999935,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Pragas\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "status": "passed",
+          "title": "retorno inválido {\"ok\":true,\"registro_id\":\"11111111-1111-4111-8111-111111111111\",\"version\":9,\"request_id\":\"22222222-2222-4222-8222-222222222222\",\"aviso_id\":\"33333333-3333-4333-8333-333333333333\",\"data_referencia\":\"2026-11-01\",\"plano\":{\"items\":[\"Pragas\"],\"frequency\":\"14\",\"triggers\":\"Avaliar crescimento\",\"next_date\":\"2026-11-01\"}} não confirma",
+          "duration": 2.721305999999913,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro PT409 preserva edição e não repete",
+          "status": "passed",
+          "title": "erro PT409 preserva edição e não repete",
+          "duration": 3.590668999999707,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro 42501 preserva edição e não repete",
+          "status": "passed",
+          "title": "erro 42501 preserva edição e não repete",
+          "duration": 2.2872660000002725,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro PT404 preserva edição e não repete",
+          "status": "passed",
+          "title": "erro PT404 preserva edição e não repete",
+          "duration": 2.1957139999999526,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro 40001 preserva edição e não repete",
+          "status": "passed",
+          "title": "erro 40001 preserva edição e não repete",
+          "duration": 1.9864349999998012,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro PGRST202 preserva edição e não repete",
+          "status": "passed",
+          "title": "erro PGRST202 preserva edição e não repete",
+          "duration": 2.279725999999755,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "duplo envio bloqueia síncrono; exceção libera somente operação própria",
+          "status": "passed",
+          "title": "duplo envio bloqueia síncrono; exceção libera somente operação própria",
+          "duration": 3.452639999999974,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "latência/revogação aborta e rejeita resultado tardio",
+          "status": "passed",
+          "title": "latência/revogação aborta e rejeita resultado tardio",
+          "duration": 4.111331000000064,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "latência/troca aborta e rejeita resultado tardio",
+          "status": "passed",
+          "title": "latência/troca aborta e rejeita resultado tardio",
+          "duration": 4.460829999999987,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "latência/unmount aborta e rejeita resultado tardio",
+          "status": "passed",
+          "title": "latência/unmount aborta e rejeita resultado tardio",
+          "duration": 42.618789000000106,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "data vinculada a alerta: rejeição definitiva clara, sem repetir",
+          "status": "passed",
+          "title": "data vinculada a alerta: rejeição definitiva clara, sem repetir",
+          "duration": 2.963901999999962,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321548397,
+      "endTime": 1793321548605.9639,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "componente real usa versão capturada; leitura nova não rebaseia; erro persiste sem limpar",
+          "status": "passed",
+          "title": "componente real usa versão capturada; leitura nova não rebaseia; erro persiste sem limpar",
+          "duration": 904.4267930000005,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "sucesso contrato canônico fecha e notifica apenas uma vez; cancelamento não envia",
+          "status": "passed",
+          "title": "sucesso contrato canônico fecha e notifica apenas uma vez; cancelamento não envia",
+          "duration": 881.8143,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "troca de ator durante envio fecha edição sem falso sucesso/callback",
+          "status": "passed",
+          "title": "troca de ator durante envio fecha edição sem falso sucesso/callback",
+          "duration": 860.4237680000006,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "montagem readonly preserva display do envelope e origem; revogação oculta",
+          "status": "passed",
+          "title": "montagem readonly preserva display do envelope e origem; revogação oculta",
+          "duration": 72.72871499999928,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "display não adota draft durante edição nem perde plano por cancelamento",
+          "status": "passed",
+          "title": "display não adota draft durante edição nem perde plano por cancelamento",
+          "duration": 372.9507420000009,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "dois saves consecutivos usam N,N+1 e retornam N+1,N+2 após refresh observado",
+          "status": "passed",
+          "title": "dois saves consecutivos usam N,N+1 e retornam N+1,N+2 após refresh observado",
+          "duration": 964.9874049999999,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "PT409 definitivo: consulta explícita, cancelar preserva, confirmar nova revisão não salva sozinho",
+          "status": "passed",
+          "title": "PT409 definitivo: consulta explícita, cancelar preserva, confirmar nova revisão não salva sozinho",
+          "duration": 1941.877004,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "timeout incerto mantém chave; PT409 posterior não permite nova tentativa/rebase",
+          "status": "passed",
+          "title": "timeout incerto mantém chave; PT409 posterior não permite nova tentativa/rebase",
+          "duration": 798.6222770000004,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "confirmação da revisão não adota mudança de version durante diálogo",
+          "status": "passed",
+          "title": "confirmação da revisão não adota mudança de version durante diálogo",
+          "duration": 636.073198,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "confirmação da revisão não adota mudança de actor durante diálogo",
+          "status": "passed",
+          "title": "confirmação da revisão não adota mudança de actor durante diálogo",
+          "duration": 825.7114660000007,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "PT409 -> revisão pendente -> troca de ator -> resposta antiga: novo ator edita e salva sem trava presa",
+          "status": "passed",
+          "title": "PT409 -> revisão pendente -> troca de ator -> resposta antiga: novo ator edita e salva sem trava presa",
+          "duration": 1162.3597570000002,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "finally antigo não libera ticket da revisão nova nem permite consulta duplicada",
+          "status": "passed",
+          "title": "finally antigo não libera ticket da revisão nova nem permite consulta duplicada",
+          "duration": 1289.8841120000034,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "desmontagem retira geração da revisão pendente sem resposta tardia ou callback",
+          "status": "passed",
+          "title": "desmontagem retira geração da revisão pendente sem resposta tardia ou callback",
+          "duration": 631.3164260000012,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321527848,
+      "endTime": 1793321539192.3164,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/monitoramento/visitMonitoringPlanEditor.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "abrir página real com plano e conduta não grava após hidratação nem após novo workspace",
+          "status": "passed",
+          "title": "abrir página real com plano e conduta não grava após hidratação nem após novo workspace",
+          "duration": 1553.5957929999995,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "edição real de conduta autosalva com CAS observado e mantém plano exato, descrição e conduta",
+          "status": "passed",
+          "title": "edição real de conduta autosalva com CAS observado e mantém plano exato, descrição e conduta",
+          "duration": 836.240498000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "salvar plano -> onUpdate/refetch não dispara autosave de hidratação",
+          "status": "passed",
+          "title": "salvar plano -> onUpdate/refetch não dispara autosave de hidratação",
+          "duration": 6346.149219000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "autosave armado antes do plano não adota versão refetchada nem perde bloco após RPC",
+          "status": "passed",
+          "title": "autosave armado antes do plano não adota versão refetchada nem perde bloco após RPC",
+          "duration": 2965.006580000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "diagnósticos atrasados e novo envelope mesma revisão não armam autosave de hidratação",
+          "status": "passed",
+          "title": "diagnósticos atrasados e novo envelope mesma revisão não armam autosave de hidratação",
+          "duration": 606.1934570000012,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "falha de diagnósticos mantém erro visível e impede autosave parcial",
+          "status": "passed",
+          "title": "falha de diagnósticos mantém erro visível e impede autosave parcial",
+          "duration": 636.9313430000002,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "autosave já em voo perde CAS após RPC, sem adotar revisão nova nem apagar plano",
+          "status": "passed",
+          "title": "autosave já em voo perde CAS após RPC, sem adotar revisão nova nem apagar plano",
+          "duration": 2820.3662680000016,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321535630,
+      "endTime": 1793321551395.3662,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/visita/monitoringAutosave.interaction.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "mensagemAmigavelVisita"
+          ],
+          "fullName": "mensagemAmigavelVisita traduz a duplicidade de check-in para português amigável",
+          "status": "passed",
+          "title": "traduz a duplicidade de check-in para português amigável",
+          "duration": 3.563159000000269,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "mensagemAmigavelVisita"
+          ],
+          "fullName": "mensagemAmigavelVisita nunca devolve o código cru para nenhum código mapeado",
+          "status": "passed",
+          "title": "nunca devolve o código cru para nenhum código mapeado",
+          "duration": 4.921057000000019,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "mensagemAmigavelVisita"
+          ],
+          "fullName": "mensagemAmigavelVisita preserva o código técnico apenas para log interno",
+          "status": "passed",
+          "title": "preserva o código técnico apenas para log interno",
+          "duration": 0.792953000000125,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "mensagemAmigavelVisita"
+          ],
+          "fullName": "mensagemAmigavelVisita usa o fallback amigável quando o erro é desconhecido",
+          "status": "passed",
+          "title": "usa o fallback amigável quando o erro é desconhecido",
+          "duration": 0.509838999999829,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "mensagemAmigavelVisita"
+          ],
+          "fullName": "mensagemAmigavelVisita traduz negativa de permissão sem revelar existência do registro",
+          "status": "passed",
+          "title": "traduz negativa de permissão sem revelar existência do registro",
+          "duration": 1.0330979999998817,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "PT409 transicao_invalida do envio para aprovação tem mensagem amigável",
+          "status": "passed",
+          "title": "PT409 transicao_invalida do envio para aprovação tem mensagem amigável",
+          "duration": 0.6357840000000579,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321551017,
+      "endTime": 1793321551029.6357,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/visita/visitaErrorMessages.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "erro 403 na hidratação bloqueia formulário e save (sem cair para rascunho/versão 0); reconsulta sem recarregar",
+          "status": "passed",
+          "title": "erro 403 na hidratação bloqueia formulário e save (sem cair para rascunho/versão 0); reconsulta sem recarregar",
+          "duration": 1307.532717,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "linha remota de outra visita ou versão inválida não hidrata o formulário",
+          "status": "passed",
+          "title": "linha remota de outra visita ou versão inválida não hidrata o formulário",
+          "duration": 42.19089200000053,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "PT409 marca conflito, não reenfileira no debounce e só salva após revisão explícita sobre a versão atual",
+          "status": "passed",
+          "title": "PT409 marca conflito, não reenfileira no debounce e só salva após revisão explícita sobre a versão atual",
+          "duration": 888.7426399999995,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "resposta tardia após troca de época durante a RPC não é adotada nem limpa a fila",
+          "status": "passed",
+          "title": "resposta tardia após troca de época durante a RPC não é adotada nem limpa a fila",
+          "duration": 308.668044,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "resposta tardia durante invalidations com troca de roles não navega",
+          "status": "passed",
+          "title": "resposta tardia durante invalidations com troca de roles não navega",
+          "duration": 386.88630699999885,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "aba 2 grava rascunho novo enquanto aba 1 envia: cleanup da aba 1 preserva o rascunho novo",
+          "status": "passed",
+          "title": "aba 2 grava rascunho novo enquanto aba 1 envia: cleanup da aba 1 preserva o rascunho novo",
+          "duration": 463.10916,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "descarte obsoleto (nova revisão de outra aba) não esconde conflito nem apaga o novo rascunho",
+          "status": "passed",
+          "title": "descarte obsoleto (nova revisão de outra aba) não esconde conflito nem apaga o novo rascunho",
+          "duration": 765.0553310000014,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "falso sucesso do baseline ({}) não confirma, não navega e mantém pendência",
+          "status": "passed",
+          "title": "falso sucesso do baseline ({}) não confirma, não navega e mantém pendência",
+          "duration": 305.25030499999957,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "offline autorizado salva localmente com dono e versão 0 e avança sem RPC",
+          "status": "passed",
+          "title": "offline autorizado salva localmente com dono e versão 0 e avança sem RPC",
+          "duration": 261.0064789999997,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "rascunho local de outro ator não é hidratado",
+          "status": "passed",
+          "title": "rascunho local de outro ator não é hidratado",
+          "duration": 184.01316700000098,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "fila IndexedDB: claim/finish por revisão+tentativa; conflito não atinge rascunho substituído; dono exato",
+          "status": "passed",
+          "title": "fila IndexedDB: claim/finish por revisão+tentativa; conflito não atinge rascunho substituído; dono exato",
+          "duration": 18.09679700000015,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "contrato do envelope: identidade completa, CAS seguro >= 0, sem falso sucesso",
+          "status": "passed",
+          "title": "contrato do envelope: identidade completa, CAS seguro >= 0, sem falso sucesso",
+          "duration": 24.683654000000388,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321515367,
+      "endTime": 1793321520322.6836,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/visita/wizardCampo.persistence.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "abrir/cancelar rascunho não chama RPC",
+          "status": "passed",
+          "title": "abrir/cancelar rascunho não chama RPC",
+          "duration": 2145.473443,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "abrir/cancelar finalizado não chama RPC",
+          "status": "passed",
+          "title": "abrir/cancelar finalizado não chama RPC",
+          "duration": 603.608991000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "confirma rascunho uma única vez com versão 3 e envelope exato",
+          "status": "passed",
+          "title": "confirma rascunho uma única vez com versão 3 e envelope exato",
+          "duration": 754.8112130000009,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "confirma finalizado uma única vez com versão 3 e envelope exato",
+          "status": "passed",
+          "title": "confirma finalizado uma única vez com versão 3 e envelope exato",
+          "duration": 541.9062249999988,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro resolved mantém diálogo e permite retry explícito",
+          "status": "passed",
+          "title": "erro resolved mantém diálogo e permite retry explícito",
+          "duration": 938.9732569999996,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro rejected mantém diálogo e permite retry explícito",
+          "status": "passed",
+          "title": "erro rejected mantém diálogo e permite retry explícito",
+          "duration": 844.5555069999991,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "sucesso invalida consultas ativas da lista sem cache global",
+          "status": "passed",
+          "title": "sucesso invalida consultas ativas da lista sem cache global",
+          "duration": 515.1314050000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "CAS null não despacha",
+          "status": "passed",
+          "title": "CAS null não despacha",
+          "duration": 423.7867320000005,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "CAS zero não despacha",
+          "status": "passed",
+          "title": "CAS zero não despacha",
+          "duration": 214.4104729999999,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "CAS NaN não despacha",
+          "status": "passed",
+          "title": "CAS NaN não despacha",
+          "duration": 305.20866399999977,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "CAS Infinity não despacha",
+          "status": "passed",
+          "title": "CAS Infinity não despacha",
+          "duration": 365.5881339999996,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "CAS fracionário não despacha",
+          "status": "passed",
+          "title": "CAS fracionário não despacha",
+          "duration": 170.20589999999902,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "CAS negativo não despacha",
+          "status": "passed",
+          "title": "CAS negativo não despacha",
+          "duration": 295.8709859999999,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "CAS string não despacha",
+          "status": "passed",
+          "title": "CAS string não despacha",
+          "duration": 217.33778899999925,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "CAS unsafe não despacha",
+          "status": "passed",
+          "title": "CAS unsafe não despacha",
+          "duration": 172.0978670000004,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "resultado sem envelope não confirma sucesso nem navega",
+          "status": "passed",
+          "title": "resultado sem envelope não confirma sucesso nem navega",
+          "duration": 481.7367740000009,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "resultado id errado não confirma sucesso nem navega",
+          "status": "passed",
+          "title": "resultado id errado não confirma sucesso nem navega",
+          "duration": 288.08600599999954,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "resultado status errado não confirma sucesso nem navega",
+          "status": "passed",
+          "title": "resultado status errado não confirma sucesso nem navega",
+          "duration": 464.86018799999874,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "resultado versão errada não confirma sucesso nem navega",
+          "status": "passed",
+          "title": "resultado versão errada não confirma sucesso nem navega",
+          "duration": 421.7118190000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "registro em cache seguido de 403 no refetch esconde dados e ações e oferece reconsulta",
+          "status": "passed",
+          "title": "registro em cache seguido de 403 no refetch esconde dados e ações e oferece reconsulta",
+          "duration": 413.71556399999827,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro na contagem visitas_checkin não vira 0 nem libera ações",
+          "status": "passed",
+          "title": "erro na contagem visitas_checkin não vira 0 nem libera ações",
+          "duration": 31.128242999999202,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro na contagem visitas_campo não vira 0 nem libera ações",
+          "status": "passed",
+          "title": "erro na contagem visitas_campo não vira 0 nem libera ações",
+          "duration": 31.051706999998714,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro na contagem visita_diagnosticos não vira 0 nem libera ações",
+          "status": "passed",
+          "title": "erro na contagem visita_diagnosticos não vira 0 nem libera ações",
+          "duration": 41.93066900000122,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro na contagem registros_consultor_recomendacoes não vira 0 nem libera ações",
+          "status": "passed",
+          "title": "erro na contagem registros_consultor_recomendacoes não vira 0 nem libera ações",
+          "duration": 16.507148000000598,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro na contagem registros_consultor_arquivos não vira 0 nem libera ações",
+          "status": "passed",
+          "title": "erro na contagem registros_consultor_arquivos não vira 0 nem libera ações",
+          "duration": 34.57101800000237,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "contagem sem número (null) não é apresentada como 0",
+          "status": "passed",
+          "title": "contagem sem número (null) não é apresentada como 0",
+          "duration": 38.695331999999325,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "registro com id divergente não habilita ações",
+          "status": "passed",
+          "title": "registro com id divergente não habilita ações",
+          "duration": 23.045055999999022,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "sessão não pronta não lê nem mostra ações",
+          "status": "passed",
+          "title": "sessão não pronta não lê nem mostra ações",
+          "duration": 7.957768000000215,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "sessão muda para não pronta após carregar: dados em cache e ações somem",
+          "status": "passed",
+          "title": "sessão muda para não pronta após carregar: dados em cache e ações somem",
+          "duration": 35.16970299999957,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "troca de ator com RPC pendente: resultado descartado, nova identidade lê de novo e não herda pending",
+          "status": "passed",
+          "title": "troca de ator com RPC pendente: resultado descartado, nova identidade lê de novo e não herda pending",
+          "duration": 360.18160799999896,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "troca de tenant com RPC pendente: resultado descartado, nova identidade lê de novo e não herda pending",
+          "status": "passed",
+          "title": "troca de tenant com RPC pendente: resultado descartado, nova identidade lê de novo e não herda pending",
+          "duration": 265.68891599999915,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "troca de roles com RPC pendente: resultado descartado, nova identidade lê de novo e não herda pending",
+          "status": "passed",
+          "title": "troca de roles com RPC pendente: resultado descartado, nova identidade lê de novo e não herda pending",
+          "duration": 337.3828829999984,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "RPC antigo pendente que falha após troca de visita não altera a nova UI",
+          "status": "passed",
+          "title": "RPC antigo pendente que falha após troca de visita não altera a nova UI",
+          "duration": 323.80265000000145,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "troca de ator durante invalidação não navega nem mostra sucesso",
+          "status": "passed",
+          "title": "troca de ator durante invalidação não navega nem mostra sucesso",
+          "duration": 159.00777899999957,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "status atualizado enquanto confirmação está aberta impede RPC",
+          "status": "passed",
+          "title": "status atualizado enquanto confirmação está aberta impede RPC",
+          "duration": 178.30429200000071,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "bloqueio de edição e offline não oferecem finalização ativa",
+          "status": "passed",
+          "title": "bloqueio de edição e offline não oferecem finalização ativa",
+          "duration": 84.5205590000005,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321515300,
+      "endTime": 1793321527854.5205,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/visita/wizardRevisao.confirmation.test.tsx"
+    }
+  ]
+}
