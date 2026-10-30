@@ -1,72 +1,39 @@
-# Liberação restrita de entregas em grupo e cancelamento observado — candidato (NÃO aplicado)
+# Capability de entrega em grupo e cancelamento observado — candidato (NÃO aplicado, NÃO autorizado)
 
-## Base considerada
-- Relato externo do proprietário (não executado pelo assistente): `release-combined.sql.review` SHA256 `a566faa4f6f460d8b9195abf93d97717013af815537f00eb28b34cc98d314971` aplicado em `swzpzcwiasxmjutrmvkm` (migration `delivery_atomic_and_proof_authorization_20261030`, PRE/POST OK); frontend `8cd18556` publicado; 0 entregas AR Bio; 5 recebíveis, hash `9c1f86a6ccec0f8c233d17994294af12`; automação e fiscal OFF.
-- Ordem vigente: backend combinado primeiro, frontend depois. Este pacote segue a mesma ordem: **SQL deste pacote → revisão → frontend**. Hoje o frontend já embarca o adaptador, mas permanece fechado porque a capability não existe no servidor.
+## Estado
+- Base: `release-combined.sql.review` SHA256 `a566faa4…` aplicado em `swzpzcwiasxmjutrmvkm` e frontend `8cd18556` publicado. Isso é relato do proprietário; o assistente não aplicou nem publicou nada.
+- Este delta concede EXECUTE a **todo** `authenticated` elegível da plataforma. Essa abertura global, antes de uma prova real, **não está autorizada**. Não instalar para viabilizar teste.
+- Ordem obrigatória se um dia for liberado:
+  1. pacote v2 de estoque/envase (`stock-envase-recovery-20261027`), revisado e instalado;
+  2. regenerar os pins deste pacote (o corpo do writer de grupo muda no v2, e o PRE atual recusaria a instalação);
+  3. revisão;
+  4. frontend.
 
-## O que o delta faz (e só isso)
-`install.sql.review` (uma transação, PRE → delta → POST → COMMIT):
-1. Cria `public.rpc_entrega_operacoes_capability_v1()` (DEFINER, `search_path=''`), que apenas informa se o ator passaria agora na checagem canônica `delivery_actor_20261030` para `group` e `cancel`. Não concede autoridade.
-2. `GRANT EXECUTE` a `authenticated` (e somente a ele) em:
-   - `rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)` — grupo atômico (reserva + entrega + expedição, receipt por tenant/ator/chave, CAS da OS e dos lotes);
-   - `rpc_entrega_cancelar_v1(uuid,text,timestamptz)` — cancelamento observado (estorno + liberação de reserva + status numa transação).
-3. Não altera nenhum corpo, overload legado (`/5` criação, `/2` cancelamento), helper privado, DML de tabela, RPCs de comprovação, motor/batch de estoque, flags fiscais ou `auto_generate_receivable`.
+## O que o delta faz
+`install.sql.review` roda em uma transação (PRE → delta → POST):
+- cria `rpc_entrega_operacoes_capability_v1()`. Ela só informa se o ator passaria agora em `delivery_actor_20261030`; não é autoridade;
+- concede EXECUTE a `authenticated` em `rpc_cockpit_criar_entrega_v1(…6)` e `rpc_entrega_cancelar_v1(uuid,text,timestamptz)`;
+- não altera nenhum corpo, overload legado, helper, DML de tabela, comprovação, motor/batch, flags fiscais ou `auto_generate_receivable`.
 
-PRE: capability ausente; RPCs de comprovação presentes com EXECUTE; barreira `zz_delivery_mutation_closed` ativa; DML cliente em `entregas` fechado; MD5 do corpo, ACL e owner exatos dos 5 objetos pinados a partir de `delivery-atomic-hardening-20261030/capture/post-expected.json` (estado pós-instalação). POST: corpos inalterados, ACL exata (authenticated sim; anon/service_role não), legados e helper fechados, barreira ativa, capability DEFINER com `search_path=""`.
+`rollback.sql.review` só fecha (deny-only): revoga os grants e a capability passa a responder fechado; o histórico fica preservado.
 
-`rollback.sql.review` (deny-only): revoga os dois grants, troca a capability para sempre fechada, mantém entregas, receipts, barreira e histórico. Reexecutável.
+## Cliente (no código, fechado até a capability existir)
+`src/lib/entregas/deliveryOperationsFlow.ts` e `src/pages/Entregas.tsx`:
+- consultam a capability imediatamente antes de cada envio; se ela estiver ausente, der erro ou responder fora do envelope exato, a operação fica fechada;
+- as revisões da OS/lotes vêm da seleção e a do cancelamento vem da abertura; no envio há apenas comparação, nunca rebase;
+- o ACK exige `organization_id` igual ao tenant capturado; há fence depois do último `await`, e resposta de sessão antiga vira `stale`;
+- **só `PT409`, `42501` e `22023` contam como recusa definitiva.** Qualquer outro código ou falha de transporte é incerto: a mensagem diz "pode ter sido gravada" e nunca afirma que nada foi gravado;
+- o snapshot imutável do envio é guardado por ator+tenant antes do dispatch. Depois de recarregar, a única saída é "Repetir envio pendente" (args idênticos). Só confirmação exata ou recusa definitiva limpam o snapshot;
+- o cliente nega OS que não seja `padrao`/agronômica manual sem pedido B2B. Destinatário e endereço detalhado preenchidos são recusados explicitamente;
+- lote aceito: `disponivel`, ou reserva **inteira** desta mesma OS (v2). O servidor reprova a posse novamente.
 
-## Escopo efetivamente provado (candidato de liberação restrita)
-Somente: **OS agronômica manual (sem pedido B2B), lotes `disponivel` do mesmo tenant, campos `data_saida/motorista/veiculo/tipo_entrega/endereco_origem`**, e cancelamento de entregas `separado/em_rota` sem recebível. Continuam fechados: OnFarm, B2B, lotes já reservados, atualização de status (`em_rota`), confirmar entregue, embalagens, financeiro/fiscal, recebimento/dispensa. Papéis: grupo = administrador/gestor/produção; cancelamento = administrador/gestor/administrativo; externos, superadmin e vínculos de parceiro negados.
+## Resultados
+- PG deste delta: 42 PASS (SQL inalterado; não reexecutado). Atores sintéticos `authenticated`, nunca `service_role`.
+- Vitest `src/test/entregas`: 23 arquivos / 368 PASS, incluindo a montagem real da página e do diálogo.
+- Nada disto prova JWT/RLS/Storage hosted.
 
-Limite funcional honesto: o formulário atual coleta telefone, destinatário e endereço detalhado; o contrato atômico não persiste esses campos, então o app **recusa antes do envio** (nomeando os campos) em vez de descartá-los. Liberar esses campos exige ampliar o contrato servidor (fora deste delta).
-
-## Frontend (já no código, fechado)
-- `src/lib/entregas/deliveryOperationsFlow.ts`: probe da capability imediatamente antes do envio (ausente/erro/envelope não exato = fechado); payload restrito; ACK exato de grupo e cancelamento; erro com SQLSTATE = recusa definitiva (transação única não confirmou); falha de transporte ou ACK não exato = incerto, mantendo exatamente os mesmos argumentos/chave (`grupoId`) para replay idempotente; fence de escopo antes do probe e do envio.
-- `src/pages/Entregas.tsx`: criação e cancelamento usam somente o adaptador; removidos os passos multichamada (reserva → entrega → expedição; update direto → estorno). Status `em_rota` continua bloqueado. A tela mantém o bloqueio de reenvio após resultado incerto (conservador).
-- Testes: `src/test/entregas/deliveryOperationsFlow.test.ts`.
-
-## Resultados brutos (esta rodada)
-- PG descartável, restauração completa (6 listas vazias) + `release-combined` exato `a566faa4` + POST de comprovação + este delta: **42 PASS / 0 FAIL**, 203,8 s, exit 0 — `test_capability_pg-current.log.txt`, `test-capability-results.json`, `test_capability_pg-timing.json`. Inclui: drift ACL recusado, falha forçada no POST com rollback, COMMIT/POST, rerun recusado, matriz de papéis da capability, anon negado, inativo negado, FSF com IDs AR Bio negado (grupo, receipt de mesma chave, cancelamento), legados fechados, campo ignorado rejeitado, ACK exatos, replay, UPDATE direto negado, zero efeitos financeiros/fiscais/outbox, ACL de comprovação inalterada, rollback deny-only preservando histórico e reexecutável. Atores sempre `authenticated` com claim sintética; nunca `service_role`.
-- Vitest `src/test/entregas` (21 arquivos): **320 PASS / 0 FAIL**, incluindo 23 novos do adaptador.
-- Falhas pré-existentes conhecidas em suítes de segurança alheias (`create-user-edge-handler`, `external-user-ab-proposal`, `d51-5-p1-systemic`) são baseline e não foram reexecutadas aqui.
-
-Nada disto prova JWT/RLS/Storage hosted.
-
-## Roteiro da prova positiva real (sessão AR Bio) — não executado
-Pré-condição: este delta revisado e aplicado pelo proprietário; frontend correspondente publicado.
-
-1. **Leitura prévia (somente leitura, ref comprovado `swzpzcwiasxmjutrmvkm`)**: contagem/hash de `accounts_receivable` (esperado 5 / `9c1f86a6…`), `entregas` AR Bio (0), `fiscal_invoices`, `comunicacao_outbox`; ator: perfil ativo, papéis, ausência de `partner_users` ativo; assinatura AR Bio com `estoque_embalagens`.
-2. **Fixture isolada, marcada**: uma OS agronômica manual AR Bio `numero_os`/observação `E2E-FIXTURE-ENTREGA-20261030`, cliente interno de teste existente da própria AR Bio (sem `partner_order_id`), status `pronto_entrega`, e um lote `disponivel` de quantidade mínima (1 unidade) — **criados apenas pelos fluxos canônicos** (OS → produção → CQ → envase).
-3. **Positivo via API/UI com sessão real** (sem capturar senha/token): `rpc_entrega_operacoes_capability_v1` → `{group:true,cancel:true}`; grupo de 1 item; conferir ACK exato, 1 entrega `separado`, 1 movimentação `expedicao`, `receivable_id` nulo.
-4. **Comprovação (Storage)**: preflight → upload no caminho vinculado → `rpc_entrega_comprovante_anexar_v1`; ACK exato; download autenticado.
-5. **Negativos reais**: sessão FSF `rh@…` com os mesmos IDs → negado; anon → negado; `PATCH /entregas` direto → negado.
-6. **Reversão**: `rpc_entrega_cancelar_v1/3` → estoque volta a `disponivel`; entrega fica `cancelada` (histórico permanente, não apagável).
-7. **Leitura posterior**: mesmos hashes financeiros/fiscais/outbox inalterados.
-
-Impacto residual não reversível: linhas `cancelada` em `entregas`, receipts privados, movimentações de estoque (reserva/expedição/estorno) e o objeto de comprovante no Storage (clientes nunca apagam). Por isso tudo leva o marcador da fixture.
-
-### Pré-requisitos reais que podem impedir a prova
-- **Capability/grants não instalados**: sem este delta, qualquer positivo é impossível (o app permanece fechado por design).
-- **Lote `disponivel` canônico**: os pacotes de geração manual de lote/CQ/envase continuam somente revisão (não aplicados). Se a AR Bio não tiver hoje uma OS agronômica `pronto_entrega` e um lote `disponivel` produzidos pelo fluxo canônico, a fixture não pode ser criada sem contornar barreiras — nesse caso a prova fica bloqueada até essa liberação, ou exige uso explícito de estoque real (impacto em estoque real, decisão do proprietário).
-- **Ator**: `arbiotecnologia@gmail.com` precisa ser administrador/gestor/produção ativo **sem** papel ou vínculo de parceiro B2B/superadmin; caso contrário a capability responde fechada (comportamento esperado) e é preciso outro usuário interno da AR Bio.
-- **Feature `estoque_embalagens`** ativa na assinatura AR Bio.
-- Campos de destinatário/telefone/endereço precisam estar vazios no formulário (limite do contrato).
+## Prova positiva real
+Ainda indisponível. Pré-requisitos concretos em `PREREQUISITES.md`; o roteiro de fixture e reversão permanece lá.
 
 ## Arquivos
-`assemble_capability.py`, `preflight.sql.review`, `delta.sql.review`, `postflight.sql.review`, `install.sql.review`, `rollback.sql.review`, `test_capability_pg.py`, `run_bounded.py`, resultados acima, `SHA256SUMS`.
-
-## Revisão 3eebcd96 — correções do cliente (30/10)
-
-- Revisões observadas: o diálogo guarda `updated_at`/status/origem da OS e dos lotes na primeira seleção; o cancelamento guarda a revisão na abertura. No envio, a página só compara (somente leitura). Se houver divergência, recusa e pede revisão; nunca rebaseia nem lê CAS nova no envio.
-- ACK: grupo e cancelamento exigem `organization_id` igual ao tenant capturado.
-- Depois do `await` final há fence: resposta tardia de outra sessão vira `stale` (sem confirmação, recusa ou retry), inclusive em replay.
-- Erros: só `PT409`, `42501` e `22023` (levantados pelos writers revisados) são recusa definitiva. Qualquer outro código (timeout, transporte, proxy, PGRST, 40001, 55P03, PT503, vazio) é incerto. As mensagens dizem "pode ter sido gravada" e nunca "nada foi gravado".
-- Recuperação: snapshot imutável `{fn,args,expectedOrg}` gravado em localStorage por ator+tenant **antes** do dispatch; falha de gravação aborta.
-  - Após remount/reload, novos envios ficam bloqueados.
-  - O único caminho é "Repetir envio pendente", com args idênticos (mesma chave e mesma CAS).
-  - Só confirmação exata ou recusa definitiva limpa o snapshot.
-  - Registro ilegível bloqueia novos envios.
-- OS: o cliente nega `osTipo≠padrao`, origem ≠ `agronomica` e OS com pedido B2B. Destinatário e endereço detalhados preenchidos são recusados explicitamente, sem perda silenciosa. Na prática, o modo "cadastro" preenche o destinatário, então o usuário precisa limpar esses campos; é uma limitação visível.
-- Testes: `src/test/entregas` 23 arquivos / 367 PASS. Inclui montagem real da página (revisão alterada, ACK de outro tenant, ACK tardio após troca de tenant, clique duplo, remount com replay exato, códigos ambíguos, cancelamento) e do diálogo real (snapshot não rebaseado). Typecheck do app OK.
-- SQL deste pacote inalterado; o PG (42 PASS) não foi reexecutado. Grant/capability **não** aplicados. Pré-requisitos e blockers em `PREREQUISITES.md`.
+`assemble_capability.py`, `preflight.sql.review`, `delta.sql.review`, `postflight.sql.review`, `install.sql.review`, `rollback.sql.review`, `test_capability_pg.py`, `run_bounded.py`, `PREREQUISITES.md`, `SHA256SUMS`.
