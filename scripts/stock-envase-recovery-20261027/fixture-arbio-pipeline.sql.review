@@ -56,6 +56,9 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=current_setting('fixture.cliente')::uuid AND organization_id=org)
  OR NOT EXISTS(SELECT 1 FROM public.fazendas WHERE id=current_setting('fixture.fazenda')::uuid AND organization_id=org AND cliente_id=current_setting('fixture.cliente')::uuid)
  OR NOT EXISTS(SELECT 1 FROM public.talhoes WHERE id=current_setting('fixture.talhao')::uuid AND organization_id=org AND fazenda_id=current_setting('fixture.fazenda')::uuid) THEN RAISE EXCEPTION 'FIXTURE_PRE_CLIENT_SCOPE'; END IF;
+ -- Human approval 2026-10-30 covers ONLY the fn_notify_lab_on_programacao in-app notice marked as test. Its title is fixed
+ -- by the trigger; the marker reaches the message through the synthetic client name, so the client must carry it.
+ IF NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=current_setting('fixture.cliente')::uuid AND nome LIKE '%TESTE SEM VALOR COMERCIAL%') THEN RAISE EXCEPTION 'FIXTURE_PRE_CLIENT_NOT_TEST_MARKED'; END IF;
  IF NOT platform_private.lab_item_is_manufacturable(prod,NULL) OR NOT EXISTS(SELECT 1 FROM public.produtos WHERE id=prod AND coalesce(ativo,true)) THEN RAISE EXCEPTION 'FIXTURE_PRE_PRODUCT_NOT_MANUFACTURABLE'; END IF;
  SELECT * INTO ref FROM public.cq_parametros_referencia WHERE id=current_setting('fixture.referencia')::uuid AND produto_id=prod AND ativo;
  IF NOT FOUND OR ref.ph_min IS NULL OR ref.ph_max IS NULL OR ref.ph_min>ref.ph_max OR ref.concentracao_min_ufc_ml IS NULL
@@ -133,6 +136,10 @@ BEGIN
   IF (SELECT count(*) FROM public.notificacoes_operacionais)-b.nop <> (SELECT count(*) FROM public.notificacoes_operacionais n JOIN public.programacao_producao pp ON pp.id=n.source_id
        JOIN public.profiles pr ON pr.user_id=n.usuario_id WHERE pp.ordem_servico_id=os AND n.source_type='programacao_producao' AND pr.organization_id=current_setting('fixture.org')::uuid)
   THEN RAISE EXCEPTION 'FIXTURE_POST_NOTIFICATION_SCOPE'; END IF;
+  IF EXISTS(SELECT 1 FROM public.notificacoes_operacionais n JOIN public.programacao_producao pp ON pp.id=n.source_id
+            WHERE pp.ordem_servico_id=os AND n.source_type='programacao_producao'
+              AND (n.tipo<>'nova_demanda_producao' OR n.mensagem NOT LIKE '%TESTE SEM VALOR COMERCIAL%'))
+  THEN RAISE EXCEPTION 'FIXTURE_POST_NOTIFICATION_NOT_TEST_MARKED'; END IF;
  END IF;
  IF EXISTS(SELECT 1 FROM public.entregas WHERE ordem_servico_id=os AND (receivable_id IS NOT NULL OR partner_order_id IS NOT NULL OR organization_id IS DISTINCT FROM current_setting('fixture.org')::uuid)) THEN RAISE EXCEPTION 'FIXTURE_POST_DELIVERY_SCOPE'; END IF;
  IF (SELECT organization_id FROM public.ordens_servico WHERE id=os) IS DISTINCT FROM current_setting('fixture.org')::uuid THEN RAISE EXCEPTION 'FIXTURE_POST_TENANT'; END IF;

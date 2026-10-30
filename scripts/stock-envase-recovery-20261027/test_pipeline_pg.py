@@ -47,7 +47,7 @@ def master_data():
     INSERT INTO public.organizations(id,nome) VALUES('{ORG}','LOCAL AR BIO'),('{ORGB}','LOCAL FSF TENANT');
     INSERT INTO public.profiles(user_id,organization_id,nome,ativo,senha_provisoria) VALUES('{ADM}','{ORG}','LOCAL ADMIN AR BIO',true,false),('{ADMB}','{ORGB}','LOCAL ADMIN FSF',true,false);
     INSERT INTO public.user_roles(user_id,role) VALUES('{ADM}','administrador'),('{ADMB}','administrador');
-    INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{CLI}','{ORG}','LOCAL CLIENTE AR BIO','LOCAL-PIPE-A'),('{CLIB}','{ORGB}','LOCAL CLIENTE FSF','LOCAL-PIPE-B');
+    INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{CLI}','{ORG}','LOCAL CLIENTE AR BIO TESTE SEM VALOR COMERCIAL','LOCAL-PIPE-A'),('{CLIB}','{ORGB}','LOCAL CLIENTE FSF','LOCAL-PIPE-B');
     INSERT INTO public.fazendas(id,organization_id,cliente_id,nome) VALUES('{FAZ}','{ORG}','{CLI}','LOCAL A'),('{FAZB}','{ORGB}','{CLIB}','LOCAL B');
     INSERT INTO public.talhoes(id,organization_id,fazenda_id,nome,area_hectares) VALUES('{TAL}','{ORG}','{FAZ}','LOCAL A',1),('{TALB}','{ORGB}','{FAZB}','LOCAL B',1);
     INSERT INTO public.produtos(id,nome,tipo,ativo,familia_catalogo) VALUES('{PROD}','LOCAL BIO TESTE SEM VALOR COMERCIAL','inoculante',true,'biologico');
