@@ -1,6 +1,10 @@
 # Entrega — candidato parcial, NO-GO operacional
 
-## Resultado vigente — correção instalador7a80a55c
+## Resultado vigente — diagnóstico timeout dc841355
+
+Regressão montada atual: **97 PASS / 0 FAIL / 0 BLOCKED**, exit 0, 257,264 s; instalador fresco atual: **9 PASS / 0 FAIL**, exit 0, 242,091 s. Não são as contagens antigas reutilizadas. Diagnóstico, causa, limites, comandos, checkpoints e logs legíveis em `TIMEOUT-DIAGNOSTICO.md`. Sem alteração de contrato SQL nesta rodada; candidato permanece NO-GO operacional.
+
+## Histórico — correção instalador7a80a55c
 
 **Instalador fechado:9PASS/0FAIL, exit0. Contrato PostgreSQL:80PASS/0FAIL/0BLOCKED, exit0**, executado contra `install.sql.review`, não somente fragments. `restore-results.json`: seis listas vazias. Sem hosted SQL/writer/publicação/frontend/GRANT cliente no instalador. Os grants locais de teste são exclusivos do harness descartável para provar os contratos; não entram no SQL deployable. Não declarar GO operacional.
 
