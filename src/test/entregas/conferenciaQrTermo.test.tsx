@@ -203,16 +203,16 @@ describe("TermoEntregaPanel", () => {
 });
 
 describe("lacunas da revisão independente", () => {
-  it("QR: editar o código limpa o resultado anterior", async () => {
+  it("QR independente: editar o código limpa o resultado anterior", async () => {
     rpcMock.mockResolvedValue({
       data: { found: true, codigo_embalagem: "EMB-1", status: "disponivel", volume: 1, unidade: "L", entrega_id: "A" },
       error: null,
     });
-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
+    render(<ConferenciaEmbalagemQR />, { wrapper });
     const input = screen.getByLabelText(/Código da embalagem/i);
     fireEvent.change(input, { target: { value: "EMB-1" } });
     fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
-    expect(await screen.findByTestId("qr-pertence")).toBeInTheDocument();
+    expect(await screen.findByText("EMB-1")).toBeInTheDocument();
 
     fireEvent.change(input, { target: { value: "EMB-2" } });
     expect(screen.queryByTestId("qr-pertence")).not.toBeInTheDocument();
@@ -222,7 +222,7 @@ describe("lacunas da revisão independente", () => {
   it("QR: campo fica travado enquanto a leitura está pendente", async () => {
     const d = deferred<any>();
     rpcMock.mockReturnValue(d.promise);
-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
+    render(<ConferenciaEmbalagemQR />, { wrapper });
     const input = screen.getByLabelText(/Código da embalagem/i) as HTMLInputElement;
     fireEvent.change(input, { target: { value: "EMB-1" } });
     fireEvent.click(screen.getByRole("button", { name: "Conferir" }));

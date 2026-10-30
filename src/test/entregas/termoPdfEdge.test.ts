@@ -75,6 +75,8 @@ const call = (body: unknown, auth = "Bearer t") => load()(new Request("https://e
 const termoOk = () => ({ id: TERMO, entrega_id: ENT, versao: 2, status: "assinado", cancelado_em: null, assinado_em: "2026-10-19", pdf_path: PATH, pdf_hash: HASH });
 
 beforeEach(() => {
+  // Override the gate with this fully simulated byte transport for every test.
+  vi.stubGlobal("fetch", fetchMock);
   vi.useRealTimers();
   Object.values(calls).forEach((c) => c.mockReset());
   st = { user: "U", perfil: [{ user_id: "U", ativo: true, senha_provisoria: false, organization_id: "OA" }],
