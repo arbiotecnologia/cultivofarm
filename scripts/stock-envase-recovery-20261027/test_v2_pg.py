@@ -77,9 +77,6 @@ def main():
     base = fn_state()
     for k, p in pins.items(): assert json.loads(base)[p['regprocedure']] == p['pre_md5'], ('PRE pin vs restored', k)
     ok('PRE pins equal restored post-release bodies (motor 44b150bf keeps split delta)')
-    post_js = last("BEGIN;" + pre + cand + "SELECT " + fn_state().replace("SELECT ", "", 0)[0:0] + "1;" ) if False else None
-    # Compute exact POST from the installed candidate inside a transaction that is rolled back.
-    out = sql("BEGIN;\n" + pre + cand + "\nSELECT 'POSTJSON'||(" + fn_state()[0:0] + "SELECT 1)::text;\nROLLBACK;") if False else None
     names = json.loads(base).keys()
     probe = "SELECT 'POSTJSON'||jsonb_build_object(" + ','.join(f"'{n}',md5(pg_get_functiondef('{n}'::regprocedure))" for n in names if n not in ('scope', 'complete')) + ")::text;"
     res = sql("BEGIN;\n" + pre + cand + "\n" + probe + "\nROLLBACK;")
@@ -132,7 +129,7 @@ def main():
     obs = last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{O2}';")
     its = lambda: json.dumps([{'item_id': owned, 'quantidade': 2, 'observed_updated_at': last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{owned}';")}, {'item_id': free, 'quantidade': 1, 'observed_updated_at': last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{free}';")}])
     stmt = lambda k: actor() + "SELECT public.rpc_cockpit_criar_entrega_v1('%s','manual','%s'::jsonb,'%s','{}'::jsonb,'%s'::timestamptz);" % (O2, its(), k, obs)
-    s1 = T.session("BEGIN;" + stmt('grp-race-A-0001')); T.wait if False else None
+    s1 = T.session("BEGIN;" + stmt('grp-race-A-0001'))
     s2 = T.session("BEGIN;" + stmt('grp-race-B-0001'))
     o1 = T.finish(s1, 'COMMIT;'); o2 = T.finish(s2, 'COMMIT;')
     joined = o1[0] + o1[1] + o2[0] + o2[1]
