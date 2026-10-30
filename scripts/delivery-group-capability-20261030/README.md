@@ -37,3 +37,21 @@ Ainda indisponível. Pré-requisitos concretos em `PREREQUISITES.md`; o roteiro 
 
 ## Arquivos
 `assemble_capability.py`, `preflight.sql.review`, `delta.sql.review`, `postflight.sql.review`, `install.sql.review`, `rollback.sql.review`, `test_capability_pg.py`, `run_bounded.py`, `PREREQUISITES.md`, `SHA256SUMS`.
+
+## Revisão b9c6ee66 — pendências entre abas e recusa de replay (cliente; sem SQL)
+- **Pendência local por tentativa:** cada uma tem slot próprio, `cf:delivery-uncertain:v2:<ator>:<tenant>:<fn>:<chave>`.
+  - `savePending` recusa sobrescrever uma tentativa distinta.
+  - `clearPending` só remove depois de comparar com a tentativa exata liquidada.
+  - Antes de reservar, a página relê o armazenamento; se houver outra tentativa (outra aba), recusa sem envio.
+  - Escuta `storage` para refletir o bloqueio criado por outras abas.
+- **Limite:** localStorage não é lock. Duas abas podem, por corrida, despachar chaves distintas; as duas tentativas ficam preservadas e bloqueiam novos envios. A deduplicação real é o receipt do servidor por chave.
+- **Recusa no replay** (`42501`/`PT409`/`22023`): não prova que o envio original incerto não foi gravado. Por exemplo, o primeiro commit se perdeu e depois o ator foi revogado ou a CAS mudou.
+  - O registro é mantido e marcado `replayRejected`; nunca é limpo e nenhuma chave nova é liberada.
+  - A tela exige consulta/reconciliação autorizada, que não existe neste pacote e segue pendente.
+  - Nenhum rollback é inferido.
+  - A recusa definitiva só limpa no **primeiro** envio da própria tentativa.
+- **Testes:** Vitest `src/test/entregas` com 23 arquivos / 372 PASS.
+  - Página montada: 42501 e PT409 no replay; dois consumidores intercalados (o ACK de X limpa só X e Y fica intacto; o consumidor B recusa chave nova sem writer).
+  - Unitário: X/Y sem sobrescrita, limpeza condicional, marcação.
+  - Os dois consumidores rodam no mesmo documento, **não** em abas reais do navegador.
+- **Infra de teste:** o mock de `localStorage` em `src/test/setup.ts` agora implementa `length`/`key`. As suítes de portal/navegação que o usam passaram (9 arquivos / 91 PASS).
