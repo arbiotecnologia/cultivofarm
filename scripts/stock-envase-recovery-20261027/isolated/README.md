@@ -3,7 +3,7 @@
 Base desta continuação: `d8b50cd6a684b1ba0c758d6b7ffdd9b2c25ed2f6`. Sem acesso hosted, sessão/segredo produtivo, implantação, publicação ou GRANT em produção. Aplicações anteriores são relatos do auditor. A entrega cancelada de referência não foi acessada ou reutilizada.
 
 ## Escopo e resultado
-**119 PASS / 0 FAIL no PostgreSQL 17 descartável, 470 PASS / 28 arquivos Vitest e 3 PASS de ordenação.** Build automático observado OK; **typecheck separado não verificável nos logs disponíveis**, logo não certificamos esse item nem GO de implantação. O release mínimo está pronto para revisão independente, não aplicado. Não identificada falha funcional conhecida nos cenários executados; não é certificação JWT/RLS/Storage real.
+**119 PASS / 0 FAIL no PostgreSQL 17 descartável (SQL inalterado nesta revisão), 484 PASS / 29 arquivos Vitest e 3 PASS de ordenação.** Build automático observado OK; **typecheck separado não verificável nos logs disponíveis**, logo não certificamos esse item nem GO de implantação. O release mínimo está pronto para revisão independente, não aplicado. Não identificada falha funcional conhecida nos cenários executados; não é certificação JWT/RLS/Storage real.
 
 Somente envase manual canônico novo. B2B/OnFarm, confirmação física, embalagens pós-envase, etiquetas/vínculos, dispensa, financeiro/fiscal/cobranças e automações continuam fora da liberação. Group/cancel e estoque independente existentes foram exercitados e preservados.
 
@@ -15,6 +15,7 @@ Somente envase manual canônico novo. B2B/OnFarm, confirmação física, embalag
 - Gates aditivos nas tabelas de autoridade/root/estoque usam singleton FOR UPDATE NOWAIT. NÃO concedem autoridade. Mantidos gates existentes de perfil/papel/convite.
 - **Corrida real inicialmente revelou 40P01**. Corrigida: DML com prelock agora recebe **55P03**, desfaz a transação e libera o envase sem deadlock. Disponibilidade sob concorrência significa recusa segura, não sucesso garantido. Nenhum retry automático. Locks de relação/DDL ainda podem produzir conflitos legítimos; owners que desativam triggers/replica não são contidos por triggers.
 - Registro no Cockpit depende de capability exata vinculada ao escopo; hook repete preflight imediatamente antes de dispatch. Mounted tests cobrem ausência/negação/erro, sessão/tenant/roles/epoch/unmount e envio único. Botão de complemento da página permanece fechado: complemento após OS pronta não está aberto pelo writer; não foi implicitamente liberado.
+- Revisão23:18: quatro leituras adotadas juntas somente no target/actor/org/epoch/open atual, geração protege A→B→A, dados anteriores ocultados imediatamente. Erro ou leitura incompleta bloqueia submit. ACK tardio não fecha outro diálogo nem anuncia sucesso; partial com saldo zero não afirma OS pronta, completed com avanço explícito não promete complemento bloqueado. 14 testes montados novos; recuperação incerta e capability continuam no hook canônico, sem novo writer.
 
 ## Instalação, release e rollback
 1. `preflight.sql.review` / `install.sql.review` / `postflight.sql.review`: endurecimento mantendo writer fechado.
@@ -32,7 +33,7 @@ Os estados completos pinam corpos/ACL/owners/config, relações/RLS/policies/col
 - Cadeia completa aprovação→programação→lote/evento→CQ aprovado→envase/estoque/pronto_entrega realizada por RPCs com triggers ligados e authenticated sintético. Referência CQ local fictícia, nenhuma especificação produtiva inventada. CQ reprovado também registrado/repetido e envase negado pelo erro canônico.
 - Reserva split por motor/batch, alvo ledger distinto do pai, conservação de quantidade/volume e replay sem mutations. Grupo e cancelamento observado/replay preservados em entrega criada localmente; gerar formulário/assinar/anexar mantidos.
 - Quatorze tabelas financeiras/fiscais/outbox com sentinelas existentes: conteúdo integral antes/depois igual, não apenas contagens. Replay pós-validade usa seam de relógio explicitamente registrada; não é passagem real do tempo nem hosted proof.
-- 470 testes de entrega/envase; não alegamos suíte global verde. Falhas históricas fora do recorte não foram mascaradas. Avisos React Router/Dialog não são FAIL.
+- 484 testes de entrega/envase nesta revisão; não alegamos suíte global verde. Falhas históricas fora do recorte não foram mascaradas. Avisos React Router/Dialog não são FAIL; nesting inválido do diálogo de envase foi corrigido.
 
 ## Logs e limites
 `pg-run.log.txt`, `test-results.json` (inclui stderr/raw de negativos/corridas), `vitest.log.txt`, `order.log.txt`, `build.log.txt`, `typecheck.log.txt`, `frontend.diff.txt`, `sources.json`, `SHA256SUMS`.
