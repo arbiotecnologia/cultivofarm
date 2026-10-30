@@ -1,0 +1,52 @@
+RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
+PASS real h15 and SaaS resolve synthetic tenant
+PASS tenant FSF cannot use AR Bio IDs
+PASS anonymous ACL denies
+PASS role financeiro denied
+PASS role parceiro_b2b denied
+PASS role parceiro_b2b_tecnico denied
+PASS role superadmin denied
+PASS role consultor_tecnico denied
+PASS inactive denied
+PASS invalid quantity None
+PASS invalid quantity NaN
+PASS invalid quantity 0
+PASS invalid quantity -1
+PASS invalid quantity Infinity
+PASS OnFarm remains contained
+PASS all negative paths no deliveries receipts
+Traceback (most recent call last):
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 187, in <module>
+    try: main()
+         ~~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 94, in main
+    out=sql(actor()+call('first-group'));print('GROUP',out,flush=True)
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 16, in sql
+    def sql(s): return pg.sql(s)
+                       ~~~~~~^^^
+  File "/dev-server/scripts/contracts-c2-20261022/integral/pg.py", line 16, in sql
+    assert r.returncode == 0, r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^^^
+AssertionError: ERROR:  DELIVERY_MUTATION_CLOSED
+CONTEXT:  PL/pgSQL function platform_private.delivery_mutation_guard_20261030() line 11 at RAISE
+SQL statement "INSERT INTO public.entregas (
+    ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,
+    lote_id, produto_id, quantidade_entregue, status, cliente_id,
+    data_saida, motorista, veiculo
+  ) VALUES (
+    CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,
+    CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,
+    p_estoque_produto_id,
+    v_est.lote_id,
+    v_est.produto_id,
+    p_quantidade,
+    'separado'::public.status_entrega,
+    v_cliente_os,
+    nullif(p_dados->>'data_saida','')::date,
+    nullif(p_dados->>'motorista',''),
+    nullif(p_dados->>'veiculo','')
+  ) RETURNING id"
+PL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 92 at SQL statement
+PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 62 at assignment
+
+RESULT 17 PASS 1 FAIL 0 BLOCKED
