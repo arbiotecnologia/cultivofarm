@@ -38,6 +38,18 @@ def candidate():
 """
     body = one(body,ctx,'')
     body = one(body,'  IF v_lote_status IS NULL THEN',ctx+'\n  IF v_lote_status IS NULL THEN')
+    fresh = """    IF platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'ENVASE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+    IF NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org AND status::text IN ('em_cq','envase')) THEN RAISE EXCEPTION 'ENVASE_FRESH_STATE_DENIED' USING ERRCODE='PT409'; END IF;
+    SELECT (resultado::text='aprovado') INTO v_cq_ok FROM public.controle_qualidade WHERE lote_id=p_lote_id ORDER BY created_at DESC,seq DESC LIMIT 1 FOR SHARE;
+    IF coalesce(v_cq_ok,false) IS NOT TRUE THEN RAISE EXCEPTION 'ENVASE_FRESH_CQ_DENIED' USING ERRCODE='PT409'; END IF;
+"""
+    body = one(body,'    INSERT INTO public.envase (',fresh+'    INSERT INTO public.envase (')
+    body = one(body,'  -- regra canônica de encerramento',fresh+'\n  -- regra canônica de encerramento')
+    # Post-wait returns must preserve the originally locked tenant, not merely authorize any tenant.
+    anchor='  -- Lock OS before programacao/lote; all fresh states checked after wait.'
+    prefix,suffix=body.split(anchor)
+    suffix=suffix.replace('PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);',"IF platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'ENVASE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;")
+    body=prefix+anchor+suffix
     cap = """CREATE FUNCTION public.rpc_envase_capability_v1(p_lote uuid,p_os uuid,p_prog uuid,p_origem text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $cap$
 DECLARE org uuid; allowed boolean:=false;

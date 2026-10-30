@@ -1,4 +1,5 @@
 ## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
+- [ ] Auditoria21:52: testar singleton/chave/fingerprint, terminal/CQ durante lock e avaliar ACL receipt/vincular/desvincular; baseline financeiro informado não é captura local nem prova hosted.
 - [x] Inventariar contratos/consumidores atuais e reconciliar aplicações relatadas 91cec22/2faf356, sem hosted/sessões/segredos; composição local oito instaladores PRE/POST.
 - [x] Preparar/testar delta de envase isolado: 29PG PASS, PRE/POST determinísticos, rollback deny-only, 3 testes de ordenação; release deliberadamente NO-GO, sem grant do writer.
 - [x] Disponibilidade exata e fences authz/session/trava no consumidor; botões continuam fechados, provas/histórico cancelado preservados;457Vitest PASS/28arquivos.
