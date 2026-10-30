@@ -10,6 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 import { embalagemLabels, embalagemVolumes, fmtL, defaultValidade } from "@/lib/envaseFormat";
+import { useAuth } from "@/hooks/useAuth";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+import { probeEnvaseAvailability } from "@/lib/envase/envaseAvailability";
+import type { EnvaseRpc } from "@/lib/envase/envaseFlow";
 
 export interface RegistrarEnvaseTarget {
   programacao_id: string;
@@ -40,6 +44,22 @@ const volumeDaLinha = (l: Linha) =>
 
 export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
   const { registrarEnvaseTransacional } = useEsteiraLaboratorio();
+  const { user, profile } = useAuth();
+  const scope = useStorageAccessScope("envase-dialog");
+  const [availableScope, setAvailableScope] = useState<string | null>(null);
+  useEffect(() => {
+    setAvailableScope(null);
+    if (!open || !target || !scope.ready || !user?.id || !profile?.organization_id) return;
+    let active = true;
+    const captured = scope.capture();
+    const fence = () => { if (!active || !captured()) throw new Error("ENVASE_SCOPE_CHANGED"); };
+    void probeEnvaseAvailability(supabase.rpc.bind(supabase) as unknown as EnvaseRpc, {
+      actorId: user.id, orgId: profile.organization_id,
+      args: { p_lote_id: target.lote_id, p_os_id: target.os_id, p_programacao_id: target.programacao_id, p_origem: target.origem,
+        p_linhas: [], p_validade: "", p_operador: null, p_idempotency_key: "availability", p_permitir_parcial: false, p_motivo_parcial: null },
+    }, fence).then(ok => { if (active && captured() && ok) setAvailableScope(scope.scope); });
+    return () => { active = false; };
+  }, [open, target?.lote_id, target?.os_id, target?.programacao_id, target?.origem, scope.scope]);
   const [linhas, setLinhas] = useState<Linha[]>([novaLinha()]);
   const [operador, setOperador] = useState("");
   const [validade, setValidade] = useState(defaultValidade());
@@ -165,7 +185,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!target || saving) return;
+    if (!target || saving || !scope.ready || availableScope !== scope.scope) return;
     if (loteSemProducao) {
       toast.error("O lote não possui volume produzido informado.");
       return;
@@ -400,8 +420,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
           <Button
             type="submit"
             className="w-full font-bold"
-            disabled
-            title="Envase indisponível até revisão do contrato canônico"
+            disabled={saving || !scope.ready || availableScope !== scope.scope}
           >
             {saving ? "Registrando..." : "Registrar envase e avançar esteira"}
           </Button>

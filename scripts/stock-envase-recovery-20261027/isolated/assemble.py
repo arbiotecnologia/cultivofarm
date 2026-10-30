@@ -127,3 +127,18 @@ def write(pre, post):
     (H/'release.sql.review').write_text("BEGIN;\n"+guard(post,'ENVASE_RELEASE_DRIFT')+"DO $blocked$ BEGIN RAISE EXCEPTION 'ENVASE_RELEASE_REVIEW_AND_CONCURRENCY_REQUIRED' USING ERRCODE='42501'; END $blocked$;\nROLLBACK;\n")
     (H/'rollback.sql.review').write_text("BEGIN; SET LOCAL lock_timeout='3s';\n"+guard(post,'ENVASE_ROLLBACK_DRIFT')+f"REVOKE EXECUTE ON FUNCTION {RPC} FROM PUBLIC,anon,authenticated,service_role;\nCREATE OR REPLACE FUNCTION public.rpc_envase_capability_v1(p_lote uuid,p_os uuid,p_prog uuid,p_origem text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $deny$ BEGIN RETURN jsonb_build_object('capability','envase_isolated_v1','available',false,'actor_id',auth.uid(),'organization_id',NULL,'lote_id',p_lote,'os_id',p_os,'programacao_id',p_prog); END $deny$;\nCOMMIT;\n")
     for n,v in [('pre-state.json',pre),('post-state.json',post)]: (H/n).write_text(json.dumps(v,indent=2)+'\n')
+
+def write_release(closed,released):
+    # Release requires the exact hardened install AND legacy closure. No helper,
+    # physical, label, waiver, fiscal or financial grants are introduced.
+    grant=f'GRANT EXECUTE ON FUNCTION {RPC} TO authenticated;\n'
+    for name,value in [('release-preflight',guard(closed,'ENVASE_RELEASE_PRE_DRIFT')),('release-postflight',guard(released,'ENVASE_RELEASE_POST_DRIFT')),('release',"BEGIN; SET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='30s';\n"+guard(closed,'ENVASE_RELEASE_PRE_DRIFT')+grant+guard(released,'ENVASE_RELEASE_POST_DRIFT')+'COMMIT;\n')]:
+        (H/f'{name}.sql.review').write_text(value)
+    # Deny-only rollback accepts either installed, legacy-closed, or released exact
+    # catalog. It never restores bodies, grants, permits or historical data.
+    deny=(H/'rollback.sql.review').read_text()
+    old=guard(json.loads((H/'post-state.json').read_text()),'ENVASE_ROLLBACK_DRIFT')
+    states=[json.loads((H/'post-state.json').read_text()),closed,released]
+    literals=["'"+json.dumps(v).replace("'","''")+"'::jsonb" for v in states]
+    check="DO $guard$ BEGIN IF ("+STATE+") NOT IN ("+','.join(literals)+") THEN RAISE EXCEPTION 'ENVASE_ROLLBACK_DRIFT'; END IF; END $guard$;\n"
+    (H/'rollback.sql.review').write_text(deny.replace(old,check))

@@ -155,6 +155,12 @@ def run():
     assert json.loads(last(att))['success'] is True and json.loads(last(att))['replayed'] is True; ok('canonical generate/sign/attach and exact attachment replay preserved')
     reject('foreign FSF proof stays closed',T.actor(T.V)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{entrega}','foreign-proof-0001');",'42501')
     sql(f'REVOKE EXECUTE ON FUNCTION {G.RPC} FROM authenticated;'); assert state()==post
+    sql((H/'legacy-closure-install.sql.review').read_text()); assert state()==closed
+    measured=sql('BEGIN;'+f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;'+G.STATE+'::text;ROLLBACK;')
+    released=json.loads([x for x in measured.splitlines() if x.startswith('{')][-1]); G.write_release(closed,released)
+    sql((H/'release.sql.review').read_text()); assert state()==released
+    ok('separate exact release installs only canonical authenticated grant after legacy closure')
+    reject('release rerun rejects changed exact catalog',(H/'release.sql.review').read_text(),'P0001')
     hist=snapshot(); sql((H/'rollback.sql.review').read_text()); assert json.loads(last(T.actor(T.W)+cap()))['available'] is False and snapshot()==hist
     reject('deny-only rollback closes canonical writer',T.actor(T.W)+env(T.O5,T.PP5,T.L5,'concurrent-0001'),'42501'); ok('rollback preserves full-row historical snapshots')
 if __name__=='__main__':
