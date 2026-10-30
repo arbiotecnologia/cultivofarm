@@ -1,0 +1,196 @@
+[
+  {
+    "test": "installed composition: a566faa4 + 4390ef16 + proof-select + evidence 36b238e9 (hash-pinned, POSTs pass)",
+    "status": "PASS"
+  },
+  {
+    "test": "PRE: produto_etiquetas has no restrictive policy; entregas/lotes policies do not reference it (no recursion)",
+    "status": "PASS",
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+    "test": "BEFORE: FSF admin and FSF financeiro read AR Bio labels (all 11 incl. mixed)",
+    "status": "PASS",
+    "counts": {
+      "U": 11,
+      "V": 11,
+      "FF": 11,
+      "CL": 2,
+      "IN": 0
+    }
+  },
+  {
+    "test": "BEFORE: FSF admin could update/delete/insert AR Bio labels; anon/authenticated TRUNCATE passed the privilege check (stopped only by FK 0A000, not by authorization)",
+    "status": "PASS",
+    "matrix": {
+      "U_update_entrega_to_foreign": "ok:updated",
+      "U_update_cliente_to_foreign": "ok:updated",
+      "U_update_lote_to_foreign": "EP0001:Campos de identifica\u00e7\u00e3o/emiss\u00e3o da etiqueta s\u00e3o imut\u00e1veis",
+      "U_update_benign_own": "ok:1",
+      "U_insert_foreign_lote": "ok:inserted",
+      "U_insert_own_lote_foreign_cliente": "ok:inserted",
+      "U_insert_own_valid": "ok:inserted",
+      "U_insert_no_lote": "ok:inserted",
+      "V_update_arbio_label": "ok:1",
+      "V_delete_arbio_label": "ok:1",
+      "V_insert_arbio_lote": "ok:inserted",
+      "U_delete_own": "ok:1",
+      "anon_select": "ok:0",
+      "anon_truncate": "E0A000:cannot truncate a table referenced in a foreign key constraint",
+      "auth_truncate": "E0A000:cannot truncate a table referenced in a foreign key constraint"
+    }
+  },
+  {
+    "test": "BEFORE: FSF admin could update AR Bio checklist and register AR Bio occurrence via UI RPCs (rolled back)",
+    "status": "PASS",
+    "matrix": {
+      "U_own_checklist": "ok:{\"success\": true}",
+      "V_arbio_checklist": "ok:{\"success\": true}",
+      "U_fsf_checklist": "ok:{\"success\": true}",
+      "IN_inactive_checklist": "EP0001:Sem permiss\u00e3o",
+      "FF_financeiro_checklist": "EP0001:Sem permiss\u00e3o",
+      "U_cancelled_checklist": "E23514:As evid\u00eancias desta entrega est\u00e3o encerradas e n\u00e3o podem ser alteradas.",
+      "U_ghost_checklist": "EP0001:Checklist n\u00e3o encontrado",
+      "U_own_occurrence": "ok:true",
+      "V_arbio_occurrence": "ok:true",
+      "U_fsf_occurrence": "ok:true",
+      "IN_inactive_occurrence": "EP0001:Sem permiss\u00e3o",
+      "U_nullorg_occurrence": "ok:true",
+      "U_cancelled_occurrence": "E23514:As evid\u00eancias desta entrega est\u00e3o encerradas e n\u00e3o podem ser alteradas.",
+      "U_ghost_occurrence": "EP0001:Entrega n\u00e3o encontrada"
+    }
+  },
+  {
+    "test": "BEFORE: AR Bio staff own checklist/occurrence via RPC works under the parent no-DML barrier (UI path functional)",
+    "status": "PASS"
+  },
+  {
+    "test": "labels POST = PRE + 1 restrictive policy + provenance helper + TRUNCATE bit removed (anon/authenticated) only",
+    "status": "PASS",
+    "acl": "{postgres=arwdDxtm/postgres,anon=arwdxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+    "test": "checklist POST = PRE with only the two writer bodies changed; ACLs, policies, triggers unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "labels PRE refuses drift",
+    "status": "PASS",
+    "expected": "LABEL_TENANT_PRE_DRIFT"
+  },
+  {
+    "test": "labels wrong POST rolls back atomically",
+    "status": "PASS",
+    "expected": "LABEL_TENANT_POST_DRIFT"
+  },
+  {
+    "test": "labels installer COMMIT + postflight",
+    "status": "PASS"
+  },
+  {
+    "test": "labels rerun refused",
+    "status": "PASS",
+    "expected": "LABEL_TENANT_PRE_DRIFT"
+  },
+  {
+    "test": "checklist PRE refuses drift",
+    "status": "PASS",
+    "expected": "CK_AUTHZ_PRE_DRIFT"
+  },
+  {
+    "test": "checklist wrong POST rolls back atomically",
+    "status": "PASS",
+    "expected": "CK_AUTHZ_POST_DRIFT"
+  },
+  {
+    "test": "checklist installer COMMIT + postflight",
+    "status": "PASS"
+  },
+  {
+    "test": "checklist rerun refused",
+    "status": "PASS",
+    "expected": "CK_AUTHZ_PRE_DRIFT"
+  },
+  {
+    "test": "AFTER reads: AR Bio admin/client only valid AR Bio label; FSF admin/financeiro only FSF label; inactive none; all 9 mixed/no-root/null-org/ghost hidden from everyone",
+    "status": "PASS"
+  },
+  {
+    "test": "AFTER label writes exact: root swaps/foreign/no-lote 42501, lote swap blocked by existing immutability trigger, own valid insert/update/delete allowed, FSF 0 rows, TRUNCATE 42501",
+    "status": "PASS",
+    "matrix": {
+      "U_update_entrega_to_foreign": "E42501",
+      "U_update_cliente_to_foreign": "E42501",
+      "U_update_lote_to_foreign": "EP0001:Campos de identifica\u00e7\u00e3o/emiss\u00e3o da etiqueta s\u00e3o imut\u00e1veis",
+      "U_update_benign_own": "ok:1",
+      "U_insert_foreign_lote": "E42501",
+      "U_insert_own_lote_foreign_cliente": "E42501",
+      "U_insert_own_valid": "ok:inserted",
+      "U_insert_no_lote": "E42501",
+      "V_update_arbio_label": "ok:0",
+      "V_delete_arbio_label": "ok:0",
+      "V_insert_arbio_lote": "E42501",
+      "U_delete_own": "ok:1",
+      "anon_select": "ok:0",
+      "anon_truncate": "E42501",
+      "auth_truncate": "E42501"
+    }
+  },
+  {
+    "test": "lote_id immutability pre-exists (same result before/after), so the root cannot be swapped",
+    "status": "PASS"
+  },
+  {
+    "test": "AFTER checklist/occurrence exact: own works, cross-tenant/inactive/financeiro/null-org/ghost 42501, closed-evidence trigger 23514 preserved",
+    "status": "PASS",
+    "matrix": {
+      "U_own_checklist": "ok:{\"success\": true}",
+      "V_arbio_checklist": "E42501",
+      "U_fsf_checklist": "E42501",
+      "IN_inactive_checklist": "E42501",
+      "FF_financeiro_checklist": "E42501",
+      "U_cancelled_checklist": "E23514:As evid\u00eancias desta entrega est\u00e3o encerradas e n\u00e3o podem ser alteradas.",
+      "U_ghost_checklist": "E42501",
+      "U_own_occurrence": "ok:true",
+      "V_arbio_occurrence": "E42501",
+      "U_fsf_occurrence": "E42501",
+      "IN_inactive_occurrence": "E42501",
+      "U_nullorg_occurrence": "E42501",
+      "U_cancelled_occurrence": "E23514:As evid\u00eancias desta entrega est\u00e3o encerradas e n\u00e3o podem ser alteradas.",
+      "U_ghost_occurrence": "E42501"
+    }
+  },
+  {
+    "test": "own checklist update persisted with actor and existing audit row",
+    "status": "PASS"
+  },
+  {
+    "test": "revocation committed while RPC waited on the delivery lock -> re-authorization after lock denies 42501",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF generate on AR Bio delivery still denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "generate/sign/attach + replay work in full installed composition",
+    "status": "PASS"
+  },
+  {
+    "test": "entrega_etiquetas link writes remain closed (42501) even for own entrega + own valid label",
+    "status": "PASS"
+  },
+  {
+    "test": "zero finance/fiscal/outbox/communication rows",
+    "status": "PASS"
+  },
+  {
+    "test": "checklist rollback: client EXECUTE revoked, hardened bodies kept (never restores unscoped writers)",
+    "status": "PASS"
+  },
+  {
+    "test": "labels rollback narrows to false; no cross-tenant read restored; TRUNCATE still denied",
+    "status": "PASS"
+  }
+]

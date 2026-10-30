@@ -1,0 +1,7 @@
+-- Deny-safe: never DROP the barrier or regrant TRUNCATE; narrow to false (direct client label access closes, DEFINER writers unaffected).
+BEGIN;
+SET LOCAL lock_timeout='3s';
+DO $r$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='produto_etiquetas' AND policyname='produto_etiquetas_tenant_root_r' AND permissive='RESTRICTIVE')
+ THEN RAISE EXCEPTION 'LABEL_TENANT_ROLLBACK_POLICY_MISSING'; END IF; END $r$;
+ALTER POLICY produto_etiquetas_tenant_root_r ON public.produto_etiquetas USING (false) WITH CHECK (false);
+COMMIT;

@@ -1,0 +1,67 @@
+-- Tenant/actor authorization for the two UI writers used by EntregaChecklistPanel / EntregaOcorrenciasPanel.
+-- Same signatures, return envelopes, audit rows and ACL (CREATE OR REPLACE keeps grants). Adds: active actor org (h15),
+-- delivery scoped to that org and locked FOR SHARE, re-authorization after the lock, fixed search_path. No parent DML.
+CREATE OR REPLACE FUNCTION public.rpc_atualizar_checklist_entrega(p_checklist_id uuid, p_concluido boolean, p_observacao text DEFAULT NULL::text)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'pg_catalog'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_org uuid := platform_private.h15_actor_organization();
+  v_entrega_id uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida' USING ERRCODE='42501'; END IF;
+  IF v_org IS NULL OR NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'Sem permissão' USING ERRCODE='42501'; END IF;
+  SELECT c.entrega_id INTO v_entrega_id FROM public.entrega_checklist c JOIN public.entregas e ON e.id = c.entrega_id
+   WHERE c.id = p_checklist_id AND e.organization_id = v_org;
+  IF v_entrega_id IS NULL THEN RAISE EXCEPTION 'Checklist não encontrado' USING ERRCODE='42501'; END IF;
+  PERFORM 1 FROM public.entregas e WHERE e.id = v_entrega_id AND e.organization_id = v_org FOR SHARE;
+  IF NOT FOUND OR platform_private.h15_actor_organization() IS DISTINCT FROM v_org OR NOT public.is_delivery_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão' USING ERRCODE='42501';
+  END IF;
+
+  UPDATE public.entrega_checklist SET
+    concluido = p_concluido,
+    observacao = coalesce(p_observacao, observacao),
+    concluido_por = CASE WHEN p_concluido THEN v_uid ELSE NULL END,
+    concluido_em = CASE WHEN p_concluido THEN now() ELSE NULL END
+  WHERE id = p_checklist_id AND entrega_id = v_entrega_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', v_entrega_id, 'DELIVERY_CHECKLIST_UPDATED',
+          jsonb_build_object('checklist_id', p_checklist_id, 'concluido', p_concluido), v_uid);
+
+  RETURN jsonb_build_object('success', true);
+END $function$;
+
+CREATE OR REPLACE FUNCTION public.rpc_registrar_ocorrencia_entrega(p_entrega_id uuid, p_payload jsonb)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'pg_catalog'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_org uuid := platform_private.h15_actor_organization();
+  v_id uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'Sessão inválida' USING ERRCODE='42501'; END IF;
+  IF v_org IS NULL OR NOT public.is_delivery_staff(v_uid) THEN RAISE EXCEPTION 'Sem permissão' USING ERRCODE='42501'; END IF;
+  PERFORM 1 FROM public.entregas e WHERE e.id = p_entrega_id AND e.organization_id = v_org FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada' USING ERRCODE='42501'; END IF;
+  IF platform_private.h15_actor_organization() IS DISTINCT FROM v_org OR NOT public.is_delivery_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão' USING ERRCODE='42501';
+  END IF;
+
+  INSERT INTO public.entrega_ocorrencias (entrega_id, tipo, descricao, gravidade, registrado_por, metadata)
+  VALUES (
+    p_entrega_id,
+    coalesce(p_payload->>'tipo','observacao'),
+    coalesce(p_payload->>'descricao',''),
+    coalesce(p_payload->>'gravidade','baixa'),
+    v_uid,
+    coalesce(p_payload->'metadata','{}'::jsonb)
+  ) RETURNING id INTO v_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, new_data, performed_by)
+  VALUES ('entrega', p_entrega_id, 'DELIVERY_OCCURRENCE_REGISTERED',
+          jsonb_build_object('ocorrencia_id', v_id, 'tipo', p_payload->>'tipo'), v_uid);
+
+  RETURN jsonb_build_object('success', true, 'id', v_id);
+END $function$;
