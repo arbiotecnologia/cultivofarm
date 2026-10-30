@@ -1,0 +1,13 @@
+=== build 2026-10-30T01:31:59Z ===
+--- typecheck ---
+src/components/financeiro/ConfirmarEntregaFinanceiroDialog.tsx(164,13): error TS2367: This comparison appears to be unintentional because the types '"carregando" | "indisponivel" | "nenhum_titulo" | "resposta_incerta"' and '"rejeitado"' have no overlap.
+src/components/financeiro/ConfirmarEntregaFinanceiroDialog.tsx(268,53): error TS2339: Property 'reject' does not exist on type '{ access: { readonly ready: boolean; scope: string; capture: () => () => boolean; }; eligible: boolean; fresh: boolean; receipt: Receipt; state: DeliveryFinanceState; reconsultar: () => Promise<...>; pending: boolean; message: string; }'.
+
+=== build 2026-10-30T01:32:34Z ===
+build OK
+
+=== build 2026-10-30T01:34:04Z ===
+build OK
+
+=== build 2026-10-30T01:34:21Z ===
+build OK
