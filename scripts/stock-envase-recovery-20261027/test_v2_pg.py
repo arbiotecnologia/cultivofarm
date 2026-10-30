@@ -252,7 +252,7 @@ def main():
     for label, sid, key, dados in [('frontend auto-filled', S10, 'meta-fe-0001', FE), ('free-text formats', S11, 'meta-free-0001', dict(FE, **FREE))]:
         out = sql(actor() + group(O8, [{'item_id': sid, 'quantidade': 2}], key, dados))
         assert '"success": true' in out, out[-800:]
-        ent = last(f"SELECT entrega_id FROM (SELECT e.id entrega_id FROM public.entregas e WHERE e.ordem_servico_id='{O8}' ORDER BY e.created_at DESC, e.id LIMIT 50) q JOIN public.entregas x ON x.id=q.entrega_id WHERE EXISTS(SELECT 1 FROM public.estoque_produto p WHERE p.id=x.estoque_produto_id AND p.lote_id IN ('{L8}','{L9}')) AND x.destinatario_telefone IS NOT DISTINCT FROM {('NULL' if dados['destinatario_telefone'] is None else repr(dados['destinatario_telefone']))} LIMIT 1;")
+        ent = re.findall(r'"entrega_id": "([0-9a-f-]{36})"', out)[-1]
         row = json.loads(last(f"SELECT to_jsonb(x)::text FROM (SELECT {','.join(dados)} FROM public.entregas WHERE id='{ent}') x;"))
         for k, v in dados.items(): assert row[k] == v, (label, k, row[k], v)
         ok(f'{label} metadata: server accepted and every field roundtripped verbatim', fields=len(dados), cep=dados['endereco_cep'], tel=dados['destinatario_telefone'])
