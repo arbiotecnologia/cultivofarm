@@ -54,6 +54,16 @@ beforeEach(() => {
 });
 
 describe("Comprovante — entrega cancelada é somente consulta", () => {
+  it("estado permitido: dispensa de assinatura aparece só como indisponível e nunca chama o servidor", async () => {
+    entregaRow = { id: "e1", status: "separado", comprovante_status: "anexado", validation_token: "tok" };
+    const { W } = makeWrapper();
+    render(<EntregaComprovantePanel entrega={{ id: "e1", status: "separado", comprovante_status: "anexado" }} />, { wrapper: W });
+    expect(await screen.findByTestId("dispensa-indisponivel")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Dispensar assinatura/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Anexar comprovante/ })).toBeInTheDocument();
+    expect(rpcMock).not.toHaveBeenCalledWith("rpc_dispensar_assinatura_entrega", expect.anything());
+  });
+
   it("cancelada no servidor (prop antiga 'separado'): nenhuma mutação, consulta/impressão/download preservados", async () => {
     entregaRow = { id: "e1", status: "cancelada", comprovante_status: "anexado", validation_token: "tok" };
     const { W } = makeWrapper();
