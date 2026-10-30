@@ -1,0 +1,524 @@
+{
+  "numTotalTestSuites": 11,
+  "numPassedTestSuites": 11,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 44,
+  "numPassedTests": 44,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1793321487522,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "creditBlockReasonLabel"
+          ],
+          "fullName": "creditBlockReasonLabel labels inactive/absent financial settings",
+          "status": "passed",
+          "title": "labels inactive/absent financial settings",
+          "duration": 8.317245000000185,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "creditBlockReasonLabel"
+          ],
+          "fullName": "creditBlockReasonLabel labels undefined limit (zero is not unlimited)",
+          "status": "passed",
+          "title": "labels undefined limit (zero is not unlimited)",
+          "duration": 0.9708019999998214,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "creditBlockReasonLabel"
+          ],
+          "fullName": "creditBlockReasonLabel keeps the existing guard reasons distinct",
+          "status": "passed",
+          "title": "keeps the existing guard reasons distinct",
+          "duration": 1.5946549999998751,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "creditBlockReasonLabel"
+          ],
+          "fullName": "creditBlockReasonLabel never hides an unknown reason nor invents one for empty",
+          "status": "passed",
+          "title": "never hides an unknown reason nor invents one for empty",
+          "duration": 0.8341150000001107,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321505394,
+      "endTime": 1793321505405.8342,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/comercial/creditBlockReason.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "ResponderCotacaoDialog credit block reason"
+          ],
+          "fullName": "ResponderCotacaoDialog credit block reason shows the inactive-settings reason returned by the server",
+          "status": "passed",
+          "title": "shows the inactive-settings reason returned by the server",
+          "duration": 506.35305100000005,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "ResponderCotacaoDialog credit block reason"
+          ],
+          "fullName": "ResponderCotacaoDialog credit block reason shows the undefined-limit reason",
+          "status": "passed",
+          "title": "shows the undefined-limit reason",
+          "duration": 281.51353299999937,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "ResponderCotacaoDialog credit block reason"
+          ],
+          "fullName": "ResponderCotacaoDialog credit block reason adds nothing when there is no reason",
+          "status": "passed",
+          "title": "adds nothing when there is no reason",
+          "duration": 174.81004900000062,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321505398,
+      "endTime": 1793321506360.81,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/comercial/responderCotacaoCreditReason.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "parser: envelope válido do mesmo org => allowed; org estrangeiro ou contrato divergente => invalid_response",
+          "status": "passed",
+          "title": "parser: envelope válido do mesmo org => allowed; org estrangeiro ou contrato divergente => invalid_response",
+          "duration": 44.49452399999973,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "admin A: lista administrativa vazia, mas a carteira da empresa mostra PB-001029 somente leitura com pendência contábil",
+          "status": "passed",
+          "title": "admin A: lista administrativa vazia, mas a carteira da empresa mostra PB-001029 somente leitura com pendência contábil",
+          "duration": 585.1816839999992,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "lista mista: deduplica somente pedidos já apresentados acima",
+          "status": "passed",
+          "title": "lista mista: deduplica somente pedidos já apresentados acima",
+          "duration": 523.461534,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro de transporte mostra aviso de indisponibilidade, nunca confundido com carteira vazia",
+          "status": "passed",
+          "title": "erro de transporte mostra aviso de indisponibilidade, nunca confundido com carteira vazia",
+          "duration": 245.06906899999922,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "admin B (org estrangeira): RPC nega com 42501 e nenhuma seção/linha aparece",
+          "status": "passed",
+          "title": "admin B (org estrangeira): RPC nega com 42501 e nenhuma seção/linha aparece",
+          "duration": 258.76752599999963,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "contrato não instalado: seção quieta, sem promessa nem erro visível",
+          "status": "passed",
+          "title": "contrato não instalado: seção quieta, sem promessa nem erro visível",
+          "duration": 222.2546880000009,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "sem realtime: nenhum canal postgres_changes é assinado pelo hook da carteira (RLS negaria os eventos)",
+          "status": "passed",
+          "title": "sem realtime: nenhum canal postgres_changes é assinado pelo hook da carteira (RLS negaria os eventos)",
+          "duration": 246.04520199999934,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "lista vazia -> pedido: botão Atualizar visível mesmo vazio e o refresh manual revela o novo pedido",
+          "status": "passed",
+          "title": "lista vazia -> pedido: botão Atualizar visível mesmo vazio e o refresh manual revela o novo pedido",
+          "duration": 387.8322680000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "erro de transporte: botão Tentar novamente visível e o refresh manual recupera a lista",
+          "status": "passed",
+          "title": "erro de transporte: botão Tentar novamente visível e o refresh manual recupera a lista",
+          "duration": 232.85491199999888,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "revogação durante refresh: resposta atrasada 42501 esconde dados antigos, sem exibir carteira de escopo inválido",
+          "status": "passed",
+          "title": "revogação durante refresh: resposta atrasada 42501 esconde dados antigos, sem exibir carteira de escopo inválido",
+          "duration": 270.1352330000009,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "sete pedidos sobrepostos não são estado vazio nem duplicam linhas; refresh revela novo pedido",
+          "status": "passed",
+          "title": "sete pedidos sobrepostos não são estado vazio nem duplicam linhas; refresh revela novo pedido",
+          "duration": 1182.3940590000002,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "classificação distingue zero resultados, sobreposição parcial e IDs administrativos alheios",
+          "status": "passed",
+          "title": "classificação distingue zero resultados, sobreposição parcial e IDs administrativos alheios",
+          "duration": 5.778104999999414,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "papel gestor_comercial não ganha autoridade pela apresentação",
+          "status": "passed",
+          "title": "papel gestor_comercial não ganha autoridade pela apresentação",
+          "duration": 281.7526149999994,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "papel parceiro_b2b não ganha autoridade pela apresentação",
+          "status": "passed",
+          "title": "papel parceiro_b2b não ganha autoridade pela apresentação",
+          "duration": 130.759865,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "papel financeiro não ganha autoridade pela apresentação",
+          "status": "passed",
+          "title": "papel financeiro não ganha autoridade pela apresentação",
+          "duration": 91.54978099999971,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "resposta estrangeira no refresh elimina carteira anterior sem fallback direto",
+          "status": "passed",
+          "title": "resposta estrangeira no refresh elimina carteira anterior sem fallback direto",
+          "duration": 127.83709199999976,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "papéis mistos continuam dependentes da negação do servidor, sem carteira estrangeira",
+          "status": "passed",
+          "title": "papéis mistos continuam dependentes da negação do servidor, sem carteira estrangeira",
+          "duration": 113.5559830000002,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "perfil inativo não inicia leitura da carteira ou adota registros",
+          "status": "passed",
+          "title": "perfil inativo não inicia leitura da carteira ou adota registros",
+          "duration": 77.79585199999929,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321496451,
+      "endTime": 1793321501488.796,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/pedidos/commercialOwnerOrders.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "usePartnerOrdersAdmin — escopo canônico (transporte sintético)"
+          ],
+          "fullName": "usePartnerOrdersAdmin — escopo canônico (transporte sintético) resposta tardia de A após troca para B nunca é adotada; B recebe somente a própria",
+          "status": "passed",
+          "title": "resposta tardia de A após troca para B nunca é adotada; B recebe somente a própria",
+          "duration": 286.3744289999995,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "usePartnerOrdersAdmin — escopo canônico (transporte sintético)"
+          ],
+          "fullName": "usePartnerOrdersAdmin — escopo canônico (transporte sintético) revogação durante a leitura oculta dados e descarta a resposta",
+          "status": "passed",
+          "title": "revogação durante a leitura oculta dados e descarta a resposta",
+          "duration": 84.31433399999969,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "usePartnerOrdersAdmin — escopo canônico (transporte sintético)"
+          ],
+          "fullName": "usePartnerOrdersAdmin — escopo canônico (transporte sintético) refresh legítimo (realtime do mesmo escopo) preserva filtros",
+          "status": "passed",
+          "title": "refresh legítimo (realtime do mesmo escopo) preserva filtros",
+          "duration": 156.5339009999998,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "usePartnerOrdersAdmin — escopo canônico (transporte sintético)"
+          ],
+          "fullName": "usePartnerOrdersAdmin — escopo canônico (transporte sintético) realtime de escopo antigo não invalida o novo e o canal é trocado por escopo",
+          "status": "passed",
+          "title": "realtime de escopo antigo não invalida o novo e o canal é trocado por escopo",
+          "duration": 131.9312370000007,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "useCreatePartnerOrder — estado contábil após criar"
+          ],
+          "fullName": "useCreatePartnerOrder — estado contábil após criar pedido pendente → aviso de pendência, nunca sucesso validado",
+          "status": "passed",
+          "title": "pedido pendente → aviso de pendência, nunca sucesso validado",
+          "duration": 127.08234900000025,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "useCreatePartnerOrder — estado contábil após criar"
+          ],
+          "fullName": "useCreatePartnerOrder — estado contábil após criar falha de leitura → estado desconhecido explícito, sem sucesso e sem reenvio",
+          "status": "passed",
+          "title": "falha de leitura → estado desconhecido explícito, sem sucesso e sem reenvio",
+          "duration": 124.2261840000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "useCreatePartnerOrder — estado contábil após criar"
+          ],
+          "fullName": "useCreatePartnerOrder — estado contábil após criar exceção de rede na leitura → desconhecido",
+          "status": "passed",
+          "title": "exceção de rede na leitura → desconhecido",
+          "duration": 133.2484170000007,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "useCreatePartnerOrder — estado contábil após criar"
+          ],
+          "fullName": "useCreatePartnerOrder — estado contábil após criar revogação/troca durante o await da leitura → nenhuma mensagem do contexto antigo",
+          "status": "passed",
+          "title": "revogação/troca durante o await da leitura → nenhuma mensagem do contexto antigo",
+          "duration": 120.5586800000001,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "useCreatePartnerOrder — estado contábil após criar"
+          ],
+          "fullName": "useCreatePartnerOrder — estado contábil após criar replay com a mesma chave devolve o mesmo pedido e reutiliza a chave",
+          "status": "passed",
+          "title": "replay com a mesma chave devolve o mesmo pedido e reutiliza a chave",
+          "duration": 133.55206299999918,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "useCreatePartnerOrder — estado contábil após criar"
+          ],
+          "fullName": "useCreatePartnerOrder — estado contábil após criar linha de outro id ou contrato desconhecido → desconhecido",
+          "status": "passed",
+          "title": "linha de outro id ou contrato desconhecido → desconhecido",
+          "duration": 1.5212639999999737,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "usePromoteAccountingPendingOrder"
+          ],
+          "fullName": "usePromoteAccountingPendingOrder envia CAS e só confirma com contrato V1 do mesmo pedido",
+          "status": "passed",
+          "title": "envia CAS e só confirma com contrato V1 do mesmo pedido",
+          "duration": 68.96465700000044,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "usePromoteAccountingPendingOrder"
+          ],
+          "fullName": "usePromoteAccountingPendingOrder troca de empresa durante o await descarta o resultado",
+          "status": "passed",
+          "title": "troca de empresa durante o await descarta o resultado",
+          "duration": 68.01919300000009,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "usePromoteAccountingPendingOrder"
+          ],
+          "fullName": "usePromoteAccountingPendingOrder mapeia erros do servidor sem inventar motivo",
+          "status": "passed",
+          "title": "mapeia erros do servidor sem inventar motivo",
+          "duration": 2.742583999999624,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321494185,
+      "endTime": 1793321495631.7427,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/pedidos/partnerOrdersAdminScope.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "filtro de status /comercial/pedidos-b2b"
+          ],
+          "fullName": "filtro de status /comercial/pedidos-b2b desmontar/remontar do mesmo ator preserva Todos",
+          "status": "passed",
+          "title": "desmontar/remontar do mesmo ator preserva Todos",
+          "duration": 26.95528800000011,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "filtro de status /comercial/pedidos-b2b"
+          ],
+          "fullName": "filtro de status /comercial/pedidos-b2b ready -> revalidando (nova época) -> ready não reseta",
+          "status": "passed",
+          "title": "ready -> revalidando (nova época) -> ready não reseta",
+          "duration": 5.838921000000482,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "filtro de status /comercial/pedidos-b2b"
+          ],
+          "fullName": "filtro de status /comercial/pedidos-b2b valor inválido retido cai no padrão",
+          "status": "passed",
+          "title": "valor inválido retido cai no padrão",
+          "duration": 4.018076999999721,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "filtro de status /comercial/pedidos-b2b"
+          ],
+          "fullName": "filtro de status /comercial/pedidos-b2b troca A -> B não herda (montado e remontado)",
+          "status": "passed",
+          "title": "troca A -> B não herda (montado e remontado)",
+          "duration": 3.9940830000005008,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "filtro de status /comercial/pedidos-b2b"
+          ],
+          "fullName": "filtro de status /comercial/pedidos-b2b logout (clearAllPauseStates via useAuth) descarta",
+          "status": "passed",
+          "title": "logout (clearAllPauseStates via useAuth) descarta",
+          "duration": 5.61797099999967,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "filtro de status /comercial/pedidos-b2b"
+          ],
+          "fullName": "filtro de status /comercial/pedidos-b2b sem identidade ativa não lê nem grava",
+          "status": "passed",
+          "title": "sem identidade ativa não lê nem grava",
+          "duration": 3.0718870000000607,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321500012,
+      "endTime": 1793321500062.0718,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/pedidos/pedidosB2BStatusFilter.test.tsx"
+    }
+  ]
+}

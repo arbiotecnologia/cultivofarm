@@ -24,6 +24,7 @@
 - Fixtures need Auth, delivery OFF, ID cleanup; SQL rollback is not browser proof — avoids false PASS.
 - Notifications follow supabase/AGENTS.md; mobile uses unified scoped reads/mutations — keeps counts coherent without widening access.
 <!-- LOVABLE:BEGIN -->
+- The runtime publication gate uses its focused Vitest configuration with real fetch/XHR forbidden; simulated transports never certify hosted authority — prevents accidental production tests.
 - Owner-order display classification belongs in the existing scoped contract module after envelope validation; deduplication never grants access — separates presentation from authority.
 - External-order origin composition follows its review-directory rules; server-owned proof never replaces internal origin, and operational readiness stays closed independently of order approval — prevents buyer-to-internal privilege escalation.
 - Identical eligible B2B probes renew only the existing lease; natural token renewal fences all reads and may restore only validated user choices after the same canonical vector and fresh catalogue/volumes, never prices/hashes/receipts — prevents periodic remounts without extending authority.

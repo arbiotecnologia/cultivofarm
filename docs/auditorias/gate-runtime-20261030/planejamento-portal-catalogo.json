@@ -1,0 +1,765 @@
+{
+  "numTotalTestSuites": 12,
+  "numPassedTestSuites": 12,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 64,
+  "numPassedTests": 64,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1793321512752,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "gestor+técnico escolhe Gestão sem card B2B inventado",
+          "status": "passed",
+          "title": "gestor+técnico escolhe Gestão sem card B2B inventado",
+          "duration": 600.9333859999997,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "login respeita preferência, intenção manual não",
+          "status": "passed",
+          "title": "login respeita preferência, intenção manual não",
+          "duration": 22.194604999999683,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "papel/contexto único technical segue destino existente",
+          "status": "passed",
+          "title": "papel/contexto único technical segue destino existente",
+          "duration": 14.103487000000314,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "papel/contexto único admin segue destino existente",
+          "status": "passed",
+          "title": "papel/contexto único admin segue destino existente",
+          "duration": 8.167529000000286,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "papel técnico nunca autoriza rota de Gestão por contexto forjado",
+          "status": "passed",
+          "title": "papel técnico nunca autoriza rota de Gestão por contexto forjado",
+          "duration": 2.3186040000000503,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "seleção atrasada após tenant A→B→A não navega nem grava contexto",
+          "status": "passed",
+          "title": "seleção atrasada após tenant A→B→A não navega nem grava contexto",
+          "duration": 205.09910800000034,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "duplo clique bloqueado e lock liberado após erro",
+          "status": "passed",
+          "title": "duplo clique bloqueado e lock liberado após erro",
+          "duration": 87.44225799999913,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "cancelar troca preserva contexto/cache e não navega",
+          "status": "passed",
+          "title": "cancelar troca preserva contexto/cache e não navega",
+          "duration": 8.519256999999925,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "troca confirmada usa intenção manual sem reescrever preferência",
+          "status": "passed",
+          "title": "troca confirmada usa intenção manual sem reescrever preferência",
+          "duration": 9.215339999999742,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321529703,
+      "endTime": 1793321530662.2153,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/multiportal.gestao.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "AppPortalGuard"
+          ],
+          "fullName": "AppPortalGuard nega produtor nominal sem producer na lista canônica",
+          "status": "passed",
+          "title": "nega produtor nominal sem producer na lista canônica",
+          "duration": 338.19081499999993,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "AppPortalGuard"
+          ],
+          "fullName": "AppPortalGuard nega gestor com payload legado verdadeiro e apenas admin canônico",
+          "status": "passed",
+          "title": "nega gestor com payload legado verdadeiro e apenas admin canônico",
+          "duration": 31.42784500000016,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "AppPortalGuard"
+          ],
+          "fullName": "AppPortalGuard libera administrador mesmo sem acesso técnico na RPC",
+          "status": "passed",
+          "title": "libera administrador mesmo sem acesso técnico na RPC",
+          "duration": 48.43430199999966,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "AppPortalGuard"
+          ],
+          "fullName": "AppPortalGuard libera cliente_produtor mesmo sem acesso técnico",
+          "status": "passed",
+          "title": "libera cliente_produtor mesmo sem acesso técnico",
+          "duration": 26.088379000000714,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "AppPortalGuard"
+          ],
+          "fullName": "AppPortalGuard libera técnico com acesso concedido pela RPC",
+          "status": "passed",
+          "title": "libera técnico com acesso concedido pela RPC",
+          "duration": 13.70033599999988,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "AppPortalGuard"
+          ],
+          "fullName": "AppPortalGuard bloqueia B2B puro que não tem técnico",
+          "status": "passed",
+          "title": "bloqueia B2B puro que não tem técnico",
+          "duration": 13.825629999999364,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "AppPortalGuard"
+          ],
+          "fullName": "AppPortalGuard redireciona sem usuário",
+          "status": "passed",
+          "title": "redireciona sem usuário",
+          "duration": 13.706341999999495,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "AppPortalGuard"
+          ],
+          "fullName": "AppPortalGuard mantém ordem de hooks entre loading e liberado",
+          "status": "passed",
+          "title": "mantém ordem de hooks entre loading e liberado",
+          "duration": 17.323621999999887,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard nega administrador sem vínculo B2B resolvido no servidor",
+          "status": "passed",
+          "title": "nega administrador sem vínculo B2B resolvido no servidor",
+          "duration": 22.088826999999583,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard nega gestor_comercial sem vínculo B2B resolvido no servidor",
+          "status": "passed",
+          "title": "nega gestor_comercial sem vínculo B2B resolvido no servidor",
+          "duration": 16.603619000001345,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard libera parceiro_b2b com has_b2b_access=true",
+          "status": "passed",
+          "title": "libera parceiro_b2b com has_b2b_access=true",
+          "duration": 8.499684999998863,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard bloqueia técnico puro sem acesso B2B",
+          "status": "passed",
+          "title": "bloqueia técnico puro sem acesso B2B",
+          "duration": 5.996150000000853,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard redireciona para /auth sem usuário",
+          "status": "passed",
+          "title": "redireciona para /auth sem usuário",
+          "duration": 7.197911999999633,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard bloqueia quando a RPC retorna erro",
+          "status": "passed",
+          "title": "bloqueia quando a RPC retorna erro",
+          "duration": 8.378783999998632,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard nega contexto de gestão mesmo com a flag legada has_b2b_access",
+          "status": "passed",
+          "title": "nega contexto de gestão mesmo com a flag legada has_b2b_access",
+          "duration": 9.196855999998661,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard nega readiness perdida mesmo com resultado B2B em cache",
+          "status": "passed",
+          "title": "nega readiness perdida mesmo com resultado B2B em cache",
+          "duration": 2.6634260000009817,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard nega papéis cumulativos mesmo com contexto B2B explícito",
+          "status": "passed",
+          "title": "nega papéis cumulativos mesmo com contexto B2B explícito",
+          "duration": 6.007499999999709,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "B2BRouteGuard"
+          ],
+          "fullName": "B2BRouteGuard nega parceiro sem projeção própria mesmo com contexto em cache",
+          "status": "passed",
+          "title": "nega parceiro sem projeção própria mesmo com contexto em cache",
+          "duration": 3.314754000000903,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "pickPrimaryRole (fluxo login)"
+          ],
+          "fullName": "pickPrimaryRole (fluxo login) administrador vence qualquer combinação — independente da ordem",
+          "status": "passed",
+          "title": "administrador vence qualquer combinação — independente da ordem",
+          "duration": 2.7119759999986854,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "pickPrimaryRole (fluxo login)"
+          ],
+          "fullName": "pickPrimaryRole (fluxo login) gestor_comercial + parceiro_b2b → gestor_comercial (legado admin comercial)",
+          "status": "passed",
+          "title": "gestor_comercial + parceiro_b2b → gestor_comercial (legado admin comercial)",
+          "duration": 0.23238300000048184,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "pickPrimaryRole (fluxo login)"
+          ],
+          "fullName": "pickPrimaryRole (fluxo login) consultor_tecnico + parceiro_b2b_tecnico → parceiro_b2b_tecnico tem maior prioridade legada",
+          "status": "passed",
+          "title": "consultor_tecnico + parceiro_b2b_tecnico → parceiro_b2b_tecnico tem maior prioridade legada",
+          "duration": 0.14660899999944377,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "pickPrimaryRole (fluxo login)"
+          ],
+          "fullName": "pickPrimaryRole (fluxo login) cliente_produtor sozinho vira primaryRole",
+          "status": "passed",
+          "title": "cliente_produtor sozinho vira primaryRole",
+          "duration": 0.19306499999947846,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "pickPrimaryRole (fluxo login)"
+          ],
+          "fullName": "pickPrimaryRole (fluxo login) nenhum papel → null (sem primaryRole)",
+          "status": "passed",
+          "title": "nenhum papel → null (sem primaryRole)",
+          "duration": 0.1700269999982993,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "pickPrimaryRole (fluxo login)"
+          ],
+          "fullName": "pickPrimaryRole (fluxo login) papel inválido é descartado",
+          "status": "passed",
+          "title": "papel inválido é descartado",
+          "duration": 0.12530300000071293,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321524276,
+      "endTime": 1793321524884.2324,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/multiportal.guards.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [],
+          "fullName": "superadmin sem tenant sai do seletor para a home canônica /plataforma",
+          "status": "passed",
+          "title": "superadmin sem tenant sai do seletor para a home canônica /plataforma",
+          "duration": 142.78389400000015,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "superadmin sem tenant não fica preso na validação infinita",
+          "status": "passed",
+          "title": "superadmin sem tenant não fica preso na validação infinita",
+          "duration": 11.191210999999385,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [],
+          "fullName": "ator multipapel com papel de portal NÃO é desviado pelo ramo superadmin",
+          "status": "passed",
+          "title": "ator multipapel com papel de portal NÃO é desviado pelo ramo superadmin",
+          "duration": 7.979648000000452,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321536565,
+      "endTime": 1793321536726.9797,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/multiportal.superadmin.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "rótulos: conflito negocial PT409"
+          ],
+          "fullName": "rótulos: conflito negocial PT409 PT409 e 40001 residual mapeiam para conflito; serialização não vira sucesso",
+          "status": "passed",
+          "title": "PT409 e 40001 residual mapeiam para conflito; serialização não vira sucesso",
+          "duration": 9.827735999999732,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "rótulos: conflito negocial PT409"
+          ],
+          "fullName": "rótulos: conflito negocial PT409 renomear com PT409: uma única chamada, sem retry, revisão antiga enviada intacta",
+          "status": "passed",
+          "title": "renomear com PT409: uma única chamada, sem retry, revisão antiga enviada intacta",
+          "duration": 4.228766999999607,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "rótulos: conflito negocial PT409"
+          ],
+          "fullName": "rótulos: conflito negocial PT409 ativar/inativar com PT409 (confirmação): uma única chamada, sem retry",
+          "status": "passed",
+          "title": "ativar/inativar com PT409 (confirmação): uma única chamada, sem retry",
+          "duration": 1.644767999999658,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "rótulos: conflito negocial PT409"
+          ],
+          "fullName": "rótulos: conflito negocial PT409 lock_timeout 55P03 / gate PT503: mensagem de ocupado, uma única chamada, sem retry",
+          "status": "passed",
+          "title": "lock_timeout 55P03 / gate PT503: mensagem de ocupado, uma única chamada, sem retry",
+          "duration": 0.8538900000003196,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321537018,
+      "endTime": 1793321537034.854,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/catalogo/catalogLabelPt409.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "painel de rótulos → leitor de exibição (fluxo real)"
+          ],
+          "fullName": "painel de rótulos → leitor de exibição (fluxo real) renomeação confirmada invalida o leitor sem invalidação manual",
+          "status": "passed",
+          "title": "renomeação confirmada invalida o leitor sem invalidação manual",
+          "duration": 743.1786090000005,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "painel de rótulos → leitor de exibição (fluxo real)"
+          ],
+          "fullName": "painel de rótulos → leitor de exibição (fluxo real) conflito CAS oferece atualização controlada sem recarregar a página",
+          "status": "passed",
+          "title": "conflito CAS oferece atualização controlada sem recarregar a página",
+          "duration": 570.0951329999998,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "painel de rótulos → leitor de exibição (fluxo real)"
+          ],
+          "fullName": "painel de rótulos → leitor de exibição (fluxo real) PT409: sem nova escrita automática e revisão esperada só muda após ação do usuário",
+          "status": "passed",
+          "title": "PT409: sem nova escrita automática e revisão esperada só muda após ação do usuário",
+          "duration": 941.0364129999989,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321531079,
+      "endTime": 1793321533334.0364,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/catalogo/catalogLabelsPanelFlow.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL envia somente planejamento/chave e invalida os consumidores após ACK",
+          "status": "passed",
+          "title": "envia somente planejamento/chave e invalida os consumidores após ACK",
+          "duration": 56.79819300000054,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL PT409 não tenta legado, não repete e não invalida",
+          "status": "passed",
+          "title": "PT409 não tenta legado, não repete e não invalida",
+          "duration": 10.22187699999995,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL 42501 não tenta legado, não repete e não invalida",
+          "status": "passed",
+          "title": "42501 não tenta legado, não repete e não invalida",
+          "duration": 9.060928000000786,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL 55P03 não tenta legado, não repete e não invalida",
+          "status": "passed",
+          "title": "55P03 não tenta legado, não repete e não invalida",
+          "duration": 6.764420999999857,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL dupla submissão envia uma RPC e rejeita a segunda sem retry",
+          "status": "passed",
+          "title": "dupla submissão envia uma RPC e rejeita a segunda sem retry",
+          "duration": 8.555597999999009,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL envelope inválido não vira sucesso nem invalida: {\"ok\":false,\"planning_id\":\"11111111-1111-4111-8111-111111111111\",\"os_created\":0}",
+          "status": "passed",
+          "title": "envelope inválido não vira sucesso nem invalida: {\"ok\":false,\"planning_id\":\"11111111-1111-4111-8111-111111111111\",\"os_created\":0}",
+          "duration": 4.440359000000171,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL envelope inválido não vira sucesso nem invalida: null",
+          "status": "passed",
+          "title": "envelope inválido não vira sucesso nem invalida: null",
+          "duration": 5.3480429999999615,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL envelope inválido não vira sucesso nem invalida: {\"ok\":true,\"planning_id\":\"22222222-2222-4222-8222-222222222222\",\"os_created\":1}",
+          "status": "passed",
+          "title": "envelope inválido não vira sucesso nem invalida: {\"ok\":true,\"planning_id\":\"22222222-2222-4222-8222-222222222222\",\"os_created\":1}",
+          "duration": 6.791949000000386,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL envelope inválido não vira sucesso nem invalida: {\"ok\":true,\"planning_id\":\"11111111-1111-4111-8111-111111111111\",\"os_created\":-1}",
+          "status": "passed",
+          "title": "envelope inválido não vira sucesso nem invalida: {\"ok\":true,\"planning_id\":\"11111111-1111-4111-8111-111111111111\",\"os_created\":-1}",
+          "duration": 30.779036000001724,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL envelope inválido não vira sucesso nem invalida: {\"ok\":true,\"planning_id\":\"11111111-1111-4111-8111-111111111111\",\"os_created\":\"1\"}",
+          "status": "passed",
+          "title": "envelope inválido não vira sucesso nem invalida: {\"ok\":true,\"planning_id\":\"11111111-1111-4111-8111-111111111111\",\"os_created\":\"1\"}",
+          "duration": 13.132152000000133,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL envelope inválido não vira sucesso nem invalida: {\"ok\":true,\"planning_id\":\"11111111-1111-4111-8111-111111111111\",\"os_created\":1,\"replay\":\"true\"}",
+          "status": "passed",
+          "title": "envelope inválido não vira sucesso nem invalida: {\"ok\":true,\"planning_id\":\"11111111-1111-4111-8111-111111111111\",\"os_created\":1,\"replay\":\"true\"}",
+          "duration": 6.118098000000828,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL ACK tardio após tenant não adota resultado",
+          "status": "passed",
+          "title": "ACK tardio após tenant não adota resultado",
+          "duration": 10.356243000000177,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL ACK tardio após actor não adota resultado",
+          "status": "passed",
+          "title": "ACK tardio após actor não adota resultado",
+          "duration": 5.460087999999814,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL ACK tardio após epoch não adota resultado",
+          "status": "passed",
+          "title": "ACK tardio após epoch não adota resultado",
+          "duration": 8.238252000001012,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL ACK tardio após inactive não adota resultado",
+          "status": "passed",
+          "title": "ACK tardio após inactive não adota resultado",
+          "duration": 9.574385999998412,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL ausência PGRST202 nunca chama legado",
+          "status": "passed",
+          "title": "ausência PGRST202 nunca chama legado",
+          "duration": 11.475599999999758,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL ausência 42883 nunca chama legado",
+          "status": "passed",
+          "title": "ausência 42883 nunca chama legado",
+          "duration": 8.31239800000003,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL ausência 404 nunca chama legado",
+          "status": "passed",
+          "title": "ausência 404 nunca chama legado",
+          "duration": 4.560663000000204,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL libera só a própria trava depois de erro para retentativa explícita",
+          "status": "passed",
+          "title": "libera só a própria trava depois de erro para retentativa explícita",
+          "duration": 15.46147799999926,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL offline/ACK perdido não inicia novo envio automaticamente",
+          "status": "passed",
+          "title": "offline/ACK perdido não inicia novo envio automaticamente",
+          "duration": 6.9478240000007645,
+          "failureMessages": [],
+          "meta": {}
+        },
+        {
+          "ancestorTitles": [
+            "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL"
+          ],
+          "fullName": "Publicação existente — contrato e lacunas, transporte simulado, sem JWT/SQL produtor sem contexto canônico não ganha acesso só pelo papel",
+          "status": "passed",
+          "title": "produtor sem contexto canônico não ganha acesso só pelo papel",
+          "duration": 45.74615400000039,
+          "failureMessages": [],
+          "meta": {}
+        }
+      ],
+      "startTime": 1793321523131,
+      "endTime": 1793321523416.746,
+      "status": "passed",
+      "message": "",
+      "name": "src/test/planejamento-producao/publicacao-contrato-current.test.tsx"
+    }
+  ]
+}

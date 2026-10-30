@@ -1,0 +1,55 @@
+{
+  "groups": [
+    {
+      "group": "carteira-cotacao",
+      "passed": 44,
+      "failed": 0,
+      "skipped": 0,
+      "start": 1793321487522,
+      "end": 1793321506360.81
+    },
+    {
+      "group": "entrega-financeiro",
+      "passed": 61,
+      "failed": 0,
+      "skipped": 0,
+      "start": 1793321487511,
+      "end": 1793321509968.798
+    },
+    {
+      "group": "campo-monitoramento",
+      "passed": 158,
+      "failed": 0,
+      "skipped": 0,
+      "start": 1793321508367,
+      "end": 1793321551395.3662
+    },
+    {
+      "group": "planejamento-portal-catalogo",
+      "passed": 64,
+      "failed": 0,
+      "skipped": 0,
+      "start": 1793321512752,
+      "end": 1793321537034.854
+    },
+    {
+      "group": "complemento-final",
+      "passed": 73,
+      "failed": 0,
+      "skipped": 0,
+      "start": 1793321701124,
+      "end": 1793321721178.9792
+    },
+    {
+      "group": "no-network-final",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "unique_tests": 388,
+  "unique_files": 30,
+  "scope": "simulated_transport_no_network",
+  "runtime_changed_this_round": false,
+  "excluded": "PG/hosted/browser/auth real/finance and fiscal dispatch"
+}
