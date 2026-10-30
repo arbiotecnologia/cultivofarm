@@ -19,7 +19,7 @@ DECLARE v_org uuid; BEGIN
  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'DELIVERY_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
  v_org:=public.h15_actor_organization();
  IF v_org IS NULL OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid() AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','consultor_tecnico','aplicador','operador_onfarm','superadmin'))
- OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=auth.uid() AND ativo IS TRUE)
+ OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=auth.uid() AND revoked_at IS NULL AND (valid_from IS NULL OR valid_from<=pg_catalog.now()))
  OR NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid() AND (role IN ('administrador','gestor') OR (p_action='group' AND role='producao') OR (p_action='cancel' AND role='administrativo')))
  THEN RAISE EXCEPTION 'DELIVERY_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
  IF NOT public.saas_has_feature('estoque_embalagens') THEN RAISE EXCEPTION 'DELIVERY_FEATURE_DENIED' USING ERRCODE='42501'; END IF;
