@@ -1,7 +1,7 @@
 DO $pre$ BEGIN
 -- POST
 IF (SELECT md5(pg_get_functiondef(to_regprocedure('platform_private.delivery_actor_20261030(text)')))) IS DISTINCT FROM 'c6da1f5d9581a0c290e5e27e4605682c' THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_BODY: %','platform_private.delivery_actor_20261030(text)'; END IF;
-IF (SELECT md5(pg_get_functiondef(to_regprocedure('public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)')))) IS DISTINCT FROM 'a9ba21be1df42bdd1fb9c838cb783e88' THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_BODY: %','public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)'; END IF;
+IF (SELECT md5(pg_get_functiondef(to_regprocedure('public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)')))) IS DISTINCT FROM '97d476cc795d75b829f305f1e64d4e62' THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_BODY: %','public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)'; END IF;
 IF (SELECT md5(pg_get_functiondef(to_regprocedure('public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)')))) IS DISTINCT FROM 'a4d47ccf5d116141ed46e9de9ea7eeaa' THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_BODY: %','public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)'; END IF;
 IF (SELECT md5(pg_get_functiondef(to_regprocedure('public.rpc_entrega_cancelar_v1(uuid,text)')))) IS DISTINCT FROM '925b6302ed3b72f0a5e2e208196fbc91' THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_BODY: %','public.rpc_entrega_cancelar_v1(uuid,text)'; END IF;
 IF (SELECT md5(pg_get_functiondef(to_regprocedure('public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)')))) IS DISTINCT FROM '3d517f1257d2e79fc89d173815955292' THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_BODY: %','public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)'; END IF;
