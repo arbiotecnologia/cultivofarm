@@ -17,7 +17,7 @@ def reject(label,s,code):
     assert r.returncode!=0 and re.search(r'ERROR:\s+'+code+r':',r.stderr), (label,r.stderr)
     ok(label)
 def snapshot():
-    tables=['envase','estoque_produto','estoque_movimentacoes','cockpit_operacao_idempotencia','laboratorio_esteira_eventos','ordens_servico','lotes','controle_qualidade','programacao_producao']+T.TABLES
+    tables=['envase','estoque_produto','estoque_movimentacoes','cockpit_operacao_idempotencia','laboratorio_esteira_eventos','ordens_servico','lotes','controle_qualidade','programacao_producao','financial_categories','payment_methods','receivable_payments','company_fiscal_settings']+T.TABLES
     return last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in tables)+")::text;")
 def state(): return json.loads(last(G.STATE+'::text;'))
 def env(os,pp,l,key,quantity=2): return T.envase(os,pp,l,[{'tipo_embalagem':'frasco_1L','quantidade':quantity}],key)
@@ -31,7 +31,10 @@ def run():
     for p in [V2/'candidate-v2.sql.review',H/'assemble.py',H/'test_pg.py']:
         sources.append({'file':str(p.relative_to(S.parent)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
     (H/'sources.json').write_text(json.dumps(sources,indent=2)+'\n'); ok('reported applied composition restored in order; all installer PRE/POST pass')
-    T.setup_v2(); pre=state(); delta=G.candidate()
+    T.setup_v2()
+    import sentinels
+    sentinels.seed(sys.modules[__name__])
+    pre=state(); delta=G.candidate()
     # pg.sql uses one connection per call: measure in ONE transaction.
     measured=sql('BEGIN;'+delta+'\n'+G.STATE+'::text;\nROLLBACK;')
     post=json.loads([x for x in measured.splitlines() if x.startswith('{')][-1]); assert state()==pre
