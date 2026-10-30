@@ -67,7 +67,7 @@ function mount() {
 }
 const writerCalls = () => t.rpc.mock.calls.filter((c: any[]) => c[0] === GROUP_RPC || c[0] === CANCEL_RPC);
 const PFX = `cf:delivery-uncertain:v2:${ACTOR}:${ORG}:`;
-const pendingKeys = () => Object.keys(localStorage).filter(k => k.startsWith(PFX)).sort();
+const pendingKeys = () => Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) as string).filter(k => k.startsWith(PFX)).sort();
 const pendingRaw = () => { const k = pendingKeys()[0]; return k ? localStorage.getItem(k) : null; };
 
 beforeEach(() => {
