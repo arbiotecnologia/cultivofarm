@@ -241,28 +241,13 @@
       "status": "PASS"
     },
     {
-      "test": "historical clock fixture exact replay after validity expired has zero writes",
+      "test": "demand changed during observed wait uses fresh 5000ml context",
       "status": "PASS"
     },
     {
-      "test": "all financial/fiscal/outbox full-row snapshots unchanged (not counts)",
-      "status": "PASS"
-    },
-    {
-      "test": "canonical generate/sign/attach and exact attachment replay preserved",
-      "status": "PASS"
-    },
-    {
-      "test": "foreign FSF proof stays closed",
-      "status": "PASS"
-    },
-    {
-      "test": "deny-only rollback closes canonical writer",
-      "status": "PASS"
-    },
-    {
-      "test": "rollback preserves full-row historical snapshots",
-      "status": "PASS"
+      "test": "execution",
+      "status": "FAIL",
+      "error": "'success'"
     }
   ],
   "raw": [
@@ -445,20 +430,8 @@
       "returncode": 3,
       "stdout": "",
       "stderr": "ERROR:  42501: permission denied for table envase_insert_permits_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
-    },
-    {
-      "test": "foreign FSF proof stays closed",
-      "returncode": 3,
-      "stdout": "",
-      "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 11 at RAISE\nSQL function \"rpc_entrega_formulario_gerar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
-    },
-    {
-      "test": "deny-only rollback closes canonical writer",
-      "returncode": 3,
-      "stdout": "",
-      "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "elapsed_seconds": 180.203,
-  "exit_code": 0
+  "elapsed_seconds": 178.403,
+  "exit_code": 1
 }
