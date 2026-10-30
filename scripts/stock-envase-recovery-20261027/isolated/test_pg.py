@@ -87,9 +87,18 @@ def run():
     sql('DROP TRIGGER zz_local_fail ON public.estoque_movimentacoes; DROP FUNCTION public.local_fail_envase_ledger();'); assert snapshot()==before; ok('ledger failure preserved full envase/stock/receipt/event/lot/CQ snapshots')
     # Concurrent same key: two connections, exact replay, one row/ledger generation.
     stmt=T.actor(T.W)+env(T.O5,T.PP5,T.L5,'concurrent-0001')
-    a=T.T.session('BEGIN;'+stmt); b=T.T.session('BEGIN;'+stmt)
+    a=T.T.session("BEGIN;SET application_name='samekey_a';"+stmt)
+    for _ in range(100):
+        if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='samekey_a' AND state='idle in transaction';")=='1': break
+        time.sleep(.02)
+    else: raise AssertionError('FIRST_WORKER_NOT_FINISHED')
+    b=T.T.session("BEGIN;SET application_name='samekey_b';"+stmt)
+    for _ in range(100):
+        if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='samekey_b' AND wait_event_type='Lock';")=='1':break
+        time.sleep(.02)
+    else: raise AssertionError('SAME_KEY_WAIT_NOT_OBSERVED')
     ra=T.T.finish(a,'COMMIT;'); rb=T.T.finish(b,'COMMIT;'); joined=''.join(ra+rb)
-    assert joined.count('"success": true')>=2 and '"replay": true' in joined and last(f"SELECT count(*) FROM public.envase WHERE lote_id='{T.L5}';")=='1'; ok('two independent connections same key: one write and one replay')
+    assert joined.count('"success": true')>=2 and '"replay": true' in joined and last(f"SELECT count(*) FROM public.envase WHERE lote_id='{T.L5}';")=='1',joined; ok('observed same-key wait: one write and one replay')
     # Assert actual worker lock wait before committing revocation (no timing-only PASS).
     holder=T.T.session(f"BEGIN; SELECT 1 FROM public.lotes WHERE id='{T.L6}' FOR UPDATE; UPDATE public.profiles SET ativo=false WHERE user_id='{T.W}';")
     worker=subprocess.Popen(pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
