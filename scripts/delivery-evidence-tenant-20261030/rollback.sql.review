@@ -1,0 +1,15 @@
+-- Deny-safe rollback: never DROP the barriers (restores cross-tenant access) and never re-grant TRUNCATE.
+-- Narrows every barrier to false: direct client reads/writes on these tables close; SECURITY DEFINER writers unaffected.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+DO $rb$ BEGIN
+ IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND permissive='RESTRICTIVE' AND policyname IN ('entrega_checklist_parent_visible_r','entrega_ocorrencias_parent_visible_r','entrega_documentos_parent_visible_r','entrega_conferencia_itens_parent_visible_r','entrega_reconciliacoes_parent_visible_r','entrega_etiquetas_parent_visible_r'))<>6
+ THEN RAISE EXCEPTION 'EVIDENCE_TENANT_ROLLBACK_POLICY_MISSING'; END IF;
+END $rb$;
+ALTER POLICY entrega_checklist_parent_visible_r ON public.entrega_checklist USING (false) WITH CHECK (false);
+ALTER POLICY entrega_ocorrencias_parent_visible_r ON public.entrega_ocorrencias USING (false) WITH CHECK (false);
+ALTER POLICY entrega_documentos_parent_visible_r ON public.entrega_documentos USING (false) WITH CHECK (false);
+ALTER POLICY entrega_conferencia_itens_parent_visible_r ON public.entrega_conferencia_itens USING (false) WITH CHECK (false);
+ALTER POLICY entrega_reconciliacoes_parent_visible_r ON public.entrega_reconciliacoes USING (false) WITH CHECK (false);
+ALTER POLICY entrega_etiquetas_parent_visible_r ON public.entrega_etiquetas USING (false) WITH CHECK (false);
+COMMIT;
