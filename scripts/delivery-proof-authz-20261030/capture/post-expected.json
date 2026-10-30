@@ -56,11 +56,24 @@
   "expected": [
    {
     "acl": "{postgres=X/postgres}",
-    "md5": "df2f9ec9e9284bbe91ffb605a24862be",
+    "md5": "030c591a31202612160b89f5d4e025c2",
     "owner": "postgres",
     "config": "{\"search_path=\\\"\\\"\",lock_timeout=3s}",
     "secdef": true,
     "signature": "platform_private.delivery_proof_apply_20261030(p_action text, p_entrega uuid, p_request_key text, p_payload jsonb)"
+   }
+  ]
+ },
+ {
+  "expression": "(SELECT coalesce(jsonb_agg(jsonb_build_object('signature',format('%I.%I(%s)',ns.nspname,p.proname,pg_get_function_identity_arguments(p.oid)),'md5',md5(pg_get_functiondef(p.oid)),'acl',p.proacl::text,'owner',pg_get_userbyid(p.proowner),'secdef',p.prosecdef,'config',p.proconfig::text) ORDER BY 1),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace ns ON ns.oid=p.pronamespace WHERE ns.nspname='platform_private' AND p.proname='delivery_proof_recheck_20261030')",
+  "expected": [
+   {
+    "acl": "{postgres=X/postgres}",
+    "md5": "fc378b281a1677a8d548de754a11c9aa",
+    "owner": "postgres",
+    "config": "{\"search_path=\\\"\\\"\"}",
+    "secdef": true,
+    "signature": "platform_private.delivery_proof_recheck_20261030(p_entrega uuid, p_org uuid, p_action text)"
    }
   ]
  },
@@ -133,8 +146,8 @@
   "expression": "(SELECT coalesce(jsonb_agg(jsonb_build_object('signature',format('%I.%I(%s)',ns.nspname,p.proname,pg_get_function_identity_arguments(p.oid)),'md5',md5(pg_get_functiondef(p.oid)),'acl',p.proacl::text,'owner',pg_get_userbyid(p.proowner),'secdef',p.prosecdef,'config',p.proconfig::text) ORDER BY 1),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace ns ON ns.oid=p.pronamespace WHERE ns.nspname='public' AND p.proname='rpc_gerar_formulario_entrega')",
   "expected": [
    {
-    "acl": "{postgres=X/postgres}",
-    "md5": "3c46bf7db03657df616816799aa7fa9f",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "2c2b6c4377dabeb62a24237200017217",
     "owner": "postgres",
     "config": "{\"search_path=\\\"\\\"\"}",
     "secdef": true,
@@ -146,8 +159,8 @@
   "expression": "(SELECT coalesce(jsonb_agg(jsonb_build_object('signature',format('%I.%I(%s)',ns.nspname,p.proname,pg_get_function_identity_arguments(p.oid)),'md5',md5(pg_get_functiondef(p.oid)),'acl',p.proacl::text,'owner',pg_get_userbyid(p.proowner),'secdef',p.prosecdef,'config',p.proconfig::text) ORDER BY 1),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace ns ON ns.oid=p.pronamespace WHERE ns.nspname='public' AND p.proname='rpc_coletar_assinatura_digital_entrega')",
   "expected": [
    {
-    "acl": "{postgres=X/postgres}",
-    "md5": "07a629e5a57e170cc346dbf12adea91d",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "f9874b989ed83b9a5c2db641621b8853",
     "owner": "postgres",
     "config": "{\"search_path=\\\"\\\"\"}",
     "secdef": true,
@@ -159,8 +172,8 @@
   "expression": "(SELECT coalesce(jsonb_agg(jsonb_build_object('signature',format('%I.%I(%s)',ns.nspname,p.proname,pg_get_function_identity_arguments(p.oid)),'md5',md5(pg_get_functiondef(p.oid)),'acl',p.proacl::text,'owner',pg_get_userbyid(p.proowner),'secdef',p.prosecdef,'config',p.proconfig::text) ORDER BY 1),'[]'::jsonb) FROM pg_proc p JOIN pg_namespace ns ON ns.oid=p.pronamespace WHERE ns.nspname='public' AND p.proname='rpc_anexar_comprovante_entrega')",
   "expected": [
    {
-    "acl": "{postgres=X/postgres}",
-    "md5": "ed18c4bf51d78140b9c845e19dec4480",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "md5": "e9048eeb8c209b802248998ab4f060b2",
     "owner": "postgres",
     "config": "{\"search_path=\\\"\\\"\"}",
     "secdef": true,

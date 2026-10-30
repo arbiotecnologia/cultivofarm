@@ -19,10 +19,17 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: fromMock,
     // Pré-verificação autorizada (novo contrato) separada do registro final.
-    rpc: (name: string, args: any) =>
-      name === "rpc_entrega_comprovacao_preflight_v1"
-        ? Promise.resolve({ data: { allowed: true }, error: null })
-        : rpcMock(name, args),
+    // Servidor simulado com envelopes EXATOS: pré-verificação ecoa entrega/ação e
+    // sucesso sem corpo do mock vira o ACK exato da gravação (entrega/ação/caminho).
+    rpc: async (name: string, args: any) => {
+      if (name === "rpc_entrega_comprovacao_preflight_v1")
+        return { data: { allowed: true, entrega_id: args?.p_entrega_id, action: args?.p_action }, error: null };
+      const r: any = await rpcMock(name, args);
+      const acts: Record<string, string> = { rpc_entrega_formulario_gerar_v1: "generate", rpc_entrega_assinatura_coletar_v1: "sign", rpc_entrega_comprovante_anexar_v1: "attach" };
+      if (acts[name] && r && !r.error && r.data === undefined)
+        return { ...r, data: { success: true, action: acts[name], entrega_id: args?.p_entrega_id, comprovante_id: "33333333-3333-4333-8333-333333333333", object_path: args?.p_payload?.arquivo_path ?? args?.p_payload?.assinatura_digital_png_path ?? null } };
+      return r;
+    },
     storage: {
       from: () => ({
         upload: uploadMock,

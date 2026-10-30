@@ -1,130 +1,138 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=1.4s
-CHECKPOINT sql_calls=100 elapsed=2.6s
-CHECKPOINT sql_calls=200 elapsed=4.0s
-CHECKPOINT sql_calls=300 elapsed=5.4s
-CHECKPOINT sql_calls=400 elapsed=7.0s
-CHECKPOINT sql_calls=500 elapsed=8.7s
-CHECKPOINT sql_calls=600 elapsed=10.1s
-CHECKPOINT sql_calls=700 elapsed=11.5s
-CHECKPOINT sql_calls=800 elapsed=12.9s
-CHECKPOINT sql_calls=900 elapsed=14.3s
-CHECKPOINT sql_calls=1000 elapsed=15.6s
-CHECKPOINT sql_calls=1100 elapsed=17.0s
-CHECKPOINT sql_calls=1200 elapsed=18.3s
-CHECKPOINT sql_calls=1300 elapsed=19.7s
-CHECKPOINT sql_calls=1400 elapsed=21.1s
-CHECKPOINT sql_calls=1500 elapsed=22.5s
-CHECKPOINT sql_calls=1600 elapsed=23.9s
-CHECKPOINT sql_calls=1700 elapsed=25.3s
-CHECKPOINT sql_calls=1800 elapsed=26.7s
-CHECKPOINT sql_calls=1900 elapsed=27.9s
-CHECKPOINT sql_calls=2000 elapsed=29.3s
-CHECKPOINT sql_calls=2100 elapsed=30.5s
-CHECKPOINT sql_calls=2200 elapsed=31.8s
-CHECKPOINT sql_calls=2300 elapsed=33.1s
-CHECKPOINT sql_calls=2400 elapsed=34.3s
-CHECKPOINT sql_calls=2500 elapsed=35.6s
-CHECKPOINT sql_calls=2600 elapsed=36.8s
-CHECKPOINT sql_calls=2700 elapsed=38.1s
-CHECKPOINT sql_calls=2800 elapsed=39.3s
-CHECKPOINT sql_calls=2900 elapsed=40.5s
-CHECKPOINT sql_calls=3000 elapsed=41.8s
-CHECKPOINT sql_calls=3100 elapsed=43.2s
-CHECKPOINT sql_calls=3200 elapsed=44.5s
-CHECKPOINT sql_calls=3300 elapsed=45.7s
-CHECKPOINT sql_calls=3400 elapsed=47.0s
-CHECKPOINT sql_calls=3500 elapsed=48.4s
-CHECKPOINT sql_calls=3600 elapsed=49.6s
-CHECKPOINT sql_calls=3700 elapsed=50.9s
-CHECKPOINT sql_calls=3800 elapsed=52.2s
-CHECKPOINT sql_calls=3900 elapsed=53.5s
-CHECKPOINT sql_calls=4000 elapsed=54.8s
-CHECKPOINT sql_calls=4100 elapsed=56.0s
-CHECKPOINT sql_calls=4200 elapsed=57.3s
-CHECKPOINT sql_calls=4300 elapsed=58.6s
-CHECKPOINT sql_calls=4400 elapsed=59.8s
-CHECKPOINT sql_calls=4500 elapsed=61.1s
-CHECKPOINT sql_calls=4600 elapsed=62.4s
-CHECKPOINT sql_calls=4700 elapsed=63.8s
-CHECKPOINT sql_calls=4800 elapsed=65.0s
-CHECKPOINT sql_calls=4900 elapsed=66.4s
-CHECKPOINT sql_calls=5000 elapsed=67.7s
-CHECKPOINT sql_calls=5100 elapsed=69.0s
-CHECKPOINT sql_calls=5200 elapsed=70.3s
-CHECKPOINT sql_calls=5300 elapsed=71.5s
-CHECKPOINT sql_calls=5400 elapsed=72.9s
-CHECKPOINT sql_calls=5500 elapsed=74.2s
-CHECKPOINT sql_calls=5600 elapsed=75.5s
-CHECKPOINT sql_calls=5700 elapsed=76.9s
-CHECKPOINT sql_calls=5800 elapsed=78.2s
-CHECKPOINT sql_calls=5900 elapsed=79.7s
-CHECKPOINT sql_calls=6000 elapsed=81.0s
-CHECKPOINT sql_calls=6100 elapsed=82.4s
-CHECKPOINT sql_calls=6200 elapsed=83.9s
-CHECKPOINT sql_calls=6300 elapsed=85.3s
-CHECKPOINT sql_calls=6400 elapsed=86.8s
-CHECKPOINT sql_calls=6500 elapsed=88.5s
-CHECKPOINT sql_calls=6600 elapsed=90.3s
-CHECKPOINT sql_calls=6700 elapsed=92.2s
-CHECKPOINT sql_calls=6800 elapsed=94.2s
-CHECKPOINT sql_calls=6900 elapsed=96.1s
-CHECKPOINT sql_calls=7000 elapsed=97.9s
-CHECKPOINT sql_calls=7100 elapsed=99.5s
-CHECKPOINT sql_calls=7200 elapsed=101.1s
-CHECKPOINT sql_calls=7300 elapsed=102.8s
-CHECKPOINT sql_calls=7400 elapsed=104.3s
-CHECKPOINT sql_calls=7500 elapsed=105.8s
-CHECKPOINT sql_calls=7600 elapsed=107.3s
-CHECKPOINT sql_calls=7700 elapsed=108.6s
-CHECKPOINT sql_calls=7800 elapsed=110.0s
-CHECKPOINT sql_calls=7900 elapsed=111.3s
-CHECKPOINT sql_calls=8000 elapsed=112.7s
-CHECKPOINT sql_calls=8100 elapsed=114.0s
-CHECKPOINT sql_calls=8200 elapsed=115.4s
-CHECKPOINT sql_calls=8300 elapsed=116.7s
-CHECKPOINT sql_calls=8400 elapsed=118.1s
-CHECKPOINT sql_calls=8500 elapsed=119.3s
-CHECKPOINT sql_calls=8600 elapsed=120.7s
-CHECKPOINT sql_calls=8700 elapsed=122.1s
-CHECKPOINT sql_calls=8800 elapsed=123.7s
-CHECKPOINT sql_calls=8900 elapsed=125.1s
-CHECKPOINT sql_calls=9000 elapsed=126.4s
-CHECKPOINT sql_calls=9100 elapsed=127.7s
-CHECKPOINT sql_calls=9200 elapsed=129.1s
-CHECKPOINT sql_calls=9300 elapsed=130.4s
-CHECKPOINT sql_calls=9400 elapsed=131.7s
-CHECKPOINT sql_calls=9500 elapsed=133.1s
-CHECKPOINT sql_calls=9600 elapsed=134.3s
-CHECKPOINT sql_calls=9700 elapsed=135.6s
-CHECKPOINT sql_calls=9800 elapsed=136.8s
-CHECKPOINT sql_calls=9900 elapsed=138.1s
-CHECKPOINT sql_calls=10000 elapsed=139.4s
-CHECKPOINT sql_calls=10100 elapsed=140.7s
-CHECKPOINT sql_calls=10200 elapsed=142.0s
-CHECKPOINT sql_calls=10300 elapsed=143.3s
-CHECKPOINT sql_calls=10400 elapsed=144.6s
-CHECKPOINT sql_calls=10500 elapsed=145.8s
-CHECKPOINT sql_calls=10600 elapsed=147.1s
+CHECKPOINT sql_calls=1 elapsed=3.8s
+CHECKPOINT sql_calls=100 elapsed=6.5s
+CHECKPOINT sql_calls=200 elapsed=9.7s
+CHECKPOINT sql_calls=300 elapsed=13.0s
+CHECKPOINT sql_calls=400 elapsed=16.1s
+CHECKPOINT sql_calls=500 elapsed=19.2s
+CHECKPOINT sql_calls=600 elapsed=22.2s
+CHECKPOINT sql_calls=700 elapsed=25.0s
+CHECKPOINT sql_calls=800 elapsed=27.8s
+CHECKPOINT sql_calls=900 elapsed=30.8s
+CHECKPOINT sql_calls=1000 elapsed=34.0s
+CHECKPOINT sql_calls=1100 elapsed=36.8s
+CHECKPOINT sql_calls=1200 elapsed=40.0s
+CHECKPOINT sql_calls=1300 elapsed=43.2s
+CHECKPOINT sql_calls=1400 elapsed=46.2s
+CHECKPOINT sql_calls=1500 elapsed=49.3s
+CHECKPOINT sql_calls=1600 elapsed=52.2s
+CHECKPOINT sql_calls=1700 elapsed=55.2s
+CHECKPOINT sql_calls=1800 elapsed=58.2s
+CHECKPOINT sql_calls=1900 elapsed=61.1s
+CHECKPOINT sql_calls=2000 elapsed=64.0s
+CHECKPOINT sql_calls=2100 elapsed=66.9s
+CHECKPOINT sql_calls=2200 elapsed=70.2s
+CHECKPOINT sql_calls=2300 elapsed=72.9s
+CHECKPOINT sql_calls=2400 elapsed=76.5s
+CHECKPOINT sql_calls=2500 elapsed=79.6s
+CHECKPOINT sql_calls=2600 elapsed=83.2s
+CHECKPOINT sql_calls=2700 elapsed=85.9s
+CHECKPOINT sql_calls=2800 elapsed=88.7s
+CHECKPOINT sql_calls=2900 elapsed=91.4s
+CHECKPOINT sql_calls=3000 elapsed=94.0s
+CHECKPOINT sql_calls=3100 elapsed=96.9s
+CHECKPOINT sql_calls=3200 elapsed=99.6s
+CHECKPOINT sql_calls=3300 elapsed=102.2s
+CHECKPOINT sql_calls=3400 elapsed=104.9s
+CHECKPOINT sql_calls=3500 elapsed=107.6s
+CHECKPOINT sql_calls=3600 elapsed=109.9s
+CHECKPOINT sql_calls=3700 elapsed=112.5s
+CHECKPOINT sql_calls=3800 elapsed=115.3s
+CHECKPOINT sql_calls=3900 elapsed=117.9s
+CHECKPOINT sql_calls=4000 elapsed=120.3s
+CHECKPOINT sql_calls=4100 elapsed=123.1s
+CHECKPOINT sql_calls=4200 elapsed=126.1s
+CHECKPOINT sql_calls=4300 elapsed=128.8s
+CHECKPOINT sql_calls=4400 elapsed=131.5s
+CHECKPOINT sql_calls=4500 elapsed=134.2s
+CHECKPOINT sql_calls=4600 elapsed=136.5s
+CHECKPOINT sql_calls=4700 elapsed=138.7s
+CHECKPOINT sql_calls=4800 elapsed=140.6s
+CHECKPOINT sql_calls=4900 elapsed=142.6s
+CHECKPOINT sql_calls=5000 elapsed=144.4s
+CHECKPOINT sql_calls=5100 elapsed=146.3s
+CHECKPOINT sql_calls=5200 elapsed=148.4s
+CHECKPOINT sql_calls=5300 elapsed=150.2s
+CHECKPOINT sql_calls=5400 elapsed=152.0s
+CHECKPOINT sql_calls=5500 elapsed=153.9s
+CHECKPOINT sql_calls=5600 elapsed=156.1s
+CHECKPOINT sql_calls=5700 elapsed=158.5s
+CHECKPOINT sql_calls=5800 elapsed=160.8s
+CHECKPOINT sql_calls=5900 elapsed=163.3s
+CHECKPOINT sql_calls=6000 elapsed=165.4s
+CHECKPOINT sql_calls=6100 elapsed=167.6s
+CHECKPOINT sql_calls=6200 elapsed=170.1s
+CHECKPOINT sql_calls=6300 elapsed=172.6s
+CHECKPOINT sql_calls=6400 elapsed=175.3s
+CHECKPOINT sql_calls=6500 elapsed=177.9s
+CHECKPOINT sql_calls=6600 elapsed=180.9s
+CHECKPOINT sql_calls=6700 elapsed=184.0s
+CHECKPOINT sql_calls=6800 elapsed=186.5s
+CHECKPOINT sql_calls=6900 elapsed=189.4s
+CHECKPOINT sql_calls=7000 elapsed=192.3s
+CHECKPOINT sql_calls=7100 elapsed=195.2s
+CHECKPOINT sql_calls=7200 elapsed=198.2s
+CHECKPOINT sql_calls=7300 elapsed=201.1s
+CHECKPOINT sql_calls=7400 elapsed=203.7s
+CHECKPOINT sql_calls=7500 elapsed=206.1s
+CHECKPOINT sql_calls=7600 elapsed=208.5s
+CHECKPOINT sql_calls=7700 elapsed=210.6s
+CHECKPOINT sql_calls=7800 elapsed=213.3s
+CHECKPOINT sql_calls=7900 elapsed=215.2s
+CHECKPOINT sql_calls=8000 elapsed=217.1s
+CHECKPOINT sql_calls=8100 elapsed=219.0s
+CHECKPOINT sql_calls=8200 elapsed=220.7s
+CHECKPOINT sql_calls=8300 elapsed=222.8s
+CHECKPOINT sql_calls=8400 elapsed=224.8s
+CHECKPOINT sql_calls=8500 elapsed=226.6s
+CHECKPOINT sql_calls=8600 elapsed=228.3s
+CHECKPOINT sql_calls=8700 elapsed=230.2s
+CHECKPOINT sql_calls=8800 elapsed=232.3s
+CHECKPOINT sql_calls=8900 elapsed=234.0s
+CHECKPOINT sql_calls=9000 elapsed=235.9s
+CHECKPOINT sql_calls=9100 elapsed=237.6s
+CHECKPOINT sql_calls=9200 elapsed=239.4s
+CHECKPOINT sql_calls=9300 elapsed=241.2s
+CHECKPOINT sql_calls=9400 elapsed=243.1s
+CHECKPOINT sql_calls=9500 elapsed=245.1s
+CHECKPOINT sql_calls=9600 elapsed=246.8s
+CHECKPOINT sql_calls=9700 elapsed=248.5s
+CHECKPOINT sql_calls=9800 elapsed=250.2s
+CHECKPOINT sql_calls=9900 elapsed=252.0s
+CHECKPOINT sql_calls=10000 elapsed=253.8s
+CHECKPOINT sql_calls=10100 elapsed=255.6s
+CHECKPOINT sql_calls=10200 elapsed=257.4s
+CHECKPOINT sql_calls=10300 elapsed=259.4s
+CHECKPOINT sql_calls=10400 elapsed=261.4s
+CHECKPOINT sql_calls=10500 elapsed=263.2s
+CHECKPOINT sql_calls=10600 elapsed=265.0s
 RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
 PASS atomic package installed first (deployment order 1)
 PASS proof installer COMMIT with PRE and POST (deployment order 2)
 PASS exact POST passes on installed instance
-CHECKPOINT fixtures 148.8
+CHECKPOINT fixtures 268.0
 PASS anon cannot execute new attach RPC
 PASS authenticated cannot execute private apply
-PASS legacy rpc_gerar_formulario_entrega closed to authenticated
-PASS legacy rpc_gerar_formulario_entrega deny-only even for owner
-PASS legacy rpc_coletar_assinatura_digital_entrega closed to authenticated
-PASS legacy rpc_coletar_assinatura_digital_entrega deny-only even for owner
-PASS legacy rpc_anexar_comprovante_entrega closed to authenticated
-PASS legacy rpc_anexar_comprovante_entrega deny-only even for owner
+PASS legacy adapter rpc_gerar_formulario_entrega closed to anon
+PASS legacy adapter rpc_gerar_formulario_entrega closed to service_role
+PASS legacy adapter rpc_gerar_formulario_entrega without session denied
+PASS legacy adapter rpc_coletar_assinatura_digital_entrega closed to anon
+PASS legacy adapter rpc_coletar_assinatura_digital_entrega closed to service_role
+PASS legacy adapter rpc_coletar_assinatura_digital_entrega without session denied
+PASS legacy adapter rpc_anexar_comprovante_entrega closed to anon
+PASS legacy adapter rpc_anexar_comprovante_entrega closed to service_role
+PASS legacy adapter rpc_anexar_comprovante_entrega without session denied
+PASS legacy generate adapter cross-tenant FSF denied
+PASS legacy generate adapter external role denied
+PASS legacy attach adapter path of another tenant delivery denied
+PASS legacy attach adapter legacy-only field data_assinatura rejected
 PASS preflight positive admin same tenant
 PASS preflight cross-tenant FSF admin denied
 PASS preflight cancelled delivery denied
 PASS preflight external admin+parceiro denied
 PASS preflight aplicador without client link denied
 PASS preflight producao staff allowed (legacy role matrix)
+CHECKPOINT sql_calls=10700 elapsed=268.6s
 PASS preflight writes nothing
 PASS generate positive creates one proof and seeds checklist
 PASS generate replay same key returns stored result
@@ -133,7 +141,6 @@ PASS generate new key reuses open proof
 PASS same key different delivery conflicts
 PASS generate cross-tenant denied
 PASS generate cancelled denied
-CHECKPOINT sql_calls=10700 elapsed=149.4s
 PASS invalid request key rejected
 PASS attach object missing denied (upload not proven)
 PASS attach object owned by other user denied
@@ -173,14 +180,37 @@ PASS after linearized revocation the next proof is denied
 PASS row holder that revokes: deadlock/denial is fail-closed, zero writes
 PASS revoked actor cannot replay stored receipt
 PASS inactive profile cannot replay
+PASS preflight aplicador WITH client link allowed
+PASS attach aplicador with client link positive
+PASS success leaves zero permit residue (context removed) and keeps the receipt
+PASS sign aplicador with client link positive
+PASS after real link revocation aplicador preflight denied
+PASS after real link revocation aplicador cannot replay stored receipt
+PASS after real link revocation aplicador new attach denied
+PASS other staff on same delivery keeps access after aplicador revocation
+CHECKPOINT sql_calls=10800 elapsed=275.0s
+PASS link revoked during storage FOR SHARE wait is denied after the wait, zero writes, zero residue
+PASS link revoked during comprovante FOR UPDATE wait is denied, zero writes, zero residue
+PASS role revoked during comprovante wait is denied, zero writes
+PASS gated link revocation during storage wait linearizes after the committed proof
+PASS after linearized link revocation the next aplicador proof is denied
+PASS PT409 OBJECT_ALREADY_LINKED while the object IS linked: SQLSTATE never proves an object is unlinked
+PASS legacy generate adapter works for same-tenant staff through the new contract
+PASS legacy attach adapter (old payload) links object with audit and zero residue
+PASS legacy attach adapter retry with same path replays (idempotent, single audit)
+PASS legacy replay kept a single audit row
+PASS legacy sign adapter (old payload) works for producao staff
+PASS legacy attach adapter cross-tenant FSF on AR Bio delivery denied
 PASS concurrent same-key attach: one write, one replay, single audit
 PASS atomic group creation still passes barrier (harness-only grant)
 PASS atomic cancel still passes barrier
 PASS financial/fiscal/outbox tables remain empty (zero titles, zero dispatch)
 PASS after rollback new RPC closed to clients
 PASS after rollback apply deny-only
-PASS after rollback legacy still closed
+PASS after rollback legacy adapters closed to clients
+PASS after rollback legacy adapters deny-only
+PASS zero permit residue at the end
 PASS after rollback barrier still closes direct writes
 PASS rollback preserved history
-ELAPSED 153.9
-RESULT 73 PASS 0 FAIL
+ELAPSED 278.6
+RESULT 102 PASS 0 FAIL

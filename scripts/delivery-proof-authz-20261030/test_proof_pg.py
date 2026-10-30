@@ -22,6 +22,7 @@ u = T.u
 A, B, U, V, C, D, O, P = T.A, T.B, T.U, T.V, T.C, T.D, T.O, T.P
 W, X, Y, Z = u(301), u(302), u(303), u(304)        # aplicador, producao, external admin, revocable
 E1, E2, E3, E4, EB, EPO, ECX = u(401), u(402), u(403), u(404), u(405), u(406), u(407)
+E5, E6, E7 = u(408), u(409), u(410)          # aplicador-linked, storage-wait, legacy adapter
 FIN = ['accounts_receivable','accounts_receivable_installments','financial_receipts','financial_documents','fiscal_invoices','fiscal_invoice_items','fiscal_events','comunicacao_outbox','comunicacao_eventos','os_faturamento_base']
 def actor(w=U): return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}';"
 def obj(path, owner=U): sql(f"INSERT INTO storage.objects(bucket_id,name,owner,owner_id) VALUES('entrega-documentos','{path}','{owner}','{owner}');")
@@ -45,7 +46,8 @@ def fixtures():
     INSERT INTO public.entregas(id,organization_id,ordem_servico_id,cliente_id,status,financial_status,assinatura_obrigatoria) VALUES
      ('{E1}','{A}','{O}','{C}','separado','PENDING_BILLING',true),('{E2}','{A}','{O}','{C}','em_rota','PENDING_BILLING',true),
      ('{E3}','{A}','{O}','{C}','separado','PENDING_BILLING',true),('{E4}','{A}','{O}','{C}','cancelada','CANCELED',true),
-     ('{EB}','{B}','{P}','{D}','separado','PENDING_BILLING',true),('{ECX}','{A}','{O}','{C}','separado','PENDING_BILLING',true);
+     ('{EB}','{B}','{P}','{D}','separado','PENDING_BILLING',true),('{ECX}','{A}','{O}','{C}','separado','PENDING_BILLING',true),
+     ('{E5}','{A}','{O}','{C}','separado','PENDING_BILLING',true),('{E6}','{A}','{O}','{C}','em_rota','PENDING_BILLING',true),('{E7}','{A}','{O}','{C}','separado','PENDING_BILLING',true);
     INSERT INTO storage.buckets(id,name,public) VALUES('entrega-documentos','entrega-documentos',false) ON CONFLICT DO NOTHING;
     SET session_replication_role=origin;""")
 
@@ -67,8 +69,14 @@ def main():
     deny('anon cannot execute new attach RPC', "SET ROLE anon; SELECT public.rpc_entrega_comprovante_anexar_v1('%s','k-anon-0001','{}'::jsonb);" % E1, 'permission denied')
     deny('authenticated cannot execute private apply', actor() + f"SELECT platform_private.delivery_proof_apply_20261030('generate','{E1}','k-priv-0001','{{}}');", 'permission denied')
     for sig, call in [('rpc_gerar_formulario_entrega', f"('{E1}')"), ('rpc_coletar_assinatura_digital_entrega', f"('{E1}','{{}}')"), ('rpc_anexar_comprovante_entrega', f"('{E1}','{{}}')")]:
-        deny(f'legacy {sig} closed to authenticated', actor() + f'SELECT public.{sig}{call};', 'permission denied')
-        deny(f'legacy {sig} deny-only even for owner', f'SELECT public.{sig}{call};', 'DELIVERY_LEGACY_CLOSED')
+        deny(f'legacy adapter {sig} closed to anon', f'SET ROLE anon; SELECT public.{sig}{call};', 'permission denied')
+        deny(f'legacy adapter {sig} closed to service_role', f'SET ROLE service_role; SELECT public.{sig}{call};', 'permission denied')
+        deny(f'legacy adapter {sig} without session denied', f'SELECT public.{sig}{call};', 'DELIVERY_PROOF_ACTOR_DENIED')
+    deny('legacy generate adapter cross-tenant FSF denied', actor(V) + f"SELECT public.rpc_gerar_formulario_entrega('{E1}');", 'DELIVERY_PROOF_SCOPE_DENIED')
+    deny('legacy generate adapter external role denied', actor(Y) + f"SELECT public.rpc_gerar_formulario_entrega('{E1}');", 'DELIVERY_PROOF_ACTOR_DENIED')
+    lp = {'arquivo_path': f'entregas/{EB}/comprovantes/{u(520)}.pdf', 'arquivo_nome': 'r.pdf', 'arquivo_mime': 'application/pdf', 'recebedor_nome': 'R'}
+    deny('legacy attach adapter path of another tenant delivery denied', actor() + f"SELECT public.rpc_anexar_comprovante_entrega('{E1}','{json.dumps(lp)}'::jsonb);", 'DELIVERY_PROOF_INVALID: path')
+    deny('legacy attach adapter legacy-only field data_assinatura rejected', actor() + f"SELECT public.rpc_anexar_comprovante_entrega('{E1}','{json.dumps({**lp, 'arquivo_path': f'entregas/{E1}/comprovantes/{u(521)}.pdf', 'data_assinatura': 'x'})}'::jsonb);", 'DELIVERY_PROOF_INVALID: field')
     # Preflight
     ok('preflight positive admin same tenant', actor() + f"SELECT (public.rpc_entrega_comprovacao_preflight_v1('{E1}','attach')->>'allowed')::boolean;")
     deny('preflight cross-tenant FSF admin denied', actor(V) + f"SELECT public.rpc_entrega_comprovacao_preflight_v1('{E1}','attach');", 'DELIVERY_PROOF_SCOPE_DENIED')
@@ -182,6 +190,81 @@ def main():
     sql(f"INSERT INTO public.user_roles(user_id,role) VALUES('{Z}','gestor'); UPDATE public.profiles SET ativo=false WHERE user_id='{Z}';")
     deny('inactive profile cannot replay', attach(E2, 'rep-z-000001', pz, w=Z), 'DELIVERY_PROOF_ACTOR_DENIED')
     sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{Z}';")
+    def ctx_zero(): return "SELECT (SELECT count(*) FROM platform_private.delivery_context_20261030)=0;"
+    # Aplicador WITH a real client link (storage1 rule) — positive, then real link revocation
+    sql(f"SET session_replication_role=replica; INSERT INTO public.user_clientes(user_id,cliente_id,is_active) VALUES('{W}','{C}',true); SET session_replication_role=origin;")
+    ok('preflight aplicador WITH client link allowed', actor(W) + f"SELECT (public.rpc_entrega_comprovacao_preflight_v1('{E5}','attach')->>'allowed')::boolean;")
+    pw = f'entregas/{E5}/comprovantes/{u(701)}.pdf'; obj(pw, W)
+    ok('attach aplicador with client link positive', attach(E5, 'apl-w-000001', pw, w=W) + f"SELECT (SELECT arquivo_path FROM public.entrega_comprovantes WHERE entrega_id='{E5}')='{pw}' AND (SELECT comprovante_anexado_por FROM public.entregas WHERE id='{E5}')='{W}';")
+    ok('success leaves zero permit residue (context removed) and keeps the receipt', ctx_zero()[:-1] + f" AND EXISTS(SELECT 1 FROM platform_private.delivery_requests_20261030 WHERE request_key='apl-w-000001' AND actor='{W}');")
+    sig5 = f'entregas/{E5}/assinaturas/{u(702)}.png'; obj(sig5, W)
+    ok('sign aplicador with client link positive', sign(E5, 'apl-sig-00001', sig5, w=W) + f"SELECT (SELECT assinatura_digital_capturada_por FROM public.entregas WHERE id='{E5}')='{W}';")
+    rev = f"UPDATE public.user_clientes SET revoked_at=now(),is_active=false WHERE user_id='{W}';"
+    unrev = f"SET session_replication_role=replica; UPDATE public.user_clientes SET revoked_at=NULL,is_active=true WHERE user_id='{W}'; SET session_replication_role=origin;"
+    sql(rev)  # real revocation through the normal (gated) path
+    deny('after real link revocation aplicador preflight denied', actor(W) + f"SELECT public.rpc_entrega_comprovacao_preflight_v1('{E5}','attach');", 'DELIVERY_PROOF_SCOPE_DENIED')
+    deny('after real link revocation aplicador cannot replay stored receipt', attach(E5, 'apl-w-000001', pw, w=W), 'DELIVERY_PROOF_SCOPE_DENIED')
+    pw2 = f'entregas/{E5}/comprovantes/{u(703)}.pdf'; obj(pw2, W)
+    deny('after real link revocation aplicador new attach denied', attach(E5, 'apl-w-000002', pw2, w=W), 'DELIVERY_PROOF_SCOPE_DENIED')
+    ok('other staff on same delivery keeps access after aplicador revocation', actor(X) + f"SELECT (public.rpc_entrega_comprovacao_preflight_v1('{E5}','attach')->>'allowed')::boolean;")
+    sql(unrev)
+    # Waits AFTER the gate: storage.objects FOR SHARE and comprovante FOR UPDATE.
+    # (e) ungated revocation (replica = privileged writer bypassing the gate) commits during the storage wait.
+    ps = f'entregas/{E6}/comprovantes/{u(704)}.pdf'; obj(ps, W)
+    holder = T.session('BEGIN;' + f"SELECT 1 FROM storage.objects WHERE name='{ps}' FOR UPDATE;"); time.sleep(.1)
+    worker = T.session(attach(E6, 'apl-st-00001', ps, w=W)); T.wait()
+    sql("SET session_replication_role=replica;" + rev + "SET session_replication_role=origin;")
+    T.finish(holder, 'COMMIT;'); out, err = T.finish(worker)
+    assert 'DELIVERY_PROOF_SCOPE_DENIED' in err, err + out
+    ok('link revoked during storage FOR SHARE wait is denied after the wait, zero writes, zero residue', nowrite(ps)[:-1] + ' AND ' + ctx_zero()[7:])
+    sql(unrev)
+    # (f) same during the comprovante FOR UPDATE wait (E5 already has a proof).
+    pcw = f'entregas/{E5}/comprovantes/{u(705)}.pdf'; obj(pcw, W)
+    holder = T.session('BEGIN;' + f"SELECT 1 FROM public.entrega_comprovantes WHERE entrega_id='{E5}' FOR UPDATE;"); time.sleep(.1)
+    worker = T.session(attach(E5, 'apl-cp-00001', pcw, w=W)); T.wait()
+    sql("SET session_replication_role=replica;" + rev + "SET session_replication_role=origin;")
+    T.finish(holder, 'COMMIT;'); out, err = T.finish(worker)
+    assert 'DELIVERY_PROOF_SCOPE_DENIED' in err, err + out
+    ok('link revoked during comprovante FOR UPDATE wait is denied, zero writes, zero residue', nowrite(pcw)[:-1] + ' AND ' + ctx_zero()[7:])
+    sql(unrev)
+    # (g) role revoked (ungated) during the comprovante wait: actor recheck denies.
+    pcr = f'entregas/{E5}/comprovantes/{u(706)}.pdf'; obj(pcr, W)
+    holder = T.session('BEGIN;' + f"SELECT 1 FROM public.entrega_comprovantes WHERE entrega_id='{E5}' FOR UPDATE;"); time.sleep(.1)
+    worker = T.session(attach(E5, 'apl-cr-00001', pcr, w=W)); T.wait()
+    sql(f"SET session_replication_role=replica; DELETE FROM public.user_roles WHERE user_id='{W}'; SET session_replication_role=origin;")
+    T.finish(holder, 'COMMIT;'); out, err = T.finish(worker)
+    assert 'DELIVERY_PROOF_ACTOR_DENIED' in err or 'DELIVERY_SCOPE_CHANGED' in err, err + out
+    ok('role revoked during comprovante wait is denied, zero writes', nowrite(pcr))
+    sql(f"INSERT INTO public.user_roles(user_id,role) VALUES('{W}','aplicador');")
+    # (h) real gated link revocation during the storage wait is linearized behind the held gate.
+    ps2 = f'entregas/{E6}/comprovantes/{u(707)}.pdf'; obj(ps2, W)
+    holder = T.session('BEGIN;' + f"SELECT 1 FROM storage.objects WHERE name='{ps2}' FOR UPDATE;"); time.sleep(.1)
+    worker = T.session(attach(E6, 'apl-st-00002', ps2, w=W)); T.wait()
+    revoker = T.session(rev); time.sleep(.3)
+    T.finish(holder, 'COMMIT;'); out, err = T.finish(worker); rout, rerr = T.finish(revoker)
+    assert 'ERROR' not in err + rerr, err + rerr
+    ok('gated link revocation during storage wait linearizes after the committed proof', f"SELECT EXISTS(SELECT 1 FROM public.entrega_comprovantes WHERE arquivo_path='{ps2}') AND EXISTS(SELECT 1 FROM public.user_clientes WHERE user_id='{W}' AND revoked_at IS NOT NULL);")
+    ps3 = f'entregas/{E6}/comprovantes/{u(708)}.pdf'; obj(ps3, W)
+    deny('after linearized link revocation the next aplicador proof is denied', attach(E6, 'apl-st-00003', ps3, w=W), 'DELIVERY_PROOF_SCOPE_DENIED')
+    # Concurrent different keys, same freshly uploaded object: exactly one links it (PT409 for the other).
+    pd = f'entregas/{E7}/comprovantes/{u(709)}.pdf'; obj(pd)
+    holder = T.session('BEGIN;' + f"SELECT pg_advisory_xact_lock(hashtext('entrega_proof:{E7}'));"); time.sleep(.1)
+    w1 = T.session(attach(E7, 'dbl-0000001', pd)); w2 = T.session(attach(E7, 'dbl-0000002', pd)); T.wait()
+    T.finish(holder, 'COMMIT;'); o1, e1 = T.finish(w1); o2, e2 = T.finish(w2)
+    assert ('OBJECT_ALREADY_LINKED' in e1 + e2) and ('"success": true' in o1 + o2), e1 + e2 + o1 + o2
+    ok('PT409 OBJECT_ALREADY_LINKED while the object IS linked: SQLSTATE never proves an object is unlinked', f"SELECT (SELECT count(*) FROM public.entrega_comprovantes WHERE arquivo_path='{pd}')=1 AND EXISTS(SELECT 1 FROM storage.objects WHERE name='{pd}');")
+    # Legacy adapters (cached frontends): same contract, old payload shape.
+    out = sql(actor() + f"SELECT public.rpc_gerar_formulario_entrega('{E7}');"); assert '"success": true' in out, out
+    passed('legacy generate adapter works for same-tenant staff through the new contract')
+    lpath = f'entregas/{E7}/comprovantes/{u(710)}.pdf'; obj(lpath)
+    legacy_payload = json.dumps({'arquivo_path': lpath, 'arquivo_nome': 'r.pdf', 'arquivo_mime': 'application/pdf', 'recebedor_nome': 'R', 'recebedor_documento': None, 'recebedor_cargo': None, 'recebedor_telefone': None})
+    ok('legacy attach adapter (old payload) links object with audit and zero residue', actor() + f"SELECT public.rpc_anexar_comprovante_entrega('{E7}','{legacy_payload}'::jsonb); RESET ROLE;" + f"SELECT (SELECT arquivo_path FROM public.entrega_comprovantes WHERE entrega_id='{E7}')='{lpath}' AND (SELECT count(*) FROM platform_private.delivery_context_20261030)=0;")
+    out = sql(actor() + f"SELECT public.rpc_anexar_comprovante_entrega('{E7}','{legacy_payload}'::jsonb);"); assert '"replayed": true' in out, out
+    passed('legacy attach adapter retry with same path replays (idempotent, single audit)')
+    ok('legacy replay kept a single audit row', f"SELECT (SELECT count(*) FROM public.financial_audit_log WHERE new_data->>'arquivo_path'='{lpath}')=1;")
+    lsig = f'entregas/{E7}/assinaturas/{u(711)}.png'; obj(lsig, X)
+    ok('legacy sign adapter (old payload) works for producao staff', actor(X) + f"SELECT public.rpc_coletar_assinatura_digital_entrega('{E7}','{json.dumps({'assinatura_digital_png_path': lsig, 'assinatura_digital_svg': None, 'assinatura_hash': 'b'*64, 'assinatura_user_agent': 'old', 'recebedor_nome': 'R'})}'::jsonb);" + f"SELECT (SELECT assinatura_digital_png_path FROM public.entrega_comprovantes WHERE entrega_id='{E7}')='{lsig}';")
+    deny('legacy attach adapter cross-tenant FSF on AR Bio delivery denied', actor(V) + f"SELECT public.rpc_anexar_comprovante_entrega('{E7}','{legacy_payload}'::jsonb);", 'DELIVERY_PROOF_SCOPE_DENIED')
     # Concurrency: same key twice, second waits and replays
     pc = f'entregas/{E2}/comprovantes/{u(611)}.pdf'; obj(pc)
     holder = T.session('BEGIN;' + f"SELECT pg_advisory_xact_lock(hashtext('entrega_proof:{E2}'));"); time.sleep(.1)
@@ -201,7 +284,9 @@ def main():
     sql((H / 'rollback.sql.review').read_text())
     deny('after rollback new RPC closed to clients', gen(E2, 'post-rb-00001'), 'permission denied')
     deny('after rollback apply deny-only', f"SELECT platform_private.delivery_proof_apply_20261030('generate','{E2}','post-rb-00002','{{}}');", 'DELIVERY_PROOF_ROLLBACK_CLOSED')
-    deny('after rollback legacy still closed', f"SELECT public.rpc_gerar_formulario_entrega('{E2}');", 'DELIVERY_LEGACY_CLOSED')
+    deny('after rollback legacy adapters closed to clients', actor() + f"SELECT public.rpc_gerar_formulario_entrega('{E2}');", 'permission denied')
+    deny('after rollback legacy adapters deny-only', f"SELECT public.rpc_gerar_formulario_entrega('{E2}');", 'DELIVERY_LEGACY_CLOSED')
+    ok('zero permit residue at the end', ctx_zero())
     deny('after rollback barrier still closes direct writes', f"UPDATE public.entregas SET comprovante_status='x' WHERE id='{E2}';", 'DELIVERY_MUTATION_CLOSED')
     ok('rollback preserved history', f"SELECT count(*)={hist} FROM platform_private.delivery_requests_20261030;")
     print('ELAPSED', round(time.monotonic() - t0, 1), flush=True)

@@ -21,7 +21,7 @@ HELPERS = ['platform_private.storage1_delivery_allowed(p_name text, p_action tex
            'public.fn_entrega_comprovante_preservar_encerrado_v1()', 'public.fn_sync_entrega_financial_status()']
 NEW = ['platform_private.delivery_proof_actor_20261030', 'platform_private.delivery_proof_row_ok_20261030',
        'platform_private.delivery_proof_gate_20261030', 'platform_private.delivery_proof_payload_20261030',
-       'platform_private.delivery_proof_apply_20261030', 'public.rpc_entrega_comprovacao_preflight_v1',
+       'platform_private.delivery_proof_apply_20261030', 'platform_private.delivery_proof_recheck_20261030', 'public.rpc_entrega_comprovacao_preflight_v1',
        'public.rpc_entrega_formulario_gerar_v1', 'public.rpc_entrega_assinatura_coletar_v1',
        'public.rpc_entrega_comprovante_anexar_v1']
 REPLACED = ['platform_private.delivery_mutation_guard_20261030', 'public.rpc_gerar_formulario_entrega',
@@ -72,22 +72,27 @@ def post():
     if exp.exists():
         for i, x in enumerate(json.loads(exp.read_text())):
             lines.append(f"IF {x['expression']} IS DISTINCT FROM {lit(json.dumps(x['expected']))}::jsonb THEN RAISE EXCEPTION 'DELIVERY_PROOF_POST_DRIFT: {i}'; END IF;")
-    for f in NEW[:5] + ['platform_private.delivery_mutation_guard_20261030']:
+    for f in NEW[:6] + ['platform_private.delivery_mutation_guard_20261030']:
         lines.append(f"IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname||'.'||p.proname={lit(f)} AND (has_function_privilege('authenticated',p.oid,'EXECUTE') OR has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('service_role',p.oid,'EXECUTE'))) THEN RAISE EXCEPTION 'DELIVERY_PROOF_POST_PRIVATE_ACL: %',{lit(f)}; END IF;")
     for sig in ['public.rpc_entrega_comprovacao_preflight_v1(uuid,text)', 'public.rpc_entrega_formulario_gerar_v1(uuid,text)',
                 'public.rpc_entrega_assinatura_coletar_v1(uuid,text,jsonb)', 'public.rpc_entrega_comprovante_anexar_v1(uuid,text,jsonb)']:
         lines.append(f"IF NOT has_function_privilege('authenticated',{lit(sig)},'EXECUTE') OR has_function_privilege('anon',{lit(sig)},'EXECUTE') OR has_function_privilege('service_role',{lit(sig)},'EXECUTE') THEN RAISE EXCEPTION 'DELIVERY_PROOF_POST_RPC_ACL: %',{lit(sig)}; END IF;")
     for sig in ['public.rpc_gerar_formulario_entrega(uuid)', 'public.rpc_coletar_assinatura_digital_entrega(uuid,jsonb)', 'public.rpc_anexar_comprovante_entrega(uuid,jsonb)']:
-        lines.append(f"IF has_function_privilege('authenticated',{lit(sig)},'EXECUTE') OR has_function_privilege('service_role',{lit(sig)},'EXECUTE') OR has_function_privilege('anon',{lit(sig)},'EXECUTE') THEN RAISE EXCEPTION 'DELIVERY_PROOF_POST_LEGACY_OPEN: %',{lit(sig)}; END IF;")
+        # Hardened adapters: authenticated only (cached frontends), never anon/service.
+        lines.append(f"IF NOT has_function_privilege('authenticated',{lit(sig)},'EXECUTE') OR has_function_privilege('service_role',{lit(sig)},'EXECUTE') OR has_function_privilege('anon',{lit(sig)},'EXECUTE') THEN RAISE EXCEPTION 'DELIVERY_PROOF_POST_LEGACY_ACL: %',{lit(sig)}; END IF;")
     lines.append("IF has_table_privilege('authenticated','public.entregas','UPDATE') OR has_table_privilege('authenticated','public.entrega_comprovantes','UPDATE') THEN RAISE EXCEPTION 'DELIVERY_PROOF_POST_DML_OPEN'; END IF;")
     return 'DO $post$ BEGIN\n' + '\n'.join(lines) + '\nEND $post$;\n'
 
-ROLLBACK = """-- Deny-only rollback: keeps history, requests, barrier and closed legacy writers.
+ROLLBACK = """-- Deny-only rollback: keeps history, requests and barrier; closes new RPCs AND legacy adapters.
 BEGIN; SET LOCAL lock_timeout='3s';
 REVOKE ALL ON FUNCTION public.rpc_entrega_comprovacao_preflight_v1(uuid,text),public.rpc_entrega_formulario_gerar_v1(uuid,text),public.rpc_entrega_assinatura_coletar_v1(uuid,text,jsonb),public.rpc_entrega_comprovante_anexar_v1(uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
 CREATE OR REPLACE FUNCTION platform_private.delivery_proof_apply_20261030(p_action text,p_entrega uuid,p_request_key text,p_payload jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RAISE EXCEPTION 'DELIVERY_PROOF_ROLLBACK_CLOSED' USING ERRCODE='42501';END$$;
 CREATE OR REPLACE FUNCTION public.rpc_entrega_comprovacao_preflight_v1(p_entrega_id uuid,p_action text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RAISE EXCEPTION 'DELIVERY_PROOF_ROLLBACK_CLOSED' USING ERRCODE='42501';END$$;
 REVOKE ALL ON FUNCTION platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+CREATE OR REPLACE FUNCTION public.rpc_gerar_formulario_entrega(p_entrega_id uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RAISE EXCEPTION 'DELIVERY_LEGACY_CLOSED' USING ERRCODE='42501';END$$;
+CREATE OR REPLACE FUNCTION public.rpc_coletar_assinatura_digital_entrega(p_entrega_id uuid,p_payload jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RAISE EXCEPTION 'DELIVERY_LEGACY_CLOSED' USING ERRCODE='42501';END$$;
+CREATE OR REPLACE FUNCTION public.rpc_anexar_comprovante_entrega(p_entrega_id uuid,p_payload jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RAISE EXCEPTION 'DELIVERY_LEGACY_CLOSED' USING ERRCODE='42501';END$$;
+REVOKE ALL ON FUNCTION public.rpc_gerar_formulario_entrega(uuid),public.rpc_coletar_assinatura_digital_entrega(uuid,jsonb),public.rpc_anexar_comprovante_entrega(uuid,jsonb) FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;
 """
 
@@ -98,5 +103,21 @@ def build():
     (H / 'postflight.sql.review').write_text(q)
     (H / 'install.sql.review').write_text("-- INACTIVE. Apply only after delivery-atomic-hardening install, in the same window.\nBEGIN; SET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='30s';\n" + p + cand + '\n' + q + 'COMMIT;\n')
     (H / 'rollback.sql.review').write_text(ROLLBACK)
+    build_release()
+
+def build_release():
+    """Single coordinated backend transaction: atomic install + proof install.
+    No window where the barrier is closed and proof writers are not migrated."""
+    a = (ATOMIC / 'install.sql.review').read_text().rstrip()
+    b = (H / 'install.sql.review').read_text()
+    assert a.endswith('COMMIT;'), 'atomic installer must end with COMMIT'
+    head = "BEGIN; SET LOCAL lock_timeout='3s'; SET LOCAL statement_timeout='30s';\n"
+    assert head in b
+    a_body = a[:-len('COMMIT;')]
+    b_body = b.split(head, 1)[1]
+    (H / 'release-combined.sql.review').write_text(
+        "-- INACTIVE. Coordinated release: delivery-atomic-hardening + delivery-proof in ONE transaction.\n"
+        "-- Deploy order: this file (backend) first, then the frontend. Cached frontends keep working\n"
+        "-- through the hardened legacy adapters; the new frontend needs the new RPCs.\n" + a_body + "\n-- ===== proof package =====\n" + b_body)
 
 if __name__ == '__main__': build()
