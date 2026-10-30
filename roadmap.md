@@ -1085,3 +1085,4 @@
 - [x] Adaptadores legados endurecidos + release-combined (uma transação), depois frontend; AGENTS raiz restaurado.
 - [ ] Instalação hosted e prova JWT/RLS/Storage real: aguarda revisão do proprietário do artefato exato.
 - [ ] Liberação restrita entregas grupo/cancelamento: candidato `scripts/delivery-group-capability-20261030/` (42 PASS PG local) aguardando revisão/aplicação do proprietário e prova real com sessão AR Bio (bloqueio possível: lote disponível canônico).
+- [ ] Entrega em grupo: grant/capability fechados até a cadeia produto→OS→aprovação→programação→lote→CQ→envase existir na AR Bio. Próximo pacote: rebase de `stock-envase-recovery` sobre o motor pós-atômico (pin `rpc_estoque_operar_v1` 44b150bf…), transição envase→pronto_entrega e entrada reservado-para-OS ↔ entrega (ver `scripts/delivery-group-capability-20261030/PREREQUISITES.md`).
