@@ -6,7 +6,7 @@
   {
     "test": "installer contains exact POST pins",
     "status": "PASS",
-    "pins": 13
+    "pins": 14
   },
   {
     "test": "PRE refuses real legacy body drift; nothing installed",
