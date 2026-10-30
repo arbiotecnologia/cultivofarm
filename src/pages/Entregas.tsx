@@ -116,7 +116,7 @@ export default function Entregas() {
   const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {
     try {
       // create/cancel probe the server capability inside the work, before any dispatch.
-      if (target !== "create" && target !== "cancel") requireDeliveryOperationContract("delivery");
+      if (target !== "create" && target !== "cancel" && target !== "replay") requireDeliveryOperationContract("delivery");
     } catch (error) {
       const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;
       setOperationNotice(message);
