@@ -12,7 +12,7 @@ def build():
     pre=[]
     for f in funcs:
         assert hashlib.md5(f['body'].encode()).hexdigest()==f['md5']
-        pre.append(f"IF (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure({lit(f['signature'])})) IS DISTINCT FROM {lit(f['md5'])} THEN RAISE EXCEPTION 'DELIVERY_PRE_FUNCTION_DRIFT: %',{lit(f['signature'])}; END IF;")
+        pre.append(f"IF NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname={lit(f['schema'])} AND p.proname={lit(f['name'])} AND format('%I.%I(%s)',n.nspname,p.proname,pg_get_function_identity_arguments(p.oid))={lit(f['signature'])} AND md5(pg_get_functiondef(p.oid))={lit(f['md5'])}) THEN RAISE EXCEPTION 'DELIVERY_PRE_FUNCTION_DRIFT: %',{lit(f['signature'])}; END IF;")
     for x in j['indexes']:
         if x['table'] not in graph['destinations']:continue
         pre.append(f"IF pg_get_indexdef(to_regclass({lit(x['schema']+'.'+x['name'])})) IS DISTINCT FROM {lit(x['definition'])} THEN RAISE EXCEPTION 'DELIVERY_PRE_INDEX_DRIFT: %',{lit(x['name'])}; END IF;")
