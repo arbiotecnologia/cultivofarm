@@ -55,3 +55,9 @@ Ainda indisponível. Pré-requisitos concretos em `PREREQUISITES.md`; o roteiro 
   - Unitário: X/Y sem sobrescrita, limpeza condicional, marcação.
   - Os dois consumidores rodam no mesmo documento, **não** em abas reais do navegador.
 - **Infra de teste:** o mock de `localStorage` em `src/test/setup.ts` agora implementa `length`/`key`. As suítes de portal/navegação que o usam passaram (9 arquivos / 91 PASS).
+
+## Rebase sobre a composição v2 (30/10)
+- O PRE do grupo foi rebaseado para o hash POST do v2 (`v2-post-hashes.json`). ACL e owner continuam os aplicados.
+- Ordem: release-combined → v2 → este delta.
+- `test_capability_pg.py`: **44 PASS / 0 FAIL**, 281 s, sobre a composição real. Inclui dois casos novos: o PRE recusa a base antiga sem v2; v2 instalado com PRE/POST exatos.
+- O delta continua não autorizado (EXECUTE global).

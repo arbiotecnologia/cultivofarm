@@ -70,3 +70,31 @@ Gerado por `assemble_v2.py` a partir de `capture/current.json` e `post-expected.
 Os grants de harness são só locais. O cancelamento de reserva do cockpit (`rpc_cockpit_cancelar_reserva_v1`) fica fora do v2, sem alteração.
 
 **Limites:** dados de upstream são carregados estaticamente (replica) para estágios já LIVE. Não é prova JWT/RLS/Storage hosted. Ver `LOT-GUARD-INVENTORY.md` e `../delivery-group-capability-20261030/PREREQUISITES.md`.
+
+## Revisão 3bb53cc — repetição exata antes das exigências de envio novo (30/10)
+
+**Defeito corrigido:** no grupo do v2, a checagem do estado do estoque (`reservado`/`disponivel`) vinha antes da leitura do recibo. Depois do commit, o estoque fica `expedido`, e a repetição exata falhava com `DELIVERY_STOCK_UNAVAILABLE`. O mesmo valia para a CAS da OS depois do lock.
+
+**Nova ordem:** ator/tenant → OS no escopo (antes da trava) → fingerprint → trava advisory da requisição → reautenticação → gate → OS `FOR UPDATE` com escopo (org/B2B/origem) → **recibo**. No recibo:
+- fingerprint igual, senão `DELIVERY_REPLAY_CONFLICT`;
+- cliente inalterado durante a espera e ainda no tenant;
+- toda entrega do recibo pertence a esse tenant/OS/cliente;
+- reautorização imediatamente antes do retorno.
+
+Somente depois vêm CAS, status, cliente e estado do estoque do envio novo. A checagem de CAS antes do lock foi removida, porque a mesma checagem existe depois do lock.
+
+**`stock_envase_complete_v1`:** nova reautorização após as esperas de programação/lote/CQ e imediatamente antes da primeira mutação. A repetição com OS já `pronto_entrega` só responde depois de reautorizar.
+
+**Resultados (PG descartável, restauração completa):**
+- `test_v2_pg.py`: **48 PASS / 0 FAIL**, 240 s. Novos casos:
+  - repetição exata dos grupos misto, só reservado e só livre: mesmos IDs e zero mutações (hash de entregas/estoque/movimentos/recibos/OS);
+  - repetição depois de a OS mudar de revisão;
+  - mesma chave com payload diferente → conflito;
+  - tenant B → `DELIVERY_SCOPE_DENIED`; ator inativo → negado, sem mutação;
+  - cancelamento: repetição exata (`replay=true`, zero mutações) e motivo diferente → conflito;
+  - repetição do grupo depois do cancelamento devolve o recibo original sem recriar nada.
+- `test_atomic_with_v2.py` (atômico → comprovação → v2): **97 PASS / 0 FAIL / 0 BLOCKED**, com resultados gravados desta execução.
+  - Uma caracterização muda por desenho: quem trava a linha diretamente e depois chama o lote (agora com gate) contra o grupo (com gate) → o PostgreSQL resolve um impasse (40P01); o lote confirmou, o grupo abortou, sem efeito parcial.
+  - Isso só ocorre com quem trava a linha diretamente, o que clientes não podem fazer. Três writers legados `service_role` (`reservar_estoque_item`, `rpc_cockpit_cancelar_reserva_v1`, criação `/5`) travam a linha sem gate; o `/5` só é chamado dentro do grupo, que já tem o gate.
+- `test_proof_with_v2.py`: **103 PASS / 0 FAIL**. Restaura os artefatos do pacote de comprovação que ele reescreve.
+- **Falha corrigida no harness:** `test_atomic_with_proof.py` (pacote de comprovação) lia `test-results.json` gravado só sob `__main__`, ou seja, um arquivo possivelmente antigo. Os wrappers novos gravam os checks da própria execução. O total antigo daquele wrapper não deve ser tomado como prova.
