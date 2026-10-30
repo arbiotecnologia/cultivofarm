@@ -1,0 +1,267 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index a4d928374..5a1d70361 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -78,7 +78,7 @@
+ - Cockpit/application business-conflict deltas follow scripts/business-conflicts-cockpit-application-20261027/AGENTS.md; only exact pinned RAISEs change, with no automatic retry or legacy reopening — preserves genuine serialization and authorization.
+ - Catalog-label business-conflict delta follows scripts/catalog-label-conflicts-20261027/AGENTS.md; only pinned label RAISEs move to PT409, shared replay helper stays 40001 — keeps scope minimal.
+ - Delivery recovery follows scripts/os-delivery-reopening-20261027/AGENTS.md; hardening never implies release of stock/ledger dependencies or client EXECUTE — prevents unsafe transitive reopening.
+-- Stock/envase recovery follows scripts/stock-envase-recovery-20261027/AGENTS.md; immutable CQ/lot fences and canonical ledger proofs survive recovery — prevents status shortcuts and forged contexts.
++- Stock/envase recovery and its isolated delta follow their nested AGENTS.md; CQ/lot/ledger fences and closed release survive recovery — prevents grant-only activation and forged contexts.
+ - Delivery-finance A2 follow scripts/delivery-finance-a2-20261028/AGENTS.md — read before changing that area.
+ - Order-flow reconciliation updates the original nine-stage plan and labels captured LIVE, externally reported installs and inactive candidates separately; migrate equivalent consumers before direct-write closure — prevents false release claims and broken screens.
+ - Delivery billing UI reconciles existing tenant-owned titles through scoped reads only while A2/value/fiscal authority is uninstalled or unproven; never redispatch financial or fiscal writes — prevents duplicate billing and false partial rollback.
+diff --git a/src/components/cockpit/RegistrarEnvaseDialog.tsx b/src/components/cockpit/RegistrarEnvaseDialog.tsx
+index c073c6252..d23790d8b 100644
+--- a/src/components/cockpit/RegistrarEnvaseDialog.tsx
++++ b/src/components/cockpit/RegistrarEnvaseDialog.tsx
+@@ -175,7 +175,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
+       return;
+     }
+     if (excedeSaldo) {
+-      toast.error(`Volume (${fmtL(volSolicitado)}) excede o saldo disponível (${fmtL(saldo!.saldo)}).`);
++      toast.error(`Volume (${fmtL(volSolicitado)}) excede o saldo disponível (${fmtL(saldo?.saldo ?? 0)}).`);
+       return;
+     }
+     if (!validade) {
+@@ -400,7 +400,8 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
+           <Button
+             type="submit"
+             className="w-full font-bold"
+-            disabled={saving || volSolicitado <= 0 || !validade || excedeSaldo || loteSemProducao}
++            disabled
++            title="Envase indisponível até revisão do contrato canônico"
+           >
+             {saving ? "Registrando..." : "Registrar envase e avançar esteira"}
+           </Button>
+diff --git a/src/hooks/AGENTS.md b/src/hooks/AGENTS.md
+index d007b6a8e..0d23f346d 100644
+--- a/src/hooks/AGENTS.md
++++ b/src/hooks/AGENTS.md
+@@ -17,3 +17,4 @@
+ 
+ - Legacy individual reservation, delivery creation/confirmation and reservation cancellation stay contained before dispatch; deferEffects, overrides and split UUID callbacks cannot open them. Reviewed independent batch reservation is unchanged — prevents delivery consumers bypassing pre-dispatch containment.
+ - Blocked delivery finance exposes only scoped existing-title reconciliation, with no creation form/catalogue reads or write callbacks; fresh empty reads never prove rollback — preserves honest read-only access.
++- Envase dispatch requires an exact scoped availability probe, synchronous per-mount lock and shared readiness/roles/authz epoch fence; uncertain attempts stay frozen and stored — prevents stale-session adoption or grant-only client activation.
+diff --git a/src/hooks/useEsteiraLaboratorio.ts b/src/hooks/useEsteiraLaboratorio.ts
+index 645011486..d807647a5 100644
+--- a/src/hooks/useEsteiraLaboratorio.ts
++++ b/src/hooks/useEsteiraLaboratorio.ts
+@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useAuth } from "@/hooks/useAuth";
+ import { dispatchEnvase, loadEnvaseAttempts, type EnvaseArgs, type EnvaseAttempt, type EnvaseRpc } from "@/lib/envase/envaseFlow";
++import { probeEnvaseAvailability } from "@/lib/envase/envaseAvailability";
++import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { toast } from "sonner";
+ import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
+ import { montarDadosEntrega, validarRespostaCriarEntrega } from "@/lib/entregas/payloadEntrega";
+@@ -77,6 +79,8 @@ const ENVASE_REVIEWED_HINT = "Para OS manual, registre o envase (Cockpit ou pág
+ 
+ export function useEsteiraLaboratorio() {
+   const { user, profile } = useAuth() as any;
++  const envaseScope = useStorageAccessScope("envase-canonical");
++  const envaseBusy = useRef(false);
+   // Latest identity, read after every await (fence): a late envase result never lands in another session/tenant.
+   const identityRef = useRef<{ actorId: string | null; orgId: string | null }>({ actorId: null, orgId: null });
+   // Identity generation: bumps on EVERY actor/org change and on unmount, so a response started under an earlier
+@@ -364,13 +368,14 @@ export function useEsteiraLaboratorio() {
+     const epoch = epochRef.current;
+     let store: Storage | null = null;
+     try { store = window.localStorage; } catch { store = null; }
+-    if (!actorId || !orgId || !store || !params.idempotencyKey) {
++    if (!actorId || !orgId || !store || !params.idempotencyKey || !envaseScope.ready || envaseBusy.current) {
+       toast.error("Sessão, empresa ou recuperação local indisponível. Nenhuma alteração foi enviada.");
+       return null;
+     }
++    const currentScope = envaseScope.capture();
+     const fence = () => {
+       const now = identityRef.current;
+-      if (epochRef.current !== epoch || now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
++      if (!currentScope() || epochRef.current !== epoch || now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
+     };
+     // A previous uncertain attempt for this lot is replayed EXACTLY (same key/args); a new key is never minted.
+     const all = loadEnvaseAttempts(store, actorId, orgId, params.loteId);
+@@ -390,11 +395,20 @@ export function useEsteiraLaboratorio() {
+     const attempt: EnvaseAttempt = pending ?? { args, actorId, orgId };
+     if (pending) toast.info("Há um envase anterior deste lote com resultado incerto: repetindo exatamente o mesmo envio (mesma chave e mesmos dados).");
+     let outcome;
++    envaseBusy.current = true;
+     try {
++      const available = await probeEnvaseAvailability(supabase.rpc.bind(supabase) as unknown as EnvaseRpc, attempt, fence);
++      fence();
++      if (!available) {
++        toast.error("Envase temporariamente indisponível. Nenhuma alteração foi enviada.");
++        return null;
++      }
+       outcome = await dispatchEnvase(supabase.rpc.bind(supabase) as unknown as EnvaseRpc, store, attempt, !!pending, fence);
+     } catch (error: any) {
+       toast.error(error?.message === "ENVASE_SCOPE_CHANGED" ? "Sessão ou empresa alterada. Nada foi enviado." : (error?.message || "Recuperação local indisponível. Nenhuma alteração foi enviada."));
+       return null;
++    } finally {
++      envaseBusy.current = false;
+     }
+     if (outcome.status === "stale") { toast.error("Sessão ou empresa alterada durante o envio. O resultado não foi adotado; o envase pendente segue vinculado à sessão original."); return null; }
+     if (outcome.status === "uncertain") { toast.error("Resposta incerta do envase: pode ter sido gravado. Consulte o histórico; um novo envio deste lote repetirá exatamente o mesmo pedido."); return null; }
+diff --git a/src/lib/envase/envaseAvailability.ts b/src/lib/envase/envaseAvailability.ts
+new file mode 100644
+index 000000000..1672b15df
+--- /dev/null
++++ b/src/lib/envase/envaseAvailability.ts
+@@ -0,0 +1,24 @@
++import type { EnvaseAttempt, EnvaseRpc } from './envaseFlow';
++
++export const ENVASE_CAPABILITY_RPC = 'rpc_envase_capability_v1';
++/** Exact availability only; the writer must independently authorize the transaction. */
++export function envaseCapabilityMatches(data: unknown, attempt: EnvaseAttempt): boolean {
++  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
++  const v = data as Record<string, unknown>;
++  const keys = ['capability', 'available', 'actor_id', 'organization_id', 'lote_id', 'os_id', 'programacao_id'];
++  return Object.keys(v).length === keys.length && keys.every(k => k in v) &&
++    v.capability === 'envase_isolated_v1' && v.available === true &&
++    v.actor_id === attempt.actorId && v.organization_id === attempt.orgId &&
++    v.lote_id === attempt.args.p_lote_id && v.os_id === attempt.args.p_os_id && v.programacao_id === attempt.args.p_programacao_id;
++}
++export async function probeEnvaseAvailability(rpc: EnvaseRpc, attempt: EnvaseAttempt, fence: () => void): Promise<boolean> {
++  fence();
++  try {
++    const { data, error } = await rpc(ENVASE_CAPABILITY_RPC, {
++      p_lote: attempt.args.p_lote_id, p_os: attempt.args.p_os_id,
++      p_prog: attempt.args.p_programacao_id, p_origem: attempt.args.p_origem,
++    });
++    fence();
++    return !error && envaseCapabilityMatches(data, attempt);
++  } catch { return false; }
++}
+\ No newline at end of file
+diff --git a/src/pages/EnvasePage.tsx b/src/pages/EnvasePage.tsx
+index d02741fac..1ef6f9dcd 100644
+--- a/src/pages/EnvasePage.tsx
++++ b/src/pages/EnvasePage.tsx
+@@ -390,7 +390,7 @@ export default function EnvasePage() {
+         ) : canManage && lotesComplementares.length > 0 && (
+           <Dialog open={open} onOpenChange={setOpen}>
+             <DialogTrigger asChild>
+-              <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Envase complementar</Button>
++              <Button disabled title="Envase indisponível até revisão do contrato canônico" className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Envase complementar</Button>
+             </DialogTrigger>
+             <DialogContent className="max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
+               <DialogHeader><DialogTitle>Envase complementar</DialogTitle></DialogHeader>
+diff --git a/src/test/envase/envaseAvailability.test.ts b/src/test/envase/envaseAvailability.test.ts
+new file mode 100644
+index 000000000..69225736b
+--- /dev/null
++++ b/src/test/envase/envaseAvailability.test.ts
+@@ -0,0 +1,21 @@
++import { describe, expect, it, vi } from 'vitest';
++import { envaseCapabilityMatches, probeEnvaseAvailability, ENVASE_CAPABILITY_RPC } from '@/lib/envase/envaseAvailability';
++import type { EnvaseAttempt } from '@/lib/envase/envaseFlow';
++const a: EnvaseAttempt = { actorId: 'AR', orgId: 'ARBIO', args: { p_lote_id:'lot',p_os_id:'os',p_programacao_id:'pp',p_origem:'manual',p_linhas:[],p_validade:'2027-01-01',p_operador:null,p_idempotency_key:'key-00001',p_permitir_parcial:false,p_motivo_parcial:null } };
++const cap = { capability:'envase_isolated_v1', available:true, actor_id:'AR',organization_id:'ARBIO',lote_id:'lot',os_id:'os',programacao_id:'pp' };
++describe('isolated envase availability', () => {
++  it('requires exact scope and envelope, never delivery capability', () => {
++    expect(envaseCapabilityMatches(cap,a)).toBe(true);
++    for (const patch of [{available:false},{available:'true'},{organization_id:'FSF'},{actor_id:'FSF'},{lote_id:'foreign'},{os_id:'other'},{programacao_id:'other'},{capability:'delivery_operations_v1'},{extra:true}]) expect(envaseCapabilityMatches({...cap,...patch},a)).toBe(false);
++  });
++  it('absent capability/errors fail closed', async () => {
++    const rpc=vi.fn().mockResolvedValue({data:null,error:{code:'PGRST202'}});
++    expect(await probeEnvaseAvailability(rpc,a,()=>{})).toBe(false);
++    expect(rpc).toHaveBeenCalledExactlyOnceWith(ENVASE_CAPABILITY_RPC,{p_lote:'lot',p_os:'os',p_prog:'pp',p_origem:'manual'});
++  });
++  it('scope changes during preflight never adopt availability', async () => {
++    let current=true;
++    const rpc=vi.fn().mockImplementation(async()=>{current=false;return {data:cap,error:null};});
++    expect(await probeEnvaseAvailability(rpc,a,()=>{if(!current)throw new Error('stale');})).toBe(false);
++  });
++});
+\ No newline at end of file
+diff --git a/src/test/envase/envaseFlow.test.tsx b/src/test/envase/envaseFlow.test.tsx
+index 250bf5a5a..240ca353c 100644
+--- a/src/test/envase/envaseFlow.test.tsx
++++ b/src/test/envase/envaseFlow.test.tsx
+@@ -1,9 +1,10 @@
+ import { describe, it, expect, vi, beforeEach } from "vitest";
+ import { renderHook, act } from "@testing-library/react";
+ import { classifyEnvaseError, parseEnvaseAck, ENVASE_RPC, saveEnvaseAttempt, clearEnvaseAttempt, loadEnvaseAttempts, type EnvaseAttempt } from "@/lib/envase/envaseFlow";
++import { ENVASE_CAPABILITY_RPC } from "@/lib/envase/envaseAvailability";
+ 
+ const t = vi.hoisted(() => ({ inv: vi.fn(), rpc: vi.fn(), from: vi.fn(), auth: { user: { id: "a1" }, profile: { organization_id: "org-A" } } as any, toast: { error: vi.fn(), info: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
+-vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...a: any[]) => t.rpc(...a), from: (...a: any[]) => t.from(...a) } }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (fn: string, args: any) => fn === "rpc_envase_capability_v1" ? Promise.resolve({ error: null, data: { capability: "envase_isolated_v1", available: true, actor_id: t.auth.user.id, organization_id: t.auth.profile.organization_id, lote_id: args.p_lote, os_id: args.p_os, programacao_id: args.p_prog } }) : t.rpc(fn, args), from: (...a: any[]) => t.from(...a) } }));
+ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
+ vi.mock("@/hooks/useCockpitQuery", () => ({ useCockpitQuery: () => ({ data: [] }) }));
+ vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: t.inv }) }));
+@@ -18,7 +19,8 @@ const envCalls = () => t.rpc.mock.calls.filter((c: any[]) => c[0] === ENVASE_RPC
+ const slotK = (k: string, a = "a1", o = "org-A") => `cf:envase-uncertain:v2:${a}:${o}:${LOTE}:${k}`;
+ const slot = slotK("k-1");
+ 
+-beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; });
++const readyAuth = (actor = "a1", org = "org-A", epoch = 0) => ({ user: { id: actor }, profile: { user_id: actor, organization_id: org, ativo: true, senha_provisoria: false }, roles: ["producao"], loading: false, authzReady: true, authzEpoch: epoch });
++beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); t.auth = readyAuth(); });
+ 
+ describe("envase error/ACK contract", () => {
+   it("only allowlisted business refusals are definitive", () => {
+@@ -103,7 +105,8 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
+     const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
+     let p: Promise<any> = Promise.resolve();
+     act(() => { p = result.current.registrarEnvaseTransacional(params("k-1")); });
+-    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-B" } }; rerender();
++    await act(async () => { await Promise.resolve(); });
++    t.auth = readyAuth("a1", "org-B"); rerender();
+     await act(async () => { release({ data: ack, error: null }); expect(await p).toBeNull(); });
+     expect(t.toast.success).not.toHaveBeenCalled();
+     expect(localStorage.getItem(slot)).not.toBeNull();
+@@ -133,12 +136,12 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
+     t.rpc.mockResolvedValueOnce({ data: null, error: { message: "Failed to fetch" } });
+     const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
+     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-1")); });
+-    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-B" } }; rerender();
++    t.auth = readyAuth("a1", "org-B"); rerender();
+     t.rpc.mockResolvedValueOnce({ data: ack, error: null });
+     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-b")); });
+     expect(envCalls()[1][1].p_idempotency_key).toBe("k-b");
+     expect(localStorage.getItem(slot)).not.toBeNull();
+-    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; rerender();
++    t.auth = readyAuth(); rerender();
+     t.rpc.mockResolvedValueOnce({ data: replayAck, error: null });
+     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-new")); });
+     expect(envCalls()[2][1].p_idempotency_key).toBe("k-1");
+@@ -156,7 +159,7 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
+     await act(async () => { await Promise.resolve(); });
+     expect(envCalls()).toHaveLength(1);
+     t.auth = other as any; rerender();
+-    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; rerender();
++    t.auth = readyAuth(); rerender();
+     await act(async () => { release({ data: ack, error: null }); expect(await p).toBeNull(); });
+     expect(t.toast.success).not.toHaveBeenCalled();
+     expect(t.toast.info).not.toHaveBeenCalled();
+@@ -170,6 +173,7 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
+     const { result, unmount } = renderHook(() => useEsteiraLaboratorio());
+     let p: Promise<any> = Promise.resolve();
+     act(() => { p = result.current.registrarEnvaseTransacional(params("k-1")); });
++    await act(async () => { await Promise.resolve(); });
+     unmount();
+     release({ data: ack, error: null }); expect(await p).toBeNull();
+     expect(t.toast.success).not.toHaveBeenCalled(); expect(t.inv).not.toHaveBeenCalled();
+@@ -182,4 +186,21 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
+     });
+     expect(t.rpc).not.toHaveBeenCalled();
+   });
++  it("same actor/tenant authorization epoch change fences late ACK without clearing pending", async () => {
++    let release: ((value: any) => void) | undefined;
++    t.rpc.mockImplementationOnce(() => new Promise(r => { release = r; }));
++    const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
++    let p: Promise<any> = Promise.resolve();
++    await act(async () => { p = result.current.registrarEnvaseTransacional(params("epoch-1")); await Promise.resolve(); });
++    t.auth = readyAuth("a1", "org-A", 1); rerender();
++    await act(async () => { release?.({ data: ack, error: null }); expect(await p).toBeNull(); });
++    expect(localStorage.getItem(slotK("epoch-1"))).not.toBeNull();
++    expect(t.inv).not.toHaveBeenCalled();
++  });
++  it("revoked readiness sends no canonical writer", async () => {
++    t.auth = { ...readyAuth(), authzReady: false };
++    const { result } = renderHook(() => useEsteiraLaboratorio());
++    await act(async () => { expect(await result.current.registrarEnvaseTransacional(params("closed-1"))).toBeNull(); });
++    expect(envCalls()).toHaveLength(0);
++  });
+ });
