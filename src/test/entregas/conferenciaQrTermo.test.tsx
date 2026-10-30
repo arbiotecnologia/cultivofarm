@@ -60,91 +60,10 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("ConferenciaEmbalagemQR", () => {
-  const digitar = (valor: string) =>
-    fireEvent.change(screen.getByLabelText(/Código da embalagem/i), { target: { value: valor } });
-
-  it("Enter com campo vazio não chama a RPC", () => {
-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
-    fireEvent.keyDown(screen.getByLabelText(/Código da embalagem/i), { key: "Enter" });
-    expect(rpcMock).not.toHaveBeenCalled();
-  });
-
-  it("Enter duplo durante a leitura não duplica a movimentação", async () => {
-    const d = deferred<any>();
-    rpcMock.mockReturnValue(d.promise);
-
-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
-    digitar("EMB-1");
-    const input = screen.getByLabelText(/Código da embalagem/i);
-    fireEvent.keyDown(input, { key: "Enter" });
-    fireEvent.keyDown(input, { key: "Enter" });
-    fireEvent.keyDown(input, { key: "Enter" });
-
-    expect(rpcMock).toHaveBeenCalledTimes(1);
-    await act(async () => {
-      d.resolve({ data: { found: false }, error: null });
-    });
-  });
-
-  it("embalagem sem vínculo avisa explicitamente e não indica sucesso", async () => {
-    rpcMock.mockResolvedValue({
-      data: { found: true, codigo_embalagem: "EMB-1", status: "disponivel", volume: 1, unidade: "L", entrega_id: null },
-      error: null,
-    });
-
-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
-    digitar("EMB-1");
-    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
-
-    expect(await screen.findByTestId("qr-sem-vinculo")).toHaveTextContent(
-      "Embalagem não vinculada a esta entrega",
-    );
-    expect(screen.queryByTestId("qr-pertence")).not.toBeInTheDocument();
-  });
-
-  it("resposta antiga (A→B→A) não sobrescreve a leitura da entrega atual", async () => {
-    const antiga = deferred<any>();
-    rpcMock.mockReturnValueOnce(antiga.promise);
-
-    const { rerender } = render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
-    digitar("EMB-ANTIGA");
-    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
-
-    rerender(<ConferenciaEmbalagemQR entregaId="B" />);
-    rerender(<ConferenciaEmbalagemQR entregaId="A" />);
-
-    await act(async () => {
-      antiga.resolve({
-        data: { found: true, codigo_embalagem: "EMB-ANTIGA", status: "disponivel", volume: 1, unidade: "L", entrega_id: "A" },
-        error: null,
-      });
-    });
-
-    expect(screen.queryByText("EMB-ANTIGA")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("qr-carregando")).not.toBeInTheDocument();
-  });
-
-  it("rejeição tardia da leitura antiga não trava nem exibe erro na entrega nova", async () => {
-    const antiga = deferred<any>();
-    rpcMock.mockReturnValueOnce(antiga.promise);
-
-    const { rerender } = render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
-    digitar("EMB-ANTIGA");
-    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
-
-    rerender(<ConferenciaEmbalagemQR entregaId="B" />);
-    await act(async () => {
-      antiga.reject(new Error("timeout interno"));
-    });
-
-    expect(screen.queryByTestId("qr-erro")).not.toBeInTheDocument();
-
-    rpcMock.mockResolvedValueOnce({ data: { found: false }, error: null });
-    fireEvent.change(screen.getByLabelText(/Código da embalagem/i), { target: { value: "EMB-B" } });
-    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
-  });
+describe('Conferência QR de entrega contida antes da movimentação',()=>{
+ it('Enter vazio não envia',()=>{render(<ConferenciaEmbalagemQR entregaId="A"/>,{wrapper});fireEvent.keyDown(screen.getByLabelText(/Código da embalagem/i),{key:'Enter'});expect(rpcMock).not.toHaveBeenCalled();});
+ it('código preenchido e Enter/clique duplo não enviam movimentação',async()=>{render(<ConferenciaEmbalagemQR entregaId="A"/>,{wrapper});fireEvent.change(screen.getByLabelText(/Código da embalagem/i),{target:{value:'EMB-1'}});fireEvent.keyDown(screen.getByLabelText(/Código da embalagem/i),{key:'Enter'});fireEvent.click(screen.getByRole('button',{name:'Conferir'}));await screen.findByTestId('qr-erro');expect(rpcMock).not.toHaveBeenCalled();});
+ it('QR independente sem entrega conserva contrato existente',async()=>{rpcMock.mockResolvedValue({data:{found:false},error:null});render(<ConferenciaEmbalagemQR/>,{wrapper});fireEvent.change(screen.getByLabelText(/Código da embalagem/i),{target:{value:'EMB-1'}});fireEvent.click(screen.getByRole('button',{name:'Conferir'}));await waitFor(()=>expect(rpcMock).toHaveBeenCalledTimes(1));});
 });
 
 describe("quantidade da conferência", () => {

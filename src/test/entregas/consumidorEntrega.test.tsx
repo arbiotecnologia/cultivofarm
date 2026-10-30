@@ -26,82 +26,32 @@ function chain(table: string) { let selected = ''; let updating = false; const c
 function mount() { const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: 3 } } }); const invalid = vi.spyOn(qc, 'invalidateQueries'); const wrapper = ({ children }: PropsWithChildren) => <QueryClientProvider client={qc}><MemoryRouter>{children}</MemoryRouter></QueryClientProvider>; const h = render(<Entregas />, { wrapper }); return { ...h, qc, invalid }; }
 beforeEach(() => { vi.clearAllMocks(); t.updates = []; t.rows = []; t.auth = { user: { id: ids[2] }, profile: { user_id: ids[2], organization_id: ids[4], ativo: true }, role: 'gestor', roles: ['gestor'], loading: false, authzReady: true, authzEpoch: 0 }; t.from.mockImplementation(chain); t.rpc.mockResolvedValue({ data: ack, error: null }); t.motor.mockResolvedValue({ ok: true, replay: false, acao: 'expedicao', estoque_produto_id: ids[1], movimentacao_id: ids[2], saldo_anterior: 1, saldo_posterior: 0, reservado_anterior: 1, reservado_posterior: 0, status_anterior: 'reservado', status_novo: 'expedido' }); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
-describe('Página Entregas real / hook real / QueryClient real; Auth e transporte simulados', () => {
- it('dupla submissão despacha uma criação', async () => { let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); let a: any, b: any; act(() => { a = t.submit(payload()).catch((e: any) => e); b = t.submit(payload()).catch((e: any) => e); }); await waitFor(() => expect(t.rpc).toHaveBeenCalledTimes(1)); await act(async () => { done({ data: ack, error: null }); await Promise.all([a,b]); }); expect(await b).toBeInstanceOf(Error); h.qc.clear(); });
- it('motor ok:false não anuncia grupo concluído nem compensa ficticiamente', async () => { t.motor.mockResolvedValue({ ok: false }); const h = mount(); await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); }); expect(t.success).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear(); });
- it('falha item N conserva efeitos conhecidos sem rollback direto', async () => { t.rpc.mockResolvedValueOnce({ data: ack, error: null }).mockResolvedValueOnce({ data: null, error: { code: 'PT409', message: 'conflito' } }); const h = mount(); await act(async () => { await expect(t.submit(payload(2))).rejects.toThrow(); }); expect(t.rpc).toHaveBeenCalledTimes(2); expect(t.updates).toEqual([]); expect(t.success).not.toHaveBeenCalled(); h.qc.clear(); });
- it.each(['tenant','ator','epoch'])('ACK tardio após %s não expede/invalida/sucesso', async change => { let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); let a: any; act(() => { a = t.submit(payload()).catch((e: any) => e); }); await waitFor(() => expect(t.rpc).toHaveBeenCalledTimes(1)); if (change === 'tenant') t.auth.profile.organization_id = ids[0]; if (change === 'ator') t.auth.user.id = ids[0]; if (change === 'epoch') t.auth.authzEpoch++; h.rerender(<Entregas />); await act(async () => { done({ data: ack, error: null }); await a; }); expect(await a).toBeInstanceOf(Error); expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.success).not.toHaveBeenCalled(); h.qc.clear(); });
-
- it.each([null, { success: true }, { success: true, ok: false, entrega_id: ids[3] }, { success: true, entrega_id: 'invalid' }, { success: true, entrega_id: ids[3], replay: 'true' }])('ACK criação inválido não expede/invalida: %j', async data => {
-   t.rpc.mockResolvedValue({ data, error: null }); const h = mount();
-   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
-   expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
+describe('Contenção real antes do primeiro dispatch da página', () => {
+ it.each([1,2])('grupo com %s itens não reserva/cria/expede/estorna', async n => {
+  const h=mount(); await act(async()=>{ await expect(t.submit(payload(n))).rejects.toThrow(); });
+  expect(t.rpc).not.toHaveBeenCalled(); expect(t.motor).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); expect(t.success).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); h.qc.clear();
  });
- it.each(['PT409','42501','55P03'])('erro %s não repete nem apaga efeitos', async code => {
-   t.rpc.mockResolvedValue({ data: null, error: { code, message: code } }); const h = mount();
-   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
-   expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.updates).toEqual([]); expect(h.invalid).not.toHaveBeenCalled(); h.qc.clear();
+ it('lote disponível não recebe reserva nem auditoria', async()=>{
+  const p=payload(); Object.assign(p.itens[0].item,{status:'disponivel',reservado_para_os_id:null}); const h=mount();
+  await act(async()=>{await expect(t.submit(p)).rejects.toThrow();}); expect(t.rpc).not.toHaveBeenCalled(); expect(t.motor).not.toHaveBeenCalled(); h.qc.clear();
  });
- it('ACK perdido bloqueia reenvio explícito e não faz compensação', async () => {
-   t.rpc.mockRejectedValue(new TypeError('Failed to fetch')); const h = mount();
-   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); await expect(t.submit(payload())).rejects.toThrow(); });
-   expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.updates).toEqual([]); expect(h.invalid).not.toHaveBeenCalled(); h.qc.clear();
+ it.each(['separado','em_rota'])('cancelamento %s não altera status nem estorna',async status=>{
+  t.rows=[{id:ids[3],status,estoque_produto_id:ids[1],clientes:{nome:'Cliente'}}]; const h=mount();
+  fireEvent.click((await screen.findAllByRole('button',{name:'Cancelar'}))[0]); fireEvent.click(screen.getByRole('button',{name:'Confirmar cancelamento'}));
+  await waitFor(()=>expect(t.error).toHaveBeenCalled()); expect(t.updates).toEqual([]); expect(t.rpc).not.toHaveBeenCalled(); expect(t.motor).not.toHaveBeenCalled(); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
  });
- it('resultado positivo invalida só caches do ator capturado', async () => {
-   const h = mount(); h.qc.setQueryData(['entregas','other-actor','other-request'], [{ id: 'foreign' }]);
-   await act(async () => { await t.submit(payload()); });
-   expect(t.success).toHaveBeenCalledTimes(1); expect(h.invalid).toHaveBeenCalledTimes(2);
-   for (const [filters] of h.invalid.mock.calls) expect(filters?.predicate?.({ queryKey: ['entregas','other-actor','other-request'] } as any)).toBe(false);
-   h.qc.clear();
+ it('envio em rota não faz UPDATE',async()=>{
+  t.rows=[{id:ids[3],status:'separado',clientes:{nome:'Cliente'}}];const h=mount(); fireEvent.click((await screen.findAllByRole('button',{name:'Enviar'}))[0]);
+  await waitFor(()=>expect(t.error).toHaveBeenCalled()); expect(t.updates).toEqual([]); expect(t.rpc).not.toHaveBeenCalled();h.qc.clear();
  });
- it('parcial válido não expede reserva completa prematuramente', async () => {
-   const h = mount(); const p = payload(); p.itens[0].item.quantidade_reservada = 5;
-   await act(async () => { await t.submit(p); });
-   expect(t.motor).not.toHaveBeenCalled(); expect(t.success).toHaveBeenCalledTimes(1); h.qc.clear();
+ it.each(['gestor','administrador','financeiro','parceiro_b2b','cliente_produtor'])('papel %s não abre o contrato',async role=>{
+  t.auth.role=role;t.auth.roles=[role]; const h=mount(); await act(async()=>{await expect(t.submit(payload())).rejects.toThrow();}); expect(t.rpc).not.toHaveBeenCalled();expect(t.updates).toEqual([]);h.qc.clear();
  });
- it('timeout abandona etapas posteriores mesmo com ACK tardio', async () => {
-   let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); let request: any;
-   vi.useFakeTimers(); act(() => { request = t.submit(payload()).catch((e: any) => e); });
-   await act(async () => { await vi.advanceTimersByTimeAsync(30001); });
-   expect(await request).toBeInstanceOf(Error);
-   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
-   expect(t.rpc).toHaveBeenCalledTimes(1);
-   await act(async () => { done({ data: ack, error: null }); await Promise.resolve(); });
-   expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear();
+ it('remount, tenant e dupla ação nunca abrem dispatch',async()=>{
+  const h=mount();await act(async()=>{await Promise.all([t.submit(payload()).catch(()=>{}),t.submit(payload()).catch(()=>{})]);});h.unmount();h.qc.clear();
+  t.auth.profile.organization_id=ids[0];const next=mount();await act(async()=>{await expect(t.submit(payload())).rejects.toThrow();});expect(t.rpc).not.toHaveBeenCalled();expect(t.motor).not.toHaveBeenCalled();expect(t.updates).toEqual([]);next.qc.clear();
  });
- it('cancelamento com estorno negativo mantém draft e não anuncia sucesso', async () => {
-   t.rows = [{ id: ids[3], status: 'em_rota', estoque_produto_id: ids[1], clientes: { nome: 'Cliente' } }];
-   t.motor.mockResolvedValue({ ok: false }); const h = mount();
-   await waitFor(() => expect(screen.getAllByRole('button', { name: 'Cancelar' }).length).toBeGreaterThan(0));
-   fireEvent.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
-   const button = screen.getByRole('button', { name: 'Confirmar cancelamento' });
-   await act(async () => { fireEvent.click(button); fireEvent.click(button); });
-   await waitFor(() => expect(t.motor).toHaveBeenCalledTimes(1));
-   expect(t.updates).toHaveLength(1); expect(t.success).not.toHaveBeenCalled();
-   expect(screen.getByRole('button', { name: 'Confirmar cancelamento' })).toBeInTheDocument(); h.qc.clear();
- });
-
- it.each([{ ok: true }, { ok: true, replay: false, acao: 'expedicao', movimentacao_id: ids[2], estoque_produto_id: ids[0] }])('ACK estoque parcial/alheio não vira sucesso: %j', async response => {
-   t.motor.mockResolvedValue(response); const h = mount(); await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
-   expect(t.success).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear();
- });
- it('reserva sem UUID confirmado não continua criação', async () => {
-   const p = payload(); Object.assign(p.itens[0].item, { reservado_para_os_id: null, status: 'disponivel' });
-   t.from.mockImplementation(table => { const c = chain(table); if (table === 'ordens_servico') c.then = (yes: any) => Promise.resolve({ data: [{ id: ids[0], cliente_id: ids[3] }], error: null }).then(yes); return c; });
-   t.rpc.mockResolvedValue({ data: { ok: false }, error: null }); const h = mount();
-   await waitFor(() => expect(h.qc.getQueryCache().findAll({ queryKey: ['todas-os-disponiveis'] })[0]?.state.status).toBe('success'));
-   await act(async () => { await new Promise(r => setTimeout(r, 10)); });
-   await act(async () => { await expect(t.submit(p)).rejects.toThrow('Falha ao reservar'); });
-   expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.rpc.mock.calls[0][0]).toBe('reservar_estoque_item'); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
- });
-
- it('reserva parcial usa UUID da linha split retornada sem tratar como erro', async () => {
-   const p = payload(); Object.assign(p.itens[0].item, { reservado_para_os_id: null, status: 'disponivel' });
-   t.from.mockImplementation(table => { const c = chain(table); if (table === 'ordens_servico') c.then = (yes: any) => Promise.resolve({ data: [{ id: ids[0], cliente_id: ids[3] }], error: null }).then(yes); return c; });
-   t.rpc.mockResolvedValueOnce({ data: ids[2], error: null }).mockResolvedValueOnce({ data: ack, error: null }); const h = mount();
-   await waitFor(() => expect(h.qc.getQueryCache().findAll({ queryKey: ['todas-os-disponiveis'] })[0]?.state.status).toBe('success'));
-   await act(async () => { await new Promise(r => setTimeout(r, 10)); });
-   await act(async () => { await t.submit(p); });
-   expect(t.rpc.mock.calls[1][1].p_estoque_produto_id).toBe(ids[2]); expect(t.success).toHaveBeenCalledTimes(1); h.qc.clear();
+ it('consulta existente conserva linhas sem operações',async()=>{
+  t.rows=[{id:ids[3],status:'entregue',clientes:{nome:'Cliente autorizado'}}];const h=mount();await screen.findByText('Cliente autorizado');expect(t.from).toHaveBeenCalledWith('entregas');expect(t.rpc).not.toHaveBeenCalled();h.qc.clear();
  });
 });
