@@ -1,0 +1,140 @@
+-- FIXTURE CANDIDATE (REVIEW ONLY, NOT EXECUTED HOSTED). TESTE SEM VALOR COMERCIAL.
+-- Canonical synthetic pipeline for the AR Bio tenant under AUTHENTICATED CLAIMS (claims testing, not browser JWT):
+--   OS aberta (RLS INSERT, same payload as OrdensServico.tsx) -> rpc_aprovar_os_v1 -> rpc_programar_os_v1
+--   -> rpc_cockpit_gerar_lote_v1 (from programada/aguardando; assumir_producao is closed LIVE)
+--   -> rpc_avancar_esteira_laboratorio(enviar_cq) -> rpc_avancar_esteira_laboratorio(registrar_cq, dados_sinteticos)
+--   -> rpc_cockpit_registrar_envase_v1 (v2) -> rpc_cockpit_criar_entrega_v1 (group) -> rpc_entrega_cancelar_v1 (optional)
+-- No replica mode, no trigger disabling, no direct status writes, no ticket minting, no GUC authority.
+-- Temporary EXECUTE for the two not-yet-released writers is granted and REVOKED inside this single transaction
+-- before COMMIT (never visible to other sessions). Any failure aborts everything.
+--
+-- Required psql variables (chosen by the owner from READ-ONLY checks; nothing is invented here):
+--   org, admin, cliente, fazenda, talhao, produto, referencia, cancel ('true'|'false'), accept_inapp ('true'|'false')
+-- KNOWN SIDE EFFECT (measured locally): OS creation -> programacao_producao INSERT -> trg_notify_lab_on_programacao writes
+-- in-app rows in notificacoes_operacionais ('Nova demanda de produção') to the tenant's lab/admin users. No outbox/external
+-- channel. It cannot be suppressed without disabling a trigger (forbidden). accept_inapp<>'true' => the whole fixture aborts.
+-- Preconditions that, if unmet, mean STOP (do not fabricate):
+--   * stock/envase v2 installed (install-v2 + postflight-v2); capability delta NOT installed;
+--   * admin: active profile in org, role administrador, no active partner_users link, not superadmin;
+--   * cliente/fazenda/talhao belong to org; produto active with familia_catalogo='biologico' (lab_item_is_manufacturable);
+--   * referencia: an EXISTING ACTIVE COMPLETE cq_parametros_referencia row for produto (global table:
+--     creating one is a shared-catalog decision by the Platform Superadmin, not part of this fixture);
+--   * org subscription grants features envase, ordens_producao, estoque_embalagens (and the OS gate features).
+\set ON_ERROR_STOP on
+BEGIN;
+SET LOCAL lock_timeout = '3s';
+SET LOCAL statement_timeout = '60s';
+SELECT set_config('fixture.org', :'org', true), set_config('fixture.admin', :'admin', true),
+       set_config('fixture.cliente', :'cliente', true), set_config('fixture.fazenda', :'fazenda', true),
+       set_config('fixture.talhao', :'talhao', true), set_config('fixture.produto', :'produto', true),
+       set_config('fixture.referencia', :'referencia', true), set_config('fixture.cancel', :'cancel', true), set_config('fixture.accept_inapp', :'accept_inapp', true);
+-- fixture.* settings only pass ids into the DO block; no writer reads them for authority.
+
+-- ---------- PRE (as the migration owner, read-only) ----------
+CREATE TEMP TABLE fixture_baseline ON COMMIT DROP AS
+SELECT (SELECT count(*) FROM public.accounts_receivable) ar, (SELECT count(*) FROM public.accounts_receivable_installments) ari,
+       (SELECT count(*) FROM public.financial_receipts) fr, (SELECT count(*) FROM public.financial_documents) fd,
+       (SELECT count(*) FROM public.fiscal_invoices) fi, (SELECT count(*) FROM public.fiscal_events) fe,
+       (SELECT count(*) FROM public.comunicacao_outbox) co, (SELECT count(*) FROM public.comunicacao_eventos) ce,
+       (SELECT count(*) FROM public.os_faturamento_base) ofb, (SELECT count(*) FROM public.notificacoes_operacionais) nop, (SELECT count(*) FROM public.portal_notificacoes) pno,
+       (SELECT md5(coalesce(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text,'')) FROM public.accounts_receivable r) ar_hash;
+GRANT SELECT ON fixture_baseline TO authenticated;
+SELECT 'FIXTURE_PRE_FIN_HASH ' || ar_hash || ' AR=' || ar FROM fixture_baseline;  -- owner compares with the recorded value
+DO $pre$
+DECLARE org uuid := current_setting('fixture.org')::uuid; adm uuid := current_setting('fixture.admin')::uuid;
+ prod uuid := current_setting('fixture.produto')::uuid; ref public.cq_parametros_referencia%ROWTYPE;
+BEGIN
+ IF to_regprocedure('platform_private.stock_envase_complete_v1(uuid,uuid,uuid,text)') IS NULL THEN RAISE EXCEPTION 'FIXTURE_PRE_V2_MISSING'; END IF;
+ IF to_regprocedure('public.rpc_entrega_operacoes_capability_v1()') IS NOT NULL THEN RAISE EXCEPTION 'FIXTURE_PRE_CAPABILITY_ALREADY_INSTALLED'; END IF;
+ IF has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE')
+ OR has_function_privilege('authenticated','public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)','EXECUTE')
+ OR has_function_privilege('authenticated','public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)','EXECUTE') THEN RAISE EXCEPTION 'FIXTURE_PRE_GRANTS_NOT_BASELINE'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.organizations WHERE id=org) THEN RAISE EXCEPTION 'FIXTURE_PRE_ORG'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=adm AND organization_id=org AND ativo) OR NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=adm AND role='administrador')
+ OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=adm AND role::text IN ('superadmin','parceiro_b2b','parceiro_b2b_tecnico'))
+ OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=adm) THEN RAISE EXCEPTION 'FIXTURE_PRE_ADMIN'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=current_setting('fixture.cliente')::uuid AND organization_id=org)
+ OR NOT EXISTS(SELECT 1 FROM public.fazendas WHERE id=current_setting('fixture.fazenda')::uuid AND organization_id=org AND cliente_id=current_setting('fixture.cliente')::uuid)
+ OR NOT EXISTS(SELECT 1 FROM public.talhoes WHERE id=current_setting('fixture.talhao')::uuid AND organization_id=org AND fazenda_id=current_setting('fixture.fazenda')::uuid) THEN RAISE EXCEPTION 'FIXTURE_PRE_CLIENT_SCOPE'; END IF;
+ IF NOT platform_private.lab_item_is_manufacturable(prod,NULL) OR NOT EXISTS(SELECT 1 FROM public.produtos WHERE id=prod AND coalesce(ativo,true)) THEN RAISE EXCEPTION 'FIXTURE_PRE_PRODUCT_NOT_MANUFACTURABLE'; END IF;
+ SELECT * INTO ref FROM public.cq_parametros_referencia WHERE id=current_setting('fixture.referencia')::uuid AND produto_id=prod AND ativo;
+ IF NOT FOUND OR ref.ph_min IS NULL OR ref.ph_max IS NULL OR ref.ph_min>ref.ph_max OR ref.concentracao_min_ufc_ml IS NULL
+ OR nullif(btrim(ref.aparencia_esperada),'') IS NULL OR nullif(btrim(ref.odor_esperado),'') IS NULL OR nullif(btrim(ref.contaminacao_esperada),'') IS NULL
+ THEN RAISE EXCEPTION 'FIXTURE_PRE_REFERENCE_INCOMPLETE (stop: needs Platform Superadmin catalogue decision)'; END IF;
+END $pre$;
+
+-- ---------- temporary, transaction-local release of the two unreleased writers ----------
+GRANT EXECUTE ON FUNCTION public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_entrega_cancelar_v1(uuid,text,timestamptz) TO authenticated;
+
+-- ---------- pipeline as the authenticated admin (claims) ----------
+SELECT set_config('request.jwt.claims', jsonb_build_object('sub', :'admin', 'role', 'authenticated', 'aal', 'aal1',
+  'iat', extract(epoch FROM now())::bigint - 5, 'exp', extract(epoch FROM now())::bigint + 600)::text, true),
+  set_config('request.jwt.claim.sub', :'admin', true), set_config('request.jwt.claim.role', 'authenticated', true);
+SET LOCAL ROLE authenticated;
+DO $pipe$
+DECLARE os uuid := gen_random_uuid(); prog uuid; lote uuid; stock uuid; ent uuid; r jsonb; ref public.cq_parametros_referencia%ROWTYPE;
+ k text := 'fixture-' || os::text; obs_os timestamptz; obs_st timestamptz;
+BEGIN
+ INSERT INTO public.ordens_servico(id,cliente_id,fazenda_id,talhao_id,tipo_item,produto_id,microrganismo_id,modo_aplicacao,area_hectares,volume_total_ml,data_programada,prioridade)
+ VALUES(os,current_setting('fixture.cliente')::uuid,current_setting('fixture.fazenda')::uuid,current_setting('fixture.talhao')::uuid,'produto',current_setting('fixture.produto')::uuid,NULL,'foliar',1,1000,current_date+1,'media');
+ IF (SELECT status::text FROM public.ordens_servico WHERE id=os) <> 'aberta' THEN RAISE EXCEPTION 'FIXTURE_OS_NOT_ABERTA'; END IF;
+ PERFORM public.rpc_aprovar_os_v1(os,'manual');
+ PERFORM public.rpc_programar_os_v1(os,'manual',current_date+1);
+ SELECT id INTO STRICT prog FROM public.programacao_producao WHERE ordem_servico_id=os;
+ -- 'assumir_producao' is CLOSED LIVE (CQ_OPERATION_CLOSED); canonical lot generation starts from programada/aguardando.
+ r := public.rpc_cockpit_gerar_lote_v1(prog,os,'manual',jsonb_build_object('volume_produzido',1000,'responsavel_producao','TESTE SEM VALOR COMERCIAL','tanque',NULL,'observacoes_tecnicas','TESTE SEM VALOR COMERCIAL E2E-FIXTURE-PIPELINE-20261030'));
+ SELECT id INTO STRICT lote FROM public.lotes WHERE programacao_id=prog;
+ PERFORM public.rpc_avancar_esteira_laboratorio(os,'manual','enviar_cq',prog);
+ SELECT * INTO STRICT ref FROM public.cq_parametros_referencia WHERE id=current_setting('fixture.referencia')::uuid;
+ -- Measurements are the reference's own accepted values (no invented acceptance criteria).
+ PERFORM public.rpc_avancar_esteira_laboratorio(os,'manual','registrar_cq',prog,jsonb_build_object(
+   'lote_id',lote,'resultado','aprovado','ph',(ref.ph_min+ref.ph_max)/2,'concentracao',ref.concentracao_min_ufc_ml,
+   'aparencia',ref.aparencia_esperada,'odor',ref.odor_esperado,'contaminacao',ref.contaminacao_esperada,
+   'referencia_id',ref.id,'dados_sinteticos',true));
+ r := public.rpc_cockpit_registrar_envase_v1(lote,os,'manual',prog,'[{"tipo_embalagem":"frasco_1L","quantidade":1}]'::jsonb,current_date+180,'TESTE SEM VALOR COMERCIAL','envase-'||k,false,NULL);
+ IF r->>'success' IS DISTINCT FROM 'true' OR (SELECT status::text FROM public.ordens_servico WHERE id=os)<>'pronto_entrega' THEN RAISE EXCEPTION 'FIXTURE_ENVASE_NOT_READY %', r; END IF;
+ SELECT id,updated_at INTO STRICT stock,obs_st FROM public.estoque_produto WHERE lote_id=lote AND status='reservado' AND reservado_para_os_id=os;
+ SELECT updated_at INTO obs_os FROM public.ordens_servico WHERE id=os;
+ r := public.rpc_cockpit_criar_entrega_v1(os,'manual',jsonb_build_array(jsonb_build_object('item_id',stock,'quantidade',1,'observed_updated_at',obs_st)),k,
+   jsonb_build_object('motorista','TESTE SEM VALOR COMERCIAL'),obs_os);
+ ent := (r->'itens'->0->>'entrega_id')::uuid;
+ IF ent IS NULL OR r->>'success' IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'FIXTURE_GROUP_ACK %', r; END IF;
+ IF current_setting('fixture.cancel')='true' THEN
+  r := public.rpc_entrega_cancelar_v1(ent,'TESTE SEM VALOR COMERCIAL',(SELECT updated_at FROM public.entregas WHERE id=ent));
+  IF r->>'success' IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'FIXTURE_CANCEL_ACK %', r; END IF;
+ END IF;
+ RAISE NOTICE 'FIXTURE_IDS %', jsonb_build_object('os',os,'programacao',prog,'lote',lote,'estoque',stock,'entrega',ent,'request_key',k);
+ PERFORM set_config('fixture.os', os::text, true);
+END $pipe$;
+RESET ROLE;
+
+-- ---------- close the temporary grants BEFORE COMMIT; POST ----------
+REVOKE EXECUTE ON FUNCTION public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.rpc_entrega_cancelar_v1(uuid,text,timestamptz) FROM authenticated;
+DO $post$
+DECLARE b fixture_baseline%ROWTYPE; os uuid := current_setting('fixture.os')::uuid;
+BEGIN
+ SELECT * INTO b FROM fixture_baseline;
+ IF has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE')
+ OR has_function_privilege('authenticated','public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)','EXECUTE')
+ OR has_function_privilege('authenticated','public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)','EXECUTE') THEN RAISE EXCEPTION 'FIXTURE_POST_GRANTS_LEFT_OPEN'; END IF;
+ IF (SELECT count(*) FROM public.accounts_receivable)<>b.ar OR (SELECT count(*) FROM public.accounts_receivable_installments)<>b.ari
+ OR (SELECT count(*) FROM public.financial_receipts)<>b.fr OR (SELECT count(*) FROM public.financial_documents)<>b.fd
+ OR (SELECT count(*) FROM public.fiscal_invoices)<>b.fi OR (SELECT count(*) FROM public.fiscal_events)<>b.fe
+ OR (SELECT count(*) FROM public.comunicacao_outbox)<>b.co OR (SELECT count(*) FROM public.comunicacao_eventos)<>b.ce
+ OR (SELECT count(*) FROM public.os_faturamento_base)<>b.ofb
+ OR (SELECT md5(coalesce(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text,'')) FROM public.accounts_receivable r)<>b.ar_hash THEN RAISE EXCEPTION 'FIXTURE_POST_FINANCIAL_OR_COMMUNICATION_EFFECT'; END IF;
+ IF (SELECT count(*) FROM public.portal_notificacoes)<>b.pno THEN RAISE EXCEPTION 'FIXTURE_POST_PORTAL_NOTIFICATION'; END IF;
+ IF (SELECT count(*) FROM public.notificacoes_operacionais)<>b.nop THEN
+  IF current_setting('fixture.accept_inapp')<>'true' THEN RAISE EXCEPTION 'FIXTURE_POST_INAPP_NOTIFICATION_NOT_ACCEPTED'; END IF;
+  IF (SELECT count(*) FROM public.notificacoes_operacionais)-b.nop <> (SELECT count(*) FROM public.notificacoes_operacionais n JOIN public.programacao_producao pp ON pp.id=n.source_id
+       JOIN public.profiles pr ON pr.user_id=n.usuario_id WHERE pp.ordem_servico_id=os AND n.source_type='programacao_producao' AND pr.organization_id=current_setting('fixture.org')::uuid)
+  THEN RAISE EXCEPTION 'FIXTURE_POST_NOTIFICATION_SCOPE'; END IF;
+ END IF;
+ IF EXISTS(SELECT 1 FROM public.entregas WHERE ordem_servico_id=os AND (receivable_id IS NOT NULL OR partner_order_id IS NOT NULL OR organization_id IS DISTINCT FROM current_setting('fixture.org')::uuid)) THEN RAISE EXCEPTION 'FIXTURE_POST_DELIVERY_SCOPE'; END IF;
+ IF (SELECT organization_id FROM public.ordens_servico WHERE id=os) IS DISTINCT FROM current_setting('fixture.org')::uuid THEN RAISE EXCEPTION 'FIXTURE_POST_TENANT'; END IF;
+END $post$;
+COMMIT;

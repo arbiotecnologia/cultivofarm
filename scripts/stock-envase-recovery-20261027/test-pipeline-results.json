@@ -1,0 +1,117 @@
+[
+  {
+    "test": "exact applied release-combined + proof POST",
+    "status": "PASS"
+  },
+  {
+    "test": "stock/envase v2 installed (PRE+POST)",
+    "status": "PASS"
+  },
+  {
+    "test": "master data only (no OS/lot/CQ/envase/stock/delivery rows exist before the pipeline)",
+    "status": "PASS"
+  },
+  {
+    "test": "baseline: envase/group/cancel have no authenticated EXECUTE",
+    "status": "PASS"
+  },
+  {
+    "test": "missing CQ reference: fixture STOPS at PRE, zero rows, grants closed",
+    "status": "PASS"
+  },
+  {
+    "test": "tenant admin cannot write the global CQ reference catalogue (LIVE ACL)",
+    "status": "PASS"
+  },
+  {
+    "test": "local CQ reference loaded as global master data (hosted: existing-reference precondition / Platform Superadmin decision)",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin with AR Bio org: PRE stops, nothing written",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF client/farm with AR Bio org: PRE stops",
+    "status": "PASS"
+  },
+  {
+    "test": "in-app notification not accepted: whole pipeline rolled back (no OS, no notification, grants closed)",
+    "status": "PASS"
+  },
+  {
+    "test": "canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento",
+    "status": "PASS",
+    "ids": {
+      "os": "a7330877-3de7-4454-9c8c-a31192dc8bc0",
+      "lote": "f1032e94-3d07-4381-875f-f10a2dee5571",
+      "entrega": "58778b37-4368-4534-a181-03dcf2272825",
+      "estoque": "00711da2-7dd9-49e4-af75-9961f649abc1",
+      "programacao": "097a8078-2769-4a44-a979-9525c862921e",
+      "request_key": "fixture-a7330877-3de7-4454-9c8c-a31192dc8bc0"
+    }
+  },
+  {
+    "test": "temporary EXECUTE revoked before COMMIT (closed after commit)",
+    "status": "PASS"
+  },
+  {
+    "test": "OS tenant derived server-side = AR Bio",
+    "status": "PASS"
+  },
+  {
+    "test": "OS ends pronto_entrega (envase transition through reviewed authority)",
+    "status": "PASS",
+    "esteira": "entrega_criada,pronto_entrega,estoque_gerado,aprovado,aguardando_cq,lote_gerado,programada,aprovada"
+  },
+  {
+    "test": "lot/CQ approved by the existing CQ core, synthetic marker kept",
+    "status": "PASS"
+  },
+  {
+    "test": "delivery created by group and cancelled",
+    "status": "PASS"
+  },
+  {
+    "test": "ledger recorded",
+    "status": "PASS",
+    "ledger": "cancelamento_reserva,estorno_expedicao,expedicao,entrada"
+  },
+  {
+    "test": "stock restored by cancellation (no deletion)",
+    "status": "PASS"
+  },
+  {
+    "test": "only in-app operational notification(s) to AR Bio users (trg_notify_lab_on_programacao); outbox stays 0",
+    "status": "PASS",
+    "notifications": "[{\"tipo\": \"nova_demanda_producao\", \"usuario\": \"a7d45277-6dec-413d-bf6b-86620c1ef39f\", \"source_type\": \"programacao_producao\"}]"
+  },
+  {
+    "test": "zero financial/fiscal/outbox/communication-event/portal-notification rows",
+    "status": "PASS"
+  },
+  {
+    "test": "no receivable/B2B link on deliveries",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin cannot read the AR Bio fixture OS (RLS)",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin cannot read the AR Bio fixture lot (RLS)",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin canonical writer on AR Bio OS denied",
+    "status": "PASS"
+  },
+  {
+    "test": "AR Bio admin reads own fixture OS (RLS positive)",
+    "status": "PASS"
+  },
+  {
+    "test": "incomplete reference after the fact: STOP, zero partial rows, grants closed",
+    "status": "PASS"
+  }
+]
