@@ -173,8 +173,8 @@ def main():
     worker=session(actor()+call('batch-order-characterization',[{'item_id':S,'quantidade':1}]));wait()
     batch="SELECT public.rpc_estoque_reservar_v1('%s','manual','%s'::jsonb,'independent-batch-proof','%s'::jsonb);"%(O,json.dumps([{'item_id':S,'quantidade':1}]),json.dumps({'cliente_id':C}))
     out,err=finish(holder,actor()+batch+'COMMIT;');out2,err2=finish(worker)
-    assert any(x in err+err2 for x in ['deadlock detected','lock timeout']),err+err2+out+out2
-    checks.append({'test':'LIVE independent batch row-before-gate versus group gate-before-row inversion','status':'BLOCKED','error':err+err2,'impact':'Do not install/release composition until independent batch ordering is safely rebased and concurrent proof passes.'})
+    assert '"ok": true' in out and 'DELIVERY_OBSERVED_CONFLICT' in err2 and 'deadlock detected' not in err+err2,err+err2+out+out2
+    checks.append({'test':'independent real batch versus group stock wait succeeds batch and rejects stale group without deadlock','status':'PASS','observed':err2})
 
 if __name__=='__main__':
     try: main()
