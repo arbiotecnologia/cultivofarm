@@ -1,0 +1,5 @@
+- Preparation only: never invoke hosted writers, apply SQL or publish from this package; keep frontend containment until the exact contract passes independent review.
+- Restore captured bodies, ACLs, constraints, policies and enabled triggers without authority stubs; report every unresolved dependency and do not certify incomplete integration.
+- Candidate delivery composition preserves independent stock batches and all financial/fiscal flags; reject downstream title/document/outbox effects transactionally rather than disabling triggers.
+- Authorization derives active actor and tenant server-side, revalidates after every wait and before replay, and excludes external actors; private receipts never grant authority.
+- Rollback is deny-only, preserves history and never restores vulnerable definitions or grants private helpers to clients.
