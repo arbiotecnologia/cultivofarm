@@ -137,29 +137,21 @@
     "status": "PASS"
   },
   {
-    "test": "gate held: envase waits on the gate first and aborts with lock timeout, zero partial rows",
+    "test": "exact replay of committed MIXED group (owned+free now expedido) returns same IDs, zero mutations",
     "status": "PASS"
   },
   {
-    "test": "inverse-order contender: PostgreSQL resolves (40P01/55P03) and no partial movement remains",
+    "test": "exact replay still answers after the OS revision changed post-commit (receipt precedes fresh CAS)",
+    "status": "PASS"
+  },
+  {
+    "test": "same key, changed payload -> replay conflict",
     "status": "PASS",
-    "detail": "40P01"
+    "expected": "DELIVERY_REPLAY_CONFLICT"
   },
   {
-    "test": "zero financial/fiscal/communication rows across envase, transition, deliveries and contention",
-    "status": "PASS"
-  },
-  {
-    "test": "rollback restores exact applied motor/batch/group/guard and never restores the purge escape",
-    "status": "PASS"
-  },
-  {
-    "test": "after rollback the envase transition is closed",
-    "status": "PASS",
-    "expected": "ENVASE_TRANSITION_CLOSED"
-  },
-  {
-    "test": "rollback preserves history",
-    "status": "PASS"
+    "test": "execution stopped at concrete failure",
+    "status": "FAIL",
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 211, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 155, in main\n    fails('tenant B replaying the same key/args is denied', win.replace(actor(), actor(V), 1), '42501')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 21, in fails\n    e = pg.sql(s, False); assert code in e, label + ':' + e[-900:]; ok(label, expected=code); return e\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 21, in sql\n    assert r.returncode!=0,'expected failure, got success: '+r.stdout[-500:]\n           ^^^^^^^^^^^^^^^\nAssertionError: expected failure, got success: \": [{\"entrega_id\": \"3d5328ce-df71-44a1-af90-fcfda99425bc\", \"movimentacao_id\": \"d937ed38-0339-4893-adf0-58315507c901\", \"estoque_produto_id\": \"597551c0-ed11-4747-b7d9-567709430f2e\"}, {\"entrega_id\": \"d8c6865b-6afd-483d-8b7e-dabd4e4d74fb\", \"movimentacao_id\": \"b7477f3e-dcc2-4106-923c-02cd862ca24d\", \"estoque_produto_id\": \"9e8c15b7-c636-4406-8f1f-9390e88a8475\"}], \"os_id\": \"10000000-0000-4000-8000-000000000041\", \"replay\": true, \"success\": true, \"organization_id\": \"10000000-0000-4000-8000-000000000001\"}\n\n"
   }
 ]
