@@ -482,7 +482,7 @@
       "test": "PRE drift aborts exactly",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  P0001: ENVASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  P0001: ENVASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "forced POST aborts installation",
@@ -512,7 +512,7 @@
       "test": "rerun refuses changed exact state",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  P0001: ENVASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  P0001: ENVASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "unqualified release stub denies before matrix generates reviewed release",
@@ -850,7 +850,7 @@
       "test": "release rerun rejects changed exact catalog",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  P0001: ENVASE_RELEASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  P0001: ENVASE_RELEASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 9 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "deny-only rollback closes canonical writer",
@@ -859,6 +859,6 @@
       "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "elapsed_seconds": 157.632,
+  "elapsed_seconds": 154.746,
   "exit_code": 0
 }
