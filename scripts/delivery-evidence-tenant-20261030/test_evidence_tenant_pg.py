@@ -137,7 +137,7 @@ def main():
     for t in ('entrega_checklist', 'entrega_ocorrencias'):
         assert all(wb[t][k] == NEG for k in ('x_ins', 'x_upd', 'x_del', 'own_ins', 'own_upd', 'own_del')), wb[t]
         assert all(wb[t][k] == BIZ for k in ('reparent_to_fsf', 'reparent_to_null_org', 'fsf_reparent_own_to_arbio')), wb[t]
-    assert all(x == 'ok:0' or x.startswith('ok:') or x == NEG for t in TABLES for x in wb[t].values()), wb   # no unexpected SQLSTATE before
+    assert all(x.startswith('ok:') or x == NEG or (x == BIZ and t in ('entrega_checklist', 'entrega_ocorrencias')) for t in TABLES for x in wb[t].values()), wb   # no unexpected SQLSTATE before
     ok('BEFORE: mixed pair (own entrega + foreign label) insert and cross-tenant label swap SUCCEED with valid IDs; FK error only for nonexistent ID', mixed=mb)
     tr = {t: probe(V, f"TRUNCATE public.{t}; SELECT 'truncated';") for t in TABLES}; print('BEFORE_TRUNCATE', tr, flush=True)
     ok('BEFORE: TRUNCATE allowed to authenticated (rolled back)', truncate=tr)
