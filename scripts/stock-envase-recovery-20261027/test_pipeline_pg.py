@@ -56,6 +56,8 @@ def check_stock(ids, ent_status, ledger_pin, stock_pin, label):
     led = last(LEDGER_SQL.format(lote=ids['lote'])); stk = last(STOCK_SQL.format(lote=ids['lote'], os=ids['os']))
     print('STATE', label, st, 'LEDGER', led, 'STOCK', stk, flush=True)
     assert st == ent_status, (label, st)
+    if os.environ.get('PIN_DISCOVER') == '1':
+        checks.append({'test': f'{label}: DISCOVERY (unpinned)', 'status': 'FAIL', 'ledger': led, 'stock': stk}); return
     assert led == ledger_pin, (label, 'ledger', led)
     assert stk == stock_pin, (label, 'stock', stk)
     ok(f'{label}: delivery {ent_status}, exact ledger and stock state', ledger=led, stock=stk)

@@ -36,7 +36,11 @@
     "status": "PASS"
   },
   {
-    "test": "client without TESTE SEM VALOR COMERCIAL marker: PRE stops, no notice",
+    "test": "unmarked or name-mismatched client: PRE stops, no notice",
+    "status": "PASS"
+  },
+  {
+    "test": "financial baseline different from pinned hash/count: PRE stops",
     "status": "PASS"
   },
   {
@@ -51,12 +55,12 @@
     "test": "canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento",
     "status": "PASS",
     "ids": {
-      "os": "13abca80-c538-42b8-905a-3f441c64877f",
-      "lote": "98d655e0-f456-4557-841f-9d4a7feadd3e",
-      "entrega": "d4cd8b05-4ad6-4eed-a843-6e6490644bea",
-      "estoque": "6db7fcaa-19f1-42cb-8cdc-7758c17ce522",
-      "programacao": "3ba5dc01-3e71-40f2-b842-4f15e64a3ab3",
-      "request_key": "fixture-13abca80-c538-42b8-905a-3f441c64877f"
+      "os": "b25544cb-727d-411e-b582-d71ed5013fba",
+      "lote": "ccf1c4e6-6e42-451e-841a-b2aeaab7846f",
+      "entrega": "62d1c4d7-7af6-4d2f-8eca-0b8df3874e74",
+      "estoque": "db7f9ffd-a6ca-4643-a366-cb53008ad371",
+      "programacao": "da0e3243-3cff-4972-bc64-58dbeaef8a88",
+      "request_key": "fixture-b25544cb-727d-411e-b582-d71ed5013fba"
     }
   },
   {
@@ -81,13 +85,10 @@
     "status": "PASS"
   },
   {
-    "test": "ledger recorded",
-    "status": "PASS",
-    "ledger": "cancelamento_reserva,estorno_expedicao,expedicao,entrada"
-  },
-  {
-    "test": "stock restored by cancellation (no deletion)",
-    "status": "PASS"
+    "test": "cancel=true: DISCOVERY (unpinned)",
+    "status": "FAIL",
+    "ledger": "cancelamento_reserva|1|1|1|1|0|reservado|disponivel|neutro;entrada|1|0|1|0|1|reservado|entrada;estorno_expedicao|1|1|1|1|1|expedido|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida",
+    "stock": "disponivel|1|0"
   },
   {
     "test": "only in-app operational notification(s) to AR Bio users (trg_notify_lab_on_programacao); outbox stays 0",
@@ -116,6 +117,26 @@
   },
   {
     "test": "AR Bio admin reads own fixture OS (RLS positive)",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel=false retained: DISCOVERY (unpinned)",
+    "status": "FAIL",
+    "ledger": "entrada|1|0|1|0|1|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida",
+    "stock": "expedido|1|1|t"
+  },
+  {
+    "test": "cancel=false: zero financial/fiscal effects",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel=false then canonical cancel: DISCOVERY (unpinned)",
+    "status": "FAIL",
+    "ledger": "cancelamento_reserva|1|1|1|1|0|reservado|disponivel|neutro;entrada|1|0|1|0|1|reservado|entrada;estorno_expedicao|1|1|1|1|1|expedido|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida",
+    "stock": "disponivel|1|0"
+  },
+  {
+    "test": "later canonical cancel: zero financial/fiscal effects",
     "status": "PASS"
   },
   {
