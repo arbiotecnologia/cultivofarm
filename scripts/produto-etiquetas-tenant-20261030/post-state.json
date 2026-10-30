@@ -304,26 +304,6 @@
  ],
  "triggers": [
   [
-   "produto_etiquetas",
-   "trg_produto_etiquetas_snapshot_immutable",
-   "O"
-  ],
-  [
-   "produto_etiquetas",
-   "trg_produto_etiquetas_updated_at",
-   "O"
-  ],
-  [
-   "lotes",
-   "trg_refresh_esteira_lotes",
-   "O"
-  ],
-  [
-   "lotes",
-   "update_lotes_updated_at",
-   "O"
-  ],
-  [
    "entrega_checklist",
    "trg_checklist_estado_editavel_v1",
    "O"
@@ -335,7 +315,7 @@
   ],
   [
    "lotes",
-   "trg_lab_lot_biological_only",
+   "aa_manual_lot_delete_v1",
    "O"
   ],
   [
@@ -345,17 +325,37 @@
   ],
   [
    "lotes",
-   "trg_saas_gate",
-   "O"
-  ],
-  [
-   "lotes",
    "tenant_organization_guard",
    "O"
   ],
   [
    "lotes",
-   "aa_manual_lot_delete_v1",
+   "trg_lab_lot_biological_only",
+   "O"
+  ],
+  [
+   "lotes",
+   "trg_refresh_esteira_lotes",
+   "O"
+  ],
+  [
+   "lotes",
+   "trg_saas_gate",
+   "O"
+  ],
+  [
+   "lotes",
+   "update_lotes_updated_at",
+   "O"
+  ],
+  [
+   "produto_etiquetas",
+   "trg_produto_etiquetas_snapshot_immutable",
+   "O"
+  ],
+  [
+   "produto_etiquetas",
+   "trg_produto_etiquetas_updated_at",
    "O"
   ]
  ]
