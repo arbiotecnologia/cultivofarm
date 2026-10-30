@@ -202,8 +202,8 @@ BEGIN
     IF coalesce(v_cq_ok,false) IS NOT TRUE THEN RAISE EXCEPTION 'ENVASE_FRESH_CQ_DENIED' USING ERRCODE='PT409'; END IF;
     v_envase_id:=gen_random_uuid();
     INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'envase',v_envase_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_envase_id,'lote_id',p_lote_id,'tipo_embalagem',v_tipo,'volume_por_unidade',v_unit_ml,'quantidade',v_qtd,'data_envase',current_date,'operador',nullif(p_operador,''),'organization_id',v_org,'etiqueta_gerada',false,'etiqueta_id',NULL,'etiqueta_gerada_em',NULL,'etiqueta_gerada_por',NULL));
-    INSERT INTO public.envase (id,lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador)
-    VALUES (v_envase_id,p_lote_id, v_tipo::public.tipo_embalagem, v_unit_ml, v_qtd, current_date, nullif(p_operador, ''))
+    INSERT INTO public.envase (id,lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador, organization_id)
+    VALUES (v_envase_id,p_lote_id, v_tipo::public.tipo_embalagem, v_unit_ml, v_qtd, current_date, nullif(p_operador, ''), v_org)
     RETURNING id INTO v_envase_id;
     v_env_ct := v_env_ct + 1;
 

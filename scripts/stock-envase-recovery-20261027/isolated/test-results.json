@@ -77,9 +77,12 @@
       "status": "PASS"
     },
     {
-      "test": "execution",
-      "status": "FAIL",
-      "error": "ERROR:  ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nSQL statement \"INSERT INTO public.envase (id,lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador)\n    VALUES (v_envase_id,p_lote_id, v_tipo::public.tipo_embalagem, v_unit_ml, v_qtd, current_date, nullif(p_operador, ''))\n    RETURNING id\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 159 at SQL statement\n"
+      "test": "manual production envase completes CQ->stock->pronto_entrega",
+      "status": "PASS"
+    },
+    {
+      "test": "exact pre-trigger tenant payload accepted; every row permit consumed",
+      "status": "PASS"
     }
   ],
   "raw": [
@@ -150,6 +153,6 @@
       "stderr": "ERROR:  PT503: STOCK_GATE_UNAVAILABLE\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 23 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     }
   ],
-  "elapsed_seconds": 162.418,
-  "exit_code": 1
+  "elapsed_seconds": 165.456,
+  "exit_code": 0
 }
