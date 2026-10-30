@@ -81,6 +81,37 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.fn_entrega_marcar_cancelamento() FROM PUBLIC,anon,authenticated;
 
+-- Called only by the canonical motor while releasing a proven delivery reservation.
+CREATE FUNCTION platform_private.delivery_merge_split_20261030(p_item uuid,p_ctx jsonb,p_payload jsonb)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_org uuid; v_s public.estoque_produto%ROWTYPE; v_main public.estoque_produto%ROWTYPE;
+ v_ent uuid:=NULLIF(p_payload->>'referencia_id','')::uuid; v_total numeric; v_volume numeric;
+BEGIN
+ v_org:=platform_private.delivery_actor_20261030('cancel');
+ IF NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current() AND actor=auth.uid() AND organization_id=v_org AND action='cancel' AND target=v_ent AND NOT consumed)
+ OR NOT EXISTS(SELECT 1 FROM platform_private.stock_motor_context WHERE txid=pg_catalog.txid_current() AND actor=auth.uid() AND item=p_item AND ctx=p_ctx AND ctx->>'acao'='cancelamento_reserva')
+ THEN RAISE EXCEPTION 'DELIVERY_MERGE_CONTEXT_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO v_s FROM public.estoque_produto WHERE id=p_item FOR UPDATE;
+ PERFORM platform_private.stock_motor_item(p_item,'cancelamento_reserva',p_payload);
+ IF v_s.status::text<>'reservado' OR v_s.quantidade IS DISTINCT FROM v_s.quantidade_reservada OR NOT EXISTS(SELECT 1 FROM public.entregas WHERE id=v_ent AND organization_id=v_org AND estoque_produto_id=p_item AND quantidade_entregue=v_s.quantidade) THEN RAISE EXCEPTION 'DELIVERY_MERGE_BALANCE_DENIED' USING ERRCODE='PT409'; END IF;
+ SELECT * INTO v_main FROM public.estoque_produto WHERE lote_id=v_s.lote_id AND envase_id IS NOT DISTINCT FROM v_s.envase_id AND produto_id IS NOT DISTINCT FROM v_s.produto_id AND microrganismo_id IS NOT DISTINCT FROM v_s.microrganismo_id AND validade IS NOT DISTINCT FROM v_s.validade AND status='disponivel' AND quantidade_reservada IS NULL AND id<>p_item ORDER BY id LIMIT 1 FOR UPDATE;
+ PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+ IF v_main.id IS NULL THEN
+  UPDATE public.estoque_produto SET status='disponivel' WHERE id=p_item;
+  RETURN;
+ END IF;
+ PERFORM platform_private.stock_motor_item(v_main.id,'cancelamento_reserva','{}'::jsonb);
+ v_total:=v_main.quantidade+v_s.quantidade; v_volume:=v_main.volume_total+v_s.volume_total;
+ IF v_total IS NULL OR v_volume IS NULL OR v_total::text IN ('NaN','Infinity','-Infinity') OR v_volume::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'DELIVERY_MERGE_BALANCE_DENIED' USING ERRCODE='PT409'; END IF;
+ -- Keep source row and immutable movement history; retire it BEFORE growing the unique main row.
+ UPDATE public.estoque_produto SET status='estornado',quantidade=0,volume_total=0,quantidade_reservada=0,reservado_para_os_id=NULL,reservado_para_os_tipo=NULL,reservado_para_cliente_id=NULL,reservado_para_partner_id=NULL,reservado_para_partner_order_id=NULL WHERE id=p_item;
+ UPDATE public.estoque_produto SET quantidade=v_total,volume_total=v_volume WHERE id=v_main.id;
+ IF NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=p_item AND idempotency_key=p_ctx->>'idempotency_key' AND saldo_posterior=0 AND acao='cancelamento_reserva')
+ OR NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE estoque_produto_id=v_main.id AND metadata->>'operacao_key'=p_ctx->>'idempotency_key' AND saldo_anterior=v_main.quantidade AND saldo_posterior=v_total AND volume_posterior=v_volume AND acao='cancelamento_reserva')
+ THEN RAISE EXCEPTION 'DELIVERY_MERGE_LEDGER_DENIED' USING ERRCODE='PT409'; END IF;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_merge_split_20261030(uuid,jsonb,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+
 -- Canonical creation overload: manual/internal only; B2B/OnFarm remain contained.
 CREATE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid,p_origem text,p_itens jsonb,p_request_key text,p_dados jsonb)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $$

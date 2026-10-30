@@ -2,6 +2,7 @@
 import json, subprocess, time, traceback
 from pathlib import Path
 import restore
+import build_motor
 from restore import pg
 H=Path(__file__).resolve().parent
 checks=[]
@@ -56,6 +57,8 @@ def wait():
 def main():
     r=restore.restore();print('RESTORE',json.dumps({k:len(v) for k,v in r.items()}),flush=True)
     sql((H/'candidate.sql.review').read_text())
+    build_motor.build()
+    sql((H/'motor-delta.sql.review').read_text())
     checks.append({'test':'candidate compiles with captured real types/bodies','status':'PASS'})
     # Exact downstream tables: a transaction context blocks any writer, not the producers globally.
     tables=['accounts_receivable','accounts_receivable_installments','financial_receipts','financial_documents','fiscal_invoices','fiscal_invoice_items','fiscal_events','comunicacao_outbox','comunicacao_eventos','os_faturamento_base']
@@ -87,11 +90,14 @@ def main():
     ent=sql('SELECT id FROM public.entregas ORDER BY id LIMIT 1;')
     deny('cross tenant cancel',actor(V)+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');",'DELIVERY_SCOPE_DENIED')
     before=sql("SELECT md5(jsonb_agg(to_jsonb(x) ORDER BY x.id)::text) FROM public.estoque_produto x;")
-    error=pg.sql(actor()+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');",False)
-    assert 'estoque_produto_lote_legado_unico_idx' in error,error
-    checks.append({'test':'cancel split collision reproduced; operational blocker retained','status':'BLOCKED','error':error})
-    print('BLOCKED cancel split collision',error,flush=True)
+    sql("CREATE FUNCTION public.local_cancel_fault() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.status='cancelada' THEN RAISE EXCEPTION 'LOCAL_CANCEL_FAULT'; END IF; RETURN NEW; END$$;CREATE TRIGGER zz_cancel_fault BEFORE UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION public.local_cancel_fault();")
+    deny('cancel failure after return ledger atomically rolls back',actor()+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');",'LOCAL_CANCEL_FAULT')
     check('failed cancel rolls back reversal stock delivery and receipt',f"SELECT (SELECT md5(jsonb_agg(to_jsonb(x) ORDER BY x.id)::text) FROM public.estoque_produto x)='{before}' AND (SELECT status::text FROM public.entregas WHERE id='{ent}')='separado' AND NOT EXISTS(SELECT 1 FROM platform_private.delivery_requests_20261030 WHERE action='cancel') AND NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE acao='estorno_expedicao');")
+    sql('DROP TRIGGER zz_cancel_fault ON public.entregas;')
+    print('CANCEL',sql(actor()+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');"),flush=True)
+    check('canonical split merge keeps unique index source history and main balance',f"SELECT (SELECT status::text FROM public.entregas WHERE id='{ent}')='cancelada' AND (SELECT status::text FROM public.estoque_produto WHERE id=(SELECT estoque_produto_id FROM public.entregas WHERE id='{ent}'))='estornado' AND (SELECT sum(quantidade) FROM public.estoque_produto)=20;")
+    check('cancel exact replay',actor()+f"SELECT (public.rpc_entrega_cancelar_v1('{ent}','local')->>'replay')::boolean;")
+    deny('cancel changed reason replay denied',actor()+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','other');",'DELIVERY_REPLAY_CONFLICT')
     check('no downstream titles fiscal outbox', 'SELECT '+ ' AND '.join(f'(SELECT count(*) FROM public.{t})=0' for t in tables)+';')
     check('private context removed on success',"SELECT count(*)=0 FROM platform_private.delivery_context_20261030;")
     # Real two-connection waits, not timers pretending to establish concurrency.
