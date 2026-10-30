@@ -180,6 +180,8 @@ def main():
     out,err=finish(holder,actor()+batch+'COMMIT;');out2,err2=finish(worker)
     assert '"ok": true' in out and 'DELIVERY_OBSERVED_CONFLICT' in err2 and 'deadlock detected' not in err+err2,err+err2+out+out2
     checks.append({'test':'independent real batch versus group stock wait succeeds batch and rejects stale group without deadlock','status':'PASS','observed':err2})
+    import test_review
+    test_review.run(sys.modules[__name__])
 
 if __name__=='__main__':
     try: main()
