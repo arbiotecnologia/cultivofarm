@@ -120,6 +120,8 @@ def run():
     sql(f"SET session_replication_role=replica;UPDATE public.ordens_servico SET status='em_cq' WHERE id='{T.O6}';")
     changed_during_wait('CQ revoked during observed lote wait denies partial before writes',f"SELECT 1 FROM public.lotes WHERE id='{T.L6}' FOR UPDATE;",f"UPDATE public.controle_qualidade SET resultado='reprovado' WHERE lote_id='{T.L6}';",env(T.O6,T.PP6,T.L6,'cq-wait-0001',1),'P0001')
     sql(f"SET session_replication_role=replica;UPDATE public.controle_qualidade SET resultado='aprovado' WHERE lote_id='{T.L6}';")
+    import matrix
+    matrix.run(sys.modules[__name__])
     z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in T.TABLES)+")::text;"); assert z1==z; ok('all financial/fiscal/outbox full-row snapshots unchanged (not counts)')
     # Existing canonical proof regressions on locally created delivery, never hosted reference.
     owned=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{T.L2}' AND status='reservado';")
