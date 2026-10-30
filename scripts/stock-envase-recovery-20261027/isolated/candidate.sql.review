@@ -23,6 +23,7 @@ DECLARE
   v_env_ct int := 0; v_est_ct int := 0; v_res_ml numeric := 0; v_liv_ml numeric := 0;
   v_avanco jsonb; v_result jsonb; v_estado text;
 BEGIN
+  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
   PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
   PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
@@ -111,6 +112,16 @@ BEGIN
     FROM public.controle_qualidade WHERE lote_id = p_lote_id
    ORDER BY created_at DESC, seq DESC LIMIT 1;
   IF coalesce(v_cq_ok, false) IS NOT TRUE THEN RAISE EXCEPTION 'COCKPIT_ENVASE_EXIGE_CQ_APROVADO'; END IF;
+
+  IF v_lote_status IS DISTINCT FROM 'aprovado' THEN RAISE EXCEPTION 'ENVASE_APPROVED_LOT_REQUIRED' USING ERRCODE='PT409'; END IF;
+  IF (SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id)<>1
+   OR (SELECT count(*) FROM public.lotes WHERE programacao_id=p_programacao_id)<>1
+   OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id) THEN RAISE EXCEPTION 'ENVASE_ROOT_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+  IF EXISTS(SELECT 1 FROM public.estoque_produto s WHERE s.reservado_para_os_id=p_os_id AND s.status::text<>'estornado' AND
+   (s.organization_id IS DISTINCT FROM v_org OR s.lote_id IS DISTINCT FROM p_lote_id OR s.produto_id IS DISTINCT FROM v_produto_id OR s.microrganismo_id IS DISTINCT FROM v_micro_id
+    OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM v_ctx.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL
+    OR s.status::text IS DISTINCT FROM 'reservado' OR s.quantidade_reservada IS DISTINCT FROM s.quantidade OR s.volume_total<=0 OR s.volume_total::text IN ('NaN','Infinity','-Infinity'))) THEN
+    RAISE EXCEPTION 'ENVASE_RESERVATION_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
 
   SELECT coalesce(sum(coalesce(volume_por_unidade,0) * coalesce(quantidade,0)), 0)
     INTO v_envasado_ml FROM public.envase WHERE lote_id = p_lote_id;
