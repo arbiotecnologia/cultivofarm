@@ -2,7 +2,7 @@
 -> stock/envase v2 candidate. Actors are `authenticated` with synthetic claims (never service_role).
 Static baseline rows are loaded with replica mode only for upstream stages already contained/LIVE;
 every tested writer runs with all triggers enabled. Not hosted JWT/RLS/Storage proof."""
-import hashlib, json, sys, time, traceback
+import hashlib, json, re, sys, time, traceback
 from pathlib import Path
 H = Path(__file__).resolve().parent
 ATOMIC = H.parent / 'delivery-atomic-hardening-20261030'
