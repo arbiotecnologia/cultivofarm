@@ -2,14 +2,14 @@
 CREATE TABLE platform_private.envase_insert_permits_v1(
  txid bigint NOT NULL, actor uuid NOT NULL, organization_id uuid NOT NULL,
  action text NOT NULL, target uuid NOT NULL, lote uuid NOT NULL, os uuid NOT NULL,
- prog uuid NOT NULL, payload jsonb NOT NULL, PRIMARY KEY(txid,action,target));
+ prog uuid NOT NULL, payload jsonb NOT NULL, admitted boolean NOT NULL DEFAULT false, PRIMARY KEY(txid,action,target));
 REVOKE ALL ON platform_private.envase_insert_permits_v1 FROM PUBLIC,anon,authenticated,service_role;
 CREATE FUNCTION platform_private.envase_insert_guard_v1() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $entry$
 DECLARE p platform_private.envase_insert_permits_v1%ROWTYPE; c record; parent public.estoque_produto%ROWTYPE; a jsonb; org uuid;
 BEGIN
  IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
- DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id RETURNING * INTO p;
+ UPDATE platform_private.envase_insert_permits_v1 SET admitted=true WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted=false RETURNING * INTO p;
  IF FOUND THEN
   IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
    OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
@@ -38,3 +38,19 @@ END $entry$;
 REVOKE ALL ON FUNCTION platform_private.envase_insert_guard_v1() FROM PUBLIC,anon,authenticated,service_role;
 CREATE TRIGGER a01_envase_insert_permit BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
 CREATE TRIGGER a01_stock_insert_permit BEFORE INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
+-- Consume only after every BEFORE normalizer and validator has produced the final row.
+CREATE FUNCTION platform_private.envase_insert_final_v1() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $final$
+DECLARE p platform_private.envase_insert_permits_v1%ROWTYPE;
+BEGIN
+ DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted RETURNING * INTO p;
+ IF FOUND THEN
+  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
+   OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
+ ELSIF TG_TABLE_NAME='envase' THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISSING' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $final$;
+REVOKE ALL ON FUNCTION platform_private.envase_insert_final_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER a01_envase_final_permit AFTER INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1();
+CREATE TRIGGER a01_stock_final_permit AFTER INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1();

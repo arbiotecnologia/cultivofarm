@@ -12,7 +12,7 @@ def run(X):
     insert=f"INSERT INTO public.envase SELECT * FROM jsonb_populate_record(NULL::public.envase,'{payload}'::jsonb||jsonb_build_object('created_at',now()));"
     permit=f"INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),'{T.W}','{T.A}','envase','{row['id']}','{l}','{o}','{p}','{payload}'::jsonb);"
     # Minting is owner-only fixture setup within a transaction; client cannot do so.
-    base="BEGIN; SET request.jwt.claim.sub='"+T.W+"';"
+    base="BEGIN;"+T.actor(T.W)+"RESET ROLE;"
     for field,value in [('organization_id',T.B),('lote_id',T.L5),('id',T.u(2805)),('quantidade',2),('operador','FOREIGN'),('etiqueta_gerada',True),('volume_por_unidade',500)]:
         changed=dict(row); changed[field]=value
         mutated=insert.replace(payload,json.dumps(changed).replace("'","''"))
