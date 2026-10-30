@@ -1077,3 +1077,10 @@
 - [ ] Implantar 01 após as duas anteriores; fiscal, cobranças e automações seguem bloqueados.
 
 - [x] 30/10 Migrar gerar formulário/assinatura/anexo para contrato autorizado (scripts/delivery-proof-authz-20261030) — preparado e testado em PG descartável; aplicação hosted/publicação aguardam revisão do proprietário.
+
+## Comprovação de entrega — revisão 69d77e3 (30/10)
+- [x] Envelopes exatos preflight/ACK, sem limpeza no cliente, stale após toda espera, busy em clique duplo.
+- [x] Recheck servidor após cada espera e antes de replay/writer; permit apagado no sucesso; aplicador vinculado + revogação real.
+- [x] 97 regressões atômicas com comprovação instalada; 93 falhas de segurança idênticas à base 7cc75d7.
+- [x] Adaptadores legados endurecidos + release-combined (uma transação), depois frontend; AGENTS raiz restaurado.
+- [ ] Instalação hosted e prova JWT/RLS/Storage real: aguarda revisão do proprietário do artefato exato.
