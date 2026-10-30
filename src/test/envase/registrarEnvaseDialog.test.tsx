@@ -25,13 +25,14 @@ async function complete(start = 0, volume = 9000, errorTable?: string) {
 }
 const submit = () => screen.getByRole("button", { name: "Registrar envase e avançar esteira" });
 describe("RegistrarEnvaseDialog current reads and ACK", () => {
-  it.each(["target", "tenant", "epoch", "close", "ABA"])("discards old four responses after %s change", async kind => {
+  it.each(["target", "actor", "tenant", "epoch", "close", "ABA"])("discards old four responses after %s change", async kind => {
     const closed = vi.fn();
     const view = render(<RegistrarEnvaseDialog open target={target} onOpenChange={closed} />);
     expect(submit()).toBeDisabled();
     let next = target;
     if (kind === "target" || kind === "ABA") next = { ...target, lote_id: "lot-B", os_id: "os-B", programacao_id: "pp-B" };
     if (kind === "tenant") t.auth = auth("B");
+    if (kind === "actor") t.auth = { ...auth(), user: { id: "other" }, profile: { ...auth().profile, user_id: "other" } };
     if (kind === "epoch") t.auth = auth("A", 1);
     view.rerender(<RegistrarEnvaseDialog open={kind !== "close"} target={next} onOpenChange={closed} />);
     if (kind === "ABA") view.rerender(<RegistrarEnvaseDialog open target={target} onOpenChange={closed} />);

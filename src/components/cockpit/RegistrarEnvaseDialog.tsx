@@ -64,7 +64,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
       actorId: user.id, orgId: profile.organization_id,
       args: { p_lote_id: target.lote_id, p_os_id: target.os_id, p_programacao_id: target.programacao_id, p_origem: target.origem,
         p_linhas: [], p_validade: "", p_operador: null, p_idempotency_key: "availability", p_permitir_parcial: false, p_motivo_parcial: null },
-    }, fence).then(ok => { if (active && captured() && context.current.generation === generation && ok) setAvailableScope(currentKey); });
+    }, fence).then(ok => { if (active && captured() && context.current.generation === generation && ok) setAvailableScope(currentKey); }).catch(() => {});
     return () => { active = false; };
   }, [currentKey]);
   const [linhas, setLinhas] = useState<Linha[]>([novaLinha()]);
@@ -258,11 +258,13 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Registrar envase</DialogTitle>
-          <DialogDescription className="flex items-center gap-2 flex-wrap">
+          <DialogDescription asChild>
+            <div className="flex items-center gap-2 flex-wrap">
             {target?.codigo_lote && (
               <Badge variant="outline" className="font-mono">Lote {target.codigo_lote}</Badge>
             )}
             {target?.produto && <span className="text-xs text-muted-foreground">{target.produto}</span>}
+            </div>
           </DialogDescription>
         </DialogHeader>
 
