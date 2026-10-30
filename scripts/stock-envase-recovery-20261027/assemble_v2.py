@@ -175,6 +175,12 @@ def build():
  PERFORM 1 FROM public.clientes""", """ SELECT * INTO v_prev FROM platform_private.delivery_requests_20261030 WHERE request_key=p_request_key AND actor=v_actor AND organization_id=v_org AND action='group';
  IF FOUND THEN
   IF v_prev.fingerprint IS DISTINCT FROM v_fp THEN RAISE EXCEPTION 'DELIVERY_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  -- Reference scope still binds the replay: client unchanged during the wait, still in tenant, and every receipt
+  -- delivery belongs to this tenant/OS/client. Only the fresh-dispatch CAS/status/stock state is not required.
+  IF v_os.cliente_id IS DISTINCT FROM v_original_client OR NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org)
+  OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_prev.result->'itens') i LEFT JOIN public.entregas e ON e.id=(i.value->>'entrega_id')::uuid
+   WHERE e.id IS NULL OR e.organization_id IS DISTINCT FROM v_org OR e.ordem_servico_id IS DISTINCT FROM p_os_id OR e.cliente_id IS DISTINCT FROM v_os.cliente_id)
+  THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
   IF platform_private.delivery_actor_20261030('group') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
   RETURN v_prev.result||jsonb_build_object('replay',true);
  END IF;
