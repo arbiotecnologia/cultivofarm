@@ -1,3 +1,5 @@
+> **Atualização 2026-10-30 (supera o parágrafo abaixo):** o hardening foi entregue e, por relato externo, aplicado via `release-combined.sql.review` (`a566faa4…`, backend combinado primeiro, frontend `8cd18556` depois). Os contratos atômicos de grupo (`rpc_cockpit_criar_entrega_v1/6`) e cancelamento observado (`rpc_entrega_cancelar_v1/3`) existem sem EXECUTE de cliente; a liberação revisável está em `scripts/delivery-group-capability-20261030/`.
+
 # Implementação atômica de entrega — recorte separado, não liberado
 
 ## Resultado da avaliação
