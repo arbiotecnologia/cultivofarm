@@ -20,8 +20,24 @@
     "status": "PASS"
   },
   {
+    "test": "tenant admin cannot write the global CQ reference catalogue (LIVE ACL)",
+    "status": "PASS"
+  },
+  {
+    "test": "local CQ reference loaded as global master data (hosted: existing-reference precondition / Platform Superadmin decision)",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin with AR Bio org: PRE stops, nothing written",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF client/farm with AR Bio org: PRE stops",
+    "status": "PASS"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 117, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 77, in main\n    sql(actor(ADM) + f\"INSERT INTO public.cq_parametros_referencia(id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,observacoes,ativo) VALUES('{REF}','{PROD}',6,8,1000000000,'TESTE homogenea','TESTE caracteristico','TESTE ausente','TESTE SEM VALOR COMERCIAL',true);\")\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 24, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  permission denied for table cq_parametros_referencia\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 121, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 91, in main\n    assert rc == 0, (out + err)[-3000:]\n           ^^^^^^^\nAssertionError: 007bb519-cba0-4704-be2c-cb93ad010048|a7d45277-6dec-413d-bf6b-86620c1ef39f|20000000-0000-4000-8000-000000000003|20000000-0000-4000-8000-000000000004|20000000-0000-4000-8000-000000000005|20000000-0000-4000-8000-000000000006|20000000-0000-4000-8000-000000000010|true\nFIXTURE_PRE_FIN_HASH d41d8cd98f00b204e9800998ecf8427e AR=0\n{\"aal\": \"aal1\", \"exp\": 1793376995, \"iat\": 1793376390, \"sub\": \"a7d45277-6dec-413d-bf6b-86620c1ef39f\", \"role\": \"authenticated\"}|a7d45277-6dec-413d-bf6b-86620c1ef39f|authenticated\nERROR:  LAB_ITEM_NOT_MANUFACTURABLE\nHINT:  Somente produtos biol\u00f3gicos e microrganismos podem gerar fabrica\u00e7\u00e3o laboratorial.\nCONTEXT:  PL/pgSQL function platform_private.lab_assert_manufacturable(uuid,uuid) line 4 at RAISE\nSQL statement \"SELECT platform_private.lab_assert_manufacturable(NEW.produto_id,NEW.microrganismo_id)\"\nPL/pgSQL function platform_private.trg_lab_os_biological_only() line 5 at PERFORM\nSQL statement \"INSERT INTO public.ordens_servico(id,cliente_id,fazenda_id,talhao_id,tipo_item,produto_id,microrganismo_id,modo_aplicacao,area_hectares,volume_total_ml,data_programada,prioridade)\n VALUES(os,current_setting('fixture.cliente')::uuid,current_setting('fixture.fazenda')::uuid,current_setting('fixture.talhao')::uuid,'produto',current_setting('fixture.produto')::uuid,NULL,'foliar',1,1000,current_date+1,'media')\"\nPL/pgSQL function inline_code_block line 5 at SQL statement\n\n"
   }
 ]

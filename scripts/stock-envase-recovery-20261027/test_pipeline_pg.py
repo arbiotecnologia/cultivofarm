@@ -4,8 +4,8 @@ OS aberta -> approval -> programming -> production -> lot -> CQ (existing refere
 under authenticated claims, with temporary EXECUTE revoked before COMMIT.
 No replica mode / trigger disabling / status forcing for ANY pipeline row. Only pre-existing MASTER data that exists
 hosted today and has no canonical writer reachable in a restore (tenant, auth users, profiles/roles, subscription,
-client/farm/plot, product) is loaded with replica mode, explicitly. The CQ reference is created by the admin through
-the same RLS INSERT the ParametrosCQ page uses (local only; hosted it is a precondition). Claims testing, not JWT."""
+client/farm/plot, product) is loaded with replica mode, explicitly. The CQ reference is GLOBAL catalogue data without any client writer
+(authenticated has no privilege); it is loaded locally as master data and is a hosted precondition. Claims testing, not JWT."""
 import hashlib, json, re, subprocess, sys, time, traceback
 from pathlib import Path
 H = Path(__file__).resolve().parent
@@ -74,8 +74,12 @@ def main():
     rc, out, err = fixture(); assert rc != 0 and 'FIXTURE_PRE_REFERENCE_INCOMPLETE' in err, err[-800:]
     assert counts() == c0 and fin() == f0 and last(GRANTS) == 'false/false/false'; ok('missing CQ reference: fixture STOPS at PRE, zero rows, grants closed')
     # Reference through the ParametrosCQ RLS writer (authenticated admin), complete values.
-    sql(actor(ADM) + f"INSERT INTO public.cq_parametros_referencia(id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,observacoes,ativo) VALUES('{REF}','{PROD}',6,8,1000000000,'TESTE homogenea','TESTE caracteristico','TESTE ausente','TESTE SEM VALOR COMERCIAL',true);")
-    ok('local CQ reference created by admin through the canonical RLS writer (hosted: precondition, not fixture)')
+    # LIVE: authenticated has NO table privilege on this GLOBAL catalogue (UI writer is blocked too) -> prove it,
+    # then load the local reference as global master data by the owner role (triggers ON, no replica).
+    e = pg.sql(actor(ADM) + f"INSERT INTO public.cq_parametros_referencia(produto_id,ativo) VALUES('{PROD}',true);", False)
+    assert 'permission denied' in e; ok('tenant admin cannot write the global CQ reference catalogue (LIVE ACL)')
+    sql(f"INSERT INTO public.cq_parametros_referencia(id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,observacoes,ativo) VALUES('{REF}','{PROD}',6,8,1000000000,'TESTE homogenea','TESTE caracteristico','TESTE ausente','TESTE SEM VALOR COMERCIAL',true);")
+    ok('local CQ reference loaded as global master data (hosted: existing-reference precondition / Platform Superadmin decision)')
     # Wrong actor/tenant: FSF admin with AR Bio ids -> PRE stops.
     rc, out, err = fixture(admin=ADMB); assert rc != 0 and 'FIXTURE_PRE_ADMIN' in err, err[-800:]
     assert counts() == c0 and last(GRANTS) == 'false/false/false'; ok('FSF admin with AR Bio org: PRE stops, nothing written')
