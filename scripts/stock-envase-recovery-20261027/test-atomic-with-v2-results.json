@@ -226,9 +226,10 @@
     "status": "PASS"
   },
   {
-    "test": "independent real batch versus group stock wait succeeds batch and rejects stale group without deadlock",
+    "test": "V2 COMPOSITION: raw row-lock holder calling gated batch vs gated group -> deadlock resolved by PostgreSQL, one side aborted, no partial effect",
     "status": "PASS",
-    "observed": "ERROR:  DELIVERY_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 50 at RAISE\n"
+    "observed": "ery details.\nCONTEXT:  while locking tuple (0,4) in relation \"estoque_produto\"\nSQL statement \"SELECT *            FROM public.estoque_produto WHERE id=v_id FOR UPDATE\"\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 49 at SQL statement\n",
+    "batch_committed": true
   },
   {
     "test": "unsupported field rejected endereco_entrega",
@@ -329,7 +330,7 @@
   {
     "test": "cancel row wait serializes effective revocation after commit",
     "status": "PASS",
-    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"176fba8c-0311-42a7-905d-47a141aa862a\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
+    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"f42a44c7-e2ff-4731-a3bf-f024d0df3b30\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
   },
   {
     "test": "cancel replay denied after effective revocation row",
@@ -343,7 +344,7 @@
   {
     "test": "cancel merge wait serializes effective revocation after commit",
     "status": "PASS",
-    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"19959340-6445-4037-8284-5e0c03d82d4b\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
+    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"cccddbf0-fd62-41cb-9862-7dedc4b0bb43\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
   },
   {
     "test": "cancel replay denied after effective revocation merge",
@@ -358,7 +359,7 @@
   {
     "test": "OS cliente_id changed while waiting denies replay",
     "status": "PASS",
-    "observed": "ERROR:  DELIVERY_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 32 at RAISE\n"
+    "observed": "ERROR:  DELIVERY_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 40 at RAISE\n"
   },
   {
     "test": "dedicated tests zero finance/outbox",

@@ -41,14 +41,17 @@ def sql_with_v2(s):
     return out
 T.sql = sql_with_v2
 rc = 0
+# test_pg writes its results file only under __main__; record THIS run's checks directly (never a stale file).
+import traceback
 try:
     T.main()
-except SystemExit as e:
-    rc = e.code or 0
+except Exception:
+    traceback.print_exc(); T.checks.append({'test': 'execution stopped at concrete failure', 'status': 'FAIL', 'error': traceback.format_exc()[-3000:]})
 finally:
-    if res.exists(): shutil.copyfile(res, H / 'test-atomic-with-v2-results.json')
+    (H / 'test-atomic-with-v2-results.json').write_text(json.dumps(T.checks, indent=2) + '\n')
     shutil.copyfile(bak, res); bak.unlink()
-    r = json.loads((H / 'test-atomic-with-v2-results.json').read_text())
+    r = T.checks
+    if any(x['status'] != 'PASS' for x in r): rc = 1
     print('ATOMIC_WITH_V2', 'v2_installed=' + str(state['done']), sum(x['status'] == 'PASS' for x in r), 'PASS',
           sum(x['status'] == 'FAIL' for x in r), 'FAIL', sum(x['status'] == 'BLOCKED' for x in r), 'BLOCKED', flush=True)
     if not state['done']: rc = 1
