@@ -317,7 +317,8 @@ describe("EntregaComprovantePanel — ações de comprovação isoladas por entr
     fromMock.mockImplementation((tabela:string)=>tabela==='entregas'?chain({data:{id:'x',comprovante_status:'anexado',validation_token:null}}):chain({data:{numero_formulario:'AR-ENT-000004'}}));
     render(<EntregaComprovantePanel entrega={{id:'e1'}}/>,{wrapper});fireEvent.click(await screen.findByRole('button',{name:/confirmar recebimento/i}));fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i),{target:{value:'caixa amassada'}});fireEvent.click(screen.getByRole('button',{name:/^confirmar$/i}));await waitFor(()=>expect(toastMock).toHaveBeenCalled());expect(rpcMock).not.toHaveBeenCalled();expect(uploadMock).not.toHaveBeenCalled();expect(screen.getByPlaceholderText(/descreva ressalvas/i)).toHaveValue('caixa amassada');
   });
-  it('dispensa não envia RPC e preserva motivo',async()=>{
-    render(<EntregaComprovantePanel entrega={{id:'e1'}}/>,{wrapper});fireEvent.click(await screen.findByRole('button',{name:/dispensar assinatura/i}));fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i),{target:{value:'cliente ausente'}});fireEvent.click(screen.getByRole('button',{name:/^dispensar$/i}));await waitFor(()=>expect(toastMock).toHaveBeenCalled());expect(rpcMock).not.toHaveBeenCalled();expect(uploadMock).not.toHaveBeenCalled();expect(screen.getByPlaceholderText(/mínimo 5 caracteres/i)).toHaveValue('cliente ausente');
+  it('dispensa indisponível: sem botão/diálogo e nenhuma RPC',async()=>{
+    render(<EntregaComprovantePanel entrega={{id:'e1'}}/>,{wrapper});expect(await screen.findByTestId('dispensa-indisponivel')).toBeInTheDocument();expect(screen.queryByRole('button',{name:/dispensar assinatura/i})).not.toBeInTheDocument();expect(screen.queryByPlaceholderText(/mínimo 5 caracteres/i)).not.toBeInTheDocument();expect(rpcMock).not.toHaveBeenCalled();expect(uploadMock).not.toHaveBeenCalled();
   });
+
 });
