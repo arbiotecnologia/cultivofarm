@@ -1,0 +1,3 @@
+REVOKE EXECUTE ON FUNCTION public.rpc_confirmar_recebimento_entrega(uuid,jsonb) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.rpc_desvincular_etiqueta_entrega(uuid,uuid,text) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.rpc_vincular_etiqueta_embalagem(uuid,uuid) FROM PUBLIC,anon,authenticated;

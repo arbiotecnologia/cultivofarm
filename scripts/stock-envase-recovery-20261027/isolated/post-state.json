@@ -13839,7 +13839,7 @@
       "public",
       "rpc_cockpit_registrar_envase_v1",
       "p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text, p_idempotency_key text, p_permitir_parcial boolean, p_motivo_parcial text",
-      "4f8ece9c88e83e0ea62cbb7eea4a0bdb",
+      "c9e54806f61cacbf6a64229a76b6bd3c",
       "{postgres=X/postgres,service_role=X/postgres}",
       "postgres",
       [

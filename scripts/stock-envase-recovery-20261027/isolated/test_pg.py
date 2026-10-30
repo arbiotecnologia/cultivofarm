@@ -40,6 +40,15 @@ def run():
     reject('PRE drift aborts exactly',inst.replace('ENVASE_PRE_DRIFT','ENVASE_PRE_DRIFT',1).replace(json.dumps(pre).replace("'","''"),json.dumps({}).replace("'","''"),1),'P0001')
     reject('forced POST aborts installation',inst.replace(delta,delta+"DO $x$ BEGIN RAISE EXCEPTION 'FORCED_POST' USING ERRCODE='PT409'; END $x$;"),'PT409'); assert state()==pre
     sql(inst); assert state()==post; ok('install COMMIT and exact POST; writer remains closed')
+    closure=G.legacy_delta()
+    measured=sql('BEGIN;'+closure+G.STATE+'::text;ROLLBACK;')
+    closed=json.loads([x for x in measured.splitlines() if x.startswith('{')][-1]); G.write_legacy(post,closed)
+    # Execute dedicated ACL closure only in a rolled-back local transaction.
+    for sig,args in zip(G.LEGACY,[f"'{T.u(999)}','{{}}'::jsonb",f"'{T.u(999)}','{T.u(998)}','LOCAL'",f"'{T.u(999)}','{T.u(998)}'"]):
+        reject('legacy client closure '+sig,'BEGIN;'+G.guard(post,'LEGACY_PRE_DRIFT')+closure+G.guard(closed,'LEGACY_POST_DRIFT')+T.actor()+f"SELECT {sig.split('(')[0]}({args});",'42501')
+        assert state()==post
+    sql('BEGIN;'+closure+(H/'legacy-closure-postflight.sql.review').read_text()+'ROLLBACK;'); assert state()==post
+    ok('legacy exact POST and effective ACL closure verified; bodies/service grants unchanged')
     reject('rerun refuses changed exact state',inst,'P0001')
     def cap(): return f"SELECT public.rpc_envase_capability_v1('{T.L2}','{T.O2}','{T.PP2}','manual');"
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is False; ok('capability unavailable while canonical writer ACL closed')
@@ -50,12 +59,22 @@ def run():
     before=snapshot()
     reject('foreign FSF cannot envase AR Bio',T.actor(T.V)+env(T.O2,T.PP2,T.L2,'foreign-0001'),'42501'); assert snapshot()==before
     reject('missing key denied before writes',T.actor(T.W)+env(T.O2,T.PP2,T.L2,''),'22023'); assert snapshot()==before
+    reject('NULL key denied before writes',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'null-key-0001').replace("'null-key-0001'","NULL"),'22023'); assert snapshot()==before
     reject('missing gate singleton fails PT503, not overwritten FOUND',"BEGIN;DELETE FROM cf_user_guards_v1.state;"+T.actor(T.W)+env(T.O2,T.PP2,T.L2,'gate-0001'),'PT503'); assert snapshot()==before
     res=json.loads(last(T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3))); assert res['success'] is True and res['estado']=='completed'; ok('manual production envase completes CQ->stock->pronto_entrega')
     assert T.os_status(T.O2)=='pronto_entrega'; assert last(f"SELECT count(*) FROM platform_private.authz_tickets WHERE target='{T.O2}';")=='0'; ok('transition ticket consumed and OS ready')
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is True; ok('endpoint capability remains available for exact replay after OS ready')
     before=snapshot(); rep=json.loads(last(T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3))); assert rep['replay'] is True and snapshot()==before; ok('exact replay same result with zero full-row mutations')
     reject('operator substitution conflicts',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3).replace("'LOCAL'","'OTHER'"),'PT409'); assert snapshot()==before
+    reason=env(T.O2,T.PP2,T.L2,'envase-ok-0001',3).replace('false,NULL','false,\'OTHER REASON\'')
+    assert reason!=env(T.O2,T.PP2,T.L2,'envase-ok-0001',3), 'REASON_ANCHOR_MISSING'
+    reject('partial reason substitution conflicts',T.actor(T.W)+reason,'PT409'); assert snapshot()==before
+    receipt=last(f"SELECT idempotency_key FROM public.cockpit_operacao_idempotencia WHERE resultado->>'envase_release_fingerprint' IS NOT NULL LIMIT 1;")
+    sql(f"UPDATE public.cockpit_operacao_idempotencia SET resultado=resultado-'envase_release_fingerprint' WHERE idempotency_key='{receipt}';")
+    legacy=snapshot(); reject('legacy receipt without fingerprint denied unchanged',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3),'PT409'); assert snapshot()==legacy
+    # Restore the exact saved receipt locally; never infer fingerprint from the retry.
+    saved=json.loads(before)['cockpit_operacao_idempotencia']; original=next(x['resultado'] for x in saved if x['idempotency_key']==receipt)
+    sql(f"UPDATE public.cockpit_operacao_idempotencia SET resultado='{json.dumps(original)}'::jsonb WHERE idempotency_key='{receipt}';"); assert snapshot()==before
     reject('fresh key on ready OS denied',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-new-0001'),'PT409'); assert snapshot()==before
     sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{T.W}';")
     inactive=snapshot(); reject('inactive same actor cannot replay',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3),'42501'); assert snapshot()==inactive
@@ -81,6 +100,26 @@ def run():
     assert re.search(r'ERROR:\s+42501:',we), we+wo
     assert last(f"SELECT count(*) FROM public.envase WHERE lote_id='{T.L6}';")=='0'; ok('active profile revoked during observed lote lock wait: 42501 and no envase')
     sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{T.W}';")
+    # Test terminal/CQ changes committed while worker actually waits. Upstream changes
+    # use replica ONLY as a fixture seam, not proof of authorization of those writers.
+    def changed_during_wait(label,lock_sql,change_sql,stmt,code):
+        holder=T.T.session('BEGIN;'+lock_sql+'SET LOCAL session_replication_role=replica;'+change_sql)
+        worker=subprocess.Popen(pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        worker.stdin.write("\\set VERBOSITY verbose\nSET application_name='envase_terminal_worker';"+T.actor(T.W)+stmt+'\n'); worker.stdin.flush()
+        waited=False
+        for _ in range(100):
+            if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='envase_terminal_worker' AND wait_event_type='Lock';")=='1': waited=True; break
+            time.sleep(.05)
+        assert waited,'WORKER_NOT_WAITING'
+        T.T.finish(holder,'COMMIT;'); expected=snapshot()
+        worker.stdin.close(); worker.stdin=None; out,err=worker.communicate(timeout=30)
+        raw.append({'test':label,'returncode':worker.returncode,'stdout':out,'stderr':err})
+        assert worker.returncode!=0 and re.search(r'ERROR:\s+'+code+':',err),out+err
+        assert snapshot()==expected; ok(label)
+    changed_during_wait('terminal OS committed during observed OS wait denies partial before writes',f"SELECT 1 FROM public.ordens_servico WHERE id='{T.O6}' FOR UPDATE;",f"UPDATE public.ordens_servico SET status='finalizada' WHERE id='{T.O6}';",env(T.O6,T.PP6,T.L6,'terminal-wait-0001',1),'PT409')
+    sql(f"SET session_replication_role=replica;UPDATE public.ordens_servico SET status='em_cq' WHERE id='{T.O6}';")
+    changed_during_wait('CQ revoked during observed lote wait denies partial before writes',f"SELECT 1 FROM public.lotes WHERE id='{T.L6}' FOR UPDATE;",f"UPDATE public.controle_qualidade SET resultado='reprovado' WHERE lote_id='{T.L6}';",env(T.O6,T.PP6,T.L6,'cq-wait-0001',1),'P0001')
+    sql(f"SET session_replication_role=replica;UPDATE public.controle_qualidade SET resultado='aprovado' WHERE lote_id='{T.L6}';")
     z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in T.TABLES)+")::text;"); assert z1==z; ok('all financial/fiscal/outbox full-row snapshots unchanged (not counts)')
     # Existing canonical proof regressions on locally created delivery, never hosted reference.
     owned=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{T.L2}' AND status='reservado';")

@@ -5,6 +5,15 @@ H = Path(__file__).resolve().parent
 V2 = H.parent
 RPC = 'public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)'
 CAP = 'public.rpc_envase_capability_v1(uuid,uuid,uuid,text)'
+LEGACY = ['public.rpc_confirmar_recebimento_entrega(uuid,jsonb)', 'public.rpc_desvincular_etiqueta_entrega(uuid,uuid,text)', 'public.rpc_vincular_etiqueta_embalagem(uuid,uuid)']
+def legacy_delta():
+    return ''.join(f'REVOKE EXECUTE ON FUNCTION {sig} FROM PUBLIC,anon,authenticated;\n' for sig in LEGACY)
+
+def write_legacy(pre,post):
+    delta=legacy_delta()
+    acl='DO $acl$ BEGIN '+''.join(f"IF has_function_privilege('authenticated','{sig}','EXECUTE') OR has_function_privilege('anon','{sig}','EXECUTE') THEN RAISE EXCEPTION 'LEGACY_CLIENT_EXECUTE_REMAINS'; END IF;" for sig in LEGACY)+' END $acl$;\n'
+    for name,value in [('candidate',delta),('preflight',guard(pre,'LEGACY_PRE_DRIFT')),('postflight',guard(post,'LEGACY_POST_DRIFT')+acl),('install',"BEGIN; SET LOCAL lock_timeout='3s';\n"+guard(pre,'LEGACY_PRE_DRIFT')+delta+guard(post,'LEGACY_POST_DRIFT')+acl+'COMMIT;\n'),('rollback',"BEGIN;\n"+delta+acl+'COMMIT;\n')]:
+        (H/f'legacy-closure-{name}.sql.review').write_text(value)
 
 def one(body, old, new):
     assert body.count(old) == 1, ('ANCHOR_CARDINALITY', old[:90], body.count(old))
@@ -38,6 +47,18 @@ def candidate():
 """
     body = one(body,ctx,'')
     body = one(body,'  IF v_lote_status IS NULL THEN',ctx+'\n  IF v_lote_status IS NULL THEN')
+    fresh = """    IF platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'ENVASE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+    IF NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org AND status::text IN ('em_cq','envase')) THEN RAISE EXCEPTION 'ENVASE_FRESH_STATE_DENIED' USING ERRCODE='PT409'; END IF;
+    SELECT (resultado::text='aprovado') INTO v_cq_ok FROM public.controle_qualidade WHERE lote_id=p_lote_id ORDER BY created_at DESC,seq DESC LIMIT 1 FOR SHARE;
+    IF coalesce(v_cq_ok,false) IS NOT TRUE THEN RAISE EXCEPTION 'ENVASE_FRESH_CQ_DENIED' USING ERRCODE='PT409'; END IF;
+"""
+    body = one(body,'    INSERT INTO public.envase (',fresh+'    INSERT INTO public.envase (')
+    body = one(body,'  -- regra canônica de encerramento',fresh+'\n  -- regra canônica de encerramento')
+    # Post-wait returns must preserve the originally locked tenant, not merely authorize any tenant.
+    anchor='  -- Lock OS before programacao/lote; all fresh states checked after wait.'
+    prefix,suffix=body.split(anchor)
+    suffix=suffix.replace('PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);',"IF platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'ENVASE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;")
+    body=prefix+anchor+suffix
     cap = """CREATE FUNCTION public.rpc_envase_capability_v1(p_lote uuid,p_os uuid,p_prog uuid,p_origem text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $cap$
 DECLARE org uuid; allowed boolean:=false;

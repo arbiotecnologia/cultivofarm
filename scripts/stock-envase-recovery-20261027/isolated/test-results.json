@@ -25,6 +25,22 @@
       "status": "PASS"
     },
     {
+      "test": "legacy client closure public.rpc_confirmar_recebimento_entrega(uuid,jsonb)",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy client closure public.rpc_desvincular_etiqueta_entrega(uuid,uuid,text)",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy client closure public.rpc_vincular_etiqueta_embalagem(uuid,uuid)",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy exact POST and effective ACL closure verified; bodies/service grants unchanged",
+      "status": "PASS"
+    },
+    {
       "test": "rerun refuses changed exact state",
       "status": "PASS"
     },
@@ -46,6 +62,10 @@
     },
     {
       "test": "missing key denied before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "NULL key denied before writes",
       "status": "PASS"
     },
     {
@@ -73,6 +93,14 @@
       "status": "PASS"
     },
     {
+      "test": "partial reason substitution conflicts",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy receipt without fingerprint denied unchanged",
+      "status": "PASS"
+    },
+    {
       "test": "fresh key on ready OS denied",
       "status": "PASS"
     },
@@ -94,6 +122,14 @@
     },
     {
       "test": "active profile revoked during observed lote lock wait: 42501 and no envase",
+      "status": "PASS"
+    },
+    {
+      "test": "terminal OS committed during observed OS wait denies partial before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "CQ revoked during observed lote wait denies partial before writes",
       "status": "PASS"
     },
     {
@@ -131,6 +167,24 @@
       "stderr": "ERROR:  PT409: FORCED_POST\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
+      "test": "legacy client closure public.rpc_confirmar_recebimento_entrega(uuid,jsonb)",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_confirmar_recebimento_entrega\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "legacy client closure public.rpc_desvincular_etiqueta_entrega(uuid,uuid,text)",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_desvincular_etiqueta_entrega\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "legacy client closure public.rpc_vincular_etiqueta_embalagem(uuid,uuid)",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_vincular_etiqueta_embalagem\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
       "test": "rerun refuses changed exact state",
       "returncode": 3,
       "stdout": "",
@@ -155,6 +209,12 @@
       "stderr": "ERROR:  22023: ENVASE_KEY_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 36 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
+      "test": "NULL key denied before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  22023: ENVASE_KEY_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 36 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
       "test": "missing gate singleton fails PT503, not overwritten FOUND",
       "returncode": 3,
       "stdout": "",
@@ -165,6 +225,18 @@
       "returncode": 3,
       "stdout": "",
       "stderr": "ERROR:  PT409: COCKPIT_IDEMPOTENCY_CONFLICT\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 58 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "partial reason substitution conflicts",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: COCKPIT_IDEMPOTENCY_CONFLICT\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 58 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "legacy receipt without fingerprint denied unchanged",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ENVASE_LEGACY_RECEIPT_REVIEW_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 57 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "fresh key on ready OS denied",
@@ -182,7 +254,19 @@
       "test": "ledger injected failure rolls back all envase writes",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  PT409: LOCAL_LEDGER_FAIL\nCONTEXT:  PL/pgSQL function local_fail_envase_ledger() line 1 at RAISE\nSQL statement \"INSERT INTO public.estoque_movimentacoes\n      (estoque_produto_id, acao, quantidade, status_novo, lote_id, usuario_id,\n       saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,\n       volume_anterior, volume_posterior, unidade, direcao,\n       origem, referencia_tipo, referencia_id, motivo, idempotency_key, request_fingerprint,\n       movimentacao_origem_id, os_id, os_tipo, cliente_id, metadata)\n    VALUES (\n      NEW.id,\n      COALESCE(v_ctx->>'acao', 'entrada'),\n      NULLIF(NEW.quantidade, 0), NEW.status::text, NEW.lote_id,\n      COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid),\n      0, COALESCE(NEW.quantidade, 0),\n      0, COALESCE(NEW.quantidade_reservada, 0),\n      0, COALESCE(NEW.volume_total, 0),\n      COALESCE(v_ctx->>'unidade', 'un'), 'entrada',\n      COALESCE(v_ctx->>'origem', 'trigger'),\n      v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid,\n      v_ctx->>'motivo', v_key, v_ctx->>'request_fingerprint',\n      (v_ctx->>'movimentacao_origem_id')::uuid,\n      NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,\n      v_meta\n    )\"\nPL/pgSQL function log_estoque_movimentacao() line 29 at SQL statement\nSQL statement \"INSERT INTO public.estoque_produto (\n        produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,\n        validade, status, reservado_para_os_id, reservado_para_os_tipo,\n        reservado_para_cliente_id, reservado_para_partner_order_id,\n        quantidade_reservada, reservado_por, reservado_em\n      ) VALUES (\n        v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,\n        (v_unit_ml * v_reservadas) / 1000.0, p_validade, 'reservado'::public.status_estoque,\n        p_os_id, v_origem, v_ctx.cliente_id, v_ctx.partner_order_id,\n        v_reservadas, v_uid, now()\n      ) RETURNING id\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 152 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  PT409: LOCAL_LEDGER_FAIL\nCONTEXT:  PL/pgSQL function local_fail_envase_ledger() line 1 at RAISE\nSQL statement \"INSERT INTO public.estoque_movimentacoes\n      (estoque_produto_id, acao, quantidade, status_novo, lote_id, usuario_id,\n       saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,\n       volume_anterior, volume_posterior, unidade, direcao,\n       origem, referencia_tipo, referencia_id, motivo, idempotency_key, request_fingerprint,\n       movimentacao_origem_id, os_id, os_tipo, cliente_id, metadata)\n    VALUES (\n      NEW.id,\n      COALESCE(v_ctx->>'acao', 'entrada'),\n      NULLIF(NEW.quantidade, 0), NEW.status::text, NEW.lote_id,\n      COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid),\n      0, COALESCE(NEW.quantidade, 0),\n      0, COALESCE(NEW.quantidade_reservada, 0),\n      0, COALESCE(NEW.volume_total, 0),\n      COALESCE(v_ctx->>'unidade', 'un'), 'entrada',\n      COALESCE(v_ctx->>'origem', 'trigger'),\n      v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid,\n      v_ctx->>'motivo', v_key, v_ctx->>'request_fingerprint',\n      (v_ctx->>'movimentacao_origem_id')::uuid,\n      NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,\n      v_meta\n    )\"\nPL/pgSQL function log_estoque_movimentacao() line 29 at SQL statement\nSQL statement \"INSERT INTO public.estoque_produto (\n        produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,\n        validade, status, reservado_para_os_id, reservado_para_os_tipo,\n        reservado_para_cliente_id, reservado_para_partner_order_id,\n        quantidade_reservada, reservado_por, reservado_em\n      ) VALUES (\n        v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,\n        (v_unit_ml * v_reservadas) / 1000.0, p_validade, 'reservado'::public.status_estoque,\n        p_os_id, v_origem, v_ctx.cliente_id, v_ctx.partner_order_id,\n        v_reservadas, v_uid, now()\n      ) RETURNING id\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 156 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "terminal OS committed during observed OS wait denies partial before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ENVASE_FRESH_STATE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 75 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "CQ revoked during observed lote wait denies partial before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENVASE_EXIGE_CQ_APROVADO\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 107 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "foreign FSF proof stays closed",
@@ -197,6 +281,6 @@
       "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "elapsed_seconds": 165.261,
+  "elapsed_seconds": 165.123,
   "exit_code": 0
 }
