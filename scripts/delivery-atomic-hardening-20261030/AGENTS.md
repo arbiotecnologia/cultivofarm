@@ -5,3 +5,4 @@
 - Rollback is deny-only, preserves history and never restores vulnerable definitions or grants private helpers to clients.
 - Generate split recomposition exclusively as a hash-pinned canonical motor delta using its private context and immutable ledger; keep the retired split row and unique index — avoids bypassing stock guards or deleting history.
 - Normalize only outer statement terminators during assembly and generate exact PRE/POST catalog checks; test the assembled closed artifact before release review — prevents concatenation syntax failures and partial metadata pins.
+- All delivery mutations require exact one-shot private transaction/actor/tenant/action/row permits enforced by a trigger; rollback keeps the trigger deny-only and table/column client DML closed — prevents legacy DEFINER/service writers and forged session flags from bypassing containment.

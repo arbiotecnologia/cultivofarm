@@ -151,7 +151,7 @@ def main():
     print('TENANT B',sql(actor(V)+call('first-group',[{'item_id':u(41),'quantidade':2}],os=P)),flush=True)
     check('same request key tenants separated no collision',"SELECT count(*)=2 FROM platform_private.delivery_requests_20261030 WHERE action='group' AND request_key='first-group';")
     deny('B cannot replay A cancel result',actor(V)+cancel(ent),'DELIVERY_SCOPE_DENIED')
-    deny('GUC spoof cannot cancel directly',actor()+f"SET app.entrega_cancelamento_id='{ent}'; UPDATE public.entregas SET status='cancelada' WHERE id<>(SELECT id FROM public.entregas WHERE id='{ent}') AND organization_id='{A}';",'ENTREGA_CANCELAMENTO_EXIGE_RPC')
+    deny('GUC spoof cannot cancel directly',actor()+f"SET app.entrega_cancelamento_id='{ent}'; UPDATE public.entregas SET status='cancelada' WHERE id<>(SELECT id FROM public.entregas WHERE id='{ent}') AND organization_id='{A}';",'permission denied')
     deny('direct stock mutation remains ACL closed',actor()+f"UPDATE public.estoque_produto SET quantidade=500 WHERE id='{S}';",'permission denied')
     deny('private context cannot be minted by caller',actor()+f"INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action) VALUES(txid_current(),'{U}','{A}','cancel');",'permission denied')
     # Same global gate used by the independent batch motor; real concurrent oversell.
