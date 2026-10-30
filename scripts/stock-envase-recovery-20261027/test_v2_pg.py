@@ -191,7 +191,12 @@ def main():
     time.sleep(0.3)
     s2 = T.session(actor() + f"BEGIN; SELECT public.rpc_estoque_operar_v1('reserva','{tgt}',1,'deadlock-probe-0001','{{\"os_id\":\"{T.O}\",\"os_tipo\":\"manual\",\"cliente_id\":\"{C}\"}}'::jsonb);")
     time.sleep(0.5)
-    o1 = T.finish(s1, "SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; ROLLBACK;"); o2 = T.finish(s2, 'ROLLBACK;')
+    def fin(p, c):
+        # The deadlock victim's psql exits (ON_ERROR_STOP); writing to it raises EPIPE — collect its output instead.
+        try: return T.finish(p, c)
+        except BrokenPipeError:
+            out, err = p.communicate(timeout=30); return (out or '', err or '')
+    o1 = fin(s1, "SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; ROLLBACK;"); o2 = fin(s2, 'ROLLBACK;')
     j = o1[1] + o2[1]
     assert ('deadlock detected' in j or '40P01' in j or 'lock timeout' in j), j[-1500:]
     assert last("SELECT count(*) FROM public.estoque_movimentacoes WHERE idempotency_key='deadlock-probe-0001';") == '0'; ok('inverse-order contender: PostgreSQL resolves (40P01/55P03) and no partial movement remains', detail=('40P01' if 'deadlock' in j else '55P03'))
