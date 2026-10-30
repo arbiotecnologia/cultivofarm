@@ -29,6 +29,7 @@ def run(t):
     w=t.u(120)
     sql('SET session_replication_role=replica;'+f"INSERT INTO auth.users(id) VALUES('{w}');INSERT INTO public.profiles(user_id,organization_id,nome,ativo,senha_provisoria) VALUES('{w}','{t.A}','REVIEW OTHER',true,false);INSERT INTO public.user_roles(user_id,role) VALUES('{w}','administrador');SET session_replication_role=origin;")
     ent,main=fresh(130)
+    t.observed.pop('review-130')
     sql(actor(w)+t.call('review-130',[{'item_id':main,'quantidade':2}]))
     check('same tenant distinct actors same key separate receipts',"SELECT count(*)=2 AND count(DISTINCT actor)=2 FROM platform_private.delivery_requests_20261030 WHERE request_key='review-130';")
     deny('legacy cancel remains contained',f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');",'DELIVERY_LEGACY_CLOSED')
