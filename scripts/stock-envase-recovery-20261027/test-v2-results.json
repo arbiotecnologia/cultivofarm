@@ -1,0 +1,50 @@
+[
+  {
+    "test": "exact applied release-combined a566faa4 + proof POST (hosted state reproduced on full restore)",
+    "status": "PASS"
+  },
+  {
+    "test": "PRE pins equal restored post-release bodies (motor 44b150bf keeps split delta)",
+    "status": "PASS"
+  },
+  {
+    "test": "post-hash probe transaction rolled back (state unchanged)",
+    "status": "PASS"
+  },
+  {
+    "test": "PRE refuses body drift",
+    "status": "PASS",
+    "expected": "STOCK_V2_PRE_DRIFT"
+  },
+  {
+    "test": "drift fixture reverted to exact LIVE body",
+    "status": "PASS"
+  },
+  {
+    "test": "forced POST failure",
+    "status": "PASS",
+    "expected": "LOCAL_POST_FORCED_FAIL"
+  },
+  {
+    "test": "POST failure rolled back atomically",
+    "status": "PASS"
+  },
+  {
+    "test": "install COMMIT with exact POST",
+    "status": "PASS"
+  },
+  {
+    "test": "standalone POST passes",
+    "status": "PASS"
+  },
+  {
+    "test": "rerun refused",
+    "status": "PASS",
+    "expected": "STOCK_V2_ALREADY_INSTALLED"
+  },
+  {
+    "test": "execution stopped at concrete failure",
+    "status": "FAIL",
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 172, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 100, in main\n    setup_v2()\n    ~~~~~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 55, in setup_v2\n    sql(\"SET session_replication_role=replica;\" + feats + f\"\"\"\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    UPDATE public.saas_plan_versions SET features_snapshot='[\"estoque_embalagens\",\"envase\",\"ordens_producao\",\"lotes_qualidade\"]' WHERE id='{T.VER}';\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status,reservado_para_os_id,reservado_para_os_tipo,reservado_para_cliente_id,quantidade_reservada) VALUES('{RX}','{T.L}','{PROD}',2,2,'reservado','{T.O}','manual','{C}',2);\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    SET session_replication_role=origin;\"\"\")\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 18, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  duplicate key value violates unique constraint \"ux_controle_qualidade_seq\"\nDETAIL:  Key (seq)=(1) already exists.\n\n"
+  }
+]
