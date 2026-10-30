@@ -3,3 +3,4 @@
 - PRE/POST are generated from the disposable composition (release-combined + v2 + proof-select) and must match the hosted read-only audit; drift or rerun aborts.
 - Rollback is deny-safe: narrows barriers to false, never drops them or re-grants TRUNCATE.
 - Synthetic claims on disposable PG are not hosted JWT proof; the auditor repeats the real FSF JWT test after applying.
+- Delivery label links stay client-write-closed until a reviewed lineage package; produto_etiquetas tenant read isolation is an open upstream blocker.
