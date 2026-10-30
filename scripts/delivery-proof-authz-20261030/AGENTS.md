@@ -1,6 +1,8 @@
 - Preparation only: never apply SQL hosted, publish or call hosted writers from this package; the owner reviews the exact artifacts first.
 - Install only on top of the exact delivery-atomic-hardening install (PRE pins its barrier body); never weaken group/cancel branches of the barrier.
-- Proof authority = active actor + tenant from h15, legacy proof staff roles (aplicador needs client link), row scope rechecked after advisory, global gate, org and row locks, and before replay; GUCs, metadata and payload never authorize.
-- Object paths must be bound to the delivery, owned by the caller and not linked elsewhere; client cleanup removes only an object uploaded in that attempt after a definitive SQLSTATE rejection — never on ambiguous responses or reused paths.
-- Rollback is deny-only and keeps receipts, barrier and closed legacy writers; B2B/OnFarm proofs, financial/fiscal effects and automations stay closed.
+- Proof authority = active actor + tenant from h15, legacy proof staff roles (aplicador needs client link), full recheck (actor, role, link, row) after every wait — advisory, gate, org, row, storage object, comprovante — and immediately before replay and writer; GUCs, metadata and payload never authorize; the one-shot permit is deleted on success, receipts kept.
+- Object paths must be bound to the delivery, owned by the caller and not linked elsewhere; clients never delete proof objects — a SQLSTATE (e.g. PT409 OBJECT_ALREADY_LINKED) does not prove an object is unlinked; rejected objects stay retained.
+- Client success requires the exact ACK envelope (success/action/entrega_id/comprovante_id/object_path) and preflight the exact allowed envelope; anything else is uncertain and keeps key/path.
+- Release = release-combined.sql.review (atomic + proof in one transaction, legacy writers kept as hardened adapters for cached frontends), then the frontend; never ship barrier and proof separately.
+- Rollback is deny-only and keeps receipts and barrier; closes new RPCs and legacy adapters; B2B/OnFarm proofs, financial/fiscal effects and automations stay closed.
 - Runners are bounded individually (run_bounded.py); synthetic claims on disposable PG are not hosted JWT/RLS/Storage proof.
