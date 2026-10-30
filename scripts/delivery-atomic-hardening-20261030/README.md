@@ -1,5 +1,19 @@
 # Entrega — candidato parcial, NO-GO operacional
 
+## Atualização executada 30/10 — revisão do27e8d586
+
+Resultado atual executável: **51 PASS / 0 FAIL / 0 BLOCKED no runner**, sem somar rodadas anteriores. `restore-results.json` contém seis listas vazias: funções/views, defaults, constraints, policies, triggers e índices. A captura adicional read-only `capture/restore-supplement.json` restaura schemas finance_private/tenant_smtp_executor e sequência private faltante; não contém dados ou secrets. Nenhum objeto foi substituído por stub.
+
+O delta `build_motor.py` valida MD5 LIVE c71a9e848eff0a522cbaa3a7ec2949a5 e gera `motor-delta.sql.review`: recomposição ocorre dentro de rpc_estoque_operar_v1, usando contexto privado verdadeiro, triggers/ledger canônicos e índice único preservado. O split fica estornado com saldo zero e histórico; o saldo/volume retorna à linha principal compatível, com dois movimentos verificados. Cancelamento positivo, replay exato, motivo divergente e falha depois do retorno com rollback passaram.
+
+O overload de grupo agora exige timestamp observado de OS e de cada estoque; recibo é contextual por organização/ator/ação/chave. Gate global precede locks OS/stock, há lock de cliente do tenant, revalidação antes de replay e comparação CAS apenas em primeira execução. Triggers downstream são instalados pelo candidate, não pelo harness. B2B/OnFarm, frontend e flags permanecem intactos.
+
+Provas adicionais: tenant B próprio positivo com mesma chave A/B; oversell real em duas conexões (segunda operação nega CAS obsoleto); revogação durante advisory e gate/linha coordenados; GUC spoof; ACL de stock/contexto privado; ACK divergente por corrupção de receipt em trigger local sem substituir motor; rollback integral item2 e cancelamento; zero financeiro/fiscal/outbox. Batch independente real disputando stock com grupo concluiu, enquanto grupo negou CAS obsoleto, sem deadlock nessa janela. Isso não prova todas as ordens transitivas.
+
+Falhas iniciais preservadas em `history/`: revogação externa enquanto gate já pertence ao worker produziu lock timeout, corrigida no ensaio para revogação real no holder do gate; caracterização esperava deadlock, mas observou batch concluído e conflito CAS, corrigida a expectativa sem alterar o batch. A correção split foi comprovada antes dessas ampliações com40PASS.
+
+**Ainda não instalável:** faltam cancelador revogação concorrente dedicado, atores distintos no mesmo tenant com chave igual, outras janelas transitivas de origem OS/cliente e snapshots de cancelamento, inventário/migração completa dos writers diretos e composição de todos os destinos financeiros/documentais (barreira atual tem dez tabelas, não é inventário universal). Testes são PostgreSQL real com identidades/tenants e transport claims locais, não JWT/RLS hosted. Instalador pinado/PRE/POST/deny rollback não foi emitido como aprovado: exige fechar esses pontos e ensaiar instalação completa. Não liberar ACL/frontend. Seções anteriores abaixo são histórico e suas contagens/pendências foram superadas apenas conforme esta atualização.
+
 Base publicada informada pelo proprietário: `859b8a8cf21caf569a3231cd74110a76c9bc2965`, após 595 PASS e UI real com `index-CYkBENfk.js`. Esta é evidência externa registrada, não publicação executada nesta rodada nem correlação independente obtida pelo assistente. Runtime src/public permanece byte-equivalente à base nesta comparação.
 
 ## Provas executáveis desta rodada
