@@ -9,8 +9,19 @@
     "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
   },
   {
+    "test": "BEFORE: FSF admin and FSF financeiro read AR Bio labels (all 11 incl. mixed)",
+    "status": "PASS",
+    "counts": {
+      "U": 11,
+      "V": 11,
+      "FF": 11,
+      "CL": 2,
+      "IN": 0
+    }
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/produto-etiquetas-tenant-20261030/test_label_checklist_pg.py\", line 261, in <module>\n    main()\n    ~~~~^^\n  File \"/dev-server/scripts/produto-etiquetas-tenant-20261030/test_label_checklist_pg.py\", line 137, in main\n    fixtures()\n    ~~~~~~~~^^\n  File \"/dev-server/scripts/produto-etiquetas-tenant-20261030/test_label_checklist_pg.py\", line 74, in fixtures\n    sql(\"SET session_replication_role=replica;\" + f\"\"\"\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    INSERT INTO auth.users(id) VALUES('{FF}'),('{CL}'),('{IN}');\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<21 lines>...\n    {label(MIX['lote_ghost'], ghost, entrega_id=EA)}\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    SET session_replication_role=origin;\"\"\")\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/produto-etiquetas-tenant-20261030/test_label_checklist_pg.py\", line 23, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  duplicate key value violates unique constraint \"produto_etiquetas_embalagem_tipo_ativa_uidx\"\nDETAIL:  Key (embalagem_id, tipo_etiqueta)=(10000000-0000-4000-8000-000000001034, principal) already exists.\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/produto-etiquetas-tenant-20261030/test_label_checklist_pg.py\", line 261, in <module>\n    main()\n    ~~~~^^\n  File \"/dev-server/scripts/produto-etiquetas-tenant-20261030/test_label_checklist_pg.py\", line 144, in main\n    assert lb['anon_truncate'] == 'ok:truncated' and lb['auth_truncate'] == 'ok:truncated', lb\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'U_update_entrega_to_foreign': 'ok:updated', 'U_update_cliente_to_foreign': 'ok:updated', 'U_update_lote_to_foreign': 'EP0001:Campos de identifica\u00e7\u00e3o/emiss\u00e3o da etiqueta s\u00e3o imut\u00e1veis', 'U_update_benign_own': 'ok:1', 'U_insert_foreign_lote': 'ok:inserted', 'U_insert_own_lote_foreign_cliente': 'ok:inserted', 'U_insert_own_valid': 'ok:inserted', 'U_insert_no_lote': 'ok:inserted', 'V_update_arbio_label': 'ok:1', 'V_delete_arbio_label': 'ok:1', 'V_insert_arbio_lote': 'ok:inserted', 'U_delete_own': 'ok:1', 'anon_select': 'ok:0', 'anon_truncate': 'E0A000:cannot truncate a table referenced in a foreign key constraint', 'auth_truncate': 'E0A000:cannot truncate a table referenced in a foreign key constraint'}\n"
   }
 ]

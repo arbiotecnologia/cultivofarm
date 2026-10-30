@@ -78,7 +78,7 @@ def fixtures():
     INSERT INTO public.user_clientes(user_id,cliente_id,is_active) VALUES('{CL}','{C}',true);
     INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{LB}','{B}','{T.PROD}','aprovado','LOCAL-LB',1000),('{LN}',NULL,'{T.PROD}','aprovado','LOCAL-LN',1000);
     INSERT INTO public.envase(id,lote_id,organization_id,tipo_embalagem,volume_por_unidade,quantidade) VALUES('{VA}','{L}','{A}','frasco_1L',1000,1),('{VB}','{LB}','{B}','frasco_1L',1000,1);
-    INSERT INTO public.estoque_embalagens(id,codigo_embalagem,lote_id,volume) VALUES('{MA}','LOCAL-MA','{L}',1),('{MB}','LOCAL-MB','{LB}',1);
+    INSERT INTO public.estoque_embalagens(id,codigo_embalagem,lote_id,volume) VALUES('{MA}','LOCAL-MA','{L}',1),('{MB}','LOCAL-MB','{LB}',1),('{u(1036)}','LOCAL-MB2','{LB}',1);
     INSERT INTO public.entregas(id,organization_id,ordem_servico_id,cliente_id,status,financial_status,assinatura_obrigatoria) VALUES
      ('{EA}','{A}','{O}','{C}','separado','PENDING_BILLING',true),('{EA2}','{A}','{O}','{C}','separado','PENDING_BILLING',true),
      ('{EB}','{B}','{P}','{D}','separado','PENDING_BILLING',true),('{EN}',NULL,'{O}','{C}','separado','PENDING_BILLING',true),
@@ -89,7 +89,7 @@ def fixtures():
     {label(MIX['entrega_foreign'], L, entrega_id=EB)}
     {label(MIX['cliente_foreign'], L, cliente_id=D)}
     {label(MIX['envase_foreign'], L, envase_id=VB)}
-    {label(MIX['embalagem_foreign'], L, embalagem_id=MB)}
+    {label(MIX['embalagem_foreign'], L, embalagem_id=u(1036))}
     {label(MIX['estoque_item_other_lote'], L, estoque_item_id=SB)}
     {label(MIX['fazenda_foreign'], L, fazenda_id=FB)}
     {label(MIX['no_lote'], None, entrega_id=EA, cliente_id=C)}
