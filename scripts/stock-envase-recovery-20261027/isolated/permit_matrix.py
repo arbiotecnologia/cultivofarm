@@ -10,7 +10,7 @@ def run(X):
     row['id']=T.u(2804)
     payload=json.dumps(row).replace("'","''")
     insert=f"INSERT INTO public.envase SELECT * FROM jsonb_populate_record(NULL::public.envase,'{payload}'::jsonb||jsonb_build_object('created_at',now()));"
-    permit=f"INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),'{T.W}','{T.A}','envase','{row['id']}','{l}','{o}','{p}','{payload}'::jsonb);"
+    permit=f"INSERT INTO platform_private.envase_insert_permits_v1(txid,actor,organization_id,action,target,lote,os,prog,payload) VALUES(txid_current(),'{T.W}','{T.A}','envase','{row['id']}','{l}','{o}','{p}','{payload}'::jsonb);"
     # Minting is owner-only fixture setup within a transaction; client cannot do so.
     base="BEGIN;"+T.actor(T.W)+"RESET ROLE;"
     for field,value in [('organization_id',T.B),('lote_id',T.L5),('id',T.u(2805)),('quantidade',2),('operador','FOREIGN'),('etiqueta_gerada',True),('volume_por_unidade',500)]:
@@ -36,10 +36,13 @@ def run(X):
     # Independent canonical batch adjustment changes only existing rows; exact replay
     # must leave entire stock/ledger/receipts unchanged.
     item=free['id']
-    stmt=T.actor()+f"SELECT public.rpc_estoque_operar_batch_v1('ajuste','[{{\"item_id\":\"{item}\",\"quantidade\":1}}]'::jsonb,'independent-batch01','{{\"sentido\":\"entrada\",\"motivo\":\"LOCAL\"}}'::jsonb);"
+    stmt=T.actor()+f"SELECT public.rpc_estoque_reservar_v1('{o}','manual','[{{\"item_id\":\"{item}\",\"quantidade\":1}}]'::jsonb,'independent-batch01','{{\"cliente_id\":\"{T.C}\"}}'::jsonb);"
     # The installed signature is read before dispatch; fail closed if not the expected one.
-    sig=X.last("SELECT to_regprocedure('public.rpc_estoque_operar_batch_v1(text,jsonb,text,jsonb)') IS NOT NULL;")
+    sig=X.last("SELECT to_regprocedure('public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)') IS NOT NULL;")
     assert sig=='t','CANONICAL_BATCH_SIGNATURE_MISSING'
     result=json.loads(X.last(stmt)); assert result.get('ok') is True,result
+    target=result['itens'][0]; assert target!=item
+    assert X.last(f"SELECT sum(quantidade)=3 AND sum(volume_total)=3 FROM public.estoque_produto WHERE lote_id='{l}';")=='t'
+    assert X.last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id='{target}' AND acao='reserva' AND usuario_id='{T.U}';")=='1'
     before=X.snapshot(); result=json.loads(X.last(stmt)); assert result.get('ok') is True and X.snapshot()==before,result
     X.ok('independent canonical stock batch and exact replay preserve installed contract')
