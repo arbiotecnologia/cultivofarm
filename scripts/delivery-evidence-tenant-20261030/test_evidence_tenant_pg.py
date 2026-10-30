@@ -120,7 +120,7 @@ def main():
         f"GRANT TRUNCATE ON public.{t} TO authenticated;" for t in TABLES if 'authenticated=' in pre['rel'][t][2] and 'D' in pre['rel'][t][2].split('authenticated=')[1].split('/')[0]) + "COMMIT;")
     assert state() == pre, 'probe revert mismatch'
     assert post['fns'] == pre['fns'] and post['rel']['entregas'] == pre['rel']['entregas']
-    assert [p for p in post['policies'] if not p[1].endswith('_parent_visible_r')] == pre['policies']
+    assert [p for p in post['policies'] if p[1] not in [f'{t}_parent_visible_r' for t in TABLES]] == pre['policies']
     for t in TABLES:
         a0, a1 = pre['rel'][t][2], post['rel'][t][2]
         assert a1 == a0.replace('authenticated=arwdDxtm', 'authenticated=arwdxtm').replace('anon=arwdDxtm', 'anon=arwdxtm'), (t, a0, a1)

@@ -112,8 +112,183 @@
     }
   },
   {
+    "test": "POST differs from PRE only by 6 restrictive policies and the TRUNCATE bit for client roles",
+    "status": "PASS",
+    "acl": {
+      "entrega_checklist": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_ocorrencias": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_documentos": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_conferencia_itens": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_reconciliacoes": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_etiquetas": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}"
+    }
+  },
+  {
+    "test": "PRE refuses drift; nothing installed",
+    "status": "PASS",
+    "expected": "EVIDENCE_TENANT_PRE_DRIFT"
+  },
+  {
+    "test": "wrong POST rolls back atomically",
+    "status": "PASS",
+    "expected": "EVIDENCE_TENANT_POST_DRIFT"
+  },
+  {
+    "test": "state unchanged after POST failure",
+    "status": "PASS"
+  },
+  {
+    "test": "installer COMMIT + postflight pass",
+    "status": "PASS"
+  },
+  {
+    "test": "rerun refused by PRE",
+    "status": "PASS",
+    "expected": "EVIDENCE_TENANT_PRE_DRIFT"
+  },
+  {
+    "test": "entrega_checklist: TRUNCATE denied to authenticated",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "entrega_ocorrencias: TRUNCATE denied to authenticated",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "entrega_documentos: TRUNCATE denied to authenticated",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "entrega_conferencia_itens: TRUNCATE denied to authenticated",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "entrega_reconciliacoes: TRUNCATE denied to authenticated",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "entrega_etiquetas: TRUNCATE denied to authenticated",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "AFTER write matrix: every cross-tenant/reparent op affects 0 rows or is denied; same-tenant outcomes identical to BEFORE",
+    "status": "PASS",
+    "after": {
+      "entrega_checklist": {
+        "x_ins": "perm:table entregas",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "perm:table entregas",
+        "own_upd": "perm:table entregas",
+        "own_del": "perm:table entregas",
+        "reparent_to_fsf": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "reparent_to_null_org": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "fsf_reparent_own_to_arbio": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
+      },
+      "entrega_ocorrencias": {
+        "x_ins": "perm:table entregas",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "perm:table entregas",
+        "own_upd": "perm:table entregas",
+        "own_del": "perm:table entregas",
+        "reparent_to_fsf": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "reparent_to_null_org": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "fsf_reparent_own_to_arbio": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
+      },
+      "entrega_documentos": {
+        "x_ins": "rls",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "ok:inserted",
+        "own_upd": "ok:0",
+        "own_del": "ok:1",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      },
+      "entrega_conferencia_itens": {
+        "x_ins": "rls",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "rls",
+        "own_upd": "ok:0",
+        "own_del": "ok:0",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      },
+      "entrega_reconciliacoes": {
+        "x_ins": "rls",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "rls",
+        "own_upd": "ok:0",
+        "own_del": "ok:0",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      },
+      "entrega_etiquetas": {
+        "x_ins": "rls",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "err:insert or update on table \"entrega_etiquetas\" violates foreign key constraint \"entrega_etiquetas_etiqueta_id_fkey\"",
+        "own_upd": "ok:1",
+        "own_del": "ok:0",
+        "reparent_to_fsf": "rls",
+        "reparent_to_null_org": "rls",
+        "fsf_reparent_own_to_arbio": "rls"
+      }
+    }
+  },
+  {
+    "test": "AFTER all 6: FSF admin/financeiro, inactive AR Bio admin read 0; org-NULL parent invisible; cross-tenant DELETE 0 rows and TRUNCATE denied",
+    "status": "PASS"
+  },
+  {
+    "test": "AFTER same-tenant reads (AR Bio admin own, FSF admin own) per table",
+    "status": "PASS",
+    "own": {
+      "entrega_checklist": [
+        1,
+        1
+      ],
+      "entrega_ocorrencias": [
+        1,
+        1
+      ],
+      "entrega_documentos": [
+        1,
+        1
+      ],
+      "entrega_conferencia_itens": [
+        1,
+        1
+      ],
+      "entrega_reconciliacoes": [
+        1,
+        1
+      ],
+      "entrega_etiquetas": [
+        1,
+        1
+      ]
+    }
+  },
+  {
+    "test": "AFTER linked AR Bio client still reads own checklist/ocorrencias",
+    "status": "PASS"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 178, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 123, in main\n    assert [p for p in post['policies'] if not p[1].endswith('_parent_visible_r')] == pre['policies']\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 178, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 163, in main\n    assert int(last(actor(U) + f\"SELECT count(*) FROM public.entrega_checklist WHERE entrega_id='{EA}';\")) >= 2\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
   }
 ]
