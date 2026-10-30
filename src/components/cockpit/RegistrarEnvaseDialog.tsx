@@ -400,7 +400,8 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
           <Button
             type="submit"
             className="w-full font-bold"
-            disabled={saving || volSolicitado <= 0 || !validade || excedeSaldo || loteSemProducao}
+            disabled
+            title="Envase indisponível até revisão do contrato canônico"
           >
             {saving ? "Registrando..." : "Registrar envase e avançar esteira"}
           </Button>
