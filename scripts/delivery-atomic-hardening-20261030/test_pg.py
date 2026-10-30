@@ -52,10 +52,14 @@ def setup():
     SET session_replication_role=origin;
     """)
 def session(s):
-    p=pg.popen(s);p.stdin.write(s+'\n');p.stdin.flush();return p
+    p=pg.popen(s);p.stdin.write("SET lock_timeout='3s';SET statement_timeout='8s';\n"+s+'\n');p.stdin.flush();return p
 def finish(p,s=''):
     if s:p.stdin.write(s+'\n');p.stdin.flush()
-    p.stdin.close();p.wait(timeout=10);return p.stdout.read(),p.stderr.read()
+    p.stdin.close();p.stdin=None
+    try:return p.communicate(timeout=10)
+    except subprocess.TimeoutExpired as e:
+        p.kill();out,err=p.communicate(timeout=3)
+        raise AssertionError('LOCAL_CONCURRENT_PROCESS_TIMEOUT limit=10s '+err[-1000:]) from e
 def wait():
     until=time.monotonic()+2
     while time.monotonic()<until:
@@ -183,7 +187,7 @@ def main():
     import test_review
     test_review.run(sys.modules[__name__])
     import test_closure
-    test_closure.run()
+    test_closure.run(sys.modules[__name__])
 
 if __name__=='__main__':
     try: main()
