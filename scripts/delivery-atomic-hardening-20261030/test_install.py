@@ -6,9 +6,11 @@ import pins
 H=Path(__file__).resolve().parent
 results=[]
 def run():
+    print('CHECKPOINT installer restore',flush=True)
     r=restore.restore();assert not any(r.values()),r
     assemble_install.build();sql=restore.pg.sql
     install=(H/'install.sql.review').read_text()
+    print('CHECKPOINT installer drift/body/ACL/POST',flush=True)
     baseline=json.loads((H/'capture/review-live.json').read_text())
     f=next(x for x in baseline['functions'] if x['name']=='rpc_estoque_reservar_v1')
     sql(f['body'].rstrip().rstrip(';').replace('BEGIN','BEGIN\n PERFORM 1;',1)+';')
@@ -24,6 +26,7 @@ def run():
     assert sql("SELECT to_regclass('platform_private.delivery_requests_20261030') IS NULL")=='t'
     results.append({'test':'POST failure rolls back real DDL','status':'PASS'})
     sql(install)
+    print('CHECKPOINT installer committed exact POST',flush=True)
     if not (H/'capture/post-expected.json').exists():
         (H/'capture/post-expected.json').write_text(json.dumps(pins.capture_post(sql),indent=2)+'\n')
         # Next fresh run exercises the generated exact POST, not only its capture.
@@ -55,6 +58,7 @@ def run():
     e=sql(install,False);assert 'DELIVERY_ALREADY_INSTALLED' in e,e
     results.append({'test':'rerun denied','status':'PASS'})
     sql((H/'rollback.sql.review').read_text())
+    print('CHECKPOINT installer deny rollback',flush=True)
     assert 'DELIVERY_ROLLBACK_CLOSED' in sql("SELECT public.rpc_entrega_cancelar_v1(NULL,NULL,NULL);",False)
     assert sql("SELECT count(*)=1 FROM platform_private.delivery_requests_20261030 WHERE request_key='history-proof'")=='t'
     results.append({'test':'deny-only rollback retains tables and history','status':'PASS'})

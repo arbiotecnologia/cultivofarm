@@ -7,6 +7,8 @@ os.environ['PATH'] = str(PG) + ':' + os.environ['PATH']
 sys.path.insert(0, str(H.parent / 'arbio-fsf-incremental-20261029'))
 import restore_stack
 from restore_stack import pg
+import bounded_pg
+bounded_pg.configure(pg)
 
 def metadata():
     old = restore_stack.merge_supplement(json.loads((H.parent/'arbio-fsf-incremental-20261029/capture/stack-metadata-2028.json').read_text()))

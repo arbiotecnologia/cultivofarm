@@ -1,0 +1,101 @@
+RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
+PASS real h15 and SaaS resolve synthetic tenant
+PASS tenant FSF cannot use AR Bio IDs
+PASS anonymous ACL denies
+PASS role financeiro denied
+PASS role parceiro_b2b denied
+PASS role parceiro_b2b_tecnico denied
+PASS role superadmin denied
+PASS role consultor_tecnico denied
+PASS inactive denied
+PASS invalid quantity None
+PASS invalid quantity NaN
+PASS invalid quantity 0
+PASS invalid quantity -1
+PASS invalid quantity Infinity
+PASS OnFarm remains contained
+PASS all negative paths no deliveries receipts
+GROUP {"itens": [{"entrega_id": "18101422-379b-48ff-9bdd-13f3c9e4dee9", "movimentacao_id": "a6ff6cab-fd08-4790-a2be-7802370506cd", "estoque_produto_id": "6cd1d1ac-f407-47c7-b6ec-6e8b16f06ce2"}, {"entrega_id": "100380d6-d3d4-467d-b50a-d8d983b31f42", "movimentacao_id": "3b6c4ecb-b220-4cdb-b8dc-8196517e259b", "estoque_produto_id": "925a74ec-4994-4d96-ba06-5b7e86cb082b"}], "os_id": "10000000-0000-4000-8000-000000000007", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000001"}
+PASS two-item group real reserve split delivery expedition
+PASS exact replay returns stored group
+PASS replay creates no duplicate
+PASS changed payload replay conflict
+PASS cross tenant cancel
+PASS cancel failure after return ledger atomically rolls back
+PASS failed cancel rolls back reversal stock delivery and receipt
+CANCEL {"replay": false, "success": true, "entrega_id": "100380d6-d3d4-467d-b50a-d8d983b31f42", "organization_id": "10000000-0000-4000-8000-000000000001", "reserva_liberada": true, "estoque_estornado": true}
+PASS canonical split merge keeps unique index source history and main balance
+PASS cancel exact replay
+PASS cancel changed reason replay denied
+PASS no downstream titles fiscal outbox
+PASS private context removed on success
+PASS revocation advisory
+PASS revocation row
+PASS concurrent replay remains two deliveries
+PASS item2 trigger failure aborts first delivery reserve expedition
+PASS delivery trigger title attempt fails transactionally
+PASS attempted title leaves zero title and no new group
+PASS exact LIVE accounting guard rejects entregue on pending snapshot
+PASS delivery transition barrier precedes any auto billing trigger
+PASS final no context no billing fiscal messages
+TENANT B {"itens": [{"entrega_id": "ce357752-11ce-4915-b5d0-5f26eb63488b", "movimentacao_id": "922477c3-2b42-4b2c-851d-705a27bdeb21", "estoque_produto_id": "237240ae-3077-43cf-b4ee-f03f22dd4942"}], "os_id": "10000000-0000-4000-8000-000000000008", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000002"}
+PASS same request key tenants separated no collision
+PASS B cannot replay A cancel result
+PASS GUC spoof cannot cancel directly
+PASS direct stock mutation remains ACL closed
+PASS private context cannot be minted by caller
+PASS oversell balance conserved no negatives
+PASS negative receipt ACK leaves every effect unchanged
+PASS final financial fiscal outbox empty after concurrency
+PASS unsupported field rejected endereco_entrega
+PASS unsupported field rejected observacoes_entrega
+PASS merge accepts available zero reservation with preserved unique index
+PASS merge rejects nonpositive/nonfinite main volume 0
+PASS bad merge retains expedition and no cancel receipt 70
+PASS merge rejects nonpositive/nonfinite main volume -1
+PASS bad merge retains expedition and no cancel receipt 80
+PASS merge rejects nonpositive/nonfinite main volume 'NaN'::numeric
+PASS bad merge retains expedition and no cancel receipt 90
+PASS merge rejects nonpositive/nonfinite main volume 'Infinity'::numeric
+PASS bad merge retains expedition and no cancel receipt 100
+PASS merge incompatible expiry rejected explicitly
+PASS same tenant distinct actors same key separate receipts
+PASS legacy cancel remains contained
+PASS cancel NULL observed denied
+PASS cancel stale observed denied
+PASS cancel revoked no effects advisory
+PASS cancel revoked no effects gate
+PASS real revoker waits gate during cancel row
+PASS cancel replay denied after effective revocation row
+PASS real revoker waits gate during cancel merge
+PASS cancel replay denied after effective revocation merge
+PASS dedicated tests zero finance/outbox
+PASS anon direct INSERT
+PASS anon direct UPDATE
+PASS anon direct DELETE
+PASS anon legacy cancellation ACL
+PASS authenticated direct INSERT
+PASS authenticated direct UPDATE
+PASS authenticated direct DELETE
+PASS authenticated legacy cancellation ACL
+Traceback (most recent call last):
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 189, in <module>
+    try: main()
+         ~~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 186, in main
+    test_closure.run()
+    ~~~~~~~~~~~~~~~~^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_closure.py", line 10, in run
+    deny(role+' direct '+action,prefix+statement,'permission denied' if role!='service_role' else 'DELIVERY_MUTATION_CLOSED')
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 21, in deny
+    e=pg.sql(s,False);assert code in e,label+':'+e
+                             ^^^^^^^^^
+AssertionError: service_role direct INSERT:ERROR:  permission denied for schema platform_private
+LINE 1:  SELECT platform_private.h15_actor_organization(); 
+                ^
+QUERY:   SELECT platform_private.h15_actor_organization(); 
+CONTEXT:  SQL function "h15_actor_organization" during startup
+PL/pgSQL function public.guard_tenant_organization_id() line 7 at assignment
+
+RESULT 80 PASS 1 FAIL 0 BLOCKED

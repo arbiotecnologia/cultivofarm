@@ -1,0 +1,10 @@
+CHECKPOINT install existing restored local schema
+CHECKPOINT reproduce last failure: service_role direct INSERT
+ERROR:  permission denied for schema platform_private
+LINE 1:  SELECT platform_private.h15_actor_organization(); 
+                ^
+QUERY:   SELECT platform_private.h15_actor_organization(); 
+CONTEXT:  SQL function "h15_actor_organization" during startup
+PL/pgSQL function public.guard_tenant_organization_id() line 7 at assignment
+
+{"scenario": "service_role direct INSERT prior expectation mismatch", "reproduced": true, "elapsed_seconds": 0.522, "lock_timeout": "2s", "statement_timeout": "20s", "process_timeout_seconds": 30}
