@@ -1,111 +1,111 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=1.6s
-CHECKPOINT sql_calls=100 elapsed=3.1s
-CHECKPOINT sql_calls=200 elapsed=5.0s
-CHECKPOINT sql_calls=300 elapsed=7.0s
-CHECKPOINT sql_calls=400 elapsed=8.9s
-CHECKPOINT sql_calls=500 elapsed=10.6s
-CHECKPOINT sql_calls=600 elapsed=12.2s
-CHECKPOINT sql_calls=700 elapsed=13.8s
-CHECKPOINT sql_calls=800 elapsed=15.5s
-CHECKPOINT sql_calls=900 elapsed=17.5s
-CHECKPOINT sql_calls=1000 elapsed=19.3s
-CHECKPOINT sql_calls=1100 elapsed=21.0s
-CHECKPOINT sql_calls=1200 elapsed=22.6s
-CHECKPOINT sql_calls=1300 elapsed=24.2s
-CHECKPOINT sql_calls=1400 elapsed=26.4s
-CHECKPOINT sql_calls=1500 elapsed=29.2s
-CHECKPOINT sql_calls=1600 elapsed=31.3s
-CHECKPOINT sql_calls=1700 elapsed=33.4s
-CHECKPOINT sql_calls=1800 elapsed=35.4s
-CHECKPOINT sql_calls=1900 elapsed=37.3s
-CHECKPOINT sql_calls=2000 elapsed=39.1s
-CHECKPOINT sql_calls=2100 elapsed=40.9s
-CHECKPOINT sql_calls=2200 elapsed=42.7s
-CHECKPOINT sql_calls=2300 elapsed=44.6s
-CHECKPOINT sql_calls=2400 elapsed=46.3s
-CHECKPOINT sql_calls=2500 elapsed=48.2s
-CHECKPOINT sql_calls=2600 elapsed=50.3s
-CHECKPOINT sql_calls=2700 elapsed=52.1s
-CHECKPOINT sql_calls=2800 elapsed=54.1s
-CHECKPOINT sql_calls=2900 elapsed=56.1s
-CHECKPOINT sql_calls=3000 elapsed=58.0s
-CHECKPOINT sql_calls=3100 elapsed=59.8s
-CHECKPOINT sql_calls=3200 elapsed=61.6s
-CHECKPOINT sql_calls=3300 elapsed=63.5s
-CHECKPOINT sql_calls=3400 elapsed=65.5s
-CHECKPOINT sql_calls=3500 elapsed=68.0s
-CHECKPOINT sql_calls=3600 elapsed=69.9s
-CHECKPOINT sql_calls=3700 elapsed=71.7s
-CHECKPOINT sql_calls=3800 elapsed=73.8s
-CHECKPOINT sql_calls=3900 elapsed=76.2s
-CHECKPOINT sql_calls=4000 elapsed=78.7s
-CHECKPOINT sql_calls=4100 elapsed=80.7s
-CHECKPOINT sql_calls=4200 elapsed=83.0s
-CHECKPOINT sql_calls=4300 elapsed=85.2s
-CHECKPOINT sql_calls=4400 elapsed=87.4s
-CHECKPOINT sql_calls=4500 elapsed=89.5s
-CHECKPOINT sql_calls=4600 elapsed=91.4s
-CHECKPOINT sql_calls=4700 elapsed=93.6s
-CHECKPOINT sql_calls=4800 elapsed=95.9s
-CHECKPOINT sql_calls=4900 elapsed=98.0s
-CHECKPOINT sql_calls=5000 elapsed=100.0s
-CHECKPOINT sql_calls=5100 elapsed=101.9s
-CHECKPOINT sql_calls=5200 elapsed=104.1s
-CHECKPOINT sql_calls=5300 elapsed=106.2s
-CHECKPOINT sql_calls=5400 elapsed=108.1s
-CHECKPOINT sql_calls=5500 elapsed=110.0s
-CHECKPOINT sql_calls=5600 elapsed=111.8s
-CHECKPOINT sql_calls=5700 elapsed=113.9s
-CHECKPOINT sql_calls=5800 elapsed=116.1s
-CHECKPOINT sql_calls=5900 elapsed=118.0s
-CHECKPOINT sql_calls=6000 elapsed=119.9s
-CHECKPOINT sql_calls=6100 elapsed=121.8s
-CHECKPOINT sql_calls=6200 elapsed=123.8s
-CHECKPOINT sql_calls=6300 elapsed=126.0s
-CHECKPOINT sql_calls=6400 elapsed=128.1s
-CHECKPOINT sql_calls=6500 elapsed=130.3s
-CHECKPOINT sql_calls=6600 elapsed=132.7s
-CHECKPOINT sql_calls=6700 elapsed=135.0s
-CHECKPOINT sql_calls=6800 elapsed=137.5s
-CHECKPOINT sql_calls=6900 elapsed=139.7s
-CHECKPOINT sql_calls=7000 elapsed=141.7s
-CHECKPOINT sql_calls=7100 elapsed=143.5s
-CHECKPOINT sql_calls=7200 elapsed=145.3s
-CHECKPOINT sql_calls=7300 elapsed=147.1s
-CHECKPOINT sql_calls=7400 elapsed=148.9s
-CHECKPOINT sql_calls=7500 elapsed=150.7s
-CHECKPOINT sql_calls=7600 elapsed=152.5s
-CHECKPOINT sql_calls=7700 elapsed=154.4s
-CHECKPOINT sql_calls=7800 elapsed=156.1s
-CHECKPOINT sql_calls=7900 elapsed=157.8s
-CHECKPOINT sql_calls=8000 elapsed=159.5s
-CHECKPOINT sql_calls=8100 elapsed=161.2s
-CHECKPOINT sql_calls=8200 elapsed=163.0s
-CHECKPOINT sql_calls=8300 elapsed=165.0s
-CHECKPOINT sql_calls=8400 elapsed=166.8s
-CHECKPOINT sql_calls=8500 elapsed=168.4s
-CHECKPOINT sql_calls=8600 elapsed=170.1s
-CHECKPOINT sql_calls=8700 elapsed=171.8s
-CHECKPOINT sql_calls=8800 elapsed=173.5s
-CHECKPOINT sql_calls=8900 elapsed=175.5s
-CHECKPOINT sql_calls=9000 elapsed=177.3s
-CHECKPOINT sql_calls=9100 elapsed=179.1s
-CHECKPOINT sql_calls=9200 elapsed=180.8s
-CHECKPOINT sql_calls=9300 elapsed=182.6s
-CHECKPOINT sql_calls=9400 elapsed=184.3s
-CHECKPOINT sql_calls=9500 elapsed=186.2s
-CHECKPOINT sql_calls=9600 elapsed=188.3s
-CHECKPOINT sql_calls=9700 elapsed=190.1s
-CHECKPOINT sql_calls=9800 elapsed=192.0s
-CHECKPOINT sql_calls=9900 elapsed=193.8s
-CHECKPOINT sql_calls=10000 elapsed=195.6s
-CHECKPOINT sql_calls=10100 elapsed=197.3s
-CHECKPOINT sql_calls=10200 elapsed=199.2s
-CHECKPOINT sql_calls=10300 elapsed=200.9s
-CHECKPOINT sql_calls=10400 elapsed=202.6s
-CHECKPOINT sql_calls=10500 elapsed=204.6s
-CHECKPOINT sql_calls=10600 elapsed=206.4s
+CHECKPOINT sql_calls=1 elapsed=2.7s
+CHECKPOINT sql_calls=100 elapsed=4.6s
+CHECKPOINT sql_calls=200 elapsed=6.3s
+CHECKPOINT sql_calls=300 elapsed=8.0s
+CHECKPOINT sql_calls=400 elapsed=9.8s
+CHECKPOINT sql_calls=500 elapsed=11.6s
+CHECKPOINT sql_calls=600 elapsed=13.5s
+CHECKPOINT sql_calls=700 elapsed=15.3s
+CHECKPOINT sql_calls=800 elapsed=17.1s
+CHECKPOINT sql_calls=900 elapsed=19.0s
+CHECKPOINT sql_calls=1000 elapsed=20.7s
+CHECKPOINT sql_calls=1100 elapsed=22.5s
+CHECKPOINT sql_calls=1200 elapsed=24.3s
+CHECKPOINT sql_calls=1300 elapsed=26.2s
+CHECKPOINT sql_calls=1400 elapsed=27.8s
+CHECKPOINT sql_calls=1500 elapsed=29.8s
+CHECKPOINT sql_calls=1600 elapsed=31.8s
+CHECKPOINT sql_calls=1700 elapsed=33.8s
+CHECKPOINT sql_calls=1800 elapsed=35.7s
+CHECKPOINT sql_calls=1900 elapsed=37.4s
+CHECKPOINT sql_calls=2000 elapsed=39.2s
+CHECKPOINT sql_calls=2100 elapsed=40.8s
+CHECKPOINT sql_calls=2200 elapsed=42.3s
+CHECKPOINT sql_calls=2300 elapsed=44.0s
+CHECKPOINT sql_calls=2400 elapsed=45.6s
+CHECKPOINT sql_calls=2500 elapsed=47.5s
+CHECKPOINT sql_calls=2600 elapsed=49.2s
+CHECKPOINT sql_calls=2700 elapsed=50.9s
+CHECKPOINT sql_calls=2800 elapsed=52.6s
+CHECKPOINT sql_calls=2900 elapsed=54.3s
+CHECKPOINT sql_calls=3000 elapsed=56.0s
+CHECKPOINT sql_calls=3100 elapsed=57.9s
+CHECKPOINT sql_calls=3200 elapsed=59.9s
+CHECKPOINT sql_calls=3300 elapsed=61.6s
+CHECKPOINT sql_calls=3400 elapsed=63.4s
+CHECKPOINT sql_calls=3500 elapsed=65.1s
+CHECKPOINT sql_calls=3600 elapsed=67.1s
+CHECKPOINT sql_calls=3700 elapsed=68.9s
+CHECKPOINT sql_calls=3800 elapsed=70.8s
+CHECKPOINT sql_calls=3900 elapsed=72.5s
+CHECKPOINT sql_calls=4000 elapsed=74.2s
+CHECKPOINT sql_calls=4100 elapsed=75.8s
+CHECKPOINT sql_calls=4200 elapsed=77.5s
+CHECKPOINT sql_calls=4300 elapsed=79.1s
+CHECKPOINT sql_calls=4400 elapsed=80.7s
+CHECKPOINT sql_calls=4500 elapsed=82.4s
+CHECKPOINT sql_calls=4600 elapsed=84.2s
+CHECKPOINT sql_calls=4700 elapsed=86.0s
+CHECKPOINT sql_calls=4800 elapsed=87.8s
+CHECKPOINT sql_calls=4900 elapsed=89.6s
+CHECKPOINT sql_calls=5000 elapsed=91.6s
+CHECKPOINT sql_calls=5100 elapsed=93.3s
+CHECKPOINT sql_calls=5200 elapsed=95.1s
+CHECKPOINT sql_calls=5300 elapsed=96.9s
+CHECKPOINT sql_calls=5400 elapsed=98.6s
+CHECKPOINT sql_calls=5500 elapsed=100.4s
+CHECKPOINT sql_calls=5600 elapsed=102.3s
+CHECKPOINT sql_calls=5700 elapsed=104.0s
+CHECKPOINT sql_calls=5800 elapsed=105.8s
+CHECKPOINT sql_calls=5900 elapsed=107.6s
+CHECKPOINT sql_calls=6000 elapsed=109.4s
+CHECKPOINT sql_calls=6100 elapsed=111.1s
+CHECKPOINT sql_calls=6200 elapsed=113.0s
+CHECKPOINT sql_calls=6300 elapsed=114.8s
+CHECKPOINT sql_calls=6400 elapsed=116.6s
+CHECKPOINT sql_calls=6500 elapsed=118.6s
+CHECKPOINT sql_calls=6600 elapsed=120.5s
+CHECKPOINT sql_calls=6700 elapsed=122.5s
+CHECKPOINT sql_calls=6800 elapsed=124.7s
+CHECKPOINT sql_calls=6900 elapsed=126.7s
+CHECKPOINT sql_calls=7000 elapsed=128.6s
+CHECKPOINT sql_calls=7100 elapsed=130.3s
+CHECKPOINT sql_calls=7200 elapsed=132.2s
+CHECKPOINT sql_calls=7300 elapsed=134.0s
+CHECKPOINT sql_calls=7400 elapsed=135.8s
+CHECKPOINT sql_calls=7500 elapsed=137.6s
+CHECKPOINT sql_calls=7600 elapsed=139.4s
+CHECKPOINT sql_calls=7700 elapsed=141.1s
+CHECKPOINT sql_calls=7800 elapsed=142.7s
+CHECKPOINT sql_calls=7900 elapsed=144.4s
+CHECKPOINT sql_calls=8000 elapsed=146.0s
+CHECKPOINT sql_calls=8100 elapsed=147.6s
+CHECKPOINT sql_calls=8200 elapsed=149.4s
+CHECKPOINT sql_calls=8300 elapsed=151.5s
+CHECKPOINT sql_calls=8400 elapsed=153.2s
+CHECKPOINT sql_calls=8500 elapsed=154.8s
+CHECKPOINT sql_calls=8600 elapsed=156.4s
+CHECKPOINT sql_calls=8700 elapsed=157.9s
+CHECKPOINT sql_calls=8800 elapsed=159.4s
+CHECKPOINT sql_calls=8900 elapsed=160.9s
+CHECKPOINT sql_calls=9000 elapsed=162.5s
+CHECKPOINT sql_calls=9100 elapsed=164.1s
+CHECKPOINT sql_calls=9200 elapsed=165.5s
+CHECKPOINT sql_calls=9300 elapsed=167.1s
+CHECKPOINT sql_calls=9400 elapsed=168.6s
+CHECKPOINT sql_calls=9500 elapsed=170.2s
+CHECKPOINT sql_calls=9600 elapsed=171.7s
+CHECKPOINT sql_calls=9700 elapsed=173.3s
+CHECKPOINT sql_calls=9800 elapsed=174.8s
+CHECKPOINT sql_calls=9900 elapsed=176.3s
+CHECKPOINT sql_calls=10000 elapsed=177.9s
+CHECKPOINT sql_calls=10100 elapsed=179.5s
+CHECKPOINT sql_calls=10200 elapsed=181.0s
+CHECKPOINT sql_calls=10300 elapsed=182.7s
+CHECKPOINT sql_calls=10400 elapsed=184.2s
+CHECKPOINT sql_calls=10500 elapsed=185.7s
+CHECKPOINT sql_calls=10600 elapsed=187.2s
 RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
 PASS exact applied release-combined a566faa4 installed + proof POST (hosted state reproduced)
 PASS pre-delta: authenticated group writer has no EXECUTE
@@ -113,20 +113,37 @@ PASS pre-delta: capability RPC absent (frontend stays closed)
 PASS PRE refuses ACL drift (legacy cancel2 granted)
 PASS forced POST failure rolls back grants and capability
 PASS state unchanged after POST failure
+PASS install COMMIT
+PASS standalone POST passes
+PASS rerun refused
+PASS anon cannot probe capability
+PASS anon cannot call group writer
+PASS admin AR Bio capability group+cancel
+PASS producao: group only
+PASS administrativo: cancel only
+PASS financeiro alone: closed
+CHECKPOINT sql_calls=10700 elapsed=189.7s
+PASS aplicador alone: closed
+PASS consultor_tecnico alone: closed
+PASS admin + parceiro_b2b: closed
+PASS admin + parceiro_b2b_tecnico: closed
+PASS admin + superadmin: closed
+PASS inactive profile: closed
+PASS inactive profile: writer denied
+PASS FSF tenant admin cannot use AR Bio OS/stock IDs
+PASS legacy 5-arg creator still closed to clients
+PASS legacy cancel2 still closed
 Traceback (most recent call last):
   File "/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py", line 96, in <module>
     try: main()
          ~~~~^^
-  File "/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py", line 52, in main
-    sql(inst); ok('install COMMIT'); sql((H / 'postflight.sql.review').read_text()); ok('standalone POST passes')
-    ~~~^^^^^^
-  File "/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py", line 17, in sql
-    def sql(s): return pg.sql(s)
-                       ~~~~~~^^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
-    assert r.returncode==0,r.stderr[-3000:]
-           ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  DELIVERY_CAP_POST_DEFINER
-CONTEXT:  PL/pgSQL function inline_code_block line 14 at RAISE
+  File "/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py", line 70, in main
+    fails('ignored field rejected server-side', T.actor() + T.call('extra').replace("'{}'::jsonb", "'{\"destinatario_nome\":\"x\"}'::jsonb"), 'DELIVERY_DATA_INVALID')
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py", line 19, in fails
+    e = pg.sql(s, False); assert code in e, label + ':' + e[-600:]; ok(label, expected=code)
+                                 ^^^^^^^^^
+AssertionError: ignored field rejected server-side:ERROR:  DELIVERY_REQUEST_INVALID
+CONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 10 at RAISE
 
-RESULT 6 PASS 1 FAIL
+RESULT 25 PASS 1 FAIL

@@ -28,8 +28,91 @@
     "status": "PASS"
   },
   {
+    "test": "install COMMIT",
+    "status": "PASS"
+  },
+  {
+    "test": "standalone POST passes",
+    "status": "PASS"
+  },
+  {
+    "test": "rerun refused",
+    "status": "PASS",
+    "expected": "DELIVERY_CAP_ALREADY_INSTALLED"
+  },
+  {
+    "test": "anon cannot probe capability",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "anon cannot call group writer",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "admin AR Bio capability group+cancel",
+    "status": "PASS"
+  },
+  {
+    "test": "producao: group only",
+    "status": "PASS"
+  },
+  {
+    "test": "administrativo: cancel only",
+    "status": "PASS"
+  },
+  {
+    "test": "financeiro alone: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "aplicador alone: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "consultor_tecnico alone: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "admin + parceiro_b2b: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "admin + parceiro_b2b_tecnico: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "admin + superadmin: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "inactive profile: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "inactive profile: writer denied",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "FSF tenant admin cannot use AR Bio OS/stock IDs",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "legacy 5-arg creator still closed to clients",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "legacy cancel2 still closed",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 96, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 52, in main\n    sql(inst); ok('install COMMIT'); sql((H / 'postflight.sql.review').read_text()); ok('standalone POST passes')\n    ~~~^^^^^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 17, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  DELIVERY_CAP_POST_DEFINER\nCONTEXT:  PL/pgSQL function inline_code_block line 14 at RAISE\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 96, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 70, in main\n    fails('ignored field rejected server-side', T.actor() + T.call('extra').replace(\"'{}'::jsonb\", \"'{\\\"destinatario_nome\\\":\\\"x\\\"}'::jsonb\"), 'DELIVERY_DATA_INVALID')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 19, in fails\n    e = pg.sql(s, False); assert code in e, label + ':' + e[-600:]; ok(label, expected=code)\n                                 ^^^^^^^^^\nAssertionError: ignored field rejected server-side:ERROR:  DELIVERY_REQUEST_INVALID\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 10 at RAISE\n\n"
   }
 ]

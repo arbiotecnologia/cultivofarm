@@ -50,7 +50,7 @@ def build():
     post += ["IF has_function_privilege('authenticated','public.rpc_entrega_cancelar_v1(uuid,text)','EXECUTE') OR has_function_privilege('authenticated','public.rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)','EXECUTE') OR has_function_privilege('authenticated','platform_private.delivery_actor_20261030(text)','EXECUTE') THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_LEGACY_OPEN'; END IF;",
              "IF has_table_privilege('authenticated','public.entregas','INSERT') OR has_table_privilege('authenticated','public.entregas','UPDATE') OR has_table_privilege('authenticated','public.entregas','DELETE') THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_DML_OPEN'; END IF;",
              "IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.entregas'::regclass AND tgname='zz_delivery_mutation_closed' AND tgenabled='O') THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_BARRIER'; END IF;",
-             "IF (SELECT prosecdef FROM pg_proc WHERE oid=to_regprocedure('public.rpc_entrega_operacoes_capability_v1()')) IS NOT TRUE OR NOT (SELECT proconfig::text FROM pg_proc WHERE oid=to_regprocedure('public.rpc_entrega_operacoes_capability_v1()'))='{search_path=\"\"}' THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_DEFINER'; END IF;"]
+             "IF (SELECT prosecdef FROM pg_proc WHERE oid=to_regprocedure('public.rpc_entrega_operacoes_capability_v1()')) IS NOT TRUE OR NOT (SELECT 'search_path=\"\"'=ANY(proconfig) FROM pg_proc WHERE oid=to_regprocedure('public.rpc_entrega_operacoes_capability_v1()')) THEN RAISE EXCEPTION 'DELIVERY_CAP_POST_DEFINER'; END IF;"]
     blk = lambda name, lines: f"DO $pre$ BEGIN\n-- {name}\n" + "\n".join(lines) + "\nEND $pre$;\n"
     delta = CAP_BODY + f"""
 REVOKE ALL ON FUNCTION {CAP} FROM PUBLIC,anon,authenticated,service_role;
