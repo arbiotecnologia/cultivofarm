@@ -12,7 +12,7 @@ BEGIN
  DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id RETURNING * INTO p;
  IF FOUND THEN
   IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
-   OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW) @> p.payload) IS NOT TRUE THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
+   OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
   RETURN NEW;
  END IF;
  -- Preserve ONLY the installed canonical partial reservation semantics under

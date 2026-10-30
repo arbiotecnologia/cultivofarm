@@ -8,6 +8,7 @@ from restore import pg
 sys.path.insert(0,str(V2)); import test_v2_pg as T
 sys.path.insert(0,str(H)); import assemble as G
 checks=[]; raw=[]
+DOWNSTREAM=list(dict.fromkeys(T.TABLES+['financial_categories','payment_methods','receivable_payments','company_fiscal_settings']))
 def ok(label): checks.append({'test':label,'status':'PASS'}); print('PASS',label,flush=True)
 def sql(s): return pg.sql(s)
 def last(s): return sql(s).splitlines()[-1]
@@ -58,7 +59,7 @@ def run():
     reject('release artifact remains explicitly NO-GO',(H/'release.sql.review').read_text(),'42501')
     sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;') # disposable only
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is True; ok('local-only grant permits in-scope production actor capability')
-    z=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in T.TABLES)+")::text;")
+    z=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;")
     before=snapshot()
     reject('foreign FSF cannot envase AR Bio',T.actor(T.V)+env(T.O2,T.PP2,T.L2,'foreign-0001'),'42501'); assert snapshot()==before
     reject('missing key denied before writes',T.actor(T.W)+env(T.O2,T.PP2,T.L2,''),'22023'); assert snapshot()==before
@@ -134,7 +135,7 @@ def run():
     sql(f"SET session_replication_role=replica;UPDATE public.controle_qualidade SET resultado='aprovado' WHERE lote_id='{T.L6}';")
     import matrix
     matrix.run(sys.modules[__name__])
-    z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in T.TABLES)+")::text;"); assert z1==z; ok('all financial/fiscal/outbox full-row snapshots unchanged (not counts)')
+    z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;"); assert z1==z; ok('all fourteen financial/fiscal/outbox existing full-row snapshots unchanged')
     # Existing canonical proof regressions on locally created delivery, never hosted reference.
     owned=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{T.L2}' AND status='reservado';")
     grp=json.loads(last(T.actor()+T.group(T.O2,[{'item_id':owned,'quantidade':2}],'proof-regression-group')))

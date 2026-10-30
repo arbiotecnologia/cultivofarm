@@ -70,7 +70,7 @@ def run(X):
     r=json.loads(last(call((o,p,l),'split-source1',3)));assert r['success']
     stock=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{l}' AND status='disponivel';")
     payload=json.dumps({'os_id':o,'os_tipo':'manual','cliente_id':T.C})
-    r=json.loads(last(T.actor()+f"SELECT public.rpc_estoque_operar_v1('reserva','{stock}',1,'split-regression1','{payload}'::jsonb);"));assert r['success'],r
+    r=json.loads(last(T.actor()+f"SELECT public.rpc_estoque_operar_v1('reserva','{stock}',1,'split-regression1','{payload}'::jsonb);"));assert r.get('ok') is True,r
     assert last(f"SELECT count(*) FROM public.estoque_produto WHERE lote_id='{l}';")=='3';ok('installed canonical motor split preserved with private parent context')
     # Lost-reply recovery after original validity expired: private receipt remains exact.
     ids=fixture(2700,vol=2000); stmt=call(ids,'expired-replay1',2).replace('current_date+180',"DATE '2000-01-01'")
