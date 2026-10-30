@@ -167,6 +167,7 @@ BEGIN
  INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target) VALUES(pg_catalog.txid_current(),v_actor,v_org,'group',p_os_id);
  v_batch:=public.rpc_estoque_reservar_v1(p_os_id,'manual',(SELECT jsonb_agg(value-'observed_updated_at') FROM jsonb_array_elements(v_items)),'delivery-reserve:'||md5(jsonb_build_array(v_actor,v_org,p_request_key)::text),jsonb_build_object('cliente_id',v_os.cliente_id));
  IF v_batch->>'ok' IS DISTINCT FROM 'true' OR v_batch->>'replay' IS DISTINCT FROM 'false' OR jsonb_array_length(v_batch->'itens')<>jsonb_array_length(v_items) THEN RAISE EXCEPTION 'DELIVERY_RESERVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM platform_private.stock_batch_requests WHERE request_key='delivery-reserve:'||md5(jsonb_build_array(v_actor,v_org,p_request_key)::text) AND result=v_batch) THEN RAISE EXCEPTION 'DELIVERY_RESERVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
  FOR v_item IN SELECT value FROM jsonb_array_elements(v_items) LOOP
   v_reserved:=(v_batch->'itens'->>v_index)::uuid; v_qty:=(v_item->>'quantidade')::numeric;
   IF v_reserved IS NULL THEN RAISE EXCEPTION 'DELIVERY_RESERVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
