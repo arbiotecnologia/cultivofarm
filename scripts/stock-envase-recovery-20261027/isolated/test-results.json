@@ -315,7 +315,7 @@
     {
       "test": "execution",
       "status": "FAIL",
-      "error": "('post-permit normalizer changed volume_por_unidade aborts exactly', 'ERROR:  23514: new row for relation \"envase\" violates check constraint \"envase_embalagem_volume_coerente\"\\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000002804, 10000000-0000-4000-8000-000000002802, frasco_1L, 1001, 3, 2026-10-30, LOCAL, 2026-10-30 22:44:55.330707+00, f, null, null, null, 10000000-0000-4000-8000-000000000001).\\nSCHEMA NAME:  public\\nTABLE NAME:  envase\\nCONSTRAINT NAME:  envase_embalagem_volume_coerente\\nLOCATION:  ExecConstraints, execMain.c:2079\\n')"
+      "error": "('post-permit normalizer changed volume_por_unidade aborts exactly', 'ERROR:  22P02: invalid input value for enum tipo_embalagem: \"frasco_2L\"\\nLINE 1: NEW.tipo_embalagem:=\\'frasco_2L\\'\\n                            ^\\nQUERY:  NEW.tipo_embalagem:=\\'frasco_2L\\'\\nCONTEXT:  PL/pgSQL function local_mutate_after_permit() line 1 at assignment\\nLOCATION:  enum_in, enum.c:133\\n')"
     }
   ],
   "raw": [
@@ -581,9 +581,9 @@
       "test": "post-permit normalizer changed volume_por_unidade aborts exactly",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  23514: new row for relation \"envase\" violates check constraint \"envase_embalagem_volume_coerente\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000002804, 10000000-0000-4000-8000-000000002802, frasco_1L, 1001, 3, 2026-10-30, LOCAL, 2026-10-30 22:44:55.330707+00, f, null, null, null, 10000000-0000-4000-8000-000000000001).\nSCHEMA NAME:  public\nTABLE NAME:  envase\nCONSTRAINT NAME:  envase_embalagem_volume_coerente\nLOCATION:  ExecConstraints, execMain.c:2079\n"
+      "stderr": "ERROR:  22P02: invalid input value for enum tipo_embalagem: \"frasco_2L\"\nLINE 1: NEW.tipo_embalagem:='frasco_2L'\n                            ^\nQUERY:  NEW.tipo_embalagem:='frasco_2L'\nCONTEXT:  PL/pgSQL function local_mutate_after_permit() line 1 at assignment\nLOCATION:  enum_in, enum.c:133\n"
     }
   ],
-  "elapsed_seconds": 164.38,
+  "elapsed_seconds": 155.465,
   "exit_code": 1
 }
