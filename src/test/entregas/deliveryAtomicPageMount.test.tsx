@@ -66,7 +66,9 @@ function mount() {
   return { ...render(<Entregas />, { wrapper }), qc };
 }
 const writerCalls = () => t.rpc.mock.calls.filter((c: any[]) => c[0] === GROUP_RPC || c[0] === CANCEL_RPC);
-const pendingKey = `cf:delivery-uncertain:v1:${ACTOR}:${ORG}`;
+const PFX = `cf:delivery-uncertain:v2:${ACTOR}:${ORG}:`;
+const pendingKeys = () => Object.keys(localStorage).filter(k => k.startsWith(PFX)).sort();
+const pendingRaw = () => { const k = pendingKeys()[0]; return k ? localStorage.getItem(k) : null; };
 
 beforeEach(() => {
   vi.clearAllMocks(); localStorage.clear(); t.writes = []; t.rows = [];
@@ -84,7 +86,7 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     expect(writerCalls()).toHaveLength(1);
     expect(writerCalls()[0][1]).toMatchObject({ p_os_observed: T1, p_itens: [{ item_id: S, quantidade: 1, observed_updated_at: T1 }] });
     expect(t.success).toHaveBeenCalled();
-    expect(localStorage.getItem(pendingKey)).toBeNull();
+    expect(pendingRaw()).toBeNull();
     expect(t.writes).toEqual([]);
     h.qc.clear();
   });
@@ -125,7 +127,7 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     const h = mount();
     await act(async () => { await expect(t.submit(payload())).rejects.toThrow(/pode ter sido gravada/); });
     expect(t.success).not.toHaveBeenCalled();
-    const stored = JSON.parse(localStorage.getItem(pendingKey) as string);
+    const stored = JSON.parse(pendingRaw() as string);
     expect(stored).toMatchObject({ fn: GROUP_RPC, expectedOrg: ORG, args: { p_request_key: payload().grupoId, p_os_observed: T1 } });
     h.unmount(); h.qc.clear();
     // Remount (reload): new key is blocked; only the exact replay is offered.
@@ -141,7 +143,7 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     await waitFor(() => expect(t.success).toHaveBeenCalledWith("Envio pendente confirmado pelo servidor."));
     expect(writerCalls()).toHaveLength(1);
     expect(writerCalls()[0][1]).toEqual(stored.args);
-    expect(localStorage.getItem(pendingKey)).toBeNull();
+    expect(pendingRaw()).toBeNull();
     next.qc.clear();
   });
   it.each(["57014", "PGRST001", "504"])("ambiguous code %s keeps pending and never claims nothing was saved", async (code) => {
@@ -151,17 +153,17 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     await act(async () => { await t.submit(payload()).catch((e: Error) => { msg = e.message; }); });
     expect(msg).toMatch(/pode ter sido gravada/);
     expect(msg).not.toMatch(/nenhuma etapa|nada foi/i);
-    expect(localStorage.getItem(pendingKey)).not.toBeNull();
+    expect(pendingRaw()).not.toBeNull();
     h.qc.clear();
   });
   it("same-mount uncertain result can be settled by the exact replay button", async () => {
     t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: null, error: { code: "57014", message: "timeout" } });
     const h = mount();
     await act(async () => { await t.submit(payload()).catch(() => {}); });
-    const stored = JSON.parse(localStorage.getItem(pendingKey) as string);
+    const stored = JSON.parse(pendingRaw() as string);
     t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: { ...groupAck, replay: true }, error: null });
     fireEvent.click(await screen.findByRole("button", { name: "Repetir envio pendente" }));
-    await waitFor(() => expect(localStorage.getItem(pendingKey)).toBeNull());
+    await waitFor(() => expect(pendingRaw()).toBeNull());
     expect(writerCalls().at(-1)?.[1]).toEqual(stored.args);
     h.qc.clear();
   });
@@ -169,7 +171,7 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: null, error: { code: "PT409", message: "DELIVERY_OBSERVED_CONFLICT" } });
     const h = mount();
     await act(async () => { await expect(t.submit(payload())).rejects.toThrow(/PT409/); });
-    expect(localStorage.getItem(pendingKey)).toBeNull();
+    expect(pendingRaw()).toBeNull();
     h.qc.clear();
   });
   it("late ACK after tenant switch is not adopted (no success, pending stays for original session)", async () => {
@@ -183,8 +185,59 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     h.rerender(<Entregas />);
     await act(async () => { release({ data: groupAck, error: null }); await settled; });
     expect(t.success).not.toHaveBeenCalled();
-    expect(localStorage.getItem(pendingKey)).not.toBeNull();
+    expect(pendingRaw()).not.toBeNull();
     h.qc.clear();
+  });
+  it("replay refused (42501 after revocation) keeps the original pending, marks reconciliation and blocks new keys", async () => {
+    t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: null, error: { code: "57014", message: "timeout" } });
+    const h = mount();
+    await act(async () => { await t.submit(payload()).catch(() => {}); });
+    const before = JSON.parse(pendingRaw() as string);
+    t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: null, error: { code: "42501", message: "revoked" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Repetir envio pendente" }));
+    await screen.findByText(/não prova que o envio original não foi gravado/);
+    const after = JSON.parse(pendingRaw() as string);
+    expect(after).toMatchObject({ ...before, replayRejected: "42501" });
+    expect(screen.queryByRole("button", { name: "Repetir envio pendente" })).toBeNull();
+    t.rpc.mockClear();
+    await act(async () => { await expect(t.submit(payload({ grupoId: "30000000-0000-4000-8000-000000000777" }))).rejects.toThrow(/resultado incerto/); });
+    expect(t.rpc).not.toHaveBeenCalled();
+    h.unmount(); h.qc.clear();
+    mount();
+    await screen.findByText(/consulta\/reconciliação autorizada/);
+  });
+  it("PT409 on replay (CAS changed) is not proof of no-commit: pending kept", async () => {
+    t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: null, error: { code: "57014", message: "timeout" } });
+    const h = mount();
+    await act(async () => { await t.submit(payload()).catch(() => {}); });
+    t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: null, error: { code: "PT409", message: "DELIVERY_OBSERVED_CONFLICT" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Repetir envio pendente" }));
+    await screen.findByText(/não prova que o envio original não foi gravado/);
+    expect(JSON.parse(pendingRaw() as string).replayRejected).toBe("PT409");
+    h.qc.clear();
+  });
+  it("two mounted consumers sharing storage, interleaved: Y's attempt is never overwritten nor cleared by X's ACK", async () => {
+    // Same-document simulation of two consumers (not real browser tabs).
+    const X = "30000000-0000-4000-8000-0000000000aa", Y = "30000000-0000-4000-8000-0000000000bb";
+    const releases: Record<string, (v: any) => void> = {};
+    t.rpc.mockImplementation((fn: string, args: any) => fn === CAPABILITY_RPC ? Promise.resolve({ data: cap, error: null }) : new Promise(r => { releases[args.p_request_key] = r; }));
+    const a = mount();
+    let pa: Promise<unknown> = Promise.resolve();
+    await act(async () => { pa = t.submit(payload({ grupoId: X })).catch((e: Error) => e); await new Promise(r => setTimeout(r, 0)); });
+    await waitFor(() => expect(releases[X]).toBeDefined());
+    // Consumer B mounted after X reserved; simulate Y written by another tab that raced past its own check.
+    const yAttempt = JSON.parse(pendingRaw() as string); yAttempt.args = { ...yAttempt.args, p_request_key: Y };
+    localStorage.setItem(`${PFX}${GROUP_RPC}:${Y}`, JSON.stringify(yAttempt));
+    const b = mount();
+    // B sees pending and refuses a new key without dispatch.
+    const before = writerCalls().length;
+    await act(async () => { await expect(t.submit(payload({ grupoId: "30000000-0000-4000-8000-0000000000cc" }))).rejects.toThrow(/incerto|outra aba/); });
+    expect(writerCalls().length).toBe(before);
+    // X's exact ACK arrives: clears only X.
+    await act(async () => { releases[X]({ data: groupAck, error: null }); await pa; });
+    expect(pendingKeys()).toEqual([`${PFX}${GROUP_RPC}:${Y}`]);
+    expect(JSON.parse(localStorage.getItem(`${PFX}${GROUP_RPC}:${Y}`) as string).args.p_request_key).toBe(Y);
+    a.qc.clear(); b.qc.clear();
   });
   it("double submit dispatches a single writer", async () => {
     const h = mount();

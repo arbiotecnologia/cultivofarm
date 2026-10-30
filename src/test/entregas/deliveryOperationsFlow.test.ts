@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  CANCEL_RPC, CAPABILITY_RPC, GROUP_RPC, buildGroupArgs, clearPending, loadPending, parseCancelAck, parseCapability, parseGroupAck,
+  CANCEL_RPC, CAPABILITY_RPC, GROUP_RPC, buildGroupArgs, clearPending, loadAllPending, loadPending, markReplayRejected, parseCancelAck, parseCapability, parseGroupAck,
   parserFor, probeDeliveryCapability, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type GroupInput, type Rpc,
 } from "@/lib/entregas/deliveryOperationsFlow";
 
@@ -167,21 +167,37 @@ describe("ACK, tenant and outcomes", () => {
 });
 
 describe("pending uncertain store (actor+tenant bound)", () => {
-  const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k), m }; };
+  const mem = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k), key: (i: number) => [...m.keys()][i] ?? null, get length() { return m.size; }, m }; };
   it("round-trips the frozen snapshot only for the same actor and tenant", () => {
     const s = mem();
     const r = { fn: GROUP_RPC, args: buildGroupArgs(input()), expectedOrg: ORG, osId: OS, count: 1 };
     savePending(s, ACTOR, ORG, r);
     expect(loadPending(s, ACTOR, ORG)).toEqual(r);
     expect(loadPending(s, ACTOR, OTHER_ORG)).toBeNull();
-    clearPending(s, ACTOR, ORG);
+    expect(clearPending(s, ACTOR, ORG, r)).toBe(true);
     expect(loadPending(s, ACTOR, ORG)).toBeNull();
+  });
+  it("interleaved X/Y: distinct attempts never overwrite; clearing X keeps Y; replay refusal keeps attempt marked", () => {
+    const s = mem();
+    const x = { fn: GROUP_RPC, args: buildGroupArgs(input()), expectedOrg: ORG, osId: OS, count: 1 };
+    const y = { ...x, args: { ...x.args, p_request_key: "30000000-0000-4000-8000-0000000000bb" } };
+    savePending(s, ACTOR, ORG, x);
+    savePending(s, ACTOR, ORG, y);
+    expect(() => savePending(s, ACTOR, ORG, { ...x, osId: S })).toThrow(/tentativa diferente/);
+    expect(loadAllPending(s, ACTOR, ORG)).toHaveLength(2);
+    expect(clearPending(s, ACTOR, ORG, { ...y, count: 9 })).toBe(false);
+    expect(clearPending(s, ACTOR, ORG, x)).toBe(true);
+    expect(loadAllPending(s, ACTOR, ORG)).toEqual([y]);
+    const marked = markReplayRejected(s, ACTOR, ORG, y, "42501");
+    expect(loadPending(s, ACTOR, ORG)).toEqual(marked);
+    expect(marked.replayRejected).toBe("42501");
   });
   it("corrupt or cross-tenant record is reported corrupt (fail-closed)", () => {
     const s = mem();
-    s.setItem(`cf:delivery-uncertain:v1:${ACTOR}:${ORG}`, "{bad");
+    s.setItem(`cf:delivery-uncertain:v2:${ACTOR}:${ORG}:x`, "{bad");
     expect(loadPending(s, ACTOR, ORG)).toBe("corrupt");
-    s.setItem(`cf:delivery-uncertain:v1:${ACTOR}:${ORG}`, JSON.stringify({ fn: GROUP_RPC, args: {}, expectedOrg: OTHER_ORG }));
+    s.m.clear();
+    s.setItem(`cf:delivery-uncertain:v2:${ACTOR}:${ORG}:${GROUP_RPC}:undefined`, JSON.stringify({ fn: GROUP_RPC, args: {}, expectedOrg: OTHER_ORG }));
     expect(loadPending(s, ACTOR, ORG)).toBe("corrupt");
   });
   it("storage write failure aborts before dispatch", async () => {
