@@ -106,7 +106,7 @@
   {
     "test": "cancel split collision reproduced; operational blocker retained",
     "status": "BLOCKED",
-    "error": "ERROR:  duplicate key value violates unique constraint \"estoque_produto_lote_legado_unico_idx\"\nDETAIL:  Key (lote_id)=(10000000-0000-4000-8000-000000000009) already exists.\nCONTEXT:  SQL statement \"UPDATE public.estoque_produto SET status='disponivel' WHERE id=p_item_id\"\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 121 at SQL statement\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text) line 36 at assignment\n"
+    "error": "ERROR:  duplicate key value violates unique constraint \"estoque_produto_lote_legado_unico_idx\"\nDETAIL:  Key (lote_id)=(10000000-0000-4000-8000-000000000010) already exists.\nCONTEXT:  SQL statement \"UPDATE public.estoque_produto SET status='disponivel' WHERE id=p_item_id\"\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 121 at SQL statement\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text) line 36 at assignment\n"
   },
   {
     "test": "failed cancel rolls back reversal stock delivery and receipt",
@@ -125,8 +125,29 @@
     "status": "PASS"
   },
   {
+    "test": "revocation after row wait before replay",
+    "status": "PASS"
+  },
+  {
+    "test": "two actual concurrent exact replays no extra group",
+    "status": "PASS"
+  },
+  {
+    "test": "concurrent replay remains two deliveries",
+    "status": "PASS"
+  },
+  {
+    "test": "item2 trigger failure aborts first delivery reserve expedition",
+    "status": "PASS",
+    "expected": "LOCAL_ITEM_TWO_FAILURE"
+  },
+  {
+    "test": "item2 rollback has no stock ledger receipt residues",
+    "status": "PASS"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 134, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 104, in main\n    assert 'DELIVERY_ACTOR_DENIED' in err or 'DELIVERY_SCOPE_CHANGED' in err,err+out\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  ESTQ_IDENTIDADE_INATIVA\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE\nPL/pgSQL function platform_private.stock_motor_item(uuid,text,jsonb) line 3 at assignment\nSQL statement \"SELECT platform_private.stock_motor_item(v_id,'reserva',jsonb_build_object('os_id',p_os_id,'os_tipo','manual','cliente_id',v_os.cliente_id))\"\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb) line 31 at PERFORM\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 134, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 122, in main\n    deny('delivery trigger title attempt fails transactionally',actor()+call('billing-fault-group'),'DELIVERY_DOWNSTREAM_FORBIDDEN')\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 15, in deny\n    e=pg.sql(s,False);assert code in e,label+':'+e\n                             ^^^^^^^^^\nAssertionError: delivery trigger title attempt fails transactionally:ERROR:  FINANCIAL_TENANT_REQUIRED\nCONTEXT:  PL/pgSQL function d51_5_validate_financial_tenant_links() line 14 at RAISE\nSQL statement \"INSERT INTO public.accounts_receivable(id) VALUES(gen_random_uuid())\"\nPL/pgSQL function local_attempt_billing() line 1 at SQL statement\nSQL statement \"INSERT INTO public.entregas (\n    ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,\n    lote_id, produto_id, quantidade_entregue, status, cliente_id,\n    data_saida, motorista, veiculo\n  ) VALUES (\n    CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,\n    CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,\n    p_estoque_produto_id,\n    v_est.lote_id,\n    v_est.produto_id,\n    p_quantidade,\n    'separado'::public.status_entrega,\n    v_cliente_os,\n    nullif(p_dados->>'data_saida','')::date,\n    nullif(p_dados->>'motorista',''),\n    nullif(p_dados->>'veiculo','')\n  ) RETURNING id\"\nPL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 92 at SQL statement\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb) line 48 at assignment\n\n"
   }
 ]
