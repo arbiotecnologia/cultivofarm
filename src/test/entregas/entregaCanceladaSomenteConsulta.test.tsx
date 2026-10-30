@@ -79,7 +79,7 @@ describe("Comprovante — entrega cancelada é somente consulta", () => {
     entregaRow = { id: "e1", status: "separado", comprovante_status: "formulario_gerado", validation_token: "tok" };
     const { qc, W } = makeWrapper();
     render(<EntregaComprovantePanel entrega={{ id: "e1", status: "separado" }} />, { wrapper: W });
-    fireEvent.click(await screen.findByRole("button", { name: /Coletar assinatura digital/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Anexar comprovante/ }));
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     entregaRow = { ...entregaRow, status: "cancelada" };
     await act(async () => { await qc.invalidateQueries(); });
