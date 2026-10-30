@@ -1,111 +1,111 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=3.1s
-CHECKPOINT sql_calls=100 elapsed=5.3s
-CHECKPOINT sql_calls=200 elapsed=7.9s
-CHECKPOINT sql_calls=300 elapsed=10.5s
-CHECKPOINT sql_calls=400 elapsed=13.2s
-CHECKPOINT sql_calls=500 elapsed=16.0s
-CHECKPOINT sql_calls=600 elapsed=18.6s
-CHECKPOINT sql_calls=700 elapsed=21.3s
-CHECKPOINT sql_calls=800 elapsed=23.8s
-CHECKPOINT sql_calls=900 elapsed=26.2s
-CHECKPOINT sql_calls=1000 elapsed=28.9s
-CHECKPOINT sql_calls=1100 elapsed=31.6s
-CHECKPOINT sql_calls=1200 elapsed=34.4s
-CHECKPOINT sql_calls=1300 elapsed=37.1s
-CHECKPOINT sql_calls=1400 elapsed=39.2s
-CHECKPOINT sql_calls=1500 elapsed=41.7s
-CHECKPOINT sql_calls=1600 elapsed=44.3s
-CHECKPOINT sql_calls=1700 elapsed=47.0s
-CHECKPOINT sql_calls=1800 elapsed=49.9s
-CHECKPOINT sql_calls=1900 elapsed=52.4s
-CHECKPOINT sql_calls=2000 elapsed=54.8s
-CHECKPOINT sql_calls=2100 elapsed=57.0s
-CHECKPOINT sql_calls=2200 elapsed=59.2s
-CHECKPOINT sql_calls=2300 elapsed=61.4s
-CHECKPOINT sql_calls=2400 elapsed=64.0s
-CHECKPOINT sql_calls=2500 elapsed=66.6s
-CHECKPOINT sql_calls=2600 elapsed=69.0s
-CHECKPOINT sql_calls=2700 elapsed=71.5s
-CHECKPOINT sql_calls=2800 elapsed=74.0s
-CHECKPOINT sql_calls=2900 elapsed=76.5s
-CHECKPOINT sql_calls=3000 elapsed=78.8s
-CHECKPOINT sql_calls=3100 elapsed=81.0s
-CHECKPOINT sql_calls=3200 elapsed=83.2s
-CHECKPOINT sql_calls=3300 elapsed=85.6s
-CHECKPOINT sql_calls=3400 elapsed=88.3s
-CHECKPOINT sql_calls=3500 elapsed=90.8s
-CHECKPOINT sql_calls=3600 elapsed=93.0s
-CHECKPOINT sql_calls=3700 elapsed=95.4s
-CHECKPOINT sql_calls=3800 elapsed=97.4s
-CHECKPOINT sql_calls=3900 elapsed=99.6s
-CHECKPOINT sql_calls=4000 elapsed=102.1s
-CHECKPOINT sql_calls=4100 elapsed=104.9s
-CHECKPOINT sql_calls=4200 elapsed=107.8s
-CHECKPOINT sql_calls=4300 elapsed=110.2s
-CHECKPOINT sql_calls=4400 elapsed=112.7s
-CHECKPOINT sql_calls=4500 elapsed=115.4s
-CHECKPOINT sql_calls=4600 elapsed=118.2s
-CHECKPOINT sql_calls=4700 elapsed=120.7s
-CHECKPOINT sql_calls=4800 elapsed=123.0s
-CHECKPOINT sql_calls=4900 elapsed=125.3s
-CHECKPOINT sql_calls=5000 elapsed=127.6s
-CHECKPOINT sql_calls=5100 elapsed=130.1s
-CHECKPOINT sql_calls=5200 elapsed=132.6s
-CHECKPOINT sql_calls=5300 elapsed=135.2s
-CHECKPOINT sql_calls=5400 elapsed=138.2s
-CHECKPOINT sql_calls=5500 elapsed=140.8s
-CHECKPOINT sql_calls=5600 elapsed=143.6s
-CHECKPOINT sql_calls=5700 elapsed=146.4s
-CHECKPOINT sql_calls=5800 elapsed=149.3s
-CHECKPOINT sql_calls=5900 elapsed=152.3s
-CHECKPOINT sql_calls=6000 elapsed=155.1s
-CHECKPOINT sql_calls=6100 elapsed=157.7s
-CHECKPOINT sql_calls=6200 elapsed=160.2s
-CHECKPOINT sql_calls=6300 elapsed=162.5s
-CHECKPOINT sql_calls=6400 elapsed=164.5s
-CHECKPOINT sql_calls=6500 elapsed=166.7s
-CHECKPOINT sql_calls=6600 elapsed=169.2s
-CHECKPOINT sql_calls=6700 elapsed=171.7s
-CHECKPOINT sql_calls=6800 elapsed=174.2s
-CHECKPOINT sql_calls=6900 elapsed=176.9s
-CHECKPOINT sql_calls=7000 elapsed=179.3s
-CHECKPOINT sql_calls=7100 elapsed=181.6s
-CHECKPOINT sql_calls=7200 elapsed=184.1s
-CHECKPOINT sql_calls=7300 elapsed=186.6s
-CHECKPOINT sql_calls=7400 elapsed=189.2s
-CHECKPOINT sql_calls=7500 elapsed=191.9s
-CHECKPOINT sql_calls=7600 elapsed=194.4s
-CHECKPOINT sql_calls=7700 elapsed=196.9s
-CHECKPOINT sql_calls=7800 elapsed=199.1s
-CHECKPOINT sql_calls=7900 elapsed=201.5s
-CHECKPOINT sql_calls=8000 elapsed=203.8s
-CHECKPOINT sql_calls=8100 elapsed=206.2s
-CHECKPOINT sql_calls=8200 elapsed=208.5s
-CHECKPOINT sql_calls=8300 elapsed=211.1s
-CHECKPOINT sql_calls=8400 elapsed=213.3s
-CHECKPOINT sql_calls=8500 elapsed=215.4s
-CHECKPOINT sql_calls=8600 elapsed=217.6s
-CHECKPOINT sql_calls=8700 elapsed=219.4s
-CHECKPOINT sql_calls=8800 elapsed=221.0s
-CHECKPOINT sql_calls=8900 elapsed=222.7s
-CHECKPOINT sql_calls=9000 elapsed=224.8s
-CHECKPOINT sql_calls=9100 elapsed=226.8s
-CHECKPOINT sql_calls=9200 elapsed=228.8s
-CHECKPOINT sql_calls=9300 elapsed=230.8s
-CHECKPOINT sql_calls=9400 elapsed=232.8s
-CHECKPOINT sql_calls=9500 elapsed=234.9s
-CHECKPOINT sql_calls=9600 elapsed=237.2s
-CHECKPOINT sql_calls=9700 elapsed=239.3s
-CHECKPOINT sql_calls=9800 elapsed=241.6s
-CHECKPOINT sql_calls=9900 elapsed=243.5s
-CHECKPOINT sql_calls=10000 elapsed=245.2s
-CHECKPOINT sql_calls=10100 elapsed=247.1s
-CHECKPOINT sql_calls=10200 elapsed=248.9s
-CHECKPOINT sql_calls=10300 elapsed=250.7s
-CHECKPOINT sql_calls=10400 elapsed=252.3s
-CHECKPOINT sql_calls=10500 elapsed=253.8s
-CHECKPOINT sql_calls=10600 elapsed=255.4s
+CHECKPOINT sql_calls=1 elapsed=2.0s
+CHECKPOINT sql_calls=100 elapsed=3.9s
+CHECKPOINT sql_calls=200 elapsed=6.1s
+CHECKPOINT sql_calls=300 elapsed=8.2s
+CHECKPOINT sql_calls=400 elapsed=10.6s
+CHECKPOINT sql_calls=500 elapsed=13.2s
+CHECKPOINT sql_calls=600 elapsed=15.7s
+CHECKPOINT sql_calls=700 elapsed=18.6s
+CHECKPOINT sql_calls=800 elapsed=21.5s
+CHECKPOINT sql_calls=900 elapsed=24.7s
+CHECKPOINT sql_calls=1000 elapsed=27.7s
+CHECKPOINT sql_calls=1100 elapsed=30.6s
+CHECKPOINT sql_calls=1200 elapsed=33.7s
+CHECKPOINT sql_calls=1300 elapsed=36.6s
+CHECKPOINT sql_calls=1400 elapsed=39.6s
+CHECKPOINT sql_calls=1500 elapsed=42.8s
+CHECKPOINT sql_calls=1600 elapsed=45.6s
+CHECKPOINT sql_calls=1700 elapsed=48.4s
+CHECKPOINT sql_calls=1800 elapsed=51.2s
+CHECKPOINT sql_calls=1900 elapsed=53.8s
+CHECKPOINT sql_calls=2000 elapsed=56.5s
+CHECKPOINT sql_calls=2100 elapsed=59.2s
+CHECKPOINT sql_calls=2200 elapsed=61.9s
+CHECKPOINT sql_calls=2300 elapsed=64.5s
+CHECKPOINT sql_calls=2400 elapsed=67.2s
+CHECKPOINT sql_calls=2500 elapsed=69.7s
+CHECKPOINT sql_calls=2600 elapsed=72.4s
+CHECKPOINT sql_calls=2700 elapsed=75.0s
+CHECKPOINT sql_calls=2800 elapsed=77.5s
+CHECKPOINT sql_calls=2900 elapsed=79.7s
+CHECKPOINT sql_calls=3000 elapsed=82.0s
+CHECKPOINT sql_calls=3100 elapsed=84.4s
+CHECKPOINT sql_calls=3200 elapsed=87.1s
+CHECKPOINT sql_calls=3300 elapsed=89.9s
+CHECKPOINT sql_calls=3400 elapsed=92.6s
+CHECKPOINT sql_calls=3500 elapsed=94.8s
+CHECKPOINT sql_calls=3600 elapsed=97.0s
+CHECKPOINT sql_calls=3700 elapsed=99.1s
+CHECKPOINT sql_calls=3800 elapsed=101.3s
+CHECKPOINT sql_calls=3900 elapsed=103.3s
+CHECKPOINT sql_calls=4000 elapsed=105.5s
+CHECKPOINT sql_calls=4100 elapsed=107.8s
+CHECKPOINT sql_calls=4200 elapsed=110.0s
+CHECKPOINT sql_calls=4300 elapsed=112.1s
+CHECKPOINT sql_calls=4400 elapsed=114.4s
+CHECKPOINT sql_calls=4500 elapsed=116.9s
+CHECKPOINT sql_calls=4600 elapsed=119.4s
+CHECKPOINT sql_calls=4700 elapsed=121.6s
+CHECKPOINT sql_calls=4800 elapsed=124.1s
+CHECKPOINT sql_calls=4900 elapsed=126.5s
+CHECKPOINT sql_calls=5000 elapsed=128.8s
+CHECKPOINT sql_calls=5100 elapsed=131.1s
+CHECKPOINT sql_calls=5200 elapsed=133.5s
+CHECKPOINT sql_calls=5300 elapsed=135.7s
+CHECKPOINT sql_calls=5400 elapsed=137.8s
+CHECKPOINT sql_calls=5500 elapsed=140.2s
+CHECKPOINT sql_calls=5600 elapsed=142.4s
+CHECKPOINT sql_calls=5700 elapsed=144.6s
+CHECKPOINT sql_calls=5800 elapsed=147.0s
+CHECKPOINT sql_calls=5900 elapsed=149.3s
+CHECKPOINT sql_calls=6000 elapsed=151.8s
+CHECKPOINT sql_calls=6100 elapsed=154.5s
+CHECKPOINT sql_calls=6200 elapsed=156.8s
+CHECKPOINT sql_calls=6300 elapsed=158.7s
+CHECKPOINT sql_calls=6400 elapsed=160.8s
+CHECKPOINT sql_calls=6500 elapsed=162.8s
+CHECKPOINT sql_calls=6600 elapsed=165.2s
+CHECKPOINT sql_calls=6700 elapsed=167.9s
+CHECKPOINT sql_calls=6800 elapsed=170.2s
+CHECKPOINT sql_calls=6900 elapsed=172.5s
+CHECKPOINT sql_calls=7000 elapsed=175.2s
+CHECKPOINT sql_calls=7100 elapsed=177.5s
+CHECKPOINT sql_calls=7200 elapsed=180.1s
+CHECKPOINT sql_calls=7300 elapsed=182.5s
+CHECKPOINT sql_calls=7400 elapsed=184.7s
+CHECKPOINT sql_calls=7500 elapsed=187.1s
+CHECKPOINT sql_calls=7600 elapsed=189.4s
+CHECKPOINT sql_calls=7700 elapsed=192.2s
+CHECKPOINT sql_calls=7800 elapsed=194.6s
+CHECKPOINT sql_calls=7900 elapsed=197.1s
+CHECKPOINT sql_calls=8000 elapsed=199.3s
+CHECKPOINT sql_calls=8100 elapsed=201.7s
+CHECKPOINT sql_calls=8200 elapsed=204.2s
+CHECKPOINT sql_calls=8300 elapsed=207.0s
+CHECKPOINT sql_calls=8400 elapsed=209.5s
+CHECKPOINT sql_calls=8500 elapsed=212.1s
+CHECKPOINT sql_calls=8600 elapsed=215.1s
+CHECKPOINT sql_calls=8700 elapsed=218.3s
+CHECKPOINT sql_calls=8800 elapsed=221.2s
+CHECKPOINT sql_calls=8900 elapsed=223.9s
+CHECKPOINT sql_calls=9000 elapsed=226.8s
+CHECKPOINT sql_calls=9100 elapsed=229.5s
+CHECKPOINT sql_calls=9200 elapsed=231.9s
+CHECKPOINT sql_calls=9300 elapsed=234.3s
+CHECKPOINT sql_calls=9400 elapsed=236.7s
+CHECKPOINT sql_calls=9500 elapsed=239.3s
+CHECKPOINT sql_calls=9600 elapsed=242.2s
+CHECKPOINT sql_calls=9700 elapsed=244.9s
+CHECKPOINT sql_calls=9800 elapsed=247.3s
+CHECKPOINT sql_calls=9900 elapsed=250.2s
+CHECKPOINT sql_calls=10000 elapsed=252.9s
+CHECKPOINT sql_calls=10100 elapsed=255.6s
+CHECKPOINT sql_calls=10200 elapsed=258.5s
+CHECKPOINT sql_calls=10300 elapsed=261.5s
+CHECKPOINT sql_calls=10400 elapsed=264.4s
+CHECKPOINT sql_calls=10500 elapsed=266.9s
+CHECKPOINT sql_calls=10600 elapsed=269.6s
 RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
 PROOF_AND_V2_INSTALLED_AFTER_ATOMIC exact POSTs ok
 PASS real h15 and SaaS resolve synthetic tenant
@@ -117,7 +117,7 @@ PASS role parceiro_b2b_tecnico denied
 PASS role superadmin denied
 PASS role consultor_tecnico denied
 PASS inactive denied
-CHECKPOINT sql_calls=10700 elapsed=258.3s
+CHECKPOINT sql_calls=10700 elapsed=274.0s
 PASS invalid quantity None
 PASS invalid quantity NaN
 PASS invalid quantity 0
@@ -125,7 +125,7 @@ PASS invalid quantity -1
 PASS invalid quantity Infinity
 PASS OnFarm remains contained
 PASS all negative paths no deliveries receipts
-GROUP {"itens": [{"entrega_id": "c79b50b1-c256-44a2-b706-f9a70c29125c", "movimentacao_id": "bd9ff32a-cb36-4cc1-ae88-42d39d39c473", "estoque_produto_id": "470cc69f-b768-4ce6-b6a0-6d5afe22cc0d"}, {"entrega_id": "d1092e73-ed87-4f88-9cf3-65d8da686730", "movimentacao_id": "f1cd8478-1e76-4c9a-89ef-189695f95800", "estoque_produto_id": "641f5c8b-f5d5-4075-9e7a-5875c68fd68e"}], "os_id": "10000000-0000-4000-8000-000000000007", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000001"}
+GROUP {"itens": [{"entrega_id": "57d3c229-010f-424c-968d-9c9f07c9a9ec", "movimentacao_id": "4805fc4a-9bde-4ec6-8681-bf402af2e070", "estoque_produto_id": "dafdebfe-839c-4e98-b7dd-7bad80af9b0f"}, {"entrega_id": "f7a230b6-2713-49f6-8fc2-5c6fe305aacd", "movimentacao_id": "0308b868-e01a-46ee-8e75-ff0f62c67076", "estoque_produto_id": "81bf2717-aa98-4434-9c15-d9083905f5fc"}], "os_id": "10000000-0000-4000-8000-000000000007", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000001"}
 PASS two-item group real reserve split delivery expedition
 PASS exact replay returns stored group
 PASS replay creates no duplicate
@@ -133,7 +133,7 @@ PASS changed payload replay conflict
 PASS cross tenant cancel
 PASS cancel failure after return ledger atomically rolls back
 PASS failed cancel rolls back reversal stock delivery and receipt
-CANCEL {"replay": false, "success": true, "entrega_id": "c79b50b1-c256-44a2-b706-f9a70c29125c", "organization_id": "10000000-0000-4000-8000-000000000001", "reserva_liberada": true, "estoque_estornado": true}
+CANCEL {"replay": false, "success": true, "entrega_id": "57d3c229-010f-424c-968d-9c9f07c9a9ec", "organization_id": "10000000-0000-4000-8000-000000000001", "reserva_liberada": true, "estoque_estornado": true}
 PASS canonical split merge keeps unique index source history and main balance
 PASS cancel exact replay
 PASS cancel changed reason replay denied
@@ -148,7 +148,7 @@ PASS attempted title leaves zero title and no new group
 PASS exact LIVE accounting guard rejects entregue on pending snapshot
 PASS delivery transition barrier precedes any auto billing trigger
 PASS final no context no billing fiscal messages
-TENANT B {"itens": [{"entrega_id": "b85e5ff3-469c-4c8f-858e-34f355e87991", "movimentacao_id": "98108712-da0c-47b6-a1d9-fd833c2b3a0d", "estoque_produto_id": "57b2ab28-75b5-4bb3-a82b-5f5adef5b846"}], "os_id": "10000000-0000-4000-8000-000000000008", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000002"}
+TENANT B {"itens": [{"entrega_id": "2801b408-4f8c-41eb-bca4-2cd1516ae790", "movimentacao_id": "ab71712b-8c9a-4c61-b9d6-4fc517807877", "estoque_produto_id": "e719667d-7548-47b5-b634-90b0192d8b97"}], "os_id": "10000000-0000-4000-8000-000000000008", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000002"}
 PASS same request key tenants separated no collision
 PASS B cannot replay A cancel result
 PASS GUC spoof cannot cancel directly
@@ -157,8 +157,8 @@ PASS private context cannot be minted by caller
 PASS oversell balance conserved no negatives
 PASS negative receipt ACK leaves every effect unchanged
 PASS final financial fiscal outbox empty after concurrency
+CHECKPOINT sql_calls=10800 elapsed=282.6s
 PASS unsupported field rejected endereco_entrega
-CHECKPOINT sql_calls=10800 elapsed=264.2s
 PASS unsupported field rejected observacoes_entrega
 PASS merge accepts available zero reservation with preserved unique index
 PASS merge rejects nonpositive/nonfinite main volume 0
@@ -178,19 +178,25 @@ PASS cancel revoked no effects advisory
 PASS cancel revoked no effects gate
 PASS real revoker waits gate during cancel row
 PASS cancel replay denied after effective revocation row
-CHECKPOINT sql_calls=10900 elapsed=271.5s
+CHECKPOINT sql_calls=10900 elapsed=293.6s
 PASS real revoker waits gate during cancel merge
 PASS cancel replay denied after effective revocation merge
+PASS dedicated tests zero finance/outbox
+PASS anon direct INSERT
+PASS anon direct UPDATE
+PASS anon direct DELETE
+PASS anon legacy cancellation ACL
+PASS authenticated direct INSERT
+PASS authenticated direct UPDATE
+PASS authenticated direct DELETE
+PASS authenticated legacy cancellation ACL
+PASS service_role direct INSERT
+PASS service_role direct UPDATE
+PASS service_role direct DELETE
+PASS service_role legacy cancellation ACL
+PASS authenticated spoof GUC cannot update with local DML grant
+PASS privileged direct writer lacks private permit
+PASS legacy creator direct INSERT denied without group permit
+PASS closure retains authenticated SELECT
+PASS closure no context residue
 ATOMIC_WITH_V2 v2_installed=True 97 PASS 0 FAIL 0 BLOCKED
-Traceback (most recent call last):
-  File "/dev-server/scripts/stock-envase-recovery-20261027/test_atomic_with_v2.py", line 45, in <module>
-    T.main()
-    ~~~~~~^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 190, in main
-    test_closure.run(sys.modules[__name__])
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_review.py", line 75, in run
-    out,err=t.finish(worker);assert expected in err or 'DELIVERY_OBSERVED_CONFLICT' in err,err+out
-                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: {"itens": [{"entrega_id": "1874820f-7e54-4c25-8ad4-82100ac55133", "movimentacao_id": "50ef40ea-dc7a-48ec-bb84-ebe4bde30b9f", "estoque_produto_id": "ced56348-1cb9-436b-a54d-2203be48d613"}], "os_id": "10000000-0000-4000-8000-000000000007", "replay": true, "success": true, "organization_id": "10000000-0000-4000-8000-000000000001"}
-
