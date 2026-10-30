@@ -36,7 +36,11 @@
     "status": "PASS"
   },
   {
-    "test": "client without TESTE SEM VALOR COMERCIAL marker: PRE stops, no notice",
+    "test": "unmarked or name-mismatched client: PRE stops, no notice",
+    "status": "PASS"
+  },
+  {
+    "test": "financial baseline different from pinned hash/count: PRE stops",
     "status": "PASS"
   },
   {
@@ -51,12 +55,12 @@
     "test": "canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento",
     "status": "PASS",
     "ids": {
-      "os": "13abca80-c538-42b8-905a-3f441c64877f",
-      "lote": "98d655e0-f456-4557-841f-9d4a7feadd3e",
-      "entrega": "d4cd8b05-4ad6-4eed-a843-6e6490644bea",
-      "estoque": "6db7fcaa-19f1-42cb-8cdc-7758c17ce522",
-      "programacao": "3ba5dc01-3e71-40f2-b842-4f15e64a3ab3",
-      "request_key": "fixture-13abca80-c538-42b8-905a-3f441c64877f"
+      "os": "c3054dd5-6938-408b-a874-e8a797bac7c4",
+      "lote": "d1009f24-31c8-49e0-8837-f61f8aff0df7",
+      "entrega": "d024c63f-78b1-4025-8852-5ddccb1607e8",
+      "estoque": "819fc0db-57e0-4f3c-8d3b-294de0ad7f29",
+      "programacao": "a38ac712-3b89-4765-8045-36e3cb3a077e",
+      "request_key": "fixture-c3054dd5-6938-408b-a874-e8a797bac7c4"
     }
   },
   {
@@ -81,13 +85,10 @@
     "status": "PASS"
   },
   {
-    "test": "ledger recorded",
+    "test": "cancel=true: delivery cancelada, exact ledger and stock state",
     "status": "PASS",
-    "ledger": "cancelamento_reserva,estorno_expedicao,expedicao,entrada"
-  },
-  {
-    "test": "stock restored by cancellation (no deletion)",
-    "status": "PASS"
+    "ledger": "cancelamento_reserva|1|1|1|1|0|reservado|disponivel|neutro;entrada|1|0|1|0|1|reservado|entrada;estorno_expedicao|1|1|1|1|1|expedido|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida",
+    "stock": "disponivel|1|0"
   },
   {
     "test": "only in-app operational notification(s) to AR Bio users (trg_notify_lab_on_programacao); outbox stays 0",
@@ -116,6 +117,26 @@
   },
   {
     "test": "AR Bio admin reads own fixture OS (RLS positive)",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel=false retained: delivery separado, exact ledger and stock state",
+    "status": "PASS",
+    "ledger": "entrada|1|0|1|0|1|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida",
+    "stock": "expedido|1|1|t"
+  },
+  {
+    "test": "cancel=false: zero financial/fiscal effects",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel=false then canonical cancel: delivery cancelada, exact ledger and stock state",
+    "status": "PASS",
+    "ledger": "cancelamento_reserva|1|1|1|1|0|reservado|disponivel|neutro;entrada|1|0|1|0|1|reservado|entrada;estorno_expedicao|1|1|1|1|1|expedido|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida",
+    "stock": "disponivel|1|0"
+  },
+  {
+    "test": "later canonical cancel: zero financial/fiscal effects",
     "status": "PASS"
   },
   {

@@ -1,0 +1,17 @@
+-- REVIEW ONLY. Hosted identifiers from the auditor's READ-ONLY findings (30/10/2026). Not executed by Lovable.
+-- Usage (auditor, after final review): psql "<canonical swzpzcwiasxmjutrmvkm DSN>" -f fixture-arbio-pipeline-params.psql -f fixture-arbio-pipeline.sql.review
+\set org '007bb519-cba0-4704-be2c-cb93ad010048'
+\set admin 'a7d45277-6dec-413d-bf6b-86620c1ef39f'
+\set cliente '8b138956-514e-4412-9b2e-c17de581e974'
+\set cliente_nome 'TESTE AUDITORIA B2B CLIENTE CONTROLE 20261009'
+\set fazenda 'ff35e2a0-8cdc-4913-b732-61875ebd1831'
+\set talhao 'a3144e03-dae2-4a05-9f07-f6943f3947f3'
+\set produto '1986af48-709f-4bf4-85b4-3c9ed8a61019'
+\set produto_nome 'TESTE AUDITORIA BIOLOGICO APLICACAO 20261019'
+\set referencia '681dfe6d-83f3-405f-87ac-4b293b09bfaa'
+\set expected_ar_hash '9c1f86a6ccec0f8c233d17994294af12'
+\set expected_ar_count '5'
+-- Real upload path: keep the delivery (status separado) for the browser proof; cancel later canonically.
+\set cancel 'false'
+-- Human approval 30/10/2026: ONLY the test-labelled fn_notify_lab_on_programacao internal notice.
+\set accept_inapp 'true'
