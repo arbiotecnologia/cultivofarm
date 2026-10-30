@@ -131,9 +131,10 @@ export type Outcome<T> =
 
 const freeze = (r: RetrySnapshot): RetrySnapshot => Object.freeze({ ...r, args: JSON.parse(JSON.stringify(r.args)) });
 
-async function dispatchOnce<T>(rpc: Rpc, retry: RetrySnapshot, parse: (d: unknown) => T | null, fence: () => void, onDispatch: () => void): Promise<Outcome<T>> {
+async function dispatchOnce<T>(rpc: Rpc, retry: RetrySnapshot, parse: (d: unknown) => T | null, fence: () => void, onDispatch: (r: RetrySnapshot) => void): Promise<Outcome<T>> {
   fence();
-  onDispatch();
+  onDispatch(retry);
+  fence();
   let outcome: Outcome<T>;
   try {
     const { data, error } = await rpc(retry.fn, retry.args);
@@ -159,7 +160,7 @@ export function parserFor(retry: RetrySnapshot): (d: unknown) => unknown {
 }
 
 /** Fresh capability probe, then one dispatch. `fence` must throw if scope/session changed. */
-export async function runAtomicGroup(rpc: Rpc, input: GroupInput, fence: () => void, onDispatch: () => void = () => {}): Promise<Outcome<GroupAck>> {
+export async function runAtomicGroup(rpc: Rpc, input: GroupInput, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<GroupAck>> {
   const args = buildGroupArgs(input);
   const cap = await probeDeliveryCapability(rpc);
   fence();
@@ -168,7 +169,7 @@ export async function runAtomicGroup(rpc: Rpc, input: GroupInput, fence: () => v
   return dispatchOnce(rpc, retry, d => parseGroupAck(d, input.osId, input.itens.length, input.expectedOrg), fence, onDispatch);
 }
 
-export async function runAtomicCancel(rpc: Rpc, entregaId: string, motivo: string, observedUpdatedAt: string, expectedOrg: string, fence: () => void, onDispatch: () => void = () => {}): Promise<Outcome<{ replay: boolean }>> {
+export async function runAtomicCancel(rpc: Rpc, entregaId: string, motivo: string, observedUpdatedAt: string, expectedOrg: string, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<{ replay: boolean }>> {
   if (!UUID.test(entregaId) || !UUID.test(expectedOrg) || !motivo.trim() || !observedUpdatedAt) throw new Error("Cancelamento inválido: informe o motivo. Nenhuma alteração foi enviada.");
   const cap = await probeDeliveryCapability(rpc);
   fence();
@@ -178,7 +179,7 @@ export async function runAtomicCancel(rpc: Rpc, entregaId: string, motivo: strin
 }
 
 /** Exact replay of an uncertain dispatch: same function, identical frozen args (same key, same observed CAS). */
-export async function replayUncertain<T>(rpc: Rpc, retry: RetrySnapshot, parse: (d: unknown) => T | null, fence: () => void, onDispatch: () => void = () => {}): Promise<Outcome<T>> {
+export async function replayUncertain<T>(rpc: Rpc, retry: RetrySnapshot, parse: (d: unknown) => T | null, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<T>> {
   const cap = await probeDeliveryCapability(rpc);
   fence();
   if (!(retry.fn === GROUP_RPC ? cap.group : retry.fn === CANCEL_RPC ? cap.cancel : false)) return { status: "uncertain", retry };
