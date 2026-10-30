@@ -1,0 +1,29 @@
+-- Sibling evidence tenant barrier. One RESTRICTIVE ALL policy per table (AND-ed with existing permissive role/action
+-- policies, so nothing is widened): the parent delivery must be visible to the caller through public.entregas RLS
+-- (incl. RESTRICTIVE tenant_isolation_d51_5), for reads (USING) and for new/changed rows (WITH CHECK, blocks reparent).
+-- Invoker EXISTS, no SECURITY DEFINER; entregas policies reference none of these tables (no recursion).
+-- TRUNCATE bypasses RLS and no app path uses it: revoked from client roles on these tables only.
+CREATE POLICY entrega_checklist_parent_visible_r ON public.entrega_checklist AS RESTRICTIVE FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_checklist.entrega_id))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_checklist.entrega_id));
+REVOKE TRUNCATE ON public.entrega_checklist FROM PUBLIC, anon, authenticated;
+CREATE POLICY entrega_ocorrencias_parent_visible_r ON public.entrega_ocorrencias AS RESTRICTIVE FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_ocorrencias.entrega_id))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_ocorrencias.entrega_id));
+REVOKE TRUNCATE ON public.entrega_ocorrencias FROM PUBLIC, anon, authenticated;
+CREATE POLICY entrega_documentos_parent_visible_r ON public.entrega_documentos AS RESTRICTIVE FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_documentos.entrega_id))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_documentos.entrega_id));
+REVOKE TRUNCATE ON public.entrega_documentos FROM PUBLIC, anon, authenticated;
+CREATE POLICY entrega_conferencia_itens_parent_visible_r ON public.entrega_conferencia_itens AS RESTRICTIVE FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_conferencia_itens.entrega_id))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_conferencia_itens.entrega_id));
+REVOKE TRUNCATE ON public.entrega_conferencia_itens FROM PUBLIC, anon, authenticated;
+CREATE POLICY entrega_reconciliacoes_parent_visible_r ON public.entrega_reconciliacoes AS RESTRICTIVE FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_reconciliacoes.entrega_id))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_reconciliacoes.entrega_id));
+REVOKE TRUNCATE ON public.entrega_reconciliacoes FROM PUBLIC, anon, authenticated;
+CREATE POLICY entrega_etiquetas_parent_visible_r ON public.entrega_etiquetas AS RESTRICTIVE FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_etiquetas.entrega_id))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_etiquetas.entrega_id));
+REVOKE TRUNCATE ON public.entrega_etiquetas FROM PUBLIC, anon, authenticated;

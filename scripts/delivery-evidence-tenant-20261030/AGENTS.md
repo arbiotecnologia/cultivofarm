@@ -1,0 +1,5 @@
+- Preparation only: never apply install/rollback hosted, publish or grant from this package; the main auditor reviews and applies.
+- Delta = one RESTRICTIVE ALL policy per sibling evidence table (USING and WITH CHECK: parent entrega visible through the caller's own entregas RLS, invoker EXISTS) plus REVOKE TRUNCATE from client roles on the same tables; never alter existing policies, other ACL bits, RLS flags, writers or entrega_termos.
+- PRE/POST are generated from the disposable composition (release-combined + v2 + proof-select) and must match the hosted read-only audit; drift or rerun aborts.
+- Rollback is deny-safe: narrows barriers to false, never drops them or re-grants TRUNCATE.
+- Synthetic claims on disposable PG are not hosted JWT proof; the auditor repeats the real FSF JWT test after applying.
