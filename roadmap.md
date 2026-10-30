@@ -1,3 +1,10 @@
+## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
+- [ ] Inventariar contratos/consumidores atuais e reconciliar aplicações relatadas 91cec22/2faf356, sem hosted/sessões/segredos.
+- [ ] Preparar e testar primeiro delta revisável de envase isolado com PRE/POST determinísticos, rollback deny-only e invariantes; não conceder legado por simples grant.
+- [ ] Ajustar somente disponibilidade/fences necessários do consumidor canônico; preservar provas e histórico cancelado.
+- [ ] Relatar escopo liberável e blockers das operações posteriores, fontes/diff/hashes/resultados brutos; revisão/implantação exclusivamente pelo auditor.
+- [ ] Homologação JWT/Storage real e implantação aguardam auditor; fiscal/financeiro/automações, confirmação física, etiquetas e dispensa não liberados nesta execução.
+
 - [x] Complemento financeiro 01:31: formulário/agenda/catálogos e promessa de persistência removidos; consulta autorizada com loading/vazio/erro/título/fiscal; 23 testes focados e595/595 gate em42arquivos PASS, zero writes programáticos/escopo, build OK; docs/auditorias/financeiro-consulta-20261030.md. Sem publicar/banco.
 - [x] Contenção entrega 30/10: catálogo LIVE somente SELECT; página/hook/motor/embalagens/recebimento e financeiro sem primeiro dispatch nos caminhos contidos; consultas e carteira preservadas; 593/593 testes em42arquivos sem rede, build OK; relatório/diff/hashes em docs/auditorias/entrega-contencao-20261030. Sem publicar/DDL/dados reais.
 - [x] Diagnóstico timeout dc841355: última falha service_role reproduzida em0,522s; expectativa/harness corrigidos sem SQL de negócio;97PASS PG257,264s e9PASS instalador242,091s/exit0, limites/checkpoints/logs em scripts/delivery-atomic-hardening-20261030/TIMEOUT-DIAGNOSTICO.md. Sem hosted/frontend/publicação.
