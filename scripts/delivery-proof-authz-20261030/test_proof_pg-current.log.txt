@@ -23,3 +23,194 @@ CHECKPOINT sql_calls=2000 elapsed=61.5s
 CHECKPOINT sql_calls=2100 elapsed=64.3s
 CHECKPOINT sql_calls=2200 elapsed=67.0s
 CHECKPOINT sql_calls=2300 elapsed=69.6s
+CHECKPOINT sql_calls=2400 elapsed=72.7s
+CHECKPOINT sql_calls=2500 elapsed=75.3s
+CHECKPOINT sql_calls=2600 elapsed=78.0s
+CHECKPOINT sql_calls=2700 elapsed=80.8s
+CHECKPOINT sql_calls=2800 elapsed=83.6s
+CHECKPOINT sql_calls=2900 elapsed=86.4s
+CHECKPOINT sql_calls=3000 elapsed=89.1s
+CHECKPOINT sql_calls=3100 elapsed=92.3s
+CHECKPOINT sql_calls=3200 elapsed=95.4s
+CHECKPOINT sql_calls=3300 elapsed=98.7s
+CHECKPOINT sql_calls=3400 elapsed=102.4s
+CHECKPOINT sql_calls=3500 elapsed=105.7s
+CHECKPOINT sql_calls=3600 elapsed=109.1s
+CHECKPOINT sql_calls=3700 elapsed=112.0s
+CHECKPOINT sql_calls=3800 elapsed=114.9s
+CHECKPOINT sql_calls=3900 elapsed=117.7s
+CHECKPOINT sql_calls=4000 elapsed=120.6s
+CHECKPOINT sql_calls=4100 elapsed=123.4s
+CHECKPOINT sql_calls=4200 elapsed=126.2s
+CHECKPOINT sql_calls=4300 elapsed=128.9s
+CHECKPOINT sql_calls=4400 elapsed=131.5s
+CHECKPOINT sql_calls=4500 elapsed=134.1s
+CHECKPOINT sql_calls=4600 elapsed=137.0s
+CHECKPOINT sql_calls=4700 elapsed=139.9s
+CHECKPOINT sql_calls=4800 elapsed=142.9s
+CHECKPOINT sql_calls=4900 elapsed=145.9s
+CHECKPOINT sql_calls=5000 elapsed=148.9s
+CHECKPOINT sql_calls=5100 elapsed=152.1s
+CHECKPOINT sql_calls=5200 elapsed=155.4s
+CHECKPOINT sql_calls=5300 elapsed=158.2s
+CHECKPOINT sql_calls=5400 elapsed=161.3s
+CHECKPOINT sql_calls=5500 elapsed=164.4s
+CHECKPOINT sql_calls=5600 elapsed=167.4s
+CHECKPOINT sql_calls=5700 elapsed=170.4s
+CHECKPOINT sql_calls=5800 elapsed=173.4s
+CHECKPOINT sql_calls=5900 elapsed=176.4s
+CHECKPOINT sql_calls=6000 elapsed=179.3s
+CHECKPOINT sql_calls=6100 elapsed=182.5s
+CHECKPOINT sql_calls=6200 elapsed=185.4s
+CHECKPOINT sql_calls=6300 elapsed=188.2s
+CHECKPOINT sql_calls=6400 elapsed=191.6s
+CHECKPOINT sql_calls=6500 elapsed=194.8s
+CHECKPOINT sql_calls=6600 elapsed=198.4s
+CHECKPOINT sql_calls=6700 elapsed=201.9s
+CHECKPOINT sql_calls=6800 elapsed=205.4s
+CHECKPOINT sql_calls=6900 elapsed=208.6s
+CHECKPOINT sql_calls=7000 elapsed=212.0s
+CHECKPOINT sql_calls=7100 elapsed=215.1s
+CHECKPOINT sql_calls=7200 elapsed=218.1s
+CHECKPOINT sql_calls=7300 elapsed=220.7s
+CHECKPOINT sql_calls=7400 elapsed=223.5s
+CHECKPOINT sql_calls=7500 elapsed=226.4s
+CHECKPOINT sql_calls=7600 elapsed=229.1s
+CHECKPOINT sql_calls=7700 elapsed=231.8s
+CHECKPOINT sql_calls=7800 elapsed=234.1s
+CHECKPOINT sql_calls=7900 elapsed=236.5s
+CHECKPOINT sql_calls=8000 elapsed=238.4s
+CHECKPOINT sql_calls=8100 elapsed=240.4s
+CHECKPOINT sql_calls=8200 elapsed=242.4s
+CHECKPOINT sql_calls=8300 elapsed=244.3s
+CHECKPOINT sql_calls=8400 elapsed=246.3s
+CHECKPOINT sql_calls=8500 elapsed=248.3s
+CHECKPOINT sql_calls=8600 elapsed=250.4s
+CHECKPOINT sql_calls=8700 elapsed=252.7s
+CHECKPOINT sql_calls=8800 elapsed=254.8s
+CHECKPOINT sql_calls=8900 elapsed=257.1s
+CHECKPOINT sql_calls=9000 elapsed=259.3s
+CHECKPOINT sql_calls=9100 elapsed=261.5s
+CHECKPOINT sql_calls=9200 elapsed=263.6s
+CHECKPOINT sql_calls=9300 elapsed=265.7s
+CHECKPOINT sql_calls=9400 elapsed=267.8s
+CHECKPOINT sql_calls=9500 elapsed=270.0s
+CHECKPOINT sql_calls=9600 elapsed=272.2s
+CHECKPOINT sql_calls=9700 elapsed=274.3s
+CHECKPOINT sql_calls=9800 elapsed=276.1s
+CHECKPOINT sql_calls=9900 elapsed=278.0s
+CHECKPOINT sql_calls=10000 elapsed=280.4s
+CHECKPOINT sql_calls=10100 elapsed=283.0s
+CHECKPOINT sql_calls=10200 elapsed=285.6s
+CHECKPOINT sql_calls=10300 elapsed=288.4s
+CHECKPOINT sql_calls=10400 elapsed=290.6s
+CHECKPOINT sql_calls=10500 elapsed=293.0s
+CHECKPOINT sql_calls=10600 elapsed=295.5s
+RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
+PASS atomic package installed first (deployment order 1)
+PASS proof installer COMMIT with PRE and POST (deployment order 2)
+PASS exact POST passes on installed instance
+CHECKPOINT fixtures 298.8
+PASS anon cannot execute new attach RPC
+PASS authenticated cannot execute private apply
+PASS legacy adapter rpc_gerar_formulario_entrega closed to anon
+PASS legacy adapter rpc_gerar_formulario_entrega closed to service_role
+PASS legacy adapter rpc_gerar_formulario_entrega without session denied
+PASS legacy adapter rpc_coletar_assinatura_digital_entrega closed to anon
+PASS legacy adapter rpc_coletar_assinatura_digital_entrega closed to service_role
+PASS legacy adapter rpc_coletar_assinatura_digital_entrega without session denied
+PASS legacy adapter rpc_anexar_comprovante_entrega closed to anon
+PASS legacy adapter rpc_anexar_comprovante_entrega closed to service_role
+PASS legacy adapter rpc_anexar_comprovante_entrega without session denied
+PASS legacy generate adapter cross-tenant FSF denied
+PASS legacy generate adapter external role denied
+PASS legacy attach adapter path of another tenant delivery denied
+PASS legacy attach adapter legacy-only field data_assinatura rejected
+PASS preflight positive admin same tenant
+PASS preflight cross-tenant FSF admin denied
+PASS preflight cancelled delivery denied
+PASS preflight external admin+parceiro denied
+PASS preflight aplicador without client link denied
+PASS preflight producao staff allowed (legacy role matrix)
+CHECKPOINT sql_calls=10700 elapsed=299.7s
+PASS preflight writes nothing
+PASS generate positive creates one proof and seeds checklist
+PASS generate replay same key returns stored result
+PASS generate replay is marked replayed, no second proof
+PASS generate new key reuses open proof
+PASS same key different delivery conflicts
+PASS generate cross-tenant denied
+PASS generate cancelled denied
+PASS invalid request key rejected
+PASS attach object missing denied (upload not proven)
+PASS attach object owned by other user denied
+PASS attach path of another delivery denied
+PASS attach traversal path denied
+PASS attach unknown field rejected
+PASS attach mime/extension mismatch rejected
+PASS attach without receiver rejected
+PASS attach cross-tenant FSF admin denied
+PASS attach external role denied
+PASS attach aplicador without link denied
+PASS rejections left zero writes
+PASS attach positive links object, delivery and audit
+PASS attach retry with same key replays without second audit
+PASS replay kept single audit
+PASS same object under new key conflicts (no relink)
+PASS attach without form generates and attaches atomically
+PASS sign invalid hash rejected
+PASS sign attachment-style path rejected
+PASS sign positive by producao staff
+PASS same key from another actor is not a replay of theirs
+PASS confirmed proof cannot be overwritten
+PASS B2B-linked delivery proof stays closed
+PASS direct UPDATE entregas by authenticated denied
+PASS direct UPDATE entrega_comprovantes by authenticated denied
+PASS owner-level write without permit denied even with spoofed GUCs
+PASS proof permit cannot change status
+PASS proof permit cannot change financial columns
+PASS proof permit for one row cannot write another
+PASS fault after form insert aborts attach
+PASS fault rolled back proof, request, audit and delivery
+PASS retry after definitive failure succeeds with same key and object
+PASS revocation committed during advisory wait denies after the wait, zero writes
+PASS revocation committed during global-gate wait denies, zero writes
+PASS row-lock wait: revocation linearized after the committed proof (gate held)
+PASS after linearized revocation the next proof is denied
+PASS row holder that revokes: deadlock/denial is fail-closed, zero writes
+PASS revoked actor cannot replay stored receipt
+PASS inactive profile cannot replay
+PASS preflight aplicador WITH client link allowed
+PASS attach aplicador with client link positive
+PASS success leaves zero permit residue (context removed) and keeps the receipt
+PASS sign aplicador with client link positive
+PASS after real link revocation aplicador preflight denied
+PASS after real link revocation aplicador cannot replay stored receipt
+PASS after real link revocation aplicador new attach denied
+PASS other staff on same delivery keeps access after aplicador revocation
+CHECKPOINT sql_calls=10800 elapsed=306.8s
+PASS link revoked during storage FOR SHARE wait is denied after the wait, zero writes, zero residue
+PASS link revoked during comprovante FOR UPDATE wait is denied, zero writes, zero residue
+PASS role revoked during comprovante wait is denied, zero writes
+PASS gated link revocation during storage wait linearizes after the committed proof
+PASS after linearized link revocation the next aplicador proof is denied
+PASS PT409 OBJECT_ALREADY_LINKED while the object IS linked: SQLSTATE never proves an object is unlinked
+PASS legacy generate adapter works for same-tenant staff through the new contract
+Traceback (most recent call last):
+  File "/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py", line 295, in <module>
+    try: main()
+         ~~~~^^
+  File "/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py", line 261, in main
+    ok('legacy attach adapter (old payload) links object with audit and zero residue', actor() + f"SELECT public.rpc_anexar_comprovante_entrega('{E7}','{legacy_payload}'::jsonb);" + f"SELECT (SELECT arquivo_path FROM public.entrega_comprovantes WHERE entrega_id='{E7}')='{lpath}' AND (SELECT count(*) FROM platform_private.delivery_context_20261030)=0;")
+    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py", line 15, in ok
+    out = sql(s); assert out.splitlines()[-1] == 't', label + ':' + out
+  File "/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py", line 13, in sql
+    def sql(s): return pg.sql(s)
+                       ~~~~~~^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  permission denied for table delivery_context_20261030
+
+RESULT 86 PASS 1 FAIL

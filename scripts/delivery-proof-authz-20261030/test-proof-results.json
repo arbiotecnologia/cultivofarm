@@ -10,7 +10,7 @@
   {
     "test": "exact POST passes on installed instance",
     "status": "PASS",
-    "expressions": 13
+    "expressions": 14
   },
   {
     "test": "anon cannot execute new attach RPC",
@@ -23,34 +23,69 @@
     "expected": "permission denied"
   },
   {
-    "test": "legacy rpc_gerar_formulario_entrega closed to authenticated",
+    "test": "legacy adapter rpc_gerar_formulario_entrega closed to anon",
     "status": "PASS",
     "expected": "permission denied"
   },
   {
-    "test": "legacy rpc_gerar_formulario_entrega deny-only even for owner",
-    "status": "PASS",
-    "expected": "DELIVERY_LEGACY_CLOSED"
-  },
-  {
-    "test": "legacy rpc_coletar_assinatura_digital_entrega closed to authenticated",
+    "test": "legacy adapter rpc_gerar_formulario_entrega closed to service_role",
     "status": "PASS",
     "expected": "permission denied"
   },
   {
-    "test": "legacy rpc_coletar_assinatura_digital_entrega deny-only even for owner",
+    "test": "legacy adapter rpc_gerar_formulario_entrega without session denied",
     "status": "PASS",
-    "expected": "DELIVERY_LEGACY_CLOSED"
+    "expected": "DELIVERY_PROOF_ACTOR_DENIED"
   },
   {
-    "test": "legacy rpc_anexar_comprovante_entrega closed to authenticated",
+    "test": "legacy adapter rpc_coletar_assinatura_digital_entrega closed to anon",
     "status": "PASS",
     "expected": "permission denied"
   },
   {
-    "test": "legacy rpc_anexar_comprovante_entrega deny-only even for owner",
+    "test": "legacy adapter rpc_coletar_assinatura_digital_entrega closed to service_role",
     "status": "PASS",
-    "expected": "DELIVERY_LEGACY_CLOSED"
+    "expected": "permission denied"
+  },
+  {
+    "test": "legacy adapter rpc_coletar_assinatura_digital_entrega without session denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ACTOR_DENIED"
+  },
+  {
+    "test": "legacy adapter rpc_anexar_comprovante_entrega closed to anon",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "legacy adapter rpc_anexar_comprovante_entrega closed to service_role",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "legacy adapter rpc_anexar_comprovante_entrega without session denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ACTOR_DENIED"
+  },
+  {
+    "test": "legacy generate adapter cross-tenant FSF denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "legacy generate adapter external role denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ACTOR_DENIED"
+  },
+  {
+    "test": "legacy attach adapter path of another tenant delivery denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID: path"
+  },
+  {
+    "test": "legacy attach adapter legacy-only field data_assinatura rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID: field"
   },
   {
     "test": "preflight positive admin same tenant",
@@ -299,43 +334,72 @@
     "expected": "DELIVERY_PROOF_ACTOR_DENIED"
   },
   {
-    "test": "concurrent same-key attach: one write, one replay, single audit",
+    "test": "preflight aplicador WITH client link allowed",
     "status": "PASS"
   },
   {
-    "test": "atomic group creation still passes barrier (harness-only grant)",
+    "test": "attach aplicador with client link positive",
     "status": "PASS"
   },
   {
-    "test": "atomic cancel still passes barrier",
+    "test": "success leaves zero permit residue (context removed) and keeps the receipt",
     "status": "PASS"
   },
   {
-    "test": "financial/fiscal/outbox tables remain empty (zero titles, zero dispatch)",
+    "test": "sign aplicador with client link positive",
     "status": "PASS"
   },
   {
-    "test": "after rollback new RPC closed to clients",
+    "test": "after real link revocation aplicador preflight denied",
     "status": "PASS",
-    "expected": "permission denied"
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
   },
   {
-    "test": "after rollback apply deny-only",
+    "test": "after real link revocation aplicador cannot replay stored receipt",
     "status": "PASS",
-    "expected": "DELIVERY_PROOF_ROLLBACK_CLOSED"
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
   },
   {
-    "test": "after rollback legacy still closed",
+    "test": "after real link revocation aplicador new attach denied",
     "status": "PASS",
-    "expected": "DELIVERY_LEGACY_CLOSED"
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
   },
   {
-    "test": "after rollback barrier still closes direct writes",
-    "status": "PASS",
-    "expected": "DELIVERY_MUTATION_CLOSED"
-  },
-  {
-    "test": "rollback preserved history",
+    "test": "other staff on same delivery keeps access after aplicador revocation",
     "status": "PASS"
+  },
+  {
+    "test": "link revoked during storage FOR SHARE wait is denied after the wait, zero writes, zero residue",
+    "status": "PASS"
+  },
+  {
+    "test": "link revoked during comprovante FOR UPDATE wait is denied, zero writes, zero residue",
+    "status": "PASS"
+  },
+  {
+    "test": "role revoked during comprovante wait is denied, zero writes",
+    "status": "PASS"
+  },
+  {
+    "test": "gated link revocation during storage wait linearizes after the committed proof",
+    "status": "PASS"
+  },
+  {
+    "test": "after linearized link revocation the next aplicador proof is denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "PT409 OBJECT_ALREADY_LINKED while the object IS linked: SQLSTATE never proves an object is unlinked",
+    "status": "PASS"
+  },
+  {
+    "test": "legacy generate adapter works for same-tenant staff through the new contract",
+    "status": "PASS"
+  },
+  {
+    "test": "execution stopped at concrete failure",
+    "status": "FAIL",
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py\", line 295, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py\", line 261, in main\n    ok('legacy attach adapter (old payload) links object with audit and zero residue', actor() + f\"SELECT public.rpc_anexar_comprovante_entrega('{E7}','{legacy_payload}'::jsonb);\" + f\"SELECT (SELECT arquivo_path FROM public.entrega_comprovantes WHERE entrega_id='{E7}')='{lpath}' AND (SELECT count(*) FROM platform_private.delivery_context_20261030)=0;\")\n    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py\", line 15, in ok\n    out = sql(s); assert out.splitlines()[-1] == 't', label + ':' + out\n  File \"/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py\", line 13, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  permission denied for table delivery_context_20261030\n\n"
   }
 ]

@@ -1,6 +1,6 @@
 {
   "runner": "test_proof_pg",
-  "exit_code": 0,
-  "elapsed_seconds": 154.139,
+  "exit_code": 1,
+  "elapsed_seconds": 309.687,
   "budget_seconds": 480
 }
