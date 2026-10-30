@@ -36,8 +36,50 @@
     "status": "PASS"
   },
   {
+    "test": "canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento",
+    "status": "PASS",
+    "ids": {
+      "os": "bf32368a-da60-468f-9d2d-196fdcdcc1b2",
+      "lote": "fd4146c8-2a0f-4c16-9c91-bd2937aae68d",
+      "entrega": "de9d7e1f-04be-49b0-88dd-0ab8ed78f98d",
+      "estoque": "0fe48436-4efe-4984-b8ed-a5169802aedd",
+      "programacao": "4bca3cd7-3f69-4d80-8f13-0388c9a4b58d",
+      "request_key": "fixture-bf32368a-da60-468f-9d2d-196fdcdcc1b2"
+    }
+  },
+  {
+    "test": "temporary EXECUTE revoked before COMMIT (closed after commit)",
+    "status": "PASS"
+  },
+  {
+    "test": "OS tenant derived server-side = AR Bio",
+    "status": "PASS"
+  },
+  {
+    "test": "OS ends pronto_entrega (envase transition through reviewed authority)",
+    "status": "PASS",
+    "esteira": "entrega_criada,pronto_entrega,estoque_gerado,aprovado,aguardando_cq,lote_gerado,programada,aprovada"
+  },
+  {
+    "test": "lot/CQ approved by the existing CQ core, synthetic marker kept",
+    "status": "PASS"
+  },
+  {
+    "test": "delivery created by group and cancelled",
+    "status": "PASS"
+  },
+  {
+    "test": "ledger recorded",
+    "status": "PASS",
+    "ledger": "cancelamento_reserva,estorno_expedicao,expedicao,entrada"
+  },
+  {
+    "test": "stock restored by cancellation (no deletion)",
+    "status": "PASS"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 121, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 91, in main\n    assert rc == 0, (out + err)[-3000:]\n           ^^^^^^^\nAssertionError: 007bb519-cba0-4704-be2c-cb93ad010048|a7d45277-6dec-413d-bf6b-86620c1ef39f|20000000-0000-4000-8000-000000000003|20000000-0000-4000-8000-000000000004|20000000-0000-4000-8000-000000000005|20000000-0000-4000-8000-000000000006|20000000-0000-4000-8000-000000000010|true\nFIXTURE_PRE_FIN_HASH d41d8cd98f00b204e9800998ecf8427e AR=0\n{\"aal\": \"aal1\", \"exp\": 1793377304, \"iat\": 1793376699, \"sub\": \"a7d45277-6dec-413d-bf6b-86620c1ef39f\", \"role\": \"authenticated\"}|a7d45277-6dec-413d-bf6b-86620c1ef39f|authenticated\nERROR:  CQ_OPERATION_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_avancar_esteira_laboratorio(uuid,text,text,uuid) line 3 at RAISE\nSQL statement \"SELECT public.rpc_avancar_esteira_laboratorio(os,'manual','assumir_producao',prog)\"\nPL/pgSQL function inline_code_block line 11 at PERFORM\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 121, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 106, in main\n    assert fin() == f0; ok('zero financial/fiscal/communication/notification rows')\n           ^^^^^^^^^^^\nAssertionError\n"
   }
 ]

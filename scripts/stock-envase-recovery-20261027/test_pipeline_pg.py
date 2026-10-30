@@ -90,7 +90,7 @@ def main():
     rc, out, err = fixture()
     assert rc == 0, (out + err)[-3000:]
     ids = json.loads(re.search(r'FIXTURE_IDS (\{.*\})', err).group(1)); print('IDS', json.dumps(ids), flush=True)
-    ok('canonical pipeline committed: OS aberta -> aprovada -> programada -> producao -> lote -> CQ -> envase -> entrega -> cancelamento', ids=ids)
+    ok('canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento', ids=ids)
     os = ids['os']
     assert last(GRANTS) == 'false/false/false'; ok('temporary EXECUTE revoked before COMMIT (closed after commit)')
     assert last(f"SELECT organization_id FROM public.ordens_servico WHERE id='{os}';") == ORG; ok('OS tenant derived server-side = AR Bio')
