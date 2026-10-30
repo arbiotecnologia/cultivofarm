@@ -27,3 +27,8 @@ CREATE POLICY entrega_etiquetas_parent_visible_r ON public.entrega_etiquetas AS 
   USING (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_etiquetas.entrega_id))
   WITH CHECK (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_etiquetas.entrega_id));
 REVOKE TRUNCATE ON public.entrega_etiquetas FROM PUBLIC, anon, authenticated;
+-- Label links: parent visibility does not prove label ownership (produto_etiquetas has no organization_id and its
+-- access helper short-circuits for internal roles). Until a separate reviewed lineage package exists, direct client
+-- INSERT/UPDATE of delivery label links is closed (no app path writes it; SECURITY DEFINER/service writers unaffected).
+CREATE POLICY entrega_etiquetas_link_write_closed_r ON public.entrega_etiquetas AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK (false);
+CREATE POLICY entrega_etiquetas_link_update_closed_r ON public.entrega_etiquetas AS RESTRICTIVE FOR UPDATE TO authenticated USING (false) WITH CHECK (false);

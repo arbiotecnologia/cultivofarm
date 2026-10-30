@@ -15,6 +15,7 @@ from restore import pg
 import test_pg as T
 APPLIED = 'a566faa4f6f460d8b9195abf93d97717013af815537f00eb28b34cc98d314971'
 V2_INSTALL = '4390ef16cd763292e76847b0d3b7ff113a81bd4e3ea0920a5b00cf2d09175cd2'
+CLOSED = ['entrega_etiquetas_link_write_closed_r', 'entrega_etiquetas_link_update_closed_r']
 TABLES = ['entrega_checklist', 'entrega_ocorrencias', 'entrega_documentos', 'entrega_conferencia_itens', 'entrega_reconciliacoes', 'entrega_etiquetas']
 checks = []
 def sql(s): return pg.sql(s)
@@ -27,6 +28,7 @@ A, B, U, V, C, D, O, P = T.A, T.B, T.U, T.V, T.C, T.D, T.O, T.P
 FF, CL, IN = u(701), u(702), u(703)
 EA, EB, EN = u(711), u(712), u(713)          # AR Bio, FSF, organization NULL
 ETQ = u(720)
+XA, XB = u(731), u(732)   # standalone labels: XA lineage AR Bio entrega/cliente, XB lineage FSF
 def actor(w): return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}'; SET request.jwt.claims='{json.dumps({'sub': w, 'role': 'authenticated'})}';"
 def cols(t, ent, rid, who=U):
     base = {'id': rid, 'entrega_id': ent}
@@ -64,6 +66,13 @@ def dml(t, w, op, row, ent=None):
     if op == 'ins': return probe(w, "WITH x AS (" + ins(t, cols(t, ent, u(990), w)).rstrip(';').replace('VALUES', 'SELECT', 1).replace('(\'', '\'', 0) + ") SELECT 1;") if False else probe(w, ins(t, cols(t, ent, u(990), w)) + " SELECT 'inserted';")
     if op == 'upd': return probe(w, f"WITH x AS (UPDATE public.{t} SET entrega_id={'entrega_id' if ent is None else repr(ent)} WHERE id='{row}' RETURNING 1) SELECT count(*) FROM x;")
     if op == 'del': return probe(w, f"WITH x AS (DELETE FROM public.{t} WHERE id='{row}' RETURNING 1) SELECT count(*) FROM x;")
+def mixed():
+    L = 'entrega_etiquetas'; own = rid(L, 1)
+    return {'own_entrega_foreign_label_ins': probe(U, f"INSERT INTO public.{L}(entrega_id,etiqueta_id) VALUES('{EA}','{XB}'); SELECT 'inserted';"),
+            'own_entrega_own_label_ins': probe(U, f"INSERT INTO public.{L}(entrega_id,etiqueta_id) VALUES('{EA}','{XA}'); SELECT 'inserted';"),
+            'swap_own_link_to_foreign_label': probe(U, f"WITH x AS (UPDATE public.{L} SET etiqueta_id='{XB}' WHERE id='{own}' RETURNING 1) SELECT count(*) FROM x;"),
+            'fsf_own_entrega_arbio_label_ins': probe(V, f"INSERT INTO public.{L}(entrega_id,etiqueta_id) VALUES('{EB}','{XA}'); SELECT 'inserted';"),
+            'fk_bogus_label_ins': probe(U, f"INSERT INTO public.{L}(entrega_id,etiqueta_id) VALUES('{EA}','{u(999)}'); SELECT 'inserted';")}
 def matrix():
     m = {}
     for t in TABLES:
@@ -84,6 +93,11 @@ def fixtures():
     INSERT INTO public.entregas(id,organization_id,ordem_servico_id,cliente_id,status,financial_status,assinatura_obrigatoria) VALUES
      ('{EA}','{A}','{O}','{C}','separado','PENDING_BILLING',true),('{EB}','{B}','{P}','{D}','separado','PENDING_BILLING',true),('{EN}',NULL,'{O}','{C}','separado','PENDING_BILLING',true);
     {rows}
+    INSERT INTO public.produto_etiquetas(id,codigo_etiqueta,produto_nome,lote_codigo,entrega_id,cliente_id)
+      SELECT x.id::uuid,'LOCAL-'||x.id,'LOCAL TESTE','LOCAL',x.e::uuid,x.c::uuid FROM (VALUES
+      ('{XA}','{EA}','{C}'),('{XB}','{EB}','{D}'),
+      ('{u(int(str(rid('entrega_etiquetas',1))[-6:])+5000)}','{EA}','{C}'),('{u(int(str(rid('entrega_etiquetas',2))[-6:])+5000)}','{EB}','{D}'),
+      ('{u(int(str(rid('entrega_etiquetas',3))[-6:])+5000)}',NULL,NULL),('{u(990+5000)}','{EA}','{C}')) x(id,e,c);
     SET session_replication_role=origin;""")
 
 def main():
@@ -110,17 +124,21 @@ def main():
     assert before['entrega_checklist'] == 1, before
     wb = matrix(); print('BEFORE_WRITES', json.dumps(wb), flush=True)
     ok('BEFORE: write outcome matrix recorded (rolled back)', matrix=wb)
+    mb = mixed(); print('BEFORE_MIXED', json.dumps(mb), flush=True)
+    assert mb['own_entrega_foreign_label_ins'] == 'ok:inserted' and mb['swap_own_link_to_foreign_label'] == 'ok:1' and mb['fsf_own_entrega_arbio_label_ins'] == 'ok:inserted', mb
+    assert mb['fk_bogus_label_ins'].startswith('err:') and 'foreign key' in mb['fk_bogus_label_ins'], mb
+    ok('BEFORE: mixed pair (own entrega + foreign label) insert and cross-tenant label swap SUCCEED with valid IDs; FK error only for nonexistent ID', mixed=mb)
     tr = {t: probe(V, f"TRUNCATE public.{t}; SELECT 'truncated';") for t in TABLES}; print('BEFORE_TRUNCATE', tr, flush=True)
     ok('BEFORE: TRUNCATE allowed to authenticated (rolled back)', truncate=tr)
     # Generate PRE/POST/installer.
     cand = (H / 'candidate.sql.review').read_text()
     preflight = check_sql(pre, 'EVIDENCE_TENANT_PRE_DRIFT')
     sql("BEGIN;\n" + cand + "\nCOMMIT;"); post = state()
-    sql("BEGIN;" + ''.join(f"DROP POLICY {t}_parent_visible_r ON public.{t};" for t in TABLES) + ''.join(
+    sql("BEGIN;" + ''.join(f"DROP POLICY {t}_parent_visible_r ON public.{t};" for t in TABLES) + ''.join(f"DROP POLICY {c} ON public.entrega_etiquetas;" for c in CLOSED) + ''.join(
         f"GRANT TRUNCATE ON public.{t} TO authenticated;" for t in TABLES if 'authenticated=' in pre['rel'][t][2] and 'D' in pre['rel'][t][2].split('authenticated=')[1].split('/')[0]) + "COMMIT;")
     assert state() == pre, 'probe revert mismatch'
     assert post['fns'] == pre['fns'] and post['rel']['entregas'] == pre['rel']['entregas']
-    assert [p for p in post['policies'] if p[1] not in [f'{t}_parent_visible_r' for t in TABLES]] == pre['policies']
+    assert [p for p in post['policies'] if p[1] not in [f'{t}_parent_visible_r' for t in TABLES] + CLOSED] == pre['policies']
     for t in TABLES:
         a0, a1 = pre['rel'][t][2], post['rel'][t][2]
         assert a1 == a0.replace('authenticated=arwdDxtm', 'authenticated=arwdxtm').replace('anon=arwdDxtm', 'anon=arwdxtm'), (t, a0, a1)
@@ -150,8 +168,14 @@ def main():
         for k in ('x_ins', 'x_upd', 'x_del', 'reparent_to_fsf', 'reparent_to_null_org', 'fsf_reparent_own_to_arbio'):
             assert not bad(wa[t][k]), (t, k, wa[t][k])
         for k in ('own_ins', 'own_upd', 'own_del'):
+            if t == 'entrega_etiquetas' and k in ('own_ins', 'own_upd'):
+                assert wa[t][k] in ('rls', 'ok:0'), (t, k, wa[t][k]); continue
             assert wa[t][k] == wb[t][k], (t, k, wb[t][k], wa[t][k])
-    ok('AFTER write matrix: every cross-tenant/reparent op affects 0 rows or is denied; same-tenant outcomes identical to BEFORE', after=wa)
+    ma = mixed(); print('AFTER_MIXED', json.dumps(ma), flush=True)
+    for k in ('own_entrega_foreign_label_ins', 'own_entrega_own_label_ins', 'fsf_own_entrega_arbio_label_ins'): assert ma[k] == 'rls', (k, ma)
+    assert ma['swap_own_link_to_foreign_label'] in ('rls', 'ok:0'), ma
+    ok('AFTER: label link INSERT/UPDATE closed for clients (mixed pair and swap denied by RLS, not FK); reads unchanged', mixed=ma)
+    ok('AFTER write matrix: every cross-tenant/reparent op affects 0 rows or is denied; same-tenant outcomes identical to BEFORE except label link INSERT/UPDATE intentionally closed', after=wa)
     ok('AFTER all 6: FSF admin/financeiro, inactive AR Bio admin read 0; org-NULL parent invisible; cross-tenant DELETE 0 rows and TRUNCATE denied')
     own = {t: [count(U, t, rid(t, 1)), count(V, t, rid(t, 2))] for t in TABLES}; print('AFTER_OWN', own, flush=True)
     ok('AFTER same-tenant reads (AR Bio admin own, FSF admin own) per table', own=own)

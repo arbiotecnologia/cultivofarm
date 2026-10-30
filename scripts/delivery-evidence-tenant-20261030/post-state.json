@@ -204,6 +204,24 @@
   ],
   [
    "entrega_etiquetas",
+   "entrega_etiquetas_link_update_closed_r",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "UPDATE",
+   "false",
+   "false"
+  ],
+  [
+   "entrega_etiquetas",
+   "entrega_etiquetas_link_write_closed_r",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "INSERT",
+   null,
+   "false"
+  ],
+  [
+   "entrega_etiquetas",
    "entrega_etiquetas_parent_visible_r",
    "RESTRICTIVE",
    "{authenticated}",

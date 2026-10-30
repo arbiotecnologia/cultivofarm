@@ -3,7 +3,7 @@
 BEGIN;
 SET LOCAL lock_timeout='3s';
 DO $rb$ BEGIN
- IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND permissive='RESTRICTIVE' AND policyname IN ('entrega_checklist_parent_visible_r','entrega_ocorrencias_parent_visible_r','entrega_documentos_parent_visible_r','entrega_conferencia_itens_parent_visible_r','entrega_reconciliacoes_parent_visible_r','entrega_etiquetas_parent_visible_r'))<>6
+ IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND permissive='RESTRICTIVE' AND policyname IN ('entrega_checklist_parent_visible_r','entrega_ocorrencias_parent_visible_r','entrega_documentos_parent_visible_r','entrega_conferencia_itens_parent_visible_r','entrega_reconciliacoes_parent_visible_r','entrega_etiquetas_parent_visible_r','entrega_etiquetas_link_write_closed_r','entrega_etiquetas_link_update_closed_r'))<>8
  THEN RAISE EXCEPTION 'EVIDENCE_TENANT_ROLLBACK_POLICY_MISSING'; END IF;
 END $rb$;
 ALTER POLICY entrega_checklist_parent_visible_r ON public.entrega_checklist USING (false) WITH CHECK (false);
@@ -12,4 +12,5 @@ ALTER POLICY entrega_documentos_parent_visible_r ON public.entrega_documentos US
 ALTER POLICY entrega_conferencia_itens_parent_visible_r ON public.entrega_conferencia_itens USING (false) WITH CHECK (false);
 ALTER POLICY entrega_reconciliacoes_parent_visible_r ON public.entrega_reconciliacoes USING (false) WITH CHECK (false);
 ALTER POLICY entrega_etiquetas_parent_visible_r ON public.entrega_etiquetas USING (false) WITH CHECK (false);
+-- link_write/update_closed policies are already false; kept as-is.
 COMMIT;
