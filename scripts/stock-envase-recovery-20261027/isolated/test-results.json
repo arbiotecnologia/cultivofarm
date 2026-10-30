@@ -25,6 +25,22 @@
       "status": "PASS"
     },
     {
+      "test": "legacy client closure public.rpc_confirmar_recebimento_entrega(uuid,jsonb)",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy client closure public.rpc_desvincular_etiqueta_entrega(uuid,uuid,text)",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy client closure public.rpc_vincular_etiqueta_embalagem(uuid,uuid)",
+      "status": "PASS"
+    },
+    {
+      "test": "legacy exact POST and effective ACL closure verified; bodies/service grants unchanged",
+      "status": "PASS"
+    },
+    {
       "test": "rerun refuses changed exact state",
       "status": "PASS"
     },
@@ -151,6 +167,24 @@
       "stderr": "ERROR:  PT409: FORCED_POST\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
+      "test": "legacy client closure public.rpc_confirmar_recebimento_entrega(uuid,jsonb)",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_confirmar_recebimento_entrega\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "legacy client closure public.rpc_desvincular_etiqueta_entrega(uuid,uuid,text)",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_desvincular_etiqueta_entrega\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
+      "test": "legacy client closure public.rpc_vincular_etiqueta_embalagem(uuid,uuid)",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_vincular_etiqueta_embalagem\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+    },
+    {
       "test": "rerun refuses changed exact state",
       "returncode": 3,
       "stdout": "",
@@ -247,6 +281,6 @@
       "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "elapsed_seconds": 162.62,
+  "elapsed_seconds": 165.123,
   "exit_code": 0
 }
