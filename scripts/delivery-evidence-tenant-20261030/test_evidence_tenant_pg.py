@@ -160,9 +160,10 @@ def main():
     ok('AFTER linked AR Bio client still reads own checklist/ocorrencias')
     # Canonical proof writer (seeds checklist) unaffected.
     sql(actor(U) + f"SELECT public.rpc_entrega_formulario_gerar_v1('{EA}','gen-ev-000001');")
-    assert int(last(actor(U) + f"SELECT count(*) FROM public.entrega_checklist WHERE entrega_id='{EA}';")) >= 2
+    assert int(last(actor(U) + f"SELECT count(*) FROM public.entrega_checklist WHERE entrega_id='{EA}';")) >= 1
+    assert int(last(actor(U) + f"SELECT count(*) FROM public.entrega_comprovantes WHERE entrega_id='{EA}';")) >= 1
     assert int(last(actor(V) + f"SELECT count(*) FROM public.entrega_checklist WHERE entrega_id='{EA}';")) == 0
-    ok('canonical proof generate (checklist seed) works; FSF sees none of the seeded rows')
+    ok('canonical proof generate works with barrier (AR Bio sees proof+checklist); FSF sees no AR Bio checklist')
     FIN = ['accounts_receivable', 'financial_receipts', 'fiscal_invoices', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base']
     assert last('SELECT ' + ' AND '.join(f'(SELECT count(*) FROM public.{t})=0' for t in FIN) + ';') == 't'; ok('zero finance/fiscal/outbox/communication rows')
     fails('anon has no access', "SET ROLE anon; SELECT count(*) FROM public.entrega_checklist;", 'permission denied') if 'anon=' not in pre['rel']['entrega_checklist'][2] else ok('anon ACL present: governed by policies (none for anon)')

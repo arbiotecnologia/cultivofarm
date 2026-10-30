@@ -287,8 +287,25 @@
     "status": "PASS"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 178, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 163, in main\n    assert int(last(actor(U) + f\"SELECT count(*) FROM public.entrega_checklist WHERE entrega_id='{EA}';\")) >= 2\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    "test": "canonical proof generate works with barrier (AR Bio sees proof+checklist); FSF sees no AR Bio checklist",
+    "status": "PASS"
+  },
+  {
+    "test": "zero finance/fiscal/outbox/communication rows",
+    "status": "PASS"
+  },
+  {
+    "test": "anon has no access",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "after rollback TRUNCATE still denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "rollback narrows to false (never drops/regrants); no cross-tenant access restored; writers still work",
+    "status": "PASS"
   }
 ]
