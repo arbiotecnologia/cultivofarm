@@ -9,7 +9,10 @@
 -- before COMMIT (never visible to other sessions). Any failure aborts everything.
 --
 -- Required psql variables (chosen by the owner from READ-ONLY checks; nothing is invented here):
---   org, admin, cliente, fazenda, talhao, produto, referencia, cancel ('true'|'false')
+--   org, admin, cliente, fazenda, talhao, produto, referencia, cancel ('true'|'false'), accept_inapp ('true'|'false')
+-- KNOWN SIDE EFFECT (measured locally): OS creation -> programacao_producao INSERT -> trg_notify_lab_on_programacao writes
+-- in-app rows in notificacoes_operacionais ('Nova demanda de produção') to the tenant's lab/admin users. No outbox/external
+-- channel. It cannot be suppressed without disabling a trigger (forbidden). accept_inapp<>'true' => the whole fixture aborts.
 -- Preconditions that, if unmet, mean STOP (do not fabricate):
 --   * stock/envase v2 installed (install-v2 + postflight-v2); capability delta NOT installed;
 --   * admin: active profile in org, role administrador, no active partner_users link, not superadmin;
@@ -24,7 +27,7 @@ SET LOCAL statement_timeout = '60s';
 SELECT set_config('fixture.org', :'org', true), set_config('fixture.admin', :'admin', true),
        set_config('fixture.cliente', :'cliente', true), set_config('fixture.fazenda', :'fazenda', true),
        set_config('fixture.talhao', :'talhao', true), set_config('fixture.produto', :'produto', true),
-       set_config('fixture.referencia', :'referencia', true), set_config('fixture.cancel', :'cancel', true);
+       set_config('fixture.referencia', :'referencia', true), set_config('fixture.cancel', :'cancel', true), set_config('fixture.accept_inapp', :'accept_inapp', true);
 -- fixture.* settings only pass ids into the DO block; no writer reads them for authority.
 
 -- ---------- PRE (as the migration owner, read-only) ----------
@@ -33,7 +36,7 @@ SELECT (SELECT count(*) FROM public.accounts_receivable) ar, (SELECT count(*) FR
        (SELECT count(*) FROM public.financial_receipts) fr, (SELECT count(*) FROM public.financial_documents) fd,
        (SELECT count(*) FROM public.fiscal_invoices) fi, (SELECT count(*) FROM public.fiscal_events) fe,
        (SELECT count(*) FROM public.comunicacao_outbox) co, (SELECT count(*) FROM public.comunicacao_eventos) ce,
-       (SELECT count(*) FROM public.os_faturamento_base) ofb,
+       (SELECT count(*) FROM public.os_faturamento_base) ofb, (SELECT count(*) FROM public.notificacoes_operacionais) nop, (SELECT count(*) FROM public.portal_notificacoes) pno,
        (SELECT md5(coalesce(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text,'')) FROM public.accounts_receivable r) ar_hash;
 GRANT SELECT ON fixture_baseline TO authenticated;
 SELECT 'FIXTURE_PRE_FIN_HASH ' || ar_hash || ' AR=' || ar FROM fixture_baseline;  -- owner compares with the recorded value
@@ -124,6 +127,13 @@ BEGIN
  OR (SELECT count(*) FROM public.comunicacao_outbox)<>b.co OR (SELECT count(*) FROM public.comunicacao_eventos)<>b.ce
  OR (SELECT count(*) FROM public.os_faturamento_base)<>b.ofb
  OR (SELECT md5(coalesce(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text,'')) FROM public.accounts_receivable r)<>b.ar_hash THEN RAISE EXCEPTION 'FIXTURE_POST_FINANCIAL_OR_COMMUNICATION_EFFECT'; END IF;
+ IF (SELECT count(*) FROM public.portal_notificacoes)<>b.pno THEN RAISE EXCEPTION 'FIXTURE_POST_PORTAL_NOTIFICATION'; END IF;
+ IF (SELECT count(*) FROM public.notificacoes_operacionais)<>b.nop THEN
+  IF current_setting('fixture.accept_inapp')<>'true' THEN RAISE EXCEPTION 'FIXTURE_POST_INAPP_NOTIFICATION_NOT_ACCEPTED'; END IF;
+  IF (SELECT count(*) FROM public.notificacoes_operacionais)-b.nop <> (SELECT count(*) FROM public.notificacoes_operacionais n JOIN public.programacao_producao pp ON pp.id=n.source_id
+       JOIN public.profiles pr ON pr.user_id=n.usuario_id WHERE pp.ordem_servico_id=os AND n.source_type='programacao_producao' AND pr.organization_id=current_setting('fixture.org')::uuid)
+  THEN RAISE EXCEPTION 'FIXTURE_POST_NOTIFICATION_SCOPE'; END IF;
+ END IF;
  IF EXISTS(SELECT 1 FROM public.entregas WHERE ordem_servico_id=os AND (receivable_id IS NOT NULL OR partner_order_id IS NOT NULL OR organization_id IS DISTINCT FROM current_setting('fixture.org')::uuid)) THEN RAISE EXCEPTION 'FIXTURE_POST_DELIVERY_SCOPE'; END IF;
  IF (SELECT organization_id FROM public.ordens_servico WHERE id=os) IS DISTINCT FROM current_setting('fixture.org')::uuid THEN RAISE EXCEPTION 'FIXTURE_POST_TENANT'; END IF;
 END $post$;

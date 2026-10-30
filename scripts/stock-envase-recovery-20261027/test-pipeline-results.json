@@ -36,15 +36,19 @@
     "status": "PASS"
   },
   {
+    "test": "in-app notification not accepted: whole pipeline rolled back (no OS, no notification, grants closed)",
+    "status": "PASS"
+  },
+  {
     "test": "canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento",
     "status": "PASS",
     "ids": {
-      "os": "70a83e15-f501-4e05-901a-2773e659fb4a",
-      "lote": "b54d23d2-a6db-4f45-ada2-a4186c106a98",
-      "entrega": "5839b16c-66d0-4cc7-9d2e-05999317809e",
-      "estoque": "15af6214-380d-4017-93e8-e8e1a066d9c0",
-      "programacao": "e046a7d4-485d-49f6-96d8-a1b310a21a23",
-      "request_key": "fixture-70a83e15-f501-4e05-901a-2773e659fb4a"
+      "os": "a7330877-3de7-4454-9c8c-a31192dc8bc0",
+      "lote": "f1032e94-3d07-4381-875f-f10a2dee5571",
+      "entrega": "58778b37-4368-4534-a181-03dcf2272825",
+      "estoque": "00711da2-7dd9-49e4-af75-9961f649abc1",
+      "programacao": "097a8078-2769-4a44-a979-9525c862921e",
+      "request_key": "fixture-a7330877-3de7-4454-9c8c-a31192dc8bc0"
     }
   },
   {
@@ -78,8 +82,36 @@
     "status": "PASS"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 123, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 108, in main\n    assert f1x == f0; ok('zero financial/fiscal/communication/notification rows')\n           ^^^^^^^^^\nAssertionError\n"
+    "test": "only in-app operational notification(s) to AR Bio users (trg_notify_lab_on_programacao); outbox stays 0",
+    "status": "PASS",
+    "notifications": "[{\"tipo\": \"nova_demanda_producao\", \"usuario\": \"a7d45277-6dec-413d-bf6b-86620c1ef39f\", \"source_type\": \"programacao_producao\"}]"
+  },
+  {
+    "test": "zero financial/fiscal/communication/notification rows",
+    "status": "PASS"
+  },
+  {
+    "test": "no receivable/B2B link on deliveries",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin cannot read the AR Bio fixture OS (RLS)",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin cannot read the AR Bio fixture lot (RLS)",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin canonical writer on AR Bio OS denied",
+    "status": "PASS"
+  },
+  {
+    "test": "AR Bio admin reads own fixture OS (RLS positive)",
+    "status": "PASS"
+  },
+  {
+    "test": "incomplete reference after the fact: STOP, zero partial rows, grants closed",
+    "status": "PASS"
   }
 ]

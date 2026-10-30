@@ -27,13 +27,13 @@ def actor(w):
     c = json.dumps({'sub': w, 'role': 'authenticated', 'iat': int(time.time()) - 5, 'exp': int(time.time()) + 600, 'aal': 'aal1'})
     return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}'; SET request.jwt.claims='{c}'; SET request.jwt.claim.role='authenticated';"
 def fixture(**over):
-    v = dict(org=ORG, admin=ADM, cliente=CLI, fazenda=FAZ, talhao=TAL, produto=PROD, referencia=REF, cancel='true'); v.update(over)
+    v = dict(org=ORG, admin=ADM, cliente=CLI, fazenda=FAZ, talhao=TAL, produto=PROD, referencia=REF, cancel='true', accept_inapp='true'); v.update(over)
     s = (H / 'fixture-arbio-pipeline.sql.review').read_text()
     for k, val in v.items(): s = s.replace(f":'{k}'", "'" + val.replace("'", "''") + "'")
     assert not re.search(r":'[a-z]+'", s)
     r = subprocess.run(pg.psql(), input=s, capture_output=True, text=True, timeout=120)
     return r.returncode, r.stdout, r.stderr
-FIN = ['accounts_receivable', 'accounts_receivable_installments', 'financial_receipts', 'financial_documents', 'fiscal_invoices', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base', 'notificacoes_operacionais', 'portal_notificacoes']
+FIN = ['accounts_receivable', 'accounts_receivable_installments', 'financial_receipts', 'financial_documents', 'fiscal_invoices', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base', 'portal_notificacoes']
 def fin(): return last("SELECT jsonb_build_object(" + ','.join(f"'{t}',(SELECT count(*) FROM public.{t})" for t in FIN) + ")::text;")
 GRANTS = "SELECT has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE')||'/'||has_function_privilege('authenticated','public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)','EXECUTE')||'/'||has_function_privilege('authenticated','public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)','EXECUTE');"
 PIPE_TABLES = ['ordens_servico', 'programacao_producao', 'lotes', 'controle_qualidade', 'envase', 'estoque_produto', 'estoque_movimentacoes', 'entregas']
@@ -85,6 +85,10 @@ def main():
     assert counts() == c0 and last(GRANTS) == 'false/false/false'; ok('FSF admin with AR Bio org: PRE stops, nothing written')
     rc, out, err = fixture(cliente=CLIB, fazenda=FAZB, talhao=TALB); assert rc != 0 and 'FIXTURE_PRE_CLIENT_SCOPE' in err, err[-800:]
     ok('FSF client/farm with AR Bio org: PRE stops')
+    # In-app side effect not accepted -> full rollback.
+    rc, out, err = fixture(accept_inapp='false'); assert rc != 0 and 'FIXTURE_POST_INAPP_NOTIFICATION_NOT_ACCEPTED' in err, err[-800:]
+    assert counts() == c0 and last("SELECT count(*) FROM public.notificacoes_operacionais;") == '0' and last(GRANTS) == 'false/false/false'
+    ok('in-app notification not accepted: whole pipeline rolled back (no OS, no notification, grants closed)')
     # Full canonical pipeline.
     f0 = fin()
     rc, out, err = fixture()
@@ -103,7 +107,9 @@ def main():
     mov = last(f"SELECT string_agg(acao,',' ORDER BY created_at) FROM public.estoque_movimentacoes WHERE estoque_produto_id='{ids['estoque']}';"); ok('ledger recorded', ledger=mov)
     assert 'expedicao' in mov and 'estorno_expedicao' in mov
     assert last(f"SELECT status::text FROM public.estoque_produto WHERE id='{ids['estoque']}';") in ('disponivel', 'reservado'); ok('stock restored by cancellation (no deletion)')
-    print('NOTIF', last("SELECT jsonb_agg(to_jsonb(n))::text FROM public.notificacoes_operacionais n;"), flush=True)
+    notif = last("SELECT jsonb_agg(jsonb_build_object('tipo',n.tipo,'usuario',n.usuario_id,'source_type',n.source_type))::text FROM public.notificacoes_operacionais n;")
+    assert last(f"SELECT count(*) FROM public.notificacoes_operacionais n JOIN public.profiles p ON p.user_id=n.usuario_id WHERE p.organization_id<>'{ORG}';") == '0'
+    ok('only in-app operational notification(s) to AR Bio users (trg_notify_lab_on_programacao); outbox stays 0', notifications=notif)
     f1x = fin(); print('FIN_BEFORE', f0, 'FIN_AFTER', f1x, flush=True)
     assert f1x == f0; ok('zero financial/fiscal/communication/notification rows')
     assert last(f"SELECT count(*) FROM public.entregas WHERE ordem_servico_id='{os}' AND (receivable_id IS NOT NULL OR partner_order_id IS NOT NULL);") == '0'; ok('no receivable/B2B link on deliveries')
