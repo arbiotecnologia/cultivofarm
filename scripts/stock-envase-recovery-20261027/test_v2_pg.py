@@ -152,7 +152,7 @@ def main():
     before = snap(); rep = json.loads(last(win))
     assert rep['replay'] is True and ids(rep) == ids(first) and snap() == before; ok('exact replay still answers after the OS revision changed post-commit (receipt precedes fresh CAS)')
     fails('same key, changed payload -> replay conflict', win.replace("'{}'::jsonb", '\'{"motorista":"X"}\'::jsonb', 1), 'DELIVERY_REPLAY_CONFLICT')
-    fails('tenant B replaying the same key/args is denied', win.replace(actor(), actor(V), 1), '42501')
+    fails('tenant B replaying the same key/args is denied', actor(V) + win[win.index('SELECT public.rpc_cockpit_criar_entrega_v1'):], '42501')
     sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{U}';")
     fails('revoked actor replay denied (no receipt disclosure)', win, '42501')
     sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{U}';")
