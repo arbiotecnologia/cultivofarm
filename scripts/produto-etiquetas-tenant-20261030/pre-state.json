@@ -9,6 +9,7 @@
   "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881|{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
   "rpc_entrega_formulario_gerar_v1(uuid,text)": "263058b4cf58f4712d3a1669e9acb9db|{postgres=X/postgres,authenticated=X/postgres}",
   "rpc_vincular_etiqueta_embalagem(uuid,uuid)": "e40dabcdc439fc35507e85133a5074b0|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "rpc_dispensar_assinatura_entrega(uuid,text)": "9c5dd351019cdc5ae311ce5aef289a5f|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
   "rpc_registrar_ocorrencia_entrega(uuid,jsonb)": "6650abf2c2dcf62d2d11179b088db9b6|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
   "rpc_atualizar_checklist_entrega(uuid,boolean,text)": "9cac8fd30cdc24b6fdd79b99f85fffd1|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
   "rpc_entrega_assinatura_coletar_v1(uuid,text,jsonb)": "4a7303d99ba740cdb88bfd42ecc30695|{postgres=X/postgres,authenticated=X/postgres}",

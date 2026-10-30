@@ -75,7 +75,7 @@ def fixtures():
     T.setup()
     ghost = u(1099)
     sql("SET session_replication_role=replica;" + f"""
-    INSERT INTO public.produtos(id,nome) VALUES('{PROD2}','LOCAL PROD2');
+    INSERT INTO public.produtos(id,nome,tipo) VALUES('{PROD2}','LOCAL PROD2','inoculante');
     INSERT INTO auth.users(id) VALUES('{FF}'),('{CL}'),('{IN}');
     INSERT INTO public.profiles(user_id,organization_id,nome,ativo,senha_provisoria) VALUES('{FF}','{B}','LOCAL FSF FIN',true,false),('{CL}','{A}','LOCAL ARB CLIENTE',true,false),('{IN}','{A}','LOCAL ARB INATIVO',false,false);
     INSERT INTO public.user_roles(user_id,role) VALUES('{FF}','financeiro'),('{CL}','cliente_produtor'),('{IN}','administrador');
