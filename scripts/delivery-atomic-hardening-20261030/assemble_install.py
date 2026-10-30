@@ -39,6 +39,8 @@ END $post$;
     rollback="""BEGIN;
 REVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz),public.rpc_entrega_cancelar_v1(uuid,text,timestamptz),public.rpc_entrega_cancelar_v1(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
 CREATE OR REPLACE FUNCTION public.rpc_entrega_cancelar_v1(p_entrega_id uuid,p_motivo text,p_observed timestamptz) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RAISE EXCEPTION 'DELIVERY_ROLLBACK_CLOSED' USING ERRCODE='42501';END$$;
+CREATE OR REPLACE FUNCTION platform_private.delivery_mutation_guard_20261030() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RAISE EXCEPTION 'DELIVERY_ROLLBACK_CLOSED' USING ERRCODE='42501';END$$;
+REVOKE ALL ON FUNCTION platform_private.delivery_mutation_guard_20261030() FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;
 """
     (H/'rollback.sql.review').write_text(rollback)

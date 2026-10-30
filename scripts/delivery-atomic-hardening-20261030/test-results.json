@@ -193,7 +193,7 @@
   {
     "test": "GUC spoof cannot cancel directly",
     "status": "PASS",
-    "expected": "ENTREGA_CANCELAMENTO_EXIGE_RPC"
+    "expected": "permission denied"
   },
   {
     "test": "direct stock mutation remains ACL closed",
@@ -329,7 +329,7 @@
   {
     "test": "cancel row wait serializes effective revocation after commit",
     "status": "PASS",
-    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"25bbe2df-3a41-4119-9845-82f0d46146ff\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
+    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"1e704861-7b0f-4729-aba4-57538ab6613a\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
   },
   {
     "test": "cancel replay denied after effective revocation row",
@@ -343,7 +343,7 @@
   {
     "test": "cancel merge wait serializes effective revocation after commit",
     "status": "PASS",
-    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"718a60c5-5b26-4ebd-9bf9-9ba7365e5737\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
+    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"f1b56954-f9ca-45a0-9f06-e0d2dc050c07\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
   },
   {
     "test": "cancel replay denied after effective revocation merge",
@@ -363,5 +363,10 @@
   {
     "test": "dedicated tests zero finance/outbox",
     "status": "PASS"
+  },
+  {
+    "test": "execution stopped at concrete failure",
+    "status": "FAIL",
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 189, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 186, in main\n    test_closure.run()\n    ~~~~~~~~~~~~~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_closure.py\", line 10, in run\n    deny(role+' direct '+action,prefix+statement,'permission denied' if role!='service_role' else 'DELIVERY_MUTATION_CLOSED')\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 21, in deny\n    e=pg.sql(s,False);assert code in e,label+':'+e\n                             ^^^^^^^^^\nAssertionError: service_role direct INSERT:ERROR:  permission denied for schema platform_private\nLINE 1:  SELECT platform_private.h15_actor_organization(); \n                ^\nQUERY:   SELECT platform_private.h15_actor_organization(); \nCONTEXT:  SQL function \"h15_actor_organization\" during startup\nPL/pgSQL function public.guard_tenant_organization_id() line 7 at assignment\n\n"
   }
 ]
