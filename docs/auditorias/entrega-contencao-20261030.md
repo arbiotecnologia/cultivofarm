@@ -15,7 +15,7 @@ Antes do acesso, `supabase/config.toml` foi lido e confirmou `project_id = "swzp
 | Objeto real | MD5 de pg_get_functiondef | Constatação |
 |---|---|---|
 | `rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb)` | `a4d47ccf5d116141ed46e9de9ea7eeaa` | Cria um item, não reserva/cria/expede grupo numa transação; authenticated sem EXECUTE |
-| `rpc_entrega_cancelar_v1(uuid,text)` | `f830c6c718e2b44a1ded06a19a04557a` | Corpo de cancelamento individual existe; authenticated sem EXECUTE; autorização anterior a advisory/linha; filhos sem ACK positivo obrigatório; não equivale a contrato liberado/comprovado |
+| `rpc_entrega_cancelar_v1(uuid,text)` | `f830c6c718e2b44a1ded06a19a04557a` | Existe e executa estorno+liberação de reserva+status em uma transação; authenticated sem EXECUTE na captura; SECURITY DEFINER com autorização somente antes dos locks, seleção por ID sem organização e replay sem reautorização; atomicidade existente não comprova segurança transitiva |
 | `rpc_entrega_confirmar_v1(uuid,jsonb,jsonb)` | `cd39f9fe93514420976263d13856c17c` | Delega ao engine; authenticated sem EXECUTE |
 | `fn_entrega_confirmar_engine_v1(uuid,uuid,text,jsonb,jsonb)` | `6eb78ceebe90196ac5b95bfc127dd63b` | UPDATE estoque/ledger legados, contexto GUC; avanço enviar_entrega pode retornar success:false sem aborto obrigatório; consulta/validação integrada não comprovadas |
 | `reservar_estoque_item(uuid,numeric,uuid,text,uuid,uuid,uuid,text)` | `9d62ba2fa4fad1b6e5d5ac67045d2e98` | UUID split legítimo, proteção individual; authenticated sem EXECUTE; não fornece receipt de grupo |
@@ -23,7 +23,9 @@ Antes do acesso, `supabase/config.toml` foi lido e confirmou `project_id = "swzp
 | `rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb)` | `c71a9e848eff0a522cbaa3a7ec2949a5` | Motor individual com contexto privado/guards e idempotência; não acopla grupo de entregas |
 | `rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)` | `ce2e7cd4080ff2f8fc15cce9294046d9` | Reserva em lote independente preservada; não confundir com grupo entrega |
 
-Catálogo capturado não apresenta endpoint de grupo de entrega com request fingerprint/receipt/CAS e resposta durable que reúna reserva+split+criação+expedição. O cancelamento individual existente não é tratado como ausente: é **existente, fechado e não comprovado**, com os problemas acima. Não conceder EXECUTE para forçar prova.
+Catálogo capturado não apresenta endpoint de grupo de entrega com request fingerprint/receipt/CAS e resposta durable que reúna reserva+split+criação+expedição. Isso é distinto do cancelamento individual: **seu corpo transacional existe**, mas permanece fechado ao cliente na captura e sem segurança transitiva comprovada. Não declarar inexistência genérica de cancelamento atômico nem adotar a RPC como segura pela existência/nome. Não conceder EXECUTE para forçar prova.
+
+Complemento independente do proprietário, 01:34 UTC, compatível com `catalog-stock-selected.txt:424–534`: o cancelador SECURITY DEFINER checa uid/has_role antes de `pg_advisory_xact_lock`, faz `SELECT ... WHERE id = p_entrega_id FOR UPDATE` sem predicado de organização e retorna replay de cancelada antes de revalidar autoridade. Faltam validação explícita de tenant/permissão após advisory e lock de linha, inclusive antes do replay. O hardening deve manter atomicidade e exigir autoridade fresca antes de qualquer resposta/efeito e após waits dos filhos, com vínculos tenant de entrega/estoque/movimento e prova da pilha real. A ausência dessas garantias é o bloqueio de segurança, não a ausência de transação. Contenção cliente mantida; nenhum writer foi chamado para testar produção.
 
 Também foram confirmados os caminhos irmãos:
 - `rpc_reservar_embalagem_entrega`: altera embalagem, ledger, separação e auditoria; valida estados antes de UPDATE sem CAS observado/receipt.
