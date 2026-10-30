@@ -166,6 +166,15 @@ def main():
     else:
         checks.append({'test':'negative ACK fault-injection does not affect returned child envelope','status':'BLOCKED','error':attempt})
     sql('DROP TRIGGER zz_bad_ack ON platform_private.stock_batch_requests;')
+    check('negative receipt ACK leaves every effect unchanged',"SELECT jsonb_build_array((SELECT count(*) FROM public.entregas),(SELECT count(*) FROM public.estoque_movimentacoes),(SELECT count(*) FROM public.estoque_produto),(SELECT count(*) FROM platform_private.stock_batch_requests))::text='"+snap+"';")
+    check('final financial fiscal outbox empty after concurrency', 'SELECT '+ ' AND '.join(f'(SELECT count(*) FROM public.{t})=0' for t in tables)+';')
+    # Characterize the remaining inversion in LIVE independent batch; never silently call it safe.
+    holder=session('BEGIN;'+f"SELECT 1 FROM public.estoque_produto WHERE id='{S}' FOR UPDATE;");time.sleep(.1)
+    worker=session(actor()+call('batch-order-characterization',[{'item_id':S,'quantidade':1}]));wait()
+    batch="SELECT public.rpc_estoque_reservar_v1('%s','manual','%s'::jsonb,'independent-batch-proof','%s'::jsonb);"%(O,json.dumps([{'item_id':S,'quantidade':1}]),json.dumps({'cliente_id':C}))
+    out,err=finish(holder,actor()+batch+'COMMIT;');out2,err2=finish(worker)
+    assert any(x in err+err2 for x in ['deadlock detected','lock timeout']),err+err2+out+out2
+    checks.append({'test':'LIVE independent batch row-before-gate versus group gate-before-row inversion','status':'BLOCKED','error':err+err2,'impact':'Do not install/release composition until independent batch ordering is safely rebased and concurrent proof passes.'})
 
 if __name__=='__main__':
     try: main()
