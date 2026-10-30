@@ -23,8 +23,10 @@ def run(X):
         before=X.snapshot(); X.reject('permit binds '+label,base+changed+insert,'42501'); assert X.snapshot()==before
     X.sql(base+permit+insert+"ROLLBACK;")
     X.ok('owner fixture exact permit positive reaches tenant and volume guards')
-    for field,expr in [('organization_id',f"'{T.B}'::uuid"),('quantidade','NEW.quantidade+1'),('volume_por_unidade','NEW.volume_por_unidade+1'),('operador',"'MUTATED'"),('etiqueta_gerada','true')]:
-        definition=f"CREATE FUNCTION public.local_mutate_after_permit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.{field}:={expr}; RETURN NEW; END $$;CREATE TRIGGER b01_local_mutate BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION public.local_mutate_after_permit();"
+    for field,expr in [('organization_id',f"'{T.B}'::uuid"),('quantidade','NEW.quantidade+1'),('volume_por_unidade','2000'),('operador',"'MUTATED'"),('etiqueta_gerada','true')]:
+        # Change packaging coherently so the real constraint cannot mask final-permit denial.
+        extra="NEW.tipo_embalagem:='frasco_2L';" if field=='volume_por_unidade' else ''
+        definition=f"CREATE FUNCTION public.local_mutate_after_permit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.{field}:={expr};{extra} RETURN NEW; END $$;CREATE TRIGGER b01_local_mutate BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION public.local_mutate_after_permit();"
         X.sql(definition); before=X.snapshot()
         X.reject('post-permit normalizer changed '+field+' aborts exactly',base+permit+insert,'42501'); assert X.snapshot()==before
         X.sql('DROP TRIGGER b01_local_mutate ON public.envase;DROP FUNCTION public.local_mutate_after_permit();')
