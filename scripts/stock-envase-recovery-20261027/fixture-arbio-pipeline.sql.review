@@ -13,7 +13,7 @@
 -- Preconditions that, if unmet, mean STOP (do not fabricate):
 --   * stock/envase v2 installed (install-v2 + postflight-v2); capability delta NOT installed;
 --   * admin: active profile in org, role administrador, no active partner_users link, not superadmin;
---   * cliente/fazenda/talhao belong to org; produto biological and active;
+--   * cliente/fazenda/talhao belong to org; produto active with familia_catalogo='biologico' (lab_item_is_manufacturable);
 --   * referencia: an EXISTING ACTIVE COMPLETE cq_parametros_referencia row for produto (global table:
 --     creating one is a shared-catalog decision by the Platform Superadmin, not part of this fixture);
 --   * org subscription grants features envase, ordens_producao, estoque_embalagens (and the OS gate features).
@@ -53,6 +53,7 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=current_setting('fixture.cliente')::uuid AND organization_id=org)
  OR NOT EXISTS(SELECT 1 FROM public.fazendas WHERE id=current_setting('fixture.fazenda')::uuid AND organization_id=org AND cliente_id=current_setting('fixture.cliente')::uuid)
  OR NOT EXISTS(SELECT 1 FROM public.talhoes WHERE id=current_setting('fixture.talhao')::uuid AND organization_id=org AND fazenda_id=current_setting('fixture.fazenda')::uuid) THEN RAISE EXCEPTION 'FIXTURE_PRE_CLIENT_SCOPE'; END IF;
+ IF NOT platform_private.lab_item_is_manufacturable(prod,NULL) OR NOT EXISTS(SELECT 1 FROM public.produtos WHERE id=prod AND coalesce(ativo,true)) THEN RAISE EXCEPTION 'FIXTURE_PRE_PRODUCT_NOT_MANUFACTURABLE'; END IF;
  SELECT * INTO ref FROM public.cq_parametros_referencia WHERE id=current_setting('fixture.referencia')::uuid AND produto_id=prod AND ativo;
  IF NOT FOUND OR ref.ph_min IS NULL OR ref.ph_max IS NULL OR ref.ph_min>ref.ph_max OR ref.concentracao_min_ufc_ml IS NULL
  OR nullif(btrim(ref.aparencia_esperada),'') IS NULL OR nullif(btrim(ref.odor_esperado),'') IS NULL OR nullif(btrim(ref.contaminacao_esperada),'') IS NULL

@@ -50,7 +50,7 @@ def master_data():
     INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{CLI}','{ORG}','LOCAL CLIENTE AR BIO','LOCAL-PIPE-A'),('{CLIB}','{ORGB}','LOCAL CLIENTE FSF','LOCAL-PIPE-B');
     INSERT INTO public.fazendas(id,organization_id,cliente_id,nome) VALUES('{FAZ}','{ORG}','{CLI}','LOCAL A'),('{FAZB}','{ORGB}','{CLIB}','LOCAL B');
     INSERT INTO public.talhoes(id,organization_id,fazenda_id,nome,area_hectares) VALUES('{TAL}','{ORG}','{FAZ}','LOCAL A',1),('{TALB}','{ORGB}','{FAZB}','LOCAL B',1);
-    INSERT INTO public.produtos(id,nome,tipo,ativo) VALUES('{PROD}','LOCAL BIO TESTE SEM VALOR COMERCIAL','inoculante',true);
+    INSERT INTO public.produtos(id,nome,tipo,ativo,familia_catalogo) VALUES('{PROD}','LOCAL BIO TESTE SEM VALOR COMERCIAL','inoculante',true,'biologico');
     INSERT INTO public.saas_modules(id,key,name) VALUES('{MOD}','localpipe','LOCAL');
     INSERT INTO public.saas_plans(id,key,name) VALUES('{PLAN}','localpipe','LOCAL');
     INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,price_amount,currency,billing_cycle,trial_days,published_at,features_snapshot) VALUES('{VER}','{PLAN}',1,'LOCAL','PUBLISHED',now()-interval '1 day',0,'BRL','monthly',1,now()-interval '1 day','{json.dumps(FEATS)}');
