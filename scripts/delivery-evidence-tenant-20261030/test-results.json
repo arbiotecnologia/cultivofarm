@@ -28,8 +28,80 @@
     }
   },
   {
+    "test": "BEFORE: write outcome matrix recorded (rolled back)",
+    "status": "PASS",
+    "matrix": {
+      "entrega_checklist": {
+        "x_ins": "perm:table entregas",
+        "x_upd": "perm:table entregas",
+        "x_del": "perm:table entregas",
+        "own_ins": "perm:table entregas",
+        "own_upd": "perm:table entregas",
+        "own_del": "perm:table entregas",
+        "reparent_to_fsf": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "reparent_to_null_org": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "fsf_reparent_own_to_arbio": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
+      },
+      "entrega_ocorrencias": {
+        "x_ins": "perm:table entregas",
+        "x_upd": "perm:table entregas",
+        "x_del": "perm:table entregas",
+        "own_ins": "perm:table entregas",
+        "own_upd": "perm:table entregas",
+        "own_del": "perm:table entregas",
+        "reparent_to_fsf": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "reparent_to_null_org": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "fsf_reparent_own_to_arbio": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
+      },
+      "entrega_documentos": {
+        "x_ins": "ok:inserted",
+        "x_upd": "ok:0",
+        "x_del": "ok:1",
+        "own_ins": "ok:inserted",
+        "own_upd": "ok:0",
+        "own_del": "ok:1",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      },
+      "entrega_conferencia_itens": {
+        "x_ins": "rls",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "rls",
+        "own_upd": "ok:0",
+        "own_del": "ok:0",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      },
+      "entrega_reconciliacoes": {
+        "x_ins": "rls",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "rls",
+        "own_upd": "ok:0",
+        "own_del": "ok:0",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      },
+      "entrega_etiquetas": {
+        "x_ins": "err:duplicate key value violates unique constraint \"entrega_etiquetas_entrega_id_etiqueta_id_key\"",
+        "x_upd": "ok:1",
+        "x_del": "ok:0",
+        "own_ins": "err:duplicate key value violates unique constraint \"entrega_etiquetas_entrega_id_etiqueta_id_key\"",
+        "own_upd": "ok:1",
+        "own_del": "ok:0",
+        "reparent_to_fsf": "err:duplicate key value violates unique constraint \"entrega_etiquetas_entrega_id_etiqueta_id_key\"",
+        "reparent_to_null_org": "err:duplicate key value violates unique constraint \"entrega_etiquetas_entrega_id_etiqueta_id_key\"",
+        "fsf_reparent_own_to_arbio": "err:duplicate key value violates unique constraint \"entrega_etiquetas_entrega_id_etiqueta_id_key\""
+      }
+    }
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 175, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 108, in main\n    wb = matrix(); print('BEFORE_WRITES', json.dumps(wb), flush=True)\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 67, in matrix\n    m[t] = {'x_ins': dml(t, V, 'ins', None, EA), 'x_upd': dml(t, V, 'upd', rid(t, 1)), 'x_del': dml(t, V, 'del', rid(t, 1)),\n                     ~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 61, in dml\n    if op == 'ins': return probe(w, \"WITH x AS (\" + ins(t, cols(t, ent, u(990), w)).rstrip(';').replace('VALUES', 'SELECT', 1).replace('(\\'', '\\'', 0) + \") SELECT 1;\") if False else probe(w, ins(t, cols(t, ent, u(990), w)) + \" SELECT 'inserted';\")\n                                                                                                                                                                                      ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 59, in probe\n    def probe(w, stmt): return cls(pg.sql(\"BEGIN;\" + actor(w) + stmt + \" ROLLBACK;\", False).replace('ROLLBACK', ''))\n                                   ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 21, in sql\n    assert r.returncode!=0,'expected failure, got success: '+r.stdout[-500:]\n           ^^^^^^^^^^^^^^^\nAssertionError: expected failure, got success: inserted\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 178, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 113, in main\n    tr = {t: 'ERROR' not in pg.sql(\"BEGIN;\" + actor(V) + f\"TRUNCATE public.{t};ROLLBACK;\", False) for t in TABLES}; print('BEFORE_TRUNCATE', tr, flush=True)\n                            ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 21, in sql\n    assert r.returncode!=0,'expected failure, got success: '+r.stdout[-500:]\n           ^^^^^^^^^^^^^^^\nAssertionError: expected failure, got success: \n"
   }
 ]

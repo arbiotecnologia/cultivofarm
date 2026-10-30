@@ -56,7 +56,10 @@ def cls(out):
     if 'row-level security' in e: return 'rls'
     if 'permission denied' in e: return 'perm:' + e.split('permission denied for ')[-1].strip()
     return 'err:' + e[:120]
-def probe(w, stmt): return cls(pg.sql("BEGIN;" + actor(w) + stmt + " ROLLBACK;", False).replace('ROLLBACK', ''))
+import subprocess
+def probe(w, stmt):
+    r = subprocess.run(restore.pg.psql(), input="SET lock_timeout='2s'; SET statement_timeout='30s';\nBEGIN;" + actor(w) + stmt + "\nROLLBACK;", capture_output=True, text=True, timeout=40)
+    return cls(r.stdout.replace('ROLLBACK', '').strip() if r.returncode == 0 else r.stderr)
 def dml(t, w, op, row, ent=None):
     if op == 'ins': return probe(w, "WITH x AS (" + ins(t, cols(t, ent, u(990), w)).rstrip(';').replace('VALUES', 'SELECT', 1).replace('(\'', '\'', 0) + ") SELECT 1;") if False else probe(w, ins(t, cols(t, ent, u(990), w)) + " SELECT 'inserted';")
     if op == 'upd': return probe(w, f"WITH x AS (UPDATE public.{t} SET entrega_id={'entrega_id' if ent is None else repr(ent)} WHERE id='{row}' RETURNING 1) SELECT count(*) FROM x;")
