@@ -12,7 +12,7 @@ def bodies():
     sup = json.loads((ATOMIC / 'capture/restore-supplement.json').read_text())
     out = {}
     for f in (cur['functions'] or []) + (sup.get('functions') or []):
-        out.setdefault(f['schema'] + '.' + f['name'], []).append(f['body'])
+        out.setdefault(f['schema'] + '.' + f['name'], []).append(f)
     post = {}
     for e in json.loads((ATOMIC / 'capture/post-expected.json').read_text()):
         ex = e.get('expected')
@@ -108,8 +108,11 @@ REVOKE ALL ON FUNCTION platform_private.stock_envase_complete_v1(uuid,uuid,uuid,
 
 def build():
     fs, post = bodies()
-    def cur(n):
-        v = fs[n]; assert len(v) == 1, (n, len(v)); return v[0].replace('\r\n', '\n')
+    def rec(n):
+        v = fs[n]; assert len(v) == 1, (n, len(v)); return v[0]
+    def cur(n): return rec(n)['body'].replace('\r\n', '\n')
+    def pin(n):
+        r = rec(n); assert hashlib.md5(r['body'].encode()).hexdigest() == r['md5'], ('capture md5 mismatch', n); return r['md5']
     pre = {}
     out = ['-- INACTIVE v2. Rebased on applied release-combined a566faa4. No client grants.\n', SCOPE, COMPLETE]
 
@@ -120,12 +123,12 @@ def build():
     out.append(m)
 
     # 2) Batch reserve: same gate before any lock.
-    b = cur('public.rpc_estoque_reservar_v1'); pre['batch'] = hashlib.md5(b.encode()).hexdigest()
+    b = cur('public.rpc_estoque_reservar_v1'); pre['batch'] = pin('public.rpc_estoque_reservar_v1')
     b = one(b, '\nBEGIN\n', '\nBEGIN\n ' + GATE, 'batch gate')
     out.append(b)
 
     # 3) Envase core: scope, gate first, recheck after waits, NaN/line checks, reviewed transition.
-    e = cur('public.rpc_cockpit_registrar_envase_v1'); pre['envase'] = hashlib.md5(e.encode()).hexdigest()
+    e = cur('public.rpc_cockpit_registrar_envase_v1'); pre['envase'] = pin('public.rpc_cockpit_registrar_envase_v1')
     check = "PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);"
     e = re.sub(r"( SET search_path TO [^\n]+)", r"\1\n SET lock_timeout TO '3s'", e, count=1)
     e = one(e, '\nBEGIN\n', '\nBEGIN\n  ' + check + '\n  ' + GATE + '  ' + check + '\n', 'envase gate')
@@ -139,17 +142,17 @@ def build():
     out.append(e)
 
     # 4) Material immutability without purge escape; finite volumes.
-    mt = cur('public.fn_envase_material_imutavel'); pre['material'] = hashlib.md5(mt.encode()).hexdigest()
+    mt = cur('public.fn_envase_material_imutavel'); pre['material'] = pin('public.fn_envase_material_imutavel')
     mt2 = re.sub(r'  -- Escape controlado.*?\n  END IF;\n', '', mt, count=1, flags=re.S)
     assert mt2 != mt and 'estoque_purge_fixture' not in mt2, 'purge escape removal'
     out.append(mt2)
-    v = cur('public.fn_validate_envase_volume'); pre['volume'] = hashlib.md5(v.encode()).hexdigest()
+    v = cur('public.fn_validate_envase_volume'); pre['volume'] = pin('public.fn_validate_envase_volume')
     v = one(v, 'IF NEW.volume_por_unidade IS NULL OR NEW.volume_por_unidade <= 0 THEN', "IF NEW.volume_por_unidade IS NULL OR NEW.volume_por_unidade <= 0 OR NEW.volume_por_unidade::text IN ('NaN','Infinity','-Infinity') THEN", 'vol unit')
     v = one(v, 'IF v_produzido IS NULL OR v_produzido <= 0 THEN', "IF v_produzido IS NULL OR v_produzido <= 0 OR v_produzido::text IN ('NaN','Infinity','-Infinity') THEN", 'vol prod')
     out.append(v)
 
     # 5) CQ parent guard: one additive branch for the envase ticket only (status-only em_cq->envase).
-    g = cur('platform_private.guard_manual_cq_parent_v1'); pre['cqparent'] = hashlib.md5(g.encode()).hexdigest()
+    g = cur('platform_private.guard_manual_cq_parent_v1'); pre['cqparent'] = pin('platform_private.guard_manual_cq_parent_v1')
     anchor = "  linked:=EXISTS(SELECT 1 FROM public.programacao_producao p JOIN public.lotes l ON l.programacao_id=p.id WHERE p.ordem_servico_id=OLD.id AND l.organization_id IS NOT NULL);\n"
     g = one(g, anchor, anchor + """  IF linked AND OLD.status::text='em_cq' AND NEW.status::text='envase'
    AND (to_jsonb(NEW)-'status'-'updated_at') IS NOT DISTINCT FROM (to_jsonb(OLD)-'status'-'updated_at')
@@ -204,7 +207,7 @@ def build():
     # LIVE restrictive body; motor/batch/group return to the exact applied bodies.
     # Material/volume hardening stays (never restore the purge escape).
     rb = ["BEGIN;\n", "CREATE OR REPLACE FUNCTION platform_private.stock_envase_complete_v1(p_os uuid,p_prog uuid,p_lote uuid,p_estado text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO '' AS $rb$ BEGIN RAISE EXCEPTION 'ENVASE_TRANSITION_CLOSED' USING ERRCODE='42501'; END $rb$;\n",
-          post[SIGS['motor']]['body'] + ';\n', cur('public.rpc_estoque_reservar_v1') + ';\n', post[SIGS['group']]['body'] + ';\n', cur('platform_private.guard_manual_cq_parent_v1') + ';\n',
+          post[SIGS['motor']]['body'] + ';\n', rec('public.rpc_estoque_reservar_v1')['body'] + ';\n', post[SIGS['group']]['body'] + ';\n', rec('platform_private.guard_manual_cq_parent_v1')['body'] + ';\n',
           "REVOKE ALL ON FUNCTION platform_private.stock_envase_complete_v1(uuid,uuid,uuid,text) FROM PUBLIC,anon,authenticated,service_role;\n", "COMMIT;\n"]
     (H / 'rollback-v2.sql.review').write_text(''.join(rb))
     return pins
