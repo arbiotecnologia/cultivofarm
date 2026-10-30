@@ -1,0 +1,10 @@
+-- Deny-safe rollback: never DROP (that restores cross-tenant reads). Narrows direct SELECT to nothing; proof
+-- writers (SECURITY DEFINER, table owner) and server-side reads are unaffected.
+BEGIN;
+SET LOCAL lock_timeout='3s';
+DO $rb$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='entrega_comprovantes' AND policyname='entrega_comprovantes_parent_visible_r' AND permissive='RESTRICTIVE')
+ THEN RAISE EXCEPTION 'PROOF_SELECT_ROLLBACK_POLICY_MISSING'; END IF;
+END $rb$;
+ALTER POLICY entrega_comprovantes_parent_visible_r ON public.entrega_comprovantes USING (false);
+COMMIT;
