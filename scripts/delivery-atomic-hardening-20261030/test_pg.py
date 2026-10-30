@@ -29,7 +29,9 @@ def setup():
     INSERT INTO public.user_roles(user_id,role) VALUES('{U}','administrador'),('{V}','administrador');
     INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{C}','{A}','LOCAL CLIENT A','LOCAL-A'),('{D}','{B}','LOCAL CLIENT B','LOCAL-B');
     INSERT INTO public.produtos(id,nome,tipo) VALUES('{PROD}','LOCAL BIO','inoculante');
-    INSERT INTO public.ordens_servico(id,organization_id,cliente_id,produto_id,origem,status,numero_os) VALUES('{O}','{A}','{C}','{PROD}','manual','pronto_entrega','LOCAL-A'),('{P}','{B}','{D}','{PROD}','manual','pronto_entrega','LOCAL-B');
+    INSERT INTO public.fazendas(id,organization_id,cliente_id,nome) VALUES('{u(18)}','{A}','{C}','LOCAL A'),('{u(19)}','{B}','{D}','LOCAL B');
+    INSERT INTO public.talhoes(id,organization_id,fazenda_id,nome) VALUES('{u(20)}','{A}','{u(18)}','LOCAL A'),('{u(21)}','{B}','{u(19)}','LOCAL B');
+    INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,origem,status,numero_os) VALUES('{O}','{A}','{C}','{u(18)}','{u(20)}','{PROD}','agronomica','pronto_entrega','LOCAL-A'),('{P}','{B}','{D}','{u(19)}','{u(21)}','{PROD}','agronomica','pronto_entrega','LOCAL-B');
     INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{L}','{A}','{PROD}','aprovado','LOCAL-A',100000),('{M}','{A}','{PROD}','aprovado','LOCAL-B',100000);
     INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{S}','{L}','{PROD}',10,10,'disponivel'),('{T}','{M}','{PROD}',10,10,'disponivel');
     INSERT INTO public.saas_modules(id,key,name) VALUES('{MOD}','local','LOCAL');
