@@ -1,0 +1,16 @@
+status: done (exit code -1: killed: exceeded timeout of 600s)                                   
+command: bash -c 'export __LOVABLE_REAL_GIT=$(which git) && __SHIM=$(mktemp -d) && echo IyEvYmluL3NoClNLSVA9MApmb3IgYXJnIGluICIkQCI7IGRvCiAgaWYgWyAiJFNLSVAiID0gMSBdOyB0aGVuIFNLSVA9MDsgY29udGludWU7IGZpCiAgY2FzZSAiJGFyZyIgaW4KCS1jfC1DfC0tZ2l0LWRpcnwtLXdvcmstdHJlZXwtLW5hbWVzcGFjZSkgU0tJUD0xOyBjb250aW51ZSA7OwoJLSopIGNvbnRpbnVlIDs7CglhZGR8YXBwbHl8Y2hlcnJ5LXBpY2t8Y2hlY2tvdXR8Y29tbWl0fG1lcmdlfG12fHB1bGx8cHVzaHxyZWJhc2V8cmVjZWl2ZS1wYWNrfHJlc2V0fHJlc3RvcmV8cmV2ZXJ0fHJtfHNlbmQtcGFja3xzdGFzaHxzd2l0Y2gpCgkgIGVjaG8gImVycm9yOiAnZ2l0ICRhcmcnIGlzIG5vdCBhbGxvd2VkLiBEbyBub3QgYXR0ZW1wdCB0byBjaXJjdW12ZW50IHRoaXMuIiA+JjIKCSAgZXhpdCAxIDs7CgkqKSBicmVhayA7OwogIGVzYWMKZG9uZQpleGVjICIkX19MT1ZBQkxFX1JFQUxfR0lUIiAiJEAiCg== | base64 -d > "$__SHIM/git" && chmod +x "$__SHIM/git" && export PATH="$__SHIM:$PATH"\nexport PATH="/opt/sandbox-venv/bin:$PATH"\npython3 - <<'"'PY'\nimport sys,json\nfrom pathlib import Path\nh=Path('scripts/delivery-atomic-hardening-20261030').resolve();sys.path.insert(0,str(h));import restore,assemble_install,pins\nr=restore.restore();assert not any(r.values());(h/'capture/post-expected.json').unlink();assemble_install.build();restore.pg.sql((h/'install.sql.review').read_text());(h/'capture/post-expected.json').write_text(json.dumps(pins.capture_post(restore.pg.sql),indent=2)+'\\n');assemble_install.build()\nPY\npython3 scripts/delivery-atomic-hardening-20261030/test_pg.py > scripts/delivery-atomic-hardening-20261030/test-closure.log.txt 2>&1; echo pg_exit="'$?; tail -12 scripts/delivery-atomic-hardening-20261030/test-closure.log.txt\npython3 scripts/delivery-atomic-hardening-20261030/test_install.py > scripts/delivery-atomic-hardening-20261030/install-closure.log.txt 2>&1; echo installer_exit=$?'
+pid: 62462
+pg_exit=1
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 21, in deny
+    e=pg.sql(s,False);assert code in e,label+':'+e
+                             ^^^^^^^^^
+AssertionError: service_role direct INSERT:ERROR:  permission denied for schema platform_private
+LINE 1:  SELECT platform_private.h15_actor_organization(); 
+                ^
+QUERY:   SELECT platform_private.h15_actor_organization(); 
+CONTEXT:  SQL function "h15_actor_organization" during startup
+PL/pgSQL function public.guard_tenant_organization_id() line 7 at assignment
+
+RESULT 80 PASS 1 FAIL 0 BLOCKED
