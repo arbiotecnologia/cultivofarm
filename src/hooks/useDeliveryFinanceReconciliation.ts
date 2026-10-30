@@ -5,9 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
 
-export type DeliveryFinanceState = "rejeitado" | "resposta_incerta" | "recebivel_confirmado" | "fiscal_pendente";
+export type DeliveryFinanceState = "indisponivel" | "carregando" | "nenhum_titulo" | "resposta_incerta" | "recebivel_confirmado" | "fiscal_pendente";
 export const isFinanceUuid = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-const blocked = "Cobrança indisponível até revisão do contrato financeiro. Seu rascunho foi preservado.";
 type DeliveryIdentity = { id: string; organization_id: string; cliente_id: string; receivable_id: string | null };
 type Receipt = { id: string; organization_id: string; origin_type: string; origin_id: string; customer_id: string;
   total_amount: number | string; status: string; fiscal_invoice_required: boolean; fiscal_invoice_status: string };
@@ -19,7 +18,6 @@ export function useDeliveryFinanceReconciliation(deliveryId: unknown, open: bool
   const access = useStorageAccessScope(`delivery-finance:${deliveryId}:${open}`);
   const qc = useQueryClient();
   const lock = useRef<object | null>(null);
-  const [action, setAction] = useState<{ scope: string; state: DeliveryFinanceState; message: string } | null>(null);
   const [pendingScope, setPendingScope] = useState<string | null>(null);
   const org = profile?.organization_id;
   const eligible = open && access.ready && isFinanceUuid(deliveryId) && isFinanceUuid(org);
@@ -67,15 +65,13 @@ export function useDeliveryFinanceReconciliation(deliveryId: unknown, open: bool
   }, [access.scope, qc]);
   const fresh = eligible && query.isSuccess && !query.isFetching && !query.error;
   const receipt = fresh ? query.data : null;
-  const state: DeliveryFinanceState = receipt
-    ? (receipt.fiscal_invoice_required && receipt.fiscal_invoice_status !== "ISSUED" ? "fiscal_pendente" : "recebivel_confirmado")
-    : (query.error ? "resposta_incerta" : action?.scope === access.scope ? action.state : "resposta_incerta");
-  const reject = () => {
-    if (!eligible || lock.current) return;
-    setAction({ scope: access.scope, state: "rejeitado", message: blocked });
-  };
+  const state: DeliveryFinanceState = !eligible ? "indisponivel"
+    : query.isFetching || query.isPending ? "carregando"
+    : query.error ? "resposta_incerta"
+    : receipt ? (receipt.fiscal_invoice_required && receipt.fiscal_invoice_status !== "ISSUED" ? "fiscal_pendente" : "recebivel_confirmado")
+    : fresh ? "nenhum_titulo" : "resposta_incerta";
   const reconsultar = async () => {
-    if (!eligible || lock.current) return;
+    if (!eligible || !access.capture()() || lock.current || query.isFetching) return;
     const ticket = {}; lock.current = ticket;
     const current = access.capture();
     setPendingScope(access.scope);
@@ -84,15 +80,20 @@ export function useDeliveryFinanceReconciliation(deliveryId: unknown, open: bool
       if (!current()) return;
       await query.refetch();
       if (!current()) return;
-      // No record is not evidence that an uncertain write rolled back; never re-dispatch.
-      setAction({ scope: access.scope, state: "resposta_incerta", message: "Consulta concluída. Nenhuma nova cobrança foi enviada." });
     } finally {
       if (lock.current === ticket) lock.current = null;
       if (current()) setPendingScope(null);
     }
   };
-  return { access, eligible, fresh, receipt, state, reject, reconsultar,
-    pending: pendingScope === access.scope,
-    message: query.error ? "Não foi possível confirmar o recebível. Reconsulte sem repetir a cobrança."
-      : action?.scope === access.scope ? action.message : blocked };
+  const messages: Record<DeliveryFinanceState, string> = {
+    indisponivel: "Entrega indisponível neste contexto.",
+    carregando: "Consultando o título da entrega...",
+    nenhum_titulo: "Nenhum título disponível nesta consulta. Isso não comprova estorno ou rollback de uma operação anterior.",
+    resposta_incerta: "Não foi possível confirmar o recebível: consulta indisponível ou vínculo ambíguo. Reconsulte sem repetir a cobrança.",
+    recebivel_confirmado: "Recebível confirmado por consulta autorizada.",
+    fiscal_pendente: "Recebível confirmado. Fiscal pendente; nenhuma segunda cobrança será enviada.",
+  };
+  return { access, eligible, fresh, receipt, state, reconsultar,
+    pending: pendingScope === access.scope || (eligible && query.isFetching),
+    message: messages[state] };
 }

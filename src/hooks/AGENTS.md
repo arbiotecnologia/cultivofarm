@@ -16,3 +16,4 @@
 - Production publication uses a synchronous per-mount lock, canonical-only RPC, strict target/positive ACK validation and existing auth scope fences; failed or stale replies never invalidate caches and retries stay disabled — prevents duplicate dispatch and false success without granting operational authority.
 
 - Legacy individual reservation, delivery creation/confirmation and reservation cancellation stay contained before dispatch; deferEffects, overrides and split UUID callbacks cannot open them. Reviewed independent batch reservation is unchanged — prevents delivery consumers bypassing pre-dispatch containment.
+- Blocked delivery finance exposes only scoped existing-title reconciliation, with no creation form/catalogue reads or write callbacks; fresh empty reads never prove rollback — preserves honest read-only access.
