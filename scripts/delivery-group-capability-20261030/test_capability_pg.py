@@ -10,7 +10,7 @@ sys.path.insert(0, str(ATOMIC)); sys.path.insert(0, str(H))
 import restore
 from restore import pg
 import test_pg as T
-import assemble
+import assemble_capability as assemble
 APPLIED = 'a566faa4f6f460d8b9195abf93d97717013af815537f00eb28b34cc98d314971'
 checks = []
 def ok(label, **kw): checks.append({'test': label, 'status': 'PASS', **kw}); print('PASS', label, flush=True)

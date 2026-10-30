@@ -4,8 +4,32 @@
     "status": "PASS"
   },
   {
+    "test": "pre-delta: authenticated group writer has no EXECUTE",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "pre-delta: capability RPC absent (frontend stays closed)",
+    "status": "PASS",
+    "expected": "does not exist"
+  },
+  {
+    "test": "PRE refuses ACL drift (legacy cancel2 granted)",
+    "status": "PASS",
+    "expected": "DELIVERY_CAP_PRE_DRIFT"
+  },
+  {
+    "test": "forced POST failure rolls back grants and capability",
+    "status": "PASS",
+    "expected": "LOCAL_POST_FORCED_FAIL"
+  },
+  {
+    "test": "state unchanged after POST failure",
+    "status": "PASS"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 96, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 42, in main\n    assemble.build(); inst = (H / 'install.sql.review').read_text()\n    ^^^^^^^^^^^^^^\nAttributeError: module 'assemble' has no attribute 'build'\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 96, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 52, in main\n    sql(inst); ok('install COMMIT'); sql((H / 'postflight.sql.review').read_text()); ok('standalone POST passes')\n    ~~~^^^^^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 17, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  DELIVERY_CAP_POST_DEFINER\nCONTEXT:  PL/pgSQL function inline_code_block line 14 at RAISE\n\n"
   }
 ]
