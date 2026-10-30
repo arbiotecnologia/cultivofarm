@@ -1,0 +1,21 @@
+ src/components/entregas/ConfirmarEntregaDialog.tsx |  3 +
+ .../entregas/EntregaComprovantePanel.tsx           |  9 ++
+ src/components/estoque/ConferenciaEmbalagemQR.tsx  |  6 +-
+ src/components/estoque/EmbalagensEntregaPanel.tsx  |  7 +-
+ .../estoque/ReservarEmbalagemEntregaDialog.tsx     |  3 +
+ src/hooks/AGENTS.md                                |  2 +-
+ .../useEsteiraLaboratorio.origemGuard.test.tsx     | 67 ++-------------
+ src/hooks/useEsteiraLaboratorio.ts                 |  5 ++
+ src/lib/entregas/operationalContainment.ts         |  8 ++
+ src/lib/estoque/motorEstoque.ts                    |  4 +
+ src/pages/Entregas.tsx                             | 17 +++-
+ src/pages/financeiro/EntregasNaoFaturadas.tsx      | 34 +++++---
+ src/test/entregas/assinaturaComprovante.test.tsx   | 91 ++------------------
+ src/test/entregas/conferenciaQrTermo.test.tsx      | 97 ++--------------------
+ src/test/entregas/confirmacaoEntregaAck.test.tsx   | 37 +--------
+ src/test/entregas/consumidorEntrega.test.tsx       | 92 +++++---------------
+ .../entregas/deliveryContainmentStock.test.tsx     | 18 ++++
+ .../entregas/reservaDeferredRuntimeGate.test.tsx   | 27 ++----
+ src/test/entregas/termoPdfEdge.test.ts             |  2 +
+ .../financeiro/deliveryPendingReadOnly.test.tsx    | 17 ++++
+ 20 files changed, 167 insertions(+), 379 deletions(-)

@@ -1,0 +1,950 @@
+diff --git a/src/components/entregas/ConfirmarEntregaDialog.tsx b/src/components/entregas/ConfirmarEntregaDialog.tsx
+index 92949fbea..e48405db7 100644
+--- a/src/components/entregas/ConfirmarEntregaDialog.tsx
++++ b/src/components/entregas/ConfirmarEntregaDialog.tsx
+@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
+ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+ import { toast } from "@/hooks/use-toast";
+ import { Paperclip, Trash2, Upload, DollarSign, Clock, Ban } from "lucide-react";
++import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ 
+ const TIPOS = [
+   { value: "RECIBO_ASSINADO", label: "Recibo assinado" },
+@@ -153,6 +154,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }:
+   const confirmar = useMutation({
+     retry: false,
+     mutationFn: async () => {
++      requireDeliveryOperationContract();
+       const captured = scope.capture();
+       let expired = false;
+       const current = () => captured() && !expired;
+@@ -270,6 +272,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }:
+         <DialogHeader>
+           <DialogTitle>Confirmar Entrega</DialogTitle>
+         </DialogHeader>
++        <p role="alert" className="text-sm text-destructive">{DELIVERY_OPERATION_BLOCK}</p>
+ 
+         <div className="rounded-md border bg-muted/30 p-3 text-sm grid grid-cols-2 gap-2">
+           <div><span className="text-muted-foreground">Cliente:</span> <strong>{entrega.clientes?.nome || "—"}</strong></div>
+diff --git a/src/components/entregas/EntregaComprovantePanel.tsx b/src/components/entregas/EntregaComprovantePanel.tsx
+index 57f171d42..d2d193883 100644
+--- a/src/components/entregas/EntregaComprovantePanel.tsx
++++ b/src/components/entregas/EntregaComprovantePanel.tsx
+@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
+ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
+ import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
+ import { DELIVERY_RECEIPT_BUCKET, deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
++import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ import { Card } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+@@ -295,6 +296,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
+     });
+ 
+   const confirmarRecebimento = () => {
++    try { requireDeliveryOperationContract(); } catch {
++      toast({ title: "Recebimento indisponível", description: DELIVERY_OPERATION_BLOCK, variant: "destructive" });
++      return;
++    }
+     // Payload capturado no início: uma edição posterior não altera o envio.
+     const ressalvasEnvio = ressalvas || null;
+     return executarAcaoComprovacao({
+@@ -315,6 +320,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
+   };
+ 
+   const dispensarAssinatura = () => {
++    try { requireDeliveryOperationContract(); } catch {
++      toast({ title: "Dispensa indisponível", description: DELIVERY_OPERATION_BLOCK, variant: "destructive" });
++      return;
++    }
+     const motivoEnvio = motivoDispensa;
+     return executarAcaoComprovacao({
+       setPendente: setDispensando,
+diff --git a/src/components/estoque/ConferenciaEmbalagemQR.tsx b/src/components/estoque/ConferenciaEmbalagemQR.tsx
+index 3afe54f48..81a6eef6b 100644
+--- a/src/components/estoque/ConferenciaEmbalagemQR.tsx
++++ b/src/components/estoque/ConferenciaEmbalagemQR.tsx
+@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
+ import { supabase } from "@/integrations/supabase/client";
+ import { EmbalagemStatusBadge } from "./EmbalagemStatusBadge";
+ import { ScanLine } from "lucide-react";
++import { requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ 
+ const MSG_ERRO_CONFERENCIA = "Não foi possível conferir este código. Tente novamente.";
+ 
+@@ -46,15 +47,16 @@ export function ConferenciaEmbalagemQR({ entregaId }: { entregaId?: string }) {
+     setErro(null);
+     setResult(null);
+     try {
++      if (entregaId) requireDeliveryOperationContract();
+       const { data, error } = await (supabase as any).rpc("rpc_ler_embalagem_por_qr", {
+         p_codigo_ou_token: alvo,
+       });
+       if (token !== tokenRef.current || entregaDaLeitura !== entregaId) return;
+       if (error) throw error;
+       setResult(data);
+-    } catch {
++    } catch (error) {
+       if (token !== tokenRef.current || entregaDaLeitura !== entregaId) return;
+-      setErro(MSG_ERRO_CONFERENCIA);
++      setErro(error instanceof Error && entregaId ? error.message : MSG_ERRO_CONFERENCIA);
+     } finally {
+       if (token === tokenRef.current) {
+         setLoading(false);
+diff --git a/src/components/estoque/EmbalagensEntregaPanel.tsx b/src/components/estoque/EmbalagensEntregaPanel.tsx
+index 668987f2e..01905bb9e 100644
+--- a/src/components/estoque/EmbalagensEntregaPanel.tsx
++++ b/src/components/estoque/EmbalagensEntregaPanel.tsx
+@@ -7,6 +7,7 @@ import { EmbalagemStatusBadge } from "./EmbalagemStatusBadge";
+ import { useToast } from "@/hooks/use-toast";
+ import { Package, CheckCircle2, Truck, AlertTriangle } from "lucide-react";
+ import { ConferenciaEmbalagemQR } from "./ConferenciaEmbalagemQR";
++import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ 
+ const MSG_ERRO_ACAO = "Não foi possível concluir a ação. Tente novamente.";
+ 
+@@ -52,12 +53,13 @@ export function EmbalagensEntregaPanel({ entregaId, compact = false }: { entrega
+   const action = async (rpc: string, params: any, label: string) => {
+     setLoading(true);
+     try {
++      requireDeliveryOperationContract();
+       const { error } = await (supabase as any).rpc(rpc, params);
+       if (error) throw error;
+       toast({ title: label });
+       await refetch();
+-    } catch {
+-      toast({ title: "Erro", description: MSG_ERRO_ACAO, variant: "destructive" });
++    } catch (error) {
++      toast({ title: "Operação indisponível", description: error instanceof Error ? error.message : MSG_ERRO_ACAO, variant: "destructive" });
+     } finally { setLoading(false); }
+   };
+ 
+@@ -69,6 +71,7 @@ export function EmbalagensEntregaPanel({ entregaId, compact = false }: { entrega
+         </CardTitle>
+       </CardHeader>
+       <CardContent className="space-y-3">
++        <p className="text-sm text-destructive">{DELIVERY_OPERATION_BLOCK}</p>
+         {isLoading && (
+           <p className="text-sm text-muted-foreground" data-testid="embalagens-carregando">
+             Carregando embalagens...
+diff --git a/src/components/estoque/ReservarEmbalagemEntregaDialog.tsx b/src/components/estoque/ReservarEmbalagemEntregaDialog.tsx
+index 4411c2f3d..ec3bb8b87 100644
+--- a/src/components/estoque/ReservarEmbalagemEntregaDialog.tsx
++++ b/src/components/estoque/ReservarEmbalagemEntregaDialog.tsx
+@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
+ import { supabase } from "@/integrations/supabase/client";
+ import { useToast } from "@/hooks/use-toast";
+ import { formatDateDisplay } from "@/lib/date-utils";
++import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ 
+ interface EntregaOpt {
+   id: string;
+@@ -44,6 +45,7 @@ export function ReservarEmbalagemEntregaDialog({
+   const submit = async () => {
+     setLoading(true);
+     try {
++      requireDeliveryOperationContract();
+       const { error } = await (supabase as any).rpc("rpc_reservar_embalagem_entrega", {
+         p_embalagem_id: embalagemId, p_entrega_id: entregaId, p_entrega_item_id: null,
+       });
+@@ -61,6 +63,7 @@ export function ReservarEmbalagemEntregaDialog({
+     <Dialog open={open} onOpenChange={onOpenChange}>
+       <DialogContent>
+         <DialogHeader><DialogTitle>Reservar embalagem para entrega</DialogTitle></DialogHeader>
++        <p role="alert" className="text-sm text-destructive">{DELIVERY_OPERATION_BLOCK}</p>
+         <div className="space-y-2">
+           <Label>Entrega</Label>
+           <Select value={entregaId} onValueChange={setEntregaId}>
+diff --git a/src/hooks/AGENTS.md b/src/hooks/AGENTS.md
+index b34671b7d..8395cfc77 100644
+--- a/src/hooks/AGENTS.md
++++ b/src/hooks/AGENTS.md
+@@ -15,4 +15,4 @@
+ - Partner order submit keeps idempotency attempts in a volatile per actor/tenant/roles/partner store written from mutationFn; identical payload reuses the key and changed payload after an ambiguous send stays blocked — prevents duplicate orders after lost responses/remounts.
+ - Production publication uses a synchronous per-mount lock, canonical-only RPC, strict target/positive ACK validation and existing auth scope fences; failed or stale replies never invalidate caches and retries stay disabled — prevents duplicate dispatch and false success without granting operational authority.
+ 
+-- Delivery callers may defer UI/cache effects with a captured scope fence while preserving existing reservation audit; canonical reservation UUIDs can identify split rows and must be carried into delivery creation — prevents stale effects and using the original unreserved row.
++- Legacy individual reservation, delivery creation/confirmation and reservation cancellation stay contained before dispatch; deferEffects, overrides and split UUID callbacks cannot open them. Reviewed independent batch reservation is unchanged — prevents delivery consumers bypassing pre-dispatch containment.
+diff --git a/src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx b/src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx
+index fb92e4c14..d84bf7781 100644
+--- a/src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx
++++ b/src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx
+@@ -102,66 +102,9 @@ beforeEach(() => {
+   toastSuccess.mockClear();
+ });
+ 
+-describe("useEsteiraLaboratorio.reservarEstoque — guarda OS↔lote", () => {
+-  it("permite reservar quando a OS informada é a origem do lote", async () => {
+-    const { result } = renderHook(() => useEsteiraLaboratorio(), { wrapper });
+-    let ok: boolean = false;
+-    await act(async () => {
+-      ok = await result.current.reservarEstoque(baseItem, baseReserva, "os-A", "padrao");
+-    });
+-    expect(ok).toBe(true);
+-    expect(rpcMock).toHaveBeenCalledTimes(1);
+-    expect(rpcMock.mock.calls[0][0]).toBe("reservar_estoque_item");
+-    expect(toastError).not.toHaveBeenCalled();
+-  });
+-
+-  it("bloqueia quando o lote pertence a outra OS e não há override", async () => {
+-    const { result } = renderHook(() => useEsteiraLaboratorio(), { wrapper });
+-    let ok: boolean = true;
+-    await act(async () => {
+-      ok = await result.current.reservarEstoque(baseItem, baseReserva, "os-OUTRA", "padrao");
+-    });
+-    expect(ok).toBe(false);
+-    expect(rpcMock).not.toHaveBeenCalled();
+-    expect(toastError).toHaveBeenCalledWith(
+-      expect.stringMatching(/outra OS\/OP.*override/i),
+-    );
+-  });
+-
+-  it("permite reservar em OS divergente quando overrideOrigem=true", async () => {
+-    const { result } = renderHook(() => useEsteiraLaboratorio(), { wrapper });
+-    let ok: boolean = false;
+-    await act(async () => {
+-      ok = await result.current.reservarEstoque(
+-        baseItem,
+-        baseReserva,
+-        "os-OUTRA",
+-        "padrao",
+-        true, // override confirmado pela UI (AlertDialog)
+-      );
+-    });
+-    expect(ok).toBe(true);
+-    expect(rpcMock).toHaveBeenCalledTimes(1);
+-    // Auditoria deve refletir o override
+-    const auditoriaCall = insertMock.mock.calls.find(
+-      ([tbl]) => tbl === "laboratorio_esteira_eventos",
+-    );
+-    expect(auditoriaCall).toBeDefined();
+-    expect(auditoriaCall?.[1]?.observacao).toMatch(/OVERRIDE de origem/i);
+-  });
+-
+-  it("reconhece origem também em OS onfarm (ordem_servico_onfarm_id)", async () => {
+-    const { result } = renderHook(() => useEsteiraLaboratorio(), { wrapper });
+-    let ok: boolean = false;
+-    await act(async () => {
+-      ok = await result.current.reservarEstoque(
+-        { ...baseItem, lote_id: "lote-origem-B" },
+-        baseReserva,
+-        "os-B",
+-        "onfarm",
+-      );
+-    });
+-    expect(ok).toBe(true);
+-    expect(rpcMock).toHaveBeenCalledTimes(1);
+-  });
++describe('Reserva individual contida independentemente da origem/override',()=>{
++ it.each([['os-A','padrao',false],['os-OUTRA','padrao',false],['os-OUTRA','padrao',true],['os-B','onfarm',false]])('origem %s/%s override=%s não abre writer',async(os,origem,override)=>{
++  const {result}=renderHook(()=>useEsteiraLaboratorio(),{wrapper});let ok=false;await act(async()=>{ok=await result.current.reservarEstoque(baseItem,baseReserva,String(os),String(origem),Boolean(override));});
++  expect(ok).toBe(false);expect(rpcMock).not.toHaveBeenCalled();expect(insertMock).not.toHaveBeenCalled();expect(toastSuccess).not.toHaveBeenCalled();expect(toastError).toHaveBeenCalled();
++ });
+ });
+diff --git a/src/hooks/useEsteiraLaboratorio.ts b/src/hooks/useEsteiraLaboratorio.ts
+index e9ee5de6a..a9ef582f5 100644
+--- a/src/hooks/useEsteiraLaboratorio.ts
++++ b/src/hooks/useEsteiraLaboratorio.ts
+@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
+ import { toast } from "sonner";
+ import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
+ import { montarDadosEntrega, validarRespostaCriarEntrega } from "@/lib/entregas/payloadEntrega";
++import { DELIVERY_OPERATION_BLOCK, DELIVERY_CANCELLATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ 
+ 
+ export type EsteiraStage =
+@@ -437,6 +438,7 @@ export function useEsteiraLaboratorio() {
+     options: { current?: () => boolean; deferEffects?: boolean; onReserved?: (id: string) => void } = {},
+   ) => {
+     const current = options.current ?? (() => true);
++    try { requireDeliveryOperationContract(); } catch { toast.error(DELIVERY_OPERATION_BLOCK); return false; }
+     if (!current()) return false;
+     const qtyToReserve = Number(reservaData.quantidade_reservada);
+     if (!qtyToReserve || qtyToReserve <= 0) {
+@@ -613,6 +615,7 @@ export function useEsteiraLaboratorio() {
+     motivo: string,
+   ) => {
+     const motivoLimpo = (motivo ?? "").trim();
++    try { requireDeliveryOperationContract("cancel"); } catch { toast.error(DELIVERY_CANCELLATION_BLOCK); return false; }
+     if (!motivoLimpo) {
+       toast.error("Informe o motivo do cancelamento da reserva.");
+       return false;
+@@ -646,6 +649,7 @@ export function useEsteiraLaboratorio() {
+    * A OS só chega a "entregue" na confirmação.
+    */
+   const criarEntrega = async (entregaData: any, osId: string, origem: string, options: { current?: () => boolean; deferEffects?: boolean } = {}) => {
++    requireDeliveryOperationContract();
+     const current = options.current ?? (() => true);
+     if (!current()) throw new Error("Contexto de entrega indisponível.");
+     if (!entregaData?.estoque_produto_id) {
+@@ -698,6 +702,7 @@ export function useEsteiraLaboratorio() {
+     recebedor: { nome: string; cargo?: string | null; documento?: string | null },
+   ) => {
+     const nome = recebedor?.nome?.trim() ?? "";
++    try { requireDeliveryOperationContract(); } catch { toast.error(DELIVERY_OPERATION_BLOCK); return false; }
+     if (!nome) {
+       toast.error("Informe o nome de quem recebeu a entrega para confirmar.");
+       return false;
+diff --git a/src/lib/entregas/operationalContainment.ts b/src/lib/entregas/operationalContainment.ts
+new file mode 100644
+index 000000000..ab2dcfb68
+--- /dev/null
++++ b/src/lib/entregas/operationalContainment.ts
+@@ -0,0 +1,8 @@
++/** Release containment, not authorization. No runtime flag, role or local lock opens it. */
++export const DELIVERY_OPERATION_BLOCK = "Operação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.";
++export const DELIVERY_CANCELLATION_BLOCK = "Cancelamento e estorno indisponíveis: a recomposição integral do estoque ainda não tem contrato comprovado para esta operação. Nenhuma alteração foi enviada.";
++export const DELIVERY_FINANCE_BLOCK = "Alteração financeira indisponível: contrato financeiro e validação fiscal pendentes. Apenas consulta e reconciliação estão disponíveis; nenhuma cobrança foi enviada.";
++
++export function requireDeliveryOperationContract(action: "delivery" | "cancel" | "finance" = "delivery"): void {
++  throw new Error(action === "cancel" ? DELIVERY_CANCELLATION_BLOCK : action === "finance" ? DELIVERY_FINANCE_BLOCK : DELIVERY_OPERATION_BLOCK);
++}
+\ No newline at end of file
+diff --git a/src/lib/estoque/motorEstoque.ts b/src/lib/estoque/motorEstoque.ts
+index e2794d270..2078f9f2d 100644
+--- a/src/lib/estoque/motorEstoque.ts
++++ b/src/lib/estoque/motorEstoque.ts
+@@ -1,5 +1,6 @@
+ import { supabase } from "@/integrations/supabase/client";
+ import type { Json } from "@/integrations/supabase/cultivofarm.types";
++import { requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ 
+ /**
+  * Motor canônico de movimentações de estoque (Fase 2).
+@@ -91,6 +92,9 @@ export async function operarEstoque(
+   idempotencyKey: string,
+   payload: EstoqueOperacaoPayload = {},
+ ): Promise<EstoqueOperacaoResultado> {
++  if (["expedicao", "entrega", "estorno_expedicao"].includes(acao) || payload.referencia_tipo === "entrega") {
++    requireDeliveryOperationContract(acao === "estorno_expedicao" ? "cancel" : "delivery");
++  }
+   const { data, error } = await supabase.rpc("rpc_estoque_operar_v1", {
+     p_acao: acao,
+     p_item_id: itemId,
+diff --git a/src/pages/Entregas.tsx b/src/pages/Entregas.tsx
+index 60f49d973..103c1ecef 100644
+--- a/src/pages/Entregas.tsx
++++ b/src/pages/Entregas.tsx
+@@ -62,6 +62,7 @@ import { SeletorLoteEnvasado } from "@/components/entregas/SeletorLoteEnvasado";
+ import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/components/entregas/RegistrarEntregaDialog";
+ import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";
+ import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
++import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ 
+ const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+   separado: { label: "Separado", variant: "secondary" },
+@@ -88,6 +89,14 @@ export default function Entregas() {
+   };
+   // Per-mount containment, not a server receipt or cross-tab idempotency.
+   const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {
++    try {
++      requireDeliveryOperationContract(target === "cancel" ? "cancel" : "delivery");
++    } catch (error) {
++      const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;
++      setOperationNotice(message);
++      toast.error(message);
++      throw error;
++    }
+     const captured = deliveryScope.capture();
+     const key = deliveryScope.scope;
+     if (!captured()) throw new Error("Contexto de entrega indisponível.");
+@@ -706,7 +715,7 @@ export default function Entregas() {
+ 
+   const cancelarEntrega = useMutation({
+     retry: false,
+-    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => runDeliveryOperation(id, async (check, dispatch) => {
++    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => runDeliveryOperation("cancel", async (check, dispatch) => {
+       if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) throw new Error("Entrega inválida.");
+       const { data: entrega, error: fetchErr } = await supabase
+         .from("entregas")
+@@ -881,10 +890,10 @@ export default function Entregas() {
+         }
+       />
+ 
+-      {operationNotice && <div role="alert" className="border border-destructive rounded-md p-3 space-y-2">
+-        <p>{operationNotice}</p>
++      <div role="alert" className="border border-destructive rounded-md p-3 space-y-2">
++        <p>{operationNotice || DELIVERY_OPERATION_BLOCK}</p>
+         <Button variant="outline" onClick={() => { if (deliveryScope.ready) { void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
+-      </div>}
++      </div>
+       <RegistrarEntregaDialog
+         key={deliveryScope.scope}
+         open={open}
+diff --git a/src/pages/financeiro/EntregasNaoFaturadas.tsx b/src/pages/financeiro/EntregasNaoFaturadas.tsx
+index 4be02a95b..78b461567 100644
+--- a/src/pages/financeiro/EntregasNaoFaturadas.tsx
++++ b/src/pages/financeiro/EntregasNaoFaturadas.tsx
+@@ -1,5 +1,5 @@
+-import { useMemo, useState } from "react";
+-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
++import { useEffect, useMemo, useState } from "react";
++import { useMutation, useQueryClient } from "@tanstack/react-query";
+ import { supabase } from "@/integrations/supabase/client";
+ import { Card, CardContent } from "@/components/ui/card";
+ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
+ import { Textarea } from "@/components/ui/textarea";
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+ import { toast } from "sonner";
++import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
++import { DELIVERY_FINANCE_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+ 
+ const MOTIVOS = [
+   { value: "bonificacao", label: "Bonificação" },
+@@ -31,8 +33,9 @@ export default function EntregasNaoFaturadas() {
+   const [motivo, setMotivo] = useState("");
+   const [justificativa, setJustificativa] = useState("");
+ 
+-  const { data: items = [] } = useQuery({
++  const { data: items = [], isError, isLoading, refetch, ready, scope } = useScopedPortalQuery<any[]>({
+     queryKey: ["entregas-nao-faturadas"],
++    retry: false,
+     queryFn: async () => {
+       const q: any = supabase
+         .from("entregas")
+@@ -48,6 +51,10 @@ export default function EntregasNaoFaturadas() {
+       return (data || []) as any[];
+     },
+   });
++  useEffect(() => {
++    setSel(null); setNbTarget(null); setMotivo(""); setJustificativa("");
++  }, [scope]);
++  const unavailable = !ready || isError;
+ 
+ 
+   const totals = useMemo(() => {
+@@ -66,7 +73,9 @@ export default function EntregasNaoFaturadas() {
+   }, [items]);
+ 
+   const markNB = useMutation({
++    retry: false,
+     mutationFn: async () => {
++      requireDeliveryOperationContract("finance");
+       if (!nbTarget) throw new Error("Entrega inválida");
+       if (!motivo || !justificativa.trim()) throw new Error("Informe motivo e justificativa");
+       const reason = `${MOTIVOS.find((m) => m.value === motivo)?.label}: ${justificativa.trim()}`;
+@@ -86,12 +95,13 @@ export default function EntregasNaoFaturadas() {
+ 
+   return (
+     <div className="space-y-4 p-4 sm:p-6">
+-      <PageHeader title="Entregas não faturadas" description={`${items.length} entrega(s) aguardando geração financeira`} />
++      <PageHeader title="Entregas não faturadas" description={unavailable ? "Consulta indisponível" : isLoading ? "Carregando entregas" : `${items.length} entrega(s) no filtro atual`} />
++      <p role="alert" className="text-sm text-destructive">{DELIVERY_FINANCE_BLOCK}</p>
+ 
+       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+-        <KpiCard label="Entregas pendentes" value={String(totals.count)} icon={Truck} tone="warning" />
+-        <KpiCard label="Valor estimado" value={brl(totals.valor)} icon={Wallet} tone="default" />
+-        <KpiCard label="Pendentes > 7 dias" value={String(totals.old)} icon={Ban} tone={totals.old > 0 ? "danger" : "default"} />
++        <KpiCard label="Entregas pendentes" value={unavailable || isLoading ? "—" : String(totals.count)} icon={Truck} tone="warning" />
++        <KpiCard label="Valor estimado" value={unavailable || isLoading ? "—" : brl(totals.valor)} icon={Wallet} tone="default" />
++        <KpiCard label="Pendentes > 7 dias" value={unavailable || isLoading ? "—" : String(totals.old)} icon={Ban} tone={totals.old > 0 ? "danger" : "default"} />
+       </div>
+ 
+       <Card>
+@@ -110,8 +120,12 @@ export default function EntregasNaoFaturadas() {
+               </TableRow>
+             </TableHeader>
+             <TableBody>
+-              {items.length === 0 ? (
+-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Tudo faturado 🎉</TableCell></TableRow>
++              {unavailable ? (
++                <TableRow><TableCell colSpan={8}>Não foi possível consultar as entregas. <Button variant="outline" onClick={() => void refetch()}>Tentar novamente</Button></TableCell></TableRow>
++              ) : isLoading ? (
++                <TableRow><TableCell colSpan={8}>Carregando entregas...</TableCell></TableRow>
++              ) : items.length === 0 ? (
++                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma entrega no filtro atual.</TableCell></TableRow>
+               ) : items.map((e: any) => {
+                 const valor = Number(e.quantidade_entregue || 0) * Number(e.produtos?.valor_litro_brl || 0);
+                 const cs = e.comprovante_status || "pendente";
+@@ -147,7 +161,7 @@ export default function EntregasNaoFaturadas() {
+                           <ShieldCheck className="h-3.5 w-3.5" />
+                         </Button>
+                       )}
+-                      <Button size="sm" onClick={() => setSel(e)}>Faturar</Button>
++                      <Button size="sm" onClick={() => setSel(e)}>Consultar financeiro</Button>
+                       <Button size="sm" variant="outline" onClick={() => setNbTarget(e)} title="Marcar como sem cobrança">
+                         <Ban className="h-3.5 w-3.5" />
+                       </Button>
+diff --git a/src/test/entregas/assinaturaComprovante.test.tsx b/src/test/entregas/assinaturaComprovante.test.tsx
+index 81534b4aa..40c2f1316 100644
+--- a/src/test/entregas/assinaturaComprovante.test.tsx
++++ b/src/test/entregas/assinaturaComprovante.test.tsx
+@@ -299,92 +299,11 @@ describe("EntregaComprovantePanel — ações de comprovação isoladas por entr
+     );
+   });
+ 
+-  it("confirmar: falha tardia da entrega antiga não fecha o diálogo nem limpa ressalvas da nova", async () => {
+-    fromMock.mockImplementation((tabela: string) =>
+-      tabela === "entregas"
+-        ? chain({ data: { id: "x", comprovante_status: "anexado", validation_token: null } })
+-        : chain({ data: { numero_formulario: "AR-ENT-000004" } }),
+-    );
+-    const d = deferred<any>();
+-    rpcMock.mockReturnValueOnce(d.promise);
+-    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
+-    fireEvent.click(await screen.findByRole("button", { name: /confirmar recebimento/i }));
+-    fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i), { target: { value: "caixa amassada" } });
+-    fireEvent.click(screen.getByRole("button", { name: /^confirmar$/i }));
+-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+-    // Payload capturado no início.
+-    expect(rpcMock.mock.calls[0][1].p_payload.ressalvas).toBe("caixa amassada");
+-
+-    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
+-    fireEvent.click(await screen.findByRole("button", { name: /confirmar recebimento/i }));
+-    fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i), { target: { value: "nova" } });
+-    toastMock.mockClear();
+-    d.resolve({ data: null, error: { message: "falha" } });
+-    await Promise.resolve();
+-    await Promise.resolve();
+-    expect(toastMock).not.toHaveBeenCalled();
+-    expect((screen.getByPlaceholderText(/descreva ressalvas/i) as HTMLTextAreaElement).value).toBe("nova");
+-    expect(screen.getByRole("button", { name: /^confirmar$/i })).not.toBeDisabled();
+-  });
+-
+-  it("dispensar: troca de entrega reseta o motivo e o término antigo não afeta a nova", async () => {
+-    const d = deferred<any>();
+-    rpcMock.mockReturnValueOnce(d.promise);
+-    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
+-    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
+-    fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i), { target: { value: "cliente ausente" } });
+-    fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i }));
+-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+-    expect(rpcMock.mock.calls[0][1].p_motivo).toBe("cliente ausente");
+-
+-    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
+-    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
+-    expect((screen.getByPlaceholderText(/mínimo 5 caracteres/i) as HTMLTextAreaElement).value).toBe("");
+-    toastMock.mockClear();
+-    d.resolve({ data: null, error: null });
+-    await Promise.resolve();
+-    await Promise.resolve();
+-    expect(toastMock).not.toHaveBeenCalled();
++  it('confirmar recebimento não envia RPC e preserva ressalvas',async()=>{
++    fromMock.mockImplementation((tabela:string)=>tabela==='entregas'?chain({data:{id:'x',comprovante_status:'anexado',validation_token:null}}):chain({data:{numero_formulario:'AR-ENT-000004'}}));
++    render(<EntregaComprovantePanel entrega={{id:'e1'}}/>,{wrapper});fireEvent.click(await screen.findByRole('button',{name:/confirmar recebimento/i}));fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i),{target:{value:'caixa amassada'}});fireEvent.click(screen.getByRole('button',{name:/^confirmar$/i}));await waitFor(()=>expect(toastMock).toHaveBeenCalled());expect(rpcMock).not.toHaveBeenCalled();expect(uploadMock).not.toHaveBeenCalled();expect(screen.getByPlaceholderText(/descreva ressalvas/i)).toHaveValue('caixa amassada');
+   });
+-});
+-
+-describe("EntregaComprovantePanel — término antigo não destrava a ação nova", () => {
+-  it("ação de B em voo continua travada quando a ação de A termina", async () => {
+-    const dA = deferred<any>();
+-    const dB = deferred<any>();
+-    rpcMock.mockReturnValueOnce(dA.promise).mockReturnValueOnce(dB.promise);
+-    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
+-
+-    // A: dispensa em voo.
+-    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
+-    fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i), { target: { value: "motivo de A" } });
+-    fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i }));
+-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+-
+-    // Troca para B e inicia a ação de B, que fica pendente.
+-    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
+-    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
+-    fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i), { target: { value: "motivo de B" } });
+-    fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i }));
+-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
+-    expect(rpcMock.mock.calls[1][1].p_motivo).toBe("motivo de B");
+-    const botaoB = screen.getByRole("button", { name: /^dispensar$/i });
+-    expect(botaoB).toBeDisabled();
+-
+-    // A termina: não pode destravar B nem fechar o diálogo de B.
+-    toastMock.mockClear();
+-    dA.resolve({ data: null, error: null });
+-    await Promise.resolve();
+-    await Promise.resolve();
+-    expect(toastMock).not.toHaveBeenCalled();
+-    expect(screen.getByRole("button", { name: /^dispensar$/i })).toBeDisabled();
+-    expect(screen.getByRole("button", { name: /cancelar/i })).toBeDisabled();
+-    expect(screen.getByPlaceholderText(/mínimo 5 caracteres/i)).toBeDisabled();
+-
+-    // Só o término de B libera.
+-    dB.resolve({ data: null, error: null });
+-    await waitFor(() =>
+-      expect(screen.queryByPlaceholderText(/mínimo 5 caracteres/i)).toBeNull(),
+-    );
++  it('dispensa não envia RPC e preserva motivo',async()=>{
++    render(<EntregaComprovantePanel entrega={{id:'e1'}}/>,{wrapper});fireEvent.click(await screen.findByRole('button',{name:/dispensar assinatura/i}));fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i),{target:{value:'cliente ausente'}});fireEvent.click(screen.getByRole('button',{name:/^dispensar$/i}));await waitFor(()=>expect(toastMock).toHaveBeenCalled());expect(rpcMock).not.toHaveBeenCalled();expect(uploadMock).not.toHaveBeenCalled();expect(screen.getByPlaceholderText(/mínimo 5 caracteres/i)).toHaveValue('cliente ausente');
+   });
+ });
+diff --git a/src/test/entregas/conferenciaQrTermo.test.tsx b/src/test/entregas/conferenciaQrTermo.test.tsx
+index 4e2ce07b5..0d3100875 100644
+--- a/src/test/entregas/conferenciaQrTermo.test.tsx
++++ b/src/test/entregas/conferenciaQrTermo.test.tsx
+@@ -60,91 +60,10 @@ beforeEach(() => {
+   vi.clearAllMocks();
+ });
+ 
+-describe("ConferenciaEmbalagemQR", () => {
+-  const digitar = (valor: string) =>
+-    fireEvent.change(screen.getByLabelText(/Código da embalagem/i), { target: { value: valor } });
+-
+-  it("Enter com campo vazio não chama a RPC", () => {
+-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
+-    fireEvent.keyDown(screen.getByLabelText(/Código da embalagem/i), { key: "Enter" });
+-    expect(rpcMock).not.toHaveBeenCalled();
+-  });
+-
+-  it("Enter duplo durante a leitura não duplica a movimentação", async () => {
+-    const d = deferred<any>();
+-    rpcMock.mockReturnValue(d.promise);
+-
+-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
+-    digitar("EMB-1");
+-    const input = screen.getByLabelText(/Código da embalagem/i);
+-    fireEvent.keyDown(input, { key: "Enter" });
+-    fireEvent.keyDown(input, { key: "Enter" });
+-    fireEvent.keyDown(input, { key: "Enter" });
+-
+-    expect(rpcMock).toHaveBeenCalledTimes(1);
+-    await act(async () => {
+-      d.resolve({ data: { found: false }, error: null });
+-    });
+-  });
+-
+-  it("embalagem sem vínculo avisa explicitamente e não indica sucesso", async () => {
+-    rpcMock.mockResolvedValue({
+-      data: { found: true, codigo_embalagem: "EMB-1", status: "disponivel", volume: 1, unidade: "L", entrega_id: null },
+-      error: null,
+-    });
+-
+-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
+-    digitar("EMB-1");
+-    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+-
+-    expect(await screen.findByTestId("qr-sem-vinculo")).toHaveTextContent(
+-      "Embalagem não vinculada a esta entrega",
+-    );
+-    expect(screen.queryByTestId("qr-pertence")).not.toBeInTheDocument();
+-  });
+-
+-  it("resposta antiga (A→B→A) não sobrescreve a leitura da entrega atual", async () => {
+-    const antiga = deferred<any>();
+-    rpcMock.mockReturnValueOnce(antiga.promise);
+-
+-    const { rerender } = render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
+-    digitar("EMB-ANTIGA");
+-    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+-
+-    rerender(<ConferenciaEmbalagemQR entregaId="B" />);
+-    rerender(<ConferenciaEmbalagemQR entregaId="A" />);
+-
+-    await act(async () => {
+-      antiga.resolve({
+-        data: { found: true, codigo_embalagem: "EMB-ANTIGA", status: "disponivel", volume: 1, unidade: "L", entrega_id: "A" },
+-        error: null,
+-      });
+-    });
+-
+-    expect(screen.queryByText("EMB-ANTIGA")).not.toBeInTheDocument();
+-    expect(screen.queryByTestId("qr-carregando")).not.toBeInTheDocument();
+-  });
+-
+-  it("rejeição tardia da leitura antiga não trava nem exibe erro na entrega nova", async () => {
+-    const antiga = deferred<any>();
+-    rpcMock.mockReturnValueOnce(antiga.promise);
+-
+-    const { rerender } = render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
+-    digitar("EMB-ANTIGA");
+-    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+-
+-    rerender(<ConferenciaEmbalagemQR entregaId="B" />);
+-    await act(async () => {
+-      antiga.reject(new Error("timeout interno"));
+-    });
+-
+-    expect(screen.queryByTestId("qr-erro")).not.toBeInTheDocument();
+-
+-    rpcMock.mockResolvedValueOnce({ data: { found: false }, error: null });
+-    fireEvent.change(screen.getByLabelText(/Código da embalagem/i), { target: { value: "EMB-B" } });
+-    fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
+-  });
++describe('Conferência QR de entrega contida antes da movimentação',()=>{
++ it('Enter vazio não envia',()=>{render(<ConferenciaEmbalagemQR entregaId="A"/>,{wrapper});fireEvent.keyDown(screen.getByLabelText(/Código da embalagem/i),{key:'Enter'});expect(rpcMock).not.toHaveBeenCalled();});
++ it('código preenchido e Enter/clique duplo não enviam movimentação',async()=>{render(<ConferenciaEmbalagemQR entregaId="A"/>,{wrapper});fireEvent.change(screen.getByLabelText(/Código da embalagem/i),{target:{value:'EMB-1'}});fireEvent.keyDown(screen.getByLabelText(/Código da embalagem/i),{key:'Enter'});fireEvent.click(screen.getByRole('button',{name:'Conferir'}));await screen.findByTestId('qr-erro');expect(rpcMock).not.toHaveBeenCalled();});
++ it('QR independente sem entrega conserva contrato existente',async()=>{rpcMock.mockResolvedValue({data:{found:false},error:null});render(<ConferenciaEmbalagemQR/>,{wrapper});fireEvent.change(screen.getByLabelText(/Código da embalagem/i),{target:{value:'EMB-1'}});fireEvent.click(screen.getByRole('button',{name:'Conferir'}));await waitFor(()=>expect(rpcMock).toHaveBeenCalledTimes(1));});
+ });
+ 
+ describe("quantidade da conferência", () => {
+@@ -284,16 +203,16 @@ describe("TermoEntregaPanel", () => {
+ });
+ 
+ describe("lacunas da revisão independente", () => {
+-  it("QR: editar o código limpa o resultado anterior", async () => {
++  it("QR independente: editar o código limpa o resultado anterior", async () => {
+     rpcMock.mockResolvedValue({
+       data: { found: true, codigo_embalagem: "EMB-1", status: "disponivel", volume: 1, unidade: "L", entrega_id: "A" },
+       error: null,
+     });
+-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
++    render(<ConferenciaEmbalagemQR />, { wrapper });
+     const input = screen.getByLabelText(/Código da embalagem/i);
+     fireEvent.change(input, { target: { value: "EMB-1" } });
+     fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+-    expect(await screen.findByTestId("qr-pertence")).toBeInTheDocument();
++    expect(await screen.findByText("EMB-1")).toBeInTheDocument();
+ 
+     fireEvent.change(input, { target: { value: "EMB-2" } });
+     expect(screen.queryByTestId("qr-pertence")).not.toBeInTheDocument();
+@@ -303,7 +222,7 @@ describe("lacunas da revisão independente", () => {
+   it("QR: campo fica travado enquanto a leitura está pendente", async () => {
+     const d = deferred<any>();
+     rpcMock.mockReturnValue(d.promise);
+-    render(<ConferenciaEmbalagemQR entregaId="A" />, { wrapper });
++    render(<ConferenciaEmbalagemQR />, { wrapper });
+     const input = screen.getByLabelText(/Código da embalagem/i) as HTMLInputElement;
+     fireEvent.change(input, { target: { value: "EMB-1" } });
+     fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+diff --git a/src/test/entregas/confirmacaoEntregaAck.test.tsx b/src/test/entregas/confirmacaoEntregaAck.test.tsx
+index 7924be54e..fd63915bd 100644
+--- a/src/test/entregas/confirmacaoEntregaAck.test.tsx
++++ b/src/test/entregas/confirmacaoEntregaAck.test.tsx
+@@ -20,37 +20,8 @@ function mount() {
+ }
+ beforeEach(() => { vi.clearAllMocks(); t.auth = { user: { id }, profile: { user_id: id, organization_id: id, ativo: true }, roles: ['gestor'], loading: false, authzReady: true, authzEpoch: 0 }; t.rpc.mockResolvedValue({ data: { success: true, entrega_id: id, replay: false }, error: null }); });
+ afterEach(() => { cleanup(); vi.useRealTimers(); });
+-describe('Confirmação existente com transporte simulado — não libera RPC fechada', () => {
+- it.each([null, { ok: false }, { success: true }, { success: true, entrega_id: 'other', replay: false }])('ACK inválido preserva dialog/draft: %j', async data => {
+-   t.rpc.mockResolvedValue({ data, error: null }); const h = mount();
+-   fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
+-   await waitFor(() => expect(t.toast).toHaveBeenCalled());
+-   expect(t.close).not.toHaveBeenCalled(); expect(t.confirmed).not.toHaveBeenCalled(); expect(h.invalidate).not.toHaveBeenCalled(); expect(t.rpc).toHaveBeenCalledTimes(1); expect(screen.getByPlaceholderText('Nome de quem recebeu na fazenda')).toHaveValue('Recebedor'); h.qc.clear();
+- });
+- it('dupla ação não envia dois dispatches', async () => {
+-   let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); const b = screen.getByRole('button', { name: 'Confirmar entrega' });
+-   act(() => { fireEvent.click(b); fireEvent.click(b); });
+-   await waitFor(() => expect(t.rpc).toHaveBeenCalledTimes(1));
+-   await act(async () => { done({ data: { success: true, entrega_id: id, replay: true }, error: null }); });
+-   await waitFor(() => expect(t.confirmed).toHaveBeenCalledWith('bill_later', id)); h.qc.clear();
+- });
+- it.each(['tenant','epoch','entrega'])('ACK tardio %s não fecha nem invalida', async change => {
+-   let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
+-   await waitFor(() => expect(t.rpc).toHaveBeenCalledTimes(1));
+-   if (change === 'tenant') t.auth.profile.organization_id = 'other'; if (change === 'epoch') t.auth.authzEpoch++;
+-   h.rerender(h.element(change === 'entrega' ? '22222222-2222-4222-8222-222222222222' : id));
+-   await act(async () => { done({ data: { success: true, entrega_id: id, replay: false }, error: null }); });
+-   expect(t.close).not.toHaveBeenCalled(); expect(t.confirmed).not.toHaveBeenCalled(); expect(h.invalidate).not.toHaveBeenCalled(); h.qc.clear();
+- });
+-
+- it('timeout confirma incerteza e ACK tardio não fecha/invalida', async () => {
+-   let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); vi.useFakeTimers();
+-   fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
+-   await act(async () => { await vi.advanceTimersByTimeAsync(30001); });
+-   expect(t.toast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Não foi possível confirmar' }));
+-   fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
+-   await act(async () => { await Promise.resolve(); }); expect(t.rpc).toHaveBeenCalledTimes(1);
+-   await act(async () => { done({ data: { success: true, entrega_id: id, replay: false }, error: null }); });
+-   expect(t.close).not.toHaveBeenCalled(); expect(h.invalidate).not.toHaveBeenCalled(); h.qc.clear();
+- });
++describe('Confirmação real contida, sem upload/metadados/RPC',()=>{
++ it('confirmação não chama RPC nem sucesso/cache',async()=>{const h=mount();fireEvent.click(screen.getByRole('button',{name:'Confirmar entrega'}));await waitFor(()=>expect(t.toast).toHaveBeenCalled());expect(t.rpc).not.toHaveBeenCalled();expect(t.close).not.toHaveBeenCalled();expect(t.confirmed).not.toHaveBeenCalled();expect(h.invalidate).not.toHaveBeenCalled();h.qc.clear();});
++ it('arquivo pendente não inicia upload nem inserção',async()=>{const h=mount();const input=document.querySelector('input[type=file]');expect(input).not.toBeNull();if(input)fireEvent.change(input,{target:{files:[new File(['evidence'],'test.pdf',{type:'application/pdf'})]}});fireEvent.click(screen.getByRole('button',{name:'Confirmar entrega'}));await waitFor(()=>expect(t.toast).toHaveBeenCalled());expect(t.toast).toHaveBeenCalledWith(expect.objectContaining({description:expect.stringContaining('Nenhuma alteração')}));expect(t.rpc).not.toHaveBeenCalled();expect(t.close).not.toHaveBeenCalled();h.qc.clear();});
++ it('duplo clique e remount permanecem contidos',async()=>{let h=mount();fireEvent.click(screen.getByRole('button',{name:'Confirmar entrega'}));fireEvent.click(screen.getByRole('button',{name:'Confirmar entrega'}));await waitFor(()=>expect(t.toast).toHaveBeenCalled());h.unmount();h.qc.clear();h=mount();fireEvent.click(screen.getByRole('button',{name:'Confirmar entrega'}));await waitFor(()=>expect(t.toast).toHaveBeenCalled());expect(t.rpc).not.toHaveBeenCalled();h.qc.clear();});
+ });
+diff --git a/src/test/entregas/consumidorEntrega.test.tsx b/src/test/entregas/consumidorEntrega.test.tsx
+index 1676303d0..194db09e3 100644
+--- a/src/test/entregas/consumidorEntrega.test.tsx
++++ b/src/test/entregas/consumidorEntrega.test.tsx
+@@ -26,82 +26,32 @@ function chain(table: string) { let selected = ''; let updating = false; const c
+ function mount() { const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: 3 } } }); const invalid = vi.spyOn(qc, 'invalidateQueries'); const wrapper = ({ children }: PropsWithChildren) => <QueryClientProvider client={qc}><MemoryRouter>{children}</MemoryRouter></QueryClientProvider>; const h = render(<Entregas />, { wrapper }); return { ...h, qc, invalid }; }
+ beforeEach(() => { vi.clearAllMocks(); t.updates = []; t.rows = []; t.auth = { user: { id: ids[2] }, profile: { user_id: ids[2], organization_id: ids[4], ativo: true }, role: 'gestor', roles: ['gestor'], loading: false, authzReady: true, authzEpoch: 0 }; t.from.mockImplementation(chain); t.rpc.mockResolvedValue({ data: ack, error: null }); t.motor.mockResolvedValue({ ok: true, replay: false, acao: 'expedicao', estoque_produto_id: ids[1], movimentacao_id: ids[2], saldo_anterior: 1, saldo_posterior: 0, reservado_anterior: 1, reservado_posterior: 0, status_anterior: 'reservado', status_novo: 'expedido' }); });
+ afterEach(() => { cleanup(); vi.useRealTimers(); });
+-describe('Página Entregas real / hook real / QueryClient real; Auth e transporte simulados', () => {
+- it('dupla submissão despacha uma criação', async () => { let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); let a: any, b: any; act(() => { a = t.submit(payload()).catch((e: any) => e); b = t.submit(payload()).catch((e: any) => e); }); await waitFor(() => expect(t.rpc).toHaveBeenCalledTimes(1)); await act(async () => { done({ data: ack, error: null }); await Promise.all([a,b]); }); expect(await b).toBeInstanceOf(Error); h.qc.clear(); });
+- it('motor ok:false não anuncia grupo concluído nem compensa ficticiamente', async () => { t.motor.mockResolvedValue({ ok: false }); const h = mount(); await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); }); expect(t.success).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear(); });
+- it('falha item N conserva efeitos conhecidos sem rollback direto', async () => { t.rpc.mockResolvedValueOnce({ data: ack, error: null }).mockResolvedValueOnce({ data: null, error: { code: 'PT409', message: 'conflito' } }); const h = mount(); await act(async () => { await expect(t.submit(payload(2))).rejects.toThrow(); }); expect(t.rpc).toHaveBeenCalledTimes(2); expect(t.updates).toEqual([]); expect(t.success).not.toHaveBeenCalled(); h.qc.clear(); });
+- it.each(['tenant','ator','epoch'])('ACK tardio após %s não expede/invalida/sucesso', async change => { let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); let a: any; act(() => { a = t.submit(payload()).catch((e: any) => e); }); await waitFor(() => expect(t.rpc).toHaveBeenCalledTimes(1)); if (change === 'tenant') t.auth.profile.organization_id = ids[0]; if (change === 'ator') t.auth.user.id = ids[0]; if (change === 'epoch') t.auth.authzEpoch++; h.rerender(<Entregas />); await act(async () => { done({ data: ack, error: null }); await a; }); expect(await a).toBeInstanceOf(Error); expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.success).not.toHaveBeenCalled(); h.qc.clear(); });
+-
+- it.each([null, { success: true }, { success: true, ok: false, entrega_id: ids[3] }, { success: true, entrega_id: 'invalid' }, { success: true, entrega_id: ids[3], replay: 'true' }])('ACK criação inválido não expede/invalida: %j', async data => {
+-   t.rpc.mockResolvedValue({ data, error: null }); const h = mount();
+-   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
+-   expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
++describe('Contenção real antes do primeiro dispatch da página', () => {
++ it.each([1,2])('grupo com %s itens não reserva/cria/expede/estorna', async n => {
++  const h=mount(); await act(async()=>{ await expect(t.submit(payload(n))).rejects.toThrow(); });
++  expect(t.rpc).not.toHaveBeenCalled(); expect(t.motor).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); expect(t.success).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); h.qc.clear();
+  });
+- it.each(['PT409','42501','55P03'])('erro %s não repete nem apaga efeitos', async code => {
+-   t.rpc.mockResolvedValue({ data: null, error: { code, message: code } }); const h = mount();
+-   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
+-   expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.updates).toEqual([]); expect(h.invalid).not.toHaveBeenCalled(); h.qc.clear();
++ it('lote disponível não recebe reserva nem auditoria', async()=>{
++  const p=payload(); Object.assign(p.itens[0].item,{status:'disponivel',reservado_para_os_id:null}); const h=mount();
++  await act(async()=>{await expect(t.submit(p)).rejects.toThrow();}); expect(t.rpc).not.toHaveBeenCalled(); expect(t.motor).not.toHaveBeenCalled(); h.qc.clear();
+  });
+- it('ACK perdido bloqueia reenvio explícito e não faz compensação', async () => {
+-   t.rpc.mockRejectedValue(new TypeError('Failed to fetch')); const h = mount();
+-   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); await expect(t.submit(payload())).rejects.toThrow(); });
+-   expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.updates).toEqual([]); expect(h.invalid).not.toHaveBeenCalled(); h.qc.clear();
++ it.each(['separado','em_rota'])('cancelamento %s não altera status nem estorna',async status=>{
++  t.rows=[{id:ids[3],status,estoque_produto_id:ids[1],clientes:{nome:'Cliente'}}]; const h=mount();
++  fireEvent.click((await screen.findAllByRole('button',{name:'Cancelar'}))[0]); fireEvent.click(screen.getByRole('button',{name:'Confirmar cancelamento'}));
++  await waitFor(()=>expect(t.error).toHaveBeenCalled()); expect(t.updates).toEqual([]); expect(t.rpc).not.toHaveBeenCalled(); expect(t.motor).not.toHaveBeenCalled(); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
+  });
+- it('resultado positivo invalida só caches do ator capturado', async () => {
+-   const h = mount(); h.qc.setQueryData(['entregas','other-actor','other-request'], [{ id: 'foreign' }]);
+-   await act(async () => { await t.submit(payload()); });
+-   expect(t.success).toHaveBeenCalledTimes(1); expect(h.invalid).toHaveBeenCalledTimes(2);
+-   for (const [filters] of h.invalid.mock.calls) expect(filters?.predicate?.({ queryKey: ['entregas','other-actor','other-request'] } as any)).toBe(false);
+-   h.qc.clear();
++ it('envio em rota não faz UPDATE',async()=>{
++  t.rows=[{id:ids[3],status:'separado',clientes:{nome:'Cliente'}}];const h=mount(); fireEvent.click((await screen.findAllByRole('button',{name:'Enviar'}))[0]);
++  await waitFor(()=>expect(t.error).toHaveBeenCalled()); expect(t.updates).toEqual([]); expect(t.rpc).not.toHaveBeenCalled();h.qc.clear();
+  });
+- it('parcial válido não expede reserva completa prematuramente', async () => {
+-   const h = mount(); const p = payload(); p.itens[0].item.quantidade_reservada = 5;
+-   await act(async () => { await t.submit(p); });
+-   expect(t.motor).not.toHaveBeenCalled(); expect(t.success).toHaveBeenCalledTimes(1); h.qc.clear();
++ it.each(['gestor','administrador','financeiro','parceiro_b2b','cliente_produtor'])('papel %s não abre o contrato',async role=>{
++  t.auth.role=role;t.auth.roles=[role]; const h=mount(); await act(async()=>{await expect(t.submit(payload())).rejects.toThrow();}); expect(t.rpc).not.toHaveBeenCalled();expect(t.updates).toEqual([]);h.qc.clear();
+  });
+- it('timeout abandona etapas posteriores mesmo com ACK tardio', async () => {
+-   let done: any; t.rpc.mockImplementation(() => new Promise(r => { done = r; })); const h = mount(); let request: any;
+-   vi.useFakeTimers(); act(() => { request = t.submit(payload()).catch((e: any) => e); });
+-   await act(async () => { await vi.advanceTimersByTimeAsync(30001); });
+-   expect(await request).toBeInstanceOf(Error);
+-   await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
+-   expect(t.rpc).toHaveBeenCalledTimes(1);
+-   await act(async () => { done({ data: ack, error: null }); await Promise.resolve(); });
+-   expect(t.motor).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear();
++ it('remount, tenant e dupla ação nunca abrem dispatch',async()=>{
++  const h=mount();await act(async()=>{await Promise.all([t.submit(payload()).catch(()=>{}),t.submit(payload()).catch(()=>{})]);});h.unmount();h.qc.clear();
++  t.auth.profile.organization_id=ids[0];const next=mount();await act(async()=>{await expect(t.submit(payload())).rejects.toThrow();});expect(t.rpc).not.toHaveBeenCalled();expect(t.motor).not.toHaveBeenCalled();expect(t.updates).toEqual([]);next.qc.clear();
+  });
+- it('cancelamento com estorno negativo mantém draft e não anuncia sucesso', async () => {
+-   t.rows = [{ id: ids[3], status: 'em_rota', estoque_produto_id: ids[1], clientes: { nome: 'Cliente' } }];
+-   t.motor.mockResolvedValue({ ok: false }); const h = mount();
+-   await waitFor(() => expect(screen.getAllByRole('button', { name: 'Cancelar' }).length).toBeGreaterThan(0));
+-   fireEvent.click(screen.getAllByRole('button', { name: 'Cancelar' })[0]);
+-   const button = screen.getByRole('button', { name: 'Confirmar cancelamento' });
+-   await act(async () => { fireEvent.click(button); fireEvent.click(button); });
+-   await waitFor(() => expect(t.motor).toHaveBeenCalledTimes(1));
+-   expect(t.updates).toHaveLength(1); expect(t.success).not.toHaveBeenCalled();
+-   expect(screen.getByRole('button', { name: 'Confirmar cancelamento' })).toBeInTheDocument(); h.qc.clear();
+- });
+-
+- it.each([{ ok: true }, { ok: true, replay: false, acao: 'expedicao', movimentacao_id: ids[2], estoque_produto_id: ids[0] }])('ACK estoque parcial/alheio não vira sucesso: %j', async response => {
+-   t.motor.mockResolvedValue(response); const h = mount(); await act(async () => { await expect(t.submit(payload())).rejects.toThrow(); });
+-   expect(t.success).not.toHaveBeenCalled(); expect(h.invalid).not.toHaveBeenCalled(); expect(t.updates).toEqual([]); h.qc.clear();
+- });
+- it('reserva sem UUID confirmado não continua criação', async () => {
+-   const p = payload(); Object.assign(p.itens[0].item, { reservado_para_os_id: null, status: 'disponivel' });
+-   t.from.mockImplementation(table => { const c = chain(table); if (table === 'ordens_servico') c.then = (yes: any) => Promise.resolve({ data: [{ id: ids[0], cliente_id: ids[3] }], error: null }).then(yes); return c; });
+-   t.rpc.mockResolvedValue({ data: { ok: false }, error: null }); const h = mount();
+-   await waitFor(() => expect(h.qc.getQueryCache().findAll({ queryKey: ['todas-os-disponiveis'] })[0]?.state.status).toBe('success'));
+-   await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+-   await act(async () => { await expect(t.submit(p)).rejects.toThrow('Falha ao reservar'); });
+-   expect(t.rpc).toHaveBeenCalledTimes(1); expect(t.rpc.mock.calls[0][0]).toBe('reservar_estoque_item'); expect(t.success).not.toHaveBeenCalled(); h.qc.clear();
+- });
+-
+- it('reserva parcial usa UUID da linha split retornada sem tratar como erro', async () => {
+-   const p = payload(); Object.assign(p.itens[0].item, { reservado_para_os_id: null, status: 'disponivel' });
+-   t.from.mockImplementation(table => { const c = chain(table); if (table === 'ordens_servico') c.then = (yes: any) => Promise.resolve({ data: [{ id: ids[0], cliente_id: ids[3] }], error: null }).then(yes); return c; });
+-   t.rpc.mockResolvedValueOnce({ data: ids[2], error: null }).mockResolvedValueOnce({ data: ack, error: null }); const h = mount();
+-   await waitFor(() => expect(h.qc.getQueryCache().findAll({ queryKey: ['todas-os-disponiveis'] })[0]?.state.status).toBe('success'));
+-   await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+-   await act(async () => { await t.submit(p); });
+-   expect(t.rpc.mock.calls[1][1].p_estoque_produto_id).toBe(ids[2]); expect(t.success).toHaveBeenCalledTimes(1); h.qc.clear();
++ it('consulta existente conserva linhas sem operações',async()=>{
++  t.rows=[{id:ids[3],status:'entregue',clientes:{nome:'Cliente autorizado'}}];const h=mount();await screen.findByText('Cliente autorizado');expect(t.from).toHaveBeenCalledWith('entregas');expect(t.rpc).not.toHaveBeenCalled();h.qc.clear();
+  });
+ });
+diff --git a/src/test/entregas/deliveryContainmentStock.test.tsx b/src/test/entregas/deliveryContainmentStock.test.tsx
+new file mode 100644
+index 000000000..886a437f9
+--- /dev/null
++++ b/src/test/entregas/deliveryContainmentStock.test.tsx
+@@ -0,0 +1,18 @@
++import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
++import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { afterEach, beforeEach, expect, it, vi } from 'vitest';
++const t=vi.hoisted(()=>({rpc:vi.fn(),toast:vi.fn()}));
++vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:t.rpc,from:()=>{const c:any={select:()=>c,eq:()=>c,neq:()=>c,order:()=>c,limit:()=>c,then:(yes:any)=>Promise.resolve({data:[{id:'E',status:'reservado',codigo_embalagem:'EMB-1'}],error:null}).then(yes)};return c;}}}));
++vi.mock('@/hooks/use-toast',()=>({useToast:()=>({toast:t.toast})}));
++vi.mock('@/components/estoque/ConferenciaEmbalagemQR',()=>({ConferenciaEmbalagemQR:()=>null}));
++import { operarEstoque } from '@/lib/estoque/motorEstoque';
++import { EmbalagensEntregaPanel } from '@/components/estoque/EmbalagensEntregaPanel';
++import { ReservarEmbalagemEntregaDialog } from '@/components/estoque/ReservarEmbalagemEntregaDialog';
++beforeEach(()=>{vi.clearAllMocks();t.rpc.mockResolvedValue({data:{ok:true},error:null});});
++afterEach(cleanup);
++function wrapper({children}:{children:React.ReactNode}){return <QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}>{children}</QueryClientProvider>;}
++it.each(['expedicao','entrega','estorno_expedicao'] as const)('motor %s não envia RPC sem contrato de entrega',async acao=>{await expect(operarEstoque(acao,'item',1,'key')).rejects.toThrow();expect(t.rpc).not.toHaveBeenCalled();});
++it('referência entrega não burla contenção com ação ajuste',async()=>{await expect(operarEstoque('ajuste','item',1,'key',{referencia_tipo:'entrega'})).rejects.toThrow();expect(t.rpc).not.toHaveBeenCalled();});
++it('ajuste independente continua no mesmo contrato',async()=>{await operarEstoque('ajuste','item',1,'key',{referencia_tipo:'manual'});expect(t.rpc).toHaveBeenCalledExactlyOnceWith('rpc_estoque_operar_v1',expect.objectContaining({p_acao:'ajuste'}));});
++it('separar e confirmar embalagens não enviam alterações',async()=>{render(<EmbalagensEntregaPanel entregaId="E"/>,{wrapper});fireEvent.click(await screen.findByRole('button',{name:'Separar'}));await waitFor(()=>expect(t.toast).toHaveBeenCalled());fireEvent.click(screen.getByRole('button',{name:/Confirmar entrega física/}));await waitFor(()=>expect(t.toast).toHaveBeenCalledTimes(2));expect(t.rpc).not.toHaveBeenCalled();});
++it('reserva de embalagem com destino selecionado não envia nem anuncia sucesso',async()=>{const done=vi.fn();render(<ReservarEmbalagemEntregaDialog open embalagemId="item" onOpenChange={vi.fn()} onDone={done}/>,{wrapper});fireEvent.click(screen.getByRole('combobox'));fireEvent.click(await screen.findByRole('option'));fireEvent.click(screen.getByRole('button',{name:'Reservar'}));await waitFor(()=>expect(t.toast).toHaveBeenCalled());expect(t.rpc).not.toHaveBeenCalled();expect(done).not.toHaveBeenCalled();});
+diff --git a/src/test/entregas/reservaDeferredRuntimeGate.test.tsx b/src/test/entregas/reservaDeferredRuntimeGate.test.tsx
+index 0e9a4e401..4544fd328 100644
+--- a/src/test/entregas/reservaDeferredRuntimeGate.test.tsx
++++ b/src/test/entregas/reservaDeferredRuntimeGate.test.tsx
+@@ -15,23 +15,12 @@ let client: QueryClient;
+ beforeEach(() => { vi.clearAllMocks(); s.rpc.mockResolvedValue({ data: split, error: null }); s.audit.mockResolvedValue({ error: null }); client = new QueryClient(); });
+ afterEach(() => { cleanup(); client.clear(); });
+ function mount() { return renderHook(() => useEsteiraLaboratorio(), { wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> }); }
+-it("deferEffects entrega o UUID dividido confirmado sem efeitos globais", async () => {
+-  const h = mount(); const cb = vi.fn(); const invalidation = vi.spyOn(client, "invalidateQueries"); let ok: unknown;
+-  await act(async () => { ok = await h.result.current.reservarEstoque({ id: "original" }, { quantidade_reservada: 2 }, "OS", "b2b", false, { deferEffects: true, current: () => true, onReserved: cb }); });
+-  expect(ok).toBe(true); expect(cb).toHaveBeenCalledExactlyOnceWith(split); expect(s.audit).toHaveBeenCalledTimes(1); expect(invalidation).not.toHaveBeenCalled(); expect(s.success).not.toHaveBeenCalled();
++it.each([true,false])('deferEffects=%s não abre reserva individual nem auditoria',async deferEffects=>{
++ const h=mount();const cb=vi.fn();const invalidation=vi.spyOn(client,'invalidateQueries');let ok:unknown;
++ await act(async()=>{ok=await h.result.current.reservarEstoque({id:'original'},{quantidade_reservada:2},'OS','b2b',true,{deferEffects,current:()=>true,onReserved:cb});});
++ expect(ok).toBe(false);expect(s.rpc).not.toHaveBeenCalled();expect(s.audit).not.toHaveBeenCalled();expect(cb).not.toHaveBeenCalled();expect(s.success).not.toHaveBeenCalled();expect(invalidation).not.toHaveBeenCalled();
+ });
+-it.each([null, {}, "original", false])("UUID inválido %j não confirma nem audita", async data => {
+-  s.rpc.mockResolvedValue({ data, error: null }); const h = mount(); const cb = vi.fn(); let ok: unknown;
+-  await act(async () => { ok = await h.result.current.reservarEstoque({ id: "original" }, { quantidade_reservada: 2 }, "OS", "b2b", false, { deferEffects: true, onReserved: cb }); });
+-  expect(ok).toBe(false); expect(cb).not.toHaveBeenCalled(); expect(s.audit).not.toHaveBeenCalled();
+-});
+-it.each(["before", "rpc", "audit"])("fence %s impede adoção/filhos/efeitos adiados", async phase => {
+-  let current = phase !== "before";
+-  if (phase === "rpc") s.rpc.mockImplementation(async () => { current = false; return { data: split, error: null }; });
+-  if (phase === "audit") s.audit.mockImplementation(async () => { current = false; return { error: null }; });
+-  const h = mount(); const cb = vi.fn(); let ok: unknown;
+-  await act(async () => { ok = await h.result.current.reservarEstoque({ id: "original" }, { quantidade_reservada: 2 }, "OS", "b2b", false, { deferEffects: true, current: () => current, onReserved: cb }); });
+-  expect(ok).toBe(false); expect(cb).not.toHaveBeenCalled(); expect(s.success).not.toHaveBeenCalled();
+-  if (phase === "before") expect(s.rpc).not.toHaveBeenCalled();
+-  if (phase === "rpc") expect(s.audit).not.toHaveBeenCalled();
+-});
+\ No newline at end of file
++it('criação direta pelo hook não envia RPC',async()=>{const h=mount();await expect(h.result.current.criarEntrega({estoque_produto_id:split},'OS','manual')).rejects.toThrow();expect(s.rpc).not.toHaveBeenCalled();expect(s.audit).not.toHaveBeenCalled();});
++it('confirmação direta pelo hook não envia RPC',async()=>{const h=mount();expect(await h.result.current.confirmarEntrega(split,'OS','manual',{nome:'Recebedor'})).toBe(false);expect(s.rpc).not.toHaveBeenCalled();expect(s.audit).not.toHaveBeenCalled();expect(s.success).not.toHaveBeenCalled();});
++it('cancelamento de reserva direto pelo hook não envia RPC',async()=>{const h=mount();expect(await h.result.current.cancelarReservaEstoque({id:split},'OS','manual','motivo')).toBe(false);expect(s.rpc).not.toHaveBeenCalled();expect(s.audit).not.toHaveBeenCalled();expect(s.success).not.toHaveBeenCalled();});
++it('reserva em lote independente permanece no RPC canônico',async()=>{s.rpc.mockResolvedValue({data:{ok:true,replay:false},error:null});const h=mount();expect(await h.result.current.reservarEstoqueLote({osId:'OS',origem:'manual',itens:[{item_id:split,quantidade:2}],idempotencyKey:'canonical'})).toEqual({ok:true,replay:false});expect(s.rpc).toHaveBeenCalledExactlyOnceWith('rpc_estoque_reservar_v1',expect.objectContaining({p_idempotency_key:'canonical'}));});
+diff --git a/src/test/entregas/termoPdfEdge.test.ts b/src/test/entregas/termoPdfEdge.test.ts
+index 261565bf7..b999dc44f 100644
+--- a/src/test/entregas/termoPdfEdge.test.ts
++++ b/src/test/entregas/termoPdfEdge.test.ts
+@@ -75,6 +75,8 @@ const call = (body: unknown, auth = "Bearer t") => load()(new Request("https://e
+ const termoOk = () => ({ id: TERMO, entrega_id: ENT, versao: 2, status: "assinado", cancelado_em: null, assinado_em: "2026-10-19", pdf_path: PATH, pdf_hash: HASH });
+ 
+ beforeEach(() => {
++  // Override the gate with this fully simulated byte transport for every test.
++  vi.stubGlobal("fetch", fetchMock);
+   vi.useRealTimers();
+   Object.values(calls).forEach((c) => c.mockReset());
+   st = { user: "U", perfil: [{ user_id: "U", ativo: true, senha_provisoria: false, organization_id: "OA" }],
+diff --git a/src/test/financeiro/deliveryPendingReadOnly.test.tsx b/src/test/financeiro/deliveryPendingReadOnly.test.tsx
+new file mode 100644
+index 000000000..8ed074e5b
+--- /dev/null
++++ b/src/test/financeiro/deliveryPendingReadOnly.test.tsx
+@@ -0,0 +1,17 @@
++import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
++import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
++import { beforeEach, afterEach, expect, it, vi } from 'vitest';
++const t=vi.hoisted(()=>({auth:{} as any,rows:[] as any[],error:null as any,rpc:vi.fn(),filters:[] as any[],toast:vi.fn()}));
++vi.mock('@/hooks/useAuth',()=>({useAuth:()=>t.auth}));
++vi.mock('sonner',()=>({toast:{error:t.toast,success:vi.fn()}}));
++vi.mock('@/components/financeiro/ConfirmarEntregaFinanceiroDialog',()=>({ConfirmarEntregaFinanceiroDialog:()=>null}));
++vi.mock('@/integrations/supabase/client',()=>({supabase:{rpc:t.rpc,from:()=>{const c:any={select:()=>c,eq:(...a:any[])=>{t.filters.push(a);return c;},is:()=>c,order:()=>c,then:(yes:any)=>Promise.resolve({data:t.rows,error:t.error}).then(yes)};return c;}}}));
++import Page from '@/pages/financeiro/EntregasNaoFaturadas';
++function mount(){const qc=new QueryClient({defaultOptions:{queries:{retry:false}}});return render(<QueryClientProvider client={qc}><Page/></QueryClientProvider>);}
++beforeEach(()=>{vi.clearAllMocks();t.rows=[];t.error=null;t.filters=[];t.auth={user:{id:'A'},profile:{user_id:'A',organization_id:'AR',ativo:true},roles:['financeiro'],loading:false,authzReady:true,authzEpoch:0};});afterEach(cleanup);
++it('erro de leitura não é ausência nem tudo faturado',async()=>{t.error=new Error('denied');mount();await screen.findByText(/Não foi possível consultar/);expect(screen.queryByText('Nenhuma entrega no filtro atual.')).toBeNull();expect(t.rpc).not.toHaveBeenCalled();});
++it('zero autorizado mantém consulta vazia sem assumir carteira global',async()=>{mount();await screen.findByText('Nenhuma entrega no filtro atual.');expect(t.rpc).not.toHaveBeenCalled();});
++it('perfil inativo não consulta e não apresenta ausência confirmada',async()=>{t.auth.profile.ativo=false;mount();expect(t.filters).toEqual([]);expect(screen.queryByText('Nenhuma entrega no filtro atual.')).toBeNull();expect(t.rpc).not.toHaveBeenCalled();});
++it('consulta positiva mantém filtros e não gera cobrança',async()=>{t.rows=[{id:'E',clientes:{nome:'Cliente AR'},produtos:{nome:'Produto'},status:'entregue'}];mount();await screen.findByText('Cliente AR');expect(t.filters).toContainEqual(['financial_status','PENDING_BILLING']);expect(t.filters).toContainEqual(['status','entregue']);expect(t.rpc).not.toHaveBeenCalled();});
++it('marcação sem cobrança também permanece somente leitura',async()=>{t.rows=[{id:'E',clientes:{nome:'Cliente AR'},produtos:{nome:'Produto'},status:'entregue'}];mount();fireEvent.click(await screen.findByTitle('Marcar como sem cobrança'));fireEvent.click(screen.getByRole('combobox'));fireEvent.click(await screen.findByRole('option',{name:'Amostra'}));fireEvent.change(document.querySelector('textarea') as HTMLTextAreaElement,{target:{value:'Justificativa'}});fireEvent.click(screen.getByRole('button',{name:'Confirmar'}));await waitFor(()=>expect(t.toast).toHaveBeenCalled());expect(t.rpc).not.toHaveBeenCalled();expect(screen.getByRole('button',{name:'Confirmar'})).toBeInTheDocument();});
++it('troca AR/FSF não conserva linhas do tenant anterior',async()=>{t.rows=[{id:'E',clientes:{nome:'Cliente AR'},produtos:{nome:'Produto'}}];const h=mount();await screen.findByText('Cliente AR');t.auth.profile.organization_id='FSF';t.rows=[];h.rerender(<QueryClientProvider client={new QueryClient()}><Page/></QueryClientProvider>);await screen.findByText('Nenhuma entrega no filtro atual.');expect(screen.queryByText('Cliente AR')).toBeNull();expect(t.rpc).not.toHaveBeenCalled();});

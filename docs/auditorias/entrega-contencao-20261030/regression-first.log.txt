@@ -1,0 +1,1826 @@
+$ vitest run --config src/test/config/runtimeGate.vitest.config.ts "--maxWorkers=2" src/test/entregas src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx src/test/financeiro/deliveryFinanceReconciliation.test.tsx src/test/pedidos/commercialOwnerOrders.test.tsx "src/test/estoque/motor-estoque-fase28c.test.ts" "--reporter=default" "--reporter=json" "--outputFile=docs/auditorias/entrega-contencao-20261030/regression-first.json"
+
+ RUN  v3.2.4 /dev-server
+
+ ✓ src/test/entregas/comprovanteEntregaPdf.test.ts (46 tests) 55ms
+ ❯ src/test/entregas/termoPdfEdge.test.ts (36 tests | 14 failed) 1563ms
+   × entrega-termo-pdf candidata: download binário autenticado > serve os bytes verificados por hash, sem assinar URL nem publicar evento 218ms
+     → expected 500 to be 200 // Object.is equality
+   ✓ entrega-termo-pdf candidata: download binário autenticado > cliente antigo signed_url recebe 410 sem tocar Storage 101ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > ação desconhecida não cai em generate 56ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > sem bearer ou usuário inválido no Auth: 401 80ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > outro tenant (RLS não enxerga o termo): 403 antes do Storage 42ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > perfil inativo: 403 33ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > perfil senha provisória: 403 44ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > perfil sem tenant: 403 42ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > termo cancelado ou substituído: 409 sem bytes 74ms
+   × entrega-termo-pdf candidata: download binário autenticado > hash divergente: 409 e nenhum byte 34ms
+     → expected 500 to be 409 // Object.is equality
+   ✓ entrega-termo-pdf candidata: download binário autenticado > PDF sem hash registrado falha fechado 27ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > revogação de acesso durante o download: re-prova nega a resposta 35ms
+   × entrega-termo-pdf candidata: download binário autenticado > perfil desativado durante o download: 403 25ms
+     → expected 500 to be 403 // Object.is equality
+   × entrega-termo-pdf candidata: download binário autenticado > termo cancelado/substituído durante o download: 409 23ms
+     → expected 500 to be 409 // Object.is equality
+   × entrega-termo-pdf candidata: download binário autenticado > PDF trocado durante o download: 409 termo_alterado 26ms
+     → expected 500 to be 409 // Object.is equality
+   ✓ entrega-termo-pdf candidata: download binário autenticado > staff A visível sob RLS contra termo de B (entrega de B): 403 antes do Storage 23ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > staff A visível sob RLS contra termo de B (cliente de B): 403 antes do Storage 44ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > staff A visível sob RLS contra termo de B (entrega sem cliente): 403 antes do Storage 28ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > staff A visível sob RLS contra termo de B (entrega inexistente): 403 antes do Storage 23ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > staff A visível sob RLS contra termo de B (tenant canônico ≠ perfil): 403 antes do Storage 30ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > staff A visível sob RLS contra termo de B (tenant canônico ausente): 403 antes do Storage 23ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > termo cancelado de B responde 403, sem revelar status 31ms
+   × entrega-termo-pdf candidata: download binário autenticado > tenant muda durante o download: re-prova nega os bytes 33ms
+     → expected 500 to be 403 // Object.is equality
+   ✓ entrega-termo-pdf candidata: download binário autenticado > generate de termo de B: 403 sem upload, registro ou evento 27ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > generate replay idempotente preservado, sem evento 31ms
+   × entrega-termo-pdf candidata: download binário autenticado > bytes vêm de transporte abortável do Storage autenticado, nunca de /sign 25ms
+     → expected 500 to be 200 // Object.is equality
+   ✓ entrega-termo-pdf candidata: download binário autenticado > pdf_path fora do formato do termo (outra entrega/termo): 409 sem Storage 54ms
+   × entrega-termo-pdf candidata: download binário autenticado > Storage que NUNCA responde e ignora o abort: 504 no prazo, sinal abortado 64ms
+     → expected 500 to be 504 // Object.is equality
+   ✓ entrega-termo-pdf candidata: download binário autenticado > consulta pendurada (tenant canônico nunca resolve): 504, sem Storage 56ms
+   ✓ entrega-termo-pdf candidata: download binário autenticado > Auth pendurado: 504 sem consultar termo nem Storage 36ms
+   × entrega-termo-pdf candidata: download binário autenticado > stream que para no meio sem terminar: 504, bytes descartados 39ms
+     → expected 500 to be 504 // Object.is equality
+   × entrega-termo-pdf candidata: download binário autenticado > Content-Length acima do limite: 413 sem ler o corpo 28ms
+     → expected 500 to be 413 // Object.is equality
+   × entrega-termo-pdf candidata: download binário autenticado > stream sem Content-Length que excede o limite: 413 e cancelamento antes de acumular tudo 28ms
+     → expected 500 to be 413 // Object.is equality
+   × entrega-termo-pdf candidata: download binário autenticado > cancel() que nunca resolve não pendura a resposta > status ruim: 404 sem aguardar cancel 25ms
+     → expected false to be true // Object.is equality
+   × entrega-termo-pdf candidata: download binário autenticado > cancel() que nunca resolve não pendura a resposta > Content-Length acima do limite: 413 sem aguardar cancel 27ms
+     → expected 500 to be 413 // Object.is equality
+   × entrega-termo-pdf candidata: download binário autenticado > cancel() que nunca resolve não pendura a resposta > stream acima do limite: 413 sem aguardar cancel 24ms
+     → expected 500 to be 413 // Object.is equality
+ ❯ src/test/entregas/assinaturaComprovante.test.tsx (15 tests | 3 failed) 6079ms
+   ✓ AssinaturaDigitalCanvas > recusa traço curto com mensagem amigável e não chama o callback 174ms
+   ✓ AssinaturaDigitalCanvas > avisa quando a imagem não pode ser gerada (toBlob nulo) 57ms
+   ✓ AssinaturaDigitalCanvas > duplo clique não dispara duas coletas e aguarda o callback 187ms
+   ✓ AssinaturaDigitalCanvas > callback rejeitado vira mensagem amigável e libera nova tentativa 63ms
+   ✓ AssinaturaDigitalCanvas > nada é aplicado após o unmount durante o processamento 85ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > envia PNG com UUID e upsert false e registra a assinatura  321ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > retry após falha da RPC reaproveita o PNG sem reenviar  406ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > troca de entrega durante o upload impede a chamada da RPC 233ms
+   ✓ EntregaComprovantePanel — assinatura do comprovante > A→B→A: resposta antiga não altera o modal da entrega atual 245ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > retry usa o hash e o payload ORIGINAIS e faz um único upload  361ms
+   ✓ EntregaComprovantePanel — reuso do PNG da assinatura > mudar o recebedor descarta o pendente: reenvia o PNG com o novo payload  369ms
+   ✓ EntregaComprovantePanel — ações de comprovação isoladas por entrega > gerar: conclusão tardia após A→B→A não emite toast nem destrava o contexto novo 68ms
+   × EntregaComprovantePanel — ações de comprovação isoladas por entrega > confirmar: falha tardia da entrega antiga não fecha o diálogo nem limpa ressalvas da nova 1201ms
+     → expected "spy" to be called 1 times, but got 0 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center justify-between flex-wrap gap-2"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-2"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-text h-5 w-5 text-primary"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M10 9H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 13H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 17H8"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"font-semibold"[39m
+            [36m>[39m
+              [0mComprovação de entrega[0m
+            [36m</h3>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 bg-violet-100 text-violet-700"[39m
+          [36m>[39m
+            [0mAnexado[0m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-1 text-sm"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-muted-foreground"[39m
+              [36m>[39m
+                [0mFormulário:[0m
+              [36m</span>[39m
+              [0m [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-mono"[39m
+              [36m>[39m
+                [0mAR-ENT-000004[0m
+              [36m</span>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-wrap gap-2 print:hidden"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-printer h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"[39m
+              [36m/>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"8"[39m
+                [33mrx[39m=[32m"1"[39m
+                [33mwidth[39m=[32m"12"[39m
+                [33mx[39m=[32m"6"[39m
+                [33my[39m=[32m"14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0m Imprimir formulário[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+            [33mtitle[39m=[32m"Imprime 2 vias: Cliente e Cultivo Farm"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-copy h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"14"[39m
+                [33mrx[39m=[32m"2"[39m
+                [33mry[39m=[32m"2"[39m
+                [33mwidth[39m=[32m"14"[39m
+    ...
+   × EntregaComprovantePanel — ações de comprovação isoladas por entrega > dispensar: troca de entrega reseta o motivo e o término antigo não afeta a nova 1159ms
+     → expected "spy" to be called 1 times, but got 0 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center justify-between flex-wrap gap-2"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-2"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-text h-5 w-5 text-primary"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M10 9H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 13H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 17H8"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"font-semibold"[39m
+            [36m>[39m
+              [0mComprovação de entrega[0m
+            [36m</h3>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 bg-blue-100 text-blue-700"[39m
+          [36m>[39m
+            [0mFormulário gerado[0m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-1 text-sm"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-muted-foreground"[39m
+              [36m>[39m
+                [0mFormulário:[0m
+              [36m</span>[39m
+              [0m [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-mono"[39m
+              [36m>[39m
+                [0mAR-ENT-000004[0m
+              [36m</span>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-wrap gap-2 print:hidden"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-printer h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"[39m
+              [36m/>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"8"[39m
+                [33mrx[39m=[32m"1"[39m
+                [33mwidth[39m=[32m"12"[39m
+                [33mx[39m=[32m"6"[39m
+                [33my[39m=[32m"14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0m Imprimir formulário[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+            [33mtitle[39m=[32m"Imprime 2 vias: Cliente e Cultivo Farm"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-copy h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"14"[39m
+                [33mrx[39m=[32m"2"[39m
+                [33mry[39m=[32m"2"[39m
+                [33mwidth[39m=[32m"14"[39...
+   × EntregaComprovantePanel — término antigo não destrava a ação nova > ação de B em voo continua travada quando a ação de A termina 1147ms
+     → expected "spy" to be called 1 times, but got 0 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center justify-between flex-wrap gap-2"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-2"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-text h-5 w-5 text-primary"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M10 9H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 13H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 17H8"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"font-semibold"[39m
+            [36m>[39m
+              [0mComprovação de entrega[0m
+            [36m</h3>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 bg-blue-100 text-blue-700"[39m
+          [36m>[39m
+            [0mFormulário gerado[0m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-1 text-sm"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-muted-foreground"[39m
+              [36m>[39m
+                [0mFormulário:[0m
+              [36m</span>[39m
+              [0m [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-mono"[39m
+              [36m>[39m
+                [0mAR-ENT-000004[0m
+              [36m</span>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-wrap gap-2 print:hidden"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-printer h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"[39m
+              [36m/>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"8"[39m
+                [33mrx[39m=[32m"1"[39m
+                [33mwidth[39m=[32m"12"[39m
+                [33mx[39m=[32m"6"[39m
+                [33my[39m=[32m"14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0m Imprimir formulário[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+            [33mtitle[39m=[32m"Imprime 2 vias: Cliente e Cultivo Farm"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-copy h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"14"[39m
+                [33mrx[39m=[32m"2"[39m
+                [33mry[39m=[32m"2"[39m
+                [33mwidth[39m=[32m"14"[39...
+stderr | src/test/pedidos/commercialOwnerOrders.test.tsx > admin A: lista administrativa vazia, mas a carteira da empresa mostra PB-001029 somente leitura com pendência contábil
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/pedidos/commercialOwnerOrders.test.tsx (18 tests) 2031ms
+   ✓ sete pedidos sobrepostos não são estado vazio nem duplicam linhas; refresh revela novo pedido  544ms
+ ❯ src/test/entregas/conferenciaQrTermo.test.tsx (16 tests | 2 failed) 1801ms
+   ✓ Conferência QR de entrega contida antes da movimentação > Enter vazio não envia 101ms
+   ✓ Conferência QR de entrega contida antes da movimentação > código preenchido e Enter/clique duplo não enviam movimentação 92ms
+   ✓ Conferência QR de entrega contida antes da movimentação > QR independente sem entrega conserva contrato existente 37ms
+   ✓ quantidade da conferência > rejeita vazio, zero, NaN e ambiguidade sem coerção para 1 2ms
+   ✓ quantidade da conferência > aceita inteiro e vírgula decimal simples 2ms
+   ✓ TermoEntregaPanel > falha de consulta mostra erro amigável, não vazio, e bloqueia ações 60ms
+   ✓ TermoEntregaPanel > vazio legítimo só aparece após sucesso 18ms
+   ✓ TermoEntregaPanel > quantidade inválida não chama a RPC e avisa o usuário 59ms
+   ✓ TermoEntregaPanel > quantidade com vírgula é enviada como número decimal 61ms
+   ✓ TermoEntregaPanel > clique duplo em salvar não duplica a chamada 54ms
+   ✓ TermoEntregaPanel > A→B→A: sucesso tardio da entrega antiga não emite aviso na atual 53ms
+   ✓ TermoEntregaPanel > falha tardia da entrega antiga não destrava nem avisa na entrega nova 94ms
+   × lacunas da revisão independente > QR: editar o código limpa o resultado anterior 1033ms
+     → Unable to find an element by: [data-testid="qr-pertence"]
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col space-y-1.5 p-6"[39m
+      [36m>[39m
+        [36m<h3[39m
+          [33mclass[39m=[32m"font-semibold tracking-tight text-base flex items-center gap-2"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"lucide lucide-scan-line h-4 w-4"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M3 7V5a2 2 0 0 1 2-2h2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M17 3h2a2 2 0 0 1 2 2v2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M21 17v2a2 2 0 0 1-2 2h-2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M7 21H5a2 2 0 0 1-2-2v-2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M7 12h10"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [0mConferência por QR[0m
+        [36m</h3>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"p-6 pt-0 space-y-3"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2"[39m
+        [36m>[39m
+          [36m<label[39m
+            [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"[39m
+            [33mfor[39m=[32m"conferencia-qr-codigo"[39m
+          [36m>[39m
+            [0mCódigo da embalagem, etiqueta ou token[0m
+          [36m</label>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+            [33mid[39m=[32m"conferencia-qr-codigo"[39m
+            [33mplaceholder[39m=[32m"Cole ou escaneie o código (embalagem, etiqueta ou token)"[39m
+            [33mvalue[39m=[32m"EMB-1"[39m
+          [36m/>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+          [36m>[39m
+            [0mConferir[0m
+          [36m</button>[39m
+        [36m</div>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-sm text-destructive"[39m
+          [33mdata-testid[39m=[32m"qr-erro"[39m
+        [36m>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col space-y-1.5 p-6"[39m
+      [36m>[39m
+        [36m<h3[39m
+          [33mclass[39m=[32m"font-semibold tracking-tight text-base flex items-center gap-2"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"lucide lucide-scan-line h-4 w-4"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M3 7V5a2 2 0 0 1 2-2h2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M17 3h2a2 2 0 0 1 2 2v2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M21 17v2a2 2 0 0 1-2 2h-2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M7 21H5a2 2 0 0 1-2-2v-2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M7 12h10"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [0mConferência por QR[0m
+        [36m</h3>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"p-6 pt-0 space-y-3"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2"[39m
+        [36m>[39m
+          [36m<label[39m
+            [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"[39m
+            [33mfor[39m=[32m"conferencia-qr-codigo"[39m
+          [36m>[39m
+            [0mCódigo da embalagem, etiqueta ou token[0m
+          [36m</label>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+            [33mid[39m=[32m"conferencia-qr-codigo"[39m
+            [33mplaceholder[39m=[32m"Cole ou escaneie o código (embalagem, etiqueta ou token)"[39m
+            [33mvalue[39m=[32m"EMB-1"[39m
+          [36m/>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+          [36m>[39m
+            [0mConferir[0m
+          [36m</button>[39m
+        [36m</div>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-sm text-destructive"[39m
+          [33mdata-testid[39m=[32m"qr-erro"[39m
+        [36m>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+   × lacunas da revisão independente > QR: campo fica travado enquanto a leitura está pendente 25ms
+     → expected 'EMB-9' to be 'EMB-1' // Object.is equality
+   ✓ lacunas da revisão independente > Termo: trocar de entrega durante o cálculo do hash não envia a assinatura 41ms
+   ✓ lacunas da revisão independente > Termo: troca durante o segundo hash também impede a chamada com efeito 65ms
+ ✓ src/test/entregas/termoPdfDownload.test.tsx (18 tests) 1083ms
+   ✓ TermoEntregaPanel: PDF binário autenticado em duas etapas > happy path: prepara pela Edge download e só baixa após novo clique  303ms
+stderr | src/test/financeiro/deliveryFinanceReconciliation.test.tsx > Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > método obrigatório/ativo e RECEITA apenas; duplo clique não envia nenhuma cobrança
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/entregas/anexoComprovante.test.tsx (11 tests) 2229ms
+   ✓ EntregaComprovantePanel — anexo > selecionar arquivo não envia nada automaticamente  512ms
+   ✓ EntregaComprovantePanel — anexo > falha na vinculação mantém o arquivo e a nova tentativa não reenvia o arquivo  386ms
+ ✓ src/test/financeiro/deliveryFinanceReconciliation.test.tsx (15 tests) 3329ms
+   ✓ Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > método obrigatório/ativo e RECEITA apenas; duplo clique não envia nenhuma cobrança  522ms
+   ✓ Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > resposta tardia após epoch não publica título nem cache antigo  307ms
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — token > token ausente não consulta e não fica carregando
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+stderr | src/test/entregas/validarEntrega.test.tsx > ValidarEntrega — navegação na mesma instância > cooldown de rate limit reabilita o botão sem consultar sozinho
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+Warning: An update to ValidarEntrega inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+    at ValidarEntrega (/dev-server/src/pages/public/ValidarEntrega.tsx:62:45)
+    at RenderedRoute (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:539:7)
+    at Routes (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1273:7)
+    at Router (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1207:17)
+    at MemoryRouter (/dev-server/node_modules/react-router/dist/umd/react-router.development.js:1101:7)
+
+ ✓ src/test/entregas/validarEntrega.test.tsx (16 tests) 562ms
+stderr | src/test/entregas/comprovanteDownloadAutenticado.test.tsx > EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/entregas/comprovanteDownloadAutenticado.test.tsx (25 tests) 2478ms
+   ✓ EntregaComprovantePanel > happy path: preparar baixa com sessão, baixar só no segundo clique; nenhuma URL assinada  492ms
+ ✓ src/test/entregas/painelChecklistOcorrencias.test.tsx (12 tests) 1083ms
+ ✓ src/test/entregas/painelEvidencias.test.tsx (8 tests) 558ms
+stderr | src/test/entregas/consumidorEntrega.test.tsx > Contenção real antes do primeiro dispatch da página > grupo com 1 itens não reserva/cria/expede/estorna
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/entregas/consumidorEntrega.test.tsx (13 tests) 1428ms
+   ✓ Contenção real antes do primeiro dispatch da página > cancelamento separado não altera status nem estorna  419ms
+   ✓ Contenção real antes do primeiro dispatch da página > cancelamento em_rota não altera status nem estorna  325ms
+ ✓ src/test/entregas/anexoComprovanteConcorrencia.test.tsx (5 tests) 1837ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > troca de entrega durante o upload: não inicia a RPC nem afeta a nova entrega  509ms
+   ✓ EntregaComprovantePanel — concorrência no envio do anexo > falha da operação antiga não destrava o envio em andamento da nova entrega  553ms
+ ✓ src/test/entregas/copiarLinkIsolamento.test.tsx (2 tests) 732ms
+   ✓ copiar link de validação — isolado das gravações > copiar durante uma assinatura pendente não invalida a gravação  626ms
+ ✓ src/test/entregas/registroEntrega.test.ts (15 tests) 20ms
+ ✓ src/test/estoque/motor-estoque-fase28c.test.ts (39 tests) 30ms
+stderr | src/test/entregas/formularioEntregaPrint.test.tsx > FormularioEntregaPrint > renderiza o documento com colunas reais do banco
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/test/entregas/formularioEntregaPrint.test.tsx (5 tests) 316ms
+ ✓ src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx (4 tests) 51ms
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação real contida, sem upload/metadados/RPC > confirmação não chama RPC nem sucesso/cache
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/reservaDeferredRuntimeGate.test.tsx (6 tests) 64ms
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação real contida, sem upload/metadados/RPC > arquivo pendente não inicia upload nem inserção
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação real contida, sem upload/metadados/RPC > duplo clique e remount permanecem contidos
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+stderr | src/test/entregas/confirmacaoEntregaAck.test.tsx > Confirmação real contida, sem upload/metadados/RPC > duplo clique e remount permanecem contidos
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/entregas/confirmacaoEntregaAck.test.tsx (3 tests) 1033ms
+   ✓ Confirmação real contida, sem upload/metadados/RPC > confirmação não chama RPC nem sucesso/cache  432ms
+   ✓ Confirmação real contida, sem upload/metadados/RPC > duplo clique e remount permanecem contidos  336ms
+ ✓ src/test/entregas/creationContracts.offline.test.ts (5 tests) 12ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 19 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/test/entregas/assinaturaComprovante.test.tsx > EntregaComprovantePanel — ações de comprovação isoladas por entrega > confirmar: falha tardia da entrega antiga não fecha o diálogo nem limpa ressalvas da nova
+AssertionError: expected "spy" to be called 1 times, but got 0 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center justify-between flex-wrap gap-2"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-2"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-text h-5 w-5 text-primary"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M10 9H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 13H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 17H8"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"font-semibold"[39m
+            [36m>[39m
+              [0mComprovação de entrega[0m
+            [36m</h3>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 bg-violet-100 text-violet-700"[39m
+          [36m>[39m
+            [0mAnexado[0m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-1 text-sm"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-muted-foreground"[39m
+              [36m>[39m
+                [0mFormulário:[0m
+              [36m</span>[39m
+              [0m [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-mono"[39m
+              [36m>[39m
+                [0mAR-ENT-000004[0m
+              [36m</span>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-wrap gap-2 print:hidden"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-printer h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"[39m
+              [36m/>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"8"[39m
+                [33mrx[39m=[32m"1"[39m
+                [33mwidth[39m=[32m"12"[39m
+                [33mx[39m=[32m"6"[39m
+                [33my[39m=[32m"14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0m Imprimir formulário[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+            [33mtitle[39m=[32m"Imprime 2 vias: Cliente e Cultivo Farm"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-copy h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"14"[39m
+                [33mrx[39m=[32m"2"[39m
+                [33mry[39m=[32m"2"[39m
+                [33mwidth[39m=[32m"14"[39m
+    ...
+ ❯ src/test/entregas/assinaturaComprovante.test.tsx:314:41
+    312|     fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i…
+    313|     fireEvent.click(screen.getByRole("button", { name: /^confirmar$/i …
+    314|     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+       |                                         ^
+    315|     // Payload capturado no início.
+    316|     expect(rpcMock.mock.calls[0][1].p_payload.ressalvas).toBe("caixa a…
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/19]⎯
+
+ FAIL  src/test/entregas/assinaturaComprovante.test.tsx > EntregaComprovantePanel — ações de comprovação isoladas por entrega > dispensar: troca de entrega reseta o motivo e o término antigo não afeta a nova
+AssertionError: expected "spy" to be called 1 times, but got 0 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center justify-between flex-wrap gap-2"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-2"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-text h-5 w-5 text-primary"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M10 9H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 13H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 17H8"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"font-semibold"[39m
+            [36m>[39m
+              [0mComprovação de entrega[0m
+            [36m</h3>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 bg-blue-100 text-blue-700"[39m
+          [36m>[39m
+            [0mFormulário gerado[0m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-1 text-sm"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-muted-foreground"[39m
+              [36m>[39m
+                [0mFormulário:[0m
+              [36m</span>[39m
+              [0m [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-mono"[39m
+              [36m>[39m
+                [0mAR-ENT-000004[0m
+              [36m</span>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-wrap gap-2 print:hidden"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-printer h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"[39m
+              [36m/>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"8"[39m
+                [33mrx[39m=[32m"1"[39m
+                [33mwidth[39m=[32m"12"[39m
+                [33mx[39m=[32m"6"[39m
+                [33my[39m=[32m"14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0m Imprimir formulário[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+            [33mtitle[39m=[32m"Imprime 2 vias: Cliente e Cultivo Farm"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-copy h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"14"[39m
+                [33mrx[39m=[32m"2"[39m
+                [33mry[39m=[32m"2"[39m
+                [33mwidth[39m=[32m"14"[39...
+ ❯ src/test/entregas/assinaturaComprovante.test.tsx:337:41
+    335|     fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/…
+    336|     fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i …
+    337|     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+       |                                         ^
+    338|     expect(rpcMock.mock.calls[0][1].p_motivo).toBe("cliente ausente");
+    339| 
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/19]⎯
+
+ FAIL  src/test/entregas/assinaturaComprovante.test.tsx > EntregaComprovantePanel — término antigo não destrava a ação nova > ação de B em voo continua travada quando a ação de A termina
+AssertionError: expected "spy" to be called 1 times, but got 0 times
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body[39m
+    [33mdata-scroll-locked[39m=[32m"1"[39m
+    [33mstyle[39m=[32m"pointer-events: none;"[39m
+  [36m>[39m
+    [36m<span[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+      [33mdata-radix-focus-guard[39m=[32m""[39m
+      [33mstyle[39m=[32m"outline: none; opacity: 0; position: fixed; pointer-events: none;"[39m
+      [33mtabindex[39m=[32m"0"[39m
+    [36m/>[39m
+    [36m<div[39m
+      [33maria-hidden[39m=[32m"true"[39m
+      [33mdata-aria-hidden[39m=[32m"true"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-4"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center justify-between flex-wrap gap-2"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex items-center gap-2"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-file-text h-5 w-5 text-primary"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M14 2v4a2 2 0 0 0 2 2h4"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M10 9H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 13H8"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M16 17H8"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [36m<h3[39m
+              [33mclass[39m=[32m"font-semibold"[39m
+            [36m>[39m
+              [0mComprovação de entrega[0m
+            [36m</h3>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 bg-blue-100 text-blue-700"[39m
+          [36m>[39m
+            [0mFormulário gerado[0m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-1 text-sm"[39m
+          [36m>[39m
+            [36m<div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"text-muted-foreground"[39m
+              [36m>[39m
+                [0mFormulário:[0m
+              [36m</span>[39m
+              [0m [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"font-mono"[39m
+              [36m>[39m
+                [0mAR-ENT-000004[0m
+              [36m</span>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-wrap gap-2 print:hidden"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-printer h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"[39m
+              [36m/>[39m
+              [36m<path[39m
+                [33md[39m=[32m"M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"[39m
+              [36m/>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"8"[39m
+                [33mrx[39m=[32m"1"[39m
+                [33mwidth[39m=[32m"12"[39m
+                [33mx[39m=[32m"6"[39m
+                [33my[39m=[32m"14"[39m
+              [36m/>[39m
+            [36m</svg>[39m
+            [0m Imprimir formulário[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-11 sm:h-9 rounded-md px-3 text-sm sm:text-xs"[39m
+            [33mtitle[39m=[32m"Imprime 2 vias: Cliente e Cultivo Farm"[39m
+          [36m>[39m
+            [36m<svg[39m
+              [33mclass[39m=[32m"lucide lucide-copy h-4 w-4 mr-1"[39m
+              [33mfill[39m=[32m"none"[39m
+              [33mheight[39m=[32m"24"[39m
+              [33mstroke[39m=[32m"currentColor"[39m
+              [33mstroke-linecap[39m=[32m"round"[39m
+              [33mstroke-linejoin[39m=[32m"round"[39m
+              [33mstroke-width[39m=[32m"2"[39m
+              [33mviewBox[39m=[32m"0 0 24 24"[39m
+              [33mwidth[39m=[32m"24"[39m
+              [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+            [36m>[39m
+              [36m<rect[39m
+                [33mheight[39m=[32m"14"[39m
+                [33mrx[39m=[32m"2"[39m
+                [33mry[39m=[32m"2"[39m
+                [33mwidth[39m=[32m"14"[39...
+ ❯ src/test/entregas/assinaturaComprovante.test.tsx:362:41
+    360|     fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/…
+    361|     fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i …
+    362|     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
+       |                                         ^
+    363| 
+    364|     // Troca para B e inicia a ação de B, que fica pendente.
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/19]⎯
+
+ FAIL  src/test/entregas/conferenciaQrTermo.test.tsx > lacunas da revisão independente > QR: editar o código limpa o resultado anterior
+TestingLibraryElementError: Unable to find an element by: [data-testid="qr-pertence"]
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col space-y-1.5 p-6"[39m
+      [36m>[39m
+        [36m<h3[39m
+          [33mclass[39m=[32m"font-semibold tracking-tight text-base flex items-center gap-2"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"lucide lucide-scan-line h-4 w-4"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M3 7V5a2 2 0 0 1 2-2h2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M17 3h2a2 2 0 0 1 2 2v2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M21 17v2a2 2 0 0 1-2 2h-2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M7 21H5a2 2 0 0 1-2-2v-2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M7 12h10"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [0mConferência por QR[0m
+        [36m</h3>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"p-6 pt-0 space-y-3"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2"[39m
+        [36m>[39m
+          [36m<label[39m
+            [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"[39m
+            [33mfor[39m=[32m"conferencia-qr-codigo"[39m
+          [36m>[39m
+            [0mCódigo da embalagem, etiqueta ou token[0m
+          [36m</label>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+            [33mid[39m=[32m"conferencia-qr-codigo"[39m
+            [33mplaceholder[39m=[32m"Cole ou escaneie o código (embalagem, etiqueta ou token)"[39m
+            [33mvalue[39m=[32m"EMB-1"[39m
+          [36m/>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+          [36m>[39m
+            [0mConferir[0m
+          [36m</button>[39m
+        [36m</div>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-sm text-destructive"[39m
+          [33mdata-testid[39m=[32m"qr-erro"[39m
+        [36m>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"rounded-lg border bg-card text-card-foreground shadow-sm"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col space-y-1.5 p-6"[39m
+      [36m>[39m
+        [36m<h3[39m
+          [33mclass[39m=[32m"font-semibold tracking-tight text-base flex items-center gap-2"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33maria-hidden[39m=[32m"true"[39m
+            [33mclass[39m=[32m"lucide lucide-scan-line h-4 w-4"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"24"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"24"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M3 7V5a2 2 0 0 1 2-2h2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M17 3h2a2 2 0 0 1 2 2v2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M21 17v2a2 2 0 0 1-2 2h-2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M7 21H5a2 2 0 0 1-2-2v-2"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"M7 12h10"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+          [0mConferência por QR[0m
+        [36m</h3>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"p-6 pt-0 space-y-3"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex gap-2"[39m
+        [36m>[39m
+          [36m<label[39m
+            [33mclass[39m=[32m"text-[13px] sm:text-sm font-semibold sm:font-medium leading-none mb-1.5 sm:mb-1 block uppercase sm:normal-case tracking-wider sm:tracking-normal text-muted-foreground sm:text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"[39m
+            [33mfor[39m=[32m"conferencia-qr-codigo"[39m
+          [36m>[39m
+            [0mCódigo da embalagem, etiqueta ou token[0m
+          [36m</label>[39m
+          [36m<input[39m
+            [33mclass[39m=[32m"flex h-12 sm:h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base leading-6 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground placeholder:leading-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm transition-colors"[39m
+            [33mid[39m=[32m"conferencia-qr-codigo"[39m
+            [33mplaceholder[39m=[32m"Cole ou escaneie o código (embalagem, etiqueta ou token)"[39m
+            [33mvalue[39m=[32m"EMB-1"[39m
+          [36m/>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 h-12 sm:h-10 px-4 py-2 text-base sm:text-sm"[39m
+          [36m>[39m
+            [0mConferir[0m
+          [36m</button>[39m
+        [36m</div>[39m
+        [36m<p[39m
+          [33mclass[39m=[32m"text-sm text-destructive"[39m
+          [33mdata-testid[39m=[32m"qr-erro"[39m
+        [36m>[39m
+          [0mOperação de entrega indisponível: reserva, registro e movimentação de estoque ainda não têm um contrato integrado comprovado. Nenhuma alteração foi enviada. Consulta e reconciliação permanecem disponíveis.[0m
+        [36m</p>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ findByTestId node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ src/test/entregas/conferenciaQrTermo.test.tsx:215:25
+    213|     fireEvent.change(input, { target: { value: "EMB-1" } });
+    214|     fireEvent.click(screen.getByRole("button", { name: "Conferir" }));
+    215|     expect(await screen.findByTestId("qr-pertence")).toBeInTheDocument…
+       |                         ^
+    216| 
+    217|     fireEvent.change(input, { target: { value: "EMB-2" } });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/19]⎯
+
+ FAIL  src/test/entregas/conferenciaQrTermo.test.tsx > lacunas da revisão independente > QR: campo fica travado enquanto a leitura está pendente
+AssertionError: expected 'EMB-9' to be 'EMB-1' // Object.is equality
+
+Expected: [32m"EMB-[7m1[27m"[39m
+Received: [31m"EMB-[7m9[27m"[39m
+
+ ❯ src/test/entregas/conferenciaQrTermo.test.tsx:231:25
+    229| 
+    230|     fireEvent.change(input, { target: { value: "EMB-9" } });
+    231|     expect(input.value).toBe("EMB-1");
+       |                         ^
+    232| 
+    233|     await act(async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > serve os bytes verificados por hash, sem assinar URL nem publicar evento
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:88:22
+     86|   it("serve os bytes verificados por hash, sem assinar URL nem publica…
+     87|     const r = await call({ termo_id: TERMO, action: "download" });
+     88|     expect(r.status).toBe(200);
+       |                      ^
+     89|     expect(r.headers.get("Content-Type")).toBe("application/pdf");
+     90|     expect(r.headers.get("Cache-Control")).toBe("private, no-store");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > hash divergente: 409 e nenhum byte
+AssertionError: expected 500 to be 409 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 409[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:131:22
+    129|     st.bytes = new TextEncoder().encode("%PDF-adulterado");
+    130|     const r = await call({ termo_id: TERMO, action: "download" });
+    131|     expect(r.status).toBe(409); expect((await r.json()).error).toBe("p…
+       |                      ^
+    132|   });
+    133|   it("PDF sem hash registrado falha fechado", async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > perfil desativado durante o download: 403
+AssertionError: expected 500 to be 403 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 403[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:144:74
+    142|   it("perfil desativado durante o download: 403", async () => {
+    143|     st.perfil = [st.perfil[0], { ...st.perfil[0], ativo: false }];
+    144|     expect((await call({ termo_id: TERMO, action: "download" })).statu…
+       |                                                                          ^
+    145|   });
+    146|   it("termo cancelado/substituído durante o download: 409", async () =…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > termo cancelado/substituído durante o download: 409
+AssertionError: expected 500 to be 409 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 409[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:148:74
+    146|   it("termo cancelado/substituído durante o download: 409", async () =…
+    147|     st.termo = [termoOk(), { ...termoOk(), status: "cancelado", cancel…
+    148|     expect((await call({ termo_id: TERMO, action: "download" })).statu…
+       |                                                                          ^
+    149|     st.termo = [termoOk()]; st.sucessor = [null, { id: "S" }];
+    150|     expect((await call({ termo_id: TERMO, action: "download" })).statu…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > PDF trocado durante o download: 409 termo_alterado
+AssertionError: expected 500 to be 409 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 409[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:155:22
+    153|     st.termo = [termoOk(), { ...termoOk(), pdf_path: `${ENT}/${TERMO}/…
+    154|     const r = await call({ termo_id: TERMO, action: "download" });
+    155|     expect(r.status).toBe(409); expect((await r.json()).error).toBe("t…
+       |                      ^
+    156|   });
+    157|   it.each([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > tenant muda durante o download: re-prova nega os bytes
+AssertionError: expected 500 to be 403 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 403[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:177:74
+    175|   it("tenant muda durante o download: re-prova nega os bytes", async (…
+    176|     st.actorOrg = ["OA", "OB"];
+    177|     expect((await call({ termo_id: TERMO, action: "download" })).statu…
+       |                                                                          ^
+    178|     st.actorOrg = ["OA"]; st.entrega = [{ id: ENT, organization_id: "O…
+    179|     expect((await call({ termo_id: TERMO, action: "download" })).statu…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > bytes vêm de transporte abortável do Storage autenticado, nunca de /sign
+AssertionError: expected 500 to be 200 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:194:74
+    192|   });
+    193|   it("bytes vêm de transporte abortável do Storage autenticado, nunca …
+    194|     expect((await call({ termo_id: TERMO, action: "download" })).statu…
+       |                                                                          ^
+    195|     const [url, init] = calls.download.mock.calls[0] as [string, Reque…
+    196|     expect(url).toContain("/storage/v1/object/authenticated/entrega-te…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > Storage que NUNCA responde e ignora o abort: 504 no prazo, sinal abortado
+AssertionError: expected 500 to be 504 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 504[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:215:22
+    213|     await vi.advanceTimersByTimeAsync(15_001);
+    214|     const r = await p;
+    215|     expect(r.status).toBe(504); expect(seen?.aborted).toBe(true);
+       |                      ^
+    216|     expect(r.headers.get("Content-Type")).not.toBe("application/pdf");
+    217|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > stream que para no meio sem terminar: 504, bytes descartados
+AssertionError: expected 500 to be 504 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 504[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:242:30
+    240|     const p = call({ termo_id: TERMO, action: "download" });
+    241|     await vi.advanceTimersByTimeAsync(15_001);
+    242|     expect((await p).status).toBe(504); expect(cancelled).toBe(true);
+       |                              ^
+    243|   });
+    244|   it("Content-Length acima do limite: 413 sem ler o corpo", async () =…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > Content-Length acima do limite: 413 sem ler o corpo
+AssertionError: expected 500 to be 413 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 413[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:248:74
+    246|     st.fetchImpl = async () => new Response(new ReadableStream({ pull(…
+    247|       { status: 200, headers: { "content-length": String(16 * 1024 * 1…
+    248|     expect((await call({ termo_id: TERMO, action: "download" })).statu…
+       |                                                                          ^
+    249|     expect(pulled).toBe(false);
+    250|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > stream sem Content-Length que excede o limite: 413 e cancelamento antes de acumular tudo
+AssertionError: expected 500 to be 413 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 413[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:257:74
+    255|       pull(c) { sent += chunk.byteLength; c.enqueue(chunk); }, cancel(…
+    256|     }), { status: 200 });
+    257|     expect((await call({ termo_id: TERMO, action: "download" })).statu…
+       |                                                                          ^
+    258|     expect(cancelled).toBe(true); expect(sent).toBeLessThanOrEqual(18 …
+    259|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > cancel() que nunca resolve não pendura a resposta > status ruim: 404 sem aguardar cancel
+AssertionError: expected false to be true // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:269:110
+    267|       let asked = false;
+    268|       st.fetchImpl = async () => new Response(new ReadableStream({ can…
+    269|       expect(await cedo(call({ termo_id: TERMO, action: "download" }))…
+       |                                                                                                              ^
+    270|     });
+    271|     it("Content-Length acima do limite: 413 sem aguardar cancel", asyn…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > cancel() que nunca resolve não pendura a resposta > Content-Length acima do limite: 413 sem aguardar cancel
+AssertionError: expected 500 to be 413 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 413[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:274:73
+    272|       st.fetchImpl = async () => new Response(new ReadableStream({ can…
+    273|         { status: 200, headers: { "content-length": String(16 * 1024 *…
+    274|       expect(await cedo(call({ termo_id: TERMO, action: "download" }))…
+       |                                                                         ^
+    275|     });
+    276|     it("stream acima do limite: 413 sem aguardar cancel", async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/19]⎯
+
+ FAIL  src/test/entregas/termoPdfEdge.test.ts > entrega-termo-pdf candidata: download binário autenticado > cancel() que nunca resolve não pendura a resposta > stream acima do limite: 413 sem aguardar cancel
+AssertionError: expected 500 to be 413 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 413[39m
+[31m+ 500[39m
+
+ ❯ src/test/entregas/termoPdfEdge.test.ts:279:73
+    277|       const chunk = new Uint8Array(1024 * 1024);
+    278|       st.fetchImpl = async () => new Response(new ReadableStream({ pul…
+    279|       expect(await cedo(call({ termo_id: TERMO, action: "download" }))…
+       |                                                                         ^
+    280|     });
+    281|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/19]⎯
+
+
+ Test Files  3 failed | 19 passed (22)
+      Tests  19 failed | 314 passed (333)
+   Start at  01:24:01
+   Duration  38.80s (transform 2.23s, setup 3.36s, collect 13.78s, tests 28.37s, environment 19.57s, prepare 2.99s)
+
+JSON report written to /dev-server/docs/auditorias/entrega-contencao-20261030/regression-first.json
+error: script "test" exited with code 1
