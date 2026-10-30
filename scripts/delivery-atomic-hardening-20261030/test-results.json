@@ -138,8 +138,83 @@
     "status": "PASS"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 144, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 114, in main\n    assert any(code in err for code in ['DELIVERY_ACTOR_DENIED','DELIVERY_SCOPE_CHANGED','ESTQ_IDENTIDADE_INATIVA']),err+out\n           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  canceling statement due to lock timeout\nCONTEXT:  while locking tuple (0,1) in relation \"ordens_servico\"\nSQL statement \"SELECT *           FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org FOR UPDATE\"\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 28 at SQL statement\n\n"
+    "test": "revocation after row wait before replay",
+    "status": "PASS"
+  },
+  {
+    "test": "two actual concurrent exact replays no extra group",
+    "status": "PASS"
+  },
+  {
+    "test": "concurrent replay remains two deliveries",
+    "status": "PASS"
+  },
+  {
+    "test": "item2 trigger failure aborts first delivery reserve expedition",
+    "status": "PASS",
+    "expected": "LOCAL_ITEM_TWO_FAILURE"
+  },
+  {
+    "test": "item2 rollback has no stock ledger receipt residues",
+    "status": "PASS"
+  },
+  {
+    "test": "delivery trigger title attempt fails transactionally",
+    "status": "PASS",
+    "expected": "DELIVERY_DOWNSTREAM_FORBIDDEN"
+  },
+  {
+    "test": "attempted title leaves zero title and no new group",
+    "status": "PASS"
+  },
+  {
+    "test": "exact LIVE accounting guard rejects entregue on pending snapshot",
+    "status": "PASS",
+    "expected": "C2_ACCOUNTING_PENDING"
+  },
+  {
+    "test": "delivery transition barrier precedes any auto billing trigger",
+    "status": "PASS",
+    "expected": "DELIVERY_B2B_TRANSITION_CLOSED"
+  },
+  {
+    "test": "final no context no billing fiscal messages",
+    "status": "PASS"
+  },
+  {
+    "test": "same request key tenants separated no collision",
+    "status": "PASS"
+  },
+  {
+    "test": "B cannot replay A cancel result",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "GUC spoof cannot cancel directly",
+    "status": "PASS",
+    "expected": "ENTREGA_CANCELAMENTO_EXIGE_RPC"
+  },
+  {
+    "test": "direct stock mutation remains ACL closed",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "private context cannot be minted by caller",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "actual concurrent oversell second stale CAS denied",
+    "status": "PASS"
+  },
+  {
+    "test": "oversell balance conserved no negatives",
+    "status": "PASS"
+  },
+  {
+    "test": "negative child ACK rolls back group",
+    "status": "PASS"
   }
 ]
