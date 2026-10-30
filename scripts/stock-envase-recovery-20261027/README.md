@@ -110,3 +110,6 @@ O grupo aceita a lista exata das 23 colunas existentes que o gravador individual
 - O envelope não retorna OS/lote/org/chave: o ACK **não** é vinculado por conteúdo; o vínculo é só a cerca de sessão (ator/org) do dispatch.
 - Pendência em slot próprio por ator+org+lote+chave (`cf:envase-uncertain:v2:`; slot v1 legado é lido). Reserva recusa se houver outra tentativa do lote antes ou depois da escrita (remove só a própria, não despachada); limpeza condicional exata; qualquer pendente múltiplo/corrompido/`replayRejected` bloqueia chave nova.
 - SQL inalterado: hashes compostos do v2/capability permanecem os do HEAD anterior. Limite: localStorage não oferece atomicidade entre abas; a dupla checagem reduz, não elimina, a janela — o servidor (idempotência por chave) continua sendo a barreira.
+
+## Aviso interno da fixture (aprovado 30/10/2026)
+Aprovado somente o aviso `fn_notify_lab_on_programacao` marcado como teste, para a OS sintética da AR Bio. PRE exige cliente com `TESTE SEM VALOR COMERCIAL` no nome; POST exige mensagem marcada e tipo `nova_demanda_producao`. Título fixo do gatilho não é alterado. Ensaio local: 28 PASS / 0 FAIL (262,9 s). Nada executado hosted.
