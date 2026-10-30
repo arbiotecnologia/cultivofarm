@@ -17,3 +17,4 @@
 
 - Legacy individual reservation, delivery creation/confirmation and reservation cancellation stay contained before dispatch; deferEffects, overrides and split UUID callbacks cannot open them. Reviewed independent batch reservation is unchanged — prevents delivery consumers bypassing pre-dispatch containment.
 - Blocked delivery finance exposes only scoped existing-title reconciliation, with no creation form/catalogue reads or write callbacks; fresh empty reads never prove rollback — preserves honest read-only access.
+- Envase dispatch requires an exact scoped availability probe, synchronous per-mount lock and shared readiness/roles/authz epoch fence; uncertain attempts stay frozen and stored — prevents stale-session adoption or grant-only client activation.

@@ -78,7 +78,7 @@
 - Cockpit/application business-conflict deltas follow scripts/business-conflicts-cockpit-application-20261027/AGENTS.md; only exact pinned RAISEs change, with no automatic retry or legacy reopening — preserves genuine serialization and authorization.
 - Catalog-label business-conflict delta follows scripts/catalog-label-conflicts-20261027/AGENTS.md; only pinned label RAISEs move to PT409, shared replay helper stays 40001 — keeps scope minimal.
 - Delivery recovery follows scripts/os-delivery-reopening-20261027/AGENTS.md; hardening never implies release of stock/ledger dependencies or client EXECUTE — prevents unsafe transitive reopening.
-- Stock/envase recovery follows scripts/stock-envase-recovery-20261027/AGENTS.md; immutable CQ/lot fences and canonical ledger proofs survive recovery — prevents status shortcuts and forged contexts.
+- Stock/envase recovery and its isolated delta follow their nested AGENTS.md; CQ/lot/ledger fences and closed release survive recovery — prevents grant-only activation and forged contexts.
 - Delivery-finance A2 follow scripts/delivery-finance-a2-20261028/AGENTS.md — read before changing that area.
 - Order-flow reconciliation updates the original nine-stage plan and labels captured LIVE, externally reported installs and inactive candidates separately; migrate equivalent consumers before direct-write closure — prevents false release claims and broken screens.
 - Delivery billing UI reconciles existing tenant-owned titles through scoped reads only while A2/value/fiscal authority is uninstalled or unproven; never redispatch financial or fiscal writes — prevents duplicate billing and false partial rollback.
