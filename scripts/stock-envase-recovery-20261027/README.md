@@ -113,3 +113,6 @@ O grupo aceita a lista exata das 23 colunas existentes que o gravador individual
 
 ## Aviso interno da fixture (aprovado 30/10/2026)
 Aprovado somente o aviso `fn_notify_lab_on_programacao` marcado como teste, para a OS sintética da AR Bio. PRE exige cliente com `TESTE SEM VALOR COMERCIAL` no nome; POST exige mensagem marcada e tipo `nova_demanda_producao`. Título fixo do gatilho não é alterado. Ensaio local: 28 PASS / 0 FAIL (262,9 s). Nada executado hosted.
+
+## Revisão ad528283
+Fixture com identificadores hosted fixados (`fixture-arbio-pipeline-params.psql`), quatro gates SaaS exatos, baseline financeiro AR Bio pinado, marcas de nome no PRE/POST, caminho `cancel=false` e ledger/estoque exatos. Ensaio local: 32 PASS / 0 FAIL (252,9 s). Nada executado hosted.

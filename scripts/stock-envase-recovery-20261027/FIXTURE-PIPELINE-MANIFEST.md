@@ -40,3 +40,11 @@ Não há limpeza destrutiva: ledger, CQ, eventos e histórico são mantidos. Rem
 
 ## Isolamento testado
 O admin FSF com IDs da AR Bio é barrado no PRE. Cliente/fazenda FSF também são barrados. O admin FSF não lê a OS nem o lote (RLS) e tem o writer negado. O admin AR Bio lê a própria OS. Referência incompleta → nenhuma linha parcial é gravada.
+
+
+## Revisão ad528283 (30/10/2026) — identificadores hosted e baseline
+- Parâmetros exatos em `fixture-arbio-pipeline-params.psql` (achados read-only do auditor): org `007bb519…`, admin `a7d45277…`, cliente `8b138956…` "TESTE AUDITORIA B2B CLIENTE CONTROLE 20261009", fazenda `ff35e2a0…`, talhão `a3144e03…`, produto `1986af48…` "TESTE AUDITORIA BIOLOGICO APLICACAO 20261019" (ativo, biológico), referência `681dfe6d…` (ativa, completa, DADOS FICTICIOS SEM VALOR COMERCIAL). **Nenhuma escrita ou permissão no catálogo global é necessária.** `authenticated` pode LER a referência; só a escrita é negada (texto anterior corrigido).
+- PRE: nomes exatos de cliente/produto iguais aos fixados e começando por `TESTE AUDITORIA` ou `TESTE SEM VALOR COMERCIAL` (`FIXTURE_PRE_NOT_TEST_MARKED`); apenas os quatro gates SaaS `estoque_embalagens`, `envase`, `ordens_producao`, `lotes_qualidade` (`FIXTURE_PRE_SAAS_GATES`); baseline financeiro da AR Bio `md5(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text)` = `9c1f86a6ccec0f8c233d17994294af12` com 5 linhas (`FIXTURE_PRE_FIN_BASELINE_DRIFT`). POST mantém contagens/hash global iguais.
+- POST do aviso: tipo `nova_demanda_producao`, título fixo do gatilho, mensagem começando por `<produto> · <cliente>` exatos. A mensagem hosted trará "TESTE AUDITORIA…", não o texto literal "SEM VALOR COMERCIAL" (vem dos nomes já existentes; nenhum dado é alterado).
+- `cancel='false'` é o padrão hosted: entrega fica `separado` para o upload real; cancelar depois pelo `rpc_entrega_cancelar_v1` canônico.
+- Estado exato (ensaio local): retida → movimentos `entrada`, `expedicao`; estoque `expedido`, qtd 1, reservada 1, ainda da OS. Após cancelar → mais `estorno_expedicao` e `cancelamento_reserva`; estoque `disponivel`, qtd 1, reservada 0, **sem vínculo à OS** (o cancelamento libera a reserva da OS; esse é o comportamento atual do motor).
