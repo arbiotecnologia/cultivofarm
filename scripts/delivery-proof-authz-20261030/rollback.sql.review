@@ -1,0 +1,7 @@
+-- Deny-only rollback: keeps history, requests, barrier and closed legacy writers.
+BEGIN; SET LOCAL lock_timeout='3s';
+REVOKE ALL ON FUNCTION public.rpc_entrega_comprovacao_preflight_v1(uuid,text),public.rpc_entrega_formulario_gerar_v1(uuid,text),public.rpc_entrega_assinatura_coletar_v1(uuid,text,jsonb),public.rpc_entrega_comprovante_anexar_v1(uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+CREATE OR REPLACE FUNCTION platform_private.delivery_proof_apply_20261030(p_action text,p_entrega uuid,p_request_key text,p_payload jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RAISE EXCEPTION 'DELIVERY_PROOF_ROLLBACK_CLOSED' USING ERRCODE='42501';END$$;
+CREATE OR REPLACE FUNCTION public.rpc_entrega_comprovacao_preflight_v1(p_entrega_id uuid,p_action text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$BEGIN RAISE EXCEPTION 'DELIVERY_PROOF_ROLLBACK_CLOSED' USING ERRCODE='42501';END$$;
+REVOKE ALL ON FUNCTION platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;

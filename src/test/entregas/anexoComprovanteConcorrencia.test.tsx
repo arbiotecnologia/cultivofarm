@@ -12,7 +12,11 @@ const { fromMock, rpcMock, uploadMock, toastMock } = vi.hoisted(() => ({
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: fromMock,
-    rpc: rpcMock,
+    // Pré-verificação autorizada (novo contrato) separada do registro final.
+    rpc: (name: string, args: any) =>
+      name === "rpc_entrega_comprovacao_preflight_v1"
+        ? Promise.resolve({ data: { allowed: true }, error: null })
+        : rpcMock(name, args),
     storage: {
       from: () => ({
         upload: uploadMock,

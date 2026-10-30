@@ -12,7 +12,11 @@ const { fromMock, rpcMock, uploadMock, toastMock } = vi.hoisted(() => ({
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: fromMock,
-    rpc: rpcMock,
+    // Pré-verificação autorizada (novo contrato) separada do registro final.
+    rpc: (name: string, args: any) =>
+      name === "rpc_entrega_comprovacao_preflight_v1"
+        ? Promise.resolve({ data: { allowed: true }, error: null })
+        : rpcMock(name, args),
     storage: {
       from: () => ({
         upload: uploadMock,
@@ -264,9 +268,12 @@ describe("EntregaComprovantePanel — reuso do PNG da assinatura", () => {
     await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
     expect(uploadMock).toHaveBeenCalledTimes(2);
     expect(rpcMock.mock.calls[1][1].p_payload.recebedor_nome).toBe("João");
-    expect(rpcMock.mock.calls[1][1].p_payload.assinatura_digital_png_path).toBe(
-      "entregas/e1/assinaturas/uuid-2.png",
+    // Novo PNG (novo caminho) e nova chave de operação; o pendente antigo não é reutilizado.
+    expect(rpcMock.mock.calls[1][1].p_payload.assinatura_digital_png_path).toBe(uploadMock.mock.calls[1][0]);
+    expect(rpcMock.mock.calls[1][1].p_payload.assinatura_digital_png_path).not.toBe(
+      rpcMock.mock.calls[0][1].p_payload.assinatura_digital_png_path,
     );
+    expect(rpcMock.mock.calls[1][1].p_request_key).not.toBe(rpcMock.mock.calls[0][1].p_request_key);
   });
 });
 

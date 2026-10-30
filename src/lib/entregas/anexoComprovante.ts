@@ -82,6 +82,8 @@ export type PathPendente = {
   tamanho: number;
   lastModified: number;
   mime: string;
+  /** Chave da operação original: o retry reusa a mesma (replay idempotente no servidor). */
+  requestKey?: string;
 };
 
 /**

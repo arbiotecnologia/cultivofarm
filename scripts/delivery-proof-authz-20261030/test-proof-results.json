@@ -1,0 +1,341 @@
+[
+  {
+    "test": "atomic package installed first (deployment order 1)",
+    "status": "PASS"
+  },
+  {
+    "test": "proof installer COMMIT with PRE and POST (deployment order 2)",
+    "status": "PASS"
+  },
+  {
+    "test": "exact POST passes on installed instance",
+    "status": "PASS",
+    "expressions": 13
+  },
+  {
+    "test": "anon cannot execute new attach RPC",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "authenticated cannot execute private apply",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "legacy rpc_gerar_formulario_entrega closed to authenticated",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "legacy rpc_gerar_formulario_entrega deny-only even for owner",
+    "status": "PASS",
+    "expected": "DELIVERY_LEGACY_CLOSED"
+  },
+  {
+    "test": "legacy rpc_coletar_assinatura_digital_entrega closed to authenticated",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "legacy rpc_coletar_assinatura_digital_entrega deny-only even for owner",
+    "status": "PASS",
+    "expected": "DELIVERY_LEGACY_CLOSED"
+  },
+  {
+    "test": "legacy rpc_anexar_comprovante_entrega closed to authenticated",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "legacy rpc_anexar_comprovante_entrega deny-only even for owner",
+    "status": "PASS",
+    "expected": "DELIVERY_LEGACY_CLOSED"
+  },
+  {
+    "test": "preflight positive admin same tenant",
+    "status": "PASS"
+  },
+  {
+    "test": "preflight cross-tenant FSF admin denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "preflight cancelled delivery denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "preflight external admin+parceiro denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ACTOR_DENIED"
+  },
+  {
+    "test": "preflight aplicador without client link denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "preflight producao staff allowed (legacy role matrix)",
+    "status": "PASS"
+  },
+  {
+    "test": "preflight writes nothing",
+    "status": "PASS"
+  },
+  {
+    "test": "generate positive creates one proof and seeds checklist",
+    "status": "PASS"
+  },
+  {
+    "test": "generate replay same key returns stored result",
+    "status": "PASS"
+  },
+  {
+    "test": "generate replay is marked replayed, no second proof",
+    "status": "PASS"
+  },
+  {
+    "test": "generate new key reuses open proof",
+    "status": "PASS"
+  },
+  {
+    "test": "same key different delivery conflicts",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_REQUEST_CONFLICT"
+  },
+  {
+    "test": "generate cross-tenant denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "generate cancelled denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "invalid request key rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID"
+  },
+  {
+    "test": "attach object missing denied (upload not proven)",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_OBJECT_DENIED"
+  },
+  {
+    "test": "attach object owned by other user denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_OBJECT_DENIED"
+  },
+  {
+    "test": "attach path of another delivery denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID: path"
+  },
+  {
+    "test": "attach traversal path denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID: path"
+  },
+  {
+    "test": "attach unknown field rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID: field"
+  },
+  {
+    "test": "attach mime/extension mismatch rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID: mime"
+  },
+  {
+    "test": "attach without receiver rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID: recebedor_nome"
+  },
+  {
+    "test": "attach cross-tenant FSF admin denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "attach external role denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ACTOR_DENIED"
+  },
+  {
+    "test": "attach aplicador without link denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "rejections left zero writes",
+    "status": "PASS"
+  },
+  {
+    "test": "attach positive links object, delivery and audit",
+    "status": "PASS"
+  },
+  {
+    "test": "attach retry with same key replays without second audit",
+    "status": "PASS"
+  },
+  {
+    "test": "replay kept single audit",
+    "status": "PASS"
+  },
+  {
+    "test": "same object under new key conflicts (no relink)",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_OBJECT_ALREADY_LINKED"
+  },
+  {
+    "test": "attach without form generates and attaches atomically",
+    "status": "PASS"
+  },
+  {
+    "test": "sign invalid hash rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID: hash"
+  },
+  {
+    "test": "sign attachment-style path rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_INVALID: path"
+  },
+  {
+    "test": "sign positive by producao staff",
+    "status": "PASS"
+  },
+  {
+    "test": "same key from another actor is not a replay of theirs",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_OBJECT"
+  },
+  {
+    "test": "confirmed proof cannot be overwritten",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_CLOSED"
+  },
+  {
+    "test": "B2B-linked delivery proof stays closed",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "direct UPDATE entregas by authenticated denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "direct UPDATE entrega_comprovantes by authenticated denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "owner-level write without permit denied even with spoofed GUCs",
+    "status": "PASS",
+    "expected": "DELIVERY_MUTATION_CLOSED"
+  },
+  {
+    "test": "proof permit cannot change status",
+    "status": "PASS",
+    "expected": "DELIVERY_MUTATION_CLOSED"
+  },
+  {
+    "test": "proof permit cannot change financial columns",
+    "status": "PASS",
+    "expected": "DELIVERY_MUTATION_CLOSED"
+  },
+  {
+    "test": "proof permit for one row cannot write another",
+    "status": "PASS",
+    "expected": "DELIVERY_MUTATION_CLOSED"
+  },
+  {
+    "test": "fault after form insert aborts attach",
+    "status": "PASS",
+    "expected": "LOCAL_FAULT_INJECTED"
+  },
+  {
+    "test": "fault rolled back proof, request, audit and delivery",
+    "status": "PASS"
+  },
+  {
+    "test": "retry after definitive failure succeeds with same key and object",
+    "status": "PASS"
+  },
+  {
+    "test": "revocation committed during advisory wait denies after the wait, zero writes",
+    "status": "PASS"
+  },
+  {
+    "test": "revocation committed during global-gate wait denies, zero writes",
+    "status": "PASS"
+  },
+  {
+    "test": "row-lock wait: revocation linearized after the committed proof (gate held)",
+    "status": "PASS"
+  },
+  {
+    "test": "after linearized revocation the next proof is denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ACTOR_DENIED"
+  },
+  {
+    "test": "row holder that revokes: deadlock/denial is fail-closed, zero writes",
+    "status": "PASS"
+  },
+  {
+    "test": "revoked actor cannot replay stored receipt",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ACTOR_DENIED"
+  },
+  {
+    "test": "inactive profile cannot replay",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ACTOR_DENIED"
+  },
+  {
+    "test": "concurrent same-key attach: one write, one replay, single audit",
+    "status": "PASS"
+  },
+  {
+    "test": "atomic group creation still passes barrier (harness-only grant)",
+    "status": "PASS"
+  },
+  {
+    "test": "atomic cancel still passes barrier",
+    "status": "PASS"
+  },
+  {
+    "test": "financial/fiscal/outbox tables remain empty (zero titles, zero dispatch)",
+    "status": "PASS"
+  },
+  {
+    "test": "after rollback new RPC closed to clients",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "after rollback apply deny-only",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ROLLBACK_CLOSED"
+  },
+  {
+    "test": "after rollback legacy still closed",
+    "status": "PASS",
+    "expected": "DELIVERY_LEGACY_CLOSED"
+  },
+  {
+    "test": "after rollback barrier still closes direct writes",
+    "status": "PASS",
+    "expected": "DELIVERY_MUTATION_CLOSED"
+  },
+  {
+    "test": "rollback preserved history",
+    "status": "PASS"
+  }
+]
