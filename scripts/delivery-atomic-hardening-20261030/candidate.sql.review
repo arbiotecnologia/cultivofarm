@@ -1,0 +1,177 @@
+-- INACTIVE candidate. Installation preserves closed client ACLs.
+CREATE TABLE platform_private.delivery_requests_20261030 (
+ request_key text PRIMARY KEY, actor uuid NOT NULL, organization_id uuid NOT NULL,
+ action text NOT NULL, fingerprint text NOT NULL, result jsonb NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT pg_catalog.clock_timestamp()
+);
+REVOKE ALL ON platform_private.delivery_requests_20261030 FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.delivery_requests_20261030 ENABLE ROW LEVEL SECURITY;
+CREATE TABLE platform_private.delivery_context_20261030 (
+ txid bigint PRIMARY KEY, actor uuid NOT NULL, organization_id uuid NOT NULL,
+ action text NOT NULL, target uuid, consumed boolean NOT NULL DEFAULT false
+);
+REVOKE ALL ON platform_private.delivery_context_20261030 FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE platform_private.delivery_context_20261030 ENABLE ROW LEVEL SECURITY;
+
+CREATE FUNCTION platform_private.delivery_actor_20261030(p_action text)
+RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_org uuid; BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'DELIVERY_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ v_org:=public.h15_actor_organization();
+ IF v_org IS NULL OR EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid() AND role IN ('parceiro_b2b','parceiro_b2b_tecnico','cliente_produtor','consultor_tecnico','aplicador','operador_onfarm','superadmin'))
+ OR EXISTS(SELECT 1 FROM public.partner_users WHERE user_id=auth.uid() AND ativo IS TRUE)
+ OR NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=auth.uid() AND (role IN ('administrador','gestor') OR (p_action='group' AND role='producao') OR (p_action='cancel' AND role='administrativo')))
+ THEN RAISE EXCEPTION 'DELIVERY_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ IF NOT public.saas_has_feature('estoque_embalagens') THEN RAISE EXCEPTION 'DELIVERY_FEATURE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN v_org;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_actor_20261030(text) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.delivery_gate_20261030(p_org uuid,p_action text)
+RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_AUTH_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
+ IF platform_private.delivery_actor_20261030(p_action) IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM public.organizations WHERE id=p_org AND ativo IS TRUE FOR SHARE;
+ IF NOT FOUND OR platform_private.delivery_actor_20261030(p_action) IS DISTINCT FROM p_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_gate_20261030(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE FUNCTION platform_private.delivery_no_downstream_20261030()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current()) THEN
+  RAISE EXCEPTION 'DELIVERY_DOWNSTREAM_FORBIDDEN: %.%',TG_TABLE_SCHEMA,TG_TABLE_NAME USING ERRCODE='42501';
+ END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION platform_private.delivery_no_downstream_20261030() FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION public.fn_entrega_marcar_cancelamento()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+ IF NEW.status::text='cancelada' AND (TG_OP='INSERT' OR OLD.status::text IS DISTINCT FROM 'cancelada') THEN
+  UPDATE platform_private.delivery_context_20261030 SET consumed=true
+   WHERE txid=pg_catalog.txid_current() AND actor=auth.uid() AND organization_id=NEW.organization_id
+    AND action='cancel' AND target=NEW.id AND consumed=false;
+  IF NOT FOUND THEN RAISE EXCEPTION 'ENTREGA_CANCELAMENTO_EXIGE_RPC' USING ERRCODE='42501'; END IF;
+  NEW.cancelada_em:=COALESCE(NEW.cancelada_em,pg_catalog.now()); NEW.cancelada_por:=auth.uid();
+ END IF;
+ RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION public.fn_entrega_marcar_cancelamento() FROM PUBLIC,anon,authenticated;
+
+-- Canonical creation overload: manual/internal only; B2B/OnFarm remain contained.
+CREATE FUNCTION public.rpc_cockpit_criar_entrega_v1(p_os_id uuid,p_origem text,p_itens jsonb,p_request_key text,p_dados jsonb)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $$
+DECLARE v_org uuid; v_actor uuid:=auth.uid(); v_os public.ordens_servico%ROWTYPE;
+ v_item jsonb; v_id uuid; v_qty numeric; v_items jsonb:='[]'; v_fp text;
+ v_prev platform_private.delivery_requests_20261030%ROWTYPE; v_batch jsonb; v_call jsonb;
+ v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid;
+BEGIN
+ v_org:=platform_private.delivery_actor_20261030('group');
+ IF p_origem IS DISTINCT FROM 'manual' OR p_os_id IS NULL THEN RAISE EXCEPTION 'DELIVERY_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;
+ IF p_request_key IS NULL OR length(btrim(p_request_key))<8 OR length(p_request_key)>128 THEN RAISE EXCEPTION 'DELIVERY_REQUEST_INVALID' USING ERRCODE='22023'; END IF;
+ IF p_dados IS NULL OR jsonb_typeof(p_dados)<>'object' OR EXISTS(SELECT 1 FROM jsonb_each(p_dados) WHERE key NOT IN ('data_saida','motorista','veiculo','tipo_entrega','endereco_origem','endereco_entrega','observacoes_entrega') OR jsonb_typeof(value) NOT IN ('string','null')) THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+ IF p_itens IS NULL OR jsonb_typeof(p_itens)<>'array' THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
+ IF jsonb_array_length(p_itens)=0 OR jsonb_array_length(p_itens)>100 THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
+ SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org;
+ IF NOT FOUND OR v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'manual' THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ FOR v_item IN SELECT value FROM jsonb_array_elements(p_itens) LOOP
+  IF jsonb_typeof(v_item)<>'object' OR NOT(v_item ? 'item_id' AND v_item ? 'quantidade') OR EXISTS(SELECT 1 FROM jsonb_each(v_item) WHERE key NOT IN ('item_id','quantidade')) THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
+  v_id:=(v_item->>'item_id')::uuid; v_qty:=(v_item->>'quantidade')::numeric;
+  IF v_id IS NULL OR v_qty IS NULL OR v_qty<=0 OR v_qty::text IN ('NaN','Infinity','-Infinity') OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_items) WHERE value->>'item_id'=v_id::text) THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
+  PERFORM platform_private.stock_motor_item(v_id,'reserva',jsonb_build_object('os_id',p_os_id,'os_tipo','manual','cliente_id',v_os.cliente_id));
+  v_items:=v_items||jsonb_build_array(jsonb_build_object('item_id',v_id,'quantidade',v_qty));
+ END LOOP;
+ SELECT jsonb_agg(value ORDER BY value->>'item_id') INTO v_items FROM jsonb_array_elements(v_items);
+ v_fp:=md5(jsonb_build_object('actor',v_actor,'org',v_org,'os',p_os_id,'origin','manual','items',v_items,'data',p_dados)::text);
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('delivery_request:'||p_request_key,0));
+ IF platform_private.delivery_actor_20261030('group') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org FOR UPDATE;
+ IF NOT FOUND OR v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'manual' THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ FOR v_item IN SELECT value FROM jsonb_array_elements(v_items) LOOP
+  v_id:=(v_item->>'item_id')::uuid;
+  PERFORM 1 FROM public.estoque_produto WHERE id=v_id FOR UPDATE;
+  PERFORM platform_private.stock_motor_item(v_id,'reserva',jsonb_build_object('os_id',p_os_id,'os_tipo','manual','cliente_id',v_os.cliente_id));
+  IF platform_private.delivery_actor_20261030('group') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ END LOOP;
+ PERFORM platform_private.delivery_gate_20261030(v_org,'group');
+ SELECT * INTO v_prev FROM platform_private.delivery_requests_20261030 WHERE request_key=p_request_key;
+ IF FOUND THEN
+  IF v_prev.actor IS DISTINCT FROM v_actor OR v_prev.organization_id IS DISTINCT FROM v_org OR v_prev.action IS DISTINCT FROM 'group' OR v_prev.fingerprint IS DISTINCT FROM v_fp THEN RAISE EXCEPTION 'DELIVERY_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  RETURN v_prev.result||jsonb_build_object('replay',true);
+ END IF;
+ IF EXISTS(SELECT 1 FROM public.entregas WHERE ordem_servico_id=p_os_id AND status::text<>'cancelada' AND estoque_produto_id IN (SELECT (value->>'item_id')::uuid FROM jsonb_array_elements(v_items))) THEN RAISE EXCEPTION 'DELIVERY_EXISTING_UNOWNED' USING ERRCODE='PT409'; END IF;
+ INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target) VALUES(pg_catalog.txid_current(),v_actor,v_org,'group',p_os_id);
+ v_batch:=public.rpc_estoque_reservar_v1(p_os_id,'manual',v_items,'delivery-reserve:'||md5(jsonb_build_array(v_actor,v_org,p_request_key)::text),jsonb_build_object('cliente_id',v_os.cliente_id));
+ IF v_batch->>'ok' IS DISTINCT FROM 'true' OR v_batch->>'replay' IS DISTINCT FROM 'false' OR jsonb_array_length(v_batch->'itens')<>jsonb_array_length(v_items) THEN RAISE EXCEPTION 'DELIVERY_RESERVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ FOR v_item IN SELECT value FROM jsonb_array_elements(v_items) LOOP
+  v_reserved:=(v_batch->'itens'->>v_index)::uuid; v_qty:=(v_item->>'quantidade')::numeric;
+  IF v_reserved IS NULL THEN RAISE EXCEPTION 'DELIVERY_RESERVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  PERFORM platform_private.delivery_gate_20261030(v_org,'group');
+  v_call:=public.rpc_cockpit_criar_entrega_v1(p_os_id,'manual',v_reserved,v_qty,p_dados||jsonb_build_object('cliente_id',v_os.cliente_id));
+  IF v_call->>'success' IS DISTINCT FROM 'true' OR v_call->>'replay' IS DISTINCT FROM 'false' THEN RAISE EXCEPTION 'DELIVERY_CREATE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  v_ent:=(v_call->>'entrega_id')::uuid;
+  IF v_ent IS NULL OR NOT EXISTS(SELECT 1 FROM public.entregas WHERE id=v_ent AND organization_id=v_org AND ordem_servico_id=p_os_id AND estoque_produto_id=v_reserved AND quantidade_entregue=v_qty AND receivable_id IS NULL AND partner_order_id IS NULL) THEN RAISE EXCEPTION 'DELIVERY_CREATE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  v_call:=public.rpc_estoque_operar_v1('expedicao',v_reserved,v_qty,'delivery-exp:'||md5(jsonb_build_array(v_actor,v_org,p_request_key,v_index)::text),jsonb_build_object('referencia_tipo','entrega','referencia_id',v_ent,'os_id',p_os_id,'os_tipo','manual','cliente_id',v_os.cliente_id));
+  IF v_call->>'ok' IS DISTINCT FROM 'true' OR v_call->>'replay' IS DISTINCT FROM 'false' OR NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE id=(v_call->>'movimentacao_id')::uuid AND estoque_produto_id=v_reserved AND referencia_id=v_ent AND referencia_tipo='entrega' AND acao='expedicao' AND usuario_id=v_actor) THEN RAISE EXCEPTION 'DELIVERY_MOVE_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+  PERFORM platform_private.delivery_gate_20261030(v_org,'group');
+  v_result:=v_result||jsonb_build_array(jsonb_build_object('entrega_id',v_ent,'estoque_produto_id',v_reserved,'movimentacao_id',v_call->>'movimentacao_id'));
+  v_index:=v_index+1;
+ END LOOP;
+ v_call:=jsonb_build_object('success',true,'replay',false,'organization_id',v_org,'os_id',p_os_id,'itens',v_result);
+ INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(p_request_key,v_actor,v_org,'group',v_fp,v_call);
+ DELETE FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current();
+ RETURN v_call;
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION public.rpc_entrega_cancelar_v1(p_entrega_id uuid,p_motivo text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $$
+DECLARE v_org uuid; v_actor uuid:=auth.uid(); v_e public.entregas%ROWTYPE; v_s public.estoque_produto%ROWTYPE;
+ v_m public.estoque_movimentacoes%ROWTYPE; v_result jsonb; v_key text; v_fp text; v_prev platform_private.delivery_requests_20261030%ROWTYPE;
+BEGIN
+ v_org:=platform_private.delivery_actor_20261030('cancel');
+ IF p_entrega_id IS NULL OR p_motivo IS NULL OR length(btrim(p_motivo))=0 THEN RAISE EXCEPTION 'DELIVERY_CANCEL_INVALID' USING ERRCODE='22023'; END IF;
+ SELECT * INTO v_e FROM public.entregas WHERE id=p_entrega_id AND organization_id=v_org;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('entrega_cancelar:'||p_entrega_id::text));
+ IF platform_private.delivery_actor_20261030('cancel') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO v_e FROM public.entregas WHERE id=p_entrega_id AND organization_id=v_org FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF platform_private.delivery_actor_20261030('cancel') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+ IF v_e.ordem_servico_onfarm_id IS NOT NULL OR v_e.partner_order_id IS NOT NULL OR v_e.receivable_id IS NOT NULL OR v_e.status::text='entregue'
+ OR NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=v_e.ordem_servico_id AND organization_id=v_org AND origem='manual' AND partner_order_id IS NULL)
+ THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;
+ v_key:='cancel:'||p_entrega_id::text; v_fp:=md5(jsonb_build_array(v_actor,v_org,p_entrega_id,btrim(p_motivo))::text);
+ SELECT * INTO v_s FROM public.estoque_produto WHERE id=v_e.estoque_produto_id FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_STOCK_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM platform_private.stock_motor_item(v_s.id,'cancelamento_reserva',jsonb_build_object('referencia_tipo','entrega','referencia_id',v_e.id));
+ PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+ SELECT * INTO v_prev FROM platform_private.delivery_requests_20261030 WHERE request_key=v_key;
+ IF FOUND THEN
+  IF v_prev.actor IS DISTINCT FROM v_actor OR v_prev.organization_id IS DISTINCT FROM v_org OR v_prev.fingerprint IS DISTINCT FROM v_fp OR v_prev.action IS DISTINCT FROM 'cancel' OR v_e.status::text<>'cancelada' THEN RAISE EXCEPTION 'DELIVERY_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  RETURN v_prev.result||jsonb_build_object('replay',true);
+ END IF;
+ IF v_e.status::text NOT IN ('separado','em_rota') OR v_s.reservado_para_os_id IS DISTINCT FROM v_e.ordem_servico_id OR v_s.reservado_para_os_tipo IS DISTINCT FROM 'manual' THEN RAISE EXCEPTION 'DELIVERY_CANCEL_STATE_CONFLICT' USING ERRCODE='PT409'; END IF;
+ INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action,target) VALUES(pg_catalog.txid_current(),v_actor,v_org,'cancel',v_e.id);
+ IF (SELECT count(*) FROM public.estoque_movimentacoes WHERE estoque_produto_id=v_s.id AND referencia_tipo='entrega' AND referencia_id=v_e.id AND acao='expedicao')<>1 THEN RAISE EXCEPTION 'DELIVERY_CANCEL_LEDGER_UNPROVEN' USING ERRCODE='PT409'; END IF;
+ SELECT * INTO v_m FROM public.estoque_movimentacoes WHERE estoque_produto_id=v_s.id AND referencia_tipo='entrega' AND referencia_id=v_e.id AND acao='expedicao' FOR UPDATE;
+ v_result:=public.rpc_estoque_operar_v1('estorno_expedicao',v_s.id,NULL,'delivery-cancel-exp:'||v_e.id::text,jsonb_build_object('referencia_tipo','entrega','referencia_id',v_e.id,'movimentacao_origem_id',v_m.id,'motivo',btrim(p_motivo)));
+ IF v_result->>'ok' IS DISTINCT FROM 'true' OR v_result->>'replay' IS DISTINCT FROM 'false' THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+ SELECT * INTO v_s FROM public.estoque_produto WHERE id=v_e.estoque_produto_id;
+ IF v_s.status::text<>'reservado' OR v_s.quantidade_reservada IS DISTINCT FROM v_e.quantidade_entregue THEN RAISE EXCEPTION 'DELIVERY_CANCEL_BALANCE_CONFLICT' USING ERRCODE='PT409'; END IF;
+ v_result:=public.rpc_estoque_operar_v1('cancelamento_reserva',v_s.id,v_s.quantidade_reservada,'delivery-cancel-res:'||v_e.id::text,jsonb_build_object('referencia_tipo','entrega','referencia_id',v_e.id,'motivo',btrim(p_motivo)));
+ IF v_result->>'ok' IS DISTINCT FROM 'true' OR v_result->>'replay' IS DISTINCT FROM 'false' THEN RAISE EXCEPTION 'DELIVERY_CANCEL_ACK_INVALID' USING ERRCODE='PT409'; END IF;
+ PERFORM platform_private.delivery_gate_20261030(v_org,'cancel');
+ UPDATE public.entregas SET status='cancelada',motivo_cancelamento=btrim(p_motivo) WHERE id=v_e.id AND organization_id=v_org;
+ IF NOT FOUND OR NOT EXISTS(SELECT 1 FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current() AND consumed) THEN RAISE EXCEPTION 'DELIVERY_CANCEL_TICKET_INVALID' USING ERRCODE='42501'; END IF;
+ v_result:=jsonb_build_object('success',true,'replay',false,'organization_id',v_org,'entrega_id',v_e.id,'estoque_estornado',true,'reserva_liberada',true);
+ INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES(v_key,v_actor,v_org,'cancel',v_fp,v_result);
+ DELETE FROM platform_private.delivery_context_20261030 WHERE txid=pg_catalog.txid_current();
+ RETURN v_result;
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_entrega_cancelar_v1(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
