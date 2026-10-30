@@ -12,7 +12,10 @@ def one(body, old, new):
 
 def candidate():
     src = (V2 / 'candidate-v2.sql.review').read_text()
-    body = re.search(r'CREATE OR REPLACE FUNCTION public.rpc_cockpit_registrar_envase_v1\(.*?\$function\$;', src, re.S).group(0)
+    assert hashlib.sha256(src.encode()).hexdigest() == '12d406373c9f8737aebe59e9fd38d4beddb8f78726f7df7ba8d53faf6c05cb29', 'V2_SOURCE_DRIFT'
+    matches = re.findall(r'CREATE OR REPLACE FUNCTION public.rpc_cockpit_registrar_envase_v1\(.*?\$function\$;', src, re.S)
+    assert len(matches)==1, 'ENVASE_SOURCE_CARDINALITY'
+    body = matches[0]
     body = one(body, "  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;\n  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;", "  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;")
     body = one(body, '  -- idempotência: LOCK primeiro, leitura definitiva depois (claim atômico)', "  IF p_idempotency_key IS NULL OR length(btrim(p_idempotency_key)) < 8 OR length(p_idempotency_key)>200 THEN RAISE EXCEPTION 'ENVASE_KEY_REQUIRED' USING ERRCODE='22023'; END IF;\n  -- idempotência: LOCK primeiro, leitura definitiva depois (claim atômico)")
     # Preserve already committed receipts/fingerprints; add a second, exact full-payload digest
@@ -27,6 +30,14 @@ def candidate():
     # Auth is reread immediately before writes and before final receipt/return.
     body = one(body, "    INSERT INTO public.envase (", "    PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);\n    INSERT INTO public.envase (")
     body = one(body, '  IF v_scope IS NOT NULL THEN', '  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);\n  IF v_scope IS NOT NULL THEN')
+    ctx = """  SELECT * INTO v_ctx FROM public.fn_cockpit_ctx_programacao(p_programacao_id);
+  IF v_ctx.os_id <> p_os_id THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_PROGRAMACAO_OS'; END IF;
+  IF v_ctx.origem <> v_origem THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ORIGEM'; END IF;
+  IF v_ctx.status_os IN ('cancelada','finalizada') THEN RAISE EXCEPTION 'COCKPIT_OS_ESTADO_TERMINAL'; END IF;
+  PERFORM public.fn_cockpit_assert_b2b_liberado(v_ctx.partner_order_id);
+"""
+    body = one(body,ctx,'')
+    body = one(body,'  IF v_lote_status IS NULL THEN',ctx+'\n  IF v_lote_status IS NULL THEN')
     cap = """CREATE FUNCTION public.rpc_envase_capability_v1(p_lote uuid,p_os uuid,p_prog uuid,p_origem text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $cap$
 DECLARE org uuid; allowed boolean:=false;
@@ -34,7 +45,9 @@ BEGIN
  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'ENVASE_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  BEGIN
   org:=platform_private.stock_envase_scope_v1(p_lote,p_prog,p_os,p_origem);
-  allowed:=has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE') AND EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os AND organization_id=org AND status::text IN ('em_cq','envase'))
+  -- Endpoint availability includes reconciliation of committed receipts after OS progressed.
+  -- Fresh-dispatch status remains checked independently under the writer lock.
+  allowed:=has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE')
    AND EXISTS(SELECT 1 FROM cf_user_guards_v1.state WHERE singleton);
  EXCEPTION WHEN insufficient_privilege THEN allowed:=false; END;
  RETURN jsonb_build_object('capability','envase_isolated_v1','available',allowed,'actor_id',auth.uid(),'organization_id',org,'lote_id',p_lote,'os_id',p_os,'programacao_id',p_prog);

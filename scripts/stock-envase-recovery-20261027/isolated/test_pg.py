@@ -17,7 +17,7 @@ def reject(label,s,code):
     assert r.returncode!=0 and re.search(r'ERROR:\s+'+code+r':',r.stderr), (label,r.stderr)
     ok(label)
 def snapshot():
-    tables=['envase','estoque_produto','estoque_movimentacoes','cockpit_operacao_idempotencia','laboratorio_esteira_eventos','ordens_servico']+T.TABLES
+    tables=['envase','estoque_produto','estoque_movimentacoes','cockpit_operacao_idempotencia','laboratorio_esteira_eventos','ordens_servico','lotes','controle_qualidade','programacao_producao']+T.TABLES
     return last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in tables)+")::text;")
 def state(): return json.loads(last(G.STATE+'::text;'))
 def env(os,pp,l,key,quantity=2): return T.envase(os,pp,l,[{'tipo_embalagem':'frasco_1L','quantidade':quantity}],key)
@@ -28,6 +28,8 @@ def run():
     sources=[]
     for p in installs:
         sources.append({'file':str(p.relative_to(S.parent)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}); sql(p.read_text())
+    for p in [V2/'candidate-v2.sql.review',H/'assemble.py',H/'test_pg.py']:
+        sources.append({'file':str(p.relative_to(S.parent)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
     (H/'sources.json').write_text(json.dumps(sources,indent=2)+'\n'); ok('reported applied composition restored in order; all installer PRE/POST pass')
     T.setup_v2(); pre=state(); delta=G.candidate()
     # pg.sql uses one connection per call: measure in ONE transaction.
@@ -50,15 +52,17 @@ def run():
     reject('missing key denied before writes',T.actor(T.W)+env(T.O2,T.PP2,T.L2,''),'22023'); assert snapshot()==before
     reject('missing gate singleton fails PT503, not overwritten FOUND',"BEGIN;DELETE FROM cf_user_guards_v1.state;"+T.actor(T.W)+env(T.O2,T.PP2,T.L2,'gate-0001'),'PT503'); assert snapshot()==before
     res=json.loads(last(T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3))); assert res['success'] is True and res['estado']=='completed'; ok('manual production envase completes CQ->stock->pronto_entrega')
-    assert T.os_status(T.O2)=='pronto_entrega'; assert last(f"SELECT count(*) FROM platform_private.authz_tickets WHERE target='{T.O2}';")=='0'; ok('transition ticket consumed; lot/CQ remain unchanged')
+    assert T.os_status(T.O2)=='pronto_entrega'; assert last(f"SELECT count(*) FROM platform_private.authz_tickets WHERE target='{T.O2}';")=='0'; ok('transition ticket consumed and OS ready')
+    assert json.loads(last(T.actor(T.W)+cap()))['available'] is True; ok('endpoint capability remains available for exact replay after OS ready')
     before=snapshot(); rep=json.loads(last(T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3))); assert rep['replay'] is True and snapshot()==before; ok('exact replay same result with zero full-row mutations')
     reject('operator substitution conflicts',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3).replace("'LOCAL'","'OTHER'"),'PT409'); assert snapshot()==before
     reject('fresh key on ready OS denied',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-new-0001'),'PT409'); assert snapshot()==before
     sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{T.W}';")
     inactive=snapshot(); reject('inactive same actor cannot replay',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3),'42501'); assert snapshot()==inactive
     sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{T.W}';")
+    before=snapshot()
     reject('ledger injected failure rolls back all envase writes',"CREATE FUNCTION public.local_fail_envase_ledger() RETURNS trigger LANGUAGE plpgsql AS $x$ BEGIN RAISE EXCEPTION 'LOCAL_LEDGER_FAIL' USING ERRCODE='PT409'; END $x$;CREATE TRIGGER zz_local_fail BEFORE INSERT ON public.estoque_movimentacoes FOR EACH ROW EXECUTE FUNCTION public.local_fail_envase_ledger();"+T.actor(T.W)+env(T.O5,T.PP5,T.L5,'rollback-0001'),'PT409')
-    sql('DROP TRIGGER zz_local_fail ON public.estoque_movimentacoes; DROP FUNCTION public.local_fail_envase_ledger();'); assert last(f"SELECT count(*) FROM public.envase WHERE lote_id='{T.L5}';")=='0'; ok('ledger failure left no envase row')
+    sql('DROP TRIGGER zz_local_fail ON public.estoque_movimentacoes; DROP FUNCTION public.local_fail_envase_ledger();'); assert snapshot()==before; ok('ledger failure preserved full envase/stock/receipt/event/lot/CQ snapshots')
     # Concurrent same key: two connections, exact replay, one row/ledger generation.
     stmt=T.actor(T.W)+env(T.O5,T.PP5,T.L5,'concurrent-0001')
     a=T.T.session('BEGIN;'+stmt); b=T.T.session('BEGIN;'+stmt)
@@ -89,8 +93,8 @@ def run():
     assert json.loads(last(att))['success'] is True and json.loads(last(att))['replayed'] is True; ok('canonical generate/sign/attach and exact attachment replay preserved')
     reject('foreign FSF proof stays closed',T.actor(T.V)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{entrega}','foreign-proof-0001');",'42501')
     sql(f'REVOKE EXECUTE ON FUNCTION {G.RPC} FROM authenticated;'); assert state()==post
-    sql((H/'rollback.sql.review').read_text()); assert json.loads(last(T.actor(T.W)+cap()))['available'] is False
-    reject('deny-only rollback closes canonical writer',T.actor(T.W)+env(T.O5,T.PP5,T.L5,'concurrent-0001'),'42501'); ok('rollback retains history, barriers, installed group/cancel and proofs')
+    hist=snapshot(); sql((H/'rollback.sql.review').read_text()); assert json.loads(last(T.actor(T.W)+cap()))['available'] is False and snapshot()==hist
+    reject('deny-only rollback closes canonical writer',T.actor(T.W)+env(T.O5,T.PP5,T.L5,'concurrent-0001'),'42501'); ok('rollback preserves full-row historical snapshots')
 if __name__=='__main__':
     status=1; started=time.monotonic()
     try: run(); status=0
