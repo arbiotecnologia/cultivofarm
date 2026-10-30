@@ -45,6 +45,15 @@ def restore():
             if present != 't': pg.sql(x['definition']+';')
         except AssertionError as e: indexes_failed.append({'object':x['schema']+'.'+x['name'],'error':str(e)})
     result['indexes_failed'] = indexes_failed
+    # Restore captured column privileges too: table ACL alone is not effective ACL.
+    for t in json.loads((H/'capture/review-live.json').read_text())['table_pins']:
+        for c in t['columns']:
+            if not c['acl']:continue
+            obj=restore_stack.q(t['schema'])+'.'+restore_stack.q(t['name'])
+            for entry in c['acl'].strip('{}').split(','):
+                role,rights=entry.split('=',1);rights=rights.split('/')[0]
+                for code,priv in [('r','SELECT'),('a','INSERT'),('w','UPDATE'),('x','REFERENCES')]:
+                    if code in rights:pg.sql(f'GRANT {priv} ({restore_stack.q(c["name"])}) ON {obj} TO {restore_stack.q(role) if role else "PUBLIC"};')
     (H/'restore-results.json').write_text(json.dumps(result,indent=2)+'\n')
     return result
 
