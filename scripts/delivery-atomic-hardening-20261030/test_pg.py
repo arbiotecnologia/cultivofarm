@@ -65,9 +65,9 @@ def wait():
 def main():
     r=restore.restore();print('RESTORE',json.dumps({k:len(v) for k,v in r.items()}),flush=True)
     assert not any(r.values()),'RESTORE_FAILED: '+json.dumps(r)
-    sql((H/'candidate.sql.review').read_text())
-    build_motor.build()
-    sql((H/'motor-delta.sql.review').read_text())
+    import assemble_install
+    assemble_install.build()
+    sql((H/'install.sql.review').read_text())
     checks.append({'test':'candidate compiles with captured real types/bodies','status':'PASS'})
     # Exact downstream tables: a transaction context blocks any writer, not the producers globally.
     tables=['accounts_receivable','accounts_receivable_installments','financial_receipts','financial_documents','fiscal_invoices','fiscal_invoice_items','fiscal_events','comunicacao_outbox','comunicacao_eventos','os_faturamento_base']
