@@ -2,7 +2,7 @@
 import json, subprocess, sys, time
 from pathlib import Path
 H = Path(__file__).resolve().parent
-RUNNERS = {'test_proof_pg': 480, 'test_proof_install': 480}
+RUNNERS = {'test_proof_pg': 480, 'test_proof_install': 480, 'test_release_combined': 480, 'test_atomic_with_proof': 480}
 def main():
     if len(sys.argv) != 2 or sys.argv[1] not in RUNNERS: raise SystemExit('Usage: run_bounded.py ' + '|'.join(RUNNERS))
     name = sys.argv[1]; budget = RUNNERS[name]; t = time.monotonic()
