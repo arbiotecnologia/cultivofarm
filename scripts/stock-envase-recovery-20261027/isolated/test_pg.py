@@ -8,6 +8,7 @@ from restore import pg
 sys.path.insert(0,str(V2)); import test_v2_pg as T
 sys.path.insert(0,str(H)); import assemble as G
 checks=[]; raw=[]
+DOWNSTREAM=list(dict.fromkeys(T.TABLES+['financial_categories','payment_methods','receivable_payments','company_fiscal_settings']))
 def ok(label): checks.append({'test':label,'status':'PASS'}); print('PASS',label,flush=True)
 def sql(s): return pg.sql(s)
 def last(s): return sql(s).splitlines()[-1]
@@ -17,7 +18,7 @@ def reject(label,s,code):
     assert r.returncode!=0 and re.search(r'ERROR:\s+'+code+r':',r.stderr), (label,r.stderr)
     ok(label)
 def snapshot():
-    tables=['envase','estoque_produto','estoque_movimentacoes','cockpit_operacao_idempotencia','laboratorio_esteira_eventos','ordens_servico','lotes','controle_qualidade','programacao_producao']+T.TABLES
+    tables=['envase','estoque_produto','estoque_movimentacoes','cockpit_operacao_idempotencia','laboratorio_esteira_eventos','ordens_servico','lotes','controle_qualidade','programacao_producao','financial_categories','payment_methods','receivable_payments','company_fiscal_settings']+T.TABLES
     return last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in tables)+")::text;")
 def state(): return json.loads(last(G.STATE+'::text;'))
 def env(os,pp,l,key,quantity=2): return T.envase(os,pp,l,[{'tipo_embalagem':'frasco_1L','quantidade':quantity}],key)
@@ -31,7 +32,10 @@ def run():
     for p in [V2/'candidate-v2.sql.review',H/'assemble.py',H/'test_pg.py']:
         sources.append({'file':str(p.relative_to(S.parent)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
     (H/'sources.json').write_text(json.dumps(sources,indent=2)+'\n'); ok('reported applied composition restored in order; all installer PRE/POST pass')
-    T.setup_v2(); pre=state(); delta=G.candidate()
+    T.setup_v2()
+    import sentinels
+    sentinels.seed(sys.modules[__name__])
+    pre=state(); delta=G.candidate()
     # pg.sql uses one connection per call: measure in ONE transaction.
     measured=sql('BEGIN;'+delta+'\n'+G.STATE+'::text;\nROLLBACK;')
     post=json.loads([x for x in measured.splitlines() if x.startswith('{')][-1]); assert state()==pre
@@ -55,7 +59,7 @@ def run():
     reject('release artifact remains explicitly NO-GO',(H/'release.sql.review').read_text(),'42501')
     sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;') # disposable only
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is True; ok('local-only grant permits in-scope production actor capability')
-    z=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in T.TABLES)+")::text;")
+    z=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;")
     before=snapshot()
     reject('foreign FSF cannot envase AR Bio',T.actor(T.V)+env(T.O2,T.PP2,T.L2,'foreign-0001'),'42501'); assert snapshot()==before
     reject('missing key denied before writes',T.actor(T.W)+env(T.O2,T.PP2,T.L2,''),'22023'); assert snapshot()==before
@@ -84,9 +88,18 @@ def run():
     sql('DROP TRIGGER zz_local_fail ON public.estoque_movimentacoes; DROP FUNCTION public.local_fail_envase_ledger();'); assert snapshot()==before; ok('ledger failure preserved full envase/stock/receipt/event/lot/CQ snapshots')
     # Concurrent same key: two connections, exact replay, one row/ledger generation.
     stmt=T.actor(T.W)+env(T.O5,T.PP5,T.L5,'concurrent-0001')
-    a=T.T.session('BEGIN;'+stmt); b=T.T.session('BEGIN;'+stmt)
+    a=T.T.session("BEGIN;SET application_name='samekey_a';"+stmt)
+    for _ in range(100):
+        if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='samekey_a' AND state='idle in transaction';")=='1': break
+        time.sleep(.02)
+    else: raise AssertionError('FIRST_WORKER_NOT_FINISHED')
+    b=T.T.session("BEGIN;SET application_name='samekey_b';"+stmt)
+    for _ in range(100):
+        if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='samekey_b' AND wait_event_type='Lock';")=='1':break
+        time.sleep(.02)
+    else: raise AssertionError('SAME_KEY_WAIT_NOT_OBSERVED')
     ra=T.T.finish(a,'COMMIT;'); rb=T.T.finish(b,'COMMIT;'); joined=''.join(ra+rb)
-    assert joined.count('"success": true')>=2 and '"replay": true' in joined and last(f"SELECT count(*) FROM public.envase WHERE lote_id='{T.L5}';")=='1'; ok('two independent connections same key: one write and one replay')
+    assert joined.count('"success": true')>=2 and '"replay": true' in joined and last(f"SELECT count(*) FROM public.envase WHERE lote_id='{T.L5}';")=='1',joined; ok('observed same-key wait: one write and one replay')
     # Assert actual worker lock wait before committing revocation (no timing-only PASS).
     holder=T.T.session(f"BEGIN; SELECT 1 FROM public.lotes WHERE id='{T.L6}' FOR UPDATE; UPDATE public.profiles SET ativo=false WHERE user_id='{T.W}';")
     worker=subprocess.Popen(pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
@@ -120,7 +133,9 @@ def run():
     sql(f"SET session_replication_role=replica;UPDATE public.ordens_servico SET status='em_cq' WHERE id='{T.O6}';")
     changed_during_wait('CQ revoked during observed lote wait denies partial before writes',f"SELECT 1 FROM public.lotes WHERE id='{T.L6}' FOR UPDATE;",f"UPDATE public.controle_qualidade SET resultado='reprovado' WHERE lote_id='{T.L6}';",env(T.O6,T.PP6,T.L6,'cq-wait-0001',1),'P0001')
     sql(f"SET session_replication_role=replica;UPDATE public.controle_qualidade SET resultado='aprovado' WHERE lote_id='{T.L6}';")
-    z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in T.TABLES)+")::text;"); assert z1==z; ok('all financial/fiscal/outbox full-row snapshots unchanged (not counts)')
+    import matrix
+    matrix.run(sys.modules[__name__])
+    z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;"); assert z1==z; ok('all fourteen financial/fiscal/outbox existing full-row snapshots unchanged')
     # Existing canonical proof regressions on locally created delivery, never hosted reference.
     owned=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{T.L2}' AND status='reservado';")
     grp=json.loads(last(T.actor()+T.group(T.O2,[{'item_id':owned,'quantidade':2}],'proof-regression-group')))

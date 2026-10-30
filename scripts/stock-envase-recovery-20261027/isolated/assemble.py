@@ -25,6 +25,7 @@ def candidate():
     matches = re.findall(r'CREATE OR REPLACE FUNCTION public.rpc_cockpit_registrar_envase_v1\(.*?\$function\$;', src, re.S)
     assert len(matches)==1, 'ENVASE_SOURCE_CARDINALITY'
     body = matches[0]
+    body = one(body,'BEGIN\n  PERFORM platform_private.stock_envase_scope_v1',"BEGIN\n  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;\n  PERFORM platform_private.stock_envase_scope_v1")
     body = one(body, "  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;\n  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;", "  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;")
     body = one(body, '  -- idempotência: LOCK primeiro, leitura definitiva depois (claim atômico)', "  IF p_idempotency_key IS NULL OR length(btrim(p_idempotency_key)) < 8 OR length(p_idempotency_key)>200 THEN RAISE EXCEPTION 'ENVASE_KEY_REQUIRED' USING ERRCODE='22023'; END IF;\n  -- idempotência: LOCK primeiro, leitura definitiva depois (claim atômico)")
     # Preserve already committed receipts/fingerprints; add a second, exact full-payload digest
@@ -47,6 +48,17 @@ def candidate():
 """
     body = one(body,ctx,'')
     body = one(body,'  IF v_lote_status IS NULL THEN',ctx+'\n  IF v_lote_status IS NULL THEN')
+    roots = """  IF v_lote_status IS DISTINCT FROM 'aprovado' THEN RAISE EXCEPTION 'ENVASE_APPROVED_LOT_REQUIRED' USING ERRCODE='PT409'; END IF;
+  IF (SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id)<>1
+   OR (SELECT count(*) FROM public.lotes WHERE programacao_id=p_programacao_id)<>1
+   OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id) THEN RAISE EXCEPTION 'ENVASE_ROOT_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+  IF EXISTS(SELECT 1 FROM public.estoque_produto s WHERE s.reservado_para_os_id=p_os_id AND s.status::text<>'estornado' AND
+   (NOT EXISTS(SELECT 1 FROM public.lotes sl WHERE sl.id=s.lote_id AND sl.organization_id=v_org) OR s.lote_id IS DISTINCT FROM p_lote_id OR s.produto_id IS DISTINCT FROM v_produto_id OR s.microrganismo_id IS DISTINCT FROM v_micro_id
+    OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM v_ctx.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL
+    OR s.status::text IS DISTINCT FROM 'reservado' OR s.quantidade_reservada IS DISTINCT FROM s.quantidade OR s.volume_total<=0 OR s.volume_total::text IN ('NaN','Infinity','-Infinity'))) THEN
+    RAISE EXCEPTION 'ENVASE_RESERVATION_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
+"""
+    body = one(body,'  SELECT coalesce(sum(coalesce(volume_por_unidade,0)',roots+'\n  SELECT coalesce(sum(coalesce(volume_por_unidade,0)')
     fresh = """    IF platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'ENVASE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
     IF NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org AND status::text IN ('em_cq','envase')) THEN RAISE EXCEPTION 'ENVASE_FRESH_STATE_DENIED' USING ERRCODE='PT409'; END IF;
     SELECT (resultado::text='aprovado') INTO v_cq_ok FROM public.controle_qualidade WHERE lote_id=p_lote_id ORDER BY created_at DESC,seq DESC LIMIT 1 FOR SHARE;
@@ -59,6 +71,18 @@ def candidate():
     prefix,suffix=body.split(anchor)
     suffix=suffix.replace('PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);',"IF platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'ENVASE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;")
     body=prefix+anchor+suffix
+    body=one(body,"  PERFORM public.fn_estoque_ctx_open(jsonb_build_object('acao','entrada','origem','rpc_cockpit_registrar_envase_v1','usuario_id',auth.uid()::text));","  PERFORM public.fn_estoque_ctx_force(jsonb_build_object('acao','entrada','origem','rpc_cockpit_registrar_envase_v1','usuario_id',auth.uid()::text));")
+    env_payload="jsonb_build_object('id',v_envase_id,'lote_id',p_lote_id,'tipo_embalagem',v_tipo,'volume_por_unidade',v_unit_ml,'quantidade',v_qtd,'data_envase',current_date,'operador',nullif(p_operador,''),'organization_id',v_org,'etiqueta_gerada',false,'etiqueta_id',NULL,'etiqueta_gerada_em',NULL,'etiqueta_gerada_por',NULL)"
+    body=one(body,'    INSERT INTO public.envase (lote_id,',f"    v_envase_id:=gen_random_uuid();\n    INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'envase',v_envase_id,p_lote_id,p_os_id,p_programacao_id,{env_payload});\n    INSERT INTO public.envase (id,lote_id,")
+    body=one(body,'    VALUES (p_lote_id, v_tipo::public.tipo_embalagem','    VALUES (v_envase_id,p_lote_id, v_tipo::public.tipo_embalagem')
+    for typ,qty in [('reservado','v_reservadas'),('disponivel','v_livres')]:
+        anchor=f'    IF {qty} > 0 THEN\n      INSERT INTO public.estoque_produto ('
+        payload=f"jsonb_build_object('id',v_estoque_id,'produto_id',v_produto_id,'microrganismo_id',v_micro_id,'lote_id',p_lote_id,'envase_id',v_envase_id,'quantidade',{qty},'volume_total',(v_unit_ml*{qty})/1000.0,'validade',p_validade,'status','{typ}','reservado_para_os_id',"+('p_os_id' if typ=='reservado' else 'NULL')+",'reservado_para_os_tipo',"+('v_origem' if typ=='reservado' else 'NULL')+",'reservado_para_cliente_id',"+('v_ctx.cliente_id' if typ=='reservado' else 'NULL')+",'reservado_para_partner_id',NULL,'reservado_para_partner_order_id',"+('v_ctx.partner_order_id' if typ=='reservado' else 'NULL')+",'quantidade_reservada',"+(qty if typ=='reservado' else 'NULL')+")"
+        payload=payload[:-1]+",'reservado_por',"+('v_uid' if typ=='reservado' else 'NULL')+",'reservado_em',"+('now()' if typ=='reservado' else 'NULL')+",'expedido_por',NULL,'expedido_em',NULL,'observacao_reserva',NULL)"
+        body=one(body,anchor,f"    IF {qty} > 0 THEN\n      v_estoque_id:=gen_random_uuid();\n      INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'estoque_produto',v_estoque_id,p_lote_id,p_os_id,p_programacao_id,{payload});\n      INSERT INTO public.estoque_produto (id,")
+    body=body.replace('        v_produto_id, v_micro_id, p_lote_id, v_envase_id,','        v_estoque_id,v_produto_id, v_micro_id, p_lote_id, v_envase_id,')
+    body=one(body,'  v_result := jsonb_build_object(',"  IF EXISTS(SELECT 1 FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current()) THEN RAISE EXCEPTION 'ENVASE_PERMIT_NOT_CONSUMED' USING ERRCODE='42501'; END IF;\n  v_result := jsonb_build_object(")
+    body=body.replace("    IF coalesce(v_cq_ok,false) IS NOT TRUE THEN", "    SELECT (resultado::text='aprovado') INTO v_cq_ok FROM public.controle_qualidade WHERE lote_id=p_lote_id ORDER BY created_at DESC,seq DESC LIMIT 1;\n    IF coalesce(v_cq_ok,false) IS NOT TRUE THEN")
     cap = """CREATE FUNCTION public.rpc_envase_capability_v1(p_lote uuid,p_os uuid,p_prog uuid,p_origem text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $cap$
 DECLARE org uuid; allowed boolean:=false;
@@ -76,14 +100,14 @@ END $cap$;
 REVOKE ALL ON FUNCTION public.rpc_envase_capability_v1(uuid,uuid,uuid,text) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION public.rpc_envase_capability_v1(uuid,uuid,uuid,text) TO authenticated;
 """
-    return body+'\n'+cap
+    return (H/'entry.sql.review').read_text()+'\n'+body+'\n'+cap
 
 # Entire relevant catalog (not counts): bodies/ACL/owner/config, columns/constraints,
 # policies and exact trigger definitions. C ordering is independent of database locale.
 TABLES = "'envase','estoque_produto','estoque_movimentacoes','lotes','controle_qualidade','ordens_servico','programacao_producao','entregas','produto_etiquetas','entrega_etiquetas','cockpit_operacao_idempotencia','laboratorio_esteira_eventos'"
 STATE = f"""SELECT jsonb_build_object(
  'functions',(SELECT jsonb_agg(jsonb_build_array(n.nspname,p.proname,pg_get_function_identity_arguments(p.oid),md5(pg_get_functiondef(p.oid)),p.proacl::text,pg_get_userbyid(p.proowner),p.proconfig,p.prosecdef) ORDER BY n.nspname COLLATE "C",p.proname COLLATE "C",pg_get_function_identity_arguments(p.oid) COLLATE "C") FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.prokind='f' AND n.nspname IN ('public','platform_private','cf_user_guards_v1')),
- 'relations',(SELECT jsonb_agg(jsonb_build_array(c.oid::regclass::text,c.relacl::text,c.relrowsecurity,c.relforcerowsecurity,pg_get_userbyid(c.relowner)) ORDER BY c.oid::regclass::text COLLATE "C") FROM pg_class c WHERE c.relnamespace='public'::regnamespace AND c.relname IN ({TABLES})),
+ 'relations',(SELECT jsonb_agg(jsonb_build_array(c.oid::regclass::text,c.relacl::text,c.relrowsecurity,c.relforcerowsecurity,pg_get_userbyid(c.relowner)) ORDER BY c.oid::regclass::text COLLATE "C") FROM pg_class c WHERE (c.relnamespace='public'::regnamespace AND c.relname IN ({TABLES})) OR (c.relnamespace='platform_private'::regnamespace AND c.relname='envase_insert_permits_v1')),
  'columns',(SELECT jsonb_agg(jsonb_build_array(a.attrelid::regclass::text,a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull,a.attacl::text) ORDER BY a.attrelid::regclass::text COLLATE "C",a.attname COLLATE "C") FROM pg_attribute a WHERE a.attnum>0 AND NOT a.attisdropped AND a.attrelid IN (SELECT oid FROM pg_class WHERE relnamespace='public'::regnamespace AND relname IN ({TABLES}))),
  'constraints',(SELECT jsonb_agg(jsonb_build_array(conrelid::regclass::text,conname,pg_get_constraintdef(oid),convalidated) ORDER BY conrelid::regclass::text COLLATE "C",conname COLLATE "C") FROM pg_constraint WHERE conrelid IN (SELECT oid FROM pg_class WHERE relnamespace='public'::regnamespace AND relname IN ({TABLES}))),
  'policies',(SELECT jsonb_agg(jsonb_build_array(tablename,policyname,permissive,roles::text,cmd,qual,with_check) ORDER BY tablename COLLATE "C",policyname COLLATE "C") FROM pg_policies WHERE schemaname='public' AND tablename IN ({TABLES})),
