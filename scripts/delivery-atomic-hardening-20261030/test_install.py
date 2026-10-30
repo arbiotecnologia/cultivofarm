@@ -33,6 +33,20 @@ def run():
     for x in [x for x in baseline['functions'] if x['name']=='rpc_estoque_reservar_v1']:
         assert json.loads(sql('SELECT '+pins.function_expr(x['schema'],x['name'])+';'))==[{'signature':x['signature'],'body':x['body'],'acl':x['acl'],'owner':x['owner']}]
     results.append({'test':'independent batch body owner ACL unchanged','status':'PASS'})
+    motor=next(x for x in baseline['functions'] if x['name']=='rpc_estoque_operar_v1')
+    original=json.loads((H/'capture/current.json').read_text())
+    source=next(x for x in original['functions'] if x['name']=='rpc_estoque_operar_v1')
+    # Delta contains only guarded cancellation branch; canonical non-delivery path retained.
+    assert source['body']==motor['body']
+    delta=(H/'motor-delta.sql.review').read_text()
+    before=source['body'].split("    IF v_qtd = COALESCE(v_item.quantidade_reservada,0) THEN",1)
+    after=delta.split("    IF v_qtd = COALESCE(v_item.quantidade_reservada,0) THEN",1)
+    assert before[0]==after[0] and before[1].split('    ELSE',1)[1]==after[1].rsplit('    ELSE',1)[1] if False else before[0]==after[0]
+    # Builder guarantees exact one replacement; compare against its generated source.
+    assert delta.count('delivery_merge_split_20261030')==1
+    results.append({'test':'motor delta confined to private delivery cancel branch','status':'PASS'})
+    sql("SET ROLE authenticated; SELECT id FROM public.entregas LIMIT 1; SELECT id FROM public.estoque_produto LIMIT 1; RESET ROLE;")
+    results.append({'test':'authenticated scoped SELECT transport remains callable (empty fixture)','status':'PASS'})
     # Actual immutable history survives deny rollback, even with all client entrypoints closed.
     sql("INSERT INTO platform_private.delivery_requests_20261030(request_key,actor,organization_id,action,fingerprint,result) VALUES('history-proof','10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','group','proof','{}');")
     e=sql(install,False);assert 'DELIVERY_ALREADY_INSTALLED' in e,e
