@@ -1,4 +1,5 @@
 ## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
+- [x] Revisão23:18: fence das quatro leituras do diálogo, bloqueio leitura incompleta/erro, mensagens por ACK e14testes montados;484Vitest PASS, diff/hashes regenerados sem hosted/publicação.
 - [x] Conclusão22:57: corrida prelock/DML real corrigida NOWAIT55P03 sem deadlock; upstream canônico completo/stock/group/cancel preservados;119PGPASS/470Vitest/3ordem,README/logs/pins atualizados; build automáticoOK, sem hosted/publicação.
 - [x] Continuação22:29: ENVASE_INSERT_PERMIT_MISMATCH corrigido, payload antes/depois e consumo/split/batch testados, mounted capability e release separados revisáveis.
 - [x] Continuação22:03: matrizes locais, sentinelas existentes, autoridade privada de entrada/isolamento/legados concluídos no recorte; operações posteriores mantidas fechadas.

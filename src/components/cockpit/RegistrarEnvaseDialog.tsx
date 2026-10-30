@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,13 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
   const { registrarEnvaseTransacional } = useEsteiraLaboratorio();
   const { user, profile } = useAuth();
   const scope = useStorageAccessScope("envase-dialog");
+  const contextKey = JSON.stringify([open, scope.scope, target?.lote_id, target?.os_id, target?.programacao_id, target?.origem]);
+  const context = useRef({ key: contextKey, generation: 0 });
+  if (context.current.key !== contextKey) {
+    context.current = { key: contextKey, generation: context.current.generation + 1 };
+  }
+  const generation = context.current.generation;
+  const currentKey = `${generation}:${contextKey}`;
   const [availableScope, setAvailableScope] = useState<string | null>(null);
   useEffect(() => {
     setAvailableScope(null);
@@ -57,22 +64,39 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
       actorId: user.id, orgId: profile.organization_id,
       args: { p_lote_id: target.lote_id, p_os_id: target.os_id, p_programacao_id: target.programacao_id, p_origem: target.origem,
         p_linhas: [], p_validade: "", p_operador: null, p_idempotency_key: "availability", p_permitir_parcial: false, p_motivo_parcial: null },
-    }, fence).then(ok => { if (active && captured() && ok) setAvailableScope(scope.scope); });
+    }, fence).then(ok => { if (active && captured() && context.current.generation === generation && ok) setAvailableScope(currentKey); }).catch(() => {});
     return () => { active = false; };
-  }, [open, target?.lote_id, target?.os_id, target?.programacao_id, target?.origem, scope.scope]);
+  }, [currentKey]);
   const [linhas, setLinhas] = useState<Linha[]>([novaLinha()]);
   const [operador, setOperador] = useState("");
   const [validade, setValidade] = useState(defaultValidade());
   const [saving, setSaving] = useState(false);
-  const [saldo, setSaldo] = useState<{ produzido: number; envasado: number; saldo: number } | null>(null);
-  const [demanda, setDemanda] = useState<{ solicitadoL: number; reservadoL: number; pendenteL: number } | null>(null);
+  const [read, setRead] = useState<{
+    key: string; status: "ready" | "error";
+    saldo?: { produzido: number; envasado: number; saldo: number };
+    demanda?: { solicitadoL: number; reservadoL: number; pendenteL: number };
+  } | null>(null);
+  const leituraAtual = open && scope.ready && read?.key === currentKey;
+  const leituraPronta = leituraAtual && read.status === "ready";
+  const saldo = leituraPronta ? read.saldo : null;
+  const demanda = leituraPronta ? read.demanda : null;
   // Chave de idempotência por abertura do diálogo: duplo clique/retry não
   // gera envase duplicado — o servidor responde replay.
   const idempotencyKey = useRef<string>(crypto.randomUUID());
 
-  const carregarSaldo = useCallback(async () => {
-    if (!target?.lote_id) return;
-    const [{ data: lote }, { data: envases }, { data: prog }, { data: reservas }] = await Promise.all([
+  useEffect(() => {
+    setRead(null);
+    setLinhas([novaLinha()]);
+    setOperador("");
+    setValidade(defaultValidade());
+    if (!open || !target?.lote_id || !scope.ready) return;
+    idempotencyKey.current = crypto.randomUUID();
+    let active = true;
+    const captured = scope.capture();
+    const fresh = () => active && captured() && context.current.generation === generation && context.current.key === contextKey;
+    const carregarSaldo = async () => {
+    try {
+    const responses = await Promise.all([
       supabase.from("lotes").select("volume_produzido").eq("id", target.lote_id).maybeSingle(),
       supabase.from("envase").select("volume_por_unidade, quantidade").eq("lote_id", target.lote_id),
       supabase
@@ -86,37 +110,29 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
         .eq("lote_id", target.lote_id)
         .eq("reservado_para_os_id", target.os_id),
     ]);
-    const produzido = Number(lote?.volume_produzido || 0);
-    const envasado = (envases ?? []).reduce(
+    if (!fresh()) return;
+    const [{ data: lote }, { data: envases }, { data: prog }, { data: reservas }] = responses;
+    if (responses.some(r => r.error) || !lote || !prog || !Array.isArray(envases) || !Array.isArray(reservas)) throw new Error("ENVASE_READ_FAILED");
+    const produzido = Number(lote.volume_produzido);
+    const envasado = envases.reduce(
       (s: number, ev: any) => s + Number(ev.volume_por_unidade || 0) * Number(ev.quantidade || 0),
       0
     );
-    setSaldo({ produzido, envasado, saldo: produzido - envasado });
-
-    const solicitadoL = Number(prog?.volume_necessario || 0) / 1000;
-    const reservadoL = (reservas ?? []).reduce(
-      (s: number, r: any) => s + (Number(r.volume_total) || 0),
+    const solicitadoL = Number(prog.volume_necessario) / 1000;
+    const reservadoL = reservas.reduce(
+      (s: number, r: any) => s + Number(r.volume_total),
       0,
     );
     const pendenteL = Math.max(0, solicitadoL - reservadoL);
-    setDemanda({ solicitadoL, reservadoL, pendenteL });
-  }, [target?.lote_id, target?.programacao_id, target?.os_id]);
-
-  useEffect(() => {
-    if (!open || !target?.lote_id) {
-      setLinhas([novaLinha()]);
-      setOperador("");
-      setValidade(defaultValidade());
-      setSaldo(null);
-      setDemanda(null);
-      return;
+    if (![produzido, envasado, solicitadoL, reservadoL].every(v => Number.isFinite(v) && v >= 0)) throw new Error("ENVASE_READ_FAILED");
+    if (fresh()) setRead({ key: currentKey, status: "ready", saldo: { produzido, envasado, saldo: produzido - envasado }, demanda: { solicitadoL, reservadoL, pendenteL } });
+    } catch {
+      if (fresh()) setRead({ key: currentKey, status: "error" });
     }
-    setLinhas([novaLinha()]);
-    setOperador("");
-    setValidade(defaultValidade());
-    idempotencyKey.current = crypto.randomUUID();
-    carregarSaldo();
-  }, [open, target?.lote_id, carregarSaldo]);
+    };
+    void carregarSaldo();
+    return () => { active = false; };
+  }, [currentKey]);
 
   // Produção NÃO é editável aqui: alterar lotes.volume_produzido direto da tela
   // criaria mudança de produção sem trilha transacional. Sem produção registrada,
@@ -185,7 +201,9 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!target || saving || !scope.ready || availableScope !== scope.scope) return;
+    if (!target || !open || saving || !leituraPronta || !scope.ready || availableScope !== currentKey) return;
+    const captured = scope.capture();
+    const submitGeneration = generation;
     if (loteSemProducao) {
       toast.error("O lote não possui volume produzido informado.");
       return;
@@ -222,15 +240,11 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
         idempotencyKey: idempotencyKey.current,
       });
 
-      if (!result) return;
-
-      const restanteMl = Number(result.saldo_restante_ml ?? 0);
-      if (restanteMl <= 0) {
-        toast.success("Lote totalmente envasado. OS pronta para entrega!");
-      } else {
-        toast.success(
-          `Envase parcial registrado. Saldo de ${fmtL(restanteMl)} disponível na página Envase para complementar.`
-        );
+      if (!result || !captured() || context.current.generation !== submitGeneration) return;
+      if (result.estado === "partial") {
+        toast.warning("Envase registrado. A demanda da OS ainda não foi coberta; a OS não avançou.");
+      } else if ((result.estado === "completed" || result.estado === "completed_override") && result.avanco?.success === true && result.avanco?.status === "pronto_entrega") {
+        toast.success("Envase registrado. OS pronta para entrega.");
       }
 
       onOpenChange(false);
@@ -244,15 +258,20 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Registrar envase</DialogTitle>
-          <DialogDescription className="flex items-center gap-2 flex-wrap">
+          <DialogDescription asChild>
+            <div className="flex items-center gap-2 flex-wrap">
             {target?.codigo_lote && (
               <Badge variant="outline" className="font-mono">Lote {target.codigo_lote}</Badge>
             )}
             {target?.produto && <span className="text-xs text-muted-foreground">{target.produto}</span>}
+            </div>
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {!leituraPronta && (leituraAtual && read.status === "error"
+            ? <p role="alert" className="text-sm text-destructive">Não foi possível consultar o saldo e a demanda atuais. O envio está bloqueado.</p>
+            : <p role="status" className="text-sm text-muted-foreground">Consultando saldo e demanda…</p>)}
           {saldo && (
             <div className="rounded-lg border bg-muted/30 p-3 grid grid-cols-3 gap-2 text-center">
               <div>
@@ -420,7 +439,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
           <Button
             type="submit"
             className="w-full font-bold"
-            disabled={saving || !scope.ready || availableScope !== scope.scope}
+            disabled={saving || !leituraPronta || !scope.ready || availableScope !== currentKey}
           >
             {saving ? "Registrando..." : "Registrar envase e avançar esteira"}
           </Button>
