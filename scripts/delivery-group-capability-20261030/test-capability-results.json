@@ -1,0 +1,213 @@
+[
+  {
+    "test": "exact applied release-combined a566faa4 installed + proof POST (hosted state reproduced)",
+    "status": "PASS"
+  },
+  {
+    "test": "pre-delta: authenticated group writer has no EXECUTE",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "pre-delta: capability RPC absent (frontend stays closed)",
+    "status": "PASS",
+    "expected": "does not exist"
+  },
+  {
+    "test": "PRE refuses ACL drift (legacy cancel2 granted)",
+    "status": "PASS",
+    "expected": "DELIVERY_CAP_PRE_DRIFT"
+  },
+  {
+    "test": "forced POST failure rolls back grants and capability",
+    "status": "PASS",
+    "expected": "LOCAL_POST_FORCED_FAIL"
+  },
+  {
+    "test": "state unchanged after POST failure",
+    "status": "PASS"
+  },
+  {
+    "test": "install COMMIT",
+    "status": "PASS"
+  },
+  {
+    "test": "standalone POST passes",
+    "status": "PASS"
+  },
+  {
+    "test": "rerun refused",
+    "status": "PASS",
+    "expected": "DELIVERY_CAP_ALREADY_INSTALLED"
+  },
+  {
+    "test": "anon cannot probe capability",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "anon cannot call group writer",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "admin AR Bio capability group+cancel",
+    "status": "PASS"
+  },
+  {
+    "test": "producao: group only",
+    "status": "PASS"
+  },
+  {
+    "test": "administrativo: cancel only",
+    "status": "PASS"
+  },
+  {
+    "test": "financeiro alone: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "aplicador alone: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "consultor_tecnico alone: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "admin + parceiro_b2b: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "admin + parceiro_b2b_tecnico: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "admin + superadmin: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "inactive profile: closed",
+    "status": "PASS"
+  },
+  {
+    "test": "inactive profile: writer denied",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "FSF tenant admin cannot use AR Bio OS/stock IDs",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "legacy 5-arg creator still closed to clients",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "legacy cancel2 still closed",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "ignored field rejected server-side",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "negatives created nothing",
+    "status": "PASS"
+  },
+  {
+    "test": "authenticated group: exact ACK envelope (frontend parser contract)",
+    "status": "PASS",
+    "ack": {
+      "itens": [
+        {
+          "entrega_id": "8f93340a-6a5d-46bc-9f7a-65ff3b7fd295",
+          "movimentacao_id": "298f19a5-4745-4b45-b594-8d987522251e",
+          "estoque_produto_id": "08013b19-f6cd-48b0-8eeb-120ebb8adaad"
+        },
+        {
+          "entrega_id": "34cbb3e6-6f01-4a6f-9041-8cdae477b505",
+          "movimentacao_id": "0fb2b9c5-60c5-4aa5-9d15-0c6e58d21fe5",
+          "estoque_produto_id": "fa7be3e4-3776-4fc9-a296-7ecafc5a0951"
+        }
+      ],
+      "os_id": "10000000-0000-4000-8000-000000000007",
+      "replay": false,
+      "success": true,
+      "organization_id": "10000000-0000-4000-8000-000000000001"
+    }
+  },
+  {
+    "test": "exact replay returns stored result",
+    "status": "PASS"
+  },
+  {
+    "test": "same key from FSF actor cannot read AR Bio receipt",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "two deliveries, two expeditions, one receipt",
+    "status": "PASS"
+  },
+  {
+    "test": "direct client UPDATE on entregas denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "FSF cannot cancel AR Bio delivery",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "authenticated cancel: exact ACK envelope",
+    "status": "PASS",
+    "ack": {
+      "replay": false,
+      "success": true,
+      "entrega_id": "8f93340a-6a5d-46bc-9f7a-65ff3b7fd295",
+      "organization_id": "10000000-0000-4000-8000-000000000001",
+      "reserva_liberada": true,
+      "estoque_estornado": true
+    }
+  },
+  {
+    "test": "zero financial/fiscal/outbox effects",
+    "status": "PASS"
+  },
+  {
+    "test": "proof preflight ACL unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback COMMIT",
+    "status": "PASS"
+  },
+  {
+    "test": "after rollback group writer denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "after rollback cancel denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "after rollback capability closed for admin",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback preserves deliveries and receipts",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback rerun idempotent",
+    "status": "PASS"
+  }
+]

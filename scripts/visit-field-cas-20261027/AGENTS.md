@@ -5,3 +5,5 @@
 - Backend applied by the auditor (visit_field_cas_gate_20261027): never re-apply; a false CAS finish/discard must never show saved or advance.
 - Field table writes are canonical-RPC-only for authenticated callers; preserve SELECT, tenant RLS, existing RPCs and owner/service_role privileges — prevents direct DML from bypassing the revocation gate.
 - Applied write-closure SQL is a reported effective-statement excerpt, not a reconstructed migration; verify effective table and column ACLs read-only before asserting closure — avoids fabricated preflight evidence.
+
+- (Moved from root AGENTS.md) Visit field writes follow scripts/visit-field-cas-20261027/AGENTS.md; installed canonical-write-only ACLs preserve SELECT/RLS and privileged service writers, and applied audit artifacts must never be replayed — prevents bypassing the field revocation gate.

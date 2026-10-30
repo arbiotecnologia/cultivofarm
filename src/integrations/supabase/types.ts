@@ -24386,16 +24386,28 @@ export type Database = {
         }
         Returns: Json
       }
-      rpc_cockpit_criar_entrega_v1: {
-        Args: {
-          p_dados?: Json
-          p_estoque_produto_id: string
-          p_origem: string
-          p_os_id: string
-          p_quantidade: number
-        }
-        Returns: Json
-      }
+      rpc_cockpit_criar_entrega_v1:
+        | {
+            Args: {
+              p_dados?: Json
+              p_estoque_produto_id: string
+              p_origem: string
+              p_os_id: string
+              p_quantidade: number
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_dados: Json
+              p_itens: Json
+              p_origem: string
+              p_os_id: string
+              p_os_observed: string
+              p_request_key: string
+            }
+            Returns: Json
+          }
       rpc_cockpit_gerar_lote_v1: {
         Args: {
           p_lote: Json
@@ -24673,16 +24685,34 @@ export type Database = {
         Args: { p_idempotency_key: string; p_payload: Json; p_termo_id: string }
         Returns: Json
       }
+      rpc_entrega_assinatura_coletar_v1: {
+        Args: { p_entrega_id: string; p_payload: Json; p_request_key: string }
+        Returns: Json
+      }
       rpc_entrega_cancelar_termo_v1: {
         Args: { p_motivo: string; p_termo_id: string }
         Returns: Json
       }
-      rpc_entrega_cancelar_v1: {
-        Args: { p_entrega_id: string; p_motivo: string }
+      rpc_entrega_cancelar_v1:
+        | { Args: { p_entrega_id: string; p_motivo: string }; Returns: Json }
+        | {
+            Args: { p_entrega_id: string; p_motivo: string; p_observed: string }
+            Returns: Json
+          }
+      rpc_entrega_comprovacao_preflight_v1: {
+        Args: { p_action: string; p_entrega_id: string }
+        Returns: Json
+      }
+      rpc_entrega_comprovante_anexar_v1: {
+        Args: { p_entrega_id: string; p_payload: Json; p_request_key: string }
         Returns: Json
       }
       rpc_entrega_confirmar_v1: {
         Args: { p_entrega_id: string; p_opcoes?: Json; p_recebedor: Json }
+        Returns: Json
+      }
+      rpc_entrega_formulario_gerar_v1: {
+        Args: { p_entrega_id: string; p_request_key: string }
         Returns: Json
       }
       rpc_entrega_gerar_termo_v1: {

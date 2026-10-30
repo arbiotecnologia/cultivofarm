@@ -42,18 +42,15 @@ function traduzErroComprovante(msg: string): string {
   const chave = Object.keys(ERROS_COMPROVANTE).find((k) => msg.includes(k));
   return chave ? ERROS_COMPROVANTE[chave] : msg;
 }
-import { validatePhoneBR } from "@/lib/masks";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
-import { validarRespostaEstoqueEntrega } from "@/lib/entregas/payloadEntrega";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmarEntregaFinanceiroDialog } from "@/components/financeiro/ConfirmarEntregaFinanceiroDialog";
 import { ConfirmarEntregaDialog } from "@/components/entregas/ConfirmarEntregaDialog";
 import { EntregaComprovantePanel } from "@/components/entregas/EntregaComprovantePanel";
 import { TermoEntregaPanel } from "@/components/entregas/TermoEntregaPanel";
 import { EmbalagensEntregaPanel } from "@/components/estoque/EmbalagensEntregaPanel";
-import { operarEstoque, chaveIdempotencia, mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
 import { FileText } from "lucide-react";
 import { formatOS, formatOSFromId } from "@/lib/osLabel";
 import { getClienteLabel, getClienteFullLabel } from "@/lib/clienteLabel";
@@ -63,6 +60,7 @@ import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/component
 import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";
 import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
 import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+import { runAtomicCancel, runAtomicGroup, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   separado: { label: "Separado", variant: "secondary" },
@@ -90,7 +88,8 @@ export default function Entregas() {
   // Per-mount containment, not a server receipt or cross-tab idempotency.
   const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {
     try {
-      requireDeliveryOperationContract(target === "cancel" ? "cancel" : "delivery");
+      // create/cancel probe the server capability inside the work, before any dispatch.
+      if (target !== "create" && target !== "cancel") requireDeliveryOperationContract("delivery");
     } catch (error) {
       const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;
       setOperationNotice(message);
@@ -525,156 +524,29 @@ export default function Entregas() {
 
   const createMutation = useMutation({
     retry: false,
-    mutationFn: (payload: RegistrarEntregaSubmit) => runDeliveryOperation("create", async (check, dispatch, current) => {
-      const { grupoId, itens, osId, osTipo, tipo_entrega, motorista, veiculo, data_saida,
-        motorista_telefone, motorista_documento, veiculo_placa, veiculo_tipo,
-        hora_saida_prevista, data_chegada_prevista, hora_chegada_prevista,
-        destinatario_nome, destinatario_telefone, destinatario_whatsapp,
-        endereco_origem, endereco_logradouro, endereco_numero, endereco_complemento,
-        endereco_bairro, endereco_cidade, endereco_uf, endereco_cep, endereco_referencia } = payload;
+    mutationFn: (payload: RegistrarEntregaSubmit) => runDeliveryOperation("create", async (check, dispatch) => {
+      // Single atomic server contract; opens only with an exact server capability (probed before dispatch).
+      const { grupoId, itens, osId, osTipo, ...dados } = payload;
       const uuid = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-      if (!uuid.test(grupoId) || !uuid.test(osId) || itens.length === 0 || itens.some(({ item, quantidade }) => !uuid.test(item.id) || !Number.isFinite(quantidade) || quantidade <= 0)) throw new Error("Identificação ou quantidade de entrega inválida.");
-      if (new Set(itens.map(({ item }) => item.id)).size !== itens.length) throw new Error("Item de estoque repetido.");
-
-      // Validação/normalização de telefones antes da persistência.
-      const motCheck = validatePhoneBR(motorista_telefone, { fieldLabel: "Telefone do motorista" });
-      if (!motCheck.ok) throw new Error(motCheck.error);
-      const destCheck = validatePhoneBR(destinatario_telefone, { fieldLabel: "Telefone do destinatário" });
-      if (!destCheck.ok) throw new Error(destCheck.error);
-      const waCheck = validatePhoneBR(destinatario_whatsapp, { fieldLabel: "WhatsApp do destinatário" });
-      if (!waCheck.ok) throw new Error(waCheck.error);
-
-      const osRef = (todasOS as any[]).find((o) => o.id === osId);
-      const criadas: string[] = [];
-
-
-      try {
-        for (const linha of itens) {
-          let item = linha.item;
-          const quantidade = linha.quantidade;
-          check();
-          if (quantidade <= 0) throw new Error(`Quantidade inválida para o lote ${item.lotes?.codigo_lote || item.id}.`);
-          if (quantidade > item._saldo) throw new Error(`Lote ${item.lotes?.codigo_lote || ""}: quantidade ${quantidade} excede o saldo físico (${item._saldo}).`);
-          if (item.status === "reservado" && quantidade > item._saldo_reserva) {
-            throw new Error(`Lote ${item.lotes?.codigo_lote || ""}: reserva remanescente é de ${item._saldo_reserva} un.`);
-          }
-
-          let itemOsId = item.reservado_para_os_id;
-          let itemOsTipo = item.reservado_para_os_tipo;
-          let itemClienteId = item.reservado_para_cliente_id;
-
-          if (!itemOsId) {
-            if (!osRef) throw new Error("OS de destino não localizada.");
-            dispatch();
-            let reservadoId = "";
-            const ok = await hookReservarEstoque(
-              item,
-              { cliente_id: osRef.cliente_id, quantidade_reservada: quantidade },
-              osRef.id,
-              osRef.type,
-              true, // override: usuário já confirmou origem no diálogo de entrega
-              { current, deferEffects: true, onReserved: (id) => { reservadoId = id; } },
-            );
-            check();
-            if (!ok) throw new Error(`Falha ao reservar o lote ${item.lotes?.codigo_lote || ""}.`);
-            if (!reservadoId) throw new Error("Reserva sem identificador confirmado.");
-            // The canonical reserve RPC returns the newly split row when partial.
-            item = { ...item, id: reservadoId };
-            itemOsId = osRef.id;
-            itemOsTipo = osRef.type;
-            itemClienteId = osRef.cliente_id;
-
-          }
-
-          // O volume entregue é calculado e gravado pelo servidor a partir do
-          // item de estoque. O frontend não envia volume como autoridade.
-          const entregaData = {
-            ordem_servico_id: itemOsTipo !== "onfarm" ? itemOsId : null,
-            ordem_servico_onfarm_id: itemOsTipo === "onfarm" ? itemOsId : null,
-            cliente_id: itemClienteId,
-            estoque_produto_id: item.id,
-            lote_id: item.lote_id,
-            produto_id: item.produto_id,
-            quantidade_entregue: quantidade,
-            
-            tipo_entrega: tipo_entrega || 'motorista',
-            motorista: motorista || null,
-            veiculo: veiculo || null,
-            data_saida: data_saida || null,
-            motorista_telefone: motCheck.value,
-            motorista_documento: motorista_documento || null,
-            veiculo_placa: veiculo_placa || null,
-            veiculo_tipo: veiculo_tipo || null,
-            hora_saida_prevista: hora_saida_prevista || null,
-            data_chegada_prevista: data_chegada_prevista || null,
-            hora_chegada_prevista: hora_chegada_prevista || null,
-            destinatario_nome: destinatario_nome || null,
-            destinatario_telefone: destCheck.value,
-            destinatario_whatsapp: waCheck.value,
-            endereco_origem: endereco_origem || 'cadastro',
-            endereco_logradouro: endereco_logradouro || null,
-            endereco_numero: endereco_numero || null,
-            endereco_complemento: endereco_complemento || null,
-            endereco_bairro: endereco_bairro || null,
-            endereco_cidade: endereco_cidade || null,
-            endereco_uf: endereco_uf || null,
-            endereco_cep: endereco_cep || null,
-            endereco_referencia: endereco_referencia || null,
-            grupo_entrega_id: grupoId,
-          };
-
-          dispatch();
-          const created = await criarEntrega(entregaData, itemOsId, itemOsTipo, { current, deferEffects: true });
-          check();
-          if (!created || !(created as any).id) throw new Error("Falha ao gravar entrega.");
-          criadas.push((created as any).id);
-
-          // Integração com estoque: se a reserva zerou, expede pelo motor canônico.
-          // Nenhum UPDATE direto: `rpc_estoque_operar_v1` grava saldo + livro atomicamente.
-          try {
-            const { data: entregasAtivas, error: leituraError } = await supabase
-              .from("entregas")
-              .select("quantidade_entregue")
-              .eq("estoque_produto_id", item.id)
-              .neq("status", "cancelada");
-            check();
-            if (leituraError) throw leituraError;
-            const totalEntregue = (entregasAtivas || []).reduce(
-              (s: number, e: any) => s + (Number(e.quantidade_entregue) || 0),
-              0,
-            );
-            const qtdReservada = Number(item.quantidade_reservada || 0);
-            if (item.status === "reservado" && qtdReservada > 0 && totalEntregue >= qtdReservada) {
-              dispatch();
-              const result = await operarEstoque(
-                "expedicao",
-                item.id,
-                qtdReservada,
-                chaveIdempotencia("entrega-expedicao", (created as any).id),
-                {
-                  origem: "entregas.registrarEntrega",
-                  referencia_tipo: "entrega",
-                  referencia_id: (created as any).id,
-                  os_id: itemOsId,
-                  os_tipo: itemOsTipo,
-                  cliente_id: itemClienteId,
-                  observacao: `Expedição automática pela entrega ${(created as any).id}`,
-                },
-              );
-              check();
-              validarRespostaEstoqueEntrega(result, "expedicao", item.id);
-            }
-          } catch (autoExpErr) {
-            throw new Error(`Entrega criada; expedição não confirmada. ${mensagemErroEstoque(autoExpErr)}`);
-          }
-
-        }
-
-        return { grupoId, total: criadas.length };
-      } catch (err: any) {
-        // No compensating writes: multi-request orchestration cannot prove rollback.
-        throw err;
-      }
+      if (!uuid.test(grupoId) || !uuid.test(osId) || itens.length === 0 || itens.some(({ item, quantidade }) => !uuid.test(item.id) || !Number.isFinite(quantidade) || quantidade <= 0 || quantidade > item._saldo)) throw new Error("Identificação ou quantidade de entrega inválida.");
+      const ids = itens.map(({ item }) => item.id);
+      const [{ data: os, error: osError }, { data: estoque, error: estoqueError }] = await Promise.all([
+        supabase.from("ordens_servico").select("id, updated_at").eq("id", osId).maybeSingle(),
+        supabase.from("estoque_produto").select("id, updated_at, status").in("id", ids),
+      ]);
+      check();
+      if (osError || estoqueError) throw new Error("Não foi possível confirmar o estado atual da OS e do estoque. Nenhuma alteração foi enviada.");
+      const rows = new Map((estoque ?? []).map((r: any) => [r.id, r]));
+      if (!os?.updated_at || rows.size !== ids.length) throw new Error("OS ou lote fora do escopo atual. Nenhuma alteração foi enviada.");
+      const outcome = await runAtomicGroup(supabase.rpc.bind(supabase) as unknown as Rpc, {
+        requestKey: grupoId, osId, osTipo, osObservedUpdatedAt: os.updated_at,
+        itens: itens.map(({ item, quantidade }) => ({ itemId: item.id, quantidade, observedUpdatedAt: (rows.get(item.id) as any).updated_at, status: (rows.get(item.id) as any).status })),
+        dados,
+      }, check, dispatch);
+      if (outcome.status === "confirmed") return { grupoId, total: outcome.ack.itens.length };
+      if (outcome.status === "closed") throw new Error(outcome.message);
+      if (outcome.status === "rejected") throw new Error(`Entrega recusada pelo servidor; nenhuma etapa foi gravada. ${outcome.message}`);
+      throw new Error("Resposta incerta da entrega. Consulte as entregas; um reenvio só pode repetir exatamente o mesmo grupo.");
     }),
     onSuccess: ({ value: { total }, current }) => {
       if (!current()) return;
@@ -717,69 +589,16 @@ export default function Entregas() {
     retry: false,
     mutationFn: ({ id, motivo }: { id: string; motivo: string }) => runDeliveryOperation("cancel", async (check, dispatch) => {
       if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) throw new Error("Entrega inválida.");
-      const { data: entrega, error: fetchErr } = await supabase
-        .from("entregas")
-        .select("id, status, estoque_produto_id, quantidade_entregue, ordem_servico_id")
-        .eq("id", id)
-        .single();
-      
+      const { data: entrega, error: fetchErr } = await supabase.from("entregas").select("id, status, updated_at").eq("id", id).maybeSingle();
       check();
-      if (fetchErr) throw fetchErr;
-      if (!entrega || entrega.id !== id || !["separado", "em_rota"].includes(entrega.status)) throw new Error("Cancelamento indisponível para este estado. Retorno de entregue exige contrato próprio.");
-
-      dispatch();
-      const { data: updated, error } = await supabase
-        .from("entregas")
-        .update({
-          status: "cancelada" as any,
-          motivo_cancelamento: motivo || null,
-        } as any)
-        .eq("id", id).eq("status", entrega.status).select("id, status");
-      check();
-      if (error) throw error;
-      if (updated?.length !== 1 || updated[0].id !== id || updated[0].status !== "cancelada") throw new Error("Cancelamento não confirmado; consulte a entrega.");
-
-      // Estorno da expedição automática pelo motor canônico: reverte exatamente
-      // a movimentação de expedição desta entrega, uma única vez (índice único
-      // em movimentacao_origem_id impede estorno duplicado).
-      try {
-        if (entrega.estoque_produto_id) {
-          const { data: movExpedicao, error: movimentoError } = await supabase
-            .from("estoque_movimentacoes")
-            .select("id, acao")
-            .eq("estoque_produto_id", entrega.estoque_produto_id)
-            .eq("referencia_tipo", "entrega")
-            .eq("referencia_id", id)
-            .in("acao", ["expedicao", "entrega"])
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          check();
-          if (movimentoError) throw movimentoError;
-          if (!movExpedicao?.id) throw new Error("Ausência de expedição não comprova estoque conciliado; cancelamento exige revisão.");
-          if (movExpedicao?.id) {
-            dispatch();
-            const result = await operarEstoque(
-              "estorno_expedicao",
-              entrega.estoque_produto_id,
-              null,
-              chaveIdempotencia("entrega-estorno", id),
-              {
-                origem: "entregas.cancelarEntrega",
-                referencia_tipo: "entrega",
-                referencia_id: id,
-                movimentacao_origem_id: movExpedicao.id,
-                motivo: `Estorno por cancelamento de entrega: ${motivo || "sem motivo informado"}`,
-              },
-            );
-            check();
-            validarRespostaEstoqueEntrega(result, "estorno_expedicao", entrega.estoque_produto_id);
-          }
-        }
-      } catch (rollbackErr) {
-        throw new Error(`Cancelamento registrado; estorno não confirmado. ${mensagemErroEstoque(rollbackErr)}`);
-      }
+      if (fetchErr || !entrega || entrega.id !== id) throw new Error("Não foi possível confirmar a entrega atual. Nenhuma alteração foi enviada.");
+      if (!["separado", "em_rota"].includes(entrega.status)) throw new Error("Cancelamento indisponível para este estado. Retorno de entregue exige contrato próprio.");
+      // One server transaction: expedition reversal, reservation release and status; no client compensation.
+      const outcome = await runAtomicCancel(supabase.rpc.bind(supabase) as unknown as Rpc, id, motivo, (entrega as any).updated_at, check, dispatch);
+      if (outcome.status === "confirmed") return { id };
+      if (outcome.status === "closed") throw new Error(outcome.message);
+      if (outcome.status === "rejected") throw new Error(`Cancelamento recusado pelo servidor; nada foi alterado. ${outcome.message}`);
+      throw new Error("Resposta incerta do cancelamento. Consulte a entrega antes de repetir.");
     }),
     onSuccess: ({ current }) => {
       if (!current()) return;

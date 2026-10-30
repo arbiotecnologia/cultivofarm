@@ -1,5 +1,7 @@
 # Entrega — pacote fechado revisável, NO-GO operacional
 
+> Estado vigente (2026-10-30): instalado no hosted como parte de `release-combined.sql.review` (relato externo). Grants de cliente para grupo/cancelamento: candidato separado em `../delivery-group-capability-20261030/`.
+
 ## Estado vigente
 
 - Instalador `install.sql.review` ensaiado em PostgreSQL descartável: **97 PASS / 0 FAIL / 0 BLOCKED** na regressão (257,264 s) e **9 PASS / 0 FAIL** no instalador fresco (242,091 s), ambos exit 0. Evidência da rodada diagnóstica anterior; **nenhum rerun nesta rodada documental**. Restauração: seis listas vazias.
@@ -16,7 +18,7 @@ Grupo interno exige CAS OS/estoque, receipts contextualizados, reautorização/g
 
 ## Compatibilidade concreta pendente
 
-**Três ações de comprovação ainda ativas no produto serão bloqueadas pelo instalador:** gerar formulário, coletar assinatura digital e anexar comprovante (`EntregaComprovantePanel.tsx:291,399,520`). Não possuem permit privado nem contenção cliente; assinatura/anexo fazem upload antes da RPC, com risco de objeto órfão quando a gravação falhar. Decisão do proprietário: migrar. A migração está em `scripts/delivery-proof-authz-20261030/` (instalar logo após este pacote, frontend publicado antes); este pacote sozinho continua bloqueando as três ações. Demais callers de criação/status/cancelamento/recebimento/embalagens/sem-cobrança encontrados já estão contidos. Não confundir isso com homologação real de todos os callers.
+**Três ações de comprovação ainda ativas no produto serão bloqueadas pelo instalador:** gerar formulário, coletar assinatura digital e anexar comprovante (`EntregaComprovantePanel.tsx:291,399,520`). Não possuem permit privado nem contenção cliente; assinatura/anexo fazem upload antes da RPC, com risco de objeto órfão quando a gravação falhar. Decisão do proprietário: migrar. A migração está em `scripts/delivery-proof-authz-20261030/` e foi entregue em `release-combined.sql.review` (atômico + comprovação numa única transação, backend primeiro, frontend depois). Relato externo do proprietário em 2026-10-30: `a566faa4…` aplicado no projeto canônico (migration `delivery_atomic_and_proof_authorization_20261030`, PRE/POST aprovados) e commit `8cd18556` publicado; este pacote isolado não deve ser reinstalado. A liberação de grupo/cancelamento a clientes segue em `scripts/delivery-group-capability-20261030/` (candidato, não aplicado). Demais callers de criação/status/cancelamento/recebimento/embalagens/sem-cobrança encontrados já estão contidos. Não confundir isso com homologação real de todos os callers.
 
 Termos/PDF em tabela irmã permanecem caminho separado: geração/assinatura/upload/publicação de evento não são universalmente fechados por um trigger em entregas. Download e consulta financeira de títulos existentes continuam leitura. Detalhes e limites em `WRITERS-INVENTORY.md`.
 

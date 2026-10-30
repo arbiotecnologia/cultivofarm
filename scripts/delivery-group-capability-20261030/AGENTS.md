@@ -1,0 +1,6 @@
+- Preparation only: never apply install/rollback hosted, publish or call hosted writers from this package; the owner reviews the exact artifacts first.
+- Install only on top of the APPLIED release-combined (a566faa4); PRE pins exact bodies/ACL/owners from the atomic post-expected capture and refuses drift or rerun.
+- Delta = capability RPC + EXECUTE to authenticated on the group/observed-cancel writers only; never touch writer bodies, legacy overloads, private helpers, table DML, proof RPCs or batch.
+- Capability is a release gate, never authority: writers re-authorize; the frontend opens only on the exact envelope probed immediately before dispatch.
+- Rollback is deny-only: revoke the two grants, capability reports closed, keep receipts/deliveries/barrier.
+- Synthetic claims on disposable PG are not hosted JWT/RLS/Storage proof; never use service_role as an actor.
