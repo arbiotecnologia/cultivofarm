@@ -95,6 +95,8 @@ BEGIN
  SELECT coalesce(sum(volume_total),0)*1000 INTO reserved FROM public.estoque_produto
   WHERE reservado_para_os_id=p_os AND reservado_para_os_tipo='manual' AND status::text<>'estornado';
  IF p_estado='completed' AND reserved < coalesce(p.volume_necessario,0) THEN RAISE EXCEPTION 'ENVASE_TRANSITION_COVERAGE' USING ERRCODE='PT409'; END IF;
+ -- Re-authorize after the programacao/lote/CQ waits and immediately before the first mutation.
+ IF org IS DISTINCT FROM platform_private.stock_envase_scope_v1(p_lote,p_prog,p_os,'manual') THEN RAISE EXCEPTION 'ENVASE_TRANSITION_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'manual_envase_transition_v1',p_os);
  IF prev='em_cq' THEN UPDATE public.ordens_servico SET status='envase' WHERE id=p_os; END IF;
  UPDATE public.ordens_servico SET status='pronto_entrega' WHERE id=p_os;
