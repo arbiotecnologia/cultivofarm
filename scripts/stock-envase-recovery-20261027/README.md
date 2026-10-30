@@ -116,3 +116,7 @@ Aprovado somente o aviso `fn_notify_lab_on_programacao` marcado como teste, para
 
 ## Revisão ad528283
 Fixture com identificadores hosted fixados (`fixture-arbio-pipeline-params.psql`), quatro gates SaaS exatos, baseline financeiro AR Bio pinado, marcas de nome no PRE/POST, caminho `cancel=false` e ledger/estoque exatos. Ensaio local: 32 PASS / 0 FAIL (252,9 s). Nada executado hosted.
+
+## Correção bloqueante c9ff63b (30/10/2026)
+O gerador `assemble_v2.py` já tinha o contrato livre para UF/CEP/telefones, mas `candidate-v2`/`install-v2`/`postflight-v2` commitados eram de uma geração anterior com regex rígidos (CEP, UF 2 letras, telefone 8–20). Regenerados por `test_v2_pg.py` (assemble → POST medido → instalador). Agora o teste falha se o candidato ou o instalador gerado contiver esses ramos rígidos, e grava no PG o payload exato emitido pelo diálogo montado (`frontend-autofill-payload.json`, escrito pelo vitest: CEP `38.600-000`, telefone `(38) 3671-1234`) e uma variante de formatos livres, conferindo cada campo verbatim. Controles de campo desconhecido, tipo, controle/tamanho, data/hora inalterados.
+Resultados atuais (logs brutos `*-current.log.txt`): v2 PG 78 PASS; capability rebaseada 44 PASS; atômicas compostas 97 PASS; proof compostas 103 PASS; fluxo canônico 32 PASS.
