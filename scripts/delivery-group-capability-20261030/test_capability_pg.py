@@ -71,7 +71,7 @@ def main():
     fails('FSF tenant admin cannot use AR Bio OS/stock IDs', T.actor(T.V) + T.call('fsf-cross'), 'DELIVERY_SCOPE_DENIED')
     fails('legacy 5-arg creator still closed to clients', T.actor() + f"SELECT public.rpc_cockpit_criar_entrega_v1('{T.O}','manual','{T.S}',1,'{{}}'::jsonb);", 'permission denied')
     fails('legacy cancel2 still closed', T.actor() + f"SELECT public.rpc_entrega_cancelar_v1('{T.O}','x');", 'permission denied')
-    fails('ignored field rejected server-side', T.actor() + T.call('extra-field-key').replace("'{}'::jsonb", "'{\"destinatario_nome\":\"x\"}'::jsonb"), 'DELIVERY_DATA_INVALID')
+    fails('unknown/boundary field rejected server-side', T.actor() + T.call('extra-field-key').replace("'{}'::jsonb", "'{\"grupo_entrega_id\":\"x\"}'::jsonb"), 'DELIVERY_DATA_INVALID')
     is_true('negatives created nothing', "SELECT (SELECT count(*) FROM public.entregas)=0 AND (SELECT count(*) FROM platform_private.delivery_requests_20261030)=0;")
     ack = json.loads(sql(T.actor() + T.call('positive')).splitlines()[-1])
     assert set(ack) == {'success', 'replay', 'organization_id', 'os_id', 'itens'} and ack['success'] is True and ack['replay'] is False and ack['os_id'] == T.O and ack['organization_id'] == T.A and len(ack['itens']) == 2
