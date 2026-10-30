@@ -1,0 +1,4 @@
+TYPECHECK: NÃO VERIFICADO SEPARADAMENTE.
+O harness automatiza build/typecheck; não há log separado de typecheck nesta execução.
+Build automático: build OK em /tmp/observability/build-errors.log.
+Não foi executado build/typecheck manual, conforme restrição do ambiente.
