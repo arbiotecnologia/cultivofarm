@@ -2,3 +2,4 @@
 - Rebase the envase-only delta on the exact applied v2 and sibling packages; never reinstall motor/batch/group or change their grants — preserves installed corrections.
 - Release is NO-GO until post-wait authority and indirect effects are demonstrated; capability is availability only, never authority.
 - Preserve CQ/lot fences, proof/history, deny-only rollback and all financial/fiscal/automation closures; waiver and label/physical writers remain independent.
+- Legacy closure is a separate ACL-only delta for receipt, delivery-label unlink and package-label link; never change bodies or service grants and never regrant on rollback — prevents definer bypasses without activating physical operations.

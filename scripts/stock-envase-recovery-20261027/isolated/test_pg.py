@@ -40,6 +40,15 @@ def run():
     reject('PRE drift aborts exactly',inst.replace('ENVASE_PRE_DRIFT','ENVASE_PRE_DRIFT',1).replace(json.dumps(pre).replace("'","''"),json.dumps({}).replace("'","''"),1),'P0001')
     reject('forced POST aborts installation',inst.replace(delta,delta+"DO $x$ BEGIN RAISE EXCEPTION 'FORCED_POST' USING ERRCODE='PT409'; END $x$;"),'PT409'); assert state()==pre
     sql(inst); assert state()==post; ok('install COMMIT and exact POST; writer remains closed')
+    closure=G.legacy_delta()
+    measured=sql('BEGIN;'+closure+G.STATE+'::text;ROLLBACK;')
+    closed=json.loads([x for x in measured.splitlines() if x.startswith('{')][-1]); G.write_legacy(post,closed)
+    # Execute dedicated ACL closure only in a rolled-back local transaction.
+    for sig,args in zip(G.LEGACY,[f"'{T.u(999)}','{{}}'::jsonb",f"'{T.u(999)}','{T.u(998)}','LOCAL'",f"'{T.u(999)}','{T.u(998)}'"]):
+        reject('legacy client closure '+sig,'BEGIN;'+G.guard(post,'LEGACY_PRE_DRIFT')+closure+G.guard(closed,'LEGACY_POST_DRIFT')+T.actor()+f"SELECT {sig.split('(')[0]}({args});",'42501')
+        assert state()==post
+    sql('BEGIN;'+closure+(H/'legacy-closure-postflight.sql.review').read_text()+'ROLLBACK;'); assert state()==post
+    ok('legacy exact POST and effective ACL closure verified; bodies/service grants unchanged')
     reject('rerun refuses changed exact state',inst,'P0001')
     def cap(): return f"SELECT public.rpc_envase_capability_v1('{T.L2}','{T.O2}','{T.PP2}','manual');"
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is False; ok('capability unavailable while canonical writer ACL closed')

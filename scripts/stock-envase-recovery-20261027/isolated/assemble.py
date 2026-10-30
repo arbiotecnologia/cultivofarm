@@ -5,6 +5,15 @@ H = Path(__file__).resolve().parent
 V2 = H.parent
 RPC = 'public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)'
 CAP = 'public.rpc_envase_capability_v1(uuid,uuid,uuid,text)'
+LEGACY = ['public.rpc_confirmar_recebimento_entrega(uuid,jsonb)', 'public.rpc_desvincular_etiqueta_entrega(uuid,uuid,text)', 'public.rpc_vincular_etiqueta_embalagem(uuid,uuid)']
+def legacy_delta():
+    return ''.join(f'REVOKE EXECUTE ON FUNCTION {sig} FROM PUBLIC,anon,authenticated;\n' for sig in LEGACY)
+
+def write_legacy(pre,post):
+    delta=legacy_delta()
+    acl='DO $acl$ BEGIN '+''.join(f"IF has_function_privilege('authenticated','{sig}','EXECUTE') OR has_function_privilege('anon','{sig}','EXECUTE') THEN RAISE EXCEPTION 'LEGACY_CLIENT_EXECUTE_REMAINS'; END IF;" for sig in LEGACY)+' END $acl$;\n'
+    for name,value in [('candidate',delta),('preflight',guard(pre,'LEGACY_PRE_DRIFT')),('postflight',guard(post,'LEGACY_POST_DRIFT')+acl),('install',"BEGIN; SET LOCAL lock_timeout='3s';\n"+guard(pre,'LEGACY_PRE_DRIFT')+delta+guard(post,'LEGACY_POST_DRIFT')+acl+'COMMIT;\n'),('rollback',"BEGIN;\n"+delta+acl+'COMMIT;\n')]:
+        (H/f'legacy-closure-{name}.sql.review').write_text(value)
 
 def one(body, old, new):
     assert body.count(old) == 1, ('ANCHOR_CARDINALITY', old[:90], body.count(old))
