@@ -189,7 +189,33 @@ def build():
     # pre-lock observed check would also refuse a legitimate replay; keep it only as a fresh-dispatch fast path
     d = one(d, """ IF v_os.updated_at IS DISTINCT FROM p_os_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
  v_original_client:=v_os.cliente_id;""", """ v_original_client:=v_os.cliente_id;""", 'group prelock observed')
-    d = one(d, " v_result jsonb:='[]'; v_index integer:=0;", " v_row public.estoque_produto%ROWTYPE; v_free jsonb:='[]'; v_fi integer:=0;\n v_result jsonb:='[]'; v_index integer:=0;", 'group decl')
+    # 6b) Delivery metadata: exact allowlist of EXISTING public.entregas columns that the single-item writer already
+    # persists, with schema-appropriate validation BEFORE the fingerprint (so replay compares validated input).
+    # Server-derived/boundary columns (cliente_id, grupo_entrega_id, status, receivable/financial/fiscal, proof,
+    # confirmation, organization) are never accepted from the client.
+    d = one(d, """ IF p_dados IS NULL OR jsonb_typeof(p_dados)<>'object' OR EXISTS(SELECT 1 FROM jsonb_each(p_dados) WHERE key NOT IN ('data_saida','motorista','veiculo','tipo_entrega','endereco_origem') OR jsonb_typeof(value) NOT IN ('string','null')) THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;""",
+""" IF p_dados IS NULL OR jsonb_typeof(p_dados)<>'object' OR EXISTS(SELECT 1 FROM jsonb_each(p_dados) WHERE key NOT IN ('data_saida','motorista','veiculo','tipo_entrega','endereco_origem',
+   'motorista_telefone','motorista_documento','veiculo_placa','veiculo_tipo','hora_saida_prevista','data_chegada_prevista','hora_chegada_prevista',
+   'destinatario_nome','destinatario_telefone','destinatario_whatsapp','endereco_logradouro','endereco_numero','endereco_complemento',
+   'endereco_bairro','endereco_cidade','endereco_uf','endereco_cep','endereco_referencia') OR jsonb_typeof(value) NOT IN ('string','null')
+   OR (jsonb_typeof(value)='string' AND length(value#>>'{}')>300)) THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+ FOR v_dk IN SELECT key FROM jsonb_each_text(p_dados) WHERE nullif(value,'') IS NOT NULL LOOP
+  v_dv:=p_dados->>v_dk;
+  IF v_dk IN ('data_saida','data_chegada_prevista') THEN
+   IF v_dv !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+   BEGIN IF to_char(v_dv::date,'YYYY-MM-DD')<>v_dv THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+   EXCEPTION WHEN datetime_field_overflow OR invalid_datetime_format THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END;
+  ELSIF v_dk IN ('hora_saida_prevista','hora_chegada_prevista') THEN
+   IF v_dv !~ '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+  ELSIF v_dk='tipo_entrega' AND v_dv NOT IN ('motorista','retirada') THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF v_dk='endereco_origem' AND v_dv NOT IN ('cadastro','personalizado') THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF v_dk='endereco_uf' AND v_dv !~ '^[A-Za-z]{2}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF v_dk='endereco_cep' AND v_dv !~ '^[0-9]{5}-?[0-9]{3}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF v_dk IN ('motorista_telefone','destinatario_telefone','destinatario_whatsapp') AND v_dv !~ '^[0-9+() .-]{8,20}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF btrim(v_dv)='' OR v_dv ~ '[[:cntrl:]]' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  END IF;
+ END LOOP;""", 'group metadata allowlist')
+    d = one(d, " v_result jsonb:='[]'; v_index integer:=0;", " v_row public.estoque_produto%ROWTYPE; v_free jsonb:='[]'; v_fi integer:=0; v_dk text; v_dv text;\n v_result jsonb:='[]'; v_index integer:=0;", 'group decl')
     d = one(d, """  PERFORM 1 FROM public.estoque_produto WHERE id=v_id FOR UPDATE;
   PERFORM platform_private.stock_motor_item(v_id,'reserva',jsonb_build_object('os_id',p_os_id,'os_tipo','manual','cliente_id',v_os.cliente_id));""",
             """  SELECT * INTO v_row FROM public.estoque_produto WHERE id=v_id FOR UPDATE;
