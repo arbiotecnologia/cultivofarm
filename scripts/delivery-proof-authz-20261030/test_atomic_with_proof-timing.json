@@ -1,0 +1,6 @@
+{
+  "runner": "test_atomic_with_proof",
+  "exit_code": 0,
+  "elapsed_seconds": 280.051,
+  "budget_seconds": 480
+}

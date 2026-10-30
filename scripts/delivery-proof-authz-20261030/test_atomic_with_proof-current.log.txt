@@ -1,0 +1,202 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.5s
+CHECKPOINT sql_calls=100 elapsed=5.2s
+CHECKPOINT sql_calls=200 elapsed=8.0s
+CHECKPOINT sql_calls=300 elapsed=10.8s
+CHECKPOINT sql_calls=400 elapsed=13.2s
+CHECKPOINT sql_calls=500 elapsed=15.6s
+CHECKPOINT sql_calls=600 elapsed=17.9s
+CHECKPOINT sql_calls=700 elapsed=20.2s
+CHECKPOINT sql_calls=800 elapsed=22.7s
+CHECKPOINT sql_calls=900 elapsed=24.7s
+CHECKPOINT sql_calls=1000 elapsed=26.5s
+CHECKPOINT sql_calls=1100 elapsed=28.3s
+CHECKPOINT sql_calls=1200 elapsed=30.2s
+CHECKPOINT sql_calls=1300 elapsed=32.0s
+CHECKPOINT sql_calls=1400 elapsed=33.9s
+CHECKPOINT sql_calls=1500 elapsed=36.2s
+CHECKPOINT sql_calls=1600 elapsed=38.7s
+CHECKPOINT sql_calls=1700 elapsed=40.7s
+CHECKPOINT sql_calls=1800 elapsed=43.1s
+CHECKPOINT sql_calls=1900 elapsed=45.5s
+CHECKPOINT sql_calls=2000 elapsed=47.8s
+CHECKPOINT sql_calls=2100 elapsed=50.0s
+CHECKPOINT sql_calls=2200 elapsed=52.3s
+CHECKPOINT sql_calls=2300 elapsed=54.7s
+CHECKPOINT sql_calls=2400 elapsed=57.2s
+CHECKPOINT sql_calls=2500 elapsed=59.6s
+CHECKPOINT sql_calls=2600 elapsed=61.9s
+CHECKPOINT sql_calls=2700 elapsed=64.4s
+CHECKPOINT sql_calls=2800 elapsed=66.7s
+CHECKPOINT sql_calls=2900 elapsed=68.7s
+CHECKPOINT sql_calls=3000 elapsed=71.0s
+CHECKPOINT sql_calls=3100 elapsed=72.8s
+CHECKPOINT sql_calls=3200 elapsed=74.7s
+CHECKPOINT sql_calls=3300 elapsed=76.7s
+CHECKPOINT sql_calls=3400 elapsed=78.6s
+CHECKPOINT sql_calls=3500 elapsed=80.5s
+CHECKPOINT sql_calls=3600 elapsed=82.8s
+CHECKPOINT sql_calls=3700 elapsed=85.1s
+CHECKPOINT sql_calls=3800 elapsed=87.1s
+CHECKPOINT sql_calls=3900 elapsed=89.1s
+CHECKPOINT sql_calls=4000 elapsed=91.3s
+CHECKPOINT sql_calls=4100 elapsed=93.7s
+CHECKPOINT sql_calls=4200 elapsed=95.8s
+CHECKPOINT sql_calls=4300 elapsed=98.1s
+CHECKPOINT sql_calls=4400 elapsed=100.5s
+CHECKPOINT sql_calls=4500 elapsed=103.3s
+CHECKPOINT sql_calls=4600 elapsed=106.2s
+CHECKPOINT sql_calls=4700 elapsed=108.8s
+CHECKPOINT sql_calls=4800 elapsed=111.4s
+CHECKPOINT sql_calls=4900 elapsed=113.9s
+CHECKPOINT sql_calls=5000 elapsed=116.5s
+CHECKPOINT sql_calls=5100 elapsed=119.1s
+CHECKPOINT sql_calls=5200 elapsed=122.0s
+CHECKPOINT sql_calls=5300 elapsed=124.7s
+CHECKPOINT sql_calls=5400 elapsed=127.3s
+CHECKPOINT sql_calls=5500 elapsed=129.9s
+CHECKPOINT sql_calls=5600 elapsed=132.6s
+CHECKPOINT sql_calls=5700 elapsed=135.5s
+CHECKPOINT sql_calls=5800 elapsed=138.1s
+CHECKPOINT sql_calls=5900 elapsed=140.8s
+CHECKPOINT sql_calls=6000 elapsed=143.1s
+CHECKPOINT sql_calls=6100 elapsed=145.4s
+CHECKPOINT sql_calls=6200 elapsed=147.4s
+CHECKPOINT sql_calls=6300 elapsed=150.1s
+CHECKPOINT sql_calls=6400 elapsed=152.4s
+CHECKPOINT sql_calls=6500 elapsed=154.9s
+CHECKPOINT sql_calls=6600 elapsed=157.2s
+CHECKPOINT sql_calls=6700 elapsed=159.8s
+CHECKPOINT sql_calls=6800 elapsed=162.4s
+CHECKPOINT sql_calls=6900 elapsed=165.1s
+CHECKPOINT sql_calls=7000 elapsed=167.4s
+CHECKPOINT sql_calls=7100 elapsed=169.7s
+CHECKPOINT sql_calls=7200 elapsed=172.1s
+CHECKPOINT sql_calls=7300 elapsed=174.7s
+CHECKPOINT sql_calls=7400 elapsed=177.1s
+CHECKPOINT sql_calls=7500 elapsed=179.7s
+CHECKPOINT sql_calls=7600 elapsed=182.3s
+CHECKPOINT sql_calls=7700 elapsed=185.0s
+CHECKPOINT sql_calls=7800 elapsed=187.2s
+CHECKPOINT sql_calls=7900 elapsed=189.3s
+CHECKPOINT sql_calls=8000 elapsed=191.2s
+CHECKPOINT sql_calls=8100 elapsed=193.2s
+CHECKPOINT sql_calls=8200 elapsed=195.3s
+CHECKPOINT sql_calls=8300 elapsed=197.3s
+CHECKPOINT sql_calls=8400 elapsed=199.2s
+CHECKPOINT sql_calls=8500 elapsed=201.1s
+CHECKPOINT sql_calls=8600 elapsed=203.3s
+CHECKPOINT sql_calls=8700 elapsed=206.0s
+CHECKPOINT sql_calls=8800 elapsed=208.6s
+CHECKPOINT sql_calls=8900 elapsed=211.0s
+CHECKPOINT sql_calls=9000 elapsed=213.6s
+CHECKPOINT sql_calls=9100 elapsed=216.3s
+CHECKPOINT sql_calls=9200 elapsed=219.0s
+CHECKPOINT sql_calls=9300 elapsed=221.6s
+CHECKPOINT sql_calls=9400 elapsed=224.0s
+CHECKPOINT sql_calls=9500 elapsed=226.6s
+CHECKPOINT sql_calls=9600 elapsed=229.2s
+CHECKPOINT sql_calls=9700 elapsed=231.7s
+CHECKPOINT sql_calls=9800 elapsed=234.4s
+CHECKPOINT sql_calls=9900 elapsed=237.2s
+CHECKPOINT sql_calls=10000 elapsed=240.2s
+CHECKPOINT sql_calls=10100 elapsed=242.8s
+CHECKPOINT sql_calls=10200 elapsed=245.3s
+CHECKPOINT sql_calls=10300 elapsed=247.7s
+CHECKPOINT sql_calls=10400 elapsed=250.4s
+CHECKPOINT sql_calls=10500 elapsed=253.2s
+CHECKPOINT sql_calls=10600 elapsed=256.0s
+RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
+PROOF_PACKAGE_INSTALLED_AFTER_ATOMIC exact POST ok
+PASS real h15 and SaaS resolve synthetic tenant
+PASS tenant FSF cannot use AR Bio IDs
+PASS anonymous ACL denies
+PASS role financeiro denied
+PASS role parceiro_b2b denied
+PASS role parceiro_b2b_tecnico denied
+PASS role superadmin denied
+PASS role consultor_tecnico denied
+PASS inactive denied
+CHECKPOINT sql_calls=10700 elapsed=260.9s
+PASS invalid quantity None
+PASS invalid quantity NaN
+PASS invalid quantity 0
+PASS invalid quantity -1
+PASS invalid quantity Infinity
+PASS OnFarm remains contained
+PASS all negative paths no deliveries receipts
+GROUP {"itens": [{"entrega_id": "8c16913d-7c57-48a0-bb8c-9be89912571f", "movimentacao_id": "3e622982-400d-477e-b7d5-cf8febf4e763", "estoque_produto_id": "6a3e8432-4bdd-42a1-a48c-e899dc2780fe"}, {"entrega_id": "f0a45942-1c9d-4c96-9e91-54321945fc7f", "movimentacao_id": "962600c1-1ce3-4f62-b0c3-51db5e3d44cf", "estoque_produto_id": "303dcbc8-3128-49f2-a1f4-381c7af72491"}], "os_id": "10000000-0000-4000-8000-000000000007", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000001"}
+PASS two-item group real reserve split delivery expedition
+PASS exact replay returns stored group
+PASS replay creates no duplicate
+PASS changed payload replay conflict
+PASS cross tenant cancel
+PASS cancel failure after return ledger atomically rolls back
+PASS failed cancel rolls back reversal stock delivery and receipt
+CANCEL {"replay": false, "success": true, "entrega_id": "8c16913d-7c57-48a0-bb8c-9be89912571f", "organization_id": "10000000-0000-4000-8000-000000000001", "reserva_liberada": true, "estoque_estornado": true}
+PASS canonical split merge keeps unique index source history and main balance
+PASS cancel exact replay
+PASS cancel changed reason replay denied
+PASS no downstream titles fiscal outbox
+PASS private context removed on success
+PASS revocation advisory
+PASS revocation row
+PASS concurrent replay remains two deliveries
+PASS item2 trigger failure aborts first delivery reserve expedition
+PASS delivery trigger title attempt fails transactionally
+PASS attempted title leaves zero title and no new group
+PASS exact LIVE accounting guard rejects entregue on pending snapshot
+PASS delivery transition barrier precedes any auto billing trigger
+PASS final no context no billing fiscal messages
+TENANT B {"itens": [{"entrega_id": "78e4ebc2-0a84-4884-818a-2670af277c60", "movimentacao_id": "fdbbbe82-d2a4-44a6-9e8b-496b28105a91", "estoque_produto_id": "2c478308-3c19-41ab-a297-e9e7cd1211c0"}], "os_id": "10000000-0000-4000-8000-000000000008", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000002"}
+PASS same request key tenants separated no collision
+PASS B cannot replay A cancel result
+PASS GUC spoof cannot cancel directly
+PASS direct stock mutation remains ACL closed
+PASS private context cannot be minted by caller
+PASS oversell balance conserved no negatives
+PASS negative receipt ACK leaves every effect unchanged
+PASS final financial fiscal outbox empty after concurrency
+PASS unsupported field rejected endereco_entrega
+CHECKPOINT sql_calls=10800 elapsed=268.8s
+PASS unsupported field rejected observacoes_entrega
+PASS merge accepts available zero reservation with preserved unique index
+PASS merge rejects nonpositive/nonfinite main volume 0
+PASS bad merge retains expedition and no cancel receipt 70
+PASS merge rejects nonpositive/nonfinite main volume -1
+PASS bad merge retains expedition and no cancel receipt 80
+PASS merge rejects nonpositive/nonfinite main volume 'NaN'::numeric
+PASS bad merge retains expedition and no cancel receipt 90
+PASS merge rejects nonpositive/nonfinite main volume 'Infinity'::numeric
+PASS bad merge retains expedition and no cancel receipt 100
+PASS merge incompatible expiry rejected explicitly
+PASS same tenant distinct actors same key separate receipts
+PASS legacy cancel remains contained
+PASS cancel NULL observed denied
+PASS cancel stale observed denied
+PASS cancel revoked no effects advisory
+PASS cancel revoked no effects gate
+PASS real revoker waits gate during cancel row
+PASS cancel replay denied after effective revocation row
+CHECKPOINT sql_calls=10900 elapsed=277.6s
+PASS real revoker waits gate during cancel merge
+PASS cancel replay denied after effective revocation merge
+PASS dedicated tests zero finance/outbox
+PASS anon direct INSERT
+PASS anon direct UPDATE
+PASS anon direct DELETE
+PASS anon legacy cancellation ACL
+PASS authenticated direct INSERT
+PASS authenticated direct UPDATE
+PASS authenticated direct DELETE
+PASS authenticated legacy cancellation ACL
+PASS service_role direct INSERT
+PASS service_role direct UPDATE
+PASS service_role direct DELETE
+PASS service_role legacy cancellation ACL
+PASS authenticated spoof GUC cannot update with local DML grant
+PASS privileged direct writer lacks private permit
+PASS legacy creator direct INSERT denied without group permit
+PASS closure retains authenticated SELECT
+PASS closure no context residue
+ATOMIC_WITH_PROOF proof_installed=True 97 PASS 0 FAIL 0 BLOCKED
