@@ -165,8 +165,32 @@
     "status": "PASS"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/produto-etiquetas-tenant-20261030/test_label_checklist_pg.py\", line 262, in <module>\n    main()\n    ~~~~^^\n  File \"/dev-server/scripts/produto-etiquetas-tenant-20261030/test_label_checklist_pg.py\", line 229, in main\n    assert waited == NEG, waited\n           ^^^^^^^^^^^^^\nAssertionError: E55P03:canceling statement due to lock timeout\n"
+    "test": "revocation committed while RPC waited on the delivery lock -> re-authorization after lock denies 42501",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF generate on AR Bio delivery still denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "generate/sign/attach + replay work in full installed composition",
+    "status": "PASS"
+  },
+  {
+    "test": "entrega_etiquetas link writes remain closed (42501) even for own entrega + own valid label",
+    "status": "PASS"
+  },
+  {
+    "test": "zero finance/fiscal/outbox/communication rows",
+    "status": "PASS"
+  },
+  {
+    "test": "checklist rollback: client EXECUTE revoked, hardened bodies kept (never restores unscoped writers)",
+    "status": "PASS"
+  },
+  {
+    "test": "labels rollback narrows to false; no cross-tenant read restored; TRUNCATE still denied",
+    "status": "PASS"
   }
 ]

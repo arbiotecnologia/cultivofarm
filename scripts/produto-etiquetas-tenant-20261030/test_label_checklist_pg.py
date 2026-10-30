@@ -42,9 +42,9 @@ def cls(out):
     if 'ERROR' not in out: return 'ok:' + out.strip().splitlines()[-1]
     m = re.search(r'ERROR:\s+([0-9A-Z]{5}):\s+(.*)', out); assert m, 'NO_SQLSTATE ' + out[-300:]
     RAW.append(m.group(0)); return 'E42501' if m.group(1) == '42501' else f'E{m.group(1)}:{m.group(2).strip()}'
-def probe(w, stmt, role=True):
+def probe(w, stmt, role=True, lt='2s'):
     pre = actor(w) if role else ''
-    r = subprocess.run(pg.psql(), input="\\set VERBOSITY verbose\nSET lock_timeout='2s'; SET statement_timeout='30s';\nBEGIN;" + pre + stmt + "\nROLLBACK;", capture_output=True, text=True, timeout=40)
+    r = subprocess.run(pg.psql(), input="\\set VERBOSITY verbose\nSET lock_timeout='" + lt + "'; SET statement_timeout='30s';\nBEGIN;" + pre + stmt + "\nROLLBACK;", capture_output=True, text=True, timeout=40)
     return cls(r.stdout.replace('ROLLBACK', '').strip() if r.returncode == 0 else r.stderr)
 NEG = 'E42501'
 ALL_LABELS = [PA, PB] + list(MIX.values())
@@ -222,7 +222,7 @@ def main():
     holder = subprocess.Popen(pg.psql(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     holder.stdin.write(f"BEGIN; SELECT 1 FROM public.entregas WHERE id='{EA}' FOR UPDATE; UPDATE public.profiles SET ativo=false WHERE user_id='{U}'; SELECT pg_sleep(3); COMMIT;\n"); holder.stdin.flush()
     time.sleep(1)
-    waited = probe(U, f"SELECT (public.rpc_registrar_ocorrencia_entrega('{EA}', '{{\"tipo\":\"observacao\"}}'::jsonb)->>'success');").replace('lock_timeout', '')
+    waited = probe(U, f"SELECT (public.rpc_registrar_ocorrencia_entrega('{EA}', '{{\"tipo\":\"observacao\"}}'::jsonb)->>'success');", lt='15s')
     holder.communicate(timeout=30)
     sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{U}';")
     print('WAIT_REVOKE', waited, flush=True)
