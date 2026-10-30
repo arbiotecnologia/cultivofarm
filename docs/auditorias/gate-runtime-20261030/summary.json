@@ -39,10 +39,16 @@
       "skipped": 0,
       "start": 1793321701124,
       "end": 1793321721178.9792
+    },
+    {
+      "group": "no-network-final",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
     }
   ],
-  "unique_tests": 386,
-  "unique_files": 29,
+  "unique_tests": 388,
+  "unique_files": 30,
   "scope": "simulated_transport_no_network",
   "runtime_changed_this_round": false,
   "excluded": "PG/hosted/browser/auth real/finance and fiscal dispatch"
