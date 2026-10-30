@@ -68,6 +68,14 @@ describe("payload contract", () => {
     for (const q of [NaN, 0, -1, Infinity]) expect(() => buildGroupArgs(input({ itens: [{ ...input().itens[0], quantidade: q }] }))).toThrow();
     expect(() => buildGroupArgs(input({ expectedOrg: "x" }))).toThrow();
   });
+  it("accepts only a reservation wholly owned by this OS", () => {
+    const own = { itemId: S, quantidade: 2, observedUpdatedAt: "t", status: "reservado", reservadoParaOsId: OS, quantidadeReservada: 2, quantidadeTotal: 2 };
+    expect(() => buildGroupArgs(input({ itens: [own] }))).not.toThrow();
+    expect(() => buildGroupArgs(input({ itens: [{ ...own, reservadoParaOsId: S }] }))).toThrow(/outra OS/);
+    expect(() => buildGroupArgs(input({ itens: [{ ...own, quantidade: 1 }] }))).toThrow(/reserva parcial/);
+    expect(() => buildGroupArgs(input({ itens: [{ ...own, quantidadeReservada: 1 }] }))).toThrow(/reserva parcial/);
+    expect(() => buildGroupArgs(input({ itens: [{ ...own, status: "expedido" }] }))).toThrow(/indisponível/);
+  });
   it("sends only the five persisted keys with observed timestamps and manual origin", () => {
     expect(buildGroupArgs(input())).toEqual({ p_os_id: OS, p_origem: "manual", p_request_key: input().requestKey, p_os_observed: "2026-10-30T10:00:00Z",
       p_itens: [{ item_id: S, quantidade: 2, observed_updated_at: "2026-10-30T09:00:00Z" }], p_dados: { tipo_entrega: "motorista", motorista: null, endereco_origem: "cadastro" } });
