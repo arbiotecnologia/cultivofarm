@@ -47,8 +47,7 @@ def run(X):
     sql(f"SET session_replication_role=replica;UPDATE public.estoque_produto SET reservado_para_os_id='{ids[0]}' WHERE id='{T.RX}';")
     b=snap();reject('existing reserved stock foreign root cannot cover own OS',call(ids,'root-conflict1'),'42501');assert snap()==b
     sql(f"SET session_replication_role=replica;UPDATE public.estoque_produto SET reservado_para_os_id='{T.T.O}' WHERE id='{T.RX}';")
-    sql(f"SET session_replication_role=replica;INSERT INTO public.lotes(id,organization_id,produto_id,programacao_id,status,codigo_lote,volume_produzido) VALUES('{T.u(2610)}','{T.A}','{T.PROD}','{ids[1]}','aprovado','AMBIGUOUS',1000);")
-    b=snap();reject('two supplied manufacturing roots reject ambiguity',call(ids,'root-ambiguous1'),'42501');assert snap()==b
+    b=snap();reject('real unique index prevents second manufacturing lot root',f"SET session_replication_role=replica;INSERT INTO public.lotes(id,organization_id,produto_id,programacao_id,status,codigo_lote,volume_produzido) VALUES('{T.u(2610)}','{T.A}','{T.PROD}','{ids[1]}','aprovado','AMBIGUOUS',1000);",'23505');assert snap()==b
     # Direct/definer/GUC cannot create initial stock or envase without private permits.
     for stmt,label in [(f"INSERT INTO public.envase(lote_id,tipo_embalagem,volume_por_unidade,quantidade,data_envase) VALUES('{T.L2}','frasco_1L',1000,1,current_date);",'envase'),(f"INSERT INTO public.estoque_produto(lote_id,produto_id,envase_id,quantidade,volume_total,status) SELECT '{T.L2}','{T.PROD}',id,1,1,'disponivel' FROM public.envase WHERE lote_id='{T.L2}' LIMIT 1;",'stock')]:
         b=snap();reject('owner indirect '+label+' without permit denied',"SET request.jwt.claim.sub='"+T.W+"';SET app.estoque_mov_ctx='{\"origem\":\"rpc_cockpit_registrar_envase_v1\"}';"+stmt,'42501');assert snap()==b
@@ -58,7 +57,6 @@ def run(X):
     ids=fixture(2700,vol=2000); stmt=call(ids,'expired-replay1',2).replace('current_date+180',"DATE '2000-01-01'")
     # First create a truthful local receipt with future date, then preserve hashes from
     # original arguments at the historical date as an explicit clock fixture seam.
-    sql('SET session_replication_role=replica;'+call(ids,'expired-replay1',2).replace(T.actor(T.W),'')) if False else None
     r=json.loads(last(call(ids,'expired-replay1',2))); assert r['success']
     key='registrar_envase_v1:'+T.W+':expired-replay1'
     sql(f"UPDATE public.cockpit_operacao_idempotencia SET payload_hash=encode(extensions.digest(jsonb_build_object('lote','{ids[2]}'::uuid,'os','{ids[0]}'::uuid,'origem','manual','prog','{ids[1]}'::uuid,'linhas','[{{\"tipo_embalagem\":\"frasco_1L\",\"quantidade\":2}}]'::jsonb,'validade',DATE '2000-01-01','parcial',false)::text,'sha256'),'hex'),resultado=jsonb_set(resultado,'{{envase_release_fingerprint}}',to_jsonb(encode(extensions.digest(jsonb_build_object('args',jsonb_build_array('{ids[2]}'::uuid,'{ids[0]}'::uuid,'manual','{ids[1]}'::uuid,'[{{\"tipo_embalagem\":\"frasco_1L\",\"quantidade\":2}}]'::jsonb,DATE '2000-01-01','LOCAL',false,NULL),'actor','{T.W}'::uuid,'org','{T.A}'::uuid)::text,'sha256'),'hex'))) WHERE idempotency_key='{key}';")
