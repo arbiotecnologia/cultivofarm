@@ -1,4 +1,5 @@
 ## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
+- [ ] Continuação22:29: corrigir ENVASE_INSERT_PERMIT_MISMATCH, provar payload/consumo/split e estoque independente, testes montados capability e release separado; nenhum hosted/publicação.
 - [ ] Continuação22:03: fechar matrizes locais completas, sentinelas existentes, autoridade de entrada, isolamento, legados e disponibilidade frontend; release revisável somente após provas, sem hosted/publicação.
 - [x] Auditoria21:52: singleton/NULLkey/fingerprint/motivo/legado e terminalOS/CQ sob espera observada; closure ACL separada receipt/desvincular/vincular embalagem com PRE/POST exato,38PGPASS/3ordem. Baseline produção apenas informado; sem hosted/publicação.
 - [x] Inventariar contratos/consumidores atuais e reconciliar aplicações relatadas 91cec22/2faf356, sem hosted/sessões/segredos; composição local oito instaladores PRE/POST.
