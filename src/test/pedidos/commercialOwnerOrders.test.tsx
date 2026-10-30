@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   COMMERCIAL_OWNER_ORDERS_CONTRACT,
   readCommercialOwnerOrders,
+  commercialOwnerOrdersDisplay,
 } from "@/lib/comercial/commercialOwnerOrders";
 
 // Transporte sintético apenas; nunca serviços hospedados. Auth simulada — não é prova JWT/RLS.
@@ -143,17 +144,17 @@ it("admin A: lista administrativa vazia, mas a carteira da empresa mostra PB-001
   expect(screen.getByText("Nenhum pedido encontrado.")).toBeTruthy();
   expect(state.writes).not.toHaveBeenCalled();
 });
-it("lista mista: carteira mantém pedido próprio mesmo também visível na lista administrativa", async () => {
+it("lista mista: deduplica somente pedidos já apresentados acima", async () => {
   state.adminRows = [ADMIN_DIRECT_ROW];
   state.ownerRows = [ORDER_ROW, DIRECT_ROW];
   mount();
   await screen.findByText("Pedidos da carteira da empresa");
   await screen.findByText("PB-001029");
-  // Dois exemplares administrativos (desktop/mobile) e um na carteira completa.
-  await waitFor(() => expect(screen.getAllByText("PB-000100").length).toBe(3));
+  await waitFor(() => expect(screen.getAllByText("PB-000100").length).toBe(2));
   const ownerTable = screen.getAllByRole("table").at(-1);
   if (!ownerTable) throw new Error("Owner table missing");
-  expect(within(ownerTable).getByText("PB-000100")).toBeTruthy();
+  expect(within(ownerTable).queryByText("PB-000100")).toBeNull();
+  expect(within(ownerTable).getByText("PB-001029")).toBeTruthy();
   expect(state.writes).not.toHaveBeenCalled();
 });
 it("erro de transporte mostra aviso de indisponibilidade, nunca confundido com carteira vazia", async () => {
@@ -189,7 +190,7 @@ it("sem realtime: nenhum canal postgres_changes é assinado pelo hook da carteir
 it("lista vazia -> pedido: botão Atualizar visível mesmo vazio e o refresh manual revela o novo pedido", async () => {
   state.ownerRows = [];
   mount();
-  await screen.findByText("Nenhum pedido da carteira da empresa no momento.");
+  await screen.findByRole("button", { name: "Atualizar" });
   const refresh = screen.getByRole("button", { name: "Atualizar" });
   const callsBefore = state.rpc.mock.calls.filter(([n]) => n === "c2_commercial_owner_orders_projection").length;
   state.ownerRows = [ORDER_ROW];
@@ -229,20 +230,33 @@ it("revogação durante refresh: resposta atrasada 42501 esconde dados antigos, 
   expect(state.writes).not.toHaveBeenCalled();
 });
 
-it("sete pedidos próprios sobrepostos continuam nos sete registros da carteira", async () => {
-  state.ownerRows = Array.from({ length: 7 }, (_, index) => ({
+it("sete pedidos sobrepostos não são estado vazio nem duplicam linhas; refresh revela novo pedido", async () => {
+  const rows = Array.from({ length: 7 }, (_, index) => ({
     ...ORDER_ROW,
     id: `d4539dd9-b090-4433-9ed3-6f8f5d3e767${index}`,
     numero: `PB-${String(1029 + index).padStart(6, "0")}`,
   }));
-  state.adminRows = state.ownerRows.map((row) => ({ ...ADMIN_DIRECT_ROW, ...(row as object) }));
+  state.ownerRows = rows;
+  state.adminRows = rows.map((row) => ({ ...ADMIN_DIRECT_ROW, ...row }));
+  expect(commercialOwnerOrdersDisplay(rows, rows.map((row) => row.id))).toEqual({ state: "already_listed", visible: [] });
   mount();
-  await waitFor(() => expect(screen.getAllByRole("table").length).toBe(2));
-  const ownerTable = screen.getAllByRole("table")[1];
-  expect(within(ownerTable).getAllByRole("row").length).toBe(8);
-  expect(within(ownerTable).getByText("PB-001029")).toBeTruthy();
-  expect(within(ownerTable).getByText("PB-001035")).toBeTruthy();
+  await screen.findByRole("button", { name: "Atualizar" });
+  expect(screen.getAllByRole("table")).toHaveLength(1);
+  expect(screen.getAllByText("PB-001029")).toHaveLength(2);
+  state.ownerRows = [...rows, DIRECT_ROW];
+  screen.getByRole("button", { name: "Atualizar" }).click();
+  await screen.findByText("PB-000100");
+  const ownerTable = screen.getAllByRole("table").at(-1);
+  if (!ownerTable) throw new Error("Owner table missing");
+  expect(within(ownerTable).getAllByRole("row")).toHaveLength(2);
+  expect(within(ownerTable).queryByText("PB-001029")).toBeNull();
   expect(state.writes).not.toHaveBeenCalled();
+});
+
+it("classificação distingue zero resultados, sobreposição parcial e IDs administrativos alheios", () => {
+  expect(commercialOwnerOrdersDisplay([], [ORDER_ROW.id])).toEqual({ state: "empty_filter", visible: [] });
+  expect(commercialOwnerOrdersDisplay([ORDER_ROW, DIRECT_ROW], [DIRECT_ROW.id])).toEqual({ state: "rows", visible: [ORDER_ROW] });
+  expect(commercialOwnerOrdersDisplay([ORDER_ROW], [DIRECT_ROW.id])).toEqual({ state: "rows", visible: [ORDER_ROW] });
 });
 
 it.each(["gestor_comercial", "parceiro_b2b", "financeiro"])("papel %s não ganha autoridade pela apresentação", async (role) => {

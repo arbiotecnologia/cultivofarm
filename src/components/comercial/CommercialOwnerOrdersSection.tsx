@@ -9,11 +9,12 @@ import { brl as fmt } from "@/lib/financial/format";
 import { partnerOrderStatusLabel, partnerOrderStatusVariant } from "@/lib/partnerOrderStatus";
 import { AccountingPendingBadge } from "@/components/pedidos/AccountingPendingNotice";
 import { isAccountingPending } from "@/lib/orderAccountingState";
+import { commercialOwnerOrdersDisplay } from "@/lib/comercial/commercialOwnerOrders";
 
 /**
  * Lista somente leitura dos pedidos externos da carteira da própria empresa.
- * Sempre montada: preserva todos os pedidos retornados pelo contrato da carteira,
- * inclusive os também visíveis na lista administrativa. Contrato ausente ou ator sem papel => seção quieta;
+ * Sempre montada: deduplica pedidos já exibidos acima, sem confundir
+ * sobreposição com resultado vazio no filtro. Contrato ausente ou ator sem papel => seção quieta;
  * erro de transporte/indisponibilidade => aviso explícito (nunca confundido
  * com "carteira vazia").
  *
@@ -22,7 +23,7 @@ import { isAccountingPending } from "@/lib/orderAccountingState";
  * eventos ao commercial owner. O botão fica visível também com lista vazia
  * ou erro, sem reload de página.
  */
-export function CommercialOwnerOrdersSection({ statusFilter }: { statusFilter: string }) {
+export function CommercialOwnerOrdersSection({ statusFilter, excludeIds = [] }: { statusFilter: string; excludeIds?: string[] }) {
   const result = useCommercialOwnerOrders({ status: statusFilter === "all" ? null : statusFilter });
   const state = result.data;
   if (!result.ready || result.isLoading) return null;
@@ -53,7 +54,8 @@ export function CommercialOwnerOrdersSection({ statusFilter }: { statusFilter: s
     );
   }
   if (!state || state.state !== "allowed") return null;
-  const visible = state.orders;
+  const display = commercialOwnerOrdersDisplay(state.orders, excludeIds);
+  const visible = display.visible;
   return (
     <Card>
       <CardHeader className="pb-3 flex flex-wrap items-center justify-between gap-3 space-y-0">
@@ -67,7 +69,11 @@ export function CommercialOwnerOrdersSection({ statusFilter }: { statusFilter: s
           podem permanecer bloqueadas. Use Atualizar para buscar o estado mais recente.
         </p>
         {visible.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum pedido da carteira da empresa no momento.</p>
+          <p role="status" className="text-sm text-muted-foreground">
+            {display.state === "already_listed"
+              ? "Todos os pedidos da carteira neste filtro já estão exibidos na lista acima."
+              : "Nenhum pedido da carteira encontrado neste filtro."}
+          </p>
         ) : (
           <Table>
             <TableHeader>
