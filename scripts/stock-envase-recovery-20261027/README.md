@@ -101,3 +101,6 @@ Somente depois vêm CAS, status, cliente e estado do estoque do envio novo. A ch
 
 ## Fixture canônica de ponta a ponta (preparação)
 Ver `FIXTURE-PIPELINE-MANIFEST.md`: script `fixture-arbio-pipeline.sql.review` (não executado hosted) e ensaio `test_pipeline_pg.py` com 26 PASS / 0 FAIL, cobrindo OS aberta até entrega por writers canônicos. É teste com claims, não JWT de navegador. Pré-condições: referência CQ global existente e produto biológico. Decisão: aceitar o aviso interno de laboratório.
+
+## Metadados da entrega no contrato atômico (preparação)
+O grupo aceita a lista exata das 23 colunas existentes que o gravador individual já persiste: transporte, horários, destinatário e endereço. Datas são AAAA-MM-DD válidas e horários HH:MM[:SS]. tipo_entrega e endereco_origem são enumerados. Textos livres vindos do cadastro são gravados exatamente como chegam, com até 300 caracteres e sem caracteres de controle. Campos derivados pelo servidor ou de fronteira (cliente, grupo, status, financeiro, fiscal, comprovante, organização) são recusados. A validação ocorre antes da impressão digital, então a repetição exata com os mesmos dados é aceita e a repetição com dados divergentes gera conflito. PG v2: 76 PASS. Capability rebaseada: 44 PASS. Regressões atômicas: 97. Comprovantes: 103. Fluxo canônico: 26.
