@@ -53,6 +53,25 @@ def run(X):
         b=snap();reject('owner indirect '+label+' without permit denied',"SET request.jwt.claim.sub='"+T.W+"';SET app.estoque_mov_ctx='{\"origem\":\"rpc_cockpit_registrar_envase_v1\"}';"+stmt,'42501');assert snap()==b
     reject('client cannot mint private permit',T.actor(T.W)+"INSERT INTO platform_private.envase_insert_permits_v1 DEFAULT VALUES;",'42501')
     assert last('SELECT count(*) FROM platform_private.envase_insert_permits_v1;')=='0';ok('all one-shot private permits consumed or rolled back')
+    # Demand is reread after actual programacao lock wait, not the old context.
+    ids=fixture(2650,vol=2000)
+    holder=T.T.session(f"BEGIN;SELECT 1 FROM public.programacao_producao WHERE id='{ids[1]}' FOR UPDATE;SET LOCAL session_replication_role=replica;UPDATE public.programacao_producao SET volume_necessario=5000 WHERE id='{ids[1]}';")
+    w=subprocess.Popen(X.pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    w.stdin.write("SET application_name='demand_worker';"+call(ids,'demand-wait01',2)+'\n');w.stdin.flush()
+    for _ in range(100):
+        if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='demand_worker' AND wait_event_type='Lock';")=='1':break
+        time.sleep(.02)
+    else:raise AssertionError('DEMAND_WAIT_NOT_OBSERVED')
+    T.T.finish(holder,'COMMIT;');w.stdin.close();w.stdin=None;out,err=w.communicate(timeout=30)
+    assert w.returncode==0,(out,err)
+    r=json.loads([s for s in out.splitlines() if s.startswith('{')][-1]);assert r['estado']=='partial' and r['pendente_os_ml']==3000 and T.os_status(ids[0])=='em_cq';ok('demand changed during observed wait uses fresh 5000ml context')
+    # Installed motor split remains functional under private parent context.
+    o,p,l=fixture(2670,vol=1000)
+    r=json.loads(last(call((o,p,l),'split-source1',3)));assert r['success']
+    stock=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{l}' AND status='disponivel';")
+    payload=json.dumps({'os_id':o,'os_tipo':'manual','cliente_id':T.C})
+    r=json.loads(last(T.actor()+f"SELECT public.rpc_estoque_operar_v1('reserva','{stock}',1,'split-regression1','{payload}'::jsonb);"));assert r['success'],r
+    assert last(f"SELECT count(*) FROM public.estoque_produto WHERE lote_id='{l}';")=='3';ok('installed canonical motor split preserved with private parent context')
     # Lost-reply recovery after original validity expired: private receipt remains exact.
     ids=fixture(2700,vol=2000); stmt=call(ids,'expired-replay1',2).replace('current_date+180',"DATE '2000-01-01'")
     # First create a truthful local receipt with future date, then preserve hashes from
