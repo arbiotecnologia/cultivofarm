@@ -12,8 +12,8 @@ import { isAccountingPending } from "@/lib/orderAccountingState";
 
 /**
  * Lista somente leitura dos pedidos externos da carteira da própria empresa.
- * Sempre montada: pedidos já visíveis na lista administrativa são deduplicados
- * por ID (excludeIds). Contrato ausente ou ator sem papel => seção quieta;
+ * Sempre montada: preserva todos os pedidos retornados pelo contrato da carteira,
+ * inclusive os também visíveis na lista administrativa. Contrato ausente ou ator sem papel => seção quieta;
  * erro de transporte/indisponibilidade => aviso explícito (nunca confundido
  * com "carteira vazia").
  *
@@ -22,7 +22,7 @@ import { isAccountingPending } from "@/lib/orderAccountingState";
  * eventos ao commercial owner. O botão fica visível também com lista vazia
  * ou erro, sem reload de página.
  */
-export function CommercialOwnerOrdersSection({ statusFilter, excludeIds = [] }: { statusFilter: string; excludeIds?: string[] }) {
+export function CommercialOwnerOrdersSection({ statusFilter }: { statusFilter: string }) {
   const result = useCommercialOwnerOrders({ status: statusFilter === "all" ? null : statusFilter });
   const state = result.data;
   if (!result.ready || result.isLoading) return null;
@@ -53,7 +53,7 @@ export function CommercialOwnerOrdersSection({ statusFilter, excludeIds = [] }: 
     );
   }
   if (!state || state.state !== "allowed") return null;
-  const visible = state.orders.filter((o) => !excludeIds.includes(o.id));
+  const visible = state.orders;
   return (
     <Card>
       <CardHeader className="pb-3 flex flex-wrap items-center justify-between gap-3 space-y-0">

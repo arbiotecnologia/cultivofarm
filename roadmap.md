@@ -1,3 +1,4 @@
+- [ ] Carteira 30/10: confirmar contrato LIVE e sobreposição administrativa; corrigir apresentação somente frontend, testar isolamento/papéis/erro/vazio e documentar evidência sem publicação.
 - [ ] Subconjunto01 20:28: restaurar stack metadata real em PG descartável; ensaiar instalador COMMIT/postflight, drift/rollback/rerun/contenção e aprovação; atualizar evidências externas de boleto/settings/identidade sem alterações comerciais ou hosted.
 # F2-B — auditoria e preparação revisável
 

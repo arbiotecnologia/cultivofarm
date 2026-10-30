@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   orgB: "99999999-9999-4999-8999-999999999999",
   org: "22222222-2222-4222-8222-222222222222",
   rpcMode: "allowed" as "allowed" | "denied" | "absent" | "error",
+  roles: ["administrador"] as string[],
   adminRows: [] as unknown[],
   ownerRows: [] as unknown[],
   channels: [] as string[],
@@ -22,7 +23,7 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
   user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.org, ativo: true, senha_provisoria: false },
-  role: "administrador", roles: ["administrador"], loading: false, authzReady: true, authzEpoch: 0,
+  role: state.roles[0], roles: state.roles, loading: false, authzReady: true, authzEpoch: 0,
   checkAuthzAccess: () => true, signOut: vi.fn(),
 }) }));
 vi.mock("@/hooks/usePartnerUnreadMessages", () => ({ useUnreadCountsByOrder: () => ({ data: {} }) }));
@@ -98,7 +99,7 @@ function rpcError(code: string, message: string) {
 
 beforeEach(() => {
   Object.assign(state, {
-    org: state.orgA, rpcMode: "allowed" as const,
+    org: state.orgA, rpcMode: "allowed" as const, roles: ["administrador"],
     adminRows: [] as unknown[], ownerRows: [ORDER_ROW] as unknown[],
     channels: [] as string[], channelCallbacks: [] as Array<{ name: string; filter: { table?: string }; cb: () => void }>,
   });
@@ -141,14 +142,17 @@ it("admin A: lista administrativa vazia, mas a carteira da empresa mostra PB-001
   expect(screen.getByText("Nenhum pedido encontrado.")).toBeTruthy();
   expect(state.writes).not.toHaveBeenCalled();
 });
-it("lista mista: pedido já visível na lista administrativa é deduplicado por ID e o externo permanece visível", async () => {
+it("lista mista: carteira mantém pedido próprio mesmo também visível na lista administrativa", async () => {
   state.adminRows = [ADMIN_DIRECT_ROW];
   state.ownerRows = [ORDER_ROW, DIRECT_ROW];
   mount();
   await screen.findByText("Pedidos da carteira da empresa");
   await screen.findByText("PB-001029");
-  // PB-000100 aparece apenas na lista administrativa (desktop + mobile), nunca duplicado na carteira.
-  await waitFor(() => expect(screen.getAllByText("PB-000100").length).toBe(2));
+  // Dois exemplares administrativos (desktop/mobile) e um na carteira completa.
+  await waitFor(() => expect(screen.getAllByText("PB-000100").length).toBe(3));
+  const ownerTable = screen.getAllByRole("table").at(-1);
+  if (!ownerTable) throw new Error("Owner table missing");
+  expect(within(ownerTable).getByText("PB-000100")).toBeTruthy();
   expect(state.writes).not.toHaveBeenCalled();
 });
 it("erro de transporte mostra aviso de indisponibilidade, nunca confundido com carteira vazia", async () => {
@@ -217,8 +221,52 @@ it("revogação durante refresh: resposta atrasada 42501 esconde dados antigos, 
   });
   screen.getByRole("button", { name: "Atualizar" }).click();
   await waitFor(() => expect(resolvePending).not.toBeNull());
-  resolvePending!({ data: null, error: { code: "42501", message: "actor_not_allowed" } });
+  if (!resolvePending) throw new Error("Pending refresh missing");
+  (resolvePending as (v: unknown) => void)({ data: null, error: { code: "42501", message: "actor_not_allowed" } });
   await waitFor(() => expect(screen.queryByText("PB-001029")).toBeNull());
   expect(screen.queryByText("Pedidos da carteira da empresa")).toBeNull();
+  expect(state.writes).not.toHaveBeenCalled();
+});
+
+it("sete pedidos próprios sobrepostos continuam nos sete registros da carteira", async () => {
+  state.ownerRows = Array.from({ length: 7 }, (_, index) => ({
+    ...ORDER_ROW,
+    id: `d4539dd9-b090-4433-9ed3-6f8f5d3e767${index}`,
+    numero: `PB-${String(1029 + index).padStart(6, "0")}`,
+  }));
+  state.adminRows = state.ownerRows.map((row) => ({ ...ADMIN_DIRECT_ROW, ...(row as object) }));
+  mount();
+  await waitFor(() => expect(screen.getAllByRole("table").length).toBe(2));
+  const ownerTable = screen.getAllByRole("table")[1];
+  expect(within(ownerTable).getAllByRole("row").length).toBe(8);
+  expect(within(ownerTable).getByText("PB-001029")).toBeTruthy();
+  expect(within(ownerTable).getByText("PB-001035")).toBeTruthy();
+  expect(state.writes).not.toHaveBeenCalled();
+});
+
+it.each(["gestor_comercial", "parceiro_b2b", "financeiro"])("papel %s não ganha autoridade pela apresentação", async (role) => {
+  state.roles = [role];
+  if (role !== "gestor_comercial") state.ownerRows = [];
+  mount();
+  await screen.findByText("Nenhum pedido encontrado.");
+  if (role === "gestor_comercial") {
+    await screen.findByText("PB-001029");
+  } else {
+    await waitFor(() => expect(state.table).toHaveBeenCalled());
+    expect(state.rpc.mock.calls.filter(([name]) => name === "c2_commercial_owner_orders_projection")).toHaveLength(0);
+    expect(screen.queryByText("PB-001029")).toBeNull();
+  }
+  expect(state.writes).not.toHaveBeenCalled();
+});
+
+it("resposta estrangeira no refresh elimina carteira anterior sem fallback direto", async () => {
+  mount();
+  await screen.findByText("PB-001029");
+  state.rpcMode = "allowed";
+  state.rpc.mockImplementation(() => rpcResponse({
+    contract: COMMERCIAL_OWNER_ORDERS_CONTRACT, organization_id: state.orgB, orders: [ORDER_ROW],
+  }));
+  screen.getByRole("button", { name: "Atualizar" }).click();
+  await waitFor(() => expect(screen.queryByText("PB-001029")).toBeNull());
   expect(state.writes).not.toHaveBeenCalled();
 });
