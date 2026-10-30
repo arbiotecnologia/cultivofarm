@@ -121,9 +121,109 @@
       "status": "PASS"
     },
     {
+      "test": "observed same-key wait: one write and one replay",
+      "status": "PASS"
+    },
+    {
+      "test": "active profile revoked during observed lote lock wait: 42501 and no envase",
+      "status": "PASS"
+    },
+    {
+      "test": "terminal OS committed during observed OS wait denies partial before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "CQ revoked during observed lote wait denies partial before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "REPEATABLE READ explicitly unsupported without writes",
+      "status": "PASS"
+    },
+    {
+      "test": "SERIALIZABLE explicitly unsupported without writes",
+      "status": "PASS"
+    },
+    {
+      "test": "READ COMMITTED partial reserves 2000ml with 3000ml pending",
+      "status": "PASS"
+    },
+    {
+      "test": "production cannot override partial",
+      "status": "PASS"
+    },
+    {
+      "test": "manager override requires reason",
+      "status": "PASS"
+    },
+    {
+      "test": "manager reasoned override completes without finance",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked during observed gate wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked during observed os wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked during observed programacao wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "role revoked during observed lote wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant revoked during observed gate wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant revoked during observed os wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant revoked during observed programacao wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "tenant revoked during observed lote wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked during observed gate wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked during observed os wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked during observed programacao wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "SaaS revoked during observed lote wait denies with 42501",
+      "status": "PASS"
+    },
+    {
+      "test": "item N failure rolls back prior item stock ledger receipt",
+      "status": "PASS"
+    },
+    {
+      "test": "lock timeout rolls back whole receipt and stock",
+      "status": "PASS"
+    },
+    {
+      "test": "existing reserved stock foreign root cannot cover own OS",
+      "status": "PASS"
+    },
+    {
       "test": "execution",
       "status": "FAIL",
-      "error": ""
+      "error": "ERROR:  duplicate key value violates unique constraint \"idx_lotes_programacao_id_unique\"\nDETAIL:  Key (programacao_id)=(10000000-0000-4000-8000-000000002601) already exists.\n"
     }
   ],
   "raw": [
@@ -228,8 +328,62 @@
       "returncode": 3,
       "stdout": "",
       "stderr": "ERROR:  PT409: LOCAL_LEDGER_FAIL\nCONTEXT:  PL/pgSQL function local_fail_envase_ledger() line 1 at RAISE\nSQL statement \"INSERT INTO public.estoque_movimentacoes\n      (estoque_produto_id, acao, quantidade, status_novo, lote_id, usuario_id,\n       saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,\n       volume_anterior, volume_posterior, unidade, direcao,\n       origem, referencia_tipo, referencia_id, motivo, idempotency_key, request_fingerprint,\n       movimentacao_origem_id, os_id, os_tipo, cliente_id, metadata)\n    VALUES (\n      NEW.id,\n      COALESCE(v_ctx->>'acao', 'entrada'),\n      NULLIF(NEW.quantidade, 0), NEW.status::text, NEW.lote_id,\n      COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid),\n      0, COALESCE(NEW.quantidade, 0),\n      0, COALESCE(NEW.quantidade_reservada, 0),\n      0, COALESCE(NEW.volume_total, 0),\n      COALESCE(v_ctx->>'unidade', 'un'), 'entrada',\n      COALESCE(v_ctx->>'origem', 'trigger'),\n      v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid,\n      v_ctx->>'motivo', v_key, v_ctx->>'request_fingerprint',\n      (v_ctx->>'movimentacao_origem_id')::uuid,\n      NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,\n      v_meta\n    )\"\nPL/pgSQL function log_estoque_movimentacao() line 29 at SQL statement\nSQL statement \"INSERT INTO public.estoque_produto (id,\n        produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,\n        validade, status, reservado_para_os_id, reservado_para_os_tipo,\n        reservado_para_cliente_id, reservado_para_partner_order_id,\n        quantidade_reservada, reservado_por, reservado_em\n      ) VALUES (\n        v_estoque_id,v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,\n        (v_unit_ml * v_reservadas) / 1000.0, p_validade, 'reservado'::public.status_estoque,\n        p_os_id, v_origem, v_ctx.cliente_id, v_ctx.partner_order_id,\n        v_reservadas, v_uid, now()\n      ) RETURNING id\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 171 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "terminal OS committed during observed OS wait denies partial before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ENVASE_FRESH_STATE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 76 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "CQ revoked during observed lote wait denies partial before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENVASE_EXIGE_CQ_APROVADO\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 108 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "REPEATABLE READ explicitly unsupported without writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  0A000: ENVASE_ISOLATION_UNSUPPORTED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "SERIALIZABLE explicitly unsupported without writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  0A000: ENVASE_ISOLATION_UNSUPPORTED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 20 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "production cannot override partial",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENVASE_PARCIAL_SEM_ALCADA\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 211 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "manager override requires reason",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENVASE_PARCIAL_SEM_MOTIVO\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 213 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "item N failure rolls back prior item stock ledger receipt",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ITEM_N_FAIL\nCONTEXT:  PL/pgSQL function local_item_n() line 1 at RAISE\nSQL statement \"INSERT INTO public.envase (id,lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador)\n    VALUES (v_envase_id,p_lote_id, v_tipo::public.tipo_embalagem, v_unit_ml, v_qtd, current_date, nullif(p_operador, ''))\n    RETURNING id\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 158 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "lock timeout rolls back whole receipt and stock",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  55P03: canceling statement due to lock timeout\nCONTEXT:  while locking tuple (0,25) in relation \"lotes\"\nSQL statement \"SELECT coalesce(volume_produzido, 0), status::text, produto_id, microrganismo_id, programacao_id\n                                                                                  FROM public.lotes WHERE id = p_lote_id FOR UPDATE\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 83 at SQL statement\nLOCATION:  ProcessInterrupts, postgres.c:3400\n"
+    },
+    {
+      "test": "existing reserved stock foreign root cannot cover own OS",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_RESERVATION_LINEAGE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 118 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     }
   ],
-  "elapsed_seconds": 196.839,
+  "elapsed_seconds": 177.039,
   "exit_code": 1
 }
