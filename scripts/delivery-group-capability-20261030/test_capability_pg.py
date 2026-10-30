@@ -40,6 +40,10 @@ def main():
     sql(rel.decode()); sql((PROOF / 'postflight.sql.review').read_text())
     ok('exact applied release-combined a566faa4 installed + proof POST (hosted state reproduced)')
     assemble.build(); inst = (H / 'install.sql.review').read_text()
+    fails('PRE refuses the stale baseline (stock/envase v2 not installed yet)', inst, 'DELIVERY_CAP_PRE_DRIFT')
+    V2 = H.parent / 'stock-envase-recovery-20261027'
+    sql((V2 / 'install-v2.sql.review').read_text()); sql((V2 / 'postflight-v2.sql.review').read_text())
+    ok('stock/envase v2 installed with exact PRE/POST (deployment order 2)')
     T.setup()
     fails('pre-delta: authenticated group writer has no EXECUTE', T.actor() + T.call('pre'), 'permission denied')
     fails('pre-delta: capability RPC absent (frontend stays closed)', T.actor() + 'SELECT public.rpc_entrega_operacoes_capability_v1();', 'does not exist')

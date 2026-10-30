@@ -1,0 +1,217 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=3.5s
+CHECKPOINT sql_calls=100 elapsed=6.1s
+CHECKPOINT sql_calls=200 elapsed=9.0s
+CHECKPOINT sql_calls=300 elapsed=12.0s
+CHECKPOINT sql_calls=400 elapsed=15.3s
+CHECKPOINT sql_calls=500 elapsed=18.5s
+CHECKPOINT sql_calls=600 elapsed=21.4s
+CHECKPOINT sql_calls=700 elapsed=24.2s
+CHECKPOINT sql_calls=800 elapsed=27.3s
+CHECKPOINT sql_calls=900 elapsed=30.2s
+CHECKPOINT sql_calls=1000 elapsed=33.2s
+CHECKPOINT sql_calls=1100 elapsed=36.1s
+CHECKPOINT sql_calls=1200 elapsed=39.2s
+CHECKPOINT sql_calls=1300 elapsed=42.2s
+CHECKPOINT sql_calls=1400 elapsed=45.0s
+CHECKPOINT sql_calls=1500 elapsed=47.8s
+CHECKPOINT sql_calls=1600 elapsed=50.7s
+CHECKPOINT sql_calls=1700 elapsed=53.7s
+CHECKPOINT sql_calls=1800 elapsed=56.8s
+CHECKPOINT sql_calls=1900 elapsed=59.7s
+CHECKPOINT sql_calls=2000 elapsed=62.7s
+CHECKPOINT sql_calls=2100 elapsed=65.4s
+CHECKPOINT sql_calls=2200 elapsed=68.4s
+CHECKPOINT sql_calls=2300 elapsed=71.3s
+CHECKPOINT sql_calls=2400 elapsed=74.0s
+CHECKPOINT sql_calls=2500 elapsed=76.6s
+CHECKPOINT sql_calls=2600 elapsed=79.3s
+CHECKPOINT sql_calls=2700 elapsed=82.4s
+CHECKPOINT sql_calls=2800 elapsed=85.3s
+CHECKPOINT sql_calls=2900 elapsed=88.5s
+CHECKPOINT sql_calls=3000 elapsed=91.5s
+CHECKPOINT sql_calls=3100 elapsed=94.3s
+CHECKPOINT sql_calls=3200 elapsed=97.1s
+CHECKPOINT sql_calls=3300 elapsed=100.3s
+CHECKPOINT sql_calls=3400 elapsed=103.9s
+CHECKPOINT sql_calls=3500 elapsed=107.1s
+CHECKPOINT sql_calls=3600 elapsed=110.1s
+CHECKPOINT sql_calls=3700 elapsed=112.9s
+CHECKPOINT sql_calls=3800 elapsed=115.6s
+CHECKPOINT sql_calls=3900 elapsed=118.6s
+CHECKPOINT sql_calls=4000 elapsed=121.5s
+CHECKPOINT sql_calls=4100 elapsed=124.7s
+CHECKPOINT sql_calls=4200 elapsed=127.6s
+CHECKPOINT sql_calls=4300 elapsed=130.3s
+CHECKPOINT sql_calls=4400 elapsed=133.1s
+CHECKPOINT sql_calls=4500 elapsed=135.8s
+CHECKPOINT sql_calls=4600 elapsed=138.3s
+CHECKPOINT sql_calls=4700 elapsed=141.0s
+CHECKPOINT sql_calls=4800 elapsed=143.9s
+CHECKPOINT sql_calls=4900 elapsed=146.9s
+CHECKPOINT sql_calls=5000 elapsed=150.2s
+CHECKPOINT sql_calls=5100 elapsed=153.5s
+CHECKPOINT sql_calls=5200 elapsed=156.7s
+CHECKPOINT sql_calls=5300 elapsed=159.8s
+CHECKPOINT sql_calls=5400 elapsed=163.0s
+CHECKPOINT sql_calls=5500 elapsed=166.1s
+CHECKPOINT sql_calls=5600 elapsed=169.3s
+CHECKPOINT sql_calls=5700 elapsed=172.5s
+CHECKPOINT sql_calls=5800 elapsed=175.4s
+CHECKPOINT sql_calls=5900 elapsed=178.5s
+CHECKPOINT sql_calls=6000 elapsed=181.4s
+CHECKPOINT sql_calls=6100 elapsed=184.0s
+CHECKPOINT sql_calls=6200 elapsed=186.4s
+CHECKPOINT sql_calls=6300 elapsed=189.2s
+CHECKPOINT sql_calls=6400 elapsed=192.1s
+CHECKPOINT sql_calls=6500 elapsed=195.0s
+CHECKPOINT sql_calls=6600 elapsed=198.4s
+CHECKPOINT sql_calls=6700 elapsed=201.7s
+CHECKPOINT sql_calls=6800 elapsed=205.1s
+CHECKPOINT sql_calls=6900 elapsed=208.4s
+CHECKPOINT sql_calls=7000 elapsed=211.5s
+CHECKPOINT sql_calls=7100 elapsed=214.7s
+CHECKPOINT sql_calls=7200 elapsed=218.0s
+CHECKPOINT sql_calls=7300 elapsed=220.9s
+CHECKPOINT sql_calls=7400 elapsed=224.0s
+CHECKPOINT sql_calls=7500 elapsed=227.6s
+CHECKPOINT sql_calls=7600 elapsed=230.9s
+CHECKPOINT sql_calls=7700 elapsed=233.9s
+CHECKPOINT sql_calls=7800 elapsed=236.5s
+CHECKPOINT sql_calls=7900 elapsed=239.3s
+CHECKPOINT sql_calls=8000 elapsed=242.1s
+CHECKPOINT sql_calls=8100 elapsed=244.7s
+CHECKPOINT sql_calls=8200 elapsed=247.3s
+CHECKPOINT sql_calls=8300 elapsed=250.0s
+CHECKPOINT sql_calls=8400 elapsed=252.6s
+CHECKPOINT sql_calls=8500 elapsed=255.2s
+CHECKPOINT sql_calls=8600 elapsed=258.0s
+CHECKPOINT sql_calls=8700 elapsed=260.7s
+CHECKPOINT sql_calls=8800 elapsed=263.2s
+CHECKPOINT sql_calls=8900 elapsed=265.7s
+CHECKPOINT sql_calls=9000 elapsed=268.2s
+CHECKPOINT sql_calls=9100 elapsed=270.6s
+CHECKPOINT sql_calls=9200 elapsed=273.0s
+CHECKPOINT sql_calls=9300 elapsed=275.4s
+CHECKPOINT sql_calls=9400 elapsed=277.8s
+CHECKPOINT sql_calls=9500 elapsed=280.2s
+CHECKPOINT sql_calls=9600 elapsed=282.5s
+CHECKPOINT sql_calls=9700 elapsed=285.1s
+CHECKPOINT sql_calls=9800 elapsed=287.9s
+CHECKPOINT sql_calls=9900 elapsed=290.6s
+CHECKPOINT sql_calls=10000 elapsed=293.1s
+CHECKPOINT sql_calls=10100 elapsed=296.2s
+CHECKPOINT sql_calls=10200 elapsed=299.0s
+CHECKPOINT sql_calls=10300 elapsed=301.7s
+CHECKPOINT sql_calls=10400 elapsed=304.6s
+CHECKPOINT sql_calls=10500 elapsed=307.2s
+CHECKPOINT sql_calls=10600 elapsed=309.9s
+RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
+PASS atomic package installed first (deployment order 1)
+PASS proof installer COMMIT with PRE and POST (deployment order 2)
+PASS exact POST passes on installed instance
+PASS V2 COMPOSITION: stock/envase install-v2 PRE+POST on top of atomic+proof
+CHECKPOINT fixtures 313.7
+PASS anon cannot execute new attach RPC
+PASS authenticated cannot execute private apply
+PASS legacy adapter rpc_gerar_formulario_entrega closed to anon
+PASS legacy adapter rpc_gerar_formulario_entrega closed to service_role
+PASS legacy adapter rpc_gerar_formulario_entrega without session denied
+PASS legacy adapter rpc_coletar_assinatura_digital_entrega closed to anon
+PASS legacy adapter rpc_coletar_assinatura_digital_entrega closed to service_role
+PASS legacy adapter rpc_coletar_assinatura_digital_entrega without session denied
+PASS legacy adapter rpc_anexar_comprovante_entrega closed to anon
+PASS legacy adapter rpc_anexar_comprovante_entrega closed to service_role
+PASS legacy adapter rpc_anexar_comprovante_entrega without session denied
+PASS legacy generate adapter cross-tenant FSF denied
+PASS legacy generate adapter external role denied
+PASS legacy attach adapter path of another tenant delivery denied
+PASS legacy attach adapter legacy-only field data_assinatura rejected
+PASS preflight positive admin same tenant
+PASS preflight cross-tenant FSF admin denied
+PASS preflight cancelled delivery denied
+PASS preflight external admin+parceiro denied
+PASS preflight aplicador without client link denied
+CHECKPOINT sql_calls=10700 elapsed=314.4s
+PASS preflight producao staff allowed (legacy role matrix)
+PASS preflight writes nothing
+PASS generate positive creates one proof and seeds checklist
+PASS generate replay same key returns stored result
+PASS generate replay is marked replayed, no second proof
+PASS generate new key reuses open proof
+PASS same key different delivery conflicts
+PASS generate cross-tenant denied
+PASS generate cancelled denied
+PASS invalid request key rejected
+PASS attach object missing denied (upload not proven)
+PASS attach object owned by other user denied
+PASS attach path of another delivery denied
+PASS attach traversal path denied
+PASS attach unknown field rejected
+PASS attach mime/extension mismatch rejected
+PASS attach without receiver rejected
+PASS attach cross-tenant FSF admin denied
+PASS attach external role denied
+PASS attach aplicador without link denied
+PASS rejections left zero writes
+PASS attach positive links object, delivery and audit
+PASS attach retry with same key replays without second audit
+PASS replay kept single audit
+PASS same object under new key conflicts (no relink)
+PASS attach without form generates and attaches atomically
+PASS sign invalid hash rejected
+PASS sign attachment-style path rejected
+PASS sign positive by producao staff
+PASS same key from another actor is not a replay of theirs
+PASS confirmed proof cannot be overwritten
+PASS B2B-linked delivery proof stays closed
+PASS direct UPDATE entregas by authenticated denied
+PASS direct UPDATE entrega_comprovantes by authenticated denied
+PASS owner-level write without permit denied even with spoofed GUCs
+PASS proof permit cannot change status
+PASS proof permit cannot change financial columns
+PASS proof permit for one row cannot write another
+PASS fault after form insert aborts attach
+PASS fault rolled back proof, request, audit and delivery
+PASS retry after definitive failure succeeds with same key and object
+PASS revocation committed during advisory wait denies after the wait, zero writes
+PASS revocation committed during global-gate wait denies, zero writes
+PASS row-lock wait: revocation linearized after the committed proof (gate held)
+PASS after linearized revocation the next proof is denied
+PASS row holder that revokes: deadlock/denial is fail-closed, zero writes
+PASS revoked actor cannot replay stored receipt
+PASS inactive profile cannot replay
+PASS preflight aplicador WITH client link allowed
+PASS attach aplicador with client link positive
+PASS success leaves zero permit residue (context removed) and keeps the receipt
+PASS sign aplicador with client link positive
+PASS after real link revocation aplicador preflight denied
+PASS after real link revocation aplicador cannot replay stored receipt
+PASS after real link revocation aplicador new attach denied
+PASS other staff on same delivery keeps access after aplicador revocation
+CHECKPOINT sql_calls=10800 elapsed=321.4s
+PASS link revoked during storage FOR SHARE wait is denied after the wait, zero writes, zero residue
+PASS link revoked during comprovante FOR UPDATE wait is denied, zero writes, zero residue
+PASS role revoked during comprovante wait is denied, zero writes
+PASS gated link revocation during storage wait linearizes after the committed proof
+PASS after linearized link revocation the next aplicador proof is denied
+PASS PT409 OBJECT_ALREADY_LINKED while the object IS linked: SQLSTATE never proves an object is unlinked
+PASS legacy generate adapter works for same-tenant staff through the new contract
+PASS legacy attach adapter (old payload) links object with audit and zero residue
+PASS legacy attach adapter retry with same path replays (idempotent, single audit)
+PASS legacy replay kept a single audit row
+PASS legacy sign adapter (old payload) works for producao staff
+PASS legacy attach adapter cross-tenant FSF on AR Bio delivery denied
+PASS concurrent same-key attach: one write, one replay, single audit
+PASS atomic group creation still passes barrier (harness-only grant)
+PASS atomic cancel still passes barrier
+PASS financial/fiscal/outbox tables remain empty (zero titles, zero dispatch)
+PASS after rollback new RPC closed to clients
+PASS after rollback apply deny-only
+PASS after rollback legacy adapters closed to clients
+PASS after rollback legacy adapters deny-only
+PASS zero permit residue at the end
+PASS after rollback barrier still closes direct writes
+PASS rollback preserved history
+ELAPSED 325.2
+PROOF_WITH_V2 103 PASS 0 NOT_PASS

@@ -4,6 +4,15 @@
     "status": "PASS"
   },
   {
+    "test": "PRE refuses the stale baseline (stock/envase v2 not installed yet)",
+    "status": "PASS",
+    "expected": "DELIVERY_CAP_PRE_DRIFT"
+  },
+  {
+    "test": "stock/envase v2 installed with exact PRE/POST (deployment order 2)",
+    "status": "PASS"
+  },
+  {
     "test": "pre-delta: authenticated group writer has no EXECUTE",
     "status": "PASS",
     "expected": "permission denied"
@@ -125,14 +134,14 @@
     "ack": {
       "itens": [
         {
-          "entrega_id": "8f93340a-6a5d-46bc-9f7a-65ff3b7fd295",
-          "movimentacao_id": "298f19a5-4745-4b45-b594-8d987522251e",
-          "estoque_produto_id": "08013b19-f6cd-48b0-8eeb-120ebb8adaad"
+          "entrega_id": "e505b0bf-3ee0-46d6-a9c0-de7155af68a6",
+          "movimentacao_id": "a4758b39-3290-4993-b51b-499b443d2da1",
+          "estoque_produto_id": "da447b01-8432-40fa-80f3-679558201703"
         },
         {
-          "entrega_id": "34cbb3e6-6f01-4a6f-9041-8cdae477b505",
-          "movimentacao_id": "0fb2b9c5-60c5-4aa5-9d15-0c6e58d21fe5",
-          "estoque_produto_id": "fa7be3e4-3776-4fc9-a296-7ecafc5a0951"
+          "entrega_id": "9be5b31c-7740-4ea8-a379-572c78af6bc3",
+          "movimentacao_id": "4c738a09-3111-41c3-8192-e9b3693c1060",
+          "estoque_produto_id": "d903b816-2f89-4dd3-8205-699d30af288a"
         }
       ],
       "os_id": "10000000-0000-4000-8000-000000000007",
@@ -170,7 +179,7 @@
     "ack": {
       "replay": false,
       "success": true,
-      "entrega_id": "8f93340a-6a5d-46bc-9f7a-65ff3b7fd295",
+      "entrega_id": "e505b0bf-3ee0-46d6-a9c0-de7155af68a6",
       "organization_id": "10000000-0000-4000-8000-000000000001",
       "reserva_liberada": true,
       "estoque_estornado": true

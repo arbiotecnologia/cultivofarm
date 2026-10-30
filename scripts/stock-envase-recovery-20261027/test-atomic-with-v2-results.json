@@ -1,0 +1,451 @@
+[
+  {
+    "test": "candidate compiles with captured real types/bodies",
+    "status": "PASS"
+  },
+  {
+    "test": "real h15 and SaaS resolve synthetic tenant",
+    "status": "PASS"
+  },
+  {
+    "test": "tenant FSF cannot use AR Bio IDs",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "anonymous ACL denies",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "role financeiro denied",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "role parceiro_b2b denied",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "role parceiro_b2b_tecnico denied",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "role superadmin denied",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "role consultor_tecnico denied",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "inactive denied",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "invalid quantity None",
+    "status": "PASS",
+    "expected": "DELIVERY_ITEMS_INVALID"
+  },
+  {
+    "test": "invalid quantity NaN",
+    "status": "PASS",
+    "expected": "DELIVERY_ITEMS_INVALID"
+  },
+  {
+    "test": "invalid quantity 0",
+    "status": "PASS",
+    "expected": "DELIVERY_ITEMS_INVALID"
+  },
+  {
+    "test": "invalid quantity -1",
+    "status": "PASS",
+    "expected": "DELIVERY_ITEMS_INVALID"
+  },
+  {
+    "test": "invalid quantity Infinity",
+    "status": "PASS",
+    "expected": "DELIVERY_ITEMS_INVALID"
+  },
+  {
+    "test": "OnFarm remains contained",
+    "status": "PASS",
+    "expected": "DELIVERY_ORIGIN_CLOSED"
+  },
+  {
+    "test": "all negative paths no deliveries receipts",
+    "status": "PASS"
+  },
+  {
+    "test": "two-item group real reserve split delivery expedition",
+    "status": "PASS"
+  },
+  {
+    "test": "exact replay returns stored group",
+    "status": "PASS"
+  },
+  {
+    "test": "replay creates no duplicate",
+    "status": "PASS"
+  },
+  {
+    "test": "changed payload replay conflict",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
+  },
+  {
+    "test": "cross tenant cancel",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "cancel failure after return ledger atomically rolls back",
+    "status": "PASS",
+    "expected": "LOCAL_CANCEL_FAULT"
+  },
+  {
+    "test": "failed cancel rolls back reversal stock delivery and receipt",
+    "status": "PASS"
+  },
+  {
+    "test": "canonical split merge keeps unique index source history and main balance",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel exact replay",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel changed reason replay denied",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
+  },
+  {
+    "test": "no downstream titles fiscal outbox",
+    "status": "PASS"
+  },
+  {
+    "test": "private context removed on success",
+    "status": "PASS"
+  },
+  {
+    "test": "revocation after advisory wait before replay",
+    "status": "PASS"
+  },
+  {
+    "test": "revocation after row wait before replay",
+    "status": "PASS"
+  },
+  {
+    "test": "two actual concurrent exact replays no extra group",
+    "status": "PASS"
+  },
+  {
+    "test": "concurrent replay remains two deliveries",
+    "status": "PASS"
+  },
+  {
+    "test": "item2 trigger failure aborts first delivery reserve expedition",
+    "status": "PASS",
+    "expected": "LOCAL_ITEM_TWO_FAILURE"
+  },
+  {
+    "test": "item2 rollback has no stock ledger receipt residues",
+    "status": "PASS"
+  },
+  {
+    "test": "delivery trigger title attempt fails transactionally",
+    "status": "PASS",
+    "expected": "DELIVERY_DOWNSTREAM_FORBIDDEN"
+  },
+  {
+    "test": "attempted title leaves zero title and no new group",
+    "status": "PASS"
+  },
+  {
+    "test": "exact LIVE accounting guard rejects entregue on pending snapshot",
+    "status": "PASS",
+    "expected": "C2_ACCOUNTING_PENDING"
+  },
+  {
+    "test": "delivery transition barrier precedes any auto billing trigger",
+    "status": "PASS",
+    "expected": "DELIVERY_B2B_TRANSITION_CLOSED"
+  },
+  {
+    "test": "final no context no billing fiscal messages",
+    "status": "PASS"
+  },
+  {
+    "test": "same request key tenants separated no collision",
+    "status": "PASS"
+  },
+  {
+    "test": "B cannot replay A cancel result",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "GUC spoof cannot cancel directly",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "direct stock mutation remains ACL closed",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "private context cannot be minted by caller",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "actual concurrent oversell second stale CAS denied",
+    "status": "PASS"
+  },
+  {
+    "test": "oversell balance conserved no negatives",
+    "status": "PASS"
+  },
+  {
+    "test": "negative child ACK rolls back group",
+    "status": "PASS"
+  },
+  {
+    "test": "negative receipt ACK leaves every effect unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "final financial fiscal outbox empty after concurrency",
+    "status": "PASS"
+  },
+  {
+    "test": "V2 COMPOSITION: raw row-lock holder calling gated batch vs gated group -> deadlock resolved by PostgreSQL, one side aborted, no partial effect",
+    "status": "PASS",
+    "observed": "ery details.\nCONTEXT:  while locking tuple (0,4) in relation \"estoque_produto\"\nSQL statement \"SELECT *            FROM public.estoque_produto WHERE id=v_id FOR UPDATE\"\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 49 at SQL statement\n",
+    "batch_committed": true
+  },
+  {
+    "test": "unsupported field rejected endereco_entrega",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "unsupported field rejected observacoes_entrega",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "merge accepts available zero reservation with preserved unique index",
+    "status": "PASS"
+  },
+  {
+    "test": "merge rejects nonpositive/nonfinite main volume 0",
+    "status": "PASS",
+    "expected": "DELIVERY_MERGE_BALANCE_DENIED"
+  },
+  {
+    "test": "bad merge retains expedition and no cancel receipt 70",
+    "status": "PASS"
+  },
+  {
+    "test": "merge rejects nonpositive/nonfinite main volume -1",
+    "status": "PASS",
+    "expected": "DELIVERY_MERGE_BALANCE_DENIED"
+  },
+  {
+    "test": "bad merge retains expedition and no cancel receipt 80",
+    "status": "PASS"
+  },
+  {
+    "test": "merge rejects nonpositive/nonfinite main volume 'NaN'::numeric",
+    "status": "PASS",
+    "expected": "DELIVERY_MERGE_BALANCE_DENIED"
+  },
+  {
+    "test": "bad merge retains expedition and no cancel receipt 90",
+    "status": "PASS"
+  },
+  {
+    "test": "merge rejects nonpositive/nonfinite main volume 'Infinity'::numeric",
+    "status": "PASS",
+    "expected": "DELIVERY_MERGE_BALANCE_DENIED"
+  },
+  {
+    "test": "bad merge retains expedition and no cancel receipt 100",
+    "status": "PASS"
+  },
+  {
+    "test": "merge incompatible expiry rejected explicitly",
+    "status": "PASS",
+    "expected": "DELIVERY_MERGE_INCOMPATIBLE"
+  },
+  {
+    "test": "same tenant distinct actors same key separate receipts",
+    "status": "PASS"
+  },
+  {
+    "test": "legacy cancel remains contained",
+    "status": "PASS",
+    "expected": "DELIVERY_LEGACY_CLOSED"
+  },
+  {
+    "test": "cancel NULL observed denied",
+    "status": "PASS",
+    "expected": "DELIVERY_CANCEL_INVALID"
+  },
+  {
+    "test": "cancel stale observed denied",
+    "status": "PASS",
+    "expected": "DELIVERY_OBSERVED_CONFLICT"
+  },
+  {
+    "test": "cancel committed revocation while awaiting advisory",
+    "status": "PASS",
+    "observed": "ERROR:  DELIVERY_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_actor_20261030(text) line 8 at RAISE\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 10 at IF\n"
+  },
+  {
+    "test": "cancel revoked no effects advisory",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel committed revocation while awaiting gate",
+    "status": "PASS",
+    "observed": "ERROR:  DELIVERY_ACTOR_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_actor_20261030(text) line 8 at RAISE\nPL/pgSQL function platform_private.delivery_gate_20261030(uuid,text) line 5 at IF\nSQL statement \"SELECT platform_private.delivery_gate_20261030(v_org,'cancel')\"\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 11 at PERFORM\n"
+  },
+  {
+    "test": "cancel revoked no effects gate",
+    "status": "PASS"
+  },
+  {
+    "test": "real revoker waits gate during cancel row",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel row wait serializes effective revocation after commit",
+    "status": "PASS",
+    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"f42a44c7-e2ff-4731-a3bf-f024d0df3b30\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
+  },
+  {
+    "test": "cancel replay denied after effective revocation row",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "real revoker waits gate during cancel merge",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel merge wait serializes effective revocation after commit",
+    "status": "PASS",
+    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"cccddbf0-fd62-41cb-9862-7dedc4b0bb43\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
+  },
+  {
+    "test": "cancel replay denied after effective revocation merge",
+    "status": "PASS",
+    "expected": "DELIVERY_ACTOR_DENIED"
+  },
+  {
+    "test": "LIVE structural guard prevents OS origem alteration during wait; unchanged replay permitted",
+    "status": "PASS",
+    "observed": "ERROR:  Campos estruturais da OS (origem, v\u00ednculo B2B, produto, n\u00famero) n\u00e3o podem ser alterados.\nCONTEXT:  PL/pgSQL function tg_protect_os_structural_fields() line 9 at RAISE\n"
+  },
+  {
+    "test": "OS cliente_id changed while waiting denies replay",
+    "status": "PASS",
+    "observed": "ERROR:  DELIVERY_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 40 at RAISE\n"
+  },
+  {
+    "test": "dedicated tests zero finance/outbox",
+    "status": "PASS"
+  },
+  {
+    "test": "anon direct INSERT",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "anon direct UPDATE",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "anon direct DELETE",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "anon legacy cancellation ACL",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "authenticated direct INSERT",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "authenticated direct UPDATE",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "authenticated direct DELETE",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "authenticated legacy cancellation ACL",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "service_role direct INSERT",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "service_role direct UPDATE",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "service_role direct DELETE",
+    "status": "PASS",
+    "expected": "DELIVERY_MUTATION_CLOSED"
+  },
+  {
+    "test": "service_role legacy cancellation ACL",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "authenticated spoof GUC cannot update with local DML grant",
+    "status": "PASS",
+    "expected": "DELIVERY_MUTATION_CLOSED"
+  },
+  {
+    "test": "privileged direct writer lacks private permit",
+    "status": "PASS",
+    "expected": "DELIVERY_MUTATION_CLOSED"
+  },
+  {
+    "test": "legacy creator direct INSERT denied without group permit",
+    "status": "PASS",
+    "expected": "COCKPIT_ENTREGA_STATUS_ESTOQUE_INVALIDO"
+  },
+  {
+    "test": "closure retains authenticated SELECT",
+    "status": "PASS"
+  },
+  {
+    "test": "closure no context residue",
+    "status": "PASS"
+  }
+]

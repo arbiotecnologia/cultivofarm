@@ -45,6 +45,8 @@ BEGIN
  SELECT coalesce(sum(volume_total),0)*1000 INTO reserved FROM public.estoque_produto
   WHERE reservado_para_os_id=p_os AND reservado_para_os_tipo='manual' AND status::text<>'estornado';
  IF p_estado='completed' AND reserved < coalesce(p.volume_necessario,0) THEN RAISE EXCEPTION 'ENVASE_TRANSITION_COVERAGE' USING ERRCODE='PT409'; END IF;
+ -- Re-authorize after the programacao/lote/CQ waits and immediately before the first mutation.
+ IF org IS DISTINCT FROM platform_private.stock_envase_scope_v1(p_lote,p_prog,p_os,'manual') THEN RAISE EXCEPTION 'ENVASE_TRANSITION_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'manual_envase_transition_v1',p_os);
  IF prev='em_cq' THEN UPDATE public.ordens_servico SET status='envase' WHERE id=p_os; END IF;
  UPDATE public.ordens_servico SET status='pronto_entrega' WHERE id=p_os;
@@ -793,7 +795,6 @@ BEGIN
  IF jsonb_array_length(p_itens)=0 OR jsonb_array_length(p_itens)>100 THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
  SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org;
  IF NOT FOUND OR v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'agronomica' THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
- IF v_os.updated_at IS DISTINCT FROM p_os_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
  v_original_client:=v_os.cliente_id;
  FOR v_item IN SELECT value FROM jsonb_array_elements(p_itens) LOOP
   IF jsonb_typeof(v_item)<>'object' OR NOT(v_item ? 'item_id' AND v_item ? 'quantidade' AND v_item ? 'observed_updated_at') OR v_item->>'observed_updated_at' IS NULL OR EXISTS(SELECT 1 FROM jsonb_each(v_item) WHERE key NOT IN ('item_id','quantidade','observed_updated_at')) THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
@@ -809,6 +810,18 @@ BEGIN
  PERFORM platform_private.delivery_gate_20261030(v_org,'group');
  SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org FOR UPDATE;
  IF NOT FOUND OR v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'agronomica' THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ SELECT * INTO v_prev FROM platform_private.delivery_requests_20261030 WHERE request_key=p_request_key AND actor=v_actor AND organization_id=v_org AND action='group';
+ IF FOUND THEN
+  IF v_prev.fingerprint IS DISTINCT FROM v_fp THEN RAISE EXCEPTION 'DELIVERY_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  -- Reference scope still binds the replay: client unchanged during the wait, still in tenant, and every receipt
+  -- delivery belongs to this tenant/OS/client. Only the fresh-dispatch CAS/status/stock state is not required.
+  IF v_os.cliente_id IS DISTINCT FROM v_original_client OR NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org)
+  OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_prev.result->'itens') i LEFT JOIN public.entregas e ON e.id=(i.value->>'entrega_id')::uuid
+   WHERE e.id IS NULL OR e.organization_id IS DISTINCT FROM v_org OR e.ordem_servico_id IS DISTINCT FROM p_os_id OR e.cliente_id IS DISTINCT FROM v_os.cliente_id)
+  THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  IF platform_private.delivery_actor_20261030('group') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+  RETURN v_prev.result||jsonb_build_object('replay',true);
+ END IF;
  IF v_os.cliente_id IS DISTINCT FROM v_original_client OR v_os.updated_at IS DISTINCT FROM p_os_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
  PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;

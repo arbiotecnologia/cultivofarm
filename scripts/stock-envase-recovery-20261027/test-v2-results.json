@@ -137,6 +137,54 @@
     "status": "PASS"
   },
   {
+    "test": "exact replay of committed MIXED group (owned+free now expedido) returns same IDs, zero mutations",
+    "status": "PASS"
+  },
+  {
+    "test": "exact replay still answers after the OS revision changed post-commit (receipt precedes fresh CAS)",
+    "status": "PASS"
+  },
+  {
+    "test": "same key, changed payload -> replay conflict",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
+  },
+  {
+    "test": "tenant B replaying the same key/args is denied",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "revoked actor replay denied (no receipt disclosure)",
+    "status": "PASS",
+    "expected": "ERROR:"
+  },
+  {
+    "test": "denied replays left no mutation",
+    "status": "PASS"
+  },
+  {
+    "test": "exact replay of RESERVED-only group: same IDs, zero mutations",
+    "status": "PASS"
+  },
+  {
+    "test": "exact replay of FREE-only group: same IDs, zero mutations",
+    "status": "PASS"
+  },
+  {
+    "test": "cancellation exact replay: replay=true, zero mutations",
+    "status": "PASS"
+  },
+  {
+    "test": "cancellation same entrega, changed motivo -> conflict",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
+  },
+  {
+    "test": "group replay after cancellation returns the original receipt; nothing re-created",
+    "status": "PASS"
+  },
+  {
     "test": "gate held: envase waits on the gate first and aborts with lock timeout, zero partial rows",
     "status": "PASS"
   },

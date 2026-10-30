@@ -95,6 +95,8 @@ BEGIN
  SELECT coalesce(sum(volume_total),0)*1000 INTO reserved FROM public.estoque_produto
   WHERE reservado_para_os_id=p_os AND reservado_para_os_tipo='manual' AND status::text<>'estornado';
  IF p_estado='completed' AND reserved < coalesce(p.volume_necessario,0) THEN RAISE EXCEPTION 'ENVASE_TRANSITION_COVERAGE' USING ERRCODE='PT409'; END IF;
+ -- Re-authorize after the programacao/lote/CQ waits and immediately before the first mutation.
+ IF org IS DISTINCT FROM platform_private.stock_envase_scope_v1(p_lote,p_prog,p_os,'manual') THEN RAISE EXCEPTION 'ENVASE_TRANSITION_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  INSERT INTO platform_private.authz_tickets(txid,scope,target) VALUES(pg_catalog.txid_current(),'manual_envase_transition_v1',p_os);
  IF prev='em_cq' THEN UPDATE public.ordens_servico SET status='envase' WHERE id=p_os; END IF;
  UPDATE public.ordens_servico SET status='pronto_entrega' WHERE id=p_os;
@@ -165,6 +167,28 @@ def build():
 
     # 6) Group delivery: consume a reservation proven exclusive to this OS (whole row), no release/re-reserve.
     d = post[SIGS['group']]['body']; pre['group'] = hashlib.md5(d.encode()).hexdigest()
+    # 6a) Exact replay first: after actor/tenant authorization, request serialization, gate and OS scope lock,
+    # but BEFORE any fresh-dispatch requirement (OS CAS/client/status, stock state). A committed group legitimately
+    # leaves the OS/stock in a different state; the stored receipt is the answer. Fingerprint mismatch -> conflict;
+    # revoked/foreign actor never reaches here (delivery_actor rechecked after every wait and right before return).
+    d = one(d, """ IF v_os.cliente_id IS DISTINCT FROM v_original_client OR v_os.updated_at IS DISTINCT FROM p_os_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ PERFORM 1 FROM public.clientes""", """ SELECT * INTO v_prev FROM platform_private.delivery_requests_20261030 WHERE request_key=p_request_key AND actor=v_actor AND organization_id=v_org AND action='group';
+ IF FOUND THEN
+  IF v_prev.fingerprint IS DISTINCT FROM v_fp THEN RAISE EXCEPTION 'DELIVERY_REPLAY_CONFLICT' USING ERRCODE='PT409'; END IF;
+  -- Reference scope still binds the replay: client unchanged during the wait, still in tenant, and every receipt
+  -- delivery belongs to this tenant/OS/client. Only the fresh-dispatch CAS/status/stock state is not required.
+  IF v_os.cliente_id IS DISTINCT FROM v_original_client OR NOT EXISTS(SELECT 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org)
+  OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_prev.result->'itens') i LEFT JOIN public.entregas e ON e.id=(i.value->>'entrega_id')::uuid
+   WHERE e.id IS NULL OR e.organization_id IS DISTINCT FROM v_org OR e.ordem_servico_id IS DISTINCT FROM p_os_id OR e.cliente_id IS DISTINCT FROM v_os.cliente_id)
+  THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+  IF platform_private.delivery_actor_20261030('group') IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'DELIVERY_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
+  RETURN v_prev.result||jsonb_build_object('replay',true);
+ END IF;
+ IF v_os.cliente_id IS DISTINCT FROM v_original_client OR v_os.updated_at IS DISTINCT FROM p_os_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ PERFORM 1 FROM public.clientes""", 'group early replay')
+    # pre-lock observed check would also refuse a legitimate replay; keep it only as a fresh-dispatch fast path
+    d = one(d, """ IF v_os.updated_at IS DISTINCT FROM p_os_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ v_original_client:=v_os.cliente_id;""", """ v_original_client:=v_os.cliente_id;""", 'group prelock observed')
     d = one(d, " v_result jsonb:='[]'; v_index integer:=0;", " v_row public.estoque_produto%ROWTYPE; v_free jsonb:='[]'; v_fi integer:=0;\n v_result jsonb:='[]'; v_index integer:=0;", 'group decl')
     d = one(d, """  PERFORM 1 FROM public.estoque_produto WHERE id=v_id FOR UPDATE;
   PERFORM platform_private.stock_motor_item(v_id,'reserva',jsonb_build_object('os_id',p_os_id,'os_tipo','manual','cliente_id',v_os.cliente_id));""",

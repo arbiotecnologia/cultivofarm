@@ -1,7 +1,9 @@
+import { useRef } from "react";
 import { useCockpitQuery } from "@/hooks/useCockpitQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { dispatchEnvase, loadEnvaseAttempt, type EnvaseArgs, type EnvaseAttempt, type EnvaseRpc } from "@/lib/envase/envaseFlow";
 import { toast } from "sonner";
 import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
 import { montarDadosEntrega, validarRespostaCriarEntrega } from "@/lib/entregas/payloadEntrega";
@@ -70,8 +72,14 @@ export function traduzErroCockpit(message?: string | null): string {
 
 
 
+const isManual = (origem: string) => !/onfarm/i.test(origem ?? "");
+const ENVASE_REVIEWED_HINT = "Para OS manual, registre o envase (Cockpit ou página Envase): a conclusão e o avanço para pronto para entrega acontecem na mesma transação revisada.";
+
 export function useEsteiraLaboratorio() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth() as any;
+  // Latest identity, read after every await (fence): a late envase result never lands in another session/tenant.
+  const identityRef = useRef<{ actorId: string | null; orgId: string | null }>({ actorId: null, orgId: null });
+  identityRef.current = { actorId: user?.id ?? null, orgId: profile?.organization_id ?? null };
   const qc = useQueryClient();
 
   const { data: profiles = [] } = useCockpitQuery({
@@ -298,6 +306,12 @@ export function useEsteiraLaboratorio() {
       }
     }
 
+    if (isManual(origem)) {
+      // OS manual em CQ está congelada pelo guard LIVE; o avanço legado seria negado. O equivalente revisado é o
+      // registro de envase (mesma transação: envase + estoque + em_cq→envase→pronto_entrega).
+      toast.info(ENVASE_REVIEWED_HINT);
+      return false;
+    }
     return await avancarEtapa({
       origem,
       osId,
@@ -308,6 +322,7 @@ export function useEsteiraLaboratorio() {
 
   const concluirEnvase = async (programacaoId: string | null, osId: string, origem: string) => {
     if (!programacaoId) return false;
+    if (isManual(origem)) { toast.info(ENVASE_REVIEWED_HINT); return false; }
     return await avancarEtapa({
       origem,
       osId,
@@ -337,40 +352,54 @@ export function useEsteiraLaboratorio() {
     permitirParcial?: boolean;
     motivoParcial?: string | null;
   }): Promise<any | null> => {
-    try {
-      const { data, error } = await (supabase as any).rpc("rpc_cockpit_registrar_envase_v1", {
-        p_lote_id: params.loteId,
-        p_os_id: params.osId,
-        p_origem: params.origem,
-        p_programacao_id: params.programacaoId,
-        p_linhas: params.linhas,
-        p_validade: params.validade,
-        p_operador: params.operador ?? null,
-        p_idempotency_key: params.idempotencyKey ?? null,
-        p_permitir_parcial: params.permitirParcial ?? false,
-        p_motivo_parcial: params.motivoParcial ?? null,
-      });
-
-      if (error) {
-        toast.error(traduzErroCockpit(error.message));
-        return null;
-      }
-
-      if (data?.replay) {
-        toast.info("Envase já registrado — operação repetida ignorada.");
-      } else if (data?.estado === "partial") {
-        toast.warning(
-          data?.message || "Envase registrado — necessidade da OS ainda não coberta.",
-        );
-      } else {
-        toast.success(data?.message || "Envase e estoque registrados.");
-      }
-      invalidateAll();
-      return data;
-    } catch (error: any) {
-      toast.error(traduzErroCockpit(error?.message));
+    const { actorId, orgId } = identityRef.current;
+    let store: Storage | null = null;
+    try { store = window.localStorage; } catch { store = null; }
+    if (!actorId || !orgId || !store || !params.idempotencyKey) {
+      toast.error("Sessão, empresa ou recuperação local indisponível. Nenhuma alteração foi enviada.");
       return null;
     }
+    const fence = () => {
+      const now = identityRef.current;
+      if (now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
+    };
+    // A previous uncertain attempt for this lot is replayed EXACTLY (same key/args); a new key is never minted.
+    const pending = loadEnvaseAttempt(store, actorId, orgId, params.loteId);
+    if (pending === "corrupt") { toast.error("Registro local de envase pendente ilegível: novos envios deste lote ficam bloqueados. Consulte o histórico de envase."); return null; }
+    if (pending?.replayRejected) {
+      toast.error(`A repetição do envase pendente foi recusada (${pending.replayRejected}). Isso não prova que o envio original não foi gravado: é necessária consulta/reconciliação autorizada; novos envios deste lote continuam bloqueados.`);
+      return null;
+    }
+    const args: EnvaseArgs = {
+      p_lote_id: params.loteId, p_os_id: params.osId, p_origem: params.origem, p_programacao_id: params.programacaoId,
+      p_linhas: params.linhas.map(l => ({ tipo_embalagem: l.tipo_embalagem, quantidade: l.quantidade })), p_validade: params.validade,
+      p_operador: params.operador ?? null, p_idempotency_key: params.idempotencyKey,
+      p_permitir_parcial: params.permitirParcial ?? false, p_motivo_parcial: params.motivoParcial ?? null,
+    };
+    const attempt: EnvaseAttempt = pending ?? { args, actorId, orgId };
+    if (pending) toast.info("Há um envase anterior deste lote com resultado incerto: repetindo exatamente o mesmo envio (mesma chave e mesmos dados).");
+    let outcome;
+    try {
+      outcome = await dispatchEnvase(supabase.rpc.bind(supabase) as unknown as EnvaseRpc, store, attempt, !!pending, fence);
+    } catch (error: any) {
+      toast.error(error?.message === "ENVASE_SCOPE_CHANGED" ? "Sessão ou empresa alterada. Nada foi enviado." : (error?.message || "Recuperação local indisponível. Nenhuma alteração foi enviada."));
+      return null;
+    }
+    if (outcome.status === "stale") { toast.error("Sessão ou empresa alterada durante o envio. O resultado não foi adotado; o envase pendente segue vinculado à sessão original."); return null; }
+    if (outcome.status === "uncertain") { toast.error("Resposta incerta do envase: pode ter sido gravado. Consulte o histórico; um novo envio deste lote repetirá exatamente o mesmo pedido."); return null; }
+    if (outcome.status === "rejected") {
+      toast.error(pending
+        ? `Repetição recusada (${outcome.code}). Isso não prova que o envio original não foi gravado; o envase pendente foi mantido e exige consulta/reconciliação autorizada.`
+        : traduzErroCockpit(outcome.message));
+      return null;
+    }
+    const data = outcome.ack.raw as any;
+    if (pending && JSON.stringify(pending.args) !== JSON.stringify(args)) toast.warning("O envase confirmado é o pedido pendente anterior, não os dados atuais do formulário. Revise antes de registrar outro.");
+    if (data?.replay) toast.info("Envase já registrado — operação repetida ignorada.");
+    else if (data?.estado === "partial") toast.warning(data?.message || "Envase registrado — necessidade da OS ainda não coberta.");
+    else toast.success(data?.message || "Envase e estoque registrados.");
+    invalidateAll();
+    return data;
   };
 
 
