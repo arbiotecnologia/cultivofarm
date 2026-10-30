@@ -790,14 +790,34 @@ AS $function$
 DECLARE v_org uuid; v_actor uuid:=auth.uid(); v_os public.ordens_servico%ROWTYPE;
  v_item jsonb; v_id uuid; v_qty numeric; v_items jsonb:='[]'; v_fp text;
  v_prev platform_private.delivery_requests_20261030%ROWTYPE; v_batch jsonb; v_call jsonb;
- v_row public.estoque_produto%ROWTYPE; v_free jsonb:='[]'; v_fi integer:=0;
+ v_row public.estoque_produto%ROWTYPE; v_free jsonb:='[]'; v_fi integer:=0; v_dk text; v_dv text;
  v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid;
 BEGIN
  v_org:=platform_private.delivery_actor_20261030('group');
  IF p_origem IS DISTINCT FROM 'manual' OR p_os_id IS NULL THEN RAISE EXCEPTION 'DELIVERY_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;
  IF p_os_observed IS NULL THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_REQUIRED' USING ERRCODE='22023'; END IF;
  IF p_request_key IS NULL OR length(btrim(p_request_key))<8 OR length(p_request_key)>128 THEN RAISE EXCEPTION 'DELIVERY_REQUEST_INVALID' USING ERRCODE='22023'; END IF;
- IF p_dados IS NULL OR jsonb_typeof(p_dados)<>'object' OR EXISTS(SELECT 1 FROM jsonb_each(p_dados) WHERE key NOT IN ('data_saida','motorista','veiculo','tipo_entrega','endereco_origem') OR jsonb_typeof(value) NOT IN ('string','null')) THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+ IF p_dados IS NULL OR jsonb_typeof(p_dados)<>'object' OR EXISTS(SELECT 1 FROM jsonb_each(p_dados) WHERE key NOT IN ('data_saida','motorista','veiculo','tipo_entrega','endereco_origem',
+   'motorista_telefone','motorista_documento','veiculo_placa','veiculo_tipo','hora_saida_prevista','data_chegada_prevista','hora_chegada_prevista',
+   'destinatario_nome','destinatario_telefone','destinatario_whatsapp','endereco_logradouro','endereco_numero','endereco_complemento',
+   'endereco_bairro','endereco_cidade','endereco_uf','endereco_cep','endereco_referencia') OR jsonb_typeof(value) NOT IN ('string','null')
+   OR (jsonb_typeof(value)='string' AND length(value#>>'{}')>300)) THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+ FOR v_dk IN SELECT key FROM jsonb_each_text(p_dados) WHERE nullif(value,'') IS NOT NULL LOOP
+  v_dv:=p_dados->>v_dk;
+  IF v_dk IN ('data_saida','data_chegada_prevista') THEN
+   IF v_dv !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+   BEGIN IF to_char(v_dv::date,'YYYY-MM-DD')<>v_dv THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+   EXCEPTION WHEN datetime_field_overflow OR invalid_datetime_format THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END;
+  ELSIF v_dk IN ('hora_saida_prevista','hora_chegada_prevista') THEN
+   IF v_dv !~ '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
+  ELSIF v_dk='tipo_entrega' AND v_dv NOT IN ('motorista','retirada') THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF v_dk='endereco_origem' AND v_dv NOT IN ('cadastro','personalizado') THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF v_dk='endereco_uf' AND v_dv !~ '^[A-Za-z]{2}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF v_dk='endereco_cep' AND v_dv !~ '^[0-9]{5}-?[0-9]{3}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF v_dk IN ('motorista_telefone','destinatario_telefone','destinatario_whatsapp') AND v_dv !~ '^[0-9+() .-]{8,20}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  ELSIF btrim(v_dv)='' OR v_dv ~ '[[:cntrl:]]' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
+  END IF;
+ END LOOP;
  IF p_itens IS NULL OR jsonb_typeof(p_itens)<>'array' THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
  IF jsonb_array_length(p_itens)=0 OR jsonb_array_length(p_itens)>100 THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
  SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org;
@@ -891,6 +911,6 @@ END $function$;
 
 -- POST
 DO $post$ BEGIN
- IF md5(pg_get_functiondef('public.fn_validate_envase_volume()'::regprocedure))<>'22092b56a46fbfc3a95718900a4e8201' OR md5(pg_get_functiondef('public.fn_envase_material_imutavel()'::regprocedure))<>'9e9464bcd54c17b31aae731785be3162' OR md5(pg_get_functiondef('platform_private.guard_manual_cq_parent_v1()'::regprocedure))<>'bf7c5e95e182062c054edc21157c0622' OR md5(pg_get_functiondef('public.rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb)'::regprocedure))<>'15328c191d6e05f8fbd72b3ebc69f1c9' OR md5(pg_get_functiondef('public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)'::regprocedure))<>'3e0dc7c48ab28f4402699b234476aa8a' OR md5(pg_get_functiondef('public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)'::regprocedure))<>'5da15a592037fc8e0c9d84a46bbebb54' OR md5(pg_get_functiondef('public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)'::regprocedure))<>'6ed411371beeaa39736ffb8caf8ca5b7' OR to_regprocedure('platform_private.stock_envase_complete_v1(uuid,uuid,uuid,text)') IS NULL OR has_function_privilege('authenticated','platform_private.stock_envase_complete_v1(uuid,uuid,uuid,text)','EXECUTE') OR has_function_privilege('authenticated','platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text)','EXECUTE') OR has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE') THEN RAISE EXCEPTION 'STOCK_V2_POST_DRIFT'; END IF;
+ IF md5(pg_get_functiondef('public.fn_validate_envase_volume()'::regprocedure))<>'22092b56a46fbfc3a95718900a4e8201' OR md5(pg_get_functiondef('public.fn_envase_material_imutavel()'::regprocedure))<>'9e9464bcd54c17b31aae731785be3162' OR md5(pg_get_functiondef('platform_private.guard_manual_cq_parent_v1()'::regprocedure))<>'bf7c5e95e182062c054edc21157c0622' OR md5(pg_get_functiondef('public.rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb)'::regprocedure))<>'15328c191d6e05f8fbd72b3ebc69f1c9' OR md5(pg_get_functiondef('public.rpc_estoque_reservar_v1(uuid,text,jsonb,text,jsonb)'::regprocedure))<>'3e0dc7c48ab28f4402699b234476aa8a' OR md5(pg_get_functiondef('public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)'::regprocedure))<>'a9ba21be1df42bdd1fb9c838cb783e88' OR md5(pg_get_functiondef('public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)'::regprocedure))<>'6ed411371beeaa39736ffb8caf8ca5b7' OR to_regprocedure('platform_private.stock_envase_complete_v1(uuid,uuid,uuid,text)') IS NULL OR has_function_privilege('authenticated','platform_private.stock_envase_complete_v1(uuid,uuid,uuid,text)','EXECUTE') OR has_function_privilege('authenticated','platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text)','EXECUTE') OR has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE') THEN RAISE EXCEPTION 'STOCK_V2_POST_DRIFT'; END IF;
 END $post$;
 COMMIT;
