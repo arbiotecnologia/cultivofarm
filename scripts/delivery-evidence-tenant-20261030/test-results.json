@@ -32,26 +32,26 @@
     "status": "PASS",
     "matrix": {
       "entrega_checklist": {
-        "x_ins": "perm:table entregas",
-        "x_upd": "perm:table entregas",
-        "x_del": "perm:table entregas",
-        "own_ins": "perm:table entregas",
-        "own_upd": "perm:table entregas",
-        "own_del": "perm:table entregas",
-        "reparent_to_fsf": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
-        "reparent_to_null_org": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
-        "fsf_reparent_own_to_arbio": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
+        "x_ins": "E42501",
+        "x_upd": "E42501",
+        "x_del": "E42501",
+        "own_ins": "E42501",
+        "own_upd": "E42501",
+        "own_del": "E42501",
+        "reparent_to_fsf": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "reparent_to_null_org": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "fsf_reparent_own_to_arbio": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
       },
       "entrega_ocorrencias": {
-        "x_ins": "perm:table entregas",
-        "x_upd": "perm:table entregas",
-        "x_del": "perm:table entregas",
-        "own_ins": "perm:table entregas",
-        "own_upd": "perm:table entregas",
-        "own_del": "perm:table entregas",
-        "reparent_to_fsf": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
-        "reparent_to_null_org": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
-        "fsf_reparent_own_to_arbio": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
+        "x_ins": "E42501",
+        "x_upd": "E42501",
+        "x_del": "E42501",
+        "own_ins": "E42501",
+        "own_upd": "E42501",
+        "own_del": "E42501",
+        "reparent_to_fsf": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "reparent_to_null_org": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "fsf_reparent_own_to_arbio": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
       },
       "entrega_documentos": {
         "x_ins": "ok:inserted",
@@ -65,10 +65,10 @@
         "fsf_reparent_own_to_arbio": "ok:0"
       },
       "entrega_conferencia_itens": {
-        "x_ins": "rls",
+        "x_ins": "E42501",
         "x_upd": "ok:0",
         "x_del": "ok:0",
-        "own_ins": "rls",
+        "own_ins": "E42501",
         "own_upd": "ok:0",
         "own_del": "ok:0",
         "reparent_to_fsf": "ok:0",
@@ -76,10 +76,10 @@
         "fsf_reparent_own_to_arbio": "ok:0"
       },
       "entrega_reconciliacoes": {
-        "x_ins": "rls",
+        "x_ins": "E42501",
         "x_upd": "ok:0",
         "x_del": "ok:0",
-        "own_ins": "rls",
+        "own_ins": "E42501",
         "own_upd": "ok:0",
         "own_del": "ok:0",
         "reparent_to_fsf": "ok:0",
@@ -100,234 +100,8 @@
     }
   },
   {
-    "test": "BEFORE: mixed pair (own entrega + foreign label) insert and cross-tenant label swap SUCCEED with valid IDs; FK error only for nonexistent ID",
-    "status": "PASS",
-    "mixed": {
-      "own_entrega_foreign_label_ins": "ok:inserted",
-      "own_entrega_own_label_ins": "ok:inserted",
-      "swap_own_link_to_foreign_label": "ok:1",
-      "fsf_own_entrega_arbio_label_ins": "ok:inserted",
-      "fk_bogus_label_ins": "err:insert or update on table \"entrega_etiquetas\" violates foreign key constraint \"entrega_etiquetas_etiqueta_id_fkey\""
-    }
-  },
-  {
-    "test": "BEFORE: TRUNCATE allowed to authenticated (rolled back)",
-    "status": "PASS",
-    "truncate": {
-      "entrega_checklist": "ok:truncated",
-      "entrega_ocorrencias": "ok:truncated",
-      "entrega_documentos": "ok:truncated",
-      "entrega_conferencia_itens": "ok:truncated",
-      "entrega_reconciliacoes": "ok:truncated",
-      "entrega_etiquetas": "ok:truncated"
-    }
-  },
-  {
-    "test": "POST differs from PRE only by 6 restrictive policies and the TRUNCATE bit for client roles",
-    "status": "PASS",
-    "acl": {
-      "entrega_checklist": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
-      "entrega_ocorrencias": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
-      "entrega_documentos": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
-      "entrega_conferencia_itens": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
-      "entrega_reconciliacoes": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}",
-      "entrega_etiquetas": "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}"
-    }
-  },
-  {
-    "test": "PRE refuses drift; nothing installed",
-    "status": "PASS",
-    "expected": "EVIDENCE_TENANT_PRE_DRIFT"
-  },
-  {
-    "test": "wrong POST rolls back atomically",
-    "status": "PASS",
-    "expected": "EVIDENCE_TENANT_POST_DRIFT"
-  },
-  {
-    "test": "state unchanged after POST failure",
-    "status": "PASS"
-  },
-  {
-    "test": "installer COMMIT + postflight pass",
-    "status": "PASS"
-  },
-  {
-    "test": "rerun refused by PRE",
-    "status": "PASS",
-    "expected": "EVIDENCE_TENANT_PRE_DRIFT"
-  },
-  {
-    "test": "entrega_checklist: TRUNCATE denied to authenticated",
-    "status": "PASS",
-    "expected": "permission denied"
-  },
-  {
-    "test": "entrega_ocorrencias: TRUNCATE denied to authenticated",
-    "status": "PASS",
-    "expected": "permission denied"
-  },
-  {
-    "test": "entrega_documentos: TRUNCATE denied to authenticated",
-    "status": "PASS",
-    "expected": "permission denied"
-  },
-  {
-    "test": "entrega_conferencia_itens: TRUNCATE denied to authenticated",
-    "status": "PASS",
-    "expected": "permission denied"
-  },
-  {
-    "test": "entrega_reconciliacoes: TRUNCATE denied to authenticated",
-    "status": "PASS",
-    "expected": "permission denied"
-  },
-  {
-    "test": "entrega_etiquetas: TRUNCATE denied to authenticated",
-    "status": "PASS",
-    "expected": "permission denied"
-  },
-  {
-    "test": "AFTER: label link INSERT/UPDATE closed for clients (mixed pair and swap denied by RLS, not FK); reads unchanged",
-    "status": "PASS",
-    "mixed": {
-      "own_entrega_foreign_label_ins": "rls",
-      "own_entrega_own_label_ins": "rls",
-      "swap_own_link_to_foreign_label": "ok:0",
-      "fsf_own_entrega_arbio_label_ins": "rls",
-      "fk_bogus_label_ins": "rls"
-    }
-  },
-  {
-    "test": "AFTER write matrix: every cross-tenant/reparent op affects 0 rows or is denied; same-tenant outcomes identical to BEFORE except label link INSERT/UPDATE intentionally closed",
-    "status": "PASS",
-    "after": {
-      "entrega_checklist": {
-        "x_ins": "perm:table entregas",
-        "x_upd": "ok:0",
-        "x_del": "ok:0",
-        "own_ins": "perm:table entregas",
-        "own_upd": "perm:table entregas",
-        "own_del": "perm:table entregas",
-        "reparent_to_fsf": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
-        "reparent_to_null_org": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
-        "fsf_reparent_own_to_arbio": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
-      },
-      "entrega_ocorrencias": {
-        "x_ins": "perm:table entregas",
-        "x_upd": "ok:0",
-        "x_del": "ok:0",
-        "own_ins": "perm:table entregas",
-        "own_upd": "perm:table entregas",
-        "own_del": "perm:table entregas",
-        "reparent_to_fsf": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
-        "reparent_to_null_org": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
-        "fsf_reparent_own_to_arbio": "err:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
-      },
-      "entrega_documentos": {
-        "x_ins": "rls",
-        "x_upd": "ok:0",
-        "x_del": "ok:0",
-        "own_ins": "ok:inserted",
-        "own_upd": "ok:0",
-        "own_del": "ok:1",
-        "reparent_to_fsf": "ok:0",
-        "reparent_to_null_org": "ok:0",
-        "fsf_reparent_own_to_arbio": "ok:0"
-      },
-      "entrega_conferencia_itens": {
-        "x_ins": "rls",
-        "x_upd": "ok:0",
-        "x_del": "ok:0",
-        "own_ins": "rls",
-        "own_upd": "ok:0",
-        "own_del": "ok:0",
-        "reparent_to_fsf": "ok:0",
-        "reparent_to_null_org": "ok:0",
-        "fsf_reparent_own_to_arbio": "ok:0"
-      },
-      "entrega_reconciliacoes": {
-        "x_ins": "rls",
-        "x_upd": "ok:0",
-        "x_del": "ok:0",
-        "own_ins": "rls",
-        "own_upd": "ok:0",
-        "own_del": "ok:0",
-        "reparent_to_fsf": "ok:0",
-        "reparent_to_null_org": "ok:0",
-        "fsf_reparent_own_to_arbio": "ok:0"
-      },
-      "entrega_etiquetas": {
-        "x_ins": "rls",
-        "x_upd": "ok:0",
-        "x_del": "ok:0",
-        "own_ins": "rls",
-        "own_upd": "ok:0",
-        "own_del": "ok:0",
-        "reparent_to_fsf": "ok:0",
-        "reparent_to_null_org": "ok:0",
-        "fsf_reparent_own_to_arbio": "ok:0"
-      }
-    }
-  },
-  {
-    "test": "AFTER all 6: FSF admin/financeiro, inactive AR Bio admin read 0; org-NULL parent invisible; cross-tenant DELETE 0 rows and TRUNCATE denied",
-    "status": "PASS"
-  },
-  {
-    "test": "AFTER same-tenant reads (AR Bio admin own, FSF admin own) per table",
-    "status": "PASS",
-    "own": {
-      "entrega_checklist": [
-        1,
-        1
-      ],
-      "entrega_ocorrencias": [
-        1,
-        1
-      ],
-      "entrega_documentos": [
-        1,
-        1
-      ],
-      "entrega_conferencia_itens": [
-        1,
-        1
-      ],
-      "entrega_reconciliacoes": [
-        1,
-        1
-      ],
-      "entrega_etiquetas": [
-        1,
-        1
-      ]
-    }
-  },
-  {
-    "test": "AFTER linked AR Bio client still reads own checklist/ocorrencias",
-    "status": "PASS"
-  },
-  {
-    "test": "canonical proof generate works with barrier (AR Bio sees proof+checklist); FSF sees no AR Bio checklist",
-    "status": "PASS"
-  },
-  {
-    "test": "zero finance/fiscal/outbox/communication rows",
-    "status": "PASS"
-  },
-  {
-    "test": "anon has no access",
-    "status": "PASS",
-    "expected": "permission denied"
-  },
-  {
-    "test": "after rollback TRUNCATE still denied",
-    "status": "PASS",
-    "expected": "permission denied"
-  },
-  {
-    "test": "rollback narrows to false (never drops/regrants); no cross-tenant access restored; writers still work",
-    "status": "PASS"
+    "test": "execution stopped at concrete failure",
+    "status": "FAIL",
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 225, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 140, in main\n    assert all(x == 'ok:0' or x.startswith('ok:') or x == NEG for t in TABLES for x in wb[t].values()), wb   # no unexpected SQLSTATE before\n           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'entrega_checklist': {'x_ins': 'E42501', 'x_upd': 'E42501', 'x_del': 'E42501', 'own_ins': 'E42501', 'own_upd': 'E42501', 'own_del': 'E42501', 'reparent_to_fsf': 'E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.', 'reparent_to_null_org': 'E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.', 'fsf_reparent_own_to_arbio': 'E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.'}, 'entrega_ocorrencias': {'x_ins': 'E42501', 'x_upd': 'E42501', 'x_del': 'E42501', 'own_ins': 'E42501', 'own_upd': 'E42501', 'own_del': 'E42501', 'reparent_to_fsf': 'E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.', 'reparent_to_null_org': 'E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.', 'fsf_reparent_own_to_arbio': 'E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.'}, 'entrega_documentos': {'x_ins': 'ok:inserted', 'x_upd': 'ok:0', 'x_del': 'ok:1', 'own_ins': 'ok:inserted', 'own_upd': 'ok:0', 'own_del': 'ok:1', 'reparent_to_fsf': 'ok:0', 'reparent_to_null_org': 'ok:0', 'fsf_reparent_own_to_arbio': 'ok:0'}, 'entrega_conferencia_itens': {'x_ins': 'E42501', 'x_upd': 'ok:0', 'x_del': 'ok:0', 'own_ins': 'E42501', 'own_upd': 'ok:0', 'own_del': 'ok:0', 'reparent_to_fsf': 'ok:0', 'reparent_to_null_org': 'ok:0', 'fsf_reparent_own_to_arbio': 'ok:0'}, 'entrega_reconciliacoes': {'x_ins': 'E42501', 'x_upd': 'ok:0', 'x_del': 'ok:0', 'own_ins': 'E42501', 'own_upd': 'ok:0', 'own_del': 'ok:0', 'reparent_to_fsf': 'ok:0', 'reparent_to_null_org': 'ok:0', 'fsf_reparent_own_to_arbio': 'ok:0'}, 'entrega_etiquetas': {'x_ins': 'ok:inserted', 'x_upd': 'ok:1', 'x_del': 'ok:0', 'own_ins': 'ok:inserted', 'own_upd': 'ok:1', 'own_del': 'ok:0', 'reparent_to_fsf': 'ok:1', 'reparent_to_null_org': 'ok:1', 'fsf_reparent_own_to_arbio': 'ok:1'}}\n"
   }
 ]

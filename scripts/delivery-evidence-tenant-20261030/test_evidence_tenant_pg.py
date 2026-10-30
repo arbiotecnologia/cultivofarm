@@ -52,15 +52,18 @@ def check_sql(expected, code):
 
 
 import re
+RAW = []
 def cls(out):
     if 'ERROR' not in out: return 'ok:' + out.strip().splitlines()[-1]
-    m = re.search(r'ERROR:\s+(.*)', out); e = m.group(1) if m else out[-200:]
-    if 'row-level security' in e: return 'rls'
-    if 'permission denied' in e: return 'perm:' + e.split('permission denied for ')[-1].strip()
-    return 'err:' + e[:120]
+    m = re.search(r'ERROR:\s+([0-9A-Z]{5}):\s+(.*)', out)
+    assert m, 'NO_SQLSTATE ' + out[-300:]
+    RAW.append(m.group(0))
+    return 'E42501' if m.group(1) == '42501' else f'E{m.group(1)}:{m.group(2).strip()}'
+NEG = 'E42501'
+BIZ = 'E23514:Não é permitido transferir evidências entre entregas.'
 import subprocess
 def probe(w, stmt):
-    r = subprocess.run(restore.pg.psql(), input="SET lock_timeout='2s'; SET statement_timeout='30s';\nBEGIN;" + actor(w) + stmt + "\nROLLBACK;", capture_output=True, text=True, timeout=40)
+    r = subprocess.run(restore.pg.psql(), input="\\set VERBOSITY verbose\nSET lock_timeout='2s'; SET statement_timeout='30s';\nBEGIN;" + actor(w) + stmt + "\nROLLBACK;", capture_output=True, text=True, timeout=40)
     return cls(r.stdout.replace('ROLLBACK', '').strip() if r.returncode == 0 else r.stderr)
 def dml(t, w, op, row, ent=None):
     if op == 'ins': return probe(w, "WITH x AS (" + ins(t, cols(t, ent, u(990), w)).rstrip(';').replace('VALUES', 'SELECT', 1).replace('(\'', '\'', 0) + ") SELECT 1;") if False else probe(w, ins(t, cols(t, ent, u(990), w)) + " SELECT 'inserted';")
@@ -125,8 +128,16 @@ def main():
     wb = matrix(); print('BEFORE_WRITES', json.dumps(wb), flush=True)
     ok('BEFORE: write outcome matrix recorded (rolled back)', matrix=wb)
     mb = mixed(); print('BEFORE_MIXED', json.dumps(mb), flush=True)
-    assert mb['own_entrega_foreign_label_ins'] == 'ok:inserted' and mb['swap_own_link_to_foreign_label'] == 'ok:1' and mb['fsf_own_entrega_arbio_label_ins'] == 'ok:inserted', mb
-    assert mb['fk_bogus_label_ins'].startswith('err:') and 'foreign key' in mb['fk_bogus_label_ins'], mb
+    assert mb['own_entrega_foreign_label_ins'] == 'ok:inserted' and mb['own_entrega_own_label_ins'] == 'ok:inserted' and mb['swap_own_link_to_foreign_label'] == 'ok:1' and mb['fsf_own_entrega_arbio_label_ins'] == 'ok:inserted', mb
+    assert mb['fk_bogus_label_ins'].startswith('E23503:'), mb   # explanation only: FK is never counted as isolation
+    L = 'entrega_etiquetas'; D_ = 'entrega_documentos'
+    assert wb[L]['own_ins'] == 'ok:inserted' and wb[L]['own_upd'] == 'ok:1', wb[L]          # valid seeded label target
+    assert wb[D_]['own_ins'] == 'ok:inserted' and wb[D_]['own_del'] == 'ok:1', wb[D_]
+    assert wb[D_]['x_ins'] == 'ok:inserted' and wb[D_]['x_del'] == 'ok:1' and wb[L]['x_upd'] == 'ok:1', 'BEFORE cross-tenant writes not reproduced'
+    for t in ('entrega_checklist', 'entrega_ocorrencias'):
+        assert all(wb[t][k] == NEG for k in ('x_ins', 'x_upd', 'x_del', 'own_ins', 'own_upd', 'own_del')), wb[t]
+        assert all(wb[t][k] == BIZ for k in ('reparent_to_fsf', 'reparent_to_null_org', 'fsf_reparent_own_to_arbio')), wb[t]
+    assert all(x == 'ok:0' or x.startswith('ok:') or x == NEG for t in TABLES for x in wb[t].values()), wb   # no unexpected SQLSTATE before
     ok('BEFORE: mixed pair (own entrega + foreign label) insert and cross-tenant label swap SUCCEED with valid IDs; FK error only for nonexistent ID', mixed=mb)
     tr = {t: probe(V, f"TRUNCATE public.{t}; SELECT 'truncated';") for t in TABLES}; print('BEFORE_TRUNCATE', tr, flush=True)
     ok('BEFORE: TRUNCATE allowed to authenticated (rolled back)', truncate=tr)
@@ -163,23 +174,26 @@ def main():
         n = last(actor(V) + f"WITH x AS (DELETE FROM public.{t} WHERE id='{rid(t, 1)}' RETURNING 1) SELECT count(*) FROM x;")
         assert n == '0' and last(f"SELECT count(*) FROM public.{t} WHERE id='{rid(t, 1)}';") == '1', (t, n)
     wa = matrix(); print('AFTER_WRITES', json.dumps(wa), flush=True)
-    bad = lambda v: v.startswith('ok:') and v not in ('ok:0',)
+    EXP = {  # exact expected outcome per table/op AFTER; ok:0 = RLS-filtered UPDATE/DELETE
+     'entrega_checklist':        dict(x_ins=NEG, x_upd=NEG, x_del=NEG, own_ins=NEG, own_upd=NEG, own_del=NEG, reparent_to_fsf=BIZ, reparent_to_null_org=BIZ, fsf_reparent_own_to_arbio=BIZ),
+     'entrega_ocorrencias':      dict(x_ins=NEG, x_upd=NEG, x_del=NEG, own_ins=NEG, own_upd=NEG, own_del=NEG, reparent_to_fsf=BIZ, reparent_to_null_org=BIZ, fsf_reparent_own_to_arbio=BIZ),
+     'entrega_documentos':       dict(x_ins=NEG, x_upd='ok:0', x_del='ok:0', own_ins='ok:inserted', own_upd='ok:0', own_del='ok:1', reparent_to_fsf='ok:0', reparent_to_null_org='ok:0', fsf_reparent_own_to_arbio='ok:0'),
+     'entrega_conferencia_itens':dict(x_ins=NEG, x_upd='ok:0', x_del='ok:0', own_ins=NEG, own_upd='ok:0', own_del='ok:0', reparent_to_fsf='ok:0', reparent_to_null_org='ok:0', fsf_reparent_own_to_arbio='ok:0'),
+     'entrega_reconciliacoes':   dict(x_ins=NEG, x_upd='ok:0', x_del='ok:0', own_ins=NEG, own_upd='ok:0', own_del='ok:0', reparent_to_fsf='ok:0', reparent_to_null_org='ok:0', fsf_reparent_own_to_arbio='ok:0'),
+     'entrega_etiquetas':        dict(x_ins=NEG, x_upd='ok:0', x_del='ok:0', own_ins=NEG, own_upd='ok:0', own_del=wb['entrega_etiquetas']['own_del'], reparent_to_fsf='ok:0', reparent_to_null_org='ok:0', fsf_reparent_own_to_arbio='ok:0')}
+    diff = {t: {k: (wb[t][k], wa[t][k], EXP[t][k]) for k in EXP[t] if wa[t][k] != EXP[t][k]} for t in TABLES}
+    assert not any(diff.values()), diff
     for t in TABLES:
-        for k in ('x_ins', 'x_upd', 'x_del', 'reparent_to_fsf', 'reparent_to_null_org', 'fsf_reparent_own_to_arbio'):
-            assert not bad(wa[t][k]), (t, k, wa[t][k])
         for k in ('own_ins', 'own_upd', 'own_del'):
-            if t == 'entrega_etiquetas' and k in ('own_ins', 'own_upd'):
-                assert wa[t][k] in ('rls', 'ok:0'), (t, k, wa[t][k]); continue
-            assert wa[t][k] == wb[t][k], (t, k, wb[t][k], wa[t][k])
+            if not (t == 'entrega_etiquetas' and k in ('own_ins', 'own_upd')): assert wa[t][k] == wb[t][k], (t, k)
     ma = mixed(); print('AFTER_MIXED', json.dumps(ma), flush=True)
-    for k in ('own_entrega_foreign_label_ins', 'own_entrega_own_label_ins', 'fsf_own_entrega_arbio_label_ins'): assert ma[k] == 'rls', (k, ma)
-    assert ma['swap_own_link_to_foreign_label'] in ('rls', 'ok:0'), ma
+    assert ma == {'own_entrega_foreign_label_ins': NEG, 'own_entrega_own_label_ins': NEG, 'swap_own_link_to_foreign_label': 'ok:0', 'fsf_own_entrega_arbio_label_ins': NEG, 'fk_bogus_label_ins': NEG}, ma
     ok('AFTER: label link INSERT/UPDATE closed for clients (mixed pair and swap denied by RLS, not FK); reads unchanged', mixed=ma)
-    ok('AFTER write matrix: every cross-tenant/reparent op affects 0 rows or is denied; same-tenant outcomes identical to BEFORE except label link INSERT/UPDATE intentionally closed', after=wa)
+    ok('AFTER write matrix equals exact expected SQLSTATE/rowcount table (42501, documented 23514 reparent trigger, or 0 rows; no FK/unique/other); same-tenant outcomes identical to BEFORE except label link INSERT/UPDATE intentionally closed', after=wa)
     ok('AFTER all 6: FSF admin/financeiro, inactive AR Bio admin read 0; org-NULL parent invisible; cross-tenant DELETE 0 rows and TRUNCATE denied')
     own = {t: [count(U, t, rid(t, 1)), count(V, t, rid(t, 2))] for t in TABLES}; print('AFTER_OWN', own, flush=True)
     ok('AFTER same-tenant reads (AR Bio admin own, FSF admin own) per table', own=own)
-    assert own['entrega_checklist'] == [1, 1] and own['entrega_ocorrencias'] == [1, 1] and own['entrega_conferencia_itens'] == [1, 1] and own['entrega_reconciliacoes'] == [1, 1]
+    assert all(own[t] == [1, 1] for t in TABLES), own
     assert count(CL, 'entrega_checklist', rid('entrega_checklist', 1)) == 1 and count(CL, 'entrega_ocorrencias', rid('entrega_ocorrencias', 1)) == 1
     ok('AFTER linked AR Bio client still reads own checklist/ocorrencias')
     # Canonical proof writer (seeds checklist) unaffected.
@@ -187,6 +201,14 @@ def main():
     assert int(last(actor(U) + f"SELECT count(*) FROM public.entrega_checklist WHERE entrega_id='{EA}';")) >= 1
     assert int(last(actor(U) + f"SELECT count(*) FROM public.entrega_comprovantes WHERE entrega_id='{EA}';")) >= 1
     assert int(last(actor(V) + f"SELECT count(*) FROM public.entrega_checklist WHERE entrega_id='{EA}';")) == 0
+    sg = f'entregas/{EA}/assinaturas/{u(721)}.png'; fp = f'entregas/{EA}/comprovantes/{u(722)}.pdf'
+    sql("INSERT INTO storage.buckets(id,name,public) VALUES('entrega-documentos','entrega-documentos',false) ON CONFLICT DO NOTHING;" + f"INSERT INTO storage.objects(bucket_id,name,owner,owner_id) VALUES('entrega-documentos','{sg}','{U}','{U}'),('entrega-documentos','{fp}','{U}','{U}');")
+    sql(actor(U) + f"SELECT public.rpc_entrega_assinatura_coletar_v1('{EA}','sig-ev-000001','{json.dumps({'assinatura_digital_png_path': sg, 'assinatura_hash': 'a' * 64, 'recebedor_nome': 'Recebedor Local', 'assinatura_user_agent': 'local'})}'::jsonb);")
+    att = lambda: sql(actor(U) + f"SELECT public.rpc_entrega_comprovante_anexar_v1('{EA}','att-ev-000001','{json.dumps({'arquivo_path': fp, 'arquivo_nome': 'recibo.pdf', 'arquivo_mime': 'application/pdf', 'recebedor_nome': 'Recebedor Local'})}'::jsonb);")
+    att(); assert '"replayed": true' in att()
+    assert last(actor(U) + f"SELECT assinatura_digital_png_path='{sg}' AND arquivo_path='{fp}' FROM public.entrega_comprovantes WHERE entrega_id='{EA}';") == 't'
+    fails('FSF admin generate on AR Bio delivery denied by writer', actor(V) + f"SELECT public.rpc_entrega_formulario_gerar_v1('{EA}','gen-x-0000009');", 'DELIVERY_PROOF_SCOPE_DENIED')
+    ok('canonical sign + attach + replay work in installed composition; owner reads result')
     ok('canonical proof generate works with barrier (AR Bio sees proof+checklist); FSF sees no AR Bio checklist')
     FIN = ['accounts_receivable', 'financial_receipts', 'fiscal_invoices', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base']
     assert last('SELECT ' + ' AND '.join(f'(SELECT count(*) FROM public.{t})=0' for t in FIN) + ';') == 't'; ok('zero finance/fiscal/outbox/communication rows')
@@ -204,6 +226,6 @@ if __name__ == '__main__':
     except Exception:
         traceback.print_exc(); checks.append({'test': 'execution stopped at concrete failure', 'status': 'FAIL', 'error': traceback.format_exc()[-3000:]})
     finally:
-        (H / 'test-results.json').write_text(json.dumps(checks, indent=2) + '\n')
+        (H / 'raw-sqlstates.log').write_text('\n'.join(RAW) + '\n'); (H / 'test-results.json').write_text(json.dumps(checks, indent=2) + '\n')
         print('RESULT', sum(x['status'] == 'PASS' for x in checks), 'PASS', sum(x['status'] != 'PASS' for x in checks), 'FAIL', flush=True)
     sys.exit(1 if any(x['status'] != 'PASS' for x in checks) else 0)
