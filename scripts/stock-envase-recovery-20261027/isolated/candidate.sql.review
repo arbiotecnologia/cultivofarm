@@ -80,11 +80,6 @@ BEGIN
   PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
   IF NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org AND status::text IN ('em_cq','envase')) THEN RAISE EXCEPTION 'ENVASE_FRESH_STATE_DENIED' USING ERRCODE='PT409'; END IF;
   -- contexto canônico e coerência de vínculos
-  SELECT * INTO v_ctx FROM public.fn_cockpit_ctx_programacao(p_programacao_id);
-  IF v_ctx.os_id <> p_os_id THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_PROGRAMACAO_OS'; END IF;
-  IF v_ctx.origem <> v_origem THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ORIGEM'; END IF;
-  IF v_ctx.status_os IN ('cancelada','finalizada') THEN RAISE EXCEPTION 'COCKPIT_OS_ESTADO_TERMINAL'; END IF;
-  PERFORM public.fn_cockpit_assert_b2b_liberado(v_ctx.partner_order_id);
 
   -- lock determinístico: programação e lote
   PERFORM 1 FROM public.programacao_producao WHERE id = p_programacao_id FOR UPDATE;
@@ -94,6 +89,12 @@ BEGIN
     INTO v_produzido_ml, v_lote_status, v_produto_id, v_micro_id, v_lote_prog
     FROM public.lotes WHERE id = p_lote_id FOR UPDATE;
   PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+
+  SELECT * INTO v_ctx FROM public.fn_cockpit_ctx_programacao(p_programacao_id);
+  IF v_ctx.os_id <> p_os_id THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_PROGRAMACAO_OS'; END IF;
+  IF v_ctx.origem <> v_origem THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ORIGEM'; END IF;
+  IF v_ctx.status_os IN ('cancelada','finalizada') THEN RAISE EXCEPTION 'COCKPIT_OS_ESTADO_TERMINAL'; END IF;
+  PERFORM public.fn_cockpit_assert_b2b_liberado(v_ctx.partner_order_id);
 
   IF v_lote_status IS NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_NAO_ENCONTRADO'; END IF;
   IF v_lote_prog IS DISTINCT FROM p_programacao_id THEN
@@ -238,7 +239,9 @@ BEGIN
  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'ENVASE_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  BEGIN
   org:=platform_private.stock_envase_scope_v1(p_lote,p_prog,p_os,p_origem);
-  allowed:=has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE') AND EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os AND organization_id=org AND status::text IN ('em_cq','envase'))
+  -- Endpoint availability includes reconciliation of committed receipts after OS progressed.
+  -- Fresh-dispatch status remains checked independently under the writer lock.
+  allowed:=has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE')
    AND EXISTS(SELECT 1 FROM cf_user_guards_v1.state WHERE singleton);
  EXCEPTION WHEN insufficient_privilege THEN allowed:=false; END;
  RETURN jsonb_build_object('capability','envase_isolated_v1','available',allowed,'actor_id',auth.uid(),'organization_id',org,'lote_id',p_lote,'os_id',p_os,'programacao_id',p_prog);

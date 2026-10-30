@@ -30,5 +30,17 @@
   {
     "file": "scripts/delivery-group-capability-20261030/install.sql.review",
     "sha256": "ee32207281419ee081af2a05c1c8068a3dc1a64369f4e868f21e5d92a474cf7c"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/candidate-v2.sql.review",
+    "sha256": "12d406373c9f8737aebe59e9fd38d4beddb8f78726f7df7ba8d53faf6c05cb29"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/assemble.py",
+    "sha256": "ef0cbd7fd2c82af3f769d850a6b9c9572b3c403daacc338f607344604933f710"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/test_pg.py",
+    "sha256": "389a2c18f535337398b6a76047c73c60d565a393703caf69cfa3e0f651718962"
   }
 ]
