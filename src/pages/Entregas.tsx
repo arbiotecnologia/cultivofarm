@@ -574,7 +574,7 @@ export default function Entregas() {
       const outcome = await runAtomicGroup(supabase.rpc.bind(supabase) as unknown as Rpc, {
         requestKey: grupoId, expectedOrg: orgId, osId, osTipo, osOrigem: observed.os.origem, osPartnerOrderId: observed.os.partner_order_id,
         osObservedUpdatedAt: observed.os.updated_at,
-        itens: itens.map(({ item, quantidade }) => ({ itemId: item.id, quantidade, observedUpdatedAt: observed.itens[item.id].updated_at as string, status: observed.itens[item.id].status as string })),
+        itens: itens.map(({ item, quantidade }) => ({ itemId: item.id, quantidade, observedUpdatedAt: observed.itens[item.id].updated_at as string, status: observed.itens[item.id].status as string, reservadoParaOsId: item.reservado_para_os_id ?? null, quantidadeReservada: item.quantidade_reservada ?? null, quantidadeTotal: item.quantidade ?? null })),
         dados,
       }, check, (r) => { dispatch(); reservePending(r); });
       settlePending(outcome);

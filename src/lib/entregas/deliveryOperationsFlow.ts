@@ -48,7 +48,8 @@ export type GroupInput = {
   osOrigem: string | null;
   osPartnerOrderId: string | null;
   osObservedUpdatedAt: string;
-  itens: { itemId: string; quantidade: number; observedUpdatedAt: string; status: string }[];
+  /** Reserved rows are accepted only when wholly reserved for this same OS (server re-proves ownership). */
+  itens: { itemId: string; quantidade: number; observedUpdatedAt: string; status: string; reservadoParaOsId?: string | null; quantidadeReservada?: number | null; quantidadeTotal?: number | null }[];
   dados: Record<string, unknown>;
 };
 
@@ -65,7 +66,13 @@ export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
     if (!UUID.test(i.itemId) || seen.has(i.itemId) || !Number.isFinite(i.quantidade) || i.quantidade <= 0 || !i.observedUpdatedAt) {
       throw new Error("Item ou quantidade inválidos. Nenhuma alteração foi enviada.");
     }
-    if (i.status !== "disponivel") throw new Error("Lote já reservado ou indisponível: o contrato atômico reserva apenas estoque disponível. Nenhuma alteração foi enviada.");
+    const ownedReservation = i.status === "reservado" && i.reservadoParaOsId === input.osId
+      && i.quantidadeReservada === i.quantidadeTotal && i.quantidadeTotal === i.quantidade;
+    if (i.status !== "disponivel" && !ownedReservation) {
+      throw new Error(i.status === "reservado"
+        ? "Lote reservado para outra OS ou reserva parcial: só a reserva inteira desta OS pode ser entregue. Nenhuma alteração foi enviada."
+        : "Lote indisponível para entrega. Nenhuma alteração foi enviada.");
+    }
     seen.add(i.itemId);
   }
   const unsupported = Object.entries(input.dados).filter(([k, v]) => !(DATA_KEYS as readonly string[]).includes(k) && v !== null && v !== undefined && v !== "").map(([k]) => k);

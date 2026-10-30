@@ -1,0 +1,165 @@
+[
+  {
+    "test": "exact applied release-combined a566faa4 + proof POST (hosted state reproduced on full restore)",
+    "status": "PASS"
+  },
+  {
+    "test": "PRE pins equal restored post-release bodies (motor 44b150bf keeps split delta)",
+    "status": "PASS"
+  },
+  {
+    "test": "post-hash probe transaction rolled back (state unchanged)",
+    "status": "PASS"
+  },
+  {
+    "test": "PRE refuses body drift",
+    "status": "PASS",
+    "expected": "STOCK_V2_PRE_DRIFT"
+  },
+  {
+    "test": "drift fixture reverted to exact LIVE body",
+    "status": "PASS"
+  },
+  {
+    "test": "forced POST failure",
+    "status": "PASS",
+    "expected": "LOCAL_POST_FORCED_FAIL"
+  },
+  {
+    "test": "POST failure rolled back atomically",
+    "status": "PASS"
+  },
+  {
+    "test": "install COMMIT with exact POST",
+    "status": "PASS"
+  },
+  {
+    "test": "standalone POST passes",
+    "status": "PASS"
+  },
+  {
+    "test": "rerun refused",
+    "status": "PASS",
+    "expected": "STOCK_V2_ALREADY_INSTALLED"
+  },
+  {
+    "test": "authenticated cannot call transition helper",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "authenticated cannot mint authz ticket",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "direct em_cq->envase without ticket denied even as table owner",
+    "status": "PASS",
+    "expected": "CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC"
+  },
+  {
+    "test": "GUC spoof does not open the transition",
+    "status": "PASS",
+    "expected": "CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC"
+  },
+  {
+    "test": "tenant B actor cannot envase AR Bio lot",
+    "status": "PASS",
+    "expected": "DENIED"
+  },
+  {
+    "test": "latest CQ reprovado keeps envase closed (existing criterion)",
+    "status": "PASS",
+    "expected": "COCKPIT_ENVASE_EXIGE_CQ_APROVADO"
+  },
+  {
+    "test": "reprovado OS unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "NaN/invalid line rejected",
+    "status": "PASS",
+    "expected": "COCKPIT_QUANTIDADE_INVALIDA"
+  },
+  {
+    "test": "partial envase stores stock but keeps OS em_cq",
+    "status": "PASS"
+  },
+  {
+    "test": "envase completes and OS em_cq->envase->pronto_entrega via reviewed transition (producao role)",
+    "status": "PASS"
+  },
+  {
+    "test": "transition ticket consumed (none left)",
+    "status": "PASS"
+  },
+  {
+    "test": "lot/CQ rows untouched",
+    "status": "PASS"
+  },
+  {
+    "test": "envase replay: no duplicate envase/stock",
+    "status": "PASS"
+  },
+  {
+    "test": "reservation of ANOTHER OS is never consumed",
+    "status": "PASS",
+    "expected": "DELIVERY_RESERVATION_NOT_OWNED"
+  },
+  {
+    "test": "partial consumption of owned reservation refused (no artificial split)",
+    "status": "PASS",
+    "expected": "DELIVERY_RESERVATION_NOT_OWNED"
+  },
+  {
+    "test": "tenant B cannot deliver AR Bio reserved stock",
+    "status": "PASS",
+    "expected": "DELIVERY"
+  },
+  {
+    "test": "concurrent deliveries on the same owned reservation: exactly one commits (no oversell)",
+    "status": "PASS"
+  },
+  {
+    "test": "mixed owned+free group delivered once (2 deliveries)",
+    "status": "PASS"
+  },
+  {
+    "test": "both items expedited through the canonical motor",
+    "status": "PASS"
+  },
+  {
+    "test": "ledger: exactly two expedition movements",
+    "status": "PASS"
+  },
+  {
+    "test": "only the free item was reserved; owned reservation consumed without release/re-reserve",
+    "status": "PASS"
+  },
+  {
+    "test": "gate held: envase waits on the gate first and aborts with lock timeout, zero partial rows",
+    "status": "PASS"
+  },
+  {
+    "test": "inverse-order contender: PostgreSQL resolves (40P01/55P03) and no partial movement remains",
+    "status": "PASS",
+    "detail": "40P01"
+  },
+  {
+    "test": "zero financial/fiscal/communication rows across envase, transition, deliveries and contention",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback restores exact applied motor/batch/group/guard and never restores the purge escape",
+    "status": "PASS"
+  },
+  {
+    "test": "after rollback the envase transition is closed",
+    "status": "PASS",
+    "expected": "ENVASE_TRANSITION_CLOSED"
+  },
+  {
+    "test": "rollback preserves history",
+    "status": "PASS"
+  }
+]
