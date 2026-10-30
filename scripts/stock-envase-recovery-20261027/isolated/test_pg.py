@@ -64,7 +64,30 @@ def run():
     a=T.T.session('BEGIN;'+stmt); b=T.T.session('BEGIN;'+stmt)
     ra=T.T.finish(a,'COMMIT;'); rb=T.T.finish(b,'COMMIT;'); joined=''.join(ra+rb)
     assert joined.count('"success": true')>=2 and '"replay": true' in joined and last(f"SELECT count(*) FROM public.envase WHERE lote_id='{T.L5}';")=='1'; ok('two independent connections same key: one write and one replay')
+    # Assert actual worker lock wait before committing revocation (no timing-only PASS).
+    holder=T.T.session(f"BEGIN; SELECT 1 FROM public.lotes WHERE id='{T.L6}' FOR UPDATE; UPDATE public.profiles SET ativo=false WHERE user_id='{T.W}';")
+    worker=subprocess.Popen(pg.psql(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    worker.stdin.write("\\set VERBOSITY verbose\nSET application_name='envase_revocation_worker';"+T.actor(T.W)+env(T.O6,T.PP6,T.L6,'revoke-wait-0001')+'\n'); worker.stdin.flush()
+    waited=False
+    for _ in range(30):
+        if last("SELECT count(*) FROM pg_stat_activity WHERE application_name='envase_revocation_worker' AND wait_event_type='Lock';")=='1': waited=True; break
+        time.sleep(.05)
+    assert waited, 'REVOCATION_WORKER_NOT_OBSERVED_WAITING'
+    T.T.finish(holder,'COMMIT;'); worker.stdin.close(); worker.stdin=None; wo,we=worker.communicate(timeout=30)
+    assert re.search(r'ERROR:\s+42501:',we), we+wo
+    assert last(f"SELECT count(*) FROM public.envase WHERE lote_id='{T.L6}';")=='0'; ok('active profile revoked during observed lote lock wait: 42501 and no envase')
+    sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{T.W}';")
     z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in T.TABLES)+")::text;"); assert z1==z; ok('all financial/fiscal/outbox full-row snapshots unchanged (not counts)')
+    # Existing canonical proof regressions on locally created delivery, never hosted reference.
+    owned=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{T.L2}' AND status='reservado';")
+    grp=json.loads(last(T.actor()+T.group(T.O2,[{'item_id':owned,'quantidade':2}],'proof-regression-group')))
+    entrega=grp['itens'][0]['entrega_id']; sg=f'entregas/{entrega}/assinaturas/{T.u(901)}.png'; fp=f'entregas/{entrega}/comprovantes/{T.u(902)}.pdf'
+    sql("INSERT INTO storage.buckets(id,name,public) VALUES('entrega-documentos','entrega-documentos',false) ON CONFLICT DO NOTHING;"+f"INSERT INTO storage.objects(bucket_id,name,owner,owner_id) VALUES('entrega-documentos','{sg}','{T.U}','{T.U}'),('entrega-documentos','{fp}','{T.U}','{T.U}');")
+    gen=json.loads(last(T.actor()+f"SELECT public.rpc_entrega_formulario_gerar_v1('{entrega}','gen-isolated-0001');")); assert gen['success'] is True
+    sig=json.loads(last(T.actor()+f"SELECT public.rpc_entrega_assinatura_coletar_v1('{entrega}','sig-isolated-0001','{json.dumps({'assinatura_digital_png_path':sg,'assinatura_hash':'a'*64,'recebedor_nome':'LOCAL','assinatura_user_agent':'local'})}'::jsonb);")); assert sig['success'] is True
+    att=T.actor()+f"SELECT public.rpc_entrega_comprovante_anexar_v1('{entrega}','att-isolated-0001','{json.dumps({'arquivo_path':fp,'arquivo_nome':'local.pdf','arquivo_mime':'application/pdf','recebedor_nome':'LOCAL'})}'::jsonb);"
+    assert json.loads(last(att))['success'] is True and json.loads(last(att))['replayed'] is True; ok('canonical generate/sign/attach and exact attachment replay preserved')
+    reject('foreign FSF proof stays closed',T.actor(T.V)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{entrega}','foreign-proof-0001');",'42501')
     sql(f'REVOKE EXECUTE ON FUNCTION {G.RPC} FROM authenticated;'); assert state()==post
     sql((H/'rollback.sql.review').read_text()); assert json.loads(last(T.actor(T.W)+cap()))['available'] is False
     reject('deny-only rollback closes canonical writer',T.actor(T.W)+env(T.O5,T.PP5,T.L5,'concurrent-0001'),'42501'); ok('rollback retains history, barriers, installed group/cancel and proofs')
