@@ -85,6 +85,10 @@ def main():
     assert counts() == c0 and last(GRANTS) == 'false/false/false'; ok('FSF admin with AR Bio org: PRE stops, nothing written')
     rc, out, err = fixture(cliente=CLIB, fazenda=FAZB, talhao=TALB); assert rc != 0 and 'FIXTURE_PRE_CLIENT_SCOPE' in err, err[-800:]
     ok('FSF client/farm with AR Bio org: PRE stops')
+    sql(f"UPDATE public.clientes SET nome='LOCAL CLIENTE AR BIO' WHERE id='{CLI}';")
+    rc, out, err = fixture(); assert rc != 0 and 'FIXTURE_PRE_CLIENT_NOT_TEST_MARKED' in err, err[-800:]
+    assert counts() == c0 and last("SELECT count(*) FROM public.notificacoes_operacionais;") == '0'; ok('client without TESTE SEM VALOR COMERCIAL marker: PRE stops, no notice')
+    sql(f"UPDATE public.clientes SET nome='LOCAL CLIENTE AR BIO TESTE SEM VALOR COMERCIAL' WHERE id='{CLI}';")
     # In-app side effect not accepted -> full rollback.
     rc, out, err = fixture(accept_inapp='false'); assert rc != 0 and 'FIXTURE_POST_INAPP_NOTIFICATION_NOT_ACCEPTED' in err, err[-800:]
     assert counts() == c0 and last("SELECT count(*) FROM public.notificacoes_operacionais;") == '0' and last(GRANTS) == 'false/false/false'
@@ -93,6 +97,8 @@ def main():
     f0 = fin()
     rc, out, err = fixture()
     assert rc == 0, (out + err)[-3000:]
+    assert last("SELECT count(*) FROM public.notificacoes_operacionais WHERE mensagem NOT LIKE '%TESTE SEM VALOR COMERCIAL%' OR tipo<>'nova_demanda_producao';") == '0' and int(last("SELECT count(*) FROM public.notificacoes_operacionais;")) >= 1
+    ok('approved internal notice only: nova_demanda_producao and message marked TESTE SEM VALOR COMERCIAL')
     ids = json.loads(re.search(r'FIXTURE_IDS (\{.*\})', err).group(1)); print('IDS', json.dumps(ids), flush=True)
     ok('canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento', ids=ids)
     os = ids['os']
