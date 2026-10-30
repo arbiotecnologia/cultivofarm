@@ -1,0 +1,102 @@
+{
+ "rls": [
+  true,
+  false,
+  "{postgres=arwdDxtm/postgres,authenticated=rxtm/postgres,service_role=arwdDxtm/postgres}"
+ ],
+ "parent": [
+  [
+   "Admin/Gestor/Adm total access on entregas",
+   "PERMISSIVE",
+   "{public}",
+   "ALL",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role))",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role))"
+  ],
+  [
+   "Cliente read own entregas",
+   "PERMISSIVE",
+   "{public}",
+   "SELECT",
+   "(cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))",
+   null
+  ],
+  [
+   "Financeiro read entregas",
+   "PERMISSIVE",
+   "{public}",
+   "SELECT",
+   "platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)",
+   null
+  ],
+  [
+   "Producao/Aplicador read entregas",
+   "PERMISSIVE",
+   "{public}",
+   "SELECT",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'aplicador'::app_role))",
+   null
+  ],
+  [
+   "tenant_isolation_d51_5",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "ALL",
+   "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+   "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+  ]
+ ],
+ "writers": {
+  "is_delivery_staff(uuid)": "aa500abecc84ca8c901753c519f36fa1|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "is_financial_staff(uuid)": "6e8f2fa7b92ca7e039d092353b3ebfe2|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "get_cliente_ids_for_user(uuid)": "c80d5900692d960f649d0a9f7850fe2c|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "rpc_gerar_formulario_entrega(uuid)": "2c2b6c4377dabeb62a24237200017217|{postgres=X/postgres,authenticated=X/postgres}",
+  "platform_private.has_role(uuid,app_role)": "c5af5b55de6d79da9b73a33948746ae2|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881|{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+  "rpc_anexar_comprovante_entrega(uuid,jsonb)": "e9048eeb8c209b802248998ab4f060b2|{postgres=X/postgres,authenticated=X/postgres}",
+  "rpc_entrega_formulario_gerar_v1(uuid,text)": "263058b4cf58f4712d3a1669e9acb9db|{postgres=X/postgres,authenticated=X/postgres}",
+  "rpc_entrega_comprovacao_preflight_v1(uuid,text)": "505066aa2eb8403b4cfee0252fbba21b|{postgres=X/postgres,authenticated=X/postgres}",
+  "rpc_coletar_assinatura_digital_entrega(uuid,jsonb)": "f9874b989ed83b9a5c2db641621b8853|{postgres=X/postgres,authenticated=X/postgres}",
+  "rpc_entrega_assinatura_coletar_v1(uuid,text,jsonb)": "4a7303d99ba740cdb88bfd42ecc30695|{postgres=X/postgres,authenticated=X/postgres}",
+  "rpc_entrega_comprovante_anexar_v1(uuid,text,jsonb)": "8155124325d58ed9baa726668c2183d5|{postgres=X/postgres,authenticated=X/postgres}",
+  "platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb)": "030c591a31202612160b89f5d4e025c2|{postgres=X/postgres}"
+ },
+ "policies": [
+  [
+   "Cliente read own entrega_comprovantes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE ((e.id = entrega_comprovantes.entrega_id) AND (e.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))))))",
+   null
+  ],
+  [
+   "Consultor read linked entrega_comprovantes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "((platform_private.has_role(( SELECT auth.uid() AS uid), 'consultor_tecnico'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'tecnico_agronomo'::app_role)) AND (EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE ((e.id = entrega_comprovantes.entrega_id) AND (e.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))))))",
+   null
+  ],
+  [
+   "Financeiro read entrega_comprovantes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "is_financial_staff(( SELECT auth.uid() AS uid))",
+   null
+  ],
+  [
+   "Staff manage entrega_comprovantes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "ALL",
+   "is_delivery_staff(( SELECT auth.uid() AS uid))",
+   "is_delivery_staff(( SELECT auth.uid() AS uid))"
+  ]
+ ],
+ "parent_rls": [
+  true,
+  false
+ ]
+}

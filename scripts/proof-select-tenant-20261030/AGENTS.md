@@ -1,0 +1,5 @@
+- Preparation only: never apply install/rollback hosted, publish or grant from this package; the main auditor reviews and applies.
+- Delta is ONE additive RESTRICTIVE SELECT policy on entrega_comprovantes requiring the parent entrega to be visible through the caller's own entregas RLS (invoker EXISTS, no definer helper); never alter existing policies, ACL, RLS flags or proof writers.
+- PRE/POST are generated from the disposable restore with the applied release-combined + v2 and must match the hosted read-only audit; drift or rerun aborts.
+- Rollback is deny-safe: it narrows the policy to false, never drops it — dropping would restore cross-tenant exposure.
+- Synthetic claims on disposable PG are not hosted JWT proof; the auditor repeats the real FSF JWT test after applying.

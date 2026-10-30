@@ -1,0 +1,7 @@
+-- Tenant fence for direct reads of delivery proofs. RESTRICTIVE: AND-ed with the four existing permissive policies,
+-- so no existing actor/client rule is widened; it only requires the parent delivery to be visible to the caller
+-- through public.entregas RLS (incl. RESTRICTIVE tenant_isolation_d51_5). Invoker subquery, no SECURITY DEFINER.
+-- entregas policies do not reference entrega_comprovantes, so there is no policy recursion.
+CREATE POLICY entrega_comprovantes_parent_visible_r ON public.entrega_comprovantes
+  AS RESTRICTIVE FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.entregas e WHERE e.id = entrega_comprovantes.entrega_id));

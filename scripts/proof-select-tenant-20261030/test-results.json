@@ -1,0 +1,111 @@
+[
+  {
+    "test": "hosted composition reproduced: release-combined a566faa4 + proof POST + install-v2 4390ef16 + POST",
+    "status": "PASS"
+  },
+  {
+    "test": "PRE state matches hosted audit: 4 permissive policies, RLS on/not forced, ACL authenticated=rxtm, parent tenant restrictive, no recursion path",
+    "status": "PASS",
+    "acl": "{postgres=arwdDxtm/postgres,authenticated=rxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  {
+    "test": "BEFORE: FSF admin/financeiro/producao read the AR Bio proof id (defect reproduced)",
+    "status": "PASS",
+    "before": {
+      "FSF admin": 1,
+      "FSF financeiro": 1,
+      "FSF producao": 1
+    }
+  },
+  {
+    "test": "POST differs from PRE only by the restrictive SELECT policy (ACL/RLS/writers/parent unchanged)",
+    "status": "PASS",
+    "policy": [
+      "entrega_comprovantes_parent_visible_r",
+      "RESTRICTIVE",
+      "{authenticated}",
+      "SELECT",
+      "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE (e.id = entrega_comprovantes.entrega_id)))",
+      null
+    ]
+  },
+  {
+    "test": "PRE refuses policy drift; nothing installed",
+    "status": "PASS",
+    "expected": "PROOF_SELECT_PRE_DRIFT"
+  },
+  {
+    "test": "wrong POST rolls back atomically",
+    "status": "PASS",
+    "expected": "PROOF_SELECT_POST_DRIFT"
+  },
+  {
+    "test": "state unchanged after POST failure",
+    "status": "PASS"
+  },
+  {
+    "test": "installer COMMIT + postflight pass",
+    "status": "PASS"
+  },
+  {
+    "test": "rerun refused by PRE",
+    "status": "PASS",
+    "expected": "PROOF_SELECT_PRE_DRIFT"
+  },
+  {
+    "test": "AFTER: FSF admin/financeiro/producao, inactive, external and unlinked client read 0 AR Bio proofs",
+    "status": "PASS",
+    "matrix": {
+      "FSF admin": 0,
+      "FSF financeiro": 0,
+      "FSF producao": 0,
+      "AR Bio inactive admin": 0,
+      "AR Bio external parceiro_b2b": 0,
+      "AR Bio unlinked client": 0
+    }
+  },
+  {
+    "test": "AFTER: AR Bio admin, linked client, linked consultant and FSF own proof still readable",
+    "status": "PASS",
+    "matrix": {
+      "AR Bio admin own": 1,
+      "AR Bio linked client": 1,
+      "AR Bio linked consultant": 1,
+      "FSF admin own": 1
+    }
+  },
+  {
+    "test": "AR Bio admin cannot read the FSF proof",
+    "status": "PASS"
+  },
+  {
+    "test": "anon has no SELECT on entrega_comprovantes",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "generate/sign/attach + replay still work for AR Bio admin; owner reads the result",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin generate on AR Bio delivery still denied by writer",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "FSF admin cannot read the new AR Bio proof",
+    "status": "PASS"
+  },
+  {
+    "test": "zero finance/fiscal/outbox/communication rows",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback narrows (never drops): no cross-tenant read restored; direct reads closed",
+    "status": "PASS"
+  },
+  {
+    "test": "writers still work after rollback",
+    "status": "PASS"
+  }
+]
