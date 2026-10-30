@@ -1,3 +1,4 @@
+- [x] Carteira 30/10: contrato LIVE e sete registros elegíveis confirmados read-only; exclusão administrativa removida somente frontend, 36/36 testes PASS/build OK; evidência em docs/auditorias/carteira-empresa-owner-read-20261030.md, sem publicação ou banco mutante.
 - [ ] Subconjunto01 20:28: restaurar stack metadata real em PG descartável; ensaiar instalador COMMIT/postflight, drift/rollback/rerun/contenção e aprovação; atualizar evidências externas de boleto/settings/identidade sem alterações comerciais ou hosted.
 # F2-B — auditoria e preparação revisável
 
