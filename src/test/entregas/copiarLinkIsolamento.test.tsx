@@ -104,7 +104,7 @@ beforeEach(() => {
   prepararCanvas();
   (globalThis.crypto as any).randomUUID = () => "uuid-1";
   entregaComToken("e1");
-  rpcMock.mockResolvedValue({ data: null, error: null });
+  rpcMock.mockResolvedValue({ error: null }); // sucesso → ACK exato sintetizado pelo mock
   uploadMock.mockResolvedValue({ data: { path: "p" }, error: null });
   copiarTextoMock.mockResolvedValue(true);
 });
