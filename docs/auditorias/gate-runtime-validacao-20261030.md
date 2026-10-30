@@ -168,7 +168,7 @@ está registrada em `carteira-empresa-owner-read-20261030.md`. Não a substituir
 mock nem exigir nova cobrança/NF. Nesta rodada só testes locais.
 
 Build automático observado após a última criação de teste/runtime inalterado:
-`build OK` em 30/10/2026 00:56:13Z (confirmar log final arquivado no encerramento).
+`build OK` em 30/10/2026 00:57:28Z; log final arquivado no encerramento.
 Typecheck separado não foi executado: harness é responsável por essa etapa;
 ausência de saída independente é limite explícito, não alegação de PASS separado.
 
