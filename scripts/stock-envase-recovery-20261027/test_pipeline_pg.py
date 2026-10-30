@@ -26,8 +26,8 @@ def last(s): return sql(s).splitlines()[-1]
 def actor(w):
     c = json.dumps({'sub': w, 'role': 'authenticated', 'iat': int(time.time()) - 5, 'exp': int(time.time()) + 600, 'aal': 'aal1'})
     return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}'; SET request.jwt.claims='{c}'; SET request.jwt.claim.role='authenticated';"
-CLI_NOME = 'TESTE SEM VALOR COMERCIAL LOCAL CLIENTE AR BIO'
-PROD_NOME = 'TESTE SEM VALOR COMERCIAL LOCAL BIO'
+CLI_NOME = 'TESTE AUDITORIA B2B CLIENTE CONTROLE 20261009'  # exact hosted synthetic master name
+PROD_NOME = 'TESTE AUDITORIA BIOLOGICO APLICACAO 20261019'  # exact hosted synthetic master name
 def fixture(**over):
     v = dict(org=ORG, admin=ADM, cliente=CLI, fazenda=FAZ, talhao=TAL, produto=PROD, referencia=REF, cancel='true', accept_inapp='true', cliente_nome=CLI_NOME, produto_nome=PROD_NOME, expected_ar_hash='none', expected_ar_count='0'); v.update(over)
     s = (H / 'fixture-arbio-pipeline.sql.review').read_text()
