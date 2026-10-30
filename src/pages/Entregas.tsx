@@ -42,18 +42,15 @@ function traduzErroComprovante(msg: string): string {
   const chave = Object.keys(ERROS_COMPROVANTE).find((k) => msg.includes(k));
   return chave ? ERROS_COMPROVANTE[chave] : msg;
 }
-import { validatePhoneBR } from "@/lib/masks";
 import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
-import { validarRespostaEstoqueEntrega } from "@/lib/entregas/payloadEntrega";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmarEntregaFinanceiroDialog } from "@/components/financeiro/ConfirmarEntregaFinanceiroDialog";
 import { ConfirmarEntregaDialog } from "@/components/entregas/ConfirmarEntregaDialog";
 import { EntregaComprovantePanel } from "@/components/entregas/EntregaComprovantePanel";
 import { TermoEntregaPanel } from "@/components/entregas/TermoEntregaPanel";
 import { EmbalagensEntregaPanel } from "@/components/estoque/EmbalagensEntregaPanel";
-import { operarEstoque, chaveIdempotencia, mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
 import { FileText } from "lucide-react";
 import { formatOS, formatOSFromId } from "@/lib/osLabel";
 import { getClienteLabel, getClienteFullLabel } from "@/lib/clienteLabel";
