@@ -4580,7 +4580,7 @@
       "platform_private",
       "envase_insert_guard_v1",
       "",
-      "d4e3e736fac979675f3ca7c4febdad09",
+      "b5978c95db619d4e2611f82b1d8c4375",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -13863,7 +13863,7 @@
       "public",
       "rpc_cockpit_registrar_envase_v1",
       "p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text, p_idempotency_key text, p_permitir_parcial boolean, p_motivo_parcial text",
-      "f96040b9aee0be920dd00d21e6f425c6",
+      "c9a937a88821141e78c9ea871415030e",
       "{postgres=X/postgres,service_role=X/postgres}",
       "postgres",
       [
