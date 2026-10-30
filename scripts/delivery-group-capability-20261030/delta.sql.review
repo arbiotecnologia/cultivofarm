@@ -1,0 +1,15 @@
+CREATE FUNCTION public.rpc_entrega_operacoes_capability_v1()
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+DECLARE g boolean:=false; c boolean:=false;
+BEGIN
+ -- Release gate only: reports whether the caller would pass the canonical actor check now.
+ -- The writers re-authorize independently; this result never grants authority.
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'DELIVERY_ACTOR_DENIED' USING ERRCODE='42501'; END IF;
+ BEGIN PERFORM platform_private.delivery_actor_20261030('group'); g:=true; EXCEPTION WHEN insufficient_privilege THEN g:=false; END;
+ BEGIN PERFORM platform_private.delivery_actor_20261030('cancel'); c:=true; EXCEPTION WHEN insufficient_privilege THEN c:=false; END;
+ RETURN jsonb_build_object('capability','delivery_operations_v1','group',g,'cancel',c);
+END $$;
+REVOKE ALL ON FUNCTION public.rpc_entrega_operacoes_capability_v1() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_entrega_operacoes_capability_v1() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_entrega_cancelar_v1(uuid,text,timestamptz) TO authenticated;

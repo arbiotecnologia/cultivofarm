@@ -1,0 +1,13 @@
+BEGIN;
+SET LOCAL lock_timeout='3s';
+-- Deny-only: close grants, keep functions/receipts/barrier/history; never reopen legacy or DML.
+REVOKE EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE EXECUTE ON FUNCTION public.rpc_entrega_cancelar_v1(uuid,text,timestamptz) FROM PUBLIC,anon,authenticated,service_role;
+CREATE OR REPLACE FUNCTION public.rpc_entrega_operacoes_capability_v1()
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $$
+BEGIN RETURN jsonb_build_object('capability','delivery_operations_v1','group',false,'cancel',false); END $$;
+DO $post$ BEGIN
+ IF has_function_privilege('authenticated','public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)','EXECUTE') OR has_function_privilege('authenticated','public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)','EXECUTE') THEN RAISE EXCEPTION 'DELIVERY_CAP_ROLLBACK_OPEN'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.entregas'::regclass AND tgname='zz_delivery_mutation_closed' AND tgenabled='O') THEN RAISE EXCEPTION 'DELIVERY_CAP_ROLLBACK_BARRIER'; END IF;
+END $post$;
+COMMIT;
