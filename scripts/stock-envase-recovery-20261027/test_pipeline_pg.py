@@ -111,7 +111,7 @@ def main():
     assert last(f"SELECT count(*) FROM public.notificacoes_operacionais n JOIN public.profiles p ON p.user_id=n.usuario_id WHERE p.organization_id<>'{ORG}';") == '0'
     ok('only in-app operational notification(s) to AR Bio users (trg_notify_lab_on_programacao); outbox stays 0', notifications=notif)
     f1x = fin(); print('FIN_BEFORE', f0, 'FIN_AFTER', f1x, flush=True)
-    assert f1x == f0; ok('zero financial/fiscal/communication/notification rows')
+    assert f1x == f0; ok('zero financial/fiscal/outbox/communication-event/portal-notification rows')
     assert last(f"SELECT count(*) FROM public.entregas WHERE ordem_servico_id='{os}' AND (receivable_id IS NOT NULL OR partner_order_id IS NOT NULL);") == '0'; ok('no receivable/B2B link on deliveries')
     # Tenant isolation (RLS reads as FSF admin) and FSF writer denial.
     assert last(actor(ADMB) + f"SELECT count(*) FROM public.ordens_servico WHERE id='{os}';") == '0'; ok('FSF admin cannot read the AR Bio fixture OS (RLS)')

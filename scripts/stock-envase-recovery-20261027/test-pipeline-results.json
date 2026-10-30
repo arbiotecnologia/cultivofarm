@@ -87,7 +87,7 @@
     "notifications": "[{\"tipo\": \"nova_demanda_producao\", \"usuario\": \"a7d45277-6dec-413d-bf6b-86620c1ef39f\", \"source_type\": \"programacao_producao\"}]"
   },
   {
-    "test": "zero financial/fiscal/communication/notification rows",
+    "test": "zero financial/fiscal/outbox/communication-event/portal-notification rows",
     "status": "PASS"
   },
   {
