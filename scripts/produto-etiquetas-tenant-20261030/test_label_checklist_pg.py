@@ -31,7 +31,8 @@ FA, FB = u(18), u(19)
 FF, CL, IN = u(1001), u(1002), u(1003)
 EA, EA2, EB, EN, EX = u(1011), u(1012), u(1013), u(1014), u(1015)   # EX: AR Bio delivery cancelada
 LB, LN = u(1021), u(1022)
-VA, VB, MA, MB, SB = u(1031), u(1032), u(1033), u(1034), u(1035)
+VA, VB, MA, MB = u(1031), u(1032), u(1033), u(1034)
+SB = T.T   # existing stock item of the other AR Bio lote M
 PA, PB = u(1041), u(1042)
 MIX = {'entrega_foreign': u(1051), 'cliente_foreign': u(1052), 'envase_foreign': u(1053), 'embalagem_foreign': u(1054),
        'estoque_item_other_lote': u(1055), 'fazenda_foreign': u(1056), 'no_lote': u(1057), 'lote_org_null': u(1058), 'lote_ghost': u(1059)}
@@ -78,7 +79,6 @@ def fixtures():
     INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{LB}','{B}','{T.PROD}','aprovado','LOCAL-LB',1000),('{LN}',NULL,'{T.PROD}','aprovado','LOCAL-LN',1000);
     INSERT INTO public.envase(id,lote_id,organization_id,tipo_embalagem,volume_por_unidade,quantidade) VALUES('{VA}','{L}','{A}','frasco_1L',1000,1),('{VB}','{LB}','{B}','frasco_1L',1000,1);
     INSERT INTO public.estoque_embalagens(id,codigo_embalagem,lote_id,volume) VALUES('{MA}','LOCAL-MA','{L}',1),('{MB}','LOCAL-MB','{LB}',1);
-    INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{SB}','{M}','{T.PROD}',1,1,'disponivel');
     INSERT INTO public.entregas(id,organization_id,ordem_servico_id,cliente_id,status,financial_status,assinatura_obrigatoria) VALUES
      ('{EA}','{A}','{O}','{C}','separado','PENDING_BILLING',true),('{EA2}','{A}','{O}','{C}','separado','PENDING_BILLING',true),
      ('{EB}','{B}','{P}','{D}','separado','PENDING_BILLING',true),('{EN}',NULL,'{O}','{C}','separado','PENDING_BILLING',true),
