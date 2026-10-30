@@ -150,8 +150,47 @@
     "expected": "DELIVERY_REPLAY_CONFLICT"
   },
   {
+    "test": "tenant B replaying the same key/args is denied",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "revoked actor replay denied (no receipt disclosure)",
+    "status": "PASS",
+    "expected": "ERROR:"
+  },
+  {
+    "test": "denied replays left no mutation",
+    "status": "PASS"
+  },
+  {
+    "test": "exact replay of RESERVED-only group: same IDs, zero mutations",
+    "status": "PASS"
+  },
+  {
+    "test": "exact replay of FREE-only group: same IDs, zero mutations",
+    "status": "PASS"
+  },
+  {
+    "test": "cancellation exact replay: replay=true, zero mutations",
+    "status": "PASS"
+  },
+  {
+    "test": "cancellation same entrega, changed motivo -> conflict",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
+  },
+  {
+    "test": "group replay after cancellation returns the original receipt; nothing re-created",
+    "status": "PASS"
+  },
+  {
+    "test": "gate held: envase waits on the gate first and aborts with lock timeout, zero partial rows",
+    "status": "PASS"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 211, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 155, in main\n    fails('tenant B replaying the same key/args is denied', actor(V) + win[win.index('SELECT public.rpc_cockpit_criar_entrega_v1'):], '42501')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 21, in fails\n    e = pg.sql(s, False); assert code in e, label + ':' + e[-900:]; ok(label, expected=code); return e\n                                 ^^^^^^^^^\nAssertionError: tenant B replaying the same key/args is denied:ERROR:  DELIVERY_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 16 at RAISE\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 211, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 194, in main\n    o1 = T.finish(s1, \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; ROLLBACK;\"); o2 = T.finish(s2, 'ROLLBACK;')\n                                                                                                           ~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 57, in finish\n    if s:p.stdin.write(s+'\\n');p.stdin.flush()\n                               ~~~~~~~~~~~~~^^\nBrokenPipeError: [Errno 32] Broken pipe\n"
   }
 ]
