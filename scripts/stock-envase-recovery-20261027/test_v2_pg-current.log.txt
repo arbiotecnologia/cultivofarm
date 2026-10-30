@@ -1,111 +1,111 @@
 CHECKPOINT initdb local
-CHECKPOINT sql_calls=1 elapsed=3.2s
-CHECKPOINT sql_calls=100 elapsed=5.5s
-CHECKPOINT sql_calls=200 elapsed=8.0s
-CHECKPOINT sql_calls=300 elapsed=10.7s
-CHECKPOINT sql_calls=400 elapsed=13.7s
-CHECKPOINT sql_calls=500 elapsed=16.4s
-CHECKPOINT sql_calls=600 elapsed=19.0s
-CHECKPOINT sql_calls=700 elapsed=22.2s
-CHECKPOINT sql_calls=800 elapsed=25.3s
-CHECKPOINT sql_calls=900 elapsed=27.9s
-CHECKPOINT sql_calls=1000 elapsed=30.6s
-CHECKPOINT sql_calls=1100 elapsed=33.1s
-CHECKPOINT sql_calls=1200 elapsed=35.6s
-CHECKPOINT sql_calls=1300 elapsed=38.2s
-CHECKPOINT sql_calls=1400 elapsed=41.0s
-CHECKPOINT sql_calls=1500 elapsed=43.8s
-CHECKPOINT sql_calls=1600 elapsed=46.5s
-CHECKPOINT sql_calls=1700 elapsed=49.1s
-CHECKPOINT sql_calls=1800 elapsed=51.6s
-CHECKPOINT sql_calls=1900 elapsed=54.0s
-CHECKPOINT sql_calls=2000 elapsed=56.4s
-CHECKPOINT sql_calls=2100 elapsed=58.6s
-CHECKPOINT sql_calls=2200 elapsed=60.9s
-CHECKPOINT sql_calls=2300 elapsed=63.2s
-CHECKPOINT sql_calls=2400 elapsed=65.2s
-CHECKPOINT sql_calls=2500 elapsed=67.3s
-CHECKPOINT sql_calls=2600 elapsed=69.4s
-CHECKPOINT sql_calls=2700 elapsed=71.5s
-CHECKPOINT sql_calls=2800 elapsed=73.5s
-CHECKPOINT sql_calls=2900 elapsed=75.6s
-CHECKPOINT sql_calls=3000 elapsed=77.6s
-CHECKPOINT sql_calls=3100 elapsed=79.6s
-CHECKPOINT sql_calls=3200 elapsed=81.9s
-CHECKPOINT sql_calls=3300 elapsed=84.3s
-CHECKPOINT sql_calls=3400 elapsed=86.5s
-CHECKPOINT sql_calls=3500 elapsed=88.9s
-CHECKPOINT sql_calls=3600 elapsed=91.1s
-CHECKPOINT sql_calls=3700 elapsed=93.1s
-CHECKPOINT sql_calls=3800 elapsed=94.9s
-CHECKPOINT sql_calls=3900 elapsed=96.7s
-CHECKPOINT sql_calls=4000 elapsed=98.8s
-CHECKPOINT sql_calls=4100 elapsed=100.7s
-CHECKPOINT sql_calls=4200 elapsed=102.5s
-CHECKPOINT sql_calls=4300 elapsed=104.5s
-CHECKPOINT sql_calls=4400 elapsed=106.8s
-CHECKPOINT sql_calls=4500 elapsed=109.0s
-CHECKPOINT sql_calls=4600 elapsed=111.2s
-CHECKPOINT sql_calls=4700 elapsed=113.3s
-CHECKPOINT sql_calls=4800 elapsed=115.4s
-CHECKPOINT sql_calls=4900 elapsed=117.6s
-CHECKPOINT sql_calls=5000 elapsed=119.7s
-CHECKPOINT sql_calls=5100 elapsed=121.8s
-CHECKPOINT sql_calls=5200 elapsed=124.1s
-CHECKPOINT sql_calls=5300 elapsed=126.4s
-CHECKPOINT sql_calls=5400 elapsed=128.9s
-CHECKPOINT sql_calls=5500 elapsed=131.2s
-CHECKPOINT sql_calls=5600 elapsed=133.2s
-CHECKPOINT sql_calls=5700 elapsed=135.3s
-CHECKPOINT sql_calls=5800 elapsed=137.6s
-CHECKPOINT sql_calls=5900 elapsed=139.8s
-CHECKPOINT sql_calls=6000 elapsed=142.0s
-CHECKPOINT sql_calls=6100 elapsed=143.8s
-CHECKPOINT sql_calls=6200 elapsed=146.0s
-CHECKPOINT sql_calls=6300 elapsed=148.2s
-CHECKPOINT sql_calls=6400 elapsed=150.1s
-CHECKPOINT sql_calls=6500 elapsed=152.0s
-CHECKPOINT sql_calls=6600 elapsed=154.2s
-CHECKPOINT sql_calls=6700 elapsed=156.5s
-CHECKPOINT sql_calls=6800 elapsed=159.1s
-CHECKPOINT sql_calls=6900 elapsed=161.5s
-CHECKPOINT sql_calls=7000 elapsed=164.3s
-CHECKPOINT sql_calls=7100 elapsed=166.8s
-CHECKPOINT sql_calls=7200 elapsed=169.5s
-CHECKPOINT sql_calls=7300 elapsed=172.0s
-CHECKPOINT sql_calls=7400 elapsed=174.5s
-CHECKPOINT sql_calls=7500 elapsed=177.1s
-CHECKPOINT sql_calls=7600 elapsed=179.7s
-CHECKPOINT sql_calls=7700 elapsed=181.9s
-CHECKPOINT sql_calls=7800 elapsed=184.1s
-CHECKPOINT sql_calls=7900 elapsed=186.4s
-CHECKPOINT sql_calls=8000 elapsed=188.7s
-CHECKPOINT sql_calls=8100 elapsed=191.0s
-CHECKPOINT sql_calls=8200 elapsed=193.0s
-CHECKPOINT sql_calls=8300 elapsed=194.8s
-CHECKPOINT sql_calls=8400 elapsed=196.6s
-CHECKPOINT sql_calls=8500 elapsed=198.2s
-CHECKPOINT sql_calls=8600 elapsed=199.9s
-CHECKPOINT sql_calls=8700 elapsed=201.7s
-CHECKPOINT sql_calls=8800 elapsed=203.3s
-CHECKPOINT sql_calls=8900 elapsed=205.1s
-CHECKPOINT sql_calls=9000 elapsed=207.4s
-CHECKPOINT sql_calls=9100 elapsed=209.7s
-CHECKPOINT sql_calls=9200 elapsed=211.7s
-CHECKPOINT sql_calls=9300 elapsed=213.7s
-CHECKPOINT sql_calls=9400 elapsed=215.9s
-CHECKPOINT sql_calls=9500 elapsed=217.9s
-CHECKPOINT sql_calls=9600 elapsed=219.7s
-CHECKPOINT sql_calls=9700 elapsed=221.5s
-CHECKPOINT sql_calls=9800 elapsed=223.5s
-CHECKPOINT sql_calls=9900 elapsed=225.6s
-CHECKPOINT sql_calls=10000 elapsed=227.6s
-CHECKPOINT sql_calls=10100 elapsed=229.6s
-CHECKPOINT sql_calls=10200 elapsed=231.5s
-CHECKPOINT sql_calls=10300 elapsed=233.7s
-CHECKPOINT sql_calls=10400 elapsed=235.7s
-CHECKPOINT sql_calls=10500 elapsed=237.7s
-CHECKPOINT sql_calls=10600 elapsed=239.6s
+CHECKPOINT sql_calls=1 elapsed=2.5s
+CHECKPOINT sql_calls=100 elapsed=4.5s
+CHECKPOINT sql_calls=200 elapsed=6.8s
+CHECKPOINT sql_calls=300 elapsed=9.3s
+CHECKPOINT sql_calls=400 elapsed=11.4s
+CHECKPOINT sql_calls=500 elapsed=13.5s
+CHECKPOINT sql_calls=600 elapsed=15.5s
+CHECKPOINT sql_calls=700 elapsed=17.5s
+CHECKPOINT sql_calls=800 elapsed=19.5s
+CHECKPOINT sql_calls=900 elapsed=21.2s
+CHECKPOINT sql_calls=1000 elapsed=23.0s
+CHECKPOINT sql_calls=1100 elapsed=24.8s
+CHECKPOINT sql_calls=1200 elapsed=26.4s
+CHECKPOINT sql_calls=1300 elapsed=28.0s
+CHECKPOINT sql_calls=1400 elapsed=29.5s
+CHECKPOINT sql_calls=1500 elapsed=31.1s
+CHECKPOINT sql_calls=1600 elapsed=32.8s
+CHECKPOINT sql_calls=1700 elapsed=34.9s
+CHECKPOINT sql_calls=1800 elapsed=36.9s
+CHECKPOINT sql_calls=1900 elapsed=38.7s
+CHECKPOINT sql_calls=2000 elapsed=40.7s
+CHECKPOINT sql_calls=2100 elapsed=42.4s
+CHECKPOINT sql_calls=2200 elapsed=44.3s
+CHECKPOINT sql_calls=2300 elapsed=46.3s
+CHECKPOINT sql_calls=2400 elapsed=48.5s
+CHECKPOINT sql_calls=2500 elapsed=50.5s
+CHECKPOINT sql_calls=2600 elapsed=52.6s
+CHECKPOINT sql_calls=2700 elapsed=54.5s
+CHECKPOINT sql_calls=2800 elapsed=56.5s
+CHECKPOINT sql_calls=2900 elapsed=58.6s
+CHECKPOINT sql_calls=3000 elapsed=60.8s
+CHECKPOINT sql_calls=3100 elapsed=63.0s
+CHECKPOINT sql_calls=3200 elapsed=65.1s
+CHECKPOINT sql_calls=3300 elapsed=67.2s
+CHECKPOINT sql_calls=3400 elapsed=69.2s
+CHECKPOINT sql_calls=3500 elapsed=71.2s
+CHECKPOINT sql_calls=3600 elapsed=72.9s
+CHECKPOINT sql_calls=3700 elapsed=74.6s
+CHECKPOINT sql_calls=3800 elapsed=76.4s
+CHECKPOINT sql_calls=3900 elapsed=78.3s
+CHECKPOINT sql_calls=4000 elapsed=80.2s
+CHECKPOINT sql_calls=4100 elapsed=82.1s
+CHECKPOINT sql_calls=4200 elapsed=83.8s
+CHECKPOINT sql_calls=4300 elapsed=85.6s
+CHECKPOINT sql_calls=4400 elapsed=87.5s
+CHECKPOINT sql_calls=4500 elapsed=89.4s
+CHECKPOINT sql_calls=4600 elapsed=91.2s
+CHECKPOINT sql_calls=4700 elapsed=93.0s
+CHECKPOINT sql_calls=4800 elapsed=94.9s
+CHECKPOINT sql_calls=4900 elapsed=97.1s
+CHECKPOINT sql_calls=5000 elapsed=99.3s
+CHECKPOINT sql_calls=5100 elapsed=101.3s
+CHECKPOINT sql_calls=5200 elapsed=103.4s
+CHECKPOINT sql_calls=5300 elapsed=105.5s
+CHECKPOINT sql_calls=5400 elapsed=107.6s
+CHECKPOINT sql_calls=5500 elapsed=109.9s
+CHECKPOINT sql_calls=5600 elapsed=112.1s
+CHECKPOINT sql_calls=5700 elapsed=114.2s
+CHECKPOINT sql_calls=5800 elapsed=116.2s
+CHECKPOINT sql_calls=5900 elapsed=118.1s
+CHECKPOINT sql_calls=6000 elapsed=120.0s
+CHECKPOINT sql_calls=6100 elapsed=122.0s
+CHECKPOINT sql_calls=6200 elapsed=124.2s
+CHECKPOINT sql_calls=6300 elapsed=126.1s
+CHECKPOINT sql_calls=6400 elapsed=128.1s
+CHECKPOINT sql_calls=6500 elapsed=130.3s
+CHECKPOINT sql_calls=6600 elapsed=132.6s
+CHECKPOINT sql_calls=6700 elapsed=135.0s
+CHECKPOINT sql_calls=6800 elapsed=137.7s
+CHECKPOINT sql_calls=6900 elapsed=140.6s
+CHECKPOINT sql_calls=7000 elapsed=143.0s
+CHECKPOINT sql_calls=7100 elapsed=145.2s
+CHECKPOINT sql_calls=7200 elapsed=147.4s
+CHECKPOINT sql_calls=7300 elapsed=149.5s
+CHECKPOINT sql_calls=7400 elapsed=151.6s
+CHECKPOINT sql_calls=7500 elapsed=153.5s
+CHECKPOINT sql_calls=7600 elapsed=155.2s
+CHECKPOINT sql_calls=7700 elapsed=157.0s
+CHECKPOINT sql_calls=7800 elapsed=158.6s
+CHECKPOINT sql_calls=7900 elapsed=160.1s
+CHECKPOINT sql_calls=8000 elapsed=161.7s
+CHECKPOINT sql_calls=8100 elapsed=163.2s
+CHECKPOINT sql_calls=8200 elapsed=164.9s
+CHECKPOINT sql_calls=8300 elapsed=166.3s
+CHECKPOINT sql_calls=8400 elapsed=167.9s
+CHECKPOINT sql_calls=8500 elapsed=169.4s
+CHECKPOINT sql_calls=8600 elapsed=171.0s
+CHECKPOINT sql_calls=8700 elapsed=172.7s
+CHECKPOINT sql_calls=8800 elapsed=174.4s
+CHECKPOINT sql_calls=8900 elapsed=176.2s
+CHECKPOINT sql_calls=9000 elapsed=178.3s
+CHECKPOINT sql_calls=9100 elapsed=180.1s
+CHECKPOINT sql_calls=9200 elapsed=181.9s
+CHECKPOINT sql_calls=9300 elapsed=183.9s
+CHECKPOINT sql_calls=9400 elapsed=185.7s
+CHECKPOINT sql_calls=9500 elapsed=187.9s
+CHECKPOINT sql_calls=9600 elapsed=189.9s
+CHECKPOINT sql_calls=9700 elapsed=191.9s
+CHECKPOINT sql_calls=9800 elapsed=193.9s
+CHECKPOINT sql_calls=9900 elapsed=195.9s
+CHECKPOINT sql_calls=10000 elapsed=198.0s
+CHECKPOINT sql_calls=10100 elapsed=199.9s
+CHECKPOINT sql_calls=10200 elapsed=201.9s
+CHECKPOINT sql_calls=10300 elapsed=203.8s
+CHECKPOINT sql_calls=10400 elapsed=205.8s
+CHECKPOINT sql_calls=10500 elapsed=207.9s
+CHECKPOINT sql_calls=10600 elapsed=209.7s
 RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
 PASS exact applied release-combined a566faa4 + proof POST (hosted state reproduced on full restore)
 PASS PRE pins equal restored post-release bodies (motor 44b150bf keeps split delta)
@@ -117,30 +117,80 @@ PASS POST failure rolled back atomically
 PASS install COMMIT with exact POST
 PASS standalone POST passes
 PASS rerun refused
+PASS authenticated cannot call transition helper
+PASS authenticated cannot mint authz ticket
+PASS direct em_cq->envase without ticket denied even as table owner
+PASS GUC spoof does not open the transition
+PASS tenant B actor cannot envase AR Bio lot
+PASS latest CQ reprovado keeps envase closed (existing criterion)
+PASS reprovado OS unchanged
+PASS NaN/invalid line rejected
+PASS partial envase stores stock but keeps OS em_cq
+PASS envase completes and OS em_cq->envase->pronto_entrega via reviewed transition (producao role)
+PASS transition ticket consumed (none left)
+PASS lot/CQ rows untouched
+PASS envase replay: no duplicate envase/stock
+PASS reservation of ANOTHER OS is never consumed
+CHECKPOINT sql_calls=10700 elapsed=213.4s
+PASS partial consumption of owned reservation refused (no artificial split)
+PASS tenant B cannot deliver AR Bio reserved stock
+PASS concurrent deliveries on the same owned reservation: exactly one commits (no oversell)
+PASS mixed owned+free group delivered once (2 deliveries)
+PASS both items expedited through the canonical motor
+PASS ledger: exactly two expedition movements
+PASS only the free item was reserved; owned reservation consumed without release/re-reserve
+PASS exact replay of committed MIXED group (owned+free now expedido) returns same IDs, zero mutations
+PASS exact replay still answers after the OS revision changed post-commit (receipt precedes fresh CAS)
+PASS same key, changed payload -> replay conflict
+PASS tenant B replaying the same key/args is denied
+PASS revoked actor replay denied (no receipt disclosure)
+PASS denied replays left no mutation
+PASS exact replay of RESERVED-only group: same IDs, zero mutations
+PASS exact replay of FREE-only group: same IDs, zero mutations
+PASS cancellation exact replay: replay=true, zero mutations
+PASS cancellation same entrega, changed motivo -> conflict
+PASS group replay after cancellation returns the original receipt; nothing re-created
+PASS gate held: envase waits on the gate first and aborts with lock timeout, zero partial rows
+PASS inverse-order contender: PostgreSQL resolves (40P01/55P03) and no partial movement remains
+PASS metadata unknown/boundary field grupo_entrega_id rejected
+PASS metadata unknown/boundary field cliente_id rejected
+PASS metadata unknown/boundary field receivable_id rejected
+PASS metadata unknown/boundary field comprovante_status rejected
+PASS metadata unknown/boundary field organization_id rejected
+PASS metadata unknown/boundary field status rejected
+PASS metadata unknown/boundary field foo rejected
+PASS metadata malformed data_saida=03/11/2026 rejected
+PASS metadata malformed data_saida=2026-02-30 rejected
+PASS metadata malformed data_chegada_prevista=2026-13-01 rejected
+PASS metadata malformed hora_saida_prevista=25:00 rejected
+PASS metadata malformed hora_chegada_prevista=8h rejected
+PASS metadata malformed endereco_uf=MGX rejected
+PASS metadata malformed endereco_cep=abc rejected
+CHECKPOINT sql_calls=10800 elapsed=224.0s
+PASS metadata malformed tipo_entrega=drone rejected
+PASS metadata malformed endereco_origem=gps rejected
+PASS metadata malformed motorista_telefone=ligar depois rejected
+PASS metadata malformed motorista=7 rejected
+PASS metadata malformed destinatario_nome={'x': 1} rejected
+PASS metadata malformed endereco_numero=True rejected
+PASS metadata malformed endereco_referencia=xxxxxxxxxxxxxxxxxxxx rejected
+PASS metadata malformed motorista=    rejected
+PASS rejected metadata wrote no delivery
+PASS all approved metadata persisted on every delivery of the group (PG roundtrip)
+PASS server-derived tenant/client/status/proof/finance unchanged by metadata
 Traceback (most recent call last):
   File "/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py", line 253, in <module>
     try: main()
          ~~~~^^
-  File "/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py", line 105, in main
-    setup_v2()
-    ~~~~~~~~^^
-  File "/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py", line 57, in setup_v2
-    sql("SET session_replication_role=replica;" + feats + f"""
-    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    UPDATE public.saas_plan_versions SET features_snapshot='["estoque_embalagens","envase","ordens_producao","lotes_qualidade"]' WHERE id='{T.VER}';
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<7 lines>...
-    INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status,reservado_para_os_id,reservado_para_os_tipo,reservado_para_cliente_id,quantidade_reservada) VALUES('{RX}','{T.L}','{PROD}',2,2,'reservado','{T.O}','manual','{C}',2);
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    SET session_replication_role=origin;""")
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py", line 236, in main
+    rep = sql(actor() + group(O8, [{'item_id': S8, 'quantidade': 2}, {'item_id': S9, 'quantidade': 2}], 'meta-full-0001', META))
   File "/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py", line 18, in sql
     def sql(s): return pg.sql(s)
                        ~~~~~~^^^
   File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
     assert r.returncode==0,r.stderr[-3000:]
            ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  duplicate key value violates unique constraint "estoque_produto_lote_legado_unico_idx"
-DETAIL:  Key (lote_id)=(10000000-0000-4000-8000-000000000058) already exists.
+AssertionError: ERROR:  DELIVERY_REPLAY_CONFLICT
+CONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 54 at RAISE
 
-RESULT 10 PASS 1 FAIL
+RESULT 69 PASS 1 FAIL

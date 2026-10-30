@@ -29,7 +29,7 @@ O5, PP5, L5 = u(47), u(48), u(49)   # concurrency/rollback target
 O6, PP6, L6 = u(50), u(51), u(52)   # partial envase
 RX = u(53)                          # stock reserved for ANOTHER OS
 O7, PP7, L7 = u(54), u(55), u(56)   # replay matrix (reserved-only / free-only / cancel)
-O8, L8, S8, S9 = u(57), u(58), u(59), u(64)  # metadata roundtrip (pronto_entrega, free stock)
+O8, L8, S8, S9, L9 = u(57), u(58), u(59), u(64), u(63)  # metadata roundtrip (pronto_entrega, free stock)
 FEATS = {'envase': u(60), 'ordens_producao': u(61), 'lotes_qualidade': u(62)}
 TABLES = ['accounts_receivable', 'accounts_receivable_installments', 'financial_receipts', 'financial_documents', 'fiscal_invoices', 'fiscal_invoice_items', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base']
 def zero(): return last("SELECT jsonb_build_object(" + ','.join(f"'{t}',(SELECT count(*) FROM public.{t})" for t in TABLES) + ")::text;")
@@ -61,8 +61,8 @@ def setup_v2():
     INSERT INTO public.user_roles(user_id,role) VALUES('{W}','producao');
     """ + manufactured(O2, PP2, L2) + manufactured(O3, PP3, L3, cq='reprovado') + manufactured(O5, PP5, L5) + manufactured(O6, PP6, L6, vol=5000) + manufactured(O7, PP7, L7) + f"""
     INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,origem,status,numero_os) VALUES('{O8}','{A}','{C}','{u(18)}','{u(20)}','{PROD}','agronomica','pronto_entrega','LOCAL-META');
-    INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{L8}','{A}','{PROD}','aprovado','LOCAL-META',100000);
-    INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{S8}','{L8}','{PROD}',2,2,'disponivel'),('{S9}','{L8}','{PROD}',2,2,'disponivel');
+    INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{L8}','{A}','{PROD}','aprovado','LOCAL-META',100000),('{L9}','{A}','{PROD}','aprovado','LOCAL-META2',100000);
+    INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{S8}','{L8}','{PROD}',2,2,'disponivel'),('{S9}','{L9}','{PROD}',2,2,'disponivel');
     INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status,reservado_para_os_id,reservado_para_os_tipo,reservado_para_cliente_id,quantidade_reservada) VALUES('{RX}','{T.L}','{PROD}',2,2,'reservado','{T.O}','manual','{C}',2);
     SET session_replication_role=origin;""")
 def fn_state():

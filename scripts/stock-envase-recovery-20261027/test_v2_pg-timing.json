@@ -1,6 +1,6 @@
 {
   "runner": "test_v2_pg",
   "exit_code": 1,
-  "elapsed_seconds": 242.542,
+  "elapsed_seconds": 225.749,
   "budget_seconds": 540
 }
