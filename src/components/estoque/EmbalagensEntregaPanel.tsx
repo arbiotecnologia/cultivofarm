@@ -7,6 +7,7 @@ import { EmbalagemStatusBadge } from "./EmbalagemStatusBadge";
 import { useToast } from "@/hooks/use-toast";
 import { Package, CheckCircle2, Truck, AlertTriangle } from "lucide-react";
 import { ConferenciaEmbalagemQR } from "./ConferenciaEmbalagemQR";
+import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 
 const MSG_ERRO_ACAO = "Não foi possível concluir a ação. Tente novamente.";
 
@@ -52,12 +53,13 @@ export function EmbalagensEntregaPanel({ entregaId, compact = false }: { entrega
   const action = async (rpc: string, params: any, label: string) => {
     setLoading(true);
     try {
+      requireDeliveryOperationContract();
       const { error } = await (supabase as any).rpc(rpc, params);
       if (error) throw error;
       toast({ title: label });
       await refetch();
-    } catch {
-      toast({ title: "Erro", description: MSG_ERRO_ACAO, variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Operação indisponível", description: error instanceof Error ? error.message : MSG_ERRO_ACAO, variant: "destructive" });
     } finally { setLoading(false); }
   };
 
@@ -69,6 +71,7 @@ export function EmbalagensEntregaPanel({ entregaId, compact = false }: { entrega
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <p className="text-sm text-destructive">{DELIVERY_OPERATION_BLOCK}</p>
         {isLoading && (
           <p className="text-sm text-muted-foreground" data-testid="embalagens-carregando">
             Carregando embalagens...

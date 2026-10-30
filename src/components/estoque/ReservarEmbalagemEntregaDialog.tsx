@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateDisplay } from "@/lib/date-utils";
+import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 
 interface EntregaOpt {
   id: string;
@@ -44,6 +45,7 @@ export function ReservarEmbalagemEntregaDialog({
   const submit = async () => {
     setLoading(true);
     try {
+      requireDeliveryOperationContract();
       const { error } = await (supabase as any).rpc("rpc_reservar_embalagem_entrega", {
         p_embalagem_id: embalagemId, p_entrega_id: entregaId, p_entrega_item_id: null,
       });
@@ -61,6 +63,7 @@ export function ReservarEmbalagemEntregaDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>Reservar embalagem para entrega</DialogTitle></DialogHeader>
+        <p role="alert" className="text-sm text-destructive">{DELIVERY_OPERATION_BLOCK}</p>
         <div className="space-y-2">
           <Label>Entrega</Label>
           <Select value={entregaId} onValueChange={setEntregaId}>
