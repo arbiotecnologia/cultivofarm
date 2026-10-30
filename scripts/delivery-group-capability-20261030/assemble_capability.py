@@ -1,9 +1,10 @@
 """Assemble the capability/grant delta on top of the APPLIED release-combined (atomic+proof).
-PRE pins come from the atomic post-expected capture (exact bodies/ACL observed after install)."""
+PRE pins come from the atomic post-expected capture, with the group writer rebased to the stock/envase v2 POST hash."""
 import hashlib, json
 from pathlib import Path
 H = Path(__file__).resolve().parent
 ATOMIC = H.parent / 'delivery-atomic-hardening-20261030'
+V2 = H.parent / 'stock-envase-recovery-20261027'
 PINS = {
     'public.rpc_cockpit_criar_entrega_v1(p_os_id uuid, p_origem text, p_itens jsonb, p_request_key text, p_dados jsonb, p_os_observed timestamp with time zone)': 'public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)',
     'public.rpc_entrega_cancelar_v1(p_entrega_id uuid, p_motivo text, p_observed timestamp with time zone)': 'public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)',
@@ -22,6 +23,11 @@ def pins():
             if isinstance(x, dict) and x.get('signature') in PINS:
                 found[PINS[x['signature']]] = (hashlib.md5(x['body'].encode()).hexdigest(), x['acl'], x['owner'])
     assert len(found) == len(PINS), found
+    # Rebased: install order is release-combined -> stock/envase v2 -> this delta. The v2 candidate replaces the
+    # group writer body (ACL/owner unchanged), so its PRE pin is the exact v2 POST hash, never the stale baseline.
+    v2 = json.loads((V2 / 'v2-post-hashes.json').read_text())
+    md5, acl, owner = found[GROUP]
+    found[GROUP] = (v2[GROUP], acl, owner)
     return found
 
 CAP_BODY = """CREATE FUNCTION public.rpc_entrega_operacoes_capability_v1()
