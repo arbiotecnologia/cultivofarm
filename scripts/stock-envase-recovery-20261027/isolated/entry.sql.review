@@ -1,0 +1,40 @@
+-- INACTIVE additive row-specific envase authority; no GUC authorizes writes.
+CREATE TABLE platform_private.envase_insert_permits_v1(
+ txid bigint NOT NULL, actor uuid NOT NULL, organization_id uuid NOT NULL,
+ action text NOT NULL, target uuid NOT NULL, lote uuid NOT NULL, os uuid NOT NULL,
+ prog uuid NOT NULL, payload jsonb NOT NULL, PRIMARY KEY(txid,action,target));
+REVOKE ALL ON platform_private.envase_insert_permits_v1 FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.envase_insert_guard_v1() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $entry$
+DECLARE p platform_private.envase_insert_permits_v1%ROWTYPE; c record; parent public.estoque_produto%ROWTYPE; a jsonb; org uuid;
+BEGIN
+ IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
+ DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id RETURNING * INTO p;
+ IF FOUND THEN
+  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
+   OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW) @> p.payload) IS NOT TRUE THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+ END IF;
+ -- Preserve ONLY the installed canonical partial reservation semantics under
+ -- its private txid/actor/parent context, not an invented envase permit.
+ IF TG_TABLE_NAME='estoque_produto' THEN
+  SELECT * INTO c FROM platform_private.stock_motor_context WHERE txid=txid_current() AND actor=auth.uid();
+  IF FOUND AND c.ctx->>'acao'='reserva' AND c.item IS NOT NULL AND NEW.id<>c.item THEN
+   SELECT * INTO parent FROM public.estoque_produto WHERE id=c.item;
+   a:=c.ctx->'reserve_args'; org:=platform_private.stock_motor_actor('reserva');
+   IF parent.status::text='disponivel' AND NEW.status::text='reservado' AND NEW.quantidade>0 AND NEW.quantidade<parent.quantidade
+    AND NEW.quantidade_reservada=NEW.quantidade AND NEW.lote_id=parent.lote_id
+    AND NEW.envase_id IS NOT DISTINCT FROM parent.envase_id AND NEW.produto_id IS NOT DISTINCT FROM parent.produto_id AND NEW.microrganismo_id IS NOT DISTINCT FROM parent.microrganismo_id
+    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade
+    AND NEW.reservado_para_os_id::text IS NOT DISTINCT FROM a->>'os_id' AND NEW.reservado_para_os_tipo IS NOT DISTINCT FROM a->>'os_tipo'
+    AND NEW.reservado_para_cliente_id::text IS NOT DISTINCT FROM a->>'cliente_id'
+    AND NEW.reservado_para_partner_id::text IS NOT DISTINCT FROM a->>'partner_id' AND NEW.reservado_para_partner_order_id::text IS NOT DISTINCT FROM a->>'partner_order_id'
+    AND NEW.observacao_reserva IS NOT DISTINCT FROM a->>'observacao'
+    AND EXISTS(SELECT 1 FROM public.lotes WHERE id=parent.lote_id AND organization_id=org) THEN RETURN NEW; END IF;
+  END IF;
+ END IF;
+ RAISE EXCEPTION 'ENVASE_INSERT_CLOSED' USING ERRCODE='42501';
+END $entry$;
+REVOKE ALL ON FUNCTION platform_private.envase_insert_guard_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER a01_envase_insert_permit BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
+CREATE TRIGGER a01_stock_insert_permit BEFORE INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
