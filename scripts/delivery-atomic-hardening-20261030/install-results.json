@@ -6,6 +6,6 @@
   {
     "test": "installer execution",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_install.py\", line 26, in <module>\n    try:run()\n        ~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_install.py\", line 16, in run\n    assert 'LOCAL_POST_FAIL' in e,e\n           ^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  syntax error at or near \"app_role\"\nLINE 1: (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=...\n               ^\nQUERY:  (SELECT md5(pg_get_functiondef(oid)) FROM pg_proc WHERE oid=to_regprocedure('public._notify_role(p_role app_role, p_tipo text, p_titulo text, p_mensagem text, p_link text)')) IS DISTINCT FROM 'e056d90a03ab1ec7ea7e8b6fdee7b594'\nCONTEXT:  invalid type name \"p_role app_role\"\nPL/pgSQL function inline_code_block line 4 at IF\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_install.py\", line 26, in <module>\n    try:run()\n        ~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_install.py\", line 16, in run\n    assert 'LOCAL_POST_FAIL' in e,e\n           ^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  syntax error at or near \"DO\"\nLINE 310: DO $post$ BEGIN\n          ^\n\n"
   }
 ]
