@@ -3,3 +3,4 @@
 - Release is NO-GO until post-wait authority and indirect effects are demonstrated; capability is availability only, never authority.
 - Preserve CQ/lot fences, proof/history, deny-only rollback and all financial/fiscal/automation closures; waiver and label/physical writers remain independent.
 - Legacy closure is a separate ACL-only delta for receipt, delivery-label unlink and package-label link; never change bodies or service grants and never regrant on rollback — prevents definer bypasses without activating physical operations.
+- Row permits are admitted before INSERT and consumed after final row validation; mutation gates on authority/root tables use NOWAIT against the existing singleton, preserving upstream bodies and rejecting prelock inversions with 55P03 — prevents post-normalizer drift and deadlocks without granting authority.
