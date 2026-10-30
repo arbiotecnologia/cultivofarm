@@ -47,7 +47,6 @@ def probe(w, stmt, role=True):
     return cls(r.stdout.replace('ROLLBACK', '').strip() if r.returncode == 0 else r.stderr)
 NEG = 'E42501'
 ALL_LABELS = [PA, PB] + list(MIX.values())
-def seen(w): return set(sql(actor(w) + "SELECT id FROM public.produto_etiquetas;").splitlines()[-200:]) & set(ALL_LABELS) if True else None
 def seen_ids(w):
     out = sql(actor(w) + "SELECT coalesce(string_agg(id::text, ',' ORDER BY id), '-') FROM public.produto_etiquetas;").splitlines()[-1]
     return set() if out == '-' else set(out.split(','))
@@ -122,9 +121,6 @@ def ck_matrix():
             'U_own_occurrence': oc(U, EA), 'V_arbio_occurrence': oc(V, EA), 'U_fsf_occurrence': oc(U, EB), 'IN_inactive_occurrence': oc(IN, EA),
             'U_nullorg_occurrence': oc(U, EN), 'U_cancelled_occurrence': oc(U, EX), 'U_ghost_occurrence': oc(U, u(1098))}
 
-def install_pkg(name, cand, pre, code):
-    sql("BEGIN;\n" + cand + "\nCOMMIT;"); post = state()
-    return post
 def main():
     t0 = time.monotonic()
     r = restore.restore(); assert not any(r.values()), 'RESTORE_FAILED ' + json.dumps(r)
@@ -139,7 +135,6 @@ def main():
     assert not any(p[0] in ('entregas', 'lotes') and 'produto_etiquetas' in (p[5] or '') + (p[6] or '') for p in pre['policies'])
     ok('PRE: produto_etiquetas has no restrictive policy; entregas/lotes policies do not reference it (no recursion)', acl=pre['rel']['produto_etiquetas'][2])
     fixtures()
-    b_seen = {w: sorted(seen_ids(w)) for w in ('U', 'V', 'FF', 'CL', 'IN')} if False else None
     bs = {'U': seen_ids(U), 'V': seen_ids(V), 'FF': seen_ids(FF), 'CL': seen_ids(CL), 'IN': seen_ids(IN)}
     print('BEFORE_SEEN', {k: len(v) for k, v in bs.items()}, flush=True)
     assert PA in bs['V'] and PA in bs['FF'] and len(bs['V']) == len(ALL_LABELS), bs
@@ -153,25 +148,16 @@ def main():
     ok('BEFORE: FSF admin could update AR Bio checklist and register AR Bio occurrence via UI RPCs (rolled back)', matrix=cb)
     assert cb['U_own_checklist'].startswith('ok:') and cb['U_own_occurrence'] == 'ok:true', cb
     ok('BEFORE: AR Bio staff own checklist/occurrence via RPC works under the parent no-DML barrier (UI path functional)')
-    # Package 1 (labels): generate exact PRE/POST and installer.
-    out = {}
-    for name, d, cand_file, prefix in (('labels', H, H / 'candidate.sql.review', 'LABEL_TENANT'), ('checklist', CK, CK / 'candidate.sql.review', 'CK_AUTHZ')):
-        cand = cand_file.read_text(); p0 = state()
-        sql("BEGIN;\n" + cand + "\nCOMMIT;"); p1 = state()
-        if name == 'labels':
-            sql("BEGIN; DROP POLICY produto_etiquetas_tenant_root_r ON public.produto_etiquetas; DROP FUNCTION platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid);"
-                "GRANT TRUNCATE ON public.produto_etiquetas TO anon, authenticated; COMMIT;")
-        else:
-            sql("BEGIN;\n" + (ATOMIC / 'capture' / 'current.json').read_text() and '' + "COMMIT;")
-        out[name] = (cand, p0, p1)
-        if name == 'labels': assert state() == p0, 'label probe revert mismatch'
-        else: break
-    # checklist probe cannot be reverted by DROP (would delete function); rebuild composition is costly, so build PRE from p0 captured before.
-    cand_l, pre_l, post_l = out['labels']; cand_c, pre_c_raw, post_c_raw = out['checklist']
-    # Restore exact pre bodies for checklist from the restored DB bodies captured in pre_c_raw: reinstall originals via pg_get_functiondef saved earlier.
-    sql(ORIG_CK)
-    assert state() == pre_c_raw, 'checklist probe revert mismatch'
-    assert pre_c_raw == pre_l
+    # Probe-apply each candidate to derive exact POST, then revert exactly to PRE.
+    cand_l = (H / 'candidate.sql.review').read_text(); cand_c = (CK / 'candidate.sql.review').read_text()
+    pre_l = state()
+    sql("BEGIN;\n" + cand_l + "\nCOMMIT;"); post_l = state()
+    sql("BEGIN; DROP POLICY produto_etiquetas_tenant_root_r ON public.produto_etiquetas; DROP FUNCTION platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid);"
+        "GRANT TRUNCATE ON public.produto_etiquetas TO anon, authenticated; COMMIT;")
+    assert state() == pre_l, 'label probe revert mismatch'
+    pre_c_raw = pre_l
+    sql("BEGIN;\n" + cand_c + "\nCOMMIT;"); post_c_raw = state()
+    sql(ORIG_CK); assert state() == pre_l, 'checklist probe revert mismatch (original bodies from LIVE capture)'
     # Exact expected deltas.
     assert [p for p in post_l['policies'] if p[1] != 'produto_etiquetas_tenant_root_r'] == pre_l['policies'] and post_l['fns'].keys() - pre_l['fns'].keys() == {'platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid)'}
     assert post_l['rel']['produto_etiquetas'][2] == pre_l['rel']['produto_etiquetas'][2].replace('anon=arwdDxtm', 'anon=arwdxtm').replace('authenticated=arwdDxtm', 'authenticated=arwdxtm'), post_l['rel']['produto_etiquetas']
@@ -181,9 +167,6 @@ def main():
     assert changed == {'rpc_atualizar_checklist_entrega(uuid,boolean,text)', 'rpc_registrar_ocorrencia_entrega(uuid,jsonb)'}, changed
     assert all(pre_c_raw['fns'][k].split('|')[1] == post_c_raw['fns'][k].split('|')[1] for k in changed) and {k: v for k, v in post_c_raw.items() if k != 'fns'} == {k: v for k, v in pre_c_raw.items() if k != 'fns'}
     ok('checklist POST = PRE with only the two writer bodies changed; ACLs, policies, triggers unchanged')
-    pkgs = []
-    for d, cand, p0, p1, prefix in ((H, cand_l, pre_l, post_l, 'LABEL_TENANT'), (CK, cand_c, pre_c_raw, None, 'CK_AUTHZ')):
-        pkgs.append((d, cand, p0, p1, prefix))
     # Label installer (on composition). POST of checklist is computed on top of labels POST.
     preL, postL = check_sql(pre_l, 'LABEL_TENANT_PRE_DRIFT'), check_sql(post_l, 'LABEL_TENANT_POST_DRIFT')
     instL = "BEGIN;\nSET LOCAL lock_timeout='3s';\nSET LOCAL statement_timeout='30s';\n" + preL + cand_l + "\n" + postL + "COMMIT;\n"
