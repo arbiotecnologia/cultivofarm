@@ -68,7 +68,9 @@ Execução final 01:28:06 UTC, 73,82s Vitest, zero skip. `full-gate-final.json`,
 
 Primeira rodada ampla: 314PASS/19FAIL; 5 expectativas antigas pressupunham writers agora fechados, 14 falhas de transporte PDF porque o gate sobrescrevia fetchMock registrado só ao importar. Atualizadas apenas expectativas dos contratos fechados e reaplicado fetch totalmente simulado em beforeEach, sem mudar Edge. Logs preservados. Segunda: 343PASS/1FAIL reproduziu defeito de apresentação em consulta inativa (zero falso); corrigido por `ready`/unavailable e limpeza scoped. Terceira: 344PASS; gate final expandido593PASS. Não somar reexecuções.
 
-Build automático final observado **build OK 01:29:21 UTC**. Typecheck manual separado não executado: a política do harness proíbe builds/typechecks manuais do projeto; CLI `tsgo` local indisponível. Não inventar resultado de typecheck. Testes de integração aqui significam código real com transporte simulado, não JWT/RLS/Storage hosted nem ensaio SQL completo.
+Build automático final observado **build OK 01:30:32 UTC**. Typecheck manual separado não executado: a política do harness proíbe builds/typechecks manuais do projeto; CLI `tsgo` local indisponível. Não inventar resultado de typecheck. Testes de integração aqui significam código real com transporte simulado, não JWT/RLS/Storage hosted nem ensaio SQL completo.
+
+Diff registrado contra a base: `runtime-test.diff`, `runtime-test-stat.txt` e `runtime-test-names.txt`; 20 arquivos sob src (10 runtime, 9 testes e 1 AGENTS), 167 inserções/379 remoções. Testes antigos de writers fechados foram substituídos por contratos zero-dispatch; cópias históricas estão nos `*.pre-containment.tsx.txt`, não são testes executáveis de writer reaberto. Hashes SHA256 em `SHA256SUMS`. Typecheck separado e browser autenticado não foram executados; os testes centrais exercitam as telas reais com transporte completamente simulado.
 
 ## Proposta atômica separada e limites concretos
 
