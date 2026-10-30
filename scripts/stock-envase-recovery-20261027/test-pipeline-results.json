@@ -55,12 +55,12 @@
     "test": "canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento",
     "status": "PASS",
     "ids": {
-      "os": "b25544cb-727d-411e-b582-d71ed5013fba",
-      "lote": "ccf1c4e6-6e42-451e-841a-b2aeaab7846f",
-      "entrega": "62d1c4d7-7af6-4d2f-8eca-0b8df3874e74",
-      "estoque": "db7f9ffd-a6ca-4643-a366-cb53008ad371",
-      "programacao": "da0e3243-3cff-4972-bc64-58dbeaef8a88",
-      "request_key": "fixture-b25544cb-727d-411e-b582-d71ed5013fba"
+      "os": "c3054dd5-6938-408b-a874-e8a797bac7c4",
+      "lote": "d1009f24-31c8-49e0-8837-f61f8aff0df7",
+      "entrega": "d024c63f-78b1-4025-8852-5ddccb1607e8",
+      "estoque": "819fc0db-57e0-4f3c-8d3b-294de0ad7f29",
+      "programacao": "a38ac712-3b89-4765-8045-36e3cb3a077e",
+      "request_key": "fixture-c3054dd5-6938-408b-a874-e8a797bac7c4"
     }
   },
   {
@@ -85,8 +85,8 @@
     "status": "PASS"
   },
   {
-    "test": "cancel=true: DISCOVERY (unpinned)",
-    "status": "FAIL",
+    "test": "cancel=true: delivery cancelada, exact ledger and stock state",
+    "status": "PASS",
     "ledger": "cancelamento_reserva|1|1|1|1|0|reservado|disponivel|neutro;entrada|1|0|1|0|1|reservado|entrada;estorno_expedicao|1|1|1|1|1|expedido|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida",
     "stock": "disponivel|1|0"
   },
@@ -120,8 +120,8 @@
     "status": "PASS"
   },
   {
-    "test": "cancel=false retained: DISCOVERY (unpinned)",
-    "status": "FAIL",
+    "test": "cancel=false retained: delivery separado, exact ledger and stock state",
+    "status": "PASS",
     "ledger": "entrada|1|0|1|0|1|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida",
     "stock": "expedido|1|1|t"
   },
@@ -130,8 +130,8 @@
     "status": "PASS"
   },
   {
-    "test": "cancel=false then canonical cancel: DISCOVERY (unpinned)",
-    "status": "FAIL",
+    "test": "cancel=false then canonical cancel: delivery cancelada, exact ledger and stock state",
+    "status": "PASS",
     "ledger": "cancelamento_reserva|1|1|1|1|0|reservado|disponivel|neutro;entrada|1|0|1|0|1|reservado|entrada;estorno_expedicao|1|1|1|1|1|expedido|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida",
     "stock": "disponivel|1|0"
   },

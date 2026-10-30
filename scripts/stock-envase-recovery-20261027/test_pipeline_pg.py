@@ -46,10 +46,10 @@ LEDGER_SQL = ("SELECT string_agg(concat_ws('|',m.acao,m.quantidade,m.saldo_anter
               "ORDER BY m.acao,m.saldo_anterior,m.reservado_anterior) FROM public.estoque_movimentacoes m WHERE m.lote_id='{lote}';")
 STOCK_SQL = ("SELECT string_agg(concat_ws('|',e.status,e.quantidade,coalesce(e.quantidade_reservada,0),(e.reservado_para_os_id='{os}')),';' ORDER BY e.status,e.quantidade) "
              "FROM public.estoque_produto e WHERE e.lote_id='{lote}';")
-LEDGER_CANCELLED = os.environ.get('PIN_LEDGER_CANCELLED', '')
-STOCK_CANCELLED = os.environ.get('PIN_STOCK_CANCELLED', '')
-LEDGER_RETAINED = os.environ.get('PIN_LEDGER_RETAINED', '')
-STOCK_RETAINED = os.environ.get('PIN_STOCK_RETAINED', '')
+LEDGER_CANCELLED = 'cancelamento_reserva|1|1|1|1|0|reservado|disponivel|neutro;entrada|1|0|1|0|1|reservado|entrada;estorno_expedicao|1|1|1|1|1|expedido|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida'
+STOCK_CANCELLED = 'disponivel|1|0'
+LEDGER_RETAINED = 'entrada|1|0|1|0|1|reservado|entrada;expedicao|1|1|1|1|1|reservado|expedido|saida'
+STOCK_RETAINED = 'expedido|1|1|t'
 RETAINED_STATUS = 'separado'
 def check_stock(ids, ent_status, ledger_pin, stock_pin, label):
     st = last(f"SELECT status::text FROM public.entregas WHERE id='{ids['entrega']}';")
