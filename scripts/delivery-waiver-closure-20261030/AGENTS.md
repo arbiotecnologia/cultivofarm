@@ -1,0 +1,3 @@
+- Preparation only: never apply hosted, publish or grant from this package; main auditor reviews and applies.
+- Closure = REVOKE client EXECUTE on rpc_dispensar_assinatura_entrega only; no body change. Rollback is a no-op, never regrant.
+- UI keeps waiver unavailable until a separately reviewed canonical waiver contract exists.
