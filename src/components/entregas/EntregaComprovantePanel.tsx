@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 import { DELIVERY_RECEIPT_BUCKET, deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
+import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -295,6 +296,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     });
 
   const confirmarRecebimento = () => {
+    try { requireDeliveryOperationContract(); } catch {
+      toast({ title: "Recebimento indisponível", description: DELIVERY_OPERATION_BLOCK, variant: "destructive" });
+      return;
+    }
     // Payload capturado no início: uma edição posterior não altera o envio.
     const ressalvasEnvio = ressalvas || null;
     return executarAcaoComprovacao({
@@ -315,6 +320,10 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   };
 
   const dispensarAssinatura = () => {
+    try { requireDeliveryOperationContract(); } catch {
+      toast({ title: "Dispensa indisponível", description: DELIVERY_OPERATION_BLOCK, variant: "destructive" });
+      return;
+    }
     const motivoEnvio = motivoDispensa;
     return executarAcaoComprovacao({
       setPendente: setDispensando,

@@ -15,4 +15,4 @@
 - Partner order submit keeps idempotency attempts in a volatile per actor/tenant/roles/partner store written from mutationFn; identical payload reuses the key and changed payload after an ambiguous send stays blocked — prevents duplicate orders after lost responses/remounts.
 - Production publication uses a synchronous per-mount lock, canonical-only RPC, strict target/positive ACK validation and existing auth scope fences; failed or stale replies never invalidate caches and retries stay disabled — prevents duplicate dispatch and false success without granting operational authority.
 
-- Delivery callers may defer UI/cache effects with a captured scope fence while preserving existing reservation audit; canonical reservation UUIDs can identify split rows and must be carried into delivery creation — prevents stale effects and using the original unreserved row.
+- Legacy individual reservation, delivery creation/confirmation and reservation cancellation stay contained before dispatch; deferEffects, overrides and split UUID callbacks cannot open them. Reviewed independent batch reservation is unchanged — prevents delivery consumers bypassing pre-dispatch containment.

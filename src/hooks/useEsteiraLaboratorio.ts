@@ -438,6 +438,7 @@ export function useEsteiraLaboratorio() {
     options: { current?: () => boolean; deferEffects?: boolean; onReserved?: (id: string) => void } = {},
   ) => {
     const current = options.current ?? (() => true);
+    try { requireDeliveryOperationContract(); } catch { toast.error(DELIVERY_OPERATION_BLOCK); return false; }
     if (!current()) return false;
     const qtyToReserve = Number(reservaData.quantidade_reservada);
     if (!qtyToReserve || qtyToReserve <= 0) {
@@ -614,8 +615,7 @@ export function useEsteiraLaboratorio() {
     motivo: string,
   ) => {
     const motivoLimpo = (motivo ?? "").trim();
-    toast.error(DELIVERY_CANCELLATION_BLOCK);
-    return false;
+    try { requireDeliveryOperationContract("cancel"); } catch { toast.error(DELIVERY_CANCELLATION_BLOCK); return false; }
     if (!motivoLimpo) {
       toast.error("Informe o motivo do cancelamento da reserva.");
       return false;
@@ -702,8 +702,7 @@ export function useEsteiraLaboratorio() {
     recebedor: { nome: string; cargo?: string | null; documento?: string | null },
   ) => {
     const nome = recebedor?.nome?.trim() ?? "";
-    toast.error(DELIVERY_OPERATION_BLOCK);
-    return false;
+    try { requireDeliveryOperationContract(); } catch { toast.error(DELIVERY_OPERATION_BLOCK); return false; }
     if (!nome) {
       toast.error("Informe o nome de quem recebeu a entrega para confirmar.");
       return false;
