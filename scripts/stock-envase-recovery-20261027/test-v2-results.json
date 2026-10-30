@@ -68,8 +68,98 @@
     "expected": "DENIED"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 172, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 109, in main\n    fails('latest CQ reprovado keeps envase closed (existing criterion)', actor() + envase(O3, PP3, L3, [{'tipo_embalagem': 'frasco_1L', 'quantidade': 2}], 'env-reprov-1'), 'COCKPIT_ENVASE_EXIGE_CQ_APROVADO')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 21, in fails\n    e = pg.sql(s, False); assert code in e, label + ':' + e[-900:]; ok(label, expected=code); return e\n                                 ^^^^^^^^^\nAssertionError: latest CQ reprovado keeps envase closed (existing criterion):ERROR:  COCKPIT_LOTE_REPROVADO_BLOQUEIA_ENVASE\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 90 at RAISE\n\n"
+    "test": "latest CQ reprovado keeps envase closed (existing criterion)",
+    "status": "PASS",
+    "expected": "COCKPIT_ENVASE_EXIGE_CQ_APROVADO"
+  },
+  {
+    "test": "reprovado OS unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "NaN/invalid line rejected",
+    "status": "PASS",
+    "expected": "COCKPIT_QUANTIDADE_INVALIDA"
+  },
+  {
+    "test": "partial envase stores stock but keeps OS em_cq",
+    "status": "PASS"
+  },
+  {
+    "test": "envase completes and OS em_cq->envase->pronto_entrega via reviewed transition (producao role)",
+    "status": "PASS"
+  },
+  {
+    "test": "transition ticket consumed (none left)",
+    "status": "PASS"
+  },
+  {
+    "test": "lot/CQ rows untouched",
+    "status": "PASS"
+  },
+  {
+    "test": "envase replay: no duplicate envase/stock",
+    "status": "PASS"
+  },
+  {
+    "test": "reservation of ANOTHER OS is never consumed",
+    "status": "PASS",
+    "expected": "DELIVERY_RESERVATION_NOT_OWNED"
+  },
+  {
+    "test": "partial consumption of owned reservation refused (no artificial split)",
+    "status": "PASS",
+    "expected": "DELIVERY_RESERVATION_NOT_OWNED"
+  },
+  {
+    "test": "tenant B cannot deliver AR Bio reserved stock",
+    "status": "PASS",
+    "expected": "DELIVERY"
+  },
+  {
+    "test": "concurrent deliveries on the same owned reservation: exactly one commits (no oversell)",
+    "status": "PASS"
+  },
+  {
+    "test": "mixed owned+free group delivered once (2 deliveries)",
+    "status": "PASS"
+  },
+  {
+    "test": "both items expedited through the canonical motor",
+    "status": "PASS"
+  },
+  {
+    "test": "ledger: exactly two expedition movements",
+    "status": "PASS"
+  },
+  {
+    "test": "only the free item was reserved; owned reservation consumed without release/re-reserve",
+    "status": "PASS"
+  },
+  {
+    "test": "gate held: envase waits on the gate first and aborts with lock timeout, zero partial rows",
+    "status": "PASS"
+  },
+  {
+    "test": "inverse-order contender: PostgreSQL resolves (40P01/55P03) and no partial movement remains",
+    "status": "PASS",
+    "detail": "40P01"
+  },
+  {
+    "test": "zero financial/fiscal/communication rows across envase, transition, deliveries and contention",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback restores exact applied motor/batch/group/guard and never restores the purge escape",
+    "status": "PASS"
+  },
+  {
+    "test": "after rollback the envase transition is closed",
+    "status": "PASS",
+    "expected": "ENVASE_TRANSITION_CLOSED"
+  },
+  {
+    "test": "rollback preserves history",
+    "status": "PASS"
   }
 ]
