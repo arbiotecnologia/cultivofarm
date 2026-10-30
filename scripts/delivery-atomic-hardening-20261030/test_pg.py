@@ -6,6 +6,7 @@ import build_motor
 from restore import pg
 H=Path(__file__).resolve().parent
 checks=[]
+observed={}
 def u(n): return f'10000000-0000-4000-8000-{n:012d}'
 A,B,U,V,C,D,O,P,L,M,S,T,PROD,PLAN,VER,MOD,FEAT=[u(n) for n in range(1,18)]
 def sql(s): return pg.sql(s)
@@ -18,7 +19,10 @@ def deny(label,s,code):
 def actor(w=U): return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}';"
 def call(key,items=None,os=O,origin='manual'):
     if items is None: items=[{'item_id':S,'quantidade':2},{'item_id':T,'quantidade':2}]
-    return "SELECT public.rpc_cockpit_criar_entrega_v1('%s','%s','%s'::jsonb,'%s','{}'::jsonb);"%(os,origin,json.dumps(items),key)
+    if key not in observed:
+        observed[key]={'os':sql(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os}';"),'items':{x['item_id']:sql(f"SELECT updated_at FROM public.estoque_produto WHERE id='{x['item_id']}';") for x in items}}
+    items=[dict(x,observed_updated_at=observed[key]['items'].get(x['item_id'])) for x in items]
+    return "SELECT public.rpc_cockpit_criar_entrega_v1('%s','%s','%s'::jsonb,'%s','{}'::jsonb,'%s'::timestamptz);"%(os,origin,json.dumps(items),key,observed[key]['os'])
 def setup():
     # Loading a static manufactured baseline is not a test of upstream manufacture/provisioning.
     # All triggers are re-enabled unchanged before every tested writer.
@@ -63,7 +67,7 @@ def main():
     # Exact downstream tables: a transaction context blocks any writer, not the producers globally.
     tables=['accounts_receivable','accounts_receivable_installments','financial_receipts','financial_documents','fiscal_invoices','fiscal_invoice_items','fiscal_events','comunicacao_outbox','comunicacao_eventos','os_faturamento_base']
     setup()
-    sql('GRANT EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb),public.rpc_entrega_cancelar_v1(uuid,text) TO authenticated;')
+    sql('GRANT EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz),public.rpc_entrega_cancelar_v1(uuid,text) TO authenticated;')
     check('real h15 and SaaS resolve synthetic tenant',actor()+f"SELECT public.h15_actor_organization()='{A}'::uuid AND public.saas_has_feature('estoque_embalagens');")
     deny('tenant FSF cannot use AR Bio IDs',actor(V)+call('cross-tenant'),'DELIVERY_SCOPE_DENIED')
     deny('anonymous ACL denies',"SET ROLE anon;"+call('anonymous'),'permission denied')
@@ -84,7 +88,7 @@ def main():
     check('all negative paths no deliveries receipts',"SELECT (SELECT count(*) FROM public.entregas)=0 AND (SELECT count(*) FROM platform_private.delivery_requests_20261030)=0;")
     out=sql(actor()+call('first-group'));print('GROUP',out,flush=True)
     check('two-item group real reserve split delivery expedition',"SELECT (SELECT count(*) FROM public.entregas)=2 AND (SELECT count(*) FROM platform_private.delivery_requests_20261030)=1 AND (SELECT count(*) FROM public.estoque_movimentacoes WHERE acao='expedicao')=2;")
-    check('exact replay returns stored group',actor()+call('first-group').replace('SELECT public.','SELECT (public.').replace("'{}'::jsonb);","'{}'::jsonb)->>'replay')::boolean;"))
+    check('exact replay returns stored group',actor()+call('first-group').replace('SELECT public.','SELECT (public.').replace(');',")->>'replay')::boolean;"))
     check('replay creates no duplicate',"SELECT count(*)=2 FROM public.entregas;")
     deny('changed payload replay conflict',actor()+call('first-group',[{'item_id':S,'quantidade':3},{'item_id':T,'quantidade':2}]),'DELIVERY_REPLAY_CONFLICT')
     ent=sql('SELECT id FROM public.entregas ORDER BY id LIMIT 1;')
@@ -102,7 +106,7 @@ def main():
     check('private context removed on success',"SELECT count(*)=0 FROM platform_private.delivery_context_20261030;")
     # Real two-connection waits, not timers pretending to establish concurrency.
     for lockkind in ['advisory','row']:
-        locksql=("SELECT pg_advisory_xact_lock(hashtextextended('delivery_request:first-group',0));" if lockkind=='advisory' else f"SELECT 1 FROM public.ordens_servico WHERE id='{O}' FOR UPDATE;")
+        locksql=(f"SELECT pg_advisory_xact_lock(hashtextextended('delivery_request:'||jsonb_build_array('{A}'::uuid,'{U}'::uuid,'group','first-group')::text,0));" if lockkind=='advisory' else f"SELECT 1 FROM public.ordens_servico WHERE id='{O}' FOR UPDATE;")
         holder=session('BEGIN;'+locksql);time.sleep(.1)
         worker=session(actor()+call('first-group'));wait()
         sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{U}';")
