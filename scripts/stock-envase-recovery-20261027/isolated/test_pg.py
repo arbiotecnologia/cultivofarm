@@ -29,7 +29,7 @@ def run():
     sources=[]
     for p in installs:
         sources.append({'file':str(p.relative_to(S.parent)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}); sql(p.read_text())
-    for p in [V2/'candidate-v2.sql.review',H/'assemble.py',H/'test_pg.py']:
+    for p in [V2/'candidate-v2.sql.review']+sorted(H.glob('*.py'))+ [H/'entry.sql.review']:
         sources.append({'file':str(p.relative_to(S.parent)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
     (H/'sources.json').write_text(json.dumps(sources,indent=2)+'\n'); ok('reported applied composition restored in order; all installer PRE/POST pass')
     T.setup_v2()
@@ -56,7 +56,7 @@ def run():
     reject('rerun refuses changed exact state',inst,'P0001')
     def cap(): return f"SELECT public.rpc_envase_capability_v1('{T.L2}','{T.O2}','{T.PP2}','manual');"
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is False; ok('capability unavailable while canonical writer ACL closed')
-    reject('release artifact remains explicitly NO-GO',(H/'release.sql.review').read_text(),'42501')
+    reject('unqualified release stub denies before matrix generates reviewed release',(H/'release.sql.review').read_text(),'42501')
     sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;') # disposable only
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is True; ok('local-only grant permits in-scope production actor capability')
     z=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;")
