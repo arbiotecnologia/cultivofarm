@@ -1,0 +1,247 @@
+CREATE OR REPLACE FUNCTION public.rpc_cockpit_registrar_envase_v1(p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text DEFAULT NULL::text, p_idempotency_key text DEFAULT NULL::text, p_permitir_parcial boolean DEFAULT false, p_motivo_parcial text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions', 'pg_temp'
+ SET lock_timeout TO '3s'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_ctx record;
+  v_scope text;
+  v_hash text; v_full_hash text; v_org uuid;
+  v_row record;
+  v_produzido_ml numeric := 0; v_envasado_ml numeric := 0; v_saldo_ml numeric := 0;
+  v_total_ml numeric := 0; v_demanda_ml numeric := 0; v_reservado_ml numeric := 0;
+  v_pendente_ml numeric := 0;
+  v_linha jsonb; v_tipo text; v_qtd integer; v_unit_ml numeric;
+  v_reservadas integer; v_livres integer;
+  v_envase_id uuid; v_estoque_id uuid;
+  v_produto_id uuid; v_micro_id uuid; v_cq_ok boolean; v_lote_status text;
+  v_lote_prog uuid;
+  v_env_ct int := 0; v_est_ct int := 0; v_res_ml numeric := 0; v_liv_ml numeric := 0;
+  v_avanco jsonb; v_result jsonb; v_estado text;
+BEGIN
+  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
+  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+  PERFORM public.fn_estoque_ctx_open(jsonb_build_object('acao','entrada','origem','rpc_cockpit_registrar_envase_v1','usuario_id',auth.uid()::text));
+  v_origem := public.fn_cockpit_assert_operador_origem(p_origem);
+
+  IF p_lote_id IS NULL OR p_os_id IS NULL OR p_programacao_id IS NULL THEN
+    RAISE EXCEPTION 'COCKPIT_ENVASE_PARAMS_INVALIDOS';
+  END IF;
+  IF p_validade IS NULL THEN RAISE EXCEPTION 'COCKPIT_ENVASE_VALIDADE_OBRIGATORIA'; END IF;
+
+  IF p_linhas IS NULL OR jsonb_typeof(p_linhas) <> 'array' OR jsonb_array_length(p_linhas) = 0 THEN
+    RAISE EXCEPTION 'COCKPIT_ENVASE_SEM_LINHAS';
+  END IF;
+
+  IF p_idempotency_key IS NULL OR length(btrim(p_idempotency_key)) < 8 OR length(p_idempotency_key)>200 THEN RAISE EXCEPTION 'ENVASE_KEY_REQUIRED' USING ERRCODE='22023'; END IF;
+  -- idempotência: LOCK primeiro, leitura definitiva depois (claim atômico)
+  IF nullif(btrim(coalesce(p_idempotency_key, '')), '') IS NOT NULL THEN
+    v_scope := 'registrar_envase_v1:' || v_uid::text || ':' || btrim(p_idempotency_key);
+    v_hash  := encode(extensions.digest(jsonb_build_object(
+                 'lote', p_lote_id, 'os', p_os_id, 'origem', v_origem,
+                 'prog', p_programacao_id, 'linhas', p_linhas,
+                 'validade', p_validade, 'parcial', p_permitir_parcial)::text, 'sha256'), 'hex');
+    v_full_hash:=encode(extensions.digest(jsonb_build_object('args',jsonb_build_array(p_lote_id,p_os_id,v_origem,p_programacao_id,p_linhas,p_validade,p_operador,p_permitir_parcial,p_motivo_parcial),'actor',v_uid,'org',platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem))::text,'sha256'),'hex');
+    PERFORM pg_advisory_xact_lock(hashtext(v_scope));
+  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+
+    SELECT * INTO v_row FROM public.cockpit_operacao_idempotencia
+     WHERE idempotency_key = v_scope FOR UPDATE;
+  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+
+    IF v_row.idempotency_key IS NOT NULL THEN
+      IF coalesce(v_row.payload_hash, '') <> v_hash THEN
+        RAISE EXCEPTION 'COCKPIT_IDEMPOTENCY_CONFLICT';
+      END IF;
+      IF v_row.resultado IS NOT NULL THEN
+        IF v_row.resultado->>'envase_release_fingerprint' IS NULL THEN RAISE EXCEPTION 'ENVASE_LEGACY_RECEIPT_REVIEW_REQUIRED' USING ERRCODE='PT409'; END IF;
+        IF v_row.resultado->>'envase_release_fingerprint' IS DISTINCT FROM v_full_hash THEN RAISE EXCEPTION 'COCKPIT_IDEMPOTENCY_CONFLICT' USING ERRCODE='PT409'; END IF;
+        PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+        RETURN (v_row.resultado-'envase_release_fingerprint') || jsonb_build_object('replay', true);
+      END IF;
+      RAISE EXCEPTION 'COCKPIT_IDEMPOTENCY_IN_PROGRESS';
+    END IF;
+
+    INSERT INTO public.cockpit_operacao_idempotencia
+      (idempotency_key, operacao, usuario_id, payload_hash, alvo_id, status)
+    VALUES (v_scope, 'registrar_envase_v1', v_uid, v_hash, p_lote_id, 'in_progress');
+  END IF;
+
+  IF p_validade <= current_date THEN RAISE EXCEPTION 'COCKPIT_ENVASE_VALIDADE_INVALIDA'; END IF;
+  v_org:=platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+  -- Lock OS before programacao/lote; all fresh states checked after wait.
+  PERFORM 1 FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org FOR UPDATE;
+  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+  IF NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org AND status::text IN ('em_cq','envase')) THEN RAISE EXCEPTION 'ENVASE_FRESH_STATE_DENIED' USING ERRCODE='PT409'; END IF;
+  -- contexto canônico e coerência de vínculos
+  SELECT * INTO v_ctx FROM public.fn_cockpit_ctx_programacao(p_programacao_id);
+  IF v_ctx.os_id <> p_os_id THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_PROGRAMACAO_OS'; END IF;
+  IF v_ctx.origem <> v_origem THEN RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ORIGEM'; END IF;
+  IF v_ctx.status_os IN ('cancelada','finalizada') THEN RAISE EXCEPTION 'COCKPIT_OS_ESTADO_TERMINAL'; END IF;
+  PERFORM public.fn_cockpit_assert_b2b_liberado(v_ctx.partner_order_id);
+
+  -- lock determinístico: programação e lote
+  PERFORM 1 FROM public.programacao_producao WHERE id = p_programacao_id FOR UPDATE;
+  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+
+  SELECT coalesce(volume_produzido, 0), status::text, produto_id, microrganismo_id, programacao_id
+    INTO v_produzido_ml, v_lote_status, v_produto_id, v_micro_id, v_lote_prog
+    FROM public.lotes WHERE id = p_lote_id FOR UPDATE;
+  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+
+  IF v_lote_status IS NULL THEN RAISE EXCEPTION 'COCKPIT_LOTE_NAO_ENCONTRADO'; END IF;
+  IF v_lote_prog IS DISTINCT FROM p_programacao_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_LOTE_PROGRAMACAO';
+  END IF;
+  IF (v_produto_id IS DISTINCT FROM v_ctx.produto_id)
+     AND (v_micro_id IS DISTINCT FROM v_ctx.microrganismo_id) THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_ITEM';
+  END IF;
+  IF v_lote_status = 'reprovado' THEN RAISE EXCEPTION 'COCKPIT_LOTE_REPROVADO_BLOQUEIA_ENVASE'; END IF;
+  IF v_produzido_ml <= 0 OR v_produzido_ml::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'COCKPIT_LOTE_SEM_VOLUME_PRODUZIDO'; END IF;
+
+  SELECT (resultado::text = 'aprovado') INTO v_cq_ok
+    FROM public.controle_qualidade WHERE lote_id = p_lote_id
+   ORDER BY created_at DESC, seq DESC LIMIT 1;
+  IF coalesce(v_cq_ok, false) IS NOT TRUE THEN RAISE EXCEPTION 'COCKPIT_ENVASE_EXIGE_CQ_APROVADO'; END IF;
+
+  SELECT coalesce(sum(coalesce(volume_por_unidade,0) * coalesce(quantidade,0)), 0)
+    INTO v_envasado_ml FROM public.envase WHERE lote_id = p_lote_id;
+  v_saldo_ml := v_produzido_ml - v_envasado_ml;
+
+  v_demanda_ml := coalesce(v_ctx.volume_necessario, 0);
+  SELECT coalesce(sum(coalesce(volume_total,0)), 0) * 1000 INTO v_reservado_ml
+    FROM public.estoque_produto
+   WHERE reservado_para_os_id = p_os_id
+     AND coalesce(reservado_para_os_tipo, v_origem) = v_origem
+     AND status <> 'estornado'::public.status_estoque;
+  v_pendente_ml := greatest(0, v_demanda_ml - v_reservado_ml);
+
+  FOR v_linha IN SELECT * FROM jsonb_array_elements(p_linhas) LOOP
+    v_tipo := v_linha->>'tipo_embalagem';
+    IF jsonb_typeof(v_linha)<>'object' OR NOT (v_linha ? 'quantidade') OR coalesce(v_linha->>'quantidade','') !~ '^[0-9]+$' THEN RAISE EXCEPTION 'COCKPIT_QUANTIDADE_INVALIDA'; END IF;
+    v_qtd := (v_linha->>'quantidade')::int;
+    v_unit_ml := CASE v_tipo WHEN 'frasco_1L' THEN 1000 WHEN 'bombona_5L' THEN 5000
+                             WHEN 'bombona_20L' THEN 20000 ELSE NULL END;
+    IF v_unit_ml IS NULL THEN RAISE EXCEPTION 'COCKPIT_EMBALAGEM_INVALIDA'; END IF;
+    IF v_qtd <= 0 THEN RAISE EXCEPTION 'COCKPIT_QUANTIDADE_INVALIDA'; END IF;
+    v_total_ml := v_total_ml + (v_unit_ml * v_qtd);
+  END LOOP;
+
+  IF v_total_ml > v_saldo_ml THEN RAISE EXCEPTION 'COCKPIT_ENVASE_EXCEDE_PRODUZIDO'; END IF;
+
+  FOR v_linha IN SELECT * FROM jsonb_array_elements(p_linhas) LOOP
+    v_tipo := v_linha->>'tipo_embalagem';
+    v_qtd  := (v_linha->>'quantidade')::int;
+    v_unit_ml := CASE v_tipo WHEN 'frasco_1L' THEN 1000 WHEN 'bombona_5L' THEN 5000
+                             WHEN 'bombona_20L' THEN 20000 END;
+
+    PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+    INSERT INTO public.envase (lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador)
+    VALUES (p_lote_id, v_tipo::public.tipo_embalagem, v_unit_ml, v_qtd, current_date, nullif(p_operador, ''))
+    RETURNING id INTO v_envase_id;
+    v_env_ct := v_env_ct + 1;
+
+    v_reservadas := CASE WHEN v_pendente_ml > 0
+                         THEN least(v_qtd, floor(v_pendente_ml / v_unit_ml)::int) ELSE 0 END;
+    v_livres := v_qtd - v_reservadas;
+    v_pendente_ml := v_pendente_ml - (v_reservadas * v_unit_ml);
+
+    IF v_reservadas > 0 THEN
+      INSERT INTO public.estoque_produto (
+        produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,
+        validade, status, reservado_para_os_id, reservado_para_os_tipo,
+        reservado_para_cliente_id, reservado_para_partner_order_id,
+        quantidade_reservada, reservado_por, reservado_em
+      ) VALUES (
+        v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,
+        (v_unit_ml * v_reservadas) / 1000.0, p_validade, 'reservado'::public.status_estoque,
+        p_os_id, v_origem, v_ctx.cliente_id, v_ctx.partner_order_id,
+        v_reservadas, v_uid, now()
+      ) RETURNING id INTO v_estoque_id;
+      v_est_ct := v_est_ct + 1;
+      v_res_ml := v_res_ml + (v_unit_ml * v_reservadas);
+
+    END IF;
+
+    IF v_livres > 0 THEN
+      INSERT INTO public.estoque_produto (
+        produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total, validade, status
+      ) VALUES (
+        v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_livres,
+        (v_unit_ml * v_livres) / 1000.0, p_validade, 'disponivel'::public.status_estoque
+      ) RETURNING id INTO v_estoque_id;
+      v_est_ct := v_est_ct + 1;
+      v_liv_ml := v_liv_ml + (v_unit_ml * v_livres);
+
+    END IF;
+  END LOOP;
+
+  -- regra canônica de encerramento
+  IF v_pendente_ml <= 0 THEN
+    v_estado := 'completed';
+  ELSIF p_permitir_parcial THEN
+    IF NOT public.fn_cockpit_is_gestor() THEN RAISE EXCEPTION 'COCKPIT_ENVASE_PARCIAL_SEM_ALCADA'; END IF;
+    IF nullif(btrim(coalesce(p_motivo_parcial, '')), '') IS NULL THEN
+      RAISE EXCEPTION 'COCKPIT_ENVASE_PARCIAL_SEM_MOTIVO';
+    END IF;
+    v_estado := 'completed_override';
+  ELSE
+    v_estado := 'partial';
+  END IF;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, programacao_id, lote_id, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+  VALUES (p_os_id, v_origem, p_programacao_id, p_lote_id, 'em_envase',
+          CASE WHEN v_estado = 'partial' THEN 'em_envase' ELSE 'estoque_gerado' END,
+          'registrar_envase_v1', v_uid,
+          format('Envase transacional [%s]: %s registros, %s entradas, reservado %s ml, livre %s ml, pendente %s ml. %s',
+                 v_estado, v_env_ct, v_est_ct, v_res_ml, v_liv_ml, v_pendente_ml,
+                 coalesce('Motivo: ' || nullif(btrim(coalesce(p_motivo_parcial, '')), ''), '')));
+
+  IF v_estado <> 'partial' THEN
+    v_avanco := platform_private.stock_envase_complete_v1(p_os_id, p_programacao_id, p_lote_id, v_estado);
+  ELSE
+    v_avanco := jsonb_build_object('success', false, 'motivo', 'COCKPIT_ENVASE_PARCIAL_NAO_AVANCA');
+  END IF;
+
+  v_result := jsonb_build_object(
+    'success', true, 'replay', false, 'estado', v_estado,
+    'envases', v_env_ct, 'entradas_estoque', v_est_ct,
+    'volume_reservado_ml', v_res_ml, 'volume_livre_ml', v_liv_ml,
+    'pendente_os_ml', v_pendente_ml, 'saldo_restante_ml', v_saldo_ml - v_total_ml,
+    'avanco', v_avanco,
+    'message', CASE WHEN v_estado = 'partial'
+                    THEN 'Envase registrado — necessidade da OS ainda não coberta.'
+                    ELSE 'Envase e estoque registrados em transação única.' END);
+
+  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
+  IF v_scope IS NOT NULL THEN
+    UPDATE public.cockpit_operacao_idempotencia
+       SET resultado = v_result||jsonb_build_object('envase_release_fingerprint',v_full_hash), status = 'done', updated_at = now()
+     WHERE idempotency_key = v_scope;
+  END IF;
+
+  RETURN v_result;
+END;
+$function$;
+CREATE FUNCTION public.rpc_envase_capability_v1(p_lote uuid,p_os uuid,p_prog uuid,p_origem text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' AS $cap$
+DECLARE org uuid; allowed boolean:=false;
+BEGIN
+ IF auth.uid() IS NULL THEN RAISE EXCEPTION 'ENVASE_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ BEGIN
+  org:=platform_private.stock_envase_scope_v1(p_lote,p_prog,p_os,p_origem);
+  allowed:=has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE') AND EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os AND organization_id=org AND status::text IN ('em_cq','envase'))
+   AND EXISTS(SELECT 1 FROM cf_user_guards_v1.state WHERE singleton);
+ EXCEPTION WHEN insufficient_privilege THEN allowed:=false; END;
+ RETURN jsonb_build_object('capability','envase_isolated_v1','available',allowed,'actor_id',auth.uid(),'organization_id',org,'lote_id',p_lote,'os_id',p_os,'programacao_id',p_prog);
+END $cap$;
+REVOKE ALL ON FUNCTION public.rpc_envase_capability_v1(uuid,uuid,uuid,text) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_envase_capability_v1(uuid,uuid,uuid,text) TO authenticated;
