@@ -1,8 +1,9 @@
 ## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
-- [ ] Inventariar contratos/consumidores atuais e reconciliar aplicações relatadas 91cec22/2faf356, sem hosted/sessões/segredos.
-- [ ] Preparar e testar primeiro delta revisável de envase isolado com PRE/POST determinísticos, rollback deny-only e invariantes; não conceder legado por simples grant.
-- [ ] Ajustar somente disponibilidade/fences necessários do consumidor canônico; preservar provas e histórico cancelado.
-- [ ] Relatar escopo liberável e blockers das operações posteriores, fontes/diff/hashes/resultados brutos; revisão/implantação exclusivamente pelo auditor.
+- [x] Inventariar contratos/consumidores atuais e reconciliar aplicações relatadas 91cec22/2faf356, sem hosted/sessões/segredos; composição local oito instaladores PRE/POST.
+- [x] Preparar/testar delta de envase isolado: 29PG PASS, PRE/POST determinísticos, rollback deny-only, 3 testes de ordenação; release deliberadamente NO-GO, sem grant do writer.
+- [x] Disponibilidade exata e fences authz/session/trava no consumidor; botões continuam fechados, provas/histórico cancelado preservados;457Vitest PASS/28arquivos.
+- [x] Relatório/fontes/SQL/hash/resultados brutos em scripts/stock-envase-recovery-20261027/isolated; nenhum novo writer liberável.
+- [ ] Liberação envase bloqueada: completar matrizes de locks/revogação/raízes/partial/override/recibos legados/sentinelas financeiros e prova canônica de entradas indiretas; não avançar operações posteriores antes disso.
 - [ ] Homologação JWT/Storage real e implantação aguardam auditor; fiscal/financeiro/automações, confirmação física, etiquetas e dispensa não liberados nesta execução.
 
 - [x] Complemento financeiro 01:31: formulário/agenda/catálogos e promessa de persistência removidos; consulta autorizada com loading/vazio/erro/título/fiscal; 23 testes focados e595/595 gate em42arquivos PASS, zero writes programáticos/escopo, build OK; docs/auditorias/financeiro-consulta-20261030.md. Sem publicar/banco.

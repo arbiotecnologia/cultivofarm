@@ -7,7 +7,8 @@ Base local inicial: `2faf35638` (ancestral de `894ae9db6`). Aplicações `91cec2
 - Corrige `FOUND` sobrescrito entre lock do singleton e validação; ausência do gate gera PT503 antes de escrita.
 - Chave obrigatória; fingerprint suplementar inclui operador, motivo, ator, empresa e argumentos completos. Recibos históricos não são alterados: os que não têm fingerprint completo recusam repetição com `ENVASE_LEGACY_RECEIPT_REVIEW_REQUIRED`, conservando o resultado anterior.
 - Replay reautoriza e não exige validade futura; escrita nova exige validade e OS `em_cq/envase` observada após lock. Nova chave em OS pronta não produz envase adicional.
-- Capability exata vincula ator/empresa/lote/OS/programação e só informa disponível quando ACL da assinatura canônica está aberta. Não concede autoridade; corpo reautoriza.
+- Capability exata vincula ator/empresa/lote/OS/programação e só informa disponível quando ACL da assinatura canônica está aberta. Disponibilidade do endpoint inclui reconciliação após OS pronta; status de escrita nova permanece exclusivo do writer sob lock. Não concede autoridade; corpo reautoriza.
+- Leitura definitiva do contexto/demanda movida para depois dos locks OS→programação→lote. Fonte v2 validada por SHA256 exato e extração com cardinalidade um.
 - Cliente reutiliza tentativa incerta congelada; adiciona epoch/readiness/roles/session fence compartilhado e trava síncrona durante preflight+dispatch. Nenhuma capability ausente/errada abre o writer.
 - Botões de registro/complemento permanecem desabilitados nesta preparação. Provas e histórico cancelado ficam intactos.
 
@@ -18,11 +19,12 @@ Estado completo dos corpos de funções public/private, ACL, owner/config, colun
 `release.sql.review` **recusa aplicação com 42501**; não contém GRANT do writer. `install` mantém a ACL fechada. Rollback revoga a assinatura canônica, capability retorna indisponível e preserva corpos endurecidos/histórico/grupo/cancelamento/prova.
 
 ## Testes desta execução (não resultados históricos)
-- PostgreSQL17 descartável em socket `/tmp`: **28 PASS / 0 FAIL**. Restaurador de metadata real sem objetos pendentes; oito instaladores com PRE/POST, ordem em `sources.json`. Fixtures upstream sintéticas em replica pelo harness existente; writers testados com triggers ligados e ROLE authenticated/claims sintéticas, nunca service_role como ator.
+- PostgreSQL17 descartável em socket `/tmp`: **29 PASS / 0 FAIL**. Restaurador de metadata real sem objetos pendentes; oito instaladores com PRE/POST, ordem em `sources.json`. Fixtures upstream sintéticas em replica pelo harness existente; writers testados com triggers ligados e ROLE authenticated/claims sintéticas, nunca service_role como ator.
 - Instalação/POST forçado/rerun/drift; gate ausente; chave ausente; produção AR positiva; FSF estrangeira 42501; replay/operador/nova chave/status; ator inativo; falha ledger com rollback; concorrência duas conexões uma gravação/um replay; **worker observado em wait_event_type=Lock** no lote antes do commit da inativação, negação 42501 sem envase; gerar/assinar/anexar/replay preservados na composição.
 - Financeiro/fiscal/outbox: comparações de conteúdo de linhas, não apenas counts, antes/depois de envase. As dez tabelas estão vazias na fixture: **não prova proteção de UPDATE de sentinelas existentes**, lacuna explícita para release.
 - Vitest entregas+envase: **457 PASS / 28 arquivos**, transporte simulado; recorte novo disponibilidade/epoch/cancelada **64 PASS**. Avisos de descrição de dialogs/React Router presentes, não erros de teste.
 - Três falhas antigas em `stock-caller-compatibility.test.ts` foram reproduzidas pelo investigador: expectativas de expedição/estorno/implementação antiga incompatíveis com contenção atual. Não se removeu contenção nem se declarou suíte global verde.
+- Ordenação determinística: três testes unittest PASS. Build automático observado OK; nenhum build/typecheck manual. Revisão independente identificou capability bloqueando replay e contexto antes do lock: corrigidos e PG repetido. Limites adicionais da revisão permanecem listados abaixo.
 
 Comandos:
 ```text
@@ -38,5 +40,6 @@ bun run test -- src/test/entregas src/test/envase
 4. Financeiro/fiscal/outbox com sentinelas existentes, rollback de item N/timeout/POST, matrizes AR/FSF própria/mista/null/inativa e pós-validade real precisam ampliação. PASS atual não certifica estes cenários.
 5. Vínculos de etiquetas e RPC pós-envase `rpc_criar_embalagens_pos_envase` exigem contratos independentes de lineage/tickets/ledger. Confirmação física permanece contida; não habilitar por envase. Dispensa NÃO expandida.
 6. JWT/RLS/Storage/browser reais, preflight LIVE e implantação ficam com auditor após revisão. Nesta rodada nenhum fluxo autenticado produtivo foi exercitado; frontend verificado por testes montados, não navegador autenticado.
+7. Recibos legados sem fingerprint completo, motivo divergente, replay pós-validade, partial/override e demanda alterada durante espera exigem testes adicionais. Concorrência mesma chave prova um envase e replay, não um inventário exaustivo de cada lançamento. A mudança de demanda está corrigida por ordem do código, não certificada por corrida dedicada.
 
 **Escopo liberável agora: nenhum novo writer.** Escopo implementado revisável: correções de envase e bloqueios/fences; group/cancel já relatados liberados preservados. Financeiro/fiscal/automações/cobranças permanecem fechados.
