@@ -76,7 +76,7 @@ def fixtures():
     INSERT INTO public.user_roles(user_id,role) VALUES('{FF}','financeiro'),('{CL}','cliente_produtor'),('{IN}','administrador');
     INSERT INTO public.user_clientes(user_id,cliente_id,is_active) VALUES('{CL}','{C}',true);
     INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{LB}','{B}','{T.PROD}','aprovado','LOCAL-LB',1000),('{LN}',NULL,'{T.PROD}','aprovado','LOCAL-LN',1000);
-    INSERT INTO public.envase(id,lote_id,organization_id,tipo_embalagem,volume_por_unidade,quantidade) VALUES('{VA}','{L}','{A}','frasco_1L',1,1),('{VB}','{LB}','{B}','frasco_1L',1,1);
+    INSERT INTO public.envase(id,lote_id,organization_id,tipo_embalagem,volume_por_unidade,quantidade) VALUES('{VA}','{L}','{A}','frasco_1L',1000,1),('{VB}','{LB}','{B}','frasco_1L',1000,1);
     INSERT INTO public.estoque_embalagens(id,codigo_embalagem,lote_id,volume) VALUES('{MA}','LOCAL-MA','{L}',1),('{MB}','LOCAL-MB','{LB}',1);
     INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{SB}','{M}','{T.PROD}',1,1,'disponivel');
     INSERT INTO public.entregas(id,organization_id,ordem_servico_id,cliente_id,status,financial_status,assinatura_obrigatoria) VALUES
