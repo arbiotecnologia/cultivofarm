@@ -111,8 +111,103 @@
     "expected": "permission denied"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 96, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 70, in main\n    fails('ignored field rejected server-side', T.actor() + T.call('extra').replace(\"'{}'::jsonb\", \"'{\\\"destinatario_nome\\\":\\\"x\\\"}'::jsonb\"), 'DELIVERY_DATA_INVALID')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-group-capability-20261030/test_capability_pg.py\", line 19, in fails\n    e = pg.sql(s, False); assert code in e, label + ':' + e[-600:]; ok(label, expected=code)\n                                 ^^^^^^^^^\nAssertionError: ignored field rejected server-side:ERROR:  DELIVERY_REQUEST_INVALID\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 10 at RAISE\n\n"
+    "test": "ignored field rejected server-side",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "negatives created nothing",
+    "status": "PASS"
+  },
+  {
+    "test": "authenticated group: exact ACK envelope (frontend parser contract)",
+    "status": "PASS",
+    "ack": {
+      "itens": [
+        {
+          "entrega_id": "8f93340a-6a5d-46bc-9f7a-65ff3b7fd295",
+          "movimentacao_id": "298f19a5-4745-4b45-b594-8d987522251e",
+          "estoque_produto_id": "08013b19-f6cd-48b0-8eeb-120ebb8adaad"
+        },
+        {
+          "entrega_id": "34cbb3e6-6f01-4a6f-9041-8cdae477b505",
+          "movimentacao_id": "0fb2b9c5-60c5-4aa5-9d15-0c6e58d21fe5",
+          "estoque_produto_id": "fa7be3e4-3776-4fc9-a296-7ecafc5a0951"
+        }
+      ],
+      "os_id": "10000000-0000-4000-8000-000000000007",
+      "replay": false,
+      "success": true,
+      "organization_id": "10000000-0000-4000-8000-000000000001"
+    }
+  },
+  {
+    "test": "exact replay returns stored result",
+    "status": "PASS"
+  },
+  {
+    "test": "same key from FSF actor cannot read AR Bio receipt",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "two deliveries, two expeditions, one receipt",
+    "status": "PASS"
+  },
+  {
+    "test": "direct client UPDATE on entregas denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "FSF cannot cancel AR Bio delivery",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "authenticated cancel: exact ACK envelope",
+    "status": "PASS",
+    "ack": {
+      "replay": false,
+      "success": true,
+      "entrega_id": "8f93340a-6a5d-46bc-9f7a-65ff3b7fd295",
+      "organization_id": "10000000-0000-4000-8000-000000000001",
+      "reserva_liberada": true,
+      "estoque_estornado": true
+    }
+  },
+  {
+    "test": "zero financial/fiscal/outbox effects",
+    "status": "PASS"
+  },
+  {
+    "test": "proof preflight ACL unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback COMMIT",
+    "status": "PASS"
+  },
+  {
+    "test": "after rollback group writer denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "after rollback cancel denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "after rollback capability closed for admin",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback preserves deliveries and receipts",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback rerun idempotent",
+    "status": "PASS"
   }
 ]
