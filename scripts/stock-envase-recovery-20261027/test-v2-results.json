@@ -4,11 +4,19 @@
     "status": "PASS"
   },
   {
+    "test": "generated candidate: free-text UF/CEP/phones (no strict regex), controls/length/date/time checks kept",
+    "status": "PASS"
+  },
+  {
     "test": "PRE pins equal restored post-release bodies (motor 44b150bf keeps split delta)",
     "status": "PASS"
   },
   {
     "test": "post-hash probe transaction rolled back (state unchanged)",
+    "status": "PASS"
+  },
+  {
+    "test": "generated installer embeds exactly the final candidate (no strict UF/CEP/phone branches)",
     "status": "PASS"
   },
   {
@@ -254,12 +262,7 @@
     "expected": "DELIVERY_DATA_INVALID"
   },
   {
-    "test": "metadata malformed endereco_uf=MGX rejected",
-    "status": "PASS",
-    "expected": "DELIVERY_DATA_INVALID"
-  },
-  {
-    "test": "metadata malformed endereco_cep=abc rejected",
+    "test": "metadata malformed endereco_cep=abc\n1 rejected",
     "status": "PASS",
     "expected": "DELIVERY_DATA_INVALID"
   },
@@ -270,11 +273,6 @@
   },
   {
     "test": "metadata malformed endereco_origem=gps rejected",
-    "status": "PASS",
-    "expected": "DELIVERY_DATA_INVALID"
-  },
-  {
-    "test": "metadata malformed motorista_telefone=ligar depois rejected",
     "status": "PASS",
     "expected": "DELIVERY_DATA_INVALID"
   },
@@ -328,6 +326,20 @@
   {
     "test": "conflict changed nothing",
     "status": "PASS"
+  },
+  {
+    "test": "frontend auto-filled metadata: server accepted and every field roundtripped verbatim",
+    "status": "PASS",
+    "fields": 23,
+    "cep": "38.600-000",
+    "tel": "(38) 3671-1234"
+  },
+  {
+    "test": "free-text formats metadata: server accepted and every field roundtripped verbatim",
+    "status": "PASS",
+    "fields": 23,
+    "cep": "38600000",
+    "tel": "+55 (38) 3671-1234 ramal 2"
   },
   {
     "test": "zero financial/fiscal/communication rows across envase, transition, deliveries and contention",

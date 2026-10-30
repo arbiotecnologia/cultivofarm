@@ -2,7 +2,7 @@
 -> stock/envase v2 candidate. Actors are `authenticated` with synthetic claims (never service_role).
 Static baseline rows are loaded with replica mode only for upstream stages already contained/LIVE;
 every tested writer runs with all triggers enabled. Not hosted JWT/RLS/Storage proof."""
-import hashlib, json, sys, time, traceback
+import hashlib, json, re, sys, time, traceback
 from pathlib import Path
 H = Path(__file__).resolve().parent
 ATOMIC = H.parent / 'delivery-atomic-hardening-20261030'
@@ -29,7 +29,8 @@ O5, PP5, L5 = u(47), u(48), u(49)   # concurrency/rollback target
 O6, PP6, L6 = u(50), u(51), u(52)   # partial envase
 RX = u(53)                          # stock reserved for ANOTHER OS
 O7, PP7, L7 = u(54), u(55), u(56)   # replay matrix (reserved-only / free-only / cancel)
-O8, L8, S8, S9, L9 = u(57), u(58), u(59), u(64), u(63)  # metadata roundtrip (pronto_entrega, free stock)
+O8, L8, S8, S9, L9 = u(57), u(58), u(59), u(64), u(63)
+S10, S11, L10, L11 = u(90), u(91), u(92), u(93)  # frontend-emitted / free-format metadata roundtrip  # metadata roundtrip (pronto_entrega, free stock)
 FEATS = {'envase': u(60), 'ordens_producao': u(61), 'lotes_qualidade': u(62)}
 TABLES = ['accounts_receivable', 'accounts_receivable_installments', 'financial_receipts', 'financial_documents', 'fiscal_invoices', 'fiscal_invoice_items', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base']
 def zero(): return last("SELECT jsonb_build_object(" + ','.join(f"'{t}',(SELECT count(*) FROM public.{t})" for t in TABLES) + ")::text;")
@@ -61,8 +62,8 @@ def setup_v2():
     INSERT INTO public.user_roles(user_id,role) VALUES('{W}','producao');
     """ + manufactured(O2, PP2, L2) + manufactured(O3, PP3, L3, cq='reprovado') + manufactured(O5, PP5, L5) + manufactured(O6, PP6, L6, vol=5000) + manufactured(O7, PP7, L7) + f"""
     INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,origem,status,numero_os) VALUES('{O8}','{A}','{C}','{u(18)}','{u(20)}','{PROD}','agronomica','pronto_entrega','LOCAL-META');
-    INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{L8}','{A}','{PROD}','aprovado','LOCAL-META',100000),('{L9}','{A}','{PROD}','aprovado','LOCAL-META2',100000);
-    INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{S8}','{L8}','{PROD}',2,2,'disponivel'),('{S9}','{L9}','{PROD}',2,2,'disponivel');
+    INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{L8}','{A}','{PROD}','aprovado','LOCAL-META',100000),('{L9}','{A}','{PROD}','aprovado','LOCAL-META2',100000),('{L10}','{A}','{PROD}','aprovado','LOCAL-META3',100000),('{L11}','{A}','{PROD}','aprovado','LOCAL-META4',100000);
+    INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{S8}','{L8}','{PROD}',2,2,'disponivel'),('{S9}','{L9}','{PROD}',2,2,'disponivel'),('{S10}','{L10}','{PROD}',2,2,'disponivel'),('{S11}','{L11}','{PROD}',2,2,'disponivel');
     INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status,reservado_para_os_id,reservado_para_os_tipo,reservado_para_cliente_id,quantidade_reservada) VALUES('{RX}','{T.L}','{PROD}',2,2,'reservado','{T.O}','manual','{C}',2);
     SET session_replication_role=origin;""")
 def fn_state():
@@ -79,6 +80,9 @@ def main():
     ok('exact applied release-combined a566faa4 + proof POST (hosted state reproduced on full restore)')
     pins = assemble_v2.build()
     pre = (H / 'preflight-v2.sql.review').read_text(); cand = (H / 'candidate-v2.sql.review').read_text()
+    STRICT = ["endereco_cep' AND v_dv !~", "endereco_uf' AND v_dv !~", "{8,20}"]
+    assert not any(x in cand for x in STRICT) and "v_dv ~ '[[:cntrl:]]'" in cand, 'GENERATED_CANDIDATE_NOT_FINAL_CONTRACT'
+    ok('generated candidate: free-text UF/CEP/phones (no strict regex), controls/length/date/time checks kept')
     base = fn_state()
     for k, p in pins.items(): assert json.loads(base)[p['regprocedure']] == p['pre_md5'], ('PRE pin vs restored', k)
     ok('PRE pins equal restored post-release bodies (motor 44b150bf keeps split delta)')
@@ -93,6 +97,8 @@ def main():
     (H / 'v2-post-hashes.json').write_text(json.dumps(post, indent=2) + '\n')
     install = "BEGIN;\nSET LOCAL lock_timeout='3s';\n" + pre + cand + "\n-- POST\n" + postsql + "COMMIT;\n"
     (H / 'install-v2.sql.review').write_text(install)
+    assert not any(x in install for x in STRICT) and cand in install, 'GENERATED_INSTALLER_NOT_FINAL_CONTRACT'
+    ok('generated installer embeds exactly the final candidate (no strict UF/CEP/phone branches)')
     # Drift refusal
     sql("CREATE OR REPLACE FUNCTION public.fn_validate_envase_volume() RETURNS trigger LANGUAGE plpgsql AS $x$ BEGIN RETURN NEW; END $x$;")
     fails('PRE refuses body drift', install, 'STOCK_V2_PRE_DRIFT')
@@ -238,6 +244,18 @@ def main():
     assert '"replay": true' in rep; ok('exact replay with identical metadata returns stored receipt')
     fails('divergent replay (metadata changed, same key) conflicts', actor() + full.replace('LOCAL DESTINATARIO', 'OUTRO'), 'DELIVERY_REPLAY_CONFLICT')
     assert last(f"SELECT count(*)||'/'||max(destinatario_nome) FROM public.entregas WHERE ordem_servico_id='{O8}';") == '2/LOCAL DESTINATARIO'; ok('conflict changed nothing')
+    # Exact payload emitted by the mounted RegistrarEntregaDialog (written by vitest), against the final emitted SQL.
+    FE = json.loads((H / 'frontend-autofill-payload.json').read_text())
+    assert FE['endereco_cep'] == '38.600-000' and FE['destinatario_telefone'] == '(38) 3671-1234'
+    FREE = {'endereco_uf': 'Minas Gerais', 'endereco_cep': '38600000', 'destinatario_telefone': '+55 (38) 3671-1234 ramal 2', 'motorista_telefone': 'falar com João',
+            'destinatario_whatsapp': '38 9 9999-0000', 'endereco_numero': 's/n', 'veiculo_placa': 'abc-1234'}
+    for label, sid, key, dados in [('frontend auto-filled', S10, 'meta-fe-0001', FE), ('free-text formats', S11, 'meta-free-0001', dict(FE, **FREE))]:
+        out = sql(actor() + group(O8, [{'item_id': sid, 'quantidade': 2}], key, dados))
+        assert '"success": true' in out, out[-800:]
+        ent = re.findall(r'"entrega_id": "([0-9a-f-]{36})"', out)[-1]
+        row = json.loads(last(f"SELECT to_jsonb(x)::text FROM (SELECT {','.join(dados)} FROM public.entregas WHERE id='{ent}') x;"))
+        for k, v in dados.items(): assert row[k] == v, (label, k, row[k], v)
+        ok(f'{label} metadata: server accepted and every field roundtripped verbatim', fields=len(dados), cep=dados['endereco_cep'], tel=dados['destinatario_telefone'])
     assert zero() == z0; ok('zero financial/fiscal/communication rows across envase, transition, deliveries and contention')
     # Rollback deny-only
     hist = last(f"SELECT (SELECT count(*) FROM public.entregas)||'/'||(SELECT count(*) FROM public.estoque_movimentacoes)||'/'||(SELECT count(*) FROM public.envase)||'/'||(SELECT count(*) FROM public.laboratorio_esteira_eventos);")

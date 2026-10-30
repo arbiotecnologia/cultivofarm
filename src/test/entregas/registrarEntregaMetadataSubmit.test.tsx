@@ -2,6 +2,7 @@ import React from "react";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { writeFileSync } from "node:fs";
 
 const SNAP = {
   destinatario_nome: "Fazenda Boa Vista", destinatario_telefone: "(38) 3671-1234", destinatario_whatsapp: "",
@@ -47,5 +48,7 @@ describe("RegistrarEntregaDialog -> atomic group with auto-filled recipient/addr
     const sent = rpc.mock.calls.find(c => c[0] === GROUP_RPC)![1].p_dados;
     for (const [k, v] of Object.entries(SNAP)) expect(sent[k]).toBe(v === "" ? null : v);
     expect(sent.endereco_origem).toBe("cadastro");
+    // Exact emitted payload is consumed by the disposable-PG v2 test against the generated SQL (no hand copy).
+    writeFileSync("scripts/stock-envase-recovery-20261027/frontend-autofill-payload.json", JSON.stringify(sent, null, 2) + "\n");
   });
 });

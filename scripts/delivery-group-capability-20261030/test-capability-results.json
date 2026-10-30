@@ -134,14 +134,14 @@
     "ack": {
       "itens": [
         {
-          "entrega_id": "d8570add-c807-4c2c-8e43-f9d94e0d9548",
-          "movimentacao_id": "dfec68b1-beb8-4ad7-b80e-6f92393f68f7",
-          "estoque_produto_id": "1defad0f-9605-466c-9233-e8e348ff2f4b"
+          "entrega_id": "c5f49253-3315-4de6-acde-b6b929ecc4c7",
+          "movimentacao_id": "55fd3093-9b84-441f-8a60-52e806620aba",
+          "estoque_produto_id": "0ca1ed66-9939-4c19-95cd-482fd539af55"
         },
         {
-          "entrega_id": "2d6bc2ca-3178-4040-b773-d4b1f66e8206",
-          "movimentacao_id": "cf1b5e9d-d0f2-4253-be02-66e1d82aa89a",
-          "estoque_produto_id": "596f8dee-1bb2-499f-be02-2860b5a32e2a"
+          "entrega_id": "6d448db3-ea13-4bad-858c-ff038096869a",
+          "movimentacao_id": "ced09a45-ea83-47ee-aee3-390aa3b20546",
+          "estoque_produto_id": "4cc47314-0110-4a3d-93e0-300dc54d812b"
         }
       ],
       "os_id": "10000000-0000-4000-8000-000000000007",
@@ -179,7 +179,7 @@
     "ack": {
       "replay": false,
       "success": true,
-      "entrega_id": "d8570add-c807-4c2c-8e43-f9d94e0d9548",
+      "entrega_id": "c5f49253-3315-4de6-acde-b6b929ecc4c7",
       "organization_id": "10000000-0000-4000-8000-000000000001",
       "reserva_liberada": true,
       "estoque_estornado": true

@@ -1,6 +1,6 @@
 {
   "runner": "test_capability_pg",
   "exit_code": 0,
-  "elapsed_seconds": 259.08,
+  "elapsed_seconds": 245.172,
   "budget_seconds": 480
 }
