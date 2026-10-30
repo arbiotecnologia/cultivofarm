@@ -141,8 +141,9 @@ def main():
     ok('BEFORE: FSF admin and FSF financeiro read AR Bio labels (all 11 incl. mixed)', counts={k: len(v) for k, v in bs.items()})
     lb = label_matrix(); print('BEFORE_LABEL', json.dumps(lb, ensure_ascii=False), flush=True)
     assert lb['V_update_arbio_label'] == 'ok:1' and lb['V_delete_arbio_label'] == 'ok:1' and lb['V_insert_arbio_lote'] == 'ok:inserted', lb
-    assert lb['anon_truncate'] == 'ok:truncated' and lb['auth_truncate'] == 'ok:truncated', lb
-    ok('BEFORE: FSF admin could update/delete/insert AR Bio labels; anon and authenticated could TRUNCATE (rolled back)', matrix=lb)
+    FKT = 'E0A000:cannot truncate a table referenced in a foreign key constraint'
+    assert lb['anon_truncate'] == FKT and lb['auth_truncate'] == FKT, lb
+    ok('BEFORE: FSF admin could update/delete/insert AR Bio labels; anon/authenticated TRUNCATE passed the privilege check (stopped only by FK 0A000, not by authorization)', matrix=lb)
     cb = ck_matrix(); print('BEFORE_CK', json.dumps(cb, ensure_ascii=False), flush=True)
     assert cb['V_arbio_checklist'].startswith('ok:') and cb['V_arbio_occurrence'] == 'ok:true', cb
     ok('BEFORE: FSF admin could update AR Bio checklist and register AR Bio occurrence via UI RPCs (rolled back)', matrix=cb)
