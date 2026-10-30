@@ -40,16 +40,23 @@ const DATA_KEYS = ["data_saida", "motorista", "veiculo", "tipo_entrega", "endere
 
 export type GroupInput = {
   requestKey: string;
+  /** Tenant captured with the session; the ACK must echo exactly this organization. */
+  expectedOrg: string;
   osId: string;
   osTipo: string;
+  /** Snapshot observed at selection time (never re-read at submit). */
+  osOrigem: string | null;
+  osPartnerOrderId: string | null;
   osObservedUpdatedAt: string;
   itens: { itemId: string; quantidade: number; observedUpdatedAt: string; status: string }[];
   dados: Record<string, unknown>;
 };
 
 export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
-  if (input.osTipo === "onfarm") throw new Error("Entrega OnFarm permanece indisponível neste contrato. Nenhuma alteração foi enviada.");
-  if (!UUID.test(input.osId) || typeof input.requestKey !== "string" || input.requestKey.length < 8 || input.requestKey.length > 128 || !input.osObservedUpdatedAt) {
+  if (input.osTipo !== "padrao" || input.osOrigem !== "agronomica" || input.osPartnerOrderId !== null) {
+    throw new Error("Somente OS agronômica manual, sem pedido B2B, usa este contrato. OnFarm e B2B permanecem indisponíveis. Nenhuma alteração foi enviada.");
+  }
+  if (!UUID.test(input.osId) || !UUID.test(input.expectedOrg) || typeof input.requestKey !== "string" || input.requestKey.length < 8 || input.requestKey.length > 128 || !input.osObservedUpdatedAt) {
     throw new Error("Identificação da entrega inválida. Nenhuma alteração foi enviada.");
   }
   if (input.itens.length === 0 || input.itens.length > 100) throw new Error("Selecione de 1 a 100 itens. Nenhuma alteração foi enviada.");
@@ -62,7 +69,7 @@ export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
     seen.add(i.itemId);
   }
   const unsupported = Object.entries(input.dados).filter(([k, v]) => !(DATA_KEYS as readonly string[]).includes(k) && v !== null && v !== undefined && v !== "").map(([k]) => k);
-  if (unsupported.length) throw new Error(`Campos ainda não suportados pelo contrato atômico: ${unsupported.sort().join(", ")}. Nenhuma alteração foi enviada.`);
+  if (unsupported.length) throw new Error(`Campos ainda não gravados pelo contrato atômico (inclui destinatário/endereço detalhado): ${unsupported.sort().join(", ")}. Limpe-os ou aguarde o contrato; nada é descartado em silêncio. Nenhuma alteração foi enviada.`);
   const dados: Record<string, string | null> = {};
   for (const k of DATA_KEYS) {
     const v = input.dados[k];
@@ -82,8 +89,8 @@ export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
 
 export type GroupAck = { replay: boolean; osId: string; itens: { entregaId: string; estoqueProdutoId: string; movimentacaoId: string }[] };
 
-export function parseGroupAck(data: unknown, osId: string, count: number): GroupAck | null {
-  if (!isObj(data) || data.success !== true || typeof data.replay !== "boolean" || data.os_id !== osId || !UUID.test(String(data.organization_id))) return null;
+export function parseGroupAck(data: unknown, osId: string, count: number, expectedOrg: string): GroupAck | null {
+  if (!isObj(data) || data.success !== true || typeof data.replay !== "boolean" || data.os_id !== osId || !UUID.test(expectedOrg) || data.organization_id !== expectedOrg) return null;
   if (!exactKeys(data, ["success", "replay", "organization_id", "os_id", "itens"]) || !Array.isArray(data.itens) || data.itens.length !== count) return null;
   const itens: GroupAck["itens"] = [];
   const ids = new Set<string>();
@@ -97,54 +104,112 @@ export function parseGroupAck(data: unknown, osId: string, count: number): Group
   return { replay: data.replay, osId, itens };
 }
 
-export function parseCancelAck(data: unknown, entregaId: string): { replay: boolean } | null {
+export function parseCancelAck(data: unknown, entregaId: string, expectedOrg: string): { replay: boolean } | null {
   if (!isObj(data) || !exactKeys(data, ["success", "replay", "organization_id", "entrega_id", "estoque_estornado", "reserva_liberada"])) return null;
-  if (data.success !== true || typeof data.replay !== "boolean" || data.entrega_id !== entregaId || data.estoque_estornado !== true || data.reserva_liberada !== true || !UUID.test(String(data.organization_id))) return null;
+  if (data.success !== true || typeof data.replay !== "boolean" || data.entrega_id !== entregaId || data.estoque_estornado !== true || data.reserva_liberada !== true) return null;
+  if (!UUID.test(expectedOrg) || data.organization_id !== expectedOrg) return null;
   return { replay: data.replay };
 }
+
+/**
+ * Only SQLSTATEs explicitly raised by the reviewed writers as business/authorization/validation refusals
+ * count as definitive. Timeouts, transport, proxy, PostgREST connection and any other code stay uncertain.
+ */
+export const DEFINITIVE_REJECTION_CODES: ReadonlySet<string> = new Set(["PT409", "42501", "22023"]);
+
+export type RetrySnapshot = { fn: string; args: Record<string, unknown>; expectedOrg: string; osId?: string; count?: number; entregaId?: string };
 
 export type Outcome<T> =
   | { status: "closed"; message: string }
   | { status: "confirmed"; ack: T }
-  /** Server answered with a PostgREST/SQLSTATE error: the single RPC transaction did not commit. */
-  | { status: "rejected"; message: string; code?: string }
-  /** Transport failure or non-exact ACK: may have committed; keep the same key/args for an exact replay only. */
-  | { status: "uncertain"; retry: { fn: string; args: Record<string, unknown> } };
+  /** Allowlisted server refusal of the single RPC transaction. */
+  | { status: "rejected"; message: string; code: string }
+  /** Transport failure, non-allowlisted error or non-exact ACK: may have committed; only an exact replay is allowed. */
+  | { status: "uncertain"; retry: RetrySnapshot }
+  /** Session/tenant changed while waiting: result is discarded for this scope (no confirmation, no rejection, no retry). */
+  | { status: "stale" };
 
-async function dispatchOnce<T>(rpc: Rpc, fn: string, args: Record<string, unknown>, parse: (d: unknown) => T | null, beforeDispatch: () => void): Promise<Outcome<T>> {
-  beforeDispatch();
+const freeze = (r: RetrySnapshot): RetrySnapshot => Object.freeze({ ...r, args: JSON.parse(JSON.stringify(r.args)) });
+
+async function dispatchOnce<T>(rpc: Rpc, retry: RetrySnapshot, parse: (d: unknown) => T | null, fence: () => void, onDispatch: (r: RetrySnapshot) => void): Promise<Outcome<T>> {
+  fence();
+  onDispatch(retry);
+  fence();
+  let outcome: Outcome<T>;
   try {
-    const { data, error } = await rpc(fn, args);
-    if (error && typeof error.code === "string" && error.code.length > 0) return { status: "rejected", message: error.message || "Operação recusada pelo servidor.", code: error.code };
-    if (error) return { status: "uncertain", retry: { fn, args } };
-    const ack = parse(data);
-    return ack ? { status: "confirmed", ack } : { status: "uncertain", retry: { fn, args } };
+    const { data, error } = await rpc(retry.fn, retry.args);
+    if (error) {
+      outcome = typeof error.code === "string" && DEFINITIVE_REJECTION_CODES.has(error.code)
+        ? { status: "rejected", message: error.message || "Operação recusada pelo servidor.", code: error.code }
+        : { status: "uncertain", retry };
+    } else {
+      const ack = parse(data);
+      outcome = ack ? { status: "confirmed", ack } : { status: "uncertain", retry };
+    }
   } catch {
-    return { status: "uncertain", retry: { fn, args } };
+    outcome = { status: "uncertain", retry };
   }
+  try { fence(); } catch { return { status: "stale" }; }
+  return outcome;
+}
+
+export function parserFor(retry: RetrySnapshot): (d: unknown) => unknown {
+  if (retry.fn === GROUP_RPC) return d => parseGroupAck(d, String(retry.osId), Number(retry.count), retry.expectedOrg);
+  if (retry.fn === CANCEL_RPC) return d => parseCancelAck(d, String(retry.entregaId), retry.expectedOrg);
+  return () => null;
 }
 
 /** Fresh capability probe, then one dispatch. `fence` must throw if scope/session changed. */
-export async function runAtomicGroup(rpc: Rpc, input: GroupInput, fence: () => void, onDispatch: () => void = () => {}): Promise<Outcome<GroupAck>> {
+export async function runAtomicGroup(rpc: Rpc, input: GroupInput, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<GroupAck>> {
   const args = buildGroupArgs(input);
   const cap = await probeDeliveryCapability(rpc);
   fence();
   if (!cap.group) return { status: "closed", message: DELIVERY_OPERATION_BLOCK };
-  return dispatchOnce(rpc, GROUP_RPC, args, d => parseGroupAck(d, input.osId, input.itens.length), () => { fence(); onDispatch(); });
+  const retry = freeze({ fn: GROUP_RPC, args, expectedOrg: input.expectedOrg, osId: input.osId, count: input.itens.length });
+  return dispatchOnce(rpc, retry, d => parseGroupAck(d, input.osId, input.itens.length, input.expectedOrg), fence, onDispatch);
 }
 
-export async function runAtomicCancel(rpc: Rpc, entregaId: string, motivo: string, observedUpdatedAt: string, fence: () => void, onDispatch: () => void = () => {}): Promise<Outcome<{ replay: boolean }>> {
-  if (!UUID.test(entregaId) || !motivo.trim() || !observedUpdatedAt) throw new Error("Cancelamento inválido: informe o motivo. Nenhuma alteração foi enviada.");
+export async function runAtomicCancel(rpc: Rpc, entregaId: string, motivo: string, observedUpdatedAt: string, expectedOrg: string, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<{ replay: boolean }>> {
+  if (!UUID.test(entregaId) || !UUID.test(expectedOrg) || !motivo.trim() || !observedUpdatedAt) throw new Error("Cancelamento inválido: informe o motivo. Nenhuma alteração foi enviada.");
   const cap = await probeDeliveryCapability(rpc);
   fence();
   if (!cap.cancel) return { status: "closed", message: DELIVERY_CANCELLATION_BLOCK };
-  return dispatchOnce(rpc, CANCEL_RPC, { p_entrega_id: entregaId, p_motivo: motivo, p_observed: observedUpdatedAt }, d => parseCancelAck(d, entregaId), () => { fence(); onDispatch(); });
+  const retry = freeze({ fn: CANCEL_RPC, args: { p_entrega_id: entregaId, p_motivo: motivo, p_observed: observedUpdatedAt }, expectedOrg, entregaId });
+  return dispatchOnce(rpc, retry, d => parseCancelAck(d, entregaId, expectedOrg), fence, onDispatch);
 }
 
-/** Exact replay of an uncertain dispatch: same function and identical args (same request key/fingerprint). */
-export async function replayUncertain<T>(rpc: Rpc, retry: { fn: string; args: Record<string, unknown> }, parse: (d: unknown) => T | null, fence: () => void): Promise<Outcome<T>> {
+/** Exact replay of an uncertain dispatch: same function, identical frozen args (same key, same observed CAS). */
+export async function replayUncertain<T>(rpc: Rpc, retry: RetrySnapshot, parse: (d: unknown) => T | null, fence: () => void, onDispatch: (r: RetrySnapshot) => void = () => {}): Promise<Outcome<T>> {
   const cap = await probeDeliveryCapability(rpc);
   fence();
   if (!(retry.fn === GROUP_RPC ? cap.group : retry.fn === CANCEL_RPC ? cap.cancel : false)) return { status: "uncertain", retry };
-  return dispatchOnce(rpc, retry.fn, retry.args, parse, fence);
+  return dispatchOnce(rpc, retry, parse, fence, onDispatch);
+}
+
+/* ---- Pending uncertain dispatch, bound to actor+tenant, survives remount/reload. ---- */
+const PENDING_PREFIX = "cf:delivery-uncertain:v1:";
+export const pendingKey = (actorId: string, orgId: string) => `${PENDING_PREFIX}${actorId}:${orgId}`;
+
+export function loadPending(store: Pick<Storage, "getItem">, actorId: string, orgId: string): RetrySnapshot | "corrupt" | null {
+  const raw = store.getItem(pendingKey(actorId, orgId));
+  if (raw === null) return null;
+  try {
+    const v = JSON.parse(raw);
+    if (!isObj(v) || (v.fn !== GROUP_RPC && v.fn !== CANCEL_RPC) || !isObj(v.args) || v.expectedOrg !== orgId) return "corrupt";
+    return freeze(v as RetrySnapshot);
+  } catch {
+    return "corrupt";
+  }
+}
+
+/** Must succeed before dispatch; a storage failure keeps the operation closed. */
+export function savePending(store: Pick<Storage, "setItem" | "getItem">, actorId: string, orgId: string, r: RetrySnapshot) {
+  const key = pendingKey(actorId, orgId);
+  const raw = JSON.stringify(r);
+  store.setItem(key, raw);
+  if (store.getItem(key) !== raw) throw new Error("Não foi possível reservar a recuperação local. Nenhuma alteração foi enviada.");
+}
+
+export function clearPending(store: Pick<Storage, "removeItem">, actorId: string, orgId: string) {
+  store.removeItem(pendingKey(actorId, orgId));
 }
