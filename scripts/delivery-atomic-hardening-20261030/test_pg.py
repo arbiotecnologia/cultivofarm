@@ -1,5 +1,5 @@
 """Real PostgreSQL bodies and triggers; synthetic rows/Auth claim transport, no hosted writes."""
-import json, subprocess, time, traceback
+import json, subprocess, time, traceback, sys
 from pathlib import Path
 import restore
 import build_motor
@@ -7,6 +7,10 @@ from restore import pg
 H=Path(__file__).resolve().parent
 checks=[]
 observed={}
+cancel_observed={}
+def cancel(ent,motivo='local'):
+    if ent not in cancel_observed:cancel_observed[ent]=sql(f"SELECT updated_at FROM public.entregas WHERE id='{ent}';")
+    return f"SELECT public.rpc_entrega_cancelar_v1('{ent}','{motivo}','{cancel_observed[ent]}'::timestamptz);"
 def u(n): return f'10000000-0000-4000-8000-{n:012d}'
 A,B,U,V,C,D,O,P,L,M,S,T,PROD,PLAN,VER,MOD,FEAT=[u(n) for n in range(1,18)]
 def sql(s): return pg.sql(s)
@@ -60,6 +64,7 @@ def wait():
     raise AssertionError('no actual PG wait')
 def main():
     r=restore.restore();print('RESTORE',json.dumps({k:len(v) for k,v in r.items()}),flush=True)
+    assert not any(r.values()),'RESTORE_FAILED: '+json.dumps(r)
     sql((H/'candidate.sql.review').read_text())
     build_motor.build()
     sql((H/'motor-delta.sql.review').read_text())
@@ -67,7 +72,7 @@ def main():
     # Exact downstream tables: a transaction context blocks any writer, not the producers globally.
     tables=['accounts_receivable','accounts_receivable_installments','financial_receipts','financial_documents','fiscal_invoices','fiscal_invoice_items','fiscal_events','comunicacao_outbox','comunicacao_eventos','os_faturamento_base']
     setup()
-    sql('GRANT EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz),public.rpc_entrega_cancelar_v1(uuid,text) TO authenticated;')
+    sql('GRANT EXECUTE ON FUNCTION public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz),public.rpc_entrega_cancelar_v1(uuid,text,timestamptz) TO authenticated;')
     check('real h15 and SaaS resolve synthetic tenant',actor()+f"SELECT public.h15_actor_organization()='{A}'::uuid AND public.saas_has_feature('estoque_embalagens');")
     deny('tenant FSF cannot use AR Bio IDs',actor(V)+call('cross-tenant'),'DELIVERY_SCOPE_DENIED')
     deny('anonymous ACL denies',"SET ROLE anon;"+call('anonymous'),'permission denied')
@@ -92,16 +97,16 @@ def main():
     check('replay creates no duplicate',"SELECT count(*)=2 FROM public.entregas;")
     deny('changed payload replay conflict',actor()+call('first-group',[{'item_id':S,'quantidade':3},{'item_id':T,'quantidade':2}]),'DELIVERY_REPLAY_CONFLICT')
     ent=sql('SELECT id FROM public.entregas ORDER BY id LIMIT 1;')
-    deny('cross tenant cancel',actor(V)+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');",'DELIVERY_SCOPE_DENIED')
+    deny('cross tenant cancel',actor(V)+cancel(ent),'DELIVERY_SCOPE_DENIED')
     before=sql("SELECT md5(jsonb_agg(to_jsonb(x) ORDER BY x.id)::text) FROM public.estoque_produto x;")
     sql("CREATE FUNCTION public.local_cancel_fault() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.status='cancelada' THEN RAISE EXCEPTION 'LOCAL_CANCEL_FAULT'; END IF; RETURN NEW; END$$;CREATE TRIGGER zz_cancel_fault BEFORE UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION public.local_cancel_fault();")
-    deny('cancel failure after return ledger atomically rolls back',actor()+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');",'LOCAL_CANCEL_FAULT')
+    deny('cancel failure after return ledger atomically rolls back',actor()+cancel(ent),'LOCAL_CANCEL_FAULT')
     check('failed cancel rolls back reversal stock delivery and receipt',f"SELECT (SELECT md5(jsonb_agg(to_jsonb(x) ORDER BY x.id)::text) FROM public.estoque_produto x)='{before}' AND (SELECT status::text FROM public.entregas WHERE id='{ent}')='separado' AND NOT EXISTS(SELECT 1 FROM platform_private.delivery_requests_20261030 WHERE action='cancel') AND NOT EXISTS(SELECT 1 FROM public.estoque_movimentacoes WHERE acao='estorno_expedicao');")
     sql('DROP TRIGGER zz_cancel_fault ON public.entregas;')
-    print('CANCEL',sql(actor()+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');"),flush=True)
+    print('CANCEL',sql(actor()+cancel(ent)),flush=True)
     check('canonical split merge keeps unique index source history and main balance',f"SELECT (SELECT status::text FROM public.entregas WHERE id='{ent}')='cancelada' AND (SELECT status::text FROM public.estoque_produto WHERE id=(SELECT estoque_produto_id FROM public.entregas WHERE id='{ent}'))='estornado' AND (SELECT sum(quantidade) FROM public.estoque_produto)=20;")
-    check('cancel exact replay',actor()+f"SELECT (public.rpc_entrega_cancelar_v1('{ent}','local')->>'replay')::boolean;")
-    deny('cancel changed reason replay denied',actor()+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','other');",'DELIVERY_REPLAY_CONFLICT')
+    check('cancel exact replay',actor()+cancel(ent).replace('SELECT public.','SELECT (public.').replace(');',")->>'replay')::boolean;"))
+    deny('cancel changed reason replay denied',actor()+cancel(ent,'other'),'DELIVERY_REPLAY_CONFLICT')
     check('no downstream titles fiscal outbox', 'SELECT '+ ' AND '.join(f'(SELECT count(*) FROM public.{t})=0' for t in tables)+';')
     check('private context removed on success',"SELECT count(*)=0 FROM platform_private.delivery_context_20261030;")
     # Real two-connection waits, not timers pretending to establish concurrency.
@@ -145,7 +150,7 @@ def main():
     observed.pop('first-group')
     print('TENANT B',sql(actor(V)+call('first-group',[{'item_id':u(41),'quantidade':2}],os=P)),flush=True)
     check('same request key tenants separated no collision',"SELECT count(*)=2 FROM platform_private.delivery_requests_20261030 WHERE action='group' AND request_key='first-group';")
-    deny('B cannot replay A cancel result',actor(V)+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');",'DELIVERY_SCOPE_DENIED')
+    deny('B cannot replay A cancel result',actor(V)+cancel(ent),'DELIVERY_SCOPE_DENIED')
     deny('GUC spoof cannot cancel directly',actor()+f"SET app.entrega_cancelamento_id='{ent}'; UPDATE public.entregas SET status='cancelada' WHERE id<>(SELECT id FROM public.entregas WHERE id='{ent}') AND organization_id='{A}';",'ENTREGA_CANCELAMENTO_EXIGE_RPC')
     deny('direct stock mutation remains ACL closed',actor()+f"UPDATE public.estoque_produto SET quantidade=500 WHERE id='{S}';",'permission denied')
     deny('private context cannot be minted by caller',actor()+f"INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action) VALUES(txid_current(),'{U}','{A}','cancel');",'permission denied')
@@ -183,3 +188,4 @@ if __name__=='__main__':
     finally:
         (H/'test-results.json').write_text(json.dumps(checks,indent=2)+'\n')
         print('RESULT',sum(x['status']=='PASS' for x in checks),'PASS',sum(x['status']=='FAIL' for x in checks),'FAIL',sum(x['status']=='BLOCKED' for x in checks),'BLOCKED',flush=True)
+    sys.exit(1 if any(x['status']!='PASS' for x in checks) else 0)

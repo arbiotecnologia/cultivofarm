@@ -51,3 +51,4 @@ def restore():
 if __name__ == '__main__':
     result = restore()
     print(json.dumps({k:len(v) for k,v in result.items()},indent=2))
+    sys.exit(1 if any(result.values()) else 0)
