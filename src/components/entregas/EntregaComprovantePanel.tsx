@@ -196,7 +196,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       const current = access.capture();
       const { data, error } = await supabase
         .from("entregas")
-        .select("id, comprovante_status, validation_token")
+        .select("id, status, comprovante_status, validation_token")
         .eq("id", entrega.id)
         .maybeSingle();
       if (error) throw error;
@@ -245,6 +245,19 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       : (entregaAtual?.comprovante_status ?? null);
   const meta = status ? STATUS_LABEL[status] || STATUS_LABEL.pendente : null;
   const validationToken = (!falhou && !carregando && entregaAtual?.validation_token) || null;
+  // Entrega cancelada é terminal: somente consulta/impressão/download. Basta o
+  // estado fresco OU o snapshot recebido indicar cancelamento (nunca reabre).
+  // O servidor continua sendo a autoridade sobre status e papel.
+  const somenteConsulta = entregaAtual?.status === "cancelada" || entrega?.status === "cancelada";
+  const somenteConsultaRef = useRef(somenteConsulta);
+  somenteConsultaRef.current = somenteConsulta;
+  useEffect(() => {
+    if (!somenteConsulta) return;
+    setOpenSign(false);
+    setOpenUpload(false);
+    setOpenConfirm(false);
+    setOpenDispensa(false);
+  }, [somenteConsulta]);
 
   const invalidate = (entregaId: string = entrega.id) => {
     qc.invalidateQueries({ queryKey: ["entregas"] });
@@ -254,7 +267,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
 
   /** Trava síncrona compartilhada entre assinatura, anexo e demais ações. */
   const iniciarAcao = () => {
-    if (!access.ready || acaoRef.current) return false;
+    if (!access.ready || acaoRef.current || somenteConsultaRef.current) return false;
     acaoRef.current = true;
     setAcaoEmAndamento(true);
     return true;
@@ -714,8 +727,14 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         </div>
       )}
 
+      {somenteConsulta && (
+        <p className="rounded-md border p-3 text-sm text-muted-foreground" role="status" data-testid="comprovante-somente-consulta">
+          Entrega cancelada — evidências disponíveis somente para consulta, impressão e download.
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-2 print:hidden">
-        {status === "pendente" && (
+        {status === "pendente" && !somenteConsulta && (
           <Button size="sm" onClick={() => { void gerarFormulario(); }} disabled={gerando || acaoEmAndamento}>
             {gerando && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
             <FileText className="h-4 w-4 mr-1" /> Gerar formulário
@@ -729,7 +748,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
             <Button size="sm" variant="outline" onClick={openForm2Vias} title="Imprime 2 vias: Cliente e Cultivo Farm">
               <Copy className="h-4 w-4 mr-1" /> Imprimir 2 vias
             </Button>
-            {status !== "confirmado" && status !== "dispensado" && (
+            {!somenteConsulta && status !== "confirmado" && status !== "dispensado" && (
               <>
                 <Button
                   size="sm"
@@ -745,12 +764,12 @@ export function EntregaComprovantePanel({ entrega }: Props) {
                 </Button>
               </>
             )}
-            {(status === "anexado" || status === "assinatura_digital_coletada") && (
+            {!somenteConsulta && (status === "anexado" || status === "assinatura_digital_coletada") && (
               <Button size="sm" onClick={() => setOpenConfirm(true)} disabled={acaoEmAndamento}>
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Confirmar recebimento
               </Button>
             )}
-            {isAdmin && status !== "confirmado" && status !== "dispensado" && (
+            {!somenteConsulta && isAdmin && status !== "confirmado" && status !== "dispensado" && (
               <Button size="sm" variant="ghost" onClick={() => setOpenDispensa(true)} disabled={acaoEmAndamento}>
                 <ShieldAlert className="h-4 w-4 mr-1" /> Dispensar assinatura
               </Button>
@@ -788,8 +807,8 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       {podeImprimir && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          <EntregaChecklistPanel entregaId={entrega.id} canEdit={status !== "confirmado" && status !== "dispensado"} />
-          <EntregaOcorrenciasPanel entregaId={entrega.id} canAdd={status !== "confirmado" && status !== "dispensado"} />
+          <EntregaChecklistPanel entregaId={entrega.id} canEdit={!somenteConsulta && status !== "confirmado" && status !== "dispensado"} />
+          <EntregaOcorrenciasPanel entregaId={entrega.id} canAdd={!somenteConsulta && status !== "confirmado" && status !== "dispensado"} />
         </div>
       )}
 

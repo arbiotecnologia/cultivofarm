@@ -89,6 +89,7 @@ describe("TermoEntregaPanel", () => {
 
   function mockConsultas({ falhar = false, itens = etiquetas as any[] } = {}) {
     fromMock.mockImplementation((tabela: string) => {
+      if (tabela === "entregas") return chain({ data: { id: "A", status: "separado" }, error: null });
       if (falhar) return chain({ data: null, error: { message: "permission denied for table" } });
       if (tabela === "entrega_etiquetas") return chain({ data: itens, error: null });
       if (tabela === "entrega_conferencia_itens") return chain({ data: [], error: null });
@@ -239,6 +240,7 @@ describe("lacunas da revisão independente", () => {
 
   it("Termo: trocar de entrega durante o cálculo do hash não envia a assinatura", async () => {
     fromMock.mockImplementation((tabela: string) => {
+      if (tabela === "entregas") return chain({ data: { id: "A", status: "separado" }, error: null });
       if (tabela === "entrega_termos")
         return chain({
           data: { id: "t1", versao: 1, status: "rascunho", snapshot_hash: "h", numero_termo: "T-1" },
@@ -278,6 +280,7 @@ describe("lacunas da revisão independente", () => {
 
   it("Termo: troca durante o segundo hash também impede a chamada com efeito", async () => {
     fromMock.mockImplementation((tabela: string) => {
+      if (tabela === "entregas") return chain({ data: { id: "A", status: "separado" }, error: null });
       if (tabela === "entrega_termos")
         return chain({
           data: { id: "t1", versao: 1, status: "rascunho", snapshot_hash: "h", numero_termo: "T-1" },

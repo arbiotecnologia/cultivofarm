@@ -135,6 +135,23 @@ export function TermoEntregaPanel({ entregaId }: Props) {
     },
   });
 
+  // Estado fresco da entrega: cancelada é terminal e deixa o termo somente para
+  // consulta/download. Enquanto não carregar ou se falhar, as gravações ficam
+  // bloqueadas (o servidor segue como autoridade).
+  const entregaStatusQuery = useQuery({
+    queryKey: ["entrega-termo-status", entregaId, access.scope],
+    enabled: access.ready && !!entregaId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("entregas").select("id, status").eq("id", entregaId).maybeSingle();
+      if (error) throw error;
+      return (data as any) ?? null;
+    },
+  });
+  const entregaCancelada = (entregaStatusQuery.data as any)?.status === "cancelada";
+  const somenteConsulta = !access.ready || !entregaStatusQuery.isSuccess || !entregaStatusQuery.data || entregaCancelada;
+  const somenteConsultaRef = useRef(somenteConsulta);
+  somenteConsultaRef.current = somenteConsulta;
+
   const termo = access.ready ? termoQuery.data as any : undefined;
   const assinado = termo?.status === "assinado";
   // Snapshot do termo exibido: qualquer mudança (versão/status/PDF) troca o
@@ -182,7 +199,7 @@ export function TermoEntregaPanel({ entregaId }: Props) {
   type Ctx = { vivo: () => boolean; entregaDaOperacao: string };
 
   const run = async (fn: (ctx: Ctx) => Promise<void>) => {
-    if (!access.ready || emAndamentoRef.current) return; // trava síncrona contra duplo clique
+    if (!access.ready || emAndamentoRef.current || somenteConsultaRef.current) return; // trava síncrona; cancelada = somente consulta
     const current = access.capture();
     emAndamentoRef.current = true;
     const token = ++tokenRef.current;
@@ -390,7 +407,7 @@ export function TermoEntregaPanel({ entregaId }: Props) {
                         type="button"
                         size="sm"
                         variant={st === op ? "default" : "outline"}
-                        disabled={assinado || busy}
+                        disabled={assinado || busy || somenteConsulta}
                         aria-pressed={st === op}
                         onClick={() => setCampo(i.etiqueta_id, "status", op)}
                         className="min-h-9 flex-1 sm:flex-none"
@@ -405,7 +422,7 @@ export function TermoEntregaPanel({ entregaId }: Props) {
                       <Input
                         id={`qtd-${i.etiqueta_id}`}
                         inputMode="decimal"
-                        disabled={assinado || busy}
+                        disabled={assinado || busy || somenteConsulta}
                         value={valorDe(i.etiqueta_id, "quantidade") as string}
                         onChange={(e) => setCampo(i.etiqueta_id, "quantidade", e.target.value)}
                       />
@@ -414,7 +431,7 @@ export function TermoEntregaPanel({ entregaId }: Props) {
                       <Label htmlFor={`mot-${i.etiqueta_id}`} className="text-xs">Motivo (recusa/ressalva)</Label>
                       <Input
                         id={`mot-${i.etiqueta_id}`}
-                        disabled={assinado || busy}
+                        disabled={assinado || busy || somenteConsulta}
                         value={valorDe(i.etiqueta_id, "motivo") as string}
                         onChange={(e) => setCampo(i.etiqueta_id, "motivo", e.target.value)}
                       />
@@ -426,7 +443,13 @@ export function TermoEntregaPanel({ entregaId }: Props) {
           </ul>
         )}
 
-        {!assinado && (
+        {entregaCancelada && (
+          <p className="text-xs text-muted-foreground" role="status" data-testid="termo-somente-consulta">
+            Entrega cancelada — termo disponível somente para consulta e download.
+          </p>
+        )}
+
+        {!assinado && !somenteConsulta && (
           <div className="flex flex-wrap gap-2">
             <Button onClick={salvarConferencia} disabled={busy || itens.length === 0} className="min-h-10">
               {busy && <Loader2 className="h-4 w-4 mr-1 animate-spin" aria-hidden="true" />}
@@ -438,7 +461,7 @@ export function TermoEntregaPanel({ entregaId }: Props) {
           </div>
         )}
 
-        {termo && termo.status === "rascunho" && (
+        {termo && termo.status === "rascunho" && !somenteConsulta && (
           <div className="rounded-md border p-3 space-y-3">
             <div className="text-xs font-medium text-muted-foreground">Recebedor e assinatura</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -481,7 +504,7 @@ export function TermoEntregaPanel({ entregaId }: Props) {
             </div>
             <div className="flex flex-wrap gap-2">
               {!termo.pdf_path ? (
-                <Button onClick={gerarPdf} disabled={busy} className="min-h-10">
+                somenteConsulta ? null : <Button onClick={gerarPdf} disabled={busy} className="min-h-10">
                   {busy && <Loader2 className="h-4 w-4 mr-1 animate-spin" aria-hidden="true" />}
                   Gerar PDF do termo
                 </Button>
@@ -500,7 +523,7 @@ export function TermoEntregaPanel({ entregaId }: Props) {
                 )
               )}
             </div>
-            <div className="space-y-2">
+            {!somenteConsulta && <div className="space-y-2">
               <Label htmlFor="motivo-cancel" className="text-xs">Cancelar/substituir termo (motivo obrigatório)</Label>
               <Textarea
                 id="motivo-cancel"
@@ -512,13 +535,13 @@ export function TermoEntregaPanel({ entregaId }: Props) {
               <Button variant="destructive" onClick={cancelarTermo} disabled={busy || motivoCancel.trim().length < 5} className="min-h-10">
                 <Ban className="h-4 w-4 mr-1" aria-hidden="true" /> Cancelar termo
               </Button>
-            </div>
+            </div>}
           </div>
         )}
 
         {termo?.status === "cancelado" && (
           <p className="text-xs text-destructive">
-            Termo cancelado{termo.motivo_cancelamento ? `: ${termo.motivo_cancelamento}` : ""}. Gere uma nova versão.
+            Termo cancelado{termo.motivo_cancelamento ? `: ${termo.motivo_cancelamento}` : ""}.{somenteConsulta ? "" : " Gere uma nova versão."}
           </p>
         )}
       </CardContent>
