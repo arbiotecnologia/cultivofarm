@@ -377,6 +377,14 @@
       "status": "PASS"
     },
     {
+      "test": "separate exact release installs only canonical authenticated grant after legacy closure",
+      "status": "PASS"
+    },
+    {
+      "test": "release rerun rejects changed exact catalog",
+      "status": "PASS"
+    },
+    {
       "test": "deny-only rollback closes canonical writer",
       "status": "PASS"
     },
@@ -711,12 +719,18 @@
       "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 11 at RAISE\nSQL function \"rpc_entrega_formulario_gerar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
+      "test": "release rerun rejects changed exact catalog",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: ENVASE_RELEASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
       "test": "deny-only rollback closes canonical writer",
       "returncode": 3,
       "stdout": "",
       "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "elapsed_seconds": 179.864,
+  "elapsed_seconds": 175.21,
   "exit_code": 0
 }
