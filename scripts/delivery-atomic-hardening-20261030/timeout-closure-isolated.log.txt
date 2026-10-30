@@ -1,14 +1,19 @@
 CHECKPOINT sql_calls=1 elapsed=0.0s
-Traceback (most recent call last):
-  File "/tmp/delivery-timeout/check_closure.py", line 7, in <module>
-    t.sql(t.actor()+t.call('closure-repro'))
-    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 16, in sql
-    def sql(s): return pg.sql(s)
-                       ~~~~~~^^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
-    assert r.returncode==0,r.stderr[-3000:]
-           ^^^^^^^^^^^^^^^
-AssertionError: ERROR:  DELIVERY_REPLAY_CONFLICT
-CONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 44 at RAISE
-
+PASS anon direct INSERT
+PASS anon direct UPDATE
+PASS anon direct DELETE
+PASS anon legacy cancellation ACL
+PASS authenticated direct INSERT
+PASS authenticated direct UPDATE
+PASS authenticated direct DELETE
+PASS authenticated legacy cancellation ACL
+PASS service_role direct INSERT
+PASS service_role direct UPDATE
+PASS service_role direct DELETE
+PASS service_role legacy cancellation ACL
+PASS authenticated spoof GUC cannot update with local DML grant
+PASS privileged direct writer lacks private permit
+PASS legacy creator direct INSERT denied without group permit
+PASS closure retains authenticated SELECT
+PASS closure no context residue
+RESULT 17 PASS elapsed 0.63
