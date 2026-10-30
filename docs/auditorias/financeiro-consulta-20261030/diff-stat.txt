@@ -1,0 +1,5 @@
+ .../ConfirmarEntregaFinanceiroDialog.tsx           | 256 ++-------------------
+ src/hooks/AGENTS.md                                |   1 +
+ src/hooks/useDeliveryFinanceReconciliation.ts      |  35 +--
+ .../deliveryFinanceReconciliation.test.tsx         |  74 +++---
+ 4 files changed, 84 insertions(+), 282 deletions(-)

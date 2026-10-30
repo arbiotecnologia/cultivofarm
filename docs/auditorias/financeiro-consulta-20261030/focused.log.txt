@@ -1,0 +1,22 @@
+$ vitest run --config src/test/config/runtimeGate.vitest.config.ts "--maxWorkers=2" src/test/financeiro/deliveryFinanceReconciliation.test.tsx src/test/financeiro/deliveryPendingReadOnly.test.tsx "--reporter=default" "--reporter=json" "--outputFile=docs/auditorias/financeiro-consulta-20261030/focused.json"
+
+ RUN  v3.2.4 /dev-server
+
+stderr | src/test/financeiro/deliveryFinanceReconciliation.test.tsx > Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > consulta não carrega catálogos nem expõe criação; interações não escrevem
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/test/financeiro/deliveryPendingReadOnly.test.tsx > marcação sem cobrança também permanece somente leitura
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+ ✓ src/test/financeiro/deliveryPendingReadOnly.test.tsx (6 tests) 843ms
+   ✓ marcação sem cobrança também permanece somente leitura  545ms
+ ✓ src/test/financeiro/deliveryFinanceReconciliation.test.tsx (17 tests) 2123ms
+   ✓ Etapa6 — QueryClient real, Auth/transportes simulados, operação contida > consulta não carrega catálogos nem expõe criação; interações não escrevem  354ms
+
+ Test Files  2 passed (2)
+      Tests  23 passed (23)
+   Start at  01:32:23
+   Duration  5.14s (transform 505ms, setup 491ms, collect 2.02s, tests 2.97s, environment 2.34s, prepare 316ms)
+
+JSON report written to /dev-server/docs/auditorias/financeiro-consulta-20261030/focused.json
