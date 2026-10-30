@@ -30,8 +30,8 @@ ETQ = u(720)
 def actor(w): return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}'; SET request.jwt.claims='{json.dumps({'sub': w, 'role': 'authenticated'})}';"
 def cols(t, ent, rid, who=U):
     base = {'id': rid, 'entrega_id': ent}
-    extra = {'entrega_checklist': {'item': 'LOCAL ITEM'}, 'entrega_ocorrencias': {'tipo': 'LOCAL', 'descricao': 'LOCAL'},
-             'entrega_documentos': {'tipo_documento': 'LOCAL', 'nome_arquivo': 'x.pdf', 'arquivo_path': f'entregas/{ent}/docs/{rid}.pdf', 'uploaded_by': who},
+    extra = {'entrega_checklist': {'item': 'LOCAL ITEM'}, 'entrega_ocorrencias': {'tipo': 'observacao', 'descricao': 'LOCAL'},
+             'entrega_documentos': {'tipo_documento': 'OUTRO', 'nome_arquivo': 'x.pdf', 'arquivo_path': f'entregas/{ent}/docs/{rid}.pdf', 'uploaded_by': who},
              'entrega_etiquetas': {'etiqueta_id': ETQ}}.get(t, {})
     return {**base, **extra}
 def ins(t, d): return f"INSERT INTO public.{t}({','.join(d)}) VALUES({','.join(repr(str(v)) for v in d.values())});"
