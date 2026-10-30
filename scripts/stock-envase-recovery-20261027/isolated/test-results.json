@@ -369,32 +369,37 @@
       "status": "PASS"
     },
     {
-      "test": "all fourteen financial/fiscal/outbox existing full-row snapshots unchanged",
+      "test": "canonical approval positive under added gates",
       "status": "PASS"
     },
     {
-      "test": "canonical generate/sign/attach and exact attachment replay preserved",
+      "test": "canonical scheduling positive under added gates",
       "status": "PASS"
     },
     {
-      "test": "foreign FSF proof stays closed",
+      "test": "canonical scheduling replay under added gates",
       "status": "PASS"
     },
     {
-      "test": "separate exact release installs only canonical authenticated grant after legacy closure",
+      "test": "canonical lot generation positive under added gates",
       "status": "PASS"
     },
     {
-      "test": "release rerun rejects changed exact catalog",
+      "test": "canonical send CQ positive under added gates",
       "status": "PASS"
     },
     {
-      "test": "deny-only rollback closes canonical writer",
+      "test": "canonical rejected CQ records under added gates without invented reference",
       "status": "PASS"
     },
     {
-      "test": "rollback preserves full-row historical snapshots",
+      "test": "canonical CQ replay under added gates preserves history",
       "status": "PASS"
+    },
+    {
+      "test": "execution",
+      "status": "FAIL",
+      "error": "('rejected canonical CQ cannot authorize envase', 'ERROR:  P0001: COCKPIT_LOTE_REPROVADO_BLOQUEIA_ENVASE\\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 102 at RAISE\\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\\n')"
     }
   ],
   "raw": [
@@ -721,28 +726,16 @@
       "holder_stdout": "1\n",
       "holder_stderr": "ERROR:  42501: MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC\nCONTEXT:  PL/pgSQL function platform_private.guard_manual_lot_write_v1() line 53 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
       "worker_stdout": "",
-      "worker_stderr": "ERROR:  40P01: deadlock detected\nDETAIL:  Process 61902 waits for ShareLock on transaction 16732; blocked by process 61901.\nProcess 61901 waits for ShareLock on transaction 16733; blocked by process 61902.\nHINT:  See server log for query details.\nCONTEXT:  while locking tuple (0,33) in relation \"lotes\"\nSQL statement \"SELECT coalesce(volume_produzido, 0), status::text, produto_id, microrganismo_id, programacao_id\n                                                                                  FROM public.lotes WHERE id = p_lote_id FOR UPDATE\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 83 at SQL statement\nLOCATION:  DeadLockReport, deadlock.c:1135\n",
+      "worker_stderr": "ERROR:  40P01: deadlock detected\nDETAIL:  Process 20958 waits for ShareLock on transaction 16728; blocked by process 20957.\nProcess 20957 waits for ShareLock on transaction 16729; blocked by process 20958.\nHINT:  See server log for query details.\nCONTEXT:  while locking tuple (0,33) in relation \"lotes\"\nSQL statement \"SELECT coalesce(volume_produzido, 0), status::text, produto_id, microrganismo_id, programacao_id\n                                                                                  FROM public.lotes WHERE id = p_lote_id FOR UPDATE\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 83 at SQL statement\nLOCATION:  DeadLockReport, deadlock.c:1135\n",
       "worker_returncode": 3
     },
     {
-      "test": "foreign FSF proof stays closed",
+      "test": "rejected canonical CQ cannot authorize envase",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 11 at RAISE\nSQL function \"rpc_entrega_formulario_gerar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
-    },
-    {
-      "test": "release rerun rejects changed exact catalog",
-      "returncode": 3,
-      "stdout": "",
-      "stderr": "ERROR:  P0001: ENVASE_RELEASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
-    },
-    {
-      "test": "deny-only rollback closes canonical writer",
-      "returncode": 3,
-      "stdout": "",
-      "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+      "stderr": "ERROR:  P0001: COCKPIT_LOTE_REPROVADO_BLOQUEIA_ENVASE\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 102 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     }
   ],
-  "elapsed_seconds": 186.003,
-  "exit_code": 0
+  "elapsed_seconds": 148.604,
+  "exit_code": 1
 }

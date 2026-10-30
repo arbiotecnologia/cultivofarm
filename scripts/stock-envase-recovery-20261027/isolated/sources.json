@@ -61,7 +61,11 @@
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/test_pg.py",
-    "sha256": "b5ee991fd7dfbe75511f10c26a8e59f49b106a21a599515c24444de93756014f"
+    "sha256": "d9b1f367c95c351419c2b305e43ad47532bb83cfaabcc7eac16436fac9f8307e"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/upstream.py",
+    "sha256": "dc9649210cc24336f7f424671132907cb937c58af9719e1458a2a8da7b117b08"
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/entry.sql.review",
