@@ -60,7 +60,7 @@ import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/component
 import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";
 import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
 import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
-import { clearPending, loadPending, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
+import { clearPending, loadPending, markReplayRejected, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   separado: { label: "Separado", variant: "secondary" },
@@ -86,25 +86,39 @@ export default function Entregas() {
   const [pending, setPending] = useState<RetrySnapshot | "corrupt" | null>(null);
   const pendingRef = useRef<RetrySnapshot | "corrupt" | null>(null);
   pendingRef.current = pending;
-  useEffect(() => {
+  const reloadPending = () => {
     const store = pendingStore();
     const value = actorId && orgId ? (store ? loadPending(store, actorId, orgId) : "corrupt") : null;
     pendingRef.current = value;
     setPending(value);
+  };
+  useEffect(() => {
+    reloadPending();
+    // Other tabs share the store: re-read on their writes (never adopt their outcomes, only their blocking state).
+    const onStorage = (e: StorageEvent) => { if (!e.key || e.key.startsWith("cf:delivery-uncertain:")) reloadPending(); };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actorId, orgId]);
   const reservePending = (r: RetrySnapshot) => {
     const store = pendingStore();
     if (!store || !actorId || !orgId || r.expectedOrg !== orgId) throw new Error("Recuperação local indisponível. Nenhuma alteração foi enviada.");
+    // Another tab may have registered its own attempt meanwhile: refuse a new key, never overwrite it.
+    const existing = loadPending(store, actorId, orgId);
+    if (existing === "corrupt" || (existing && JSON.stringify(existing) !== JSON.stringify(r))) {
+      reloadPending();
+      throw new Error("Há outra tentativa com resultado incerto nesta sessão (outra aba). Nenhuma alteração foi enviada.");
+    }
     savePending(store, actorId, orgId, r);
     pendingRef.current = r;
     setPending(r);
   };
-  const settlePending = (outcome: Outcome<unknown>) => {
+  /** Clears only the exact attempt this consumer dispatched; first-dispatch definitive refusal or exact confirmation. */
+  const settlePending = (outcome: Outcome<unknown>, attempt: RetrySnapshot | null) => {
     if (outcome.status !== "confirmed" && outcome.status !== "rejected") return;
     const store = pendingStore();
-    if (store && actorId && orgId) clearPending(store, actorId, orgId);
-    pendingRef.current = null;
-    setPending(null);
+    if (store && actorId && orgId && attempt) clearPending(store, actorId, orgId, attempt);
+    reloadPending();
   };
   const invalidateDelivery = (current: () => boolean) => {
     if (!current()) return;
@@ -571,13 +585,14 @@ export default function Entregas() {
       const changed = (os as any).updated_at !== observed.os.updated_at || (os as any).origem !== observed.os.origem || ((os as any).partner_order_id ?? null) !== observed.os.partner_order_id
         || ids.some(id => (rows.get(id) as any).updated_at !== observed.itens[id].updated_at || (rows.get(id) as any).status !== observed.itens[id].status);
       if (changed) throw new Error("A OS ou um lote mudou desde a seleção. Feche, revise os dados atualizados e confirme novamente. Nenhuma alteração foi enviada.");
+      let attempt: RetrySnapshot | null = null;
       const outcome = await runAtomicGroup(supabase.rpc.bind(supabase) as unknown as Rpc, {
         requestKey: grupoId, expectedOrg: orgId, osId, osTipo, osOrigem: observed.os.origem, osPartnerOrderId: observed.os.partner_order_id,
         osObservedUpdatedAt: observed.os.updated_at,
         itens: itens.map(({ item, quantidade }) => ({ itemId: item.id, quantidade, observedUpdatedAt: observed.itens[item.id].updated_at as string, status: observed.itens[item.id].status as string, reservadoParaOsId: item.reservado_para_os_id ?? null, quantidadeReservada: item.quantidade_reservada ?? null, quantidadeTotal: item.quantidade ?? null })),
         dados,
-      }, check, (r) => { dispatch(); reservePending(r); });
-      settlePending(outcome);
+      }, check, (r) => { dispatch(); reservePending(r); attempt = r; });
+      settlePending(outcome, attempt);
       if (outcome.status === "confirmed") return { grupoId, total: outcome.ack.itens.length };
       if (outcome.status === "closed") throw new Error(outcome.message);
       if (outcome.status === "rejected") throw new Error(`Entrega recusada pelo servidor (${outcome.code}); a transação não foi confirmada. ${outcome.message}`);
@@ -632,8 +647,9 @@ export default function Entregas() {
       if ((entrega as any).updated_at !== observedUpdatedAt || entrega.status !== observedStatus) throw new Error("A entrega mudou desde a abertura do cancelamento. Feche, revise o estado atual e confirme novamente. Nenhuma alteração foi enviada.");
       if (!["separado", "em_rota"].includes(entrega.status)) throw new Error("Cancelamento indisponível para este estado. Retorno de entregue exige contrato próprio.");
       // One server transaction: expedition reversal, reservation release and status; no client compensation.
-      const outcome = await runAtomicCancel(supabase.rpc.bind(supabase) as unknown as Rpc, id, motivo, observedUpdatedAt, orgId, check, (r) => { dispatch(); reservePending(r); });
-      settlePending(outcome);
+      let attempt: RetrySnapshot | null = null;
+      const outcome = await runAtomicCancel(supabase.rpc.bind(supabase) as unknown as Rpc, id, motivo, observedUpdatedAt, orgId, check, (r) => { dispatch(); reservePending(r); attempt = r; });
+      settlePending(outcome, attempt);
       if (outcome.status === "confirmed") return { id };
       if (outcome.status === "closed") throw new Error(outcome.message);
       if (outcome.status === "rejected") throw new Error(`Cancelamento recusado pelo servidor (${outcome.code}); a transação não foi confirmada. ${outcome.message}`);
@@ -655,11 +671,15 @@ export default function Entregas() {
       const p = pendingRef.current;
       if (!p || p === "corrupt" || p.expectedOrg !== orgId) throw new Error("Nenhum envio pendente válido para esta sessão. Nada foi enviado.");
       // Exact frozen args: same request key and same observed revisions; never a new CAS or new key.
+      if (p.replayRejected) throw new Error(`A repetição já foi recusada (${p.replayRejected}). Isso não prova que o envio original não foi gravado: é necessária consulta/reconciliação autorizada. Novos envios continuam bloqueados.`);
       const outcome = await replayUncertain(supabase.rpc.bind(supabase) as unknown as Rpc, p, parserFor(p), check, () => dispatch());
-      settlePending(outcome);
-      if (outcome.status === "confirmed" || outcome.status === "rejected") unresolved.current.delete(deliveryScope.scope);
-      if (outcome.status === "confirmed") return true;
-      if (outcome.status === "rejected") throw new Error(`Repetição recusada pelo servidor (${outcome.code}); o envio pendente foi encerrado sem confirmação. ${outcome.message}`);
+      if (outcome.status === "confirmed") { settlePending(outcome, p); unresolved.current.delete(deliveryScope.scope); return true; }
+      if (outcome.status === "rejected") {
+        const store = pendingStore();
+        if (store && actorId && orgId) markReplayRejected(store, actorId, orgId, p, outcome.code);
+        reloadPending();
+        throw new Error(`Repetição recusada pelo servidor (${outcome.code}). Isso não prova que o envio original não foi gravado (ex.: permissão revogada ou revisão alterada depois). O envio pendente foi mantido e exige consulta/reconciliação autorizada; novos envios continuam bloqueados. ${outcome.message}`);
+      }
       throw new Error("Repetição ainda sem resultado confirmado. O envio pendente permanece bloqueando novos envios.");
     }),
     onSuccess: ({ current }) => {
