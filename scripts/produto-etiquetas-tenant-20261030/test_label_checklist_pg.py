@@ -35,7 +35,10 @@ VA, VB, MA, MB = u(1031), u(1032), u(1033), u(1034)
 SB = T.T   # existing stock item of the other AR Bio lote M
 PA, PB = u(1041), u(1042)
 MIX = {'entrega_foreign': u(1051), 'cliente_foreign': u(1052), 'envase_foreign': u(1053), 'embalagem_foreign': u(1054),
-       'estoque_item_other_lote': u(1055), 'fazenda_foreign': u(1056), 'no_lote': u(1057), 'lote_org_null': u(1058), 'lote_ghost': u(1059)}
+       'estoque_item_other_lote': u(1055), 'fazenda_foreign': u(1056), 'no_lote': u(1057), 'lote_org_null': u(1058), 'lote_ghost': u(1059),
+       'envase_item_opaque': u(1201), 'entrega_item_opaque': u(1202), 'produto_mismatch': u(1203), 'substitui_foreign': u(1204), 'substituida_por_foreign': u(1205)}
+SUBOWN, PROD2 = u(1206), u(1207)
+WAIVE = H.parent / 'delivery-waiver-closure-20261030'
 CHA, CHB, CHX = u(1061), u(1062), u(1063)
 def actor(w): return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}'; SET request.jwt.claims='{json.dumps({'sub': w, 'role': 'authenticated'})}';"
 def cls(out):
@@ -47,12 +50,12 @@ def probe(w, stmt, role=True, lt='2s'):
     r = subprocess.run(pg.psql(), input="\\set VERBOSITY verbose\nSET lock_timeout='" + lt + "'; SET statement_timeout='30s';\nBEGIN;" + pre + stmt + "\nROLLBACK;", capture_output=True, text=True, timeout=40)
     return cls(r.stdout.replace('ROLLBACK', '').strip() if r.returncode == 0 else r.stderr)
 NEG = 'E42501'
-ALL_LABELS = [PA, PB] + list(MIX.values())
+ALL_LABELS = [PA, PB, SUBOWN] + list(MIX.values())
 def seen_ids(w):
     out = sql(actor(w) + "SELECT coalesce(string_agg(id::text, ',' ORDER BY id), '-') FROM public.produto_etiquetas;").splitlines()[-1]
     return set() if out == '-' else set(out.split(','))
 FNS = ("('rpc_atualizar_checklist_entrega','rpc_registrar_ocorrencia_entrega','can_user_access_produto_etiqueta','is_delivery_staff','rpc_entrega_formulario_gerar_v1',"
-       "'rpc_entrega_assinatura_coletar_v1','rpc_entrega_comprovante_anexar_v1','rpc_gerar_etiqueta_produto','rpc_vincular_etiqueta_embalagem','rpc_marcar_etiqueta_impressa','rpc_cancelar_etiqueta_produto')")
+       "'rpc_entrega_assinatura_coletar_v1','rpc_entrega_comprovante_anexar_v1','rpc_gerar_etiqueta_produto','rpc_vincular_etiqueta_embalagem','rpc_marcar_etiqueta_impressa','rpc_cancelar_etiqueta_produto','rpc_dispensar_assinatura_entrega')")
 STATE = f"""SELECT jsonb_build_object(
  'rel',(SELECT jsonb_object_agg(relname, jsonb_build_array(relrowsecurity,relforcerowsecurity,relacl::text)) FROM pg_class WHERE relnamespace='public'::regnamespace AND relname IN ('produto_etiquetas','entrega_etiquetas','entregas','lotes','entrega_checklist','entrega_ocorrencias')),
  'policies',(SELECT jsonb_agg(jsonb_build_array(tablename,policyname,permissive,roles::text,cmd,qual,with_check) ORDER BY tablename,policyname) FROM pg_policies WHERE schemaname='public' AND tablename IN ('produto_etiquetas','entrega_etiquetas','entregas','lotes','entrega_checklist','entrega_ocorrencias')),
@@ -72,6 +75,7 @@ def fixtures():
     T.setup()
     ghost = u(1099)
     sql("SET session_replication_role=replica;" + f"""
+    INSERT INTO public.produtos(id,nome,tipo) VALUES('{PROD2}','LOCAL PROD2','inoculante');
     INSERT INTO auth.users(id) VALUES('{FF}'),('{CL}'),('{IN}');
     INSERT INTO public.profiles(user_id,organization_id,nome,ativo,senha_provisoria) VALUES('{FF}','{B}','LOCAL FSF FIN',true,false),('{CL}','{A}','LOCAL ARB CLIENTE',true,false),('{IN}','{A}','LOCAL ARB INATIVO',false,false);
     INSERT INTO public.user_roles(user_id,role) VALUES('{FF}','financeiro'),('{CL}','cliente_produtor'),('{IN}','administrador');
@@ -95,6 +99,12 @@ def fixtures():
     {label(MIX['no_lote'], None, entrega_id=EA, cliente_id=C)}
     {label(MIX['lote_org_null'], LN, entrega_id=EA)}
     {label(MIX['lote_ghost'], ghost, entrega_id=EA)}
+    {label(MIX['envase_item_opaque'], L, envase_item_id=u(1211))}
+    {label(MIX['entrega_item_opaque'], L, entrega_item_id=u(1212))}
+    {label(MIX['produto_mismatch'], L, produto_id=PROD2)}
+    {label(MIX['substitui_foreign'], L, substitui_etiqueta_id=PB)}
+    {label(MIX['substituida_por_foreign'], L, substituida_por_id=PB)}
+    {label(SUBOWN, L, produto_id=T.PROD, substitui_etiqueta_id=PA)}
     SET session_replication_role=origin;""")
 
 def label_matrix():
@@ -110,6 +120,15 @@ def label_matrix():
             'V_delete_arbio_label': probe(V, f"WITH x AS (DELETE FROM public.produto_etiquetas WHERE id='{PA}' RETURNING 1) SELECT count(*) FROM x;"),
             'V_insert_arbio_lote': probe(V, label(u(1095), L) + " SELECT 'inserted';"),
             'U_delete_own': probe(U, f"WITH x AS (DELETE FROM public.produto_etiquetas WHERE id='{PA}' RETURNING 1) SELECT count(*) FROM x;"),
+            'U_update_envase_item_opaque': probe(U, f"UPDATE public.produto_etiquetas SET envase_item_id='{u(1213)}' WHERE id='{PA}'; SELECT 'updated';"),
+            'U_update_entrega_item_opaque': probe(U, f"UPDATE public.produto_etiquetas SET entrega_item_id='{u(1214)}' WHERE id='{PA}'; SELECT 'updated';"),
+            'U_update_substitui_to_foreign': probe(U, f"UPDATE public.produto_etiquetas SET substitui_etiqueta_id='{PB}' WHERE id='{SUBOWN}'; SELECT 'updated';"),
+            'U_update_substituida_por_to_foreign': probe(U, f"UPDATE public.produto_etiquetas SET substituida_por_id='{PB}' WHERE id='{PA}'; SELECT 'updated';"),
+            'U_update_substituida_por_to_own': probe(U, f"WITH x AS (UPDATE public.produto_etiquetas SET substituida_por_id='{SUBOWN}' WHERE id='{PA}' RETURNING 1) SELECT count(*) FROM x;"),
+            'U_insert_produto_mismatch': probe(U, label(u(1221), L, produto_id=PROD2) + " SELECT 'inserted';"),
+            'U_insert_substitui_foreign': probe(U, label(u(1222), L, substitui_etiqueta_id=PB) + " SELECT 'inserted';"),
+            'U_insert_substitui_own': probe(U, label(u(1223), L, produto_id=T.PROD, substitui_etiqueta_id=PA) + " SELECT 'inserted';"),
+            'U_insert_envase_item_opaque': probe(U, label(u(1224), L, envase_item_id=u(1215)) + " SELECT 'inserted';"),
             'anon_select': probe(None, "SET ROLE anon; SELECT count(*) FROM public.produto_etiquetas;", role=False),
             'anon_truncate': probe(None, "SET ROLE anon; TRUNCATE public.produto_etiquetas; SELECT 'truncated';", role=False),
             'auth_truncate': probe(V, "TRUNCATE public.produto_etiquetas; SELECT 'truncated';")}
@@ -138,7 +157,7 @@ def main():
     bs = {'U': seen_ids(U), 'V': seen_ids(V), 'FF': seen_ids(FF), 'CL': seen_ids(CL), 'IN': seen_ids(IN)}
     print('BEFORE_SEEN', {k: len(v) for k, v in bs.items()}, flush=True)
     assert PA in bs['V'] and PA in bs['FF'] and len(bs['V']) == len(ALL_LABELS), bs
-    ok('BEFORE: FSF admin and FSF financeiro read AR Bio labels (all 11 incl. mixed)', counts={k: len(v) for k, v in bs.items()})
+    ok('BEFORE: FSF admin and FSF financeiro read AR Bio labels (all incl. mixed)', counts={k: len(v) for k, v in bs.items()})
     lb = label_matrix(); print('BEFORE_LABEL', json.dumps(lb, ensure_ascii=False), flush=True)
     assert lb['V_update_arbio_label'] == 'ok:1' and lb['V_delete_arbio_label'] == 'ok:1' and lb['V_insert_arbio_lote'] == 'ok:inserted', lb
     FKT = 'E0A000:cannot truncate a table referenced in a foreign key constraint'
@@ -153,14 +172,14 @@ def main():
     cand_l = (H / 'candidate.sql.review').read_text(); cand_c = (CK / 'candidate.sql.review').read_text()
     pre_l = state()
     sql("BEGIN;\n" + cand_l + "\nCOMMIT;"); post_l = state()
-    sql("BEGIN; DROP POLICY produto_etiquetas_tenant_root_r ON public.produto_etiquetas; DROP FUNCTION platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid);"
+    sql("BEGIN; DROP POLICY produto_etiquetas_tenant_root_r ON public.produto_etiquetas; DROP FUNCTION platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid);"
         "GRANT TRUNCATE ON public.produto_etiquetas TO anon, authenticated; COMMIT;")
     assert state() == pre_l, 'label probe revert mismatch'
     pre_c_raw = pre_l
     sql("BEGIN;\n" + cand_c + "\nCOMMIT;"); post_c_raw = state()
     sql(ORIG_CK); assert state() == pre_l, 'checklist probe revert mismatch (original bodies from LIVE capture)'
     # Exact expected deltas.
-    assert [p for p in post_l['policies'] if p[1] != 'produto_etiquetas_tenant_root_r'] == pre_l['policies'] and post_l['fns'].keys() - pre_l['fns'].keys() == {'platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid)'}
+    assert [p for p in post_l['policies'] if p[1] != 'produto_etiquetas_tenant_root_r'] == pre_l['policies'] and post_l['fns'].keys() - pre_l['fns'].keys() == {'platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)'}
     assert post_l['rel']['produto_etiquetas'][2] == pre_l['rel']['produto_etiquetas'][2].replace('anon=arwdDxtm', 'anon=arwdxtm').replace('authenticated=arwdDxtm', 'authenticated=arwdxtm'), post_l['rel']['produto_etiquetas']
     assert {k: v for k, v in post_l['rel'].items() if k != 'produto_etiquetas'} == {k: v for k, v in pre_l['rel'].items() if k != 'produto_etiquetas'} and post_l['triggers'] == pre_l['triggers']
     ok('labels POST = PRE + 1 restrictive policy + provenance helper + TRUNCATE bit removed (anon/authenticated) only', acl=post_l['rel']['produto_etiquetas'][2])
@@ -195,14 +214,16 @@ def main():
     # AFTER label reads.
     as_ = {'U': seen_ids(U), 'V': seen_ids(V), 'FF': seen_ids(FF), 'CL': seen_ids(CL), 'IN': seen_ids(IN)}
     print('AFTER_SEEN', {k: sorted(x[-4:] for x in v) for k, v in as_.items()}, flush=True)
-    assert as_ == {'U': {PA}, 'V': {PB}, 'FF': {PB}, 'CL': {PA}, 'IN': set()}, as_
-    ok('AFTER reads: AR Bio admin/client only valid AR Bio label; FSF admin/financeiro only FSF label; inactive none; all 9 mixed/no-root/null-org/ghost hidden from everyone')
+    assert as_ == {'U': {PA, SUBOWN}, 'V': {PB}, 'FF': {PB}, 'CL': {PA}, 'IN': set()}, as_
+    ok('AFTER reads: AR Bio admin/client only valid AR Bio label; FSF admin/financeiro only FSF label; inactive none; valid own substitution visible to staff (client only via existing cliente link); all 14 mixed/no-root/null-org/ghost/opaque-item/product-mismatch/foreign-substitution hidden from everyone')
     la = label_matrix(); print('AFTER_LABEL', json.dumps(la, ensure_ascii=False), flush=True)
     IMM = 'EP0001:Campos de identificação/emissão da etiqueta são imutáveis'
     EXP = {'U_update_entrega_to_foreign': NEG, 'U_update_cliente_to_foreign': NEG, 'U_update_lote_to_foreign': IMM, 'U_update_benign_own': 'ok:1',
            'U_insert_foreign_lote': NEG, 'U_insert_own_lote_foreign_cliente': NEG, 'U_insert_own_valid': 'ok:inserted', 'U_insert_no_lote': NEG,
            'V_update_arbio_label': 'ok:0', 'V_delete_arbio_label': 'ok:0', 'V_insert_arbio_lote': NEG, 'U_delete_own': 'ok:1',
-           'anon_select': 'ok:0', 'anon_truncate': NEG, 'auth_truncate': NEG}
+           'anon_select': 'ok:0', 'anon_truncate': NEG, 'auth_truncate': NEG,
+           'U_update_envase_item_opaque': NEG, 'U_update_entrega_item_opaque': NEG, 'U_update_substitui_to_foreign': NEG, 'U_update_substituida_por_to_foreign': NEG,
+           'U_update_substituida_por_to_own': 'ok:1', 'U_insert_produto_mismatch': NEG, 'U_insert_substitui_foreign': NEG, 'U_insert_substitui_own': 'ok:inserted', 'U_insert_envase_item_opaque': NEG}
     diff = {k: (lb[k], la[k], EXP[k]) for k in EXP if la[k] != EXP[k]}; assert not diff, diff
     ok('AFTER label writes exact: root swaps/foreign/no-lote 42501, lote swap blocked by existing immutability trigger, own valid insert/update/delete allowed, FSF 0 rows, TRUNCATE 42501', matrix=la)
     assert lb['U_update_lote_to_foreign'] == IMM; ok('lote_id immutability pre-exists (same result before/after), so the root cannot be swapped')
@@ -238,6 +259,30 @@ def main():
     assert last(actor(U) + f"SELECT assinatura_digital_png_path='{sg}' AND arquivo_path='{fp}' FROM public.entrega_comprovantes WHERE entrega_id='{EA2}';") == 't'
     fails('FSF generate on AR Bio delivery still denied', actor(V) + f"SELECT public.rpc_entrega_formulario_gerar_v1('{EA2}','gen-lc-x00001');", 'DELIVERY_PROOF_SCOPE_DENIED')
     ok('generate/sign/attach + replay work in full installed composition')
+    WV = lambda w, e: probe(w, f"SELECT public.rpc_dispensar_assinatura_entrega('{e}', 'LOCAL motivo de teste dispensa')::text;")
+    DIRECT = lambda w: probe(w, f"WITH x AS (UPDATE public.entrega_comprovantes SET status='dispensado' WHERE entrega_id='{EA2}' RETURNING 1) SELECT count(*) FROM x;")
+    DIRP = lambda w: probe(w, f"WITH x AS (UPDATE public.entregas SET comprovante_status='dispensado' WHERE id='{EA2}' RETURNING 1) SELECT count(*) FROM x;")
+    wb = {'U_own': WV(U, EA2), 'U_own_nocomp': WV(U, EA), 'V_foreign': WV(V, EA2), 'U_cancelled': WV(U, EX), 'CL_client': WV(CL, EA2),
+          'U_direct_comprovante': DIRECT(U), 'U_direct_entregas': DIRP(U)}
+    print('BEFORE_WAIVER', json.dumps(wb, ensure_ascii=False), flush=True)
+    assert not any(v.startswith('ok:') and v not in ('ok:0',) for v in wb.values()), wb
+    ok('waiver current state: no client path mutates (RPC denied by existing barriers/guards, direct writes 0 rows/denied) -- recorded exact outcomes', matrix=wb)
+    pre_w = state(); cand_w = (WAIVE / 'candidate.sql.review').read_text()
+    sql("BEGIN;\n" + cand_w + "\nCOMMIT;"); post_w = state()
+    sql("GRANT EXECUTE ON FUNCTION public.rpc_dispensar_assinatura_entrega(uuid,text) TO authenticated;"); assert state() == pre_w
+    k = [x for x in pre_w['fns'] if x.startswith('rpc_dispensar_assinatura_entrega(')]; assert len(k) == 1, k
+    assert {x: v for x, v in post_w['fns'].items() if x != k[0]} == {x: v for x, v in pre_w['fns'].items() if x != k[0]} and post_w['fns'][k[0]] == pre_w['fns'][k[0]].replace(',authenticated=X/postgres', '')
+    assert {x: v for x, v in post_w.items() if x != 'fns'} == {x: v for x, v in pre_w.items() if x != 'fns'}
+    preW, postW = check_sql(pre_w, 'WAIVER_CLOSE_PRE_DRIFT'), check_sql(post_w, 'WAIVER_CLOSE_POST_DRIFT')
+    instW = "BEGIN;\nSET LOCAL lock_timeout='3s';\nSET LOCAL statement_timeout='30s';\n" + preW + cand_w + "\n" + postW + "COMMIT;\n"
+    fails('waiver wrong POST rolls back atomically', instW.replace(postW, check_sql({**post_w, 'fns': {}}, 'WAIVER_CLOSE_POST_DRIFT')), 'WAIVER_CLOSE_POST_DRIFT'); assert state() == pre_w
+    sql(instW); sql(postW); assert state() == post_w; fails('waiver rerun refused', instW, 'WAIVER_CLOSE_PRE_DRIFT')
+    for n, v in (('preflight.sql.review', preW), ('postflight.sql.review', postW), ('install.sql.review', instW)): (WAIVE / n).write_text(v)
+    (WAIVE / 'pre-state.json').write_text(json.dumps(pre_w, indent=1) + '\n'); (WAIVE / 'post-state.json').write_text(json.dumps(post_w, indent=1) + '\n')
+    wa = {x: WV(w, e) for x, (w, e) in {'U_own': (U, EA2), 'V_foreign': (V, EA2), 'CL_client': (CL, EA2)}.items()}
+    assert wa == {'U_own': NEG, 'V_foreign': NEG, 'CL_client': NEG}, wa
+    ok('waiver closure: only authenticated EXECUTE removed (body/other ACL unchanged); all clients 42501', matrix=wa)
+    att(); ok('attach replay still works after waiver closure')
     assert probe(U, f"INSERT INTO public.entrega_etiquetas(entrega_id,etiqueta_id) VALUES('{EA}','{PA}'); SELECT 'inserted';") == NEG
     ok('entrega_etiquetas link writes remain closed (42501) even for own entrega + own valid label')
     FIN = ['accounts_receivable', 'financial_receipts', 'fiscal_invoices', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base']

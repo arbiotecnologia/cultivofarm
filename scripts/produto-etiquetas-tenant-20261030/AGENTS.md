@@ -1,4 +1,4 @@
 - Preparation only: never apply install/rollback hosted, publish or grant from this package; the main auditor reviews and applies.
-- Label tenant = organization of its immutable lote; every other provided root must agree, otherwise deny. Never derive ownership from gerada_por, current profiles or can_user_access_produto_etiqueta.
+- Label tenant = organization of its immutable lote; every other provided root (incl. produto, substitution labels) must agree, opaque item ids deny, otherwise deny. Never derive ownership from gerada_por, current profiles or can_user_access_produto_etiqueta.
 - Delta = provenance helper + one RESTRICTIVE ALL policy + REVOKE TRUNCATE; never alter existing policies, writers or other ACL bits. entrega_etiquetas link writes stay closed.
 - Rollback narrows to false, never drops or regrants. Synthetic claims are not hosted JWT proof.

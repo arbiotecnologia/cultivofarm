@@ -1,0 +1,3 @@
+-- Deny-safe closure of the legacy role-only SECURITY DEFINER waiver writer.
+-- No body change, no new grant; service_role/postgres untouched. Reopening requires its own reviewed canonical contract.
+REVOKE EXECUTE ON FUNCTION public.rpc_dispensar_assinatura_entrega(uuid,text) FROM PUBLIC, anon, authenticated;

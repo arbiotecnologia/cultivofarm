@@ -1,0 +1,362 @@
+{
+ "fns": {
+  "is_delivery_staff(uuid)": "aa500abecc84ca8c901753c519f36fa1|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "rpc_gerar_etiqueta_produto(jsonb)": "814be9eb7435c3fced7ffad44b9fc3fe|{postgres=X/postgres,service_role=X/postgres}",
+  "can_user_access_produto_etiqueta(uuid)": "3461b265f7b3ee93b9c9e90cfc1a7438|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "rpc_marcar_etiqueta_impressa(uuid,text)": "530d9055b76830a4161f58633c41e7d1|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "platform_private.has_role(uuid,app_role)": "c5af5b55de6d79da9b73a33948746ae2|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "rpc_cancelar_etiqueta_produto(uuid,text)": "c640896710b8eb8a00eb230bbf9e1cbe|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881|{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+  "rpc_entrega_formulario_gerar_v1(uuid,text)": "263058b4cf58f4712d3a1669e9acb9db|{postgres=X/postgres,authenticated=X/postgres}",
+  "rpc_vincular_etiqueta_embalagem(uuid,uuid)": "e40dabcdc439fc35507e85133a5074b0|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "rpc_dispensar_assinatura_entrega(uuid,text)": "9c5dd351019cdc5ae311ce5aef289a5f|{postgres=X/postgres,service_role=X/postgres}",
+  "rpc_registrar_ocorrencia_entrega(uuid,jsonb)": "2c6fa115c4f534e717d02208552661e2|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "rpc_atualizar_checklist_entrega(uuid,boolean,text)": "6e086110d15b56347e75e4dd7261e49f|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "rpc_entrega_assinatura_coletar_v1(uuid,text,jsonb)": "4a7303d99ba740cdb88bfd42ecc30695|{postgres=X/postgres,authenticated=X/postgres}",
+  "rpc_entrega_comprovante_anexar_v1(uuid,text,jsonb)": "8155124325d58ed9baa726668c2183d5|{postgres=X/postgres,authenticated=X/postgres}",
+  "platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)": "f83753b70fb4f05d5bd8ae705b1ef3f3|{postgres=X/postgres,authenticated=X/postgres}"
+ },
+ "rel": {
+  "lotes": [
+   true,
+   false,
+   "{postgres=arwdDxtm/postgres,anon=arwd/postgres,authenticated=arwd/postgres,service_role=arwdDxtm/postgres}"
+  ],
+  "entregas": [
+   true,
+   false,
+   "{postgres=arwdDxtm/postgres,authenticated=rxtm/postgres,service_role=arwdDxtm/postgres}"
+  ],
+  "entrega_checklist": [
+   true,
+   false,
+   "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}"
+  ],
+  "entrega_etiquetas": [
+   true,
+   false,
+   "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}"
+  ],
+  "produto_etiquetas": [
+   true,
+   false,
+   "{postgres=arwdDxtm/postgres,anon=arwdxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}"
+  ],
+  "entrega_ocorrencias": [
+   true,
+   false,
+   "{postgres=arwdDxtm/postgres,authenticated=arwdxtm/postgres,service_role=arwdDxtm/postgres}"
+  ]
+ },
+ "policies": [
+  [
+   "entrega_checklist",
+   "Cliente read own entrega_checklist",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE ((e.id = entrega_checklist.entrega_id) AND (e.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))))))",
+   null
+  ],
+  [
+   "entrega_checklist",
+   "Staff manage entrega_checklist",
+   "PERMISSIVE",
+   "{authenticated}",
+   "ALL",
+   "is_delivery_staff(( SELECT auth.uid() AS uid))",
+   "is_delivery_staff(( SELECT auth.uid() AS uid))"
+  ],
+  [
+   "entrega_checklist",
+   "entrega_checklist_parent_visible_r",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "ALL",
+   "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE (e.id = entrega_checklist.entrega_id)))",
+   "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE (e.id = entrega_checklist.entrega_id)))"
+  ],
+  [
+   "entrega_etiquetas",
+   "entrega_etiquetas insert internal",
+   "PERMISSIVE",
+   "{authenticated}",
+   "INSERT",
+   null,
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role))"
+  ],
+  [
+   "entrega_etiquetas",
+   "entrega_etiquetas select",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "can_user_access_produto_etiqueta(etiqueta_id)",
+   null
+  ],
+  [
+   "entrega_etiquetas",
+   "entrega_etiquetas update internal",
+   "PERMISSIVE",
+   "{authenticated}",
+   "UPDATE",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role))",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role))"
+  ],
+  [
+   "entrega_etiquetas",
+   "entrega_etiquetas_link_update_closed_r",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "UPDATE",
+   "false",
+   "false"
+  ],
+  [
+   "entrega_etiquetas",
+   "entrega_etiquetas_link_write_closed_r",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "INSERT",
+   null,
+   "false"
+  ],
+  [
+   "entrega_etiquetas",
+   "entrega_etiquetas_parent_visible_r",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "ALL",
+   "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE (e.id = entrega_etiquetas.entrega_id)))",
+   "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE (e.id = entrega_etiquetas.entrega_id)))"
+  ],
+  [
+   "entrega_ocorrencias",
+   "Cliente read own entrega_ocorrencias",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE ((e.id = entrega_ocorrencias.entrega_id) AND (e.cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid)))))))",
+   null
+  ],
+  [
+   "entrega_ocorrencias",
+   "Financeiro read entrega_ocorrencias",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "is_financial_staff(( SELECT auth.uid() AS uid))",
+   null
+  ],
+  [
+   "entrega_ocorrencias",
+   "Staff manage entrega_ocorrencias",
+   "PERMISSIVE",
+   "{authenticated}",
+   "ALL",
+   "is_delivery_staff(( SELECT auth.uid() AS uid))",
+   "is_delivery_staff(( SELECT auth.uid() AS uid))"
+  ],
+  [
+   "entrega_ocorrencias",
+   "entrega_ocorrencias_parent_visible_r",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "ALL",
+   "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE (e.id = entrega_ocorrencias.entrega_id)))",
+   "(EXISTS ( SELECT 1\n   FROM entregas e\n  WHERE (e.id = entrega_ocorrencias.entrega_id)))"
+  ],
+  [
+   "entregas",
+   "Admin/Gestor/Adm total access on entregas",
+   "PERMISSIVE",
+   "{public}",
+   "ALL",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role))",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role))"
+  ],
+  [
+   "entregas",
+   "Cliente read own entregas",
+   "PERMISSIVE",
+   "{public}",
+   "SELECT",
+   "(cliente_id = ANY (get_cliente_ids_for_user(( SELECT auth.uid() AS uid))))",
+   null
+  ],
+  [
+   "entregas",
+   "Financeiro read entregas",
+   "PERMISSIVE",
+   "{public}",
+   "SELECT",
+   "platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)",
+   null
+  ],
+  [
+   "entregas",
+   "Producao/Aplicador read entregas",
+   "PERMISSIVE",
+   "{public}",
+   "SELECT",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'aplicador'::app_role))",
+   null
+  ],
+  [
+   "entregas",
+   "tenant_isolation_d51_5",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "ALL",
+   "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+   "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+  ],
+  [
+   "lotes",
+   "Adm/Consultor read lotes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrativo'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'consultor_tecnico'::app_role))",
+   null
+  ],
+  [
+   "lotes",
+   "Admin/Gestor/Producao access on lotes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "ALL",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role))",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role))"
+  ],
+  [
+   "lotes",
+   "Financeiro read lotes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "platform_private.has_role(( SELECT auth.uid() AS uid), 'financeiro'::app_role)",
+   null
+  ],
+  [
+   "lotes",
+   "OnFarm scoped insert lotes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "INSERT",
+   null,
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role) AND (EXISTS ( SELECT 1\n   FROM ((programacao_producao pp\n     LEFT JOIN ordens_servico os ON ((os.id = pp.ordem_servico_id)))\n     LEFT JOIN ordens_servico_onfarm o2 ON ((o2.id = pp.ordem_servico_onfarm_id)))\n  WHERE ((pp.id = lotes.programacao_id) AND fn_onfarm_scope_cliente(COALESCE(os.cliente_id, o2.cliente_id))))))"
+  ],
+  [
+   "lotes",
+   "OnFarm scoped select lotes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "fn_onfarm_scope_lote(id)",
+   null
+  ],
+  [
+   "lotes",
+   "OnFarm scoped update lotes",
+   "PERMISSIVE",
+   "{authenticated}",
+   "UPDATE",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role) AND fn_onfarm_scope_lote(id))",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role) AND fn_onfarm_scope_lote(id))"
+  ],
+  [
+   "lotes",
+   "tenant_isolation_d51_5",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "ALL",
+   "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+   "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+  ],
+  [
+   "produto_etiquetas",
+   "Internal manage produto_etiquetas",
+   "PERMISSIVE",
+   "{authenticated}",
+   "ALL",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role))",
+   "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'gestor'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'producao'::app_role) OR platform_private.has_role(( SELECT auth.uid() AS uid), 'operador_onfarm'::app_role))"
+  ],
+  [
+   "produto_etiquetas",
+   "Read produto_etiquetas via access fn",
+   "PERMISSIVE",
+   "{authenticated}",
+   "SELECT",
+   "can_user_access_produto_etiqueta(id)",
+   null
+  ],
+  [
+   "produto_etiquetas",
+   "produto_etiquetas_tenant_root_r",
+   "RESTRICTIVE",
+   "{authenticated}",
+   "ALL",
+   "(platform_private.produto_etiqueta_root_org_v1(lote_id, produto_id, envase_id, envase_item_id, estoque_item_id, embalagem_id, entrega_id, entrega_item_id, cliente_id, fazenda_id, substitui_etiqueta_id, substituida_por_id) = platform_private.h15_actor_organization())",
+   "(platform_private.produto_etiqueta_root_org_v1(lote_id, produto_id, envase_id, envase_item_id, estoque_item_id, embalagem_id, entrega_id, entrega_item_id, cliente_id, fazenda_id, substitui_etiqueta_id, substituida_por_id) = platform_private.h15_actor_organization())"
+  ]
+ ],
+ "triggers": [
+  [
+   "produto_etiquetas",
+   "trg_produto_etiquetas_snapshot_immutable",
+   "O"
+  ],
+  [
+   "produto_etiquetas",
+   "trg_produto_etiquetas_updated_at",
+   "O"
+  ],
+  [
+   "lotes",
+   "trg_refresh_esteira_lotes",
+   "O"
+  ],
+  [
+   "lotes",
+   "update_lotes_updated_at",
+   "O"
+  ],
+  [
+   "entrega_checklist",
+   "trg_checklist_estado_editavel_v1",
+   "O"
+  ],
+  [
+   "entrega_ocorrencias",
+   "trg_ocorrencia_estado_editavel_v1",
+   "O"
+  ],
+  [
+   "lotes",
+   "trg_lab_lot_biological_only",
+   "O"
+  ],
+  [
+   "lotes",
+   "aa_manual_lot_write_fence_v1",
+   "O"
+  ],
+  [
+   "lotes",
+   "trg_saas_gate",
+   "O"
+  ],
+  [
+   "lotes",
+   "tenant_organization_guard",
+   "O"
+  ],
+  [
+   "lotes",
+   "aa_manual_lot_delete_v1",
+   "O"
+  ]
+ ]
+}

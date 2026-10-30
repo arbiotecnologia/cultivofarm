@@ -1,0 +1,3 @@
+# Fechamento deny-safe da dispensa de assinatura (preparação, não aplicado)
+Estado atual ensaiado na composição instalada (a566faa4+4390ef16+proof-select+36b238e9): staff próprio/estrangeiro/cancelada → 42501 (barreiras existentes), cliente → P0001 do guard de papel; UPDATE direto em entrega_comprovantes/entregas → 42501. Ou seja, já fechado na prática, mas EXECUTE do authenticated segue concedido a um DEFINER role-only.
+Delta: só remove EXECUTE de PUBLIC/anon/authenticated. PRE/POST pinados no install; rerun recusado; POST errado reverte. Ensaio: ../produto-etiquetas-tenant-20261030/test_label_checklist_pg.py.

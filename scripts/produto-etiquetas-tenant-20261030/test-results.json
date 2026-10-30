@@ -9,12 +9,12 @@
     "acl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
   },
   {
-    "test": "BEFORE: FSF admin and FSF financeiro read AR Bio labels (all 11 incl. mixed)",
+    "test": "BEFORE: FSF admin and FSF financeiro read AR Bio labels (all incl. mixed)",
     "status": "PASS",
     "counts": {
-      "U": 11,
-      "V": 11,
-      "FF": 11,
+      "U": 17,
+      "V": 17,
+      "FF": 17,
       "CL": 2,
       "IN": 0
     }
@@ -35,6 +35,15 @@
       "V_delete_arbio_label": "ok:1",
       "V_insert_arbio_lote": "ok:inserted",
       "U_delete_own": "ok:1",
+      "U_update_envase_item_opaque": "ok:updated",
+      "U_update_entrega_item_opaque": "ok:updated",
+      "U_update_substitui_to_foreign": "ok:updated",
+      "U_update_substituida_por_to_foreign": "ok:updated",
+      "U_update_substituida_por_to_own": "ok:1",
+      "U_insert_produto_mismatch": "ok:inserted",
+      "U_insert_substitui_foreign": "ok:inserted",
+      "U_insert_substitui_own": "ok:inserted",
+      "U_insert_envase_item_opaque": "ok:inserted",
       "anon_select": "ok:0",
       "anon_truncate": "E0A000:cannot truncate a table referenced in a foreign key constraint",
       "auth_truncate": "E0A000:cannot truncate a table referenced in a foreign key constraint"
@@ -112,7 +121,7 @@
     "expected": "CK_AUTHZ_PRE_DRIFT"
   },
   {
-    "test": "AFTER reads: AR Bio admin/client only valid AR Bio label; FSF admin/financeiro only FSF label; inactive none; all 9 mixed/no-root/null-org/ghost hidden from everyone",
+    "test": "AFTER reads: AR Bio admin/client only valid AR Bio label; FSF admin/financeiro only FSF label; inactive none; valid own substitution visible to staff (client only via existing cliente link); all 14 mixed/no-root/null-org/ghost/opaque-item/product-mismatch/foreign-substitution hidden from everyone",
     "status": "PASS"
   },
   {
@@ -131,6 +140,15 @@
       "V_delete_arbio_label": "ok:0",
       "V_insert_arbio_lote": "E42501",
       "U_delete_own": "ok:1",
+      "U_update_envase_item_opaque": "E42501",
+      "U_update_entrega_item_opaque": "E42501",
+      "U_update_substitui_to_foreign": "E42501",
+      "U_update_substituida_por_to_foreign": "E42501",
+      "U_update_substituida_por_to_own": "ok:1",
+      "U_insert_produto_mismatch": "E42501",
+      "U_insert_substitui_foreign": "E42501",
+      "U_insert_substitui_own": "ok:inserted",
+      "U_insert_envase_item_opaque": "E42501",
       "anon_select": "ok:0",
       "anon_truncate": "E42501",
       "auth_truncate": "E42501"
@@ -175,6 +193,42 @@
   },
   {
     "test": "generate/sign/attach + replay work in full installed composition",
+    "status": "PASS"
+  },
+  {
+    "test": "waiver current state: no client path mutates (RPC denied by existing barriers/guards, direct writes 0 rows/denied) -- recorded exact outcomes",
+    "status": "PASS",
+    "matrix": {
+      "U_own": "E42501",
+      "U_own_nocomp": "E42501",
+      "V_foreign": "E42501",
+      "U_cancelled": "E42501",
+      "CL_client": "EP0001:Apenas admin/gestor/administrativo podem dispensar assinatura",
+      "U_direct_comprovante": "E42501",
+      "U_direct_entregas": "E42501"
+    }
+  },
+  {
+    "test": "waiver wrong POST rolls back atomically",
+    "status": "PASS",
+    "expected": "WAIVER_CLOSE_POST_DRIFT"
+  },
+  {
+    "test": "waiver rerun refused",
+    "status": "PASS",
+    "expected": "WAIVER_CLOSE_PRE_DRIFT"
+  },
+  {
+    "test": "waiver closure: only authenticated EXECUTE removed (body/other ACL unchanged); all clients 42501",
+    "status": "PASS",
+    "matrix": {
+      "U_own": "E42501",
+      "V_foreign": "E42501",
+      "CL_client": "E42501"
+    }
+  },
+  {
+    "test": "attach replay still works after waiver closure",
     "status": "PASS"
   },
   {

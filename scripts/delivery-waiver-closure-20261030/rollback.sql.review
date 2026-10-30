@@ -1,0 +1,3 @@
+-- Rollback is intentionally a no-op: closure is already deny-only. Never re-GRANT EXECUTE to authenticated/anon/PUBLIC
+-- from this package; a future waiver contract must be its own reviewed install.
+SELECT 'waiver closure rollback: no-op by design';

@@ -9,11 +9,12 @@
   "platform_private.h15_actor_organization()": "64e10608403238a41a9baf92857ca881|{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
   "rpc_entrega_formulario_gerar_v1(uuid,text)": "263058b4cf58f4712d3a1669e9acb9db|{postgres=X/postgres,authenticated=X/postgres}",
   "rpc_vincular_etiqueta_embalagem(uuid,uuid)": "e40dabcdc439fc35507e85133a5074b0|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+  "rpc_dispensar_assinatura_entrega(uuid,text)": "9c5dd351019cdc5ae311ce5aef289a5f|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
   "rpc_registrar_ocorrencia_entrega(uuid,jsonb)": "2c6fa115c4f534e717d02208552661e2|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
   "rpc_atualizar_checklist_entrega(uuid,boolean,text)": "6e086110d15b56347e75e4dd7261e49f|{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
   "rpc_entrega_assinatura_coletar_v1(uuid,text,jsonb)": "4a7303d99ba740cdb88bfd42ecc30695|{postgres=X/postgres,authenticated=X/postgres}",
   "rpc_entrega_comprovante_anexar_v1(uuid,text,jsonb)": "8155124325d58ed9baa726668c2183d5|{postgres=X/postgres,authenticated=X/postgres}",
-  "platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid)": "d4e03248fea10d0fbe2254b182c5f01c|{postgres=X/postgres,authenticated=X/postgres}"
+  "platform_private.produto_etiqueta_root_org_v1(uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid,uuid)": "f83753b70fb4f05d5bd8ae705b1ef3f3|{postgres=X/postgres,authenticated=X/postgres}"
  },
  "rel": {
   "lotes": [
@@ -297,8 +298,8 @@
    "RESTRICTIVE",
    "{authenticated}",
    "ALL",
-   "(platform_private.produto_etiqueta_root_org_v1(lote_id, envase_id, estoque_item_id, embalagem_id, entrega_id, cliente_id, fazenda_id) = platform_private.h15_actor_organization())",
-   "(platform_private.produto_etiqueta_root_org_v1(lote_id, envase_id, estoque_item_id, embalagem_id, entrega_id, cliente_id, fazenda_id) = platform_private.h15_actor_organization())"
+   "(platform_private.produto_etiqueta_root_org_v1(lote_id, produto_id, envase_id, envase_item_id, estoque_item_id, embalagem_id, entrega_id, entrega_item_id, cliente_id, fazenda_id, substitui_etiqueta_id, substituida_por_id) = platform_private.h15_actor_organization())",
+   "(platform_private.produto_etiqueta_root_org_v1(lote_id, produto_id, envase_id, envase_item_id, estoque_item_id, embalagem_id, entrega_id, entrega_item_id, cliente_id, fazenda_id, substitui_etiqueta_id, substituida_por_id) = platform_private.h15_actor_organization())"
   ]
  ],
  "triggers": [
