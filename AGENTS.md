@@ -92,3 +92,4 @@
 
 - Incremental deployment: read scripts/arbio-fsf-incremental-20261029/AGENTS.md — preserves release gates.
 - Delivery proof (form/signature/attachment) follows scripts/delivery-proof-authz-20261030/AGENTS.md; it ships in one backend transaction with the atomic barrier and hardened legacy adapters before the frontend, and clients never delete proof objects — prevents broken windows, cross-tenant proof writes and loss of concurrently linked files.
+- Delivery group/cancel client release follows scripts/delivery-group-capability-20261030/AGENTS.md; frontend opens only on the exact server capability probed before dispatch — prevents opening writers before reviewed grants.

@@ -1084,3 +1084,4 @@
 - [x] 97 regressões atômicas com comprovação instalada; 93 falhas de segurança idênticas à base 7cc75d7.
 - [x] Adaptadores legados endurecidos + release-combined (uma transação), depois frontend; AGENTS raiz restaurado.
 - [ ] Instalação hosted e prova JWT/RLS/Storage real: aguarda revisão do proprietário do artefato exato.
+- [ ] Liberação restrita entregas grupo/cancelamento: candidato `scripts/delivery-group-capability-20261030/` (42 PASS PG local) aguardando revisão/aplicação do proprietário e prova real com sessão AR Bio (bloqueio possível: lote disponível canônico).
