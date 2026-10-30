@@ -189,8 +189,25 @@
     "status": "PASS"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 211, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 194, in main\n    o1 = T.finish(s1, \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; ROLLBACK;\"); o2 = T.finish(s2, 'ROLLBACK;')\n                                                                                                           ~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 57, in finish\n    if s:p.stdin.write(s+'\\n');p.stdin.flush()\n                               ~~~~~~~~~~~~~^^\nBrokenPipeError: [Errno 32] Broken pipe\n"
+    "test": "inverse-order contender: PostgreSQL resolves (40P01/55P03) and no partial movement remains",
+    "status": "PASS",
+    "detail": "40P01"
+  },
+  {
+    "test": "zero financial/fiscal/communication rows across envase, transition, deliveries and contention",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback restores exact applied motor/batch/group/guard and never restores the purge escape",
+    "status": "PASS"
+  },
+  {
+    "test": "after rollback the envase transition is closed",
+    "status": "PASS",
+    "expected": "ENVASE_TRANSITION_CLOSED"
+  },
+  {
+    "test": "rollback preserves history",
+    "status": "PASS"
   }
 ]

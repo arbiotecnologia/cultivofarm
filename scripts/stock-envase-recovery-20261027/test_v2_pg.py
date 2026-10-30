@@ -195,6 +195,9 @@ def main():
         # The deadlock victim's psql exits (ON_ERROR_STOP); writing to it raises EPIPE — collect its output instead.
         try: return T.finish(p, c)
         except BrokenPipeError:
+            try: p.stdin.close()
+            except Exception: pass
+            p.stdin = None
             out, err = p.communicate(timeout=30); return (out or '', err or '')
     o1 = fin(s1, "SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; ROLLBACK;"); o2 = fin(s2, 'ROLLBACK;')
     j = o1[1] + o2[1]
