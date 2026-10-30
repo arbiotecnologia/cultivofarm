@@ -14967,11 +14967,6 @@
     "expression": "(SELECT coalesce(jsonb_agg(jsonb_build_object('name',tgname,'definition',pg_get_triggerdef(oid),'enabled',tgenabled) ORDER BY tgname),'[]'::jsonb) FROM pg_trigger WHERE tgrelid=to_regclass('public.entregas') AND NOT tgisinternal)",
     "expected": [
       {
-        "name": "a00_delivery_mutation_closed",
-        "enabled": "O",
-        "definition": "CREATE TRIGGER a00_delivery_mutation_closed BEFORE INSERT OR DELETE OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_mutation_guard_20261030()"
-      },
-      {
         "name": "tenant_organization_guard",
         "enabled": "O",
         "definition": "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
@@ -15020,6 +15015,11 @@
         "name": "update_entregas_updated_at",
         "enabled": "O",
         "definition": "CREATE TRIGGER update_entregas_updated_at BEFORE UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+      },
+      {
+        "name": "zz_delivery_mutation_closed",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER zz_delivery_mutation_closed BEFORE INSERT OR DELETE OR UPDATE ON public.entregas FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_mutation_guard_20261030()"
       }
     ]
   },

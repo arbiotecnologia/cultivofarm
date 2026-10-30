@@ -82,8 +82,39 @@
     "status": "PASS"
   },
   {
+    "test": "two-item group real reserve split delivery expedition",
+    "status": "PASS"
+  },
+  {
+    "test": "exact replay returns stored group",
+    "status": "PASS"
+  },
+  {
+    "test": "replay creates no duplicate",
+    "status": "PASS"
+  },
+  {
+    "test": "changed payload replay conflict",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
+  },
+  {
+    "test": "cross tenant cancel",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "cancel failure after return ledger atomically rolls back",
+    "status": "PASS",
+    "expected": "LOCAL_CANCEL_FAULT"
+  },
+  {
+    "test": "failed cancel rolls back reversal stock delivery and receipt",
+    "status": "PASS"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 187, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 94, in main\n    out=sql(actor()+call('first-group'));print('GROUP',out,flush=True)\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 16, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/contracts-c2-20261022/integral/pg.py\", line 16, in sql\n    assert r.returncode == 0, r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  DELIVERY_MUTATION_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.delivery_mutation_guard_20261030() line 11 at RAISE\nSQL statement \"INSERT INTO public.entregas (\n    ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,\n    lote_id, produto_id, quantidade_entregue, status, cliente_id,\n    data_saida, motorista, veiculo\n  ) VALUES (\n    CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,\n    CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,\n    p_estoque_produto_id,\n    v_est.lote_id,\n    v_est.produto_id,\n    p_quantidade,\n    'separado'::public.status_entrega,\n    v_cliente_os,\n    nullif(p_dados->>'data_saida','')::date,\n    nullif(p_dados->>'motorista',''),\n    nullif(p_dados->>'veiculo','')\n  ) RETURNING id\"\nPL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 92 at SQL statement\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 62 at assignment\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 187, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 106, in main\n    print('CANCEL',sql(actor()+cancel(ent)),flush=True)\n                   ~~~^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 16, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/contracts-c2-20261022/integral/pg.py\", line 16, in sql\n    assert r.returncode == 0, r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  DELIVERY_MUTATION_CLOSED\nCONTEXT:  PL/pgSQL function platform_private.delivery_mutation_guard_20261030() line 24 at RAISE\nSQL statement \"UPDATE public.entregas SET status='cancelada',motivo_cancelamento=btrim(p_motivo) WHERE id=v_e.id AND organization_id=v_org\"\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 47 at SQL statement\n\n"
   }
 ]

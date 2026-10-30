@@ -15,12 +15,21 @@ PASS invalid quantity -1
 PASS invalid quantity Infinity
 PASS OnFarm remains contained
 PASS all negative paths no deliveries receipts
+GROUP {"itens": [{"entrega_id": "25aaf52c-f4bc-496b-a204-9b7ce41f7162", "movimentacao_id": "585a5185-1dd2-49f7-978d-3fb3d536b751", "estoque_produto_id": "6a11aceb-d6f1-4fc6-b98a-8de3d1cbbc88"}, {"entrega_id": "304a3e19-26db-4e6c-a4c5-72f8d34b37f8", "movimentacao_id": "25a48bd8-1599-432f-8cf5-9123b287afa7", "estoque_produto_id": "5e94408e-8976-4175-877b-3cdd74cc1685"}], "os_id": "10000000-0000-4000-8000-000000000007", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000001"}
+PASS two-item group real reserve split delivery expedition
+PASS exact replay returns stored group
+PASS replay creates no duplicate
+PASS changed payload replay conflict
+PASS cross tenant cancel
+PASS cancel failure after return ledger atomically rolls back
+PASS failed cancel rolls back reversal stock delivery and receipt
 Traceback (most recent call last):
   File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 187, in <module>
     try: main()
          ~~~~^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 94, in main
-    out=sql(actor()+call('first-group'));print('GROUP',out,flush=True)
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 106, in main
+    print('CANCEL',sql(actor()+cancel(ent)),flush=True)
+                   ~~~^^^^^^^^^^^^^^^^^^^^^
   File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 16, in sql
     def sql(s): return pg.sql(s)
                        ~~~~~~^^^
@@ -28,25 +37,8 @@ Traceback (most recent call last):
     assert r.returncode == 0, r.stderr[-3000:]
            ^^^^^^^^^^^^^^^^^
 AssertionError: ERROR:  DELIVERY_MUTATION_CLOSED
-CONTEXT:  PL/pgSQL function platform_private.delivery_mutation_guard_20261030() line 11 at RAISE
-SQL statement "INSERT INTO public.entregas (
-    ordem_servico_id, ordem_servico_onfarm_id, estoque_produto_id,
-    lote_id, produto_id, quantidade_entregue, status, cliente_id,
-    data_saida, motorista, veiculo
-  ) VALUES (
-    CASE WHEN v_origem = 'onfarm' THEN NULL ELSE p_os_id END,
-    CASE WHEN v_origem = 'onfarm' THEN p_os_id ELSE NULL END,
-    p_estoque_produto_id,
-    v_est.lote_id,
-    v_est.produto_id,
-    p_quantidade,
-    'separado'::public.status_entrega,
-    v_cliente_os,
-    nullif(p_dados->>'data_saida','')::date,
-    nullif(p_dados->>'motorista',''),
-    nullif(p_dados->>'veiculo','')
-  ) RETURNING id"
-PL/pgSQL function rpc_cockpit_criar_entrega_v1(uuid,text,uuid,numeric,jsonb) line 92 at SQL statement
-PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 62 at assignment
+CONTEXT:  PL/pgSQL function platform_private.delivery_mutation_guard_20261030() line 24 at RAISE
+SQL statement "UPDATE public.entregas SET status='cancelada',motivo_cancelamento=btrim(p_motivo) WHERE id=v_e.id AND organization_id=v_org"
+PL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 47 at SQL statement
 
-RESULT 17 PASS 1 FAIL 0 BLOCKED
+RESULT 24 PASS 1 FAIL 0 BLOCKED
