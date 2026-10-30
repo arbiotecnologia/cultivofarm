@@ -258,7 +258,7 @@ def main():
     passed('legacy generate adapter works for same-tenant staff through the new contract')
     lpath = f'entregas/{E7}/comprovantes/{u(710)}.pdf'; obj(lpath)
     legacy_payload = json.dumps({'arquivo_path': lpath, 'arquivo_nome': 'r.pdf', 'arquivo_mime': 'application/pdf', 'recebedor_nome': 'R', 'recebedor_documento': None, 'recebedor_cargo': None, 'recebedor_telefone': None})
-    ok('legacy attach adapter (old payload) links object with audit and zero residue', actor() + f"SELECT public.rpc_anexar_comprovante_entrega('{E7}','{legacy_payload}'::jsonb);" + f"SELECT (SELECT arquivo_path FROM public.entrega_comprovantes WHERE entrega_id='{E7}')='{lpath}' AND (SELECT count(*) FROM platform_private.delivery_context_20261030)=0;")
+    ok('legacy attach adapter (old payload) links object with audit and zero residue', actor() + f"SELECT public.rpc_anexar_comprovante_entrega('{E7}','{legacy_payload}'::jsonb); RESET ROLE;" + f"SELECT (SELECT arquivo_path FROM public.entrega_comprovantes WHERE entrega_id='{E7}')='{lpath}' AND (SELECT count(*) FROM platform_private.delivery_context_20261030)=0;")
     out = sql(actor() + f"SELECT public.rpc_anexar_comprovante_entrega('{E7}','{legacy_payload}'::jsonb);"); assert '"replayed": true' in out, out
     passed('legacy attach adapter retry with same path replays (idempotent, single audit)')
     ok('legacy replay kept a single audit row', f"SELECT (SELECT count(*) FROM public.financial_audit_log WHERE new_data->>'arquivo_path'='{lpath}')=1;")

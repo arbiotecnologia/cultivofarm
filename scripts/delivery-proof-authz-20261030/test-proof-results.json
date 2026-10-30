@@ -398,8 +398,73 @@
     "status": "PASS"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py\", line 295, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py\", line 261, in main\n    ok('legacy attach adapter (old payload) links object with audit and zero residue', actor() + f\"SELECT public.rpc_anexar_comprovante_entrega('{E7}','{legacy_payload}'::jsonb);\" + f\"SELECT (SELECT arquivo_path FROM public.entrega_comprovantes WHERE entrega_id='{E7}')='{lpath}' AND (SELECT count(*) FROM platform_private.delivery_context_20261030)=0;\")\n    ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py\", line 15, in ok\n    out = sql(s); assert out.splitlines()[-1] == 't', label + ':' + out\n  File \"/dev-server/scripts/delivery-proof-authz-20261030/test_proof_pg.py\", line 13, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  permission denied for table delivery_context_20261030\n\n"
+    "test": "legacy attach adapter (old payload) links object with audit and zero residue",
+    "status": "PASS"
+  },
+  {
+    "test": "legacy attach adapter retry with same path replays (idempotent, single audit)",
+    "status": "PASS"
+  },
+  {
+    "test": "legacy replay kept a single audit row",
+    "status": "PASS"
+  },
+  {
+    "test": "legacy sign adapter (old payload) works for producao staff",
+    "status": "PASS"
+  },
+  {
+    "test": "legacy attach adapter cross-tenant FSF on AR Bio delivery denied",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "concurrent same-key attach: one write, one replay, single audit",
+    "status": "PASS"
+  },
+  {
+    "test": "atomic group creation still passes barrier (harness-only grant)",
+    "status": "PASS"
+  },
+  {
+    "test": "atomic cancel still passes barrier",
+    "status": "PASS"
+  },
+  {
+    "test": "financial/fiscal/outbox tables remain empty (zero titles, zero dispatch)",
+    "status": "PASS"
+  },
+  {
+    "test": "after rollback new RPC closed to clients",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "after rollback apply deny-only",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_ROLLBACK_CLOSED"
+  },
+  {
+    "test": "after rollback legacy adapters closed to clients",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "after rollback legacy adapters deny-only",
+    "status": "PASS",
+    "expected": "DELIVERY_LEGACY_CLOSED"
+  },
+  {
+    "test": "zero permit residue at the end",
+    "status": "PASS"
+  },
+  {
+    "test": "after rollback barrier still closes direct writes",
+    "status": "PASS",
+    "expected": "DELIVERY_MUTATION_CLOSED"
+  },
+  {
+    "test": "rollback preserved history",
+    "status": "PASS"
   }
 ]
