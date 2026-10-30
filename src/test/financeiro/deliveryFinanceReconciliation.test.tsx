@@ -144,4 +144,18 @@ describe("Etapa6 — QueryClient real, Auth/transportes simulados, operação co
     expect(screen.getByRole("button", { name: "Revisar cobrança indisponível" })).toBeDisabled();
     expect(s.rpc).not.toHaveBeenCalled();
   });
+  it("chave exata da reconciliação corresponde ao cache real e desmontagem remove o título", async () => {
+    s.receipt = receipt(); const { client, view } = setup();
+    await screen.findByRole("button", { name: /Abrir lançamento financeiro/ });
+    const actual = client.getQueryCache().findAll({ queryKey: ["delivery-finance-reconciliation", s.id] });
+    expect(actual).toHaveLength(1);
+    expect(actual[0].queryKey).toHaveLength(4);
+    const invalidation = vi.spyOn(client, "invalidateQueries");
+    fireEvent.click(screen.getByRole("button", { name: "Reconsultar lançamento" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Reconsultar lançamento" })).toBeEnabled());
+    expect(invalidation.mock.calls[0][0]?.queryKey).toEqual(actual[0].queryKey);
+    view.unmount();
+    await waitFor(() => expect(client.getQueryCache().findAll({ queryKey: ["delivery-finance-reconciliation", s.id] })).toHaveLength(0));
+    expect(s.rpc).not.toHaveBeenCalled();
+  });
 });
