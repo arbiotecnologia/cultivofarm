@@ -104,8 +104,29 @@
     "expected": "DELIVERY_SCOPE_DENIED"
   },
   {
+    "test": "cancel split collision reproduced; operational blocker retained",
+    "status": "BLOCKED",
+    "error": "ERROR:  duplicate key value violates unique constraint \"estoque_produto_lote_legado_unico_idx\"\nDETAIL:  Key (lote_id)=(10000000-0000-4000-8000-000000000009) already exists.\nCONTEXT:  SQL statement \"UPDATE public.estoque_produto SET status='disponivel' WHERE id=p_item_id\"\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 121 at SQL statement\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text) line 36 at assignment\n"
+  },
+  {
+    "test": "failed cancel rolls back reversal stock delivery and receipt",
+    "status": "PASS"
+  },
+  {
+    "test": "no downstream titles fiscal outbox",
+    "status": "PASS"
+  },
+  {
+    "test": "private context removed on success",
+    "status": "PASS"
+  },
+  {
+    "test": "revocation after advisory wait before replay",
+    "status": "PASS"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 98, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 90, in main\n    print('CANCEL',sql(actor()+f\"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');\"),flush=True)\n                   ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 10, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/contracts-c2-20261022/integral/pg.py\", line 16, in sql\n    assert r.returncode == 0, r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  duplicate key value violates unique constraint \"estoque_produto_lote_legado_unico_idx\"\nDETAIL:  Key (lote_id)=(10000000-0000-4000-8000-000000000010) already exists.\nCONTEXT:  SQL statement \"UPDATE public.estoque_produto SET status='disponivel' WHERE id=p_item_id\"\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 121 at SQL statement\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text) line 36 at assignment\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 134, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 104, in main\n    assert 'DELIVERY_ACTOR_DENIED' in err or 'DELIVERY_SCOPE_CHANGED' in err,err+out\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  ESTQ_IDENTIDADE_INATIVA\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE\nPL/pgSQL function platform_private.stock_motor_item(uuid,text,jsonb) line 3 at assignment\nSQL statement \"SELECT platform_private.stock_motor_item(v_id,'reserva',jsonb_build_object('os_id',p_os_id,'os_tipo','manual','cliente_id',v_os.cliente_id))\"\nPL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb) line 31 at PERFORM\n\n"
   }
 ]
