@@ -217,8 +217,8 @@ def main():
     for k, bad in [('grupo_entrega_id', u(99)), ('cliente_id', C), ('receivable_id', u(98)), ('comprovante_status', 'aprovado'), ('organization_id', B), ('status', 'entregue'), ('foo', 'x')]:
         fails(f'metadata unknown/boundary field {k} rejected', actor() + group(O8, [{'item_id': S8, 'quantidade': 2}], f'meta-unk-{k}'[:60], dict(META, **{k: bad})), 'DELIVERY_DATA_INVALID')
     for k, bad in [('data_saida', '03/11/2026'), ('data_saida', '2026-02-30'), ('data_chegada_prevista', '2026-13-01'), ('hora_saida_prevista', '25:00'),
-                   ('hora_chegada_prevista', '8h'), ('endereco_uf', 'MGX'), ('endereco_cep', 'abc'), ('tipo_entrega', 'drone'), ('endereco_origem', 'gps'),
-                   ('motorista_telefone', 'ligar depois'), ('motorista', 7), ('destinatario_nome', {'x': 1}), ('endereco_numero', True), ('endereco_referencia', 'x' * 301), ('motorista', '   ')]:
+                   ('hora_chegada_prevista', '8h'), ('endereco_cep', 'abc\n1'), ('tipo_entrega', 'drone'), ('endereco_origem', 'gps'),
+                   ('motorista', 7), ('destinatario_nome', {'x': 1}), ('endereco_numero', True), ('endereco_referencia', 'x' * 301), ('motorista', '   ')]:
         fails(f'metadata malformed {k}={str(bad)[:20]} rejected', actor() + group(O8, [{'item_id': S8, 'quantidade': 2}], f'meta-bad-{k}-{abs(hash(str(bad)))%9999}'[:60], dict(META, **{k: bad})), 'DELIVERY_DATA_INVALID')
     assert last(f"SELECT count(*) FROM public.entregas WHERE ordem_servico_id='{O8}';") == '0'; ok('rejected metadata wrote no delivery')
     full = group(O8, [{'item_id': S8, 'quantidade': 2}, {'item_id': S9, 'quantidade': 2}], 'meta-full-0001', META)   # frozen observed args

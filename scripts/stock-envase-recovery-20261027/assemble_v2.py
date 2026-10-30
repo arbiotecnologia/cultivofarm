@@ -191,6 +191,8 @@ def build():
  v_original_client:=v_os.cliente_id;""", """ v_original_client:=v_os.cliente_id;""", 'group prelock observed')
     # 6b) Delivery metadata: exact allowlist of EXISTING public.entregas columns that the single-item writer already
     # persists, with schema-appropriate validation BEFORE the fingerprint (so replay compares validated input).
+    # Free-text columns (names, phones, UF, CEP, address) are `text` in the schema and arrive auto-filled from existing
+    # cadastros in heterogeneous formats: validated as non-blank text <=300 chars without control characters, stored verbatim.
     # Server-derived/boundary columns (cliente_id, grupo_entrega_id, status, receivable/financial/fiscal, proof,
     # confirmation, organization) are never accepted from the client.
     d = one(d, """ IF p_dados IS NULL OR jsonb_typeof(p_dados)<>'object' OR EXISTS(SELECT 1 FROM jsonb_each(p_dados) WHERE key NOT IN ('data_saida','motorista','veiculo','tipo_entrega','endereco_origem') OR jsonb_typeof(value) NOT IN ('string','null')) THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;""",
@@ -209,9 +211,6 @@ def build():
    IF v_dv !~ '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023'; END IF;
   ELSIF v_dk='tipo_entrega' AND v_dv NOT IN ('motorista','retirada') THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
   ELSIF v_dk='endereco_origem' AND v_dv NOT IN ('cadastro','personalizado') THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
-  ELSIF v_dk='endereco_uf' AND v_dv !~ '^[A-Za-z]{2}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
-  ELSIF v_dk='endereco_cep' AND v_dv !~ '^[0-9]{5}-?[0-9]{3}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
-  ELSIF v_dk IN ('motorista_telefone','destinatario_telefone','destinatario_whatsapp') AND v_dv !~ '^[0-9+() .-]{8,20}$' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
   ELSIF btrim(v_dv)='' OR v_dv ~ '[[:cntrl:]]' THEN RAISE EXCEPTION 'DELIVERY_DATA_INVALID' USING ERRCODE='22023';
   END IF;
  END LOOP;""", 'group metadata allowlist')
