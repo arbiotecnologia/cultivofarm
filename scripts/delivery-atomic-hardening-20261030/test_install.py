@@ -41,7 +41,10 @@ def run():
     delta=(H/'motor-delta.sql.review').read_text()
     before=source['body'].split("    IF v_qtd = COALESCE(v_item.quantidade_reservada,0) THEN",1)
     after=delta.split("    IF v_qtd = COALESCE(v_item.quantidade_reservada,0) THEN",1)
-    assert before[0]==after[0] and before[1].split('    ELSE',1)[1]==after[1].rsplit('    ELSE',1)[1] if False else before[0]==after[0]
+    assert before[0]==after[0]
+    suffix="  ELSIF p_acao = 'expedicao' THEN"
+    if suffix in source['body']:
+        assert source['body'].split(suffix,1)[1]==delta.split(suffix,1)[1]
     # Builder guarantees exact one replacement; compare against its generated source.
     assert delta.count('delivery_merge_split_20261030')==1
     results.append({'test':'motor delta confined to private delivery cancel branch','status':'PASS'})
