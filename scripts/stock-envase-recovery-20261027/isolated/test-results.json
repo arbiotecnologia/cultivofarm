@@ -81,9 +81,60 @@
       "status": "PASS"
     },
     {
-      "test": "execution",
-      "status": "FAIL",
-      "error": "ERROR:  column \"id\" does not exist\nLINE 1: SELECT id FROM public.cockpit_operacao_idempotencia WHERE re...\n               ^\n"
+      "test": "legacy receipt without fingerprint denied unchanged",
+      "status": "PASS"
+    },
+    {
+      "test": "fresh key on ready OS denied",
+      "status": "PASS"
+    },
+    {
+      "test": "inactive same actor cannot replay",
+      "status": "PASS"
+    },
+    {
+      "test": "ledger injected failure rolls back all envase writes",
+      "status": "PASS"
+    },
+    {
+      "test": "ledger failure preserved full envase/stock/receipt/event/lot/CQ snapshots",
+      "status": "PASS"
+    },
+    {
+      "test": "two independent connections same key: one write and one replay",
+      "status": "PASS"
+    },
+    {
+      "test": "active profile revoked during observed lote lock wait: 42501 and no envase",
+      "status": "PASS"
+    },
+    {
+      "test": "terminal OS committed during observed OS wait denies partial before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "CQ revoked during observed lote wait denies partial before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "all financial/fiscal/outbox full-row snapshots unchanged (not counts)",
+      "status": "PASS"
+    },
+    {
+      "test": "canonical generate/sign/attach and exact attachment replay preserved",
+      "status": "PASS"
+    },
+    {
+      "test": "foreign FSF proof stays closed",
+      "status": "PASS"
+    },
+    {
+      "test": "deny-only rollback closes canonical writer",
+      "status": "PASS"
+    },
+    {
+      "test": "rollback preserves full-row historical snapshots",
+      "status": "PASS"
     }
   ],
   "raw": [
@@ -146,8 +197,56 @@
       "returncode": 3,
       "stdout": "",
       "stderr": "ERROR:  PT409: COCKPIT_IDEMPOTENCY_CONFLICT\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 58 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "legacy receipt without fingerprint denied unchanged",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ENVASE_LEGACY_RECEIPT_REVIEW_REQUIRED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 57 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "fresh key on ready OS denied",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ENVASE_FRESH_STATE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 75 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "inactive same actor cannot replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ESTQ_IDENTIDADE_INATIVA\nCONTEXT:  PL/pgSQL function platform_private.stock_motor_actor(text) line 4 at RAISE\nPL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 4 at assignment\nSQL statement \"SELECT platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem)\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 20 at PERFORM\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "ledger injected failure rolls back all envase writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: LOCAL_LEDGER_FAIL\nCONTEXT:  PL/pgSQL function local_fail_envase_ledger() line 1 at RAISE\nSQL statement \"INSERT INTO public.estoque_movimentacoes\n      (estoque_produto_id, acao, quantidade, status_novo, lote_id, usuario_id,\n       saldo_anterior, saldo_posterior, reservado_anterior, reservado_posterior,\n       volume_anterior, volume_posterior, unidade, direcao,\n       origem, referencia_tipo, referencia_id, motivo, idempotency_key, request_fingerprint,\n       movimentacao_origem_id, os_id, os_tipo, cliente_id, metadata)\n    VALUES (\n      NEW.id,\n      COALESCE(v_ctx->>'acao', 'entrada'),\n      NULLIF(NEW.quantidade, 0), NEW.status::text, NEW.lote_id,\n      COALESCE(auth.uid(), (v_ctx->>'usuario_id')::uuid),\n      0, COALESCE(NEW.quantidade, 0),\n      0, COALESCE(NEW.quantidade_reservada, 0),\n      0, COALESCE(NEW.volume_total, 0),\n      COALESCE(v_ctx->>'unidade', 'un'), 'entrada',\n      COALESCE(v_ctx->>'origem', 'trigger'),\n      v_ctx->>'referencia_tipo', (v_ctx->>'referencia_id')::uuid,\n      v_ctx->>'motivo', v_key, v_ctx->>'request_fingerprint',\n      (v_ctx->>'movimentacao_origem_id')::uuid,\n      NEW.reservado_para_os_id, NEW.reservado_para_os_tipo, NEW.reservado_para_cliente_id,\n      v_meta\n    )\"\nPL/pgSQL function log_estoque_movimentacao() line 29 at SQL statement\nSQL statement \"INSERT INTO public.estoque_produto (\n        produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,\n        validade, status, reservado_para_os_id, reservado_para_os_tipo,\n        reservado_para_cliente_id, reservado_para_partner_order_id,\n        quantidade_reservada, reservado_por, reservado_em\n      ) VALUES (\n        v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,\n        (v_unit_ml * v_reservadas) / 1000.0, p_validade, 'reservado'::public.status_estoque,\n        p_os_id, v_origem, v_ctx.cliente_id, v_ctx.partner_order_id,\n        v_reservadas, v_uid, now()\n      ) RETURNING id\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 156 at SQL statement\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "terminal OS committed during observed OS wait denies partial before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  PT409: ENVASE_FRESH_STATE_DENIED\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 75 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "CQ revoked during observed lote wait denies partial before writes",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: COCKPIT_ENVASE_EXIGE_CQ_APROVADO\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 107 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "foreign FSF proof stays closed",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_PROOF_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_proof_apply_20261030(text,uuid,text,jsonb) line 11 at RAISE\nSQL function \"rpc_entrega_formulario_gerar_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "deny-only rollback closes canonical writer",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "elapsed_seconds": 157.427,
-  "exit_code": 1
+  "elapsed_seconds": 162.62,
+  "exit_code": 0
 }

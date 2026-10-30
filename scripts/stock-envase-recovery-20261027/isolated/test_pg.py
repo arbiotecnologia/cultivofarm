@@ -60,12 +60,12 @@ def run():
     reason=env(T.O2,T.PP2,T.L2,'envase-ok-0001',3).replace('false,NULL','false,\'OTHER REASON\'')
     assert reason!=env(T.O2,T.PP2,T.L2,'envase-ok-0001',3), 'REASON_ANCHOR_MISSING'
     reject('partial reason substitution conflicts',T.actor(T.W)+reason,'PT409'); assert snapshot()==before
-    receipt=last(f"SELECT id FROM public.cockpit_operacao_idempotencia WHERE resultado->>'envase_release_fingerprint' IS NOT NULL LIMIT 1;")
-    sql(f"UPDATE public.cockpit_operacao_idempotencia SET resultado=resultado-'envase_release_fingerprint' WHERE id='{receipt}';")
+    receipt=last(f"SELECT idempotency_key FROM public.cockpit_operacao_idempotencia WHERE resultado->>'envase_release_fingerprint' IS NOT NULL LIMIT 1;")
+    sql(f"UPDATE public.cockpit_operacao_idempotencia SET resultado=resultado-'envase_release_fingerprint' WHERE idempotency_key='{receipt}';")
     legacy=snapshot(); reject('legacy receipt without fingerprint denied unchanged',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3),'PT409'); assert snapshot()==legacy
     # Restore the exact saved receipt locally; never infer fingerprint from the retry.
-    saved=json.loads(before)['cockpit_operacao_idempotencia']; original=next(x['resultado'] for x in saved if x['id']==receipt)
-    sql(f"UPDATE public.cockpit_operacao_idempotencia SET resultado='{json.dumps(original)}'::jsonb WHERE id='{receipt}';"); assert snapshot()==before
+    saved=json.loads(before)['cockpit_operacao_idempotencia']; original=next(x['resultado'] for x in saved if x['idempotency_key']==receipt)
+    sql(f"UPDATE public.cockpit_operacao_idempotencia SET resultado='{json.dumps(original)}'::jsonb WHERE idempotency_key='{receipt}';"); assert snapshot()==before
     reject('fresh key on ready OS denied',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-new-0001'),'PT409'); assert snapshot()==before
     sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{T.W}';")
     inactive=snapshot(); reject('inactive same actor cannot replay',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3),'42501'); assert snapshot()==inactive
