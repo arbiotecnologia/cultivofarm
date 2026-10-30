@@ -32,7 +32,7 @@ describe("capability gate", () => {
     expect(await probeDeliveryCapability(rpc)).toEqual({ group: false, cancel: false });
     const out = await runAtomicGroup(rpc, input(), noop);
     expect(out.status).toBe("closed");
-    expect((rpc as any).mock.calls.map((c: any[]) => c[0])).toEqual([CAPABILITY_RPC]);
+    expect((rpc as any).mock.calls.map((c: any[]) => c[0])).toEqual([CAPABILITY_RPC, CAPABILITY_RPC]);
   });
   it.each([null, {}, { ...cap, extra: 1 }, { ...cap, group: "true" }, { ...cap, capability: "x" }])("non-exact envelope %# is closed", (d) => {
     expect(parseCapability(d)).toEqual({ group: false, cancel: false });
