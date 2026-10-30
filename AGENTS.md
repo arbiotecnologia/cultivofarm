@@ -93,5 +93,4 @@
 - Incremental deployment: read scripts/arbio-fsf-incremental-20261029/AGENTS.md — preserves release gates.
 - Delivery proof (form/signature/attachment) follow scripts/delivery-proof-authz-20261030/AGENTS.md — read before changing that area.
 - Delivery group/cancel client release follows scripts/delivery-group-capability-20261030/AGENTS.md; frontend opens only on the exact server capability probed before dispatch — prevents opening writers before reviewed grants.
-- Proof read tenant fence follows scripts/proof-select-tenant-20261030/AGENTS.md; rollback narrows, never drops — prevents restoring cross-tenant proof reads.
-- Sibling delivery evidence tenant barrier follows scripts/delivery-evidence-tenant-20261030/AGENTS.md; rollback narrows, never drops or regrants TRUNCATE — prevents restoring cross-tenant evidence access.
+- Delivery proof/evidence tenant fences: read scripts/proof-select-tenant-20261030/ and delivery-evidence-tenant-20261030/ AGENTS.md.
