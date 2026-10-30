@@ -37,6 +37,16 @@ const envelopeSchema = z.object({
 }).strict();
 
 export interface CommercialOwnerOrder extends z.infer<typeof rowSchema> {}
+/** Presentation only, after the scoped server envelope has been authorized. */
+export function commercialOwnerOrdersDisplay(orders: readonly CommercialOwnerOrder[], excludeIds: readonly string[]) {
+  const excluded = new Set(excludeIds);
+  const visible = orders.filter((order) => !excluded.has(order.id));
+  return {
+    visible,
+    state: orders.length === 0 ? "empty_filter" as const
+      : visible.length === 0 ? "already_listed" as const : "rows" as const,
+  };
+}
 export type CommercialOwnerOrdersState =
   | { state: "allowed"; organizationId: string; orders: readonly CommercialOwnerOrder[] }
   | { state: "blocked"; reason: CommercialOwnerOrdersBlockReason };
