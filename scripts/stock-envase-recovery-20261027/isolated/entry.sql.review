@@ -2,14 +2,14 @@
 CREATE TABLE platform_private.envase_insert_permits_v1(
  txid bigint NOT NULL, actor uuid NOT NULL, organization_id uuid NOT NULL,
  action text NOT NULL, target uuid NOT NULL, lote uuid NOT NULL, os uuid NOT NULL,
- prog uuid NOT NULL, payload jsonb NOT NULL, PRIMARY KEY(txid,action,target));
+ prog uuid NOT NULL, payload jsonb NOT NULL, admitted boolean NOT NULL DEFAULT false, PRIMARY KEY(txid,action,target));
 REVOKE ALL ON platform_private.envase_insert_permits_v1 FROM PUBLIC,anon,authenticated,service_role;
 CREATE FUNCTION platform_private.envase_insert_guard_v1() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $entry$
 DECLARE p platform_private.envase_insert_permits_v1%ROWTYPE; c record; parent public.estoque_produto%ROWTYPE; a jsonb; org uuid;
 BEGIN
  IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
- DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id RETURNING * INTO p;
+ UPDATE platform_private.envase_insert_permits_v1 SET admitted=true WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted=false RETURNING * INTO p;
  IF FOUND THEN
   IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
    OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
@@ -38,3 +38,62 @@ END $entry$;
 REVOKE ALL ON FUNCTION platform_private.envase_insert_guard_v1() FROM PUBLIC,anon,authenticated,service_role;
 CREATE TRIGGER a01_envase_insert_permit BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
 CREATE TRIGGER a01_stock_insert_permit BEFORE INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
+-- Consume only after every BEFORE normalizer and validator has produced the final row.
+CREATE FUNCTION platform_private.envase_insert_final_v1() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $final$
+DECLARE p platform_private.envase_insert_permits_v1%ROWTYPE;
+BEGIN
+ DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted RETURNING * INTO p;
+ IF FOUND THEN
+  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
+   OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
+ ELSIF TG_TABLE_NAME='envase' THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISSING' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $final$;
+REVOKE ALL ON FUNCTION platform_private.envase_insert_final_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER a01_envase_final_permit AFTER INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1();
+CREATE TRIGGER a01_stock_final_permit AFTER INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1();
+-- Availability/revocation serialization only. These locks never grant authority.
+CREATE FUNCTION platform_private.stock_envase_mutation_gate_v1() RETURNS trigger
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='3s' AS $gate$
+BEGIN
+ IF TG_LEVEL<>'STATEMENT' OR TG_WHEN<>'BEFORE' OR TG_OP NOT IN ('INSERT','UPDATE','DELETE','TRUNCATE')
+ OR TG_RELID NOT IN ('public.organizations'::regclass,'public.organization_subscriptions'::regclass,'public.saas_plan_versions'::regclass,'public.saas_plan_version_features'::regclass,'public.saas_features'::regclass,'public.saas_modules'::regclass,'public.organization_feature_overrides'::regclass,'public.clientes'::regclass,'public.programacao_producao'::regclass,'public.ordens_servico'::regclass,'public.lotes'::regclass,'public.controle_qualidade'::regclass,'public.estoque_produto'::regclass) THEN RAISE EXCEPTION 'ENVASE_GATE_CONTEXT_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
+ RETURN NULL;
+END $gate$;
+REVOKE ALL ON FUNCTION platform_private.stock_envase_mutation_gate_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.organizations FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.organization_subscriptions FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.saas_plan_versions FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.saas_plan_version_features FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.saas_features FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.saas_modules FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.organization_feature_overrides FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.clientes FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.programacao_producao FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.ordens_servico FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.lotes FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.controle_qualidade FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.estoque_produto FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1();
+-- Manufacturing coverage has a canonical root; independent nonmanufacturing stock
+-- remains governed by the installed motor without an invented manufacturing root.
+CREATE FUNCTION platform_private.stock_envase_reservation_root_v1() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $root$
+DECLARE p public.programacao_producao%ROWTYPE; l public.lotes%ROWTYPE; o public.ordens_servico%ROWTYPE;
+BEGIN
+ IF NEW.status::text<>'reservado' OR NEW.reservado_para_os_tipo IS DISTINCT FROM 'manual' THEN RETURN NEW; END IF;
+ IF TG_OP='UPDATE' AND NEW.status IS NOT DISTINCT FROM OLD.status AND NEW.lote_id IS NOT DISTINCT FROM OLD.lote_id AND NEW.reservado_para_os_id IS NOT DISTINCT FROM OLD.reservado_para_os_id THEN RETURN NEW; END IF;
+ SELECT * INTO o FROM public.ordens_servico WHERE id=NEW.reservado_para_os_id;
+ SELECT * INTO p FROM public.programacao_producao WHERE ordem_servico_id=o.id;
+ IF NOT FOUND THEN RETURN NEW; END IF;
+ SELECT * INTO l FROM public.lotes WHERE id=NEW.lote_id;
+ IF o.status::text NOT IN ('em_cq','envase','pronto_entrega') OR l.programacao_id IS DISTINCT FROM p.id OR l.organization_id IS DISTINCT FROM o.organization_id OR p.organization_id IS DISTINCT FROM o.organization_id
+ OR NEW.produto_id IS DISTINCT FROM p.produto_id OR NEW.microrganismo_id IS DISTINCT FROM p.microrganismo_id OR NEW.reservado_para_cliente_id IS DISTINCT FROM o.cliente_id
+ OR (SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id=o.id)<>1 THEN RAISE EXCEPTION 'ENVASE_RESERVATION_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $root$;
+REVOKE ALL ON FUNCTION platform_private.stock_envase_reservation_root_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER a02_stock_envase_reservation_root BEFORE INSERT OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.stock_envase_reservation_root_v1();

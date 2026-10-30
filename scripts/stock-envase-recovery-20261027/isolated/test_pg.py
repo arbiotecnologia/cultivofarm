@@ -1,6 +1,6 @@
 """Disposable full captured restore + externally reported applied composition. Never hosted."""
 from pathlib import Path
-import hashlib, json, re, subprocess, sys, time, traceback
+import hashlib, json, os, re, subprocess, sys, time, traceback
 H=Path(__file__).resolve().parent; S=H.parents[1]; V2=H.parent
 sys.path.insert(0,str(S/'delivery-atomic-hardening-20261030'))
 import restore
@@ -66,6 +66,10 @@ def run():
     reject('NULL key denied before writes',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'null-key-0001').replace("'null-key-0001'","NULL"),'22023'); assert snapshot()==before
     reject('missing gate singleton fails PT503, not overwritten FOUND',"BEGIN;DELETE FROM cf_user_guards_v1.state;"+T.actor(T.W)+env(T.O2,T.PP2,T.L2,'gate-0001'),'PT503'); assert snapshot()==before
     res=json.loads(last(T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3))); assert res['success'] is True and res['estado']=='completed'; ok('manual production envase completes CQ->stock->pronto_entrega')
+    assert last('SELECT count(*) FROM platform_private.envase_insert_permits_v1;')=='0'
+    assert last(f"SELECT organization_id='{T.A}' FROM public.envase WHERE lote_id='{T.L2}';")=='t'
+    ok('exact pre-trigger tenant payload accepted; every row permit consumed')
+    if os.environ.get('ENVASE_TARGETED')=='1': return
     assert T.os_status(T.O2)=='pronto_entrega'; assert last(f"SELECT count(*) FROM platform_private.authz_tickets WHERE target='{T.O2}';")=='0'; ok('transition ticket consumed and OS ready')
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is True; ok('endpoint capability remains available for exact replay after OS ready')
     before=snapshot(); rep=json.loads(last(T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3))); assert rep['replay'] is True and snapshot()==before; ok('exact replay same result with zero full-row mutations')
@@ -135,6 +139,10 @@ def run():
     sql(f"SET session_replication_role=replica;UPDATE public.controle_qualidade SET resultado='aprovado' WHERE lote_id='{T.L6}';")
     import matrix
     matrix.run(sys.modules[__name__])
+    import permit_matrix
+    permit_matrix.run(sys.modules[__name__])
+    import cooperation
+    cooperation.run(sys.modules[__name__])
     z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;"); assert z1==z; ok('all fourteen financial/fiscal/outbox existing full-row snapshots unchanged')
     # Existing canonical proof regressions on locally created delivery, never hosted reference.
     owned=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{T.L2}' AND status='reservado';")
@@ -147,6 +155,12 @@ def run():
     assert json.loads(last(att))['success'] is True and json.loads(last(att))['replayed'] is True; ok('canonical generate/sign/attach and exact attachment replay preserved')
     reject('foreign FSF proof stays closed',T.actor(T.V)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{entrega}','foreign-proof-0001');",'42501')
     sql(f'REVOKE EXECUTE ON FUNCTION {G.RPC} FROM authenticated;'); assert state()==post
+    sql((H/'legacy-closure-install.sql.review').read_text()); assert state()==closed
+    measured=sql('BEGIN;'+f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;'+G.STATE+'::text;ROLLBACK;')
+    released=json.loads([x for x in measured.splitlines() if x.startswith('{')][-1]); G.write_release(closed,released)
+    sql((H/'release.sql.review').read_text()); assert state()==released
+    ok('separate exact release installs only canonical authenticated grant after legacy closure')
+    reject('release rerun rejects changed exact catalog',(H/'release.sql.review').read_text(),'P0001')
     hist=snapshot(); sql((H/'rollback.sql.review').read_text()); assert json.loads(last(T.actor(T.W)+cap()))['available'] is False and snapshot()==hist
     reject('deny-only rollback closes canonical writer',T.actor(T.W)+env(T.O5,T.PP5,T.L5,'concurrent-0001'),'42501'); ok('rollback preserves full-row historical snapshots')
 if __name__=='__main__':

@@ -3,8 +3,8 @@ import { renderHook, act } from "@testing-library/react";
 import { classifyEnvaseError, parseEnvaseAck, ENVASE_RPC, saveEnvaseAttempt, clearEnvaseAttempt, loadEnvaseAttempts, type EnvaseAttempt } from "@/lib/envase/envaseFlow";
 import { ENVASE_CAPABILITY_RPC } from "@/lib/envase/envaseAvailability";
 
-const t = vi.hoisted(() => ({ inv: vi.fn(), rpc: vi.fn(), from: vi.fn(), auth: { user: { id: "a1" }, profile: { organization_id: "org-A" } } as any, toast: { error: vi.fn(), info: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (fn: string, args: any) => fn === "rpc_envase_capability_v1" ? Promise.resolve({ error: null, data: { capability: "envase_isolated_v1", available: true, actor_id: t.auth.user.id, organization_id: t.auth.profile.organization_id, lote_id: args.p_lote, os_id: args.p_os, programacao_id: args.p_prog } }) : t.rpc(fn, args), from: (...a: any[]) => t.from(...a) } }));
+const t = vi.hoisted(() => ({ inv: vi.fn(), cap: vi.fn(), rpc: vi.fn(), from: vi.fn(), auth: { user: { id: "a1" }, profile: { organization_id: "org-A" } } as any, toast: { error: vi.fn(), info: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (fn: string, args: any) => fn === "rpc_envase_capability_v1" ? t.cap(args) : t.rpc(fn, args), from: (...a: any[]) => t.from(...a) } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
 vi.mock("@/hooks/useCockpitQuery", () => ({ useCockpitQuery: () => ({ data: [] }) }));
 vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: t.inv }) }));
@@ -20,7 +20,8 @@ const slotK = (k: string, a = "a1", o = "org-A") => `cf:envase-uncertain:v2:${a}
 const slot = slotK("k-1");
 
 const readyAuth = (actor = "a1", org = "org-A", epoch = 0) => ({ user: { id: actor }, profile: { user_id: actor, organization_id: org, ativo: true, senha_provisoria: false }, roles: ["producao"], loading: false, authzReady: true, authzEpoch: epoch });
-beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); t.auth = readyAuth(); });
+const capAck = (args: any) => ({ error: null, data: { capability: "envase_isolated_v1", available: true, actor_id: "a1", organization_id: "org-A", lote_id: args.p_lote, os_id: args.p_os, programacao_id: args.p_prog } });
+beforeEach(() => { vi.clearAllMocks(); t.cap.mockReset(); localStorage.clear(); t.auth = readyAuth(); t.cap.mockImplementation((args) => Promise.resolve({ ...capAck(args), data: { ...capAck(args).data, actor_id: t.auth.user.id, organization_id: t.auth.profile.organization_id } })); });
 
 describe("envase error/ACK contract", () => {
   it("only allowlisted business refusals are definitive", () => {
@@ -70,6 +71,47 @@ describe("envase error/ACK contract", () => {
 });
 
 describe("useEsteiraLaboratorio envase (mounted hook)", () => {
+  it.each(["absent", "denied", "error", "throw", "foreign", "extra"])("%s preflight sends zero writers", async (kind) => {
+    t.cap.mockImplementationOnce((args) => kind === "throw" ? Promise.reject(new Error("offline")) : Promise.resolve(kind === "absent" ? { data: null, error: null } : kind === "error" ? { data: null, error: { code: "PGRST202" } } : { error: null, data: { ...capAck(args).data, ...(kind === "denied" ? { available: false } : kind === "foreign" ? { organization_id: "org-B" } : { unexpected: true }) } }));
+    const { result } = renderHook(() => useEsteiraLaboratorio());
+    await act(async () => { expect(await result.current.registrarEnvaseTransacional(params("cap-closed"))).toBeNull(); });
+    expect(envCalls()).toHaveLength(0); expect(localStorage.length).toBe(0);
+  });
+  it.each(["tenant", "session", "epoch", "role", "cancel"])("%s change during preflight fences dispatch", async (kind) => {
+    let resolve: ((value: any) => void) | undefined;
+    t.cap.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    const { result, rerender, unmount } = renderHook(() => useEsteiraLaboratorio());
+    let pending: Promise<any> = Promise.resolve();
+    act(() => { pending = result.current.registrarEnvaseTransacional(params("cap-race")); });
+    if (kind === "cancel") unmount();
+    else { t.auth = kind === "tenant" ? readyAuth("a1", "org-B") : kind === "session" ? { ...readyAuth(), user: null } : kind === "role" ? { ...readyAuth(), roles: [] } : readyAuth("a1", "org-A", 1); rerender(); }
+    await act(async () => { resolve?.(capAck({ p_lote: LOTE, p_os: "os1", p_prog: "pp1" })); expect(await pending).toBeNull(); });
+    expect(envCalls()).toHaveLength(0); expect(localStorage.length).toBe(0);
+  });
+  it("one preflight and dispatch own synchronous lock through both waits", async () => {
+    let probe: ((value: any) => void) | undefined; let writer: ((value: any) => void) | undefined;
+    t.cap.mockImplementationOnce(() => new Promise(r => { probe = r; }));
+    t.rpc.mockImplementationOnce(() => new Promise(r => { writer = r; }));
+    const { result } = renderHook(() => useEsteiraLaboratorio()); let first: Promise<any> = Promise.resolve();
+    act(() => { first = result.current.registrarEnvaseTransacional(params("locked-1")); });
+    await act(async () => { expect(await result.current.registrarEnvaseTransacional(params("locked-2"))).toBeNull(); });
+    expect(t.cap).toHaveBeenCalledTimes(1);
+    await act(async () => { probe?.(capAck({ p_lote: LOTE, p_os: "os1", p_prog: "pp1" })); await Promise.resolve(); });
+    await act(async () => { expect(await result.current.registrarEnvaseTransacional(params("locked-3"))).toBeNull(); });
+    expect(envCalls()).toHaveLength(1);
+    await act(async () => { writer?.({ data: ack, error: null }); expect(await first).toEqual(ack); });
+    expect(t.cap.mock.invocationCallOrder[0]).toBeLessThan(t.rpc.mock.invocationCallOrder[0]);
+  });
+  it("denied preflight preserves frozen uncertain attempt", async () => {
+    t.rpc.mockResolvedValueOnce({ data: null, error: { message: "offline" } });
+    const { result } = renderHook(() => useEsteiraLaboratorio());
+    await act(async () => { await result.current.registrarEnvaseTransacional(params("k-1")); });
+    const stored = localStorage.getItem(slot);
+    t.cap.mockResolvedValueOnce({ data: null, error: null });
+    await act(async () => { await result.current.registrarEnvaseTransacional(params("new-2", 5)); });
+    expect(envCalls()).toHaveLength(1); expect(localStorage.getItem(slot)).toBe(stored);
+    expect(t.cap.mock.calls[1][0]).toEqual({ p_lote: LOTE, p_os: "os1", p_prog: "pp1", p_origem: "manual" });
+  });
   it("uncertain keeps the frozen attempt; next submit replays EXACT args (no new key); confirmation clears", async () => {
     t.rpc.mockResolvedValueOnce({ data: null, error: { code: "57014", message: "timeout" } });
     const { result } = renderHook(() => useEsteiraLaboratorio());

@@ -1,6 +1,363 @@
 {
   "columns": [
     [
+      "clientes",
+      "banco_agencia",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "banco_conta",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "banco_nome",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "banco_pix_chave",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "banco_pix_tipo",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "banco_tipo_conta",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "cobranca_bairro",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "cobranca_cep",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "cobranca_complemento",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "cobranca_estado",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "cobranca_logradouro",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "cobranca_mesmo_endereco",
+      "boolean",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "cobranca_municipio",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "cobranca_numero",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "codigo_cliente",
+      "text",
+      true,
+      null
+    ],
+    [
+      "clientes",
+      "condicao_pagamento",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "contato_financeiro_email",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "contato_financeiro_nome",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "contato_financeiro_telefone",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "cpf_cnpj",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "clientes",
+      "email",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "endereco_bairro",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "endereco_cep",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "endereco_complemento",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "endereco_estado",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "endereco_latitude",
+      "numeric",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "endereco_logradouro",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "endereco_longitude",
+      "numeric",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "endereco_municipio",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "endereco_numero",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "clientes",
+      "inscricao_estadual",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "inscricao_municipal",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "limite_credito",
+      "numeric",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "marca_cor_primaria",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "marca_logo_url",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "marca_nome",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "nome",
+      "text",
+      true,
+      null
+    ],
+    [
+      "clientes",
+      "nome_fantasia",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "observacoes",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "organization_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "razao_social",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "segmento",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "site",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "status_cliente",
+      "cliente_status",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "tags",
+      "text[]",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "telefone",
+      "text",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "telefones",
+      "text[]",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "tipo_pessoa",
+      "cliente_tipo_pessoa",
+      false,
+      null
+    ],
+    [
+      "clientes",
+      "updated_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
       "cockpit_operacao_idempotencia",
       "alvo_id",
       "uuid",
@@ -1541,6 +1898,657 @@
       null
     ],
     [
+      "organization_feature_overrides",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "created_by",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "end_idempotency_key",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "end_reason",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "ended_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "ended_by",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "ends_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "feature_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "idempotency_key",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "limit_value",
+      "numeric",
+      false,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "mode",
+      "text",
+      true,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "organization_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "reason",
+      "text",
+      true,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "starts_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "organization_feature_overrides",
+      "updated_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "billing_cycle",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "billing_cycle_snapshot",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "cancel_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "cancelled_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "created_by",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "currency_snapshot",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "current_period_end",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "current_period_start",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "features_snapshot",
+      "jsonb",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "last_correlation_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "limits_snapshot",
+      "jsonb",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "organization_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "plan_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "plan_version_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "price_snapshot",
+      "numeric(14,2)",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "started_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "state_changed_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "status",
+      "saas_subscription_status",
+      true,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "suspended_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "trial_ends_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "updated_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "organizations",
+      "ativada_em",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "ativo",
+      "boolean",
+      true,
+      null
+    ],
+    [
+      "organizations",
+      "cnpj",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "cnpj_normalizado",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "organizations",
+      "email_corporativo",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "fuso_horario",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "organizations",
+      "nome",
+      "text",
+      true,
+      null
+    ],
+    [
+      "organizations",
+      "nome_fantasia",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "onboarding_concluido_em",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "onboarding_dados",
+      "jsonb",
+      true,
+      null
+    ],
+    [
+      "organizations",
+      "partner_account_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "razao_social",
+      "text",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "responsavel_definido_em",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "responsavel_user_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "organizations",
+      "status",
+      "text",
+      true,
+      null
+    ],
+    [
+      "organizations",
+      "updated_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "access_expires_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "access_operation_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "access_operation_kind",
+      "text",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "access_operation_status",
+      "text",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "access_requested_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "access_valid_after",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "attempt_count",
+      "integer",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "auth_created_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "concluido_em",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "cpf_cnpj",
+      "text",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email",
+      "text",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_accepted_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_attempt_count",
+      "integer",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_delivery_status",
+      "text",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_failed_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_idempotency_key",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_last_attempt_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_last_error_code",
+      "text",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_lease_expires_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_lease_token",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "email_next_attempt_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "invited_by",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "last_error_code",
+      "text",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "lease_expires_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "lease_token",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "modo_acesso",
+      "text",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "nome",
+      "text",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "organization_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "request_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "responsavel_principal",
+      "boolean",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "status",
+      "text",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "telefone",
+      "text",
+      false,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "updated_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "user_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
       "produto_etiquetas",
       "cepas",
       "text[]",
@@ -1905,6 +2913,125 @@
       null
     ],
     [
+      "profiles",
+      "ativo",
+      "boolean",
+      true,
+      null
+    ],
+    [
+      "profiles",
+      "cargo",
+      "text",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "cliente_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "cpf_cnpj",
+      "text",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "crea",
+      "text",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "profiles",
+      "data_admissao",
+      "date",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "email",
+      "text",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "especialidade",
+      "text",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "profiles",
+      "nome",
+      "text",
+      true,
+      null
+    ],
+    [
+      "profiles",
+      "observacoes_internas",
+      "text",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "organization_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "senha_provisoria",
+      "boolean",
+      true,
+      null
+    ],
+    [
+      "profiles",
+      "telefone",
+      "text",
+      false,
+      null
+    ],
+    [
+      "profiles",
+      "updated_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "profiles",
+      "user_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
       "programacao_producao",
       "created_at",
       "timestamp with time zone",
@@ -1994,9 +3121,393 @@
       "numeric",
       false,
       null
+    ],
+    [
+      "saas_features",
+      "active",
+      "boolean",
+      true,
+      null
+    ],
+    [
+      "saas_features",
+      "commercializable",
+      "boolean",
+      true,
+      null
+    ],
+    [
+      "saas_features",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "saas_features",
+      "description",
+      "text",
+      false,
+      null
+    ],
+    [
+      "saas_features",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "saas_features",
+      "key",
+      "text",
+      true,
+      null
+    ],
+    [
+      "saas_features",
+      "module_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "saas_features",
+      "name",
+      "text",
+      true,
+      null
+    ],
+    [
+      "saas_features",
+      "updated_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "saas_modules",
+      "active",
+      "boolean",
+      true,
+      null
+    ],
+    [
+      "saas_modules",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "saas_modules",
+      "description",
+      "text",
+      false,
+      null
+    ],
+    [
+      "saas_modules",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "saas_modules",
+      "key",
+      "text",
+      true,
+      null
+    ],
+    [
+      "saas_modules",
+      "name",
+      "text",
+      true,
+      null
+    ],
+    [
+      "saas_modules",
+      "updated_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "saas_plan_version_features",
+      "config",
+      "jsonb",
+      false,
+      null
+    ],
+    [
+      "saas_plan_version_features",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "saas_plan_version_features",
+      "enabled",
+      "boolean",
+      true,
+      null
+    ],
+    [
+      "saas_plan_version_features",
+      "feature_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "saas_plan_version_features",
+      "limit_value",
+      "numeric",
+      false,
+      null
+    ],
+    [
+      "saas_plan_version_features",
+      "plan_version_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "archive_reason",
+      "text",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "archived_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "archived_by",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "billing_cycle",
+      "text",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "correlation_id",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "created_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "created_by",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "currency",
+      "text",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "description_snapshot",
+      "text",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "draft_key",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "effective_from",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "effective_to",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "features_snapshot",
+      "jsonb",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "limits_snapshot",
+      "jsonb",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "name_snapshot",
+      "text",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "plan_id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "price_amount",
+      "numeric(14,2)",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "publication_reason",
+      "text",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "publish_key",
+      "uuid",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "published_at",
+      "timestamp with time zone",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "revision",
+      "integer",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "status",
+      "text",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "trial_days",
+      "integer",
+      false,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "updated_at",
+      "timestamp with time zone",
+      true,
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "version_number",
+      "integer",
+      true,
+      null
+    ],
+    [
+      "user_roles",
+      "id",
+      "uuid",
+      true,
+      null
+    ],
+    [
+      "user_roles",
+      "role",
+      "app_role",
+      true,
+      null
+    ],
+    [
+      "user_roles",
+      "user_id",
+      "uuid",
+      true,
+      null
     ]
   ],
   "policies": [
+    [
+      "clientes",
+      "Clients read access",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "can_user_access_cliente(id)",
+      null
+    ],
+    [
+      "clientes",
+      "Tenant writers manage clients",
+      "PERMISSIVE",
+      "{authenticated}",
+      "ALL",
+      "((organization_id = platform_private.h15_actor_organization()) AND (platform_private.has_role(auth.uid(), 'administrador'::app_role) OR platform_private.has_role(auth.uid(), 'gestor'::app_role) OR platform_private.has_role(auth.uid(), 'gestor_comercial'::app_role)))",
+      "((organization_id = platform_private.h15_actor_organization()) AND (platform_private.has_role(auth.uid(), 'administrador'::app_role) OR platform_private.has_role(auth.uid(), 'gestor'::app_role) OR platform_private.has_role(auth.uid(), 'gestor_comercial'::app_role)))"
+    ],
+    [
+      "clientes",
+      "tenant_isolation_d51_5",
+      "RESTRICTIVE",
+      "{authenticated}",
+      "ALL",
+      "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
+      "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+    ],
     [
       "cockpit_operacao_idempotencia",
       "cockpit_idem_select_interno",
@@ -2448,6 +3959,123 @@
       "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
     ],
     [
+      "organization_feature_overrides",
+      "Superadmin cria exce\u00e7\u00f5es",
+      "PERMISSIVE",
+      "{authenticated}",
+      "INSERT",
+      null,
+      "is_platform_superadmin(auth.uid())"
+    ],
+    [
+      "organization_feature_overrides",
+      "Superadmin encerra exce\u00e7\u00f5es",
+      "PERMISSIVE",
+      "{authenticated}",
+      "UPDATE",
+      "is_platform_superadmin(auth.uid())",
+      "is_platform_superadmin(auth.uid())"
+    ],
+    [
+      "organization_feature_overrides",
+      "Superadmin le exce\u00e7\u00f5es",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "is_platform_superadmin(auth.uid())",
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "Superadmin altera assinatura",
+      "PERMISSIVE",
+      "{authenticated}",
+      "UPDATE",
+      "is_platform_superadmin(auth.uid())",
+      "is_platform_superadmin(auth.uid())"
+    ],
+    [
+      "organization_subscriptions",
+      "Superadmin cria assinatura",
+      "PERMISSIVE",
+      "{authenticated}",
+      "INSERT",
+      null,
+      "is_platform_superadmin(auth.uid())"
+    ],
+    [
+      "organization_subscriptions",
+      "Superadmin l\u00ea assinaturas",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))",
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "saas_platform_read",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))",
+      null
+    ],
+    [
+      "organization_subscriptions",
+      "saas_tenant_admin_read_own_org",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "(platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role) AND (organization_id = platform_private.h15_actor_organization()))",
+      null
+    ],
+    [
+      "organizations",
+      "Superadmin le empresas",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "is_platform_superadmin(auth.uid())",
+      null
+    ],
+    [
+      "organizations",
+      "b2b_organization_full_row_containment",
+      "RESTRICTIVE",
+      "{authenticated}",
+      "SELECT",
+      "platform_private.b2b_organization_full_row_allowed()",
+      null
+    ],
+    [
+      "organizations",
+      "organizations_select_scoped",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "(EXISTS ( SELECT 1\n   FROM profiles p\n  WHERE ((p.user_id = ( SELECT auth.uid() AS uid)) AND (p.organization_id = organizations.id))))",
+      null
+    ],
+    [
+      "platform_org_admin_invites",
+      "platform_org_admin_invites_service_only",
+      "PERMISSIVE",
+      "{public}",
+      "ALL",
+      "false",
+      "false"
+    ],
+    [
+      "platform_org_admin_invites",
+      "platform_org_admin_invites_superadmin_read",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "is_platform_superadmin(auth.uid())",
+      null
+    ],
+    [
       "produto_etiquetas",
       "Internal manage produto_etiquetas",
       "PERMISSIVE",
@@ -2473,6 +4101,51 @@
       "ALL",
       "(platform_private.produto_etiqueta_root_org_v1(lote_id, produto_id, envase_id, envase_item_id, estoque_item_id, embalagem_id, entrega_id, entrega_item_id, cliente_id, fazenda_id, substitui_etiqueta_id, substituida_por_id) = platform_private.h15_actor_organization())",
       "(platform_private.produto_etiqueta_root_org_v1(lote_id, produto_id, envase_id, envase_item_id, estoque_item_id, embalagem_id, entrega_id, entrega_item_id, cliente_id, fazenda_id, substitui_etiqueta_id, substituida_por_id) = platform_private.h15_actor_organization())"
+    ],
+    [
+      "profiles",
+      "Tenant admins can update same organization profiles",
+      "PERMISSIVE",
+      "{authenticated}",
+      "UPDATE",
+      "platform_private.is_tenant_admin_for_user(user_id)",
+      "platform_private.is_tenant_admin_for_user(user_id)"
+    ],
+    [
+      "profiles",
+      "Tenant admins can view same organization profiles",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "((user_id = auth.uid()) OR platform_private.is_tenant_admin_for_user(user_id))",
+      null
+    ],
+    [
+      "profiles",
+      "Users can insert own profile",
+      "PERMISSIVE",
+      "{public}",
+      "INSERT",
+      null,
+      "(( SELECT auth.uid() AS uid) = user_id)"
+    ],
+    [
+      "profiles",
+      "Users can update own non sensitive profile fields",
+      "PERMISSIVE",
+      "{authenticated}",
+      "UPDATE",
+      "(user_id = auth.uid())",
+      "(user_id = auth.uid())"
+    ],
+    [
+      "profiles",
+      "Users can view own profile",
+      "PERMISSIVE",
+      "{public}",
+      "SELECT",
+      "(( SELECT auth.uid() AS uid) = user_id)",
+      null
     ],
     [
       "programacao_producao",
@@ -2518,9 +4191,189 @@
       "ALL",
       "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))",
       "((organization_id IS NOT NULL) AND (organization_id = platform_private.h15_actor_organization()))"
+    ],
+    [
+      "saas_features",
+      "saas_admin_read",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role)",
+      null
+    ],
+    [
+      "saas_features",
+      "saas_platform_read",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))",
+      null
+    ],
+    [
+      "saas_modules",
+      "saas_admin_read",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role)",
+      null
+    ],
+    [
+      "saas_modules",
+      "saas_platform_read",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))",
+      null
+    ],
+    [
+      "saas_plan_version_features",
+      "saas_plan_version_features_platform_read",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))",
+      null
+    ],
+    [
+      "saas_plan_version_features",
+      "saas_plan_version_features_platform_write",
+      "PERMISSIVE",
+      "{authenticated}",
+      "ALL",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))"
+    ],
+    [
+      "saas_plan_version_features",
+      "saas_plan_version_features_tenant_read_current",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "(EXISTS ( SELECT 1\n   FROM organization_subscriptions s\n  WHERE ((s.plan_version_id = saas_plan_version_features.plan_version_id) AND (s.organization_id = platform_private.h15_actor_organization()) AND platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role))))",
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_platform_insert",
+      "PERMISSIVE",
+      "{authenticated}",
+      "INSERT",
+      null,
+      "(is_platform_superadmin(( SELECT auth.uid() AS uid)) AND (created_by = ( SELECT auth.uid() AS uid)))"
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_platform_read",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))",
+      null
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_platform_update",
+      "PERMISSIVE",
+      "{authenticated}",
+      "UPDATE",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))",
+      "is_platform_superadmin(( SELECT auth.uid() AS uid))"
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_tenant_read_current",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "(EXISTS ( SELECT 1\n   FROM organization_subscriptions s\n  WHERE ((s.plan_version_id = saas_plan_versions.id) AND (s.organization_id = platform_private.h15_actor_organization()) AND platform_private.has_role(( SELECT auth.uid() AS uid), 'administrador'::app_role))))",
+      null
+    ],
+    [
+      "user_roles",
+      "Tenant admins can delete same organization roles",
+      "PERMISSIVE",
+      "{authenticated}",
+      "DELETE",
+      "((role <> 'superadmin'::app_role) AND platform_private.is_tenant_admin_for_user(user_id))",
+      null
+    ],
+    [
+      "user_roles",
+      "Tenant admins can insert same organization roles",
+      "PERMISSIVE",
+      "{authenticated}",
+      "INSERT",
+      null,
+      "((role <> 'superadmin'::app_role) AND platform_private.is_tenant_admin_for_user(user_id))"
+    ],
+    [
+      "user_roles",
+      "Tenant admins can read same organization roles",
+      "PERMISSIVE",
+      "{authenticated}",
+      "SELECT",
+      "platform_private.is_tenant_admin_for_user(user_id)",
+      null
+    ],
+    [
+      "user_roles",
+      "Tenant admins can update same organization roles",
+      "PERMISSIVE",
+      "{authenticated}",
+      "UPDATE",
+      "((role <> 'superadmin'::app_role) AND platform_private.is_tenant_admin_for_user(user_id))",
+      "((role <> 'superadmin'::app_role) AND platform_private.is_tenant_admin_for_user(user_id))"
+    ],
+    [
+      "user_roles",
+      "Users can view own roles",
+      "PERMISSIVE",
+      "{public}",
+      "SELECT",
+      "(( SELECT auth.uid() AS uid) = user_id)",
+      null
     ]
   ],
   "triggers": [
+    [
+      "clientes",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.clientes FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "clientes",
+      "clientes_audit_trg",
+      "O",
+      "CREATE TRIGGER clientes_audit_trg AFTER INSERT OR DELETE OR UPDATE ON public.clientes FOR EACH ROW EXECUTE FUNCTION trg_clientes_audit()"
+    ],
+    [
+      "clientes",
+      "tenant_organization_guard",
+      "O",
+      "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.clientes FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
+    ],
+    [
+      "clientes",
+      "trg_set_codigo_cliente",
+      "O",
+      "CREATE TRIGGER trg_set_codigo_cliente BEFORE INSERT ON public.clientes FOR EACH ROW EXECUTE FUNCTION set_codigo_cliente()"
+    ],
+    [
+      "clientes",
+      "update_clientes_updated_at",
+      "O",
+      "CREATE TRIGGER update_clientes_updated_at BEFORE UPDATE ON public.clientes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    ],
+    [
+      "controle_qualidade",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.controle_qualidade FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
     [
       "controle_qualidade",
       "aa_manual_cq_write_fence_v1",
@@ -2631,6 +4484,12 @@
     ],
     [
       "envase",
+      "a01_envase_final_permit",
+      "O",
+      "CREATE TRIGGER a01_envase_final_permit AFTER INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1()"
+    ],
+    [
+      "envase",
       "a01_envase_insert_permit",
       "O",
       "CREATE TRIGGER a01_envase_insert_permit BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1()"
@@ -2685,15 +4544,33 @@
     ],
     [
       "estoque_produto",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.estoque_produto FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "estoque_produto",
       "a00_stock_p1_tenant_guard",
       "O",
       "CREATE TRIGGER a00_stock_p1_tenant_guard BEFORE INSERT OR DELETE OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.stock_p1_guard()"
     ],
     [
       "estoque_produto",
+      "a01_stock_final_permit",
+      "O",
+      "CREATE TRIGGER a01_stock_final_permit AFTER INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1()"
+    ],
+    [
+      "estoque_produto",
       "a01_stock_insert_permit",
       "O",
       "CREATE TRIGGER a01_stock_insert_permit BEFORE INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1()"
+    ],
+    [
+      "estoque_produto",
+      "a02_stock_envase_reservation_root",
+      "O",
+      "CREATE TRIGGER a02_stock_envase_reservation_root BEFORE INSERT OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.stock_envase_reservation_root_v1()"
     ],
     [
       "estoque_produto",
@@ -2739,6 +4616,12 @@
     ],
     [
       "lotes",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.lotes FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "lotes",
       "aa_manual_lot_delete_v1",
       "O",
       "CREATE TRIGGER aa_manual_lot_delete_v1 BEFORE DELETE ON public.lotes FOR EACH ROW EXECUTE FUNCTION platform_private.guard_manual_lot_delete_v1()"
@@ -2778,6 +4661,12 @@
       "update_lotes_updated_at",
       "O",
       "CREATE TRIGGER update_lotes_updated_at BEFORE UPDATE ON public.lotes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    ],
+    [
+      "ordens_servico",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.ordens_servico FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
     ],
     [
       "ordens_servico",
@@ -2888,6 +4777,114 @@
       "CREATE TRIGGER zz_audit_separate_approval AFTER UPDATE OF status ON public.ordens_servico FOR EACH ROW EXECUTE FUNCTION private.guard_os_separate_approval()"
     ],
     [
+      "organization_feature_overrides",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.organization_feature_overrides FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "organization_feature_overrides",
+      "ofo_guard_trg",
+      "O",
+      "CREATE TRIGGER ofo_guard_trg BEFORE DELETE OR UPDATE ON public.organization_feature_overrides FOR EACH ROW EXECUTE FUNCTION ofo_guard()"
+    ],
+    [
+      "organization_feature_overrides",
+      "ofo_stamp_author_trg",
+      "O",
+      "CREATE TRIGGER ofo_stamp_author_trg BEFORE INSERT ON public.organization_feature_overrides FOR EACH ROW EXECUTE FUNCTION ofo_stamp_author()"
+    ],
+    [
+      "organization_feature_overrides",
+      "ofo_stamp_end_trg",
+      "O",
+      "CREATE TRIGGER ofo_stamp_end_trg BEFORE UPDATE ON public.organization_feature_overrides FOR EACH ROW EXECUTE FUNCTION ofo_stamp_end()"
+    ],
+    [
+      "organization_feature_overrides",
+      "saas_feature_override_guard_trg",
+      "O",
+      "CREATE TRIGGER saas_feature_override_guard_trg BEFORE DELETE OR UPDATE ON public.organization_feature_overrides FOR EACH ROW EXECUTE FUNCTION saas_feature_override_guard()"
+    ],
+    [
+      "organization_subscriptions",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.organization_subscriptions FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "organization_subscriptions",
+      "organization_subscriptions_no_delete_trg",
+      "O",
+      "CREATE TRIGGER organization_subscriptions_no_delete_trg BEFORE DELETE ON public.organization_subscriptions FOR EACH ROW EXECUTE FUNCTION saas_no_delete()"
+    ],
+    [
+      "organization_subscriptions",
+      "saas_subscription_guard_trg",
+      "O",
+      "CREATE TRIGGER saas_subscription_guard_trg BEFORE INSERT OR UPDATE ON public.organization_subscriptions FOR EACH ROW EXECUTE FUNCTION saas_subscription_guard()"
+    ],
+    [
+      "organization_subscriptions",
+      "saas_subscription_require_published_version_trg",
+      "O",
+      "CREATE TRIGGER saas_subscription_require_published_version_trg BEFORE INSERT OR UPDATE OF plan_version_id, status, started_at ON public.organization_subscriptions FOR EACH ROW EXECUTE FUNCTION saas_subscription_require_published_version()"
+    ],
+    [
+      "organization_subscriptions",
+      "saas_trial_validate_trg",
+      "O",
+      "CREATE TRIGGER saas_trial_validate_trg BEFORE INSERT ON public.organization_subscriptions FOR EACH ROW EXECUTE FUNCTION saas_trial_validate()"
+    ],
+    [
+      "organization_subscriptions",
+      "trg_org_subscriptions_audit",
+      "O",
+      "CREATE TRIGGER trg_org_subscriptions_audit AFTER INSERT OR UPDATE ON public.organization_subscriptions FOR EACH ROW EXECUTE FUNCTION saas_subscription_audit()"
+    ],
+    [
+      "organization_subscriptions",
+      "trg_org_subscriptions_no_delete",
+      "O",
+      "CREATE TRIGGER trg_org_subscriptions_no_delete BEFORE DELETE ON public.organization_subscriptions FOR EACH ROW EXECUTE FUNCTION saas_subscription_no_delete()"
+    ],
+    [
+      "organization_subscriptions",
+      "trg_organization_subscriptions_updated_at",
+      "O",
+      "CREATE TRIGGER trg_organization_subscriptions_updated_at BEFORE UPDATE ON public.organization_subscriptions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    ],
+    [
+      "organizations",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.organizations FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "organizations",
+      "trg_organizations_guard_status",
+      "O",
+      "CREATE TRIGGER trg_organizations_guard_status BEFORE INSERT OR UPDATE ON public.organizations FOR EACH ROW EXECUTE FUNCTION organizations_guard_status()"
+    ],
+    [
+      "platform_org_admin_invites",
+      "a00_cf_invitation_gate",
+      "O",
+      "CREATE TRIGGER a00_cf_invitation_gate BEFORE INSERT OR DELETE OR UPDATE ON public.platform_org_admin_invites FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_invitation_gate()"
+    ],
+    [
+      "platform_org_admin_invites",
+      "a00_cf_invitation_no_truncate",
+      "O",
+      "CREATE TRIGGER a00_cf_invitation_no_truncate BEFORE TRUNCATE ON public.platform_org_admin_invites FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()"
+    ],
+    [
+      "platform_org_admin_invites",
+      "z90_cf_invitation_profile_stamp",
+      "O",
+      "CREATE TRIGGER z90_cf_invitation_profile_stamp AFTER INSERT OR DELETE OR UPDATE ON public.platform_org_admin_invites FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_invitation_profiles()"
+    ],
+    [
       "produto_etiquetas",
       "trg_produto_etiquetas_snapshot_immutable",
       "O",
@@ -2898,6 +4895,78 @@
       "trg_produto_etiquetas_updated_at",
       "O",
       "CREATE TRIGGER trg_produto_etiquetas_updated_at BEFORE UPDATE ON public.produto_etiquetas FOR EACH ROW EXECUTE FUNCTION fn_produto_etiquetas_updated_at()"
+    ],
+    [
+      "profiles",
+      "a00_cf_user_gate",
+      "O",
+      "CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR DELETE OR UPDATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate()"
+    ],
+    [
+      "profiles",
+      "a00_cf_user_no_truncate",
+      "O",
+      "CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()"
+    ],
+    [
+      "profiles",
+      "guard_profile_senha_provisoria",
+      "O",
+      "CREATE TRIGGER guard_profile_senha_provisoria BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_senha_provisoria()"
+    ],
+    [
+      "profiles",
+      "guard_profile_senha_ticket",
+      "O",
+      "CREATE TRIGGER guard_profile_senha_ticket BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_senha_ticket()"
+    ],
+    [
+      "profiles",
+      "guard_profile_sensitive_fields",
+      "O",
+      "CREATE TRIGGER guard_profile_sensitive_fields BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_sensitive_fields()"
+    ],
+    [
+      "profiles",
+      "h15_profile_organization_guard",
+      "O",
+      "CREATE TRIGGER h15_profile_organization_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION h15_profile_organization_guard()"
+    ],
+    [
+      "profiles",
+      "trg_guard_profile_tenant_fields",
+      "O",
+      "CREATE TRIGGER trg_guard_profile_tenant_fields BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION guard_profile_tenant_fields()"
+    ],
+    [
+      "profiles",
+      "trg_profiles_enforce_cliente",
+      "O",
+      "CREATE TRIGGER trg_profiles_enforce_cliente BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION enforce_cliente_id_for_produtor()"
+    ],
+    [
+      "profiles",
+      "update_profiles_updated_at",
+      "O",
+      "CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    ],
+    [
+      "profiles",
+      "z99_cf_profile_stamp",
+      "O",
+      "CREATE TRIGGER z99_cf_profile_stamp BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.advance_stamp()"
+    ],
+    [
+      "profiles",
+      "z99_cf_require_admin",
+      "O",
+      "CREATE TRIGGER z99_cf_require_admin AFTER INSERT OR DELETE OR UPDATE ON public.profiles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.require_admin()"
+    ],
+    [
+      "programacao_producao",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.programacao_producao FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
     ],
     [
       "programacao_producao",
@@ -2946,6 +5015,96 @@
       "update_programacao_updated_at",
       "O",
       "CREATE TRIGGER update_programacao_updated_at BEFORE UPDATE ON public.programacao_producao FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    ],
+    [
+      "saas_features",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.saas_features FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "saas_features",
+      "trg_saas_features_updated_at",
+      "O",
+      "CREATE TRIGGER trg_saas_features_updated_at BEFORE UPDATE ON public.saas_features FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    ],
+    [
+      "saas_modules",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.saas_modules FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "saas_modules",
+      "trg_saas_modules_updated_at",
+      "O",
+      "CREATE TRIGGER trg_saas_modules_updated_at BEFORE UPDATE ON public.saas_modules FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+    ],
+    [
+      "saas_plan_version_features",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.saas_plan_version_features FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "saas_plan_version_features",
+      "saas_plan_version_features_no_mutation",
+      "O",
+      "CREATE TRIGGER saas_plan_version_features_no_mutation BEFORE INSERT OR DELETE OR UPDATE ON public.saas_plan_version_features FOR EACH ROW EXECUTE FUNCTION saas_plan_version_feature_guard()"
+    ],
+    [
+      "saas_plan_versions",
+      "a00_stock_envase_mutation_gate",
+      "O",
+      "CREATE TRIGGER a00_stock_envase_mutation_gate BEFORE INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.saas_plan_versions FOR EACH STATEMENT EXECUTE FUNCTION platform_private.stock_envase_mutation_gate_v1()"
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_version_guard_trg",
+      "O",
+      "CREATE TRIGGER saas_plan_version_guard_trg BEFORE INSERT ON public.saas_plan_versions FOR EACH ROW EXECUTE FUNCTION saas_plan_version_guard()"
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_version_no_mutation",
+      "O",
+      "CREATE TRIGGER saas_plan_version_no_mutation BEFORE DELETE OR UPDATE ON public.saas_plan_versions FOR EACH ROW EXECUTE FUNCTION saas_plan_version_no_mutation()"
+    ],
+    [
+      "user_roles",
+      "a00_cf_user_gate",
+      "O",
+      "CREATE TRIGGER a00_cf_user_gate BEFORE INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.acquire_gate()"
+    ],
+    [
+      "user_roles",
+      "a00_cf_user_no_truncate",
+      "O",
+      "CREATE TRIGGER a00_cf_user_no_truncate BEFORE TRUNCATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.block_truncate()"
+    ],
+    [
+      "user_roles",
+      "trg_guard_superadmin_role_assignment",
+      "O",
+      "CREATE TRIGGER trg_guard_superadmin_role_assignment BEFORE INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION guard_superadmin_role_assignment()"
+    ],
+    [
+      "user_roles",
+      "trg_user_roles_enforce_cliente",
+      "O",
+      "CREATE TRIGGER trg_user_roles_enforce_cliente BEFORE INSERT OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION enforce_cliente_id_for_produtor()"
+    ],
+    [
+      "user_roles",
+      "z90_cf_touch_profile",
+      "O",
+      "CREATE TRIGGER z90_cf_touch_profile AFTER INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH ROW EXECUTE FUNCTION cf_user_guards_v1.touch_related_profiles()"
+    ],
+    [
+      "user_roles",
+      "z99_cf_require_admin",
+      "O",
+      "CREATE TRIGGER z99_cf_require_admin AFTER INSERT OR DELETE OR UPDATE ON public.user_roles FOR EACH STATEMENT EXECUTE FUNCTION cf_user_guards_v1.require_admin()"
     ]
   ],
   "functions": [
@@ -4578,9 +6737,21 @@
     ],
     [
       "platform_private",
+      "envase_insert_final_v1",
+      "",
+      "7837c5852e37159d826875babf9da228",
+      "{postgres=X/postgres}",
+      "postgres",
+      [
+        "search_path=\"\""
+      ],
+      true
+    ],
+    [
+      "platform_private",
       "envase_insert_guard_v1",
       "",
-      "b5978c95db619d4e2611f82b1d8c4375",
+      "c150d00c4e0258ddcf4f7e2f86f53170",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -5416,6 +7587,31 @@
       [
         "search_path=\"\"",
         "lock_timeout=3s"
+      ],
+      true
+    ],
+    [
+      "platform_private",
+      "stock_envase_mutation_gate_v1",
+      "",
+      "415c84914143cab379c7ee4c379639fc",
+      "{postgres=X/postgres}",
+      "postgres",
+      [
+        "search_path=\"\"",
+        "lock_timeout=3s"
+      ],
+      true
+    ],
+    [
+      "platform_private",
+      "stock_envase_reservation_root_v1",
+      "",
+      "52563977f17f3ea8026c1a33c03dc619",
+      "{postgres=X/postgres}",
+      "postgres",
+      [
+        "search_path=\"\""
       ],
       true
     ],
@@ -13863,7 +16059,7 @@
       "public",
       "rpc_cockpit_registrar_envase_v1",
       "p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text, p_idempotency_key text, p_permitir_parcial boolean, p_motivo_parcial text",
-      "c9a937a88821141e78c9ea871415030e",
+      "65ecc1f718a7eeb0b52d18d91191da50",
       "{postgres=X/postgres,service_role=X/postgres}",
       "postgres",
       [
@@ -18524,6 +20720,13 @@
   ],
   "relations": [
     [
+      "clientes",
+      "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
       "cockpit_operacao_idempotencia",
       "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
       true,
@@ -18594,6 +20797,34 @@
       "postgres"
     ],
     [
+      "organization_feature_overrides",
+      "{postgres=arwdDxtm/postgres,authenticated=rDxtm/postgres,service_role=arwdDxtm/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
+      "organization_subscriptions",
+      "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
+      "organizations",
+      "{postgres=arwdDxtm/postgres,anon=xtm/postgres,authenticated=rxtm/postgres,service_role=arwdDxtm/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
+      "platform_org_admin_invites",
+      "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
       "platform_private.envase_insert_permits_v1",
       "{postgres=arwdDxtm/postgres}",
       false,
@@ -18608,7 +20839,49 @@
       "postgres"
     ],
     [
+      "profiles",
+      "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
       "programacao_producao",
+      "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
+      "saas_features",
+      "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
+      "saas_modules",
+      "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=r/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
+      "saas_plan_version_features",
+      "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
+      "saas_plan_versions",
+      "{postgres=arwdDxtm/postgres,authenticated=arwDxtm/postgres,service_role=arwdDxtm/postgres}",
+      true,
+      false,
+      "postgres"
+    ],
+    [
+      "user_roles",
       "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
       true,
       false,
@@ -18616,6 +20889,30 @@
     ]
   ],
   "constraints": [
+    [
+      "clientes",
+      "clientes_marca_cor_hex",
+      "CHECK (((marca_cor_primaria IS NULL) OR (marca_cor_primaria ~ '^#[0-9a-fA-F]{6}$'::text)))",
+      true
+    ],
+    [
+      "clientes",
+      "clientes_marca_nome_len",
+      "CHECK (((marca_nome IS NULL) OR ((char_length(btrim(marca_nome)) >= 2) AND (char_length(btrim(marca_nome)) <= 80))))",
+      true
+    ],
+    [
+      "clientes",
+      "clientes_organization_id_fkey",
+      "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      true
+    ],
+    [
+      "clientes",
+      "clientes_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
     [
       "cockpit_operacao_idempotencia",
       "cockpit_operacao_idempotencia_pkey",
@@ -19079,6 +21376,186 @@
       true
     ],
     [
+      "organization_feature_overrides",
+      "ofo_period_chk",
+      "CHECK (((ends_at IS NULL) OR (ends_at > starts_at)))",
+      true
+    ],
+    [
+      "organization_feature_overrides",
+      "organization_feature_overrides_feature_id_fkey",
+      "FOREIGN KEY (feature_id) REFERENCES saas_features(id) ON DELETE RESTRICT",
+      true
+    ],
+    [
+      "organization_feature_overrides",
+      "organization_feature_overrides_limit_value_check",
+      "CHECK (((limit_value IS NULL) OR (limit_value >= (0)::numeric)))",
+      true
+    ],
+    [
+      "organization_feature_overrides",
+      "organization_feature_overrides_mode_check",
+      "CHECK ((mode = ANY (ARRAY['GRANT'::text, 'REVOKE'::text])))",
+      true
+    ],
+    [
+      "organization_feature_overrides",
+      "organization_feature_overrides_organization_id_fkey",
+      "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE RESTRICT",
+      true
+    ],
+    [
+      "organization_feature_overrides",
+      "organization_feature_overrides_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
+    [
+      "organization_feature_overrides",
+      "organization_feature_overrides_reason_check",
+      "CHECK ((length(btrim(reason)) >= 5))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "org_subscriptions_billing_cycle_valid",
+      "CHECK (((billing_cycle IS NULL) OR (billing_cycle = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'semiannual'::text, 'annual'::text, 'custom'::text]))))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "org_subscriptions_cancelled_consistency",
+      "CHECK (((status <> 'CANCELLED'::saas_subscription_status) OR (cancelled_at IS NOT NULL)))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "org_subscriptions_currency_snapshot_format",
+      "CHECK (((currency_snapshot IS NULL) OR (currency_snapshot ~ '^[A-Z]{3}$'::text)))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "org_subscriptions_cycle_snapshot_valid",
+      "CHECK (((billing_cycle_snapshot IS NULL) OR (billing_cycle_snapshot = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'semiannual'::text, 'annual'::text, 'custom'::text]))))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "org_subscriptions_features_snapshot_array",
+      "CHECK (((features_snapshot IS NULL) OR (jsonb_typeof(features_snapshot) = 'array'::text)))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "org_subscriptions_limits_snapshot_object",
+      "CHECK (((limits_snapshot IS NULL) OR (jsonb_typeof(limits_snapshot) = 'object'::text)))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "org_subscriptions_period_order",
+      "CHECK (((current_period_start IS NULL) OR (current_period_end IS NULL) OR (current_period_end > current_period_start)))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "org_subscriptions_price_snapshot_nonnegative",
+      "CHECK (((price_snapshot IS NULL) OR (price_snapshot >= (0)::numeric)))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "org_subscriptions_suspended_consistency",
+      "CHECK (((status <> 'SUSPENDED'::saas_subscription_status) OR (suspended_at IS NOT NULL)))",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "organization_subscriptions_organization_id_fkey",
+      "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "organization_subscriptions_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "organization_subscriptions_plan_id_fkey",
+      "FOREIGN KEY (plan_id) REFERENCES saas_plans(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      true
+    ],
+    [
+      "organization_subscriptions",
+      "organization_subscriptions_plan_version_id_fkey",
+      "FOREIGN KEY (plan_version_id) REFERENCES saas_plan_versions(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      true
+    ],
+    [
+      "organizations",
+      "organizations_partner_account_id_fkey",
+      "FOREIGN KEY (partner_account_id) REFERENCES partner_accounts(id) ON DELETE SET NULL",
+      true
+    ],
+    [
+      "organizations",
+      "organizations_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
+    [
+      "organizations",
+      "organizations_status_chk",
+      "CHECK ((status = ANY (ARRAY['rascunho'::text, 'aguardando_ativacao'::text, 'onboarding'::text, 'ativa'::text, 'suspensa'::text, 'cancelada'::text])))",
+      true
+    ],
+    [
+      "platform_org_admin_invites",
+      "platform_org_admin_invites_email_attempt_count_chk",
+      "CHECK (((email_attempt_count >= 0) AND (email_attempt_count <= 50)))",
+      true
+    ],
+    [
+      "platform_org_admin_invites",
+      "platform_org_admin_invites_email_delivery_status_chk",
+      "CHECK ((email_delivery_status = ANY (ARRAY['pending'::text, 'sending'::text, 'accepted'::text, 'failed'::text, 'ambiguous'::text])))",
+      true
+    ],
+    [
+      "platform_org_admin_invites",
+      "platform_org_admin_invites_email_error_code_chk",
+      "CHECK (((email_last_error_code IS NULL) OR ((length(email_last_error_code) >= 1) AND (length(email_last_error_code) <= 80))))",
+      true
+    ],
+    [
+      "platform_org_admin_invites",
+      "platform_org_admin_invites_modo_acesso_check",
+      "CHECK ((modo_acesso = ANY (ARRAY['link'::text, 'senha_temporaria'::text])))",
+      true
+    ],
+    [
+      "platform_org_admin_invites",
+      "platform_org_admin_invites_organization_id_fkey",
+      "FOREIGN KEY (organization_id) REFERENCES organizations(id)",
+      true
+    ],
+    [
+      "platform_org_admin_invites",
+      "platform_org_admin_invites_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
+    [
+      "platform_org_admin_invites",
+      "platform_org_admin_invites_status_chk",
+      "CHECK ((status = ANY (ARRAY['pendente'::text, 'processando'::text, 'falhou'::text, 'ativo'::text])))",
+      true
+    ],
+    [
       "produto_etiquetas",
       "fk_produto_etiquetas_embalagem",
       "FOREIGN KEY (embalagem_id) REFERENCES estoque_embalagens(id) ON DELETE SET NULL",
@@ -19169,6 +21646,36 @@
       true
     ],
     [
+      "profiles",
+      "profiles_cliente_id_fkey",
+      "FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL",
+      true
+    ],
+    [
+      "profiles",
+      "profiles_organization_id_fkey",
+      "FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL",
+      true
+    ],
+    [
+      "profiles",
+      "profiles_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
+    [
+      "profiles",
+      "profiles_user_id_fkey",
+      "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      true
+    ],
+    [
+      "profiles",
+      "profiles_user_id_key",
+      "UNIQUE (user_id)",
+      true
+    ],
+    [
       "programacao_producao",
       "programacao_producao_item_chk",
       "CHECK (((produto_id IS NOT NULL) OR (microrganismo_id IS NOT NULL)))",
@@ -19214,6 +21721,204 @@
       "programacao_producao",
       "programacao_producao_responsavel_id_fkey",
       "FOREIGN KEY (responsavel_id) REFERENCES profiles(id) ON DELETE SET NULL",
+      true
+    ],
+    [
+      "saas_features",
+      "saas_features_key_format",
+      "CHECK ((key ~ '^[a-z][a-z0-9_.]{1,95}$'::text))",
+      true
+    ],
+    [
+      "saas_features",
+      "saas_features_key_unique",
+      "UNIQUE (key)",
+      true
+    ],
+    [
+      "saas_features",
+      "saas_features_module_id_fkey",
+      "FOREIGN KEY (module_id) REFERENCES saas_modules(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      true
+    ],
+    [
+      "saas_features",
+      "saas_features_name_nonblank",
+      "CHECK ((btrim(name) <> ''::text))",
+      true
+    ],
+    [
+      "saas_features",
+      "saas_features_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
+    [
+      "saas_modules",
+      "saas_modules_key_format",
+      "CHECK ((key ~ '^[a-z][a-z0-9_]{1,63}$'::text))",
+      true
+    ],
+    [
+      "saas_modules",
+      "saas_modules_key_unique",
+      "UNIQUE (key)",
+      true
+    ],
+    [
+      "saas_modules",
+      "saas_modules_name_nonblank",
+      "CHECK ((btrim(name) <> ''::text))",
+      true
+    ],
+    [
+      "saas_modules",
+      "saas_modules_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
+    [
+      "saas_plan_version_features",
+      "saas_plan_version_features_config_object",
+      "CHECK (((config IS NULL) OR (jsonb_typeof(config) = 'object'::text)))",
+      true
+    ],
+    [
+      "saas_plan_version_features",
+      "saas_plan_version_features_feature_id_fkey",
+      "FOREIGN KEY (feature_id) REFERENCES saas_features(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      true
+    ],
+    [
+      "saas_plan_version_features",
+      "saas_plan_version_features_limit_nonnegative",
+      "CHECK (((limit_value IS NULL) OR (limit_value >= (0)::numeric)))",
+      true
+    ],
+    [
+      "saas_plan_version_features",
+      "saas_plan_version_features_pkey",
+      "PRIMARY KEY (plan_version_id, feature_id)",
+      true
+    ],
+    [
+      "saas_plan_version_features",
+      "saas_plan_version_features_plan_version_id_fkey",
+      "FOREIGN KEY (plan_version_id) REFERENCES saas_plan_versions(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_archive_shape",
+      "CHECK (((status <> 'ARCHIVED'::text) OR ((archived_at IS NOT NULL) AND (archived_by IS NOT NULL) AND (length(btrim(archive_reason)) >= 5))))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_currency_format",
+      "CHECK (((currency IS NULL) OR (currency ~ '^[A-Z]{3}$'::text)))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_cycle_valid",
+      "CHECK (((billing_cycle IS NULL) OR (billing_cycle = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'semiannual'::text, 'annual'::text, 'custom'::text]))))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_features_array",
+      "CHECK ((jsonb_typeof(features_snapshot) = 'array'::text))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_limits_object",
+      "CHECK ((jsonb_typeof(limits_snapshot) = 'object'::text))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_number_positive",
+      "CHECK ((version_number > 0))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_period_valid",
+      "CHECK (((effective_to IS NULL) OR (effective_to > effective_from)))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_plan_id_fkey",
+      "FOREIGN KEY (plan_id) REFERENCES saas_plans(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_plan_number_unique",
+      "UNIQUE (plan_id, version_number)",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_price_nonnegative",
+      "CHECK (((price_amount IS NULL) OR (price_amount >= (0)::numeric)))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_publication_reason_length",
+      "CHECK (((publication_reason IS NULL) OR ((char_length(btrim(publication_reason)) >= 2) AND (char_length(btrim(publication_reason)) <= 500))))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_publish_shape",
+      "CHECK (((status = 'DRAFT'::text) OR ((price_amount IS NOT NULL) AND (currency IS NOT NULL) AND (billing_cycle IS NOT NULL) AND (trial_days IS NOT NULL) AND (effective_from IS NOT NULL) AND (published_at IS NOT NULL) AND (jsonb_typeof(limits_snapshot) = 'object'::text) AND (jsonb_array_length(features_snapshot) > 0))))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_revision_positive",
+      "CHECK ((revision > 0))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_status_valid",
+      "CHECK ((status = ANY (ARRAY['DRAFT'::text, 'PUBLISHED'::text, 'ARCHIVED'::text])))",
+      true
+    ],
+    [
+      "saas_plan_versions",
+      "saas_plan_versions_trial_days_valid",
+      "CHECK (((trial_days IS NULL) OR ((trial_days >= 1) AND (trial_days <= 365))))",
+      true
+    ],
+    [
+      "user_roles",
+      "user_roles_pkey",
+      "PRIMARY KEY (id)",
+      true
+    ],
+    [
+      "user_roles",
+      "user_roles_user_id_fkey",
+      "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      true
+    ],
+    [
+      "user_roles",
+      "user_roles_user_id_role_key",
+      "UNIQUE (user_id, role)",
       true
     ]
   ]
