@@ -317,8 +317,33 @@
     "status": "PASS"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 253, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 236, in main\n    rep = sql(actor() + group(O8, [{'item_id': S8, 'quantidade': 2}, {'item_id': S9, 'quantidade': 2}], 'meta-full-0001', META))\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 18, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  DELIVERY_REPLAY_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 54 at RAISE\n\n"
+    "test": "exact replay with identical metadata returns stored receipt",
+    "status": "PASS"
+  },
+  {
+    "test": "divergent replay (metadata changed, same key) conflicts",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
+  },
+  {
+    "test": "conflict changed nothing",
+    "status": "PASS"
+  },
+  {
+    "test": "zero financial/fiscal/communication rows across envase, transition, deliveries and contention",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback restores exact applied motor/batch/group/guard and never restores the purge escape",
+    "status": "PASS"
+  },
+  {
+    "test": "after rollback the envase transition is closed",
+    "status": "PASS",
+    "expected": "ENVASE_TRANSITION_CLOSED"
+  },
+  {
+    "test": "rollback preserves history",
+    "status": "PASS"
   }
 ]

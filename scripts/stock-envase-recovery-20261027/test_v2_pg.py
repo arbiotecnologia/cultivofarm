@@ -221,7 +221,8 @@ def main():
                    ('motorista_telefone', 'ligar depois'), ('motorista', 7), ('destinatario_nome', {'x': 1}), ('endereco_numero', True), ('endereco_referencia', 'x' * 301), ('motorista', '   ')]:
         fails(f'metadata malformed {k}={str(bad)[:20]} rejected', actor() + group(O8, [{'item_id': S8, 'quantidade': 2}], f'meta-bad-{k}-{abs(hash(str(bad)))%9999}'[:60], dict(META, **{k: bad})), 'DELIVERY_DATA_INVALID')
     assert last(f"SELECT count(*) FROM public.entregas WHERE ordem_servico_id='{O8}';") == '0'; ok('rejected metadata wrote no delivery')
-    out = sql(actor() + group(O8, [{'item_id': S8, 'quantidade': 2}, {'item_id': S9, 'quantidade': 2}], 'meta-full-0001', META))
+    full = group(O8, [{'item_id': S8, 'quantidade': 2}, {'item_id': S9, 'quantidade': 2}], 'meta-full-0001', META)   # frozen observed args
+    out = sql(actor() + full)
     cols = ','.join(META)
     rows = json.loads(last(f"SELECT jsonb_agg(to_jsonb(x))::text FROM (SELECT {cols} FROM public.entregas WHERE ordem_servico_id='{O8}') x;"))
     assert len(rows) == 2
@@ -233,9 +234,9 @@ def main():
     ok('all approved metadata persisted on every delivery of the group (PG roundtrip)', fields=len(META))
     assert last(f"SELECT bool_and(cliente_id='{C}' AND organization_id='{A}' AND receivable_id IS NULL AND partner_order_id IS NULL AND status='separado' AND comprovante_status='pendente') FROM public.entregas WHERE ordem_servico_id='{O8}';") == 't'
     ok('server-derived tenant/client/status/proof/finance unchanged by metadata')
-    rep = sql(actor() + group(O8, [{'item_id': S8, 'quantidade': 2}, {'item_id': S9, 'quantidade': 2}], 'meta-full-0001', META))
+    rep = sql(actor() + full)
     assert '"replay": true' in rep; ok('exact replay with identical metadata returns stored receipt')
-    fails('divergent replay (metadata changed, same key) conflicts', actor() + group(O8, [{'item_id': S8, 'quantidade': 2}, {'item_id': S9, 'quantidade': 2}], 'meta-full-0001', dict(META, destinatario_nome='OUTRO')), 'DELIVERY_REPLAY_CONFLICT')
+    fails('divergent replay (metadata changed, same key) conflicts', actor() + full.replace('LOCAL DESTINATARIO', 'OUTRO'), 'DELIVERY_REPLAY_CONFLICT')
     assert last(f"SELECT count(*)||'/'||max(destinatario_nome) FROM public.entregas WHERE ordem_servico_id='{O8}';") == '2/LOCAL DESTINATARIO'; ok('conflict changed nothing')
     assert zero() == z0; ok('zero financial/fiscal/communication rows across envase, transition, deliveries and contention')
     # Rollback deny-only
