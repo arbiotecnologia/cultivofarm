@@ -28,6 +28,7 @@ O3, PP3, L3 = u(44), u(45), u(46)   # latest CQ reprovado
 O5, PP5, L5 = u(47), u(48), u(49)   # concurrency/rollback target
 O6, PP6, L6 = u(50), u(51), u(52)   # partial envase
 RX = u(53)                          # stock reserved for ANOTHER OS
+O7, PP7, L7 = u(54), u(55), u(56)   # replay matrix (reserved-only / free-only / cancel)
 FEATS = {'envase': u(60), 'ordens_producao': u(61), 'lotes_qualidade': u(62)}
 TABLES = ['accounts_receivable', 'accounts_receivable_installments', 'financial_receipts', 'financial_documents', 'fiscal_invoices', 'fiscal_invoice_items', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base']
 def zero(): return last("SELECT jsonb_build_object(" + ','.join(f"'{t}',(SELECT count(*) FROM public.{t})" for t in TABLES) + ")::text;")
@@ -57,7 +58,7 @@ def setup_v2():
     INSERT INTO auth.users(id) VALUES('{W}');
     INSERT INTO public.profiles(user_id,organization_id,nome,ativo,senha_provisoria) VALUES('{W}','{A}','LOCAL PROD',true,false);
     INSERT INTO public.user_roles(user_id,role) VALUES('{W}','producao');
-    """ + manufactured(O2, PP2, L2) + manufactured(O3, PP3, L3, cq='reprovado') + manufactured(O5, PP5, L5) + manufactured(O6, PP6, L6, vol=5000) + f"""
+    """ + manufactured(O2, PP2, L2) + manufactured(O3, PP3, L3, cq='reprovado') + manufactured(O5, PP5, L5) + manufactured(O6, PP6, L6, vol=5000) + manufactured(O7, PP7, L7) + f"""
     INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status,reservado_para_os_id,reservado_para_os_tipo,reservado_para_cliente_id,quantidade_reservada) VALUES('{RX}','{T.L}','{PROD}',2,2,'reservado','{T.O}','manual','{C}',2);
     SET session_replication_role=origin;""")
 def fn_state():
@@ -129,8 +130,9 @@ def main():
     obs = last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{O2}';")
     its = lambda: json.dumps([{'item_id': owned, 'quantidade': 2, 'observed_updated_at': last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{owned}';")}, {'item_id': free, 'quantidade': 1, 'observed_updated_at': last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{free}';")}])
     stmt = lambda k: actor() + "SELECT public.rpc_cockpit_criar_entrega_v1('%s','manual','%s'::jsonb,'%s','{}'::jsonb,'%s'::timestamptz);" % (O2, its(), k, obs)
-    s1 = T.session("BEGIN;" + stmt('grp-race-A-0001'))
-    s2 = T.session("BEGIN;" + stmt('grp-race-B-0001'))
+    stA, stB = stmt('grp-race-A-0001'), stmt('grp-race-B-0001')
+    s1 = T.session("BEGIN;" + stA)
+    s2 = T.session("BEGIN;" + stB)
     o1 = T.finish(s1, 'COMMIT;'); o2 = T.finish(s2, 'COMMIT;')
     joined = o1[0] + o1[1] + o2[0] + o2[1]
     n_ok = joined.count('"success": true')
@@ -139,6 +141,43 @@ def main():
     assert last(f"SELECT string_agg(status::text,',' ORDER BY quantidade) FROM public.estoque_produto WHERE id IN ('{owned}','{free}') OR (lote_id='{L2}' AND status='expedido');").count('expedido') >= 2; ok('both items expedited through the canonical motor')
     assert last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE lote_id='{L2}' AND acao='expedicao';") == '2'; ok('ledger: exactly two expedition movements')
     assert last(f"SELECT count(*) FROM public.estoque_movimentacoes WHERE lote_id='{L2}' AND acao='reserva';") == '1'; ok('only the free item was reserved; owned reservation consumed without release/re-reserve')
+    # ---- Exact replay after commit (state legitimately moved: reserved->expedido, free->expedido) ----
+    snap = lambda: last("SELECT md5(string_agg(t,'|' ORDER BY t)) FROM (SELECT 'E'||id||status||updated_at AS t FROM public.entregas UNION ALL SELECT 'S'||id||status||updated_at||coalesce(reservado_para_os_id::text,'') FROM public.estoque_produto UNION ALL SELECT 'M'||id FROM public.estoque_movimentacoes UNION ALL SELECT 'R'||request_key FROM platform_private.delivery_requests_20261030 UNION ALL SELECT 'B'||request_key FROM platform_private.stock_batch_requests UNION ALL SELECT 'O'||id||status||updated_at FROM public.ordens_servico) x;")
+    ids = lambda r: sorted((i['entrega_id'], i['estoque_produto_id'], i['movimentacao_id']) for i in r['itens'])
+    win = stA if '"success": true' in (o1[0] + o1[1]) else stB
+    first = json.loads([l for l in (o1[0] + o1[1] + o2[0] + o2[1]).splitlines() if '"success": true' in l][0].strip())
+    before = snap(); rep = json.loads(last(win))
+    assert rep['replay'] is True and ids(rep) == ids(first) and snap() == before; ok('exact replay of committed MIXED group (owned+free now expedido) returns same IDs, zero mutations')
+    sql(f"SET session_replication_role=replica; UPDATE public.ordens_servico SET updated_at=updated_at+interval '1 second' WHERE id='{O2}'; SET session_replication_role=origin;")
+    before = snap(); rep = json.loads(last(win))
+    assert rep['replay'] is True and ids(rep) == ids(first) and snap() == before; ok('exact replay still answers after the OS revision changed post-commit (receipt precedes fresh CAS)')
+    fails('same key, changed payload -> replay conflict', win.replace("'{}'::jsonb", '\'{"motorista":"X"}\'::jsonb', 1), 'DELIVERY_REPLAY_CONFLICT')
+    fails('tenant B replaying the same key/args is denied', win.replace(actor(), actor(V), 1), '42501')
+    sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{U}';")
+    fails('revoked actor replay denied (no receipt disclosure)', win, '42501')
+    sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{U}';")
+    assert snap() == before; ok('denied replays left no mutation')
+    # Reserved-only and free-only groups on a fresh manufactured OS.
+    json.loads(last(actor(W) + envase(O7, PP7, L7, [{'tipo_embalagem': 'frasco_1L', 'quantidade': 3}], 'env-o7-00001')))
+    assert os_status(O7) == 'pronto_entrega'
+    own7 = last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{L7}' AND status='reservado' AND reservado_para_os_id='{O7}';")
+    free7 = last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{L7}' AND status='disponivel';")
+    g_res = group(O7, [{'item_id': own7, 'quantidade': 2}], 'grp-o7-res-01'); r1 = json.loads(last(actor() + g_res))
+    before = snap(); rp = json.loads(last(actor() + g_res))
+    assert rp['replay'] is True and ids(rp) == ids(r1) and snap() == before; ok('exact replay of RESERVED-only group: same IDs, zero mutations')
+    g_free = group(O7, [{'item_id': free7, 'quantidade': 1}], 'grp-o7-free-1'); r2 = json.loads(last(actor() + g_free))
+    before = snap(); rp = json.loads(last(actor() + g_free))
+    assert rp['replay'] is True and ids(rp) == ids(r2) and snap() == before; ok('exact replay of FREE-only group: same IDs, zero mutations')
+    # Cancellation: commit, exact replay, then the group replay still answers from its receipt without re-creating.
+    e7 = r1['itens'][0]['entrega_id']
+    obs7 = last(f"SELECT updated_at FROM public.entregas WHERE id='{e7}';")
+    cst = actor() + f"SELECT public.rpc_entrega_cancelar_v1('{e7}','LOCAL teste','{obs7}'::timestamptz);"
+    c1 = json.loads(last(cst)); assert c1['replay'] is False
+    before = snap(); c2 = json.loads(last(cst))
+    assert c2['replay'] is True and snap() == before; ok('cancellation exact replay: replay=true, zero mutations')
+    fails('cancellation same entrega, changed motivo -> conflict', cst.replace('LOCAL teste', 'LOCAL outro'), 'DELIVERY_REPLAY_CONFLICT')
+    before = snap(); rp = json.loads(last(actor() + g_res))
+    assert rp['replay'] is True and ids(rp) == ids(r1) and snap() == before; ok('group replay after cancellation returns the original receipt; nothing re-created')
     # Lock uniformity: gate held -> envase waits and fails 55P03 atomically.
     hold = T.session("BEGIN; SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE; SELECT pg_sleep(5);")
     time.sleep(0.4)
