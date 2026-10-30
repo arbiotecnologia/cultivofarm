@@ -62,9 +62,9 @@ BEGIN
  AND NEW.organization_id=OLD.organization_id AND NEW.status=OLD.status THEN
   UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;
  ELSIF c.action='cancel' AND TG_OP='UPDATE' AND c.mutation='cancel' AND NEW.id=c.target AND OLD.id=c.target
- AND OLD.organization_id=v_org AND NEW.status::text='cancelada'
- AND (pg_catalog.to_jsonb(NEW)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por'])
- IS NOT DISTINCT FROM (pg_catalog.to_jsonb(OLD)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por']) THEN
+ AND OLD.organization_id=v_org AND NEW.status::text='cancelada' AND NEW.financial_status='CANCELED'
+ AND (pg_catalog.to_jsonb(NEW)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por','financial_status'])
+ IS NOT DISTINCT FROM (pg_catalog.to_jsonb(OLD)-ARRAY['status','motivo_cancelamento','updated_at','cancelada_em','cancelada_por','financial_status']) THEN
   UPDATE platform_private.delivery_context_20261030 SET mutation='done' WHERE txid=c.txid;
  ELSE RAISE EXCEPTION 'DELIVERY_MUTATION_CLOSED' USING ERRCODE='42501'; END IF;
  RETURN NEW;
