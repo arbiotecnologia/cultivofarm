@@ -1,0 +1,27 @@
+[
+  {
+    "test": "exact applied release-combined + proof POST",
+    "status": "PASS"
+  },
+  {
+    "test": "stock/envase v2 installed (PRE+POST)",
+    "status": "PASS"
+  },
+  {
+    "test": "master data only (no OS/lot/CQ/envase/stock/delivery rows exist before the pipeline)",
+    "status": "PASS"
+  },
+  {
+    "test": "baseline: envase/group/cancel have no authenticated EXECUTE",
+    "status": "PASS"
+  },
+  {
+    "test": "missing CQ reference: fixture STOPS at PRE, zero rows, grants closed",
+    "status": "PASS"
+  },
+  {
+    "test": "execution stopped at concrete failure",
+    "status": "FAIL",
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 117, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 77, in main\n    sql(actor(ADM) + f\"INSERT INTO public.cq_parametros_referencia(id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,observacoes,ativo) VALUES('{REF}','{PROD}',6,8,1000000000,'TESTE homogenea','TESTE caracteristico','TESTE ausente','TESTE SEM VALOR COMERCIAL',true);\")\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 24, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  permission denied for table cq_parametros_referencia\n\n"
+  }
+]

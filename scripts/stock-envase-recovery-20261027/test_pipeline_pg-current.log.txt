@@ -1,0 +1,130 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=2.8s
+CHECKPOINT sql_calls=100 elapsed=4.9s
+CHECKPOINT sql_calls=200 elapsed=6.9s
+CHECKPOINT sql_calls=300 elapsed=9.2s
+CHECKPOINT sql_calls=400 elapsed=11.3s
+CHECKPOINT sql_calls=500 elapsed=13.4s
+CHECKPOINT sql_calls=600 elapsed=16.0s
+CHECKPOINT sql_calls=700 elapsed=18.9s
+CHECKPOINT sql_calls=800 elapsed=21.5s
+CHECKPOINT sql_calls=900 elapsed=24.2s
+CHECKPOINT sql_calls=1000 elapsed=26.6s
+CHECKPOINT sql_calls=1100 elapsed=28.7s
+CHECKPOINT sql_calls=1200 elapsed=30.9s
+CHECKPOINT sql_calls=1300 elapsed=33.5s
+CHECKPOINT sql_calls=1400 elapsed=36.0s
+CHECKPOINT sql_calls=1500 elapsed=38.4s
+CHECKPOINT sql_calls=1600 elapsed=40.8s
+CHECKPOINT sql_calls=1700 elapsed=43.7s
+CHECKPOINT sql_calls=1800 elapsed=46.4s
+CHECKPOINT sql_calls=1900 elapsed=48.8s
+CHECKPOINT sql_calls=2000 elapsed=51.6s
+CHECKPOINT sql_calls=2100 elapsed=53.9s
+CHECKPOINT sql_calls=2200 elapsed=55.9s
+CHECKPOINT sql_calls=2300 elapsed=57.9s
+CHECKPOINT sql_calls=2400 elapsed=59.9s
+CHECKPOINT sql_calls=2500 elapsed=62.2s
+CHECKPOINT sql_calls=2600 elapsed=64.8s
+CHECKPOINT sql_calls=2700 elapsed=67.5s
+CHECKPOINT sql_calls=2800 elapsed=70.1s
+CHECKPOINT sql_calls=2900 elapsed=72.5s
+CHECKPOINT sql_calls=3000 elapsed=74.7s
+CHECKPOINT sql_calls=3100 elapsed=77.0s
+CHECKPOINT sql_calls=3200 elapsed=79.7s
+CHECKPOINT sql_calls=3300 elapsed=82.4s
+CHECKPOINT sql_calls=3400 elapsed=85.0s
+CHECKPOINT sql_calls=3500 elapsed=87.2s
+CHECKPOINT sql_calls=3600 elapsed=89.6s
+CHECKPOINT sql_calls=3700 elapsed=91.7s
+CHECKPOINT sql_calls=3800 elapsed=94.0s
+CHECKPOINT sql_calls=3900 elapsed=96.3s
+CHECKPOINT sql_calls=4000 elapsed=98.9s
+CHECKPOINT sql_calls=4100 elapsed=101.1s
+CHECKPOINT sql_calls=4200 elapsed=103.9s
+CHECKPOINT sql_calls=4300 elapsed=106.5s
+CHECKPOINT sql_calls=4400 elapsed=109.3s
+CHECKPOINT sql_calls=4500 elapsed=111.7s
+CHECKPOINT sql_calls=4600 elapsed=114.2s
+CHECKPOINT sql_calls=4700 elapsed=116.7s
+CHECKPOINT sql_calls=4800 elapsed=119.4s
+CHECKPOINT sql_calls=4900 elapsed=122.2s
+CHECKPOINT sql_calls=5000 elapsed=125.1s
+CHECKPOINT sql_calls=5100 elapsed=128.0s
+CHECKPOINT sql_calls=5200 elapsed=130.7s
+CHECKPOINT sql_calls=5300 elapsed=133.5s
+CHECKPOINT sql_calls=5400 elapsed=136.0s
+CHECKPOINT sql_calls=5500 elapsed=138.6s
+CHECKPOINT sql_calls=5600 elapsed=140.9s
+CHECKPOINT sql_calls=5700 elapsed=143.4s
+CHECKPOINT sql_calls=5800 elapsed=145.8s
+CHECKPOINT sql_calls=5900 elapsed=148.4s
+CHECKPOINT sql_calls=6000 elapsed=151.2s
+CHECKPOINT sql_calls=6100 elapsed=154.3s
+CHECKPOINT sql_calls=6200 elapsed=157.1s
+CHECKPOINT sql_calls=6300 elapsed=159.8s
+CHECKPOINT sql_calls=6400 elapsed=162.4s
+CHECKPOINT sql_calls=6500 elapsed=165.0s
+CHECKPOINT sql_calls=6600 elapsed=167.9s
+CHECKPOINT sql_calls=6700 elapsed=171.2s
+CHECKPOINT sql_calls=6800 elapsed=174.1s
+CHECKPOINT sql_calls=6900 elapsed=176.7s
+CHECKPOINT sql_calls=7000 elapsed=179.3s
+CHECKPOINT sql_calls=7100 elapsed=181.8s
+CHECKPOINT sql_calls=7200 elapsed=184.2s
+CHECKPOINT sql_calls=7300 elapsed=186.1s
+CHECKPOINT sql_calls=7400 elapsed=188.4s
+CHECKPOINT sql_calls=7500 elapsed=190.9s
+CHECKPOINT sql_calls=7600 elapsed=193.7s
+CHECKPOINT sql_calls=7700 elapsed=196.3s
+CHECKPOINT sql_calls=7800 elapsed=199.0s
+CHECKPOINT sql_calls=7900 elapsed=201.4s
+CHECKPOINT sql_calls=8000 elapsed=203.7s
+CHECKPOINT sql_calls=8100 elapsed=205.8s
+CHECKPOINT sql_calls=8200 elapsed=208.1s
+CHECKPOINT sql_calls=8300 elapsed=210.3s
+CHECKPOINT sql_calls=8400 elapsed=212.5s
+CHECKPOINT sql_calls=8500 elapsed=214.7s
+CHECKPOINT sql_calls=8600 elapsed=217.1s
+CHECKPOINT sql_calls=8700 elapsed=219.6s
+CHECKPOINT sql_calls=8800 elapsed=222.4s
+CHECKPOINT sql_calls=8900 elapsed=225.6s
+CHECKPOINT sql_calls=9000 elapsed=228.2s
+CHECKPOINT sql_calls=9100 elapsed=230.8s
+CHECKPOINT sql_calls=9200 elapsed=233.7s
+CHECKPOINT sql_calls=9300 elapsed=236.3s
+CHECKPOINT sql_calls=9400 elapsed=238.6s
+CHECKPOINT sql_calls=9500 elapsed=240.9s
+CHECKPOINT sql_calls=9600 elapsed=243.6s
+CHECKPOINT sql_calls=9700 elapsed=246.0s
+CHECKPOINT sql_calls=9800 elapsed=248.6s
+CHECKPOINT sql_calls=9900 elapsed=251.3s
+CHECKPOINT sql_calls=10000 elapsed=253.8s
+CHECKPOINT sql_calls=10100 elapsed=256.4s
+CHECKPOINT sql_calls=10200 elapsed=259.3s
+CHECKPOINT sql_calls=10300 elapsed=261.9s
+CHECKPOINT sql_calls=10400 elapsed=264.7s
+CHECKPOINT sql_calls=10500 elapsed=267.3s
+CHECKPOINT sql_calls=10600 elapsed=270.0s
+RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
+PASS exact applied release-combined + proof POST
+PASS stock/envase v2 installed (PRE+POST)
+PASS master data only (no OS/lot/CQ/envase/stock/delivery rows exist before the pipeline)
+PASS baseline: envase/group/cancel have no authenticated EXECUTE
+PASS missing CQ reference: fixture STOPS at PRE, zero rows, grants closed
+Traceback (most recent call last):
+  File "/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py", line 117, in <module>
+    try: main()
+         ~~~~^^
+  File "/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py", line 77, in main
+    sql(actor(ADM) + f"INSERT INTO public.cq_parametros_referencia(id,produto_id,ph_min,ph_max,concentracao_min_ufc_ml,aparencia_esperada,odor_esperado,contaminacao_esperada,observacoes,ativo) VALUES('{REF}','{PROD}',6,8,1000000000,'TESTE homogenea','TESTE caracteristico','TESTE ausente','TESTE SEM VALOR COMERCIAL',true);")
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py", line 24, in sql
+    def sql(s): return pg.sql(s)
+                       ~~~~~~^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  permission denied for table cq_parametros_referencia
+
+RESULT 5 PASS 1 FAIL
