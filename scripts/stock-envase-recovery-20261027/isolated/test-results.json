@@ -337,27 +337,27 @@
       "status": "PASS"
     },
     {
-      "test": "enabled role writer waits on envase gate without replica bypass",
+      "test": "existing role gate waits without replica bypass",
       "status": "PASS"
     },
     {
-      "test": "enabled tenant writer waits on envase gate without replica bypass",
+      "test": "existing tenant gate waits without replica bypass",
       "status": "PASS"
     },
     {
-      "test": "enabled SaaS writer waits on envase gate without replica bypass",
+      "test": "enabled SaaS gate refuses contention with exact 55P03 without replica bypass",
       "status": "PASS"
     },
     {
-      "test": "enabled CQ writer waits on envase gate without replica bypass",
+      "test": "enabled CQ gate refuses contention with exact 55P03 without replica bypass",
       "status": "PASS"
     },
     {
-      "test": "enabled new CQ writer waits on envase gate without replica bypass",
+      "test": "enabled new CQ gate refuses contention with exact 55P03 without replica bypass",
       "status": "PASS"
     },
     {
-      "test": "enabled root writer waits on envase gate without replica bypass",
+      "test": "enabled root gate refuses contention with exact 55P03 without replica bypass",
       "status": "PASS"
     },
     {
@@ -365,7 +365,7 @@
       "status": "PASS"
     },
     {
-      "test": "real inverse-prelock DML deadlock/timeout rejects exact concurrency state without partial envase",
+      "test": "real inverse-prelock DML returns 55P03 without deadlock or partial envase",
       "status": "PASS"
     },
     {
@@ -755,34 +755,34 @@
     {
       "test": "cooperation SaaS",
       "stdout": "",
-      "stderr": "",
-      "returncode": 0
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:4993\n",
+      "returncode": 3
     },
     {
       "test": "cooperation CQ",
       "stdout": "",
-      "stderr": "",
-      "returncode": 0
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:4993\n",
+      "returncode": 3
     },
     {
       "test": "cooperation new CQ",
       "stdout": "",
-      "stderr": "",
-      "returncode": 0
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:4993\n",
+      "returncode": 3
     },
     {
       "test": "cooperation root",
       "stdout": "",
-      "stderr": "",
-      "returncode": 0
+      "stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:4993\n",
+      "returncode": 3
     },
     {
       "test": "inverse prelock actual DML",
       "holder_stdout": "1\n",
-      "holder_stderr": "ERROR:  42501: MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC\nCONTEXT:  PL/pgSQL function platform_private.guard_manual_lot_write_v1() line 53 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
-      "worker_stdout": "",
-      "worker_stderr": "ERROR:  40P01: deadlock detected\nDETAIL:  Process 44763 waits for ShareLock on transaction 16728; blocked by process 44762.\nProcess 44762 waits for ShareLock on transaction 16729; blocked by process 44763.\nHINT:  See server log for query details.\nCONTEXT:  while locking tuple (0,33) in relation \"lotes\"\nSQL statement \"SELECT coalesce(volume_produzido, 0), status::text, produto_id, microrganismo_id, programacao_id\n                                                                                  FROM public.lotes WHERE id = p_lote_id FOR UPDATE\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 83 at SQL statement\nLOCATION:  DeadLockReport, deadlock.c:1135\n",
-      "worker_returncode": 3
+      "holder_stderr": "ERROR:  55P03: could not obtain lock on row in relation \"state\"\nCONTEXT:  SQL statement \"SELECT 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT\"\nPL/pgSQL function platform_private.stock_envase_mutation_gate_v1() line 8 at PERFORM\nLOCATION:  heap_lock_tuple, heapam.c:4993\n",
+      "worker_stdout": "{\"avanco\": {\"replay\": false, \"status\": \"pronto_entrega\", \"success\": true, \"status_anterior\": \"em_cq\"}, \"estado\": \"completed\", \"replay\": false, \"envases\": 1, \"message\": \"Envase e estoque registrados em transa\u00e7\u00e3o \u00fanica.\", \"success\": true, \"pendente_os_ml\": 0, \"volume_livre_ml\": 0, \"entradas_estoque\": 1, \"saldo_restante_ml\": 98000, \"volume_reservado_ml\": 2000}\n",
+      "worker_stderr": "",
+      "worker_returncode": 0
     },
     {
       "test": "rejected canonical CQ cannot authorize envase",
@@ -809,6 +809,6 @@
       "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "elapsed_seconds": 153.678,
+  "elapsed_seconds": 151.742,
   "exit_code": 0
 }

@@ -41,7 +41,7 @@
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/cooperation.py",
-    "sha256": "dd73747dc5ccb0233c5a872a76aa0df5d5c42fa890a15134b8d7be8e2ec27919"
+    "sha256": "84a3296c853b3302cd983156bfc59e5fa4d853f5959045d9beaff050a1f75d3f"
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/matrix.py",
@@ -69,6 +69,6 @@
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/entry.sql.review",
-    "sha256": "d02692b6ee961e0241fe94d3c24611a6cb5a3558de8ec3b0492200e65da63613"
+    "sha256": "2778154a6aaac4c2ccd8fd46ae968fe8449bb08143bdcdc9076c754fe6717596"
   }
 ]
