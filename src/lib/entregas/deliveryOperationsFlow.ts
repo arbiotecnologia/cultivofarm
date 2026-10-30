@@ -106,7 +106,7 @@ export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
     const v = input.dados[k];
     if (v === undefined) continue;
     if (v !== null && typeof v !== "string") { invalid.push(k); continue; }
-    const value = v === null || v.trim() === "" ? null : v;
+    const value: string | null = v === null || (v as string).trim() === "" ? null : (v as string);
     if (value !== null && metadataError(k, value)) { invalid.push(k); continue; }
     dados[k] = value;
   }
