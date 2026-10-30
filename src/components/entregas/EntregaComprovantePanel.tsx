@@ -365,6 +365,11 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   };
 
   const dispensarAssinatura = () => {
+    // Legacy waiver writer is closed pending its own reviewed canonical contract: never dispatch.
+    if (!WAIVER_CONTRACT_AVAILABLE) {
+      toast({ title: "Dispensa indisponível", description: "A dispensa de assinatura aguarda contrato próprio revisado.", variant: "destructive" });
+      return;
+    }
     try { requireDeliveryOperationContract(); } catch {
       toast({ title: "Dispensa indisponível", description: DELIVERY_OPERATION_BLOCK, variant: "destructive" });
       return;
@@ -770,9 +775,9 @@ export function EntregaComprovantePanel({ entrega }: Props) {
               </Button>
             )}
             {!somenteConsulta && isAdmin && status !== "confirmado" && status !== "dispensado" && (
-              <Button size="sm" variant="ghost" onClick={() => setOpenDispensa(true)} disabled={acaoEmAndamento}>
-                <ShieldAlert className="h-4 w-4 mr-1" /> Dispensar assinatura
-              </Button>
+              <span className="inline-flex items-center text-xs text-muted-foreground" data-testid="dispensa-indisponivel">
+                <ShieldAlert className="h-4 w-4 mr-1" /> Dispensa de assinatura indisponível até revisão do contrato próprio.
+              </span>
             )}
             {validationToken && (
               <Button size="sm" variant="ghost" onClick={() => void copyLink()}>
