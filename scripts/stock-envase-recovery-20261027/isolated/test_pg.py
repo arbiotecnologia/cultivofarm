@@ -30,8 +30,7 @@ def run():
         sources.append({'file':str(p.relative_to(S.parent)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}); sql(p.read_text())
     (H/'sources.json').write_text(json.dumps(sources,indent=2)+'\n'); ok('reported applied composition restored in order; all installer PRE/POST pass')
     T.setup_v2(); pre=state(); delta=G.candidate()
-    sql('BEGIN;'+delta); post=state(); sql('ROLLBACK;')
-    # pg.sql uses one connection per call: measure in ONE transaction instead.
+    # pg.sql uses one connection per call: measure in ONE transaction.
     measured=sql('BEGIN;'+delta+'\n'+G.STATE+'::text;\nROLLBACK;')
     post=json.loads([x for x in measured.splitlines() if x.startswith('{')][-1]); assert state()==pre
     G.write(pre,post); ok('exact deterministic PRE/POST measured; probe rolls back')

@@ -105,6 +105,7 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
     const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
     let p: Promise<any> = Promise.resolve();
     act(() => { p = result.current.registrarEnvaseTransacional(params("k-1")); });
+    await act(async () => { await Promise.resolve(); });
     t.auth = readyAuth("a1", "org-B"); rerender();
     await act(async () => { release({ data: ack, error: null }); expect(await p).toBeNull(); });
     expect(t.toast.success).not.toHaveBeenCalled();
