@@ -175,7 +175,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
       return;
     }
     if (excedeSaldo) {
-      toast.error(`Volume (${fmtL(volSolicitado)}) excede o saldo disponível (${fmtL(saldo!.saldo)}).`);
+      toast.error(`Volume (${fmtL(volSolicitado)}) excede o saldo disponível (${fmtL(saldo?.saldo ?? 0)}).`);
       return;
     }
     if (!validade) {

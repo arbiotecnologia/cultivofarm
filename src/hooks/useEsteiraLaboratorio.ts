@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { dispatchEnvase, loadEnvaseAttempts, type EnvaseArgs, type EnvaseAttempt, type EnvaseRpc } from "@/lib/envase/envaseFlow";
+import { probeEnvaseAvailability } from "@/lib/envase/envaseAvailability";
+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { toast } from "sonner";
 import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
 import { montarDadosEntrega, validarRespostaCriarEntrega } from "@/lib/entregas/payloadEntrega";
@@ -77,6 +79,8 @@ const ENVASE_REVIEWED_HINT = "Para OS manual, registre o envase (Cockpit ou pág
 
 export function useEsteiraLaboratorio() {
   const { user, profile } = useAuth() as any;
+  const envaseScope = useStorageAccessScope("envase-canonical");
+  const envaseBusy = useRef(false);
   // Latest identity, read after every await (fence): a late envase result never lands in another session/tenant.
   const identityRef = useRef<{ actorId: string | null; orgId: string | null }>({ actorId: null, orgId: null });
   // Identity generation: bumps on EVERY actor/org change and on unmount, so a response started under an earlier
@@ -364,13 +368,14 @@ export function useEsteiraLaboratorio() {
     const epoch = epochRef.current;
     let store: Storage | null = null;
     try { store = window.localStorage; } catch { store = null; }
-    if (!actorId || !orgId || !store || !params.idempotencyKey) {
+    if (!actorId || !orgId || !store || !params.idempotencyKey || !envaseScope.ready || envaseBusy.current) {
       toast.error("Sessão, empresa ou recuperação local indisponível. Nenhuma alteração foi enviada.");
       return null;
     }
+    const currentScope = envaseScope.capture();
     const fence = () => {
       const now = identityRef.current;
-      if (epochRef.current !== epoch || now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
+      if (!currentScope() || epochRef.current !== epoch || now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
     };
     // A previous uncertain attempt for this lot is replayed EXACTLY (same key/args); a new key is never minted.
     const all = loadEnvaseAttempts(store, actorId, orgId, params.loteId);
@@ -390,11 +395,20 @@ export function useEsteiraLaboratorio() {
     const attempt: EnvaseAttempt = pending ?? { args, actorId, orgId };
     if (pending) toast.info("Há um envase anterior deste lote com resultado incerto: repetindo exatamente o mesmo envio (mesma chave e mesmos dados).");
     let outcome;
+    envaseBusy.current = true;
     try {
+      const available = await probeEnvaseAvailability(supabase.rpc.bind(supabase) as unknown as EnvaseRpc, attempt, fence);
+      fence();
+      if (!available) {
+        toast.error("Envase temporariamente indisponível. Nenhuma alteração foi enviada.");
+        return null;
+      }
       outcome = await dispatchEnvase(supabase.rpc.bind(supabase) as unknown as EnvaseRpc, store, attempt, !!pending, fence);
     } catch (error: any) {
       toast.error(error?.message === "ENVASE_SCOPE_CHANGED" ? "Sessão ou empresa alterada. Nada foi enviado." : (error?.message || "Recuperação local indisponível. Nenhuma alteração foi enviada."));
       return null;
+    } finally {
+      envaseBusy.current = false;
     }
     if (outcome.status === "stale") { toast.error("Sessão ou empresa alterada durante o envio. O resultado não foi adotado; o envase pendente segue vinculado à sessão original."); return null; }
     if (outcome.status === "uncertain") { toast.error("Resposta incerta do envase: pode ter sido gravado. Consulte o histórico; um novo envio deste lote repetirá exatamente o mesmo pedido."); return null; }
