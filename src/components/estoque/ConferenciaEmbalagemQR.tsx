@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { EmbalagemStatusBadge } from "./EmbalagemStatusBadge";
 import { ScanLine } from "lucide-react";
+import { requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 
 const MSG_ERRO_CONFERENCIA = "Não foi possível conferir este código. Tente novamente.";
 
@@ -46,15 +47,16 @@ export function ConferenciaEmbalagemQR({ entregaId }: { entregaId?: string }) {
     setErro(null);
     setResult(null);
     try {
+      if (entregaId) requireDeliveryOperationContract();
       const { data, error } = await (supabase as any).rpc("rpc_ler_embalagem_por_qr", {
         p_codigo_ou_token: alvo,
       });
       if (token !== tokenRef.current || entregaDaLeitura !== entregaId) return;
       if (error) throw error;
       setResult(data);
-    } catch {
+    } catch (error) {
       if (token !== tokenRef.current || entregaDaLeitura !== entregaId) return;
-      setErro(MSG_ERRO_CONFERENCIA);
+      setErro(error instanceof Error && entregaId ? error.message : MSG_ERRO_CONFERENCIA);
     } finally {
       if (token === tokenRef.current) {
         setLoading(false);

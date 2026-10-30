@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useScopedPortalQuery } from "@/hooks/useScopedPortalQuery";
+import { DELIVERY_FINANCE_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 
 const MOTIVOS = [
   { value: "bonificacao", label: "Bonificação" },
@@ -31,8 +33,9 @@ export default function EntregasNaoFaturadas() {
   const [motivo, setMotivo] = useState("");
   const [justificativa, setJustificativa] = useState("");
 
-  const { data: items = [] } = useQuery({
+  const { data: items = [], isError, isLoading, refetch, ready, scope } = useScopedPortalQuery<any[]>({
     queryKey: ["entregas-nao-faturadas"],
+    retry: false,
     queryFn: async () => {
       const q: any = supabase
         .from("entregas")
@@ -48,6 +51,10 @@ export default function EntregasNaoFaturadas() {
       return (data || []) as any[];
     },
   });
+  useEffect(() => {
+    setSel(null); setNbTarget(null); setMotivo(""); setJustificativa("");
+  }, [scope]);
+  const unavailable = !ready || isError;
 
 
   const totals = useMemo(() => {
@@ -66,7 +73,9 @@ export default function EntregasNaoFaturadas() {
   }, [items]);
 
   const markNB = useMutation({
+    retry: false,
     mutationFn: async () => {
+      requireDeliveryOperationContract("finance");
       if (!nbTarget) throw new Error("Entrega inválida");
       if (!motivo || !justificativa.trim()) throw new Error("Informe motivo e justificativa");
       const reason = `${MOTIVOS.find((m) => m.value === motivo)?.label}: ${justificativa.trim()}`;
@@ -86,12 +95,13 @@ export default function EntregasNaoFaturadas() {
 
   return (
     <div className="space-y-4 p-4 sm:p-6">
-      <PageHeader title="Entregas não faturadas" description={`${items.length} entrega(s) aguardando geração financeira`} />
+      <PageHeader title="Entregas não faturadas" description={unavailable ? "Consulta indisponível" : isLoading ? "Carregando entregas" : `${items.length} entrega(s) no filtro atual`} />
+      <p role="alert" className="text-sm text-destructive">{DELIVERY_FINANCE_BLOCK}</p>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <KpiCard label="Entregas pendentes" value={String(totals.count)} icon={Truck} tone="warning" />
-        <KpiCard label="Valor estimado" value={brl(totals.valor)} icon={Wallet} tone="default" />
-        <KpiCard label="Pendentes > 7 dias" value={String(totals.old)} icon={Ban} tone={totals.old > 0 ? "danger" : "default"} />
+        <KpiCard label="Entregas pendentes" value={unavailable || isLoading ? "—" : String(totals.count)} icon={Truck} tone="warning" />
+        <KpiCard label="Valor estimado" value={unavailable || isLoading ? "—" : brl(totals.valor)} icon={Wallet} tone="default" />
+        <KpiCard label="Pendentes > 7 dias" value={unavailable || isLoading ? "—" : String(totals.old)} icon={Ban} tone={totals.old > 0 ? "danger" : "default"} />
       </div>
 
       <Card>
@@ -110,8 +120,12 @@ export default function EntregasNaoFaturadas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Tudo faturado 🎉</TableCell></TableRow>
+              {unavailable ? (
+                <TableRow><TableCell colSpan={8}>Não foi possível consultar as entregas. <Button variant="outline" onClick={() => void refetch()}>Tentar novamente</Button></TableCell></TableRow>
+              ) : isLoading ? (
+                <TableRow><TableCell colSpan={8}>Carregando entregas...</TableCell></TableRow>
+              ) : items.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma entrega no filtro atual.</TableCell></TableRow>
               ) : items.map((e: any) => {
                 const valor = Number(e.quantidade_entregue || 0) * Number(e.produtos?.valor_litro_brl || 0);
                 const cs = e.comprovante_status || "pendente";
@@ -147,7 +161,7 @@ export default function EntregasNaoFaturadas() {
                           <ShieldCheck className="h-3.5 w-3.5" />
                         </Button>
                       )}
-                      <Button size="sm" onClick={() => setSel(e)}>Faturar</Button>
+                      <Button size="sm" onClick={() => setSel(e)}>Consultar financeiro</Button>
                       <Button size="sm" variant="outline" onClick={() => setNbTarget(e)} title="Marcar como sem cobrança">
                         <Ban className="h-3.5 w-3.5" />
                       </Button>

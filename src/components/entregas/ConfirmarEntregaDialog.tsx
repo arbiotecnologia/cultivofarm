@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
 import { Paperclip, Trash2, Upload, DollarSign, Clock, Ban } from "lucide-react";
+import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 
 const TIPOS = [
   { value: "RECIBO_ASSINADO", label: "Recibo assinado" },
@@ -153,6 +154,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
   const confirmar = useMutation({
     retry: false,
     mutationFn: async () => {
+      requireDeliveryOperationContract();
       const captured = scope.capture();
       let expired = false;
       const current = () => captured() && !expired;
@@ -270,6 +272,7 @@ export function ConfirmarEntregaDialog({ open, onClose, entrega, onConfirmed }: 
         <DialogHeader>
           <DialogTitle>Confirmar Entrega</DialogTitle>
         </DialogHeader>
+        <p role="alert" className="text-sm text-destructive">{DELIVERY_OPERATION_BLOCK}</p>
 
         <div className="rounded-md border bg-muted/30 p-3 text-sm grid grid-cols-2 gap-2">
           <div><span className="text-muted-foreground">Cliente:</span> <strong>{entrega.clientes?.nome || "—"}</strong></div>

@@ -62,6 +62,7 @@ import { SeletorLoteEnvasado } from "@/components/entregas/SeletorLoteEnvasado";
 import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/components/entregas/RegistrarEntregaDialog";
 import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";
 import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
+import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   separado: { label: "Separado", variant: "secondary" },
@@ -88,6 +89,14 @@ export default function Entregas() {
   };
   // Per-mount containment, not a server receipt or cross-tab idempotency.
   const runDeliveryOperation = async <T,>(target: string, work: (check: () => void, dispatch: () => void, current: () => boolean) => Promise<T>) => {
+    try {
+      requireDeliveryOperationContract(target === "cancel" ? "cancel" : "delivery");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : DELIVERY_OPERATION_BLOCK;
+      setOperationNotice(message);
+      toast.error(message);
+      throw error;
+    }
     const captured = deliveryScope.capture();
     const key = deliveryScope.scope;
     if (!captured()) throw new Error("Contexto de entrega indisponível.");
@@ -706,7 +715,7 @@ export default function Entregas() {
 
   const cancelarEntrega = useMutation({
     retry: false,
-    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => runDeliveryOperation(id, async (check, dispatch) => {
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => runDeliveryOperation("cancel", async (check, dispatch) => {
       if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) throw new Error("Entrega inválida.");
       const { data: entrega, error: fetchErr } = await supabase
         .from("entregas")
@@ -881,10 +890,10 @@ export default function Entregas() {
         }
       />
 
-      {operationNotice && <div role="alert" className="border border-destructive rounded-md p-3 space-y-2">
-        <p>{operationNotice}</p>
+      <div role="alert" className="border border-destructive rounded-md p-3 space-y-2">
+        <p>{operationNotice || DELIVERY_OPERATION_BLOCK}</p>
         <Button variant="outline" onClick={() => { if (deliveryScope.ready) { void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
-      </div>}
+      </div>
       <RegistrarEntregaDialog
         key={deliveryScope.scope}
         open={open}

@@ -1,0 +1,261 @@
+[map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} body_md5:e4008b029ce8d58f70f3fc88571d03be definition:CREATE OR REPLACE FUNCTION public.fn_mark_entrega_not_billable(_entrega_id uuid, _reason text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_entrega public.entregas%ROWTYPE;
+BEGIN
+  IF NOT public.is_financial_staff(v_uid) THEN
+    RAISE EXCEPTION 'Sem permissão para marcar entrega como sem cobrança.' USING ERRCODE='insufficient_privilege';
+  END IF;
+  IF _reason IS NULL OR length(trim(_reason)) = 0 THEN
+    RAISE EXCEPTION 'Motivo é obrigatório.' USING ERRCODE='check_violation';
+  END IF;
+
+  SELECT * INTO v_entrega FROM public.entregas WHERE id = _entrega_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Entrega não encontrada.'; END IF;
+  IF v_entrega.receivable_id IS NOT NULL THEN
+    RAISE EXCEPTION 'Entrega já foi faturada.' USING ERRCODE='check_violation';
+  END IF;
+
+  UPDATE public.entregas
+    SET financial_status = 'NOT_BILLABLE',
+        not_billable_reason = _reason
+    WHERE id = _entrega_id;
+
+  INSERT INTO public.financial_audit_log (entity_type, entity_id, action, old_data, new_data, performed_by)
+  VALUES ('entregas', _entrega_id, 'MARK_NOT_BILLABLE',
+    jsonb_build_object('financial_status', v_entrega.financial_status),
+    jsonb_build_object('financial_status', 'NOT_BILLABLE', 'reason', _reason),
+    v_uid);
+END $function$
+ signature:fn_mark_entrega_not_billable(uuid,text)] map[acl:{postgres=X/postgres,service_role=X/postgres} body_md5:b30eb1df9094e4dace1d071b11b6af41 definition:CREATE OR REPLACE FUNCTION public.rpc_cockpit_cancelar_reserva_v1(p_item_id uuid, p_os_id uuid, p_origem text, p_motivo text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_origem text;
+  v_item public.estoque_produto%ROWTYPE;
+  v_main public.estoque_produto%ROWTYPE;
+  v_modo text;
+  v_motivo text := nullif(btrim(coalesce(p_motivo, '')), '');
+BEGIN
+  PERFORM public.fn_estoque_ctx_open(jsonb_build_object('acao','cancelamento_reserva','origem','rpc_cockpit_cancelar_reserva_v1','usuario_id',auth.uid()::text));
+  v_origem := public.fn_cockpit_assert_operador_origem(p_origem);
+
+  IF p_item_id IS NULL OR p_os_id IS NULL THEN RAISE EXCEPTION 'COCKPIT_RESERVA_PARAMS_INVALIDOS'; END IF;
+  IF v_motivo IS NULL THEN RAISE EXCEPTION 'COCKPIT_RESERVA_MOTIVO_OBRIGATORIO'; END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('cockpit_reserva:' || p_item_id::text));
+
+  SELECT * INTO v_item FROM public.estoque_produto WHERE id = p_item_id FOR UPDATE;
+  IF v_item.id IS NULL THEN RAISE EXCEPTION 'COCKPIT_RESERVA_NAO_ENCONTRADA'; END IF;
+
+  IF v_item.status::text = 'estornado' OR v_item.quantidade_reservada IS NULL THEN
+    RETURN jsonb_build_object('success', true, 'replay', true,
+      'message', 'Reserva já cancelada anteriormente.');
+  END IF;
+  IF v_item.status::text = 'expedido' THEN RAISE EXCEPTION 'COCKPIT_RESERVA_JA_EXPEDIDA'; END IF;
+
+  -- coerência: a reserva precisa pertencer à MESMA OS/origem
+  IF v_item.reservado_para_os_id IS DISTINCT FROM p_os_id THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_RESERVA_OS';
+  END IF;
+  IF coalesce(v_item.reservado_para_os_tipo, v_origem) IS DISTINCT FROM v_origem THEN
+    RAISE EXCEPTION 'COCKPIT_RELATION_MISMATCH_RESERVA_ORIGEM';
+  END IF;
+
+  -- override (cancelar reserva feita por outro operador) exige gestor
+  IF v_item.reservado_por IS DISTINCT FROM v_uid AND NOT public.fn_cockpit_is_gestor() THEN
+    RAISE EXCEPTION 'COCKPIT_RESERVA_OVERRIDE_SEM_ALCADA';
+  END IF;
+
+  -- saldo principal compatível (mesmo lote, envase, item e validade)
+  SELECT * INTO v_main
+    FROM public.estoque_produto
+   WHERE lote_id = v_item.lote_id
+     AND envase_id IS NOT DISTINCT FROM v_item.envase_id
+     AND produto_id IS NOT DISTINCT FROM v_item.produto_id
+     AND microrganismo_id IS NOT DISTINCT FROM v_item.microrganismo_id
+     AND validade IS NOT DISTINCT FROM v_item.validade
+     AND quantidade_reservada IS NULL
+     AND status = 'disponivel'::public.status_estoque
+     AND id <> v_item.id
+   ORDER BY id LIMIT 1 FOR UPDATE;
+
+  IF v_main.id IS NOT NULL THEN
+    v_modo := 'estorno_para_saldo_principal';
+    UPDATE public.estoque_produto
+       SET quantidade = coalesce(v_main.quantidade,0) + coalesce(v_item.quantidade,0),
+           volume_total = coalesce(v_main.volume_total,0) + coalesce(v_item.volume_total,0),
+           updated_at = now()
+     WHERE id = v_main.id;
+
+    UPDATE public.estoque_produto
+       SET status = 'estornado'::public.status_estoque, quantidade = 0, volume_total = 0,
+           quantidade_reservada = 0, reservado_para_os_id = NULL, reservado_para_os_tipo = NULL,
+           reservado_para_cliente_id = NULL, reservado_para_partner_id = NULL,
+           reservado_para_partner_order_id = NULL,
+           observacao_reserva = v_motivo || format(' — saldo devolvido ao registro %s', v_main.id),
+           updated_at = now()
+     WHERE id = v_item.id;
+
+  ELSE
+    v_modo := 'liberacao_no_proprio_registro';
+    UPDATE public.estoque_produto
+       SET status = 'disponivel'::public.status_estoque, quantidade_reservada = NULL,
+           reservado_para_os_id = NULL, reservado_para_os_tipo = NULL,
+           reservado_para_cliente_id = NULL, reservado_para_partner_id = NULL,
+           reservado_para_partner_order_id = NULL,
+           observacao_reserva = v_motivo, updated_at = now()
+     WHERE id = v_item.id;
+
+  END IF;
+
+  INSERT INTO public.laboratorio_esteira_eventos
+    (os_id, origem_os, lote_id, etapa_anterior, etapa_nova, acao, usuario_id, observacao)
+  VALUES (p_os_id, v_origem, v_item.lote_id, 'estoque_reservado', 'estoque_disponivel',
+          'cancelar_reserva_v1', v_uid, format('Cancelamento transacional (%s). Motivo: %s', v_modo, v_motivo));
+
+  RETURN jsonb_build_object('success', true, 'replay', false, 'modo', v_modo,
+    'message', 'Reserva cancelada e saldo devolvido em transação única.');
+END;
+$function$
+ signature:rpc_cockpit_cancelar_reserva_v1(uuid,uuid,text,text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} body_md5:8d3b4a6e7bf63a245266bd79ca13609a definition:CREATE OR REPLACE FUNCTION public.rpc_confirmar_entrega_embalagens(p_entrega_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_count int := 0;
+  r record;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth required'; END IF;
+  IF NOT (public.has_role(v_uid,'administrador'::app_role)
+       OR public.has_role(v_uid,'gestor'::app_role)
+       OR public.has_role(v_uid,'producao'::app_role)
+       OR public.has_role(v_uid,'operador_onfarm'::app_role)) THEN
+    RAISE EXCEPTION 'sem permissão';
+  END IF;
+
+  FOR r IN
+    SELECT id, status FROM public.estoque_embalagens
+     WHERE entrega_id = p_entrega_id AND status IN ('reservado','separado')
+     FOR UPDATE
+  LOOP
+    UPDATE public.estoque_embalagens
+       SET status='entregue', entregue_em=now(), entregue_por=v_uid
+     WHERE id = r.id;
+    INSERT INTO public.estoque_embalagem_movimentacoes(
+      embalagem_id, tipo_movimentacao, status_anterior, status_novo, entrega_id, user_id
+    ) VALUES (r.id, 'entrega_confirmada', r.status, 'entregue', p_entrega_id, v_uid);
+    v_count := v_count + 1;
+  END LOOP;
+
+  IF v_count = 0 THEN
+    RAISE EXCEPTION 'nenhuma embalagem reservada/separada para esta entrega';
+  END IF;
+
+  PERFORM public.rpc_recalcular_separacao_entrega(p_entrega_id);
+  INSERT INTO public.financial_audit_log(entity_type, entity_id, action, performed_by, new_data)
+    VALUES ('estoque_embalagem', p_entrega_id, 'EMB_DELIVERED', v_uid,
+            jsonb_build_object('entrega_id', p_entrega_id, 'qtd', v_count));
+  RETURN jsonb_build_object('success', true, 'total', v_count);
+END $function$
+ signature:rpc_confirmar_entrega_embalagens(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} body_md5:260cfda7c74644ddf251920a8c95b232 definition:CREATE OR REPLACE FUNCTION public.rpc_confirmar_separacao_embalagem(p_embalagem_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_st text; v_ent uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth required'; END IF;
+  IF NOT (public.can_user_manage_estoque_embalagem(p_embalagem_id)
+       OR public.has_role(v_uid,'administrativo'::app_role)) THEN RAISE EXCEPTION 'sem permissão'; END IF;
+  SELECT status, entrega_id INTO v_st, v_ent FROM public.estoque_embalagens WHERE id = p_embalagem_id;
+  IF v_st <> 'reservado' THEN RAISE EXCEPTION 'embalagem não está reservada'; END IF;
+  UPDATE public.estoque_embalagens SET status='separado', separado_em=now(), separado_por=v_uid WHERE id = p_embalagem_id;
+  INSERT INTO public.estoque_embalagem_movimentacoes(embalagem_id, tipo_movimentacao, status_anterior, status_novo, entrega_id, user_id)
+    VALUES (p_embalagem_id, 'separacao_entrega', 'reservado', 'separado', v_ent, v_uid);
+  IF v_ent IS NOT NULL THEN PERFORM public.rpc_recalcular_separacao_entrega(v_ent); END IF;
+  INSERT INTO public.financial_audit_log(entity_type, entity_id, action, performed_by)
+    VALUES ('estoque_embalagem', p_embalagem_id, 'EMB_PICKED', v_uid);
+  RETURN jsonb_build_object('success', true);
+END $function$
+ signature:rpc_confirmar_separacao_embalagem(uuid)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} body_md5:e529ab40e6e51a59d9384d0cedb080da definition:CREATE OR REPLACE FUNCTION public.rpc_ler_embalagem_por_qr(p_codigo_ou_token text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_emb record; v_etq_id uuid;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth required'; END IF;
+  -- Tenta codigo_embalagem direto
+  SELECT * INTO v_emb FROM public.estoque_embalagens WHERE codigo_embalagem = p_codigo_ou_token LIMIT 1;
+  IF NOT FOUND THEN
+    -- Tenta via etiqueta (codigo ou trace_token)
+    SELECT id INTO v_etq_id FROM public.produto_etiquetas
+     WHERE codigo_etiqueta = p_codigo_ou_token
+        OR trace_token::text = p_codigo_ou_token
+     LIMIT 1;
+    IF v_etq_id IS NOT NULL THEN
+      SELECT * INTO v_emb FROM public.estoque_embalagens WHERE etiqueta_id = v_etq_id LIMIT 1;
+    END IF;
+  END IF;
+  IF v_emb.id IS NULL THEN RETURN jsonb_build_object('found', false); END IF;
+  IF NOT public.can_user_access_estoque_embalagem(v_emb.id) THEN RAISE EXCEPTION 'sem permissão'; END IF;
+  INSERT INTO public.estoque_embalagem_movimentacoes(embalagem_id, tipo_movimentacao, user_id)
+    VALUES (v_emb.id, 'leitura_qr', v_uid);
+  RETURN jsonb_build_object(
+    'found', true,
+    'embalagem_id', v_emb.id,
+    'codigo_embalagem', v_emb.codigo_embalagem,
+    'status', v_emb.status,
+    'lote_id', v_emb.lote_id,
+    'produto_id', v_emb.produto_id,
+    'etiqueta_id', v_emb.etiqueta_id,
+    'entrega_id', v_emb.entrega_id,
+    'validade_em', v_emb.validade_em,
+    'volume', v_emb.volume,
+    'unidade', v_emb.unidade
+  );
+END $function$
+ signature:rpc_ler_embalagem_por_qr(text)] map[acl:{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres} body_md5:43208f22cb0ba189e623eac4b7922138 definition:CREATE OR REPLACE FUNCTION public.rpc_reservar_embalagem_entrega(p_embalagem_id uuid, p_entrega_id uuid, p_entrega_item_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+DECLARE v_uid uuid := auth.uid(); v_st text; v_val date; v_ent_st text;
+BEGIN
+  IF v_uid IS NULL THEN RAISE EXCEPTION 'auth required'; END IF;
+  IF NOT public.can_user_manage_estoque_embalagem(p_embalagem_id) THEN RAISE EXCEPTION 'sem permissão'; END IF;
+  SELECT status, validade_em INTO v_st, v_val FROM public.estoque_embalagens WHERE id = p_embalagem_id;
+  IF v_st IS NULL THEN RAISE EXCEPTION 'embalagem inexistente'; END IF;
+  IF v_st <> 'em_estoque' THEN RAISE EXCEPTION 'embalagem não está em estoque (status=%)', v_st; END IF;
+  IF v_val IS NOT NULL AND v_val < CURRENT_DATE THEN RAISE EXCEPTION 'embalagem vencida'; END IF;
+  SELECT status::text INTO v_ent_st FROM public.entregas WHERE id = p_entrega_id;
+  IF v_ent_st IS NULL THEN RAISE EXCEPTION 'entrega inexistente'; END IF;
+  IF v_ent_st = 'cancelada' THEN RAISE EXCEPTION 'entrega cancelada'; END IF;
+  UPDATE public.estoque_embalagens
+     SET status='reservado', entrega_id=p_entrega_id, entrega_item_id=p_entrega_item_id,
+         reservado_em=now(), reservado_por=v_uid
+   WHERE id = p_embalagem_id;
+  INSERT INTO public.estoque_embalagem_movimentacoes(embalagem_id, tipo_movimentacao, status_anterior, status_novo, entrega_id, entrega_item_id, user_id)
+    VALUES (p_embalagem_id, 'reserva_entrega', v_st, 'reservado', p_entrega_id, p_entrega_item_id, v_uid);
+  PERFORM public.rpc_recalcular_separacao_entrega(p_entrega_id);
+  INSERT INTO public.financial_audit_log(entity_type, entity_id, action, performed_by, new_data)
+    VALUES ('estoque_embalagem', p_embalagem_id, 'EMB_RESERVED', v_uid, jsonb_build_object('entrega_id', p_entrega_id));
+  RETURN jsonb_build_object('success', true);
+END $function$
+ signature:rpc_reservar_embalagem_entrega(uuid,uuid,uuid)]]

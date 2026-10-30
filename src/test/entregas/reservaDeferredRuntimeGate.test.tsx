@@ -15,23 +15,12 @@ let client: QueryClient;
 beforeEach(() => { vi.clearAllMocks(); s.rpc.mockResolvedValue({ data: split, error: null }); s.audit.mockResolvedValue({ error: null }); client = new QueryClient(); });
 afterEach(() => { cleanup(); client.clear(); });
 function mount() { return renderHook(() => useEsteiraLaboratorio(), { wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> }); }
-it("deferEffects entrega o UUID dividido confirmado sem efeitos globais", async () => {
-  const h = mount(); const cb = vi.fn(); const invalidation = vi.spyOn(client, "invalidateQueries"); let ok: unknown;
-  await act(async () => { ok = await h.result.current.reservarEstoque({ id: "original" }, { quantidade_reservada: 2 }, "OS", "b2b", false, { deferEffects: true, current: () => true, onReserved: cb }); });
-  expect(ok).toBe(true); expect(cb).toHaveBeenCalledExactlyOnceWith(split); expect(s.audit).toHaveBeenCalledTimes(1); expect(invalidation).not.toHaveBeenCalled(); expect(s.success).not.toHaveBeenCalled();
+it.each([true,false])('deferEffects=%s não abre reserva individual nem auditoria',async deferEffects=>{
+ const h=mount();const cb=vi.fn();const invalidation=vi.spyOn(client,'invalidateQueries');let ok:unknown;
+ await act(async()=>{ok=await h.result.current.reservarEstoque({id:'original'},{quantidade_reservada:2},'OS','b2b',true,{deferEffects,current:()=>true,onReserved:cb});});
+ expect(ok).toBe(false);expect(s.rpc).not.toHaveBeenCalled();expect(s.audit).not.toHaveBeenCalled();expect(cb).not.toHaveBeenCalled();expect(s.success).not.toHaveBeenCalled();expect(invalidation).not.toHaveBeenCalled();
 });
-it.each([null, {}, "original", false])("UUID inválido %j não confirma nem audita", async data => {
-  s.rpc.mockResolvedValue({ data, error: null }); const h = mount(); const cb = vi.fn(); let ok: unknown;
-  await act(async () => { ok = await h.result.current.reservarEstoque({ id: "original" }, { quantidade_reservada: 2 }, "OS", "b2b", false, { deferEffects: true, onReserved: cb }); });
-  expect(ok).toBe(false); expect(cb).not.toHaveBeenCalled(); expect(s.audit).not.toHaveBeenCalled();
-});
-it.each(["before", "rpc", "audit"])("fence %s impede adoção/filhos/efeitos adiados", async phase => {
-  let current = phase !== "before";
-  if (phase === "rpc") s.rpc.mockImplementation(async () => { current = false; return { data: split, error: null }; });
-  if (phase === "audit") s.audit.mockImplementation(async () => { current = false; return { error: null }; });
-  const h = mount(); const cb = vi.fn(); let ok: unknown;
-  await act(async () => { ok = await h.result.current.reservarEstoque({ id: "original" }, { quantidade_reservada: 2 }, "OS", "b2b", false, { deferEffects: true, current: () => current, onReserved: cb }); });
-  expect(ok).toBe(false); expect(cb).not.toHaveBeenCalled(); expect(s.success).not.toHaveBeenCalled();
-  if (phase === "before") expect(s.rpc).not.toHaveBeenCalled();
-  if (phase === "rpc") expect(s.audit).not.toHaveBeenCalled();
-});
+it('criação direta pelo hook não envia RPC',async()=>{const h=mount();await expect(h.result.current.criarEntrega({estoque_produto_id:split},'OS','manual')).rejects.toThrow();expect(s.rpc).not.toHaveBeenCalled();expect(s.audit).not.toHaveBeenCalled();});
+it('confirmação direta pelo hook não envia RPC',async()=>{const h=mount();expect(await h.result.current.confirmarEntrega(split,'OS','manual',{nome:'Recebedor'})).toBe(false);expect(s.rpc).not.toHaveBeenCalled();expect(s.audit).not.toHaveBeenCalled();expect(s.success).not.toHaveBeenCalled();});
+it('cancelamento de reserva direto pelo hook não envia RPC',async()=>{const h=mount();expect(await h.result.current.cancelarReservaEstoque({id:split},'OS','manual','motivo')).toBe(false);expect(s.rpc).not.toHaveBeenCalled();expect(s.audit).not.toHaveBeenCalled();expect(s.success).not.toHaveBeenCalled();});
+it('reserva em lote independente permanece no RPC canônico',async()=>{s.rpc.mockResolvedValue({data:{ok:true,replay:false},error:null});const h=mount();expect(await h.result.current.reservarEstoqueLote({osId:'OS',origem:'manual',itens:[{item_id:split,quantidade:2}],idempotencyKey:'canonical'})).toEqual({ok:true,replay:false});expect(s.rpc).toHaveBeenCalledExactlyOnceWith('rpc_estoque_reservar_v1',expect.objectContaining({p_idempotency_key:'canonical'}));});

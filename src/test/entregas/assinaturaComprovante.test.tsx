@@ -299,92 +299,11 @@ describe("EntregaComprovantePanel — ações de comprovação isoladas por entr
     );
   });
 
-  it("confirmar: falha tardia da entrega antiga não fecha o diálogo nem limpa ressalvas da nova", async () => {
-    fromMock.mockImplementation((tabela: string) =>
-      tabela === "entregas"
-        ? chain({ data: { id: "x", comprovante_status: "anexado", validation_token: null } })
-        : chain({ data: { numero_formulario: "AR-ENT-000004" } }),
-    );
-    const d = deferred<any>();
-    rpcMock.mockReturnValueOnce(d.promise);
-    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
-    fireEvent.click(await screen.findByRole("button", { name: /confirmar recebimento/i }));
-    fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i), { target: { value: "caixa amassada" } });
-    fireEvent.click(screen.getByRole("button", { name: /^confirmar$/i }));
-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
-    // Payload capturado no início.
-    expect(rpcMock.mock.calls[0][1].p_payload.ressalvas).toBe("caixa amassada");
-
-    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
-    fireEvent.click(await screen.findByRole("button", { name: /confirmar recebimento/i }));
-    fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i), { target: { value: "nova" } });
-    toastMock.mockClear();
-    d.resolve({ data: null, error: { message: "falha" } });
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(toastMock).not.toHaveBeenCalled();
-    expect((screen.getByPlaceholderText(/descreva ressalvas/i) as HTMLTextAreaElement).value).toBe("nova");
-    expect(screen.getByRole("button", { name: /^confirmar$/i })).not.toBeDisabled();
+  it('confirmar recebimento não envia RPC e preserva ressalvas',async()=>{
+    fromMock.mockImplementation((tabela:string)=>tabela==='entregas'?chain({data:{id:'x',comprovante_status:'anexado',validation_token:null}}):chain({data:{numero_formulario:'AR-ENT-000004'}}));
+    render(<EntregaComprovantePanel entrega={{id:'e1'}}/>,{wrapper});fireEvent.click(await screen.findByRole('button',{name:/confirmar recebimento/i}));fireEvent.change(screen.getByPlaceholderText(/descreva ressalvas/i),{target:{value:'caixa amassada'}});fireEvent.click(screen.getByRole('button',{name:/^confirmar$/i}));await waitFor(()=>expect(toastMock).toHaveBeenCalled());expect(rpcMock).not.toHaveBeenCalled();expect(uploadMock).not.toHaveBeenCalled();expect(screen.getByPlaceholderText(/descreva ressalvas/i)).toHaveValue('caixa amassada');
   });
-
-  it("dispensar: troca de entrega reseta o motivo e o término antigo não afeta a nova", async () => {
-    const d = deferred<any>();
-    rpcMock.mockReturnValueOnce(d.promise);
-    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
-    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
-    fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i), { target: { value: "cliente ausente" } });
-    fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i }));
-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
-    expect(rpcMock.mock.calls[0][1].p_motivo).toBe("cliente ausente");
-
-    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
-    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
-    expect((screen.getByPlaceholderText(/mínimo 5 caracteres/i) as HTMLTextAreaElement).value).toBe("");
-    toastMock.mockClear();
-    d.resolve({ data: null, error: null });
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(toastMock).not.toHaveBeenCalled();
-  });
-});
-
-describe("EntregaComprovantePanel — término antigo não destrava a ação nova", () => {
-  it("ação de B em voo continua travada quando a ação de A termina", async () => {
-    const dA = deferred<any>();
-    const dB = deferred<any>();
-    rpcMock.mockReturnValueOnce(dA.promise).mockReturnValueOnce(dB.promise);
-    const { rerender } = render(<EntregaComprovantePanel entrega={{ id: "e1" }} />, { wrapper });
-
-    // A: dispensa em voo.
-    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
-    fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i), { target: { value: "motivo de A" } });
-    fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i }));
-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(1));
-
-    // Troca para B e inicia a ação de B, que fica pendente.
-    rerender(<EntregaComprovantePanel entrega={{ id: "e2" }} />);
-    fireEvent.click(await screen.findByRole("button", { name: /dispensar assinatura/i }));
-    fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i), { target: { value: "motivo de B" } });
-    fireEvent.click(screen.getByRole("button", { name: /^dispensar$/i }));
-    await waitFor(() => expect(rpcMock).toHaveBeenCalledTimes(2));
-    expect(rpcMock.mock.calls[1][1].p_motivo).toBe("motivo de B");
-    const botaoB = screen.getByRole("button", { name: /^dispensar$/i });
-    expect(botaoB).toBeDisabled();
-
-    // A termina: não pode destravar B nem fechar o diálogo de B.
-    toastMock.mockClear();
-    dA.resolve({ data: null, error: null });
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(toastMock).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: /^dispensar$/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /cancelar/i })).toBeDisabled();
-    expect(screen.getByPlaceholderText(/mínimo 5 caracteres/i)).toBeDisabled();
-
-    // Só o término de B libera.
-    dB.resolve({ data: null, error: null });
-    await waitFor(() =>
-      expect(screen.queryByPlaceholderText(/mínimo 5 caracteres/i)).toBeNull(),
-    );
+  it('dispensa não envia RPC e preserva motivo',async()=>{
+    render(<EntregaComprovantePanel entrega={{id:'e1'}}/>,{wrapper});fireEvent.click(await screen.findByRole('button',{name:/dispensar assinatura/i}));fireEvent.change(screen.getByPlaceholderText(/mínimo 5 caracteres/i),{target:{value:'cliente ausente'}});fireEvent.click(screen.getByRole('button',{name:/^dispensar$/i}));await waitFor(()=>expect(toastMock).toHaveBeenCalled());expect(rpcMock).not.toHaveBeenCalled();expect(uploadMock).not.toHaveBeenCalled();expect(screen.getByPlaceholderText(/mínimo 5 caracteres/i)).toHaveValue('cliente ausente');
   });
 });

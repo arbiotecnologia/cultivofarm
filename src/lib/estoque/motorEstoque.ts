@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/cultivofarm.types";
+import { requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 
 /**
  * Motor canônico de movimentações de estoque (Fase 2).
@@ -91,6 +92,9 @@ export async function operarEstoque(
   idempotencyKey: string,
   payload: EstoqueOperacaoPayload = {},
 ): Promise<EstoqueOperacaoResultado> {
+  if (["expedicao", "entrega", "estorno_expedicao"].includes(acao) || payload.referencia_tipo === "entrega") {
+    requireDeliveryOperationContract(acao === "estorno_expedicao" ? "cancel" : "delivery");
+  }
   const { data, error } = await supabase.rpc("rpc_estoque_operar_v1", {
     p_acao: acao,
     p_item_id: itemId,

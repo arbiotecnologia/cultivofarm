@@ -1,0 +1,68 @@
+{
+  "Entrega/estoque": {
+    "pass": 306,
+    "fail": 0,
+    "files": [
+      "src/hooks/useEsteiraLaboratorio.origemGuard.test.tsx",
+      "src/test/entregas/anexoComprovante.test.tsx",
+      "src/test/entregas/anexoComprovanteConcorrencia.test.tsx",
+      "src/test/entregas/assinaturaComprovante.test.tsx",
+      "src/test/entregas/comprovanteDownloadAutenticado.test.tsx",
+      "src/test/entregas/comprovanteEntregaPdf.test.ts",
+      "src/test/entregas/conferenciaQrTermo.test.tsx",
+      "src/test/entregas/confirmacaoEntregaAck.test.tsx",
+      "src/test/entregas/consumidorEntrega.test.tsx",
+      "src/test/entregas/copiarLinkIsolamento.test.tsx",
+      "src/test/entregas/creationContracts.offline.test.ts",
+      "src/test/entregas/deliveryContainmentStock.test.tsx",
+      "src/test/entregas/formularioEntregaPrint.test.tsx",
+      "src/test/entregas/painelChecklistOcorrencias.test.tsx",
+      "src/test/entregas/painelEvidencias.test.tsx",
+      "src/test/entregas/registroEntrega.test.ts",
+      "src/test/entregas/reservaDeferredRuntimeGate.test.tsx",
+      "src/test/entregas/termoPdfDownload.test.tsx",
+      "src/test/entregas/termoPdfEdge.test.ts",
+      "src/test/entregas/validarEntrega.test.tsx",
+      "src/test/estoque/motor-estoque-fase28c.test.ts"
+    ]
+  },
+  "Demais runtime": {
+    "pass": 222,
+    "fail": 0,
+    "files": [
+      "src/test/multiportal.gestao.test.tsx",
+      "src/test/multiportal.guards.test.tsx",
+      "src/test/multiportal.superadmin.test.tsx",
+      "src/test/catalogo/catalogLabelPt409.test.ts",
+      "src/test/catalogo/catalogLabelsPanelFlow.test.tsx",
+      "src/test/monitoramento/origemAlertaAgronomico.test.tsx",
+      "src/test/monitoramento/reprogramarCasClient.test.tsx",
+      "src/test/monitoramento/saveVisitMonitoringPlanClient.test.tsx",
+      "src/test/monitoramento/visitMonitoringPlanEditor.test.tsx",
+      "src/test/planejamento-producao/publicacao-contrato-current.test.tsx",
+      "src/test/visita/monitoringAutosave.interaction.test.tsx",
+      "src/test/visita/visitaErrorMessages.test.ts",
+      "src/test/visita/wizardCampo.persistence.test.tsx",
+      "src/test/visita/wizardRevisao.confirmation.test.tsx"
+    ]
+  },
+  "Financeiro": {
+    "pass": 21,
+    "fail": 0,
+    "files": [
+      "src/test/financeiro/deliveryFinanceReconciliation.test.tsx",
+      "src/test/financeiro/deliveryPendingReadOnly.test.tsx"
+    ]
+  },
+  "Carteira/comercial": {
+    "pass": 44,
+    "fail": 0,
+    "files": [
+      "src/test/pedidos/commercialOwnerOrders.test.tsx",
+      "src/test/pedidos/partnerOrdersAdminScope.test.tsx",
+      "src/test/pedidos/pedidosB2BStatusFilter.test.tsx",
+      "src/test/comercial/creditBlockReason.test.ts",
+      "src/test/comercial/responderCotacaoCreditReason.test.tsx"
+    ]
+  }
+}

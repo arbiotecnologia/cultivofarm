@@ -102,66 +102,9 @@ beforeEach(() => {
   toastSuccess.mockClear();
 });
 
-describe("useEsteiraLaboratorio.reservarEstoque — guarda OS↔lote", () => {
-  it("permite reservar quando a OS informada é a origem do lote", async () => {
-    const { result } = renderHook(() => useEsteiraLaboratorio(), { wrapper });
-    let ok: boolean = false;
-    await act(async () => {
-      ok = await result.current.reservarEstoque(baseItem, baseReserva, "os-A", "padrao");
-    });
-    expect(ok).toBe(true);
-    expect(rpcMock).toHaveBeenCalledTimes(1);
-    expect(rpcMock.mock.calls[0][0]).toBe("reservar_estoque_item");
-    expect(toastError).not.toHaveBeenCalled();
-  });
-
-  it("bloqueia quando o lote pertence a outra OS e não há override", async () => {
-    const { result } = renderHook(() => useEsteiraLaboratorio(), { wrapper });
-    let ok: boolean = true;
-    await act(async () => {
-      ok = await result.current.reservarEstoque(baseItem, baseReserva, "os-OUTRA", "padrao");
-    });
-    expect(ok).toBe(false);
-    expect(rpcMock).not.toHaveBeenCalled();
-    expect(toastError).toHaveBeenCalledWith(
-      expect.stringMatching(/outra OS\/OP.*override/i),
-    );
-  });
-
-  it("permite reservar em OS divergente quando overrideOrigem=true", async () => {
-    const { result } = renderHook(() => useEsteiraLaboratorio(), { wrapper });
-    let ok: boolean = false;
-    await act(async () => {
-      ok = await result.current.reservarEstoque(
-        baseItem,
-        baseReserva,
-        "os-OUTRA",
-        "padrao",
-        true, // override confirmado pela UI (AlertDialog)
-      );
-    });
-    expect(ok).toBe(true);
-    expect(rpcMock).toHaveBeenCalledTimes(1);
-    // Auditoria deve refletir o override
-    const auditoriaCall = insertMock.mock.calls.find(
-      ([tbl]) => tbl === "laboratorio_esteira_eventos",
-    );
-    expect(auditoriaCall).toBeDefined();
-    expect(auditoriaCall?.[1]?.observacao).toMatch(/OVERRIDE de origem/i);
-  });
-
-  it("reconhece origem também em OS onfarm (ordem_servico_onfarm_id)", async () => {
-    const { result } = renderHook(() => useEsteiraLaboratorio(), { wrapper });
-    let ok: boolean = false;
-    await act(async () => {
-      ok = await result.current.reservarEstoque(
-        { ...baseItem, lote_id: "lote-origem-B" },
-        baseReserva,
-        "os-B",
-        "onfarm",
-      );
-    });
-    expect(ok).toBe(true);
-    expect(rpcMock).toHaveBeenCalledTimes(1);
-  });
+describe('Reserva individual contida independentemente da origem/override',()=>{
+ it.each([['os-A','padrao',false],['os-OUTRA','padrao',false],['os-OUTRA','padrao',true],['os-B','onfarm',false]])('origem %s/%s override=%s não abre writer',async(os,origem,override)=>{
+  const {result}=renderHook(()=>useEsteiraLaboratorio(),{wrapper});let ok=false;await act(async()=>{ok=await result.current.reservarEstoque(baseItem,baseReserva,String(os),String(origem),Boolean(override));});
+  expect(ok).toBe(false);expect(rpcMock).not.toHaveBeenCalled();expect(insertMock).not.toHaveBeenCalled();expect(toastSuccess).not.toHaveBeenCalled();expect(toastError).toHaveBeenCalled();
+ });
 });

@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
 import { montarDadosEntrega, validarRespostaCriarEntrega } from "@/lib/entregas/payloadEntrega";
+import { DELIVERY_OPERATION_BLOCK, DELIVERY_CANCELLATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
 
 
 export type EsteiraStage =
@@ -437,6 +438,7 @@ export function useEsteiraLaboratorio() {
     options: { current?: () => boolean; deferEffects?: boolean; onReserved?: (id: string) => void } = {},
   ) => {
     const current = options.current ?? (() => true);
+    try { requireDeliveryOperationContract(); } catch { toast.error(DELIVERY_OPERATION_BLOCK); return false; }
     if (!current()) return false;
     const qtyToReserve = Number(reservaData.quantidade_reservada);
     if (!qtyToReserve || qtyToReserve <= 0) {
@@ -613,6 +615,7 @@ export function useEsteiraLaboratorio() {
     motivo: string,
   ) => {
     const motivoLimpo = (motivo ?? "").trim();
+    try { requireDeliveryOperationContract("cancel"); } catch { toast.error(DELIVERY_CANCELLATION_BLOCK); return false; }
     if (!motivoLimpo) {
       toast.error("Informe o motivo do cancelamento da reserva.");
       return false;
@@ -646,6 +649,7 @@ export function useEsteiraLaboratorio() {
    * A OS só chega a "entregue" na confirmação.
    */
   const criarEntrega = async (entregaData: any, osId: string, origem: string, options: { current?: () => boolean; deferEffects?: boolean } = {}) => {
+    requireDeliveryOperationContract();
     const current = options.current ?? (() => true);
     if (!current()) throw new Error("Contexto de entrega indisponível.");
     if (!entregaData?.estoque_produto_id) {
@@ -698,6 +702,7 @@ export function useEsteiraLaboratorio() {
     recebedor: { nome: string; cargo?: string | null; documento?: string | null },
   ) => {
     const nome = recebedor?.nome?.trim() ?? "";
+    try { requireDeliveryOperationContract(); } catch { toast.error(DELIVERY_OPERATION_BLOCK); return false; }
     if (!nome) {
       toast.error("Informe o nome de quem recebeu a entrega para confirmar.");
       return false;
