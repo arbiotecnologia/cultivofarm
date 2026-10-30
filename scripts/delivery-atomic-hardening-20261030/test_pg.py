@@ -37,7 +37,7 @@ def setup():
     INSERT INTO public.saas_modules(id,key,name) VALUES('{MOD}','local','LOCAL');
     INSERT INTO public.saas_features(id,module_id,key,name) VALUES('{FEAT}','{MOD}','estoque_embalagens','LOCAL');
     INSERT INTO public.saas_plans(id,key,name) VALUES('{PLAN}','local','LOCAL');
-    INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from) VALUES('{VER}','{PLAN}',1,'LOCAL','PUBLISHED',now()-interval '1 day');
+    INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,price_amount,currency,billing_cycle,trial_days,published_at,features_snapshot) VALUES('{VER}','{PLAN}',1,'LOCAL','PUBLISHED',now()-interval '1 day',0,'BRL','monthly',0,now()-interval '1 day','["estoque_embalagens"]');
     INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled) VALUES('{VER}','{FEAT}',true);
     INSERT INTO public.organization_subscriptions(organization_id,plan_id,plan_version_id,status) VALUES('{A}','{PLAN}','{VER}','ACTIVE'),('{B}','{PLAN}','{VER}','ACTIVE');
     SET session_replication_role=origin;
