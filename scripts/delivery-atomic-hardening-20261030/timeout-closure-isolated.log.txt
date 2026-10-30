@@ -1,27 +1,14 @@
 CHECKPOINT sql_calls=1 elapsed=0.0s
-PASS anon direct INSERT
-PASS anon direct UPDATE
-PASS anon direct DELETE
-PASS anon legacy cancellation ACL
-PASS authenticated direct INSERT
-PASS authenticated direct UPDATE
-PASS authenticated direct DELETE
-PASS authenticated legacy cancellation ACL
-PASS service_role direct INSERT
 Traceback (most recent call last):
-  File "/tmp/delivery-timeout/check_closure.py", line 8, in <module>
-    test_closure.run(t)
-    ~~~~~~~~~~~~~~~~^^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_closure.py", line 11, in run
-    deny(role+' direct '+action,prefix+statement,expected)
-    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 21, in deny
-    e=pg.sql(s,False);assert code in e,label+':'+e
-                             ^^^^^^^^^
-AssertionError: service_role direct UPDATE:ERROR:  permission denied for schema platform_private
-LINE 1:  SELECT platform_private.h15_actor_organization(); 
-                ^
-QUERY:   SELECT platform_private.h15_actor_organization(); 
-CONTEXT:  SQL function "h15_actor_organization" during startup
-PL/pgSQL function public.guard_tenant_organization_id() line 7 at assignment
+  File "/tmp/delivery-timeout/check_closure.py", line 7, in <module>
+    t.sql(t.actor()+t.call('closure-repro'))
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py", line 16, in sql
+    def sql(s): return pg.sql(s)
+                       ~~~~~~^^^
+  File "/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py", line 19, in sql
+    assert r.returncode==0,r.stderr[-3000:]
+           ^^^^^^^^^^^^^^^
+AssertionError: ERROR:  DELIVERY_REPLAY_CONFLICT
+CONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 44 at RAISE
 
