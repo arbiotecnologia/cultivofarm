@@ -32,7 +32,7 @@ def cols(t, ent, rid, who=U):
     base = {'id': rid, 'entrega_id': ent}
     extra = {'entrega_checklist': {'item': 'LOCAL ITEM'}, 'entrega_ocorrencias': {'tipo': 'observacao', 'descricao': 'LOCAL'},
              'entrega_documentos': {'tipo_documento': 'OUTRO', 'nome_arquivo': 'x.pdf', 'arquivo_path': f'entregas/{ent}/docs/{rid}.pdf', 'uploaded_by': who},
-             'entrega_etiquetas': {'etiqueta_id': ETQ}}.get(t, {})
+             'entrega_etiquetas': {'etiqueta_id': u(int(str(rid)[-6:]) + 5000)}}.get(t, {})
     return {**base, **extra}
 def ins(t, d): return f"INSERT INTO public.{t}({','.join(d)}) VALUES({','.join(repr(str(v)) for v in d.values())});"
 def rid(t, k): return u(800 + TABLES.index(t) * 10 + k)          # k: 1=AR Bio row, 2=FSF row, 3=org-null parent, 4=new
@@ -110,7 +110,7 @@ def main():
     assert before['entrega_checklist'] == 1, before
     wb = matrix(); print('BEFORE_WRITES', json.dumps(wb), flush=True)
     ok('BEFORE: write outcome matrix recorded (rolled back)', matrix=wb)
-    tr = {t: 'ERROR' not in pg.sql("BEGIN;" + actor(V) + f"TRUNCATE public.{t};ROLLBACK;", False) for t in TABLES}; print('BEFORE_TRUNCATE', tr, flush=True)
+    tr = {t: probe(V, f"TRUNCATE public.{t}; SELECT 'truncated';") for t in TABLES}; print('BEFORE_TRUNCATE', tr, flush=True)
     ok('BEFORE: TRUNCATE allowed to authenticated (rolled back)', truncate=tr)
     # Generate PRE/POST/installer.
     cand = (H / 'candidate.sql.review').read_text()
