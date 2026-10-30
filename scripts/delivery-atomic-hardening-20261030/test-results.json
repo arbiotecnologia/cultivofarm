@@ -226,8 +226,8 @@
     "status": "PASS"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 180, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 176, in main\n    assert any(x in err+err2 for x in ['deadlock detected','lock timeout']),err+err2+out+out2\n           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  DELIVERY_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 47 at RAISE\n1\n{\"ok\": true, \"itens\": [\"9a80311d-2b99-4418-9050-e6fcee915696\"], \"replay\": false}\n\n"
+    "test": "independent real batch versus group stock wait succeeds batch and rejects stale group without deadlock",
+    "status": "PASS",
+    "observed": "ERROR:  DELIVERY_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 47 at RAISE\n"
   }
 ]
