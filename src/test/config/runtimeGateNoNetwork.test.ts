@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import "./runtimeGateNoNetwork";
 
 it("gate refuses real fetch instead of falling through to a hosted transport", () => {
   expect(() => fetch("https://example.invalid/forbidden")).toThrow("runtime_gate_real_network_forbidden");

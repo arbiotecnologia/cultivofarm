@@ -1,4 +1,4 @@
-- [ ] Gate runtime 30/10: inventário no repositório, revisão dos 26 deltas, suíte sem rede por grupo, lacunas concretas e correlação LIVE local; sem publicar/SQL/ações reais.
+- [x] Gate runtime 30/10: inventário e relatório no repositório; 388 testes únicos simulados PASS, runtime 4acf7dfe intacto, gaps fila/reserva/cache/página cobertos; bloqueios concretos multichamada/A2 e SHA LIVE sem correlação local registrados. Sem publicar/SQL/ações reais.
 - [x] Carteira 30/10 complemento: deduplicação mantida; already_listed distinto de empty_filter, prova RPC real atribuída ao proprietário; 37/37 testes PASS, build OK; sem publicação ou banco mutante. Verificação visual autenticada posterior permanece externa.
 - [ ] Subconjunto01 20:28: restaurar stack metadata real em PG descartável; ensaiar instalador COMMIT/postflight, drift/rollback/rerun/contenção e aprovação; atualizar evidências externas de boleto/settings/identidade sem alterações comerciais ou hosted.
 # F2-B — auditoria e preparação revisável
