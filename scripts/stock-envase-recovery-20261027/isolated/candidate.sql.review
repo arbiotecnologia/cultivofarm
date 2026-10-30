@@ -1,3 +1,43 @@
+-- INACTIVE additive row-specific envase authority; no GUC authorizes writes.
+CREATE TABLE platform_private.envase_insert_permits_v1(
+ txid bigint NOT NULL, actor uuid NOT NULL, organization_id uuid NOT NULL,
+ action text NOT NULL, target uuid NOT NULL, lote uuid NOT NULL, os uuid NOT NULL,
+ prog uuid NOT NULL, payload jsonb NOT NULL, PRIMARY KEY(txid,action,target));
+REVOKE ALL ON platform_private.envase_insert_permits_v1 FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION platform_private.envase_insert_guard_v1() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $entry$
+DECLARE p platform_private.envase_insert_permits_v1%ROWTYPE; c record; parent public.estoque_produto%ROWTYPE; a jsonb; org uuid;
+BEGIN
+ IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
+ DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id RETURNING * INTO p;
+ IF FOUND THEN
+  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
+   OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW) @> p.payload) IS NOT TRUE THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+ END IF;
+ -- Preserve ONLY the installed canonical partial reservation semantics under
+ -- its private txid/actor/parent context, not an invented envase permit.
+ IF TG_TABLE_NAME='estoque_produto' THEN
+  SELECT * INTO c FROM platform_private.stock_motor_context WHERE txid=txid_current() AND actor=auth.uid();
+  IF FOUND AND c.ctx->>'acao'='reserva' AND c.item IS NOT NULL AND NEW.id<>c.item THEN
+   SELECT * INTO parent FROM public.estoque_produto WHERE id=c.item;
+   a:=c.ctx->'reserve_args'; org:=platform_private.stock_motor_actor('reserva');
+   IF parent.status::text='disponivel' AND NEW.status::text='reservado' AND NEW.quantidade>0 AND NEW.quantidade<parent.quantidade
+    AND NEW.quantidade_reservada=NEW.quantidade AND NEW.lote_id=parent.lote_id
+    AND NEW.envase_id IS NOT DISTINCT FROM parent.envase_id AND NEW.produto_id IS NOT DISTINCT FROM parent.produto_id AND NEW.microrganismo_id IS NOT DISTINCT FROM parent.microrganismo_id
+    AND NEW.validade IS NOT DISTINCT FROM parent.validade AND NEW.volume_total=NEW.quantidade*parent.volume_total/parent.quantidade
+    AND NEW.reservado_para_os_id::text IS NOT DISTINCT FROM a->>'os_id' AND NEW.reservado_para_os_tipo IS NOT DISTINCT FROM a->>'os_tipo'
+    AND NEW.reservado_para_cliente_id::text IS NOT DISTINCT FROM a->>'cliente_id'
+    AND NEW.reservado_para_partner_id::text IS NOT DISTINCT FROM a->>'partner_id' AND NEW.reservado_para_partner_order_id::text IS NOT DISTINCT FROM a->>'partner_order_id'
+    AND NEW.observacao_reserva IS NOT DISTINCT FROM a->>'observacao'
+    AND EXISTS(SELECT 1 FROM public.lotes WHERE id=parent.lote_id AND organization_id=org) THEN RETURN NEW; END IF;
+  END IF;
+ END IF;
+ RAISE EXCEPTION 'ENVASE_INSERT_CLOSED' USING ERRCODE='42501';
+END $entry$;
+REVOKE ALL ON FUNCTION platform_private.envase_insert_guard_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER a01_envase_insert_permit BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
+CREATE TRIGGER a01_stock_insert_permit BEFORE INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
 CREATE OR REPLACE FUNCTION public.rpc_cockpit_registrar_envase_v1(p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text DEFAULT NULL::text, p_idempotency_key text DEFAULT NULL::text, p_permitir_parcial boolean DEFAULT false, p_motivo_parcial text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -28,7 +68,7 @@ BEGIN
   PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
   PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);
-  PERFORM public.fn_estoque_ctx_open(jsonb_build_object('acao','entrada','origem','rpc_cockpit_registrar_envase_v1','usuario_id',auth.uid()::text));
+  PERFORM public.fn_estoque_ctx_force(jsonb_build_object('acao','entrada','origem','rpc_cockpit_registrar_envase_v1','usuario_id',auth.uid()::text));
   v_origem := public.fn_cockpit_assert_operador_origem(p_origem);
 
   IF p_lote_id IS NULL OR p_os_id IS NULL OR p_programacao_id IS NULL THEN
@@ -118,7 +158,7 @@ BEGIN
    OR (SELECT count(*) FROM public.lotes WHERE programacao_id=p_programacao_id)<>1
    OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id) THEN RAISE EXCEPTION 'ENVASE_ROOT_AMBIGUOUS' USING ERRCODE='42501'; END IF;
   IF EXISTS(SELECT 1 FROM public.estoque_produto s WHERE s.reservado_para_os_id=p_os_id AND s.status::text<>'estornado' AND
-   (s.organization_id IS DISTINCT FROM v_org OR s.lote_id IS DISTINCT FROM p_lote_id OR s.produto_id IS DISTINCT FROM v_produto_id OR s.microrganismo_id IS DISTINCT FROM v_micro_id
+   (NOT EXISTS(SELECT 1 FROM public.lotes sl WHERE sl.id=s.lote_id AND sl.organization_id=v_org) OR s.lote_id IS DISTINCT FROM p_lote_id OR s.produto_id IS DISTINCT FROM v_produto_id OR s.microrganismo_id IS DISTINCT FROM v_micro_id
     OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM v_ctx.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL
     OR s.status::text IS DISTINCT FROM 'reservado' OR s.quantidade_reservada IS DISTINCT FROM s.quantidade OR s.volume_total<=0 OR s.volume_total::text IN ('NaN','Infinity','-Infinity'))) THEN
     RAISE EXCEPTION 'ENVASE_RESERVATION_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
@@ -159,8 +199,10 @@ BEGIN
     IF NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org AND status::text IN ('em_cq','envase')) THEN RAISE EXCEPTION 'ENVASE_FRESH_STATE_DENIED' USING ERRCODE='PT409'; END IF;
     SELECT (resultado::text='aprovado') INTO v_cq_ok FROM public.controle_qualidade WHERE lote_id=p_lote_id ORDER BY created_at DESC,seq DESC LIMIT 1 FOR SHARE;
     IF coalesce(v_cq_ok,false) IS NOT TRUE THEN RAISE EXCEPTION 'ENVASE_FRESH_CQ_DENIED' USING ERRCODE='PT409'; END IF;
-    INSERT INTO public.envase (lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador)
-    VALUES (p_lote_id, v_tipo::public.tipo_embalagem, v_unit_ml, v_qtd, current_date, nullif(p_operador, ''))
+    v_envase_id:=gen_random_uuid();
+    INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'envase',v_envase_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_envase_id,'lote_id',p_lote_id,'tipo_embalagem',v_tipo,'volume_por_unidade',v_unit_ml,'quantidade',v_qtd,'data_envase',current_date,'operador',nullif(p_operador,'')));
+    INSERT INTO public.envase (id,lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador)
+    VALUES (v_envase_id,p_lote_id, v_tipo::public.tipo_embalagem, v_unit_ml, v_qtd, current_date, nullif(p_operador, ''))
     RETURNING id INTO v_envase_id;
     v_env_ct := v_env_ct + 1;
 
@@ -170,13 +212,15 @@ BEGIN
     v_pendente_ml := v_pendente_ml - (v_reservadas * v_unit_ml);
 
     IF v_reservadas > 0 THEN
-      INSERT INTO public.estoque_produto (
+      v_estoque_id:=gen_random_uuid();
+      INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'estoque_produto',v_estoque_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_estoque_id,'produto_id',v_produto_id,'microrganismo_id',v_micro_id,'lote_id',p_lote_id,'envase_id',v_envase_id,'quantidade',v_reservadas,'volume_total',(v_unit_ml*v_reservadas)/1000.0,'validade',p_validade,'status','reservado','reservado_para_os_id',p_os_id,'reservado_para_os_tipo',v_origem,'reservado_para_cliente_id',v_ctx.cliente_id,'reservado_para_partner_id',NULL,'reservado_para_partner_order_id',v_ctx.partner_order_id,'quantidade_reservada',v_reservadas));
+      INSERT INTO public.estoque_produto (id,
         produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,
         validade, status, reservado_para_os_id, reservado_para_os_tipo,
         reservado_para_cliente_id, reservado_para_partner_order_id,
         quantidade_reservada, reservado_por, reservado_em
       ) VALUES (
-        v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,
+        v_estoque_id,v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_reservadas,
         (v_unit_ml * v_reservadas) / 1000.0, p_validade, 'reservado'::public.status_estoque,
         p_os_id, v_origem, v_ctx.cliente_id, v_ctx.partner_order_id,
         v_reservadas, v_uid, now()
@@ -187,10 +231,12 @@ BEGIN
     END IF;
 
     IF v_livres > 0 THEN
-      INSERT INTO public.estoque_produto (
+      v_estoque_id:=gen_random_uuid();
+      INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'estoque_produto',v_estoque_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_estoque_id,'produto_id',v_produto_id,'microrganismo_id',v_micro_id,'lote_id',p_lote_id,'envase_id',v_envase_id,'quantidade',v_livres,'volume_total',(v_unit_ml*v_livres)/1000.0,'validade',p_validade,'status','disponivel','reservado_para_os_id',NULL,'reservado_para_os_tipo',NULL,'reservado_para_cliente_id',NULL,'reservado_para_partner_id',NULL,'reservado_para_partner_order_id',NULL,'quantidade_reservada',NULL));
+      INSERT INTO public.estoque_produto (id,
         produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total, validade, status
       ) VALUES (
-        v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_livres,
+        v_estoque_id,v_produto_id, v_micro_id, p_lote_id, v_envase_id, v_livres,
         (v_unit_ml * v_livres) / 1000.0, p_validade, 'disponivel'::public.status_estoque
       ) RETURNING id INTO v_estoque_id;
       v_est_ct := v_est_ct + 1;
@@ -232,6 +278,7 @@ BEGIN
     v_avanco := jsonb_build_object('success', false, 'motivo', 'COCKPIT_ENVASE_PARCIAL_NAO_AVANCA');
   END IF;
 
+  IF EXISTS(SELECT 1 FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current()) THEN RAISE EXCEPTION 'ENVASE_PERMIT_NOT_CONSUMED' USING ERRCODE='42501'; END IF;
   v_result := jsonb_build_object(
     'success', true, 'replay', false, 'estado', v_estado,
     'envases', v_env_ct, 'entradas_estoque', v_est_ct,

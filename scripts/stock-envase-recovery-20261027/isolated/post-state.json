@@ -2631,6 +2631,12 @@
     ],
     [
       "envase",
+      "a01_envase_insert_permit",
+      "O",
+      "CREATE TRIGGER a01_envase_insert_permit BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1()"
+    ],
+    [
+      "envase",
       "tenant_organization_guard",
       "O",
       "CREATE TRIGGER tenant_organization_guard BEFORE INSERT OR UPDATE ON public.envase FOR EACH ROW EXECUTE FUNCTION guard_tenant_organization_id()"
@@ -2682,6 +2688,12 @@
       "a00_stock_p1_tenant_guard",
       "O",
       "CREATE TRIGGER a00_stock_p1_tenant_guard BEFORE INSERT OR DELETE OR UPDATE ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.stock_p1_guard()"
+    ],
+    [
+      "estoque_produto",
+      "a01_stock_insert_permit",
+      "O",
+      "CREATE TRIGGER a01_stock_insert_permit BEFORE INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1()"
     ],
     [
       "estoque_produto",
@@ -4558,6 +4570,18 @@
       "p_entrega_id uuid",
       "8ef541cf6a657757a1a615df54f12aa5",
       "{postgres=X/postgres,authenticated=X/postgres}",
+      "postgres",
+      [
+        "search_path=\"\""
+      ],
+      true
+    ],
+    [
+      "platform_private",
+      "envase_insert_guard_v1",
+      "",
+      "d4e3e736fac979675f3ca7c4febdad09",
+      "{postgres=X/postgres}",
       "postgres",
       [
         "search_path=\"\""
@@ -13839,7 +13863,7 @@
       "public",
       "rpc_cockpit_registrar_envase_v1",
       "p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text, p_idempotency_key text, p_permitir_parcial boolean, p_motivo_parcial text",
-      "b39dc7aa99bc4f133b2ed44928e9963d",
+      "f96040b9aee0be920dd00d21e6f425c6",
       "{postgres=X/postgres,service_role=X/postgres}",
       "postgres",
       [
@@ -18566,6 +18590,13 @@
       "ordens_servico",
       "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
       true,
+      false,
+      "postgres"
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "{postgres=arwdDxtm/postgres}",
+      false,
       false,
       "postgres"
     ],
