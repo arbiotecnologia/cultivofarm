@@ -64,15 +64,18 @@ Comando limitado a 180 segundos:
 bun run test -- src/test/pedidos/commercialOwnerOrders.test.tsx src/test/pedidos/partnerOrdersAdminScope.test.tsx src/test/pedidos/pedidosB2BStatusFilter.test.tsx
 ```
 
-Resultado: **34/34 PASS** (15 carteira, 13 escopo administrativo, 6 filtros).
+Resultado: **36/36 PASS** (17 carteira, 13 escopo administrativo, 6 filtros).
 Inclui sete registros sobrepostos preservados na carteira, carteira realmente
 vazia, atualização manual, erro sem falso vazio, negação 42501, RPC ausente,
 gestor comercial permitido, parceiro/financeiro sem nova tentativa autorizada,
-resposta de organização estrangeira rejeitada, revogação e isolamento de cache.
+resposta de organização estrangeira rejeitada, papéis mistos negados pelo servidor,
+perfil inativo sem leitura, revogação e isolamento de cache.
 Transporte/Auth sintéticos: **não são homologação JWT/RLS**.
 
 Build/typecheck são executados pelo harness da plataforma, não manualmente.
-O resultado observado será registrado no relatório de validação final.
+Último sinal observado após a edição: `build OK` às 00:44:16 UTC de 30/10/2026.
+Não houve saída separada de typecheck disponível; não certificamos essa etapa
+independentemente do build automático.
 
 ## Limites e conferência posterior
 
