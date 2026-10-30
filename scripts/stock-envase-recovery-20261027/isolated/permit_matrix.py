@@ -23,6 +23,11 @@ def run(X):
         before=X.snapshot(); X.reject('permit binds '+label,base+changed+insert,'42501'); assert X.snapshot()==before
     X.sql(base+permit+insert+"ROLLBACK;")
     X.ok('owner fixture exact permit positive reaches tenant and volume guards')
+    for field,expr in [('organization_id',f"'{T.B}'::uuid"),('quantidade','NEW.quantidade+1'),('volume_por_unidade','NEW.volume_por_unidade+1'),('operador',"'MUTATED'"),('etiqueta_gerada','true')]:
+        definition=f"CREATE FUNCTION public.local_mutate_after_permit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.{field}:={expr}; RETURN NEW; END $$;CREATE TRIGGER b01_local_mutate BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION public.local_mutate_after_permit();"
+        X.sql(definition); before=X.snapshot()
+        X.reject('post-permit normalizer changed '+field+' aborts exactly',base+permit+insert,'42501'); assert X.snapshot()==before
+        X.sql('DROP TRIGGER b01_local_mutate ON public.envase;DROP FUNCTION public.local_mutate_after_permit();')
     # Duplicate row UUID is deliberately deleted using fixture replica mode, then
     # reinserted with triggers enabled: failure must be missing authority, not PK.
     X.reject('consumed one-shot permit cannot authorize another insert',base+permit+insert+"SET LOCAL session_replication_role=replica;DELETE FROM public.envase WHERE id='"+row['id']+"';SET LOCAL session_replication_role=origin;"+insert,'42501')
