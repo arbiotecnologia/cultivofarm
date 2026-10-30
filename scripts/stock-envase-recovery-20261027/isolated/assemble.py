@@ -75,6 +75,10 @@ def candidate():
     env_payload="jsonb_build_object('id',v_envase_id,'lote_id',p_lote_id,'tipo_embalagem',v_tipo,'volume_por_unidade',v_unit_ml,'quantidade',v_qtd,'data_envase',current_date,'operador',nullif(p_operador,''),'organization_id',v_org,'etiqueta_gerada',false,'etiqueta_id',NULL,'etiqueta_gerada_em',NULL,'etiqueta_gerada_por',NULL)"
     body=one(body,'    INSERT INTO public.envase (lote_id,',f"    v_envase_id:=gen_random_uuid();\n    INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'envase',v_envase_id,p_lote_id,p_os_id,p_programacao_id,{env_payload});\n    INSERT INTO public.envase (id,lote_id,")
     body=one(body,'    VALUES (p_lote_id, v_tipo::public.tipo_embalagem','    VALUES (v_envase_id,p_lote_id, v_tipo::public.tipo_embalagem')
+    # The permit executes before tenant_organization_guard: supply the authoritative
+    # tenant explicitly, rather than comparing a NULL pre-trigger row to a filled row.
+    body=one(body,'data_envase, operador)\n    VALUES (v_envase_id,','data_envase, operador, organization_id)\n    VALUES (v_envase_id,')
+    body=one(body,"v_qtd, current_date, nullif(p_operador, ''))","v_qtd, current_date, nullif(p_operador, ''), v_org)")
     for typ,qty in [('reservado','v_reservadas'),('disponivel','v_livres')]:
         anchor=f'    IF {qty} > 0 THEN\n      INSERT INTO public.estoque_produto ('
         payload=f"jsonb_build_object('id',v_estoque_id,'produto_id',v_produto_id,'microrganismo_id',v_micro_id,'lote_id',p_lote_id,'envase_id',v_envase_id,'quantidade',{qty},'volume_total',(v_unit_ml*{qty})/1000.0,'validade',p_validade,'status','{typ}','reservado_para_os_id',"+('p_os_id' if typ=='reservado' else 'NULL')+",'reservado_para_os_tipo',"+('v_origem' if typ=='reservado' else 'NULL')+",'reservado_para_cliente_id',"+('v_ctx.cliente_id' if typ=='reservado' else 'NULL')+",'reservado_para_partner_id',NULL,'reservado_para_partner_order_id',"+('v_ctx.partner_order_id' if typ=='reservado' else 'NULL')+",'quantidade_reservada',"+(qty if typ=='reservado' else 'NULL')+")"

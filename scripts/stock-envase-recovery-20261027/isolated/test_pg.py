@@ -1,6 +1,6 @@
 """Disposable full captured restore + externally reported applied composition. Never hosted."""
 from pathlib import Path
-import hashlib, json, re, subprocess, sys, time, traceback
+import hashlib, json, os, re, subprocess, sys, time, traceback
 H=Path(__file__).resolve().parent; S=H.parents[1]; V2=H.parent
 sys.path.insert(0,str(S/'delivery-atomic-hardening-20261030'))
 import restore
@@ -66,6 +66,10 @@ def run():
     reject('NULL key denied before writes',T.actor(T.W)+env(T.O2,T.PP2,T.L2,'null-key-0001').replace("'null-key-0001'","NULL"),'22023'); assert snapshot()==before
     reject('missing gate singleton fails PT503, not overwritten FOUND',"BEGIN;DELETE FROM cf_user_guards_v1.state;"+T.actor(T.W)+env(T.O2,T.PP2,T.L2,'gate-0001'),'PT503'); assert snapshot()==before
     res=json.loads(last(T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3))); assert res['success'] is True and res['estado']=='completed'; ok('manual production envase completes CQ->stock->pronto_entrega')
+    assert last('SELECT count(*) FROM platform_private.envase_insert_permits_v1;')=='0'
+    assert last(f"SELECT organization_id='{T.A}' FROM public.envase WHERE lote_id='{T.L2}';")=='t'
+    ok('exact pre-trigger tenant payload accepted; every row permit consumed')
+    if os.environ.get('ENVASE_TARGETED')=='1': return
     assert T.os_status(T.O2)=='pronto_entrega'; assert last(f"SELECT count(*) FROM platform_private.authz_tickets WHERE target='{T.O2}';")=='0'; ok('transition ticket consumed and OS ready')
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is True; ok('endpoint capability remains available for exact replay after OS ready')
     before=snapshot(); rep=json.loads(last(T.actor(T.W)+env(T.O2,T.PP2,T.L2,'envase-ok-0001',3))); assert rep['replay'] is True and snapshot()==before; ok('exact replay same result with zero full-row mutations')
