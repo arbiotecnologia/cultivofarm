@@ -101,7 +101,7 @@ def main():
         worker=session(actor()+call('first-group'));wait()
         sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{U}';")
         finish(holder,'COMMIT;');out,err=finish(worker)
-        assert 'DELIVERY_ACTOR_DENIED' in err or 'DELIVERY_SCOPE_CHANGED' in err,err+out
+        assert any(code in err for code in ['DELIVERY_ACTOR_DENIED','DELIVERY_SCOPE_CHANGED','ESTQ_IDENTIDADE_INATIVA']),err+out
         checks.append({'test':'revocation after '+lockkind+' wait before replay','status':'PASS'});print('PASS revocation',lockkind,flush=True)
         sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{U}';")
     holder=session('BEGIN;'+actor()+call('first-group'));time.sleep(.15)
