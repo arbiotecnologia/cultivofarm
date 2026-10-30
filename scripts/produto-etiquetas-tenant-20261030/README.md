@@ -11,3 +11,9 @@ Achado: rpc_atualizar_checklist_entrega / rpc_registrar_ocorrencia_entrega (usad
 funcionam sob a barreira (DEFINER), mas aceitavam empresa alheia; corrigidas sem abrir DML de entregas.
 Ensaio: test-results.json 28 PASS/0 FAIL, SQLSTATE exatos (raw-matrices.log, raw-sqlstates.log). Sintético; não é prova JWT hosted.
 Pendências fora deste pacote: rpc_dispensar_assinatura_entrega não auditada aqui; vínculos entrega_etiquetas continuam fechados; financeiro/fiscal/automação bloqueados.
+
+## Revisão aef5b69 → atual
+- `envase_item_id`/`entrega_item_id` não têm tabela referenciada (opacos): valor não nulo nega (não é ignorado).
+- `produto_id` deve coincidir com `lotes.produto_id` quando ambos existem; produto é catálogo global, sem tenant.
+- `substitui_etiqueta_id`/`substituida_por_id`: a etiqueta referenciada deve ter lote da mesma organização (leitura direta de um nível dentro do helper DEFINER; sem recursão de policy/helper).
+- Ensaio: 33/33 PASS, negativos exatos 42501 com IDs válidos (sem falso positivo por FK).
