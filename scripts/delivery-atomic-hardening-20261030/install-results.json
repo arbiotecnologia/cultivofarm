@@ -1,11 +1,18 @@
 [
   {
-    "test": "PRE failure aborts before DDL",
+    "test": "real body drift aborts PRE before DDL",
     "status": "PASS"
   },
   {
-    "test": "installer execution",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_install.py\", line 26, in <module>\n    try:run()\n        ~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_install.py\", line 16, in run\n    assert 'LOCAL_POST_FAIL' in e,e\n           ^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  DELIVERY_PRE_TABLE_DRIFT: public.notificacoes_operacionais\nCONTEXT:  PL/pgSQL function inline_code_block line 328 at RAISE\n\n"
+    "test": "real ACL drift aborts PRE before DDL",
+    "status": "PASS"
+  },
+  {
+    "test": "POST failure rolls back real DDL",
+    "status": "PASS"
+  },
+  {
+    "test": "captured exact post baseline; rerun test required",
+    "status": "BLOCKED"
   }
 ]
