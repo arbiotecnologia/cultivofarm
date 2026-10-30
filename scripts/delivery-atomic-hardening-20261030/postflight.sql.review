@@ -1,0 +1,4 @@
+DO $post$ BEGIN
+ IF to_regclass('platform_private.delivery_requests_20261030') IS NULL OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='a00_delivery_order_transition_closed' AND tgenabled='O') THEN RAISE EXCEPTION 'DELIVERY_POST_MISSING'; END IF;
+ IF has_function_privilege('authenticated','public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)','EXECUTE') OR has_function_privilege('anon','public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)','EXECUTE') THEN RAISE EXCEPTION 'DELIVERY_POST_ACL_OPEN'; END IF;
+END $post$;
