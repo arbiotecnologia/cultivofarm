@@ -1,47 +1,42 @@
 # Comprovação de entrega — migração autorizada (candidato, NÃO aplicado)
 
-Decisão do proprietário (30/10/2026): preservar **gerar formulário**, **coletar assinatura digital** e **anexar comprovante**, migrando-os antes da implantação da barreira de entregas.
+Decisão do proprietário (30/10/2026): **preservar** gerar formulário, coletar assinatura digital e anexar comprovante, migrando-os antes da implantação da barreira de entregas. Nada deste pacote foi aplicado hosted nem publicado.
 
-## Achados nos corpos LIVE (captura somente leitura, ref canônico)
+## Correções da revisão independente 69d77e3
 
-Ref `swzpzcwiasxmjutrmvkm` comprovado por env/cliente e por MD5 idênticos à captura (`capture/live-proof-storage-readonly.txt`): `rpc_anexar…` `bafa068d…`, `rpc_gerar…` `62ce0a8a…`, `rpc_coletar…` `570bacbf…`, `storage1_delivery_allowed` `d7c7d1a9…`.
+1. **Envelopes exatos no cliente** (`src/lib/entregas/deliveryProofFlow.ts`): pré-verificação só libera upload com `{allowed:true, entrega_id, action}` iguais aos pedidos; caso contrário `blocked` sem upload. Sucesso só com ACK `{success:true, action, entrega_id, comprovante_id(uuid), object_path}` (caminho igual ao enviado; `null` em gerar). Qualquer outro corpo sem erro é `uncertain` e mantém chave + caminho.
+2. **Sem limpeza no cliente**: `ProofClient` não tem `remove`; o painel não chama `.remove(`. Código SQLSTATE nunca é tratado como prova de "não vinculado" (teste PG mostra PT409 `OBJECT_ALREADY_LINKED` com o objeto vinculado por chamada concorrente). Recusa definitiva retorna `retainedPath` e o objeto fica guardado sem vínculo. Escopo verificado após **toda** espera (preflight, upload, RPC final) → `stale` sem efeito. Exceção no upload = `uncertain` (mesmo caminho). 55P03/40001/40P01/PT503/57014 = incerto com pendência. Clique duplo/chamadas simultâneas da mesma entrega+ação → `busy`.
+3. **Servidor** (`candidate.sql.review`): novo `delivery_proof_recheck_20261030` (ator ativo/tenant h15, papéis, vínculo de cliente vivo, escopo da linha relida) chamado após advisory+gate+lock de linha (antes do replay), após `FOR SHARE` em `storage.objects`, após `FOR UPDATE` do comprovante e imediatamente antes do UPDATE de `entregas`. O permit `proof` é **apagado no sucesso**; recibos mantidos.
+4. **Aplicador com vínculo real** exercitado (preflight, anexo, assinatura), revogação real do vínculo (via caminho normal com gate) nega preflight, replay e novo anexo; outro funcionário da mesma empresa mantém acesso. Matriz legada de papéis preservada.
+5. **93 falhas de segurança**: reproduzidas na base `7cc75d7` via `git archive` em `/tmp` (checkout principal intocado): base 6 PASS/93 FAIL, HEAD 6 PASS/93 FAIL, **nomes idênticos e primeira linha de erro idêntica** (92× `Cannot use 'import.meta' outside a module`, 1× asserção de texto em `d51-5-p1-systemic`). Sem diferença em `package.json`/lock/vite/vitest entre base e HEAD. Evidência: `security-suites-base-vs-head.json`.
+6. **Liberação coordenada sem janela quebrada**: as três funções legadas viram **adaptadores endurecidos** (mesma apply privada; chave idempotente derivada do caminho; só `authenticated`). `release-combined.sql.review` = instalador atômico + instalador de comprovação em **uma única transação**. Ordem: (1) backend combinado, (2) frontend. Frontends em cache continuam funcionando pelos adaptadores; o frontend novo usa as RPCs novas. Não implantar os dois instaladores separadamente.
+7. `AGENTS.md` raiz restaurado ao texto original de `7cc75d7` (cinco regras recompostas integralmente) + uma regra nova deste pacote.
 
-Legado: SECURITY DEFINER com `is_delivery_staff` apenas — **sem filtro de empresa** (staff de qualquer tenant gravava em qualquer entrega), **caminho de arquivo livre** (podia apontar arquivo de outra entrega/empresa; triggers só exigiam existência no bucket), sem lock, idempotência ou reautorização. Storage já restringe upload por empresa/status (`storage1_delivery_allowed`); `entrega_comprovantes` já não tem DML cliente (ACL `rxtm`).
+## Contrato (resumo)
 
-## Contrato novo (`candidate.sql.review`)
+- `rpc_entrega_comprovacao_preflight_v1(entrega, ação)` — leitura autorizada, não grava.
+- `rpc_entrega_formulario_gerar_v1`, `rpc_entrega_assinatura_coletar_v1`, `rpc_entrega_comprovante_anexar_v1` — EXECUTE só `authenticated`.
+- Ator: perfil ativo + empresa via h15; papéis administrador, gestor, administrativo, producao, operador_onfarm, aplicador (este só com vínculo ao cliente); externos (parceiro B2B/técnico, cliente_produtor, consultor, superadmin, partner_users ativo) negados.
+- Linha: entrega e cliente da mesma empresa; B2B e OnFarm fechados; comprovante confirmado não é sobrescrito.
+- Objeto: existe, é do próprio ator, caminho `entregas/<id>/(assinaturas|comprovantes)/<uuid>.<ext>`, não vinculado a outro comprovante.
+- Barreira: ramo `proof` one-shot (só colunas de comprovação); group/cancel idênticos.
+- Rollback deny-only: fecha RPCs novas **e** adaptadores legados; mantém recibos, histórico e barreira.
 
-- `rpc_entrega_comprovacao_preflight_v1(entrega, ação)` — leitura autorizada antes do upload; não grava.
-- `rpc_entrega_formulario_gerar_v1(entrega, chave)`, `rpc_entrega_assinatura_coletar_v1(entrega, chave, payload)`, `rpc_entrega_comprovante_anexar_v1(entrega, chave, payload)` — EXECUTE só `authenticated`.
-- Ator: sessão, perfil ativo e empresa via h15; papéis da regra existente (administrador, gestor, administrativo, producao, operador_onfarm, aplicador — este só com vínculo ao cliente, como no Storage); externos (parceiro B2B/técnico, cliente_produtor, consultor, superadmin, partner_users ativo) negados.
-- Linha: entrega e cliente da mesma empresa; B2B e OnFarm fechados; gerar em separado/em_rota/entregue, assinar/anexar em separado/em_rota (mesmo gate do upload); comprovante confirmado não é sobrescrito.
-- Ordem: ator → validação → advisory → reautorização → gate global `cf_user_guards_v1` + org → `FOR UPDATE` da entrega → reautorização + escopo → replay (só depois) → objeto em `storage.objects` existente, do próprio ator, travado `FOR SHARE`, não vinculado a outro comprovante → permit `proof` one-shot → uma única UPDATE em `entregas` verificada pela barreira (só colunas de comprovação; status, financeiro e vínculos inalterados).
-- Payload com conjunto exato de campos, tamanhos limitados, caminho `entregas/<id>/(assinaturas|comprovantes)/<uuid>.<ext>` coerente com MIME, hash SHA-256 hex.
-- Chave por empresa/ator/ação; mesma chave e mesma impressão → replay; divergente → `PT409`.
-- Legado: corpos deny-only e EXECUTE revogado de clientes e service_role. Barreira ganha ramo `proof`; ramos group/cancel idênticos.
+## Resultados atuais (PostgreSQL descartável, restauração completa; runners individuais `run_bounded.py`, 480 s cada)
 
-## Frontend (`src/lib/entregas/deliveryProofFlow.ts` e painel)
+| Runner | Resultado | Tempo |
+|---|---|---|
+| `test_proof_pg` | **102 PASS / 0 FAIL** | 278,9 s |
+| `test_atomic_with_proof` (97 regressões atômicas com comprovação instalada) | **97 PASS / 0 FAIL / 0 BLOCKED** | 280,1 s |
+| `test_proof_install` | **10 PASS / 0 FAIL** | 289,0 s |
+| `test_release_combined` | **6 PASS / 0 FAIL** | 222,5 s |
 
-Pré-verificação → upload (`upsert:false`) → RPC com chave. Ambíguo (rede, 5xx, sem código, PT503/40001/57014): mantém caminho e chave para retry sem reenviar e **nunca apaga**. Recusa definitiva (42501/22023/PT409/23514/55P03) após upload desta tentativa: remove só esse objeto; caminho reaproveitado nunca é apagado. Troca de entrega após upload: não chama RPC nem apaga.
-
-## Ordem de implantação recomendada
-
-1. Publicar o frontend (as três ações ficam "não autorizadas agora", **sem upload**, enquanto o preflight não existir).
-2. `delivery-atomic-hardening-20261030/install.sql.review`.
-3. `install.sql.review` deste pacote na mesma janela (PRE exige o corpo exato da barreira atômica).
-
-Ordem inversa faria o frontend antigo enviar arquivo e falhar na RPC legada fechada → objeto órfão. Após o passo 3 o postflight atômico deixa de bater no corpo da barreira (substituída de propósito); vale o POST deste pacote.
-
-## Resultados atuais (PostgreSQL descartável, restauração completa, seis listas vazias)
-
-- `test_proof_pg`: **73 PASS / 0 FAIL**, exit 0, 154,1 s (orçamento 480 s) — `test-proof-results.json`, `test_proof_pg-current.log.txt`.
-- `test_proof_install`: **10 PASS / 0 FAIL**, exit 0, 168,7 s — drift de corpo, ACL e barreira recusados; POST forçado reverte tudo; COMMIT + POST exato; rerun recusado; rollback deny-only; reinstalação recusada.
-- Frontend: `deliveryProofFlow.test.ts` (12) e suítes de entregas: 20 arquivos / 275 testes PASS; build OK.
+Frontend: `src/test/entregas` 20 arquivos / **297 PASS** (inclui 34 de `deliveryProofFlow.test.ts`); typecheck `tsgo` OK; build automático OK. Mocks dos testes de painel passaram a devolver envelopes exatos (sucesso sem corpo → ACK exato); `data:null` agora é corretamente incerto.
 
 ## Limites materiais
 
-- Identidades/claims sintéticos: não provam JWT/RLS/Storage API hosted. Supõe-se que o Storage grava `owner_id = auth.uid()`; confirmar com sessão real após instalar.
-- Aplicador positivo com vínculo não exercitado (fixture sem `user_clientes`); só a negação sem vínculo.
-- Limpeza depende da política DELETE atual do bucket; se negada, o objeto não vinculado permanece (sem limpeza privilegiada).
-- Anexo passa a exigir recebedor sempre (a UI já exigia); `data_assinatura`/`arquivo_url` do payload legado não são aceitos.
-- `rpc_dispensar_assinatura_entrega` chama o gerar legado e falhará — já contida no cliente; continua fora do recorte, assim como confirmação de recebimento, termos/PDF, B2B/OnFarm, financeiro, fiscal, cobrança e automações.
-- 93 falhas Vitest em `create-user-edge-handler`, `external-user-ab-proposal` e `d51-5-p1-systemic`: arquivos não alterados desde `7cc75d7`; não relacionadas e não corrigidas aqui.
+- Identidades/claims sintéticos: não provam JWT/RLS/Storage API hosted; supõe-se `owner_id = auth.uid()` no Storage — confirmar com sessão real após instalar.
+- Revogação **com gate** durante esperas após o gate é linearizada (o ator segura `cf_user_guards_v1`); a negação após espera foi provada com revogação **sem gate** (`session_replication_role=replica`, simulando escritor privilegiado) — rotulada como injeção local.
+- Objetos de tentativas recusadas ficam no bucket sem vínculo (sem limpeza privilegiada); limpeza futura exige desenho servidor que prove desvínculo atomicamente.
+- Adaptador legado de gerar usa chave aleatória (idempotência pelo reaproveitamento do comprovante aberto); assinar/anexar legados derivam a chave do caminho.
+- `rpc_dispensar_assinatura_entrega`, confirmação de recebimento, termos/PDF, B2B/OnFarm, financeiro, fiscal, cobrança e automações seguem fora do recorte e contidos.
