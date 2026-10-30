@@ -55,3 +55,18 @@ Impacto residual não reversível: linhas `cancelada` em `entregas`, receipts pr
 
 ## Arquivos
 `assemble_capability.py`, `preflight.sql.review`, `delta.sql.review`, `postflight.sql.review`, `install.sql.review`, `rollback.sql.review`, `test_capability_pg.py`, `run_bounded.py`, resultados acima, `SHA256SUMS`.
+
+## Revisão 3eebcd96 — correções do cliente (30/10)
+
+- Revisões observadas: o diálogo guarda `updated_at`/status/origem da OS e dos lotes na primeira seleção; o cancelamento guarda a revisão na abertura. No envio, a página só compara (somente leitura). Se houver divergência, recusa e pede revisão; nunca rebaseia nem lê CAS nova no envio.
+- ACK: grupo e cancelamento exigem `organization_id` igual ao tenant capturado.
+- Depois do `await` final há fence: resposta tardia de outra sessão vira `stale` (sem confirmação, recusa ou retry), inclusive em replay.
+- Erros: só `PT409`, `42501` e `22023` (levantados pelos writers revisados) são recusa definitiva. Qualquer outro código (timeout, transporte, proxy, PGRST, 40001, 55P03, PT503, vazio) é incerto. As mensagens dizem "pode ter sido gravada" e nunca "nada foi gravado".
+- Recuperação: snapshot imutável `{fn,args,expectedOrg}` gravado em localStorage por ator+tenant **antes** do dispatch; falha de gravação aborta.
+  - Após remount/reload, novos envios ficam bloqueados.
+  - O único caminho é "Repetir envio pendente", com args idênticos (mesma chave e mesma CAS).
+  - Só confirmação exata ou recusa definitiva limpa o snapshot.
+  - Registro ilegível bloqueia novos envios.
+- OS: o cliente nega `osTipo≠padrao`, origem ≠ `agronomica` e OS com pedido B2B. Destinatário e endereço detalhados preenchidos são recusados explicitamente, sem perda silenciosa. Na prática, o modo "cadastro" preenche o destinatário, então o usuário precisa limpar esses campos; é uma limitação visível.
+- Testes: `src/test/entregas` 23 arquivos / 367 PASS. Inclui montagem real da página (revisão alterada, ACK de outro tenant, ACK tardio após troca de tenant, clique duplo, remount com replay exato, códigos ambíguos, cancelamento) e do diálogo real (snapshot não rebaseado). Typecheck do app OK.
+- SQL deste pacote inalterado; o PG (42 PASS) não foi reexecutado. Grant/capability **não** aplicados. Pré-requisitos e blockers em `PREREQUISITES.md`.
