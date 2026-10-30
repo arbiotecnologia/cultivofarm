@@ -214,8 +214,8 @@ def main():
     # AFTER label reads.
     as_ = {'U': seen_ids(U), 'V': seen_ids(V), 'FF': seen_ids(FF), 'CL': seen_ids(CL), 'IN': seen_ids(IN)}
     print('AFTER_SEEN', {k: sorted(x[-4:] for x in v) for k, v in as_.items()}, flush=True)
-    assert as_ == {'U': {PA, SUBOWN}, 'V': {PB}, 'FF': {PB}, 'CL': {PA, SUBOWN}, 'IN': set()}, as_
-    ok('AFTER reads: AR Bio admin/client only valid AR Bio label; FSF admin/financeiro only FSF label; inactive none; valid own substitution visible; all 14 mixed/no-root/null-org/ghost/opaque-item/product-mismatch/foreign-substitution hidden from everyone')
+    assert as_ == {'U': {PA, SUBOWN}, 'V': {PB}, 'FF': {PB}, 'CL': {PA}, 'IN': set()}, as_
+    ok('AFTER reads: AR Bio admin/client only valid AR Bio label; FSF admin/financeiro only FSF label; inactive none; valid own substitution visible to staff (client only via existing cliente link); all 14 mixed/no-root/null-org/ghost/opaque-item/product-mismatch/foreign-substitution hidden from everyone')
     la = label_matrix(); print('AFTER_LABEL', json.dumps(la, ensure_ascii=False), flush=True)
     IMM = 'EP0001:Campos de identificação/emissão da etiqueta são imutáveis'
     EXP = {'U_update_entrega_to_foreign': NEG, 'U_update_cliente_to_foreign': NEG, 'U_update_lote_to_foreign': IMM, 'U_update_benign_own': 'ok:1',
