@@ -3,7 +3,7 @@ import { useCockpitQuery } from "@/hooks/useCockpitQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { dispatchEnvase, loadEnvaseAttempt, type EnvaseArgs, type EnvaseAttempt, type EnvaseRpc } from "@/lib/envase/envaseFlow";
+import { dispatchEnvase, loadEnvaseAttempts, type EnvaseArgs, type EnvaseAttempt, type EnvaseRpc } from "@/lib/envase/envaseFlow";
 import { toast } from "sonner";
 import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
 import { montarDadosEntrega, validarRespostaCriarEntrega } from "@/lib/entregas/payloadEntrega";
@@ -364,7 +364,9 @@ export function useEsteiraLaboratorio() {
       if (now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
     };
     // A previous uncertain attempt for this lot is replayed EXACTLY (same key/args); a new key is never minted.
-    const pending = loadEnvaseAttempt(store, actorId, orgId, params.loteId);
+    const all = loadEnvaseAttempts(store, actorId, orgId, params.loteId);
+    if (all !== "corrupt" && all.length > 1) { toast.error("Há mais de um envase com resultado incerto para este lote (outra aba). Novos envios ficam bloqueados até consulta/reconciliação."); return null; }
+    const pending = all === "corrupt" ? "corrupt" : all[0] ?? null;
     if (pending === "corrupt") { toast.error("Registro local de envase pendente ilegível: novos envios deste lote ficam bloqueados. Consulte o histórico de envase."); return null; }
     if (pending?.replayRejected) {
       toast.error(`A repetição do envase pendente foi recusada (${pending.replayRejected}). Isso não prova que o envio original não foi gravado: é necessária consulta/reconciliação autorizada; novos envios deste lote continuam bloqueados.`);
