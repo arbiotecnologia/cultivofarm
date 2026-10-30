@@ -52,7 +52,7 @@ REVOKE ALL ON FUNCTION platform_private.delivery_no_downstream_20261030() FROM P
 -- A receipt-table barrier alone is insufficient: tg_auto_b2b_receivable can catch child errors.
 DO $$ DECLARE v_table text; BEGIN
  FOREACH v_table IN ARRAY ARRAY['accounts_receivable','accounts_receivable_installments','financial_receipts','financial_documents','fiscal_invoices','fiscal_invoice_items','fiscal_events','comunicacao_outbox','comunicacao_eventos','os_faturamento_base'] LOOP
-  EXECUTE format('CREATE TRIGGER z_delivery_no_downstream BEFORE INSERT OR UPDATE OR DELETE ON public.%I FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_no_downstream_20261030()',v_table);
+  EXECUTE format('CREATE TRIGGER a00_delivery_no_downstream BEFORE INSERT OR UPDATE OR DELETE ON public.%I FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_no_downstream_20261030()',v_table);
  END LOOP;
 END $$;
 CREATE FUNCTION platform_private.delivery_order_transition_guard_20261030()
