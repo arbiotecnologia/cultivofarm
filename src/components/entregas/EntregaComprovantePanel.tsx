@@ -6,6 +6,7 @@ import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
 import { useAuthenticatedAttachmentOpener } from "@/hooks/useAuthenticatedAttachmentOpener";
 import { DELIVERY_RECEIPT_BUCKET, deliveryReceiptLocator } from "@/lib/entregas/comprovanteLocator";
 import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
+import { runProofOperation, type ProofClient, type ProofPending } from "@/lib/entregas/deliveryProofFlow";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,22 @@ const MSG_FALHA_VINCULO =
   "O arquivo foi enviado, mas não foi possível vinculá-lo à entrega. Tente novamente — o arquivo não será enviado de novo.";
 const MSG_FALHA_ASSINATURA_ENVIO =
   "Não foi possível enviar a imagem da assinatura. Verifique a conexão e tente novamente.";
+const MSG_PROVA_BLOQUEADA =
+  "Esta ação não está autorizada para esta entrega agora. Nenhum arquivo foi enviado.";
+const MSG_PROVA_RECUSADA = "O registro foi recusado e nada foi vinculado à entrega.";
+const MSG_PROVA_RECUSADA_DESCARTE = "O registro foi recusado; o arquivo enviado nesta tentativa foi descartado.";
+
+/** Transporte canônico: RPCs autenticadas e o bucket privado já existente. */
+const proofClient: ProofClient = {
+  rpc: async (name, args) => {
+    const { data, error } = await supabase.rpc(name as any, args as any);
+    return { data, error: error as any };
+  },
+  upload: async (path, body, contentType) =>
+    supabase.storage.from("entrega-documentos").upload(path, body, { contentType, upsert: false }),
+  remove: async (path) => supabase.storage.from("entrega-documentos").remove([path]),
+};
+
 const MSG_FALHA_ASSINATURA_VINCULO =
   "A assinatura foi enviada, mas não foi possível registrá-la. Tente novamente — a imagem não será enviada de novo.";
 
@@ -69,6 +86,7 @@ type AssinaturaPendente = {
   path: string;
   hash: string;
   recebedor: RecebedorPayload;
+  requestKey: string;
 };
 
 function mesmoRecebedor(a: RecebedorPayload, b: RecebedorPayload) {
@@ -108,6 +126,8 @@ export function EntregaComprovantePanel({ entrega }: Props) {
   const [confirmando, setConfirmando] = useState(false);
   const [dispensando, setDispensando] = useState(false);
   const enviandoAnexoRef = useRef(false);
+  // Geração com resultado incerto: o retry reusa a mesma chave (replay no servidor).
+  const gerarPendenteRef = useRef<ProofPending | null>(null);
   // Trava síncrona COMPARTILHADA: assinatura, anexo, confirmação e dispensa
   // nunca correm em paralelo sobre a mesma comprovação.
   const acaoRef = useRef(false);
@@ -137,6 +157,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setDispensando(false);
     setPathPendente(null);
     setAssinaturaPendente(null);
+    gerarPendenteRef.current = null;
     setLinkManual(null);
     setOpenUpload(false);
     setOpenSign(false);
@@ -288,10 +309,21 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       setPendente: setGerando,
       sucessoTitulo: "Formulário gerado",
       executar: async (entregaId) => {
-        const { error } = await supabase.rpc("rpc_gerar_formulario_entrega" as any, {
-          p_entrega_id: entregaId,
+        const pendente = gerarPendenteRef.current?.entregaId === entregaId ? gerarPendenteRef.current : null;
+        const out = await runProofOperation({
+          client: proofClient,
+          entregaId,
+          action: "generate",
+          pending: pendente,
+          isCurrent: () => entregaAtivaRef.current === entregaId,
         });
-        if (error) throw error;
+        if (out.kind === "ok") {
+          gerarPendenteRef.current = null;
+          return;
+        }
+        if (out.kind === "stale") return;
+        gerarPendenteRef.current = out.kind === "uncertain" ? out.pending : null;
+        throw new Error(out.kind);
       },
     });
 
@@ -378,63 +410,60 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     const hash = pendenteAplicavel ? pendenteAplicavel.hash : data.hash;
     const recebedorEnvio = pendenteAplicavel ? pendenteAplicavel.recebedor : recebedorAtualEnvio;
 
-    let path = pendenteAplicavel ? pendenteAplicavel.path : null;
     try {
-      if (!path) {
-        const novoPath = `entregas/${entregaIdEnvio}/assinaturas/${crypto.randomUUID()}.png`;
-        const { error: upErr } = await supabase.storage
-          .from("entrega-documentos")
-          .upload(novoPath, data.pngBlob, { contentType: "image/png", upsert: false });
-        if (upErr) {
-          if (!atual()) return;
-          toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_ENVIO, variant: "destructive" });
-          return;
-        }
-        path = novoPath;
-      }
-
-      // Operação obsoleta após o upload: não inicia a RPC e não apaga o objeto.
-      if (!atual()) return;
-
-      const { error } = await supabase.rpc("rpc_coletar_assinatura_digital_entrega" as any, {
-        p_entrega_id: entregaIdEnvio,
-        p_payload: {
+      const out = await runProofOperation({
+        client: proofClient,
+        entregaId: entregaIdEnvio,
+        action: "sign",
+        pending: pendenteAplicavel
+          ? { entregaId: entregaIdEnvio, action: "sign", requestKey: pendenteAplicavel.requestKey, path: pendenteAplicavel.path }
+          : null,
+        blob: data.pngBlob,
+        contentType: "image/png",
+        extensao: "png",
+        buildPayload: (path) => ({
           assinatura_digital_png_path: path,
           assinatura_digital_svg: svgPath.length < 8000 ? svgPath : null,
           assinatura_hash: hash,
-          assinatura_user_agent: navigator.userAgent,
+          assinatura_user_agent: navigator.userAgent.slice(0, 512),
           recebedor_nome: recebedorEnvio.nome,
           recebedor_documento: recebedorEnvio.documento || null,
           recebedor_cargo: recebedorEnvio.cargo || null,
           recebedor_telefone: recebedorEnvio.telefone || null,
-        },
+        }),
+        isCurrent: atual,
       });
-
-      if (error) {
-        if (!atual()) return;
-        // PNG já armazenado: a nova tentativa apenas vincula, sem reenviar
-        // e sem apagar o objeto (resultado incerto).
-        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path, hash, recebedor: recebedorEnvio });
-        toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
-        return;
-      }
-
-      if (!atual()) {
+      if (out.kind === "stale") return;
+      if (out.kind === "ok") {
+        if (!atual()) {
+          invalidate(entregaIdEnvio);
+          return;
+        }
+        toast({ title: "Assinatura digital coletada" });
+        setAssinaturaPendente(null);
+        setOpenSign(false);
         invalidate(entregaIdEnvio);
         return;
       }
-      toast({ title: "Assinatura digital coletada" });
+      if (!atual()) return;
+      if (out.kind === "uncertain") {
+        // Imagem já armazenada e resultado incerto: retry só vincula (mesma chave), sem apagar.
+        setAssinaturaPendente({
+          entregaId: entregaIdEnvio, traco: svgPath, path: out.pending.path as string, hash,
+          recebedor: recebedorEnvio, requestKey: out.pending.requestKey,
+        });
+        toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
+        return;
+      }
       setAssinaturaPendente(null);
-      setOpenSign(false);
-      invalidate(entregaIdEnvio);
+      const desc =
+        out.kind === "blocked" ? MSG_PROVA_BLOQUEADA
+        : out.kind === "upload_failed" ? MSG_FALHA_ASSINATURA_ENVIO
+        : out.cleaned ? MSG_PROVA_RECUSADA_DESCARTE : MSG_PROVA_RECUSADA;
+      toast({ title: "Erro", description: desc, variant: "destructive" });
     } catch {
       if (!atual()) return;
-      if (path) {
-        setAssinaturaPendente({ entregaId: entregaIdEnvio, traco: svgPath, path, hash, recebedor: recebedorEnvio });
-        toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_VINCULO, variant: "destructive" });
-      } else {
-        toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_ENVIO, variant: "destructive" });
-      }
+      toast({ title: "Erro", description: MSG_FALHA_ASSINATURA_ENVIO, variant: "destructive" });
     } finally {
       // Nunca destrava uma ação que já pertence a outra entrega/operação.
       if (atual()) liberarAcao();
@@ -495,90 +524,69 @@ export function EntregaComprovantePanel({ entrega }: Props) {
     setEnviandoAnexo(true);
     setErroArquivo(null);
 
-    let path = pathReaproveitado;
-    let uploadFeitoAgora = false;
     try {
-      if (!path) {
-        const novoPath = `entregas/${entregaIdEnvio}/comprovantes/${crypto.randomUUID()}.${validacao.extensao}`;
-        const { error: upErr } = await supabase.storage
-          .from("entrega-documentos")
-          .upload(novoPath, file, { contentType: validacao.mime, upsert: false });
-        if (upErr) {
-          if (!atual()) return;
-          toast({ title: "Erro", description: MSG_FALHA_ENVIO, variant: "destructive" });
-          setErroArquivo(MSG_FALHA_ENVIO);
-          return;
-        }
-        path = novoPath;
-        uploadFeitoAgora = true;
-      }
-
-      // Operação obsoleta após o upload: não inicia a RPC e não apaga o objeto
-      // (o arquivo pertence à entrega antiga; nunca é atribuído à nova).
-      if (!atual()) return;
-
-      const { error } = await supabase.rpc("rpc_anexar_comprovante_entrega" as any, {
-        p_entrega_id: entregaIdEnvio,
-        p_payload: {
+      const out = await runProofOperation({
+        client: proofClient,
+        entregaId: entregaIdEnvio,
+        action: "attach",
+        pending: pathReaproveitado && pathPendente?.requestKey
+          ? { entregaId: entregaIdEnvio, action: "attach", requestKey: pathPendente.requestKey, path: pathReaproveitado }
+          : null,
+        blob: file,
+        contentType: validacao.mime,
+        extensao: validacao.extensao,
+        buildPayload: (path) => ({
           arquivo_path: path,
-          arquivo_nome: file.name,
+          arquivo_nome: file.name.slice(0, 255),
           arquivo_mime: validacao.mime,
           recebedor_nome: recebedorEnvio.nome,
           recebedor_documento: recebedorEnvio.documento || null,
           recebedor_cargo: recebedorEnvio.cargo || null,
           recebedor_telefone: recebedorEnvio.telefone || null,
-        },
+        }),
+        isCurrent: atual,
       });
-
-      if (error) {
-        // O arquivo já está no armazenamento: não reenviar e não apagar
-        // (uma falha de rede pode esconder um sucesso do servidor).
-        if (!atual()) return;
-        setPathPendente({
-          entregaId: entregaIdEnvio,
-          path,
-          nome: file.name,
-          tamanho: file.size,
-          lastModified: file.lastModified,
-          mime: validacao.mime,
-        });
-        setErroArquivo(MSG_FALHA_VINCULO);
-        toast({ title: "Erro", description: MSG_FALHA_VINCULO, variant: "destructive" });
-        return;
-      }
-
-      // Sucesso de uma operação obsoleta: atualiza os dados da entrega capturada,
-      // sem mexer no estado nem fechar o modal da entrega atual.
-      if (!atual()) {
+      if (out.kind === "stale") return;
+      if (out.kind === "ok") {
+        // Sucesso de uma operação obsoleta: atualiza só a entrega capturada.
+        if (!atual()) {
+          invalidate(entregaIdEnvio);
+          return;
+        }
+        toast({ title: "Comprovante anexado" });
+        setPathPendente(null);
+        setArquivo(null);
+        setOpenUpload(false);
         invalidate(entregaIdEnvio);
         return;
       }
-      toast({ title: "Comprovante anexado" });
-      setPathPendente(null);
-      setArquivo(null);
-      setOpenUpload(false);
-      invalidate(entregaIdEnvio);
-    } catch {
       if (!atual()) return;
-      if (path) {
+      if (out.kind === "uncertain") {
+        // Arquivo já armazenado e resultado incerto: não reenviar e não apagar.
         setPathPendente({
           entregaId: entregaIdEnvio,
-          path,
+          path: out.pending.path as string,
           nome: file.name,
           tamanho: file.size,
           lastModified: file.lastModified,
           mime: validacao.mime,
+          requestKey: out.pending.requestKey,
         });
         setErroArquivo(MSG_FALHA_VINCULO);
         toast({ title: "Erro", description: MSG_FALHA_VINCULO, variant: "destructive" });
-      } else {
-        setErroArquivo(uploadFeitoAgora ? MSG_FALHA_VINCULO : MSG_FALHA_ENVIO);
-        toast({
-          title: "Erro",
-          description: uploadFeitoAgora ? MSG_FALHA_VINCULO : MSG_FALHA_ENVIO,
-          variant: "destructive",
-        });
+        return;
       }
+      setPathPendente(null);
+      const desc =
+        out.kind === "blocked" ? MSG_PROVA_BLOQUEADA
+        : out.kind === "upload_failed" ? MSG_FALHA_ENVIO
+        : out.cleaned ? MSG_PROVA_RECUSADA_DESCARTE : MSG_PROVA_RECUSADA;
+      setErroArquivo(desc);
+      toast({ title: "Erro", description: desc, variant: "destructive" });
+    } catch {
+      if (!atual()) return;
+      setErroArquivo(MSG_FALHA_ENVIO);
+      toast({ title: "Erro", description: MSG_FALHA_ENVIO, variant: "destructive" });
     } finally {
       // Nunca destrava um envio que já pertence a outra entrega/operação.
       if (atual()) {

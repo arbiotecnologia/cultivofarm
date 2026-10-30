@@ -1,0 +1,43 @@
+[
+  {
+    "test": "atomic package installed (order 1)",
+    "status": "PASS"
+  },
+  {
+    "test": "installer contains exact POST pins",
+    "status": "PASS",
+    "pins": 13
+  },
+  {
+    "test": "PRE refuses real legacy body drift; nothing installed",
+    "status": "PASS"
+  },
+  {
+    "test": "PRE refuses ACL drift; nothing installed",
+    "status": "PASS"
+  },
+  {
+    "test": "PRE refuses barrier drift; nothing installed",
+    "status": "PASS"
+  },
+  {
+    "test": "forced POST failure rolls back every DDL/ACL change",
+    "status": "PASS"
+  },
+  {
+    "test": "COMMIT and standalone exact POST pass",
+    "status": "PASS"
+  },
+  {
+    "test": "rerun refused without changes",
+    "status": "PASS"
+  },
+  {
+    "test": "rollback is deny-only: RPCs closed, legacy stays closed, barrier kept",
+    "status": "PASS"
+  },
+  {
+    "test": "installer still refuses after rollback (no silent reopen)",
+    "status": "PASS"
+  }
+]

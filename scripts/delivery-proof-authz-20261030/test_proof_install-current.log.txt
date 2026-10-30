@@ -1,0 +1,120 @@
+CHECKPOINT initdb local
+CHECKPOINT sql_calls=1 elapsed=1.5s
+CHECKPOINT sql_calls=100 elapsed=3.0s
+CHECKPOINT sql_calls=200 elapsed=4.5s
+CHECKPOINT sql_calls=300 elapsed=6.0s
+CHECKPOINT sql_calls=400 elapsed=7.7s
+CHECKPOINT sql_calls=500 elapsed=9.6s
+CHECKPOINT sql_calls=600 elapsed=11.8s
+CHECKPOINT sql_calls=700 elapsed=13.8s
+CHECKPOINT sql_calls=800 elapsed=15.7s
+CHECKPOINT sql_calls=900 elapsed=17.7s
+CHECKPOINT sql_calls=1000 elapsed=19.8s
+CHECKPOINT sql_calls=1100 elapsed=21.9s
+CHECKPOINT sql_calls=1200 elapsed=24.1s
+CHECKPOINT sql_calls=1300 elapsed=26.3s
+CHECKPOINT sql_calls=1400 elapsed=28.3s
+CHECKPOINT sql_calls=1500 elapsed=29.9s
+CHECKPOINT sql_calls=1600 elapsed=31.5s
+CHECKPOINT sql_calls=1700 elapsed=33.0s
+CHECKPOINT sql_calls=1800 elapsed=34.5s
+CHECKPOINT sql_calls=1900 elapsed=35.8s
+CHECKPOINT sql_calls=2000 elapsed=37.3s
+CHECKPOINT sql_calls=2100 elapsed=38.6s
+CHECKPOINT sql_calls=2200 elapsed=39.9s
+CHECKPOINT sql_calls=2300 elapsed=41.4s
+CHECKPOINT sql_calls=2400 elapsed=42.8s
+CHECKPOINT sql_calls=2500 elapsed=44.1s
+CHECKPOINT sql_calls=2600 elapsed=45.4s
+CHECKPOINT sql_calls=2700 elapsed=46.7s
+CHECKPOINT sql_calls=2800 elapsed=48.1s
+CHECKPOINT sql_calls=2900 elapsed=49.4s
+CHECKPOINT sql_calls=3000 elapsed=50.6s
+CHECKPOINT sql_calls=3100 elapsed=52.1s
+CHECKPOINT sql_calls=3200 elapsed=53.4s
+CHECKPOINT sql_calls=3300 elapsed=54.7s
+CHECKPOINT sql_calls=3400 elapsed=56.1s
+CHECKPOINT sql_calls=3500 elapsed=57.7s
+CHECKPOINT sql_calls=3600 elapsed=59.3s
+CHECKPOINT sql_calls=3700 elapsed=61.0s
+CHECKPOINT sql_calls=3800 elapsed=62.6s
+CHECKPOINT sql_calls=3900 elapsed=64.0s
+CHECKPOINT sql_calls=4000 elapsed=65.5s
+CHECKPOINT sql_calls=4100 elapsed=67.1s
+CHECKPOINT sql_calls=4200 elapsed=68.6s
+CHECKPOINT sql_calls=4300 elapsed=70.0s
+CHECKPOINT sql_calls=4400 elapsed=71.3s
+CHECKPOINT sql_calls=4500 elapsed=73.0s
+CHECKPOINT sql_calls=4600 elapsed=74.8s
+CHECKPOINT sql_calls=4700 elapsed=76.3s
+CHECKPOINT sql_calls=4800 elapsed=77.8s
+CHECKPOINT sql_calls=4900 elapsed=79.2s
+CHECKPOINT sql_calls=5000 elapsed=80.6s
+CHECKPOINT sql_calls=5100 elapsed=82.0s
+CHECKPOINT sql_calls=5200 elapsed=83.5s
+CHECKPOINT sql_calls=5300 elapsed=84.7s
+CHECKPOINT sql_calls=5400 elapsed=86.2s
+CHECKPOINT sql_calls=5500 elapsed=87.6s
+CHECKPOINT sql_calls=5600 elapsed=89.0s
+CHECKPOINT sql_calls=5700 elapsed=90.4s
+CHECKPOINT sql_calls=5800 elapsed=92.0s
+CHECKPOINT sql_calls=5900 elapsed=93.5s
+CHECKPOINT sql_calls=6000 elapsed=94.9s
+CHECKPOINT sql_calls=6100 elapsed=96.5s
+CHECKPOINT sql_calls=6200 elapsed=97.9s
+CHECKPOINT sql_calls=6300 elapsed=99.4s
+CHECKPOINT sql_calls=6400 elapsed=101.1s
+CHECKPOINT sql_calls=6500 elapsed=102.7s
+CHECKPOINT sql_calls=6600 elapsed=104.1s
+CHECKPOINT sql_calls=6700 elapsed=105.8s
+CHECKPOINT sql_calls=6800 elapsed=107.7s
+CHECKPOINT sql_calls=6900 elapsed=109.3s
+CHECKPOINT sql_calls=7000 elapsed=110.8s
+CHECKPOINT sql_calls=7100 elapsed=112.3s
+CHECKPOINT sql_calls=7200 elapsed=113.8s
+CHECKPOINT sql_calls=7300 elapsed=115.3s
+CHECKPOINT sql_calls=7400 elapsed=116.8s
+CHECKPOINT sql_calls=7500 elapsed=118.3s
+CHECKPOINT sql_calls=7600 elapsed=119.7s
+CHECKPOINT sql_calls=7700 elapsed=121.1s
+CHECKPOINT sql_calls=7800 elapsed=122.5s
+CHECKPOINT sql_calls=7900 elapsed=123.8s
+CHECKPOINT sql_calls=8000 elapsed=125.2s
+CHECKPOINT sql_calls=8100 elapsed=126.5s
+CHECKPOINT sql_calls=8200 elapsed=127.8s
+CHECKPOINT sql_calls=8300 elapsed=129.2s
+CHECKPOINT sql_calls=8400 elapsed=130.8s
+CHECKPOINT sql_calls=8500 elapsed=132.3s
+CHECKPOINT sql_calls=8600 elapsed=133.8s
+CHECKPOINT sql_calls=8700 elapsed=135.3s
+CHECKPOINT sql_calls=8800 elapsed=136.7s
+CHECKPOINT sql_calls=8900 elapsed=138.2s
+CHECKPOINT sql_calls=9000 elapsed=139.7s
+CHECKPOINT sql_calls=9100 elapsed=141.3s
+CHECKPOINT sql_calls=9200 elapsed=142.7s
+CHECKPOINT sql_calls=9300 elapsed=144.2s
+CHECKPOINT sql_calls=9400 elapsed=146.0s
+CHECKPOINT sql_calls=9500 elapsed=147.6s
+CHECKPOINT sql_calls=9600 elapsed=149.0s
+CHECKPOINT sql_calls=9700 elapsed=150.6s
+CHECKPOINT sql_calls=9800 elapsed=152.3s
+CHECKPOINT sql_calls=9900 elapsed=153.9s
+CHECKPOINT sql_calls=10000 elapsed=155.6s
+CHECKPOINT sql_calls=10100 elapsed=157.3s
+CHECKPOINT sql_calls=10200 elapsed=158.8s
+CHECKPOINT sql_calls=10300 elapsed=160.3s
+CHECKPOINT sql_calls=10400 elapsed=161.8s
+CHECKPOINT sql_calls=10500 elapsed=163.5s
+CHECKPOINT sql_calls=10600 elapsed=165.4s
+PASS atomic package installed (order 1)
+PASS installer contains exact POST pins
+PASS PRE refuses real legacy body drift; nothing installed
+PASS PRE refuses ACL drift; nothing installed
+PASS PRE refuses barrier drift; nothing installed
+PASS forced POST failure rolls back every DDL/ACL change
+PASS COMMIT and standalone exact POST pass
+PASS rerun refused without changes
+PASS rollback is deny-only: RPCs closed, legacy stays closed, barrier kept
+PASS installer still refuses after rollback (no silent reopen)
+ELAPSED 168.4
+RESULT 10 PASS 0 FAIL

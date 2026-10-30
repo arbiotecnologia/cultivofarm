@@ -1075,3 +1075,5 @@
 - [ ] Revisão do artefato exato pelo proprietário (bloqueio: decisão do proprietário).
 - [ ] Executar leituras reais A/F1/F2/T4 (bloqueio: sessões dos titulares).
 - [ ] Implantar 01 após as duas anteriores; fiscal, cobranças e automações seguem bloqueados.
+
+- [x] 30/10 Migrar gerar formulário/assinatura/anexo para contrato autorizado (scripts/delivery-proof-authz-20261030) — preparado e testado em PG descartável; aplicação hosted/publicação aguardam revisão do proprietário.
