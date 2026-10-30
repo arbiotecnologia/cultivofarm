@@ -57,7 +57,8 @@ const MSG_FALHA_ASSINATURA_ENVIO =
 const MSG_PROVA_BLOQUEADA =
   "Esta ação não está autorizada para esta entrega agora. Nenhum arquivo foi enviado.";
 const MSG_PROVA_RECUSADA = "O registro foi recusado e nada foi vinculado à entrega.";
-const MSG_PROVA_RECUSADA_DESCARTE = "O registro foi recusado; o arquivo enviado nesta tentativa foi descartado.";
+const MSG_PROVA_RECUSADA_RETIDO =
+  "O registro foi recusado e nada foi vinculado à entrega. O arquivo enviado ficou guardado sem vínculo e não foi apagado.";
 
 /** Transporte canônico: RPCs autenticadas e o bucket privado já existente. */
 const proofClient: ProofClient = {
@@ -67,7 +68,6 @@ const proofClient: ProofClient = {
   },
   upload: async (path, body, contentType) =>
     supabase.storage.from("entrega-documentos").upload(path, body, { contentType, upsert: false }),
-  remove: async (path) => supabase.storage.from("entrega-documentos").remove([path]),
 };
 
 const MSG_FALHA_ASSINATURA_VINCULO =
@@ -321,7 +321,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
           gerarPendenteRef.current = null;
           return;
         }
-        if (out.kind === "stale") return;
+        if (out.kind === "stale" || out.kind === "busy") return;
         gerarPendenteRef.current = out.kind === "uncertain" ? out.pending : null;
         throw new Error(out.kind);
       },
@@ -433,7 +433,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         }),
         isCurrent: atual,
       });
-      if (out.kind === "stale") return;
+      if (out.kind === "stale" || out.kind === "busy") return;
       if (out.kind === "ok") {
         if (!atual()) {
           invalidate(entregaIdEnvio);
@@ -459,7 +459,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       const desc =
         out.kind === "blocked" ? MSG_PROVA_BLOQUEADA
         : out.kind === "upload_failed" ? MSG_FALHA_ASSINATURA_ENVIO
-        : out.cleaned ? MSG_PROVA_RECUSADA_DESCARTE : MSG_PROVA_RECUSADA;
+        : out.retainedPath ? MSG_PROVA_RECUSADA_RETIDO : MSG_PROVA_RECUSADA;
       toast({ title: "Erro", description: desc, variant: "destructive" });
     } catch {
       if (!atual()) return;
@@ -546,7 +546,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
         }),
         isCurrent: atual,
       });
-      if (out.kind === "stale") return;
+      if (out.kind === "stale" || out.kind === "busy") return;
       if (out.kind === "ok") {
         // Sucesso de uma operação obsoleta: atualiza só a entrega capturada.
         if (!atual()) {
@@ -580,7 +580,7 @@ export function EntregaComprovantePanel({ entrega }: Props) {
       const desc =
         out.kind === "blocked" ? MSG_PROVA_BLOQUEADA
         : out.kind === "upload_failed" ? MSG_FALHA_ENVIO
-        : out.cleaned ? MSG_PROVA_RECUSADA_DESCARTE : MSG_PROVA_RECUSADA;
+        : out.retainedPath ? MSG_PROVA_RECUSADA_RETIDO : MSG_PROVA_RECUSADA;
       setErroArquivo(desc);
       toast({ title: "Erro", description: desc, variant: "destructive" });
     } catch {
