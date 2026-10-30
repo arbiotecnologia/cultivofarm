@@ -48,6 +48,8 @@ interface Props {
   entrega: any;
 }
 
+// Waiver stays closed until its own reviewed canonical contract is installed (server EXECUTE revoked by review package).
+const WAIVER_CONTRACT_AVAILABLE = false as boolean;
 const MSG_ERRO_GENERICA = "Não foi possível concluir a ação. Tente novamente.";
 const MSG_FALHA_ENVIO = "Não foi possível enviar o arquivo. Verifique a conexão e tente novamente.";
 const MSG_FALHA_VINCULO =
