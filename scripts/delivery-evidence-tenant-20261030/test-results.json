@@ -1,0 +1,23 @@
+[
+  {
+    "test": "composition: release-combined a566faa4 + install-v2 4390ef16 + proof-select-tenant install/POST",
+    "status": "PASS"
+  },
+  {
+    "test": "PRE: 6 tables RLS on/not forced, no restrictive policy; entregas policies do not reference them; entrega_termos already restrictive",
+    "status": "PASS",
+    "acl": {
+      "entrega_checklist": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_ocorrencias": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_documentos": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_conferencia_itens": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_reconciliacoes": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "entrega_etiquetas": "{postgres=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+    }
+  },
+  {
+    "test": "execution stopped at concrete failure",
+    "status": "FAIL",
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 158, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 81, in main\n    fixtures()\n    ~~~~~~~~^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 54, in fixtures\n    sql(\"SET session_replication_role=replica;\" + f\"\"\"\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    INSERT INTO auth.users(id) VALUES('{FF}'),('{CL}'),('{IN}');\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<5 lines>...\n    {rows}\n    ^^^^^^\n    SET session_replication_role=origin;\"\"\")\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 20, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  new row for relation \"entrega_ocorrencias\" violates check constraint \"entrega_ocorrencias_tipo_chk\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000000811, 10000000-0000-4000-8000-000000000711, LOCAL, LOCAL, baixa, null, 2026-10-30 18:38:16.957038+00, {}, 2026-10-30 18:38:16.957038+00).\n\n"
+  }
+]

@@ -123,7 +123,6 @@ def main():
         assert n == '0' and m == '0' and last(f"SELECT count(*) FROM public.{t} WHERE id='{rid(t, 1)}';") == '1', (t, n, m)
     ok('AFTER all 6: FSF admin/financeiro, inactive AR Bio admin read 0; org-NULL parent invisible; cross-tenant INSERT/UPDATE/DELETE and TRUNCATE denied')
     own = {t: [count(U, t, rid(t, 1)), count(V, t, rid(t, 2))] for t in TABLES}; print('AFTER_OWN', own, flush=True)
-    for t in TABLES: assert own[t] == [before_own[t][0], before_own[t][1]] if False else True
     ok('AFTER same-tenant reads (AR Bio admin own, FSF admin own) per table', own=own)
     assert own['entrega_checklist'] == [1, 1] and own['entrega_ocorrencias'] == [1, 1] and own['entrega_conferencia_itens'] == [1, 1] and own['entrega_reconciliacoes'] == [1, 1]
     assert count(CL, 'entrega_checklist', rid('entrega_checklist', 1)) == 1 and count(CL, 'entrega_ocorrencias', rid('entrega_ocorrencias', 1)) == 1
