@@ -191,7 +191,7 @@ def build():
   v_qty:=(v_item->>'quantidade')::numeric;""", 'group map')
     out.append(d)
 
-    cand = '\n'.join(x.rstrip().rstrip(';') + ';\n' if not x.rstrip().endswith('$;') and x.rstrip().endswith('$function$') else x for x in out)
+    cand = '\n'.join(x.rstrip() if x.rstrip().endswith(';') else x.rstrip() + ';' for x in out) + '\n'
     (H / 'candidate-v2.sql.review').write_text(cand)
     pins = {k: {'regprocedure': REGPROC[k], 'pre_md5': v} for k, v in pre.items()}
     (H / 'v2-pre-pins.json').write_text(json.dumps(pins, indent=2) + '\n')
