@@ -4,3 +4,4 @@
 - Authorization derives active actor and tenant server-side, revalidates after every wait and before replay, and excludes external actors; private receipts never grant authority.
 - Rollback is deny-only, preserves history and never restores vulnerable definitions or grants private helpers to clients.
 - Generate split recomposition exclusively as a hash-pinned canonical motor delta using its private context and immutable ledger; keep the retired split row and unique index — avoids bypassing stock guards or deleting history.
+- Normalize only outer statement terminators during assembly and generate exact PRE/POST catalog checks; test the assembled closed artifact before release review — prevents concatenation syntax failures and partial metadata pins.

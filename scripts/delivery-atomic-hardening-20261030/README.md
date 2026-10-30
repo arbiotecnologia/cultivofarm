@@ -1,5 +1,21 @@
 # Entrega — candidato parcial, NO-GO operacional
 
+## Resultado vigente — correção instalador7a80a55c
+
+**Instalador fechado:9PASS/0FAIL, exit0. Contrato PostgreSQL:80PASS/0FAIL/0BLOCKED, exit0**, executado contra `install.sql.review`, não somente fragments. `restore-results.json`: seis listas vazias. Sem hosted SQL/writer/publicação/frontend/GRANT cliente no instalador. Os grants locais de teste são exclusivos do harness descartável para provar os contratos; não entram no SQL deployable. Não declarar GO operacional.
+
+Montagem usa `rstrip().rstrip(';')+';\n'` nas fronteiras, mantendo corpos capturados e MD5 originais: o motor-delta isolado terminava em `$function$`, causando erro ao concatenar POST. O PRE agora verifica corpo/ACL/owner de funções, ACL/owner/RLS/forceRLS/colunas/defaults/ACL por coluna e políticas das tabelas envolvidas, além de triggers/índices capturados. O POST tem **379 assertions** exatas (corpos, ACL/owner, tabelas/colunas/RLS/policies/triggers/indexes), inclusive todas as funções/helpers/tabelas novas. Baseline POST foi capturada localmente após montagem e novamente exercitada em restauração fresca; não é evidência hosted.
+
+Regressões instalador: alteração real de corpo e GRANT anon local detectados no PRE; POST falho reverte DDL; COMMIT+POST exato; batch independente com corpo/owner/ACL intactos; delta motor confinado à recomposição privada; SELECT authenticated executável em fixture vazia (ACL/policies exatas preservadas, não prova visibilidade de dados reais); rerun recusado; rollback deny-only conserva receipt histórico real inserido no PG local. Não restaura corpo vulnerável nem remove tabelas/guards/histórico.
+
+Arquivos legíveis: `install-run.log.txt`, `test-review.log.txt`, `install-results.json`, `test-results.json`, `restore-results.json`, `preflight.sql.review`, `postflight.sql.review`, `install.sql.review`, `rollback.sql.review`, `capture/post-expected.json`. Logs históricos disponíveis convertidos para `.log.txt`; falhas anteriores não são somadas aos PASS atuais.
+
+### Destinos além das dez barreiras — alcance limitado, não universal
+
+`callgraph.json` é closure textual de116funções/19destinos com triggers capturados. `financial_initial_installments` é contexto privado usado pelo gerador de recebíveis; `partner_order_payment_schedule` e `partner_order_financial_links` pertencem à cadeia B2B. O recorte de grupo nega OS com partner_order_id e origem não agronômica; cancelamento nega partner_order_id/receivable_id/OnFarm/entregue. Trigger `a00_delivery_order_transition_closed` aborta mudança de status de partner_orders antes do autogerador; barreiras em accounts_receivable/parcelas abortam nascimento financeiro. Isso explica a exclusão no caminho interno testado, mas **não prova inalcance universal de dynamic SQL/unqualified calls/Edges externas**. Não foram criadas permissões ou liberada cadeia B2B. Revisão independente da closure e migração dos callers diretos permanecem gates de reabertura, não faltas sintáticas do instalador fechado.
+
+O POST pinou o autogerador e guard contábil preservados; não alteramos flags fiscais/auto_generate_receivable. Nenhuma alegação de certificação JWT/RLS hosted, cobrança ou NF. As seções abaixo são histórico superado pelas contagens e limites desta seção.
+
 ## Atualização executada 30/10 — revisão do27e8d586
 
 Resultado atual executável: **51 PASS / 0 FAIL / 0 BLOCKED no runner**, sem somar rodadas anteriores. `restore-results.json` contém seis listas vazias: funções/views, defaults, constraints, policies, triggers e índices. A captura adicional read-only `capture/restore-supplement.json` restaura schemas finance_private/tenant_smtp_executor e sequência private faltante; não contém dados ou secrets. Nenhum objeto foi substituído por stub.
