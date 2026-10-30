@@ -124,7 +124,7 @@ export function parseCancelAck(data: unknown, entregaId: string, expectedOrg: st
  */
 export const DEFINITIVE_REJECTION_CODES: ReadonlySet<string> = new Set(["PT409", "42501", "22023"]);
 
-export type RetrySnapshot = { fn: string; args: Record<string, unknown>; expectedOrg: string; osId?: string; count?: number; entregaId?: string };
+export type RetrySnapshot = { fn: string; args: Record<string, unknown>; expectedOrg: string; osId?: string; count?: number; entregaId?: string; /** set when the exact replay was refused: original outcome still unknown */ replayRejected?: string };
 
 export type Outcome<T> =
   | { status: "closed"; message: string }
@@ -193,30 +193,81 @@ export async function replayUncertain<T>(rpc: Rpc, retry: RetrySnapshot, parse: 
   return dispatchOnce(rpc, retry, parse, fence, onDispatch);
 }
 
-/* ---- Pending uncertain dispatch, bound to actor+tenant, survives remount/reload. ---- */
-const PENDING_PREFIX = "cf:delivery-uncertain:v1:";
-export const pendingKey = (actorId: string, orgId: string) => `${PENDING_PREFIX}${actorId}:${orgId}`;
+/* ---- Pending uncertain dispatches: one slot PER ATTEMPT (actor+tenant+fn+key), survives remount/reload. ----
+ * Several tabs/consumers share localStorage: a save never overwrites a distinct attempt and a clear only
+ * removes the exact attempt it settled (compare-before-remove). Local storage is not a lock: two tabs may
+ * each hold their own attempt; both are kept and both block new keys until settled. */
+const PENDING_PREFIX = "cf:delivery-uncertain:v2:";
+const scopePrefix = (actorId: string, orgId: string) => `${PENDING_PREFIX}${actorId}:${orgId}:`;
+export const attemptId = (r: Pick<RetrySnapshot, "fn" | "args">) =>
+  r.fn === GROUP_RPC ? `${r.fn}:${String(r.args.p_request_key)}` : `${r.fn}:${String(r.args.p_entrega_id)}:${String(r.args.p_observed)}`;
+export const pendingKey = (actorId: string, orgId: string, r: Pick<RetrySnapshot, "fn" | "args">) => `${scopePrefix(actorId, orgId)}${attemptId(r)}`;
+type PendingStore = Pick<Storage, "getItem" | "key" | "length">;
 
-export function loadPending(store: Pick<Storage, "getItem">, actorId: string, orgId: string): RetrySnapshot | "corrupt" | null {
-  const raw = store.getItem(pendingKey(actorId, orgId));
-  if (raw === null) return null;
+const parseSlot = (raw: string, orgId: string, slot: string, actorId: string): RetrySnapshot | "corrupt" => {
   try {
     const v = JSON.parse(raw);
     if (!isObj(v) || (v.fn !== GROUP_RPC && v.fn !== CANCEL_RPC) || !isObj(v.args) || v.expectedOrg !== orgId) return "corrupt";
+    if (pendingKey(actorId, orgId, v as RetrySnapshot) !== slot) return "corrupt";
     return freeze(v as RetrySnapshot);
-  } catch {
-    return "corrupt";
-  }
+  } catch { return "corrupt"; }
+};
+
+/** All attempts of this actor+tenant, in stable key order; any unreadable slot is reported as corrupt (fail closed). */
+export function loadAllPending(store: PendingStore, actorId: string, orgId: string): (RetrySnapshot | "corrupt")[] {
+  const prefix = scopePrefix(actorId, orgId);
+  const keys: string[] = [];
+  for (let i = 0; i < store.length; i++) { const k = store.key(i); if (k && k.startsWith(prefix)) keys.push(k); }
+  return keys.sort().map(k => { const raw = store.getItem(k); return raw === null ? "corrupt" : parseSlot(raw, orgId, k, actorId); });
 }
 
-/** Must succeed before dispatch; a storage failure keeps the operation closed. */
+export function loadPending(store: PendingStore, actorId: string, orgId: string): RetrySnapshot | "corrupt" | null {
+  const all = loadAllPending(store, actorId, orgId);
+  if (all.includes("corrupt")) return "corrupt";
+  return all[0] ?? null;
+}
+
+/** Must succeed before dispatch; storage failure or a DISTINCT attempt already in this slot keeps the operation closed. */
 export function savePending(store: Pick<Storage, "setItem" | "getItem">, actorId: string, orgId: string, r: RetrySnapshot) {
-  const key = pendingKey(actorId, orgId);
+  const key = pendingKey(actorId, orgId, r);
   const raw = JSON.stringify(r);
+  const prev = store.getItem(key);
+  if (prev !== null && prev !== raw) throw new Error("Já existe uma tentativa diferente registrada para esta chave. Nenhuma alteração foi enviada.");
   store.setItem(key, raw);
   if (store.getItem(key) !== raw) throw new Error("Não foi possível reservar a recuperação local. Nenhuma alteração foi enviada.");
 }
 
-export function clearPending(store: Pick<Storage, "removeItem">, actorId: string, orgId: string) {
-  store.removeItem(pendingKey(actorId, orgId));
+/** Conditional: removes only if the slot still holds exactly this attempt. Returns whether it removed. */
+export function clearPending(store: Pick<Storage, "removeItem" | "getItem">, actorId: string, orgId: string, r: RetrySnapshot): boolean {
+  const key = pendingKey(actorId, orgId, r);
+  const { replayRejected: _ignored, ...base } = r;
+  const cur = store.getItem(key);
+  if (cur === null) return false;
+  try {
+    const v = JSON.parse(cur);
+    const { replayRejected: _x, ...vb } = isObj(v) ? v : {} as Record<string, unknown>;
+    if (JSON.stringify(vb) !== JSON.stringify(base)) return false;
+  } catch { return false; }
+  store.removeItem(key);
+  return true;
+}
+
+/**
+ * A refusal of the REPLAY (e.g. 42501 after revocation, PT409 after a CAS change) does not prove the original
+ * uncertain dispatch did not commit. Keep the attempt, mark it as needing authorized reconciliation, never clear
+ * it and never allow a new key. No rollback is inferred.
+ */
+export function markReplayRejected(store: Pick<Storage, "setItem" | "getItem">, actorId: string, orgId: string, r: RetrySnapshot, code: string): RetrySnapshot {
+  const key = pendingKey(actorId, orgId, r);
+  const cur = store.getItem(key);
+  const { replayRejected: _ignored, ...base } = r;
+  const marked = freeze({ ...base, replayRejected: code });
+  if (cur !== null) {
+    try {
+      const v = JSON.parse(cur); const { replayRejected: _x, ...vb } = isObj(v) ? v : {} as Record<string, unknown>;
+      if (JSON.stringify(vb) !== JSON.stringify(base)) return r; // distinct attempt: never overwrite
+    } catch { return r; }
+  }
+  store.setItem(key, JSON.stringify(marked));
+  return marked;
 }
