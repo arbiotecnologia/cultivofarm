@@ -2,14 +2,14 @@
 CREATE TABLE platform_private.envase_insert_permits_v1(
  txid bigint NOT NULL, actor uuid NOT NULL, organization_id uuid NOT NULL,
  action text NOT NULL, target uuid NOT NULL, lote uuid NOT NULL, os uuid NOT NULL,
- prog uuid NOT NULL, payload jsonb NOT NULL, PRIMARY KEY(txid,action,target));
+ prog uuid NOT NULL, payload jsonb NOT NULL, admitted boolean NOT NULL DEFAULT false, PRIMARY KEY(txid,action,target));
 REVOKE ALL ON platform_private.envase_insert_permits_v1 FROM PUBLIC,anon,authenticated,service_role;
 CREATE FUNCTION platform_private.envase_insert_guard_v1() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $entry$
 DECLARE p platform_private.envase_insert_permits_v1%ROWTYPE; c record; parent public.estoque_produto%ROWTYPE; a jsonb; org uuid;
 BEGIN
  IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;
- DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id RETURNING * INTO p;
+ UPDATE platform_private.envase_insert_permits_v1 SET admitted=true WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted=false RETURNING * INTO p;
  IF FOUND THEN
   IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
    OR NEW.lote_id IS DISTINCT FROM p.lote OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_INSERT_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
@@ -38,6 +38,22 @@ END $entry$;
 REVOKE ALL ON FUNCTION platform_private.envase_insert_guard_v1() FROM PUBLIC,anon,authenticated,service_role;
 CREATE TRIGGER a01_envase_insert_permit BEFORE INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
 CREATE TRIGGER a01_stock_insert_permit BEFORE INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_guard_v1();
+-- Consume only after every BEFORE normalizer and validator has produced the final row.
+CREATE FUNCTION platform_private.envase_insert_final_v1() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $final$
+DECLARE p platform_private.envase_insert_permits_v1%ROWTYPE;
+BEGIN
+ DELETE FROM platform_private.envase_insert_permits_v1 WHERE txid=txid_current() AND actor=auth.uid() AND action=TG_TABLE_NAME AND target=NEW.id AND admitted RETURNING * INTO p;
+ IF FOUND THEN
+  IF p.organization_id IS DISTINCT FROM platform_private.stock_envase_scope_v1(p.lote,p.prog,p.os,'manual')
+   OR (to_jsonb(NEW)-'created_at'-'updated_at') IS DISTINCT FROM p.payload THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISMATCH' USING ERRCODE='42501'; END IF;
+ ELSIF TG_TABLE_NAME='envase' THEN RAISE EXCEPTION 'ENVASE_FINAL_PERMIT_MISSING' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END $final$;
+REVOKE ALL ON FUNCTION platform_private.envase_insert_final_v1() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER a01_envase_final_permit AFTER INSERT ON public.envase FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1();
+CREATE TRIGGER a01_stock_final_permit AFTER INSERT ON public.estoque_produto FOR EACH ROW EXECUTE FUNCTION platform_private.envase_insert_final_v1();
 CREATE OR REPLACE FUNCTION public.rpc_cockpit_registrar_envase_v1(p_lote_id uuid, p_os_id uuid, p_origem text, p_programacao_id uuid, p_linhas jsonb, p_validade date, p_operador text DEFAULT NULL::text, p_idempotency_key text DEFAULT NULL::text, p_permitir_parcial boolean DEFAULT false, p_motivo_parcial text DEFAULT NULL::text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -201,7 +217,7 @@ BEGIN
     SELECT (resultado::text='aprovado') INTO v_cq_ok FROM public.controle_qualidade WHERE lote_id=p_lote_id ORDER BY created_at DESC,seq DESC LIMIT 1;
     IF coalesce(v_cq_ok,false) IS NOT TRUE THEN RAISE EXCEPTION 'ENVASE_FRESH_CQ_DENIED' USING ERRCODE='PT409'; END IF;
     v_envase_id:=gen_random_uuid();
-    INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'envase',v_envase_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_envase_id,'lote_id',p_lote_id,'tipo_embalagem',v_tipo,'volume_por_unidade',v_unit_ml,'quantidade',v_qtd,'data_envase',current_date,'operador',nullif(p_operador,''),'organization_id',v_org,'etiqueta_gerada',false,'etiqueta_id',NULL,'etiqueta_gerada_em',NULL,'etiqueta_gerada_por',NULL));
+    INSERT INTO platform_private.envase_insert_permits_v1(txid,actor,organization_id,action,target,lote,os,prog,payload) VALUES(txid_current(),v_uid,v_org,'envase',v_envase_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_envase_id,'lote_id',p_lote_id,'tipo_embalagem',v_tipo,'volume_por_unidade',v_unit_ml,'quantidade',v_qtd,'data_envase',current_date,'operador',nullif(p_operador,''),'organization_id',v_org,'etiqueta_gerada',false,'etiqueta_id',NULL,'etiqueta_gerada_em',NULL,'etiqueta_gerada_por',NULL));
     INSERT INTO public.envase (id,lote_id, tipo_embalagem, volume_por_unidade, quantidade, data_envase, operador, organization_id)
     VALUES (v_envase_id,p_lote_id, v_tipo::public.tipo_embalagem, v_unit_ml, v_qtd, current_date, nullif(p_operador, ''), v_org)
     RETURNING id INTO v_envase_id;
@@ -214,7 +230,7 @@ BEGIN
 
     IF v_reservadas > 0 THEN
       v_estoque_id:=gen_random_uuid();
-      INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'estoque_produto',v_estoque_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_estoque_id,'produto_id',v_produto_id,'microrganismo_id',v_micro_id,'lote_id',p_lote_id,'envase_id',v_envase_id,'quantidade',v_reservadas,'volume_total',(v_unit_ml*v_reservadas)/1000.0,'validade',p_validade,'status','reservado','reservado_para_os_id',p_os_id,'reservado_para_os_tipo',v_origem,'reservado_para_cliente_id',v_ctx.cliente_id,'reservado_para_partner_id',NULL,'reservado_para_partner_order_id',v_ctx.partner_order_id,'quantidade_reservada',v_reservadas,'reservado_por',v_uid,'reservado_em',now(),'expedido_por',NULL,'expedido_em',NULL,'observacao_reserva',NULL));
+      INSERT INTO platform_private.envase_insert_permits_v1(txid,actor,organization_id,action,target,lote,os,prog,payload) VALUES(txid_current(),v_uid,v_org,'estoque_produto',v_estoque_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_estoque_id,'produto_id',v_produto_id,'microrganismo_id',v_micro_id,'lote_id',p_lote_id,'envase_id',v_envase_id,'quantidade',v_reservadas,'volume_total',(v_unit_ml*v_reservadas)/1000.0,'validade',p_validade,'status','reservado','reservado_para_os_id',p_os_id,'reservado_para_os_tipo',v_origem,'reservado_para_cliente_id',v_ctx.cliente_id,'reservado_para_partner_id',NULL,'reservado_para_partner_order_id',v_ctx.partner_order_id,'quantidade_reservada',v_reservadas,'reservado_por',v_uid,'reservado_em',now(),'expedido_por',NULL,'expedido_em',NULL,'observacao_reserva',NULL));
       INSERT INTO public.estoque_produto (id,
         produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total,
         validade, status, reservado_para_os_id, reservado_para_os_tipo,
@@ -233,7 +249,7 @@ BEGIN
 
     IF v_livres > 0 THEN
       v_estoque_id:=gen_random_uuid();
-      INSERT INTO platform_private.envase_insert_permits_v1 VALUES(txid_current(),v_uid,v_org,'estoque_produto',v_estoque_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_estoque_id,'produto_id',v_produto_id,'microrganismo_id',v_micro_id,'lote_id',p_lote_id,'envase_id',v_envase_id,'quantidade',v_livres,'volume_total',(v_unit_ml*v_livres)/1000.0,'validade',p_validade,'status','disponivel','reservado_para_os_id',NULL,'reservado_para_os_tipo',NULL,'reservado_para_cliente_id',NULL,'reservado_para_partner_id',NULL,'reservado_para_partner_order_id',NULL,'quantidade_reservada',NULL,'reservado_por',NULL,'reservado_em',NULL,'expedido_por',NULL,'expedido_em',NULL,'observacao_reserva',NULL));
+      INSERT INTO platform_private.envase_insert_permits_v1(txid,actor,organization_id,action,target,lote,os,prog,payload) VALUES(txid_current(),v_uid,v_org,'estoque_produto',v_estoque_id,p_lote_id,p_os_id,p_programacao_id,jsonb_build_object('id',v_estoque_id,'produto_id',v_produto_id,'microrganismo_id',v_micro_id,'lote_id',p_lote_id,'envase_id',v_envase_id,'quantidade',v_livres,'volume_total',(v_unit_ml*v_livres)/1000.0,'validade',p_validade,'status','disponivel','reservado_para_os_id',NULL,'reservado_para_os_tipo',NULL,'reservado_para_cliente_id',NULL,'reservado_para_partner_id',NULL,'reservado_para_partner_order_id',NULL,'quantidade_reservada',NULL,'reservado_por',NULL,'reservado_em',NULL,'expedido_por',NULL,'expedido_em',NULL,'observacao_reserva',NULL));
       INSERT INTO public.estoque_produto (id,
         produto_id, microrganismo_id, lote_id, envase_id, quantidade, volume_total, validade, status
       ) VALUES (

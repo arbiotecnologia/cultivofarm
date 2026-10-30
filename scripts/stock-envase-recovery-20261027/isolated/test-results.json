@@ -301,9 +301,21 @@
       "status": "PASS"
     },
     {
+      "test": "owner fixture exact permit positive reaches tenant and volume guards",
+      "status": "PASS"
+    },
+    {
+      "test": "post-permit normalizer changed organization_id aborts exactly",
+      "status": "PASS"
+    },
+    {
+      "test": "post-permit normalizer changed quantidade aborts exactly",
+      "status": "PASS"
+    },
+    {
       "test": "execution",
       "status": "FAIL",
-      "error": "ERROR:  ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 6 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\n"
+      "error": "('post-permit normalizer changed volume_por_unidade aborts exactly', 'ERROR:  23514: new row for relation \"envase\" violates check constraint \"envase_embalagem_volume_coerente\"\\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000002804, 10000000-0000-4000-8000-000000002802, frasco_1L, 1001, 3, 2026-10-30, LOCAL, 2026-10-30 22:44:55.330707+00, f, null, null, null, 10000000-0000-4000-8000-000000000001).\\nSCHEMA NAME:  public\\nTABLE NAME:  envase\\nCONSTRAINT NAME:  envase_embalagem_volume_coerente\\nLOCATION:  ExecConstraints, execMain.c:2079\\n')"
     }
   ],
   "raw": [
@@ -491,13 +503,13 @@
       "test": "exact permit rejects changed organization_id",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 6 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "exact permit rejects changed lote_id",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 6 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "exact permit rejects changed id",
@@ -509,25 +521,25 @@
       "test": "exact permit rejects changed quantidade",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 6 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "exact permit rejects changed operador",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 6 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "exact permit rejects changed etiqueta_gerada",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 6 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "exact permit rejects changed volume_por_unidade",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 6 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  42501: ENVASE_INSERT_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_guard_v1() line 8 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "permit binds actor",
@@ -551,9 +563,27 @@
       "test": "permit binds root",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 6 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  42501: ENVASE_SCOPE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.stock_envase_scope_v1(uuid,uuid,uuid,text) line 10 at RAISE\nPL/pgSQL function platform_private.envase_insert_guard_v1() line 7 at IF\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "post-permit normalizer changed organization_id aborts exactly",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: tenant_scope_violation\nCONTEXT:  PL/pgSQL function public.guard_tenant_organization_id() line 15 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "post-permit normalizer changed quantidade aborts exactly",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: ENVASE_FINAL_PERMIT_MISMATCH\nCONTEXT:  PL/pgSQL function platform_private.envase_insert_final_v1() line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "post-permit normalizer changed volume_por_unidade aborts exactly",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  23514: new row for relation \"envase\" violates check constraint \"envase_embalagem_volume_coerente\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000002804, 10000000-0000-4000-8000-000000002802, frasco_1L, 1001, 3, 2026-10-30, LOCAL, 2026-10-30 22:44:55.330707+00, f, null, null, null, 10000000-0000-4000-8000-000000000001).\nSCHEMA NAME:  public\nTABLE NAME:  envase\nCONSTRAINT NAME:  envase_embalagem_volume_coerente\nLOCATION:  ExecConstraints, execMain.c:2079\n"
     }
   ],
-  "elapsed_seconds": 161.535,
+  "elapsed_seconds": 164.38,
   "exit_code": 1
 }
