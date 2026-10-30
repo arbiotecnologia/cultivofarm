@@ -24719,6 +24719,7 @@ export type Database = {
         Args: { p_entrega_id: string; p_template_versao?: string }
         Returns: Json
       }
+      rpc_entrega_operacoes_capability_v1: { Args: never; Returns: Json }
       rpc_entrega_reconciliar_v1: {
         Args: { p_entrega_id: string; p_idempotency_key: string }
         Returns: Json
