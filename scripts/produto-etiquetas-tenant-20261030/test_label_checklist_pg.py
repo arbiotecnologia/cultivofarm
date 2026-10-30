@@ -62,7 +62,8 @@ STATE = f"""SELECT jsonb_build_object(
  'triggers',(SELECT jsonb_agg(jsonb_build_array(tgrelid::regclass::text,tgname,tgenabled) ORDER BY 1,2) FROM pg_trigger WHERE NOT tgisinternal AND tgrelid IN ('public.produto_etiquetas'::regclass,'public.lotes'::regclass,'public.entrega_checklist'::regclass,'public.entrega_ocorrencias'::regclass)),
  'fns',(SELECT jsonb_object_agg(p.oid::regprocedure::text, md5(pg_get_functiondef(p.oid))||'|'||coalesce(p.proacl::text,'')) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
    WHERE (n.nspname='public' AND p.proname IN {FNS}) OR (n.nspname='platform_private' AND p.proname IN ('h15_actor_organization','has_role','produto_etiqueta_root_org_v1'))))"""
-def state(): return json.loads(last(STATE + "::text;"))
+def state():
+    d = json.loads(last(STATE + "::text;")); d["triggers"] = sorted(d["triggers"] or [], key=lambda t: tuple(x.encode() for x in t)); return d
 def check_sql(expected, code):
     lit = json.dumps(expected).replace("'", "''")
     return f"DO $c$ BEGIN\n IF ({STATE}) IS DISTINCT FROM '{lit}'::jsonb THEN RAISE EXCEPTION '{code}'; END IF;\nEND $c$;\n"
