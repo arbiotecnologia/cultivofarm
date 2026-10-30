@@ -139,6 +139,33 @@ def main():
     sql("CREATE TRIGGER a00_delivery_transition BEFORE UPDATE OF status ON public.local_order_guard_probe FOR EACH ROW EXECUTE FUNCTION platform_private.delivery_order_transition_guard_20261030();")
     deny('delivery transition barrier precedes any auto billing trigger',f"BEGIN;INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action) VALUES(txid_current(),'{U}','{A}','group'); UPDATE public.local_order_guard_probe SET status='entregue'; COMMIT;",'DELIVERY_B2B_TRANSITION_CLOSED')
     check('final no context no billing fiscal messages', 'SELECT (SELECT count(*) FROM platform_private.delivery_context_20261030)=0 AND '+ ' AND '.join(f'(SELECT count(*) FROM public.{t})=0' for t in tables)+';')
+    # Own tenant B positive, same caller key as A: separate immutable namespaces.
+    sql('SET session_replication_role=replica;'+f"INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{u(40)}','{B}','{PROD}','aprovado','LOCAL-B-OWN',100); INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{u(41)}','{u(40)}','{PROD}',10,10,'disponivel'); SET session_replication_role=origin;")
+    # Retain A's original observed request; B's first request has different objects.
+    observed.pop('first-group')
+    print('TENANT B',sql(actor(V)+call('first-group',[{'item_id':u(41),'quantidade':2}],os=P)),flush=True)
+    check('same request key tenants separated no collision',"SELECT count(*)=2 FROM platform_private.delivery_requests_20261030 WHERE action='group' AND request_key='first-group';")
+    deny('B cannot replay A cancel result',actor(V)+f"SELECT public.rpc_entrega_cancelar_v1('{ent}','local');",'DELIVERY_SCOPE_DENIED')
+    deny('GUC spoof cannot cancel directly',actor()+f"SET app.entrega_cancelamento_id='{ent}'; UPDATE public.entregas SET status='cancelada' WHERE id<>(SELECT id FROM public.entregas WHERE id='{ent}') AND organization_id='{A}';",'ENTREGA_CANCELAMENTO_EXIGE_RPC')
+    deny('direct stock mutation remains ACL closed',actor()+f"UPDATE public.estoque_produto SET quantidade=500 WHERE id='{S}';",'permission denied')
+    deny('private context cannot be minted by caller',actor()+f"INSERT INTO platform_private.delivery_context_20261030(txid,actor,organization_id,action) VALUES(txid_current(),'{U}','{A}','cancel');",'permission denied')
+    # Same global gate used by the independent batch motor; real concurrent oversell.
+    sql('SET session_replication_role=replica;'+f"INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{u(50)}','{A}','{PROD}','aprovado','LOCAL-OVERSELL',100); INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{u(51)}','{u(50)}','{PROD}',10,10,'disponivel'); SET session_replication_role=origin;")
+    one=actor()+call('oversell-one',[{'item_id':u(51),'quantidade':7}]);two=actor()+call('oversell-two',[{'item_id':u(51),'quantidade':7}])
+    holder=session('BEGIN;'+one);time.sleep(.15);worker=session(two);wait();finish(holder,'COMMIT;');out,err=finish(worker)
+    assert 'DELIVERY_OBSERVED_CONFLICT' in err,err+out
+    checks.append({'test':'actual concurrent oversell second stale CAS denied','status':'PASS'})
+    check('oversell balance conserved no negatives',f"SELECT sum(quantidade)=10 AND min(quantidade)>=0 AND count(*) FILTER(WHERE status='expedido')=1 FROM public.estoque_produto WHERE lote_id='{u(50)}';")
+    # Negative child ACK through result corruption at its persisted receipt, no motor stub.
+    sql("CREATE FUNCTION public.local_bad_ack() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN NEW.result=jsonb_set(NEW.result,'{ok}','false'); RETURN NEW; END$$;CREATE TRIGGER zz_bad_ack BEFORE INSERT ON platform_private.stock_batch_requests FOR EACH ROW EXECUTE FUNCTION public.local_bad_ack();")
+    snap=sql("SELECT jsonb_build_array((SELECT count(*) FROM public.entregas),(SELECT count(*) FROM public.estoque_movimentacoes),(SELECT count(*) FROM public.estoque_produto),(SELECT count(*) FROM platform_private.stock_batch_requests))::text;")
+    # Reserve RPC returns local result, not stored receipt: receipt corruption may not alter ACK.
+    attempt=pg.sql(actor()+call('ack-negative',[{'item_id':S,'quantidade':1}]),False)
+    if 'DELIVERY_RESERVE_ACK_INVALID' in attempt:
+        checks.append({'test':'negative child ACK rolls back group','status':'PASS'})
+    else:
+        checks.append({'test':'negative ACK fault-injection does not affect returned child envelope','status':'BLOCKED','error':attempt})
+    sql('DROP TRIGGER zz_bad_ack ON platform_private.stock_batch_requests;')
 
 if __name__=='__main__':
     try: main()
