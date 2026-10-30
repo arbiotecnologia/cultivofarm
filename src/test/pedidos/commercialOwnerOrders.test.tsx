@@ -15,6 +15,7 @@ const state = vi.hoisted(() => ({
   org: "22222222-2222-4222-8222-222222222222",
   rpcMode: "allowed" as "allowed" | "denied" | "absent" | "error",
   roles: ["administrador"] as string[],
+  active: true,
   adminRows: [] as unknown[],
   ownerRows: [] as unknown[],
   channels: [] as string[],
@@ -22,7 +23,7 @@ const state = vi.hoisted(() => ({
   rpc: vi.fn(), table: vi.fn(), writes: vi.fn(),
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({
-  user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.org, ativo: true, senha_provisoria: false },
+  user: { id: state.actor }, profile: { user_id: state.actor, organization_id: state.org, ativo: state.active, senha_provisoria: false },
   role: state.roles[0], roles: state.roles, loading: false, authzReady: true, authzEpoch: 0,
   checkAuthzAccess: () => true, signOut: vi.fn(),
 }) }));
@@ -99,7 +100,7 @@ function rpcError(code: string, message: string) {
 
 beforeEach(() => {
   Object.assign(state, {
-    org: state.orgA, rpcMode: "allowed" as const, roles: ["administrador"],
+    org: state.orgA, rpcMode: "allowed" as const, roles: ["administrador"], active: true,
     adminRows: [] as unknown[], ownerRows: [ORDER_ROW] as unknown[],
     channels: [] as string[], channelCallbacks: [] as Array<{ name: string; filter: { table?: string }; cb: () => void }>,
   });
@@ -269,4 +270,23 @@ it("resposta estrangeira no refresh elimina carteira anterior sem fallback diret
   screen.getByRole("button", { name: "Atualizar" }).click();
   await waitFor(() => expect(screen.queryByText("PB-001029")).toBeNull());
   expect(state.writes).not.toHaveBeenCalled();
+});
+
+it("papéis mistos continuam dependentes da negação do servidor, sem carteira estrangeira", async () => {
+  state.roles = ["administrador", "parceiro_b2b"];
+  state.org = state.orgB;
+  state.rpcMode = "denied";
+  mount();
+  await waitFor(() => expect(state.rpc.mock.calls.some(([name]) => name === "c2_commercial_owner_orders_projection")).toBe(true));
+  expect(screen.queryByText("PB-001029")).toBeNull();
+  expect(state.writes).not.toHaveBeenCalled();
+});
+
+it("perfil inativo não inicia leitura da carteira ou adota registros", async () => {
+  state.active = false;
+  mount();
+  await screen.findByText("Nenhum pedido encontrado.");
+  expect(state.rpc).not.toHaveBeenCalled();
+  expect(state.table).not.toHaveBeenCalled();
+  expect(screen.queryByText("PB-001029")).toBeNull();
 });
