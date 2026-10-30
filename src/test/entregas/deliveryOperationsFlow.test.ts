@@ -139,7 +139,7 @@ describe("ACK, tenant and outcomes", () => {
     expect(out).toMatchObject({ status: "confirmed", ack: { replay: true } });
     expect((rpc as any).mock.calls[1]).toEqual([GROUP_RPC, retry.args]);
     let n = 0;
-    expect(await replayUncertain(rpc, retry, parserFor(retry), () => { if (++n > 2) throw new Error("scope"); })).toEqual({ status: "stale" });
+    expect(await replayUncertain(rpc, retry, parserFor(retry), () => { if (++n > 3) throw new Error("scope"); })).toEqual({ status: "stale" });
   });
   it("replay with revoked capability stays uncertain without dispatch", async () => {
     const rpc = rpcWith({ [CAPABILITY_RPC]: { data: { ...cap, group: false }, error: null } });
