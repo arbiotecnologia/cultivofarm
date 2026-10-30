@@ -106,11 +106,11 @@ def main():
     check('private context removed on success',"SELECT count(*)=0 FROM platform_private.delivery_context_20261030;")
     # Real two-connection waits, not timers pretending to establish concurrency.
     for lockkind in ['advisory','row']:
-        locksql=(f"SELECT pg_advisory_xact_lock(hashtextextended('delivery_request:'||jsonb_build_array('{A}'::uuid,'{U}'::uuid,'group','first-group')::text,0));" if lockkind=='advisory' else f"SELECT 1 FROM public.ordens_servico WHERE id='{O}' FOR UPDATE;")
+        locksql=(f"SELECT pg_advisory_xact_lock(hashtextextended('delivery_request:'||jsonb_build_array('{A}'::uuid,'{U}'::uuid,'group','first-group')::text,0));" if lockkind=='advisory' else f"SELECT 1 FROM cf_user_guards_v1.state FOR UPDATE; SELECT 1 FROM public.ordens_servico WHERE id='{O}' FOR UPDATE;")
         holder=session('BEGIN;'+locksql);time.sleep(.1)
         worker=session(actor()+call('first-group'));wait()
-        sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{U}';")
-        finish(holder,'COMMIT;');out,err=finish(worker)
+        if lockkind=='advisory':sql(f"UPDATE public.profiles SET ativo=false WHERE user_id='{U}';")
+        finish(holder,(f"UPDATE public.profiles SET ativo=false WHERE user_id='{U}';" if lockkind=='row' else '')+'COMMIT;');out,err=finish(worker)
         assert any(code in err for code in ['DELIVERY_ACTOR_DENIED','DELIVERY_SCOPE_CHANGED','ESTQ_IDENTIDADE_INATIVA']),err+out
         checks.append({'test':'revocation after '+lockkind+' wait before replay','status':'PASS'});print('PASS revocation',lockkind,flush=True)
         sql(f"UPDATE public.profiles SET ativo=true WHERE user_id='{U}';")
