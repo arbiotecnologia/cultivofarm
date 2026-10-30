@@ -121,7 +121,7 @@ RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET 
 DECLARE v_org uuid; v_actor uuid:=auth.uid(); v_os public.ordens_servico%ROWTYPE;
  v_item jsonb; v_id uuid; v_qty numeric; v_items jsonb:='[]'; v_fp text;
  v_prev platform_private.delivery_requests_20261030%ROWTYPE; v_batch jsonb; v_call jsonb;
- v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz;
+ v_result jsonb:='[]'; v_index integer:=0; v_ent uuid; v_reserved uuid; v_current timestamptz; v_original_client uuid;
 BEGIN
  v_org:=platform_private.delivery_actor_20261030('group');
  IF p_origem IS DISTINCT FROM 'manual' OR p_os_id IS NULL THEN RAISE EXCEPTION 'DELIVERY_ORIGIN_CLOSED' USING ERRCODE='42501'; END IF;
@@ -133,6 +133,7 @@ BEGIN
  SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org;
  IF NOT FOUND OR v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'agronomica' THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  IF v_os.updated_at IS DISTINCT FROM p_os_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
+ v_original_client:=v_os.cliente_id;
  FOR v_item IN SELECT value FROM jsonb_array_elements(p_itens) LOOP
   IF jsonb_typeof(v_item)<>'object' OR NOT(v_item ? 'item_id' AND v_item ? 'quantidade' AND v_item ? 'observed_updated_at') OR v_item->>'observed_updated_at' IS NULL OR EXISTS(SELECT 1 FROM jsonb_each(v_item) WHERE key NOT IN ('item_id','quantidade','observed_updated_at')) THEN RAISE EXCEPTION 'DELIVERY_ITEMS_INVALID' USING ERRCODE='22023'; END IF;
   v_id:=(v_item->>'item_id')::uuid; v_qty:=(v_item->>'quantidade')::numeric;
@@ -147,6 +148,7 @@ BEGIN
  PERFORM platform_private.delivery_gate_20261030(v_org,'group');
  SELECT * INTO v_os FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org FOR UPDATE;
  IF NOT FOUND OR v_os.partner_order_id IS NOT NULL OR v_os.origem IS DISTINCT FROM 'agronomica' THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
+ IF v_os.cliente_id IS DISTINCT FROM v_original_client OR v_os.updated_at IS DISTINCT FROM p_os_observed THEN RAISE EXCEPTION 'DELIVERY_OBSERVED_CONFLICT' USING ERRCODE='PT409'; END IF;
  PERFORM 1 FROM public.clientes WHERE id=v_os.cliente_id AND organization_id=v_org FOR SHARE;
  IF NOT FOUND THEN RAISE EXCEPTION 'DELIVERY_SCOPE_DENIED' USING ERRCODE='42501'; END IF;
  FOR v_item IN SELECT value FROM jsonb_array_elements(v_items) LOOP

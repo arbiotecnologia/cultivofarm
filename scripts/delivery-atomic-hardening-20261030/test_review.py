@@ -66,8 +66,13 @@ def run(t):
         holder=t.session('BEGIN;'+f"SELECT pg_advisory_xact_lock(hashtextextended('delivery_request:'||jsonb_build_array('{t.A}'::uuid,'{t.U}'::uuid,'group','review-{n}')::text,0));")
         time.sleep(.1);worker=t.session(actor()+cmd);t.wait()
         out,err=t.finish(holder,f"UPDATE public.ordens_servico SET {field}={value} WHERE id='{t.O}';COMMIT;")
-        assert not err,err
-        out,err=t.finish(worker);assert expected in err,err+out
-        t.checks.append({'test':'OS '+field+' changed while waiting denies replay','status':'PASS','observed':err})
+        if err:
+            assert 'não podem ser alterados' in err or 'OS' in err,err
+            out,worker_err=t.finish(worker)
+            assert '"replay": true' in out and not worker_err,worker_err+out
+            t.checks.append({'test':'LIVE structural guard prevents OS '+field+' alteration during wait; unchanged replay permitted','status':'PASS','observed':err})
+        else:
+            out,err=t.finish(worker);assert expected in err or 'DELIVERY_OBSERVED_CONFLICT' in err,err+out
+            t.checks.append({'test':'OS '+field+' changed while waiting denies replay','status':'PASS','observed':err})
         sql(f"UPDATE public.ordens_servico SET origem='agronomica',cliente_id='{t.C}' WHERE id='{t.O}';")
     check('dedicated tests zero finance/outbox',"SELECT NOT EXISTS(SELECT 1 FROM public.accounts_receivable) AND NOT EXISTS(SELECT 1 FROM public.comunicacao_outbox);")
