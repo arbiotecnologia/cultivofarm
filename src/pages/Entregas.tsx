@@ -128,7 +128,7 @@ export default function Entregas() {
     if (!captured()) throw new Error("Contexto de entrega indisponível.");
     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");
     if (pendingRef.current && target !== "replay") throw new Error("Há um envio anterior com resultado incerto. Use \"Repetir envio pendente\" (mesma chave e mesmas revisões) antes de qualquer novo envio.");
-    if (unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");
+    if (target !== "replay" && unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");
     const ticket = Symbol(target);
     operation.current = ticket;
     let expired = false;
@@ -657,6 +657,7 @@ export default function Entregas() {
       // Exact frozen args: same request key and same observed revisions; never a new CAS or new key.
       const outcome = await replayUncertain(supabase.rpc.bind(supabase) as unknown as Rpc, p, parserFor(p), check, () => dispatch());
       settlePending(outcome);
+      if (outcome.status === "confirmed" || outcome.status === "rejected") unresolved.current.delete(deliveryScope.scope);
       if (outcome.status === "confirmed") return true;
       if (outcome.status === "rejected") throw new Error(`Repetição recusada pelo servidor (${outcome.code}); o envio pendente foi encerrado sem confirmação. ${outcome.message}`);
       throw new Error("Repetição ainda sem resultado confirmado. O envio pendente permanece bloqueando novos envios.");

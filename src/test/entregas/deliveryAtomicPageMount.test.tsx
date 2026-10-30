@@ -154,6 +154,17 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     expect(localStorage.getItem(pendingKey)).not.toBeNull();
     h.qc.clear();
   });
+  it("same-mount uncertain result can be settled by the exact replay button", async () => {
+    t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: null, error: { code: "57014", message: "timeout" } });
+    const h = mount();
+    await act(async () => { await t.submit(payload()).catch(() => {}); });
+    const stored = JSON.parse(localStorage.getItem(pendingKey) as string);
+    t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: { ...groupAck, replay: true }, error: null });
+    fireEvent.click(await screen.findByRole("button", { name: "Repetir envio pendente" }));
+    await waitFor(() => expect(localStorage.getItem(pendingKey)).toBeNull());
+    expect(writerCalls().at(-1)?.[1]).toEqual(stored.args);
+    h.qc.clear();
+  });
   it("definitive PT409 clears the reservation", async () => {
     t.rpc.mockImplementation(async (fn: string) => fn === CAPABILITY_RPC ? { data: cap, error: null } : { data: null, error: { code: "PT409", message: "DELIVERY_OBSERVED_CONFLICT" } });
     const h = mount();
