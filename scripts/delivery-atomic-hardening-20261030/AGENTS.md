@@ -3,3 +3,4 @@
 - Candidate delivery composition preserves independent stock batches and all financial/fiscal flags; reject downstream title/document/outbox effects transactionally rather than disabling triggers.
 - Authorization derives active actor and tenant server-side, revalidates after every wait and before replay, and excludes external actors; private receipts never grant authority.
 - Rollback is deny-only, preserves history and never restores vulnerable definitions or grants private helpers to clients.
+- Generate split recomposition exclusively as a hash-pinned canonical motor delta using its private context and immutable ledger; keep the retired split row and unique index — avoids bypassing stock guards or deleting history.

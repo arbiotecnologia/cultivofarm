@@ -104,13 +104,26 @@
     "expected": "DELIVERY_SCOPE_DENIED"
   },
   {
-    "test": "cancel split collision reproduced; operational blocker retained",
-    "status": "BLOCKED",
-    "error": "ERROR:  duplicate key value violates unique constraint \"estoque_produto_lote_legado_unico_idx\"\nDETAIL:  Key (lote_id)=(10000000-0000-4000-8000-000000000009) already exists.\nCONTEXT:  SQL statement \"UPDATE public.estoque_produto SET status='disponivel' WHERE id=p_item_id\"\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 121 at SQL statement\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text) line 36 at assignment\n"
+    "test": "cancel failure after return ledger atomically rolls back",
+    "status": "PASS",
+    "expected": "LOCAL_CANCEL_FAULT"
   },
   {
     "test": "failed cancel rolls back reversal stock delivery and receipt",
     "status": "PASS"
+  },
+  {
+    "test": "canonical split merge keeps unique index source history and main balance",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel exact replay",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel changed reason replay denied",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
   },
   {
     "test": "no downstream titles fiscal outbox",
@@ -167,5 +180,54 @@
   {
     "test": "final no context no billing fiscal messages",
     "status": "PASS"
+  },
+  {
+    "test": "same request key tenants separated no collision",
+    "status": "PASS"
+  },
+  {
+    "test": "B cannot replay A cancel result",
+    "status": "PASS",
+    "expected": "DELIVERY_SCOPE_DENIED"
+  },
+  {
+    "test": "GUC spoof cannot cancel directly",
+    "status": "PASS",
+    "expected": "ENTREGA_CANCELAMENTO_EXIGE_RPC"
+  },
+  {
+    "test": "direct stock mutation remains ACL closed",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "private context cannot be minted by caller",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "actual concurrent oversell second stale CAS denied",
+    "status": "PASS"
+  },
+  {
+    "test": "oversell balance conserved no negatives",
+    "status": "PASS"
+  },
+  {
+    "test": "negative child ACK rolls back group",
+    "status": "PASS"
+  },
+  {
+    "test": "negative receipt ACK leaves every effect unchanged",
+    "status": "PASS"
+  },
+  {
+    "test": "final financial fiscal outbox empty after concurrency",
+    "status": "PASS"
+  },
+  {
+    "test": "independent real batch versus group stock wait succeeds batch and rejects stale group without deadlock",
+    "status": "PASS",
+    "observed": "ERROR:  DELIVERY_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamp with time zone) line 47 at RAISE\n"
   }
 ]

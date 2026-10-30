@@ -21,6 +21,17 @@ def metadata():
     old.update({k:extra[k] for k in ('schemas','enums','roles')})
     old['enums'] = [x for x in old['enums'] if x['schema'] in {s['name'] for s in old['schemas']}]
     old['constraints'] = [x for x in old['constraints'] if not x['definition'].startswith('TRIGGER')]
+    supplement=json.loads((H/'capture/restore-supplement.json').read_text())
+    for key,values in supplement.items():
+        values=values or []
+        if key=='functions':
+            names={(x['schema'],x['name']) for x in values}
+            old[key]=[x for x in old[key] if (x['schema'],x['name']) not in names]+values
+        elif key=='sequences':
+            names={(x['schema'],x['name']) for x in values}
+            old[key]=[x for x in old[key] if (x['schema'],x['name']) not in names]+values
+        else:
+            old[key]=old.get(key,[])+values
     return old
 
 def restore():
