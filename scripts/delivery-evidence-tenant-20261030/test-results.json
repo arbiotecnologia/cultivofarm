@@ -87,16 +87,27 @@
         "fsf_reparent_own_to_arbio": "ok:0"
       },
       "entrega_etiquetas": {
-        "x_ins": "err:insert or update on table \"entrega_etiquetas\" violates foreign key constraint \"entrega_etiquetas_etiqueta_id_fkey\"",
+        "x_ins": "ok:inserted",
         "x_upd": "ok:1",
         "x_del": "ok:0",
-        "own_ins": "err:insert or update on table \"entrega_etiquetas\" violates foreign key constraint \"entrega_etiquetas_etiqueta_id_fkey\"",
+        "own_ins": "ok:inserted",
         "own_upd": "ok:1",
         "own_del": "ok:0",
         "reparent_to_fsf": "ok:1",
         "reparent_to_null_org": "ok:1",
         "fsf_reparent_own_to_arbio": "ok:1"
       }
+    }
+  },
+  {
+    "test": "BEFORE: mixed pair (own entrega + foreign label) insert and cross-tenant label swap SUCCEED with valid IDs; FK error only for nonexistent ID",
+    "status": "PASS",
+    "mixed": {
+      "own_entrega_foreign_label_ins": "ok:inserted",
+      "own_entrega_own_label_ins": "ok:inserted",
+      "swap_own_link_to_foreign_label": "ok:1",
+      "fsf_own_entrega_arbio_label_ins": "ok:inserted",
+      "fk_bogus_label_ins": "err:insert or update on table \"entrega_etiquetas\" violates foreign key constraint \"entrega_etiquetas_etiqueta_id_fkey\""
     }
   },
   {
@@ -177,7 +188,18 @@
     "expected": "permission denied"
   },
   {
-    "test": "AFTER write matrix: every cross-tenant/reparent op affects 0 rows or is denied; same-tenant outcomes identical to BEFORE",
+    "test": "AFTER: label link INSERT/UPDATE closed for clients (mixed pair and swap denied by RLS, not FK); reads unchanged",
+    "status": "PASS",
+    "mixed": {
+      "own_entrega_foreign_label_ins": "rls",
+      "own_entrega_own_label_ins": "rls",
+      "swap_own_link_to_foreign_label": "ok:0",
+      "fsf_own_entrega_arbio_label_ins": "rls",
+      "fk_bogus_label_ins": "rls"
+    }
+  },
+  {
+    "test": "AFTER write matrix: every cross-tenant/reparent op affects 0 rows or is denied; same-tenant outcomes identical to BEFORE except label link INSERT/UPDATE intentionally closed",
     "status": "PASS",
     "after": {
       "entrega_checklist": {
@@ -239,12 +261,12 @@
         "x_ins": "rls",
         "x_upd": "ok:0",
         "x_del": "ok:0",
-        "own_ins": "err:insert or update on table \"entrega_etiquetas\" violates foreign key constraint \"entrega_etiquetas_etiqueta_id_fkey\"",
-        "own_upd": "ok:1",
+        "own_ins": "rls",
+        "own_upd": "ok:0",
         "own_del": "ok:0",
-        "reparent_to_fsf": "rls",
-        "reparent_to_null_org": "rls",
-        "fsf_reparent_own_to_arbio": "rls"
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
       }
     }
   },
