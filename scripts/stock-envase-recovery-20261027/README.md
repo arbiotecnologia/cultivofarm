@@ -98,3 +98,6 @@ Somente depois vêm CAS, status, cliente e estado do estoque do envio novo. A ch
   - Isso só ocorre com quem trava a linha diretamente, o que clientes não podem fazer. Três writers legados `service_role` (`reservar_estoque_item`, `rpc_cockpit_cancelar_reserva_v1`, criação `/5`) travam a linha sem gate; o `/5` só é chamado dentro do grupo, que já tem o gate.
 - `test_proof_with_v2.py`: **103 PASS / 0 FAIL**. Restaura os artefatos do pacote de comprovação que ele reescreve.
 - **Falha corrigida no harness:** `test_atomic_with_proof.py` (pacote de comprovação) lia `test-results.json` gravado só sob `__main__`, ou seja, um arquivo possivelmente antigo. Os wrappers novos gravam os checks da própria execução. O total antigo daquele wrapper não deve ser tomado como prova.
+
+## Fixture canônica de ponta a ponta (preparação)
+Ver `FIXTURE-PIPELINE-MANIFEST.md`: script `fixture-arbio-pipeline.sql.review` (não executado hosted) e ensaio `test_pipeline_pg.py` com 26 PASS / 0 FAIL, cobrindo OS aberta até entrega por writers canônicos. É teste com claims, não JWT de navegador. Pré-condições: referência CQ global existente e produto biológico. Decisão: aceitar o aviso interno de laboratório.
