@@ -1,54 +1,42 @@
-# Envase manual isolado — preparação, NÃO LIBERÁVEL ainda
+# Envase manual isolado — pacote revisável final
 
-Base local inicial: `2faf35638` (ancestral de `894ae9db6`). Aplicações `91cec22`/`2faf` são relatos do proprietário, não verificações hosted desta execução. **Nenhum acesso hosted, sessão/segredo produtivo, grant produção, publicação ou fixture real foi executado.** A referência cancelada `d7edc250-25a4-4ee2-8b62-27c1645cdfc0` não foi acessada/alterada.
+Base desta continuação: `d8b50cd6a684b1ba0c758d6b7ffdd9b2c25ed2f6`. Sem acesso hosted, sessão/segredo produtivo, implantação, publicação ou GRANT em produção. Aplicações anteriores são relatos do auditor. A entrega cancelada de referência não foi acessada ou reutilizada.
 
-## Delta mínimo já implementado
-- Somente corpo da assinatura canônica de envase + capability específica somente leitura. Motor/batch/grupo, guards CQ/lote, permissões e efeitos downstream não são reinstalados.
-- Corrige `FOUND` sobrescrito entre lock do singleton e validação; ausência do gate gera PT503 antes de escrita.
-- Chave obrigatória; fingerprint suplementar inclui operador, motivo, ator, empresa e argumentos completos. Recibos históricos não são alterados: os que não têm fingerprint completo recusam repetição com `ENVASE_LEGACY_RECEIPT_REVIEW_REQUIRED`, conservando o resultado anterior.
-- Replay reautoriza e não exige validade futura; escrita nova exige validade e OS `em_cq/envase` observada após lock. Nova chave em OS pronta não produz envase adicional.
-- Capability exata vincula ator/empresa/lote/OS/programação e só informa disponível quando ACL da assinatura canônica está aberta. Disponibilidade do endpoint inclui reconciliação após OS pronta; status de escrita nova permanece exclusivo do writer sob lock. Não concede autoridade; corpo reautoriza.
-- Leitura definitiva do contexto/demanda movida para depois dos locks OS→programação→lote. Fonte v2 validada por SHA256 exato e extração com cardinalidade um.
-- Cliente reutiliza tentativa incerta congelada; adiciona epoch/readiness/roles/session fence compartilhado e trava síncrona durante preflight+dispatch. Nenhuma capability ausente/errada abre o writer.
-- Botões de registro/complemento permanecem desabilitados nesta preparação. Provas e histórico cancelado ficam intactos.
-- Auditoria21:52 incorporada: estado/CQ fresco antes de cada envase e encerramento, tenant pós-wait igual ao tenant inicialmente bloqueado. CQ atual bloqueado FOR SHARE; isso não prova cooperação de novos CQ concorrentes.
+## Escopo e resultado
+**119 PASS / 0 FAIL no PostgreSQL 17 descartável, 470 PASS / 28 arquivos Vitest e 3 PASS de ordenação.** Build automático observado OK; **typecheck separado não verificável nos logs disponíveis**, logo não certificamos esse item nem GO de implantação. O release mínimo está pronto para revisão independente, não aplicado. Não identificada falha funcional conhecida nos cenários executados; não é certificação JWT/RLS/Storage real.
 
-## Fechamento legado separado
-`legacy-closure-{candidate,install,preflight,postflight,rollback}.sql.review`: PRE exige o POST exato do delta envase desta pasta. Portanto **não aplicar isoladamente sobre a produção anterior**. Delta exclusivamente REVOKE cliente; corpos, grants service e todas as demais funções permanecem iguais. Rollback repete a negação, sem regrant. POST verifica ACL efetiva, inclusive herdada, de authenticated/anon.
-- `rpc_confirmar_recebimento_entrega(uuid,jsonb)`: o UPDATE de entregas sem permit encontra a barreira privada e aborta transacionalmente pelo código; fechamento ACL adicional é defesa em profundidade, não liberação.
-- `rpc_desvincular_etiqueta_entrega(uuid,uuid,text)` e `rpc_vincular_etiqueta_embalagem(uuid,uuid)`: escrevem tabelas irmãs e não dependem necessariamente da barreira de entregas. Não existe assinatura capturada `rpc_vincular_etiqueta_entrega`; não inventada.
-- Fontes: `capture/current.json` do atomic, corpos MD5 respectivamente `f05682aacbaee0a74bd1dc484ba293e0`, `8bc7ac4cd8159efa3e5370d0ff10a0e0`, `e40dabcdc439fc35507e85133a5074b0`. Escopo da closure não inclui expansão de dispensa nem contratos físicos.
-- Baseline produção informado pela auditoria: envase MD5 `6ed411371beeaa39736ffb8caf8ca5b7`; recebíveis5/MD5 `9c1f86a6ccec0f8c233d17994294af12`; fiscal false/false/false/null e autofinance false. **Informação externa, não recapturada nem usada como fixture/PRE; zero acesso hosted nesta execução.**
+Somente envase manual canônico novo. B2B/OnFarm, confirmação física, embalagens pós-envase, etiquetas/vínculos, dispensa, financeiro/fiscal/cobranças e automações continuam fora da liberação. Group/cancel e estoque independente existentes foram exercitados e preservados.
 
-## Artefatos e guardas
-`install`, `preflight`, `postflight`, `rollback`, `release`, `candidate`, `state` `.sql.review`, `pre-state.json`, `post-state.json`, `sources.json`, `SHA256SUMS`, resultados e logs brutos.
-Estado completo dos corpos de funções public/private, ACL, owner/config, colunas, constraints, RLS/policies e definições/enabled de triggers relevantes. Ordenação por colunas explícitas `COLLATE "C"`; nada de contagens ou agregado `ORDER BY 1,2`. O PRE é derivado da restauração local exata dos instaladores relatados aplicados; o auditor precisa comparar com LIVE canônico. Corpo diferente ou função adicional também aborta: conservador, não equivalente a captura atual hosted.
+## Correções e contrato
+- Guarda do singleton imediatamente após lock; chave obrigatória e fingerprint integral com operador/motivo/ator/tenant. Recibos legados sem fingerprint retornam PT409 `ENVASE_LEGACY_RECEIPT_REVIEW_REQUIRED`, sem regravar ou duplicar história; não inferimos os dois recibos reais relatados.
+- Contexto/demanda depois dos locks OS→programação→lote; reautorização e status/CQ frescos antes de cada mutação e replay. Somente READ COMMITTED; REPEATABLE READ e SERIALIZABLE negados com 0A000.
+- Permit por linha/txid/ator/root: organização explícita no INSERT, admissão BEFORE e igualdade da imagem final AFTER, consumo único. Excluídos apenas created_at/updated_at. GUC do logger não autoriza INSERT.
+- Split do motor preservado pelo contexto privado existente, sem reinstalar motor/batch/group ou seus grants. Reservas de fabricação exigem raiz correspondente; estoque independente sem programação permanece no contrato canônico existente.
+- Gates aditivos nas tabelas de autoridade/root/estoque usam singleton FOR UPDATE NOWAIT. NÃO concedem autoridade. Mantidos gates existentes de perfil/papel/convite.
+- **Corrida real inicialmente revelou 40P01**. Corrigida: DML com prelock agora recebe **55P03**, desfaz a transação e libera o envase sem deadlock. Disponibilidade sob concorrência significa recusa segura, não sucesso garantido. Nenhum retry automático. Locks de relação/DDL ainda podem produzir conflitos legítimos; owners que desativam triggers/replica não são contidos por triggers.
+- Registro no Cockpit depende de capability exata vinculada ao escopo; hook repete preflight imediatamente antes de dispatch. Mounted tests cobrem ausência/negação/erro, sessão/tenant/roles/epoch/unmount e envio único. Botão de complemento da página permanece fechado: complemento após OS pronta não está aberto pelo writer; não foi implicitamente liberado.
 
-`release.sql.review` **recusa aplicação com 42501**; não contém GRANT do writer. `install` mantém a ACL fechada. Rollback revoga a assinatura canônica, capability retorna indisponível e preserva corpos endurecidos/histórico/grupo/cancelamento/prova.
+## Instalação, release e rollback
+1. `preflight.sql.review` / `install.sql.review` / `postflight.sql.review`: endurecimento mantendo writer fechado.
+2. `legacy-closure-{preflight,install,postflight}.sql.review`: somente REVOKE cliente de receipt/desvincular/vincular embalagem; depende do POST exato do passo 1, preserva corpos/service grants.
+3. `release-preflight.sql.review` / `release.sql.review` / `release-postflight.sql.review`: PRE exige install + closure exatos; **único GRANT de writer é EXECUTE authenticated na assinatura canônica de envase**. Capability de consulta instalada no passo 1 não concede autoridade.
+4. `rollback.sql.review`: aceita catálogos exatos instalado/fechado/liberado, revoga writer e fecha capability; mantém guards, receipts, history, proof/group/cancel. Closure rollback nunca regranta.
 
-## Testes desta execução (não resultados históricos)
-- PostgreSQL17 descartável em socket `/tmp`: **38 PASS / 0 FAIL**. Restaurador de metadata real sem objetos pendentes; oito instaladores com PRE/POST, ordem em `sources.json`. Fixtures upstream sintéticas em replica pelo harness existente; writers testados com triggers ligados e ROLE authenticated/claims sintéticas, nunca service_role como ator.
-- Novos testes: NULL key, motivo divergente, recibo legado intacto após PT409, três closures cliente42501/POST exato. Terminal `finalizada` durante espera observada no lock OS nega o envio parcial antes de escrita; CQ reprovado durante espera observada no lote também nega. Mudanças upstream usam replica como seam explícita, não provam autoridade/cooperação desses writers; a OS já fica travada antes de esperar programação/lote.
-- Instalação/POST forçado/rerun/drift; gate ausente; chave ausente; produção AR positiva; FSF estrangeira 42501; replay/operador/nova chave/status; ator inativo; falha ledger com rollback; concorrência duas conexões uma gravação/um replay; **worker observado em wait_event_type=Lock** no lote antes do commit da inativação, negação 42501 sem envase; gerar/assinar/anexar/replay preservados na composição.
-- Financeiro/fiscal/outbox: comparações de conteúdo de linhas, não apenas counts, antes/depois de envase. As dez tabelas estão vazias na fixture: **não prova proteção de UPDATE de sentinelas existentes**, lacuna explícita para release.
-- Vitest entregas+envase: **457 PASS / 28 arquivos**, transporte simulado; recorte novo disponibilidade/epoch/cancelada **64 PASS**. Avisos de descrição de dialogs/React Router presentes, não erros de teste.
-- Três falhas antigas em `stock-caller-compatibility.test.ts` foram reproduzidas pelo investigador: expectativas de expedição/estorno/implementação antiga incompatíveis com contenção atual. Não se removeu contenção nem se declarou suíte global verde.
-- Ordenação determinística: três testes unittest PASS. Build automático observado OK; nenhum build/typecheck manual. Revisão independente identificou capability bloqueando replay e contexto antes do lock: corrigidos e PG repetido. Limites adicionais da revisão permanecem listados abaixo.
+Os estados completos pinam corpos/ACL/owners/config, relações/RLS/policies/colunas/constraints/triggers; incluem estrutura privada dos permits e singleton. Ordem por colunas explícitas COLLATE C. O PRE antigo cc690cf aprovado read-only **não vale para estes pins ampliados**: auditor precisa repetir PRE atual no ref canônico `swzpzcwiasxmjutrmvkm`. Sem validação do ref, não operar. Nada usa Lovable Cloud.
 
-Comandos:
-```text
-python3 scripts/stock-envase-recovery-20261027/isolated/test_pg.py
-python3 scripts/stock-envase-recovery-20261027/isolated/test_order.py
-bun run test -- src/test/entregas src/test/envase
-```
+## Evidências executadas
+- Restauração integral das capturas/migrations reais e oito instaladores relatados: zero objetos pendentes. Ordem/hashes das fontes em `sources.json`.
+- Adulterações de organização/lote/id/quantidade/operador/etiqueta/volume, ator/txid/ação/root: 42501 estrito, snapshots preservados. Mutação pós-permit também aborta; sem aceitar FK/enum/unique como prova.
+- Revogação perfil/papel/tenant/SaaS durante locks, CQ/status terminal, demanda concorrente, partial/override e motivo divergente, replay, falha item N/ledger/timeout e integridade de recibos. Seams replica são somente bootstrap/mudanças simuladas upstream, **não prova de cooperação**.
+- Cooperação sem replica: statement gates (inclusive zero linhas) e **RPCs reais de aprovação/programação/lote/CQ em contenção**, recusados 55P03 com snapshot igual. Positivos e replay dos mesmos corpos/restauração preservados.
+- Cadeia completa aprovação→programação→lote/evento→CQ aprovado→envase/estoque/pronto_entrega realizada por RPCs com triggers ligados e authenticated sintético. Referência CQ local fictícia, nenhuma especificação produtiva inventada. CQ reprovado também registrado/repetido e envase negado pelo erro canônico.
+- Reserva split por motor/batch, alvo ledger distinto do pai, conservação de quantidade/volume e replay sem mutations. Grupo e cancelamento observado/replay preservados em entrega criada localmente; gerar formulário/assinar/anexar mantidos.
+- Quatorze tabelas financeiras/fiscais/outbox com sentinelas existentes: conteúdo integral antes/depois igual, não apenas contagens. Replay pós-validade usa seam de relógio explicitamente registrada; não é passagem real do tempo nem hosted proof.
+- 470 testes de entrega/envase; não alegamos suíte global verde. Falhas históricas fora do recorte não foram mascaradas. Avisos React Router/Dialog não são FAIL.
 
-## Blockers de release / etapas posteriores
-1. Completar matriz de revogação DURANTE locks para papel, empresa e SaaS; inativação de perfil, terminal OS e CQ foram demonstrados em esperas específicas. Cancelamento canônico concorrente, CQ/feature writers e isolamento REPEATABLE READ/cooperação de locks ainda precisam prova.
-2. Entrada estoque ainda utiliza contexto de logger por GUC legado. Não é autorização, mas spoof e writers indiretos de entrada precisam fechamento/prova canônica antes de grant; não inventar ticket CQ ou abrir helper.
-3. Cobertura/reserva da conclusão privada instalada depende de invariantes por OS. Provar tenant/lote/programação e estados de estoque com sentinelas conflitantes; helpers não alterados neste delta.
-4. Financeiro/fiscal/outbox com sentinelas existentes, rollback de item N/timeout/POST, matrizes AR/FSF própria/mista/null/inativa e pós-validade real precisam ampliação. PASS atual não certifica estes cenários.
-5. Vínculos de etiquetas e RPC pós-envase `rpc_criar_embalagens_pos_envase` exigem contratos independentes de lineage/tickets/ledger. Confirmação física permanece contida; não habilitar por envase. Dispensa NÃO expandida.
-6. JWT/RLS/Storage/browser reais, preflight LIVE e implantação ficam com auditor após revisão. Nesta rodada nenhum fluxo autenticado produtivo foi exercitado; frontend verificado por testes montados, não navegador autenticado.
-7. Replay pós-validade, partial/override positivo e demanda alterada durante espera exigem testes adicionais. Recibo legado e motivo divergente agora testados, mas reconciliação autorizada do legado ainda pendente. Concorrência mesma chave prova um envase e replay, não um inventário exaustivo de cada lançamento. A mudança de demanda está corrigida por ordem do código, não certificada por corrida dedicada.
+## Logs e limites
+`pg-run.log.txt`, `test-results.json` (inclui stderr/raw de negativos/corridas), `vitest.log.txt`, `order.log.txt`, `build.log.txt`, `typecheck.log.txt`, `frontend.diff.txt`, `sources.json`, `SHA256SUMS`.
 
-**Escopo liberável agora: nenhum novo writer.** Escopo implementado revisável: correções de envase e bloqueios/fences; group/cancel já relatados liberados preservados. Financeiro/fiscal/automações/cobranças permanecem fechados.
+Comandos locais: `python3 scripts/stock-envase-recovery-20261027/isolated/test_pg.py`; `python3 scripts/stock-envase-recovery-20261027/isolated/test_order.py`; `bun run test -- src/test/entregas src/test/envase`. Builds/typechecks manuais são proibidos pelo ambiente; build foi validado pelo harness automático. Typecheck não possui evidência separada: pendência de validação, não uma alegação de PASS.
+
+**Pendências externas:** revisão dos artefatos exatos, PRE/POST LIVE e sessão JWT/RLS/Storage/browser pelo auditor, evidência separada de typecheck. Nenhuma implantação autorizada nesta execução. Nenhuma decisão comercial humana nova foi necessária para corrigir os defeitos locais.
