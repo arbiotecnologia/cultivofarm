@@ -25,6 +25,7 @@ def candidate():
     matches = re.findall(r'CREATE OR REPLACE FUNCTION public.rpc_cockpit_registrar_envase_v1\(.*?\$function\$;', src, re.S)
     assert len(matches)==1, 'ENVASE_SOURCE_CARDINALITY'
     body = matches[0]
+    body = one(body,'BEGIN\n  PERFORM platform_private.stock_envase_scope_v1',"BEGIN\n  IF current_setting('transaction_isolation') <> 'read committed' THEN RAISE EXCEPTION 'ENVASE_ISOLATION_UNSUPPORTED' USING ERRCODE='0A000'; END IF;\n  PERFORM platform_private.stock_envase_scope_v1")
     body = one(body, "  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;\n  PERFORM platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem);\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;", "  PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;\n IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;")
     body = one(body, '  -- idempotência: LOCK primeiro, leitura definitiva depois (claim atômico)', "  IF p_idempotency_key IS NULL OR length(btrim(p_idempotency_key)) < 8 OR length(p_idempotency_key)>200 THEN RAISE EXCEPTION 'ENVASE_KEY_REQUIRED' USING ERRCODE='22023'; END IF;\n  -- idempotência: LOCK primeiro, leitura definitiva depois (claim atômico)")
     # Preserve already committed receipts/fingerprints; add a second, exact full-payload digest
@@ -47,6 +48,17 @@ def candidate():
 """
     body = one(body,ctx,'')
     body = one(body,'  IF v_lote_status IS NULL THEN',ctx+'\n  IF v_lote_status IS NULL THEN')
+    roots = """  IF v_lote_status IS DISTINCT FROM 'aprovado' THEN RAISE EXCEPTION 'ENVASE_APPROVED_LOT_REQUIRED' USING ERRCODE='PT409'; END IF;
+  IF (SELECT count(*) FROM public.programacao_producao WHERE ordem_servico_id=p_os_id OR ordem_servico_onfarm_id=p_os_id)<>1
+   OR (SELECT count(*) FROM public.lotes WHERE programacao_id=p_programacao_id)<>1
+   OR EXISTS(SELECT 1 FROM public.production_order_link WHERE ordem_servico_id=p_os_id) THEN RAISE EXCEPTION 'ENVASE_ROOT_AMBIGUOUS' USING ERRCODE='42501'; END IF;
+  IF EXISTS(SELECT 1 FROM public.estoque_produto s WHERE s.reservado_para_os_id=p_os_id AND s.status::text<>'estornado' AND
+   (s.organization_id IS DISTINCT FROM v_org OR s.lote_id IS DISTINCT FROM p_lote_id OR s.produto_id IS DISTINCT FROM v_produto_id OR s.microrganismo_id IS DISTINCT FROM v_micro_id
+    OR s.reservado_para_os_tipo IS DISTINCT FROM 'manual' OR s.reservado_para_cliente_id IS DISTINCT FROM v_ctx.cliente_id OR s.reservado_para_partner_order_id IS NOT NULL
+    OR s.status::text IS DISTINCT FROM 'reservado' OR s.quantidade_reservada IS DISTINCT FROM s.quantidade OR s.volume_total<=0 OR s.volume_total::text IN ('NaN','Infinity','-Infinity'))) THEN
+    RAISE EXCEPTION 'ENVASE_RESERVATION_LINEAGE_DENIED' USING ERRCODE='42501'; END IF;
+"""
+    body = one(body,'  SELECT coalesce(sum(coalesce(volume_por_unidade,0)',roots+'\n  SELECT coalesce(sum(coalesce(volume_por_unidade,0)')
     fresh = """    IF platform_private.stock_envase_scope_v1(p_lote_id,p_programacao_id,p_os_id,p_origem) IS DISTINCT FROM v_org THEN RAISE EXCEPTION 'ENVASE_SCOPE_CHANGED' USING ERRCODE='42501'; END IF;
     IF NOT EXISTS(SELECT 1 FROM public.ordens_servico WHERE id=p_os_id AND organization_id=v_org AND status::text IN ('em_cq','envase')) THEN RAISE EXCEPTION 'ENVASE_FRESH_STATE_DENIED' USING ERRCODE='PT409'; END IF;
     SELECT (resultado::text='aprovado') INTO v_cq_ok FROM public.controle_qualidade WHERE lote_id=p_lote_id ORDER BY created_at DESC,seq DESC LIMIT 1 FOR SHARE;
