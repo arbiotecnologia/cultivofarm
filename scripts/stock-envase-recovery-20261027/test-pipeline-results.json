@@ -36,19 +36,27 @@
     "status": "PASS"
   },
   {
+    "test": "client without TESTE SEM VALOR COMERCIAL marker: PRE stops, no notice",
+    "status": "PASS"
+  },
+  {
     "test": "in-app notification not accepted: whole pipeline rolled back (no OS, no notification, grants closed)",
+    "status": "PASS"
+  },
+  {
+    "test": "approved internal notice only: nova_demanda_producao and message marked TESTE SEM VALOR COMERCIAL",
     "status": "PASS"
   },
   {
     "test": "canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento",
     "status": "PASS",
     "ids": {
-      "os": "5821c56a-0261-4498-bd7c-83d6f4e79d1a",
-      "lote": "7cd18774-df28-46e7-b455-c4af2f10df8f",
-      "entrega": "80638de2-e6f8-4daf-98b9-c032d7bf56e3",
-      "estoque": "83307d0e-639c-4141-a887-899f5b5a212c",
-      "programacao": "cb5824e6-b1c1-4343-b92e-b8923bfa3ae2",
-      "request_key": "fixture-5821c56a-0261-4498-bd7c-83d6f4e79d1a"
+      "os": "13abca80-c538-42b8-905a-3f441c64877f",
+      "lote": "98d655e0-f456-4557-841f-9d4a7feadd3e",
+      "entrega": "d4cd8b05-4ad6-4eed-a843-6e6490644bea",
+      "estoque": "6db7fcaa-19f1-42cb-8cdc-7758c17ce522",
+      "programacao": "3ba5dc01-3e71-40f2-b842-4f15e64a3ab3",
+      "request_key": "fixture-13abca80-c538-42b8-905a-3f441c64877f"
     }
   },
   {

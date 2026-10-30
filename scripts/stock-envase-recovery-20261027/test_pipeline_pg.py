@@ -47,7 +47,7 @@ def master_data():
     INSERT INTO public.organizations(id,nome) VALUES('{ORG}','LOCAL AR BIO'),('{ORGB}','LOCAL FSF TENANT');
     INSERT INTO public.profiles(user_id,organization_id,nome,ativo,senha_provisoria) VALUES('{ADM}','{ORG}','LOCAL ADMIN AR BIO',true,false),('{ADMB}','{ORGB}','LOCAL ADMIN FSF',true,false);
     INSERT INTO public.user_roles(user_id,role) VALUES('{ADM}','administrador'),('{ADMB}','administrador');
-    INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{CLI}','{ORG}','LOCAL CLIENTE AR BIO','LOCAL-PIPE-A'),('{CLIB}','{ORGB}','LOCAL CLIENTE FSF','LOCAL-PIPE-B');
+    INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{CLI}','{ORG}','LOCAL CLIENTE AR BIO TESTE SEM VALOR COMERCIAL','LOCAL-PIPE-A'),('{CLIB}','{ORGB}','LOCAL CLIENTE FSF','LOCAL-PIPE-B');
     INSERT INTO public.fazendas(id,organization_id,cliente_id,nome) VALUES('{FAZ}','{ORG}','{CLI}','LOCAL A'),('{FAZB}','{ORGB}','{CLIB}','LOCAL B');
     INSERT INTO public.talhoes(id,organization_id,fazenda_id,nome,area_hectares) VALUES('{TAL}','{ORG}','{FAZ}','LOCAL A',1),('{TALB}','{ORGB}','{FAZB}','LOCAL B',1);
     INSERT INTO public.produtos(id,nome,tipo,ativo,familia_catalogo) VALUES('{PROD}','LOCAL BIO TESTE SEM VALOR COMERCIAL','inoculante',true,'biologico');
@@ -85,6 +85,10 @@ def main():
     assert counts() == c0 and last(GRANTS) == 'false/false/false'; ok('FSF admin with AR Bio org: PRE stops, nothing written')
     rc, out, err = fixture(cliente=CLIB, fazenda=FAZB, talhao=TALB); assert rc != 0 and 'FIXTURE_PRE_CLIENT_SCOPE' in err, err[-800:]
     ok('FSF client/farm with AR Bio org: PRE stops')
+    sql(f"UPDATE public.clientes SET nome='LOCAL CLIENTE AR BIO' WHERE id='{CLI}';")
+    rc, out, err = fixture(); assert rc != 0 and 'FIXTURE_PRE_CLIENT_NOT_TEST_MARKED' in err, err[-800:]
+    assert counts() == c0 and last("SELECT count(*) FROM public.notificacoes_operacionais;") == '0'; ok('client without TESTE SEM VALOR COMERCIAL marker: PRE stops, no notice')
+    sql(f"UPDATE public.clientes SET nome='LOCAL CLIENTE AR BIO TESTE SEM VALOR COMERCIAL' WHERE id='{CLI}';")
     # In-app side effect not accepted -> full rollback.
     rc, out, err = fixture(accept_inapp='false'); assert rc != 0 and 'FIXTURE_POST_INAPP_NOTIFICATION_NOT_ACCEPTED' in err, err[-800:]
     assert counts() == c0 and last("SELECT count(*) FROM public.notificacoes_operacionais;") == '0' and last(GRANTS) == 'false/false/false'
@@ -93,6 +97,8 @@ def main():
     f0 = fin()
     rc, out, err = fixture()
     assert rc == 0, (out + err)[-3000:]
+    assert last("SELECT count(*) FROM public.notificacoes_operacionais WHERE mensagem NOT LIKE '%TESTE SEM VALOR COMERCIAL%' OR tipo<>'nova_demanda_producao';") == '0' and int(last("SELECT count(*) FROM public.notificacoes_operacionais;")) >= 1
+    ok('approved internal notice only: nova_demanda_producao and message marked TESTE SEM VALOR COMERCIAL')
     ids = json.loads(re.search(r'FIXTURE_IDS (\{.*\})', err).group(1)); print('IDS', json.dumps(ids), flush=True)
     ok('canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento', ids=ids)
     os = ids['os']
