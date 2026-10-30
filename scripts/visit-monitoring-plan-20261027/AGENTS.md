@@ -4,3 +4,4 @@
 - Local PostgreSQL uses synthetic Auth and reduced schema; full hosted trigger/RLS integration and real sessions remain unverified — prevents false homologation.
 - Display comes from the authorized workspace, independently of drafts; confirmed saves retire observed revisions and definitive rejection requires explicit re-read/confirmation, while uncertain attempts keep their key — prevents stale second saves and unsafe rebasing.
 - Validate time-dependent dates in Sao Paulo only after authorized receipt replay — preserves historical idempotency.
+- (Moved from root AGENTS.md) Generic visit monitoring plans follow scripts/visit-monitoring-plan-20261027/AGENTS.md: preserve the textual plan and a derived visit notice, never invent agronomic alert types; private receipts and observed version CAS keep atomic replay independent of writable audit logs — prevents unrelated climate capture and forged replay.

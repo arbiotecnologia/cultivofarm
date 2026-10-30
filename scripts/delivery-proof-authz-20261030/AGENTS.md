@@ -6,3 +6,5 @@
 - Release = release-combined.sql.review (atomic + proof in one transaction, legacy writers kept as hardened adapters for cached frontends), then the frontend; never ship barrier and proof separately.
 - Rollback is deny-only and keeps receipts and barrier; closes new RPCs and legacy adapters; B2B/OnFarm proofs, financial/fiscal effects and automations stay closed.
 - Runners are bounded individually (run_bounded.py); synthetic claims on disposable PG are not hosted JWT/RLS/Storage proof.
+
+- (Moved from root AGENTS.md) Delivery proof (form/signature/attachment) follows scripts/delivery-proof-authz-20261030/AGENTS.md; it ships in one backend transaction with the atomic barrier and hardened legacy adapters before the frontend, and clients never delete proof objects — prevents broken windows, cross-tenant proof writes and loss of concurrently linked files.

@@ -4,3 +4,5 @@
 - Finance authority is internal-only and read afresh in READ COMMITTED after waits; external/cumulative partner or producer roles and unreviewed origins deny — prevents supplier-finance elevation.
 - Rollback replaces only these bodies with deny-only implementations and retains ACL; never restore vulnerable captured LIVE definitions — prevents BOLA recurrence.
 - Local PostgreSQL/Auth/schema tests are simulated; JWT/RLS and full installed-trigger integration require independent canonical-environment proof — prevents false certification.
+
+- (Moved from root AGENTS.md) Delivery-finance A2 follows scripts/delivery-finance-a2-20261028/AGENTS.md; proposed internal-only bodies preserve immutable installments and exact metadata pins, with deny-only rollback and no operational release — prevents BOLA and unreviewed transitive activation.
