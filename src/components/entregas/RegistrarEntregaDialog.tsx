@@ -55,6 +55,13 @@ export type RegistrarEntregaSubmit = {
   endereco_uf: string;
   endereco_cep: string;
   endereco_referencia: string;
+  /** Revisions observed when the OS/lots were first selected in this dialog; never refreshed at submit. */
+  observed: DeliveryObservedSnapshot;
+};
+
+export type DeliveryObservedSnapshot = {
+  os: { id: string; type: string; updated_at: string | null; origem: string | null; partner_order_id: string | null } | null;
+  itens: Record<string, { updated_at: string | null; status: string | null }>;
 };
 
 interface Props {
@@ -93,9 +100,13 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
   const [mostrarTodosLotes, setMostrarTodosLotes] = useState(false); // override para exibir lotes fora do escopo da OS
   const [overrideConfirmado, setOverrideConfirmado] = useState<Set<string>>(new Set()); // ids de estoque_produto liberados manualmente
   const [pendingOverrideId, setPendingOverrideId] = useState<string | null>(null);
+  const observedItens = useRef(new Map<string, { updated_at: string | null; status: string | null }>());
+  const observedOs = useRef<DeliveryObservedSnapshot["os"]>(null);
 
   useEffect(() => {
     if (!open) {
+      observedItens.current = new Map();
+      observedOs.current = null;
       setOsSelecionada("");
       setLinhas([]);
       setTipoEntrega("motorista");
@@ -185,6 +196,18 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
     });
   };
 
+  // Snapshot per lot on first selection; later list refreshes never rebase it.
+  useEffect(() => {
+    const m = observedItens.current;
+    const ids = new Set(linhas.map((l) => l.estoque_produto_id));
+    for (const k of [...m.keys()]) if (!ids.has(k)) m.delete(k);
+    for (const l of linhas) {
+      if (m.has(l.estoque_produto_id)) continue;
+      const it = itensSelecionaveis.find((i) => i.id === l.estoque_produto_id);
+      if (it) m.set(it.id, { updated_at: it.updated_at ?? null, status: it.status ?? null });
+    }
+  }, [linhas, itensSelecionaveis]);
+
   const itensSelecionados = useMemo(
     () =>
       linhas
@@ -216,6 +239,14 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
     (todasOS as any[]).find((o) => o.id === osEfetivaId) ||
     (osExtra?.id === osEfetivaId ? osExtra : null);
 
+  useEffect(() => {
+    if (!osEfetiva || observedOs.current?.id === osEfetiva.id) return;
+    observedOs.current = {
+      id: osEfetiva.id, type: (osEfetiva as any).type || "padrao", updated_at: (osEfetiva as any).updated_at ?? null,
+      origem: (osEfetiva as any).origem ?? null, partner_order_id: (osEfetiva as any).partner_order_id ?? null,
+    };
+  }, [osEfetiva]);
+
   // Se a OS (reservada ou vinda do cockpit) não estiver em todasOS, busca sob demanda.
   useEffect(() => {
     const alvo = osEfetivaId || osInicial;
@@ -226,7 +257,7 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
     (async () => {
       const { data: p } = await supabase
         .from("ordens_servico")
-        .select("id, numero_os, status, cliente_id, origem, partner_order_id, clientes(nome, codigo_cliente), produtos(nome), partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))")
+        .select("id, numero_os, status, updated_at, cliente_id, origem, partner_order_id, clientes(nome, codigo_cliente), produtos(nome), partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))")
         .eq("id", alvo)
         .maybeSingle();
       if (cancelled) return;
@@ -360,6 +391,10 @@ export function RegistrarEntregaDialog({ open, onOpenChange, itensSelecionaveis,
       hora_chegada_prevista: horaChegadaPrevista,
       endereco_origem: enderecoOrigem,
       ...destinatario,
+      observed: {
+        os: observedOs.current && observedOs.current.id === osEfetiva.id ? { ...observedOs.current } : null,
+        itens: Object.fromEntries(observedItens.current),
+      },
     });
   };
 
