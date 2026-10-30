@@ -188,8 +188,155 @@
     "expected": "permission denied"
   },
   {
-    "test": "execution stopped at concrete failure",
-    "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 225, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-evidence-tenant-20261030/test_evidence_tenant_pg.py\", line 185, in main\n    assert not any(diff.values()), diff\n           ^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'entrega_checklist': {'x_upd': ('E42501', 'ok:0', 'E42501'), 'x_del': ('E42501', 'ok:0', 'E42501')}, 'entrega_ocorrencias': {'x_upd': ('E42501', 'ok:0', 'E42501'), 'x_del': ('E42501', 'ok:0', 'E42501')}, 'entrega_documentos': {}, 'entrega_conferencia_itens': {}, 'entrega_reconciliacoes': {}, 'entrega_etiquetas': {}}\n"
+    "test": "AFTER: label link INSERT/UPDATE closed for clients (mixed pair and swap denied by RLS, not FK); reads unchanged",
+    "status": "PASS",
+    "mixed": {
+      "own_entrega_foreign_label_ins": "E42501",
+      "own_entrega_own_label_ins": "E42501",
+      "swap_own_link_to_foreign_label": "ok:0",
+      "fsf_own_entrega_arbio_label_ins": "E42501",
+      "fk_bogus_label_ins": "E42501"
+    }
+  },
+  {
+    "test": "AFTER write matrix equals exact expected SQLSTATE/rowcount table (42501, documented 23514 reparent trigger, or 0 rows; no FK/unique/other); same-tenant outcomes identical to BEFORE except label link INSERT/UPDATE intentionally closed",
+    "status": "PASS",
+    "after": {
+      "entrega_checklist": {
+        "x_ins": "E42501",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "E42501",
+        "own_upd": "E42501",
+        "own_del": "E42501",
+        "reparent_to_fsf": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "reparent_to_null_org": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "fsf_reparent_own_to_arbio": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
+      },
+      "entrega_ocorrencias": {
+        "x_ins": "E42501",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "E42501",
+        "own_upd": "E42501",
+        "own_del": "E42501",
+        "reparent_to_fsf": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "reparent_to_null_org": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas.",
+        "fsf_reparent_own_to_arbio": "E23514:N\u00e3o \u00e9 permitido transferir evid\u00eancias entre entregas."
+      },
+      "entrega_documentos": {
+        "x_ins": "E42501",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "ok:inserted",
+        "own_upd": "ok:0",
+        "own_del": "ok:1",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      },
+      "entrega_conferencia_itens": {
+        "x_ins": "E42501",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "E42501",
+        "own_upd": "ok:0",
+        "own_del": "ok:0",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      },
+      "entrega_reconciliacoes": {
+        "x_ins": "E42501",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "E42501",
+        "own_upd": "ok:0",
+        "own_del": "ok:0",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      },
+      "entrega_etiquetas": {
+        "x_ins": "E42501",
+        "x_upd": "ok:0",
+        "x_del": "ok:0",
+        "own_ins": "E42501",
+        "own_upd": "ok:0",
+        "own_del": "ok:0",
+        "reparent_to_fsf": "ok:0",
+        "reparent_to_null_org": "ok:0",
+        "fsf_reparent_own_to_arbio": "ok:0"
+      }
+    }
+  },
+  {
+    "test": "AFTER all 6: FSF admin/financeiro, inactive AR Bio admin read 0; org-NULL parent invisible; cross-tenant DELETE 0 rows and TRUNCATE denied",
+    "status": "PASS"
+  },
+  {
+    "test": "AFTER same-tenant reads (AR Bio admin own, FSF admin own) per table",
+    "status": "PASS",
+    "own": {
+      "entrega_checklist": [
+        1,
+        1
+      ],
+      "entrega_ocorrencias": [
+        1,
+        1
+      ],
+      "entrega_documentos": [
+        1,
+        1
+      ],
+      "entrega_conferencia_itens": [
+        1,
+        1
+      ],
+      "entrega_reconciliacoes": [
+        1,
+        1
+      ],
+      "entrega_etiquetas": [
+        1,
+        1
+      ]
+    }
+  },
+  {
+    "test": "AFTER linked AR Bio client still reads own checklist/ocorrencias",
+    "status": "PASS"
+  },
+  {
+    "test": "FSF admin generate on AR Bio delivery denied by writer",
+    "status": "PASS",
+    "expected": "DELIVERY_PROOF_SCOPE_DENIED"
+  },
+  {
+    "test": "canonical sign + attach + replay work in installed composition; owner reads result",
+    "status": "PASS"
+  },
+  {
+    "test": "canonical proof generate works with barrier (AR Bio sees proof+checklist); FSF sees no AR Bio checklist",
+    "status": "PASS"
+  },
+  {
+    "test": "zero finance/fiscal/outbox/communication rows",
+    "status": "PASS"
+  },
+  {
+    "test": "anon has no access",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "after rollback TRUNCATE still denied",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "rollback narrows to false (never drops/regrants); no cross-tenant access restored; writers still work",
+    "status": "PASS"
   }
 ]

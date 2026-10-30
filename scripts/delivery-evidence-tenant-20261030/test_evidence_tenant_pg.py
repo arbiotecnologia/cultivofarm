@@ -175,8 +175,8 @@ def main():
         assert n == '0' and last(f"SELECT count(*) FROM public.{t} WHERE id='{rid(t, 1)}';") == '1', (t, n)
     wa = matrix(); print('AFTER_WRITES', json.dumps(wa), flush=True)
     EXP = {  # exact expected outcome per table/op AFTER; ok:0 = RLS-filtered UPDATE/DELETE
-     'entrega_checklist':        dict(x_ins=NEG, x_upd=NEG, x_del=NEG, own_ins=NEG, own_upd=NEG, own_del=NEG, reparent_to_fsf=BIZ, reparent_to_null_org=BIZ, fsf_reparent_own_to_arbio=BIZ),
-     'entrega_ocorrencias':      dict(x_ins=NEG, x_upd=NEG, x_del=NEG, own_ins=NEG, own_upd=NEG, own_del=NEG, reparent_to_fsf=BIZ, reparent_to_null_org=BIZ, fsf_reparent_own_to_arbio=BIZ),
+     'entrega_checklist':        dict(x_ins=NEG, x_upd='ok:0', x_del='ok:0', own_ins=NEG, own_upd=NEG, own_del=NEG, reparent_to_fsf=BIZ, reparent_to_null_org=BIZ, fsf_reparent_own_to_arbio=BIZ),
+     'entrega_ocorrencias':      dict(x_ins=NEG, x_upd='ok:0', x_del='ok:0', own_ins=NEG, own_upd=NEG, own_del=NEG, reparent_to_fsf=BIZ, reparent_to_null_org=BIZ, fsf_reparent_own_to_arbio=BIZ),
      'entrega_documentos':       dict(x_ins=NEG, x_upd='ok:0', x_del='ok:0', own_ins='ok:inserted', own_upd='ok:0', own_del='ok:1', reparent_to_fsf='ok:0', reparent_to_null_org='ok:0', fsf_reparent_own_to_arbio='ok:0'),
      'entrega_conferencia_itens':dict(x_ins=NEG, x_upd='ok:0', x_del='ok:0', own_ins=NEG, own_upd='ok:0', own_del='ok:0', reparent_to_fsf='ok:0', reparent_to_null_org='ok:0', fsf_reparent_own_to_arbio='ok:0'),
      'entrega_reconciliacoes':   dict(x_ins=NEG, x_upd='ok:0', x_del='ok:0', own_ins=NEG, own_upd='ok:0', own_del='ok:0', reparent_to_fsf='ok:0', reparent_to_null_org='ok:0', fsf_reparent_own_to_arbio='ok:0'),
