@@ -29,7 +29,7 @@ def run():
     sources=[]
     for p in installs:
         sources.append({'file':str(p.relative_to(S.parent)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}); sql(p.read_text())
-    for p in [V2/'candidate-v2.sql.review',H/'assemble.py',H/'test_pg.py']:
+    for p in [V2/'candidate-v2.sql.review']+sorted(H.glob('*.py'))+ [H/'entry.sql.review']:
         sources.append({'file':str(p.relative_to(S.parent)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
     (H/'sources.json').write_text(json.dumps(sources,indent=2)+'\n'); ok('reported applied composition restored in order; all installer PRE/POST pass')
     T.setup_v2()
@@ -56,7 +56,7 @@ def run():
     reject('rerun refuses changed exact state',inst,'P0001')
     def cap(): return f"SELECT public.rpc_envase_capability_v1('{T.L2}','{T.O2}','{T.PP2}','manual');"
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is False; ok('capability unavailable while canonical writer ACL closed')
-    reject('release artifact remains explicitly NO-GO',(H/'release.sql.review').read_text(),'42501')
+    reject('unqualified release stub denies before matrix generates reviewed release',(H/'release.sql.review').read_text(),'42501')
     sql(f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;') # disposable only
     assert json.loads(last(T.actor(T.W)+cap()))['available'] is True; ok('local-only grant permits in-scope production actor capability')
     z=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;")
@@ -143,6 +143,8 @@ def run():
     permit_matrix.run(sys.modules[__name__])
     import cooperation
     cooperation.run(sys.modules[__name__])
+    import upstream
+    upstream.run(sys.modules[__name__])
     z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;"); assert z1==z; ok('all fourteen financial/fiscal/outbox existing full-row snapshots unchanged')
     # Existing canonical proof regressions on locally created delivery, never hosted reference.
     owned=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{T.L2}' AND status='reservado';")
@@ -154,6 +156,11 @@ def run():
     att=T.actor()+f"SELECT public.rpc_entrega_comprovante_anexar_v1('{entrega}','att-isolated-0001','{json.dumps({'arquivo_path':fp,'arquivo_nome':'local.pdf','arquivo_mime':'application/pdf','recebedor_nome':'LOCAL'})}'::jsonb);"
     assert json.loads(last(att))['success'] is True and json.loads(last(att))['replayed'] is True; ok('canonical generate/sign/attach and exact attachment replay preserved')
     reject('foreign FSF proof stays closed',T.actor(T.V)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{entrega}','foreign-proof-0001');",'42501')
+    observed=last(f"SELECT updated_at FROM public.entregas WHERE id='{entrega}';")
+    cancel=T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{entrega}','LOCAL REGRESSION','{observed}'::timestamptz);"
+    result=json.loads(last(cancel)); assert result['success'] is True
+    before=snapshot(); result=json.loads(last(cancel)); assert result['replay'] is True and snapshot()==before
+    ok('canonical group and observed cancellation replay preserved under added gates')
     sql(f'REVOKE EXECUTE ON FUNCTION {G.RPC} FROM authenticated;'); assert state()==post
     sql((H/'legacy-closure-install.sql.review').read_text()); assert state()==closed
     measured=sql('BEGIN;'+f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;'+G.STATE+'::text;ROLLBACK;')

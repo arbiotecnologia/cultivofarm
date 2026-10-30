@@ -21745,5 +21745,37 @@
       "UNIQUE (user_id, role)",
       true
     ]
+  ],
+  "private_columns": [
+    [
+      "cf_user_guards_v1.state",
+      "revision",
+      "bigint",
+      true,
+      null,
+      null
+    ],
+    [
+      "cf_user_guards_v1.state",
+      "singleton",
+      "boolean",
+      true,
+      null,
+      null
+    ]
+  ],
+  "private_constraints": [
+    [
+      "cf_user_guards_v1.state",
+      "state_pkey",
+      "PRIMARY KEY (singleton)",
+      true
+    ],
+    [
+      "cf_user_guards_v1.state",
+      "state_singleton_check",
+      "CHECK (singleton)",
+      true
+    ]
   ]
 }

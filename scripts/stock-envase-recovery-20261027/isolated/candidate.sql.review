@@ -60,7 +60,10 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path='' SET lock_timeout='
 BEGIN
  IF TG_LEVEL<>'STATEMENT' OR TG_WHEN<>'BEFORE' OR TG_OP NOT IN ('INSERT','UPDATE','DELETE','TRUNCATE')
  OR TG_RELID NOT IN ('public.organizations'::regclass,'public.organization_subscriptions'::regclass,'public.saas_plan_versions'::regclass,'public.saas_plan_version_features'::regclass,'public.saas_features'::regclass,'public.saas_modules'::regclass,'public.organization_feature_overrides'::regclass,'public.clientes'::regclass,'public.programacao_producao'::regclass,'public.ordens_servico'::regclass,'public.lotes'::regclass,'public.controle_qualidade'::regclass,'public.estoque_produto'::regclass) THEN RAISE EXCEPTION 'ENVASE_GATE_CONTEXT_DENIED' USING ERRCODE='42501'; END IF;
- PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE;
+ -- Existing upstream RPCs can prelock business rows before their first DML.
+ -- Never wait here while owning those rows: reject contention atomically instead
+ -- of closing the singleton/business-row deadlock cycle.
+ PERFORM 1 FROM cf_user_guards_v1.state WHERE singleton FOR UPDATE NOWAIT;
  IF NOT FOUND THEN RAISE EXCEPTION 'STOCK_GATE_UNAVAILABLE' USING ERRCODE='PT503'; END IF;
  RETURN NULL;
 END $gate$;

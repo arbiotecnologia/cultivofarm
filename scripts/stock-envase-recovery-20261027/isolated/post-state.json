@@ -7594,7 +7594,7 @@
       "platform_private",
       "stock_envase_mutation_gate_v1",
       "",
-      "415c84914143cab379c7ee4c379639fc",
+      "fd66c95c67366e613d886ac4e6a4f9f7",
       "{postgres=X/postgres}",
       "postgres",
       [
@@ -21919,6 +21919,124 @@
       "user_roles",
       "user_roles_user_id_role_key",
       "UNIQUE (user_id, role)",
+      true
+    ]
+  ],
+  "private_columns": [
+    [
+      "cf_user_guards_v1.state",
+      "revision",
+      "bigint",
+      true,
+      null,
+      null
+    ],
+    [
+      "cf_user_guards_v1.state",
+      "singleton",
+      "boolean",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "action",
+      "text",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "actor",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "admitted",
+      "boolean",
+      true,
+      null,
+      "false"
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "lote",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "organization_id",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "os",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "payload",
+      "jsonb",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "prog",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "target",
+      "uuid",
+      true,
+      null,
+      null
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "txid",
+      "bigint",
+      true,
+      null,
+      null
+    ]
+  ],
+  "private_constraints": [
+    [
+      "cf_user_guards_v1.state",
+      "state_pkey",
+      "PRIMARY KEY (singleton)",
+      true
+    ],
+    [
+      "cf_user_guards_v1.state",
+      "state_singleton_check",
+      "CHECK (singleton)",
+      true
+    ],
+    [
+      "platform_private.envase_insert_permits_v1",
+      "envase_insert_permits_v1_pkey",
+      "PRIMARY KEY (txid, action, target)",
       true
     ]
   ]

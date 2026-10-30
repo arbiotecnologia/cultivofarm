@@ -37,10 +37,38 @@
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/assemble.py",
-    "sha256": "7afcbebeed863c70924c1d63e9db57ba99beea811b37e684dbf4e74528671c12"
+    "sha256": "c2c125dd5be34c01df16856d79bf43e70d511e0fb23c060592f1d4afc9943743"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/cooperation.py",
+    "sha256": "84a3296c853b3302cd983156bfc59e5fa4d853f5959045d9beaff050a1f75d3f"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/matrix.py",
+    "sha256": "dfd2190e573cbd0865c5646544ed948fd9c9d541538dd257a8bafe6f47e27e1e"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/permit_matrix.py",
+    "sha256": "9615c8626fab2bca7f9e5d4bee81571bd7ccd61378dd7a1903f4e40804a69142"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/sentinels.py",
+    "sha256": "c584dd78d99fd28a53db190a05339d82245bedd3798f1149f160c38fb8f33d99"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/test_order.py",
+    "sha256": "1f497978b7a67282d0d5c8fc61953e8e92af2aa5fad1bcc31e48fe4cc308ff42"
   },
   {
     "file": "scripts/stock-envase-recovery-20261027/isolated/test_pg.py",
-    "sha256": "01c6eff0b218bc4f30b1f146ffae88e87079f3365118e0cef1074238eaafc9d3"
+    "sha256": "b93cdf1a3a2707a794490d3ce29eebab0d08c6f224d74275e193cc406e0656cd"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/upstream.py",
+    "sha256": "65274d018c25ee8e1d35415c1f054cb6c5acf152256299285d4ff0cdfdb01ccc"
+  },
+  {
+    "file": "scripts/stock-envase-recovery-20261027/isolated/entry.sql.review",
+    "sha256": "2778154a6aaac4c2ccd8fd46ae968fe8449bb08143bdcdc9076c754fe6717596"
   }
 ]

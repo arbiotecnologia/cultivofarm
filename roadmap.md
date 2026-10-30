@@ -1,12 +1,13 @@
 ## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
-- [ ] Continuação22:29: corrigir ENVASE_INSERT_PERMIT_MISMATCH, provar payload/consumo/split e estoque independente, testes montados capability e release separado; nenhum hosted/publicação.
-- [ ] Continuação22:03: fechar matrizes locais completas, sentinelas existentes, autoridade de entrada, isolamento, legados e disponibilidade frontend; release revisável somente após provas, sem hosted/publicação.
+- [x] Conclusão22:57: corrida prelock/DML real corrigida NOWAIT55P03 sem deadlock; upstream canônico completo/stock/group/cancel preservados;119PGPASS/470Vitest/3ordem,README/logs/pins atualizados; build automáticoOK, sem hosted/publicação.
+- [x] Continuação22:29: ENVASE_INSERT_PERMIT_MISMATCH corrigido, payload antes/depois e consumo/split/batch testados, mounted capability e release separados revisáveis.
+- [x] Continuação22:03: matrizes locais, sentinelas existentes, autoridade privada de entrada/isolamento/legados concluídos no recorte; operações posteriores mantidas fechadas.
 - [x] Auditoria21:52: singleton/NULLkey/fingerprint/motivo/legado e terminalOS/CQ sob espera observada; closure ACL separada receipt/desvincular/vincular embalagem com PRE/POST exato,38PGPASS/3ordem. Baseline produção apenas informado; sem hosted/publicação.
 - [x] Inventariar contratos/consumidores atuais e reconciliar aplicações relatadas 91cec22/2faf356, sem hosted/sessões/segredos; composição local oito instaladores PRE/POST.
 - [x] Preparar/testar delta de envase isolado: 29PG PASS, PRE/POST determinísticos, rollback deny-only, 3 testes de ordenação; release deliberadamente NO-GO, sem grant do writer.
 - [x] Disponibilidade exata e fences authz/session/trava no consumidor; botões continuam fechados, provas/histórico cancelado preservados;457Vitest PASS/28arquivos.
 - [x] Relatório/fontes/SQL/hash/resultados brutos em scripts/stock-envase-recovery-20261027/isolated; nenhum novo writer liberável.
-- [ ] Liberação envase bloqueada: completar matrizes de locks/revogação/raízes/partial/override/recibos legados/sentinelas financeiros e prova canônica de entradas indiretas; não avançar operações posteriores antes disso.
+- [ ] Implantação envase aguarda auditor: revisão/PRE/POST LIVE/JWT real e evidência separada typecheck (log automático disponível só registra buildOK); release mínimo revisável, não aplicado.
 - [ ] Homologação JWT/Storage real e implantação aguardam auditor; fiscal/financeiro/automações, confirmação física, etiquetas e dispensa não liberados nesta execução.
 
 - [x] Complemento financeiro 01:31: formulário/agenda/catálogos e promessa de persistência removidos; consulta autorizada com loading/vazio/erro/título/fiscal; 23 testes focados e595/595 gate em42arquivos PASS, zero writes programáticos/escopo, build OK; docs/auditorias/financeiro-consulta-20261030.md. Sem publicar/banco.
