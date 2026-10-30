@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { act, cleanup, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { __resetOfflineDbForTests, getPendingCampoByRegistro, savePendingCampo, saveSyncedVisitMapping } from "@/lib/offlineDb";
@@ -43,9 +43,12 @@ it.each([
 });
 it.each(["PT409", "42501", "08006"])("%s preserva fila e não repete automaticamente", async code => {
   await savePendingCampo(entry()); s.rpc.mockResolvedValue({ data: null, error: { code, message: code } });
-  const h = mount(); await act(async () => { await h.result.current.syncAll(); await h.result.current.syncAll(); });
+  const h = mount(); await act(async () => { await h.result.current.syncAll(); });
   expect(s.rpc).toHaveBeenCalledTimes(1);
   expect((await getPendingCampoByRegistro("local"))?.syncStatus).toBe(code === "PT409" ? "conflict" : "sync_error");
+  // A second explicit sync is not an automatic retry. Business conflicts remain quarantined.
+  await act(async () => { await h.result.current.syncAll(); });
+  expect(s.rpc).toHaveBeenCalledTimes(code === "PT409" ? 1 : 2);
 });
 it.each([{}, { ...envelope().data, registro_consultor_id: CU }, { ...envelope().data, versao: 2 }])("ACK inválido %j mantém pendência", async data => {
   await savePendingCampo(entry()); s.rpc.mockResolvedValue({ data, error: null });
@@ -57,7 +60,7 @@ it.each(["epoch", "tenant", "nova revisão"])("%s durante RPC não apaga nem con
   s.rpc.mockImplementation(() => new Promise(resolve => { finish = resolve; })); const h = mount(); let pending: Promise<void> | undefined;
   await act(async () => { pending = h.result.current.syncAll(); });
   // IndexedDB is asynchronous: wait until the actual mocked dispatch is reached.
-  const { waitFor } = await import("@testing-library/react"); await waitFor(() => expect(s.rpc).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(s.rpc).toHaveBeenCalledTimes(1));
   if (mode === "nova revisão") await savePendingCampo(entry({ payload: { fase_fenologica: "V5" } }));
   else { if (mode === "epoch") s.auth.authzEpoch++; else s.auth.profile.organization_id = "FSF"; h.rerender(); }
   await act(async () => { finish?.(envelope()); await pending; });
