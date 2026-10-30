@@ -182,6 +182,8 @@ def main():
     checks.append({'test':'independent real batch versus group stock wait succeeds batch and rejects stale group without deadlock','status':'PASS','observed':err2})
     import test_review
     test_review.run(sys.modules[__name__])
+    import test_closure
+    test_closure.run()
 
 if __name__=='__main__':
     try: main()
