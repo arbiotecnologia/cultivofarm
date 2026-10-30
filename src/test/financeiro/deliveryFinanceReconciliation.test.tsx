@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,21 +6,21 @@ const s = vi.hoisted(() => ({
   org: "11111111-1111-4111-8111-111111111111", id: "22222222-2222-4222-8222-222222222222",
   customer: "33333333-3333-4333-8333-333333333333", receiptId: "44444444-4444-4444-8444-444444444444",
   auth: {} as any, receipt: null as any, error: null as any, hold: false, pending: [] as Array<() => void>,
-  calls: [] as Array<{ table: string; filters: Record<string, unknown> }>, rpc: vi.fn(),
+  calls: [] as Array<{ table: string; filters: Record<string, unknown> }>, rpc: vi.fn(), write: vi.fn(), duplicates: false,
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => s.auth }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   rpc: s.rpc,
   from(table: string) {
     const filters: Record<string, unknown> = {};
-    const c: any = {};
+    const c: any = { insert: s.write, update: s.write, delete: s.write, upsert: s.write };
     for (const m of ["select", "neq", "order", "limit", "maybeSingle", "abortSignal"]) c[m] = () => c;
     c.eq = (k: string, v: unknown) => { filters[k] = v; return c; };
     c.then = (resolve: (v: unknown) => void) => {
       s.calls.push({ table, filters });
       const error = s.error;
       const data = table === "entregas" ? { id: s.id, organization_id: s.org, cliente_id: s.customer, receivable_id: s.receipt?.id ?? null }
-        : table === "accounts_receivable" ? s.receipt ? [{ ...s.receipt }] : []
+        : table === "accounts_receivable" ? s.receipt ? s.duplicates ? [{ ...s.receipt }, { ...s.receipt }] : [{ ...s.receipt }] : []
         : table === "financial_categories" ? [{ id: "cat", name: "Receita", active: true, type: "RECEITA" }, { id: "both", name: "Ambos", active: true, type: "AMBOS" }]
         : table === "payment_methods" ? [{ id: "method", name: "Método ativo", active: true }, { id: "inactive", name: "Inativo", active: false }]
         : [];
@@ -36,7 +36,7 @@ vi.mock("@/components/ui/select", () => ({
   SelectItem: ({ children, value }: any) => <option value={value}>{children}</option>,
 }));
 import { ConfirmarEntregaFinanceiroDialog } from "@/components/financeiro/ConfirmarEntregaFinanceiroDialog";
-import { isFinanceUuid } from "@/hooks/useDeliveryFinanceReconciliation";
+import { isFinanceUuid, useDeliveryFinanceReconciliation } from "@/hooks/useDeliveryFinanceReconciliation";
 const receipt = () => ({ id: s.receiptId, organization_id: s.org, origin_type: "DELIVERY", origin_id: s.id, customer_id: s.customer,
   total_amount: 123, status: "OPEN", fiscal_invoice_required: false, fiscal_invoice_status: "PENDING" });
 function setup() {
@@ -47,30 +47,27 @@ function setup() {
 }
 beforeEach(() => {
   s.auth = { user: { id: "55555555-5555-4555-8555-555555555555" }, profile: { user_id: "55555555-5555-4555-8555-555555555555", organization_id: s.org, ativo: true, senha_provisoria: false }, roles: ["financeiro"], loading: false, authzReady: true, authzEpoch: 0 };
-  Object.assign(s, { receipt: null, error: null, hold: false, pending: [], calls: [] }); s.rpc.mockReset();
+  Object.assign(s, { receipt: null, error: null, hold: false, pending: [], calls: [], duplicates: false }); s.rpc.mockReset(); s.write.mockReset();
 });
-async function draft() {
-  await waitFor(() => expect(screen.getByRole("option", { name: "Método ativo" })).toBeInTheDocument());
-  const selects = screen.getAllByRole("combobox");
-  fireEvent.change(selects[0], { target: { value: "cat" } });
-  fireEvent.change(selects[2], { target: { value: "method" } });
+async function consulted() {
+  await screen.findByText(/Nenhum título disponível nesta consulta/);
 }
 describe("Etapa6 — QueryClient real, Auth/transportes simulados, operação contida", () => {
   it("valida UUID, nunca aceita string arbitrária ou objeto como ID", () => {
     expect(isFinanceUuid(s.receiptId)).toBe(true); expect(isFinanceUuid("{}" )).toBe(false);
     expect(isFinanceUuid({ id: s.receiptId })).toBe(false);
   });
-  it("método obrigatório/ativo e RECEITA apenas; duplo clique não envia nenhuma cobrança", async () => {
-    setup(); await draft();
-    expect(screen.queryByRole("option", { name: "Ambos" })).toBeNull();
-    expect(screen.queryByRole("option", { name: "Inativo" })).toBeNull();
-    const b = screen.getByRole("button", { name: "Revisar cobrança indisponível" });
-    fireEvent.click(b); fireEvent.click(b);
-    await screen.findAllByText(/Seu rascunho foi preservado/);
-    expect(s.rpc).not.toHaveBeenCalled(); expect(screen.getAllByRole("combobox")[2]).toHaveValue("method");
+  it("consulta não carrega catálogos nem expõe criação; interações não escrevem", async () => {
+    setup(); await consulted();
+    expect(s.calls.map(c => c.table)).toEqual(["entregas", "accounts_receivable"]);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Enter" });
+    fireEvent.submit(screen.getByRole("dialog"));
+    fireEvent.click(screen.getByRole("button", { name: "Reconsultar lançamento" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Reconsultar lançamento" })).toBeEnabled());
+    expect(s.rpc).not.toHaveBeenCalled(); expect(s.write).not.toHaveBeenCalled();
   });
   it("ACK perdido: reconsulta encontra título pelo vínculo sem segunda geração", async () => {
-    const { client } = setup(); await draft(); s.receipt = receipt();
+    const { client } = setup(); await consulted(); s.receipt = receipt();
     fireEvent.click(screen.getByRole("button", { name: "Reconsultar lançamento" }));
     await screen.findByText(/Recebível confirmado por consulta/);
     expect(s.rpc).not.toHaveBeenCalled();
@@ -86,14 +83,14 @@ describe("Etapa6 — QueryClient real, Auth/transportes simulados, operação co
     await waitFor(() => expect(screen.getByRole("button", { name: "Reconsultar lançamento" })).toBeEnabled());
     expect(s.rpc).not.toHaveBeenCalled();
   });
-  for (const code of ["PT409", "42501"]) it(`${code} de releitura preserva draft, oculta cache e não repete escrita`, async () => {
-    setup(); await draft(); s.error = { code, message: "negado" };
+  for (const code of ["PT409", "42501"]) it(`${code} de releitura mostra indisponibilidade, oculta cache e não repete escrita`, async () => {
+    setup(); await consulted(); s.error = { code, message: "negado" };
     fireEvent.click(screen.getByRole("button", { name: "Reconsultar lançamento" }));
     await screen.findAllByText(/Não foi possível confirmar o recebível/);
-    expect(screen.getAllByRole("combobox")[2]).toHaveValue("method"); expect(s.rpc).not.toHaveBeenCalled();
+    expect(s.write).not.toHaveBeenCalled(); expect(s.rpc).not.toHaveBeenCalled();
   });
   for (const change of ["tenant", "epoch", "actor"]) it(`resposta tardia após ${change} não publica título nem cache antigo`, async () => {
-    const { client, view, tree } = setup(); await draft();
+    const { client, view, tree } = setup(); await consulted();
     s.hold = true; s.receipt = receipt();
     fireEvent.click(screen.getByRole("button", { name: "Reconsultar lançamento" }));
     await waitFor(() => expect(s.pending.length).toBe(1)); const late = s.pending.shift();
@@ -117,7 +114,7 @@ describe("Etapa6 — QueryClient real, Auth/transportes simulados, operação co
     await screen.findAllByText(/Não foi possível confirmar o recebível/); expect(s.rpc).not.toHaveBeenCalled();
   });
   it("dupla reconsulta pendente usa um único ticket e invalidação exata", async () => {
-    const { client } = setup(); await draft(); s.hold = true;
+    const { client } = setup(); await consulted(); s.hold = true;
     const invalidation = vi.spyOn(client, "invalidateQueries");
     const b = screen.getByRole("button", { name: "Reconsultar lançamento" });
     fireEvent.click(b); fireEvent.click(b);
@@ -128,7 +125,7 @@ describe("Etapa6 — QueryClient real, Auth/transportes simulados, operação co
     await waitFor(() => expect(b).toBeEnabled()); expect(s.rpc).not.toHaveBeenCalled();
   });
   it("troca de tenant durante await de invalidação não dispara a próxima leitura", async () => {
-    const { client, view, tree } = setup(); await draft();
+    const { client, view, tree } = setup(); await consulted();
     let finish: (() => void) | undefined;
     vi.spyOn(client, "invalidateQueries").mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
     fireEvent.click(screen.getByRole("button", { name: "Reconsultar lançamento" }));
@@ -139,10 +136,27 @@ describe("Etapa6 — QueryClient real, Auth/transportes simulados, operação co
     expect(s.calls.slice(count).filter(c => c.table === "accounts_receivable")).toHaveLength(0);
     expect(s.rpc).not.toHaveBeenCalled();
   });
-  it("método ausente bloqueia revisão e não envia fallback NULL", async () => {
-    setup(); await draft(); fireEvent.change(screen.getAllByRole("combobox")[2], { target: { value: "" } });
-    expect(screen.getByRole("button", { name: "Revisar cobrança indisponível" })).toBeDisabled();
-    expect(s.rpc).not.toHaveBeenCalled();
+  it("carregamento inicial não anuncia ausência nem erro", async () => {
+    s.hold = true; setup(); await waitFor(() => expect(s.pending.length).toBe(1));
+    expect(screen.getByRole("status")).toHaveTextContent("Consultando o título");
+    await act(async () => { s.hold = false; s.pending.shift()?.(); }); await consulted();
+    expect(s.write).not.toHaveBeenCalled(); expect(s.rpc).not.toHaveBeenCalled();
+  });
+  it("duplicidade de títulos é ambiguidade, não ausência nem sucesso", async () => {
+    s.receipt = receipt(); s.duplicates = true; setup(); await screen.findByText(/vínculo ambíguo/);
+    expect(screen.queryByRole("button", { name: /Abrir lançamento/ })).toBeNull();
+    expect(s.write).not.toHaveBeenCalled(); expect(s.rpc).not.toHaveBeenCalled();
+  });
+  it("chamada programática de reconciliação e função capturada após revogação não escrevem", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const h = renderHook(() => useDeliveryFinanceReconciliation(s.id, true), { wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider> });
+    await waitFor(() => expect(h.result.current.state).toBe("nenhum_titulo"));
+    const old = h.result.current.reconsultar;
+    await act(async () => { await old(); });
+    const count = s.calls.length; s.auth.profile.ativo = false; h.rerender();
+    await act(async () => { await old(); await h.result.current.reconsultar(); });
+    expect(s.calls).toHaveLength(count); expect(s.rpc).not.toHaveBeenCalled(); expect(s.write).not.toHaveBeenCalled();
+    h.unmount(); client.clear();
   });
   it("chave exata da reconciliação corresponde ao cache real e desmontagem remove o título", async () => {
     s.receipt = receipt(); const { client, view } = setup();
