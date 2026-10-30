@@ -36,7 +36,30 @@ export async function probeDeliveryCapability(rpc: Rpc): Promise<DeliveryCapabil
 }
 
 /** Fields the atomic contract persists. Anything else non-empty is rejected before dispatch (never silently dropped). */
-const DATA_KEYS = ["data_saida", "motorista", "veiculo", "tipo_entrega", "endereco_origem"] as const;
+export const DATA_KEYS = [
+  "data_saida", "motorista", "veiculo", "tipo_entrega", "endereco_origem",
+  "motorista_telefone", "motorista_documento", "veiculo_placa", "veiculo_tipo",
+  "hora_saida_prevista", "data_chegada_prevista", "hora_chegada_prevista",
+  "destinatario_nome", "destinatario_telefone", "destinatario_whatsapp",
+  "endereco_logradouro", "endereco_numero", "endereco_complemento", "endereco_bairro",
+  "endereco_cidade", "endereco_uf", "endereco_cep", "endereco_referencia",
+] as const;
+const DATE_KEYS = new Set(["data_saida", "data_chegada_prevista"]);
+const TIME_KEYS = new Set(["hora_saida_prevista", "hora_chegada_prevista"]);
+const validDate = (v: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(`${v}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+};
+/** Mirrors the server allowlist/validation (server remains authoritative). */
+function metadataError(k: string, v: string): boolean {
+  if (v.length > 300 || /[\u0000-\u001f\u007f]/.test(v) || v.trim() === "") return true;
+  if (DATE_KEYS.has(k)) return !validDate(v);
+  if (TIME_KEYS.has(k)) return !/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(v);
+  if (k === "tipo_entrega") return v !== "motorista" && v !== "retirada";
+  if (k === "endereco_origem") return v !== "cadastro" && v !== "personalizado";
+  return false;
+}
 
 export type GroupInput = {
   requestKey: string;
@@ -76,14 +99,18 @@ export function buildGroupArgs(input: GroupInput): Record<string, unknown> {
     seen.add(i.itemId);
   }
   const unsupported = Object.entries(input.dados).filter(([k, v]) => !(DATA_KEYS as readonly string[]).includes(k) && v !== null && v !== undefined && v !== "").map(([k]) => k);
-  if (unsupported.length) throw new Error(`Campos ainda não gravados pelo contrato atômico (inclui destinatário/endereço detalhado): ${unsupported.sort().join(", ")}. Limpe-os ou aguarde o contrato; nada é descartado em silêncio. Nenhuma alteração foi enviada.`);
+  if (unsupported.length) throw new Error(`Campos não aceitos pelo contrato de entrega: ${unsupported.sort().join(", ")}. Nada é descartado em silêncio. Nenhuma alteração foi enviada.`);
   const dados: Record<string, string | null> = {};
+  const invalid: string[] = [];
   for (const k of DATA_KEYS) {
     const v = input.dados[k];
     if (v === undefined) continue;
-    if (v !== null && typeof v !== "string") throw new Error("Dados da entrega inválidos. Nenhuma alteração foi enviada.");
-    dados[k] = v === "" ? null : (v as string | null);
+    if (v !== null && typeof v !== "string") { invalid.push(k); continue; }
+    const value: string | null = v === null || (v as string).trim() === "" ? null : (v as string);
+    if (value !== null && metadataError(k, value)) { invalid.push(k); continue; }
+    dados[k] = value;
   }
+  if (invalid.length) throw new Error(`Dados da entrega inválidos: ${invalid.join(", ")}. Corrija data (AAAA-MM-DD), horário (HH:MM) ou texto. Nenhuma alteração foi enviada.`);
   return {
     p_os_id: input.osId,
     p_origem: "manual",

@@ -29,6 +29,7 @@ O5, PP5, L5 = u(47), u(48), u(49)   # concurrency/rollback target
 O6, PP6, L6 = u(50), u(51), u(52)   # partial envase
 RX = u(53)                          # stock reserved for ANOTHER OS
 O7, PP7, L7 = u(54), u(55), u(56)   # replay matrix (reserved-only / free-only / cancel)
+O8, L8, S8, S9, L9 = u(57), u(58), u(59), u(64), u(63)  # metadata roundtrip (pronto_entrega, free stock)
 FEATS = {'envase': u(60), 'ordens_producao': u(61), 'lotes_qualidade': u(62)}
 TABLES = ['accounts_receivable', 'accounts_receivable_installments', 'financial_receipts', 'financial_documents', 'fiscal_invoices', 'fiscal_invoice_items', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base']
 def zero(): return last("SELECT jsonb_build_object(" + ','.join(f"'{t}',(SELECT count(*) FROM public.{t})" for t in TABLES) + ")::text;")
@@ -38,10 +39,10 @@ def actor(w=U):
 def envase(os, prog, lote, linhas, key, origem='manual', parcial='false', motivo='NULL'):
     return f"SELECT public.rpc_cockpit_registrar_envase_v1('{lote}','{os}','{origem}','{prog}','{json.dumps(linhas)}'::jsonb,current_date+180,'LOCAL','{key}',{parcial},{motivo});"
 def os_status(os): return last(f"SELECT status::text FROM public.ordens_servico WHERE id='{os}';")
-def group(os, items, key):
+def group(os, items, key, dados=None):
     obs = last(f"SELECT updated_at FROM public.ordens_servico WHERE id='{os}';")
     its = [dict(i, observed_updated_at=last(f"SELECT updated_at FROM public.estoque_produto WHERE id='{i['item_id']}';")) for i in items]
-    return "SELECT public.rpc_cockpit_criar_entrega_v1('%s','manual','%s'::jsonb,'%s','{}'::jsonb,'%s'::timestamptz);" % (os, json.dumps(its), key, obs)
+    return "SELECT public.rpc_cockpit_criar_entrega_v1('%s','manual','%s'::jsonb,'%s','%s'::jsonb,'%s'::timestamptz);" % (os, json.dumps(its), key, json.dumps(dados or {}).replace("'", "''"), obs)
 def manufactured(os, prog, lote, cq='aprovado', vol=2000, status='em_cq'):
     return f"""
     INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,origem,status,numero_os,volume_total_ml) VALUES('{os}','{A}','{C}','{u(18)}','{u(20)}','{PROD}','agronomica','{status}','LOCAL-{os[-4:]}',{vol});
@@ -59,6 +60,9 @@ def setup_v2():
     INSERT INTO public.profiles(user_id,organization_id,nome,ativo,senha_provisoria) VALUES('{W}','{A}','LOCAL PROD',true,false);
     INSERT INTO public.user_roles(user_id,role) VALUES('{W}','producao');
     """ + manufactured(O2, PP2, L2) + manufactured(O3, PP3, L3, cq='reprovado') + manufactured(O5, PP5, L5) + manufactured(O6, PP6, L6, vol=5000) + manufactured(O7, PP7, L7) + f"""
+    INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,origem,status,numero_os) VALUES('{O8}','{A}','{C}','{u(18)}','{u(20)}','{PROD}','agronomica','pronto_entrega','LOCAL-META');
+    INSERT INTO public.lotes(id,organization_id,produto_id,status,codigo_lote,volume_produzido) VALUES('{L8}','{A}','{PROD}','aprovado','LOCAL-META',100000),('{L9}','{A}','{PROD}','aprovado','LOCAL-META2',100000);
+    INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status) VALUES('{S8}','{L8}','{PROD}',2,2,'disponivel'),('{S9}','{L9}','{PROD}',2,2,'disponivel');
     INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status,reservado_para_os_id,reservado_para_os_tipo,reservado_para_cliente_id,quantidade_reservada) VALUES('{RX}','{T.L}','{PROD}',2,2,'reservado','{T.O}','manual','{C}',2);
     SET session_replication_role=origin;""")
 def fn_state():
@@ -203,6 +207,37 @@ def main():
     j = o1[1] + o2[1]
     assert ('deadlock detected' in j or '40P01' in j or 'lock timeout' in j), j[-1500:]
     assert last("SELECT count(*) FROM public.estoque_movimentacoes WHERE idempotency_key='deadlock-probe-0001';") == '0'; ok('inverse-order contender: PostgreSQL resolves (40P01/55P03) and no partial movement remains', detail=('40P01' if 'deadlock' in j else '55P03'))
+    # ---- Delivery metadata (exact allowlist of existing columns) ----
+    META = {'tipo_entrega': 'motorista', 'data_saida': '2026-11-03', 'motorista': 'LOCAL MOTORISTA', 'veiculo': 'LOCAL CAMINHAO',
+            'motorista_telefone': '(38) 99999-0000', 'motorista_documento': 'LOCAL-CNH-1', 'veiculo_placa': 'ABC1D23', 'veiculo_tipo': 'caminhao',
+            'hora_saida_prevista': '08:30', 'data_chegada_prevista': '2026-11-04', 'hora_chegada_prevista': '17:45:00',
+            'destinatario_nome': 'LOCAL DESTINATARIO', 'destinatario_telefone': '+55 38 3333-0000', 'destinatario_whatsapp': '38999990000',
+            'endereco_origem': 'personalizado', 'endereco_logradouro': "Rua D'Agua", 'endereco_numero': '10', 'endereco_complemento': 'Galpao 2',
+            'endereco_bairro': 'Centro', 'endereco_cidade': 'Paracatu', 'endereco_uf': 'MG', 'endereco_cep': '38600-000', 'endereco_referencia': 'LOCAL'}
+    for k, bad in [('grupo_entrega_id', u(99)), ('cliente_id', C), ('receivable_id', u(98)), ('comprovante_status', 'aprovado'), ('organization_id', B), ('status', 'entregue'), ('foo', 'x')]:
+        fails(f'metadata unknown/boundary field {k} rejected', actor() + group(O8, [{'item_id': S8, 'quantidade': 2}], f'meta-unk-{k}'[:60], dict(META, **{k: bad})), 'DELIVERY_DATA_INVALID')
+    for k, bad in [('data_saida', '03/11/2026'), ('data_saida', '2026-02-30'), ('data_chegada_prevista', '2026-13-01'), ('hora_saida_prevista', '25:00'),
+                   ('hora_chegada_prevista', '8h'), ('endereco_cep', 'abc\n1'), ('tipo_entrega', 'drone'), ('endereco_origem', 'gps'),
+                   ('motorista', 7), ('destinatario_nome', {'x': 1}), ('endereco_numero', True), ('endereco_referencia', 'x' * 301), ('motorista', '   ')]:
+        fails(f'metadata malformed {k}={str(bad)[:20]} rejected', actor() + group(O8, [{'item_id': S8, 'quantidade': 2}], f'meta-bad-{k}-{abs(hash(str(bad)))%9999}'[:60], dict(META, **{k: bad})), 'DELIVERY_DATA_INVALID')
+    assert last(f"SELECT count(*) FROM public.entregas WHERE ordem_servico_id='{O8}';") == '0'; ok('rejected metadata wrote no delivery')
+    full = group(O8, [{'item_id': S8, 'quantidade': 2}, {'item_id': S9, 'quantidade': 2}], 'meta-full-0001', META)   # frozen observed args
+    out = sql(actor() + full)
+    cols = ','.join(META)
+    rows = json.loads(last(f"SELECT jsonb_agg(to_jsonb(x))::text FROM (SELECT {cols} FROM public.entregas WHERE ordem_servico_id='{O8}') x;"))
+    assert len(rows) == 2
+    for r in rows:
+        for k, v in META.items():
+            got = r[k]
+            if k.startswith('hora_'): got = got[:len(v)] if v.count(':') == 1 else got
+            assert got == v, (k, got, v)
+    ok('all approved metadata persisted on every delivery of the group (PG roundtrip)', fields=len(META))
+    assert last(f"SELECT bool_and(cliente_id='{C}' AND organization_id='{A}' AND receivable_id IS NULL AND partner_order_id IS NULL AND status='separado' AND comprovante_status='pendente') FROM public.entregas WHERE ordem_servico_id='{O8}';") == 't'
+    ok('server-derived tenant/client/status/proof/finance unchanged by metadata')
+    rep = sql(actor() + full)
+    assert '"replay": true' in rep; ok('exact replay with identical metadata returns stored receipt')
+    fails('divergent replay (metadata changed, same key) conflicts', actor() + full.replace('LOCAL DESTINATARIO', 'OUTRO'), 'DELIVERY_REPLAY_CONFLICT')
+    assert last(f"SELECT count(*)||'/'||max(destinatario_nome) FROM public.entregas WHERE ordem_servico_id='{O8}';") == '2/LOCAL DESTINATARIO'; ok('conflict changed nothing')
     assert zero() == z0; ok('zero financial/fiscal/communication rows across envase, transition, deliveries and contention')
     # Rollback deny-only
     hist = last(f"SELECT (SELECT count(*) FROM public.entregas)||'/'||(SELECT count(*) FROM public.estoque_movimentacoes)||'/'||(SELECT count(*) FROM public.envase)||'/'||(SELECT count(*) FROM public.laboratorio_esteira_eventos);")

@@ -116,9 +116,17 @@ describe("Entregas page with atomic adapter (mounted)", () => {
     expect(writerCalls()).toHaveLength(0);
     h.qc.clear();
   });
-  it("recipient/address filled from cadastro is refused explicitly, never dropped", async () => {
+  it("recipient/address filled from cadastro is dispatched and confirmed (no clearing workaround)", async () => {
     const h = mount();
-    await act(async () => { await expect(t.submit(payload({ destinatario_nome: "Fazenda X", endereco_cidade: "Paracatu" }))).rejects.toThrow(/destinatario_nome, endereco_cidade/); });
+    await act(async () => { await t.submit(payload({ destinatario_nome: "Fazenda X", endereco_cidade: "Paracatu", endereco_cep: "38.600-000", hora_saida_prevista: "08:30" })); });
+    expect(writerCalls()).toHaveLength(1);
+    expect(writerCalls()[0][1].p_dados).toMatchObject({ destinatario_nome: "Fazenda X", endereco_cidade: "Paracatu", endereco_cep: "38.600-000", hora_saida_prevista: "08:30" });
+    expect(t.success).toHaveBeenCalled();
+    h.qc.clear();
+  });
+  it("unknown field from the dialog is refused explicitly, never dropped", async () => {
+    const h = mount();
+    await act(async () => { await expect(t.submit(payload({ cliente_id: ORG_B }))).rejects.toThrow(/não aceitos.*cliente_id/); });
     expect(writerCalls()).toHaveLength(0);
     h.qc.clear();
   });

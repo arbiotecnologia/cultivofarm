@@ -120,7 +120,7 @@
     "expected": "permission denied"
   },
   {
-    "test": "ignored field rejected server-side",
+    "test": "unknown/boundary field rejected server-side",
     "status": "PASS",
     "expected": "DELIVERY_DATA_INVALID"
   },
@@ -134,14 +134,14 @@
     "ack": {
       "itens": [
         {
-          "entrega_id": "e505b0bf-3ee0-46d6-a9c0-de7155af68a6",
-          "movimentacao_id": "a4758b39-3290-4993-b51b-499b443d2da1",
-          "estoque_produto_id": "da447b01-8432-40fa-80f3-679558201703"
+          "entrega_id": "d8570add-c807-4c2c-8e43-f9d94e0d9548",
+          "movimentacao_id": "dfec68b1-beb8-4ad7-b80e-6f92393f68f7",
+          "estoque_produto_id": "1defad0f-9605-466c-9233-e8e348ff2f4b"
         },
         {
-          "entrega_id": "9be5b31c-7740-4ea8-a379-572c78af6bc3",
-          "movimentacao_id": "4c738a09-3111-41c3-8192-e9b3693c1060",
-          "estoque_produto_id": "d903b816-2f89-4dd3-8205-699d30af288a"
+          "entrega_id": "2d6bc2ca-3178-4040-b773-d4b1f66e8206",
+          "movimentacao_id": "cf1b5e9d-d0f2-4253-be02-66e1d82aa89a",
+          "estoque_produto_id": "596f8dee-1bb2-499f-be02-2860b5a32e2a"
         }
       ],
       "os_id": "10000000-0000-4000-8000-000000000007",
@@ -179,7 +179,7 @@
     "ack": {
       "replay": false,
       "success": true,
-      "entrega_id": "e505b0bf-3ee0-46d6-a9c0-de7155af68a6",
+      "entrega_id": "d8570add-c807-4c2c-8e43-f9d94e0d9548",
       "organization_id": "10000000-0000-4000-8000-000000000001",
       "reserva_liberada": true,
       "estoque_estornado": true

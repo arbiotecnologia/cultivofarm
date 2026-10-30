@@ -43,12 +43,12 @@
     "test": "canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento",
     "status": "PASS",
     "ids": {
-      "os": "a7330877-3de7-4454-9c8c-a31192dc8bc0",
-      "lote": "f1032e94-3d07-4381-875f-f10a2dee5571",
-      "entrega": "58778b37-4368-4534-a181-03dcf2272825",
-      "estoque": "00711da2-7dd9-49e4-af75-9961f649abc1",
-      "programacao": "097a8078-2769-4a44-a979-9525c862921e",
-      "request_key": "fixture-a7330877-3de7-4454-9c8c-a31192dc8bc0"
+      "os": "5821c56a-0261-4498-bd7c-83d6f4e79d1a",
+      "lote": "7cd18774-df28-46e7-b455-c4af2f10df8f",
+      "entrega": "80638de2-e6f8-4daf-98b9-c032d7bf56e3",
+      "estoque": "83307d0e-639c-4141-a887-899f5b5a212c",
+      "programacao": "cb5824e6-b1c1-4343-b92e-b8923bfa3ae2",
+      "request_key": "fixture-5821c56a-0261-4498-bd7c-83d6f4e79d1a"
     }
   },
   {

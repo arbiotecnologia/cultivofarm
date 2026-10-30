@@ -52,9 +52,28 @@ describe("capability gate", () => {
 });
 
 describe("payload contract", () => {
-  it("rejects unsupported non-empty fields (recipient/address) instead of dropping them", () => {
-    expect(() => buildGroupArgs(input({ dados: { destinatario_nome: "X", motorista_telefone: "1", endereco_cidade: "Paracatu" } })))
-      .toThrow(/destinatario_nome, endereco_cidade, motorista_telefone/);
+  const FULL = {
+    tipo_entrega: "motorista", data_saida: "2026-11-03", motorista: "M", veiculo: "V", motorista_telefone: "(38) 99999-0000",
+    motorista_documento: "CNH", veiculo_placa: "ABC1D23", veiculo_tipo: "caminhao", hora_saida_prevista: "08:30",
+    data_chegada_prevista: "2026-11-04", hora_chegada_prevista: "17:45", destinatario_nome: "Fazenda X",
+    destinatario_telefone: "3836711234", destinatario_whatsapp: "", endereco_origem: "cadastro", endereco_logradouro: "Rua A",
+    endereco_numero: "10", endereco_complemento: "", endereco_bairro: "Centro", endereco_cidade: "Paracatu", endereco_uf: "MG",
+    endereco_cep: "38.600-000", endereco_referencia: "",
+  };
+  it("passes every approved existing metadata field verbatim (blank -> null), nothing dropped", () => {
+    const d = buildGroupArgs(input({ dados: FULL })).p_dados as Record<string, unknown>;
+    expect(Object.keys(d).sort()).toEqual(Object.keys(FULL).sort());
+    for (const [k, v] of Object.entries(FULL)) expect(d[k]).toBe(v === "" ? null : v);
+  });
+  it.each(["grupo_entrega_id", "cliente_id", "receivable_id", "organization_id", "status", "comprovante_status", "foo"])("unknown/boundary field %s is rejected", (k) => {
+    expect(() => buildGroupArgs(input({ dados: { ...FULL, [k]: "x" } }))).toThrow(new RegExp(`não aceitos.*${k}`));
+  });
+  it.each([
+    ["data_saida", "03/11/2026"], ["data_saida", "2026-02-30"], ["data_chegada_prevista", "2026-13-01"], ["hora_saida_prevista", "25:00"],
+    ["hora_chegada_prevista", "8h"], ["tipo_entrega", "drone"], ["endereco_origem", "gps"], ["endereco_cep", "abc\n1"], ["endereco_referencia", "x".repeat(301)],
+    ["motorista", 7], ["destinatario_nome", { x: 1 }], ["endereco_numero", true],
+  ])("malformed %s=%s is rejected before dispatch", (k, v) => {
+    expect(() => buildGroupArgs(input({ dados: { ...FULL, [k]: v as any } }))).toThrow(/Dados da entrega inválidos/);
   });
   it.each([
     { osTipo: "onfarm" }, { osTipo: "manual" }, { osTipo: "" }, { osOrigem: "b2b" }, { osOrigem: null },
@@ -78,7 +97,7 @@ describe("payload contract", () => {
   });
   it("sends only the five persisted keys with observed timestamps and manual origin", () => {
     expect(buildGroupArgs(input())).toEqual({ p_os_id: OS, p_origem: "manual", p_request_key: input().requestKey, p_os_observed: "2026-10-30T10:00:00Z",
-      p_itens: [{ item_id: S, quantidade: 2, observed_updated_at: "2026-10-30T09:00:00Z" }], p_dados: { tipo_entrega: "motorista", motorista: null, endereco_origem: "cadastro" } });
+      p_itens: [{ item_id: S, quantidade: 2, observed_updated_at: "2026-10-30T09:00:00Z" }], p_dados: { tipo_entrega: "motorista", motorista: null, endereco_origem: "cadastro", motorista_telefone: null } });
   });
 });
 

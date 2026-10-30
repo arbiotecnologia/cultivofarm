@@ -194,6 +194,142 @@
     "detail": "40P01"
   },
   {
+    "test": "metadata unknown/boundary field grupo_entrega_id rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata unknown/boundary field cliente_id rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata unknown/boundary field receivable_id rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata unknown/boundary field comprovante_status rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata unknown/boundary field organization_id rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata unknown/boundary field status rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata unknown/boundary field foo rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed data_saida=03/11/2026 rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed data_saida=2026-02-30 rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed data_chegada_prevista=2026-13-01 rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed hora_saida_prevista=25:00 rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed hora_chegada_prevista=8h rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed endereco_uf=MGX rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed endereco_cep=abc rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed tipo_entrega=drone rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed endereco_origem=gps rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed motorista_telefone=ligar depois rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed motorista=7 rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed destinatario_nome={'x': 1} rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed endereco_numero=True rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed endereco_referencia=xxxxxxxxxxxxxxxxxxxx rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "metadata malformed motorista=    rejected",
+    "status": "PASS",
+    "expected": "DELIVERY_DATA_INVALID"
+  },
+  {
+    "test": "rejected metadata wrote no delivery",
+    "status": "PASS"
+  },
+  {
+    "test": "all approved metadata persisted on every delivery of the group (PG roundtrip)",
+    "status": "PASS",
+    "fields": 23
+  },
+  {
+    "test": "server-derived tenant/client/status/proof/finance unchanged by metadata",
+    "status": "PASS"
+  },
+  {
+    "test": "exact replay with identical metadata returns stored receipt",
+    "status": "PASS"
+  },
+  {
+    "test": "divergent replay (metadata changed, same key) conflicts",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
+  },
+  {
+    "test": "conflict changed nothing",
+    "status": "PASS"
+  },
+  {
     "test": "zero financial/fiscal/communication rows across envase, transition, deliveries and contention",
     "status": "PASS"
   },
