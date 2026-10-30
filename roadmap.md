@@ -1,3 +1,11 @@
+## 30/10 21:35 — envase isolado e operações posteriores (preparação autorizada)
+- [x] Inventariar contratos/consumidores atuais e reconciliar aplicações relatadas 91cec22/2faf356, sem hosted/sessões/segredos; composição local oito instaladores PRE/POST.
+- [x] Preparar/testar delta de envase isolado: 29PG PASS, PRE/POST determinísticos, rollback deny-only, 3 testes de ordenação; release deliberadamente NO-GO, sem grant do writer.
+- [x] Disponibilidade exata e fences authz/session/trava no consumidor; botões continuam fechados, provas/histórico cancelado preservados;457Vitest PASS/28arquivos.
+- [x] Relatório/fontes/SQL/hash/resultados brutos em scripts/stock-envase-recovery-20261027/isolated; nenhum novo writer liberável.
+- [ ] Liberação envase bloqueada: completar matrizes de locks/revogação/raízes/partial/override/recibos legados/sentinelas financeiros e prova canônica de entradas indiretas; não avançar operações posteriores antes disso.
+- [ ] Homologação JWT/Storage real e implantação aguardam auditor; fiscal/financeiro/automações, confirmação física, etiquetas e dispensa não liberados nesta execução.
+
 - [x] Complemento financeiro 01:31: formulário/agenda/catálogos e promessa de persistência removidos; consulta autorizada com loading/vazio/erro/título/fiscal; 23 testes focados e595/595 gate em42arquivos PASS, zero writes programáticos/escopo, build OK; docs/auditorias/financeiro-consulta-20261030.md. Sem publicar/banco.
 - [x] Contenção entrega 30/10: catálogo LIVE somente SELECT; página/hook/motor/embalagens/recebimento e financeiro sem primeiro dispatch nos caminhos contidos; consultas e carteira preservadas; 593/593 testes em42arquivos sem rede, build OK; relatório/diff/hashes em docs/auditorias/entrega-contencao-20261030. Sem publicar/DDL/dados reais.
 - [x] Diagnóstico timeout dc841355: última falha service_role reproduzida em0,522s; expectativa/harness corrigidos sem SQL de negócio;97PASS PG257,264s e9PASS instalador242,091s/exit0, limites/checkpoints/logs em scripts/delivery-atomic-hardening-20261030/TIMEOUT-DIAGNOSTICO.md. Sem hosted/frontend/publicação.

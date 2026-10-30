@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { classifyEnvaseError, parseEnvaseAck, ENVASE_RPC, saveEnvaseAttempt, clearEnvaseAttempt, loadEnvaseAttempts, type EnvaseAttempt } from "@/lib/envase/envaseFlow";
+import { ENVASE_CAPABILITY_RPC } from "@/lib/envase/envaseAvailability";
 
 const t = vi.hoisted(() => ({ inv: vi.fn(), rpc: vi.fn(), from: vi.fn(), auth: { user: { id: "a1" }, profile: { organization_id: "org-A" } } as any, toast: { error: vi.fn(), info: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...a: any[]) => t.rpc(...a), from: (...a: any[]) => t.from(...a) } }));
+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (fn: string, args: any) => fn === "rpc_envase_capability_v1" ? Promise.resolve({ error: null, data: { capability: "envase_isolated_v1", available: true, actor_id: t.auth.user.id, organization_id: t.auth.profile.organization_id, lote_id: args.p_lote, os_id: args.p_os, programacao_id: args.p_prog } }) : t.rpc(fn, args), from: (...a: any[]) => t.from(...a) } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
 vi.mock("@/hooks/useCockpitQuery", () => ({ useCockpitQuery: () => ({ data: [] }) }));
 vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: t.inv }) }));
@@ -18,7 +19,8 @@ const envCalls = () => t.rpc.mock.calls.filter((c: any[]) => c[0] === ENVASE_RPC
 const slotK = (k: string, a = "a1", o = "org-A") => `cf:envase-uncertain:v2:${a}:${o}:${LOTE}:${k}`;
 const slot = slotK("k-1");
 
-beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; });
+const readyAuth = (actor = "a1", org = "org-A", epoch = 0) => ({ user: { id: actor }, profile: { user_id: actor, organization_id: org, ativo: true, senha_provisoria: false }, roles: ["producao"], loading: false, authzReady: true, authzEpoch: epoch });
+beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); t.auth = readyAuth(); });
 
 describe("envase error/ACK contract", () => {
   it("only allowlisted business refusals are definitive", () => {
@@ -103,7 +105,8 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
     const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
     let p: Promise<any> = Promise.resolve();
     act(() => { p = result.current.registrarEnvaseTransacional(params("k-1")); });
-    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-B" } }; rerender();
+    await act(async () => { await Promise.resolve(); });
+    t.auth = readyAuth("a1", "org-B"); rerender();
     await act(async () => { release({ data: ack, error: null }); expect(await p).toBeNull(); });
     expect(t.toast.success).not.toHaveBeenCalled();
     expect(localStorage.getItem(slot)).not.toBeNull();
@@ -133,12 +136,12 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
     t.rpc.mockResolvedValueOnce({ data: null, error: { message: "Failed to fetch" } });
     const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-1")); });
-    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-B" } }; rerender();
+    t.auth = readyAuth("a1", "org-B"); rerender();
     t.rpc.mockResolvedValueOnce({ data: ack, error: null });
     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-b")); });
     expect(envCalls()[1][1].p_idempotency_key).toBe("k-b");
     expect(localStorage.getItem(slot)).not.toBeNull();
-    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; rerender();
+    t.auth = readyAuth(); rerender();
     t.rpc.mockResolvedValueOnce({ data: replayAck, error: null });
     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-new")); });
     expect(envCalls()[2][1].p_idempotency_key).toBe("k-1");
@@ -156,7 +159,7 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
     await act(async () => { await Promise.resolve(); });
     expect(envCalls()).toHaveLength(1);
     t.auth = other as any; rerender();
-    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; rerender();
+    t.auth = readyAuth(); rerender();
     await act(async () => { release({ data: ack, error: null }); expect(await p).toBeNull(); });
     expect(t.toast.success).not.toHaveBeenCalled();
     expect(t.toast.info).not.toHaveBeenCalled();
@@ -170,6 +173,7 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
     const { result, unmount } = renderHook(() => useEsteiraLaboratorio());
     let p: Promise<any> = Promise.resolve();
     act(() => { p = result.current.registrarEnvaseTransacional(params("k-1")); });
+    await act(async () => { await Promise.resolve(); });
     unmount();
     release({ data: ack, error: null }); expect(await p).toBeNull();
     expect(t.toast.success).not.toHaveBeenCalled(); expect(t.inv).not.toHaveBeenCalled();
@@ -181,5 +185,22 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
       expect(await result.current.concluirEnvase("pp1", "os1", "manual")).toBe(false);
     });
     expect(t.rpc).not.toHaveBeenCalled();
+  });
+  it("same actor/tenant authorization epoch change fences late ACK without clearing pending", async () => {
+    let release: ((value: any) => void) | undefined;
+    t.rpc.mockImplementationOnce(() => new Promise(r => { release = r; }));
+    const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
+    let p: Promise<any> = Promise.resolve();
+    await act(async () => { p = result.current.registrarEnvaseTransacional(params("epoch-1")); await Promise.resolve(); });
+    t.auth = readyAuth("a1", "org-A", 1); rerender();
+    await act(async () => { release?.({ data: ack, error: null }); expect(await p).toBeNull(); });
+    expect(localStorage.getItem(slotK("epoch-1"))).not.toBeNull();
+    expect(t.inv).not.toHaveBeenCalled();
+  });
+  it("revoked readiness sends no canonical writer", async () => {
+    t.auth = { ...readyAuth(), authzReady: false };
+    const { result } = renderHook(() => useEsteiraLaboratorio());
+    await act(async () => { expect(await result.current.registrarEnvaseTransacional(params("closed-1"))).toBeNull(); });
+    expect(envCalls()).toHaveLength(0);
   });
 });
