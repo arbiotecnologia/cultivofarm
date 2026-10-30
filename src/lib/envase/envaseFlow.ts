@@ -44,52 +44,110 @@ export function classifyEnvaseError(error: { code?: unknown; message?: unknown }
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+const nonNegInt = (v: unknown) => typeof v === "number" && Number.isInteger(v) && v >= 0;
+const nonNegNum = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0;
+const exactKeys = (o: Record<string, unknown>, req: string[], opt: string[] = []) =>
+  req.every(k => k in o) && Object.keys(o).every(k => req.includes(k) || opt.includes(k));
+const ACK_KEYS = ["success", "replay", "estado", "envases", "entradas_estoque", "volume_reservado_ml", "volume_livre_ml", "pendente_os_ml", "saldo_restante_ml", "avanco", "message"];
+/**
+ * Exact canonical envelope of the v2 writer (no coercion: null/strings/NaN never pass). The envelope carries NO
+ * os/lot/org/key identifiers, so it is NOT bound to the attempt by content; only the dispatch fence binds it.
+ */
 export function parseEnvaseAck(data: unknown): EnvaseAck | null {
-  if (!isObj(data) || data.success !== true || typeof data.replay !== "boolean") return null;
-  if (!["completed", "completed_override", "partial"].includes(String(data.estado))) return null;
-  const saldo = Number(data.saldo_restante_ml);
-  if (!Number.isFinite(saldo)) return null;
-  return { replay: data.replay, estado: String(data.estado), saldoRestanteMl: saldo, message: typeof data.message === "string" ? data.message : undefined, raw: data };
+  if (!isObj(data) || !exactKeys(data, ACK_KEYS) || data.success !== true || typeof data.replay !== "boolean" || typeof data.message !== "string") return null;
+  const estado = data.estado;
+  if (estado !== "completed" && estado !== "completed_override" && estado !== "partial") return null;
+  if (!nonNegInt(data.envases) || !nonNegInt(data.entradas_estoque) || (data.envases as number) < 1 || (data.entradas_estoque as number) < 1) return null;
+  if (!nonNegNum(data.volume_reservado_ml) || !nonNegNum(data.volume_livre_ml) || !nonNegNum(data.saldo_restante_ml)) return null;
+  // pendente_os_ml = greatest(0, demanda-reservado) minus newly reserved volume: finite, never NaN/null.
+  const pend = data.pendente_os_ml;
+  if (typeof pend !== "number" || !Number.isFinite(pend)) return null;
+  if (estado === "completed" ? pend > 0 : pend <= 0) return null;
+  const av = data.avanco;
+  if (!isObj(av)) return null;
+  if (estado === "partial") {
+    if (!exactKeys(av, ["success", "motivo"]) || av.success !== false || av.motivo !== "COCKPIT_ENVASE_PARCIAL_NAO_AVANCA") return null;
+  } else {
+    if (!exactKeys(av, ["success", "replay", "status"], ["status_anterior"]) || av.success !== true || typeof av.replay !== "boolean" || av.status !== "pronto_entrega") return null;
+    if ("status_anterior" in av ? (av.replay !== false || (av.status_anterior !== "em_cq" && av.status_anterior !== "envase")) : av.replay !== true) return null;
+  }
+  return { replay: data.replay, estado, saldoRestanteMl: data.saldo_restante_ml as number, message: data.message, raw: data };
 }
 
-/* ---- Frozen uncertain attempt per actor+tenant+lot (survives reload; never overwritten by a distinct attempt). ---- */
-const PREFIX = "cf:envase-uncertain:v1:";
-const slot = (actorId: string, orgId: string, loteId: string) => `${PREFIX}${actorId}:${orgId}:${loteId}`;
-type S = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+/* ---- Pending uncertain attempts: one slot PER ATTEMPT (actor+tenant+lot+key); a save never overwrites a distinct
+ * attempt, a clear removes only the exact attempt, and any pending/corrupt attempt for the lot blocks new keys. ---- */
+const PREFIX = "cf:envase-uncertain:v2:";
+const LEGACY_PREFIX = "cf:envase-uncertain:v1:";
+const lotPrefix = (actorId: string, orgId: string, loteId: string) => `${PREFIX}${actorId}:${orgId}:${loteId}:`;
+const slotOf = (a: Pick<EnvaseAttempt, "actorId" | "orgId" | "args">) => `${lotPrefix(a.actorId, a.orgId, a.args.p_lote_id)}${a.args.p_idempotency_key}`;
+type S = Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length">;
 
-export function loadEnvaseAttempt(store: S, actorId: string, orgId: string, loteId: string): EnvaseAttempt | "corrupt" | null {
-  const raw = store.getItem(slot(actorId, orgId, loteId));
+const lotSlots = (store: S, actorId: string, orgId: string, loteId: string) => {
+  const out: string[] = [];
+  for (let i = 0; i < store.length; i++) {
+    const k = store.key(i);
+    if (k && (k.startsWith(lotPrefix(actorId, orgId, loteId)) || k === `${LEGACY_PREFIX}${actorId}:${orgId}:${loteId}`)) out.push(k);
+  }
+  return out.sort();
+};
+const parseAttempt = (raw: string | null, slot: string, actorId: string, orgId: string, loteId: string): EnvaseAttempt | "corrupt" | null => {
   if (raw === null) return null;
   try {
     const v = JSON.parse(raw);
-    if (!isObj(v) || v.actorId !== actorId || v.orgId !== orgId || !isObj(v.args) || (v.args as EnvaseArgs).p_lote_id !== loteId) return "corrupt";
+    if (!isObj(v) || v.actorId !== actorId || v.orgId !== orgId || !isObj(v.args)) return "corrupt";
+    const args = v.args as EnvaseArgs;
+    if (args.p_lote_id !== loteId || typeof args.p_idempotency_key !== "string" || !args.p_idempotency_key) return "corrupt";
+    if (!slot.startsWith(LEGACY_PREFIX) && slot !== slotOf(v as EnvaseAttempt)) return "corrupt";
     return v as EnvaseAttempt;
   } catch { return "corrupt"; }
-}
-export function saveEnvaseAttempt(store: S, a: EnvaseAttempt) {
-  const key = slot(a.actorId, a.orgId, a.args.p_lote_id);
-  const raw = JSON.stringify(a);
-  const prev = store.getItem(key);
-  if (prev !== null && prev !== raw) throw new Error("Já existe um envase com resultado incerto para este lote. Nenhuma alteração foi enviada.");
-  store.setItem(key, raw);
-  if (store.getItem(key) !== raw) throw new Error("Não foi possível reservar a recuperação local. Nenhuma alteração foi enviada.");
+};
+/** All pending attempts of this actor/tenant/lot (fresh read every call). Any unreadable slot -> "corrupt". */
+export function loadEnvaseAttempts(store: S, actorId: string, orgId: string, loteId: string): EnvaseAttempt[] | "corrupt" {
+  const out: EnvaseAttempt[] = [];
+  for (const k of lotSlots(store, actorId, orgId, loteId)) {
+    const a = parseAttempt(store.getItem(k), k, actorId, orgId, loteId);
+    if (a === "corrupt") return "corrupt";
+    if (a) out.push(a);
+  }
+  return out;
 }
 const sameAttempt = (raw: string | null, a: EnvaseAttempt) => {
   if (raw === null) return false;
   try { const { replayRejected: _x, ...v } = JSON.parse(raw); const { replayRejected: _y, ...b } = a; return JSON.stringify(v) === JSON.stringify(b); } catch { return false; }
 };
+const slotHolding = (store: S, a: EnvaseAttempt) =>
+  lotSlots(store, a.actorId, a.orgId, a.args.p_lote_id).find(k => sameAttempt(store.getItem(k), a)) ?? null;
+/**
+ * Reserve this attempt's own slot. Refuses when a distinct attempt already exists for the lot, before AND after the
+ * write (another tab may have interleaved); on a post-write collision only our own, never-dispatched slot is removed.
+ */
+export function saveEnvaseAttempt(store: S, a: EnvaseAttempt) {
+  if (slotHolding(store, a)) return; // exact same attempt already reserved (replay)
+  const others = () => loadEnvaseAttempts(store, a.actorId, a.orgId, a.args.p_lote_id);
+  const before = others();
+  if (before === "corrupt" || before.length) throw new Error("Já existe um envase com resultado incerto para este lote. Nenhuma alteração foi enviada.");
+  const key = slotOf(a); const raw = JSON.stringify(a);
+  if (store.getItem(key) !== null) throw new Error("Já existe um envase com resultado incerto para este lote. Nenhuma alteração foi enviada.");
+  store.setItem(key, raw);
+  if (store.getItem(key) !== raw) throw new Error("Não foi possível reservar a recuperação local. Nenhuma alteração foi enviada.");
+  const after = others();
+  if (after === "corrupt" || after.length !== 1) {
+    if (store.getItem(key) === raw) store.removeItem(key);
+    throw new Error("Outro envio deste lote foi iniciado em paralelo. Nenhuma alteração foi enviada; consulte o histórico.");
+  }
+}
 /** Conditional clear: only the exact attempt that was settled. */
 export function clearEnvaseAttempt(store: S, a: EnvaseAttempt): boolean {
-  const key = slot(a.actorId, a.orgId, a.args.p_lote_id);
-  if (!sameAttempt(store.getItem(key), a)) return false;
-  store.removeItem(key); return true;
+  const k = slotHolding(store, a);
+  if (!k) return false;
+  store.removeItem(k); return true;
 }
 /** Refusal of a REPLAY does not prove the original uncertain call did not commit: keep it, mark it, block the lot. */
 export function markEnvaseReplayRejected(store: S, a: EnvaseAttempt, code: string) {
-  const key = slot(a.actorId, a.orgId, a.args.p_lote_id);
-  if (!sameAttempt(store.getItem(key), a)) return;
+  const k = slotHolding(store, a);
+  if (!k) return;
   const { replayRejected: _x, ...b } = a;
-  store.setItem(key, JSON.stringify({ ...b, replayRejected: code }));
+  store.setItem(k, JSON.stringify({ ...b, replayRejected: code }));
 }
 
 export type EnvaseRpc = (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }>;
