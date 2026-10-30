@@ -42,10 +42,13 @@ SELECT (SELECT count(*) FROM public.accounts_receivable) ar, (SELECT count(*) FR
        (SELECT count(*) FROM public.fiscal_invoices) fi, (SELECT count(*) FROM public.fiscal_events) fe,
        (SELECT count(*) FROM public.comunicacao_outbox) co, (SELECT count(*) FROM public.comunicacao_eventos) ce,
        (SELECT count(*) FROM public.os_faturamento_base) ofb, (SELECT count(*) FROM public.notificacoes_operacionais) nop, (SELECT count(*) FROM public.portal_notificacoes) pno,
-       (SELECT md5(coalesce(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text,'')) FROM public.accounts_receivable r) ar_hash;
+       (SELECT md5(coalesce(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text,'')) FROM public.accounts_receivable r) ar_hash,
+       (SELECT md5(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text) FROM public.accounts_receivable r WHERE r.organization_id=current_setting('fixture.org')::uuid) ar_org_hash,
+       (SELECT count(*) FROM public.accounts_receivable r WHERE r.organization_id=current_setting('fixture.org')::uuid) ar_org;
 GRANT SELECT ON fixture_baseline TO authenticated;
-SELECT 'FIXTURE_PRE_FIN_HASH ' || ar_hash || ' AR=' || ar FROM fixture_baseline;
--- Runtime baseline comparison: formula md5(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text) over ALL accounts_receivable.
+SELECT 'FIXTURE_PRE_FIN_HASH org=' || coalesce(ar_org_hash,'none') || ' AR_ORG=' || ar_org || ' global=' || ar_hash || ' AR=' || ar FROM fixture_baseline;
+-- Runtime baseline: md5(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text) over the org's accounts_receivable must equal the pinned value;
+-- POST additionally requires the global count/hash unchanged.
 DO $pre$
 DECLARE org uuid := current_setting('fixture.org')::uuid; adm uuid := current_setting('fixture.admin')::uuid;
  prod uuid := current_setting('fixture.produto')::uuid; ref public.cq_parametros_referencia%ROWTYPE;
@@ -55,8 +58,8 @@ BEGIN
  IF has_function_privilege('authenticated','public.rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text)','EXECUTE')
  OR has_function_privilege('authenticated','public.rpc_cockpit_criar_entrega_v1(uuid,text,jsonb,text,jsonb,timestamptz)','EXECUTE')
  OR has_function_privilege('authenticated','public.rpc_entrega_cancelar_v1(uuid,text,timestamptz)','EXECUTE') THEN RAISE EXCEPTION 'FIXTURE_PRE_GRANTS_NOT_BASELINE'; END IF;
- IF (SELECT ar_hash FROM fixture_baseline) IS DISTINCT FROM current_setting('fixture.expected_ar_hash')
- OR (SELECT ar FROM fixture_baseline) IS DISTINCT FROM current_setting('fixture.expected_ar_count')::bigint THEN RAISE EXCEPTION 'FIXTURE_PRE_FIN_BASELINE_DRIFT'; END IF;
+ IF (SELECT ar_org_hash FROM fixture_baseline) IS DISTINCT FROM current_setting('fixture.expected_ar_hash')
+ OR (SELECT ar_org FROM fixture_baseline) IS DISTINCT FROM current_setting('fixture.expected_ar_count')::bigint THEN RAISE EXCEPTION 'FIXTURE_PRE_FIN_BASELINE_DRIFT'; END IF;
  IF NOT EXISTS(SELECT 1 FROM public.organizations WHERE id=org) THEN RAISE EXCEPTION 'FIXTURE_PRE_ORG'; END IF;
  -- Exactly the four relevant SaaS gates; no extra entitlement is invented or required here.
  IF NOT (public._saas_user_has_feature(adm,'estoque_embalagens') AND public._saas_user_has_feature(adm,'envase')
