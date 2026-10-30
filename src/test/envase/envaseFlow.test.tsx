@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { classifyEnvaseError, parseEnvaseAck, ENVASE_RPC, saveEnvaseAttempt, clearEnvaseAttempt, loadEnvaseAttempts, type EnvaseAttempt } from "@/lib/envase/envaseFlow";
 
-const t = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), auth: { user: { id: "a1" }, profile: { organization_id: "org-A" } } as any, toast: { error: vi.fn(), info: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
+const t = vi.hoisted(() => ({ inv: vi.fn(), rpc: vi.fn(), from: vi.fn(), auth: { user: { id: "a1" }, profile: { organization_id: "org-A" } } as any, toast: { error: vi.fn(), info: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...a: any[]) => t.rpc(...a), from: (...a: any[]) => t.from(...a) } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
 vi.mock("@/hooks/useCockpitQuery", () => ({ useCockpitQuery: () => ({ data: [] }) }));
-vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: vi.fn() }) }));
+vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: t.inv }) }));
 vi.mock("sonner", () => ({ toast: t.toast }));
 import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
 
@@ -143,6 +143,37 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-new")); });
     expect(envCalls()[2][1].p_idempotency_key).toBe("k-1");
     expect(localStorage.getItem(slot)).toBeNull();
+  });
+  it.each([
+    ["org A->B->A", { user: { id: "a1" }, profile: { organization_id: "org-B" } }],
+    ["actor a1->a2->a1", { user: { id: "a2" }, profile: { organization_id: "org-A" } }],
+  ])("in-flight %s: late ACK of the old generation is rejected; pending kept; no success/invalidation", async (_l, other) => {
+    let release!: (v: any) => void;
+    t.rpc.mockImplementationOnce(() => new Promise(r => { release = r; }));
+    const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
+    let p: Promise<any> = Promise.resolve();
+    act(() => { p = result.current.registrarEnvaseTransacional(params("k-1")); });
+    await act(async () => { await Promise.resolve(); });
+    expect(envCalls()).toHaveLength(1);
+    t.auth = other as any; rerender();
+    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; rerender();
+    await act(async () => { release({ data: ack, error: null }); expect(await p).toBeNull(); });
+    expect(t.toast.success).not.toHaveBeenCalled();
+    expect(t.toast.info).not.toHaveBeenCalled();
+    expect(t.inv).not.toHaveBeenCalled();
+    expect(localStorage.getItem(slot)).not.toBeNull();
+    expect(JSON.parse(localStorage.getItem(slot) as string).args.p_idempotency_key).toBe("k-1");
+  });
+  it("unmount during flight: late ACK is not adopted and pending is kept", async () => {
+    let release!: (v: any) => void;
+    t.rpc.mockImplementationOnce(() => new Promise(r => { release = r; }));
+    const { result, unmount } = renderHook(() => useEsteiraLaboratorio());
+    let p: Promise<any> = Promise.resolve();
+    act(() => { p = result.current.registrarEnvaseTransacional(params("k-1")); });
+    unmount();
+    release({ data: ack, error: null }); expect(await p).toBeNull();
+    expect(t.toast.success).not.toHaveBeenCalled(); expect(t.inv).not.toHaveBeenCalled();
+    expect(localStorage.getItem(slot)).not.toBeNull();
   });
   it("manual OS stage buttons never call the legacy esteira advance", async () => {
     const { result } = renderHook(() => useEsteiraLaboratorio());

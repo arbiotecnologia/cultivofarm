@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useCockpitQuery } from "@/hooks/useCockpitQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,7 +79,15 @@ export function useEsteiraLaboratorio() {
   const { user, profile } = useAuth() as any;
   // Latest identity, read after every await (fence): a late envase result never lands in another session/tenant.
   const identityRef = useRef<{ actorId: string | null; orgId: string | null }>({ actorId: null, orgId: null });
-  identityRef.current = { actorId: user?.id ?? null, orgId: profile?.organization_id ?? null };
+  // Identity generation: bumps on EVERY actor/org change and on unmount, so a response started under an earlier
+  // generation is never adopted even if the identity later returns to the same actor/org (A->B->A).
+  const epochRef = useRef(0);
+  {
+    const next = { actorId: user?.id ?? null, orgId: profile?.organization_id ?? null };
+    if (next.actorId !== identityRef.current.actorId || next.orgId !== identityRef.current.orgId) epochRef.current += 1;
+    identityRef.current = next;
+  }
+  useEffect(() => () => { epochRef.current += 1; }, []);
   const qc = useQueryClient();
 
   const { data: profiles = [] } = useCockpitQuery({
@@ -353,6 +361,7 @@ export function useEsteiraLaboratorio() {
     motivoParcial?: string | null;
   }): Promise<any | null> => {
     const { actorId, orgId } = identityRef.current;
+    const epoch = epochRef.current;
     let store: Storage | null = null;
     try { store = window.localStorage; } catch { store = null; }
     if (!actorId || !orgId || !store || !params.idempotencyKey) {
@@ -361,7 +370,7 @@ export function useEsteiraLaboratorio() {
     }
     const fence = () => {
       const now = identityRef.current;
-      if (now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
+      if (epochRef.current !== epoch || now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
     };
     // A previous uncertain attempt for this lot is replayed EXACTLY (same key/args); a new key is never minted.
     const all = loadEnvaseAttempts(store, actorId, orgId, params.loteId);
