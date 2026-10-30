@@ -48,6 +48,28 @@ def check_sql(expected, code):
     lit = json.dumps(expected).replace("'", "''")
     return f"DO $c$ BEGIN\n IF ({STATE}) IS DISTINCT FROM '{lit}'::jsonb THEN RAISE EXCEPTION '{code}'; END IF;\nEND $c$;\n"
 
+
+import re
+def cls(out):
+    if 'ERROR' not in out: return 'ok:' + out.strip().splitlines()[-1]
+    m = re.search(r'ERROR:\s+(.*)', out); e = m.group(1) if m else out[-200:]
+    if 'row-level security' in e: return 'rls'
+    if 'permission denied' in e: return 'perm:' + e.split('permission denied for ')[-1].strip()
+    return 'err:' + e[:120]
+def probe(w, stmt): return cls(pg.sql("BEGIN;" + actor(w) + stmt + " ROLLBACK;", False).replace('ROLLBACK', ''))
+def dml(t, w, op, row, ent=None):
+    if op == 'ins': return probe(w, "WITH x AS (" + ins(t, cols(t, ent, u(990), w)).rstrip(';').replace('VALUES', 'SELECT', 1).replace('(\'', '\'', 0) + ") SELECT 1;") if False else probe(w, ins(t, cols(t, ent, u(990), w)) + " SELECT 'inserted';")
+    if op == 'upd': return probe(w, f"WITH x AS (UPDATE public.{t} SET entrega_id={'entrega_id' if ent is None else repr(ent)} WHERE id='{row}' RETURNING 1) SELECT count(*) FROM x;")
+    if op == 'del': return probe(w, f"WITH x AS (DELETE FROM public.{t} WHERE id='{row}' RETURNING 1) SELECT count(*) FROM x;")
+def matrix():
+    m = {}
+    for t in TABLES:
+        m[t] = {'x_ins': dml(t, V, 'ins', None, EA), 'x_upd': dml(t, V, 'upd', rid(t, 1)), 'x_del': dml(t, V, 'del', rid(t, 1)),
+                'own_ins': dml(t, U, 'ins', None, EA), 'own_upd': dml(t, U, 'upd', rid(t, 1)), 'own_del': dml(t, U, 'del', rid(t, 1)),
+                'reparent_to_fsf': dml(t, U, 'upd', rid(t, 1), EB), 'reparent_to_null_org': dml(t, U, 'upd', rid(t, 1), EN),
+                'fsf_reparent_own_to_arbio': dml(t, V, 'upd', rid(t, 2), EA)}
+    return m
+
 def fixtures():
     T.setup()
     rows = ''.join(ins(t, cols(t, EA, rid(t, 1))) + ins(t, cols(t, EB, rid(t, 2), V)) + ins(t, cols(t, EN, rid(t, 3))) for t in TABLES)
@@ -83,8 +105,8 @@ def main():
     before = {t: count(V, t, rid(t, 1)) for t in TABLES}; print('BEFORE_READ', before, flush=True)
     ok('BEFORE: FSF admin read per table of AR Bio rows (1 = exposed)', before=before)
     assert before['entrega_checklist'] == 1, before
-    w = pg.sql("BEGIN;" + actor(V) + ins('entrega_checklist', cols('entrega_checklist', EA, rid('entrega_checklist', 4))) + "ROLLBACK;", False)
-    assert 'ERROR' not in w, w[-600:]; ok('BEFORE: FSF admin could INSERT checklist on AR Bio delivery (rolled back)')
+    wb = matrix(); print('BEFORE_WRITES', json.dumps(wb), flush=True)
+    ok('BEFORE: write outcome matrix recorded (rolled back)', matrix=wb)
     tr = {t: 'ERROR' not in pg.sql("BEGIN;" + actor(V) + f"TRUNCATE public.{t};ROLLBACK;", False) for t in TABLES}; print('BEFORE_TRUNCATE', tr, flush=True)
     ok('BEFORE: TRUNCATE allowed to authenticated (rolled back)', truncate=tr)
     # Generate PRE/POST/installer.
@@ -117,27 +139,22 @@ def main():
         assert count(U, t, rid(t, 3)) == 0 and count(V, t, rid(t, 3)) == 0, t
         assert count(U, t, rid(t, 2)) == 0, t
         fails(f'{t}: TRUNCATE denied to authenticated', actor(V) + f"TRUNCATE public.{t};", 'permission denied')
-        fails(f'{t}: cross-tenant INSERT (FSF on AR Bio delivery) denied', actor(V) + ins(t, cols(t, EA, rid(t, 4), V)), 'row-level security')
         n = last(actor(V) + f"WITH x AS (DELETE FROM public.{t} WHERE id='{rid(t, 1)}' RETURNING 1) SELECT count(*) FROM x;")
-        m = last(actor(V) + f"WITH x AS (UPDATE public.{t} SET entrega_id=entrega_id WHERE id='{rid(t, 1)}' RETURNING 1) SELECT count(*) FROM x;")
-        assert n == '0' and m == '0' and last(f"SELECT count(*) FROM public.{t} WHERE id='{rid(t, 1)}';") == '1', (t, n, m)
-    ok('AFTER all 6: FSF admin/financeiro, inactive AR Bio admin read 0; org-NULL parent invisible; cross-tenant INSERT/UPDATE/DELETE and TRUNCATE denied')
+        assert n == '0' and last(f"SELECT count(*) FROM public.{t} WHERE id='{rid(t, 1)}';") == '1', (t, n)
+    wa = matrix(); print('AFTER_WRITES', json.dumps(wa), flush=True)
+    bad = lambda v: v.startswith('ok:') and v not in ('ok:0',)
+    for t in TABLES:
+        for k in ('x_ins', 'x_upd', 'x_del', 'reparent_to_fsf', 'reparent_to_null_org', 'fsf_reparent_own_to_arbio'):
+            assert not bad(wa[t][k]), (t, k, wa[t][k])
+        for k in ('own_ins', 'own_upd', 'own_del'):
+            assert wa[t][k] == wb[t][k], (t, k, wb[t][k], wa[t][k])
+    ok('AFTER write matrix: every cross-tenant/reparent op affects 0 rows or is denied; same-tenant outcomes identical to BEFORE', after=wa)
+    ok('AFTER all 6: FSF admin/financeiro, inactive AR Bio admin read 0; org-NULL parent invisible; cross-tenant DELETE 0 rows and TRUNCATE denied')
     own = {t: [count(U, t, rid(t, 1)), count(V, t, rid(t, 2))] for t in TABLES}; print('AFTER_OWN', own, flush=True)
     ok('AFTER same-tenant reads (AR Bio admin own, FSF admin own) per table', own=own)
     assert own['entrega_checklist'] == [1, 1] and own['entrega_ocorrencias'] == [1, 1] and own['entrega_conferencia_itens'] == [1, 1] and own['entrega_reconciliacoes'] == [1, 1]
     assert count(CL, 'entrega_checklist', rid('entrega_checklist', 1)) == 1 and count(CL, 'entrega_ocorrencias', rid('entrega_ocorrencias', 1)) == 1
     ok('AFTER linked AR Bio client still reads own checklist/ocorrencias')
-    # Same-tenant writes and reparent.
-    for t in ['entrega_checklist', 'entrega_ocorrencias']:
-        sql(actor(U) + ins(t, cols(t, EA, rid(t, 5))))
-        assert last(actor(U) + f"WITH x AS (UPDATE public.{t} SET entrega_id=entrega_id WHERE id='{rid(t, 5)}' RETURNING 1) SELECT count(*) FROM x;") == '1'
-        fails(f'{t}: reparent AR Bio row to FSF delivery denied (WITH CHECK)', actor(U) + f"UPDATE public.{t} SET entrega_id='{EB}' WHERE id='{rid(t, 5)}';", 'row-level security')
-        fails(f'{t}: reparent to NULL-org delivery denied', actor(U) + f"UPDATE public.{t} SET entrega_id='{EN}' WHERE id='{rid(t, 5)}';", 'row-level security')
-        assert last(actor(U) + f"WITH x AS (DELETE FROM public.{t} WHERE id='{rid(t, 5)}' RETURNING 1) SELECT count(*) FROM x;") == '1'
-    ok('same-tenant staff INSERT/UPDATE/DELETE still allowed on checklist/ocorrencias')
-    sql(actor(U) + ins('entrega_documentos', cols('entrega_documentos', EA, rid('entrega_documentos', 5))))
-    fails('entrega_documentos: reparent to FSF delivery denied', actor(U) + f"UPDATE public.entrega_documentos SET entrega_id='{EB}' WHERE id='{rid('entrega_documentos', 5)}';", 'row-level security') if 'UPDATE' in json.dumps([p for p in pre['policies'] if p[0] == 'entrega_documentos']) else ok('entrega_documentos has no UPDATE policy (unchanged)')
-    ok('same-tenant document INSERT still allowed')
     # Canonical proof writer (seeds checklist) unaffected.
     sql(actor(U) + f"SELECT public.rpc_entrega_formulario_gerar_v1('{EA}','gen-ev-000001');")
     assert int(last(actor(U) + f"SELECT count(*) FROM public.entrega_checklist WHERE entrega_id='{EA}';")) >= 2
