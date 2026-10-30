@@ -60,7 +60,7 @@ import { RegistrarEntregaDialog, type RegistrarEntregaSubmit } from "@/component
 import { PreviewDocumentoEntrega } from "@/components/entregas/PreviewDocumentoEntrega";
 import { labelModalidade, labelResponsavelCurto } from "@/lib/entregas/modalidade";
 import { DELIVERY_OPERATION_BLOCK, requireDeliveryOperationContract } from "@/lib/entregas/operationalContainment";
-import { runAtomicCancel, runAtomicGroup, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
+import { clearPending, loadPending, parserFor, replayUncertain, runAtomicCancel, runAtomicGroup, savePending, type Outcome, type RetrySnapshot, type Rpc } from "@/lib/entregas/deliveryOperationsFlow";
 
 const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   separado: { label: "Separado", variant: "secondary" },
@@ -74,11 +74,38 @@ export default function Entregas() {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const { config: brandingConfig, defaults: brandingDefaults } = useSystemConfig();
-  const { role } = useAuth();
+  const { role, user, profile } = useAuth();
+  const actorId: string | null = user?.id ?? null;
+  const orgId: string | null = profile?.organization_id ?? null;
+  const pendingStore = (): Storage | null => { try { return window.localStorage; } catch { return null; } };
   const deliveryScope = useStorageAccessScope("entregas-operations");
   const operation = useRef<symbol | null>(null);
   const unresolved = useRef(new Set<string>());
   const [operationNotice, setOperationNotice] = useState("");
+  // Uncertain dispatch bound to actor+tenant: blocks any new key (also after remount/reload) until an exact replay settles it.
+  const [pending, setPending] = useState<RetrySnapshot | "corrupt" | null>(null);
+  const pendingRef = useRef<RetrySnapshot | "corrupt" | null>(null);
+  pendingRef.current = pending;
+  useEffect(() => {
+    const store = pendingStore();
+    const value = actorId && orgId ? (store ? loadPending(store, actorId, orgId) : "corrupt") : null;
+    pendingRef.current = value;
+    setPending(value);
+  }, [actorId, orgId]);
+  const reservePending = (r: RetrySnapshot) => {
+    const store = pendingStore();
+    if (!store || !actorId || !orgId || r.expectedOrg !== orgId) throw new Error("Recuperação local indisponível. Nenhuma alteração foi enviada.");
+    savePending(store, actorId, orgId, r);
+    pendingRef.current = r;
+    setPending(r);
+  };
+  const settlePending = (outcome: Outcome<unknown>) => {
+    if (outcome.status !== "confirmed" && outcome.status !== "rejected") return;
+    const store = pendingStore();
+    if (store && actorId && orgId) clearPending(store, actorId, orgId);
+    pendingRef.current = null;
+    setPending(null);
+  };
   const invalidateDelivery = (current: () => boolean) => {
     if (!current()) return;
     for (const prefix of ["entregas", "estoque-prontos-entrega"]) {
@@ -100,6 +127,7 @@ export default function Entregas() {
     const key = deliveryScope.scope;
     if (!captured()) throw new Error("Contexto de entrega indisponível.");
     if (operation.current) throw new Error("Uma operação de entrega já está em andamento.");
+    if (pendingRef.current && target !== "replay") throw new Error("Há um envio anterior com resultado incerto. Use \"Repetir envio pendente\" (mesma chave e mesmas revisões) antes de qualquer novo envio.");
     if (unresolved.current.has(key)) throw new Error("Resultado anterior pendente. Consulte as entregas antes de qualquer novo envio; a reconciliação operacional ainda está bloqueada.");
     const ticket = Symbol(target);
     operation.current = ticket;
@@ -268,7 +296,7 @@ export default function Entregas() {
       const { data, error } = await supabase
         .from("estoque_produto")
         .select(`
-          id, status, quantidade, quantidade_reservada, volume_total, validade,
+          id, status, updated_at, quantidade, quantidade_reservada, volume_total, validade,
           reservado_para_os_id, reservado_para_os_tipo, reservado_para_cliente_id,
           produto_id, microrganismo_id, lote_id,
           produtos(id, nome),
@@ -285,7 +313,7 @@ export default function Entregas() {
         const { data: d2, error: e2 } = await supabase
           .from("estoque_produto")
           .select(`
-            id, status, quantidade, quantidade_reservada, volume_total, validade,
+            id, status, updated_at, quantidade, quantidade_reservada, volume_total, validade,
             reservado_para_os_id, reservado_para_os_tipo, reservado_para_cliente_id,
             produto_id, microrganismo_id, lote_id,
             produtos(id, nome),
@@ -306,7 +334,7 @@ export default function Entregas() {
     queryKey: ["todas-os-disponiveis"],
     queryFn: async () => {
       const [osPadrone, osOnFarm] = await Promise.all([
-        supabase.from("ordens_servico").select("id, numero_os, status, cliente_id, origem, partner_order_id, clientes(nome, codigo_cliente), produtos(nome), data_programada, partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))"),
+        supabase.from("ordens_servico").select("id, numero_os, status, updated_at, cliente_id, origem, partner_order_id, clientes(nome, codigo_cliente), produtos(nome), data_programada, partner_orders:partner_order_id(numero, partner_id, partner_accounts:partner_id(codigo, nome_fantasia, razao_social))"),
         supabase.from("ordens_servico_onfarm").select("id, numero_os, status, cliente_id, clientes(nome, codigo_cliente), produtos(nome), data_recomendada"),
       ]);
       const p = (osPadrone.data || []).map((o) => ({ ...o, type: "padrao", data: o.data_programada }));
@@ -526,27 +554,35 @@ export default function Entregas() {
     retry: false,
     mutationFn: (payload: RegistrarEntregaSubmit) => runDeliveryOperation("create", async (check, dispatch) => {
       // Single atomic server contract; opens only with an exact server capability (probed before dispatch).
-      const { grupoId, itens, osId, osTipo, ...dados } = payload;
+      const { grupoId, itens, osId, osTipo, observed, ...dados } = payload;
       const uuid = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
       if (!uuid.test(grupoId) || !uuid.test(osId) || itens.length === 0 || itens.some(({ item, quantidade }) => !uuid.test(item.id) || !Number.isFinite(quantidade) || quantidade <= 0 || quantidade > item._saldo)) throw new Error("Identificação ou quantidade de entrega inválida.");
+      if (!orgId || !observed?.os || observed.os.id !== osId || !observed.os.updated_at || itens.some(({ item }) => !observed.itens?.[item.id]?.updated_at)) throw new Error("Revisão observada da OS/lotes ausente. Reabra a seleção. Nenhuma alteração foi enviada.");
       const ids = itens.map(({ item }) => item.id);
+      // Read-only comparison with the snapshot taken at selection: divergence requires user review, never a silent rebase.
       const [{ data: os, error: osError }, { data: estoque, error: estoqueError }] = await Promise.all([
-        supabase.from("ordens_servico").select("id, updated_at").eq("id", osId).maybeSingle(),
+        supabase.from("ordens_servico").select("id, updated_at, origem, partner_order_id").eq("id", osId).maybeSingle(),
         supabase.from("estoque_produto").select("id, updated_at, status").in("id", ids),
       ]);
       check();
       if (osError || estoqueError) throw new Error("Não foi possível confirmar o estado atual da OS e do estoque. Nenhuma alteração foi enviada.");
       const rows = new Map((estoque ?? []).map((r: any) => [r.id, r]));
-      if (!os?.updated_at || rows.size !== ids.length) throw new Error("OS ou lote fora do escopo atual. Nenhuma alteração foi enviada.");
+      if (!os || rows.size !== ids.length) throw new Error("OS ou lote fora do escopo atual. Nenhuma alteração foi enviada.");
+      const changed = (os as any).updated_at !== observed.os.updated_at || (os as any).origem !== observed.os.origem || ((os as any).partner_order_id ?? null) !== observed.os.partner_order_id
+        || ids.some(id => (rows.get(id) as any).updated_at !== observed.itens[id].updated_at || (rows.get(id) as any).status !== observed.itens[id].status);
+      if (changed) throw new Error("A OS ou um lote mudou desde a seleção. Feche, revise os dados atualizados e confirme novamente. Nenhuma alteração foi enviada.");
       const outcome = await runAtomicGroup(supabase.rpc.bind(supabase) as unknown as Rpc, {
-        requestKey: grupoId, osId, osTipo, osObservedUpdatedAt: os.updated_at,
-        itens: itens.map(({ item, quantidade }) => ({ itemId: item.id, quantidade, observedUpdatedAt: (rows.get(item.id) as any).updated_at, status: (rows.get(item.id) as any).status })),
+        requestKey: grupoId, expectedOrg: orgId, osId, osTipo, osOrigem: observed.os.origem, osPartnerOrderId: observed.os.partner_order_id,
+        osObservedUpdatedAt: observed.os.updated_at,
+        itens: itens.map(({ item, quantidade }) => ({ itemId: item.id, quantidade, observedUpdatedAt: observed.itens[item.id].updated_at as string, status: observed.itens[item.id].status as string })),
         dados,
-      }, check, dispatch);
+      }, check, (r) => { dispatch(); reservePending(r); });
+      settlePending(outcome);
       if (outcome.status === "confirmed") return { grupoId, total: outcome.ack.itens.length };
       if (outcome.status === "closed") throw new Error(outcome.message);
-      if (outcome.status === "rejected") throw new Error(`Entrega recusada pelo servidor; nenhuma etapa foi gravada. ${outcome.message}`);
-      throw new Error("Resposta incerta da entrega. Consulte as entregas; um reenvio só pode repetir exatamente o mesmo grupo.");
+      if (outcome.status === "rejected") throw new Error(`Entrega recusada pelo servidor (${outcome.code}); a transação não foi confirmada. ${outcome.message}`);
+      if (outcome.status === "stale") throw new Error("Sessão ou empresa alterada durante o envio. O resultado não foi adotado; o envio pendente continua vinculado à sessão original.");
+      throw new Error("Resposta incerta da entrega: pode ter sido gravada. Consulte as entregas; somente a repetição exata do mesmo envio está disponível.");
     }),
     onSuccess: ({ value: { total }, current }) => {
       if (!current()) return;
@@ -587,18 +623,22 @@ export default function Entregas() {
 
   const cancelarEntrega = useMutation({
     retry: false,
-    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => runDeliveryOperation("cancel", async (check, dispatch) => {
-      if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) throw new Error("Entrega inválida.");
+    mutationFn: ({ id, motivo, observedUpdatedAt, observedStatus }: { id: string; motivo: string; observedUpdatedAt: string | null; observedStatus: string | null }) => runDeliveryOperation("cancel", async (check, dispatch) => {
+      if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) || !orgId) throw new Error("Entrega inválida.");
+      if (!observedUpdatedAt) throw new Error("Revisão observada da entrega ausente. Reabra o cancelamento. Nenhuma alteração foi enviada.");
       const { data: entrega, error: fetchErr } = await supabase.from("entregas").select("id, status, updated_at").eq("id", id).maybeSingle();
       check();
       if (fetchErr || !entrega || entrega.id !== id) throw new Error("Não foi possível confirmar a entrega atual. Nenhuma alteração foi enviada.");
+      if ((entrega as any).updated_at !== observedUpdatedAt || entrega.status !== observedStatus) throw new Error("A entrega mudou desde a abertura do cancelamento. Feche, revise o estado atual e confirme novamente. Nenhuma alteração foi enviada.");
       if (!["separado", "em_rota"].includes(entrega.status)) throw new Error("Cancelamento indisponível para este estado. Retorno de entregue exige contrato próprio.");
       // One server transaction: expedition reversal, reservation release and status; no client compensation.
-      const outcome = await runAtomicCancel(supabase.rpc.bind(supabase) as unknown as Rpc, id, motivo, (entrega as any).updated_at, check, dispatch);
+      const outcome = await runAtomicCancel(supabase.rpc.bind(supabase) as unknown as Rpc, id, motivo, observedUpdatedAt, orgId, check, (r) => { dispatch(); reservePending(r); });
+      settlePending(outcome);
       if (outcome.status === "confirmed") return { id };
       if (outcome.status === "closed") throw new Error(outcome.message);
-      if (outcome.status === "rejected") throw new Error(`Cancelamento recusado pelo servidor; nada foi alterado. ${outcome.message}`);
-      throw new Error("Resposta incerta do cancelamento. Consulte a entrega antes de repetir.");
+      if (outcome.status === "rejected") throw new Error(`Cancelamento recusado pelo servidor (${outcome.code}); a transação não foi confirmada. ${outcome.message}`);
+      if (outcome.status === "stale") throw new Error("Sessão ou empresa alterada durante o cancelamento. O resultado não foi adotado.");
+      throw new Error("Resposta incerta do cancelamento: pode ter sido gravado. Consulte a entrega; somente a repetição exata está disponível.");
     }),
     onSuccess: ({ current }) => {
       if (!current()) return;
@@ -606,6 +646,25 @@ export default function Entregas() {
       toast.success("Entrega cancelada");
       setCancelTarget(null);
       setMotivoCancel("");
+    },
+  });
+
+  const replayPending = useMutation({
+    retry: false,
+    mutationFn: () => runDeliveryOperation("replay", async (check, dispatch) => {
+      const p = pendingRef.current;
+      if (!p || p === "corrupt" || p.expectedOrg !== orgId) throw new Error("Nenhum envio pendente válido para esta sessão. Nada foi enviado.");
+      // Exact frozen args: same request key and same observed revisions; never a new CAS or new key.
+      const outcome = await replayUncertain(supabase.rpc.bind(supabase) as unknown as Rpc, p, parserFor(p), check, () => dispatch());
+      settlePending(outcome);
+      if (outcome.status === "confirmed") return true;
+      if (outcome.status === "rejected") throw new Error(`Repetição recusada pelo servidor (${outcome.code}); o envio pendente foi encerrado sem confirmação. ${outcome.message}`);
+      throw new Error("Repetição ainda sem resultado confirmado. O envio pendente permanece bloqueando novos envios.");
+    }),
+    onSuccess: ({ current }) => {
+      if (!current()) return;
+      invalidateDelivery(current);
+      toast.success("Envio pendente confirmado pelo servidor.");
     },
   });
 
@@ -711,6 +770,16 @@ export default function Entregas() {
 
       <div role="alert" className="border border-destructive rounded-md p-3 space-y-2">
         <p>{operationNotice || DELIVERY_OPERATION_BLOCK}</p>
+        {pending && (
+          <p>
+            {pending === "corrupt"
+              ? "Registro local de envio pendente ilegível ou armazenamento indisponível: novos envios ficam bloqueados nesta sessão. Consulte as entregas."
+              : "Há um envio com resultado incerto. Novos envios ficam bloqueados até a repetição exata confirmar ou o servidor recusar."}
+          </p>
+        )}
+        {pending && pending !== "corrupt" && (
+          <Button variant="outline" disabled={replayPending.isPending} onClick={() => replayPending.mutate()}>Repetir envio pendente</Button>
+        )}
         <Button variant="outline" onClick={() => { if (deliveryScope.ready) { void recarregarEntregas(); void recarregarEstoque(); } }}>Consultar entregas</Button>
       </div>
       <RegistrarEntregaDialog
@@ -970,7 +1039,7 @@ export default function Entregas() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={cancelarEntrega.isPending}
-              onClick={(event) => { event.preventDefault(); if (cancelTarget) cancelarEntrega.mutate({ id: cancelTarget.id, motivo: motivoCancel.trim() }); }}
+              onClick={(event) => { event.preventDefault(); if (cancelTarget) cancelarEntrega.mutate({ id: cancelTarget.id, motivo: motivoCancel.trim(), observedUpdatedAt: cancelTarget.updated_at ?? null, observedStatus: cancelTarget.status ?? null }); }}
             >
               Confirmar cancelamento
             </AlertDialogAction>
