@@ -103,6 +103,7 @@ def main():
     mov = last(f"SELECT string_agg(acao,',' ORDER BY created_at) FROM public.estoque_movimentacoes WHERE estoque_produto_id='{ids['estoque']}';"); ok('ledger recorded', ledger=mov)
     assert 'expedicao' in mov and 'estorno_expedicao' in mov
     assert last(f"SELECT status::text FROM public.estoque_produto WHERE id='{ids['estoque']}';") in ('disponivel', 'reservado'); ok('stock restored by cancellation (no deletion)')
+    print('NOTIF', last("SELECT jsonb_agg(to_jsonb(n))::text FROM public.notificacoes_operacionais n;"), flush=True)
     f1x = fin(); print('FIN_BEFORE', f0, 'FIN_AFTER', f1x, flush=True)
     assert f1x == f0; ok('zero financial/fiscal/communication/notification rows')
     assert last(f"SELECT count(*) FROM public.entregas WHERE ordem_servico_id='{os}' AND (receivable_id IS NOT NULL OR partner_order_id IS NOT NULL);") == '0'; ok('no receivable/B2B link on deliveries')

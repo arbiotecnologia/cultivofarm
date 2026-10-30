@@ -39,12 +39,12 @@
     "test": "canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento",
     "status": "PASS",
     "ids": {
-      "os": "5c741871-f387-4e06-ab03-ffffd4f20c32",
-      "lote": "d979aa54-982f-4c07-8653-5032a070efec",
-      "entrega": "a7f7ff1d-3e4f-4318-ab6e-edee71d15c7d",
-      "estoque": "762d28d1-b8fd-4c6a-b6c6-a13b0c4c6fe4",
-      "programacao": "48c9d17f-1313-4365-beff-f96ad593ab0e",
-      "request_key": "fixture-5c741871-f387-4e06-ab03-ffffd4f20c32"
+      "os": "70a83e15-f501-4e05-901a-2773e659fb4a",
+      "lote": "b54d23d2-a6db-4f45-ada2-a4186c106a98",
+      "entrega": "5839b16c-66d0-4cc7-9d2e-05999317809e",
+      "estoque": "15af6214-380d-4017-93e8-e8e1a066d9c0",
+      "programacao": "e046a7d4-485d-49f6-96d8-a1b310a21a23",
+      "request_key": "fixture-70a83e15-f501-4e05-901a-2773e659fb4a"
     }
   },
   {
@@ -80,6 +80,6 @@
   {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 122, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 107, in main\n    assert f1x == f0; ok('zero financial/fiscal/communication/notification rows')\n           ^^^^^^^^^\nAssertionError\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 123, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_pipeline_pg.py\", line 108, in main\n    assert f1x == f0; ok('zero financial/fiscal/communication/notification rows')\n           ^^^^^^^^^\nAssertionError\n"
   }
 ]
