@@ -19,6 +19,7 @@ def metadata():
             keep = [x for x in old[key] if x['schema'] not in {'public','platform_private','private','cf_user_guards_v1','auth'}]
         old[key] = keep + (values or [])
     old.update({k:extra[k] for k in ('schemas','enums','roles')})
+    old['enums'] = [x for x in old['enums'] if x['schema'] in {s['name'] for s in old['schemas']}]
     old['constraints'] = [x for x in old['constraints'] if not x['definition'].startswith('TRIGGER')]
     return old
 
