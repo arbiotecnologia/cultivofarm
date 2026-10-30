@@ -139,6 +139,8 @@ def run():
     sql(f"SET session_replication_role=replica;UPDATE public.controle_qualidade SET resultado='aprovado' WHERE lote_id='{T.L6}';")
     import matrix
     matrix.run(sys.modules[__name__])
+    import permit_matrix
+    permit_matrix.run(sys.modules[__name__])
     z1=last("SELECT jsonb_build_object("+','.join("'%s',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE \"C\"),'[]') FROM public.%s x)"%(t,t) for t in DOWNSTREAM)+")::text;"); assert z1==z; ok('all fourteen financial/fiscal/outbox existing full-row snapshots unchanged')
     # Existing canonical proof regressions on locally created delivery, never hosted reference.
     owned=last(f"SELECT id FROM public.estoque_produto WHERE lote_id='{T.L2}' AND status='reservado';")
