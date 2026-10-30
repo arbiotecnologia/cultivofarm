@@ -156,6 +156,11 @@ def run():
     att=T.actor()+f"SELECT public.rpc_entrega_comprovante_anexar_v1('{entrega}','att-isolated-0001','{json.dumps({'arquivo_path':fp,'arquivo_nome':'local.pdf','arquivo_mime':'application/pdf','recebedor_nome':'LOCAL'})}'::jsonb);"
     assert json.loads(last(att))['success'] is True and json.loads(last(att))['replayed'] is True; ok('canonical generate/sign/attach and exact attachment replay preserved')
     reject('foreign FSF proof stays closed',T.actor(T.V)+f"SELECT public.rpc_entrega_formulario_gerar_v1('{entrega}','foreign-proof-0001');",'42501')
+    observed=last(f"SELECT updated_at FROM public.entregas WHERE id='{entrega}';")
+    cancel=T.actor()+f"SELECT public.rpc_entrega_cancelar_v1('{entrega}','LOCAL REGRESSION','{observed}'::timestamptz);"
+    result=json.loads(last(cancel)); assert result['success'] is True
+    before=snapshot(); result=json.loads(last(cancel)); assert result['replay'] is True and snapshot()==before
+    ok('canonical group and observed cancellation replay preserved under added gates')
     sql(f'REVOKE EXECUTE ON FUNCTION {G.RPC} FROM authenticated;'); assert state()==post
     sql((H/'legacy-closure-install.sql.review').read_text()); assert state()==closed
     measured=sql('BEGIN;'+f'GRANT EXECUTE ON FUNCTION {G.RPC} TO authenticated;'+G.STATE+'::text;ROLLBACK;')
