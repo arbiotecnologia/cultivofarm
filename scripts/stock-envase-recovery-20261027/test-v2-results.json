@@ -43,8 +43,33 @@
     "expected": "STOCK_V2_ALREADY_INSTALLED"
   },
   {
+    "test": "authenticated cannot call transition helper",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "authenticated cannot mint authz ticket",
+    "status": "PASS",
+    "expected": "permission denied"
+  },
+  {
+    "test": "direct em_cq->envase without ticket denied even as table owner",
+    "status": "PASS",
+    "expected": "CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC"
+  },
+  {
+    "test": "GUC spoof does not open the transition",
+    "status": "PASS",
+    "expected": "CQ_MANUAL_PARENT_REQUIRES_REVIEWED_RPC"
+  },
+  {
+    "test": "tenant B actor cannot envase AR Bio lot",
+    "status": "PASS",
+    "expected": "DENIED"
+  },
+  {
     "test": "execution stopped at concrete failure",
     "status": "FAIL",
-    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 172, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 100, in main\n    setup_v2()\n    ~~~~~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 55, in setup_v2\n    sql(\"SET session_replication_role=replica;\" + feats + f\"\"\"\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    UPDATE public.saas_plan_versions SET features_snapshot='[\"estoque_embalagens\",\"envase\",\"ordens_producao\",\"lotes_qualidade\"]' WHERE id='{T.VER}';\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<4 lines>...\n    INSERT INTO public.estoque_produto(id,lote_id,produto_id,quantidade,volume_total,status,reservado_para_os_id,reservado_para_os_tipo,reservado_para_cliente_id,quantidade_reservada) VALUES('{RX}','{T.L}','{PROD}',2,2,'reservado','{T.O}','manual','{C}',2);\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    SET session_replication_role=origin;\"\"\")\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 18, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/bounded_pg.py\", line 19, in sql\n    assert r.returncode==0,r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^\nAssertionError: ERROR:  duplicate key value violates unique constraint \"ux_controle_qualidade_seq\"\nDETAIL:  Key (seq)=(1) already exists.\n\n"
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 172, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 109, in main\n    fails('latest CQ reprovado keeps envase closed (existing criterion)', actor() + envase(O3, PP3, L3, [{'tipo_embalagem': 'frasco_1L', 'quantidade': 2}], 'env-reprov-1'), 'COCKPIT_ENVASE_EXIGE_CQ_APROVADO')\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/dev-server/scripts/stock-envase-recovery-20261027/test_v2_pg.py\", line 21, in fails\n    e = pg.sql(s, False); assert code in e, label + ':' + e[-900:]; ok(label, expected=code); return e\n                                 ^^^^^^^^^\nAssertionError: latest CQ reprovado keeps envase closed (existing criterion):ERROR:  COCKPIT_LOTE_REPROVADO_BLOQUEIA_ENVASE\nCONTEXT:  PL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 90 at RAISE\n\n"
   }
 ]

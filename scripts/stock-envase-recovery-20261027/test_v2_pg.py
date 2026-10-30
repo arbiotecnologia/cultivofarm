@@ -46,8 +46,8 @@ def manufactured(os, prog, lote, cq='aprovado', vol=2000, status='em_cq'):
     INSERT INTO public.ordens_servico(id,organization_id,cliente_id,fazenda_id,talhao_id,produto_id,origem,status,numero_os,volume_total_ml) VALUES('{os}','{A}','{C}','{u(18)}','{u(20)}','{PROD}','agronomica','{status}','LOCAL-{os[-4:]}',{vol});
     INSERT INTO public.programacao_producao(id,organization_id,ordem_servico_id,produto_id,volume_necessario,status,data_programada) VALUES('{prog}','{A}','{os}','{PROD}',{vol},'aprovado',current_date);
     INSERT INTO public.lotes(id,organization_id,produto_id,programacao_id,status,codigo_lote,volume_produzido) VALUES('{lote}','{A}','{PROD}','{prog}','{'aprovado' if cq=='aprovado' else 'reprovado'}','LOCAL-L-{lote[-4:]}',100000);
-    INSERT INTO public.controle_qualidade(lote_id,organization_id,resultado,seq,responsavel,ph,concentracao) VALUES('{lote}','{A}','aprovado',1,'DADOS FICTICIOS SEM VALOR COMERCIAL',7,1e9);
-    {"INSERT INTO public.controle_qualidade(lote_id,organization_id,resultado,seq,responsavel,ph,concentracao,created_at) VALUES('"+lote+"','"+A+"','reprovado',2,'DADOS FICTICIOS SEM VALOR COMERCIAL',7,1e9,now()+interval '1 second');" if cq!='aprovado' else ''}
+    INSERT INTO public.controle_qualidade(lote_id,organization_id,resultado,seq,responsavel,ph,concentracao) VALUES('{lote}','{A}','aprovado',{int(lote[-4:])},'DADOS FICTICIOS SEM VALOR COMERCIAL',7,1e9);
+    {"INSERT INTO public.controle_qualidade(lote_id,organization_id,resultado,seq,responsavel,ph,concentracao,created_at) VALUES('"+lote+"','"+A+"','reprovado',"+str(int(lote[-4:])+1000)+",'DADOS FICTICIOS SEM VALOR COMERCIAL',7,1e9,now()+interval '1 second');" if cq!='aprovado' else ''}
     """
 def setup_v2():
     T.setup()
