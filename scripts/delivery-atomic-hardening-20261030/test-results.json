@@ -104,13 +104,26 @@
     "expected": "DELIVERY_SCOPE_DENIED"
   },
   {
-    "test": "cancel split collision reproduced; operational blocker retained",
-    "status": "BLOCKED",
-    "error": "ERROR:  duplicate key value violates unique constraint \"estoque_produto_lote_legado_unico_idx\"\nDETAIL:  Key (lote_id)=(10000000-0000-4000-8000-000000000009) already exists.\nCONTEXT:  SQL statement \"UPDATE public.estoque_produto SET status='disponivel' WHERE id=p_item_id\"\nPL/pgSQL function rpc_estoque_operar_v1(text,uuid,numeric,text,jsonb) line 121 at SQL statement\nPL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text) line 36 at assignment\n"
+    "test": "cancel failure after return ledger atomically rolls back",
+    "status": "PASS",
+    "expected": "LOCAL_CANCEL_FAULT"
   },
   {
     "test": "failed cancel rolls back reversal stock delivery and receipt",
     "status": "PASS"
+  },
+  {
+    "test": "canonical split merge keeps unique index source history and main balance",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel exact replay",
+    "status": "PASS"
+  },
+  {
+    "test": "cancel changed reason replay denied",
+    "status": "PASS",
+    "expected": "DELIVERY_REPLAY_CONFLICT"
   },
   {
     "test": "no downstream titles fiscal outbox",
