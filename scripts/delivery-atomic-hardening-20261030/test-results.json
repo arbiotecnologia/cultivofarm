@@ -329,7 +329,7 @@
   {
     "test": "cancel row wait serializes effective revocation after commit",
     "status": "PASS",
-    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"dd2526a5-e128-4d74-b80b-60da8c3095a1\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
+    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"25bbe2df-3a41-4119-9845-82f0d46146ff\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
   },
   {
     "test": "cancel replay denied after effective revocation row",
@@ -343,7 +343,7 @@
   {
     "test": "cancel merge wait serializes effective revocation after commit",
     "status": "PASS",
-    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"80a3e5c8-c1b3-4d81-8d9b-7cfdb1b26e3f\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
+    "observed": "{\"replay\": false, \"success\": true, \"entrega_id\": \"718a60c5-5b26-4ebd-9bf9-9ba7365e5737\", \"organization_id\": \"10000000-0000-4000-8000-000000000001\", \"reserva_liberada\": true, \"estoque_estornado\": true}\n"
   },
   {
     "test": "cancel replay denied after effective revocation merge",

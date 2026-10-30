@@ -1,0 +1,73 @@
+RESTORE {"unrestored_functions_views": 0, "defaults_failed": 0, "constraints_failed": 0, "policies_failed": 0, "triggers_failed": 0, "indexes_failed": 0}
+PASS real h15 and SaaS resolve synthetic tenant
+PASS tenant FSF cannot use AR Bio IDs
+PASS anonymous ACL denies
+PASS role financeiro denied
+PASS role parceiro_b2b denied
+PASS role parceiro_b2b_tecnico denied
+PASS role superadmin denied
+PASS role consultor_tecnico denied
+PASS inactive denied
+PASS invalid quantity None
+PASS invalid quantity NaN
+PASS invalid quantity 0
+PASS invalid quantity -1
+PASS invalid quantity Infinity
+PASS OnFarm remains contained
+PASS all negative paths no deliveries receipts
+GROUP {"itens": [{"entrega_id": "41bbfa81-418a-403e-ba16-df981e7eef5d", "movimentacao_id": "1a148888-2d93-4c76-9c57-63aed731b9af", "estoque_produto_id": "7458627f-6691-4687-b260-a8571e6db101"}, {"entrega_id": "836a8b48-ed29-4dfc-af37-c1602168061d", "movimentacao_id": "bb2848ee-6681-4b4c-91e8-bd1adf92f171", "estoque_produto_id": "f42dce6f-a158-4d44-9662-926fa2cc3388"}], "os_id": "10000000-0000-4000-8000-000000000007", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000001"}
+PASS two-item group real reserve split delivery expedition
+PASS exact replay returns stored group
+PASS replay creates no duplicate
+PASS changed payload replay conflict
+PASS cross tenant cancel
+PASS cancel failure after return ledger atomically rolls back
+PASS failed cancel rolls back reversal stock delivery and receipt
+CANCEL {"replay": false, "success": true, "entrega_id": "41bbfa81-418a-403e-ba16-df981e7eef5d", "organization_id": "10000000-0000-4000-8000-000000000001", "reserva_liberada": true, "estoque_estornado": true}
+PASS canonical split merge keeps unique index source history and main balance
+PASS cancel exact replay
+PASS cancel changed reason replay denied
+PASS no downstream titles fiscal outbox
+PASS private context removed on success
+PASS revocation advisory
+PASS revocation row
+PASS concurrent replay remains two deliveries
+PASS item2 trigger failure aborts first delivery reserve expedition
+PASS delivery trigger title attempt fails transactionally
+PASS attempted title leaves zero title and no new group
+PASS exact LIVE accounting guard rejects entregue on pending snapshot
+PASS delivery transition barrier precedes any auto billing trigger
+PASS final no context no billing fiscal messages
+TENANT B {"itens": [{"entrega_id": "213e2fcc-21a6-47b5-8dab-0c937ff40861", "movimentacao_id": "c24d737c-6ab2-4c67-aa52-38c9f0d16aae", "estoque_produto_id": "6442a5c6-dbd8-4edf-9a18-be3c71e7bc5a"}], "os_id": "10000000-0000-4000-8000-000000000008", "replay": false, "success": true, "organization_id": "10000000-0000-4000-8000-000000000002"}
+PASS same request key tenants separated no collision
+PASS B cannot replay A cancel result
+PASS GUC spoof cannot cancel directly
+PASS direct stock mutation remains ACL closed
+PASS private context cannot be minted by caller
+PASS oversell balance conserved no negatives
+PASS negative receipt ACK leaves every effect unchanged
+PASS final financial fiscal outbox empty after concurrency
+PASS unsupported field rejected endereco_entrega
+PASS unsupported field rejected observacoes_entrega
+PASS merge accepts available zero reservation with preserved unique index
+PASS merge rejects nonpositive/nonfinite main volume 0
+PASS bad merge retains expedition and no cancel receipt 70
+PASS merge rejects nonpositive/nonfinite main volume -1
+PASS bad merge retains expedition and no cancel receipt 80
+PASS merge rejects nonpositive/nonfinite main volume 'NaN'::numeric
+PASS bad merge retains expedition and no cancel receipt 90
+PASS merge rejects nonpositive/nonfinite main volume 'Infinity'::numeric
+PASS bad merge retains expedition and no cancel receipt 100
+PASS merge incompatible expiry rejected explicitly
+PASS same tenant distinct actors same key separate receipts
+PASS legacy cancel remains contained
+PASS cancel NULL observed denied
+PASS cancel stale observed denied
+PASS cancel revoked no effects advisory
+PASS cancel revoked no effects gate
+PASS real revoker waits gate during cancel row
+PASS cancel replay denied after effective revocation row
+PASS real revoker waits gate during cancel merge
+PASS cancel replay denied after effective revocation merge
+PASS dedicated tests zero finance/outbox
+RESULT 80 PASS 0 FAIL 0 BLOCKED

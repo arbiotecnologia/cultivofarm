@@ -20,6 +20,14 @@
     "status": "PASS"
   },
   {
+    "test": "motor delta confined to private delivery cancel branch",
+    "status": "PASS"
+  },
+  {
+    "test": "authenticated scoped SELECT transport remains callable (empty fixture)",
+    "status": "PASS"
+  },
+  {
     "test": "rerun denied",
     "status": "PASS"
   },
