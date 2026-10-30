@@ -43,10 +43,10 @@ SELECT (SELECT count(*) FROM public.accounts_receivable) ar, (SELECT count(*) FR
        (SELECT count(*) FROM public.comunicacao_outbox) co, (SELECT count(*) FROM public.comunicacao_eventos) ce,
        (SELECT count(*) FROM public.os_faturamento_base) ofb, (SELECT count(*) FROM public.notificacoes_operacionais) nop, (SELECT count(*) FROM public.portal_notificacoes) pno,
        (SELECT md5(coalesce(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text,'')) FROM public.accounts_receivable r) ar_hash,
-       (SELECT md5(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text) FROM public.accounts_receivable r WHERE r.organization_id=current_setting('fixture.org')::uuid) ar_org_hash,
+       (SELECT coalesce(md5(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text),'none') FROM public.accounts_receivable r WHERE r.organization_id=current_setting('fixture.org')::uuid) ar_org_hash,
        (SELECT count(*) FROM public.accounts_receivable r WHERE r.organization_id=current_setting('fixture.org')::uuid) ar_org;
 GRANT SELECT ON fixture_baseline TO authenticated;
-SELECT 'FIXTURE_PRE_FIN_HASH org=' || coalesce(ar_org_hash,'none') || ' AR_ORG=' || ar_org || ' global=' || ar_hash || ' AR=' || ar FROM fixture_baseline;
+SELECT 'FIXTURE_PRE_FIN_HASH org=' || ar_org_hash || ' AR_ORG=' || ar_org || ' global=' || ar_hash || ' AR=' || ar FROM fixture_baseline;
 -- Runtime baseline: md5(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text) over the org's accounts_receivable must equal the pinned value;
 -- POST additionally requires the global count/hash unchanged.
 DO $pre$

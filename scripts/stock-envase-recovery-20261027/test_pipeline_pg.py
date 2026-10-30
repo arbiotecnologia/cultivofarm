@@ -6,7 +6,7 @@ No replica mode / trigger disabling / status forcing for ANY pipeline row. Only 
 hosted today and has no canonical writer reachable in a restore (tenant, auth users, profiles/roles, subscription,
 client/farm/plot, product) is loaded with replica mode, explicitly. The CQ reference is GLOBAL catalogue data without any client writer
 (authenticated has no privilege); it is loaded locally as master data and is a hosted precondition. Claims testing, not JWT."""
-import hashlib, json, re, subprocess, sys, time, traceback
+import os, hashlib, json, re, subprocess, sys, time, traceback
 from pathlib import Path
 H = Path(__file__).resolve().parent
 ATOMIC = H.parent / 'delivery-atomic-hardening-20261030'
@@ -26,11 +26,13 @@ def last(s): return sql(s).splitlines()[-1]
 def actor(w):
     c = json.dumps({'sub': w, 'role': 'authenticated', 'iat': int(time.time()) - 5, 'exp': int(time.time()) + 600, 'aal': 'aal1'})
     return f"SET ROLE authenticated; SET request.jwt.claim.sub='{w}'; SET request.jwt.claims='{c}'; SET request.jwt.claim.role='authenticated';"
+CLI_NOME = 'TESTE SEM VALOR COMERCIAL LOCAL CLIENTE AR BIO'
+PROD_NOME = 'TESTE SEM VALOR COMERCIAL LOCAL BIO'
 def fixture(**over):
-    v = dict(org=ORG, admin=ADM, cliente=CLI, fazenda=FAZ, talhao=TAL, produto=PROD, referencia=REF, cancel='true', accept_inapp='true'); v.update(over)
+    v = dict(org=ORG, admin=ADM, cliente=CLI, fazenda=FAZ, talhao=TAL, produto=PROD, referencia=REF, cancel='true', accept_inapp='true', cliente_nome=CLI_NOME, produto_nome=PROD_NOME, expected_ar_hash='none', expected_ar_count='0'); v.update(over)
     s = (H / 'fixture-arbio-pipeline.sql.review').read_text()
     for k, val in v.items(): s = s.replace(f":'{k}'", "'" + val.replace("'", "''") + "'")
-    assert not re.search(r":'[a-z]+'", s)
+    assert not re.search(r":'[a-z_]+'", s)
     r = subprocess.run(pg.psql(), input=s, capture_output=True, text=True, timeout=120)
     return r.returncode, r.stdout, r.stderr
 FIN = ['accounts_receivable', 'accounts_receivable_installments', 'financial_receipts', 'financial_documents', 'fiscal_invoices', 'fiscal_events', 'comunicacao_outbox', 'comunicacao_eventos', 'os_faturamento_base', 'portal_notificacoes']
@@ -39,6 +41,24 @@ GRANTS = "SELECT has_function_privilege('authenticated','public.rpc_cockpit_regi
 PIPE_TABLES = ['ordens_servico', 'programacao_producao', 'lotes', 'controle_qualidade', 'envase', 'estoque_produto', 'estoque_movimentacoes', 'entregas']
 def counts(): return last("SELECT jsonb_build_object(" + ','.join(f"'{t}',(SELECT count(*) FROM public.{t})" for t in PIPE_TABLES) + ")::text;")
 
+# Exact ledger (per lot, all stock rows, deterministic order) and stock state pins.
+LEDGER_SQL = ("SELECT string_agg(concat_ws('|',m.acao,m.quantidade,m.saldo_anterior,m.saldo_posterior,m.reservado_anterior,m.reservado_posterior,m.status_anterior,m.status_novo,m.direcao),';' "
+              "ORDER BY m.acao,m.saldo_anterior,m.reservado_anterior) FROM public.estoque_movimentacoes m WHERE m.lote_id='{lote}';")
+STOCK_SQL = ("SELECT string_agg(concat_ws('|',e.status,e.quantidade,coalesce(e.quantidade_reservada,0),(e.reservado_para_os_id='{os}')),';' ORDER BY e.status,e.quantidade) "
+             "FROM public.estoque_produto e WHERE e.lote_id='{lote}';")
+LEDGER_CANCELLED = os.environ.get('PIN_LEDGER_CANCELLED', '')
+STOCK_CANCELLED = os.environ.get('PIN_STOCK_CANCELLED', '')
+LEDGER_RETAINED = os.environ.get('PIN_LEDGER_RETAINED', '')
+STOCK_RETAINED = os.environ.get('PIN_STOCK_RETAINED', '')
+RETAINED_STATUS = 'separado'
+def check_stock(ids, ent_status, ledger_pin, stock_pin, label):
+    st = last(f"SELECT status::text FROM public.entregas WHERE id='{ids['entrega']}';")
+    led = last(LEDGER_SQL.format(lote=ids['lote'])); stk = last(STOCK_SQL.format(lote=ids['lote'], os=ids['os']))
+    print('STATE', label, st, 'LEDGER', led, 'STOCK', stk, flush=True)
+    assert st == ent_status, (label, st)
+    assert led == ledger_pin, (label, 'ledger', led)
+    assert stk == stock_pin, (label, 'stock', stk)
+    ok(f'{label}: delivery {ent_status}, exact ledger and stock state', ledger=led, stock=stk)
 def master_data():
     feats = ''.join(f"INSERT INTO public.saas_features(id,module_id,key,name) VALUES('{u(100+i)}','{MOD}','{k}','LOCAL');INSERT INTO public.saas_plan_version_features(plan_version_id,feature_id,enabled) VALUES('{VER}','{u(100+i)}',true);" for i, k in enumerate(FEATS))
     sql("SET session_replication_role=replica;" + f"""
@@ -47,10 +67,10 @@ def master_data():
     INSERT INTO public.organizations(id,nome) VALUES('{ORG}','LOCAL AR BIO'),('{ORGB}','LOCAL FSF TENANT');
     INSERT INTO public.profiles(user_id,organization_id,nome,ativo,senha_provisoria) VALUES('{ADM}','{ORG}','LOCAL ADMIN AR BIO',true,false),('{ADMB}','{ORGB}','LOCAL ADMIN FSF',true,false);
     INSERT INTO public.user_roles(user_id,role) VALUES('{ADM}','administrador'),('{ADMB}','administrador');
-    INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{CLI}','{ORG}','LOCAL CLIENTE AR BIO TESTE SEM VALOR COMERCIAL','LOCAL-PIPE-A'),('{CLIB}','{ORGB}','LOCAL CLIENTE FSF','LOCAL-PIPE-B');
+    INSERT INTO public.clientes(id,organization_id,nome,codigo_cliente) VALUES('{CLI}','{ORG}','{CLI_NOME}','LOCAL-PIPE-A'),('{CLIB}','{ORGB}','LOCAL CLIENTE FSF','LOCAL-PIPE-B');
     INSERT INTO public.fazendas(id,organization_id,cliente_id,nome) VALUES('{FAZ}','{ORG}','{CLI}','LOCAL A'),('{FAZB}','{ORGB}','{CLIB}','LOCAL B');
     INSERT INTO public.talhoes(id,organization_id,fazenda_id,nome,area_hectares) VALUES('{TAL}','{ORG}','{FAZ}','LOCAL A',1),('{TALB}','{ORGB}','{FAZB}','LOCAL B',1);
-    INSERT INTO public.produtos(id,nome,tipo,ativo,familia_catalogo) VALUES('{PROD}','LOCAL BIO TESTE SEM VALOR COMERCIAL','inoculante',true,'biologico');
+    INSERT INTO public.produtos(id,nome,tipo,ativo,familia_catalogo) VALUES('{PROD}','{PROD_NOME}','inoculante',true,'biologico');
     INSERT INTO public.saas_modules(id,key,name) VALUES('{MOD}','localpipe','LOCAL');
     INSERT INTO public.saas_plans(id,key,name) VALUES('{PLAN}','localpipe','LOCAL');
     INSERT INTO public.saas_plan_versions(id,plan_id,version_number,name_snapshot,status,effective_from,price_amount,currency,billing_cycle,trial_days,published_at,features_snapshot) VALUES('{VER}','{PLAN}',1,'LOCAL','PUBLISHED',now()-interval '1 day',0,'BRL','monthly',1,now()-interval '1 day','{json.dumps(FEATS)}');
@@ -86,9 +106,12 @@ def main():
     rc, out, err = fixture(cliente=CLIB, fazenda=FAZB, talhao=TALB); assert rc != 0 and 'FIXTURE_PRE_CLIENT_SCOPE' in err, err[-800:]
     ok('FSF client/farm with AR Bio org: PRE stops')
     sql(f"UPDATE public.clientes SET nome='LOCAL CLIENTE AR BIO' WHERE id='{CLI}';")
-    rc, out, err = fixture(); assert rc != 0 and 'FIXTURE_PRE_CLIENT_NOT_TEST_MARKED' in err, err[-800:]
-    assert counts() == c0 and last("SELECT count(*) FROM public.notificacoes_operacionais;") == '0'; ok('client without TESTE SEM VALOR COMERCIAL marker: PRE stops, no notice')
-    sql(f"UPDATE public.clientes SET nome='LOCAL CLIENTE AR BIO TESTE SEM VALOR COMERCIAL' WHERE id='{CLI}';")
+    rc, out, err = fixture(cliente_nome='LOCAL CLIENTE AR BIO'); assert rc != 0 and 'FIXTURE_PRE_NOT_TEST_MARKED' in err, err[-800:]
+    rc, out, err = fixture(); assert rc != 0 and 'FIXTURE_PRE_NOT_TEST_MARKED' in err, err[-800:]
+    assert counts() == c0 and last("SELECT count(*) FROM public.notificacoes_operacionais;") == '0'; ok('unmarked or name-mismatched client: PRE stops, no notice')
+    sql(f"UPDATE public.clientes SET nome='{CLI_NOME}' WHERE id='{CLI}';")
+    rc, out, err = fixture(expected_ar_hash='9c1f86a6ccec0f8c233d17994294af12', expected_ar_count='5'); assert rc != 0 and 'FIXTURE_PRE_FIN_BASELINE_DRIFT' in err, err[-800:]
+    assert counts() == c0; ok('financial baseline different from pinned hash/count: PRE stops')
     # In-app side effect not accepted -> full rollback.
     rc, out, err = fixture(accept_inapp='false'); assert rc != 0 and 'FIXTURE_POST_INAPP_NOTIFICATION_NOT_ACCEPTED' in err, err[-800:]
     assert counts() == c0 and last("SELECT count(*) FROM public.notificacoes_operacionais;") == '0' and last(GRANTS) == 'false/false/false'
@@ -97,7 +120,7 @@ def main():
     f0 = fin()
     rc, out, err = fixture()
     assert rc == 0, (out + err)[-3000:]
-    assert last("SELECT count(*) FROM public.notificacoes_operacionais WHERE mensagem NOT LIKE '%TESTE SEM VALOR COMERCIAL%' OR tipo<>'nova_demanda_producao';") == '0' and int(last("SELECT count(*) FROM public.notificacoes_operacionais;")) >= 1
+    assert last(f"SELECT count(*) FROM public.notificacoes_operacionais WHERE tipo<>'nova_demanda_producao' OR titulo<>'Nova demanda de produção' OR position('{PROD_NOME} · {CLI_NOME}' IN mensagem)<>1;") == '0' and int(last("SELECT count(*) FROM public.notificacoes_operacionais;")) >= 1
     ok('approved internal notice only: nova_demanda_producao and message marked TESTE SEM VALOR COMERCIAL')
     ids = json.loads(re.search(r'FIXTURE_IDS (\{.*\})', err).group(1)); print('IDS', json.dumps(ids), flush=True)
     ok('canonical pipeline committed: OS aberta -> aprovada -> programada -> lote -> CQ -> envase -> entrega -> cancelamento', ids=ids)
@@ -109,10 +132,7 @@ def main():
     assert last(f"SELECT status::text FROM public.ordens_servico WHERE id='{os}';") == 'pronto_entrega'; ok('OS ends pronto_entrega (envase transition through reviewed authority)', esteira=hist)
     assert last(f"SELECT status::text||'/'||(SELECT resultado::text FROM public.controle_qualidade WHERE lote_id=l.id ORDER BY created_at DESC LIMIT 1)||'/'||(SELECT responsavel FROM public.controle_qualidade WHERE lote_id=l.id LIMIT 1) FROM public.lotes l WHERE id='{ids['lote']}';") == 'aprovado/aprovado/DADOS FICTICIOS SEM VALOR COMERCIAL'; ok('lot/CQ approved by the existing CQ core, synthetic marker kept')
     assert last(f"SELECT status::text FROM public.entregas WHERE id='{ids['entrega']}';") == 'cancelada'; ok('delivery created by group and cancelled')
-    assert last(f"SELECT string_agg(acao,',' ORDER BY created_at) FROM public.estoque_movimentacoes WHERE estoque_produto_id='{ids['estoque']}';") in ('entrada_envase,expedicao,estorno_expedicao', 'entrada,expedicao,estorno_expedicao') or True
-    mov = last(f"SELECT string_agg(acao,',' ORDER BY created_at) FROM public.estoque_movimentacoes WHERE estoque_produto_id='{ids['estoque']}';"); ok('ledger recorded', ledger=mov)
-    assert 'expedicao' in mov and 'estorno_expedicao' in mov
-    assert last(f"SELECT status::text FROM public.estoque_produto WHERE id='{ids['estoque']}';") in ('disponivel', 'reservado'); ok('stock restored by cancellation (no deletion)')
+    check_stock(ids, 'cancelada', LEDGER_CANCELLED, STOCK_CANCELLED, 'cancel=true')
     notif = last("SELECT jsonb_agg(jsonb_build_object('tipo',n.tipo,'usuario',n.usuario_id,'source_type',n.source_type))::text FROM public.notificacoes_operacionais n;")
     assert last(f"SELECT count(*) FROM public.notificacoes_operacionais n JOIN public.profiles p ON p.user_id=n.usuario_id WHERE p.organization_id<>'{ORG}';") == '0'
     ok('only in-app operational notification(s) to AR Bio users (trg_notify_lab_on_programacao); outbox stays 0', notifications=notif)
@@ -124,6 +144,20 @@ def main():
     assert last(actor(ADMB) + f"SELECT count(*) FROM public.lotes WHERE id='{ids['lote']}';") == '0'; ok('FSF admin cannot read the AR Bio fixture lot (RLS)')
     e = pg.sql(actor(ADMB) + f"SELECT public.rpc_programar_os_v1('{os}','manual',current_date+2);", False); assert 'ERROR' in e; ok('FSF admin canonical writer on AR Bio OS denied')
     assert last(actor(ADM) + f"SELECT count(*) FROM public.ordens_servico WHERE id='{os}';") == '1'; ok('AR Bio admin reads own fixture OS (RLS positive)')
+    # cancel=false: the path needed for the real upload. Delivery retained, then cancelled canonically.
+    rc, out, err = fixture(cancel='false'); assert rc == 0, (out + err)[-3000:]
+    ids2 = json.loads(re.search(r'FIXTURE_IDS (\{.*\})', err).group(1))
+    assert last(GRANTS) == 'false/false/false'
+    check_stock(ids2, RETAINED_STATUS, LEDGER_RETAINED, STOCK_RETAINED, 'cancel=false retained')
+    assert fin() == f0; ok('cancel=false: zero financial/fiscal effects')
+    ar = last(f"SELECT updated_at FROM public.entregas WHERE id='{ids2['entrega']}';")
+    out2 = sql("BEGIN; GRANT EXECUTE ON FUNCTION public.rpc_entrega_cancelar_v1(uuid,text,timestamptz) TO authenticated;" + actor(ADM)
+        + f"SELECT public.rpc_entrega_cancelar_v1('{ids2['entrega']}','TESTE SEM VALOR COMERCIAL','{ar}')->>'success'; RESET ROLE;"
+        + "REVOKE EXECUTE ON FUNCTION public.rpc_entrega_cancelar_v1(uuid,text,timestamptz) FROM authenticated; COMMIT;")
+    assert 'true' in out2.split(), out2[-800:]
+    assert last(GRANTS) == 'false/false/false'
+    check_stock(ids2, 'cancelada', LEDGER_CANCELLED, STOCK_CANCELLED, 'cancel=false then canonical cancel')
+    assert fin() == f0; ok('later canonical cancel: zero financial/fiscal effects')
     # Mid-pipeline failure: CQ reprovado reference mismatch -> whole transaction rolls back.
     c1, f1 = counts(), fin()
     sql(f"UPDATE public.cq_parametros_referencia SET aparencia_esperada=NULL WHERE id='{REF}';")
