@@ -1,0 +1,11 @@
+[
+  {
+    "test": "candidate compiles with captured real types/bodies",
+    "status": "PASS"
+  },
+  {
+    "test": "execution stopped at concrete failure",
+    "status": "FAIL",
+    "error": "Traceback (most recent call last):\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 96, in <module>\n    try: main()\n         ~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 61, in main\n    setup()\n    ~~~~~^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 24, in setup\n    sql(\"SET session_replication_role=replica;\"+f\"\"\"\n    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    INSERT INTO cf_user_guards_v1.state VALUES(true,1);\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ...<15 lines>...\n    SET session_replication_role=origin;\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    \"\"\")\n    ^^^^\n  File \"/dev-server/scripts/delivery-atomic-hardening-20261030/test_pg.py\", line 10, in sql\n    def sql(s): return pg.sql(s)\n                       ~~~~~~^^^\n  File \"/dev-server/scripts/contracts-c2-20261022/integral/pg.py\", line 16, in sql\n    assert r.returncode == 0, r.stderr[-3000:]\n           ^^^^^^^^^^^^^^^^^\nAssertionError: ERROR:  new row for relation \"ordens_servico\" violates check constraint \"ordens_servico_origem_check\"\nDETAIL:  Failing row contains (10000000-0000-4000-8000-000000000007, 10000000-0000-4000-8000-000000000005, null, null, 10000000-0000-4000-8000-000000000013, null, null, null, media, pronto_entrega, 2026-10-30 01:56:13.67123+00, 2026-10-30 01:56:13.67123+00, null, produto, null, LOCAL-A, null, null, manual, 10000000-0000-4000-8000-000000000001).\n\n"
+  }
+]
