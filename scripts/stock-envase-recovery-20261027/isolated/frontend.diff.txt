@@ -1,351 +1,276 @@
 diff --git a/src/components/cockpit/RegistrarEnvaseDialog.tsx b/src/components/cockpit/RegistrarEnvaseDialog.tsx
-index c073c6252..b7af67669 100644
+index b7af67669..1c1131ac4 100644
 --- a/src/components/cockpit/RegistrarEnvaseDialog.tsx
 +++ b/src/components/cockpit/RegistrarEnvaseDialog.tsx
-@@ -10,6 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
- import { toast } from "sonner";
- import { useEsteiraLaboratorio } from "@/hooks/useEsteiraLaboratorio";
- import { embalagemLabels, embalagemVolumes, fmtL, defaultValidade } from "@/lib/envaseFormat";
-+import { useAuth } from "@/hooks/useAuth";
-+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
-+import { probeEnvaseAvailability } from "@/lib/envase/envaseAvailability";
-+import type { EnvaseRpc } from "@/lib/envase/envaseFlow";
- 
- export interface RegistrarEnvaseTarget {
-   programacao_id: string;
-@@ -40,6 +44,22 @@ const volumeDaLinha = (l: Linha) =>
- 
- export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
+@@ -1,4 +1,4 @@
+-import { useCallback, useEffect, useRef, useState } from "react";
++import { useEffect, useRef, useState } from "react";
+ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+@@ -46,6 +46,13 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
    const { registrarEnvaseTransacional } = useEsteiraLaboratorio();
-+  const { user, profile } = useAuth();
-+  const scope = useStorageAccessScope("envase-dialog");
-+  const [availableScope, setAvailableScope] = useState<string | null>(null);
-+  useEffect(() => {
-+    setAvailableScope(null);
-+    if (!open || !target || !scope.ready || !user?.id || !profile?.organization_id) return;
-+    let active = true;
-+    const captured = scope.capture();
-+    const fence = () => { if (!active || !captured()) throw new Error("ENVASE_SCOPE_CHANGED"); };
-+    void probeEnvaseAvailability(supabase.rpc.bind(supabase) as unknown as EnvaseRpc, {
-+      actorId: user.id, orgId: profile.organization_id,
-+      args: { p_lote_id: target.lote_id, p_os_id: target.os_id, p_programacao_id: target.programacao_id, p_origem: target.origem,
-+        p_linhas: [], p_validade: "", p_operador: null, p_idempotency_key: "availability", p_permitir_parcial: false, p_motivo_parcial: null },
-+    }, fence).then(ok => { if (active && captured() && ok) setAvailableScope(scope.scope); });
-+    return () => { active = false; };
-+  }, [open, target?.lote_id, target?.os_id, target?.programacao_id, target?.origem, scope.scope]);
+   const { user, profile } = useAuth();
+   const scope = useStorageAccessScope("envase-dialog");
++  const contextKey = JSON.stringify([open, scope.scope, target?.lote_id, target?.os_id, target?.programacao_id, target?.origem]);
++  const context = useRef({ key: contextKey, generation: 0 });
++  if (context.current.key !== contextKey) {
++    context.current = { key: contextKey, generation: context.current.generation + 1 };
++  }
++  const generation = context.current.generation;
++  const currentKey = `${generation}:${contextKey}`;
+   const [availableScope, setAvailableScope] = useState<string | null>(null);
+   useEffect(() => {
+     setAvailableScope(null);
+@@ -57,22 +64,39 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
+       actorId: user.id, orgId: profile.organization_id,
+       args: { p_lote_id: target.lote_id, p_os_id: target.os_id, p_programacao_id: target.programacao_id, p_origem: target.origem,
+         p_linhas: [], p_validade: "", p_operador: null, p_idempotency_key: "availability", p_permitir_parcial: false, p_motivo_parcial: null },
+-    }, fence).then(ok => { if (active && captured() && ok) setAvailableScope(scope.scope); });
++    }, fence).then(ok => { if (active && captured() && context.current.generation === generation && ok) setAvailableScope(currentKey); }).catch(() => {});
+     return () => { active = false; };
+-  }, [open, target?.lote_id, target?.os_id, target?.programacao_id, target?.origem, scope.scope]);
++  }, [currentKey]);
    const [linhas, setLinhas] = useState<Linha[]>([novaLinha()]);
    const [operador, setOperador] = useState("");
    const [validade, setValidade] = useState(defaultValidade());
-@@ -165,7 +185,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
+   const [saving, setSaving] = useState(false);
+-  const [saldo, setSaldo] = useState<{ produzido: number; envasado: number; saldo: number } | null>(null);
+-  const [demanda, setDemanda] = useState<{ solicitadoL: number; reservadoL: number; pendenteL: number } | null>(null);
++  const [read, setRead] = useState<{
++    key: string; status: "ready" | "error";
++    saldo?: { produzido: number; envasado: number; saldo: number };
++    demanda?: { solicitadoL: number; reservadoL: number; pendenteL: number };
++  } | null>(null);
++  const leituraAtual = open && scope.ready && read?.key === currentKey;
++  const leituraPronta = leituraAtual && read.status === "ready";
++  const saldo = leituraPronta ? read.saldo : null;
++  const demanda = leituraPronta ? read.demanda : null;
+   // Chave de idempotência por abertura do diálogo: duplo clique/retry não
+   // gera envase duplicado — o servidor responde replay.
+   const idempotencyKey = useRef<string>(crypto.randomUUID());
+ 
+-  const carregarSaldo = useCallback(async () => {
+-    if (!target?.lote_id) return;
+-    const [{ data: lote }, { data: envases }, { data: prog }, { data: reservas }] = await Promise.all([
++  useEffect(() => {
++    setRead(null);
++    setLinhas([novaLinha()]);
++    setOperador("");
++    setValidade(defaultValidade());
++    if (!open || !target?.lote_id || !scope.ready) return;
++    idempotencyKey.current = crypto.randomUUID();
++    let active = true;
++    const captured = scope.capture();
++    const fresh = () => active && captured() && context.current.generation === generation && context.current.key === contextKey;
++    const carregarSaldo = async () => {
++    try {
++    const responses = await Promise.all([
+       supabase.from("lotes").select("volume_produzido").eq("id", target.lote_id).maybeSingle(),
+       supabase.from("envase").select("volume_por_unidade, quantidade").eq("lote_id", target.lote_id),
+       supabase
+@@ -86,37 +110,29 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
+         .eq("lote_id", target.lote_id)
+         .eq("reservado_para_os_id", target.os_id),
+     ]);
+-    const produzido = Number(lote?.volume_produzido || 0);
+-    const envasado = (envases ?? []).reduce(
++    if (!fresh()) return;
++    const [{ data: lote }, { data: envases }, { data: prog }, { data: reservas }] = responses;
++    if (responses.some(r => r.error) || !lote || !prog || !Array.isArray(envases) || !Array.isArray(reservas)) throw new Error("ENVASE_READ_FAILED");
++    const produzido = Number(lote.volume_produzido);
++    const envasado = envases.reduce(
+       (s: number, ev: any) => s + Number(ev.volume_por_unidade || 0) * Number(ev.quantidade || 0),
+       0
+     );
+-    setSaldo({ produzido, envasado, saldo: produzido - envasado });
+-
+-    const solicitadoL = Number(prog?.volume_necessario || 0) / 1000;
+-    const reservadoL = (reservas ?? []).reduce(
+-      (s: number, r: any) => s + (Number(r.volume_total) || 0),
++    const solicitadoL = Number(prog.volume_necessario) / 1000;
++    const reservadoL = reservas.reduce(
++      (s: number, r: any) => s + Number(r.volume_total),
+       0,
+     );
+     const pendenteL = Math.max(0, solicitadoL - reservadoL);
+-    setDemanda({ solicitadoL, reservadoL, pendenteL });
+-  }, [target?.lote_id, target?.programacao_id, target?.os_id]);
+-
+-  useEffect(() => {
+-    if (!open || !target?.lote_id) {
+-      setLinhas([novaLinha()]);
+-      setOperador("");
+-      setValidade(defaultValidade());
+-      setSaldo(null);
+-      setDemanda(null);
+-      return;
++    if (![produzido, envasado, solicitadoL, reservadoL].every(v => Number.isFinite(v) && v >= 0)) throw new Error("ENVASE_READ_FAILED");
++    if (fresh()) setRead({ key: currentKey, status: "ready", saldo: { produzido, envasado, saldo: produzido - envasado }, demanda: { solicitadoL, reservadoL, pendenteL } });
++    } catch {
++      if (fresh()) setRead({ key: currentKey, status: "error" });
+     }
+-    setLinhas([novaLinha()]);
+-    setOperador("");
+-    setValidade(defaultValidade());
+-    idempotencyKey.current = crypto.randomUUID();
+-    carregarSaldo();
+-  }, [open, target?.lote_id, carregarSaldo]);
++    };
++    void carregarSaldo();
++    return () => { active = false; };
++  }, [currentKey]);
+ 
+   // Produção NÃO é editável aqui: alterar lotes.volume_produzido direto da tela
+   // criaria mudança de produção sem trilha transacional. Sem produção registrada,
+@@ -185,7 +201,9 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
  
    const handleSubmit = async (e: React.FormEvent) => {
      e.preventDefault();
--    if (!target || saving) return;
-+    if (!target || saving || !scope.ready || availableScope !== scope.scope) return;
+-    if (!target || saving || !scope.ready || availableScope !== scope.scope) return;
++    if (!target || !open || saving || !leituraPronta || !scope.ready || availableScope !== currentKey) return;
++    const captured = scope.capture();
++    const submitGeneration = generation;
      if (loteSemProducao) {
        toast.error("O lote não possui volume produzido informado.");
        return;
-@@ -175,7 +195,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
-       return;
-     }
-     if (excedeSaldo) {
--      toast.error(`Volume (${fmtL(volSolicitado)}) excede o saldo disponível (${fmtL(saldo!.saldo)}).`);
-+      toast.error(`Volume (${fmtL(volSolicitado)}) excede o saldo disponível (${fmtL(saldo?.saldo ?? 0)}).`);
-       return;
-     }
-     if (!validade) {
-@@ -400,7 +420,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
+@@ -222,15 +240,11 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
+         idempotencyKey: idempotencyKey.current,
+       });
+ 
+-      if (!result) return;
+-
+-      const restanteMl = Number(result.saldo_restante_ml ?? 0);
+-      if (restanteMl <= 0) {
+-        toast.success("Lote totalmente envasado. OS pronta para entrega!");
+-      } else {
+-        toast.success(
+-          `Envase parcial registrado. Saldo de ${fmtL(restanteMl)} disponível na página Envase para complementar.`
+-        );
++      if (!result || !captured() || context.current.generation !== submitGeneration) return;
++      if (result.estado === "partial") {
++        toast.warning("Envase registrado. A demanda da OS ainda não foi coberta; a OS não avançou.");
++      } else if ((result.estado === "completed" || result.estado === "completed_override") && result.avanco?.success === true && result.avanco?.status === "pronto_entrega") {
++        toast.success("Envase registrado. OS pronta para entrega.");
+       }
+ 
+       onOpenChange(false);
+@@ -244,15 +258,20 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
+       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+         <DialogHeader>
+           <DialogTitle>Registrar envase</DialogTitle>
+-          <DialogDescription className="flex items-center gap-2 flex-wrap">
++          <DialogDescription asChild>
++            <div className="flex items-center gap-2 flex-wrap">
+             {target?.codigo_lote && (
+               <Badge variant="outline" className="font-mono">Lote {target.codigo_lote}</Badge>
+             )}
+             {target?.produto && <span className="text-xs text-muted-foreground">{target.produto}</span>}
++            </div>
+           </DialogDescription>
+         </DialogHeader>
+ 
+         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
++          {!leituraPronta && (leituraAtual && read.status === "error"
++            ? <p role="alert" className="text-sm text-destructive">Não foi possível consultar o saldo e a demanda atuais. O envio está bloqueado.</p>
++            : <p role="status" className="text-sm text-muted-foreground">Consultando saldo e demanda…</p>)}
+           {saldo && (
+             <div className="rounded-lg border bg-muted/30 p-3 grid grid-cols-3 gap-2 text-center">
+               <div>
+@@ -420,7 +439,7 @@ export function RegistrarEnvaseDialog({ open, onOpenChange, target }: Props) {
            <Button
              type="submit"
              className="w-full font-bold"
--            disabled={saving || volSolicitado <= 0 || !validade || excedeSaldo || loteSemProducao}
-+            disabled={saving || !scope.ready || availableScope !== scope.scope}
+-            disabled={saving || !scope.ready || availableScope !== scope.scope}
++            disabled={saving || !leituraPronta || !scope.ready || availableScope !== currentKey}
            >
              {saving ? "Registrando..." : "Registrar envase e avançar esteira"}
            </Button>
-diff --git a/src/hooks/useEsteiraLaboratorio.ts b/src/hooks/useEsteiraLaboratorio.ts
-index 645011486..d807647a5 100644
---- a/src/hooks/useEsteiraLaboratorio.ts
-+++ b/src/hooks/useEsteiraLaboratorio.ts
-@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
- import { supabase } from "@/integrations/supabase/client";
- import { useAuth } from "@/hooks/useAuth";
- import { dispatchEnvase, loadEnvaseAttempts, type EnvaseArgs, type EnvaseAttempt, type EnvaseRpc } from "@/lib/envase/envaseFlow";
-+import { probeEnvaseAvailability } from "@/lib/envase/envaseAvailability";
-+import { useStorageAccessScope } from "@/hooks/useStorageAccessScope";
- import { toast } from "sonner";
- import { mensagemErroEstoque } from "@/lib/estoque/motorEstoque";
- import { montarDadosEntrega, validarRespostaCriarEntrega } from "@/lib/entregas/payloadEntrega";
-@@ -77,6 +79,8 @@ const ENVASE_REVIEWED_HINT = "Para OS manual, registre o envase (Cockpit ou pág
- 
- export function useEsteiraLaboratorio() {
-   const { user, profile } = useAuth() as any;
-+  const envaseScope = useStorageAccessScope("envase-canonical");
-+  const envaseBusy = useRef(false);
-   // Latest identity, read after every await (fence): a late envase result never lands in another session/tenant.
-   const identityRef = useRef<{ actorId: string | null; orgId: string | null }>({ actorId: null, orgId: null });
-   // Identity generation: bumps on EVERY actor/org change and on unmount, so a response started under an earlier
-@@ -364,13 +368,14 @@ export function useEsteiraLaboratorio() {
-     const epoch = epochRef.current;
-     let store: Storage | null = null;
-     try { store = window.localStorage; } catch { store = null; }
--    if (!actorId || !orgId || !store || !params.idempotencyKey) {
-+    if (!actorId || !orgId || !store || !params.idempotencyKey || !envaseScope.ready || envaseBusy.current) {
-       toast.error("Sessão, empresa ou recuperação local indisponível. Nenhuma alteração foi enviada.");
-       return null;
-     }
-+    const currentScope = envaseScope.capture();
-     const fence = () => {
-       const now = identityRef.current;
--      if (epochRef.current !== epoch || now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
-+      if (!currentScope() || epochRef.current !== epoch || now.actorId !== actorId || now.orgId !== orgId) throw new Error("ENVASE_SCOPE_CHANGED");
-     };
-     // A previous uncertain attempt for this lot is replayed EXACTLY (same key/args); a new key is never minted.
-     const all = loadEnvaseAttempts(store, actorId, orgId, params.loteId);
-@@ -390,11 +395,20 @@ export function useEsteiraLaboratorio() {
-     const attempt: EnvaseAttempt = pending ?? { args, actorId, orgId };
-     if (pending) toast.info("Há um envase anterior deste lote com resultado incerto: repetindo exatamente o mesmo envio (mesma chave e mesmos dados).");
-     let outcome;
-+    envaseBusy.current = true;
-     try {
-+      const available = await probeEnvaseAvailability(supabase.rpc.bind(supabase) as unknown as EnvaseRpc, attempt, fence);
-+      fence();
-+      if (!available) {
-+        toast.error("Envase temporariamente indisponível. Nenhuma alteração foi enviada.");
-+        return null;
-+      }
-       outcome = await dispatchEnvase(supabase.rpc.bind(supabase) as unknown as EnvaseRpc, store, attempt, !!pending, fence);
-     } catch (error: any) {
-       toast.error(error?.message === "ENVASE_SCOPE_CHANGED" ? "Sessão ou empresa alterada. Nada foi enviado." : (error?.message || "Recuperação local indisponível. Nenhuma alteração foi enviada."));
-       return null;
-+    } finally {
-+      envaseBusy.current = false;
-     }
-     if (outcome.status === "stale") { toast.error("Sessão ou empresa alterada durante o envio. O resultado não foi adotado; o envase pendente segue vinculado à sessão original."); return null; }
-     if (outcome.status === "uncertain") { toast.error("Resposta incerta do envase: pode ter sido gravado. Consulte o histórico; um novo envio deste lote repetirá exatamente o mesmo pedido."); return null; }
-diff --git a/src/lib/envase/envaseAvailability.ts b/src/lib/envase/envaseAvailability.ts
+diff --git a/src/test/envase/registrarEnvaseDialog.test.tsx b/src/test/envase/registrarEnvaseDialog.test.tsx
 new file mode 100644
-index 000000000..1672b15df
+index 000000000..487aa9a51
 --- /dev/null
-+++ b/src/lib/envase/envaseAvailability.ts
-@@ -0,0 +1,24 @@
-+import type { EnvaseAttempt, EnvaseRpc } from './envaseFlow';
-+
-+export const ENVASE_CAPABILITY_RPC = 'rpc_envase_capability_v1';
-+/** Exact availability only; the writer must independently authorize the transaction. */
-+export function envaseCapabilityMatches(data: unknown, attempt: EnvaseAttempt): boolean {
-+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
-+  const v = data as Record<string, unknown>;
-+  const keys = ['capability', 'available', 'actor_id', 'organization_id', 'lote_id', 'os_id', 'programacao_id'];
-+  return Object.keys(v).length === keys.length && keys.every(k => k in v) &&
-+    v.capability === 'envase_isolated_v1' && v.available === true &&
-+    v.actor_id === attempt.actorId && v.organization_id === attempt.orgId &&
-+    v.lote_id === attempt.args.p_lote_id && v.os_id === attempt.args.p_os_id && v.programacao_id === attempt.args.p_programacao_id;
-+}
-+export async function probeEnvaseAvailability(rpc: EnvaseRpc, attempt: EnvaseAttempt, fence: () => void): Promise<boolean> {
-+  fence();
-+  try {
-+    const { data, error } = await rpc(ENVASE_CAPABILITY_RPC, {
-+      p_lote: attempt.args.p_lote_id, p_os: attempt.args.p_os_id,
-+      p_prog: attempt.args.p_programacao_id, p_origem: attempt.args.p_origem,
-+    });
-+    fence();
-+    return !error && envaseCapabilityMatches(data, attempt);
-+  } catch { return false; }
-+}
-\ No newline at end of file
-diff --git a/src/lib/envase/envaseFlow.ts b/src/lib/envase/envaseFlow.ts
-index 9ff0851b9..6965700e2 100644
---- a/src/lib/envase/envaseFlow.ts
-+++ b/src/lib/envase/envaseFlow.ts
-@@ -29,6 +29,9 @@ const DEFINITIVE_MESSAGES = [
-   "COCKPIT_ENVASE_PARCIAL_SEM_MOTIVO", "ENVASE_SCOPE_DENIED", "ENVASE_ORIGIN_COMPOSITION_PENDING",
-   "ENVASE_TRANSITION_STATE", "ENVASE_TRANSITION_SCOPE_DENIED", "ENVASE_TRANSITION_CQ_REQUIRED",
-   "ENVASE_TRANSITION_NO_ENVASE", "ENVASE_TRANSITION_COVERAGE", "ENVASE_TRANSITION_CLOSED",
-+  "ENVASE_LEGACY_RECEIPT_REVIEW_REQUIRED", "ENVASE_KEY_REQUIRED", "ENVASE_FRESH_STATE_DENIED",
-+  "ENVASE_FRESH_CQ_DENIED", "ENVASE_SCOPE_CHANGED", "ENVASE_APPROVED_LOT_REQUIRED",
-+  "ENVASE_ROOT_AMBIGUOUS", "ENVASE_RESERVATION_LINEAGE_DENIED",
- ];
- // IN_PROGRESS / gate / lock / transport / proxy / unknown are NOT proof that nothing committed.
- const DEFINITIVE_CODES = new Set(["42501", "PT409", "22023"]);
-diff --git a/src/pages/EnvasePage.tsx b/src/pages/EnvasePage.tsx
-index d02741fac..1ef6f9dcd 100644
---- a/src/pages/EnvasePage.tsx
-+++ b/src/pages/EnvasePage.tsx
-@@ -390,7 +390,7 @@ export default function EnvasePage() {
-         ) : canManage && lotesComplementares.length > 0 && (
-           <Dialog open={open} onOpenChange={setOpen}>
-             <DialogTrigger asChild>
--              <Button className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Envase complementar</Button>
-+              <Button disabled title="Envase indisponível até revisão do contrato canônico" className="w-full sm:w-auto"><Plus className="h-4 w-4 mr-2" />Envase complementar</Button>
-             </DialogTrigger>
-             <DialogContent className="max-h-[90vh] overflow-y-auto mx-2 sm:mx-auto">
-               <DialogHeader><DialogTitle>Envase complementar</DialogTitle></DialogHeader>
-diff --git a/src/test/envase/envaseAvailability.test.ts b/src/test/envase/envaseAvailability.test.ts
-new file mode 100644
-index 000000000..69225736b
---- /dev/null
-+++ b/src/test/envase/envaseAvailability.test.ts
-@@ -0,0 +1,21 @@
-+import { describe, expect, it, vi } from 'vitest';
-+import { envaseCapabilityMatches, probeEnvaseAvailability, ENVASE_CAPABILITY_RPC } from '@/lib/envase/envaseAvailability';
-+import type { EnvaseAttempt } from '@/lib/envase/envaseFlow';
-+const a: EnvaseAttempt = { actorId: 'AR', orgId: 'ARBIO', args: { p_lote_id:'lot',p_os_id:'os',p_programacao_id:'pp',p_origem:'manual',p_linhas:[],p_validade:'2027-01-01',p_operador:null,p_idempotency_key:'key-00001',p_permitir_parcial:false,p_motivo_parcial:null } };
-+const cap = { capability:'envase_isolated_v1', available:true, actor_id:'AR',organization_id:'ARBIO',lote_id:'lot',os_id:'os',programacao_id:'pp' };
-+describe('isolated envase availability', () => {
-+  it('requires exact scope and envelope, never delivery capability', () => {
-+    expect(envaseCapabilityMatches(cap,a)).toBe(true);
-+    for (const patch of [{available:false},{available:'true'},{organization_id:'FSF'},{actor_id:'FSF'},{lote_id:'foreign'},{os_id:'other'},{programacao_id:'other'},{capability:'delivery_operations_v1'},{extra:true}]) expect(envaseCapabilityMatches({...cap,...patch},a)).toBe(false);
++++ b/src/test/envase/registrarEnvaseDialog.test.tsx
+@@ -0,0 +1,81 @@
++import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
++import { beforeEach, describe, expect, it, vi } from "vitest";
++const t = vi.hoisted(() => ({ auth: {} as any, reads: [] as any[], writer: vi.fn(), toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() } }));
++vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
++vi.mock("@/hooks/useEsteiraLaboratorio", () => ({ useEsteiraLaboratorio: () => ({ registrarEnvaseTransacional: t.writer }) }));
++vi.mock("sonner", () => ({ toast: t.toast }));
++vi.mock("@/integrations/supabase/client", () => ({ supabase: {
++  rpc: (_name: string, a: any) => Promise.resolve({ error: null, data: { capability: "envase_isolated_v1", available: true, actor_id: t.auth.user.id, organization_id: t.auth.profile.organization_id, lote_id: a.p_lote, os_id: a.p_os, programacao_id: a.p_prog } }),
++  from: (table: string) => {
++    let resolve: (value: any) => void = () => {};
++    const promise = new Promise(r => { resolve = r; });
++    t.reads.push({ table, resolve });
++    const query: any = { select: () => query, eq: () => query, maybeSingle: () => promise, then: promise.then.bind(promise) };
++    return query;
++  },
++} }));
++import { RegistrarEnvaseDialog } from "@/components/cockpit/RegistrarEnvaseDialog";
++const target = { lote_id: "lot-A", os_id: "os-A", programacao_id: "pp-A", origem: "manual", codigo_lote: "A" };
++const auth = (org = "A", epoch = 0) => ({ user: { id: "actor" }, profile: { user_id: "actor", organization_id: org, ativo: true, senha_provisoria: false }, roles: ["producao"], authzReady: true, authzEpoch: epoch, loading: false });
++beforeEach(() => { vi.clearAllMocks(); t.reads = []; t.auth = auth(); });
++async function complete(start = 0, volume = 9000, errorTable?: string) {
++  await act(async () => {
++    for (const r of t.reads.slice(start, start + 4)) r.resolve({ error: r.table === errorTable ? { message: "failed" } : null, data: r.table === "lotes" ? { volume_produzido: volume } : r.table === "programacao_producao" ? { volume_necessario: 12000 } : [] });
 +  });
-+  it('absent capability/errors fail closed', async () => {
-+    const rpc=vi.fn().mockResolvedValue({data:null,error:{code:'PGRST202'}});
-+    expect(await probeEnvaseAvailability(rpc,a,()=>{})).toBe(false);
-+    expect(rpc).toHaveBeenCalledExactlyOnceWith(ENVASE_CAPABILITY_RPC,{p_lote:'lot',p_os:'os',p_prog:'pp',p_origem:'manual'});
++}
++const submit = () => screen.getByRole("button", { name: "Registrar envase e avançar esteira" });
++describe("RegistrarEnvaseDialog current reads and ACK", () => {
++  it.each(["target", "actor", "tenant", "epoch", "close", "ABA"])("discards old four responses after %s change", async kind => {
++    const closed = vi.fn();
++    const view = render(<RegistrarEnvaseDialog open target={target} onOpenChange={closed} />);
++    expect(submit()).toBeDisabled();
++    let next = target;
++    if (kind === "target" || kind === "ABA") next = { ...target, lote_id: "lot-B", os_id: "os-B", programacao_id: "pp-B" };
++    if (kind === "tenant") t.auth = auth("B");
++    if (kind === "actor") t.auth = { ...auth(), user: { id: "other" }, profile: { ...auth().profile, user_id: "other" } };
++    if (kind === "epoch") t.auth = auth("A", 1);
++    view.rerender(<RegistrarEnvaseDialog open={kind !== "close"} target={next} onOpenChange={closed} />);
++    if (kind === "ABA") view.rerender(<RegistrarEnvaseDialog open target={target} onOpenChange={closed} />);
++    await complete(0, 99000);
++    expect(screen.queryByText("99 L")).not.toBeInTheDocument();
++    if (kind !== "close") expect(submit()).toBeDisabled();
++    expect(t.writer).not.toHaveBeenCalled();
 +  });
-+  it('scope changes during preflight never adopt availability', async () => {
-+    let current=true;
-+    const rpc=vi.fn().mockImplementation(async()=>{current=false;return {data:cap,error:null};});
-+    expect(await probeEnvaseAvailability(rpc,a,()=>{if(!current)throw new Error('stale');})).toBe(false);
++  it.each(["lotes", "envase", "programacao_producao", "estoque_produto"])("failed %s read blocks even programmatic submit", async table => {
++    render(<RegistrarEnvaseDialog open target={target} onOpenChange={vi.fn()} />);
++    await complete(0, 9000, table);
++    expect(screen.getByRole("alert")).toBeInTheDocument(); expect(submit()).toBeDisabled();
++    fireEvent.submit(submit().closest("form") as HTMLFormElement);
++    expect(t.writer).not.toHaveBeenCalled();
++  });
++  it("invalidates ready data immediately and waits for all four new reads", async () => {
++    const view = render(<RegistrarEnvaseDialog open target={target} onOpenChange={vi.fn()} />);
++    await complete(); await waitFor(() => expect(submit()).toBeEnabled());
++    expect(screen.getAllByText("9 L").length).toBeGreaterThan(0);
++    view.rerender(<RegistrarEnvaseDialog open target={{ ...target, os_id: "new-os" }} onOpenChange={vi.fn()} />);
++    expect(screen.queryByText("9 L")).not.toBeInTheDocument(); expect(submit()).toBeDisabled();
++    await act(async () => { t.reads[4].resolve({ data: { volume_produzido: 5000 }, error: null }); });
++    expect(submit()).toBeDisabled(); expect(t.writer).not.toHaveBeenCalled();
++  });
++  it.each([
++    ["partial", 0, { success: false, motivo: "COCKPIT_ENVASE_PARCIAL_NAO_AVANCA" }],
++    ["completed", 6000, { success: true, status: "pronto_entrega" }],
++  ])("uses %s ACK rather than remaining lot balance", async (estado, saldo_restante_ml, avanco) => {
++    t.writer.mockResolvedValueOnce({ estado, saldo_restante_ml, avanco });
++    const close = vi.fn(); render(<RegistrarEnvaseDialog open target={target} onOpenChange={close} />);
++    await complete(); await waitFor(() => expect(submit()).toBeEnabled());
++    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "3" } });
++    fireEvent.click(submit()); await waitFor(() => expect(close).toHaveBeenCalledWith(false));
++    if (estado === "partial") { expect(t.toast.warning).toHaveBeenCalled(); expect(t.toast.success).not.toHaveBeenCalled(); }
++    else { expect(t.toast.success).toHaveBeenCalledWith("Envase registrado. OS pronta para entrega."); }
++    expect(JSON.stringify(t.toast.success.mock.calls)).not.toMatch(/complementar|página Envase/);
++  });
++  it("late ACK after closing does not announce or close another opening", async () => {
++    let resolve: (v: any) => void = () => {}; t.writer.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
++    const close = vi.fn(); const view = render(<RegistrarEnvaseDialog open target={target} onOpenChange={close} />);
++    await complete(); await waitFor(() => expect(submit()).toBeEnabled()); fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "3" } }); fireEvent.click(submit());
++    view.rerender(<RegistrarEnvaseDialog open={false} target={target} onOpenChange={close} />);
++    await act(async () => { resolve({ estado: "completed", avanco: { success: true, status: "pronto_entrega" } }); });
++    expect(close).not.toHaveBeenCalled(); expect(t.toast.success).not.toHaveBeenCalled();
 +  });
 +});
 \ No newline at end of file
-diff --git a/src/test/envase/envaseFlow.test.tsx b/src/test/envase/envaseFlow.test.tsx
-index 250bf5a5a..93e273ed8 100644
---- a/src/test/envase/envaseFlow.test.tsx
-+++ b/src/test/envase/envaseFlow.test.tsx
-@@ -1,9 +1,10 @@
- import { describe, it, expect, vi, beforeEach } from "vitest";
- import { renderHook, act } from "@testing-library/react";
- import { classifyEnvaseError, parseEnvaseAck, ENVASE_RPC, saveEnvaseAttempt, clearEnvaseAttempt, loadEnvaseAttempts, type EnvaseAttempt } from "@/lib/envase/envaseFlow";
-+import { ENVASE_CAPABILITY_RPC } from "@/lib/envase/envaseAvailability";
- 
--const t = vi.hoisted(() => ({ inv: vi.fn(), rpc: vi.fn(), from: vi.fn(), auth: { user: { id: "a1" }, profile: { organization_id: "org-A" } } as any, toast: { error: vi.fn(), info: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
--vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (...a: any[]) => t.rpc(...a), from: (...a: any[]) => t.from(...a) } }));
-+const t = vi.hoisted(() => ({ inv: vi.fn(), cap: vi.fn(), rpc: vi.fn(), from: vi.fn(), auth: { user: { id: "a1" }, profile: { organization_id: "org-A" } } as any, toast: { error: vi.fn(), info: vi.fn(), success: vi.fn(), warning: vi.fn() } }));
-+vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: (fn: string, args: any) => fn === "rpc_envase_capability_v1" ? t.cap(args) : t.rpc(fn, args), from: (...a: any[]) => t.from(...a) } }));
- vi.mock("@/hooks/useAuth", () => ({ useAuth: () => t.auth }));
- vi.mock("@/hooks/useCockpitQuery", () => ({ useCockpitQuery: () => ({ data: [] }) }));
- vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: t.inv }) }));
-@@ -18,7 +19,9 @@ const envCalls = () => t.rpc.mock.calls.filter((c: any[]) => c[0] === ENVASE_RPC
- const slotK = (k: string, a = "a1", o = "org-A") => `cf:envase-uncertain:v2:${a}:${o}:${LOTE}:${k}`;
- const slot = slotK("k-1");
- 
--beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; });
-+const readyAuth = (actor = "a1", org = "org-A", epoch = 0) => ({ user: { id: actor }, profile: { user_id: actor, organization_id: org, ativo: true, senha_provisoria: false }, roles: ["producao"], loading: false, authzReady: true, authzEpoch: epoch });
-+const capAck = (args: any) => ({ error: null, data: { capability: "envase_isolated_v1", available: true, actor_id: "a1", organization_id: "org-A", lote_id: args.p_lote, os_id: args.p_os, programacao_id: args.p_prog } });
-+beforeEach(() => { vi.clearAllMocks(); t.cap.mockReset(); localStorage.clear(); t.auth = readyAuth(); t.cap.mockImplementation((args) => Promise.resolve({ ...capAck(args), data: { ...capAck(args).data, actor_id: t.auth.user.id, organization_id: t.auth.profile.organization_id } })); });
- 
- describe("envase error/ACK contract", () => {
-   it("only allowlisted business refusals are definitive", () => {
-@@ -68,6 +71,47 @@ describe("envase error/ACK contract", () => {
- });
- 
- describe("useEsteiraLaboratorio envase (mounted hook)", () => {
-+  it.each(["absent", "denied", "error", "throw", "foreign", "extra"])("%s preflight sends zero writers", async (kind) => {
-+    t.cap.mockImplementationOnce((args) => kind === "throw" ? Promise.reject(new Error("offline")) : Promise.resolve(kind === "absent" ? { data: null, error: null } : kind === "error" ? { data: null, error: { code: "PGRST202" } } : { error: null, data: { ...capAck(args).data, ...(kind === "denied" ? { available: false } : kind === "foreign" ? { organization_id: "org-B" } : { unexpected: true }) } }));
-+    const { result } = renderHook(() => useEsteiraLaboratorio());
-+    await act(async () => { expect(await result.current.registrarEnvaseTransacional(params("cap-closed"))).toBeNull(); });
-+    expect(envCalls()).toHaveLength(0); expect(localStorage.length).toBe(0);
-+  });
-+  it.each(["tenant", "session", "epoch", "role", "cancel"])("%s change during preflight fences dispatch", async (kind) => {
-+    let resolve: ((value: any) => void) | undefined;
-+    t.cap.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
-+    const { result, rerender, unmount } = renderHook(() => useEsteiraLaboratorio());
-+    let pending: Promise<any> = Promise.resolve();
-+    act(() => { pending = result.current.registrarEnvaseTransacional(params("cap-race")); });
-+    if (kind === "cancel") unmount();
-+    else { t.auth = kind === "tenant" ? readyAuth("a1", "org-B") : kind === "session" ? { ...readyAuth(), user: null } : kind === "role" ? { ...readyAuth(), roles: [] } : readyAuth("a1", "org-A", 1); rerender(); }
-+    await act(async () => { resolve?.(capAck({ p_lote: LOTE, p_os: "os1", p_prog: "pp1" })); expect(await pending).toBeNull(); });
-+    expect(envCalls()).toHaveLength(0); expect(localStorage.length).toBe(0);
-+  });
-+  it("one preflight and dispatch own synchronous lock through both waits", async () => {
-+    let probe: ((value: any) => void) | undefined; let writer: ((value: any) => void) | undefined;
-+    t.cap.mockImplementationOnce(() => new Promise(r => { probe = r; }));
-+    t.rpc.mockImplementationOnce(() => new Promise(r => { writer = r; }));
-+    const { result } = renderHook(() => useEsteiraLaboratorio()); let first: Promise<any> = Promise.resolve();
-+    act(() => { first = result.current.registrarEnvaseTransacional(params("locked-1")); });
-+    await act(async () => { expect(await result.current.registrarEnvaseTransacional(params("locked-2"))).toBeNull(); });
-+    expect(t.cap).toHaveBeenCalledTimes(1);
-+    await act(async () => { probe?.(capAck({ p_lote: LOTE, p_os: "os1", p_prog: "pp1" })); await Promise.resolve(); });
-+    await act(async () => { expect(await result.current.registrarEnvaseTransacional(params("locked-3"))).toBeNull(); });
-+    expect(envCalls()).toHaveLength(1);
-+    await act(async () => { writer?.({ data: ack, error: null }); expect(await first).toEqual(ack); });
-+    expect(t.cap.mock.invocationCallOrder[0]).toBeLessThan(t.rpc.mock.invocationCallOrder[0]);
-+  });
-+  it("denied preflight preserves frozen uncertain attempt", async () => {
-+    t.rpc.mockResolvedValueOnce({ data: null, error: { message: "offline" } });
-+    const { result } = renderHook(() => useEsteiraLaboratorio());
-+    await act(async () => { await result.current.registrarEnvaseTransacional(params("k-1")); });
-+    const stored = localStorage.getItem(slot);
-+    t.cap.mockResolvedValueOnce({ data: null, error: null });
-+    await act(async () => { await result.current.registrarEnvaseTransacional(params("new-2", 5)); });
-+    expect(envCalls()).toHaveLength(1); expect(localStorage.getItem(slot)).toBe(stored);
-+    expect(t.cap.mock.calls[1][0]).toEqual({ p_lote: LOTE, p_os: "os1", p_prog: "pp1", p_origem: "manual" });
-+  });
-   it("uncertain keeps the frozen attempt; next submit replays EXACT args (no new key); confirmation clears", async () => {
-     t.rpc.mockResolvedValueOnce({ data: null, error: { code: "57014", message: "timeout" } });
-     const { result } = renderHook(() => useEsteiraLaboratorio());
-@@ -103,7 +147,8 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
-     const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
-     let p: Promise<any> = Promise.resolve();
-     act(() => { p = result.current.registrarEnvaseTransacional(params("k-1")); });
--    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-B" } }; rerender();
-+    await act(async () => { await Promise.resolve(); });
-+    t.auth = readyAuth("a1", "org-B"); rerender();
-     await act(async () => { release({ data: ack, error: null }); expect(await p).toBeNull(); });
-     expect(t.toast.success).not.toHaveBeenCalled();
-     expect(localStorage.getItem(slot)).not.toBeNull();
-@@ -133,12 +178,12 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
-     t.rpc.mockResolvedValueOnce({ data: null, error: { message: "Failed to fetch" } });
-     const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
-     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-1")); });
--    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-B" } }; rerender();
-+    t.auth = readyAuth("a1", "org-B"); rerender();
-     t.rpc.mockResolvedValueOnce({ data: ack, error: null });
-     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-b")); });
-     expect(envCalls()[1][1].p_idempotency_key).toBe("k-b");
-     expect(localStorage.getItem(slot)).not.toBeNull();
--    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; rerender();
-+    t.auth = readyAuth(); rerender();
-     t.rpc.mockResolvedValueOnce({ data: replayAck, error: null });
-     await act(async () => { await result.current.registrarEnvaseTransacional(params("k-new")); });
-     expect(envCalls()[2][1].p_idempotency_key).toBe("k-1");
-@@ -156,7 +201,7 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
-     await act(async () => { await Promise.resolve(); });
-     expect(envCalls()).toHaveLength(1);
-     t.auth = other as any; rerender();
--    t.auth = { user: { id: "a1" }, profile: { organization_id: "org-A" } }; rerender();
-+    t.auth = readyAuth(); rerender();
-     await act(async () => { release({ data: ack, error: null }); expect(await p).toBeNull(); });
-     expect(t.toast.success).not.toHaveBeenCalled();
-     expect(t.toast.info).not.toHaveBeenCalled();
-@@ -170,6 +215,7 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
-     const { result, unmount } = renderHook(() => useEsteiraLaboratorio());
-     let p: Promise<any> = Promise.resolve();
-     act(() => { p = result.current.registrarEnvaseTransacional(params("k-1")); });
-+    await act(async () => { await Promise.resolve(); });
-     unmount();
-     release({ data: ack, error: null }); expect(await p).toBeNull();
-     expect(t.toast.success).not.toHaveBeenCalled(); expect(t.inv).not.toHaveBeenCalled();
-@@ -182,4 +228,21 @@ describe("useEsteiraLaboratorio envase (mounted hook)", () => {
-     });
-     expect(t.rpc).not.toHaveBeenCalled();
-   });
-+  it("same actor/tenant authorization epoch change fences late ACK without clearing pending", async () => {
-+    let release: ((value: any) => void) | undefined;
-+    t.rpc.mockImplementationOnce(() => new Promise(r => { release = r; }));
-+    const { result, rerender } = renderHook(() => useEsteiraLaboratorio());
-+    let p: Promise<any> = Promise.resolve();
-+    await act(async () => { p = result.current.registrarEnvaseTransacional(params("epoch-1")); await Promise.resolve(); });
-+    t.auth = readyAuth("a1", "org-A", 1); rerender();
-+    await act(async () => { release?.({ data: ack, error: null }); expect(await p).toBeNull(); });
-+    expect(localStorage.getItem(slotK("epoch-1"))).not.toBeNull();
-+    expect(t.inv).not.toHaveBeenCalled();
-+  });
-+  it("revoked readiness sends no canonical writer", async () => {
-+    t.auth = { ...readyAuth(), authzReady: false };
-+    const { result } = renderHook(() => useEsteiraLaboratorio());
-+    await act(async () => { expect(await result.current.registrarEnvaseTransacional(params("closed-1"))).toBeNull(); });
-+    expect(envCalls()).toHaveLength(0);
-+  });
- });
