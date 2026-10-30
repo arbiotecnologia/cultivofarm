@@ -53,7 +53,7 @@
       "status": "PASS"
     },
     {
-      "test": "release artifact remains explicitly NO-GO",
+      "test": "unqualified release stub denies before matrix generates reviewed release",
       "status": "PASS"
     },
     {
@@ -365,6 +365,10 @@
       "status": "PASS"
     },
     {
+      "test": "real inverse-prelock DML deadlock/timeout rejects exact concurrency state without partial envase",
+      "status": "PASS"
+    },
+    {
       "test": "all fourteen financial/fiscal/outbox existing full-row snapshots unchanged",
       "status": "PASS"
     },
@@ -431,7 +435,7 @@
       "stderr": "ERROR:  P0001: ENVASE_PRE_DRIFT\nCONTEXT:  PL/pgSQL function inline_code_block line 7 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
-      "test": "release artifact remains explicitly NO-GO",
+      "test": "unqualified release stub denies before matrix generates reviewed release",
       "returncode": 3,
       "stdout": "",
       "stderr": "ERROR:  42501: ENVASE_RELEASE_REVIEW_AND_CONCURRENCY_REQUIRED\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
@@ -713,6 +717,14 @@
       "returncode": 0
     },
     {
+      "test": "inverse prelock actual DML",
+      "holder_stdout": "1\n",
+      "holder_stderr": "ERROR:  42501: MANUAL_LOT_WRITE_REQUIRES_REVIEWED_RPC\nCONTEXT:  PL/pgSQL function platform_private.guard_manual_lot_write_v1() line 53 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n",
+      "worker_stdout": "",
+      "worker_stderr": "ERROR:  40P01: deadlock detected\nDETAIL:  Process 61902 waits for ShareLock on transaction 16732; blocked by process 61901.\nProcess 61901 waits for ShareLock on transaction 16733; blocked by process 61902.\nHINT:  See server log for query details.\nCONTEXT:  while locking tuple (0,33) in relation \"lotes\"\nSQL statement \"SELECT coalesce(volume_produzido, 0), status::text, produto_id, microrganismo_id, programacao_id\n                                                                                  FROM public.lotes WHERE id = p_lote_id FOR UPDATE\"\nPL/pgSQL function rpc_cockpit_registrar_envase_v1(uuid,uuid,text,uuid,jsonb,date,text,text,boolean,text) line 83 at SQL statement\nLOCATION:  DeadLockReport, deadlock.c:1135\n",
+      "worker_returncode": 3
+    },
+    {
       "test": "foreign FSF proof stays closed",
       "returncode": 3,
       "stdout": "",
@@ -731,6 +743,6 @@
       "stderr": "ERROR:  42501: permission denied for function rpc_cockpit_registrar_envase_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "elapsed_seconds": 175.21,
+  "elapsed_seconds": 186.003,
   "exit_code": 0
 }
