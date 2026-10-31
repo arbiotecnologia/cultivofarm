@@ -128,11 +128,14 @@ describe("FASE 28B — componentes e integrações mapeados", () => {
     expect(arquivos.filter((f) => !exists(f))).toEqual([]);
   });
 
-  it("Entregas.tsx usa o motor canônico com chaves de idempotência", () => {
+  it("Entregas.tsx usa contratos atômicos com chave/CAS e não o motor legado", () => {
     const c = read(ENTREGAS);
-    expect(c).toContain("operarEstoque");
-    expect(c).toContain("entrega-expedicao");
-    expect(c).toContain("entrega-estorno");
+    expect(c).not.toContain("operarEstoque");
+    expect(c).not.toContain("entrega-expedicao");
+    expect(c).not.toContain("entrega-estorno");
+    expect(c).toContain('from "@/lib/entregas/deliveryOperationsFlow"');
+    expect(c).toMatch(/requestKey: grupoId/);
+    expect(c).toMatch(/runAtomicCancel\(/);
   });
 
   it("nenhum componente de estoque escreve direto em estoque_produto", () => {
