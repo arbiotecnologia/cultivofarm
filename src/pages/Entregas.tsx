@@ -939,6 +939,7 @@ export default function Entregas() {
                     actions={
                       <>
                         {e.status === "separado" && <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
+                        {e.status === "em_rota" && sendAttempts.current.has(`${deliveryScope.scope}:${e.id}`) && <Button size="sm" variant="outline" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Reconciliar envio</Button>}
                         {e.status === "em_rota" && (
                           <div className="flex gap-1 w-full">
                             <Button size="sm" variant="outline" className="flex-1" onClick={() => handleConfirmarEntrega(e.id)}>Apenas Confirmar</Button>
@@ -1014,6 +1015,7 @@ export default function Entregas() {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {e.status === "separado" && <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Enviar</Button>}
+                        {e.status === "em_rota" && sendAttempts.current.has(`${deliveryScope.scope}:${e.id}`) && <Button size="sm" variant="outline" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ id: e.id, status: "em_rota" })}>Reconciliar envio</Button>}
                         {e.status === "em_rota" && (
                           <>
                             <Button size="sm" variant="outline" onClick={() => handleConfirmarEntrega(e.id)}>Confirmar</Button>
