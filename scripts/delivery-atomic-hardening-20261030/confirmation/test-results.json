@@ -113,52 +113,21 @@
       "status": "PASS"
     },
     {
-      "test": "partial envase demand remains open",
+      "test": "actual corrupted ledger os_id rejects replay",
       "status": "PASS"
     },
     {
-      "test": "proof multi-new-digital exact replay",
+      "test": "actual corrupted ledger lote_id rejects replay",
       "status": "PASS"
     },
     {
-      "test": "proof multi-attach exact replay",
+      "test": "actual corrupted ledger os_tipo rejects replay",
       "status": "PASS"
     },
     {
-      "test": "first item cannot finalize with pending independent stock delivery",
-      "status": "PASS"
-    },
-    {
-      "test": "second item after OS entregue completes 5000ml demand independently",
-      "status": "PASS"
-    },
-    {
-      "test": "first partial ACK replay remains exact after second item finalization",
-      "status": "PASS"
-    },
-    {
-      "test": "multi-item physical confirmation no finance fiscal outbox changes",
-      "status": "PASS"
-    },
-    {
-      "test": "canonical cancellation wins observed race and confirmation rolls back",
-      "status": "PASS"
-    },
-    {
-      "test": "confirmed physical delivery cannot ordinary cancel",
-      "status": "PASS"
-    },
-    {
-      "test": "all fourteen existing financial fiscal outbox sentinels full content unchanged",
-      "status": "PASS"
-    },
-    {
-      "test": "deny rollback keeps canonical writer closed",
-      "status": "PASS"
-    },
-    {
-      "test": "rollback preserves physical proof stock ledger and receipts history",
-      "status": "PASS"
+      "test": "execution",
+      "status": "FAIL",
+      "error": "ERROR:  new row for relation \"estoque_movimentacoes\" violates check constraint \"estoque_mov_referencia_tipo_valida\"\nDETAIL:  Failing row contains (90f78548-40d4-474d-82a3-97a7f2d5b396, 23f0b48e-bc15-4018-87c3-5547c10a60b0, expedicao, 2, reservado, expedido, 10000000-0000-4000-8000-000000000047, manual, 10000000-0000-4000-8000-000000000005, 10000000-0000-4000-8000-000000000003, null, 2026-10-31 13:53:30.705625+00, 10000000-0000-4000-8000-000000000049, 2, 2, 2, 2, 2.0000000000000000, 2.0000000000000000, un, saida, rpc_estoque_operar_v1, os, 643275a5-6445-4c48-9ddd-ed97fe0d1846, null, delivery-exp:28db69e0d517a54a948c541d6adfc97f, a3cdd1c44db46b14b516c4a2144093198c5c905c085eb879551df5c39aac16ce, null, {\"motor\": \"v1\", \"stock_request_item\": \"23f0b48e-bc15-4018-87c3-5...).\n"
     }
   ],
   "raw": [
@@ -271,23 +240,24 @@
       "returncode": 3
     },
     {
-      "test": "cancel wins",
-      "stdout": "",
-      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 27 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
-    },
-    {
-      "test": "confirmed physical delivery cannot ordinary cancel",
+      "test": "actual corrupted ledger os_id rejects replay",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: DELIVERY_CANCEL_ORIGIN_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 17 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_REPLAY_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 54 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
-      "test": "deny rollback keeps canonical writer closed",
+      "test": "actual corrupted ledger lote_id rejects replay",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: permission denied for function rpc_entrega_confirmar_manual_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_REPLAY_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 54 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "actual corrupted ledger os_tipo rejects replay",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_REPLAY_STATE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 54 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     }
   ],
-  "exit_code": 0,
-  "elapsed_seconds": 21.435547783999937
+  "exit_code": 1,
+  "elapsed_seconds": 15.838943941000252
 }
