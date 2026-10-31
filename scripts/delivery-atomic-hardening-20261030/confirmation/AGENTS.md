@@ -3,3 +3,4 @@
 - Confirmation validates original expedition and immutable lot/OS/stock/proof lineage under the existing singleton; it never expedites stock twice or writes ledger directly.
 - Preserve existing receiver/proof requirements and physical workflow, server authority after waits, exact CAS/receipt replay and deny-only rollback; financial/fiscal/outbox effects and B2B/OnFarm remain closed.
 - Generate deterministic full catalog pins from the disposable composition, with explicit column COLLATE C ordering; client UI capability never grants authority and uncertain dispatch preserves exact arguments.
+- Confirmation runtime validates UUIDs and timezone-bearing calendar timestamps; attempts retain capability OS/proof roots through preflight and ACK validation, keeping uncertain keys unchanged — prevents incomplete or substituted success without replacing server authorization.

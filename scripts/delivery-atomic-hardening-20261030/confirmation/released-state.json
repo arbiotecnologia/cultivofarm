@@ -17584,7 +17584,7 @@
       "public",
       "rpc_entrega_confirmacao_capability_v1",
       "p_entrega uuid",
-      "d9c45392d31f53b63cac2f04f0c5aa14",
+      "06f3e58ab113bd51fd14ea85fab20240",
       "{postgres=X/postgres,authenticated=X/postgres}",
       "postgres",
       [

@@ -13,7 +13,15 @@
       "status": "PASS"
     },
     {
-      "test": "separate minimum release exact PRE POST",
+      "test": "review release stays NO-GO without remaining matrix",
+      "status": "PASS"
+    },
+    {
+      "test": "disposable harness-only activation exact state; review release remains closed",
+      "status": "PASS"
+    },
+    {
+      "test": "capability binds observed OS canonical proof and CAS revision",
       "status": "PASS"
     },
     {
@@ -161,6 +169,12 @@
       "stderr": "ERROR:  42501: permission denied for function rpc_entrega_confirmar_manual_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     },
     {
+      "test": "review release stays NO-GO without remaining matrix",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  P0001: CONFIRM_RELEASE_NO_GO_REMAINING_MATRIX\nCONTEXT:  PL/pgSQL function inline_code_block line 1 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
       "test": "foreign FSF denies without mutations",
       "returncode": 3,
       "stdout": "",
@@ -275,5 +289,5 @@
     }
   ],
   "exit_code": 0,
-  "elapsed_seconds": 23.052319500000067
+  "elapsed_seconds": 21.435547783999937
 }
