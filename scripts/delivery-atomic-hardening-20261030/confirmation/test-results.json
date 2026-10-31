@@ -125,9 +125,24 @@
       "status": "PASS"
     },
     {
-      "test": "execution",
-      "status": "FAIL",
-      "error": ""
+      "test": "canonical cancellation wins observed race and confirmation rolls back",
+      "status": "PASS"
+    },
+    {
+      "test": "confirmed physical delivery cannot ordinary cancel",
+      "status": "PASS"
+    },
+    {
+      "test": "all fourteen existing financial fiscal outbox sentinels full content unchanged",
+      "status": "PASS"
+    },
+    {
+      "test": "deny rollback keeps canonical writer closed",
+      "status": "PASS"
+    },
+    {
+      "test": "rollback preserves physical proof stock ledger and receipts history",
+      "status": "PASS"
     }
   ],
   "raw": [
@@ -147,7 +162,7 @@
       "test": "same key changed receiver conflicts",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_REPLAY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 54 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_REPLAY_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 55 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "inactive actor cannot replay",
@@ -183,7 +198,7 @@
       "test": "stale CAS denied",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 58 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  PT409: DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 59 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "financial payload rejected",
@@ -195,7 +210,7 @@
       "test": "foreign object owner rejects canonical digital proof",
       "returncode": 3,
       "stdout": "",
-      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_OBJECT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_proof_v1(public.entregas) line 22 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 42 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+      "stderr": "ERROR:  42501: DELIVERY_CONFIRM_OBJECT_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_proof_v1(public.entregas) line 22 at RAISE\nPL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 43 at assignment\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
     },
     {
       "test": "profile revoked DURING observed lock denies confirmation",
@@ -224,9 +239,21 @@
     {
       "test": "cancel wins",
       "stdout": "",
-      "stderr": "ERROR:  DELIVERY_CONFIRM_LINEAGE_DENIED\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 39 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\n"
+      "stderr": "ERROR:  DELIVERY_CONFIRM_OBSERVED_CONFLICT\nCONTEXT:  PL/pgSQL function platform_private.delivery_confirm_apply_v1(uuid,timestamp with time zone,text,jsonb) line 27 at RAISE\nSQL function \"rpc_entrega_confirmar_manual_v1\" statement 1\n"
+    },
+    {
+      "test": "confirmed physical delivery cannot ordinary cancel",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: DELIVERY_CANCEL_ORIGIN_CLOSED\nCONTEXT:  PL/pgSQL function public.rpc_entrega_cancelar_v1(uuid,text,timestamp with time zone) line 17 at RAISE\nLOCATION:  exec_stmt_raise, pl_exec.c:3911\n"
+    },
+    {
+      "test": "deny rollback keeps canonical writer closed",
+      "returncode": 3,
+      "stdout": "",
+      "stderr": "ERROR:  42501: permission denied for function rpc_entrega_confirmar_manual_v1\nLOCATION:  aclcheck_error, aclchk.c:2845\n"
     }
   ],
-  "exit_code": 1,
-  "elapsed_seconds": 23.2754184180003
+  "exit_code": 0,
+  "elapsed_seconds": 24.049496823000027
 }
